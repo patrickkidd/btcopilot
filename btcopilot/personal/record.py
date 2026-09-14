@@ -305,6 +305,7 @@ def _validate(data: dict, deltas: list[dict]):
     _words(data, deltas)
     _moves(data, deltas)
     _twins(data, deltas)
+    _structure(data, deltas)
 
 
 LINKS = (
@@ -336,13 +337,7 @@ def _val(value):
 
 
 def _touched(deltas: list[dict]) -> list[str]:
-    return list(
-        dict.fromkeys(
-            str(delta["item_id"])
-            for delta in deltas
-            if delta["item_kind"] == ItemKind.Event.value
-        )
-    )
+    return _touched_kind(deltas, ItemKind.Event)
 
 
 def _moved(event: dict) -> bool:
@@ -476,6 +471,68 @@ def _twins(data: dict, deltas: list[dict]):
                     f"that event is already event {other.get('id')}: change it "
                     f"with edit_event(id={other.get('id')}) rather than adding it"
                 )
+
+
+def _touched_kind(deltas: list[dict], kind: ItemKind) -> list[str]:
+    return list(
+        dict.fromkeys(
+            str(delta["item_id"])
+            for delta in deltas
+            if delta["item_kind"] == kind.value and delta["item_id"] is not None
+        )
+    )
+
+
+def _pair(bond: dict) -> tuple:
+    return tuple(
+        sorted(str(bond.get(side)) for side in ("person_a", "person_b"))
+    )
+
+
+def _structure(data: dict, deltas: list[dict]):
+    """Who belongs to whom, checked on what this write leaves behind.
+
+    Nobody is their own parent or their own partner, a bond is between two
+    different people who are both in the record, and any two people have one
+    bond ever, because a child is the offspring of a bond rather than of a
+    pairing written twice.
+    """
+    bonds = _collection(data, ItemKind.PairBond)
+    for bond_id in _touched_kind(deltas, ItemKind.PairBond):
+        bond = _find(data, ItemKind.PairBond, bond_id)
+        if bond is None:
+            continue
+        sides = [bond.get("person_a"), bond.get("person_b")]
+        if any(side is None for side in sides):
+            raise Invalid(
+                f"pair bond {bond_id} needs two people: add the missing one as a "
+                "person first, generically named where nobody named them"
+            )
+        if str(sides[0]) == str(sides[1]):
+            raise Invalid(f"pair bond {bond_id} is one person with themselves")
+        for side in sides:
+            if _find(data, ItemKind.Person, side) is None:
+                raise Invalid(f"pair bond {bond_id} names person {side}, who is not in the record")
+        for other in bonds:
+            if str(other.get("id")) != str(bond_id) and _pair(other) == _pair(bond):
+                raise Invalid(
+                    f"those two already have pair bond {other.get('id')}: change "
+                    f"it with edit_pair_bond(id={other.get('id')}) rather than "
+                    "adding a second one"
+                )
+
+    for person_id in _touched_kind(deltas, ItemKind.Person):
+        person = _find(data, ItemKind.Person, person_id)
+        if person is None or person.get("parents") is None:
+            continue
+        bond = _find(data, ItemKind.PairBond, person["parents"])
+        if bond is None:
+            raise Invalid(
+                f"person {person_id} is born to pair bond {person['parents']}, "
+                "which is not in the record"
+            )
+        if str(person_id) in _pair(bond):
+            raise Invalid(f"person {person_id} cannot be their own parent")
 
 
 def _commit(

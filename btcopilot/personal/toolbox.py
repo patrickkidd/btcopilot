@@ -54,6 +54,10 @@ EDITS = (
 )
 
 
+def _enum_value(value):
+    return getattr(value, "value", value)
+
+
 def _values(cls) -> list[str]:
     return [member.value for member in cls]
 
@@ -104,7 +108,7 @@ def schemas() -> list[dict]:
                     "gender": _enum_param(PersonKind, "The person's gender."),
                     "parents": {
                         "type": "integer",
-                        "description": "The id of the pair bond this person was born into.",
+                        "description": means[prompts.ToolText.Parents],
                     },
                 },
             },
@@ -116,8 +120,14 @@ def schemas() -> list[dict]:
                 "type": "object",
                 "properties": {
                     "id": {"type": "integer"},
-                    "person_a": {"type": "integer"},
-                    "person_b": {"type": "integer"},
+                    "person_a": {
+                        "type": "integer",
+                        "description": means[prompts.ToolText.PersonA],
+                    },
+                    "person_b": {
+                        "type": "integer",
+                        "description": means[prompts.ToolText.PersonB],
+                    },
                     "married": {"type": "boolean"},
                 },
             },
@@ -343,7 +353,41 @@ class Toolbox:
                 fields[key] = self._person(data, args[key])
         if args.get("married") is not None:
             fields["married"] = bool(args["married"])
+        if args.get("id") is None and len(fields.keys() & {"person_a", "person_b"}) == 1:
+            known = fields.get("person_a", fields.get("person_b"))
+            missing = "person_b" if "person_a" in fields else "person_a"
+            fields[missing] = self._generic(known, prompts.Role.Partner)
         return self._write(ItemKind.PairBond, args.get("id"), fields)
+
+    #: The parent a birth names second, worked out from the one it names first.
+    OTHER_PARENT = {
+        PersonKind.Male.value: prompts.Role.Mother,
+        PersonKind.Female.value: prompts.Role.Father,
+    }
+    ROLE_GENDER = {
+        prompts.Role.Father: PersonKind.Male,
+        prompts.Role.Mother: PersonKind.Female,
+        prompts.Role.Partner: PersonKind.Unknown,
+    }
+
+    def _generic(self, other_id: int, role) -> int:
+        """A parent or partner nobody named, added as a person so the bond has
+        two sides and the birth has two parents (R-0325 rules 9 and 10). What
+        they are called comes from the overridable prompts."""
+        other = self._find_person(other_id)
+        name = prompts.generic_name(other.get("name") or "someone", role)
+        _, patch = self._write(
+            ItemKind.Person,
+            None,
+            {"name": name, "gender": self.ROLE_GENDER[role].value},
+        )
+        return int(patch["deltas"][0]["item_id"])
+
+    def _find_person(self, person_id) -> dict:
+        for person in self.data.people:
+            if str(person.get("id")) == str(person_id):
+                return person
+        raise ToolError(f"No person {person_id} in the record")
 
     def _edit_event(self, args: dict) -> tuple[str, dict]:
         data = self.data
@@ -375,6 +419,17 @@ class Toolbox:
                 fields[key] = [self._person(data, p) for p in args[arg]]
         if args.get("id") is None and not args.get("kind"):
             raise ToolError("A new event needs a kind")
+        if (
+            fields.get("kind") in (EventKind.Birth.value, EventKind.Adopted.value)
+            and fields.get("person") is not None
+            and fields.get("spouse") is None
+            and fields.get("child") is not None
+        ):
+            known = self._find_person(fields["person"])
+            role = self.OTHER_PARENT.get(
+                _enum_value(known.get("gender")), prompts.Role.Partner
+            )
+            fields["spouse"] = self._generic(fields["child"], role)
         return self._write(ItemKind.Event, args.get("id"), fields)
 
     def _edit_cluster(self, args: dict) -> tuple[str, dict]:

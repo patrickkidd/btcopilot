@@ -10,6 +10,7 @@ from btcopilot.personal import prompts
 from btcopilot.personal.coachmodel import ModelTurn, ToolCall
 from btcopilot.personal.models import Change
 from btcopilot.review import adapter
+from btcopilot.review.scribe import written
 from btcopilot.tests.review.conftest import coded, person
 
 
@@ -275,3 +276,44 @@ def test_fdserver_replaces_the_scribe_prompt(coder, cut, turns, tmp_path):
     assert model.system.startswith("the private scribe words")
     assert "Marcus" in model.system
     assert "the private scribe words" not in prompts.scribe_prompt("")
+
+
+STRUCTURE = {
+    "people": [
+        {"id": 1, "name": "Marcus", "gender": "male"},
+        {"id": 2, "name": "Delphine", "gender": "female"},
+        {"id": 3, "name": "Corinne", "gender": "female", "parents": 10},
+        {"id": 4, "name": "Theo", "gender": "male", "parents": 10},
+    ],
+    "pair_bonds": [{"id": 10, "person_a": 1, "person_b": 2, "married": True}],
+    "events": [
+        {
+            "id": 20,
+            "kind": "married",
+            "person": 1,
+            "spouse": 2,
+            "dateTime": "1970-06-01",
+        }
+    ],
+}
+
+
+def test_a_marriage_reads_as_both_names_and_the_year():
+    """The line the coder sees for a structure write (R-0326, drawing 1a)."""
+    assert written(STRUCTURE, ["20"], [], ["10"]) == [
+        "+ Marcus & Delphine · married · Jun 1970"
+    ]
+
+
+def test_a_child_reads_as_whose_child_they_are():
+    assert written(STRUCTURE, [], ["3", "4"]) == [
+        "+ Corinne · daughter of Marcus & Delphine",
+        "+ Theo · son of Marcus & Delphine",
+    ]
+
+
+def test_a_bond_with_no_event_says_it_has_no_date_yet():
+    record = dict(STRUCTURE, events=[])
+    assert written(record, [], [], ["10"]) == [
+        "+ Marcus & Delphine · married · no date yet"
+    ]

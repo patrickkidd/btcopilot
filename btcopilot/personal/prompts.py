@@ -162,6 +162,24 @@ class ToolText(_enum.StrEnum):
     Relationship = "relationship"
     RelationshipTargets = "relationship_targets"
     RelationshipTriangles = "relationship_triangles"
+    PersonA = "person_a"
+    PersonB = "person_b"
+    Parents = "parents"
+
+
+class Role(_enum.StrEnum):
+    """What a generically named person is to the person they were named after."""
+
+    Father = "father"
+    Mother = "mother"
+    Partner = "partner"
+
+
+def generic_name(other: str, role: Role) -> str:
+    """What a parent or partner nobody named is called, so the bond can be made
+    of two people rather than left half-written (R-0325 rules 9 and 10).
+    Production deployments override this callable via FDSERVER_PROMPTS_PATH."""
+    return f"{other}'s {Role(role).value}"
 
 
 def tool_meanings() -> dict[ToolText, str]:
@@ -199,6 +217,19 @@ def tool_meanings() -> dict[ToolText, str]:
             "A second list of people the relationship links. Required when "
             "relationship is inside or outside."
         ),
+        ToolText.PersonA: (
+            "One side of the bond. A bond is between two different people and "
+            "there is one bond ever between any two of them."
+        ),
+        ToolText.PersonB: (
+            "The other side. Leave it out only when nobody named them: the "
+            "record then adds them as a generically named person, because a "
+            "bond with one side is not a bond."
+        ),
+        ToolText.Parents: (
+            "The id of the pair bond this person was born into. Children are "
+            "the offspring of a bond, so the two parents must have one first."
+        ),
     }
 
 
@@ -221,6 +252,11 @@ tools, and nothing else.
 not give you.
 - Add a person before the event about them, and use the id the tool gives you \
 back rather than guessing one.
+- A marriage or a pairing is a pair bond between the two people, and the \
+marriage event as well when they said a year. A child is born into that bond: \
+set the child's parents to it.
+- When a parent or a partner is not named, write the bond anyway with the one \
+who is: the record adds the other as a generically named person.
 - When you cannot tell which person is meant, call no tool and reply with one \
 short question naming the people it could be.
 - Say nothing when the writing worked. Words are for asking only.

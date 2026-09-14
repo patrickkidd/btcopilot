@@ -45,9 +45,12 @@ def test_every_tool_parameter_has_a_default_meaning():
 
 
 def test_the_default_schemas_say_nothing_clinical():
-    properties = _event_properties()
+    overridable = {member.value for member in prompts.ToolText}
     said = " ".join(
-        str(properties[member.value]["description"]) for member in prompts.ToolText
+        str(field.get("description", ""))
+        for schema in toolbox.schemas()
+        for name, field in schema["input_schema"].get("properties", {}).items()
+        if name in overridable
     ).lower()
     for word in ("projection", "overfunctioning", "cutoff", "fusion", "triangle"):
         assert word not in said

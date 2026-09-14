@@ -243,24 +243,83 @@ def edit_lines(diagram_id: int, deltas: list[dict]) -> list[str]:
         data,
         _touched(deltas, "event"),
         [one for one in _touched(deltas, "person") if one not in named],
+        _touched(deltas, "pair_bond"),
     )
 
 
-def written(data: dict, event_ids, person_ids=()) -> list[str]:
+#: The kinds that happen to two partners at once, which read as both names.
+PAIR_KINDS = ("married", "bonded", "separated", "divorced")
+
+
+def written(data: dict, event_ids, person_ids=(), bond_ids=()) -> list[str]:
     """The record's own words for what a coder wrote: who it is about, what
-    kind of thing it is, and when."""
+    kind of thing it is, and when. A marriage reads as two names joined and the
+    year; a person born into a bond reads as whose child they are (R-0326)."""
     people = {str(p.get("id")): p for p in data.get("people") or []}
     events = {str(e.get("id")): e for e in data.get("events") or []}
+    bonds = {str(b.get("id")): b for b in data.get("pair_bonds") or []}
     out: list[str] = []
+    said: set[tuple] = set()
     for one in event_ids:
         event = events.get(str(one))
-        if event is not None:
-            _add(out, _event_words(event, people))
+        if event is None:
+            continue
+        if _plain(event.get("kind")) in PAIR_KINDS:
+            said.add(_pair_of(event.get("person"), event.get("spouse")))
+        _add(out, _event_words(event, people))
+    for one in bond_ids:
+        bond = bonds.get(str(one))
+        if bond is None:
+            continue
+        pair = _pair_of(bond.get("person_a"), bond.get("person_b"))
+        if pair not in said:
+            _add(out, _bond_words(bond, people, events))
     for one in person_ids:
         person = people.get(str(one))
         if person is not None:
-            _add(out, f"+ {_name(person)}")
+            _add(out, f"+ {_person_words(person, people, bonds)}")
     return out
+
+
+def _pair_of(a, b) -> tuple:
+    return tuple(sorted(str(one) for one in (a, b)))
+
+
+#: What a person born into a bond is called, by the record's own gender field.
+CHILD_WORDS = {"male": "son", "female": "daughter"}
+
+
+def _person_words(person: dict, people: dict, bonds: dict) -> str:
+    """A person, and whose child they are when the record says so."""
+    name = _name(person)
+    bond = bonds.get(str(person.get("parents"))) if person.get("parents") else None
+    if bond is None:
+        return name
+    word = CHILD_WORDS.get(_plain(person.get("gender")), "child")
+    return f"{name} · {word} of {_both(bond, people)}"
+
+
+def _joined(people: dict, *ids) -> str:
+    return " & ".join(_name(people.get(str(one), {})) for one in ids)
+
+
+def _both(bond: dict, people: dict) -> str:
+    return _joined(people, bond.get("person_a"), bond.get("person_b"))
+
+
+def _bond_words(bond: dict, people: dict, events: dict) -> str:
+    """A bond nobody wrote an event for: who the two are, whether they married,
+    and the year the record has for it."""
+    pair = _pair_of(bond.get("person_a"), bond.get("person_b"))
+    started = [
+        event
+        for event in events.values()
+        if _plain(event.get("kind")) in ("married", "bonded")
+        and _pair_of(event.get("person"), event.get("spouse")) == pair
+    ]
+    word = "married" if bond.get("married") else "together"
+    when = _when(started[0].get("dateTime")) if started else "no date yet"
+    return f"+ {_both(bond, people)} · {word} · {when}"
 
 
 def _add(out: list[str], line: str):
@@ -269,6 +328,10 @@ def _add(out: list[str], line: str):
 
 
 def _event_words(event: dict, people: dict) -> str:
+    kind = _plain(event.get("kind"))
+    if kind in PAIR_KINDS and event.get("spouse") is not None:
+        both = _joined(people, event.get("person"), event.get("spouse"))
+        return f"+ {both} · {kind} · {_when(event.get('dateTime'))}"
     about = event.get("child")
     if about is None:
         about = event.get("person")
