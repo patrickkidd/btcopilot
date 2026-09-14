@@ -271,9 +271,16 @@ export class Ballot {
     });
   }
 
+  /** The item the room is on, so stepping out to the transcript and back comes
+   * back to it. */
+  onItem(): number | null {
+    return this.item()?.id ?? null;
+  }
+
   /** Open the ballot of one cut on the first item this coder has not voted
-   * on. An item they skipped is still on the list (R-0257). */
-  async open(cutId: number): Promise<void> {
+   * on, or on `itemId` when coming back to one. An item they skipped is still
+   * on the list (R-0257). */
+  async open(cutId: number, itemId: number | null = null): Promise<void> {
     const [cut, items, votes, records] = await Promise.all([
       api.cut(cutId),
       api.items(cutId),
@@ -285,7 +292,8 @@ export class Ballot {
     this.records = new Map(records.map((one) => [one.coding_id, one]));
     this.ballot = ballotOrder(items);
     this.mine = new Map(votes.map((vote) => [vote.review_item_id, vote]));
-    this.at = Math.max(this.unvoted(0), 0);
+    const back = itemId === null ? -1 : this.ballot.findIndex((one) => one.id === itemId);
+    this.at = back >= 0 ? back : Math.max(this.unvoted(0), 0);
     this.render();
   }
 

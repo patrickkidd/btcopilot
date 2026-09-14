@@ -13,7 +13,7 @@ from btcopilot.review.routes import (
     coder,
     cut_or_404,
     item_or_404,
-    on_ballot,
+    open_items,
 )
 
 
@@ -41,7 +41,7 @@ def vote_put(item_id: int):
     item = item_or_404(item_id)
     if item.cut.vote_opened_at is None:
         raise ValueError("that vote is not open")
-    if item not in on_ballot(item.cut):
+    if item not in open_items(item.cut):
         raise ValueError("that item is not on the ballot")
     body = request.get_json() or {}
     choice = VoteChoice(body.get("choice"))

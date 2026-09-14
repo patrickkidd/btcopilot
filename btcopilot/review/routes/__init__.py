@@ -14,7 +14,6 @@ from btcopilot import auth
 from btcopilot.extensions import csrf, db
 from btcopilot.review import adapter, snapshot
 from btcopilot.review.models import Coding, Cut, Item, ReviewStatus, Vote
-from btcopilot.schema import ItemKind
 
 _log = logging.getLogger(__name__)
 
@@ -100,10 +99,11 @@ def human_codings(cut: Cut) -> set[int]:
 
 
 def open_items(cut: Cut) -> list[Item]:
-    """What the meeting has to decide: every disputed item of the cut that a
-    person wrote, of any kind. People and pair bonds never reach the ballot;
-    they wait for the room (R-0250). An item only the coach wrote is not the
-    room's to decide (R-0254)."""
+    """What the ballot asks and the meeting has to decide — the same set: every
+    disputed item of the cut a person wrote, people and bonds among them,
+    because an event about somebody nobody has agreed on yet cannot be settled
+    (R-0257, R-0326). What the coders already read the same way is not in it,
+    and neither is an item only the coach wrote down (R-0254)."""
     people = human_codings(cut)
     return [
         item
@@ -113,20 +113,10 @@ def open_items(cut: Cut) -> list[Item]:
     ]
 
 
-def on_ballot(cut: Cut) -> list[Item]:
-    """What a coder votes on: the disputed events of the cut, one per screen
-    (R-0257). What the coders already read the same way is not voted on,
-    people and pair bonds are decided at the meeting, and an item only the
-    coach wrote down is not on the ballot."""
-    return [
-        item for item in open_items(cut) if item.item_kind is ItemKind.Event
-    ]
-
-
 def voted(cut: Cut, user) -> bool:
     """Voted on every item of that cut's ballot, which is what closes a coder
     out of the meeting's work."""
-    item_ids = [item.id for item in on_ballot(cut)]
+    item_ids = [item.id for item in open_items(cut)]
     if not item_ids:
         return True
     mine = Vote.query.filter(

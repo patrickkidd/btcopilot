@@ -488,6 +488,22 @@ def test_an_agreed_item_cannot_be_voted_on(patrick, test_user, test_user_2, cut)
     assert "not on the ballot" in refused.get_data(as_text=True)
 
 
+def test_a_disputed_person_can_be_voted_on(patrick, test_user, test_user_2, cut):
+    """People and bonds are on the ballot, read before the events, because an
+    event about somebody nobody has agreed on yet cannot be settled (R-0326)."""
+    coded(test_user, cut, {"people": [person(1, "Ann")]})
+    coded(test_user_2, cut, {"people": [person(1, "Ann"), person(2, "Lee")]})
+    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    disputed = next(
+        i
+        for i in Item.query.filter_by(cut_id=cut.id, item_kind="person").all()
+        if i.status is ReviewStatus.Disputed
+    )
+
+    cast = patrick.put(f"/review/items/{disputed.id}/vote", json={"choice": "drop"})
+    assert cast.status_code == 200
+
+
 def test_the_vote_task_goes_when_every_disputed_event_has_a_vote(
     patrick, coder, test_user, test_user_2, cut
 ):

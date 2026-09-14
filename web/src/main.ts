@@ -326,11 +326,15 @@ const ballot = new Ballot(
 
 /** Which coding the ballot on screen belongs to, so the transcript it opens is
  * this coder's own thread of the same conversation. */
-let voting: { cutId: number; codingId: number } | null = null;
+let voting: { cutId: number; codingId: number; itemId: number | null } | null = null;
 
-async function openBallot(cutId: number, codingId: number): Promise<void> {
-  voting = { cutId, codingId };
-  await ballot.open(cutId);
+async function openBallot(
+  cutId: number,
+  codingId: number,
+  itemId: number | null = null,
+): Promise<void> {
+  voting = { cutId, codingId, itemId };
+  await ballot.open(cutId, itemId);
   screen(Screen.Ballot);
 }
 
@@ -338,6 +342,7 @@ async function openBallot(cutId: number, codingId: number): Promise<void> {
  * thread of that conversation, read and not added to. */
 async function openLine(statementId: number): Promise<void> {
   if (!voting) return;
+  voting.itemId = ballot.onItem();
   await coding.open(voting.codingId, statementId);
   screen(Screen.Coding);
 }
@@ -423,7 +428,8 @@ $("rules-close").addEventListener("click", () => screen(readingFrom));
 $("coding-back").addEventListener("click", () => {
   // Reading the transcript is a step out of the ballot, so it steps back into
   // it on the item it was left on.
-  if (here === Screen.Coding && voting) void openBallot(voting.cutId, voting.codingId);
+  if (here === Screen.Coding && voting)
+    void openBallot(voting.cutId, voting.codingId, voting.itemId);
   else if (here === Screen.Coding || here === Screen.Ballot) void openTask();
   else if (here === Screen.Cut || here === Screen.Meeting) void openAgenda();
   else if (here === Screen.Result) void openTask();

@@ -91,7 +91,8 @@ def test_what_only_the_coach_read_differently_is_not_disputed(
 def test_the_meeting_lists_people_as_well_as_events(
     patrick, test_user, test_user_2, cut
 ):
-    """People and pair bonds never reach the ballot; they wait for the room."""
+    """People and bonds are read before the events, on the ballot and in the
+    meeting alike (R-0326)."""
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": []})
     coded(test_user_2, cut, {"people": [person(1, "Ann"), person(2, "Bo")]})
     open_vote(patrick, cut)
@@ -301,6 +302,43 @@ def test_changing_an_opinion_rewords_the_same_moment(patrick, test_user, test_us
     )
 
     assert db.session.get(Item, item.id).item_id == "10"
+
+
+def test_a_person_can_be_decided_before_what_they_stand_on_is_ratified(
+    patrick, test_user, test_user_2, cut
+):
+    """Keeping a person born to a bond the coders all read the same way puts
+    that bond on the case first, so the record has what the person needs and
+    the room is not refused (R-0326)."""
+    shared = {
+        "people": [person(1, "Ann"), person(2, "Bo"), person(3, "Cass")],
+        "pair_bonds": [{"id": 20, "person_a": 1, "person_b": 2}],
+    }
+    coded(test_user, cut, shared)
+    coded(
+        test_user_2,
+        cut,
+        dict(shared, people=[person(1, "Ann"), person(2, "Bo"), dict(person(3, "Cass"), parents=20)]),
+    )
+    open_vote(patrick, cut)
+    disputed = next(
+        i
+        for i in db.session.get(Cut, cut.id).items
+        if i.status is ReviewStatus.Disputed and i.item_kind.value == "person"
+    )
+    born = next(
+        o for o in disputed.opinions if o["item"].get("parents") is not None
+    )
+
+    kept = patrick.patch(
+        f"/review/items/{disputed.id}",
+        json={"choice": "keep", "value": {"coding_id": born["coding_id"]}},
+    )
+    assert kept.status_code == 200, kept.get_data(as_text=True)
+    bond = next(
+        i for i in db.session.get(Cut, cut.id).items if i.item_kind.value == "pair_bond"
+    )
+    assert bond.item_id is not None
 
 
 def test_a_decision_the_record_refuses_is_the_rooms_fault(

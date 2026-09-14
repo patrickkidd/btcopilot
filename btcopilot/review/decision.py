@@ -9,6 +9,7 @@ meeting screen rather than argued over (R-0257, R-0274).
 from btcopilot.extensions import db
 from btcopilot.review import adapter
 from btcopilot.review.models import Item, ReviewStatus
+from btcopilot.schema import ItemKind
 
 
 def value_of(item: Item, given) -> dict:
@@ -28,6 +29,14 @@ def value_of(item: Item, given) -> dict:
 
 
 def write(item: Item, value: dict, user):
+    """The room's decision on one item, onto the case. What the room already
+    read the same way goes on first: a person born to a bond, or a bond between
+    two people, cannot be written while what it stands on is missing (R-0326)."""
+    confirm_agreed(item.cut, user)
+    return _write(item, value, user)
+
+
+def _write(item: Item, value: dict, user):
     case = adapter.case_diagram(
         db.session.get(adapter.Discussion, item.cut.discussion_id)
     )
@@ -53,17 +62,25 @@ def write(item: Item, value: dict, user):
 def confirm_agreed(cut, user) -> list[Item]:
     """Every item the coders already read the same way, written onto the case
     as it stands. The room chooses nothing here: ratifying is the confirming."""
-    found = [
-        item
-        for item in cut.items
-        if item.status is ReviewStatus.Agreed and item.item_id is None
-    ]
+    found = sorted(
+        (
+            item
+            for item in cut.items
+            if item.status is ReviewStatus.Agreed and item.item_id is None
+        ),
+        key=lambda item: _STANDS_ON.index(item.item_kind),
+    )
     for item in found:
         # Agreed means every coder wrote it the same way, so any opinion is it.
-        change = write(item, item.opinions[0]["item"], user)
+        change = _write(item, item.opinions[0]["item"], user)
         item.decision_change_id = change.id
     db.session.flush()
     return found
+
+
+# People before the bonds between them, bonds before the events about them:
+# the record refuses an item whose ground is not there yet (R-0326).
+_STANDS_ON = [ItemKind.Person, ItemKind.PairBond, ItemKind.Event]
 
 
 def _take_id(item: Item) -> str | None:
