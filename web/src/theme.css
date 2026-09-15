@@ -2478,11 +2478,15 @@ button { font-family: inherit; }
 /* A version of a person or a bond is drawn as well as written: the drawing sits
  * under the words and takes the whole width of the card (R-0326). */
 .opinion:has(.frag) { grid-template-columns: 1fr; }
-.frag { display: flex; justify-content: center; padding: 4px 0; }
+/* A drawing sits at the left of the version it belongs to, where the words
+ * above it start, rather than floating in the middle of the card (R-0338). */
+.frag { display: flex; justify-content: flex-start; padding: 4px 0; }
 .frag svg { max-width: 100%; height: auto; }
-.side .frag { flex-basis: 100%; justify-content: flex-start; }
 .opinion:active { background: var(--tint); }
 .opinion.on { border-color: var(--data); color: var(--data); background: var(--tint); }
+/* A drawing reads against the card, not against a wash: the chosen version of a
+ * person or a bond is marked by its outline alone (R-0337). */
+.opinion.on:has(.frag) { background: none; }
 .bl-card .note { font: 400 13px var(--mono); color: var(--faint); }
 .quote {
   font: 400 13px/1.4 var(--mono);
@@ -2515,7 +2519,8 @@ button { font-family: inherit; }
   font: 400 17px var(--sans);
 }
 .say::placeholder { color: var(--faint); }
-.nextrow { display: flex; justify-content: flex-end; padding: 0 16px 16px; }
+.nextrow { display: flex; justify-content: flex-end; gap: 8px; padding: 0 16px 16px; }
+.nextrow .btn[disabled] { opacity: 0.4; pointer-events: none; }
 .nextrow .btn { min-width: 96px; border-color: var(--data); color: var(--data); }
 /* The wire keeps the height its row was given: left to scale with the width it
  * grows to 211 tall on a desktop and lies over the controls under it, taking
@@ -2585,6 +2590,18 @@ button { font-family: inherit; }
  * have no place on a line of years (R-0326). */
 .mkey .mcount { color: var(--faint); }
 
+/* The meeting scrolls as one page: the title, the figures, the legend, the wire
+ * and the sort go up out of the way as soon as the list moves, and only the
+ * ratify bar is held (R-0338). */
+.mscroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.mscroll .fs-body { flex: none; overflow: visible; }
+
 /* Which order the list is read in (R-0316). */
 .sortbar {
   flex: none;
@@ -2649,6 +2666,10 @@ button { font-family: inherit; }
 .side { display: flex; align-items: center; gap: 2px 10px; flex-wrap: wrap; }
 .side .slab { color: var(--ink); }
 .side .swho { color: var(--faint); }
+/* The line a version was written from, and the shape it was written into, read
+ * under the names rather than squeezed in beside them (R-0338). */
+.side .quote, .side .frag { flex-basis: 100%; }
+.side .quote { margin: 2px 0 0; }
 /* The button follows its own version rather than sitting out at the right
  * margin, where a wrapped row leaves it unclear which version it keeps. */
 .side .mt-keep { min-height: 44px; }

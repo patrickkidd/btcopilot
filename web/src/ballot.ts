@@ -245,7 +245,7 @@ export function group(
  * it, or somebody typed it into the editor (R-0278). */
 export function versionLine(opinion: Opinion, openable: boolean): string {
   if (!opinion.line)
-    return `<div class="quote"><i>written in the editor</i></div>`;
+    return `<div class="quote"><i>no transcript line</i></div>`;
   const open = openable
     ? `<div><button class="chip" type="button" ` +
       `data-said="${opinion.line.statement_id}">open in transcript</button></div>`
@@ -391,7 +391,7 @@ export class Ballot {
         const said = structure ? versionLine(one.opinion, true) : "";
         return (
           `<div class="opinion tap${on}" data-coding="${one.opinion.coding_id}">` +
-          `<span>opinion ${index + 1} · ${esc(one.label)}</span>${drawn}${said}</div>`
+          `<span>opinion ${index + 1} · ${esc(one.label)}</span>${said}${drawn}</div>`
         );
       })
       .join("");
@@ -440,7 +440,11 @@ export class Ballot {
       `(optional — you may skip it)</label>` +
       `<input class="say" id="bl-say" type="text" placeholder="say why (optional)" ` +
       `value="${esc(vote?.reason ?? "")}">` +
-      `<div class="nextrow"><button class="btn" id="bl-next" type="button">` +
+      // A dot can take you back to an item already voted on, so there is a way
+      // forward again from wherever you land (R-0337).
+      `<div class="nextrow">` +
+      `<button class="btn" id="bl-prev" type="button"${this.at === 0 ? " disabled" : ""}>‹ prev</button>` +
+      `<button class="btn" id="bl-next" type="button">` +
       `${this.last() ? "done" : "next ›"}</button></div>`
     );
   }
@@ -471,6 +475,7 @@ export class Ballot {
     else if (target.closest("#bl-line") && item.line)
       this.handlers.onTranscript(item.line.statement_id);
     else if (said) this.handlers.onTranscript(Number(said.dataset.said));
+    else if (target.closest("#bl-prev")) this.prev();
     else if (target.closest("#bl-next")) void this.next();
   }
 
@@ -513,6 +518,13 @@ export class Ballot {
       item.id,
       await api.castVote(item.id, vote.choice, vote.value, reason || null),
     );
+  }
+
+  /** The item before this one, in the order the ballot walks. */
+  private prev(): void {
+    if (this.at === 0) return;
+    this.at -= 1;
+    this.render();
   }
 
   /** The next item, or the first one still unvoted when this was the last;

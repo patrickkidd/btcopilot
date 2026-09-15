@@ -74,7 +74,7 @@ describe("two versions of a person", () => {
     const sides = group(disputed, records).map((one) => one.label);
     expect(sides).toEqual([
       "born to Marcus & Delphine",
-      "born to nobody on the record",
+      "no parents recorded",
     ]);
   });
 

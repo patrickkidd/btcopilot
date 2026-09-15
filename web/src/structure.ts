@@ -129,7 +129,7 @@ export function versionWords(
       const bond = record?.pair_bonds.find((one) => one.id === Number(value));
       return bond
         ? `born to ${named(bond.person_a)} & ${named(bond.person_b)}`
-        : "born to nobody on the record";
+        : "no parents recorded";
     }
     if (field === "person_a" || field === "person_b") return named(value);
     if (field === "married") return value ? "married" : "together, not married";

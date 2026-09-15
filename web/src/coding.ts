@@ -89,10 +89,13 @@ export class Coding {
     await this.refresh();
     // The ballot opens the transcript at the line an item came from, which is
     // a turn far above the cut (R-0278).
-    if (atStatement !== undefined)
-      this.list
-        .querySelector(`[data-turn="${atStatement}"]`)
-        ?.scrollIntoView({ block: "center" });
+    // It is outlined the way a tapped line is, so the line the item was read
+    // from is picked out of the ones around it (R-0337).
+    if (atStatement !== undefined) {
+      const line = this.list.querySelector(`[data-turn="${atStatement}"]`);
+      line?.classList.add("sel");
+      line?.scrollIntoView({ block: "center" });
+    }
   }
 
   /** The record after something was written into it: the picture, the drawer

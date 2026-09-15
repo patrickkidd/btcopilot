@@ -246,7 +246,7 @@ export function openEditor(
       `<div class="lab">&Delta; relationship</div>` +
       chips(
         "relationship",
-        [{ value: "", label: "none" }, ...plain(Object.values(Relationship))],
+        [...plain(Object.values(Relationship)), { value: "", label: "none" }],
         relationship,
       ) +
       `<div data-block="targets"${relationship ? "" : " hidden"}>` +

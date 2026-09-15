@@ -286,18 +286,19 @@ export class Meeting {
         (one) =>
           `<div class="side"><span class="sdots">${dots(one.names.length, 0)}</span>` +
           `<span class="slab">${esc(one.label)}</span>` +
-          // Each version of a person or a bond is drawn as well as written, so
-          // the room reads the argument as a shape (R-0326).
+          `<span class="swho">${esc(one.names.join(", "))} = ${one.names.length}</span>` +
+          `<button class="btn mt-keep" type="button" ` +
+          `data-coding="${one.opinion.coding_id}"${kept ? " disabled" : ""}>` +
+          `keep this</button>` +
+          // Under the names, the way an event's line reads: the line first, then
+          // the shape it was written into, each on its own width (R-0338).
+          (structure ? versionLine(one.opinion, false) : "") +
           (structure
             ? `<div class="frag">` +
               drawVersion(this.records, item.item_kind, one.opinion) +
               `</div>`
             : "") +
-          (structure ? versionLine(one.opinion, false) : "") +
-          `<span class="swho">${esc(one.names.join(", "))} = ${one.names.length}</span>` +
-          `<button class="btn mt-keep" type="button" ` +
-          `data-coding="${one.opinion.coding_id}"${kept ? " disabled" : ""}>` +
-          `keep this</button></div>`,
+          `</div>`,
       )
       .join("");
     const missing = item.not_coded
@@ -465,9 +466,12 @@ export class Meeting {
     }
     this.at = id;
     this.render();
-    this.body
-      .querySelector(`[data-item="${id}"]`)
-      ?.scrollIntoView({ block: "center" });
+    this.body.querySelector(`[data-item="${id}"]`)?.scrollIntoView({
+      block: "center",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
   }
 
   private onSort(clicked: Event): void {
