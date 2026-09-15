@@ -28,7 +28,7 @@ from btcopilot.personal.models import (
 from btcopilot.personal.recordtext import date_text, render
 from btcopilot.personal.toolbox import EDITS, ToolError, Toolbox, schemas
 from btcopilot.pro.models import Diagram, User
-from btcopilot.schema import PDP, Event, PairBond, Person, from_dict
+from btcopilot.schema import PDP, Event, ItemKind, PairBond, Person, from_dict
 
 __all__ = [
     "Author",
@@ -76,9 +76,9 @@ def write_tools() -> list[dict]:
     return [schema for schema in schemas() if schema["name"] in names]
 
 
-def coded_in(diagram_id: int) -> dict[int, dict]:
-    """Which turn each event on a record was written from."""
-    return record.coded_in(diagram_id)
+def coded_in(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[int, dict]:
+    """Which turn each item of one kind on a record was written from."""
+    return record.coded_in(diagram_id, kind)
 
 
 def scribe_prompt(record_text: str) -> str:

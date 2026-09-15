@@ -240,6 +240,22 @@ export function group(
   return [...found.values()];
 }
 
+/** The transcript line one version was written from, under that version. A
+ * version with no line was not written from anything said: the coach replayed
+ * it, or somebody typed it into the editor (R-0278). */
+export function versionLine(opinion: Opinion, openable: boolean): string {
+  if (!opinion.line)
+    return `<div class="quote"><i>written in the editor</i></div>`;
+  const open = openable
+    ? `<div><button class="chip" type="button" ` +
+      `data-said="${opinion.line.statement_id}">open in transcript</button></div>`
+    : "";
+  return (
+    `<div class="quote"><b>${esc(opinion.line.who)}:</b> ` +
+    `&ldquo;${esc(opinion.line.text)}&rdquo;</div>${open}`
+  );
+}
+
 export class Ballot {
   private session = "";
   private items: BallotItem[] = [];
@@ -369,9 +385,13 @@ export class Ballot {
             drawVersion(this.records, item.item_kind, one.opinion) +
             `</div>`
           : "";
+        // A person or a bond is coded from a turn per version: several coders
+        // may have written the same person from different things said, so the
+        // line rides with the version and not with the item (R-0278).
+        const said = structure ? versionLine(one.opinion, true) : "";
         return (
           `<div class="opinion tap${on}" data-coding="${one.opinion.coding_id}">` +
-          `<span>opinion ${index + 1} · ${esc(one.label)}</span>${drawn}</div>`
+          `<span>opinion ${index + 1} · ${esc(one.label)}</span>${drawn}${said}</div>`
         );
       })
       .join("");
@@ -391,11 +411,12 @@ export class Ballot {
         `coder${item.not_coded === 1 ? "" : "s"} left this ` +
         `${isStructure(item.item_kind) ? "out" : "event out"}</div>`
       : "";
-    const line = item.line
-      ? `<div class="quote"><b>${esc(item.line.who)}:</b> ` +
-        `&ldquo;${esc(item.line.text)}&rdquo;</div>` +
-        `<div><button class="chip" id="bl-line" type="button">open in transcript</button></div>`
-      : "";
+    const line =
+      structure || !item.line
+        ? ""
+        : `<div class="quote"><b>${esc(item.line.who)}:</b> ` +
+          `&ldquo;${esc(item.line.text)}&rdquo;</div>` +
+          `<div><button class="chip" id="bl-line" type="button">open in transcript</button></div>`;
     const dropped = vote?.choice === VoteChoice.Drop ? " on" : "";
     return (
       `<div class="bl-card">` +
@@ -437,7 +458,8 @@ export class Ballot {
     const target = clicked.target as Element;
     const item = this.item();
     if (!item) return;
-    const opinion = target.closest<HTMLElement>(".opinion.tap");
+    const said = target.closest<HTMLElement>("[data-said]");
+    const opinion = said ? null : target.closest<HTMLElement>(".opinion.tap");
     if (opinion?.dataset.coding) {
       void this.vote(VoteChoice.Opinion, {
         coding_id: Number(opinion.dataset.coding),
@@ -448,6 +470,7 @@ export class Ballot {
     else if (target.closest("#bl-change")) this.change(item);
     else if (target.closest("#bl-line") && item.line)
       this.handlers.onTranscript(item.line.statement_id);
+    else if (said) this.handlers.onTranscript(Number(said.dataset.said));
     else if (target.closest("#bl-next")) void this.next();
   }
 

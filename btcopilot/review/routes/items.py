@@ -27,6 +27,8 @@ class Decision(enum.StrEnum):
     Reopen = "reopen"
 
 
+CODED_KINDS = (ItemKind.Event, ItemKind.Person, ItemKind.PairBond)
+
 DECISION_STATUS = {
     Decision.Keep: ReviewStatus.Decided,
     Decision.Change: ReviewStatus.Decided,
@@ -57,7 +59,9 @@ def read(cut) -> dict:
             continue
         record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
         found[coding.id] = {
-            "turns": adapter.coded_in(coding.diagram_id),
+            "turns": {
+                kind: adapter.coded_in(coding.diagram_id, kind) for kind in CODED_KINDS
+            },
             "people": record.get("people") or [],
             "user_id": coding.user_id,
             "coder": adapter.initials(db.session.get(adapter.User, coding.user_id)),
@@ -83,25 +87,32 @@ def voting_payload(item: Item, records: dict, named: bool = False) -> dict:
     for raw, opinion in zip(raws, data["opinions"]):
         record = records[raw["coding_id"]]
         opinion["statement_id"] = _turn_of(item, raw, record)
+        opinion["line"] = _line(opinion["statement_id"])
         opinion["person_name"] = _name_of(raw["item"], record)
         if named:
             opinion["user_id"] = record["user_id"]
             opinion["coder"] = record["coder"]
     data["people"] = _people_of(item, records)
-    data["line"] = _line(data["opinions"])
+    data["line"] = next(
+        (one["line"] for one in data["opinions"] if one["line"]), None
+    )
     return data
 
 
 def _turn_of(item: Item, raw: dict, record: dict) -> int | None:
-    """Which turn of the conversation the coder wrote this opinion from. Only
-    events carry that: the record stamps the turn on the event it wrote."""
-    if item.item_kind is not ItemKind.Event:
+    """Which turn of the conversation this coder wrote this opinion from. The
+    record stamps the turn on every item it writes, so a person and a pair bond
+    trace back the same way an event does, each coder to their own turn
+    (R-0278). Nothing is stamped on what the coach replayed or what was typed
+    in the editor, and those carry no turn."""
+    if item.item_kind not in CODED_KINDS:
         return None
     try:
-        event_id = int(raw["item_id"])
+        item_id = int(raw["item_id"])
     except (KeyError, TypeError, ValueError):
         return None
-    return (record.get("turns") or {}).get(event_id, {}).get("statement_id")
+    turns = (record.get("turns") or {}).get(item.item_kind) or {}
+    return turns.get(item_id, {}).get("statement_id")
 
 
 def _name_of(value: dict, record: dict) -> str | None:
@@ -127,13 +138,12 @@ def _people_of(item: Item, records: dict) -> list[dict]:
     ]
 
 
-def _line(opinions: list[dict]) -> dict | None:
-    """The transcript line the item came from, which the ballot shows and can
-    open, and which is never edited there."""
-    ids = [t.get("statement_id") for t in opinions if t.get("statement_id")]
-    if not ids:
+def _line(statement_id: int | None) -> dict | None:
+    """The transcript line one version was written from, which the ballot shows
+    and can open, and which is never edited there."""
+    if not statement_id:
         return None
-    said = adapter.statement(ids[0])
+    said = adapter.statement(statement_id)
     if said is None:
         return None
     speaker = said.speaker

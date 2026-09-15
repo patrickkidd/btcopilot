@@ -390,8 +390,10 @@ def test_a_coder_cannot_read_a_session_whole(coder, session):
     assert refused.status_code == 302
 
 
-def wrote_from(coding, event_id: int, statement_id: int, user_id: int):
-    """The coder's record stamped with the turn one event was written from."""
+def wrote_from(
+    coding, item_id: int, statement_id: int, user_id: int, kind: str = "event"
+):
+    """The coder's record stamped with the turn one item was written from."""
     db.session.add(
         Change(
             diagram_id=coding.diagram_id,
@@ -401,8 +403,8 @@ def wrote_from(coding, event_id: int, statement_id: int, user_id: int):
             author=Author.Review,
             deltas=[
                 {
-                    "item_kind": "event",
-                    "item_id": str(event_id),
+                    "item_kind": kind,
+                    "item_id": str(item_id),
                     "field": "description",
                     "after": "said so",
                 }
@@ -429,6 +431,30 @@ def test_the_ballot_carries_the_turn_and_the_person_of_each_opinion(
     assert agreed["opinions"][0]["statement_id"] == turns[1].id
     assert agreed["line"]["text"] == "turn 1"
     assert [one["name"] for one in agreed["people"]] == ["Ann"]
+
+
+def test_each_version_of_a_person_carries_the_line_its_coder_wrote_it_from(
+    patrick, test_user, test_user_2, cut, turns
+):
+    first, second = two_codings(test_user, test_user_2, cut)
+    wrote_from(first, 1, turns[0].id, test_user.id, kind="person")
+    wrote_from(second, 1, turns[1].id, test_user_2.id, kind="person")
+    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+
+    rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
+    ann = next(r for r in rows if r["item_kind"] == "person")
+    assert [one["line"]["text"] for one in ann["opinions"]] == ["turn 0", "turn 1"]
+
+
+def test_a_person_nobody_wrote_from_a_turn_carries_no_line(
+    patrick, test_user, test_user_2, cut
+):
+    two_codings(test_user, test_user_2, cut)
+    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+
+    rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
+    ann = next(r for r in rows if r["item_kind"] == "person")
+    assert [one["line"] for one in ann["opinions"]] == [None, None]
 
 
 def test_an_item_one_coder_left_out_says_how_many_left_it_out(

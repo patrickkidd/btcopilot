@@ -597,9 +597,10 @@ def diff(old: dict, new: dict) -> list[dict]:
     return deltas
 
 
-def coded_in(diagram_id: int) -> dict[int, dict]:
+def coded_in(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[int, dict]:
     """Where each moment on this diagram was written down: the message the coach
-    was saying when it went in, and the session that message belongs to.
+    was saying when it went in, and the session that message belongs to. People
+    and pair bonds trace the same way, and the kind asked for says which.
 
     The command log is the record of that. Every command carries the deltas it
     applied, and a coach turn stamps its own statement on the commands it made,
@@ -627,13 +628,13 @@ def coded_in(diagram_id: int) -> dict[int, dict]:
     }
     for row in rows:
         for delta in row.deltas or []:
-            if delta.get("item_kind") != ItemKind.Event.value:
+            if delta.get("item_kind") != kind.value:
                 continue
             try:
-                event_id = int(delta["item_id"])
+                item_id = int(delta["item_id"])
             except (KeyError, TypeError, ValueError):
                 continue
-            found[event_id] = {
+            found[item_id] = {
                 "discussion_id": said.get(row.statement_id),
                 "statement_id": row.statement_id,
                 "turn_id": row.turn_id,

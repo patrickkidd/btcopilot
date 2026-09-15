@@ -552,12 +552,22 @@ export interface NextMeeting {
   flagged_rules: Rule[];
 }
 
+/** One line of the transcript, as a version of an item points back at it. */
+export interface TranscriptLine {
+  statement_id: number;
+  who: string;
+  text: string;
+}
+
 /** One coder's reading of one item, without their name (R-0252). */
 export interface Opinion {
   coding_id?: number;
   item_id?: number | string | null;
   /** The turn of the conversation this opinion was written from. */
   statement_id?: number | null;
+  /** The transcript line that turn is, or null when nothing was stamped on it:
+   * the coach's replay, or an edit made in the editor. */
+  line?: TranscriptLine | null;
   /** The person this opinion is about, named on the record it was written on. */
   person_name?: string | null;
   /** Who wrote this opinion, which appears at the meeting and nowhere before it
@@ -599,8 +609,9 @@ export interface BallotItem {
   /** The people of the record the first opinion was written on, so an opinion of your
    * own can name one of them. */
   people: { id: number; name: string }[];
-  /** The transcript line the item came from, which is never edited here. */
-  line: { statement_id: number; who: string; text: string } | null;
+  /** The first version's transcript line, which an event shows for the whole
+   * item. A person or a bond shows one line per version instead. */
+  line: TranscriptLine | null;
   /** The matcher could not tell which person of another coding this is, so the
    * room decides who is who before anything else about them (R-0326). */
   ambiguous?: boolean;

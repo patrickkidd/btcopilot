@@ -6,6 +6,7 @@ import {
   group,
   names,
   telling,
+  versionLine,
   when,
   words,
 } from "./ballot";
@@ -292,6 +293,7 @@ export class Meeting {
               drawVersion(this.records, item.item_kind, one.opinion) +
               `</div>`
             : "") +
+          (structure ? versionLine(one.opinion, false) : "") +
           `<span class="swho">${esc(one.names.join(", "))} = ${one.names.length}</span>` +
           `<button class="btn mt-keep" type="button" ` +
           `data-coding="${one.opinion.coding_id}"${kept ? " disabled" : ""}>` +
@@ -303,10 +305,11 @@ export class Meeting {
         `<span class="slab">left this ${structure ? "out" : "event out"}</span>` +
         `<span class="swho">= ${item.not_coded}</span></div>`
       : "";
-    const line = item.line
-      ? `<div class="quote"><b>${esc(item.line.who)}:</b> ` +
-        `&ldquo;${esc(item.line.text)}&rdquo;</div>`
-      : "";
+    const line =
+      structure || !item.line
+        ? ""
+        : `<div class="quote"><b>${esc(item.line.who)}:</b> ` +
+          `&ldquo;${esc(item.line.text)}&rdquo;</div>`;
     return (
       `<div class="drow${closable ? " hasx" : ""}" data-item="${item.id}">` +
       (closable
