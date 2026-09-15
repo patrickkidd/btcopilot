@@ -1,6 +1,7 @@
 import * as api from "./api";
 import { esc, type Title } from "./dom";
 import { toast } from "./toast";
+import { dayText } from "./when";
 import type { Differed, Result, Rule, Tendency } from "./types";
 
 /** After ratification: what the meeting produced, with nothing to choose.
@@ -16,11 +17,7 @@ export interface ResultHandlers {
   onTitle(title: string | Title): void;
 }
 
-const day = (value: string): string =>
-  new Date(value).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
+const NO_COACH = "the coach did not code this conversation";
 
 /** A rule's provenance in the words of the decision it came from. */
 function from(rule: Rule): string {
@@ -73,7 +70,7 @@ export class ResultScreen {
   private render(): void {
     const found = this.result;
     if (!found) return;
-    this.handlers.onTitle(`ratified ${day(found.ratified_at)}`);
+    this.handlers.onTitle(`ratified ${dayText(found.ratified_at)}`);
     this.stats.innerHTML = this.figures(found);
     this.body.innerHTML =
       this.rules(found) + this.differed(found) + this.coders(found);
@@ -100,6 +97,8 @@ export class ResultScreen {
         : "") +
       `<span>agreement first pass <b>${percent(found.first_pass?.percent)}</b></span>` +
       `<span>after ratification <b>${percent(found.after?.percent)}</b></span>` +
+      // A figure that cannot be worked out is said in words rather than left
+      // off the screen: the room can tell "not scored" from "scored badly".
       (coach
         ? `<span>the coach's pass against the ratified record: ` +
           `events <b>${coach.events}</b> · people <b>${coach.people}</b>` +
@@ -107,7 +106,7 @@ export class ResultScreen {
             ? ""
             : ` · variables <b>${coach.variables}</b>`) +
           `</span>`
-        : "")
+        : `<span>${NO_COACH}</span>`)
     );
   }
 
@@ -141,10 +140,19 @@ export class ResultScreen {
   /** Where the AI's reading differed from the room, with its reason. An audit
    * rather than a vote (R-0254). */
   private differed(found: Result): string {
-    if (!found.differed.length) return "";
+    const head = `<div class="acard"><h4>Where the AI's proposal differed from the room`;
+    if (!found.coach)
+      return (
+        `${head}</h4><div class="prov">${NO_COACH}, so there is nothing ` +
+        `to compare it against.</div></div>`
+      );
+    if (!found.differed.length)
+      return (
+        `${head}</h4><div class="prov">The coach read every item the same ` +
+        `way the room did.</div></div>`
+      );
     return (
-      `<div class="acard"><h4>Where the AI's proposal differed from the ` +
-      `room · ${found.differed.length}</h4>` +
+      `${head} · ${found.differed.length}</h4>` +
       found.differed.map((one) => this.arow(one)).join("") +
       `</div>`
     );

@@ -64,6 +64,12 @@ export function meetingTitle(date: string | null): string {
   return `Next meeting · ${WD[d.getDay()].slice(0, 3)}, ${MON[d.getMonth()]} ${d.getDate()}`;
 }
 
+/** A stored timestamp said as a bare day, the way a row names one: "Sep 15". */
+export function dayText(value: string): string {
+  const d = new Date(value);
+  return `${MON[d.getMonth()]} ${d.getDate()}`;
+}
+
 export function shortDate(d: Date, now: Date): string {
   if (sameDay(d, now)) return "today";
   if (sameDay(d, yesterday(now))) return "yesterday";

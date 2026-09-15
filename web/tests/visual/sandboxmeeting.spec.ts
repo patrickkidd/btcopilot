@@ -227,6 +227,12 @@ test.describe(() => {
       await visible(".tb-result"),
       "the ratified conversation offers the result on the agenda",
     );
+    const ratified = await page.locator(".sn-row .sn-s").last().innerText();
+    say(`the ratified row: "${ratified.replace(/\s+/g, " ")}"`);
+    check(
+      /up to .+ · ratified /.test(ratified),
+      "a ratified row says where the cut stops and when it was ratified",
+    );
     await page.locator(".tb-result").first().click();
     await page.waitForTimeout(1800);
     check(await visible("#result-screen"), "that opens the result screen");

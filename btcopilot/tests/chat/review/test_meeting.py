@@ -291,6 +291,22 @@ def test_the_result_scores_the_coachs_own_pass(
     assert result["coach"]["events"] is not None
 
 
+def test_a_cut_the_coach_never_coded_says_so_rather_than_scoring_it(
+    patrick, test_user, test_user_2, cut
+):
+    """No score and no differences, so the screen can say the coach did not
+    code this conversation instead of showing an empty space."""
+    coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
+    coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
+    open_vote(patrick, cut)
+    decide_all(patrick, cut)
+    patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
+
+    result = patrick.get(f"/review/result?cut_id={cut.id}").get_json()
+    assert result["coach"] is None
+    assert result["differed"] == []
+
+
 def test_where_the_coach_differed_is_written_once_at_ratification(
     patrick, test_user, test_user_2, coach_user, cut
 ):

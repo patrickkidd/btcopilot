@@ -420,6 +420,7 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 - One control nudges the people who are not done. [drawn] {R-0258}
 - Taking a conversation off the agenda is one tap, before anyone has started. [drawn]
 - The button that runs the meeting is the app's filled primary button, reads "run the meeting", and has the same room after it as before it. [built] {R-0341}
+- A ratified conversation keeps a row with a way in to the result; the row says where the cut stops and the day the room ratified it, so two cuts of one conversation read differently. [built] {R-0275}
 - Every coder's single task card is derived from that screen. [drawn] {R-0265}
 - Asking a coder to correct the coach's pass instead of coding from scratch was dropped, because coding is blind. [drawn] {R-0250}
 
@@ -504,6 +505,7 @@ What it is for: what the meeting produced, with nothing left to choose.
 - It shows agreement before the ballot and after ratification, side by side. [built]
 - One more count says how many people and bonds the room ratified and how many it left open; an unresolved person is the one that matters most, because every event about them stands on it. [built] {R-0326}
 - It shows how the coach's own pass scored against the agreed record. [built] {R-0242}
+- When the coach never coded that conversation, the screen says so in both places rather than leaving the score and the differences blank. [built]
 - The word for the agreed record is ratified; what the coach proposes is a proposal and is never called gold. [drawn] {R-0249}
 - The AI writes the guideline changes itself out of what the room decided, and they are live; there is nothing to choose on this screen. [built] {R-0259, R-0310}
 - Each new rule shows the decided item it came from and the margin it was decided by. [built] {R-0259}

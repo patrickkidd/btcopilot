@@ -1,7 +1,7 @@
 import * as api from "./api";
 import { esc, type Title } from "./dom";
 import { toast } from "./toast";
-import { meetingTitle } from "./when";
+import { dayText, meetingTitle } from "./when";
 import {
   CoderState,
   type NextMeeting,
@@ -217,8 +217,10 @@ export class Agenda {
           (cut) =>
             `<div class="sn-row"><div class="sn-m">` +
             `<div class="sn-t">${esc(cut.session)}</div>` +
-            `<div class="sn-s">up to turn ${cut.end_order ?? 0} · ` +
-            `${esc(cut.cut_day ?? "")}</div></div></div>` +
+            // Two cuts of one conversation read alike unless the line says
+            // where each one stops and when the room ratified it.
+            `<div class="sn-s">up to ${esc(cut.cut_day ?? "")} · ratified ` +
+            `${cut.ratified_at ? dayText(cut.ratified_at) : ""}</div></div></div>` +
             `<button class="nudge go tb-result" type="button" data-cut="${cut.id}">` +
             `see the result</button>`,
         )
