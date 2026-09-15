@@ -107,6 +107,19 @@ export const onBallot = (one: BallotItem) =>
   one.status === ItemStatus.Disputed &&
   one.opinions.length > 0;
 
+/** Which coding's version is lit on a card: while the vote is open it is the
+ * one this coder chose, and once the cut is ratified it is the one the meeting
+ * kept, on every later reading of it (R-0339). */
+export function litCoding(
+  item: BallotItem,
+  vote: Vote | undefined,
+  ratified: boolean,
+): number | null {
+  if (ratified) return item.kept_coding_id ?? null;
+  if (vote?.choice !== VoteChoice.Opinion) return null;
+  return (vote.value?.coding_id as number | undefined) ?? null;
+}
+
 /** The order the ballot walks: the people and the bonds first, then the events,
  * because an event about somebody nobody has agreed on yet cannot be settled
  * (R-0326). */
@@ -258,6 +271,9 @@ export function versionLine(opinion: Opinion, openable: boolean): string {
 
 export class Ballot {
   private session = "";
+  /** A ratified cut is read rather than voted on, and reads the version the
+   * meeting kept as the lit one (R-0339). */
+  private ratified = false;
   private items: BallotItem[] = [];
   private ballot: BallotItem[] = [];
   private mine = new Map<number, Vote>();
@@ -304,6 +320,7 @@ export class Ballot {
       api.records(cutId),
     ]);
     this.session = cut.session;
+    this.ratified = cut.ratified_at !== null;
     this.items = items;
     this.records = new Map(records.map((one) => [one.coding_id, one]));
     this.ballot = ballotOrder(items);
@@ -370,12 +387,11 @@ export class Ballot {
     const first = item.opinions[0];
     const structure = isStructure(item.item_kind);
     const vote = this.mine.get(item.id);
-    const chosen = vote?.choice === VoteChoice.Opinion ? vote.value : null;
+    const lit = litCoding(item, vote, this.ratified);
     const mine = vote?.choice === VoteChoice.Change ? vote.value : null;
     const opinions = group(item, this.records)
       .map((one, index) => {
-        const on =
-          chosen && chosen.coding_id === one.opinion.coding_id ? " on" : "";
+        const on = lit === one.opinion.coding_id ? " on" : "";
         // How many coders backed an opinion is not shown here: names and counts
         // appear for the first time at the meeting, so nobody votes with the
         // room in view (R-0252, R-0272). A person or a bond is drawn as well as

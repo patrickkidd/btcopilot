@@ -45,6 +45,7 @@ def payload(item: Item, named: bool) -> dict:
             for opinion in (item.opinions or [])
         ]
         data.pop("user_id", None)
+        data.pop("kept_coding_id", None)
     return data
 
 
@@ -191,11 +192,19 @@ def item_patch(item_id: int):
 
     item.status = DECISION_STATUS[choice]
     item.user_id = None if choice is Decision.Reopen else user.id
+    given = body.get("value")
+    # Only keeping a coder's version says whose version it is; writing one out,
+    # leaving it unresolved or reopening it leaves nothing lit (R-0339).
+    item.kept_coding_id = (
+        given.get("coding_id")
+        if choice is Decision.Keep and isinstance(given, dict)
+        else None
+    )
 
     if choice is Decision.Reopen:
         item.decision_change_id = None
     elif choice is not Decision.Unresolved:
-        value = decision.value_of(item, body.get("value"))
+        value = decision.value_of(item, given)
         change = decision.write(item, value, user)
         item.decision_change_id = change.id
 

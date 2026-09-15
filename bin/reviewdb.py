@@ -72,6 +72,17 @@ def decision_column(db: sqlite3.Connection) -> list[str]:
     return done
 
 
+def kept_column(db: sqlite3.Connection) -> list[str]:
+    """Which coding's version the room kept, so a decided item still opens with
+    that row lit (R-0339)."""
+    if "review_items" not in tables(db):
+        return []
+    if "kept_coding_id" in columns(db, "review_items"):
+        return []
+    db.execute("ALTER TABLE review_items ADD COLUMN kept_coding_id INTEGER")
+    return ["review_items.kept_coding_id"]
+
+
 def opinions_column(db: sqlite3.Connection) -> list[str]:
     """One coder's version of an event is an opinion, not a take (R-0315)."""
     if "review_items" not in tables(db):
@@ -116,7 +127,13 @@ def main(path: str) -> None:
     if not os.path.exists(path):
         raise SystemExit(f"no database at {path}")
     db = sqlite3.connect(path)
-    done = rename(db) + add_kind(db) + decision_column(db) + opinions_column(db)
+    done = (
+        rename(db)
+        + add_kind(db)
+        + decision_column(db)
+        + opinions_column(db)
+        + kept_column(db)
+    )
     db.commit()
     db.close()
     done += create_review(path)

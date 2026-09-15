@@ -42,6 +42,12 @@ class Item(db.Model, ModelMixin):
     decision_change_id = Column(
         Integer, ForeignKey("diagram_changes.id"), nullable=True
     )
+    #: Which coding's version the room kept, so a decided item opens with that
+    #: row lit however long after the meeting it is read (R-0339). The record
+    #: keeps the words, not where they came from, so the choice lives here.
+    kept_coding_id = Column(
+        Integer, ForeignKey("review_codings.id"), nullable=True
+    )
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     cut = relationship("Cut", back_populates="items")

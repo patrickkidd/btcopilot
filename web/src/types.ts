@@ -617,6 +617,9 @@ export interface BallotItem {
   ambiguous?: boolean;
   /** Who decided it, which only the meeting's own reading carries. */
   user_id?: number | null;
+  /** Which coding's version the room kept, so the kept row lights again on
+   * every reading of a decided item (R-0339). */
+  kept_coding_id?: number | null;
 }
 
 /** The three things a vote can say (R-0257). */

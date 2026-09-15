@@ -95,10 +95,6 @@ export class Meeting {
   /** The event the room is on: its dot is green and, when the vote agreed on
    * it, its card is the one open (R-0317, R-0320). */
   private at: number | null = null;
-  /** Which version of an item the room kept, by item and coding, so the kept
-   * row lights (R-0339). The record keeps the words, not which coding they came
-   * from, so this is what the room chose while the meeting is open. */
-  private kept = new Map<number, number>();
   private scrim = el("div", "fs-scrim");
   private sheet = el("div", "fs-sheet bl-sheet");
 
@@ -289,7 +285,7 @@ export class Meeting {
       .map(
         (one) =>
           `<div class="side tap${
-            this.kept.get(item.id) === one.opinion.coding_id ? " on" : ""
+            item.kept_coding_id === one.opinion.coding_id ? " on" : ""
           }" data-coding="${one.opinion.coding_id}">` +
           `<span class="sdots">${dots(one.names.length, 0)}</span>` +
           `<span class="slab">${esc(one.label)}</span>` +
@@ -448,12 +444,12 @@ export class Meeting {
     if (side) {
       const coding = Number(side.dataset.coding);
       // Keeping the version that is already kept is no decision at all.
-      if (this.kept.get(item.id) === coding) return;
-      const before = this.kept.get(item.id);
-      this.kept.set(item.id, coding);
+      if (item.kept_coding_id === coding) return;
+      const before = item.kept_coding_id ?? null;
+      item.kept_coding_id = coding;
+      this.render();
       if (!(await this.decide(item, Decision.Keep, { coding_id: coding }))) {
-        if (before === undefined) this.kept.delete(item.id);
-        else this.kept.set(item.id, before);
+        item.kept_coding_id = before;
         this.render();
       }
       return;

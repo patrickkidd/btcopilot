@@ -423,12 +423,14 @@ def upgrade():
     sa.Column('status', sa.Enum('agreed', 'disputed', 'decided', 'unresolved', name='reviewstatus'), nullable=False),
     sa.Column('ambiguous', sa.Boolean(), server_default='0', nullable=False),
     sa.Column('decision_change_id', sa.Integer(), nullable=True),
+    sa.Column('kept_coding_id', sa.Integer(), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['cut_id'], ['review_cuts.id'], ),
     sa.ForeignKeyConstraint(['decision_change_id'], ['diagram_changes.id'], ),
+    sa.ForeignKeyConstraint(['kept_coding_id'], ['review_codings.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )

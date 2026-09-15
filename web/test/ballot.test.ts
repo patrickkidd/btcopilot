@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { eventsOf, names, what, when } from "../src/ballot";
-import { ItemKind, ItemStatus, type BallotItem } from "../src/types";
+import { eventsOf, litCoding, names, what, when } from "../src/ballot";
+import {
+  ItemKind,
+  ItemStatus,
+  VoteChoice,
+  type BallotItem,
+  type Vote,
+} from "../src/types";
 
 const item = (
   id: number,
@@ -54,5 +60,26 @@ describe("the events of a cut", () => {
       item(3, { kind: "death", dateTime: "2010-03-11" }),
     ]);
     expect(events.map((one) => one.id)).toEqual([2, 3, 1]);
+  });
+});
+
+describe("which version is lit", () => {
+  const vote = (coding: number) =>
+    ({
+      choice: VoteChoice.Opinion,
+      value: { coding_id: coding },
+    }) as unknown as Vote;
+
+  it("is the one this coder chose while the vote is open", () => {
+    expect(litCoding(item(1, { kind: "birth" }), vote(7), false)).toBe(7);
+  });
+
+  it("is the one the meeting kept once the cut is ratified", () => {
+    const decided = { ...item(1, { kind: "birth" }), kept_coding_id: 9 };
+    expect(litCoding(decided, vote(7), true)).toBe(9);
+  });
+
+  it("lights nothing when a ratified item was written out rather than kept", () => {
+    expect(litCoding(item(1, { kind: "birth" }), vote(7), true)).toBeNull();
   });
 });

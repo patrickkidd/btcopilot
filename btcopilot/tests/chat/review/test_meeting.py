@@ -119,6 +119,56 @@ def test_names_are_on_the_meetings_reading_and_not_the_ballots(
     assert any("user_id" in opinion for item in named for opinion in item["opinions"])
 
 
+def test_the_kept_version_is_read_back_on_a_later_reading(
+    patrick, test_user, test_user_2, cut
+):
+    """Which coder's version the room kept is on the item itself, so a decided
+    item opens with that row lit long after the meeting (R-0339). Writing one
+    out or leaving it unresolved keeps nothing lit."""
+    three_readings_users(test_user, test_user_2, cut)
+    open_vote(patrick, cut)
+    item = next(
+        one
+        for one in db.session.get(Cut, cut.id).items
+        if one.status is ReviewStatus.Disputed and one.item_kind.value == "event"
+    )
+    coding_id = item.opinions[0]["coding_id"]
+
+    patrick.patch(
+        f"/review/items/{item.id}",
+        json={"choice": "keep", "value": {"coding_id": coding_id}},
+    )
+    rows = patrick.get(f"/review/items?cut_id={cut.id}&named=true").get_json()
+    read = next(one for one in rows if one["id"] == item.id)
+    assert read["kept_coding_id"] == coding_id
+
+    patrick.patch(f"/review/items/{item.id}", json={"choice": "unresolved"})
+    assert db.session.get(Item, item.id).kept_coding_id is None
+
+
+def test_the_kept_version_is_not_on_the_blind_reading(
+    patrick, coder, test_user, test_user_2, cut
+):
+    three_readings_users(test_user, test_user_2, cut)
+    open_vote(patrick, cut)
+    blind = coder.get(f"/review/items?cut_id={cut.id}").get_json()
+    assert all("kept_coding_id" not in one for one in blind)
+
+
+def three_readings_users(test_user, test_user_2, cut):
+    """Two coders on the same moment, dated differently, so it is disputed."""
+    coded(
+        test_user,
+        cut,
+        {"people": [person(1, "Ann")], "events": [shift(10, 1, "a shift", "2021-06-01")]},
+    )
+    coded(
+        test_user_2,
+        cut,
+        {"people": [person(1, "Ann")], "events": [shift(10, 1, "a shift", "2022-01-01")]},
+    )
+
+
 def test_a_coder_cannot_ask_for_the_names(coder, test_user, test_user_2, cut):
     coded(test_user, cut, {"people": [person(1, "Ann")]})
     refused = coder.get(f"/review/items?cut_id={cut.id}&named=true")
