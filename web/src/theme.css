@@ -2419,6 +2419,15 @@ button { font-family: inherit; }
 }
 .nudge:active { background: var(--tint); }
 .nudge:disabled { color: var(--faint); cursor: default; }
+/* The one button that runs the meeting is the app's filled primary, and it is
+ * given the same room after it as before it (R-0341). */
+.nudge.go {
+  margin-bottom: 14px;
+  border: none;
+  background: var(--data);
+  color: var(--onaccent);
+  font: 600 15px var(--sans);
+}
 
 /* The agenda, which fills itself. */
 .agbox {
@@ -2628,10 +2637,6 @@ button { font-family: inherit; }
 .mband .sw { width: 8px; height: 8px; }
 .mband .sortbar { flex: none; gap: 5px; padding: 0; border: none; background: none; }
 .mband .seg { padding: 3px 7px; font-size: 11px; }
-/* A dot puts the room on its event: the card lands under the band, not behind
- * it (R-0340). */
-.mscroll .fs-body > [data-item] { scroll-margin-top: calc(var(--mband, 96px) + 8px); }
-
 /* Which order the list is read in (R-0316). */
 .sortbar {
   flex: none;

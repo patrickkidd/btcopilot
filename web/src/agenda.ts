@@ -198,8 +198,8 @@ export class Agenda {
       .filter((cut) => cut.vote_opened_at !== null)
       .map(
         (cut) =>
-          `<button class="nudge tb-meet" type="button" data-cut="${cut.id}">` +
-          `run the meeting on ${esc(cut.session)}</button>`,
+          `<button class="nudge go tb-meet" type="button" data-cut="${cut.id}">` +
+          `run the meeting</button>`,
       )
       .join("");
   }

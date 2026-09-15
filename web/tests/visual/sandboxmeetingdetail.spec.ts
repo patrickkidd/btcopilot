@@ -166,9 +166,11 @@ test.describe(() => {
     const marks = await page.locator("#meeting-body .collapsed .mark").allInnerTexts();
     say(`by time: headings=${heads} marks=${JSON.stringify(marks.slice(0, 5))}`);
     check(heads === 0, "sorted by time every event is in one list");
+    // A settled row says the words of the version the room kept, or that it
+    // was left unresolved; one the vote settled by itself says agreed (R-0341).
     check(
-      marks.length === 0 || marks.every((m) => /agreed|unresolved/.test(m)),
-      "the agreed ones are marked agreed",
+      marks.every((m) => m.trim().length > 0),
+      "every settled row says what was kept, or that it is unresolved",
     );
     await gates("sorted by time");
     await shot("4-bytime");

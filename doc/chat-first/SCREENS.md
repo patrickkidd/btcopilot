@@ -419,6 +419,7 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 - Each coder's state is shown as not started, coding, done or voted, with a count of who is closed out. [drawn] {R-0258}
 - One control nudges the people who are not done. [drawn] {R-0258}
 - Taking a conversation off the agenda is one tap, before anyone has started. [drawn]
+- The button that runs the meeting is the app's filled primary button, reads "run the meeting", and has the same room after it as before it. [built] {R-0341}
 - Every coder's single task card is derived from that screen. [drawn] {R-0265}
 - Asking a coder to correct the coach's pass instead of coding from scratch was dropped, because coding is blind. [drawn] {R-0250}
 
@@ -468,6 +469,8 @@ What it is for: closing what the vote could not, and ratifying the record.
 - Every row names who and what; an event with no date says it has no date yet, and an item with no description is named by its kind in words. [built] {R-0318}
 - On a split, each version carries its own keep button; with one version there is one. [built] {R-0319}
 - Every dot on the wire answers a tap, on the meeting as on the ballot: it puts the room on that event and brings its card up. [built] {R-0320}
+- The list travels to that card rather than jumping to it, so the room sees which way it moved. [built] {R-0341}
+- A choice made on an item never moves it: it stays where the sort put it, collapses to one line saying the words of the version the room kept or that it was left unresolved, and tapping that line opens the card again with the choice lit. Only the sort control orders the list again. [built] {R-0341}
 - Every open item must be given one of three choices: keep a version, change it, or mark it unresolved. [built] {R-0257}
 - The ratify button stays dead until every open item has a choice, and says how many still need one. [built] {R-0257}
 - Each choice made in the meeting is a decision, and only decided events feed the coding guidelines; plenty stay unresolved for a while, and that is expected. [built] {R-0309}

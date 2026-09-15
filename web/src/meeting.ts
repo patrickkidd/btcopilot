@@ -59,7 +59,7 @@ export interface MeetingHandlers {
 
 /** Which choice a row is showing as taken, worked out from what the item is
  * now rather than kept on the side. */
-function choiceOf(item: BallotItem): Decision | null {
+export function choiceOf(item: Pick<BallotItem, "status">): Decision | null {
   if (item.status === ItemStatus.Unresolved) return Decision.Unresolved;
   if (item.status === ItemStatus.Decided) return Decision.Keep;
   return null;
@@ -67,10 +67,33 @@ function choiceOf(item: BallotItem): Decision | null {
 
 /** One side of an item as the room hears it: the reading, who is behind it and
  * how many that is. */
-interface Side {
+export interface Side {
   label: string;
   names: string[];
   opinion: Opinion;
+}
+
+/** The seats the list keeps. A choice never moves an item: it stays where the
+ * sort put it and only the sort control seats the list again (R-0341). What
+ * the sort has newly brought in takes a seat at the end. */
+export function seated(order: number[], sorted: BallotItem[]): number[] {
+  const here = new Set(sorted.map((one) => one.id));
+  const kept = order.filter((id) => here.has(id));
+  const seen = new Set(kept);
+  return [...kept, ...sorted.filter((one) => !seen.has(one.id)).map((one) => one.id)];
+}
+
+/** What a settled row says in its one line: the words of the version the room
+ * kept, or that the room left it unresolved (R-0341). */
+export function markOf(
+  item: Pick<BallotItem, "status" | "kept_coding_id">,
+  sides: Side[],
+): string {
+  if (item.status === ItemStatus.Unresolved) return "unresolved";
+  const kept = sides.find(
+    (one) => one.opinion.coding_id === item.kept_coding_id,
+  );
+  return kept?.label ?? "agreed";
 }
 
 /** The order the list is read in: the most split first, or the day each event
@@ -78,6 +101,27 @@ interface Side {
 enum Sort {
   Divergence = "divergence",
   Time = "time",
+}
+
+/** How long the list takes to travel to a card, and the shorter journey for a
+ * reader who has asked for less movement. */
+const TRAVEL_MS = 340;
+const TRAVEL_MS_QUIET = 160;
+
+/** Take the scroller to a card. The travel is written out rather than left to
+ * the browser's own smooth scrolling, which iOS Safari does not honour from
+ * every tap, so the room always sees where the list went (R-0341). */
+function travel(scroller: HTMLElement, to: number, ms: number): void {
+  const from = scroller.scrollTop;
+  const far = to - from;
+  if (!far) return;
+  const began = performance.now();
+  const step = (now: number): void => {
+    const part = Math.min((now - began) / ms, 1);
+    scroller.scrollTop = from + far * (1 - (1 - part) ** 3);
+    if (part < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 
 const dots = (filled: number, empty: number): string =>
@@ -92,6 +136,10 @@ export class Meeting {
    * against (R-0326). */
   private records = new Map<number, CodingRecord>();
   private sort = Sort.Divergence;
+  /** The seats the sort gave, and how many of them were disputed when it did:
+   * a choice leaves both alone (R-0341). */
+  private order: number[] = [];
+  private settled = 0;
   /** The event the room is on: its dot is green and, when the vote agreed on
    * it, its card is the one open (R-0317, R-0320). */
   private at: number | null = null;
@@ -119,6 +167,9 @@ export class Meeting {
   }
 
   async open(cutId: number): Promise<void> {
+    // Reading the same cut again — after a choice, say — keeps the seats the
+    // sort gave; another cut starts its own list (R-0341).
+    if (this.cut?.id !== cutId) this.order = [];
     const [cut, items, tallies, records] = await Promise.all([
       api.cut(cutId),
       api.namedItems(cutId),
@@ -200,20 +251,32 @@ export class Meeting {
     );
     this.key.innerHTML = this.legend();
     this.sorter.innerHTML = this.sorts();
+    const seats = this.seats();
     this.body.innerHTML =
-      this.sort === Sort.Time ? this.byTime() : this.byDivergence(open);
+      this.sort === Sort.Time ? this.byTime(seats) : this.byDivergence(seats);
     this.bar.innerHTML = this.ratifyBar(open.length);
-    this.band();
   }
 
-  /** How tall the band held at the top of the list is, so a card scrolled to
-   * lands under it and not behind it. It is measured because the legend wraps
-   * on a narrow phone (R-0340). */
-  private band(): void {
-    const stuck = this.view.closest<HTMLElement>(".mstick");
-    const scroller = this.body.closest<HTMLElement>(".mscroll");
-    if (!stuck || !scroller) return;
-    scroller.style.setProperty("--mband", `${stuck.offsetHeight}px`);
+  /** The list in the seats the sort gave it. The seats are taken once, when
+   * the sort is chosen, so a choice made in the meeting leaves every item
+   * where the room last read it (R-0341). */
+  private seats(): BallotItem[] {
+    const sorted =
+      this.sort === Sort.Time
+        ? this.listed()
+        : [...this.open_(), ...this.decided()];
+    if (!this.order.length) this.settled = this.open_().length;
+    this.order = seated(this.order, sorted);
+    const by = new Map(this.items.map((one) => [one.id, one]));
+    return this.order.map((id) => by.get(id) as BallotItem);
+  }
+
+  /** One seat: a card while the item is still disputed or the room has opened
+   * it, otherwise the one line it collapsed to (R-0341). */
+  private seat(item: BallotItem): string {
+    return item.status === ItemStatus.Disputed
+      ? this.row(item)
+      : this.agreed(item);
   }
 
   /** The header: the title and one line of labelled figures, which scroll away.
@@ -264,31 +327,27 @@ export class Meeting {
   }
 
   /** The most split first, with what the vote agreed on listed after it. */
-  private byDivergence(open: BallotItem[]): string {
-    const decided = this.decided();
+  private byDivergence(seats: BallotItem[]): string {
+    const open = seats.slice(0, this.settled);
+    const decided = seats.slice(this.settled);
     return (
       `<div class="div">Disputed<span class="dcount">most split first</span></div>` +
       (open.length
-        ? open.map((one) => this.row(one)).join("")
+        ? open.map((one) => this.seat(one)).join("")
         : `<div class="none">Every open item has a choice.</div>`) +
       (decided.length
         ? `<div class="div">Everyone agreed` +
           `<span class="dcount">tap one to change it</span></div>` +
-          decided.map((one) => this.agreed(one)).join("")
+          decided.map((one) => this.seat(one)).join("")
         : "")
     );
   }
 
   /** Every event the room wrote, in the order they happened, the agreed ones in
    * the same list and marked agreed (R-0316). */
-  private byTime(): string {
-    const rows = this.listed();
-    if (!rows.length) return `<div class="none">Nothing to decide.</div>`;
-    return rows
-      .map((one) =>
-        one.status === ItemStatus.Disputed ? this.row(one) : this.agreed(one),
-      )
-      .join("");
+  private byTime(seats: BallotItem[]): string {
+    if (!seats.length) return `<div class="none">Nothing to decide.</div>`;
+    return seats.map((one) => this.seat(one)).join("");
   }
 
   /** One item's card: its tally, every version with who wrote it, the line it
@@ -421,12 +480,10 @@ export class Meeting {
    * agreed, which opens the same card as a disputed one on a tap (R-0317). */
   private agreed(item: BallotItem): string {
     if (this.at === item.id) return this.row(item, true);
-    const mark =
-      item.status === ItemStatus.Unresolved ? "left unresolved" : "agreed";
     return (
       `<div class="collapsed" data-item="${item.id}">` +
       `<span>${esc(this.rowName(item))}</span>` +
-      `<span class="mark">${mark}</span></div>`
+      `<span class="mark">${esc(markOf(item, this.sides(item)))}</span></div>`
     );
   }
 
@@ -493,14 +550,29 @@ export class Meeting {
     }
     this.at = id;
     this.render();
-    // "start" and not "center", so the card lands below the sticky band rather
-    // than under it: only start honours the row's scroll margin (R-0340).
-    this.body.querySelector(`[data-item="${id}"]`)?.scrollIntoView({
-      block: "start",
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "auto"
-        : "smooth",
-    });
+    this.bring(id);
+  }
+
+  /** The card the room is on travels up under the band held at the top of the
+   * list, so the reader sees which way the list moved (R-0340, R-0341). */
+  private bring(id: number): void {
+    const row = this.body.querySelector<HTMLElement>(`[data-item="${id}"]`);
+    const scroller = this.body.closest<HTMLElement>(".mscroll");
+    const stuck = this.view.closest<HTMLElement>(".mstick");
+    if (!row || !scroller || !stuck) return;
+    const to =
+      scroller.scrollTop +
+      row.getBoundingClientRect().top -
+      scroller.getBoundingClientRect().top -
+      stuck.offsetHeight -
+      8;
+    travel(
+      scroller,
+      Math.max(0, Math.min(to, scroller.scrollHeight - scroller.clientHeight)),
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? TRAVEL_MS_QUIET
+        : TRAVEL_MS,
+    );
   }
 
   private onSort(clicked: Event): void {
@@ -508,6 +580,8 @@ export class Meeting {
       ?.dataset.sort;
     if (!chosen || chosen === this.sort) return;
     this.sort = chosen as Sort;
+    // The sort control is the only thing that seats the list again (R-0341).
+    this.order = [];
     this.render();
   }
 
@@ -528,6 +602,9 @@ export class Meeting {
       );
       return false;
     }
+    // The item the room has just chosen on collapses to its one line, in the
+    // seat it already had; tapping that line opens it again (R-0341).
+    if (this.at === item.id) this.at = null;
     if (this.cut) await this.open(this.cut.id);
     return true;
   }
