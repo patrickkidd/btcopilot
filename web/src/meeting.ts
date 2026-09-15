@@ -101,6 +101,7 @@ export class Meeting {
   constructor(
     private stats: HTMLElement,
     private view: HTMLElement,
+    private key: HTMLElement,
     private sorter: HTMLElement,
     private body: HTMLElement,
     private bar: HTMLElement,
@@ -197,14 +198,26 @@ export class Meeting {
       eventsOf(this.items),
       this.at ?? open[0]?.id ?? null,
     );
+    this.key.innerHTML = this.legend();
     this.sorter.innerHTML = this.sorts();
     this.body.innerHTML =
       this.sort === Sort.Time ? this.byTime() : this.byDivergence(open);
     this.bar.innerHTML = this.ratifyBar(open.length);
+    this.band();
   }
 
-  /** The header: the title, one line of labelled figures, and the colours the
-   * wire under it is drawn in. Nothing here is said again below (R-0321). */
+  /** How tall the band held at the top of the list is, so a card scrolled to
+   * lands under it and not behind it. It is measured because the legend wraps
+   * on a narrow phone (R-0340). */
+  private band(): void {
+    const stuck = this.view.closest<HTMLElement>(".mstick");
+    const scroller = this.body.closest<HTMLElement>(".mscroll");
+    if (!stuck || !scroller) return;
+    scroller.style.setProperty("--mband", `${stuck.offsetHeight}px`);
+  }
+
+  /** The header: the title and one line of labelled figures, which scroll away.
+   * Nothing here is said again below (R-0321, R-0340). */
   private head(open: number): string {
     const cut = this.cut;
     const day = cut?.meeting_date
@@ -224,13 +237,20 @@ export class Meeting {
       (first?.percent === null || first?.percent === undefined
         ? ""
         : `<span>${first.percent}% agreed before the vote</span>`) +
-      `</div>` +
-      `<div class="mkey"><span><i class="sw ok"></i>agreed</span>` +
+      // The wire is one dot per event and stays that way, so the family is a
+      // count and not a colour: it reads with the other figures (R-0326, 4d).
+      `<span class="mcount">${esc(this.structureCount())}</span>` +
+      `</div>`
+    );
+  }
+
+  /** The three colours the wire is drawn in, which stay with the wire at the
+   * top of the list rather than scrolling away with the title (R-0340). */
+  private legend(): string {
+    return (
+      `<span><i class="sw ok"></i>agreed</span>` +
       `<span><i class="sw no"></i>disputed</span>` +
-      `<span><i class="sw now"></i>now</span>` +
-      // The wire is one dot per event and stays that way; the family is a count
-      // beside its colours (R-0326, 4d).
-      `<span class="mcount">and ${esc(this.structureCount())}</span></div>`
+      `<span><i class="sw now"></i>now</span>`
     );
   }
 
@@ -473,8 +493,10 @@ export class Meeting {
     }
     this.at = id;
     this.render();
+    // "start" and not "center", so the card lands below the sticky band rather
+    // than under it: only start honours the row's scroll margin (R-0340).
     this.body.querySelector(`[data-item="${id}"]`)?.scrollIntoView({
-      block: "center",
+      block: "start",
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
         ? "auto"
         : "smooth",

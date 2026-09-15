@@ -461,7 +461,8 @@ What it is for: closing what the vote could not, and ratifying the record.
 
 - The meeting screen carries only the items the ballot left open. [built] {R-0250}
 - Names and counts appear here for the first time. [built] {R-0252}
-- The header is one title line — the word Meeting, the day, the conversation — then one line of three labelled figures (how many events, how many disputed, what agreement was before the vote), then the three colours of the wire with one word each; no figure appears twice on the screen and the tally chip that read the margin as shorthand is gone. [built] {R-0321}
+- The header is one title line — the word Meeting, the day, the conversation — then one line of labelled figures (how many events, how many disputed, what agreement was before the vote, how many people and bonds); no figure appears twice on the screen and the tally chip that read the margin as shorthand is gone. [built] {R-0321, R-0340}
+- The title and the figures scroll away with the list, but the wire, the three colours of the wire with one word each, and the ordering control stay at the top of the scrolling area as one compact band, so the room can always reach another event; the ratify bar stays at the bottom. [built] {R-0340}
 - The list is read either most split first or in the order the events happened; sorted by time every event is in one list, the agreed ones marked agreed. [built] {R-0316}
 - An item the vote agreed on opens the same card as a disputed one on a tap of its row, with a close button at its top right; keeping is disabled once it is kept, and change and mark unresolved stay. [built] {R-0317}
 - Every row names who and what; an event with no date says it has no date yet, and an item with no description is named by its kind in words. [built] {R-0318}
@@ -484,7 +485,7 @@ What it is for: closing what the vote could not, and ratifying the record.
 - People and bonds are in the meeting's list, read before the events, each version its own row with its own drawing. [built] {R-0326}
 - Tapping a version's row keeps that version, and the kept row lights the way a chosen opinion lights on the ballot; tapping another version changes the choice, and tapping the kept one does nothing. [built] {R-0339}
 - Under the versions are the two other choices, "change…" and "mark unresolved". [built] {R-0339}
-- They are not on the wire: the wire stays one dot per event, and how many people and bonds the cut holds is a count beside its colours. [built] {R-0326}
+- They are not on the wire: the wire stays one dot per event, and how many people and bonds the cut holds is a count on the header's line of figures. [built] {R-0326, R-0340}
 - One timeline above the list shows agreement and disagreement at a glance: one dot per event, teal where the vote agreed, amber where it did not, with a small count beside a disputed dot. [built] {R-0277, R-0278}
 
 ## After ratification

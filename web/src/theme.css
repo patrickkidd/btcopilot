@@ -2590,9 +2590,10 @@ button { font-family: inherit; }
  * have no place on a line of years (R-0326). */
 .mkey .mcount { color: var(--faint); }
 
-/* The meeting scrolls as one page: the title, the figures, the legend, the wire
- * and the sort go up out of the way as soon as the list moves, and only the
- * ratify bar is held (R-0338). */
+/* The meeting scrolls as one page: the title and the figures go up out of the
+ * way as soon as the list moves, the ratify bar is held at the bottom, and the
+ * wire with its colours and the sort stay at the top of the list, so the room
+ * can always reach another event (R-0338, R-0340). */
 .mscroll {
   flex: 1;
   min-height: 0;
@@ -2601,6 +2602,35 @@ button { font-family: inherit; }
   scrollbar-gutter: stable;
 }
 .mscroll .fs-body { flex: none; overflow: visible; }
+
+/* One compact band: the wire, then a single line carrying the colours and the
+ * order the list is read in. */
+.mstick {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--bg);
+}
+.mband {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 16px 6px;
+  border-bottom: 1px solid var(--line);
+}
+/* Both halves are set small enough to sit on one line on a phone, and they
+   wrap rather than overlap if a translation ever makes them wider. */
+.mband .mkey { flex: 0 1 auto; gap: 2px 5px; font-size: 11px; }
+.mband .mkey span { white-space: nowrap; gap: 4px; }
+.mband .mkey span + span::before { margin-right: 5px; }
+.mband .sw { width: 8px; height: 8px; }
+.mband .sortbar { flex: none; gap: 5px; padding: 0; border: none; background: none; }
+.mband .seg { padding: 3px 7px; font-size: 11px; }
+/* A dot puts the room on its event: the card lands under the band, not behind
+ * it (R-0340). */
+.mscroll .fs-body > [data-item] { scroll-margin-top: calc(var(--mband, 96px) + 8px); }
 
 /* Which order the list is read in (R-0316). */
 .sortbar {
