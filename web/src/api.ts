@@ -288,6 +288,10 @@ export const finishCoding = (codingId: number) =>
 
 export const onAgenda = () => ask<Cut[]>("GET", "/cuts?on_agenda=true");
 
+/** Every cut, whatever state it is in, so the agenda can offer the result of
+ * the ones the room has already ratified. */
+export const allCuts = () => ask<Cut[]>("GET", "/cuts");
+
 /** The whole conversation, so the cut can be placed on any line of it. */
 export const sessionTurns = (discussionId: number) =>
   ask<SessionTurns>("GET", `/turns?discussion_id=${discussionId}`);

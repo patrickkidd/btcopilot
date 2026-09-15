@@ -30,12 +30,15 @@ export interface AgendaHandlers {
   onMeeting(cutId: number): void;
   /** What the screen is called, which the title row shows. */
   onTitle(title: string | Title): void;
+  /** What the meeting produced on a cut the room has ratified (R-0275). */
+  onResult(cutId: number): void;
 }
 
 const CROSS = "&#10005;";
 
 export class Agenda {
   private cuts: Cut[] = [];
+  private ratified: Cut[] = [];
   private coders: CoderLine[] = [];
   private next: NextMeeting | null = null;
 
@@ -48,11 +51,16 @@ export class Agenda {
   }
 
   async load(): Promise<void> {
-    [this.cuts, this.coders, this.next] = await Promise.all([
+    const [cuts, coders, next, every] = await Promise.all([
       api.onAgenda(),
       api.coders(),
       api.agenda(),
+      api.allCuts(),
     ]);
+    this.cuts = cuts;
+    this.coders = coders;
+    this.next = next;
+    this.ratified = every.filter((cut) => cut.ratified_at !== null);
     this.handlers.onTitle(this.title());
     this.render();
   }
@@ -115,6 +123,11 @@ export class Agenda {
       await this.openVote();
       return;
     }
+    const result = target.closest<HTMLElement>(".tb-result");
+    if (result) {
+      this.handlers.onResult(Number(result.dataset.cut));
+      return;
+    }
     const meet = target.closest<HTMLElement>(".tb-meet");
     if (meet) {
       this.handlers.onMeeting(Number(meet.dataset.cut));
@@ -175,6 +188,7 @@ export class Agenda {
         ? this.cuts.map((cut) => this.cutRow(cut)).join("")
         : `<div class="none">Nothing is on the agenda yet.</div>`) +
       `<button class="nudge tb-add" type="button">+ put another on the agenda</button>` +
+      this.results() +
       `<div class="sn-hd">Coders</div>` +
       this.coders.map((one) => this.coderRow(one)).join("") +
       `<div class="plnote">closed out: ${closed} of ${this.coders.length}` +
@@ -189,6 +203,27 @@ export class Agenda {
         : `<button class="nudge tb-vote" type="button">open the vote</button>`) +
       this.meetingButtons() +
       this.agendaBox();
+  }
+
+  /** A conversation the room has ratified keeps one way in to what the meeting
+   * produced, so the result stays reachable after the cut leaves the agenda
+   * (R-0275). */
+  private results(): string {
+    if (!this.ratified.length) return "";
+    return (
+      `<div class="sn-hd">Ratified</div>` +
+      this.ratified
+        .map(
+          (cut) =>
+            `<div class="sn-row"><div class="sn-m">` +
+            `<div class="sn-t">${esc(cut.session)}</div>` +
+            `<div class="sn-s">up to turn ${cut.end_order ?? 0} · ` +
+            `${esc(cut.cut_day ?? "")}</div></div></div>` +
+            `<button class="nudge go tb-result" type="button" data-cut="${cut.id}">` +
+            `see the result</button>`,
+        )
+        .join("")
+    );
   }
 
   /** Once the vote is open the meeting can be run on that cut: the room

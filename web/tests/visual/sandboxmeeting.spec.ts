@@ -213,6 +213,24 @@ test.describe(() => {
       say("SKIP the flag walk: the coach drafted no rule for this cut");
     }
 
+    // ── the way back to the result once the cut is ratified (R-0275) ──────
+
+    await page.locator("#sessions-open").click();
+    await page.waitForTimeout(900);
+    check(
+      await visible(".fs-task:not(.fs-agenda)"),
+      "a coder's sheet offers the task card with nothing left to code",
+    );
+    await page.locator(".fs-agenda").click();
+    await page.waitForTimeout(1600);
+    check(
+      await visible(".tb-result"),
+      "the ratified conversation offers the result on the agenda",
+    );
+    await page.locator(".tb-result").first().click();
+    await page.waitForTimeout(1800);
+    check(await visible("#result-screen"), "that opens the result screen");
+
     // ── the deterministic gates ───────────────────────────────────────────
 
     await quiet();

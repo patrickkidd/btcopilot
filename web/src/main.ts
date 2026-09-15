@@ -293,7 +293,6 @@ async function openTask(): Promise<void> {
   voting = null;
   const found = await oneTask.load();
   $("title").textContent = beforeMeeting(found.task);
-  sessions.task(coder(found) ? "Your coding task" : null);
   screen(Screen.Task);
 }
 
@@ -362,6 +361,7 @@ const agenda = new Agenda($("agenda-body"), {
   onAdd: () => sessions.show(),
   onPlace: (discussionId) => void placeCut(discussionId),
   onMeeting: (cutId) => void openMeeting(cutId),
+  onResult: (cutId) => void openResult(cutId),
   onTitle: (title) => {
     setTitle(title);
   },
@@ -1034,17 +1034,21 @@ if (import.meta.env.PROD && "serviceWorker" in navigator)
 // subscriber never asks for a task and opens on the chat. A reader who has
 // never coded never sees the card, and a server without the review tables
 // leaves the chat exactly as it was.
-if (CODER)
+if (CODER) {
+  // The way to the card is always in the sheet for a coder, task or no task:
+  // between meetings the card is how what they finished, and the result of the
+  // last meeting, stays reachable (R-0265).
+  sessions.task("Your coding task");
   void api
     .tasks()
     .then((found) => {
-      sessions.task(coder(found) ? "Your coding task" : null);
       if (coder(found)) void openTask();
     })
     .catch((error) => {
       if (!(error instanceof api.Failed)) throw error;
       console.warn(error.message);
     });
+}
 
 // The page is only served to a signed-in reader, so this is the moment to ask
 // about a key on this device, and then about the home screen — one card at a
