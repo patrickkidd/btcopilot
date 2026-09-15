@@ -135,6 +135,34 @@ function chips(
   );
 }
 
+export const MAX_FIELD_LINES = 10;
+
+/** The height a written-in field takes: its own text, until ten lines, and
+ * from there it stays and scrolls inside. */
+export const grownHeight = (content: number, line: number, pad: number): number =>
+  Math.min(content, line * MAX_FIELD_LINES + pad);
+
+/** Browsers with field-sizing do this in the stylesheet; the rest are measured
+ * here on every keystroke. */
+function autogrow(root: HTMLElement) {
+  if (CSS.supports("field-sizing", "content")) return;
+  root.querySelectorAll("textarea").forEach((area) => {
+    const grow = () => {
+      const style = getComputedStyle(area);
+      const line = parseFloat(style.lineHeight);
+      const pad = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+      area.style.height = "auto";
+      const height = grownHeight(area.scrollHeight, line, pad);
+      area.style.height = `${height}px`;
+      area.style.overflowY = area.scrollHeight > height ? "auto" : "hidden";
+    };
+    area.addEventListener("input", grow);
+    // A detached textarea measures zero, and the caller inserts this editor
+    // after openEditor returns, so the first measure waits for the next frame.
+    requestAnimationFrame(grow);
+  });
+}
+
 const plain = (values: string[]): Option[] =>
   values.map((value) => ({ value, label: value }));
 
@@ -241,16 +269,7 @@ export function openEditor(
       `</div>`,
   );
 
-  editor.querySelectorAll("textarea").forEach((area) => {
-    const grow = () => {
-      area.style.height = "auto";
-      area.style.height = `${area.scrollHeight}px`;
-    };
-    area.addEventListener("input", grow);
-    // A detached textarea measures zero, and the caller inserts this editor
-    // after openEditor returns, so the first measure waits for the next frame.
-    requestAnimationFrame(grow);
-  });
+  autogrow(editor);
 
   editor.querySelectorAll<HTMLElement>(".segs").forEach((group) => {
     group.addEventListener("click", (clicked) => {
@@ -513,6 +532,8 @@ export function openPersonEditor(
       (person ? `<button class="del" type="button">Delete</button>` : "") +
       `</div>`,
   );
+
+  autogrow(editor);
 
   editor.querySelectorAll<HTMLElement>("[data-event]").forEach((button) => {
     button.addEventListener("click", () =>

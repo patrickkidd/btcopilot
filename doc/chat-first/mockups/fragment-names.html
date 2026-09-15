@@ -1,3 +1,6 @@
+<title>Names below or above the shape</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
 /* Tokens only, so themes stay A/B-testable with stable semantics:
    teal = data, amber = asking (DRAWABILITY). */
 :root {
@@ -148,15 +151,6 @@ button { font-family: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* A title in two parts stays one line: the name gives way first and the tail,
-   which says how far through the conversation the screen is, never does. */
-.ttl:has(.ttl-tail) { display: flex; align-items: baseline; }
-.ttl-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ttl-tail { flex: none; }
 .iconbtn {
   flex: none;
   width: 44px;
@@ -863,10 +857,9 @@ button { font-family: inherit; }
 }
 @keyframes blink { 50% { opacity: 0; } }
 /* Waiting, before there is anything to write. The mockups blink the caret here
-   too; the owner ruled that too dead to read as thinking, so it is three dots
+   too; Patrick ruled that too dead to read as thinking, so it is three dots
    at text height instead, and his ruling supersedes the mockup. */
-.bub.typing.dots::after,
-.dots3::after {
+.bub.typing.dots::after {
   content: "";
   display: inline-block;
   width: 6px;
@@ -894,9 +887,6 @@ button { font-family: inherit; }
     transform: translateY(0);
   }
 }
-/* The same three dots after a word on a button that is working; the two dots
-   the shadows draw stand to the right of the box, so they need the room. */
-.dots3::after { margin-left: 8px; margin-right: 24px; }
 /* who is speaking, on the coach's side (approved play-by-play) */
 .bub .who {
   font: 500 13px/1.2 var(--mono);
@@ -1236,17 +1226,13 @@ button { font-family: inherit; }
 }
 /* The textarea also carries .f, so this must out-rank `.editor .f` above it:
    selecting on the tag alone loses and the field renders unpadded. */
-/* The field grows with what is typed in it and stops at ten lines. Browsers
-   without field-sizing are measured in editor.ts instead. */
 .editor textarea.f {
   height: auto;
   min-height: 44px;
-  max-height: calc(1.3em * 10 + 22px);
   padding: 11px 12px;
   line-height: 1.3;
   resize: none;
-  overflow-y: auto;
-  field-sizing: content;
+  overflow: hidden;
   font-family: var(--sans);
 }
 .editor .f:focus, .editor textarea:focus { border-color: var(--data); }
@@ -1287,7 +1273,7 @@ button { font-family: inherit; }
 }
 
 /* ---- the session door: the button beside the message box, and the sheet it
-   raises (family-sections, the owner's pick 2026-09-02 23:33) ---- */
+   raises (family-sections, Patrick's pick 2026-09-02 23:33) ---- */
 .fs-glyph {
   flex: none;
   position: relative;
@@ -1559,34 +1545,6 @@ button { font-family: inherit; }
 .row .untitled { color: var(--faint); }
 /* a title someone gave by hand, so the coach's own titles read apart from it */
 .pencil { margin-left: 4px; font-size: 13px; color: var(--faint); }
-/* a session that is not a chat says which kind it is, because the list mixes
-   notes, recordings and chats and only the label tells them apart (R-0281) */
-.kindtag {
-  margin-left: 6px;
-  padding: 0 6px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--tint);
-  font: 500 11px/16px var(--mono);
-  color: var(--faint);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  vertical-align: 1px;
-}
-/* the answer a row is asking for, typed into the row itself: the date and the
-   title of a recording, on the side its value sits on */
-.row.side input.rwhen {
-  flex: none;
-  width: 44%;
-  padding: 2px 6px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--data);
-  font: 400 15px/1.3 var(--sans);
-  text-align: right;
-}
-.row.side .rwhen.said { color: var(--data); }
 .row input.rename {
   width: 100%;
   padding: 1px 6px;
@@ -1641,7 +1599,7 @@ button { font-family: inherit; }
 }
 
 /* ---- settings: an iOS-Settings list where every row pushes its own page
-   (settings-nested, the owner's pick 2026-09-03 00:27) ---- */
+   (settings-nested, Patrick's pick 2026-09-03 00:27) ---- */
 .avatar {
   flex: none;
   position: relative;
@@ -2185,545 +2143,225 @@ button { font-family: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .hs-share, .hs-row { animation: none; }
 }
+/* ---- mockup frames only ---- */
+html, body { height: auto !important; overflow: visible !important; display: block !important; }
+body { padding: 28px 20px 48px !important; background: var(--bg); }
+.mk-h1 { font: 600 21px var(--sans); color: var(--ink); margin: 0 0 4px; }
+.mk-lead { color: var(--faint); font: 14px/1.45 var(--sans); margin: 0 0 22px; max-width: 88ch; }
+.mk-sec { margin-bottom: 44px; }
+.mk-sec h2 { font: 600 16px var(--sans); color: var(--ink); margin: 0 0 4px; }
+.mk-sec h2 span { color: var(--data); font: 12px var(--mono); margin-right: 8px; }
+.mk-sec p { color: var(--faint); font: 13.5px/1.45 var(--sans); margin: 0 0 12px; max-width: 88ch; }
+.mk-row { display: flex; gap: 22px; align-items: flex-start; overflow-x: auto; padding-bottom: 6px; }
+.frame { position: relative; flex: none; width: 840px; height: 620px; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); box-shadow: 0 8px 24px var(--shadow); }
+.frame.phone { width: 400px; height: 760px; border-radius: 28px; }
+.frame .app { max-width: none; height: 100%; }
+.mk-cap { font: 12px/1.45 var(--mono); color: var(--faint); margin: 6px 0 0; width: 840px; }
+.frame.phone + .mk-cap { width: 400px; }
+.mk-add { position: relative; }
+.mk-add::after { content: ""; position: absolute; inset: -2px; border: 2px dashed var(--ask); border-radius: 10px; pointer-events: none; z-index: 3; }
+.mk-key { font: 12px/1.45 var(--mono); color: var(--faint); margin: 0 0 18px; }
+.mk-key i { display: inline-block; width: 22px; height: 12px; border: 2px dashed var(--ask); border-radius: 4px; vertical-align: -2px; margin-right: 6px; }
 
-/* ── Coding ──────────────────────────────────────────────────────────────
-   The coder's screen: the transcript read-only, the drawer pinned on a wide
-   window, and the two lines across the thread (R-0267, R-0270, R-0271). */
+/* ---- the review layer: everything below is new on top of the app ---- */
+.stats { display: flex; gap: 18px; align-items: center; height: 36px; padding: 0 16px; border-bottom: 1px solid var(--line); font: 400 13px var(--mono); color: var(--faint); }
+.stats b { color: var(--data); font-weight: 500; }
+.tk { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: var(--data); margin-right: 3px; vertical-align: -1px; }
+.tk.no { background: none; border: 1px solid var(--line); }
+.tk.coach { border-radius: 50%; }
+.tally { flex: none; width: 80px; }
+.legend { display: flex; gap: 14px; align-items: center; font: 400 12px var(--mono); color: var(--faint); padding: 6px 16px; border-bottom: 1px solid var(--line); }
 
-.split { flex: 1; min-height: 0; display: flex; }
-.split > .screen { flex: 1; min-width: 0; }
-.pinned { display: none; }
-/* wide enough for the drawer to stand beside the thread rather than over it.
-   The app is a phone everywhere else, so only the coding screen widens. */
-@media (min-width: 840px) {
-  .app.wide { max-width: 840px; }
-  .pinned {
-    flex: none;
-    width: 300px;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    border-left: 1px solid var(--line);
-    background: var(--panel);
-  }
-  .pinned .scroller { flex: 1; }
-}
+/* a disputed row: stacked, so the reason, the quote and the buttons fit */
+.drow { display: block; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.drow .top { display: flex; align-items: center; gap: 12px; }
+.drow .pick { font: 400 17px/1.3 var(--sans); color: var(--ink); flex: 1; }
+.drow .why { font: 400 13px/1.4 var(--sans); color: var(--faint); margin: 6px 0 0 80px; }
+.drow .quote { font: 400 13px/1.4 var(--mono); color: var(--ink); background: var(--tint); border-left: 3px solid var(--data); border-radius: 0 8px 8px 0; padding: 8px 10px; margin: 8px 0 0 80px; }
+.drow .quote b { color: var(--data); font-weight: 500; letter-spacing: 0.06em; }
+.drow .acts2 { display: flex; gap: 8px; margin: 10px 0 0 80px; }
+.drow .acts2 .btn { min-height: 44px; }
+.drow.faint .pick { color: var(--faint); }
+.drow.amber { background: var(--ask-tint); }
+.diff { color: var(--ask-text); }
+.collapsed { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 16px; border-bottom: 1px solid var(--line); background: var(--panel); color: var(--faint); font: 400 15px/1.2 var(--sans); }
+.krule { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--bg); }
+.krule .gname { font: 600 15px var(--sans); color: var(--ink); }
+.krule .segs { padding: 0; }
+.krule .btn { min-height: 44px; margin-left: auto; border-color: var(--move); color: var(--move-text); }
 
-/* a transcript line cannot be edited; the one you picked is outlined in the
-   action colour */
-.bub.line { cursor: default; }
-.bub.line.sel { outline: 2px solid var(--move); outline-offset: 2px; }
-/* The coder's own words: a subordinate line under the bubble they tapped, on
- * the same side as it, with the scribe's edit lines beneath (R-0270). */
-.bub.said,
-.bub.coach.sub {
-  position: relative;
-  align-self: flex-end;
-  max-width: 72%;
-  margin-right: 14px;
-  border-radius: 12px;
-  border-top-right-radius: 3px;
-}
-.bub.said {
-  padding: 7px 11px;
-  font: 400 15px/1.4 var(--sans);
-  color: var(--ink);
-  background: color-mix(in srgb, var(--data) 12%, var(--panel));
-  border: 1px solid color-mix(in srgb, var(--data) 35%, var(--line));
-}
-/* the scribe's edit lines: the coach's own tool-call bubble, smaller and
- * hung under the coder's words; a stem ties each to the one above it (C6) */
-.bub.coach.sub { padding: 4px 10px 6px; }
-.bub.coach.sub .did { margin-top: 2px; }
-.bub.said::before,
-.bub.coach.sub::before {
-  content: "";
-  position: absolute;
-  right: 14px;
-  top: -11px;
-  width: 2px;
-  height: 10px;
-  background: color-mix(in srgb, var(--data) 35%, var(--line));
-}
-.bub.coach.sub::before { background: var(--line); }
-.bub.said.left,
-.bub.coach.sub.left { align-self: flex-start; margin: 0 0 0 14px; border-top-right-radius: 12px; border-top-left-radius: 3px; }
-.bub.said.left::before,
-.bub.coach.sub.left::before { right: auto; left: 14px; }
-
-/* the scribe asking instead of writing: the same edit line, in the asking
-   colour */
-.bub .did.q { color: var(--ask-text); }
-.bub .did.q::before { background: var(--ask); }
-
-/* a task already finished, on the one-task card */
-.plrow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 56px;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--line);
-  background: var(--panel);
-}
-.plrow .ck {
-  flex: none;
-  width: 20px;
-  text-align: center;
-  color: var(--move-text);
-  font: 500 15px var(--mono);
-}
-.plrow .pm { flex: 1; min-width: 0; }
-.plrow.done .r1 { color: var(--faint); }
-.plprog {
-  padding: 8px 16px;
-  font: 400 13px var(--mono);
-  color: var(--faint);
-  border-bottom: 1px solid var(--line);
-  background: var(--bg);
-}
-
-/* the two lines across the thread: the last ratified cut, and this cut */
-.cutline { display: flex; align-items: center; gap: 8px; margin: 2px 0; }
-.cutline .ln { flex: 1; border-top: 1px dashed var(--line); }
-.cutline .lb { font: 400 13px var(--mono); color: var(--faint); }
-.cutline.now .ln { border-top: 2px dashed var(--ask); }
-.cutline.now .lb { font-weight: 500; color: var(--ask-text); }
-
-/* Done, in the title row beside the account mark */
-.donebtn {
-  flex: none;
-  min-width: 44px;
-  height: 44px;
-  padding: 0 8px;
-  border: none;
-  background: none;
-  color: var(--move-text);
-  font: 600 15px var(--sans);
-  cursor: pointer;
-}
-.donebtn:active { opacity: 0.55; }
-
-/* the confirmation sheet Done opens */
-.cf-sheet { height: auto; padding: 4px 20px calc(20px + env(safe-area-inset-bottom)); }
-.cf-t { margin: 6px 0 10px; font: 600 21px/1.2 var(--sans); color: var(--ink); }
-.cf-p { margin: 0 0 10px; font: 400 15px/1.45 var(--sans); color: var(--ink); }
-.cf-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
-.cf-go {
-  min-height: 44px;
-  border: none;
-  border-radius: 22px;
-  background: var(--data);
-  color: var(--onaccent);
-  font: 600 15px var(--sans);
-  cursor: pointer;
-}
-.cf-no {
-  min-height: 44px;
-  border: none;
-  background: none;
-  color: var(--ink);
-  font: 500 15px var(--sans);
-  cursor: pointer;
-}
-
-/* a turn above the last agreed line, tapped: one faint line, no outline */
-.abv {
-  align-self: flex-start;
-  max-width: 82%;
-  margin: -4px 0 0 2px;
-  font: 400 13px/1.4 var(--mono);
-  color: var(--faint);
-}
-
-/* the coding guidelines, behind the (i) in the title row (R-0278) */
-.rl-row { padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
-.rl-t { font: 400 17px/1.4 var(--sans); color: var(--ink); }
-.rl-m { margin-top: 4px; font: 400 13px var(--mono); color: var(--faint); }
-.rl-flag {
-  min-height: 44px;
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--data);
-  font: 500 15px var(--sans);
-  cursor: pointer;
-}
-.rl-flag[disabled] { color: var(--faint); cursor: default; }
-
-/* the one task card: the row with room for its button (R-0265) */
-.tkcard { cursor: default; gap: 8px; padding: 14px 16px; }
-.tkcard .r1, .tkcard .r2 { white-space: normal; }
-.tkcard.waiting { opacity: 0.45; }
-.tkcard .addbtn { margin-top: 8px; }
-.plrow .r1, .plrow .r2 { white-space: normal; }
-.tkdone { border-bottom: none; background: none; }
-.plrow.done { opacity: 0.5; }
-
-/* the way to the coder's one task, under the new-session button */
-.fs-task {
-  width: 100%;
-  height: 44px;
-  margin-top: 8px;
-  padding: 0 14px;
-  border: 1.5px solid var(--data);
-  border-radius: 22px;
-  background: none;
-  color: var(--data);
-  font: 600 15px var(--sans);
-  cursor: pointer;
-}
-.fs-task:active { background: var(--tint); }
-
-/* ── The agenda ────────────────────────────────────────────────────────────
- * Patrick's own screens: putting a conversation on the agenda, placing the cut
- * and the one screen that carries the whole of his administration (f7–f10). */
-
-/* His swipe offers a third action, and "Put on the agenda" is too many words
- * for a strip of three, so his actions stack the way the drawing has them. */
-.fs-body .row.swiped.wide { transform: translateX(-216px); }
-.fs-acts.wide { width: 216px; flex-direction: column; padding: 6px 8px; }
-.fs-acts.wide .fs-act { text-align: left; padding: 4px 6px; min-height: 36px; }
-.fs-act.tbl { color: var(--ask-text); }
-
-/* Placing the cut: the thread read-only, turns after the cut dimmed. */
-.ct-bar { flex-direction: column; align-items: stretch; gap: 6px; }
-.ct-hint { font: 400 13px var(--mono); color: var(--faint); text-align: center; }
-.ct-go { height: 44px; border-color: var(--ask); color: var(--ask-text); }
-.bub.line.after { opacity: 0.4; }
-
-/* One line per coder, and what they are doing. */
-.srow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 56px;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--line);
-  background: var(--panel);
-}
-.srow .s1 { flex: 1; font: 400 17px/1.3 var(--sans); color: var(--ink); }
-.srow .s2 { font: 400 13px var(--mono); color: var(--faint); }
-.plnote { padding: 12px 16px 18px; font: 400 13px/1.5 var(--mono); color: var(--faint); }
-.nudge {
-  display: block;
-  width: calc(100% - 32px);
-  margin: 14px 16px 0;
-  min-height: 44px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-  color: var(--ink);
-  font: 500 15px var(--sans);
-  cursor: pointer;
-}
-.nudge:active { background: var(--tint); }
-.nudge:disabled { color: var(--faint); cursor: default; }
-
-/* The agenda, which fills itself. */
-.agbox {
-  margin: 14px 16px 16px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--panel);
-}
-.aghd { padding: 10px 12px 6px; font: 500 13px var(--mono); color: var(--faint); }
-.agrow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 0 12px;
-  border-top: 1px solid var(--line);
-  font: 400 14px/1.3 var(--sans);
-  color: var(--ink);
-}
-.agt { flex: 1; min-width: 0; }
-.agx {
-  flex: none;
-  color: var(--data);
-  font: 400 13px var(--mono);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-/* ── The ballot ────────────────────────────────────────────────────────────
- * One disputed event per screen, the opinions without names, and the agreement
- * timeline above it. Drawn from the frame's own stylesheet. */
-.bl-card {
-  margin: 16px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.bl-card h3 { font: 500 15px var(--sans); margin: 0; color: var(--ink); }
+/* the card that stacks one moment as each coder wrote it */
+.deck { display: grid; grid-template-columns: 1fr 300px; flex: 1; min-height: 0; }
+.card { margin: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.card h3 { font: 500 15px var(--sans); margin: 0; color: var(--ink); }
+.take { display: grid; grid-template-columns: 60px 1fr auto; gap: 10px; align-items: baseline; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; font: 400 14px var(--sans); }
+.take.same { opacity: 0.55; }
+.take .w { font: 400 12px var(--mono); color: var(--faint); }
+.take .v .diff { color: var(--ask-text); }
 .progress { font: 400 12px var(--mono); color: var(--faint); }
-.opinion {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  min-height: 44px;
-  align-items: center;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  font: 400 17px/1.3 var(--sans);
-  cursor: pointer;
-}
-.opinion .n { font: 400 13px var(--mono); color: var(--faint); }
-/* A version of a person or a bond is drawn as well as written: the drawing sits
- * under the words and takes the whole width of the card (R-0326). */
-.opinion:has(.frag) { grid-template-columns: 1fr; }
-.frag { display: flex; justify-content: center; padding: 4px 0; }
-.frag svg { max-width: 100%; height: auto; }
-.side .frag { flex-basis: 100%; justify-content: flex-start; }
-.opinion:active { background: var(--tint); }
-.opinion.on { border-color: var(--data); color: var(--data); background: var(--tint); }
-.bl-card .note { font: 400 13px var(--mono); color: var(--faint); }
-.quote {
-  font: 400 13px/1.4 var(--mono);
-  color: var(--ink);
-  background: var(--tint);
-  border-left: 3px solid var(--data);
-  border-radius: 0 8px 8px 0;
-  padding: 8px 10px;
-}
-.quote b { color: var(--data); font-weight: 500; letter-spacing: 0.06em; }
+.deck .side { border-left: 1px solid var(--line); display: flex; flex-direction: column; }
+.rec { font: 400 13px/1.4 var(--sans); color: var(--ink); border-top: 1px dashed var(--line); padding-top: 8px; }
+.rec b { color: var(--data); font-weight: 500; }
+.vote { display: flex; align-items: center; gap: 10px; border-top: 1px solid var(--line); padding-top: 10px; font: 400 13px var(--mono); color: var(--faint); }
+.vt { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--data); vertical-align: -2px; margin-right: 4px; }
+.vt.on { background: var(--data); }
+.verdict { margin-left: auto; color: var(--move-text); font-weight: 500; }
 .phbtns { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px; }
 .phbtns .btn { flex: 1 1 45%; }
-.btn.on { border-color: var(--data); color: var(--data); background: var(--tint); }
-.saylab {
-  display: block;
-  padding: 0 16px 6px;
-  color: var(--faint);
-  font: 400 13px/1.3 var(--sans);
-}
-.say {
-  margin: 0 16px 16px;
-  height: 44px;
-  box-sizing: border-box;
-  width: calc(100% - 32px);
-  padding: 0 16px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-  color: var(--ink);
-  font: 400 17px var(--sans);
-}
-.say::placeholder { color: var(--faint); }
+.say { margin: 0 16px 16px; height: 44px; display: flex; align-items: center; padding: 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--faint); font: 400 17px var(--sans); }
+.teach { display: grid; grid-template-columns: 1fr 380px; flex: 1; min-height: 0; }
+.teach .side { border-left: 1px solid var(--line); overflow: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.srow { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.srow .s1 { flex: 1; font: 400 17px/1.3 var(--sans); color: var(--ink); }
+.srow .s2 { font: 400 13px var(--mono); color: var(--faint); }
+.gcard { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.gcard h4 { margin: 0; font: 600 15px var(--sans); color: var(--ink); }
+.gcard .rule { font: 400 15px/1.4 var(--sans); color: var(--ink); border-left: 3px solid var(--ask); padding-left: 10px; }
+.gcard .who2 { font: 400 14px/1.4 var(--sans); color: var(--ink); }
+.gcard .btn { width: 100%; }
+.ph { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--faint); font: 400 15px var(--sans); background: repeating-linear-gradient(45deg, transparent, transparent 10px, var(--tint) 10px, var(--tint) 20px); }
+
+/* ---- this page's own additions ---- */
+.mk-dec { margin: 0 0 26px; padding-left: 22px; max-width: 92ch; font: 400 14px/1.6 var(--sans); color: var(--ink); }
+.mk-dec li { margin-bottom: 4px; }
+.mk-dec b { color: var(--data); font-weight: 600; }
+/* a ballot take: one 44px row you tap to keep it, no name beside it */
+.take.tap { grid-template-columns: 1fr auto; min-height: 44px; align-items: center; cursor: pointer; font: 400 17px/1.3 var(--sans); }
+.take.tap .n { font: 400 13px var(--mono); color: var(--faint); }
+.take.tap:active { background: var(--tint); }
+.take.tap.off { color: var(--faint); }
 .nextrow { display: flex; justify-content: flex-end; padding: 0 16px 16px; }
 .nextrow .btn { min-width: 96px; border-color: var(--data); color: var(--data); }
-/* The wire keeps the height its row was given: left to scale with the width it
- * grows to 211 tall on a desktop and lies over the controls under it, taking
- * their taps with it (verified at 1280 wide). */
-.tl svg[height] { height: 100%; }
+/* the meeting's tally line: circles, the names beside them, the verdict */
+.tline { display: flex; align-items: center; gap: 10px; margin: 8px 0 0 80px; font: 400 13px/1.4 var(--mono); color: var(--faint); flex-wrap: wrap; }
+.tline .verdict { margin-left: auto; }
+.aline { margin: 6px 0 0 80px; font: 400 13px/1.4 var(--sans); color: var(--faint); }
+.aline b { color: var(--ask-text); font-weight: 500; }
+.ratbar { flex: none; display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--line); background: var(--panel); }
+.ratbar .btn { min-height: 44px; border-color: var(--data); color: var(--data); }
+.reopen { margin-left: auto; color: var(--data); font: 400 13px var(--mono); cursor: pointer; }
+.acard { margin: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.acard h4 { margin: 0 0 10px; font: 600 15px var(--sans); color: var(--ink); }
+.arow { display: grid; grid-template-columns: 1.1fr 0.7fr 0.7fr 1.4fr auto; gap: 12px; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--line); font: 400 14px/1.4 var(--sans); }
+.arow .s2 { font: 400 13px var(--mono); color: var(--faint); }
+.scoreline { margin: 10px 0 0; font: 400 13px var(--mono); color: var(--faint); }
+.scoreline b { color: var(--data); font-weight: 500; }
+/* a choice already made at the meeting: the same pressed look a segment has */
+.btn.on { border-color: var(--data); color: var(--data); background: var(--tint); }
+.ratbar .note { font: 400 13px var(--mono); color: var(--faint); }
+.ratbar .btn[disabled] { opacity: 0.4; cursor: default; }
+/* the punchlist: one row per thing a coder must finish before the meeting */
+.plrow { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.plrow .ck { flex: none; width: 20px; text-align: center; color: var(--move-text); font: 500 15px var(--mono); }
+.plrow .ck.todo { color: var(--line); }
+.plrow .pm { flex: 1; min-width: 0; }
+.plrow.done .r1 { color: var(--faint); }
+.plnote { padding: 12px 16px 18px; font: 400 13px/1.5 var(--mono); color: var(--faint); }
+.plprog { padding: 8px 16px; font: 400 13px var(--mono); color: var(--faint); border-bottom: 1px solid var(--line); background: var(--bg); }
+/* who has done what, before the meeting: coders down the side, items across */
+.grid { width: 100%; border-collapse: collapse; font: 400 13px var(--mono); color: var(--ink); }
+.grid th { font-weight: 500; color: var(--faint); text-align: center; padding: 8px 4px; border-bottom: 1px solid var(--line); }
+.grid th.who { text-align: left; padding-left: 16px; }
+.grid td { text-align: center; padding: 10px 4px; border-bottom: 1px solid var(--line); }
+.grid td.who { text-align: left; padding-left: 16px; color: var(--ink); }
+.grid .yes { color: var(--move-text); }
+.grid .no { color: var(--line); }
+.nudge { display: block; width: calc(100% - 32px); margin: 14px 16px 0; min-height: 44px; border: 2px dashed var(--ask); border-radius: 8px; background: none; color: var(--ask-text); font: 500 15px var(--sans); cursor: pointer; }
+/* one guideline the meeting wrote, and where it came from */
+.rcard { margin: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.rcard h4 { margin: 0 0 10px; font: 600 15px var(--sans); color: var(--ink); }
+.rcard .rule { font: 400 15px/1.4 var(--sans); color: var(--ink); border-left: 3px solid var(--ask); padding-left: 10px; margin-top: 12px; }
+.rcard .prov { margin: 4px 0 0 13px; font: 400 13px/1.4 var(--mono); color: var(--faint); }
+.rcard .flag { margin-left: 13px; color: var(--faint); font: 400 13px var(--mono); text-decoration: underline; cursor: pointer; }
+.rcard .who2 { font: 400 14px/1.5 var(--sans); color: var(--ink); margin-top: 6px; }
+/* what the next meeting will start from, filled in by itself */
+.agbox { margin: 14px 16px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.aghd { padding: 10px 12px 6px; font: 500 13px var(--mono); color: var(--faint); }
+.agrow { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border-top: 1px solid var(--line); font: 400 14px/1.3 var(--sans); color: var(--ink); }
+.agt { flex: 1; min-width: 0; }
+.agx { flex: none; color: var(--data); font: 400 13px var(--mono); text-decoration: underline; cursor: pointer; }
+/* the agreement timeline over the meeting's list */
 .tl .wire2 { stroke: var(--line); stroke-width: 1.5; }
 .tl .d-ok { fill: var(--data); }
 .tl .d-no { fill: var(--ask); }
-.tl .d-on { fill: var(--move); }
 .tl .d-n { font: 400 12px var(--mono); fill: var(--ask-text); }
-.bl-sheet { height: 88%; }
+/* the moment you are voting on now, enlarged, in the one action green */
+.tl .d-on { fill: var(--move); }
+.tl .sq { fill: none; stroke: var(--line); stroke-width: 1.2; }
+.tl .sq.has { fill: var(--data); stroke: var(--data); }
+.tl .sq.has.no { fill: var(--ask); stroke: var(--ask); }
+/* Done, at the top right of the coding screen */
+.donebtn { flex: none; min-width: 44px; height: 44px; padding: 0 8px; border: none; background: none; color: var(--move-text); font: 600 15px var(--sans); cursor: pointer; }
+.donebtn:active { opacity: 0.55; }
+/* one written guideline, as anyone reads it in the app */
+.glrow { padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.glrow .g1 { font: 400 15px/1.4 var(--sans); color: var(--ink); }
+.glrow .g2 { margin-top: 4px; font: 400 12px/1.4 var(--mono); color: var(--faint); }
+.glrow .gflag { color: var(--faint); font: 400 12px var(--mono); text-decoration: underline; cursor: pointer; }
+</style>
+<style>
+html, body { height: auto !important; overflow: visible !important; display: block !important; }
+body { padding: 28px 20px 48px !important; background: var(--bg); }
+.mk-h1 { font: 600 21px var(--sans); color: var(--ink); margin: 0 0 4px; }
+.mk-lead { color: var(--faint); font: 14px/1.45 var(--sans); margin: 0 0 22px; max-width: 88ch; }
+.mk-sec { margin-bottom: 44px; }
+.mk-sec h2 { font: 600 16px var(--sans); color: var(--ink); margin: 0 0 4px; }
+.mk-sec h2 span { color: var(--data); font: 12px var(--mono); margin-right: 8px; }
+.mk-sec p { color: var(--faint); font: 13.5px/1.45 var(--sans); margin: 0 0 12px; max-width: 88ch; }
+.mk-row { display: flex; gap: 22px; align-items: flex-start; overflow-x: auto; padding-bottom: 6px; flex-wrap: wrap; }
+.col { flex: none; width: 393px; max-width: 100%; }
+.frame.fr { position: relative; width: 393px; max-width: 100%; height: 620px; overflow: hidden; border: 1px solid var(--line); border-radius: 28px; background: var(--bg); box-shadow: 0 8px 24px var(--shadow); }
+.frame.fr .app { max-width: none; height: 100%; display: flex; flex-direction: column; }
+.mk-cap { font: 12px/1.45 var(--mono); color: var(--faint); margin: 6px 0 0; width: 100%; }
+.mk-cap b { color: var(--ink); }
+.tagbadge { position: absolute; top: 10px; left: 12px; z-index: 4; font: 500 12px var(--mono); color: var(--onaccent); background: var(--data); border-radius: 6px; padding: 2px 7px; }
+.fragwrap { display: flex; justify-content: center; padding: 10px 0 14px; overflow-x: auto; }
+.fragwrap svg { max-width: 100%; height: auto; }
+.frame.fr .card { margin: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.frame.fr .editor { padding: 12px; }
+</style>
 
-/* Tapping the meeting date row opens the phone's own date picker: the field
- * covers the whole row and is not drawn, so the row reads as any other. */
-.tb-when { position: relative; }
-.tb-date {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  opacity: 0;
-  border: none;
-  background: none;
-}
-
-/* ── The meeting and the result screen ─────────────────────────────────────
- * The room closes what the vote could not, then reads what it produced. The
- * classes and the measurements are the approved drawing's own (review.html
- * frames f11 and f13). */
-
-.stats {
-  flex: none;
-  display: flex;
-  gap: 18px;
-  align-items: center;
-  flex-wrap: wrap;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--line);
-  font: 400 13px var(--mono);
-  color: var(--faint);
-}
-.stats b { color: var(--data); font-weight: 500; }
-
-/* The meeting's header: a title, one line of labelled figures, and the colours
- * the wire under it is drawn in — in that order, nothing repeated (R-0321). */
-.stats.mhead {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 10px 16px;
-}
-.mtitle { font: 600 17px/1.3 var(--sans); color: var(--ink); }
-/* The figures are one line: the phone is the narrow case, so they are set a
- * step down from the title and separated by a thin dot rather than a gap. */
-.mfigs, .mkey { display: flex; flex-wrap: wrap; gap: 2px 7px; align-items: center; }
-.mfigs { font-size: 12px; }
-.mfigs span + span::before, .mkey span + span::before {
-  content: "·";
-  margin-right: 7px;
-  color: var(--line);
-}
-.mkey span { display: inline-flex; align-items: center; gap: 6px; }
-.sw { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-.sw.ok { background: var(--data); }
-.sw.no { background: var(--ask); }
-.sw.now { background: var(--move); }
-/* The family is a count beside the wire's colours, because a person and a bond
- * have no place on a line of years (R-0326). */
-.mkey .mcount { color: var(--faint); }
-
-/* Which order the list is read in (R-0316). */
-.sortbar {
-  flex: none;
-  display: flex;
-  gap: 8px;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--line);
-  background: var(--panel);
-}
-
-/* A disputed row: stacked, so the tally, the quote and the buttons fit. */
-.drow {
-  position: relative;
-  display: block;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--line);
-  background: var(--panel);
-}
-/* An agreed item's card is opened by a tap and closed by this (R-0317); the
- * card keeps its first line clear of the button. */
-.drow.hasx { padding-right: 52px; }
-.cardx {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 44px;
-  height: 44px;
-  border: none;
-  background: none;
-  color: var(--faint);
-  font: 400 21px/1 var(--sans);
-  cursor: pointer;
-}
-.drow .top { display: flex; align-items: center; gap: 12px; }
-.drow .tally { flex: none; width: 80px; }
-.drow .pick { font: 400 17px/1.3 var(--sans); color: var(--ink); flex: 1; }
-.drow .quote { margin: 8px 0 0 80px; }
-.drow .acts2 { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 0 80px; }
-.drow .acts2 .btn { min-height: 44px; }
-
-.vt {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 1px solid var(--data);
-  vertical-align: -2px;
-  margin-right: 4px;
-}
-.vt.on { background: var(--data); }
-
-/* The versions of an item, one per line: who wrote it, how many that is, and
- * its own button to keep it (R-0319). */
-.tline {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 8px 0 0 80px;
-  font: 400 13px/1.4 var(--mono);
-  color: var(--faint);
-}
-.side { display: flex; align-items: center; gap: 2px 10px; flex-wrap: wrap; }
-.side .slab { color: var(--ink); }
-.side .swho { color: var(--faint); }
-/* The button follows its own version rather than sitting out at the right
- * margin, where a wrapped row leaves it unclear which version it keeps. */
-.side .mt-keep { min-height: 44px; }
-.side .btn[disabled] { opacity: 0.4; cursor: default; }
-
-.collapsed {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 44px;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--line);
-  background: var(--panel);
-  color: var(--faint);
-  font: 400 15px/1.2 var(--sans);
-}
-.collapsed:active { background: var(--tint); }
-.collapsed .mark { margin-left: auto; color: var(--data); font: 400 13px var(--mono); }
-
-.ratbar {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 10px 16px;
-  border-top: 1px solid var(--line);
-  background: var(--panel);
-}
-.ratbar .btn { min-height: 44px; border-color: var(--data); color: var(--data); }
-.ratbar .btn[disabled] { opacity: 0.4; cursor: default; }
-.ratbar .note { font: 400 13px var(--mono); color: var(--faint); }
-
-/* The guidelines this meeting wrote, and where each came from. */
-.rcard, .acard {
-  margin: 16px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 14px 16px;
-}
-.rcard h4, .acard h4 { margin: 0 0 10px; font: 600 15px var(--sans); color: var(--ink); }
-.rcard .rule {
-  font: 400 15px/1.4 var(--sans);
-  color: var(--ink);
-  border-left: 3px solid var(--ask);
-  padding-left: 10px;
-  margin-top: 12px;
-}
-.rcard .prov { margin: 4px 0 0 13px; font: 400 13px/1.4 var(--mono); color: var(--faint); }
-.rcard .flag {
-  display: inline-block;
-  margin-left: 13px;
-  min-height: 44px;
-  line-height: 44px;
-  color: var(--faint);
-  font: 400 13px var(--mono);
-  text-decoration: underline;
-  cursor: pointer;
-}
-.rcard .who2 { font: 400 14px/1.5 var(--sans); color: var(--ink); margin-top: 6px; }
-
-/* Where the AI read the cut differently: a row per place, which stacks to one
- * column on a phone. */
-.arow {
-  display: grid;
-  grid-template-columns: 1.1fr 0.7fr 0.7fr 1.4fr;
-  gap: 12px;
-  align-items: baseline;
-  padding: 8px 0;
-  border-top: 1px solid var(--line);
-  font: 400 14px/1.4 var(--sans);
-}
-.arow .s2 { font: 400 13px var(--mono); color: var(--faint); }
-@media (max-width: 720px) {
-  .arow { grid-template-columns: 1fr; gap: 4px; }
-}
+<div class="mk-h1">The family fragment &mdash; each person&rsquo;s name written under the shape, or over it</div>
+<div class="mk-lead">Every picture here was drawn by the app&rsquo;s own fragment code. The left picture in each pair is what the app draws today: the name under the shape. The right picture is the same family with the name over the shape instead, and nothing else changed. What you give up either way is space: a name written over a shape shares that band with the line coming down from that person&rsquo;s parents, and a name written under a shape shares that band with the line dropping to that person&rsquo;s children. Fictional people only.</div>
+<div class="mk-sec"><h2><span>1</span>Corinne's parents, on the ballot card</h2>
+<p>The version card a coder votes on. Corinne is in the middle, her parents' bond above her, her brother beside her.</p>
+<div class="mk-row">
+<div class="col"><div class="frame phone fr"><div class="app">
+<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Session 3 &middot; ballot &middot; 2 of 6</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="card"><div class="progress">version <b>1 below</b> &middot; Corinne's parents, on the ballot card</div><div class="fragwrap"><svg class="fragment" viewBox="-2.1 -3.1 4.2 4.43" width="168" height="177.2" role="img" style="background:var(--panel);font-family:var(--sans)"><path class="frag-line" d="M -1 -1.5 V -1.05 H 1 V -1.5" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="round" stroke-linejoin="round" /><path class="frag-line" d="M 0 -0.5 L 0 -1.05" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="butt" stroke-linejoin="round" /><path class="frag-shape" d="M -0.5 0 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><path class="frag-shape" d="M -0.6 0 a 0.6 0.6 0 1 0 1.2 0 a 0.6 0.6 0 1 0 -1.2 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="0" y="0.78" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Corinne</text><path class="frag-shape" d="M -1.5 -2.5 H -0.5 V -1.5 H -1.5 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="-1" y="-1.22" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Marcus</text><path class="frag-shape" d="M 0.5 -2 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="1" y="-1.22" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Delphine</text></svg></div>
+<div class="take tap"><span>keep this version</span><span class="n">2 coders</span></div></div>
+</div><div class="tagbadge">1 below</div></div><div class="mk-cap"><b>names below &mdash; what is built today</b> &mdash; The name sits under the shape. Under a person who has children, the name has to share that space with the line dropping to them.</div></div>
+<div class="col"><div class="frame phone fr"><div class="app">
+<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Session 3 &middot; ballot &middot; 2 of 6</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="card"><div class="progress">version <b>1 above</b> &middot; Corinne's parents, on the ballot card</div><div class="fragwrap"><svg class="fragment" viewBox="-2.1 -3.26 4.2 4.36" width="168" height="174.4" role="img" style="background:var(--panel);font-family:var(--sans)"><path class="frag-line" d="M -1 -1.5 V -1.05 H 1 V -1.5" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="round" stroke-linejoin="round" /><path class="frag-line" d="M 0 -0.5 L 0 -1.05" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="butt" stroke-linejoin="round" /><path class="frag-shape" d="M -0.5 0 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><path class="frag-shape" d="M -0.6 0 a 0.6 0.6 0 1 0 1.2 0 a 0.6 0.6 0 1 0 -1.2 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="0" y="-0.66" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Corinne</text><path class="frag-shape" d="M -1.5 -2.5 H -0.5 V -1.5 H -1.5 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="-1" y="-2.66" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Marcus</text><path class="frag-shape" d="M 0.5 -2 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="1" y="-2.66" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Delphine</text></svg></div>
+<div class="take tap"><span>keep this version</span><span class="n">2 coders</span></div></div>
+</div><div class="tagbadge">1 above</div></div><div class="mk-cap"><b>names above</b> &mdash; The name sits over the shape. Over a person whose parents are in the record, the name has to share that space with the line coming down from their parents' bar.</div></div>
+</div></div>
+<div class="mk-sec"><h2><span>2</span>A name too long for the box</h2>
+<p>The renderer cuts a long name to the box width plus one sibling gap and ends it with three dots, whichever side it is written on.</p>
+<div class="mk-row">
+<div class="col"><div class="frame phone fr"><div class="app">
+<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Session 3 &middot; ballot &middot; 2 of 6</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="card"><div class="progress">version <b>2 below</b> &middot; A name too long for the box</div><div class="fragwrap"><svg class="fragment" viewBox="-2.1 -3.1 5.2 6.43" width="208" height="257.2" role="img" style="background:var(--panel);font-family:var(--sans)"><path class="frag-line" d="M -1 -1.5 V -1.05 H 1 V -1.5" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="round" stroke-linejoin="round" /><path class="frag-line" d="M 0 -0.5 L 0 -1.05" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="butt" stroke-linejoin="round" /><path class="frag-line" d="M 0 0.5 V 0.95 H 2 V 0.5" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="round" stroke-linejoin="round" /><path class="frag-line" d="M 0 1.5 L 0 0.95" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="butt" stroke-linejoin="round" /><path class="frag-line" d="M 2 1.5 L 2 0.95" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="butt" stroke-linejoin="round" /><path class="frag-shape" d="M -0.5 -0.5 H 0.5 V 0.5 H -0.5 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><path class="frag-shape" d="M -0.6 -0.6 H 0.6 V 0.6 H -0.6 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="0" y="0.78" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Marcus</text><path class="frag-shape" d="M -1.5 -2.5 H -0.5 V -1.5 H -1.5 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="-1" y="-1.22" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Errol</text><path class="frag-shape" d="M 0.5 -2 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="1" y="-1.22" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Odile</text><path class="frag-shape" d="M 1.5 0 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="2" y="0.78" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Delphine</text><path class="frag-shape" d="M -0.5 2 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="0" y="2.78" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Corinnebarthol…</text><path class="frag-shape" d="M 1.5 1.5 H 2.5 V 2.5 H 1.5 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="2" y="2.78" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Theo</text></svg></div>
+<div class="take tap"><span>keep this version</span><span class="n">2 coders</span></div></div>
+</div><div class="tagbadge">2 below</div></div><div class="mk-cap"><b>names below &mdash; what is built today</b> &mdash; The cut name runs along the bottom of the shape, clear of the children's row below it.</div></div>
+<div class="col"><div class="frame phone fr"><div class="app">
+<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Session 3 &middot; ballot &middot; 2 of 6</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="card"><div class="progress">version <b>2 above</b> &middot; A name too long for the box</div><div class="fragwrap"><svg class="fragment" viewBox="-2.1 -3.26 5.2 6.36" width="208" height="254.4" role="img" style="background:var(--panel);font-family:var(--sans)"><path class="frag-line" d="M -1 -1.5 V -1.05 H 1 V -1.5" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="round" stroke-linejoin="round" /><path class="frag-line" d="M 0 -0.5 L 0 -1.05" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="butt" stroke-linejoin="round" /><path class="frag-line" d="M 0 0.5 V 0.95 H 2 V 0.5" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="round" stroke-linejoin="round" /><path class="frag-line" d="M 0 1.5 L 0 0.95" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="butt" stroke-linejoin="round" /><path class="frag-line" d="M 2 1.5 L 2 0.95" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="butt" stroke-linejoin="round" /><path class="frag-shape" d="M -0.5 -0.5 H 0.5 V 0.5 H -0.5 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><path class="frag-shape" d="M -0.6 -0.6 H 0.6 V 0.6 H -0.6 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="0" y="-0.66" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Marcus</text><path class="frag-shape" d="M -1.5 -2.5 H -0.5 V -1.5 H -1.5 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="-1" y="-2.66" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Errol</text><path class="frag-shape" d="M 0.5 -2 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="1" y="-2.66" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Odile</text><path class="frag-shape" d="M 1.5 0 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="2" y="-0.66" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Delphine</text><path class="frag-shape" d="M -0.5 2 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="0" y="1.34" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Corinnebarthol…</text><path class="frag-shape" d="M 1.5 1.5 H 2.5 V 2.5 H 1.5 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="2" y="1.34" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Theo</text></svg></div>
+<div class="take tap"><span>keep this version</span><span class="n">2 coders</span></div></div>
+</div><div class="tagbadge">2 above</div></div><div class="mk-cap"><b>names above</b> &mdash; The cut name runs along the top of the shape, and on the children's row it reaches up toward their parents' bar.</div></div>
+</div></div>
+<div class="mk-sec"><h2><span>3</span>One person with two bonds in a row</h2>
+<p>The middle person had two partners, so the two bond lines share the one row.</p>
+<div class="mk-row">
+<div class="col"><div class="frame phone fr"><div class="app">
+<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Session 3 &middot; ballot &middot; 2 of 6</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="card"><div class="progress">version <b>3 below</b> &middot; One person with two bonds in a row</div><div class="fragwrap"><svg class="fragment" viewBox="-2.1 -3.1 7.2 6.43" width="288" height="257.2" role="img" style="background:var(--panel);font-family:var(--sans)"><path class="frag-line" d="M -1 -1.5 V -1.05 H 1 V -1.5" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="round" stroke-linejoin="round" /><path class="frag-line" d="M 0 -0.5 L 0 -1.05" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="butt" stroke-linejoin="round" /><path class="frag-line" d="M 0 0.5 V 0.95 H 2 V 0.5" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="round" stroke-linejoin="round" /><path class="frag-line" d="M 1.75 1.1 L 1.75 0.7" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="round" stroke-linejoin="round" /><path class="frag-line" d="M 1.85 1.1 L 1.85 0.7" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="round" stroke-linejoin="round" /><path class="frag-line" d="M 0 1.5 L 0 0.95" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="butt" stroke-linejoin="round" /><path class="frag-line" d="M 2 1.5 L 2 0.95" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="butt" stroke-linejoin="round" /><path class="frag-line" d="M 0 0.5 V 1.45 H 4 V 0.5" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.12 0.09" /><path class="frag-line" d="M 4 1.5 L 4 1.45" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="butt" stroke-linejoin="round" /><path class="frag-shape" d="M -0.5 -0.5 H 0.5 V 0.5 H -0.5 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><path class="frag-shape" d="M -0.6 -0.6 H 0.6 V 0.6 H -0.6 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="0" y="0.78" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Marcus</text><path class="frag-shape" d="M -1.5 -2.5 H -0.5 V -1.5 H -1.5 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="-1" y="-1.22" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Errol</text><path class="frag-shape" d="M 0.5 -2 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="1" y="-1.22" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Odile</text><path class="frag-shape" d="M 1.5 0 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="2" y="0.78" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Delphine</text><path class="frag-shape" d="M -0.5 2 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="0" y="2.78" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Corinne</text><path class="frag-shape" d="M 1.5 1.5 H 2.5 V 2.5 H 1.5 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="2" y="2.78" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Theo</text><path class="frag-shape" d="M 3.5 0 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="4" y="0.78" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Nadine</text><path class="frag-shape" d="M 3.5 2 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="4" y="2.78" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Ines</text></svg></div>
+<div class="take tap"><span>keep this version</span><span class="n">2 coders</span></div></div>
+</div><div class="tagbadge">3 below</div></div><div class="mk-cap"><b>names below &mdash; what is built today</b> &mdash; Three names sit in a line under three shapes, below the bond lines that join them.</div></div>
+<div class="col"><div class="frame phone fr"><div class="app">
+<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Session 3 &middot; ballot &middot; 2 of 6</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="card"><div class="progress">version <b>3 above</b> &middot; One person with two bonds in a row</div><div class="fragwrap"><svg class="fragment" viewBox="-2.1 -3.26 7.2 6.36" width="288" height="254.4" role="img" style="background:var(--panel);font-family:var(--sans)"><path class="frag-line" d="M -1 -1.5 V -1.05 H 1 V -1.5" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="round" stroke-linejoin="round" /><path class="frag-line" d="M 0 -0.5 L 0 -1.05" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="butt" stroke-linejoin="round" /><path class="frag-line" d="M 0 0.5 V 0.95 H 2 V 0.5" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="round" stroke-linejoin="round" /><path class="frag-line" d="M 1.75 1.1 L 1.75 0.7" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="round" stroke-linejoin="round" /><path class="frag-line" d="M 1.85 1.1 L 1.85 0.7" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="round" stroke-linejoin="round" /><path class="frag-line" d="M 0 1.5 L 0 0.95" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="butt" stroke-linejoin="round" /><path class="frag-line" d="M 2 1.5 L 2 0.95" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="butt" stroke-linejoin="round" /><path class="frag-line" d="M 0 0.5 V 1.45 H 4 V 0.5" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.12 0.09" /><path class="frag-line" d="M 4 1.5 L 4 1.45" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linecap="butt" stroke-linejoin="round" /><path class="frag-shape" d="M -0.5 -0.5 H 0.5 V 0.5 H -0.5 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><path class="frag-shape" d="M -0.6 -0.6 H 0.6 V 0.6 H -0.6 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="0" y="-0.66" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Marcus</text><path class="frag-shape" d="M -1.5 -2.5 H -0.5 V -1.5 H -1.5 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="-1" y="-2.66" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Errol</text><path class="frag-shape" d="M 0.5 -2 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="1" y="-2.66" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Odile</text><path class="frag-shape" d="M 1.5 0 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="2" y="-0.66" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Delphine</text><path class="frag-shape" d="M -0.5 2 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="0" y="1.34" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Corinne</text><path class="frag-shape" d="M 1.5 1.5 H 2.5 V 2.5 H 1.5 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="2" y="1.34" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Theo</text><path class="frag-shape" d="M 3.5 0 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="4" y="-0.66" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Nadine</text><path class="frag-shape" d="M 3.5 2 a 0.5 0.5 0 1 0 1 0 a 0.5 0.5 0 1 0 -1 0 Z" fill="none" stroke="var(--ink)" stroke-width="0.03" stroke-linejoin="round" stroke-linecap="round" /><text class="frag-name" x="4" y="1.34" font-size="0.25" text-anchor="middle" fill="var(--ink)" stroke="var(--panel)" stroke-width="0.09" paint-order="stroke">Ines</text></svg></div>
+<div class="take tap"><span>keep this version</span><span class="n">2 coders</span></div></div>
+</div><div class="tagbadge">3 above</div></div><div class="mk-cap"><b>names above</b> &mdash; Three names sit in a line over three shapes, in the same band as the bond lines that join them.</div></div>
+</div></div>

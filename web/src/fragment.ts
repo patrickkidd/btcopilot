@@ -64,12 +64,19 @@ export interface Fragment {
   ask?: number[];
 }
 
+/** Which side of the shape a person's name is written on. */
+export enum NamePlace {
+  Below = "below",
+  Above = "above",
+}
+
 export interface Options {
   /** Pixels per person box. */
   u: number;
+  names: NamePlace;
 }
 
-export const defaults: Options = { u: 44 };
+export const defaults: Options = { u: 44, names: NamePlace.Below };
 
 const STROKE = 0.03;
 const DEPTH = 0.45;
@@ -83,6 +90,7 @@ const TICK = 0.3;
 const NAME_SIZE = 0.25;
 const AGE_SIZE = 0.3;
 const NAME_DROP = 0.78;
+const NAME_RISE = 0.66;
 const CHAR = 0.53;
 /** Centre to centre, in person boxes. */
 const SIBLING_GAP = 2;
@@ -371,15 +379,10 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
       draw.text("?", at.x + 0.62, at.y - 0.46, AGE_SIZE, "ask", "frag-ask");
 
     if (at.p.name) {
-      draw.text(
-        fitName(at.p.name, NAME_SIZE),
-        at.x,
-        at.y + NAME_DROP,
-        NAME_SIZE,
-        colour,
-        "frag-name",
-      );
-      draw.seen(at.x, at.y + NAME_DROP + 0.2);
+      const above = o.names === NamePlace.Above;
+      const y = above ? at.y - NAME_RISE : at.y + NAME_DROP;
+      draw.text(fitName(at.p.name, NAME_SIZE), at.x, y, NAME_SIZE, colour, "frag-name");
+      draw.seen(at.x, above ? y - NAME_SIZE : y + 0.2);
     }
   };
 
