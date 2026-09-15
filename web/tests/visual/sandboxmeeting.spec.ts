@@ -42,17 +42,15 @@ test.describe(() => {
     check(dots >= 2, `the agreement timeline is above the list (${dots})`);
     const names = await page.locator(".tline").first().innerText();
     say(`the first tally line: "${names.replace(/\s+/g, " ")}"`);
-    check(/ballot\d|=\s*\d/.test(names), "names and counts are on the tally line");
-    // Every reading is its own .side, whose .swho reads "who, who = n". The
-    // "left this out" side carries a count with nobody on it, so it is skipped.
+    check(/ballot\d|[A-Z]\./.test(names), "names are on the tally line");
+    // Every reading is its own .side, whose .swho reads "who, who" — initials
+    // only (R-0342). The "left this out" side carries a count with nobody on it.
     const sides = (await page.locator(".tline").first().locator(".side .swho").allInnerTexts())
-      .map((t) => t.match(/^(.*?)\s*=\s*(\d+)$/))
-      .filter((m) => m && m[1].trim())
-      .map((m) => [m[1].split(/,\s*/).length, Number(m[2])]);
-    say(`names against counts: ${JSON.stringify(sides)}`);
+      .filter((t) => !/^=\s*\d+$/.test(t.trim()));
+    say(`names on each reading: ${JSON.stringify(sides)}`);
     check(
-      sides.length > 0 && sides.every(([n, c]) => n === c),
-      "the count beside a reading is how many names are on it",
+      sides.length > 0 && sides.every((t) => !/=/.test(t)),
+      "a reading carries initials and no count",
     );
     const split = await page.locator(".drow .verdict").allInnerTexts();
     say(`verdicts in order: ${JSON.stringify(split)}`);

@@ -368,7 +368,7 @@ export class Meeting {
           }" data-coding="${one.opinion.coding_id}">` +
           `<span class="sdots">${dots(one.names.length, 0)}</span>` +
           `<span class="slab">${esc(one.label)}</span>` +
-          `<span class="swho">${esc(one.names.join(", "))} = ${one.names.length}</span>` +
+          `<span class="swho">${esc(one.names.join(", "))}</span>` +
           // Under the names, the way an event's line reads: the line first, then
           // the shape it was written into, each on its own width (R-0338).
           (structure ? versionLine(one.opinion, false) : "") +
