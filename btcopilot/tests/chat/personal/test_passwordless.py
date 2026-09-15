@@ -7,6 +7,8 @@ import flask.testing
 import pytest
 import webauthn
 from flask_wtf.csrf import generate_csrf
+from itsdangerous import TimestampSigner
+from mock import patch
 from webauthn.helpers import bytes_to_base64url
 
 from btcopilot import extensions
@@ -97,6 +99,30 @@ def test_chat_cookie_outlives_the_training_timeout(flask_app, browser):
     )
     days = (expires - datetime.datetime.now(datetime.timezone.utc)).days
     assert days > 30
+
+
+def test_chat_session_older_than_the_training_timeout_is_still_read(
+    flask_app, browser
+):
+    """The signature itself used to be refused past the training app's eight
+    hours, which signed a reader out overnight whatever the cookie said."""
+    invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
+    browser.get(f"/personal/invite/{invitation.token}")
+    with browser.session_transaction() as cookie:
+        signed_in = dict(cookie)
+
+    nine_hours_ago = int(datetime.datetime.now().timestamp()) - 9 * 3600
+    with patch.object(TimestampSigner, "get_timestamp", return_value=nine_hours_ago):
+        stale = flask_app.session_interface.get_signing_serializer(flask_app).dumps(
+            signed_in
+        )
+    browser.set_cookie(
+        flask_app.session_interface.get_cookie_name(flask_app),
+        stale,
+        domain=flask_app.config["SERVER_NAME"],
+    )
+
+    assert browser.get("/personal/me").get_json()["user"]["email"] == INVITED
 
 
 def test_invite_is_single_use(flask_app, browser):
