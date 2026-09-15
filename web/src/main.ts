@@ -9,7 +9,7 @@ import { Cut } from "./cut";
 import { Agenda } from "./agenda";
 import { Meeting } from "./meeting";
 import { ResultScreen } from "./result";
-import { CODER, OneTask, beforeMeeting, coder } from "./task";
+import { CODER, OneTask, beforeMeeting, coder, wayIn } from "./task";
 import { Rules } from "./rules";
 import { Sessions } from "./sessions";
 import { sessionTitle, summaryOf } from "./search";
@@ -1038,7 +1038,7 @@ if (CODER) {
   // The way to the card is always in the sheet for a coder, task or no task:
   // between meetings the card is how what they finished, and the result of the
   // last meeting, stays reachable (R-0265).
-  sessions.task("Your coding task");
+  sessions.task(wayIn(CODER));
   void api
     .tasks()
     .then((found) => {
