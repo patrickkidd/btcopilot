@@ -95,6 +95,10 @@ export class Meeting {
   /** The event the room is on: its dot is green and, when the vote agreed on
    * it, its card is the one open (R-0317, R-0320). */
   private at: number | null = null;
+  /** Which version of an item the room kept, by item and coding, so the kept
+   * row lights (R-0339). The record keeps the words, not which coding they came
+   * from, so this is what the room chose while the meeting is open. */
+  private kept = new Map<number, number>();
   private scrim = el("div", "fs-scrim");
   private sheet = el("div", "fs-sheet bl-sheet");
 
@@ -271,25 +275,25 @@ export class Meeting {
       .join("");
   }
 
-  /** One item's card: its tally, every version with who wrote it and its own
-   * button to keep it, the line it came from, and what else can be done with it
-   * (R-0318, R-0319). An agreed item opens the same card, with a way to close
-   * it again (R-0317). */
+  /** One item's card: its tally, every version with who wrote it, the line it
+   * came from, and what else can be done with it (R-0318, R-0319). Tapping a
+   * version keeps it, and the kept one lights the way a chosen opinion lights
+   * on the ballot (R-0339). An agreed item opens the same card, with a way to
+   * close it again (R-0317). */
   private row(item: BallotItem, closable = false): string {
     const chosen = choiceOf(item);
     const sides = this.sides(item);
     const biggest = Math.max(...sides.map((one) => one.names.length), 0);
-    const kept = item.status === ItemStatus.Decided;
     const structure = isStructure(item.item_kind);
     const versions = sides
       .map(
         (one) =>
-          `<div class="side"><span class="sdots">${dots(one.names.length, 0)}</span>` +
+          `<div class="side tap${
+            this.kept.get(item.id) === one.opinion.coding_id ? " on" : ""
+          }" data-coding="${one.opinion.coding_id}">` +
+          `<span class="sdots">${dots(one.names.length, 0)}</span>` +
           `<span class="slab">${esc(one.label)}</span>` +
           `<span class="swho">${esc(one.names.join(", "))} = ${one.names.length}</span>` +
-          `<button class="btn mt-keep" type="button" ` +
-          `data-coding="${one.opinion.coding_id}"${kept ? " disabled" : ""}>` +
-          `keep this</button>` +
           // Under the names, the way an event's line reads: the line first, then
           // the shape it was written into, each on its own width (R-0338).
           (structure ? versionLine(one.opinion, false) : "") +
@@ -440,11 +444,18 @@ export class Meeting {
       this.render();
       return;
     }
-    const keep = target.closest<HTMLElement>(".mt-keep");
-    if (keep) {
-      await this.decide(item, Decision.Keep, {
-        coding_id: Number(keep.dataset.coding),
-      });
+    const side = target.closest<HTMLElement>(".side.tap");
+    if (side) {
+      const coding = Number(side.dataset.coding);
+      // Keeping the version that is already kept is no decision at all.
+      if (this.kept.get(item.id) === coding) return;
+      const before = this.kept.get(item.id);
+      this.kept.set(item.id, coding);
+      if (!(await this.decide(item, Decision.Keep, { coding_id: coding }))) {
+        if (before === undefined) this.kept.delete(item.id);
+        else this.kept.set(item.id, before);
+        this.render();
+      }
       return;
     }
     const choice = target.closest<HTMLElement>(".mt-choice")?.dataset.choice;
@@ -486,7 +497,7 @@ export class Meeting {
     item: BallotItem,
     choice: Decision,
     value: Record<string, unknown> | null = null,
-  ): Promise<void> {
+  ): Promise<boolean> {
     try {
       await api.decide(item.id, choice, value);
     } catch (error) {
@@ -497,9 +508,10 @@ export class Meeting {
           ? error.detail.replace(/^\w+ [^:]+: /, "")
           : "Nothing came back",
       );
-      return;
+      return false;
     }
     if (this.cut) await this.open(this.cut.id);
+    return true;
   }
 
   /** "change…" opens the app's own event editor over the meeting, prefilled,

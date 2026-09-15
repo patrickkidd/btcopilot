@@ -481,7 +481,9 @@ What it is for: closing what the vote could not, and ratifying the record.
 - The two-sided comparison of two codings already drawn has to fold into either the ballot or this screen, and where is unbuilt work. [drawn]
 - The review screens are built as their own isolated piece, so changing them can never break the chat or the professional features. [drawn] {R-0245}
 - The meeting sees every disputed event with its tally, the most split first, and the unanimous ones collapsed below. [built] {R-0274}
-- People and bonds are in the meeting's list, read before the events, each version with its own "keep this" and its own drawing. [built] {R-0326}
+- People and bonds are in the meeting's list, read before the events, each version its own row with its own drawing. [built] {R-0326}
+- Tapping a version's row keeps that version, and the kept row lights the way a chosen opinion lights on the ballot; tapping another version changes the choice, and tapping the kept one does nothing. [built] {R-0339}
+- Under the versions are the two other choices, "change…" and "mark unresolved". [built] {R-0339}
 - They are not on the wire: the wire stays one dot per event, and how many people and bonds the cut holds is a count beside its colours. [built] {R-0326}
 - One timeline above the list shows agreement and disagreement at a glance: one dot per event, teal where the vote agreed, amber where it did not, with a small count beside a disputed dot. [built] {R-0277, R-0278}
 

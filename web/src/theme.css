@@ -2653,8 +2653,8 @@ button { font-family: inherit; }
 }
 .vt.on { background: var(--data); }
 
-/* The versions of an item, one per line: who wrote it, how many that is, and
- * its own button to keep it (R-0319). */
+/* The versions of an item, one per line: who wrote it, how many that is, and a
+ * tap on the line itself to keep that version (R-0319, R-0339). */
 .tline {
   display: flex;
   flex-direction: column;
@@ -2664,16 +2664,26 @@ button { font-family: inherit; }
   color: var(--faint);
 }
 .side { display: flex; align-items: center; gap: 2px 10px; flex-wrap: wrap; }
+.tline .side {
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
 .side .slab { color: var(--ink); }
 .side .swho { color: var(--faint); }
+/* A version is kept by tapping it, and the kept one lights the way a chosen
+ * opinion lights on the ballot (R-0339). */
+.side.tap { border-color: var(--line); cursor: pointer; }
+.side.tap:active { background: var(--tint); }
+.side.on { border-color: var(--data); background: var(--tint); }
+.side.on .slab, .side.on .swho { color: var(--data); }
+/* A drawing reads against the card, not against a wash (R-0337). */
+.side.on:has(.frag) { background: none; }
 /* The line a version was written from, and the shape it was written into, read
  * under the names rather than squeezed in beside them (R-0338). */
 .side .quote, .side .frag { flex-basis: 100%; }
 .side .quote { margin: 2px 0 0; }
-/* The button follows its own version rather than sitting out at the right
- * margin, where a wrapped row leaves it unclear which version it keeps. */
-.side .mt-keep { min-height: 44px; }
-.side .btn[disabled] { opacity: 0.4; cursor: default; }
 
 .collapsed {
   cursor: pointer;
