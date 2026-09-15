@@ -467,7 +467,7 @@ What it is for: closing what the vote could not, and ratifying the record.
 - The list is read either most split first or in the order the events happened; sorted by time every event is in one list, the agreed ones marked agreed. [built] {R-0316}
 - An item the vote agreed on opens the same card as a disputed one on a tap of its row, with a close button at its top right; keeping is disabled once it is kept, and change and mark unresolved stay. [built] {R-0317}
 - Every row names who and what; an event with no date says it has no date yet, and an item with no description is named by its kind in words. [built] {R-0318}
-- On a split, each version carries its own keep button; with one version there is one. [built] {R-0319}
+- On a split, tapping a version keeps it and the row lights, the way an opinion is chosen on the ballot; no separate keep button. [built] {R-0319, R-0339}
 - Every dot on the wire answers a tap, on the meeting as on the ballot: it puts the room on that event and brings its card up. [built] {R-0320}
 - The list travels to that card rather than jumping to it, so the room sees which way it moved. [built] {R-0341}
 - A choice made on an item never moves it: it stays where the sort put it, collapses to one line saying the words of the version the room kept or that it was left unresolved, and tapping that line opens the card again with the choice lit. Only the sort control orders the list again. [built] {R-0341}
