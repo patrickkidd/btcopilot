@@ -189,6 +189,8 @@ What it is for: seeing and editing everything in the record by hand.
 - One button in the row under the picture opens a drawer holding everything in the record. [built] {R-0198}
 - The events list and the people list are two tabs in that one drawer, not a filter. [built] {R-0199}
 - The button sits inside the picture's own frame, matching the sessions button beside the chat input. [built] {R-0198}
+- On a phone the drawer slides up over the chat, the picture and the title row, full screen, and its own back arrow is the way out; the chat stays under it while it travels. [built] {R-0345}
+- The coding screen's drawer opens the same way from the same button, and still stands beside the thread on a wide window. [built] {R-0345}
 - Events are grouped under their cluster, with a heading that stays in view as you scroll so you always know which cluster you are in. [built]
 - A cluster of one event reads "1 event", not "1 events". [built]
 - Events with no date are grouped under their own heading. [built]
@@ -233,10 +235,11 @@ What it is for: one person's own details.
 - The jump works in reverse, from an event back to the person. [built] {R-0201}
 - Your own birthdate anchors your own line on the picture. [built]
 - Every diagram that ever had a chat on it carries a person called Assistant, which is a defect and not yet fixed. [built]
-- The editor asks who the person was born to: a list of the couples on the record, and nobody. [built] {R-0326}
-- Somebody with nobody on the record is offered "add parents", which makes the couple, naming a parent nobody named after the child — "Corinne's father". [built] {R-0325, R-0326}
-- Under it is one row per other person they have ever been bonded to, and a row to add one; a row opens that bond's own small editor. [built] {R-0326}
-- That bond editor asks who the other person is and whether they married; when it started and when it ended are events about the two of them. [built] {R-0326}
+- Under "Born to" the person's two parents are named outright — "Rafael Ortega and Marisol Ortega"; the reader never sees the word bond. [built] {R-0345}
+- Somebody with no parents on the record is offered "add parents", a picker asking for a mother and a father, each either somebody already on the record or a name typed there. [built] {R-0345}
+- Saving it makes whoever is new, takes the couple those two already are when they are one, and sets this person's parents to it. [built] {R-0345, R-0326}
+- Under "Partners" is one row per other person they have ever been a partner of, reading "with Marisol Ortega · married 1970", and a row saying "add a partner". [built] {R-0345}
+- A partner row opens that partnership's own small editor: who the other person is and whether they married; when it started and when it ended are events about the two of them. [built] {R-0345, R-0326}
 - The people list itself is unchanged: no chips and no second line under a name, because a chip means a tap into the chat. [built] {R-0326}
 - A person cannot be their own parent or their own partner, a bond is between two different people, and any two people have one bond ever; the record refuses the rest, so the coach and the scribe are held to it too. [built] {R-0326}
 - The record refuses a bond that cannot exist, and names a missing parent rather than guessing who they are. [built] {R-0325}

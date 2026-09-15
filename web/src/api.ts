@@ -182,13 +182,6 @@ export const savePairBond = (
 export const deletePairBond = (id: number, diagramId?: number) =>
   call<void>("DELETE", onDiagram(`/pair_bonds/${id}`, diagramId));
 
-/** Parents for somebody who has none on the record: the bond is made with
- * generically named people where nobody named them (R-0325). */
-export const addParents = (personId: number, diagramId?: number) =>
-  call<PairBond>("POST", onDiagram("/pair_bonds", diagramId), {
-    parent_of: personId,
-  });
-
 /** Sessions, newest activity first. The server has no current-session pointer:
  * posting into a session is what makes it the one you come back to. */
 export const sessionIndex = (diagramId?: number) =>

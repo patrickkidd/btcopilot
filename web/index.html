@@ -67,7 +67,7 @@
   <aside class="pinned" id="chat-drawer" hidden></aside>
   </div>
 
-  <div class="screen" id="menu-screen" hidden>
+  <div class="screen slideover" id="menu-screen" hidden>
     <div class="ovbar">
       <button class="backbtn" id="menu-close" type="button" aria-label="back">
         <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M13.5 4.5 7 11l6.5 6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
@@ -148,7 +148,13 @@
         <button class="send" id="coding-send" type="button" aria-label="Send"><span>&#8593;</span></button>
       </div>
     </div>
-    <aside class="pinned">
+    <aside class="pinned slideover" id="coding-drawer" hidden>
+      <div class="ovbar">
+        <button class="backbtn" id="coding-rows-close" type="button" aria-label="back">
+          <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M13.5 4.5 7 11l6.5 6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        </button>
+        <span class="ovt">Timeline</span>
+      </div>
       <div class="tabs" id="coding-tabs" role="tablist">
         <button class="tab on" id="coding-tab-events" type="button" role="tab" aria-selected="true">Events</button>
         <button class="tab" id="coding-tab-people" type="button" role="tab" aria-selected="false">People</button>

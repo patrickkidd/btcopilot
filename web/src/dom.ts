@@ -23,6 +23,32 @@ export function $(id: string): HTMLElement {
   return node;
 }
 
+/** How long a panel takes to travel up over what it covers, matched to the
+ * sessions sheet's own motion in the stylesheet. */
+const SLIDE_MS = 280;
+
+const sliding = new WeakMap<HTMLElement, number>();
+
+/** Bring a full-screen panel up over everything beneath it, or send it back
+ * down: the events and people list travels the way the sessions sheet does,
+ * full height, and is only taken out of the page once it has landed (R-0345). */
+export function slideOver(panel: HTMLElement, up: boolean): void {
+  window.clearTimeout(sliding.get(panel));
+  if (up) {
+    panel.hidden = false;
+    void panel.offsetWidth;
+    panel.classList.add("in");
+    return;
+  }
+  panel.classList.remove("in");
+  sliding.set(
+    panel,
+    window.setTimeout(() => {
+      panel.hidden = true;
+    }, SLIDE_MS),
+  );
+}
+
 /** A screen's title in two parts. The name is the part that gives way when the
  * row runs out of width; the tail says which stretch of the conversation is on
  * screen and has to stay readable, so at phone width a long name ellipsises

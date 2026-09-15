@@ -37,9 +37,10 @@ export const tok = (
   `<button type="button" class="tok ${kind}${live ? "" : " dim"}" id="${id}"` +
   `${live ? "" : " disabled"}>${mark}${word}</button>`;
 
-/** The way into the two lists, at the end of the row (owner review round 3). */
-export const LIST_BUTTON =
-  `<button class="listglyph" id="menu-open" type="button" ` +
+/** The way into the two lists, at the end of the row (owner review round 3).
+ * The chat and the coding screen each have their own, so the id is given. */
+export const listButton = (id: string) =>
+  `<button class="listglyph" id="${id}" type="button" ` +
   `aria-label="open the timeline list">` +
   `<svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true">` +
   `<path d="M1 1h14M1 6h14M1 11h14" stroke="currentColor" stroke-width="1.6" ` +

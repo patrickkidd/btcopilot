@@ -26,10 +26,10 @@ import {
   type PicState,
   type Sel,
 } from "./caption";
-import { $, setTitle } from "./dom";
+import { $, setTitle, slideOver } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
-import { ASK_MARK, IN_CHAT_MARK, LIST_BUTTON, PLAY_MARK, tok } from "./tokens";
+import { ASK_MARK, IN_CHAT_MARK, listButton, PLAY_MARK, tok } from "./tokens";
 import { offerHomeScreen, showHomeScreen, homeScreenBadge } from "./homescreen";
 import { offerPasskey } from "./passkey";
 import { PRO, WIDE } from "./pro";
@@ -273,6 +273,7 @@ const coding = new Coding(
   $("coding-caption"),
   $("coding-send"),
   $("coding-rows"),
+  $("coding-drawer"),
   $("coding-search") as HTMLInputElement,
   $("coding-tabs"),
   $("coding-add"),
@@ -647,7 +648,7 @@ function actions(): void {
   if (!sel && !open) {
     // the about page is words already; no hint under it
     const hint = picture.aboutOpen() ? "" : "tap a cluster";
-    host.innerHTML = `<span class="cta">${hint}</span>` + LIST_BUTTON;
+    host.innerHTML = `<span class="cta">${hint}</span>` + listButton("menu-open");
     wireList();
     return;
   }
@@ -662,7 +663,7 @@ function actions(): void {
     tok("cap-chip", "", ASK_MARK, "ask", true) +
     tok("cap-play", "g", PLAY_MARK, "explain", moves > 0) +
     tok("cap-trace", "data", IN_CHAT_MARK, "in chat", !!trace) +
-    LIST_BUTTON;
+    listButton("menu-open");
 
   $("cap-chip").addEventListener("click", () =>
     apply(
@@ -878,8 +879,10 @@ function upOne(): void {
 /** The list is full screen with its own back button, so it takes the title row
  * over rather than stacking a second bar under it (ruling 2026-09-03 05:53). */
 function screen(which: Screen): void {
-  $("chat-split").hidden = which !== Screen.Chat;
-  $("menu-screen").hidden = which !== Screen.Menu;
+  // The list comes up over the chat rather than replacing it, so the chat is
+  // still there underneath while the list travels (R-0345).
+  $("chat-split").hidden = which !== Screen.Chat && which !== Screen.Menu;
+  slideOver($("menu-screen"), which === Screen.Menu);
   $("task-screen").hidden = which !== Screen.Task;
   $("ballot-screen").hidden = which !== Screen.Ballot;
   $("cut-screen").hidden = which !== Screen.Cut;
@@ -888,8 +891,10 @@ function screen(which: Screen): void {
   $("result-screen").hidden = which !== Screen.Result;
   $("coding-screen").hidden = which !== Screen.Coding;
   $("rules-screen").hidden = which !== Screen.Rules;
+  // The list covers the title row rather than taking its place: it is over
+  // everything, with its own back arrow.
   document.querySelector<HTMLElement>(".titlerow")!.hidden =
-    which === Screen.Menu || which === Screen.Rules;
+    which === Screen.Rules;
   // The app is a phone everywhere else; it widens only where the drawer
   // stands beside the thread — the coding screen, and the chat screen for a
   // professional on a wide window.

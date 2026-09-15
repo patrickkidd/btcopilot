@@ -1,10 +1,11 @@
 import * as api from "./api";
-import { el, esc, type Title } from "./dom";
+import { el, esc, slideOver, type Title } from "./dom";
 import { dragScroll } from "./drag";
 import { Picture, Target, type Tap } from "./picture";
 import { Menu, Tab } from "./menu";
 import { toast } from "./toast";
-import { PLAY_MARK, tok } from "./tokens";
+import { listButton, PLAY_MARK, tok } from "./tokens";
+import { WIDE } from "./pro";
 import {
   emptyTimeline,
   type CodingThread,
@@ -30,6 +31,9 @@ export interface CodingHandlers {
   onTitle(title: string | Title): void;
 }
 
+/** The list button on the coding screen's own picture. */
+const LIST_ID = "coding-list";
+
 const PLACEHOLDER = {
   none: "tap a line, then say what happened",
   picked: "say what this line tells you happened",
@@ -42,6 +46,9 @@ export class Coding {
   private drawer: Menu | null = null;
   private sending = false;
   private picture: Picture;
+  /** Wide enough for the drawer to stand beside the thread; narrower and it
+   * comes up over it instead (R-0345). */
+  private wide = window.matchMedia(WIDE);
   private scrim = el("div", "fs-scrim");
   private sheet = el("div", "fs-sheet cf-sheet");
 
@@ -51,6 +58,7 @@ export class Coding {
     private caption: HTMLElement,
     private send: HTMLElement,
     private rows: HTMLElement,
+    private panel: HTMLElement,
     private search: HTMLInputElement,
     private tabs: HTMLElement,
     private addRow: HTMLElement,
@@ -68,6 +76,8 @@ export class Coding {
     this.scrim.hidden = true;
     this.sheet.hidden = true;
     this.wire();
+    this.wide.addEventListener("change", () => this.showRows(this.wide.matches));
+    this.showRows(this.wide.matches);
     dragScroll(this.list);
     dragScroll(this.rows);
   }
@@ -185,6 +195,9 @@ export class Coding {
       this.drawer?.search(this.search.value),
     );
     this.addRow.addEventListener("click", () => this.drawer?.add());
+    this.panel
+      .querySelector(".backbtn")
+      ?.addEventListener("click", () => this.showRows(false));
     this.tabs.addEventListener("click", (e) => {
       const tab = (e.target as Element).closest<HTMLElement>(".tab");
       if (!tab) return;
@@ -252,22 +265,35 @@ export class Coding {
     const open = this.picture.openCluster();
     if (!open) {
       const say = this.picked === null ? "tap a line" : "tap a cluster";
-      this.caption.innerHTML = `<span class="cta">${say}</span>`;
+      this.caption.innerHTML =
+        `<span class="cta">${say}</span>` + listButton(LIST_ID);
+      this.wireList();
       return;
     }
     const moves = this.picture.countMoves(open.event_ids);
-    this.caption.innerHTML = tok(
-      "coding-play",
-      "g",
-      PLAY_MARK,
-      "play-by-play",
-      moves > 0,
-    );
+    this.caption.innerHTML =
+      tok("coding-play", "g", PLAY_MARK, "play-by-play", moves > 0) +
+      listButton(LIST_ID);
     if (moves)
       this.caption.querySelector("#coding-play")?.addEventListener("click", () => {
         this.picture.openBoard(open.event_ids, open.id);
         this.marks();
       });
+    this.wireList();
+  }
+
+  /** The way into the list, in the same place on the picture as the chat's
+   * (R-0345): on a narrow window it brings the drawer up over the thread, and
+   * where the drawer already stands beside it the search takes the cursor. */
+  private wireList(): void {
+    this.caption.querySelector(`#${LIST_ID}`)?.addEventListener("click", () => {
+      if (this.wide.matches) this.search.focus({ preventScroll: true });
+      else this.showRows(true);
+    });
+  }
+
+  private showRows(up: boolean): void {
+    slideOver(this.panel, up);
   }
 
   /** What the coder typed, sent to the scribe: their own words go into the

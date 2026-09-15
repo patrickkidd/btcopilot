@@ -2804,3 +2804,33 @@ button { font-family: inherit; }
 @media (max-width: 720px) {
   .arow { grid-template-columns: 1fr; gap: 4px; }
 }
+
+/* ---- a list that comes up over the whole screen (R-0345) ----
+   The events and people list travels the way the sessions sheet does, but full
+   height and over everything, the picture and the title row included: the chat
+   is still there underneath while it moves, and the back arrow at its own top
+   left is the way out. */
+.slideover {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  transform: translateY(100%);
+  transition: transform 0.26s cubic-bezier(0.4, 0, 0.7, 0.5);
+}
+.slideover.in {
+  transform: none;
+  transition-timing-function: cubic-bezier(0.3, 1.25, 0.5, 1);
+}
+.slideover[hidden] { display: none; }
+@media (min-width: 840px) {
+  /* Standing beside the thread, the drawer is a column and not a traveller,
+     and the arrow that closes it has nothing to close. */
+  .pinned.slideover { position: static; transform: none; z-index: auto; }
+  .pinned .ovbar { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slideover { transition: none !important; }
+}

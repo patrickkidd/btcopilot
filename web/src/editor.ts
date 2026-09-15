@@ -1,4 +1,6 @@
 import { esc, el } from "./dom";
+import { fullName } from "./rows";
+import { toast } from "./toast";
 import * as api from "./api";
 import type { PairBond, Person, TimelineEvent } from "./types";
 
@@ -420,70 +422,144 @@ export interface PersonEditor {
   onSave?: (body: Partial<Person>) => void;
 }
 
-const ADD_PARENTS = "add";
+/** The two sides of a couple, each its own row in the picker. */
+export enum Parent {
+  Mother = "mother",
+  Father = "father",
+}
 
-/** Both names of a bond, which is how a couple is named everywhere. */
-export const bothNames = (bond: PairBond, people: Person[]): string =>
-  [bond.person_a, bond.person_b]
-    .map((id) => people.find((p) => p.id === id)?.name ?? "someone")
-    .join(" & ");
+const PARENT_KIND = {
+  [Parent.Mother]: PersonKind.Female,
+  [Parent.Father]: PersonKind.Male,
+};
 
-/** When a bond ended, which the record holds as an event about the two of
- * them rather than as a field on the bond. */
-const endedIn = (bond: PairBond, events: TimelineEvent[]): string | null => {
+/** Picking nobody on a row means the name typed beside it is a new person. */
+const A_NEW_NAME = "";
+
+/** The one field name the partner picker is read back by. */
+const PARTNER = "partner";
+
+/** The year of the first event of these kinds about the two of them, which is
+ * where a couple's dates live: the record keeps no dates on the couple. */
+const yearOf = (
+  bond: PairBond,
+  events: TimelineEvent[],
+  kinds: EventKind[],
+): string | null => {
   const found = events.find(
     (event) =>
-      (event.kind === EventKind.Divorced || event.kind === EventKind.Separated) &&
+      kinds.includes(event.kind as EventKind) &&
       [event.person, event.spouse].includes(bond.person_a) &&
       [event.person, event.spouse].includes(bond.person_b),
   );
   return found?.dateTime ? found.dateTime.slice(0, 4) : null;
 };
 
-/** One row per other person this person has ever been bonded to — never one
- * "with", because the record keeps one bond ever between any two people and a
- * bond that ended is still one of them (R-0326). */
-function bondRows(person: Person, family: Family): string {
-  const mine = family.pair_bonds.filter(
-    (bond) => bond.person_a === person.id || bond.person_b === person.id,
+/** The couple these two people already are, whichever way round they are
+ * named: the record keeps one of these ever between any two people, so naming
+ * the same two again takes the one that is there (R-0326). */
+export const findBond = (
+  family: Family,
+  one: number,
+  two: number,
+): PairBond | undefined =>
+  family.pair_bonds.find(
+    (bond) =>
+      (bond.person_a === one && bond.person_b === two) ||
+      (bond.person_a === two && bond.person_b === one),
   );
-  const rows = mine
-    .map((bond) => {
-      const other =
-        bond.person_a === person.id ? bond.person_b : bond.person_a;
-      const name = family.people.find((p) => p.id === other)?.name ?? "someone";
-      const ended = endedIn(bond, family.events);
-      const said = [bond.married ? "married" : "together", ended ? `ended ${ended}` : ""]
+
+const named = (id: number | null, people: Person[]): string => {
+  const person = people.find((p) => p.id === id);
+  return person ? fullName(person) : "someone";
+};
+
+/** Who somebody was born to, said as the two names the reader knows them by,
+ * in the order the record holds them (R-0345). Nobody on the record yet reads
+ * as nothing at all. */
+export function bornToNames(person: Person, family: Family): string | null {
+  const bond = family.pair_bonds.find((one) => one.id === person.parents);
+  if (!bond) return null;
+  return [bond.person_a, bond.person_b]
+    .map((id) => named(id, family.people))
+    .join(" and ");
+}
+
+/** One partner, said the way the record knows them: who they are, whether they
+ * married and when, and the year it ended when there is one (R-0345). */
+export function partnerLine(
+  bond: PairBond,
+  person: Person,
+  family: Family,
+): string {
+  const other = bond.person_a === person.id ? bond.person_b : bond.person_a;
+  const married = bond.married
+    ? ["married", yearOf(bond, family.events, [EventKind.Married])]
         .filter(Boolean)
-        .join(" · ");
-      return (
+        .join(" ")
+    : "";
+  const ended = yearOf(bond, family.events, [
+    EventKind.Divorced,
+    EventKind.Separated,
+  ]);
+  return [`with ${named(other, family.people)}`, married, ended ? `ended ${ended}` : ""]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** Everyone this person has ever been a partner of — never one "with", because
+ * the record keeps one couple ever between any two people and a partnership
+ * that ended is still one of them (R-0326). */
+function partnerRows(person: Person, family: Family): string {
+  const rows = family.pair_bonds
+    .filter((bond) => bond.person_a === person.id || bond.person_b === person.id)
+    .map(
+      (bond) =>
         `<button class="btn bondrow" type="button" data-bond="${bond.id}">` +
-        `${esc(name)} · ${esc(said)}</button>`
-      );
-    })
+        `${esc(partnerLine(bond, person, family))}</button>`,
+    )
     .join("");
   return (
-    `<div class="lab">Bonds</div>` +
+    `<div class="lab">Partners</div>` +
     (rows || `<div class="hint">Nobody on the record yet.</div>`) +
-    `<button class="btn bondrow" type="button" data-bond="new">+ a bond</button>`
+    `<button class="btn bondrow" type="button" data-bond="new">add a partner</button>`
   );
 }
 
-/** The couples this person could have been born to: every bond in the record
- * except the ones they are themselves part of, because nobody is their own
- * parent (R-0326). */
+/** Who this person was born to, by name, and the way to say it where the
+ * record does not know yet. The reader never sees the couple itself (R-0345). */
 function bornTo(person: Person | null, family: Family, canWrite: boolean): string {
-  const options: Option[] = [{ value: "", label: "nobody on the record" }];
-  for (const bond of family.pair_bonds) {
-    if (person && (bond.person_a === person.id || bond.person_b === person.id))
-      continue;
-    options.push({ value: bond.id, label: bothNames(bond, family.people) });
+  // A version on a ballot proposes one of the couples the record already has:
+  // nobody can be made from there, so it is a choice and not a picker.
+  if (!canWrite) {
+    const options: Option[] = [
+      { value: "", label: "nobody on the record" },
+      ...family.pair_bonds
+        .filter(
+          (bond) =>
+            !person ||
+            (bond.person_a !== person.id && bond.person_b !== person.id),
+        )
+        .map((bond) => ({
+          value: bond.id,
+          label: [bond.person_a, bond.person_b]
+            .map((id) => named(id, family.people))
+            .join(" and "),
+        })),
+    ];
+    return (
+      `<div class="lab">Born to</div>` +
+      chips("parents", options, person?.parents ?? "")
+    );
   }
-  // Only for somebody who has nobody: a person is born to one couple, so the
-  // way to change that is to pick another, never to make a second one.
-  if (person && canWrite && person.parents === null)
-    options.push({ value: ADD_PARENTS, label: "+ add parents" });
-  return `<div class="lab">Born to</div>` + chips("parents", options, person?.parents ?? "");
+  const names = person ? bornToNames(person, family) : null;
+  const say = names
+    ? `<button class="btn parents" type="button">${esc(names)}</button>`
+    : `<div class="hint">Not on the record yet.</div>` +
+      (person && canWrite
+        ? `<button class="btn parents" type="button">add parents</button>`
+        : "");
+  return `<div class="lab">Born to</div>` + say;
 }
 
 /** The person editor: the event editor's own markup, with the fields the record
@@ -515,9 +591,9 @@ export function openPersonEditor(
       (family
         ? `<div class="sec">Family</div>` +
           bornTo(person, family, !onSave) +
-          // The bonds a person is in are the record's, not one version's: they
-          // are corrected where the record is, never on a ballot card.
-          (person && !onSave ? bondRows(person, family) : "")
+          // The partners a person has are the record's, not one version's:
+          // they are corrected where the record is, never on a ballot card.
+          (person && !onSave ? partnerRows(person, family) : "")
         : "") +
       `<div class="sec">When</div>` +
       `<div class="hint">Add birth and death events by chatting with the coach.</div>` +
@@ -545,16 +621,17 @@ export function openPersonEditor(
     group.addEventListener("click", (clicked) => {
       const button = (clicked.target as Element).closest<HTMLElement>(".seg");
       if (!button) return;
-      // "add parents" is not a couple to pick: it makes one, generically named
-      // where nobody named them, and the record hands it back (R-0325).
-      if (button.dataset.value === ADD_PARENTS && person) {
-        void api.addParents(person.id, diagramId).then(done);
-        return;
-      }
       group
         .querySelectorAll(".seg")
         .forEach((other) => other.classList.toggle("on", other === button));
     });
+  });
+
+  editor.querySelector<HTMLElement>(".parents")?.addEventListener("click", (e) => {
+    if (!person || !family) return;
+    const row = e.currentTarget as HTMLElement;
+    row.after(openParentsPicker(person, family, { done, diagramId }));
+    row.hidden = true;
   });
 
   editor.querySelectorAll<HTMLElement>(".bondrow").forEach((row) => {
@@ -605,6 +682,121 @@ export function personValues(editor: HTMLElement): Partial<Person> {
 /** One bond's own small editor, opened from the person it belongs to: who the
  * other person is, and whether they married. When it started and when it ended
  * are events about the two of them, so they are not fields here (R-0326). */
+/** One side of a couple: somebody already on the record, or a name typed here
+ * for somebody who is not on it yet. */
+function personPick(
+  name: string,
+  label: string,
+  people: Person[],
+  current: number | null,
+): string {
+  const options: Option[] = [
+    { value: A_NEW_NAME, label: "a new name" },
+    ...people.map((p) => ({ value: p.id, label: fullName(p) })),
+  ];
+  return (
+    `<div class="lab">${esc(label)}</div>` +
+    chips(name, options, current ?? A_NEW_NAME) +
+    field("or a name", `${name}_name`, null)
+  );
+}
+
+/** What one row of a picker names: whoever was chosen, or whoever the typed
+ * name becomes once the record has made them. */
+async function pickedPerson(
+  editor: HTMLElement,
+  name: string,
+  gender: PersonKind,
+  diagramId?: number,
+): Promise<number | null> {
+  const chosen = editor.querySelector<HTMLElement>(
+    `.segs[data-name="${name}"] .seg.on`,
+  )?.dataset.value;
+  if (chosen) return Number(chosen);
+  const typed = editor
+    .querySelector<HTMLInputElement>(`[data-name="${name}_name"]`)
+    ?.value.trim();
+  if (!typed) return null;
+  const made = await api.savePerson(null, { name: typed, gender }, diagramId);
+  return made.id;
+}
+
+/** Who somebody was born to, named rather than picked out of a list of
+ * couples: a mother and a father, each either already on the record or a name
+ * typed here. Saving makes whoever is new, takes the couple those two already
+ * are when they are one, and sets this person's parents to it (R-0345). */
+export function openParentsPicker(
+  person: Person,
+  family: Family,
+  opts: { done: () => void; diagramId?: number },
+): HTMLElement {
+  const bond = family.pair_bonds.find((one) => one.id === person.parents);
+  const others = family.people.filter((p) => p.id !== person.id);
+  const side = (kind: PersonKind): number | null => {
+    if (!bond) return null;
+    const found = [bond.person_a, bond.person_b].find(
+      (id) => family.people.find((p) => p.id === id)?.gender === kind,
+    );
+    return found ?? null;
+  };
+  const editor = el(
+    "div",
+    "editor parents",
+    personPick(Parent.Mother, "Mother", others, side(PersonKind.Female)) +
+      personPick(Parent.Father, "Father", others, side(PersonKind.Male)) +
+      `<div class="acts"><button class="save" type="button">Save</button></div>`,
+  );
+  autogrow(editor);
+  pickOne(editor);
+
+  editor.querySelector(".save")?.addEventListener("click", () => {
+    void (async () => {
+      const mother = await pickedPerson(
+        editor,
+        Parent.Mother,
+        PARENT_KIND[Parent.Mother],
+        opts.diagramId,
+      );
+      const father = await pickedPerson(
+        editor,
+        Parent.Father,
+        PARENT_KIND[Parent.Father],
+        opts.diagramId,
+      );
+      if (mother === null || father === null) {
+        toast("Name both of them");
+        return;
+      }
+      // The father is the record's own first side of a couple, so a couple made
+      // here reads in the same order as one the record made itself.
+      const already = findBond(family, mother, father);
+      const couple =
+        already ??
+        (await api.savePairBond(
+          null,
+          { person_a: father, person_b: mother },
+          opts.diagramId,
+        ));
+      await api.savePerson(person.id, { parents: couple.id }, opts.diagramId);
+      opts.done();
+    })();
+  });
+  return editor;
+}
+
+/** One chip at a time in every group in this editor. */
+function pickOne(editor: HTMLElement): void {
+  editor.querySelectorAll<HTMLElement>(".segs").forEach((group) => {
+    group.addEventListener("click", (clicked) => {
+      const button = (clicked.target as Element).closest<HTMLElement>(".seg");
+      if (!button) return;
+      group
+        .querySelectorAll(".seg")
+        .forEach((one) => one.classList.toggle("on", one === button));
+    });
+  });
+}
+
 export function openBondEditor(
   bond: PairBond | null,
   person: Person,
@@ -633,14 +825,18 @@ export function openBondEditor(
             : [],
       ),
   );
-  const partners: Option[] = family.people
-    .filter((p) => p.id !== person.id && !taken.has(p.id))
-    .map((p) => ({ value: p.id, label: p.name }));
+  const others = family.people.filter(
+    (p) => p.id !== person.id && !taken.has(p.id),
+  );
+  // A version on a ballot is words about a record, not a write to one: nobody
+  // new can be made from there, so that row only offers who is already on it.
+  const partner: Option[] = others.map((p) => ({ value: p.id, label: fullName(p) }));
   const editor = el(
     "div",
-    "editor bond",
-    `<div class="lab">Partner</div>` +
-      chips("partner", partners, other ?? "") +
+    "editor partner",
+    (opts.onSave
+      ? `<div class="lab">Partner</div>` + chips(PARTNER, partner, other ?? "")
+      : personPick(PARTNER, "Partner", others, other)) +
       `<div class="lab">Married</div>` +
       chips("married", [
         { value: "yes", label: "married" },
@@ -653,30 +849,39 @@ export function openBondEditor(
       `</div>`,
   );
 
-  editor.querySelectorAll<HTMLElement>(".segs").forEach((group) => {
-    group.addEventListener("click", (clicked) => {
-      const button = (clicked.target as Element).closest<HTMLElement>(".seg");
-      if (!button) return;
-      group
-        .querySelectorAll(".seg")
-        .forEach((one) => one.classList.toggle("on", one === button));
-    });
-  });
+  autogrow(editor);
+  pickOne(editor);
 
   editor.querySelector(".save")?.addEventListener("click", () => {
-    const picked = editor.querySelector<HTMLElement>(
-      '.segs[data-name="partner"] .seg.on',
-    )?.dataset.value;
     const married = !!editor.querySelector(
       '.segs[data-name="married"] .seg.on[data-value="yes"]',
     );
-    if (!picked) return;
-    const body = { person_a: person.id, person_b: Number(picked), married };
     if (opts.onSave) {
-      opts.onSave(body);
+      const picked = editor.querySelector<HTMLElement>(
+        `.segs[data-name="${PARTNER}"] .seg.on`,
+      )?.dataset.value;
+      if (!picked) return;
+      opts.onSave({ person_a: person.id, person_b: Number(picked), married });
       return;
     }
-    void api.savePairBond(bond ? bond.id : null, body, opts.diagramId).then(opts.done);
+    void (async () => {
+      const kind =
+        person.gender === PersonKind.Female ? PersonKind.Male : PersonKind.Female;
+      const who = await pickedPerson(editor, PARTNER, kind, opts.diagramId);
+      if (who === null) {
+        toast("Name the other person");
+        return;
+      }
+      // One couple ever between any two people: naming the same two again
+      // changes the one that is there rather than making a second (R-0326).
+      const already = bond ?? findBond(family, person.id, who);
+      await api.savePairBond(
+        already ? already.id : null,
+        { person_a: person.id, person_b: who, married },
+        opts.diagramId,
+      );
+      opts.done();
+    })();
   });
   editor.querySelector(".del")?.addEventListener("click", () => {
     if (bond) void api.deletePairBond(bond.id, opts.diagramId).then(opts.done);
