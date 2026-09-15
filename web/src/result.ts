@@ -18,6 +18,14 @@ export interface ResultHandlers {
 }
 
 const NO_COACH = "the coach did not code this conversation";
+const NO_COACH_SAID = "The coach did not code this conversation.";
+
+/** An agreement figure, which the server already gives out of a hundred. */
+const pc = (value: number | null | undefined): string =>
+  value === null || value === undefined ? "—" : `${Math.round(value)}%`;
+
+/** A score the server gives between nothing and one, read as a percentage. */
+const share = (value: number): string => `${Math.round(value * 100)}%`;
 
 /** A rule's provenance in the words of the decision it came from. */
 function from(rule: Rule): string {
@@ -71,43 +79,54 @@ export class ResultScreen {
     const found = this.result;
     if (!found) return;
     this.handlers.onTitle(`ratified ${dayText(found.ratified_at)}`);
-    this.stats.innerHTML = this.figures(found);
+    this.stats.innerHTML = this.head(found);
     this.body.innerHTML =
       this.rules(found) + this.differed(found) + this.coders(found);
   }
 
+  /** The head of the screen, which scrolls away with the rest of it: what this
+   * result is, one line of labelled figures, and the coach's own score said as
+   * a sentence under them (R-0344). */
+  private head(found: Result): string {
+    return (
+      `<div class="mtitle">Result · ${esc(found.conversation)} · ` +
+      `ratified ${esc(dayText(found.ratified_at))}</div>` +
+      `<div class="mfigs">${this.figures(found)}</div>` +
+      `<div class="rscore">${this.score(found)}</div>`
+    );
+  }
+
   /** The counts, and the two agreement figures side by side. */
   private figures(found: Result): string {
-    const percent = (value: number | null | undefined) =>
-      value === null || value === undefined ? "—" : `${value}%`;
-    const coach = found.coach;
+    const structure = found.structure;
     return (
-      `<span>${found.items} items</span>` +
       `<span>${found.ratified} ratified</span>` +
       `<span>${found.unresolved} unresolved</span>` +
       // One more count beside the events: an unresolved person is the one that
       // matters most, because every event about them stands on it (R-0326).
-      (found.structure
-        ? `<span>${found.structure.people} ` +
-          `${found.structure.people === 1 ? "person" : "people"} and ` +
-          `${found.structure.bonds} ` +
-          `${found.structure.bonds === 1 ? "bond" : "bonds"} · ` +
-          `${found.structure.ratified} ratified, ` +
-          `${found.structure.unresolved} unresolved</span>`
+      (structure
+        ? `<span>${structure.people} ` +
+          `${structure.people === 1 ? "person" : "people"} and ` +
+          `${structure.bonds} ${structure.bonds === 1 ? "bond" : "bonds"}, ` +
+          `${structure.unresolved} unresolved</span>`
         : "") +
-      `<span>agreement first pass <b>${percent(found.first_pass?.percent)}</b></span>` +
-      `<span>after ratification <b>${percent(found.after?.percent)}</b></span>` +
-      // A figure that cannot be worked out is said in words rather than left
-      // off the screen: the room can tell "not scored" from "scored badly".
-      (coach
-        ? `<span>the coach's pass against the ratified record: ` +
-          `events <b>${coach.events}</b> · people <b>${coach.people}</b>` +
-          (coach.variables === null
-            ? ""
-            : ` · variables <b>${coach.variables}</b>`) +
-          `</span>`
-        : `<span>${NO_COACH}</span>`)
+      `<span><b>${pc(found.first_pass?.percent)}</b> agreed before the vote</span>` +
+      `<span><b>${pc(found.after?.percent)}</b> after</span>`
     );
+  }
+
+  /** How the coach's own pass scored against what the room ratified. A figure
+   * that cannot be worked out is said in words rather than left off the
+   * screen: the room can tell "not scored" from "scored badly". */
+  private score(found: Result): string {
+    const coach = found.coach;
+    if (!coach) return NO_COACH_SAID;
+    const said = [
+      `${share(coach.events)} on events`,
+      `${share(coach.people)} on people`,
+      coach.variables === null ? null : `${share(coach.variables)} on variables`,
+    ].filter(Boolean);
+    return `The coach's own pass scored ${said.join(", ")} against the ratified record.`;
   }
 
   /** The guideline changes the AI wrote, each with the decision it came from and

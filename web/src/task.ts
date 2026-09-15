@@ -44,6 +44,23 @@ export const wayIn = (coder: boolean): string | null =>
 
 const CHECK = "&#10003;";
 
+/** One task already finished. A cut the room has ratified opens what the
+ * meeting produced, so that row is a way in and reads like one; a cut still
+ * waiting on the room is only a record and stays faint (R-0275, R-0344). */
+export function finishedRow(one: FinishedTask): string {
+  const opens = one.ratified
+    ? ` data-result="${one.cut_id}"` +
+      ` role="button" tabindex="0" class="plrow done opens"`
+    : ` class="plrow done"`;
+  return (
+    `<div${opens}><span class="ck">${CHECK}</span>` +
+    `<div class="pm"><div class="r1">${esc(one.title)}</div>` +
+    `<div class="r2">${esc(one.detail)}</div></div>` +
+    (one.ratified ? `<span class="sn-chev">&rsaquo;</span>` : "") +
+    `</div>`
+  );
+}
+
 export class OneTask {
   private task: Task | null = null;
 
@@ -80,7 +97,7 @@ export class OneTask {
       (found.task ? this.card(found.task) : this.nothing()) +
       (found.done.length
         ? `<div class="plprog tkdone">done before</div>` +
-          found.done.map((one) => this.finished(one)).join("")
+          found.done.map(finishedRow).join("")
         : "");
   }
 
@@ -92,15 +109,6 @@ export class OneTask {
       `<div class="r2">${esc(task.detail)}</div>` +
       `<button class="addbtn" type="button"${task.ready ? "" : " disabled"}>` +
       `${task.kind === TaskKind.Vote ? "vote" : "start"}</button></div>`
-    );
-  }
-
-  private finished(one: FinishedTask): string {
-    const opens = one.ratified ? ` data-result="${one.cut_id}"` : "";
-    return (
-      `<div class="plrow done"${opens}><span class="ck">${CHECK}</span>` +
-      `<div class="pm"><div class="r1">${esc(one.title)}</div>` +
-      `<div class="r2">${esc(one.detail)}</div></div></div>`
     );
   }
 

@@ -10,7 +10,7 @@ from flask import jsonify, request
 
 from btcopilot.review import coachscore, snapshot, tendencies
 from btcopilot.review.models import ReviewStatus, Rule
-from btcopilot.review.routes import bp, coder, cut_or_404, human_codings
+from btcopilot.review.routes import bp, coder, cut_or_404, human_codings, session_name
 from btcopilot.review.routes.rules import payload as rule_payload
 from btcopilot.schema import ItemKind
 
@@ -36,6 +36,7 @@ def result_read():
     return jsonify(
         {
             "cut_id": cut.id,
+            "conversation": session_name(cut),
             "ratified_at": cut.ratified_at.isoformat(),
             "items": len(theirs),
             "ratified": counts[ReviewStatus.Decided.value]

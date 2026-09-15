@@ -134,6 +134,12 @@ def sees_others(cut: Cut, user) -> bool:
     return mine is not None and mine.done_at is not None
 
 
+def session_name(cut: Cut) -> str:
+    """What the conversation a cut was taken from is called on screen."""
+    discussion = adapter.discussion_of(cut.discussion_id)
+    return (discussion.title or "").strip() or "an untitled conversation"
+
+
 from btcopilot.review.routes import (  # noqa: E402  bp must exist first
     agenda,
     coders,

@@ -708,6 +708,8 @@ export interface Tendency {
 /** What the meeting produced, with nothing left to choose. */
 export interface Result {
   cut_id: number;
+  /** The conversation the cut was taken from, which names the result. */
+  conversation: string;
   ratified_at: string;
   items: number;
   ratified: number;

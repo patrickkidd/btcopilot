@@ -10,7 +10,7 @@ from flask import jsonify
 
 from btcopilot.review import adapter
 from btcopilot.review.models import Coding, Cut
-from btcopilot.review.routes import bp, coder, my_coding, voted
+from btcopilot.review.routes import bp, coder, my_coding, session_name, voted
 
 #: Roughly how long one turn takes to code, for the card's estimate.
 MINUTES_PER_TURN = 0.8
@@ -50,7 +50,7 @@ def _to_code(cut: Cut, mine: Coding | None, user) -> dict:
         "cut_id": cut.id,
         "coding_id": mine.id if mine else None,
         "meeting_date": _iso(cut.meeting_date),
-        "title": f"Code {_session_name(cut)} up to {_cut_day(cut)}",
+        "title": f"Code {session_name(cut)} up to {_cut_day(cut)}",
         "detail": _since(cut, turns, user),
         "ready": True,
     }
@@ -63,7 +63,7 @@ def _to_vote(cut: Cut, mine: Coding, ready: bool) -> dict:
         "cut_id": cut.id,
         "coding_id": mine.id,
         "meeting_date": _iso(cut.meeting_date),
-        "title": f"Vote on the disputed events of {_session_name(cut)}",
+        "title": f"Vote on the disputed events of {session_name(cut)}",
         "detail": "about 10 min" if ready else f"{waiting} · about 10 min",
         "ready": ready,
     }
@@ -114,7 +114,7 @@ def _finished(coding: Coding) -> dict:
     return {
         "coding_id": coding.id,
         "cut_id": cut.id,
-        "title": f"{_session_name(cut)} up to {_cut_day(cut)}",
+        "title": f"{session_name(cut)} up to {_cut_day(cut)}",
         "detail": (
             f"ratified {_day(ratified)}" if ratified else f"done {_day(coding.done_at)}"
         ),
@@ -122,11 +122,6 @@ def _finished(coding: Coding) -> dict:
         # took part can read (R-0275).
         "ratified": ratified is not None,
     }
-
-
-def _session_name(cut: Cut) -> str:
-    discussion = adapter.discussion_of(cut.discussion_id)
-    return (discussion.title or "").strip() or "an untitled conversation"
 
 
 def _cut_day(cut: Cut) -> str:
