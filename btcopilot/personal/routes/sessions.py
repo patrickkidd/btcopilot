@@ -9,6 +9,7 @@ from btcopilot.personal.routes import (
     bp,
     current_session,
     last_activity,
+    utc_iso,
     owned_session,
     require_write_access,
     user_sessions,
@@ -31,7 +32,7 @@ def session_payload(discussion: Discussion) -> dict:
         "title": discussion.title,
         "summary": discussion.summary,
         "title_set_by_user": discussion.title_set_by_user,
-        "last_activity": last_activity(discussion).isoformat(),
+        "last_activity": utc_iso(last_activity(discussion)),
         "message_count": len(discussion.statements),
         "kind": DiscussionKind(discussion.kind).value,
         "date": (

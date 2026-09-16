@@ -8,7 +8,7 @@ from flask import abort, jsonify, request
 import btcopilot
 from btcopilot import auth, diagramjson
 from btcopilot.personal.licence import require_professional
-from btcopilot.personal.routes import bp, last_activity
+from btcopilot.personal.routes import bp, last_activity, utc_iso
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion
 from btcopilot.pro.models import Diagram
@@ -50,7 +50,7 @@ def diagram_payload(diagram: Diagram, user) -> dict:
         "id": diagram.id,
         "name": diagram.name,
         "session_count": len(discussions),
-        "last_activity": when.isoformat() if when else None,
+        "last_activity": utc_iso(when) if when else None,
         "free": diagram.id == user.free_diagram_id,
         "current": diagram.id == user.diagram_in_use(),
         "owned": diagram.user_id == user.id,

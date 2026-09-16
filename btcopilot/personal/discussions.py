@@ -39,7 +39,6 @@ def create_discussion(data: dict, diagram: Diagram | None = None) -> Discussion:
     discussion = Discussion(
         user_id=user.id,
         diagram_id=diagram.id,
-        summary="New Discussion",
         speakers=[
             Speaker(name=subject_name, type=SpeakerType.Subject, person_id=1),
             # The coach is not in the family, so it points at no person.

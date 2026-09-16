@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 from flask import Blueprint, abort, request
@@ -53,6 +54,12 @@ def _invalid_record(e):
 @bp.context_processor
 def _inject_globals():
     return {"csrf_token": generate_csrf}
+
+
+def utc_iso(when: datetime.datetime) -> str:
+    """Stored times are naive UTC; the browser needs to be told so, or it reads
+    them as its own local time."""
+    return when.replace(tzinfo=datetime.timezone.utc).isoformat()
 
 
 def last_activity(discussion: Discussion):

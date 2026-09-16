@@ -2,14 +2,8 @@ import * as api from "./api";
 import { $, el, esc, isAdmin } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
-import { clockTime, dayKey, dayLabel, meetingTitle } from "./when";
-import {
-  matching,
-  sessionTitle,
-  summaryOf,
-  untitled,
-  type Family,
-} from "./search";
+import { dayKey, dayLabel, meetingTitle } from "./when";
+import { matching, sessionTitle, untitled, type Family } from "./search";
 import { SessionKind, type Diagram, type Session } from "./types";
 import { PRO } from "./pro";
 import { Recording } from "./recording";
@@ -405,12 +399,6 @@ export class Sessions {
     const searching = !!this.filter.trim();
     const rows = home ? matching(home, this.filter).rows : [];
 
-    // the clock only earns its place when a day holds more than one session
-    const counts = new Map<number, number>();
-    for (const s of rows) {
-      const key = dayKey(new Date(s.last_activity));
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
     let html = "";
     let day = 0;
     for (const session of rows) {
@@ -420,7 +408,7 @@ export class Sessions {
         day = key;
         html += `<div class="ghead">${esc(dayLabel(when, now))}</div>`;
       }
-      html += this.rowHtml(session, (counts.get(key) ?? 1) >= 2 ? clockTime(when) : "");
+      html += this.rowHtml(session);
     }
 
     if (!html)
@@ -436,27 +424,25 @@ export class Sessions {
     this.body.scrollTop = top;
   }
 
-  private rowHtml(session: Session, when: string): string {
-    // an untitled session is named by its clock, which the row's own clock
-    // already says when the day holds more than one
+  private rowHtml(session: Session): string {
     const title = untitled(session)
-      ? `<span class="untitled">${esc(when ? "Untitled" : sessionTitle(session))}</span>`
+      ? `<span class="untitled">${esc(sessionTitle(session))}</span>`
       : esc(session.title as string);
     // The app has one list row: the timeline list's `.row` with its `.r1`
-    // title and `.r2` secondary line. A session row is that row with a date
-    // column beside it, not a second row component.
+    // title and `.r2` secondary line. The second line is the coach's own
+    // summary, and a session without one is a single line.
+    const summary = session.summary?.trim();
     return (
-      `<div class="row side${session.id === this.current ? " cur" : ""}" data-id="${session.id}">` +
+      `<div class="row${session.id === this.current ? " cur" : ""}" data-id="${session.id}">` +
       `<div class="rmain">` +
-      `<div class="r1 rtitle">${title}` +
+      `<div class="r1 rtitle"><span class="tname">${title}</span>` +
       (session.title_set_by_user ? `<span class="pencil">&#9998;</span>` : "") +
       (session.kind === SessionKind.Chat
         ? ""
         : `<span class="kindtag">${esc(session.kind)}</span>`) +
       `</div>` +
-      `<div class="r2">${esc(summaryOf(session))}</div>` +
+      (summary ? `<div class="r2">${esc(summary)}</div>` : "") +
       `</div>` +
-      `<div class="r2 rwhen">${esc(when)}</div>` +
       `</div>`
     );
   }

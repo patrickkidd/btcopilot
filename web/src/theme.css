@@ -1508,8 +1508,10 @@ button { font-family: inherit; }
 .pencil { margin-left: 4px; font-size: 13px; color: var(--faint); }
 /* a session that is not a chat says which kind it is, because the list mixes
    notes, recordings and chats and only the label tells them apart (R-0281) */
+.rtitle { display: flex; align-items: center; gap: 6px; }
+.rtitle .tname { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .kindtag {
-  margin-left: 6px;
+  flex: none;
   padding: 0 6px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -1546,14 +1548,8 @@ button { font-family: inherit; }
 }
 /* the day the sessions under it fall on */
 .ghead {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  height: 32px;
-  line-height: 32px;
-  padding: 0 16px;
-  background: var(--panel);
-  font: 600 13px var(--sans);
+  padding: 18px 16px 6px;
+  font: 600 13px/1 var(--sans);
   color: var(--ink);
 }
 
