@@ -145,7 +145,10 @@ doc/chat-first/TEST_2026-09-14.md — the whole app by hand in dependency order,
 four reusable sign-in links; the walk of 12 September is archived. Every step of sections six
 to nine was then driven literally in a real browser by an independent agent on the same fixture
 accounts and corrected to what the screen shows, which is now the rule before any walk is handed
-to him [R-0343]. He has not walked seven, eight or nine.
+to him [R-0343]. **He walked seven, eight and nine on 15 September** and said it is all fine
+for now; what he found is rows 114–132 of the review log and rulings R-0347..R-0352, all built
+except row 124 (deleting a session with content fails on the chat database, an isolation
+question) and row 132 (the plan codes are the Pro app's; pricing and plans are not decided).
 
 Ten rulings came out of his walk [R-0337..R-0346] and all but the last are built. Sessions are
 never dropped fast, so he is not signed out mid-walk [R-0337]. Agents may keep editing the front
@@ -166,6 +169,7 @@ name and "Partners" beneath, never "bond" [R-0345]. The one not built is R-0346 
 flags a ratified guideline or controls the agenda, the vote and the meeting, and the account
 button shows its icon — which was in flight when the session stopped; nothing of it has landed
 on the branch and one edit to the account button's mark is uncommitted in the worktree.
+(R-0346 landed on 15 September, commit 8364eb4.)
 
 **Two design questions are open and neither is decided.** doc/chat-first/EVENT_MODEL.md, with its
 page at https://claude.ai/code/artifact/d4dbc090-fbde-464c-bcdc-0cc31e1a5c53, writes down his

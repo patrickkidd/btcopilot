@@ -1064,3 +1064,20 @@ family and the Ortega case.
 
 Walks seven, eight and nine were driven end to end in a browser by an independent agent and their
 steps rewritten to what the screen actually shows, but Patrick has not walked them.
+
+## 2026-09-15 night — walks 7 to 9, and the sessions list redrawn
+
+Patrick walked seven, eight and nine. Walk 7 first showed him no Rafael Ortega: his own step 6
+had renamed Rafael and Marisol into the two parents he typed, because the people route handed
+out ids from a counter the fixture record did not carry; one allocator now skips every id on
+the record (row 114). Walk 8 was the sessions sheet, three rounds of it: first the case rows
+went (the case is chosen on the account page, R-0347), then the list was redrawn on the notes
+precedent with an adversarial reviewer's six findings folded in, then the preview line got two
+lines to itself. On the way: times were sent without a timezone, the placeholder summary went,
+the upload moved server-side on his ruling (R-0348) and was proved with a real two-voice
+recording, an empty session got a call to action worded per kind (R-0350), the upload got its
+cost warning (R-0349), the empty timeline became one sentence (R-0351), the wide layout lost
+its list button (R-0352), and walk 8 was rewritten to drive the upload, a note and a fresh
+chat, every step driven in a browser before hand-over. Open: deleting a session with content
+fails on the chat database (row 124), and the plan codes are the Pro app's (row 132); he said
+pricing and plans are not decided. He then asked what is left before deploy.

@@ -37,9 +37,12 @@ unmeasured until the coding loop produces numbers.
 **Lives in:** btcopilot PR #136, fdserver PR #30; merge-risk review with the seven fixes
 landed: doc/chat-first/MERGE_REVIEW.md (fix commit 9f1707a); review log
 doc/chat-first/REVIEW_LOG.md; sandbox scripts /Users/patrick/worktrees/fd362-sandbox/.
-**Next action:** Patrick walks sections seven to nine of doc/chat-first/TEST_2026-09-14.md; then,
-on his word, the deploy work starts (T-11) and the three are invited.
-**Updated:** 2026-09-15.
+**Next action:** he walked seven to nine on 15 September and called it fine for now; he asked
+what is left before deploy. The list, in order: the session-delete defect (row 124), the three
+image edits so the browser app ships inside the image, secret rotation, his key in the
+encryption rules, the droplet, the import run, DNS; the coach's prompt review and CI stay open
+beside it. Pricing and plans are not decided and nothing on the deploy path waits on them.
+**Updated:** 2026-09-15 night.
 
 ## T-2 · The coach knows the clinical definitions, and we can measure it
 
