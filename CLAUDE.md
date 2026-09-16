@@ -23,6 +23,9 @@ Backend for Pro/Personal apps, training app, AI extraction system.
 - **UI options with one-line descriptions, never a research project (2026-09-11).** Every turn
   on a design topic shows him drawn options and says what each is. Captions are not forced
   short: not verbose, but enough that every non-self-evident control is explained.
+- **Never repeat in the reply what an artifact already says (2026-09-16).** When a page is
+  published, the reply is the link and only what is not on the page: the decision he must
+  make, or what changed since. Duplicated content makes him read both.
 - **Cost estimates are for the work, not for validation.** Squashing seven migrations is a few
   tool calls, not an hour. Verify only what changed, once, at the cheapest level that proves it;
   never re-verify before a merge is even in sight.
