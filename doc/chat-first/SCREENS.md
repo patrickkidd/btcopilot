@@ -254,10 +254,11 @@ What it is for: your past conversations.
 - A button beside the chat input opens a sheet holding your past sessions. [built]
 - The sheet rises from the input bar and can be dragged back down to close. [built]
 - Sessions are searchable by their titles and their summaries. [built] {R-0347}
-- Each row shows a title, the coach's one-line summary of that session, and its clock when the day holds more than one. [built] {R-0347}
-- Rows are grouped by day under a heading: today, yesterday, then the weekday and date. [built] {R-0347}
+- The list is drawn on the notes-list precedent: a small uppercase grey heading per period — today, yesterday, previous 7 days, previous 30 days, then the month — over a rounded group of rows; no clock column, no badges, no pencil. [built] {R-0347}
+- Each row is a bold title over one grey line: the day (left out under today and yesterday), the word recording or note when it is one, and the first thing the client said. A session nobody titled is named by its first six words, or "New session". [built] {R-0347}
+- A "⋯" at the row's right opens the same rename and delete actions as the swipe. [built] {R-0347}
 - The coach titles a session after the first exchange, and you can rename it by hand. [built]
-- A session you renamed by hand is marked as such. [built]
+- A session you renamed by hand is not marked; the coach simply never overwrites it. [built] {R-0347}
 - Emptying a rename puts the coach's own title back and says so. [built]
 - The session you are in is marked. [built]
 - Newest activity is first, and the order never changes while you are looking at it. [built]

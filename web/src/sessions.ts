@@ -14,6 +14,7 @@ import { Recording } from "./recording";
  * page, never here. */
 
 const TITLE_CAP = 120;
+const DAY_HEADINGS = new Set(["Today", "Yesterday"]);
 /** Drag up from the input bar this far to open; drag the grabber down this far
  * to close. */
 const OPEN_DRAG = 40;
@@ -234,6 +235,11 @@ export class Sessions {
     }
     const row = target.closest<HTMLElement>(".row");
     if (!row || row.querySelector("input.rename")) return;
+    if (target.closest(".rmore")) {
+      this.openActions(row);
+      this.opening = false;
+      return;
+    }
     this.pick(row);
   }
 
@@ -409,7 +415,7 @@ export class Sessions {
         period = label;
         html += `<div class="ghead">${esc(label)}</div><div class="fs-group">`;
       }
-      html += this.rowHtml(session, now);
+      html += this.rowHtml(session, now, label);
     }
     if (period) html += `</div>`;
 
@@ -429,15 +435,20 @@ export class Sessions {
   /** A row the way a notes or messages list draws one: the title, then one
    * grey line with the day and the first thing the client said. A recording
    * or a note says which it is in that line. */
-  private rowHtml(session: Session, now: Date): string {
-    const day = rowDate(new Date(session.date ? `${session.date}T12:00:00` : session.last_activity), now);
-    const parts = [day];
+  private rowHtml(session: Session, now: Date, period: string): string {
+    const when = new Date(session.date ? `${session.date}T12:00:00` : session.last_activity);
+    const parts: string[] = [];
+    // inside Today and Yesterday the heading already says the day
+    if (!DAY_HEADINGS.has(period)) parts.push(rowDate(when, now));
     if (session.kind !== SessionKind.Chat) parts.push(session.kind);
     parts.push(session.preview ?? "Nothing said yet");
     return (
       `<div class="row${session.id === this.current ? " cur" : ""}" data-id="${session.id}">` +
+      `<div class="rmain">` +
       `<div class="r1 rtitle">${esc(sessionTitle(session))}</div>` +
       `<div class="r2 rsub">${esc(parts.join(" · "))}</div>` +
+      `</div>` +
+      `<button class="rmore" type="button" aria-label="Rename or delete">&#8943;</button>` +
       `</div>`
     );
   }

@@ -1546,10 +1546,27 @@ button { font-family: inherit; }
 /* the period the sessions under it fall in, over a rounded group of rows */
 .fs-body { background: var(--bg); }
 .ghead {
-  padding: 22px 28px 8px;
-  font: 600 15px/1 var(--sans);
-  color: var(--ink);
+  padding: 24px 28px 8px;
+  font: 600 13px/1 var(--sans);
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
+.fs-body::after { content: ""; display: block; height: 16px; }
+.fs-group .row { flex-direction: row; align-items: center; gap: 8px; }
+.fs-group .rmain { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.rmore {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin-right: -12px;
+  border: 0;
+  background: none;
+  color: var(--faint);
+  font: 400 20px/1 var(--sans);
+  cursor: pointer;
+}
+.rmore:active { color: var(--ink); }
 .fs-group {
   margin: 0 12px;
   border-radius: 12px;
