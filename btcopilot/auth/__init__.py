@@ -19,7 +19,7 @@ _log = logging.getLogger(__name__)
 
 
 CONFIG_DEFAULTS = {
-    "CHAT_HOME": "/personal/",
+    "CHAT_HOME": "/app/",
     "CHAT_SESSION_DAYS": 180,
     "LOGIN_CODE_MINUTES": 10,
     "LOGIN_CODES_PER_HOUR": 5,
@@ -37,7 +37,7 @@ def init_app(app):
     app.session_interface = LongSessions()
     # Sign-in belongs to the chat app the reader is signing in to, so its pages
     # live under the same path as the app itself.
-    app.register_blueprint(bp, url_prefix="/personal")
+    app.register_blueprint(bp, url_prefix="/app")
 
 
 def is_pro_app_request():
@@ -49,7 +49,7 @@ def is_training_app_request() -> bool:
 
 
 def is_chat_app_request() -> bool:
-    return request.path.startswith("/personal")
+    return request.path.startswith("/app")
 
 
 def login_url() -> str:

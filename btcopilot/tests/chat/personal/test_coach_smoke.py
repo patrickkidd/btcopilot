@@ -3,7 +3,7 @@ diagram + blank conversation history. Verifies the new committed_state
 plumbing produces coherent coach output and (qualitatively) that the prompt
 is steering toward outstanding categories.
 
-Run: uv run pytest btcopilot/btcopilot/tests/personal/test_coach_smoke.py -v -m e2e -s
+Run: uv run pytest btcopilot/btcopilot/tests/chat/personal/test_coach_smoke.py -v -m e2e -s
 """
 import pickle
 

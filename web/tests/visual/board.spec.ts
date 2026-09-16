@@ -15,7 +15,7 @@ import { stateFor, steady } from "./setup";
  * single cluster, so the board it opens has every move on it in order. */
 
 const settle = async (page: Page) => {
-  await page.goto("/personal/");
+  await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(400);
 };

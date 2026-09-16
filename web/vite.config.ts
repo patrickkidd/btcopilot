@@ -6,17 +6,17 @@ import { defineConfig, type Plugin, type ProxyOptions } from "vite";
 // Flask serves the bundle through the personal blueprint's static folder, and
 // names the entry files itself in the page template, so the output names are
 // fixed rather than hashed.
-const BASE = "/personal/static/web/";
+const BASE = "/app/static/web/";
 
 /** The sandbox this dev server borrows its server from. */
 const FLASK = process.env.FLASK_URL ?? "http://127.0.0.1:8890";
 
 /** Everything the server owns. The page itself is not here: it is served from
  * this repo so an edit shows on refresh, with the two things only the server
- * knows grafted into it. `/personal/static/web` is left out on purpose — that
+ * knows grafted into it. `/app/static/web` is left out on purpose — that
  * is where this dev server's own modules live. */
 const SERVER_PATHS = [
-  "^/personal/(?!static/web)",
+  "^/app/(?!static/web)",
   "/review",
   "/training",
   "/static",
@@ -41,7 +41,7 @@ const proxy: Record<string, ProxyOptions> = Object.fromEntries(
  * builds its sign-in links and sets its cookies from it, so a request that
  * arrived at this machine's network name must reach the server saying so. */
 function fromServer(headers: Record<string, unknown>) {
-  const to = new URL(`${FLASK}/personal/`);
+  const to = new URL(`${FLASK}/app/`);
   return new Promise<{
     status: number;
     body: string;
@@ -87,7 +87,7 @@ function page(): Plugin {
     configureServer(server) {
       server.middlewares.use(async (request, response, next) => {
         const url = (request.url ?? "").split("?")[0];
-        if (url !== "/personal/" && url !== "/personal") return next();
+        if (url !== "/app/" && url !== "/app") return next();
         const from = await fromServer(request.headers);
         for (const cookie of from.cookies) response.appendHeader("Set-Cookie", cookie);
         if (from.status !== 200) {
@@ -105,7 +105,7 @@ function page(): Plugin {
           throw new Error("the server's page carried no CSRF token or session");
         const here = readFileSync(new URL("./index.html", import.meta.url), "utf8");
         const html = await server.transformIndexHtml(
-          request.url ?? "/personal/",
+          request.url ?? "/app/",
           here.replace("</head>", head + "</head>"),
         );
         response.setHeader("Content-Type", "text/html; charset=utf-8");

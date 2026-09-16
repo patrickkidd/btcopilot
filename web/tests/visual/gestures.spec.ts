@@ -7,7 +7,7 @@ import { stateFor } from "./setup";
  * and tapping a datum shows where it was mentioned [Oracle: R-0140]. */
 
 const settle = async (page: Page) => {
-  await page.goto("/personal/");
+  await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(600);
 };
@@ -84,7 +84,7 @@ test.describe("a tap on a message's own words", () => {
   test.use({ storageState: stateFor("moves") });
 
   test("lights what that message named, and costs no turn", async ({ page }) => {
-    await page.goto("/personal/");
+    await page.goto("/app/");
     await expect(page.locator("#view .ss")).toBeVisible();
     await page.waitForTimeout(600);
     const bubble = page.locator(".bub.coach").last();
@@ -101,7 +101,7 @@ test.describe("a tap on a message's own words", () => {
   });
 
   test("never writes more than three rows of words", async ({ page }) => {
-    await page.goto("/personal/");
+    await page.goto("/app/");
     await expect(page.locator("#view .ss")).toBeVisible();
     await page.waitForTimeout(600);
     await page.locator(".bub.coach").last().click({ position: { x: 6, y: 6 } });

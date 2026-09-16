@@ -184,7 +184,7 @@ jobs:
             -e FLASK_SQLALCHEMY_DATABASE_URI=sqlite:////tmp/smoke.db \
             $IMAGE sh -c "flask admin db upgrade && exec gunicorn --bind 0.0.0.0:8888 'btcopilot.app:create_app()'"
           for i in $(seq 1 40); do
-            code=$(curl -s -o /tmp/page.html -w '%{http_code}' -L http://127.0.0.1:8888/personal/ || true)
+            code=$(curl -s -o /tmp/page.html -w '%{http_code}' -L http://127.0.0.1:8888/app/ || true)
             [ "$code" = "200" ] && break
             sleep 1
           done

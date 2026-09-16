@@ -8,7 +8,7 @@ import { stateFor } from "./setup";
  * is two ways into one record — what happened, and who it happened to. */
 
 const settle = async (page: Page) => {
-  await page.goto("/personal/");
+  await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(500);
 };

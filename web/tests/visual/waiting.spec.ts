@@ -7,12 +7,12 @@ import { stateFor } from "./setup";
  * moment the warning takes its place. */
 
 const settle = async (page: Page) => {
-  await page.goto("/personal/");
+  await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(500);
 };
 
-const SEND = /\/personal\/(chat|sessions\/\d+\/statements)$/;
+const SEND = /\/app\/(chat|sessions\/\d+\/statements)$/;
 
 const waiting = (page: Page) => page.locator(".bub.coach.typing");
 

@@ -45,7 +45,7 @@ def test_users_roles_set_then_read(run, test_user):
 
 def test_users_invite_prints_a_link(run, flask_app):
     invited = rows(run("users", "invite", "new@fd362-fixture.invalid", "--json"))
-    assert "/personal/invite/" in invited[0]["url"]
+    assert "/app/invite/" in invited[0]["url"]
 
 
 def test_unknown_user_is_named(flask_app):

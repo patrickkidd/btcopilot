@@ -10,7 +10,7 @@ import { stateFor } from "./setup";
  * while a reader steps through it. */
 
 const settle = async (page: Page) => {
-  await page.goto("/personal/");
+  await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(400);
 };

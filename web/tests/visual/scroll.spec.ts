@@ -5,7 +5,7 @@ import { stateFor } from "./setup";
  * outer page never moves (UI_STANDARDS) [Oracle: R-0104, R-0105]. */
 
 const settle = async (page: Page) => {
-  await page.goto("/personal/");
+  await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(600);
 };

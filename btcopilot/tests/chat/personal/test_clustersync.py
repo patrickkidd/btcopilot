@@ -400,7 +400,7 @@ def test_the_play_endpoint_resolves_a_stored_cluster(web, test_user, family):
         "btcopilot.personal.playturn.PlayTurn.run", return_value={"steps": []}
     ) as play:
         response = web.post(
-            "/personal/play",
+            "/app/play",
             json={"cluster_id": cluster_id},
             headers={"X-CSRFToken": token},
         )

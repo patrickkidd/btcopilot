@@ -1,7 +1,7 @@
 """
 Pytest integration for synthetic conversation quality testing.
 
-Run with: uv run pytest btcopilot/btcopilot/tests/personal/test_synthetic.py -v -m e2e
+Run with: uv run pytest btcopilot/btcopilot/tests/chat/personal/test_synthetic.py -v -m e2e
 """
 
 import json

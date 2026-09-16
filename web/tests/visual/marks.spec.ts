@@ -12,7 +12,7 @@ test.use({ storageState: stateFor("moves") });
 
 test("the symptom mark is on screen for the whole loop", async ({ page }) => {
   test.skip(test.info().project.name !== "phone");
-  await page.goto("/personal/");
+  await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(600);
   await page.locator("#cap-play").click();

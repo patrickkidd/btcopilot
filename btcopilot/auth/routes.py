@@ -142,7 +142,7 @@ def me():
     )
 
 
-# The chat app owns /personal/sessions for its own sessions, so the devices a
+# The chat app owns /app/sessions for its own sessions, so the devices a
 # reader is signed in on are listed here.
 @bp.route("/signins")
 def sessions():

@@ -24,7 +24,7 @@ def test_the_id_the_coach_used_to_hold_is_never_handed_to_anyone():
 
 def test_a_new_session_points_the_coach_at_no_person(web):
     response = web.post(
-        "/personal/sessions", json={}, headers={"X-CSRFToken": csrf_token(web)}
+        "/app/sessions", json={}, headers={"X-CSRFToken": csrf_token(web)}
     )
     assert response.status_code == 201
 

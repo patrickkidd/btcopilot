@@ -2,10 +2,10 @@
    network. Every API call goes to the network untouched. */
 const CACHE = "familydiagram-v1";
 const SHELL = [
-  "/personal/",
-  "/personal/static/web/app.js",
-  "/personal/static/web/app.css",
-  "/personal/manifest.webmanifest",
+  "/app/",
+  "/app/static/web/app.js",
+  "/app/static/web/app.css",
+  "/app/manifest.webmanifest",
 ];
 
 self.addEventListener("install", (e) => {
@@ -32,7 +32,7 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   const shell =
     e.request.mode === "navigate" ||
-    url.pathname.startsWith("/personal/static/web/");
+    url.pathname.startsWith("/app/static/web/");
   if (e.request.method !== "GET" || !shell) return;
   e.respondWith(
     fetch(e.request)
@@ -42,7 +42,7 @@ self.addEventListener("fetch", (e) => {
         return response;
       })
       .catch(() =>
-        caches.match(e.request).then((hit) => hit || caches.match("/personal/")),
+        caches.match(e.request).then((hit) => hit || caches.match("/app/")),
       ),
   );
 });

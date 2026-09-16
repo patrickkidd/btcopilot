@@ -1,16 +1,14 @@
 # familydiagram.com on the chat box. /app is the app (R-0356); the desktop app's
 # update feeds are served from the deployment; everything else keeps redirecting
 # to alaskafamilysystems.com as the old box did, until a product homepage exists.
-# Until the app's own mount is renamed from /personal to /app, /app lands on it.
 familydiagram.com {
     encode gzip
     handle /appcast_*.xml {
         root * /srv/appcast
         file_server
     }
-    redir /app /personal/ 302
-    redir /app/* /personal/ 302
-    handle /personal* {
+    redir /app /app/ 302
+    handle /app* {
         reverse_proxy fd-app:8888
     }
     handle /review* {

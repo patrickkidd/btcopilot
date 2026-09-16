@@ -10,7 +10,7 @@ test.describe("chips in a bubble", () => {
   test.use({ storageState: stateFor("hostile") });
 
   test("twelve long chips wrap inside the bubble", async ({ page }) => {
-    await page.goto("/personal/");
+    await page.goto("/app/");
     await expect(page.locator(".bub").first()).toBeVisible();
     await page.waitForTimeout(400);
     const bubble = page.locator(".bub").filter({ hasText: "Twelve of them" });
@@ -19,7 +19,7 @@ test.describe("chips in a bubble", () => {
   });
 
   test("no chip anywhere reaches past the edge of its bubble", async ({ page }) => {
-    await page.goto("/personal/");
+    await page.goto("/app/");
     await expect(page.locator(".bub").first()).toBeVisible();
     await page.waitForTimeout(400);
     const escaped = await page.evaluate(() =>
@@ -37,7 +37,7 @@ test.describe("chips in a bubble", () => {
   });
 
   test("every chip shows its whole label, at one size", async ({ page }) => {
-    await page.goto("/personal/");
+    await page.goto("/app/");
     await expect(page.locator(".bub").first()).toBeVisible();
     await page.waitForTimeout(400);
     // The owner ruled out the two-tap expand: labels are capped at the source,
@@ -61,7 +61,7 @@ test.describe("the coach's words", () => {
   test.use({ storageState: stateFor("hostile") });
 
   test("a coach bubble says who is speaking", async ({ page }) => {
-    await page.goto("/personal/");
+    await page.goto("/app/");
     await expect(page.locator(".bub.coach .who").first()).toHaveText("Coach");
   });
 });
@@ -70,7 +70,7 @@ test.describe("the question that closes a reply", () => {
   test.use({ storageState: stateFor("moves") });
 
   test("it stands apart in amber above the answers held out", async ({ page }) => {
-    await page.goto("/personal/");
+    await page.goto("/app/");
     await expect(page.locator(".bub").first()).toBeVisible();
     await page.waitForTimeout(400);
     const bubble = page.locator(".bub.coach").last();

@@ -35,7 +35,7 @@ import type {
   Voice,
 } from "./types";
 
-const ROOT = "/personal";
+const ROOT = "/app";
 /** The review is its own door, beside the app's own (R-0296). */
 const REVIEW = "/review";
 

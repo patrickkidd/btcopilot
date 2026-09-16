@@ -245,7 +245,7 @@ def test_chat_returns_the_words_and_the_events_behind_them(web, family, monkeypa
     )
     token = csrf_token(web)
     response = web.post(
-        "/personal/chat",
+        "/app/chat",
         json={"statement": "My sister is Nell."},
         headers={"X-CSRFToken": token},
     )
@@ -526,21 +526,21 @@ def test_every_message_the_page_reads_back_carries_its_kind(web, family, monkeyp
     token = csrf_token(web)
 
     said_reply = web.post(
-        "/personal/chat",
+        "/app/chat",
         json={"statement": "My dad moved out."},
         headers={"X-CSRFToken": token},
     ).get_json()
     assert said_reply["kind"] == StatementKind.Turn.value
 
     played = web.post(
-        "/personal/play",
+        "/app/play",
         json={"cluster_id": "c1"},
         headers={"X-CSRFToken": token},
     ).get_json()
     assert played["kind"] == StatementKind.Play.value
     assert played["cluster_id"] == "c1"
 
-    stored = web.get(f"/personal/sessions/{said_reply['discussion_id']}").get_json()
+    stored = web.get(f"/app/sessions/{said_reply['discussion_id']}").get_json()
     assert [(s["kind"], s["cluster_id"]) for s in stored["statements"]] == [
         (StatementKind.Turn.value, None),
         (StatementKind.Turn.value, None),
@@ -568,7 +568,7 @@ def test_a_csrf_token_older_than_an_hour_still_posts(web, family, monkeypatch):
     monkeypatch.setattr(time, "time", lambda: later)
 
     reply = web.post(
-        "/personal/chat",
+        "/app/chat",
         json={"statement": "My dad moved out."},
         headers={"X-CSRFToken": token},
     )
@@ -600,13 +600,13 @@ def test_a_moment_the_coach_wrote_traces_to_the_message_that_wrote_it(
     )
     token = csrf_token(web)
     reply = web.post(
-        "/personal/chat",
+        "/app/chat",
         json={"statement": "My mum got sick that winter."},
         headers={"X-CSRFToken": token},
     ).get_json()
 
-    coded = web.get("/personal/timeline").get_json()["coded_in"]
-    made = [event["id"] for event in web.get("/personal/timeline").get_json()["events"]]
+    coded = web.get("/app/timeline").get_json()["coded_in"]
+    made = [event["id"] for event in web.get("/app/timeline").get_json()["events"]]
     newest = str(max(made))
     assert coded[newest]["statement_id"] == reply["statement_id"]
     assert coded[newest]["discussion_id"] == reply["discussion_id"]

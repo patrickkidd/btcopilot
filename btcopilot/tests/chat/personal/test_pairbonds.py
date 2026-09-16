@@ -25,7 +25,7 @@ def family(test_user):
 
 def _post(web, body):
     return web.post(
-        "/personal/pair_bonds", json=body, headers={"X-CSRFToken": csrf_token(web)}
+        "/app/pair_bonds", json=body, headers={"X-CSRFToken": csrf_token(web)}
     )
 
 
@@ -58,14 +58,14 @@ def test_a_child_is_born_to_a_bond_and_never_to_one_they_are_in(web, family):
     token = csrf_token(web)
 
     born = web.patch(
-        "/personal/people/3",
+        "/app/people/3",
         json={"parents": bond["id"]},
         headers={"X-CSRFToken": token},
     )
     assert born.get_json()["parents"] == bond["id"]
 
     refused = web.patch(
-        "/personal/people/1",
+        "/app/people/1",
         json={"parents": bond["id"]},
         headers={"X-CSRFToken": token},
     )
@@ -90,13 +90,13 @@ def test_ending_a_bond_leaves_its_children_without_parents(web, family):
     bond = _post(web, {"person_a": 1, "person_b": 2}).get_json()
     token = csrf_token(web)
     web.patch(
-        "/personal/people/3",
+        "/app/people/3",
         json={"parents": bond["id"]},
         headers={"X-CSRFToken": token},
     )
 
     removed = web.delete(
-        f"/personal/pair_bonds/{bond['id']}", headers={"X-CSRFToken": token}
+        f"/app/pair_bonds/{bond['id']}", headers={"X-CSRFToken": token}
     )
     assert removed.status_code == 204
 

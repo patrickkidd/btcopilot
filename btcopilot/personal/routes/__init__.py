@@ -17,7 +17,7 @@ _log = logging.getLogger(__name__)
 bp = Blueprint(
     "personal",
     __name__,
-    url_prefix="/personal",
+    url_prefix="/app",
     template_folder="templates",
     static_folder="../static",
 )

@@ -12,7 +12,7 @@ import { stateFor } from "./setup";
  * a dot picks and never moves the thread. */
 
 const settle = async (page: Page) => {
-  await page.goto("/personal/");
+  await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(500);
 };

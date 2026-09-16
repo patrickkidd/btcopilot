@@ -134,7 +134,7 @@ def web(flask_app, test_user):
 
 
 def csrf_token(web) -> str:
-    page = web.get("/personal/").get_data(as_text=True)
+    page = web.get("/app/").get_data(as_text=True)
     return re.search(r'name="csrf-token" content="([^"]+)"', page).group(1)
 
 

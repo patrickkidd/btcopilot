@@ -9,7 +9,7 @@ import { stateFor, steady } from "./setup";
  * which is exactly what it did hide once. */
 
 const settle = async (page: import("@playwright/test").Page) => {
-  await page.goto("/personal/");
+  await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(400);
 };

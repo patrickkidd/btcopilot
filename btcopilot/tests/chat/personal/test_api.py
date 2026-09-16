@@ -65,7 +65,7 @@ def patch(web, token, url, body):
 
 @pytest.mark.chat_flow(response="a coach reply", title="Sleep and the move")
 def test_session_auto_titled_after_first_exchange(web, token, test_user):
-    post(web, token, "/personal/chat", {"statement": "hello"})
+    post(web, token, "/app/chat", {"statement": "hello"})
 
     discussion = Discussion.query.one()
     assert discussion.title == "Sleep and the move"
@@ -73,19 +73,19 @@ def test_session_auto_titled_after_first_exchange(web, token, test_user):
 
 @pytest.mark.chat_flow(title="Sleep and the move")
 def test_session_title_kept_after_later_exchanges(web, token):
-    post(web, token, "/personal/chat", {"statement": "one"})
+    post(web, token, "/app/chat", {"statement": "one"})
     Discussion.query.one().update(title="Hand written")
     db.session.commit()
-    post(web, token, "/personal/chat", {"statement": "two"})
+    post(web, token, "/app/chat", {"statement": "two"})
 
     assert Discussion.query.one().title == "Hand written"
 
 
 @pytest.mark.chat_flow
 def test_session_list(web, token):
-    post(web, token, "/personal/chat", {"statement": "hello"})
+    post(web, token, "/app/chat", {"statement": "hello"})
 
-    sessions = web.get("/personal/sessions").get_json()
+    sessions = web.get("/app/sessions").get_json()
     assert len(sessions) == 1
     assert sessions[0]["message_count"] == 2
     assert sessions[0]["summary"]
@@ -103,12 +103,12 @@ def test_session_list_omits_a_transcript_import(web, token, test_user):
     db.session.add(imported)
     db.session.commit()
 
-    assert web.get("/personal/sessions").get_json() == []
-    assert web.get(f"/personal/sessions/{imported.id}").status_code == 404
+    assert web.get("/app/sessions").get_json() == []
+    assert web.get(f"/app/sessions/{imported.id}").status_code == 404
 
 
 def test_session_create(web, token, test_user):
-    response = post(web, token, "/personal/sessions", {})
+    response = post(web, token, "/app/sessions", {})
     assert response.status_code == 201
     assert response.get_json()["message_count"] == 0
     assert Discussion.query.one().diagram_id == test_user.free_diagram_id
@@ -116,24 +116,24 @@ def test_session_create(web, token, test_user):
 
 @pytest.mark.chat_flow
 def test_session_switch_by_last_activity(web, token):
-    first = post(web, token, "/personal/chat", {"statement": "one"}).get_json()
-    second = post(web, token, "/personal/sessions", {}).get_json()
+    first = post(web, token, "/app/chat", {"statement": "one"}).get_json()
+    second = post(web, token, "/app/sessions", {}).get_json()
     post(
         web,
         token,
-        f"/personal/sessions/{first['discussion_id']}/statements",
+        f"/app/sessions/{first['discussion_id']}/statements",
         {"statement": "back to the first"},
     )
 
-    listed = web.get("/personal/sessions").get_json()
+    listed = web.get("/app/sessions").get_json()
     assert [s["id"] for s in listed] == [first["discussion_id"], second["id"]]
 
 
 @pytest.mark.chat_flow(response="a coach reply")
 def test_session_statements(web, token):
-    created = post(web, token, "/personal/chat", {"statement": "hello"}).get_json()
+    created = post(web, token, "/app/chat", {"statement": "hello"}).get_json()
 
-    session = web.get(f"/personal/sessions/{created['discussion_id']}").get_json()
+    session = web.get(f"/app/sessions/{created['discussion_id']}").get_json()
     assert [(s["role"], s["text"]) for s in session["statements"]] == [
         ("user", "hello"),
         ("coach", "a coach reply"),
@@ -141,10 +141,10 @@ def test_session_statements(web, token):
 
 
 def test_session_rename(web, token):
-    created = post(web, token, "/personal/sessions", {}).get_json()
+    created = post(web, token, "/app/sessions", {}).get_json()
 
     renamed = patch(
-        web, token, f"/personal/sessions/{created['id']}", {"title": "The move"}
+        web, token, f"/app/sessions/{created['id']}", {"title": "The move"}
     )
     assert renamed.get_json()["title"] == "The move"
     assert db.session.get(Discussion, created["id"]).title == "The move"
@@ -152,11 +152,11 @@ def test_session_rename(web, token):
 
 @pytest.mark.chat_flow(response="a coach reply")
 def test_session_delete_keeps_the_record(web, token, test_user):
-    created = post(web, token, "/personal/chat", {"statement": "hello"}).get_json()
+    created = post(web, token, "/app/chat", {"statement": "hello"}).get_json()
     events = len(test_user.free_diagram.get_diagram_data().events)
 
     response = web.delete(
-        f"/personal/sessions/{created['discussion_id']}", headers={"X-CSRFToken": token}
+        f"/app/sessions/{created['discussion_id']}", headers={"X-CSRFToken": token}
     )
     assert response.status_code == 204
     assert db.session.get(Discussion, created["discussion_id"]) is None
@@ -169,23 +169,23 @@ def test_session_delete_of_another_user_is_not_found(web, token, test_user_2):
     db.session.commit()
 
     response = web.delete(
-        f"/personal/sessions/{other.id}", headers={"X-CSRFToken": token}
+        f"/app/sessions/{other.id}", headers={"X-CSRFToken": token}
     )
     assert response.status_code == 404
     assert db.session.get(Discussion, other.id) is not None
 
 
 def test_session_rename_rejects_unknown_field(web, token):
-    created = post(web, token, "/personal/sessions", {}).get_json()
+    created = post(web, token, "/app/sessions", {}).get_json()
 
     response = patch(
-        web, token, f"/personal/sessions/{created['id']}", {"summary": "x"}
+        web, token, f"/app/sessions/{created['id']}", {"summary": "x"}
     )
     assert response.status_code == 400
 
 
 def test_chat_requires_json(web, token):
-    response = web.post("/personal/chat", data="hello", headers={"X-CSRFToken": token})
+    response = web.post("/app/chat", data="hello", headers={"X-CSRFToken": token})
     assert response.status_code == 415
 
 
@@ -194,7 +194,7 @@ def test_session_of_another_user_is_not_found(web, token, test_user_2):
     db.session.add(other)
     db.session.commit()
 
-    assert web.get(f"/personal/sessions/{other.id}").status_code == 404
+    assert web.get(f"/app/sessions/{other.id}").status_code == 404
 
 
 # ── chips ───────────────────────────────────────────────────────────────────
@@ -216,7 +216,7 @@ def test_chat_keeps_the_chips_the_record_resolves(web, token, family):
     family.set_diagram_data(data)
     db.session.commit()
 
-    body = post(web, token, "/personal/chat", {"statement": "hi"}).get_json()
+    body = post(web, token, "/app/chat", {"statement": "hi"}).get_json()
     assert body["statement"] == (
         "That sits in [[event:10|two winters]], with [[person:1|Wren]]."
     )
@@ -227,7 +227,7 @@ def test_chat_keeps_the_chips_the_record_resolves(web, token, family):
 
 @pytest.mark.chat_flow(response="I mean [[person:99|someone]].")
 def test_a_chip_pointing_at_nothing_becomes_its_own_words(web, token, family):
-    body = post(web, token, "/personal/chat", {"statement": "hi"}).get_json()
+    body = post(web, token, "/app/chat", {"statement": "hi"}).get_json()
     assert body["statement"] == "I mean someone."
 
 
@@ -278,13 +278,13 @@ def test_clusters_survive_a_server_side_write(dated):
 
 @pytest.mark.chat_flow(response="That cluster: [[cluster:c1|the run]].")
 def test_a_cluster_chip_survives_when_the_record_holds_it(web, token, dated):
-    body = post(web, token, "/personal/chat", {"statement": "hi"}).get_json()
+    body = post(web, token, "/app/chat", {"statement": "hi"}).get_json()
     assert body["statement"] == "That cluster: [[cluster:c1|the run]]."
 
 
 @pytest.mark.chat_flow(response="Off the line: [[cluster:c9|elsewhere]].")
 def test_a_cluster_chip_the_record_does_not_hold_is_dropped(web, token, dated):
-    body = post(web, token, "/personal/chat", {"statement": "hi"}).get_json()
+    body = post(web, token, "/app/chat", {"statement": "hi"}).get_json()
     assert body["statement"] == "Off the line: elsewhere."
 
 
@@ -300,7 +300,7 @@ def test_a_chip_may_name_an_undated_event(web, token, dated):
     dated.set_diagram_data(data)
     db.session.commit()
 
-    body = post(web, token, "/personal/chat", {"statement": "hi"}).get_json()
+    body = post(web, token, "/app/chat", {"statement": "hi"}).get_json()
     assert body["statement"] == "An undated one: [[event:12|that]]."
 
 
@@ -309,7 +309,7 @@ def test_a_chip_may_name_an_undated_event(web, token, dated):
 
 
 def test_preferences_defaults(web, test_user):
-    body = web.get("/personal/preferences").get_json()
+    body = web.get("/app/preferences").get_json()
     assert body == {
         PrefKey.Speak.value: False,
         PrefKey.Proactive.value: Proactive.Never.value,
@@ -325,7 +325,7 @@ def test_preferences_round_trip(web, token, test_user):
     body = patch(
         web,
         token,
-        "/personal/preferences",
+        "/app/preferences",
         {
             PrefKey.Speak.value: True,
             PrefKey.Theme.value: Theme.Dark.value,
@@ -339,19 +339,19 @@ def test_preferences_round_trip(web, token, test_user):
 
     assert test_user.pref(PrefKey.Theme) is Theme.Dark
     assert test_user.birthdate == datetime.date(1984, 2, 29)
-    assert web.get("/personal/preferences").get_json()["first_name"] == "Wren"
+    assert web.get("/app/preferences").get_json()["first_name"] == "Wren"
 
 
 def test_preferences_rejects_unknown_key(web, token):
     assert (
-        patch(web, token, "/personal/preferences", {"colour": "blue"}).status_code
+        patch(web, token, "/app/preferences", {"colour": "blue"}).status_code
         == 400
     )
 
 
 def test_preferences_rejects_bad_value(web, token):
     response = patch(
-        web, token, "/personal/preferences", {PrefKey.Theme.value: "aubergine"}
+        web, token, "/app/preferences", {PrefKey.Theme.value: "aubergine"}
     )
     assert response.status_code == 400
 
@@ -366,7 +366,7 @@ def test_account(web, test_user):
     db.session.add(License(user_id=test_user.id, policy_id=policy.id, active=True))
     db.session.commit()
 
-    body = web.get("/personal/account").get_json()
+    body = web.get("/app/account").get_json()
     assert body["email"] == test_user.username
     assert body["plan"] == PLAN_PLACEHOLDER
     assert body["sign_in_method"] == "password"
@@ -384,7 +384,7 @@ def test_account_license_status_follows_the_license(web, test_user):
     )
     db.session.commit()
 
-    body = web.get("/personal/account").get_json()
+    body = web.get("/app/account").get_json()
     assert body["licenses"][0]["status"] == LicenseStatus.Canceled.value
 
 
@@ -399,10 +399,10 @@ def test_read_only_grant_is_not_listed_or_writable(web, token, test_user, test_u
     db.session.commit()
     shared.grant_access(test_user, btcopilot.ACCESS_READ_ONLY, _commit=True)
 
-    listed = web.get("/personal/diagrams").get_json()
+    listed = web.get("/app/diagrams").get_json()
     assert shared.id not in {d["id"] for d in listed}
 
-    response = post(web, token, f"/personal/diagrams/{shared.id}/select", {})
+    response = post(web, token, f"/app/diagrams/{shared.id}/select", {})
     assert response.status_code == 404
     assert test_user.current_diagram_id is None
 
@@ -411,7 +411,7 @@ def test_read_only_grant_is_not_listed_or_writable(web, token, test_user, test_u
     test_user.current_diagram_id = shared.id
     db.session.commit()
 
-    assert post(web, token, "/personal/people", {"name": "Nova"}).status_code == 403
+    assert post(web, token, "/app/people", {"name": "Nova"}).status_code == 403
     assert shared.get_diagram_data().people == []
 
 
@@ -431,14 +431,14 @@ SHIFT = {
 
 
 def test_event_round_trip(web, token, family):
-    created = post(web, token, "/personal/events", SHIFT)
+    created = post(web, token, "/app/events", SHIFT)
     assert created.status_code == 201
     event = created.get_json()
     assert event["id"] > 0
     assert event["dateTime"] == "2019-04-02"
     assert event["relationshipTargets"] == [2]
 
-    read = web.get("/personal/timeline").get_json()
+    read = web.get("/app/timeline").get_json()
     assert [p["event_id"] for lane in read["lanes"] for p in lane["points"]] == [
         event["id"]
     ]
@@ -446,7 +446,7 @@ def test_event_round_trip(web, token, family):
     updated = patch(
         web,
         token,
-        f"/personal/events/{event['id']}",
+        f"/app/events/{event['id']}",
         {"description": "Sleep improved", "symptom": VariableShift.Down.value},
     ).get_json()
     assert updated["description"] == "Sleep improved"
@@ -455,7 +455,7 @@ def test_event_round_trip(web, token, family):
 
     assert (
         web.delete(
-            f"/personal/events/{event['id']}", headers={"X-CSRFToken": token}
+            f"/app/events/{event['id']}", headers={"X-CSRFToken": token}
         ).status_code
         == 204
     )
@@ -475,7 +475,7 @@ def test_a_named_record_takes_the_write_and_a_stranger_s_does_not(
     db.session.add_all([mine, theirs])
     db.session.commit()
 
-    created = post(web, token, f"/personal/events?diagram_id={mine.id}", SHIFT)
+    created = post(web, token, f"/app/events?diagram_id={mine.id}", SHIFT)
     assert created.status_code == 201
     assert [e["description"] for e in mine.get_diagram_data().events] == [
         "Sleep got worse"
@@ -487,35 +487,35 @@ def test_a_named_record_takes_the_write_and_a_stranger_s_does_not(
         patch(
             web,
             token,
-            f"/personal/events/{event_id}?diagram_id={mine.id}",
+            f"/app/events/{event_id}?diagram_id={mine.id}",
             {"description": "Sleep improved"},
         ).get_json()["description"]
         == "Sleep improved"
     )
     assert (
         web.delete(
-            f"/personal/events/{event_id}?diagram_id={mine.id}",
+            f"/app/events/{event_id}?diagram_id={mine.id}",
             headers={"X-CSRFToken": token},
         ).status_code
         == 204
     )
     assert mine.get_diagram_data().events == []
 
-    refused = post(web, token, f"/personal/people?diagram_id={theirs.id}", {"name": "Nova"})
+    refused = post(web, token, f"/app/people?diagram_id={theirs.id}", {"name": "Nova"})
     assert refused.status_code == 403
     assert theirs.get_diagram_data().people == []
 
 
 def test_event_write_takes_the_diagram_lock(web, token, family):
     before = family.version
-    post(web, token, "/personal/events", SHIFT)
+    post(web, token, "/app/events", SHIFT)
     db.session.refresh(family)
     assert family.version == before + 1
 
 
 def test_event_variables_dropped_when_kind_is_not_shift(web, token, family):
     event = post(
-        web, token, "/personal/events", dict(SHIFT, kind=EventKind.Death.value)
+        web, token, "/app/events", dict(SHIFT, kind=EventKind.Death.value)
     ).get_json()
     assert event["symptom"] is None
     assert event["relationship"] is None
@@ -523,12 +523,12 @@ def test_event_variables_dropped_when_kind_is_not_shift(web, token, family):
 
 
 def test_event_switching_kind_drops_the_shift_values(web, token, family):
-    event = post(web, token, "/personal/events", SHIFT).get_json()
+    event = post(web, token, "/app/events", SHIFT).get_json()
 
     updated = patch(
         web,
         token,
-        f"/personal/events/{event['id']}",
+        f"/app/events/{event['id']}",
         {"kind": EventKind.Death.value},
     ).get_json()
     assert updated["symptom"] is None
@@ -539,7 +539,7 @@ def test_event_switching_kind_drops_the_shift_values(web, token, family):
 def test_event_targets_dropped_without_a_relationship(web, token, family):
     body = dict(SHIFT)
     del body["relationship"]
-    event = post(web, token, "/personal/events", body).get_json()
+    event = post(web, token, "/app/events", body).get_json()
     assert event["relationshipTargets"] == []
 
 
@@ -547,7 +547,7 @@ def test_event_triangles_kept_only_for_inside_and_outside(web, token, family):
     conflict = post(
         web,
         token,
-        "/personal/events",
+        "/app/events",
         dict(SHIFT, relationshipTriangles=[3]),
     ).get_json()
     assert conflict["relationshipTriangles"] == []
@@ -555,7 +555,7 @@ def test_event_triangles_kept_only_for_inside_and_outside(web, token, family):
     inside = post(
         web,
         token,
-        "/personal/events",
+        "/app/events",
         dict(
             SHIFT,
             relationship=RelationshipKind.Inside.value,
@@ -566,26 +566,26 @@ def test_event_triangles_kept_only_for_inside_and_outside(web, token, family):
 
 
 def test_event_rejects_unknown_field(web, token, family):
-    response = post(web, token, "/personal/events", dict(SHIFT, mood="blue"))
+    response = post(web, token, "/app/events", dict(SHIFT, mood="blue"))
     assert response.status_code == 400
     assert b"mood" in response.get_data()
 
 
 def test_event_rejects_unknown_person(web, token, family):
-    response = post(web, token, "/personal/events", dict(SHIFT, person=99))
+    response = post(web, token, "/app/events", dict(SHIFT, person=99))
     assert response.status_code == 400
 
 
 def test_event_rejects_bad_kind(web, token, family):
     assert (
-        post(web, token, "/personal/events", dict(SHIFT, kind="wedding")).status_code
+        post(web, token, "/app/events", dict(SHIFT, kind="wedding")).status_code
         == 400
     )
 
 
 def test_event_of_missing_id_is_404(web, token, family):
     assert (
-        patch(web, token, "/personal/events/404", {"description": "x"}).status_code
+        patch(web, token, "/app/events/404", {"description": "x"}).status_code
         == 404
     )
 
@@ -608,7 +608,7 @@ def test_timeline_reports_where_an_event_was_coded(web, family):
     family.set_diagram_data(data)
     db.session.commit()
 
-    body = web.get("/personal/timeline").get_json()
+    body = web.get("/app/timeline").get_json()
     assert body["coded_in"] == {"10": {"discussion_id": 77, "statement_id": None}}
 
 
@@ -625,4 +625,4 @@ def test_timeline_omits_events_never_traced(web, family):
     family.set_diagram_data(data)
     db.session.commit()
 
-    assert web.get("/personal/timeline").get_json()["coded_in"] == {}
+    assert web.get("/app/timeline").get_json()["coded_in"] == {}

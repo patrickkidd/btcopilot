@@ -8,7 +8,7 @@ import { stateFor } from "./setup";
  * never change position on screen just from a click on a chip. */
 
 const settle = async (page: Page) => {
-  await page.goto("/personal/");
+  await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   // A bubble still typing itself out keeps growing, and the first-run greeting
   // starts a moment after load, so waiting on a class is racy. Wait instead

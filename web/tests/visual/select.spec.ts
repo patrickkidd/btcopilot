@@ -6,7 +6,7 @@ import { stateFor } from "./setup";
  * decides: on the words it selects, in the space around them it scrolls. */
 
 const settle = async (page: Page) => {
-  await page.goto("/personal/");
+  await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(500);
 };

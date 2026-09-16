@@ -28,7 +28,7 @@ def people(diagram):
 def test_adding_someone_writes_them_and_logs_it_as_the_user(web, family):
     token = csrf_token(web)
     added = web.post(
-        "/personal/people",
+        "/app/people",
         json={"name": "Bo", "gender": "male"},
         headers={"X-CSRFToken": token},
     )
@@ -43,7 +43,7 @@ def test_adding_someone_writes_them_and_logs_it_as_the_user(web, family):
 def test_changing_someone_keeps_their_id(web, family):
     token = csrf_token(web)
     changed = web.patch(
-        "/personal/people/1",
+        "/app/people/1",
         json={"name": "Wren", "last_name": "Ellis"},
         headers={"X-CSRFToken": token},
     ).get_json()
@@ -60,7 +60,7 @@ def test_changing_someone_keeps_their_id(web, family):
 def test_a_field_the_record_has_no_room_for_is_refused(web, family):
     token = csrf_token(web)
     refused = web.patch(
-        "/personal/people/1",
+        "/app/people/1",
         json={"birthDate": "1980-01-01"},
         headers={"X-CSRFToken": token},
     )
@@ -70,7 +70,7 @@ def test_a_field_the_record_has_no_room_for_is_refused(web, family):
 
 def test_removing_someone_takes_them_off_the_record(web, family):
     token = csrf_token(web)
-    gone = web.delete("/personal/people/1", headers={"X-CSRFToken": token})
+    gone = web.delete("/app/people/1", headers={"X-CSRFToken": token})
     assert gone.status_code == 204
     assert people(family) == []
 
@@ -83,7 +83,7 @@ def test_a_record_behind_its_own_counter_never_renames_someone(web, family):
     db.session.commit()
 
     added = web.post(
-        "/personal/people",
+        "/app/people",
         json={"name": "Bo", "gender": "male"},
         headers={"X-CSRFToken": csrf_token(web)},
     ).get_json()

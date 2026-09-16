@@ -6,12 +6,12 @@ import { stateFor } from "./setup";
  * lights wherever people are drawn, which today is the board. */
 
 const settle = async (page: Page) => {
-  await page.goto("/personal/");
+  await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(500);
 };
 
-const SEND = /\/personal\/(chat|sessions\/\d+\/statements)$/;
+const SEND = /\/app\/(chat|sessions\/\d+\/statements)$/;
 
 /** A turn that added one moment, told the way the server tells it: the call,
  * then the patch naming what it made. Event 22 is on the moves record. */

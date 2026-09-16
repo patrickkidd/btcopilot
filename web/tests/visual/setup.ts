@@ -159,7 +159,7 @@ export default async function setup() {
   for (const key of KEYS) {
     const context = await browser.newContext();
     const page = await context.newPage();
-    await page.goto(`${base}/personal/invite/${tokens.get(key)}`, {
+    await page.goto(`${base}/app/invite/${tokens.get(key)}`, {
       waitUntil: "domcontentloaded",
     });
     // A sign-in link works once. If it has already been opened, or if the
@@ -167,7 +167,7 @@ export default async function setup() {
     // invite answers with the sign-in page and the state below would be
     // anonymous — every golden then shows a logged-out shell. Fail here
     // instead, where the cause is still visible.
-    const me = await page.request.get(`${base}/personal/me`);
+    const me = await page.request.get(`${base}/app/me`);
     if (!me.ok() || !(await me.json()).user)
       throw new Error(
         `the sign-in link for "${key}" did not open a session (GET /me returned ${me.status()}). ` +

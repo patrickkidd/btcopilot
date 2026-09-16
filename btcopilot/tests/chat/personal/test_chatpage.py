@@ -27,20 +27,20 @@ def no_auto_auth(monkeypatch):
 def test_page_loads(web):
     """The page is the built web bundle: the picture, the composer, and the
     menu that holds the timeline."""
-    response = web.get("/personal/")
+    response = web.get("/app/")
     assert response.status_code == 200
     page = response.get_data(as_text=True)
     assert 'id="view"' in page
     assert 'id="composer"' in page
     assert 'id="sessions-open"' in page
     assert 'id="menu-screen"' in page
-    assert "/personal/static/web/app.js" in page
+    assert "/app/static/web/app.js" in page
 
 
 def test_page_carries_what_only_the_server_knows(web, test_user):
     """The bundle is static; the CSRF token, the diagram and the session the
     user returns to are injected into it."""
-    page = web.get("/personal/").get_data(as_text=True)
+    page = web.get("/app/").get_data(as_text=True)
     assert 'name="csrf-token"' in page
     assert f'"id": {test_user.free_diagram_id}' in page
     assert "window.BOOTSTRAP=" in page
@@ -49,9 +49,9 @@ def test_page_carries_what_only_the_server_knows(web, test_user):
 def test_page_requires_login(flask_app):
     flask_app.test_client_class = flask.testing.FlaskClient
     with flask_app.test_client(use_cookies=True) as client:
-        response = client.get("/personal/")
+        response = client.get("/app/")
         assert response.status_code == 302
-        assert "/personal/login" in response.headers["Location"]
+        assert "/app/login" in response.headers["Location"]
 
 
 def test_timeline_shows_own_data_only(web, test_user):
@@ -59,7 +59,7 @@ def test_timeline_shows_own_data_only(web, test_user):
     diagram.set_diagram_data(seed_diagram_data())
     db.session.commit()
     token = csrf_token(web)
-    data = web.get("/personal/timeline").get_json()
+    data = web.get("/app/timeline").get_json()
     assert {p["id"] for p in data["people"]} == {1, 3, 4, 5, 6, 7}
     assert {b["id"] for b in data["pair_bonds"]} == {8, 9}
 
@@ -75,7 +75,7 @@ def test_timeline_empty_for_user_without_diagram(flask_app, test_user_2):
             sess["logged_in_at"] = datetime.datetime.now(
                 datetime.timezone.utc
             ).isoformat()
-        data = client.get("/personal/timeline").get_json()
+        data = client.get("/app/timeline").get_json()
         assert data["people"] == []
         assert data["lanes"] == []
 
@@ -84,7 +84,7 @@ def test_timeline_empty_for_user_without_diagram(flask_app, test_user_2):
 def test_chat_round_trip(web, test_user):
     token = csrf_token(web)
     response = web.post(
-        "/personal/chat",
+        "/app/chat",
         json={"statement": "hello there"},
         headers={"X-CSRFToken": token},
     )
@@ -107,24 +107,24 @@ def test_chat_round_trip(web, test_user):
 def test_chat_reuses_discussion(web, test_user):
     token = csrf_token(web)
     first = web.post(
-        "/personal/chat", json={"statement": "one"}, headers={"X-CSRFToken": token}
+        "/app/chat", json={"statement": "one"}, headers={"X-CSRFToken": token}
     ).get_json()
     second = web.post(
-        "/personal/chat", json={"statement": "two"}, headers={"X-CSRFToken": token}
+        "/app/chat", json={"statement": "two"}, headers={"X-CSRFToken": token}
     ).get_json()
     assert first["discussion_id"] == second["discussion_id"]
     assert Discussion.query.count() == 1
 
 
 def test_chat_rejects_missing_csrf(web):
-    response = web.post("/personal/chat", json={"statement": "forged"})
+    response = web.post("/app/chat", json={"statement": "forged"})
     assert response.status_code == 400
     assert Statement.query.count() == 0
 
 
 def test_chat_rejects_bad_csrf(web):
     response = web.post(
-        "/personal/chat",
+        "/app/chat",
         json={"statement": "forged"},
         headers={"X-CSRFToken": "not-a-real-token"},
     )
@@ -154,22 +154,22 @@ def test_the_timeline_says_nothing_about_extraction(web, test_user):
     """The picture is written by the coach as it talks, so there is no cursor
     behind the conversation to report and no badge saying so."""
     _make_discussion(test_user, order=3)
-    assert "extraction" not in web.get("/personal/timeline").get_json()
+    assert "extraction" not in web.get("/app/timeline").get_json()
 
 
 def test_pwa_files_are_served_from_the_app_root(web):
-    """The service worker has to answer from /personal/ or its scope cannot
+    """The service worker has to answer from /app/ or its scope cannot
     cover the app."""
-    assert web.get("/personal/sw.js").status_code == 200
-    assert web.get("/personal/manifest.webmanifest").status_code == 200
+    assert web.get("/app/sw.js").status_code == 200
+    assert web.get("/app/manifest.webmanifest").status_code == 200
 
 
 def test_a_tap_is_recorded_against_the_diagram(web, test_user):
-    """The page runs on a session cookie, so it cannot reach /personal/, which
+    """The page runs on a session cookie, so it cannot reach /app/, which
     is signed by the native apps. It writes to the same store through here."""
     token = csrf_token(web)
     response = web.post(
-        "/personal/interactions",
+        "/app/interactions",
         json={
             "diagram_id": test_user.free_diagram_id,
             "kind": InteractionKind.Look.value,
@@ -187,7 +187,7 @@ def test_a_tap_is_recorded_against_the_diagram(web, test_user):
 
 def test_a_tap_that_names_no_item_kind_is_refused_in_words(web, test_user):
     response = web.post(
-        "/personal/interactions",
+        "/app/interactions",
         json={
             "diagram_id": test_user.free_diagram_id,
             "kind": InteractionKind.ChipTap.value,
@@ -207,7 +207,7 @@ def test_play_hands_the_coach_the_cluster_events_in_date_order(
     diagram = test_user.free_diagram
     diagram.set_diagram_data(seed_diagram_data())
     db.session.commit()
-    cluster = web.get("/personal/timeline").get_json()["clusters"][0]
+    cluster = web.get("/app/timeline").get_json()["clusters"][0]
     token = csrf_token(web)
 
     # the walk is sentences, not a list of chips: a bare run is sent back
@@ -223,7 +223,7 @@ def test_play_hands_the_coach_the_cluster_events_in_date_order(
         "btcopilot.personal.playturn.CoachModel", lambda *a, **k: model
     )
     reply = web.post(
-        "/personal/play",
+        "/app/play",
         json={"cluster_id": cluster["id"]},
         headers={"X-CSRFToken": token},
     ).get_json()
@@ -242,7 +242,7 @@ def test_play_refuses_a_cluster_that_is_not_on_the_line(web, test_user):
     token = csrf_token(web)
 
     response = web.post(
-        "/personal/play",
+        "/app/play",
         json={"cluster_id": "nope"},
         headers={"X-CSRFToken": token},
     )

@@ -1054,7 +1054,7 @@ void load().then(async () => {
 // so a saved edit would never reach the page.
 if (import.meta.env.PROD && "serviceWorker" in navigator)
   window.addEventListener("load", () =>
-    navigator.serviceWorker.register("/personal/sw.js", { scope: "/personal/" }),
+    navigator.serviceWorker.register("/app/sw.js", { scope: "/app/" }),
   );
 
 // A coder opens on their one task rather than on the chat (R-0265, frame f1),

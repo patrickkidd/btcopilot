@@ -7,7 +7,7 @@ import { stateFor } from "./setup";
  * still be there when the reader looks back. */
 
 const settle = async (page: Page) => {
-  await page.goto("/personal/");
+  await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(400);
 };
@@ -20,7 +20,7 @@ const say = async (page: Page, words: string) => {
 const warning = (page: Page) => page.locator(".sys.warn");
 
 /** Where a turn is posted: a new thread, or the session already on screen. */
-const SEND = /\/personal\/(chat|sessions\/\d+\/statements)$/;
+const SEND = /\/app\/(chat|sessions\/\d+\/statements)$/;
 
 test.describe("a send that does not go through", () => {
   test.use({ storageState: stateFor("moves") });
@@ -113,7 +113,7 @@ test.describe("an explain that does not go through", () => {
 
   test("warns under the board and leaves the board up", async ({ page }) => {
     await settle(page);
-    await page.route("**/personal/play", (route) =>
+    await page.route("**/app/play", (route) =>
       route.fulfill({ status: 500, body: "no" }),
     );
     await page.locator("#cap-play").click();

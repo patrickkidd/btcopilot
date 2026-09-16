@@ -75,7 +75,7 @@ def test_the_chat_app_reads_the_relationship_sub_fields(web, test_user):
     db.session.commit()
 
     csrf_token(web)
-    events = {e["id"]: e for e in web.get("/personal/timeline").get_json()["events"]}
+    events = {e["id"]: e for e in web.get("/app/timeline").get_json()["events"]}
     assert events[12]["relationship"] == "distance"
     assert events[12]["relationshipTargets"] == [2, 3]
     assert events[13]["relationship"] == "inside"
@@ -93,7 +93,7 @@ def test_editing_an_event_by_hand_keeps_the_fields_only_the_desktop_knows(web, t
     db.session.commit()
 
     saved = web.patch(
-        "/personal/events/12",
+        "/app/events/12",
         json={"description": "moved away and went quiet for a year"},
         headers={"X-CSRFToken": csrf_token(web)},
     )

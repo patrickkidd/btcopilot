@@ -88,7 +88,7 @@ def user_invite(email, base_url):
     return [
         {
             "email": address,
-            "url": f"{base}/personal/invite/{invitation.token}",
+            "url": f"{base}/app/invite/{invitation.token}",
             "expires_at": invitation.expires_at,
         }
     ]
