@@ -384,7 +384,7 @@ his sign-in through the second invite (the first was consumed by the verificatio
 which created his account) and one chat turn. (3) [build] the fixed migration is committed on the branch
 but the running image predates it; the file was copied into the running container by hand, so
 the next image from CI carries it and nothing on the box depends on the hand copy.
-(4) [ruling] rename the app's mount from /personal to /app — about 13 places in the web sources
+(4) done: the mount is /app, on his word that R-0356 covered it — no separate ruling. Was: rename the app's mount from /personal to /app — about 13 places in the web sources
 and 70 in Python and tests — so the address bar and the sign-in links read familydiagram.com/app
 rather than the Caddy redirect standing in for it. Asked, not answered. (5) [build] rotate every secret in the committed compose file, which still holds live keys and a
 TLS private key in git history — he issues the new credentials. (6) [build] freeze the old
@@ -400,7 +400,7 @@ and the four appcast feeds); doc/chat-first/PLATFORM_BUILD.md; doc/chat-first/DA
 private/prompts/ and private/oracle/, encrypted; commits 974c29e, 1423f0a, eae997e.
 **Next action:** he puts the four real values into /etc/fd/secrets.env on the box and restarts
 the app and worker containers; then he opens his invite link at familydiagram.com and sends one
-message to the coach. Then rename the mount to /app (open item 4) so the address reads as ruled.
+message to the coach. A ProxyFix so Flask sees https behind Caddy is a small follow-up.
 **Updated:** 2026-09-16, second session.
 
 ## T-12 · The learning loop: a scout that looks outward and a review of the scout

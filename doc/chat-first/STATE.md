@@ -103,6 +103,15 @@ redirects to the app, www redirects to the bare name, the update feeds serve, an
 else redirects to the old site. The first invite was consumed by the verification request
 itself, which created his account; a second invite was minted and left untouched.
 
+**Then, on his word that R-0356 already covered it:** the app's mount was renamed from /personal
+to /app across code, tests, web and Caddy (48 files, 576 tests green), a branch image built by
+the release workflow on dispatch, pulled onto the box, and Caddy recreated (a single-file bind
+mount keeps the old inode after the file is replaced, so a reload is not enough). The app
+answers at https://familydiagram.com/app; /personal now redirects to the old site like every
+other path. A third invite was minted under /app. Known wart: the sign-in redirect's `next`
+carries http, not https, because Flask does not read the proxy's scheme header; harmless
+because Caddy upgrades http, but a ProxyFix belongs in the app.
+
 **What is not true yet on the box.** His own sign-in and first chat turn. Four keys in the secrets file are placeholders — Anthropic, AssemblyAI,
 and the Brevo mail username and password — so the coach cannot answer and no sign-in mail is
 sent; copying the real values there was refused by the permission classifier as credential
