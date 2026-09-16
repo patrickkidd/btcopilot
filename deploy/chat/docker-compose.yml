@@ -7,6 +7,7 @@
 # shared settings are their own anchor and each service merges them in.
 x-app-env: &app-env
   FLASK_CONFIG: production
+  FLASK_APP: "btcopilot.app:create_app()"
   FLASK_SQLALCHEMY_DATABASE_URI: postgresql://chat:${POSTGRES_PASSWORD}@fd-postgres:5432/chat
   CELERY_BROKER_URL: redis://fd-redis:6379/0
   CELERY_RESULT_BACKEND: redis://fd-redis:6379/0
@@ -61,6 +62,11 @@ services:
       FD_IS_CELERY: "1"
       DD_SERVICE: fd-worker
     command: ["python", "-m", "celery", "-A", "btcopilot.celery:celery", "worker", "--pool=solo", "--loglevel=info"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -m celery -A btcopilot.celery:celery inspect ping -d celery@$$HOSTNAME --timeout 10 || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
 
   fd-postgres:
     image: postgres:16-alpine
