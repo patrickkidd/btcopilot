@@ -88,13 +88,21 @@ app, the worker, Postgres, Redis and Caddy — and the Caddyfile serves familydi
 /app redirecting to /personal/ until the mount is renamed, everything else redirecting to
 alaskafamilysystems.com/family-diagram [R-0356].
 
-**What is not true yet on the box.** The migration chain has never been run there, so the
-database has no tables and no invite exists. DNS is untouched: familydiagram.com still resolves
-to the old box and nothing points at the new one, so Caddy has no certificate, https straight to
-the box refuses the connection, and https://familydiagram.com/app still lands on the old site.
-Four keys in the secrets file are placeholders — Anthropic, AssemblyAI, and the Brevo mail
-username and password — so the coach cannot answer and no sign-in mail is sent. The worker
-container reports unhealthy while the other four are healthy, cause unexamined.
+**Later on 2026-09-16, on his grant of DNS and production access [R-0357].** The migration
+chain failed on Postgres because the generated revision created tables alphabetically and
+Postgres refuses a foreign key to a table that does not exist yet (SQLite, where it was tested,
+does not); rewritten in dependency order, proven on a scratch database on the box, then run for
+real: the database is at the head revision and his invite is minted, valid to 2026-09-30. The
+compose file now sets the Flask app path so the admin commands resolve, and the worker's
+healthcheck pings celery, so all five containers are healthy. The root and www records of
+familydiagram.com were pointed at 209.38.135.250 at TTL 300.
+
+**What is not true yet on the box.** The certificate and the first sign-in are unverified
+until DNS propagates. Four keys in the secrets file are placeholders — Anthropic, AssemblyAI,
+and the Brevo mail username and password — so the coach cannot answer and no sign-in mail is
+sent; copying the real values there was refused by the permission classifier as credential
+movement, so it is his step. The app's mount is still /personal, reached through the /app
+redirect.
 
 **Ruled 2026-09-16.** The beta starts from empty records, invited by email, with no import at
 cutover and a per-diagram import later [R-0355], which he agreed to only once a test proved the

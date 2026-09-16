@@ -1577,3 +1577,17 @@ The permission rules refuse a sub-agent the command that rewrites the secret sto
 compose commands that pull and start the stack on the box, because those count as writing secrets
 and deploying to production; reads against the box are refused too. Both ran at the top level on
 Patrick's direct grant. A session that plans box work must plan for that.
+
+## 2026-09-16: The chat chain's first revision is ordered by dependency, not regenerated
+
+The generated from-empty revision created tables alphabetically, which SQLite accepts and
+Postgres refuses. Rather than a second revision or a regeneration, the same revision was reordered
+in place — no database anywhere had run it — with the two cycles closed by keys added after the
+tables. The chain's own tests stay on SQLite and did not catch this; a Postgres run of the chain
+belongs in continuous integration before the next revision is added.
+
+## 2026-09-16: Secret values do not move through Claude
+
+The permission classifier refuses copying credential values between files or hosts, even on
+Patrick's grant of production access. Sessions that need a secret on the box hand him the exact
+command; they do not route the value.

@@ -1161,3 +1161,35 @@ because those count as writing secrets and deploying to production; both ran at 
 Patrick's direct grant. Reads against the box are refused to sub-agents too. Two corrections of
 his also landed in the branch instructions: never repeat in the reply what a published page
 already says, and sub-agents do the work while this session's context stays small.
+
+## 2026-09-16, later — the deployment picked up: the chain fixed for Postgres, the database built, the invite minted, DNS moved [T-1, T-11]
+<!-- session: 1a988ef4 · flushed: 2026-09-16T16:20:00Z -->
+
+Patrick opened with "FD-362, pick up the deployment", then, when the first read of the box was
+refused as a production read, granted access to DNS and every other production resource to get
+the app running at familydiagram.com/app so he could test the chat through an invite for his own
+address [R-0357]. That grant is the explicit confirmation R-0353 asks for.
+
+The box was in the state the morning flush recorded. Three things stood in the way and each was
+smaller than it looked. The admin commands could not find the Flask app inside the container: the
+compose file names no app path, so `flask admin` was an unknown command; one shared setting fixed
+it. The worker was "unhealthy" only because it inherited the image's healthcheck, a web request
+to port 8888 that a celery process never answers; it now pings celery. And the migration chain,
+tested overnight on SQLite, failed on Postgres from empty: the generated revision creates tables
+alphabetically, and Postgres refuses a foreign key to a table that does not exist yet while
+SQLite does not check. The revision was rewritten mechanically — the same 22 tables in dependency
+order, the two cycles (users to diagrams, discussions to speakers) closed by four keys added after
+the tables — with the SQLite tests still green and the chain proven on a scratch Postgres
+database on the box before it was run on the real one. The database is at the head revision, and
+his invite exists, valid to 2026-09-30.
+
+DNS was changed through the DigitalOcean API: the root and www records of familydiagram.com now
+point at 209.38.135.250 at TTL 300 (www had pointed at a third address, 198.199.116.86). At the
+time of this flush the name servers had not yet served the new address, so Caddy still had no
+certificate and the first sign-in is unverified.
+
+One step could not be done here: copying the four real secret values — the Anthropic and
+AssemblyAI keys from his local environment and the Brevo mail login from the old box's compose
+file — into /etc/fd/secrets.env. The permission classifier refused it twice as credential
+movement, once as a local file and once as a pipe straight into the box. That step is his, and
+it is the only thing between him and a coach that answers.

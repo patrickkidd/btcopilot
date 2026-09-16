@@ -20,8 +20,8 @@ record only.
 
 ## T-1 · Ship the personal app to the first beta users
 
-**Status:** the code is ready for his review and the box is built; the beta waits on four keys,
-the migration chain on the box, and DNS.
+**Status:** the code is ready for his review; the box has its database, his invite is minted,
+and DNS points at it; the beta waits on the four keys and his first sign-in.
 **Decided:** one server for Pro, training and the chat app; old Pro diagrams stay pickle and
 new rows are JSON in the same column [Oracle: R-0241]; the beta users are the app working
 group of three clinicians [R-0079]; sign-in is passwordless with Face ID on a capable phone;
@@ -33,16 +33,16 @@ deferred to the first $20–40 bill [R-0354].
 is the first open item on the coach topic; (2) [waiting] the four service keys for the box —
 Anthropic, AssemblyAI, and the Brevo mail username and password — without which the coach does
 not answer and no sign-in mail is sent; (3) [verify] the app has never been opened on Android;
-(4) [verify] passkeys have never been tried on a real https domain, and cannot be until DNS
-points at the new box; (5) [waiting] cluster quality on anyone else's record stays unmeasured
+(4) [verify] passkeys have never been tried on a real https domain; DNS now points at the new
+box, so his first sign-in through the invite is the test; (5) [waiting] cluster quality on anyone else's record stays unmeasured
 until the coding loop produces numbers.
 **Lives in:** btcopilot PR #136 (fdserver PR #30 closed unmerged, 2026-09-16); merge-risk review
 with the seven fixes landed: doc/chat-first/MERGE_REVIEW.md; review log
 doc/chat-first/REVIEW_LOG.md, 146 rows; sandbox scripts
 /Users/patrick/worktrees/fd362-sandbox/; the box's deployment deploy/chat/.
-**Next action:** his four keys, then the migration chain and DNS on the deploy topic; his code
-review and the coach's prompt review run alongside.
-**Updated:** 2026-09-16.
+**Next action:** his four keys on the box, then his sign-in through the invite link and one chat
+turn; his code review and the coach's prompt review run alongside.
+**Updated:** 2026-09-16, second session.
 
 ## T-2 · The coach knows the clinical definitions, and we can measure it
 
@@ -328,8 +328,9 @@ doc/chat-first/{TOPICS.md,HISTORY.md,trace.json,events.json}; private/oracle/ (e
 
 ## T-11 · Platform reset: repo, deployment, billing, identity, admin
 
-**Status:** the box exists and the stack runs on it; the name does not point at it yet and the
-database is still empty. fdserver is out of this ticket.
+**Status:** the box runs the stack with its database built and Patrick's invite minted; the two
+DNS records point at it as of 2026-09-16 16:17 UTC; the certificate and the first sign-in are
+the open verification. Four secret values are still placeholders. fdserver is out of this ticket.
 **Decided:** one public repo; prompts leave the Python constants for one `.prompty` file per
 prompt with shared fragments, encrypted in place with sops and age, one key pair per machine,
 private keys never copied; files naming real people never enter a repo. The chat app gets its
@@ -363,22 +364,33 @@ else redirects to alaskafamilysystems.com/family-diagram, with www redirecting t
 **Deployment moved out of fdserver:** Patrick closed fdserver PR #30 unmerged. The compose file,
 Caddyfile, secrets template, runbook, release workflow and the four update feeds are
 `deploy/chat/` in this repo. The root CLAUDE.md was edited once on his word to say so.
+**Picked up later the same day, on his grant of DNS and production access [R-0357]:** the
+admin commands could not find the Flask app inside the container, so the compose file now
+sets the app path for every service; the worker was unhealthy only because it inherited the
+image's web healthcheck, so it now pings celery instead. The migration chain failed on
+Postgres from empty: the generated revision created tables in alphabetical order and Postgres
+refuses a foreign key to a table that does not exist yet, which SQLite, where the chain was
+tested, does not. The revision was rewritten in dependency order with the two cycles
+(users↔diagrams, discussions↔speakers) closed by four keys added after the tables; proven on a
+scratch Postgres database on the box, then run for real: the database is at the head revision
+with all 23 tables. His invite was minted (valid to 2026-09-30). The root and www records of
+familydiagram.com were changed to 209.38.135.250 at TTL 300. Copying the four real secret
+values (Anthropic and AssemblyAI keys from his local environment, the Brevo mail login from the
+old box's compose file) into the box's secrets file was refused twice by the permission
+classifier as credential movement, so that step is his.
 **Open:** (1) [waiting] four keys are still REPLACE_ME in /etc/fd/secrets.env — Anthropic,
-AssemblyAI, and the Brevo mail username and password. Until Patrick supplies them the coach
-does not answer and no sign-in mail is sent; an invite link minted on the box by
-`flask admin users invite` works without mail. (2) [build] the database on the box has no tables:
-`flask admin db current` returns nothing, so the migration chain has never been run there.
-(3) [build] DNS still points familydiagram.com at the old box, 107.170.236.117, and www at
-198.199.116.86; nothing resolves to 209.38.135.250, so Caddy cannot get a certificate and
-https to the box refuses the connection. Changing it needs his confirmation each time [R-0353].
+AssemblyAI, and the Brevo mail username and password. Until Patrick puts them there the coach
+does not answer and no sign-in mail is sent; his invite link works without mail. (2) [verify]
+Caddy's certificate for familydiagram.com and www after DNS propagates, then his sign-in
+through the invite and one chat turn. (3) [build] the fixed migration is committed on the branch
+but the running image predates it; the file was copied into the running container by hand, so
+the next image from CI carries it and nothing on the box depends on the hand copy.
 (4) [ruling] rename the app's mount from /personal to /app — about 13 places in the web sources
 and 70 in Python and tests — so the address bar and the sign-in links read familydiagram.com/app
-rather than the Caddy redirect standing in for it. Asked, not answered. (5) [verify] the worker
-container reports unhealthy while the other four are healthy; the cause is unexamined.
-(6) [build] rotate every secret in the committed compose file, which still holds live keys and a
-TLS private key in git history — he issues the new credentials. (7) [build] freeze the old
-droplet for Pro. (8) [build] money through Stripe: account, keys and the price, after the first
-bill [R-0354]. (9) [build] archive the fdserver repo once nothing refers to it. (10) [verify]
+rather than the Caddy redirect standing in for it. Asked, not answered. (5) [build] rotate every secret in the committed compose file, which still holds live keys and a
+TLS private key in git history — he issues the new credentials. (6) [build] freeze the old
+droplet for Pro. (7) [build] money through Stripe: account, keys and the price, after the first
+bill [R-0354]. (8) [build] archive the fdserver repo once nothing refers to it. (9) [verify]
 production still has no automated database backup.
 **Note for the next session:** the permission classifier refuses a sub-agent both `sops
 updatekeys`, because it writes the secret store, and `docker compose pull` and `up` on the box,
@@ -387,9 +399,10 @@ Production reads on the box are refused to sub-agents too.
 **Lives in:** deploy/chat/ (compose, Caddyfile, secrets template, README, the release workflow
 and the four appcast feeds); doc/chat-first/PLATFORM_BUILD.md; doc/chat-first/DATADOG.md;
 private/prompts/ and private/oracle/, encrypted; commits 974c29e, 1423f0a, eae997e.
-**Next action:** get the four keys from him, then on his confirmation run the migration chain on
-the box, mint his invite, and point the two DNS records at 209.38.135.250.
-**Updated:** 2026-09-16.
+**Next action:** he puts the four real values into /etc/fd/secrets.env on the box and restarts
+the app and worker containers; then he opens his invite link at familydiagram.com and sends one
+message to the coach. Then rename the mount to /app (open item 4) so the address reads as ruled.
+**Updated:** 2026-09-16, second session.
 
 ## T-12 · The learning loop: a scout that looks outward and a review of the scout
 
