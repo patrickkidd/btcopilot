@@ -216,14 +216,13 @@ What it is for: correcting or adding one event by hand.
 - How sure you are is one of unknown, approximate or certain. [built]
 - Symptom, anxiety and functioning are each set to up, down, same or not said. [built]
 - A relationship change sits at the same level as those three, under one heading, never in its own section. [built]
-- A relationship change is a kind plus the people involved, from the person who moved to the people it was aimed at. [drawn]
-- The list of people a relationship points at is labelled differently by kind, so a conflict asks for the others and an overfunctioning asks who was underfunctioning. [drawn]
-- A third list of people appears only for the inside and outside positions of a triangle. [drawn]
-- The shift fields and the relationship field only appear for a shift; the spouse field only for a bonding, marriage, separation or divorce; the child field only for a birth or adoption. [drawn]
+- A relationship change is a kind plus the people involved, from the person who moved to the people it was aimed at. [built]
+- The list of people a relationship points at is labelled differently by kind, so a conflict asks for the others and an overfunctioning asks who was underfunctioning. [built]
+- A third list of people appears only for the inside and outside positions of a triangle. [built]
+- The shift fields and the relationship field only appear for a shift; the spouse field only for a bonding, marriage, separation or divorce; the child field only for a birth or adoption. [built]
 - Saving drops values that no longer apply to the kind, so changing a shift into a death clears the shift values. [built]
 - Saving re-sorts the list by time and redraws the lists and the picture. [built]
 - Delete appears only when you are editing something that already exists. [built]
-- The relationship fields and the hiding of fields by kind are the unbuilt part of this screen; no decision is needed, only the work. [drawn]
 
 ## The person editor
 
