@@ -2017,9 +2017,15 @@ button { font-family: inherit; }
 .ss .ep-yrs { font: 400 10.5px var(--mono); fill: var(--faint); }
 .ss .ss-hint { font: 400 13px var(--mono); fill: var(--faint); }
 .ss-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin: 0;
-  padding: 10px 16px;
-  font: 400 13px/1.4 var(--sans);
+  padding: 0 24px;
+  text-align: center;
+  font: 400 14px/1.4 var(--sans);
   color: var(--faint);
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2280,6 +2286,11 @@ button { font-family: inherit; }
   cursor: pointer;
 }
 .donebtn:active { opacity: 0.55; }
+
+/* the empty session's call to action, where the bubbles will be */
+.cta { margin: 28px 20px 0; }
+.cta-t { margin: 0 0 8px; font: 600 19px/1.25 var(--sans); color: var(--ink); }
+.cta-p { margin: 0 0 8px; font: 400 15px/1.45 var(--sans); color: var(--faint); }
 
 /* the confirmation sheet Done opens */
 .cf-sheet { height: auto; padding: 4px 20px calc(20px + env(safe-area-inset-bottom)); }

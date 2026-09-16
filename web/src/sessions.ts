@@ -469,7 +469,9 @@ export class Sessions {
   private async start(kind: SessionKind = SessionKind.Chat): Promise<void> {
     const home = this.home();
     const current = this.current === null ? undefined : this.find(this.current);
-    if (current && current.message_count === 0) {
+    // two empty sessions of one kind say nothing the first does not; a note
+    // beside an empty session is a different thing and is allowed
+    if (current && current.kind === kind && current.message_count === 0) {
       this.lower();
       toast("Still empty — say something first");
       $("composer").focus({ preventScroll: true });

@@ -507,6 +507,12 @@ export class Picture {
     return this.level === Level.About;
   }
 
+  /** Nothing dated on the record yet: the picture is one sentence, and the
+   * row under it has nothing to point at. */
+  empty(): boolean {
+    return this.dated().length === 0;
+  }
+
   /** Up exactly one level: the board to the cluster it is showing, an open
    * cluster to the whole line. The title row is the only way up (owner ruling
    * 2026-09-08), so the board carries no corner arrow of its own. */
@@ -717,7 +723,7 @@ export class Picture {
     if (!dated.length) {
       this.host.innerHTML =
         `<div class="ss"><p class="ss-empty">` +
-        `Nothing on your line yet — it draws itself as you talk.</p>${shelf}</div>`;
+        `The timeline draws itself here as you talk.</p>${shelf}</div>`;
       return;
     }
 

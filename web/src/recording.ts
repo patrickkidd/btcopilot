@@ -12,6 +12,11 @@ import { VoiceRole, type Session, type Utterance, type Voice } from "./types";
 /** How long between asking whether the transcript is ready. */
 const POLL_MS = 3000;
 
+enum Stage {
+  Warn = "warn",
+  Map = "map",
+}
+
 const ROLES = [
   { role: VoiceRole.Clinician, label: "the clinician" },
   { role: VoiceRole.Client, label: "the client" },
@@ -48,6 +53,7 @@ export class Recording {
   private make: HTMLButtonElement;
   private file = document.createElement("input");
 
+  private stage = Stage.Warn;
   private utterances: Utterance[] = [];
   private voices: Voice[] = [];
   private roles = new Map<string, VoiceRole>();
@@ -73,13 +79,31 @@ export class Recording {
     this.sheet
       .querySelector(".fs-handle")!
       .addEventListener("click", () => this.lower());
-    this.make.addEventListener("click", () => void this.create());
+    this.make.addEventListener("click", () => {
+      if (this.stage === Stage.Warn) this.choose();
+      else void this.create();
+    });
     this.body.addEventListener("click", (e) => this.onBodyClick(e));
     dragScroll(this.body);
   }
 
-  /** The sessions sheet's own button: the file picker, then everything else. */
+  /** The sessions sheet's own button: a word about the cost first (R-0349),
+   * then the file picker, then everything else. */
   pick(): void {
+    this.stage = Stage.Warn;
+    this.head.value = "Before you upload";
+    this.body.innerHTML =
+      `<p class="cf-p">Transcribing a recording costs Alaska Family Systems money ` +
+      `for every minute of audio.</p>` +
+      `<p class="cf-p">Check with patrick@alaskafamilysystems.com before you ` +
+      `upload one.</p>`;
+    this.make.hidden = false;
+    this.make.textContent = "Choose a recording";
+    this.raise();
+  }
+
+  private choose(): void {
+    this.lower();
     this.file.value = "";
     this.file.click();
   }
@@ -87,6 +111,7 @@ export class Recording {
   private async take(): Promise<void> {
     const file = this.file.files?.[0];
     if (!file) return;
+    this.stage = Stage.Map;
     this.title = titleFrom(file.name);
     this.date = today();
     this.roles.clear();
@@ -121,6 +146,7 @@ export class Recording {
 
   private render(): void {
     this.make.hidden = false;
+    this.make.textContent = "Create session";
     let html = "";
     for (const voice of this.voices) {
       const role = this.roles.get(voice.label)!;
@@ -181,7 +207,11 @@ export class Recording {
     this.onMade(made);
   }
 
+  private hiding: number | null = null;
+
   private raise(): void {
+    if (this.hiding !== null) window.clearTimeout(this.hiding);
+    this.hiding = null;
     this.scrim.hidden = false;
     this.sheet.hidden = false;
     void this.sheet.offsetWidth;
@@ -192,7 +222,8 @@ export class Recording {
   private lower(): void {
     this.scrim.classList.remove("in");
     this.sheet.classList.remove("in");
-    window.setTimeout(() => {
+    this.hiding = window.setTimeout(() => {
+      this.hiding = null;
       this.scrim.hidden = true;
       this.sheet.hidden = true;
     }, 280);

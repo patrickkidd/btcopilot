@@ -51,6 +51,7 @@ import {
   type Statement,
   type Cluster,
   type Timeline,
+  SessionKind,
 } from "./types";
 
 declare global {
@@ -242,11 +243,13 @@ const sessions = new Sessions(
   {
     onPick: (picked) => {
       session = picked.id;
-      void openSession(picked.id);
+      void openSession(picked.id, picked.kind);
     },
     onList: (list) => {
       known = list;
       actions();
+      // the list says what kind of session the empty one is
+      if ($("chat").querySelector(".cta")) showPrompt();
     },
     onDiagram: (diagram, how) => onDiagram(diagram, how),
     onTask: () => void openTask(),
@@ -502,7 +505,30 @@ function addStatement(statement: Statement): void {
 
 /** Opening a session replaces the thread with its statements and puts the
  * picture back where that session's last coach message left it. */
-async function openSession(id: number): Promise<void> {
+/** The empty session's call to action, worded for what the session is: a
+ * note is the clinician writing up a session after the fact, a professional's
+ * session is about a case, and a personal session is about your own family
+ * (R-0350). */
+function showPrompt(kind?: SessionKind): void {
+  kind ??= known.find((s) => s.id === session)?.kind ?? SessionKind.Chat;
+  if (kind === SessionKind.Note)
+    chat.prompt("Write up the session", [
+      `Tell the coach what happened in the session you just had with the ${familyTitle} family: who was there, what came up, what changed.`,
+      "The coach puts it into the record the way a session's own words would be.",
+    ]);
+  else if (PRO)
+    chat.prompt("Start the session", [
+      `Talk to the coach about the ${familyTitle} case. Who is in the family, and what brought them in?`,
+      "You can also tap the mic on your keyboard and say it.",
+    ]);
+  else
+    chat.prompt("Tell your coach who is on your mind", [
+      "Start with a name and what has been going on with them. The coach asks what a coach asks, and the picture above grows as you talk.",
+      "You can also tap the mic on your keyboard and say it.",
+    ]);
+}
+
+async function openSession(id: number, kind?: SessionKind): Promise<void> {
   const { statements } = await api.session(id);
   // One thread fades out before the next one takes its place, so the swap does
   // not read as words rewriting themselves.
@@ -511,6 +537,7 @@ async function openSession(id: number): Promise<void> {
   await wait(FADE_MS);
   chat.clear();
   for (const statement of statements) addStatement(statement);
+  if (!statements.length) showPrompt(kind);
   picture.clear();
   pic = REST;
   // Picking up an older thread says so, so the words above the composer are
@@ -646,9 +673,10 @@ function actions(): void {
   // Nothing open and nothing picked: there is nothing to act on, so the row
   // says what a tap will do instead.
   if (!sel && !open) {
-    // the about page is words already; no hint under it
-    const hint = picture.aboutOpen() ? "" : "tap a cluster";
-    host.innerHTML = `<span class="cta">${hint}</span>` + listButton("menu-open");
+    // the about page is words already, and an empty picture has nothing to
+    // tap; no hint under either
+    const hint = picture.aboutOpen() || picture.empty() ? "" : "tap a cluster";
+    host.innerHTML = `<span class="cta">${hint}</span>` + (pinned() ? "" : listButton("menu-open"));
     wireList();
     return;
   }
@@ -663,7 +691,7 @@ function actions(): void {
     tok("cap-chip", "", ASK_MARK, "ask", true) +
     tok("cap-play", "g", PLAY_MARK, "explain", moves > 0) +
     tok("cap-trace", "data", IN_CHAT_MARK, "in chat", !!trace) +
-    listButton("menu-open");
+    (pinned() ? "" : listButton("menu-open"));
 
   $("cap-chip").addEventListener("click", () =>
     apply(
@@ -711,7 +739,10 @@ function pinDrawer(): void {
   if (here === Screen.Chat || (on && here === Screen.Menu)) screen(Screen.Chat);
 }
 
-wide.addEventListener("change", () => pinDrawer());
+wide.addEventListener("change", () => {
+  pinDrawer();
+  actions();
+});
 
 /** The board is its own level, and entering it is the one deliberate act that
  * changes the picture's height. It goes up before the coach's words are
@@ -1012,13 +1043,7 @@ void settings.load();
 void load().then(async () => {
   const said = window.BOOTSTRAP.statements;
   if (!said.length) {
-    // the ratified opening beat: 320ms before the coach starts typing
-    await wait(320);
-    await chat.live().type(
-      "I'm here whenever you want to think out loud about your family. " +
-        "Tell me who is on your mind.",
-      () => undefined,
-    );
+    showPrompt();
     return;
   }
   // Coming back a week later, the picture is where the last message left it.

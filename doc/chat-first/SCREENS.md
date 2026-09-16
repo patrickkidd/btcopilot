@@ -360,6 +360,10 @@ What it is for: a professional's several client records.
 What it is for: getting a recorded session into the app as a conversation.
 
 - Uploading a recording is an item in the sessions sheet, beside starting a new session. [built] {R-0243}
+- Before the file picker, a sheet says that transcribing costs Alaska Family Systems money and to check with patrick@alaskafamilysystems.com first; its one button chooses the recording. [built] {R-0349}
+- An empty session shows, where the bubbles will be, a heading and a line or two saying what to type, worded for what the session is — a note asks for the write-up of the session just had, a professional's session asks about the case, a personal session asks who is on your mind — and it goes on the first send. [built] {R-0350}
+- With nothing dated on the record, the picture is one centred sentence, the timeline draws itself as you talk, and the row under it carries no hint. [built] {R-0351}
+- On the wide layout the drawer is pinned open, so the list button under the picture is not shown. [built] {R-0352}
 - After upload, a sheet asks who each speaker is, and the approved drawing of it stands. [built] {R-0243}
 - Once mapped, the recording reads as a conversation like any other and can be coded. [built] {R-0267}
 - Colleagues' earlier sessions come in through this same path. [drawn]

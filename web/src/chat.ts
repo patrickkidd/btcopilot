@@ -141,6 +141,9 @@ export class Chat {
       );
     };
     this.watchScrolling();
+    // the thread's box changes size after it is put up — a phone's toolbar
+    // collapsing, the picture taking its height — and stays on its last words
+    new ResizeObserver(() => this.scroll()).observe(this.list);
     // The thread's height is only final once the web font has replaced the
     // fallback, so pin it again then: otherwise a thread opened before the font
     // lands sits partway up its own scroll.
@@ -189,6 +192,21 @@ export class Chat {
     this.stuck = true;
   }
 
+  /** What to do on an empty session, where the bubbles will be: a heading and
+   * a line or two saying what to type. It goes the moment the reader sends
+   * their first words (R-0350). */
+  prompt(title: string, lines: string[]): void {
+    this.list.querySelector(".cta")?.remove();
+    this.list.append(
+      el(
+        "div",
+        "cta",
+        `<div class="cta-t">${esc(title)}</div>` +
+          lines.map((line) => `<p class="cta-p">${esc(line)}</p>`).join(""),
+      ),
+    );
+  }
+
   add(
     role: Role,
     text: string,
@@ -196,6 +214,7 @@ export class Chat {
     statementId: number | null = null,
     play: string | null = null,
   ): HTMLElement {
+    if (role === Role.User) this.list.querySelector(".cta")?.remove();
     const bubble = el(
       "div",
       `bub ${role}`,
