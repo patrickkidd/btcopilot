@@ -26,11 +26,32 @@ from btcopilot.personal.discussions import (
 )
 
 
+PREVIEW_CHARS = 120
+
+
+def preview(discussion: Discussion) -> str | None:
+    """The first thing the client said, the way a notes or messages list
+    previews its content under the title."""
+    said = next(
+        (
+            s.text
+            for s in discussion.statements
+            if s.text and s.speaker_id != discussion.chat_ai_speaker_id
+        ),
+        None,
+    )
+    if said is None:
+        return None
+    words = " ".join(said.split())
+    return words if len(words) <= PREVIEW_CHARS else words[:PREVIEW_CHARS].rstrip() + "…"
+
+
 def session_payload(discussion: Discussion) -> dict:
     return {
         "id": discussion.id,
         "title": discussion.title,
         "summary": discussion.summary,
+        "preview": preview(discussion),
         "title_set_by_user": discussion.title_set_by_user,
         "last_activity": utc_iso(last_activity(discussion)),
         "message_count": len(discussion.statements),

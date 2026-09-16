@@ -4,15 +4,13 @@ import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { VoiceRole, type Session, type Utterance, type Voice } from "./types";
 
-/** Putting a recorded session into the record. The audio goes straight from the
- * browser to the transcription service, the way the training app already sends
- * it, so it never passes through our own server. What comes back is split into
- * voices, and the reader says who each one is before anything is read into the
- * record (R-0243, R-0267). */
+/** Putting a recorded session into the record. The audio goes to our own
+ * server, which sends it on to be transcribed (R-0348). What comes back is
+ * split into voices, and the reader says who each one is before anything is
+ * read into the record (R-0243, R-0267). */
 
-/** How long between asking the service whether the transcript is ready. */
+/** How long between asking whether the transcript is ready. */
 const POLL_MS = 3000;
-const SERVICE = "https://api.assemblyai.com/v2";
 
 const ROLES = [
   { role: VoiceRole.Clinician, label: "the clinician" },
@@ -25,30 +23,12 @@ const today = () => new Date().toISOString().slice(0, 10);
  * until the reader types something else. */
 const titleFrom = (name: string) => name.replace(/\.[^.]+$/, "");
 
-async function transcribe(file: File, key: string): Promise<Utterance[]> {
-  const put = await fetch(`${SERVICE}/upload`, {
-    method: "POST",
-    headers: { authorization: key },
-    body: file,
-  });
-  if (!put.ok) throw new Error(await put.text());
-  const asked = await fetch(`${SERVICE}/transcript`, {
-    method: "POST",
-    headers: { authorization: key, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      audio_url: (await put.json()).upload_url,
-      speaker_labels: true,
-    }),
-  });
-  if (!asked.ok) throw new Error(await asked.text());
-  const id = (await asked.json()).id;
+async function transcribe(file: File): Promise<Utterance[]> {
+  const id = await api.startTranscription(file);
   for (;;) {
-    const answer = await fetch(`${SERVICE}/transcript/${id}`, {
-      headers: { authorization: key },
-    });
-    const data = await answer.json();
-    if (data.status === "completed") return data.utterances ?? [];
-    if (data.status === "error") throw new Error(data.error);
+    const answer = await api.transcription(id);
+    if (answer.status === "completed") return answer.utterances ?? [];
+    if (answer.status === "error") throw new Error(answer.error ?? "transcription failed");
     await new Promise((wait) => window.setTimeout(wait, POLL_MS));
   }
 }
@@ -116,8 +96,7 @@ export class Recording {
     this.head.value = `Reading ${file.name}…`;
     this.waiting("The recording is being transcribed. This takes a few minutes.");
     try {
-      const key = await api.transcriptionKey();
-      this.utterances = await transcribe(file, key);
+      this.utterances = await transcribe(file);
       this.voices = await api.recordingVoices(this.utterances);
     } catch (wrong) {
       this.head.value = file.name;

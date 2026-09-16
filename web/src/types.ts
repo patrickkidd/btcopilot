@@ -283,6 +283,8 @@ export interface Session {
    * with a pencil. */
   title_set_by_user: boolean;
   summary: string | null;
+  /** The first thing the client said, one line, for the row under the title. */
+  preview: string | null;
   last_activity: string;
   message_count: number;
 }

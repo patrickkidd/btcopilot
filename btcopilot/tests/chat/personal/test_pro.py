@@ -2,6 +2,8 @@
 here is refused as not-found without the licence, because a reader who does not
 have it is never told the surface exists (R-0237, R-0285)."""
 
+import io
+
 import pytest
 
 from btcopilot.extensions import db
@@ -10,6 +12,7 @@ from btcopilot.personal.models import Discussion, DiscussionKind, SpeakerType
 from btcopilot.personal.prompts import note_register
 from btcopilot.schema import Person, PersonKind, asdict
 from btcopilot.tests.chat.personal.conftest import Model, csrf_token, said
+from btcopilot.personal import transcription
 
 UTTERANCES = [
     {"speaker": "A", "text": "When did your father go down to Arizona, roughly?"},
@@ -193,3 +196,44 @@ def test_a_note_tells_the_coach_who_it_is_talking_to(discussion):
     model = Model(said("Noted."))
     CoachTurn(discussion, "she never says the word divorce", model=model).run()
     assert note_register() in model.systems[0]
+
+
+class Answer:
+    def __init__(self, body):
+        self.body = body
+
+    def raise_for_status(self):
+        pass
+
+    def json(self):
+        return self.body
+
+
+def test_the_audio_is_sent_on_from_this_server_and_the_key_stays_here(pro, monkeypatch):
+    monkeypatch.setenv("ASSEMBLYAI_API_KEY", "secret")
+    sent = {}
+
+    def post(url, headers, data=None, json=None):
+        sent[url] = (headers["authorization"], data.read() if data else json)
+        return Answer({"upload_url": "u://1"} if url.endswith("/upload") else {"id": "t1"})
+
+    monkeypatch.setattr(transcription.requests, "post", post)
+    started = pro.post(
+        "/personal/transcriptions",
+        data={"audio": (io.BytesIO(b"RIFF"), "session.wav")},
+        headers={"X-CSRFToken": csrf_token(pro)},
+    )
+    assert started.status_code == 202
+    assert started.get_json() == {"id": "t1"}
+    assert sent[transcription.SERVICE + "/upload"] == ("secret", b"RIFF")
+    assert sent[transcription.SERVICE + "/transcript"][1]["speaker_labels"] is True
+    assert "secret" not in started.get_data(as_text=True)
+
+
+def test_a_finished_transcript_is_read_back_through_this_server(pro, monkeypatch):
+    monkeypatch.setenv("ASSEMBLYAI_API_KEY", "secret")
+    done = Answer({"status": "completed", "utterances": UTTERANCES})
+    monkeypatch.setattr(transcription.requests, "get", lambda url, headers: done)
+    read = pro.get("/personal/transcriptions/t1").get_json()
+    assert read["status"] == "completed"
+    assert [u["speaker"] for u in read["utterances"]] == [u["speaker"] for u in UTTERANCES]

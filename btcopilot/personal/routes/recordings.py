@@ -1,13 +1,13 @@
 """Putting a recorded session into the record. The browser sends the audio
-straight to the transcription service, the way the training app already does,
-and posts the transcript here with the reader's answer to who each voice is
+here, this server sends it on to be transcribed and hands the transcript back
+(R-0348), and the reader's answer to who each voice is comes back with it
 (R-0243, R-0267)."""
 
 import datetime
-import os
 
 from flask import jsonify, request
 
+from btcopilot.personal import transcription
 from btcopilot.personal.discussions import create_recording, transcript_voices
 from btcopilot.personal.licence import require_professional
 from btcopilot.personal.models import SpeakerType
@@ -15,15 +15,21 @@ from btcopilot.personal.routes import bp, writable_diagram
 from btcopilot.personal.routes.sessions import session_payload
 
 
-@bp.route("/transcription")
-def transcription_key():
-    """The key the browser uploads the audio with. Without one configured the
-    upload fails where the reader can see it rather than pretending to work."""
+@bp.route("/transcriptions", methods=["POST"])
+def transcription_start():
+    """The audio, as the one file of a multipart form. Answers with the id to
+    poll; without a key configured it fails where the reader can see it."""
     require_professional()
-    key = os.getenv("ASSEMBLYAI_API_KEY")
-    if not key:
-        raise ValueError("Transcription is not configured on this server")
-    return jsonify({"key": key})
+    audio = request.files.get("audio")
+    if audio is None:
+        raise ValueError("No audio in the upload")
+    return jsonify({"id": transcription.start(audio.stream)}), 202
+
+
+@bp.route("/transcriptions/<transcript_id>")
+def transcription_status(transcript_id: str):
+    require_professional()
+    return jsonify(transcription.status(transcript_id))
 
 
 @bp.route("/recordings/voices", methods=["POST"])

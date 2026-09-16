@@ -1505,13 +1505,10 @@ button { font-family: inherit; }
 }
 .row .untitled { color: var(--faint); }
 /* a title someone gave by hand, so the coach's own titles read apart from it */
-.pencil { margin-left: 4px; font-size: 13px; color: var(--faint); }
 /* a session that is not a chat says which kind it is, because the list mixes
    notes, recordings and chats and only the label tells them apart (R-0281) */
-.rtitle { display: flex; align-items: center; gap: 6px; }
-.rtitle .tname { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .kindtag {
-  flex: none;
+  margin-left: 6px;
   padding: 0 6px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -1546,12 +1543,24 @@ button { font-family: inherit; }
   font: 400 17px/1.3 var(--sans);
   outline: none;
 }
-/* the day the sessions under it fall on */
+/* the period the sessions under it fall in, over a rounded group of rows */
+.fs-body { background: var(--bg); }
 .ghead {
-  padding: 18px 16px 6px;
-  font: 600 13px/1 var(--sans);
+  padding: 22px 28px 8px;
+  font: 600 15px/1 var(--sans);
   color: var(--ink);
 }
+.fs-group {
+  margin: 0 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--panel);
+}
+.fs-group .row { border-bottom: 1px solid var(--line); }
+.fs-group .row:last-child { border-bottom: 0; }
+.fs-body .rtitle { font-weight: 600; }
+.fs-body .rsub { font: 400 14px/1.3 var(--sans); color: var(--faint); }
+.fs-body .fs-hint { padding-top: 24px; }
 
 /* what the app says about what it just did */
 .toasts {

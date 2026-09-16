@@ -1,7 +1,6 @@
 /** What a session is called, and what the sessions sheet's search box finds.
  * Pure, so it can be checked without a browser. */
 
-import { clockTime } from "./when";
 import type { Diagram, Session } from "./types";
 
 /** One family and the sessions on it. A personal account has one of these; a
@@ -14,12 +13,17 @@ export interface Family {
 /** A session the coach has not titled yet. */
 export const untitled = (session: Session) => !session.title?.trim();
 
-/** A session the coach has not titled yet is named by when it happened, so two
- * of them can still be told apart. */
-export const sessionTitle = (session: Session) =>
-  untitled(session)
-    ? `Untitled · ${clockTime(new Date(session.last_activity))}`
-    : (session.title as string);
+const TITLE_WORDS = 6;
+
+/** A session the coach has not titled yet is named by what was first said in
+ * it, the way a notes list names a note by its first line. */
+export const sessionTitle = (session: Session) => {
+  if (!untitled(session)) return session.title as string;
+  const words = session.preview?.split(" ").filter(Boolean) ?? [];
+  if (!words.length) return "New session";
+  const head = words.slice(0, TITLE_WORDS).join(" ");
+  return words.length > TITLE_WORDS ? `${head}…` : head;
+};
 
 export const summaryOf = (session: Session) =>
   session.summary?.trim() ||

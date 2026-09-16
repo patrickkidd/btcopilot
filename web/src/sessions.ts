@@ -2,8 +2,8 @@ import * as api from "./api";
 import { $, el, esc, isAdmin } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
-import { dayKey, dayLabel, meetingTitle } from "./when";
-import { matching, sessionTitle, untitled, type Family } from "./search";
+import { meetingTitle, periodLabel, rowDate } from "./when";
+import { matching, sessionTitle, type Family } from "./search";
 import { SessionKind, type Diagram, type Session } from "./types";
 import { PRO } from "./pro";
 import { Recording } from "./recording";
@@ -400,16 +400,18 @@ export class Sessions {
     const rows = home ? matching(home, this.filter).rows : [];
 
     let html = "";
-    let day = 0;
+    let period = "";
     for (const session of rows) {
       const when = new Date(session.last_activity);
-      const key = dayKey(when);
-      if (key !== day) {
-        day = key;
-        html += `<div class="ghead">${esc(dayLabel(when, now))}</div>`;
+      const label = periodLabel(when, now);
+      if (label !== period) {
+        if (period) html += `</div>`;
+        period = label;
+        html += `<div class="ghead">${esc(label)}</div><div class="fs-group">`;
       }
-      html += this.rowHtml(session);
+      html += this.rowHtml(session, now);
     }
+    if (period) html += `</div>`;
 
     if (!html)
       html = `<div class="fs-hint">${
@@ -424,25 +426,18 @@ export class Sessions {
     this.body.scrollTop = top;
   }
 
-  private rowHtml(session: Session): string {
-    const title = untitled(session)
-      ? `<span class="untitled">${esc(sessionTitle(session))}</span>`
-      : esc(session.title as string);
-    // The app has one list row: the timeline list's `.row` with its `.r1`
-    // title and `.r2` secondary line. The second line is the coach's own
-    // summary, and a session without one is a single line.
-    const summary = session.summary?.trim();
+  /** A row the way a notes or messages list draws one: the title, then one
+   * grey line with the day and the first thing the client said. A recording
+   * or a note says which it is in that line. */
+  private rowHtml(session: Session, now: Date): string {
+    const day = rowDate(new Date(session.date ? `${session.date}T12:00:00` : session.last_activity), now);
+    const parts = [day];
+    if (session.kind !== SessionKind.Chat) parts.push(session.kind);
+    parts.push(session.preview ?? "Nothing said yet");
     return (
       `<div class="row${session.id === this.current ? " cur" : ""}" data-id="${session.id}">` +
-      `<div class="rmain">` +
-      `<div class="r1 rtitle"><span class="tname">${title}</span>` +
-      (session.title_set_by_user ? `<span class="pencil">&#9998;</span>` : "") +
-      (session.kind === SessionKind.Chat
-        ? ""
-        : `<span class="kindtag">${esc(session.kind)}</span>`) +
-      `</div>` +
-      (summary ? `<div class="r2">${esc(summary)}</div>` : "") +
-      `</div>` +
+      `<div class="r1 rtitle">${esc(sessionTitle(session))}</div>` +
+      `<div class="r2 rsub">${esc(parts.join(" · "))}</div>` +
       `</div>`
     );
   }

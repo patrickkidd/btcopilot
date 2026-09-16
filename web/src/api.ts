@@ -219,10 +219,25 @@ export const selectDiagram = (id: number) =>
 export const newDiagram = (name: string) =>
   call<Diagram>("POST", "/diagrams", { name });
 
-/** The key the browser uploads a recording with, so the audio never passes
- * through this server. */
-export const transcriptionKey = () =>
-  call<{ key: string }>("GET", "/transcription").then((r) => r.key);
+/** The audio goes to this server, which sends it on to be transcribed and
+ * answers with the id to ask after (R-0348). */
+export async function startTranscription(file: File): Promise<string> {
+  const form = new FormData();
+  form.append("audio", file, file.name);
+  const response = await fetch(`${ROOT}/transcriptions`, {
+    method: "POST",
+    headers: { "X-CSRFToken": csrf() },
+    body: form,
+  });
+  if (!response.ok) throw new Error(await response.text());
+  return ((await response.json()) as { id: string }).id;
+}
+
+export const transcription = (id: string) =>
+  call<{ status: string; utterances: Utterance[] | null; error: string | null }>(
+    "GET",
+    `/transcriptions/${id}`,
+  );
 
 /** The voices a transcript holds, each with the first thing it said. */
 export const recordingVoices = (utterances: Utterance[]) =>

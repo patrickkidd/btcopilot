@@ -2,6 +2,10 @@
  * session-menu scaffold. Pure, so it can be checked without a browser. */
 
 const DAY = 24 * 3600 * 1000;
+const MONTH = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
 const MON = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
@@ -31,12 +35,23 @@ export function clockTime(d: Date): string {
   return `${d.getHours() % 12 || 12}:${minutes} ${suffix}`;
 }
 
-/** The heading over a day's sessions: Today, Yesterday, then the weekday and
- * date, with the year once it is not this one. */
-export function dayLabel(d: Date, now: Date): string {
+/** The heading a session sits under: Today, Yesterday, Previous 7 days,
+ * Previous 30 days, then the month — the grouping every notes and chat list
+ * uses. */
+export function periodLabel(d: Date, now: Date): string {
   if (sameDay(d, now)) return "Today";
   if (sameDay(d, yesterday(now))) return "Yesterday";
-  const date = `${WD[d.getDay()].slice(0, 3)}, ${MON[d.getMonth()]} ${d.getDate()}`;
+  const age = now.getTime() - d.getTime();
+  if (age < 7 * DAY) return "Previous 7 days";
+  if (age < 30 * DAY) return "Previous 30 days";
+  const month = MONTH[d.getMonth()];
+  return d.getFullYear() === now.getFullYear() ? month : `${month} ${d.getFullYear()}`;
+}
+
+/** The date in a row's second line: "Sep 12", with the year once it is not
+ * this one. */
+export function rowDate(d: Date, now: Date): string {
+  const date = `${MON[d.getMonth()]} ${d.getDate()}`;
   return d.getFullYear() === now.getFullYear() ? date : `${date}, ${d.getFullYear()}`;
 }
 
