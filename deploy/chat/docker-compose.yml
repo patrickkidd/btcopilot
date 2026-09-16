@@ -3,20 +3,23 @@
 # Pro box. Secrets live in secrets.env, encrypted with sops; decrypt it on the
 # box into /etc/fd/secrets.env (root-only) and nowhere else.
 
+# A service's own `environment` replaces an anchored one wholesale, so the
+# shared settings are their own anchor and each service merges them in.
+x-app-env: &app-env
+  FLASK_CONFIG: production
+  FLASK_SQLALCHEMY_DATABASE_URI: postgresql://chat:${POSTGRES_PASSWORD}@fd-postgres:5432/chat
+  CELERY_BROKER_URL: redis://fd-redis:6379/0
+  CELERY_RESULT_BACKEND: redis://fd-redis:6379/0
+  BTCOPILOT_INSTANCE_PATH: /app/instance
+  SOPS_AGE_KEY_FILE: /run/secrets/age.key
+  DD_ENV: production
+  DD_SITE: datadoghq.com
+  DD_LOGS_INJECTION: "true"
+
 x-app: &app
   image: ghcr.io/patrickkidd/btcopilot:${BTCOPILOT_TAG:-latest}
   restart: unless-stopped
   env_file: /etc/fd/secrets.env
-  environment:
-    FLASK_CONFIG: production
-    FLASK_SQLALCHEMY_DATABASE_URI: postgresql://chat:${POSTGRES_PASSWORD}@fd-postgres:5432/chat
-    CELERY_BROKER_URL: redis://fd-redis:6379/0
-    CELERY_RESULT_BACKEND: redis://fd-redis:6379/0
-    BTCOPILOT_INSTANCE_PATH: /app/instance
-    SOPS_AGE_KEY_FILE: /run/secrets/age.key
-    DD_ENV: production
-    DD_SITE: datadoghq.com
-    DD_LOGS_INJECTION: "true"
   volumes:
     - ./instance:/app/instance
     - /etc/fd/age.key:/run/secrets/age.key:ro
@@ -45,6 +48,7 @@ services:
     <<: *app
     container_name: fd-app
     environment:
+      <<: *app-env
       DD_SERVICE: fd-app
     expose:
       - "8888"
@@ -53,6 +57,7 @@ services:
     <<: *app
     container_name: fd-worker
     environment:
+      <<: *app-env
       FD_IS_CELERY: "1"
       DD_SERVICE: fd-worker
     command: ["python", "-m", "celery", "-A", "btcopilot.celery:celery", "worker", "--pool=solo", "--loglevel=info"]
