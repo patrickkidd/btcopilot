@@ -1,0 +1,23 @@
+# familydiagram.com on the chat box. /app is the app (R-0356); the desktop app's
+# update feeds are served from the deployment; everything else keeps redirecting
+# to alaskafamilysystems.com as the old box did, until a product homepage exists.
+familydiagram.com {
+    encode gzip
+    handle /appcast_*.xml {
+        root * /srv/appcast
+        file_server
+    }
+    redir /app /app/ 302
+    handle /app* {
+        reverse_proxy fd-app:8888
+    }
+    handle /review* {
+        reverse_proxy fd-app:8888
+    }
+    handle {
+        redir https://alaskafamilysystems.com/family-diagram{uri} 301
+    }
+}
+www.familydiagram.com {
+    redir https://familydiagram.com{uri} 301
+}

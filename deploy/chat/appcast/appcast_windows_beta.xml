@@ -1,0 +1,176 @@
+<?xml version="1.0" ?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0">
+    <channel>
+        <title>familydiagram Releases</title>
+        <link>https://github.com/patrickkidd/familydiagram</link>
+        <item>
+            <title>2.1.23b2</title>
+            <description>&lt;ul&gt;
+  &lt;li&gt;Improved auto-arrange layout for diagrams with multiple family clusters.&lt;/li&gt;
+  &lt;li&gt;Fixed a load failure on some older diagrams.&lt;/li&gt;
+&lt;/ul&gt;</description>
+            <pubDate>Tue, 05 May 2026 05:21:49 +0000</pubDate>
+            <enclosure sparkle:version="2.1.23b2" sparkle:shortVersionString="2.1.23b2" url="https://github.com/patrickkidd/familydiagram/releases/download/2.1.23b2/Family.Diagram.zip" length="28968754" type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion/>
+        </item>
+        <item>
+            <title>2.1.23b1</title>
+            <description>&lt;ul&gt;
+  &lt;li&gt;Can open the same file in pro and personal apps now, even with multiple users.&lt;/li&gt;
+  &lt;li&gt;Fix clearing SARF variables in pro app&lt;/li&gt;
+  &lt;li&gt;Defensive fix for new macOS feature &quot;Full Keyboard Access&quot;&quot;&lt;/li&gt;
+&lt;/ul&gt;</description>
+            <pubDate>Sun, 03 May 2026 06:23:00 +0000</pubDate>
+            <enclosure sparkle:version="2.1.23b1" sparkle:shortVersionString="2.1.23b1" url="https://github.com/patrickkidd/familydiagram/releases/download/2.1.23b1/Family.Diagram.zip" length="28941889" type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion/>
+        </item>
+        <item>
+            <title>2.1.22b1</title>
+            <description>&lt;ul&gt;
+  &lt;li&gt;Prune duplicate pairbonds&lt;/li&gt;
+&lt;/ul&gt;</description>
+            <pubDate>Tue, 17 Feb 2026 14:47:00 +0000</pubDate>
+            <enclosure sparkle:version="2.1.22b1" sparkle:shortVersionString="2.1.22b1" url="https://github.com/patrickkidd/familydiagram/releases/download/2.1.22b1/Family.Diagram.zip" length="28206116" type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion/>
+        </item>
+        <item>
+            <title>2.1.21b1</title>
+            <description>&lt;ul&gt;
+  &lt;li&gt;Attempt to fix person notes not clearing when closing a diagram.&lt;/li&gt;
+&lt;/ul&gt;</description>
+            <pubDate>Tue, 10 Feb 2026 22:08:55 +0000</pubDate>
+            <enclosure sparkle:version="2.1.21b1" sparkle:shortVersionString="2.1.21b1" url="https://github.com/patrickkidd/familydiagram/releases/download/2.1.21b1/Family.Diagram.zip" length="28164816" type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion/>
+        </item>
+        <item>
+            <title>2.1.20b1</title>
+            <description>&lt;ul&gt;
+  &lt;li&gt;Fixed bugs related to showing triangle graph.&lt;/li&gt;
+&lt;/ul&gt;</description>
+            <pubDate>Fri, 23 Jan 2026 00:33:40 +0000</pubDate>
+            <enclosure sparkle:version="2.1.20b1" sparkle:shortVersionString="2.1.20b1" url="https://github.com/patrickkidd/familydiagram/releases/download/2.1.20b1/Family.Diagram.zip" length="28141674" type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion/>
+        </item>
+        <item>
+            <title>2.1.19b1</title>
+            <description>&lt;ul&gt;
+  &lt;li&gt;Added Triangle view, click the triangle badge on a mover to show positions&lt;/li&gt;
+&lt;/ul&gt;</description>
+            <pubDate>Fri, 16 Jan 2026 17:35:25 +0000</pubDate>
+            <enclosure sparkle:version="2.1.19b1" sparkle:shortVersionString="2.1.19b1" url="https://github.com/patrickkidd/familydiagram/releases/download/2.1.19b1/Family.Diagram.zip" length="28118199" type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion/>
+        </item>
+        <item>
+            <title>2.1.18b1</title>
+            <description>&lt;ul&gt;
+  &lt;li&gt;Very large diagrams load in seconds instead of minutes.&lt;/li&gt;
+&lt;/ul&gt;</description>
+            <pubDate>Thu, 15 Jan 2026 07:08:22 +0000</pubDate>
+            <enclosure sparkle:version="2.1.18b1" sparkle:shortVersionString="2.1.18b1" url="https://github.com/patrickkidd/familydiagram/releases/download/2.1.18b1/Family.Diagram.zip" length="27963855" type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion/>
+        </item>
+        <item>
+            <title>2.1.17b1</title>
+            <description>&lt;ul&gt;
+  &lt;li&gt;Click row in timeline sets the diagram to that date.&lt;/li&gt;
+  &lt;li&gt;Fixed broked &quot;Add birth&quot; and &quot;Edit birth&quot; buttons in person properties&lt;/li&gt;
+  &lt;li&gt;Fixed person picker in add form not showing renamed people in auto-complete.&lt;/li&gt;
+  &lt;li&gt;Can now use down/up arrows + enter/return to pick a person via autocomplete in add event form.&lt;/li&gt;
+  &lt;li&gt;Visual timeline shows person names now.&lt;/li&gt;
+&lt;/ul&gt;</description>
+            <pubDate>Wed, 14 Jan 2026 12:27:40 +0000</pubDate>
+            <enclosure sparkle:version="2.1.17b1" sparkle:shortVersionString="2.1.17b1" url="https://github.com/patrickkidd/familydiagram/releases/download/2.1.17b1/Family.Diagram.zip" length="27963805" type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion/>
+        </item>
+        <item>
+            <title>2.1.16b2</title>
+            <description>&lt;ul&gt;
+  &lt;li&gt;Fixed error when re-opening diagram after deleting a view with people in it.&lt;/li&gt;
+&lt;/ul&gt;</description>
+            <pubDate>Tue, 06 Jan 2026 15:46:07 +0000</pubDate>
+            <enclosure sparkle:version="2.1.16b2" sparkle:shortVersionString="2.1.16b2" url="https://github.com/patrickkidd/familydiagram/releases/download/2.1.16b2/Family.Diagram.zip" length="27943348" type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion/>
+        </item>
+        <item>
+            <title>2.1.16b1</title>
+            <description>&lt;ul&gt;
+  &lt;li&gt;Added date certainty field&lt;/li&gt;
+&lt;/ul&gt;</description>
+            <pubDate>Wed, 31 Dec 2025 04:10:26 +0000</pubDate>
+            <enclosure sparkle:version="2.1.16b1" sparkle:shortVersionString="2.1.16b1" url="https://github.com/patrickkidd/familydiagram/releases/download/2.1.16b1/Family.Diagram.zip" length="27927050" type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion/>
+        </item>
+        <item>
+            <title>2.1.15b2</title>
+            <description>&lt;ul&gt;
+  &lt;li&gt;Fixed bug where birth events would disappear when the person being born was listed on any other events.&lt;/li&gt;
+&lt;/ul&gt;</description>
+            <pubDate>Sat, 20 Dec 2025 05:27:29 +0000</pubDate>
+            <enclosure sparkle:version="2.1.15b2" sparkle:shortVersionString="2.1.15b2" url="https://github.com/patrickkidd/familydiagram/releases/download/2.1.15b2/Family.Diagram.zip" length="27883042" type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion/>
+        </item>
+        <item>
+            <title>2.1.15b1</title>
+            <description>&lt;ul&gt;
+  &lt;li&gt;Fixed bug where SARF shifts show on diagram for people other than the one&lt;/li&gt;
+&lt;/ul&gt;</description>
+            <pubDate>Sun, 14 Dec 2025 22:16:11 +0000</pubDate>
+            <enclosure sparkle:version="2.1.15b1" sparkle:shortVersionString="2.1.15b1" url="https://github.com/patrickkidd/familydiagram/releases/download/2.1.15b1/Family.Diagram.zip" length="27846059" type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion/>
+        </item>
+        <item>
+            <title>2.1.14b1</title>
+            <description>&lt;ul&gt;
+  &lt;li&gt;Fixed bug opening diagrams with error about `hideSARFGraphics`&lt;/li&gt;
+&lt;/ul&gt;</description>
+            <pubDate>Thu, 11 Dec 2025 23:07:36 +0000</pubDate>
+            <enclosure sparkle:version="2.1.14b1" sparkle:shortVersionString="2.1.14b1" url="https://github.com/patrickkidd/familydiagram/releases/download/2.1.14b1/Family.Diagram.zip" length="27830746" type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion/>
+        </item>
+        <item>
+            <title>2.1.13b1</title>
+            <description>&lt;ul&gt;
+  &lt;li&gt;Added people field to SearchDialog&lt;/li&gt;
+  &lt;li&gt;Rearranged and re-named person fields in EventForm to be more intuitive&lt;/li&gt;
+  &lt;li&gt;Edit SARF variables in timeline&lt;/li&gt;
+  &lt;li&gt;Add option to hide variable graphics in diagram&lt;/li&gt;
+  &lt;li&gt;Auto-focus people picker on click to add person for easier typing&lt;/li&gt;
+&lt;/ul&gt;</description>
+            <pubDate>Wed, 10 Dec 2025 21:50:47 +0000</pubDate>
+            <enclosure sparkle:version="2.1.13b1" sparkle:shortVersionString="2.1.13b1" url="https://github.com/patrickkidd/familydiagram/releases/download/2.1.13b1/Family.Diagram.zip" length="27824711" type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion/>
+        </item>
+        <item>
+            <title>2.1.12b1</title>
+            <description>&lt;ul&gt;
+  &lt;li&gt;Moved autosave out of documents folder to app data folder&lt;/li&gt;
+&lt;/ul&gt;</description>
+            <pubDate>Tue, 02 Dec 2025 05:55:56 +0000</pubDate>
+            <enclosure sparkle:version="2.1.12b1" sparkle:shortVersionString="2.1.12b1" url="https://github.com/patrickkidd/familydiagram/releases/download/2.1.12b1/Family.Diagram.zip" length="27729088" type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion/>
+        </item>
+        <item>
+            <title>2.1.11b1</title>
+            <description>&lt;ul&gt;
+  &lt;li&gt;Server-stored diagram format updates to allow syncing documents with coming&lt;/li&gt;
+&lt;/ul&gt;</description>
+            <pubDate>Mon, 01 Dec 2025 03:22:37 +0000</pubDate>
+            <enclosure sparkle:version="2.1.11b1" sparkle:shortVersionString="2.1.11b1" url="https://github.com/patrickkidd/familydiagram/releases/download/2.1.11b1/Family.Diagram.zip" length="27698129" type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion/>
+        </item>
+        <item>
+            <title>2.1.10b1</title>
+            <description>&lt;ul&gt;
+  &lt;li&gt;Added autosave&lt;/li&gt;
+  &lt;li&gt;Immediate auto-save when a document is opened&lt;/li&gt;
+  &lt;li&gt;Periodic auto-save every 30 minutes while document is open&lt;/li&gt;
+  &lt;li&gt;Timestamped filenames (YYYYMMDD_HHMMSS format) compatible with tiered retention&lt;/li&gt;
+  &lt;li&gt;Auto-save stops when document is closed or for read-only documents&lt;/li&gt;
+  &lt;li&gt;Added changelog to auto updates&lt;/li&gt;
+&lt;/ul&gt;</description>
+            <pubDate>Sat, 22 Nov 2025 07:39:51 +0000</pubDate>
+            <enclosure sparkle:version="2.1.10b1" sparkle:shortVersionString="2.1.10b1" url="https://github.com/patrickkidd/familydiagram/releases/download/2.1.10b1/Family.Diagram.zip" length="27681973" type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion/>
+        </item>
+    </channel>
+</rss>

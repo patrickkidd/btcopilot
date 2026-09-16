@@ -1,6 +1,7 @@
 import pytest
 import re
 from playwright.sync_api import Page, expect
+from tests.frontend.conftest import sign_in
 
 
 class TestAuditorSelection:
@@ -212,8 +213,7 @@ def admin_context(browser, flask_app, admin_test_data):
 
     flask_app.test_client_class = FlaskClient
     test_client = flask_app.test_client()
-    with test_client.session_transaction() as sess:
-        sess["user_id"] = admin_test_data["user_id"]
+    sign_in(test_client, admin_test_data["user_id"])
 
     def _flask_route_handler(route: Route, test_client: FlaskClient):
         from urllib.parse import urlparse

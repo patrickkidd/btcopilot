@@ -9,11 +9,15 @@ snapshots = Snapshot()
 
 snapshots['test_only[params0] 1'] = {
     'active': True,
+    'birthdate': None,
     'created_at': GenericRepr('FakeDatetime(2025, 1, 15, 12, 0)'),
+    'current_diagram_id': None,
     'first_name': '',
     'free_diagram_id': None,
     'id': 1,
     'last_name': '',
+    'preferences': {
+    },
     'roles': [
         'subscriber'
     ],
@@ -25,11 +29,15 @@ snapshots['test_only[params0] 1'] = {
 
 snapshots['test_only[params1] 1'] = {
     'active': True,
+    'birthdate': None,
     'created_at': GenericRepr('FakeDatetime(2025, 1, 15, 12, 0)'),
+    'current_diagram_id': None,
     'first_name': '',
     'free_diagram_id': None,
     'id': 1,
     'last_name': '',
+    'preferences': {
+    },
     'roles': [
         'subscriber'
     ],

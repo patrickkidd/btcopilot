@@ -1,0 +1,209 @@
+import * as api from "./api";
+import { esc, type Title } from "./dom";
+import { flagLine } from "./rules";
+import { toast } from "./toast";
+import { dayText } from "./when";
+import type { Differed, Result, Rule, Tendency } from "./types";
+
+/** After ratification: what the meeting produced, with nothing to choose.
+ *
+ * How many events were ratified and how many were left unresolved, agreement
+ * before the ballot and after ratification side by side, how the coach's own
+ * pass scored against the agreed record, the guideline changes the AI wrote
+ * with the decision each came from, where its reading differed from the room,
+ * and what each coder tends to do (R-0242, R-0249, R-0254, R-0259).
+ */
+
+export interface ResultHandlers {
+  onTitle(title: string | Title): void;
+}
+
+const NO_COACH = "the coach did not code this conversation";
+const NO_COACH_SAID = "The coach did not code this conversation.";
+
+/** An agreement figure, which the server already gives out of a hundred. */
+const pc = (value: number | null | undefined): string =>
+  value === null || value === undefined ? "—" : `${Math.round(value)}%`;
+
+/** A score the server gives between nothing and one, read as a percentage. */
+const share = (value: number): string => `${Math.round(value * 100)}%`;
+
+/** A rule's provenance in the words of the decision it came from. */
+function from(rule: Rule): string {
+  const source = rule.source as {
+    label?: string;
+    margin?: string | null;
+    meeting_date?: string | null;
+  };
+  const said = [
+    source.label ? `from ${source.label}` : "from this meeting",
+    source.margin ? `decided ${source.margin}` : null,
+  ].filter(Boolean);
+  return said.join(" · ");
+}
+
+/** What one coder tends to do, said as a sentence rather than a score. */
+function tends(one: Tendency): string[] {
+  const said: string[] = [];
+  if (one.left_out)
+    said.push(
+      `${one.name} left out ${one.left_out} of ${one.items} items the others coded.`,
+    );
+  if (one.apart)
+    said.push(
+      `${one.name} read ${one.apart} of ${one.items} differently from what the room decided.`,
+    );
+  if (one.leans)
+    said.push(
+      `${one.name} differs on ${one.leans} more than anything else (${one.leans_count} times).`,
+    );
+  return said;
+}
+
+export class ResultScreen {
+  private result: Result | null = null;
+
+  constructor(
+    private stats: HTMLElement,
+    private body: HTMLElement,
+    private handlers: ResultHandlers,
+  ) {
+    this.body.addEventListener("click", (clicked) => void this.onTap(clicked));
+  }
+
+  async open(cutId: number): Promise<void> {
+    this.result = await api.result(cutId);
+    this.render();
+  }
+
+  private render(): void {
+    const found = this.result;
+    if (!found) return;
+    this.handlers.onTitle(`ratified ${dayText(found.ratified_at)}`);
+    this.stats.innerHTML = this.head(found);
+    this.body.innerHTML =
+      this.rules(found) + this.differed(found) + this.coders(found);
+  }
+
+  /** The head of the screen, which scrolls away with the rest of it: what this
+   * result is, one line of labelled figures, and the coach's own score said as
+   * a sentence under them (R-0344). */
+  private head(found: Result): string {
+    return (
+      `<div class="mtitle">Result · ${esc(found.conversation)} · ` +
+      `ratified ${esc(dayText(found.ratified_at))}</div>` +
+      `<div class="mfigs">${this.figures(found)}</div>` +
+      `<div class="rscore">${this.score(found)}</div>`
+    );
+  }
+
+  /** The counts, and the two agreement figures side by side. */
+  private figures(found: Result): string {
+    const structure = found.structure;
+    return (
+      `<span>${found.ratified} ratified</span>` +
+      `<span>${found.unresolved} unresolved</span>` +
+      // One more count beside the events: an unresolved person is the one that
+      // matters most, because every event about them stands on it (R-0326).
+      (structure
+        ? `<span>${structure.people} ` +
+          `${structure.people === 1 ? "person" : "people"} and ` +
+          `${structure.bonds} ${structure.bonds === 1 ? "bond" : "bonds"}, ` +
+          `${structure.unresolved} unresolved</span>`
+        : "") +
+      `<span><b>${pc(found.first_pass?.percent)}</b> agreed before the vote</span>` +
+      `<span><b>${pc(found.after?.percent)}</b> after</span>`
+    );
+  }
+
+  /** How the coach's own pass scored against what the room ratified. A figure
+   * that cannot be worked out is said in words rather than left off the
+   * screen: the room can tell "not scored" from "scored badly". */
+  private score(found: Result): string {
+    const coach = found.coach;
+    if (!coach) return NO_COACH_SAID;
+    const said = [
+      `${share(coach.events)} on events`,
+      `${share(coach.people)} on people`,
+      coach.variables === null ? null : `${share(coach.variables)} on variables`,
+    ].filter(Boolean);
+    return `The coach's own pass scored ${said.join(", ")} against the ratified record.`;
+  }
+
+  /** The guideline changes the AI wrote, each with the decision it came from and
+   * a link that puts it on the next meeting's agenda (R-0259, R-0276). */
+  private rules(found: Result): string {
+    if (!found.rules.length)
+      return (
+        `<div class="rcard"><h4>Guidelines changed by this meeting · 0</h4>` +
+        `<div class="prov">Nothing the room decided asked for a new rule.</div>` +
+        `</div>`
+      );
+    return (
+      `<div class="rcard"><h4>Guidelines changed by this meeting · ` +
+      `${found.rules.length}</h4>` +
+      found.rules
+        .map(
+          (rule) =>
+            `<div class="rule">${esc(rule.text)}</div>` +
+            `<div class="prov">${esc(from(rule))}</div>` +
+            `<div>${flagLine(rule, "flag rs-flag")}</div>`,
+        )
+        .join("") +
+      `<div class="prov" style="margin-top:12px">flagged rules and unresolved ` +
+      `items go on the next meeting's agenda by themselves</div></div>`
+    );
+  }
+
+  /** Where the AI's reading differed from the room, with its reason. An audit
+   * rather than a vote (R-0254). */
+  private differed(found: Result): string {
+    const head = `<div class="acard"><h4>Where the AI's proposal differed from the room`;
+    if (!found.coach)
+      return (
+        `${head}</h4><div class="prov">${NO_COACH}, so there is nothing ` +
+        `to compare it against.</div></div>`
+      );
+    if (!found.differed.length)
+      return (
+        `${head}</h4><div class="prov">The coach read every item the same ` +
+        `way the room did.</div></div>`
+      );
+    return (
+      `${head} · ${found.differed.length}</h4>` +
+      found.differed.map((one) => this.arow(one)).join("") +
+      `</div>`
+    );
+  }
+
+  private arow(one: Differed): string {
+    return (
+      `<div class="arow"><span>${esc(one.label)}</span>` +
+      `<span class="s2">the room: ${esc(one.room)}</span>` +
+      `<span class="s2">the AI: ${esc(one.coach)}</span>` +
+      `<span>${esc(one.reason ?? "no reason was given")}</span></div>`
+    );
+  }
+
+  private coders(found: Result): string {
+    const lines = found.coders.flatMap(tends);
+    if (!lines.length) return "";
+    return (
+      `<div class="rcard"><h4>What each coder tends to do</h4>` +
+      lines.map((said) => `<div class="who2">${esc(said)}</div>`).join("") +
+      `</div>`
+    );
+  }
+
+  /** Flagging a rule does one thing: it puts that rule on the next meeting's
+   * agenda, and the same tap takes it off again (R-0276, R-0346). */
+  private async onTap(clicked: Event): Promise<void> {
+    const flag = (clicked.target as Element).closest<HTMLElement>("button.rs-flag");
+    if (!flag) return;
+    const id = Number(flag.dataset.rule);
+    const was = this.result?.rules.find((rule) => rule.id === id)?.flagged === true;
+    const after = await api.flagRule(id, !was);
+    toast(after.flagged ? "On the next meeting's agenda" : "Flag taken off");
+    if (this.result) await this.open(this.result.cut_id);
+  }
+}

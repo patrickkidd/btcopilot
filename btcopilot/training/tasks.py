@@ -2,7 +2,7 @@ import logging
 
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion
-from btcopilot.tests.personal.synthetic import (
+from btcopilot.tests.chat.personal.synthetic import (
     ConversationSimulator,
     DEPRECATED_PERSONAS,
 )

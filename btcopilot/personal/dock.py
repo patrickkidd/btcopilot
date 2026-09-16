@@ -20,7 +20,7 @@ from dataclasses import dataclass
 
 from btcopilot.familygraph import bond_endpoints, components, default_ids, person_id
 from btcopilot.llmutil import SARF_REVIEW_MODEL, gemini_structured
-from btcopilot.personal.prompts import DOCK_PROMPT
+from btcopilot.personal import prompts
 from btcopilot.schema import (
     DiagramData,
     PDP,
@@ -132,7 +132,7 @@ def _prompt(
         f"FLOATING GROUP (ids {sorted(c)}):\n{_lines(c, names, partners)}"
         for c in floats
     )
-    return DOCK_PROMPT.format(
+    return prompts.DOCK_PROMPT.format(
         roster=_lines(main, names, partners),
         floats=floats_text,
         transcript=transcript,

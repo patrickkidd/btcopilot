@@ -4,44 +4,18 @@ Produces a cumulative PDP using the same extraction pipeline but with SARF
 definitions from doc/sarf-definitions/ instead of the tuned inline summaries.
 """
 
-import importlib.util
+import functools
 import logging
-import os
-from pathlib import Path
 
+from btcopilot.personal import prompts
 from btcopilot.training.sarfdefinitions import all_condensed_definitions
 
 _log = logging.getLogger(__name__)
 
-# Load production prompts. In production FDSERVER_PROMPTS_PATH is set and
-# personal.prompts already has the full versions. In dev that env var is
-# unset so we fall back to the co-located fdserver repo.
-_fdserver_path = os.environ.get("FDSERVER_PROMPTS_PATH") or str(
-    Path(__file__).parent.parent.parent.parent
-    / "fdserver"
-    / "prompts"
-    / "private_prompts.py"
-)
-
 PROMPTS_UNAVAILABLE_ERROR = (
-    "Litreview AI coder is unavailable: production prompts were not found. "
-    "Set FDSERVER_PROMPTS_PATH or ensure fdserver repo is co-located."
+    "Litreview AI coder is unavailable: it rewrites one section of the private "
+    "second-pass extraction prompt, and only the open-source default is installed."
 )
-
-_BASE_PASS2_PROMPT = None
-
-if os.path.exists(_fdserver_path):
-    _spec = importlib.util.spec_from_file_location("_private_prompts", _fdserver_path)
-    _mod = importlib.util.module_from_spec(_spec)
-    _spec.loader.exec_module(_mod)
-    _BASE_PASS2_PROMPT = _mod.DATA_EXTRACTION_PASS2_PROMPT
-else:
-    _log.warning(
-        "Production prompts not found at %s. "
-        "Litreview AI coder features will be unavailable. "
-        "Set FDSERVER_PROMPTS_PATH or ensure fdserver repo is co-located.",
-        _fdserver_path,
-    )
 
 AUDITOR_ID = "litreview-ai"
 
@@ -77,17 +51,17 @@ EVENT FIELD RULES
 ═══════════════════════════════════════════════════════════════════════════════"""
 
 
-def _build_pass2_prompt() -> str:
-    if _BASE_PASS2_PROMPT is None:
-        raise RuntimeError(PROMPTS_UNAVAILABLE_ERROR)
-    base = _BASE_PASS2_PROMPT
+# The coder rewrites one section of the private second-pass prompt. The
+# open-source default has no such section, so both prompts read as None and the
+# route answers with PROMPTS_UNAVAILABLE_ERROR instead. Read on first use, never
+# at import: the private prompts are encrypted and a test run holds no key.
+@functools.cache
+def pass2_prompt() -> str | None:
+    base = prompts.DATA_EXTRACTION_PASS2_PROMPT
     start_idx = base.find(_SARF_SECTION_START)
     end_idx = base.find(_SARF_SECTION_END)
-    if start_idx == -1 or end_idx == -1:
-        raise ValueError(
-            "Could not find SARF VARIABLE CODING section boundaries in Pass 2 prompt. "
-            "The prompt format may have changed."
-        )
+    if start_idx < 0 or end_idx < 0:
+        return None
     return (
         base[:start_idx]
         + _LITREVIEW_SARF_SECTION
@@ -95,7 +69,10 @@ def _build_pass2_prompt() -> str:
     )
 
 
-def _build_sarf_review_prompt() -> str:
+@functools.cache
+def sarf_review_prompt() -> str | None:
+    if pass2_prompt() is None:
+        return None
     return f"""\
 You are reviewing clinical shift events extracted from a family therapy discussion.
 
@@ -115,9 +92,3 @@ People context:
 Original conversation:
 {{conversation_history}}
 """
-
-
-# Build prompts only if production prompts are available; otherwise set to
-# None so the module can still be imported (e.g. in Docker CI).
-LITREVIEW_PASS2_PROMPT = _build_pass2_prompt() if _BASE_PASS2_PROMPT else None
-LITREVIEW_SARF_REVIEW_PROMPT = _build_sarf_review_prompt() if _BASE_PASS2_PROMPT else None

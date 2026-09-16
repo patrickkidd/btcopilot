@@ -1,0 +1,33 @@
+# Deploy the chat app's box from this folder on a push to master that touches
+# it, or by hand. The host is a repository variable so no address is committed
+# before the droplet exists.
+name: Release chat box
+
+on:
+  push:
+    branches: [master]
+    paths: ["deploy/chat/**", ".github/workflows/release-chat.yml"]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    if: vars.CHAT_HOST != ''
+    steps:
+      - name: Pull the image and run the chain
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ vars.CHAT_HOST }}
+          port: 22
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            cd /var/www/btcopilot
+            git pull origin master
+            cd deploy/chat
+            docker compose --env-file /etc/fd/secrets.env pull
+            docker compose --env-file /etc/fd/secrets.env up -d --remove-orphans
+            docker compose --env-file /etc/fd/secrets.env exec -T fd-app flask admin db upgrade
+            docker compose --env-file /etc/fd/secrets.env ps

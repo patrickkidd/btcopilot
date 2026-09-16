@@ -1,0 +1,8 @@
+---
+name: discussion_title
+description: Name a conversation in at most six words.
+---
+
+Give this conversation a title of at most six words. Reply with the title only.
+
+{conversation_history}

@@ -9,7 +9,7 @@ from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
 from btcopilot.pro.models import User
 from btcopilot.training.utils import get_breadcrumbs
-from btcopilot.tests.personal.synthetic import PersonaTrait, AttachmentStyle
+from btcopilot.tests.chat.personal.synthetic import PersonaTrait, AttachmentStyle
 
 _log = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ def index():
 
 @bp.route("/generate-persona", methods=["POST"])
 def generate_persona_route():
-    from btcopilot.tests.personal.synthetic import generate_persona
+    from btcopilot.tests.chat.personal.synthetic import generate_persona
 
     data = request.get_json()
     if not data:

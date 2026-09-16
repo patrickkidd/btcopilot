@@ -1067,6 +1067,176 @@ Single-prompt extraction (full conversation → one LLM call → complete PDP) t
 
 **Revisit trigger:** 3.6-flash pricing/latency changes; GT date-certainty tooling fix (would shift all Events numbers); mobile sync-path latency budget decision.
 
+## 2026-08-25: MVP done condition = returning long-horizon chat that improves the diagram through chat (supersedes FD-264's clinician-in-Pro loop)
+
+**Context:** Return from a 5-week break. Record shows the Jun 24 ruling (rebuild ceiling → human-in-the-loop corrections, FD-339) was never acted on; the Jul 21 test of Patrick's own diagram left unticketed structural bugs (duplicate self, self-bonds); FD-264's done condition (warm clinician uses a Personal-generated diagram in a Pro session) depends on diagram correctness + arrangement that measured out at a ceiling. Brainstorm: `doc/brainstorming/2026-08-25--fall-2026-direction.md`.
+
+**Options considered:** (1) FD-264 as written — clinician-in-Pro loop; pulls Pro interop, Personal auto-arrange, FD-336 forward. (2) Returning long-horizon chat — user returns over weeks, diagram/timeline stay coherent, diagram corrected through chat; clinician loop becomes the next epic. (3) Platform first (FD-340 port, FD-336).
+
+**Decision:** (2). MVP = a user returns and chats ≥3 sessions over ≥4 weeks; the diagram and timeline stay coherent (no duplicate self, no self-bonds, new facts land on the right people); the user corrects the family through chat ("vibe-coding the diagram"); the user says it was worth returning to. Techniques adopted as the design frame (brainstorm §7–§8): explicit user edits as agent tool calls while narrative extraction stays batch; arrangement as constraints/relations emitted by the agent and rendered by a deterministic engine that re-places only the touched neighborhood; agent writes through the existing snapshot-diff merge; selection-as-context, entity chips that halo diagram items, tap-to-disambiguate, commit invariants as post-edit guards, one turn = one undo step, trust-tiered auto-apply. Voice: current voice fine for now. Parked: FD-340 (trigger: PyQt5/Rosetta breaks a build or App Store submission needs it), Personal auto-arrange as a global feature, FD-336, workstream-skill work. Jira: first-beta epic FD-341 (children FD-342..FD-353, FD-339 moved under it) created 2026-08-25; FD-264 to be closed by Patrick. This is a BETA epic; the App Store MVP epic follows once FD-351 shows unprompted return.
+
+**Reasoning:** No automated extraction setting produced a correct family for Patrick's own diagram (Jun 9/24); corrections through chat are the only correctness path on record and double as real-family structural GT. Two failures (duplicate self, self-bonds) break accumulation itself, so they precede everything. Incremental single-person placement (deferred May 4) is the shared prerequisite of chat-driven corrections, local arrangement, and live diagram-while-chatting, so it moves ahead of FD-339.
+
+**Revisit trigger:** Seminar testers do not return unprompted in the Dec–Feb block (kills the premise → fall back to option 1 with manual diagram cleanup); prod-dump count shows zero non-Patrick conversations and testers decline; per-user LLM cost makes a free tier untenable.
+
+## 2026-08-25: Architecture B — one authoring tool surface for chat-driven diagram edits; Pro chat drawer first in FD-341
+
+**Context:** FD-342 dogfood found chat can only ADD (the only writer is the extraction PDP; edits/deletes of committed entities exist only in the review sheet). The Personal app renders no diagram (Discuss/Learn/Plan over a SceneModel), so chat-beside-diagram exists nowhere; four FD-341 stories assumed it.
+
+**Options considered:** (A) hybrid — batch extraction unchanged, agent tool calls for explicit user edits only; (B) one authoring tool surface (person/parents/bonds/events/SARF/merge/split/arrangement hint) used for user corrections with full CRUD, and potentially for narrative extraction as a read-before-write, guard-validated loop; (C) FD-336 full embed first.
+
+**Decision:** B for corrections now (FD-339 re-scoped; FD-349 trust tiers/undo and FD-350 GT log absorbed into it and closed). Narrative extraction stays batch until a measured spike (FD-355) compares agentic extraction on the same tool surface against the batch pipeline (6 GT discussions + diagram 1924 assertions; outcome = replace / split structure-vs-SARF / keep hybrid). **Amended same day:** Patrick ruled FD-336 in full (well-scoped, not weeks) ranked FIRST, and tickets kept to actual workstreams. FD-354 (thin drawer) and FD-355 (spike) deleted; 343/344 (guards, speaker weld) and the spike folded into FD-339 as phases 0 and 2; 345 (labels) into FD-336; 348 (arrangement hints) into FD-346; 349/350 already absorbed. Then consolidated to journey-shaped workstreams (Patrick: first two = embed the Personal app, vibe-code the diagram in Pro): FD-347 (pointing UI) and FD-346 (arrangement) folded into FD-339 as phases 2–3 and deleted. FD-342 (dogfood) deleted 2026-08-26 — it was FD-339's human walk, now written into FD-339. Final: 5 children — FD-336 → FD-339 ("Conversational diagram editing in the Pro app (agentic loop + authoring tools)") → FD-351 → FD-352 → FD-353.
+
+**Reasoning:** The June ceiling failures (duplicates, self-bonds, wrong parents, cross-name welds) are write-without-reading failures; a tool-calling agent gets invariant feedback per write. The 2026-02-24 result (per-turn delta extraction lost 2x F1) puts the burden of proof on B for extraction, hence a spike, not a pivot. FD-336 as designed changes persistence for every Pro user and cannot be feature-flagged.
+
+**Revisit trigger:** FD-355 numbers; the drawer's concurrent-save journeys failing; arrangement hints not reaching acceptable layouts within ~3 hints on 30-person families.
+
+## 2026-08-29: Pivot — chat-first web app ("Claude Code for Family Diagram"), parallel epic
+
+**Context:** Aug 28–30 brainstorm session. Adversarial 22-agent check of "interactive agent removes upfront extraction precision": holds for structure, fails for shift/SARF timeline. Architecture panel: keep Flask backend, JSON doc + command log, one web page (Vite/TS SVG, PWA), no Qt. Concept ruled: chat + one timeline picture above it; chat = event clock, record = state clock; lanes only person/couple/household; no diagram drawn at first; proactive near-zero default.
+
+**Options considered:** (a) continue FD-341 as sequenced (Pro drawer first); (b) fold the pivot into FD-341; (c) parallel epic, FD-341 kept separate as the June plan of record.
+
+**Decision:** (c). New epic: chat-first web app against the existing backend. Story 1 = web page (chat + timeline picture, existing endpoints, browser-session auth). Story 2 = corrections through chat (agent tool surface) in that page. Pro embed (FD-336) no longer first — superseded as the chat surface by the web page; FD-341 untouched pending Patrick's re-triage. Business model designed and TABLED (flat $29, Sonnet-class loop, founders $19; conditions: Sonnet quality test, caching, token logging — none exist).
+
+**Reasoning:** Old apps' tech debt (PyQt5, no PySide6/iOS path, 6-yr handwritten UI) makes every change expensive; a web page is a second client of endpoints that already exist, seeds the new architecture, and throws nothing away. The picture (1–2wk) drives corrections (3–5wk); both start now. Patrick's journal file → extraction → copy of 1924 supplies real dated events for the first picture.
+
+**Revisit trigger:** Patrick doesn't feel the picture on his own data (kills the insight premise); Sonnet-class coaching rejected by working group (re-opens cost model); story 1 blocked on personal-route auth >2 days.
+
+
+## 2026-08-31: Drawability rules ruled; question language replaces progress bar; question budget clarified
+
+**Context:** The always-unclear engineering point — what the timeline picture may draw — settled against Patrick's own record (discussions 55/58 + 14-month journal) and a hand-coded clinical case, via a visual ruling page built from real data.
+
+**Decision:** Five rules in doc/DRAWABILITY.md: (1) line at 3 directed points, dots below, span only where points exist; (2) date-guessed points count, rendered as bands for correction; (3) gaps dotted ("no data yet"), recorded no-change draws as solid flat; (4) order shown only when guess-ranges don't touch; (5) open states fade after last confirmation, death hard-stops a person. One visual question-treatment in exactly three places (order-unknown-that-matters, unconfirmed fades, undated shelf); candidates found deterministically, the coach picks/phrases in conversation — no background LLM calls, no progress bar, no "finished."
+
+**Also ruled (2026-08-31):** in-story follow-up questions (dating, year-before, who-else-was-in-it, one-SARF-dimension-per-anchor) are exempt from the ~1-targeted-question-per-session budget, which caps only out-of-flow clarification questions.
+
+**Reasoning:** The Learn tab failed by drawing whatever existed however sparse. Real-data findings: uncertainty is the norm for remembered history (57/84 chat dates year-grade+) and the exception for journaled-now (75/78 day-certain) — certainty is a property of capture time, so returning chat is the data-quality strategy; self-reported data is direction-rich (70%) except relationship moves; density encodes capture mode, not severity.
+
+**Revisit trigger:** Patrick's or testers' lanes draw misleading pictures under these rules in the first working-group cycle; the "?" pairs prove too numerous or too rare to fuel conversation.
+
+
+## 2026-08-31: UI shape ruled from real-data mockups — conversation-led, always-on strip, quiet questions; cartoon rule
+
+**Context:** Three phone mockups from Patrick's real record (strip / question-first / living header).
+
+**Decision:** Question-first rejected (survey feel; "no one is going to like a questionnaire"). Ruled shape: conversation drives everything; picture always on, strip-small above the chat; questions as quiet in-place marks; the coach aims the picture via an inline reference; users can proactively fill gaps through the picture; undated shelf behind a tap. Cartoon rule recorded in doc/DRAWABILITY.md: one or two impactful correlations, not a dataset; the brain-rearranging moment is the product's acceptance test.
+
+**Revisit trigger:** working-group members don't notice quiet marks (engagement rests on coach prose alone), or the strip proves too small to aim at on phones.
+
+## 2026-09-01 — Loop engineering is the project's organizing principle
+Patrick's ruling, verbatim-close: the whole project is about loop engineering now.
+Get something in front of users that keeps them chatting — neat graphics where the
+drill-down levels fill in visually AS THEY TYPE — generating a feedback loop of
+collected data; track corrections occurring directly in chat; maximize automatic
+in-app data collection (interactive, in the app itself) so users never need to talk
+to Patrick; the system learns from collected data. Visual-design convergence (the
+three-level drill-down: at-rest wire → aimed-lane episode → chalkboard moves) is now
+in service of retention + data generation, not a design end in itself. Connects to
+the earlier friction auto-report ruling.
+
+---
+
+## 2026-09
+
+### 2026-09-13: FD-362 platform — prompts become files, secrets are encrypted in place
+
+**Context:** Steps 1-5 of `doc/chat-first/PLATFORM_BUILD.md`. The chat app was
+reading its real prompts out of a second private repo through a runtime path
+override, which made that repo a dependency of every run and of the tests.
+
+**Decisions accepted:**
+- **One .prompty file per prompt**, open-source defaults in
+  `btcopilot/personal/prompty/`, private wording in `private/prompts/`. A private
+  file replaces the public one of the same name; anything it does not carry falls
+  through. The app runs whole with no private directory at all.
+- **The prompt files are rendered with Jinja2 directly, not with the prompty
+  package.** The package's value is its invoker, and the app has its own model
+  client, so taking the dependency would have bought a YAML parser. The file
+  format is unchanged; only the renderer is ours. A fragment that is missing
+  raises rather than rendering empty, which was the risk named in the plan.
+- **Defaults live in each prompt file's frontmatter**, because Jinja2's include
+  does not see a value the including template set, and the coach's chat prompt
+  and its agent prompt want different words when the record is empty.
+- **The tool parameter meanings merge key by key**, so the private file names
+  only the parameters whose meaning is clinical. Before this the private file had
+  to restate the eleven it did carry and silently dropped three.
+- **sops with age, whole-file, and the key outside every repo.** Today's key is a
+  throwaway for development; Patrick's own key and the new box's replace it.
+- **The rulings stay as whole files, not one file per ruling.** The plan made the
+  split conditional on the diff being unreadable. The committed bytes are one
+  opaque blob either way, and `.gitattributes` with a decrypting textconv gives a
+  full readable `git diff` locally, so splitting 300-odd index lines into 300
+  files would buy only a filename in a pull request's view. Open for Patrick if
+  he reviews rulings on GitHub rather than locally.
+
+**Rejected:** keeping the second repo on the path "just for tests" — it was the
+reason the tests had been running on the open-source stubs without anyone
+noticing, since the path it computed did not exist in a worktree.
+
+**Proved:** every prompt renders the text its Python constant produced, asserted
+string for string, public and private, from the encrypted files. The coach
+answered a real chat turn on the sandbox and wrote to the record with no second
+repo on the import path.
+
+
+### 2026-09-12: FD-362 Pro surfaces — one licence gate, no second app
+
+**Context:** Building the Pro screens drawn in `doc/chat-first/mockups/pro.html` (frames f1–f7):
+cases, uploading a recording, notes, and the drawer pinned open on a wide window.
+
+**Decisions accepted:**
+- **One gate, read from the licence, not the role.** `personal/licence.py:professional()` is true
+  when the user holds an active licence whose policy product is the professional one. It is in the
+  bootstrap and on the account payload, and the front end reads it once (`web/src/pro.ts`). Every
+  Pro-only route refuses as 404, never 403: a reader without the licence is never told the surface
+  exists (R-0237, R-0285).
+- **"Case" is a word, not a data model.** A case is a Diagram. The Pro surfaces rename the same
+  switcher, the same sessions and the same picture. A personal reader never sees the word.
+- **A note is `Discussion.kind = note`, not a new table.** It is listed with the sessions and
+  labelled, and the coach is told the register it is in through a new overridable callable
+  `note_register()` with a neutral default in btcopilot and the real wording in fdserver (R-0305).
+- **Recordings reuse the transcription path the training app already has.** The browser sends the
+  audio straight to AssemblyAI and posts the diarized transcript back; the audio never touches our
+  server. The utterance-to-speakers-and-statements loop was lifted out of the training route into
+  `personal/discussions.py:transcript_statements()` and both callers now share it.
+- **The clinician's voice becomes the coach's side of the thread.** A mapped recording sets
+  `chat_ai_speaker` to the Expert voice and `chat_user_speaker` to the Subject voice, which is what
+  makes it read and code like any other session rather than needing a second kind of reader.
+- **One sheet at a time.** Uploading lowers the sessions sheet rather than standing the who-is-who
+  sheet on top of it; two stacked sheets read through each other.
+- **`Person.notes` joins the shared schema.** The desktop app has always kept notes on a person;
+  the record now carries the field so both apps mean the same thing by it.
+
+### 2026-09-02: Chat-first companion API — chip contract, save semantics, session switching
+
+**Context:** Phase 2 of the chat-first companion build (`doc/chat-first/BUILD_SPEC.md`): the REST
+surface behind the one-page coach — sessions, preferences, account, event CRUD, coach chips,
+traceability.
+
+**Decisions accepted:**
+- **Chip markup is `[[kind:target|label]]`** with four kinds (chapter, events, person, range),
+  parsed in `personal/refs.py` inside `ask()`. The transcript stores the label text only, so markup
+  never reaches the record or the extraction prompt. Unresolvable references are dropped rather than
+  shown pointing at nothing; a reply naming nothing yields an empty list and nothing is inferred
+  from prose. The instruction lives in `COACH_REFERENCE_INSTRUCTION`; fdserver overrides it, and an
+  override that drops it simply turns chips off.
+- **Event rules are enforced by normalizing on save, not by refusing the write.** A saved event
+  drops values that no longer apply to its kind (a shift switched to a death loses its shift
+  values), so no stored event can violate the rules. Unknown field names are still refused outright.
+- **No server-side "current session" pointer.** Sessions list by last activity, so the session the
+  user last spoke in is the one the page returns to. Switching is a client concern plus a post to
+  that session's statements.
+- **Another user's session is a 404, not a 403** — the app never confirms a session it will not show.
+- **Traceability is stamped at PDP commit**, where the discussion is known; the statement stays null
+  because extraction runs over a window, not a single statement. Stored as plain string keys on the
+  event chunk (never enum keys — those chunks are pickled for the Pro app).
+
+**Rejected:** adding `discussionId`/`statementId` fields to `schema.Event` — the extraction response
+schema is generated from that dataclass, so new fields would change the extraction contract and
+require an F1 run.
+
 ---
 
 ## 2026-08-25: Ticket lifecycle rules — Jira canonical, built-in worktrees, PR as observation surface
@@ -1085,3 +1255,339 @@ Single-prompt extraction (full conversation → one LLM call → complete PDP) t
 
 **Revisit trigger:** the harness gains multi-repo worktree support; or the resolver script lands and the hand procedure in root CLAUDE.md gets replaced; or a private repo goes public / plan upgrades (then apply the same branch protection).
 
+
+---
+
+## 2026-09-03: Corpus work pinned; the main stream is the chat MVP; architectural step back opened
+
+**Context:** STATE.md carried the corpus phases (filter → nature-of-the-data → visual choices → build) as the ruled working order and named the subset sessions as next. Patrick clarified that this was a side branch he had already pinned in favor of generating data through chat, and that the main stream had landed on a minimum viable mobile chat prototype. Using the prototype exposed gaps that trace back to questions the original vision never settled.
+
+**Decision (Patrick):** The corpus/subset/notability threads are pinned, not next. The governing principle is the smallest and most powerful simple UI that can be tested and iterated on. A brainstorm session takes the architectural step back and fills the gaps: the UI principle, the Pro app from first principles, the data format (reuse-and-modernize vs new-with-migration; off the pickle and whole-diagram optimistic writer toward multi-reader/writer sync), and the unruled prototype gaps (no tool calls, no user journeys, pending-pool fate). Big-model spend is bounded: judgment only, no agent panels by default.
+
+**Revisit trigger:** the brainstorm's rulings land (each gets its own entry and oracle ruling id); or the chat MVP produces enough data to reopen the corpus thread.
+
+
+---
+
+## 2026-09-07: Clusters are stored server-side; a stretch the user named is not regrouped away
+
+**Context:** The ruling is that clusters are stored, not derived on read, but nothing wrote them: the
+page grouped events by the silences between them and the coach could not point at the result, so a
+chip aimed at a stretch never resolved. Detection existed only behind a stateless endpoint the client
+called by hand.
+
+**Decision:** A coach turn that changes an event re-groups the line server-side and writes the result
+into the record through the one write path, authored by the coach in the same turn, so the grouping
+carries a change log and an undo like every other item. A cache key on the record keeps the model call
+off turns that change nothing the grouping depends on; it is compared in the writer only, never on
+read. A grouping keeps its id across re-detection, matched by event overlap, so a chip the coach wrote
+last week still points at something the record holds.
+
+**Decision:** A stretch named through the coach's cluster tool is stored as the user's, and
+re-detection yields to it: its events are held out of the next detection and an overlapping model
+grouping loses the overlap. Nothing had ruled this. The alternative — treating every coach-made
+grouping as the model's — was rejected because re-detection would then regroup away a name the user
+had asked for, which is the worse failure and matches the established pattern that the coach does not
+overwrite what the user chose.
+
+**Decision:** Provenance on a grouping is never claimed falsely. A run of events the line grouped by
+date gaps is neither the model's nor the user's and says so, because re-detection keys on that field
+and a false value there costs someone an afternoon.
+
+**Also:** the other side of the chat stopped being a person in the record — the coach speaker points
+at no person and chat defaults no longer create one — while its id stays reserved so records written
+before this rule keep meaning the same thing.
+
+**Revisit trigger:** the turn's latency or model spend makes synchronous detection untenable (move it
+to the worker that already runs the agent loop); or the user gains a way to name a stretch without
+going through the coach, which would need its own provenance.
+
+## 2026-09-11: Ground truth in three stages, coded up to cuts; the AI out of the vote
+
+**Context:** Last year's IRR meetings never converged: a tool too complicated for therapists,
+no pre-meeting work, every dispute argued live. The new app makes every coding a diagram, so a
+review process could be designed from scratch. Patrick ruled it over seven rounds on one drawn
+page (oracle R-0244..R-0268).
+
+**Decision:** Three stages. Each coder codes a conversation up to a cut Patrick selects on the
+thread, blind, adding to their own earlier coding of it; once three are done, each votes on a
+phone on every disputed item, takes shown without names and with no AI take or recommendation
+in the ballot; the meeting sees only what the vote left open, with names and tallies, gives
+every item keep / change / unresolved, and ratifies with unresolved items kept as data. Coders
+have one task at a time, never a list. The AI does the clerical work (matching, grouping,
+quoting, ordering, drafting the guideline changes after ratification) and is scored, never
+consulted, on the human decisions. Rejected: the AI's recommendation in the ballot or at the
+meeting (anchoring); a queue of tasks; whole transcripts as a separate unit (a cut at the end
+is the whole thing); correcting the coach's coding first (not blind).
+
+**Open:** the ballot's settling rule; whether names are revealed at ratification and
+who-was-right stored; whether the meeting's records replace the repository's markdown as the
+system of record with the guidelines file generated from the tables; the migration of last
+year's rules and ledgers.
+
+**Revisit trigger:** the first two meetings — if the pre-meeting vote is not being done, the
+stages collapse back to one and the design is wrong.
+
+## 2026-09-12: Tool schemas say the shape, fdserver says the meaning
+
+**Decision**: the clinical wording on the record-writing tools' parameters (variables,
+event kinds, relationship moves, the child-focus case) lives in fdserver's private prompt
+module and reaches btcopilot through one overridable callable keyed by an enum of tool
+parameters; btcopilot's defaults are data-shape text only. The coach and the review scribe
+read the same schemas. Under R-0305.
+**Rejected**: leaving the text on the tools in btcopilot (public repo; it is the IP);
+duplicating a second schema for the scribe.
+**Open**: the scribe's own prompt (ruled behaviours of the coding loop, never in fdserver)
+stays in btcopilot pending Patrick's word.
+
+## 2026-09-11: The scribe never pretends — a loop that runs out says what it wrote
+
+**Decision**: the review scribe's tool loop is capped at eight steps (was three). When the
+model still wants to call tools at the cap, the request fails with the list of what was written
+and "say it again", and the coding screen re-reads the record, since every tool call is
+committed as it lands.
+**Rejected**: rolling back the partial writes (the record's commit path commits per call so the
+picture moves while the coach speaks; deferring that is a change to the coach's own loop);
+returning the partial lines as success (the defect found: the coder saw "+ Marcus" as done while
+the event was never written).
+**Context**: found by the 2026-09-11 night walks of the coding screen; two fixture runs at phone
+and desktop size both lost the event on an empty record.
+
+## 2026-09-11: Every screen ruled and drawn; the review's data model minimal; build begun
+
+**Decision:** The coding, review, Pro and interface screens are all ruled and drawn on one
+fictional family in the app's own markup (mockups/, the catalogue for beta users). The review's
+data model, after an adversarial pass: one column on discussions, five prefixed review tables,
+the branch's history tables renamed diagram_changes and diagram_interactions, JSON for what will
+change shape, nothing the desktop app reads touched (REVIEW_TABLES.html). Steps one and two of
+the ruled build order landed the same night with independent browser walks closing three defects.
+
+**Rejected:** a numerical settling rule before the meeting; the AI's take in the vote; whole
+transcripts as a separate coding unit; correcting the coach's coding first; two-boxes compare;
+conflict marks in triangles; a per-case "+" in the sessions sheet; trend lines before real data.
+
+**Revisit trigger:** the first two review meetings.
+
+
+## 2026-09-12: Billing and old users for the chat-first product (Patrick's word: "sounds good")
+
+**Decision:** Stripe owns money only: flat plans sold through Stripe's hosted payment page and
+customer portal, subscription state mirrored into the users table by webhook that re-fetches
+the full subscription. Tokens are metered in our own table, one row per coach turn, with a
+hard cap and a paid top-up. Old Pro users are imported, not carried as a schema: email, name,
+Stripe customer id and the diagram, every diagram converted from pickle to JSON once, up front.
+**Rejected:** per-token billing through Stripe (their new usage path is Metronome, pricing
+unpublished; the Meters path is kept only for existing integrations); a soft cap (no billing
+consequence); converting diagrams on demand (keeps the pickle classes alive indefinitely);
+Stripe as the CRM or identity store.
+**Open:** the model the coach runs on sets the price floor (Sonnet 5 about 2.4 cents a turn,
+Opus 5 about 6); whether to sell worldwide from day one decides Stripe's merchant-of-record
+add-on at 3.5%.
+
+## 2026-09-13: Platform reset rulings (Patrick: "yes" to 2, 3, 4, 5)
+
+**Decision:** (2) The chat-first product gets its own DigitalOcean droplet with Caddy for
+TLS; the existing droplet is frozen to serve the Pro desktop app until Pro is sunset.
+(3) Stripe owns money only, flat monthly plans with our own token metering and a hard cap;
+customers manage and cancel their own subscription through Stripe's customer portal, and
+every subscription email (renewal, receipt, failed payment) links straight to it, so nobody
+has to ask Patrick to cancel. (4) Old Pro users are imported, every diagram converted once.
+(5) No admin web app. Administration is done by an agent, Claude Code or Patrick's
+self-hosted Qwen through OpenClaw, against an admin tool surface that carries its own
+reference manual, so any agentic tool can operate it without being taught.
+**Rejected:** per-token billing through Stripe; converting diagrams on demand; a hand-built
+admin UI; an admin surface only Claude Code can use.
+**Secrets (Patrick, 2026-09-13: "I like the sops route"):** one sops-encrypted env file in
+the repo; one age key pair per machine, the Mac's and the droplet's, private keys never
+copied between machines; both public keys in the repo config; the droplet decrypts at deploy
+into Docker's secrets mount. Rejected: GitHub Actions secrets (no history, no matching
+local sandbox), a hand-made env file on the server, 1Password.
+**Repo shape, re-judged 2026-09-13 after Patrick's challenge (not yet ruled):** one public
+repo with the prompts and the oracle rulings encrypted in place by the same sops and age
+keys; no second repo in the daily loop, so no worktree switch and one PR per ticket.
+Boundary: files with real people in them (coach transcripts, training exports) never enter
+the public repo, encrypted or not; fdserver keeps them as an archive. Costs accepted:
+ciphertext in GitHub's PR view (local diff is cleartext), manual merge if two sessions edit
+the same encrypted file, the age key in CI if prompt tests run there. The earlier "key leak"
+objection was overweighted; the real asymmetry is that secrets rotate and prompts do not.
+**Ruled 2026-09-13 ("go with prompty and use sops"):** one public repo; prompts move
+out of Python string constants into one `.prompty` file per prompt (markdown body, YAML
+frontmatter, Jinja2) with shared fragments as Jinja2 includes; prompts and the oracle
+rulings are encrypted in place with the same sops and age keys as the secrets. Files with
+real people in them never enter the public repo. Prompty over dotprompt because dotprompt's
+Python lives inside Genkit and uses Handlebars; prompty is Python-first (2.0.1, 2026-09-10),
+Jinja2, with an Anthropic invoker. Risk accepted: single maintainer; fragments through
+the prompty runtime unverified, fallback is rendering the body with plain Jinja2.
+**Ruled 2026-09-13, pricing inputs:** the coach stays on the model in use, Claude Opus 4.6
+with thinking on (the default in llmutil, no override in the sandbox or production compose);
+it is conversational on small scopes, not extraction, and needs the long context because
+users care about small details across a long conversation. Launch US-only, Stripe Tax on from
+day one; going global later is a flag on Stripe's hosted payment page, not a rebuild. fdserver
+leaves the daily loop entirely: the oracle store and prompts move into btcopilot encrypted;
+the files with real people in them (coach transcripts, training exports, database dumps)
+move to the corpus folder that already lives outside every repo, with their own backup; the
+fdserver repo is archived, not deleted.
+**Ruled 2026-09-13:** no plan price or pricing structure until the beta is in use; Patrick
+does not trust projections from his experience and wants to see real usage first. The
+per-turn token table is still built, since it is what the beta will be read from.
+**Verified 2026-09-13, prompty fragments:** prompty 2.0.1 renders the body in a sandboxed
+Jinja2 environment whose loader holds only the prompt itself, so `{% include %}` of a
+fragment file cannot resolve out of the box. The fix is a renderer subclass with a file
+loader pointed at the prompts folder, registered under prompty's renderer entry point;
+about ten lines. Also learned: 2.0 input declarations need a `kind` field.
+**Open:** the admin surface
+is a CLI on the engine plus one skill file generated from the CLI's declarations and checked
+by a test, no MCP server unless an agent without a shell appears.
+
+## 2026-09-13: The pivot — design people and family structure pixel by pixel before any more testing
+
+Testing stopped [R-0322, R-0323, R-0324]. People, pair-bonds and parents are designed to
+the pixel for the coach, the scribe, the ballot and the meeting, added to the decided flow
+rather than re-conceiving it. The order was set: a conventions sheet taken from the desktop
+app's drawing code (the code is ground truth over the written visual specification), then a
+renderer-drawn gallery of hostile cases for his ruling, then goldens he approves. Then build
+the whole separation plan, then a fresh sandbox and the walks from the start.
+
+## 2026-09-13/14: Fragment drawing rules ruled from the gallery
+
+Twelve rules fixed the renderer to one way of drawing [R-0325, R-0326]; the notable ones are
+that a missing or unnamed parent is added as a generically named person so the bond can
+exist, which reaches extraction, and that a child whose parents are not on the record stands
+alone. In the review the people list stays as it is because chips would imply a tap into
+chat, the person editor gains "born to" and lists every pair-bond one per other person, the
+ballot shows a fragment per version, and structure items stay off the meeting wire and are
+counted in the legend. The only costs weighed are technical complexity, inference cost and
+accuracy, never agent effort.
+
+## 2026-09-14: The chat app starts over with its own accounts
+
+Its own user table on its own database, not shared with Pro; old Pro users are imported once
+rather than shared live. [R-0327]
+
+## 2026-09-14: Observability is Datadog on the recommended low-cost set, and the droplet waits for his word
+
+One host, logs ingest-only with exclusion filters and errors indexed, LLM observability
+inside the free tier with a span-count monitor, one uptime check, browser logs and error
+tracking, plus session replay from day one; APM and product analytics later; the paid
+infrastructure host waits. [R-0328, R-0329, R-0330] The droplet is created only after he has
+tested the build and says deploy work may start; region sfo3 because sfo1 lacks volumes.
+
+## 2026-09-14: The chat app's tests are their own suite, audited for time by an Opus auditor
+
+Own tree, own configuration and fixtures, filtered to the changed component and run whole
+once at the end [R-0331, R-0332]; the chat app is greenfield so its tests are derived from
+rulings; unit tests do no I/O beyond the logic under test.
+
+## 2026-09-14: A self-improving loop runs locally inside sessions
+
+A scout reads the corpus and the session transcripts, researches what changed outside, and
+proposes at most ten ranked process changes, each with an external source and one prediction
+on one of four measured numbers; a loop review of two agents reviews the scout itself and may
+change only the scout's brief. [R-0333, R-0334, R-0335, R-0336] Both are invoked by the flush
+rather than a calendar: the scout after every build that hands him a walk, the review after
+every fourth scout run or two measured outcomes. Kill rules: fewer than one proposal in six
+merged after eight runs retires the scout; a merged change that does not move its number
+within two builds stops that kind of proposal. Two cloud routines exist as a fallback and
+stay disabled.
+
+## 2026-09-15: A walk is driven in a real browser before Patrick is handed it
+
+An independent agent walks the document literally, step by step, on the same fixture accounts,
+and every step that does not match what the screen shows is corrected first. The document carries
+its sign-in link in every section, puts one action in a step, and colours the action verb.
+Sessions are never dropped fast, so he is not signed out mid-walk, and agents may keep editing
+the front end while he walks because a page reload is acceptable. [R-0337, R-0338, R-0343]
+
+## 2026-09-15: The meeting speaks the ballot's language, and a decision stays where it sat
+
+Tapping a version keeps it and the row lights; the kept version is stored on the item so it
+lights on every later reading; version rows carry the coders' initials and no count; a decided
+item keeps the seat the sort gave it and collapses in place rather than moving or disappearing.
+The agreement wire, its legend and the sort control stay at the top while the title and figures
+scroll away, and a dot tap travels the list with an animated scroll because iOS Safari does not
+honour the browser's own smooth scrolling. [R-0338, R-0339, R-0340, R-0341, R-0342]
+
+## 2026-09-15: A meeting result is reachable again, and reads as words
+
+The result screen is opened again from a coder's done list and from the agenda for a ratified
+conversation, ratified rows told apart by their date. Its summary scrolls with the page under a
+title and one labelled figures line rather than pinning as monospaced output, and a coach pass
+that was never coded is said in words. [R-0343, R-0344]
+
+## 2026-09-15: The person editor says "born to", never "bond"
+
+The section is the person's biological parents, picked as a mother and a father by name or added,
+with the pair-bond staying a data-model fact behind it; the rows beneath read "Partners". The
+list button inside the picture opens the events and people list sliding in full screen over the
+chat and the picture. Adoptive and foster parents, possibly several, are a known open design
+question. [R-0345]
+
+## 2026-09-15: Only an admin controls the meeting and the guideline flags
+
+Only an admin flags a ratified guideline for the next meeting, tapping again unflags it, and a
+non-admin sees a flagged guideline as text rather than a link; only an admin puts a cut on the
+agenda, moves it, opens the vote or runs the meeting. Ruled and started, not landed. [R-0346]
+
+## 2026-09-15: The event model is written up and waits for six of his rulings
+
+Three complaints with the timeline shape inherited from the desktop app, a normalised shape, and
+six questions — whether an ordinary event is a named kind or no kind, whether a birth ever
+carries parents, whether "moved" keeps its own kind, whether a triangle's two positions are named
+or ordered, whether the three variables nest, and whether any of it changes now or after the
+beta. Nothing is built from it.
+
+## 2026-09-16: The beta starts from empty records, proved safe by a shape test
+
+People are invited by email onto empty records; no import of the old Pro database at cutover, and
+a per-diagram manual import later. Patrick would agree only if nothing would be lost by importing
+later, so a test stores a Pro-shaped record with relationship moves and targets, triangles, an
+emotion, a layer, intensity, colour, Qt dates and points, reads it back through the chat page with
+the sub-fields intact, returns it to Pro equal, and keeps the desktop-only fields after a hand
+edit. The comparison page is "Old Record, New Record". The data model document's triangle type was
+wrong (pairs) and is fixed to a list of person ids. [R-0355]
+
+## 2026-09-16: Claude creates the droplet and changes DNS, on his confirmation each time
+
+Patrick does not do those steps himself; Claude does them, and only after he says so for that
+specific step. [R-0353]
+
+## 2026-09-16: Pricing and plans wait for the first bill
+
+No plan or price is decided until the app runs in production and the first $20–40 bill shows what
+the usage costs. Nothing on the deploy path waits on this. [R-0354]
+
+## 2026-09-16: The app is served at familydiagram.com/app
+
+familydiagram.com otherwise keeps doing what the old box does today, redirecting to
+alaskafamilysystems.com/family-diagram, until a new product homepage exists later. Until the app's
+mount is renamed from /personal to /app, Caddy redirects /app to /personal/ — the rename is about
+13 places in the web sources and 70 in Python and tests, and is asked of him, not answered.
+[R-0356]
+
+## 2026-09-16: fdserver leaves this ticket; deployment lives in this repo
+
+Patrick closed the fdserver pull request unmerged. The compose file, Caddyfile, secrets template,
+runbook, release workflow and the desktop app's four update feeds are `deploy/chat/` here. The
+prompts and the rulings had already moved into this repo encrypted on 13 September; the
+deployment had been drafted in fdserver out of habit.
+
+## 2026-09-16: Two commands on the box are refused to sub-agents
+
+The permission rules refuse a sub-agent the command that rewrites the secret store's keys and the
+compose commands that pull and start the stack on the box, because those count as writing secrets
+and deploying to production; reads against the box are refused too. Both ran at the top level on
+Patrick's direct grant. A session that plans box work must plan for that.
+
+## 2026-09-16: The chat chain's first revision is ordered by dependency, not regenerated
+
+The generated from-empty revision created tables alphabetically, which SQLite accepts and
+Postgres refuses. Rather than a second revision or a regeneration, the same revision was reordered
+in place — no database anywhere had run it — with the two cycles closed by keys added after the
+tables. The chain's own tests stay on SQLite and did not catch this; a Postgres run of the chain
+belongs in continuous integration before the next revision is added.
+
+## 2026-09-16: Secret values do not move through Claude
+
+The permission classifier refuses copying credential values between files or hosts, even on
+Patrick's grant of production access. Sessions that need a secret on the box hand him the exact
+command; they do not route the value.

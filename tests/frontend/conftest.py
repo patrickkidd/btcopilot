@@ -1,3 +1,4 @@
+import datetime
 import pytest
 import requests
 import time
@@ -10,7 +11,7 @@ from btcopilot.pro.models import User
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 import btcopilot
 
-from btcopilot.tests.conftest import flask_app
+from btcopilot.tests.fixtures import flask_app
 
 
 def pytest_configure(config):
@@ -55,9 +56,23 @@ def browser_context_args(browser_context_args):
     }
 
 
+def sign_in(test_client: FlaskClient, user_id: int):
+    """The session the training app accepts: who is signed in, and when. Without
+    the time every request counts as expired and redirects to the login page."""
+    with test_client.session_transaction() as sess:
+        sess["user_id"] = user_id
+        sess["logged_in_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+
+TEST_HOST = "testserver"
+
+
 def _flask_route_handler(route: Route, test_client: FlaskClient):
     request = route.request
     parsed_url = urlparse(request.url)
+    if parsed_url.hostname != TEST_HOST:
+        route.continue_()
+        return
     path = parsed_url.path
     query_string = parsed_url.query
     post_data = request.post_data_buffer if request.post_data_buffer else None
@@ -164,8 +179,7 @@ def authenticated_auditor_context(browser: Browser, flask_app) -> BrowserContext
 
     flask_app.test_client_class = FlaskClient
     test_client = flask_app.test_client()
-    with test_client.session_transaction() as sess:
-        sess["user_id"] = auditor_user.id
+    sign_in(test_client, auditor_user.id)
 
     def route_handler(route: Route):
         _flask_route_handler(route, test_client)
@@ -210,8 +224,7 @@ def logged_in_page(browser: Browser, flask_app) -> Page:
 
     context = browser.new_context()
     test_client = flask_app.test_client()
-    with test_client.session_transaction() as sess:
-        sess["user_id"] = user.id
+    sign_in(test_client, user.id)
 
     def route_handler(route: Route):
         _flask_route_handler(route, test_client)
@@ -309,8 +322,7 @@ def class_auditor_context(
 
     therapist_flask_app.test_client_class = FlaskClient
     test_client = therapist_flask_app.test_client()
-    with test_client.session_transaction() as sess:
-        sess["user_id"] = therapist_test_data["user_id"]
+    sign_in(test_client, therapist_test_data["user_id"])
 
     def route_handler(route: Route):
         _flask_route_handler(route, test_client)
