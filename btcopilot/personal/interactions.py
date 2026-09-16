@@ -26,6 +26,12 @@ def record_interaction(user, data: dict) -> Interaction:
     if not diagram.check_read_access(user):
         abort(403)
 
+    # Said in words rather than a bare 500, and with the tap's own kind, so the
+    # next tap that names nothing can be found (review log row 68).
+    if not data.get("item_kind"):
+        raise ValueError(
+            f"a {data.get('kind')} tap on statement {data.get('statement_id')} named no item kind"
+        )
     interaction = Interaction(
         diagram_id=diagram.id,
         user_id=user.id,

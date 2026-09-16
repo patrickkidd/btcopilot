@@ -185,6 +185,20 @@ def test_a_tap_is_recorded_against_the_diagram(web, test_user):
     ]
 
 
+def test_a_tap_that_names_no_item_kind_is_refused_in_words(web, test_user):
+    response = web.post(
+        "/personal/interactions",
+        json={
+            "diagram_id": test_user.free_diagram_id,
+            "kind": InteractionKind.ChipTap.value,
+            "statement_id": 7,
+        },
+        headers={"X-CSRFToken": csrf_token(web)},
+    )
+    assert response.status_code == 400
+    assert "chip_tap tap on statement 7" in response.get_data(as_text=True)
+
+
 def test_play_hands_the_coach_the_cluster_events_in_date_order(
     web, test_user, monkeypatch
 ):
