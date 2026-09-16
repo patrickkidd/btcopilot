@@ -43,6 +43,7 @@ TABLES = frozenset(
         "review_codings",
         "review_cuts",
         "review_items",
+        "review_notes",
         "review_rules",
         "review_votes",
         "speakers",

@@ -32,8 +32,10 @@ class Feedback(db.Model, ModelMixin):
     exported_at = Column(DateTime)  # Track when exported as test case
     rejection_reason = Column(Text)  # Admin notes on why feedback wasn't approved
 
-    # Relationships
-    statement = relationship("Statement", backref="feedbacks")
+    # Read-only on purpose: the chat app's database has no feedbacks table, and
+    # a managed relationship would make deleting a statement there reach for
+    # it. On the Pro database the foreign key still refuses to orphan a row.
+    statement = relationship("Statement", backref="feedbacks", viewonly=True)
 
     @property
     def is_approved(self):
@@ -57,4 +59,4 @@ class ReconciliationNote(db.Model, ModelMixin):
     resolved = Column(Boolean, default=False)
     created_by = Column(String(255), nullable=False)
 
-    statement = relationship("Statement", backref="reconciliation_notes")
+    statement = relationship("Statement", backref="reconciliation_notes", viewonly=True)

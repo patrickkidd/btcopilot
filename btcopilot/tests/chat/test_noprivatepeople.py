@@ -48,6 +48,8 @@ ALLOWED_EMAIL = {
     "noreply@anthropic.com",
     "other_auditor@example.com",
     "patrick+fd321walk@example.com",
+    "pro@fd362-fixture.invalid",
+    "table@fd362-fixture.invalid",
     "patrick@alaskafamilysystems.com",
     "patrick@database.familydiagram",
     "patrick@example.com",

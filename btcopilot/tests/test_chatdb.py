@@ -13,6 +13,7 @@ from alembic.config import Config
 from sqlalchemy import create_engine, inspect
 
 from btcopilot import chattables
+from btcopilot.extensions import db
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -50,6 +51,21 @@ def chain(tmp_path):
 
 def test_chain_builds_the_chat_tables_and_no_others(chain):
     assert set(shape(chain)) == set(chattables.TABLES)
+
+
+CHAT_PACKAGES = ("btcopilot.review", "btcopilot.personal", "btcopilot.auth", "btcopilot.admin")
+
+
+def test_every_chat_model_is_in_the_chain():
+    """A model in a chat-app package whose table the chain does not build is a
+    table that exists on the sandbox by hand and on a fresh server not at all,
+    which is how review_notes went missing."""
+    owned = {
+        mapper.local_table.name
+        for mapper in db.Model.registry.mappers
+        if mapper.class_.__module__.startswith(CHAT_PACKAGES)
+    }
+    assert owned - set(chattables.TABLES) == set()
 
 
 def test_chain_matches_what_the_models_declare(chain, tmp_path):

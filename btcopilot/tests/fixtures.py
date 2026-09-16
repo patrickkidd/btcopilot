@@ -156,6 +156,13 @@ def unmocks(request, extensions):
 
 @pytest.fixture
 def flask_app(request, tmp_path):
+    yield from make_app(request, tmp_path)
+
+
+def make_app(request, tmp_path, tables=None):
+    """The test app on an empty in-memory database. `tables` narrows what is
+    created to one deployment's own set, so a path that reaches a table that
+    deployment does not have fails here rather than on its server."""
 
     logging.getLogger("btcopilot").setLevel(logging.DEBUG)
 
@@ -192,7 +199,12 @@ def flask_app(request, tmp_path):
     extension_module.mail.init_app(app)
 
     with app.app_context():
-        db.create_all()
+        if tables is None:
+            db.create_all()
+        else:
+            db.Model.metadata.create_all(
+                db.engine, tables=[db.Model.metadata.tables[t] for t in tables]
+            )
         yield app
         db.session.remove()
         db.drop_all()

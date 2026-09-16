@@ -9,6 +9,15 @@ from btcopilot.personal.toolbox import ToolName
 from btcopilot.training.models import Feedback
 from btcopilot.training.run_agent_f1 import run_agent_f1
 from btcopilot.tests.chat.personal.conftest import Model, called, said
+from btcopilot.tests.fixtures import make_app
+
+
+@pytest.fixture
+def flask_app(request, tmp_path):
+    """The replay scores the coach against the training app's approved
+    feedback, a table the chat database does not hold, so this one file runs
+    on the whole schema."""
+    yield from make_app(request, tmp_path)
 
 AUDITOR = "auditor-1"
 

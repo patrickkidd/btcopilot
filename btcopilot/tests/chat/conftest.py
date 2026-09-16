@@ -8,7 +8,9 @@ taking Pro's by directory: Stripe is never started here at all.
 
 import pytest
 
+from btcopilot.chattables import TABLES
 from btcopilot.tests.fixtures import (
+    make_app,
     CHAT_STUBS,
     add_e2e_option,
     add_markers,
@@ -41,3 +43,11 @@ def pytest_configure(config):
 def extensions():
     with stubbed(CHAT_STUBS) as originals:
         yield originals
+
+
+@pytest.fixture
+def flask_app(request, tmp_path):
+    """The chat app's tests run on the chat app's own tables and nothing else
+    (R-0322, R-0327): a path that reaches a Pro or Training table the chat
+    database does not hold fails here, not on the beta server."""
+    yield from make_app(request, tmp_path, tables=TABLES)
