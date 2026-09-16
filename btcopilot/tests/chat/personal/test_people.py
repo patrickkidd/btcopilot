@@ -73,3 +73,19 @@ def test_removing_someone_takes_them_off_the_record(web, family):
     gone = web.delete("/personal/people/1", headers={"X-CSRFToken": token})
     assert gone.status_code == 204
     assert people(family) == []
+
+
+def test_a_record_behind_its_own_counter_never_renames_someone(web, family):
+    data = family.get_diagram_data()
+    data.people.append(asdict(Person(id=2, name="Sol", gender=PersonKind.Male)))
+    data.lastItemId = 0
+    family.set_diagram_data(data)
+    db.session.commit()
+
+    added = web.post(
+        "/personal/people",
+        json={"name": "Bo", "gender": "male"},
+        headers={"X-CSRFToken": csrf_token(web)},
+    ).get_json()
+    assert added["id"] == 3
+    assert [p["name"] for p in people(family)] == ["Wren", "Sol", "Bo"]

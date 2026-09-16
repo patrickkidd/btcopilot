@@ -27,6 +27,20 @@ from btcopilot.schema import (
 _log = logging.getLogger(__name__)
 
 
+def next_id(data) -> int:
+    """The first id no person, event, bond or emotion on the record holds. The
+    counter alone is not trusted: a record written without it, or behind its
+    own items, would hand out an id that renames somebody instead of adding
+    them."""
+    used = [
+        item["id"]
+        for collection in (data.people, data.events, data.pair_bonds, data.emotions)
+        for item in collection
+        if isinstance(item, dict) and isinstance(item.get("id"), int)
+    ]
+    return max(used + [data.lastItemId or 0]) + 1
+
+
 class Invalid(Exception):
     """The record the deltas would leave behind breaks a rule of the data model."""
 

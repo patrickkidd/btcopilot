@@ -74,7 +74,7 @@ def create_person():
     if dia is None:
         abort(404)
     data = dia.get_diagram_data()
-    person_id = (data.lastItemId or 0) + 1
+    person_id = record.next_id(data)
     deltas = [_delta(person_id, field, value) for field, value in values.items()]
     deltas.append(
         {

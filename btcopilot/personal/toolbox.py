@@ -555,15 +555,6 @@ class Toolbox:
         }[kind]
         return any(str(i.get("id")) == str(item_id) for i in collection)
 
-    def _next_id(self, data: DiagramData) -> int:
-        used = [
-            item["id"]
-            for collection in (data.people, data.events, data.pair_bonds, data.emotions)
-            for item in collection
-            if isinstance(item, dict) and isinstance(item.get("id"), int)
-        ]
-        return max(used + [data.lastItemId or 0]) + 1
-
     def _next_cluster_id(self, data: DiagramData) -> str:
         return clusters.next_id({str(c.get("id")) for c in data.clusters})
 
@@ -576,7 +567,7 @@ class Toolbox:
             if kind is ItemKind.Cluster:
                 item_id = self._next_cluster_id(data)
             else:
-                item_id = self._next_id(data)
+                item_id = record.next_id(data)
         elif not self._exists(data, kind, item_id):
             raise ToolError(f"No {kind.value} {item_id} in the record")
 

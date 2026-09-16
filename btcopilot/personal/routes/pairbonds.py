@@ -7,6 +7,7 @@ The record refuses a bond with one side, a bond of somebody with themselves, and
 a second bond between the same two (R-0326).
 """
 
+import itertools
 import uuid
 
 from flask import abort, jsonify, request
@@ -115,16 +116,14 @@ def create_pair_bond():
     ):
         raise ValueError("A pair bond is between two people")
 
-    next_id = (data.lastItemId or 0)
+    ids = itertools.count(record.next_id(data))
     deltas = []
     for side, role in zip(("person_a", "person_b"), PARENT_ROLES):
         if values.get(side) is not None:
             continue
-        next_id += 1
-        deltas += _named_parent(next_id, child, role)
-        values[side] = next_id
-    next_id += 1
-    bond_id = next_id
+        values[side] = next(ids)
+        deltas += _named_parent(values[side], child, role)
+    bond_id = next(ids)
     deltas += [_delta(bond_id, field, value) for field, value in values.items()]
     if child is not None:
         deltas.append(_person_delta(child["id"], "parents", bond_id))
