@@ -268,15 +268,63 @@ def test_a_post_without_a_csrf_token_is_refused(flask_app, patrick, session, tur
     assert "CSRF" in refused.get_data(as_text=True)
 
 
-def test_a_rule_is_flagged_and_the_flag_closed(coder):
-    made = coder.post("/review/rules", json={"text": "Date a shift by when it began"})
+def test_patrick_flags_a_rule_and_the_same_tap_takes_the_flag_off(patrick):
+    made = patrick.post(
+        "/review/rules", json={"text": "Date a shift by when it began"}
+    )
     rule_id = made.get_json()["id"]
 
-    coder.patch(f"/review/rules/{rule_id}", json={"flag": True, "reason": "unclear"})
+    on = patrick.patch(
+        f"/review/rules/{rule_id}", json={"flag": True, "reason": "unclear"}
+    )
+    assert on.get_json()["flagged"] is True
     assert db.session.get(Rule, rule_id).open_flags()
 
-    coder.patch(f"/review/rules/{rule_id}", json={"close_flag": True})
+    off = patrick.patch(f"/review/rules/{rule_id}", json={"flag": False})
+    assert off.get_json()["flagged"] is False
     assert not db.session.get(Rule, rule_id).open_flags()
+
+
+def test_a_coder_reads_the_rules_but_cannot_flag_one(patrick, coder):
+    rule_id = patrick.post("/review/rules", json={"text": "A rule"}).get_json()["id"]
+
+    assert coder.get("/review/rules").status_code == 200
+    refused = coder.patch(f"/review/rules/{rule_id}", json={"flag": True})
+    assert refused.status_code in (302, 403)
+    assert not db.session.get(Rule, rule_id).open_flags()
+
+
+def test_only_patrick_runs_the_agenda(patrick, coder, session, turns, cut):
+    put = coder.post(
+        "/review/cuts",
+        json={"discussion_id": session.id, "end_statement_id": turns[3].id},
+    )
+    assert put.status_code in (302, 403)
+
+    moved = coder.patch(f"/review/cuts/{cut.id}", json={"meeting_date": "2026-11-05"})
+    assert moved.status_code in (302, 403)
+
+    opened = coder.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    assert opened.status_code in (302, 403)
+
+    ratified = coder.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
+    assert ratified.status_code in (302, 403)
+
+    nudged = coder.post("/review/nudges", json={"cut_id": cut.id})
+    assert nudged.status_code in (302, 403)
+
+    taken = coder.delete(f"/review/cuts/{cut.id}")
+    assert taken.status_code in (302, 403)
+    assert db.session.get(Cut, cut.id) is not None
+
+
+def test_only_patrick_decides_an_item(patrick, coder, test_user, test_user_2, cut):
+    two_codings(test_user, test_user_2, cut)
+    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    item = Item.query.filter_by(cut_id=cut.id).first()
+
+    refused = coder.patch(f"/review/items/{item.id}", json={"choice": "unresolved"})
+    assert refused.status_code in (302, 403)
 
 
 def test_the_agenda_gathers_what_the_meeting_must_take_up(
@@ -287,7 +335,7 @@ def test_the_agenda_gathers_what_the_meeting_must_take_up(
     item = Item.query.filter_by(cut_id=cut.id).first()
     patrick.patch(f"/review/items/{item.id}", json={"choice": "unresolved"})
     rule = coder.post("/review/rules", json={"text": "A rule to look at"}).get_json()
-    coder.patch(f"/review/rules/{rule['id']}", json={"flag": True})
+    patrick.patch(f"/review/rules/{rule['id']}", json={"flag": True})
     agenda = patrick.get("/review/agenda").get_json()
     assert [r["id"] for r in agenda["flagged_rules"]] == [rule["id"]]
     assert "unresolved_items" not in agenda

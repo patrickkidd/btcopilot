@@ -101,7 +101,7 @@ def cut_patch(cut_id: int):
     body = request.get_json() or {}
 
     if "meeting_date" in body:
-        coder()
+        admin()
         cut.meeting_date = _date(body["meeting_date"])
 
     if "end_statement_id" in body:

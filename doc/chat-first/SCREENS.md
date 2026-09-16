@@ -275,7 +275,7 @@ What it is for: your past conversations.
 
 @frame built#f17 | Your name and address, the coach and appearance settings, your records and plan, and signing out.
 
-- The button that opens the account page shows its icon. [drawn] {R-0346}
+- The button that opens the account page shows its icon. [built] {R-0346}
 
 What it is for: you, your families, your plan, and signing out.
 
@@ -426,7 +426,7 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 - One control nudges the people who are not done. [drawn] {R-0258}
 - Taking a conversation off the agenda is one tap, before anyone has started. [drawn]
 - The button that runs the meeting is the app's filled primary button, reads "run the meeting", and has the same room after it as before it. [built] {R-0341}
-- Only an administrator sees the controls on this screen; a coder who reaches it sees the work but not the way to move it. [drawn] {R-0346}
+- Only an administrator sees the controls on this screen; a coder who reaches it sees the work but not the way to move it. [built] {R-0346}
 - A ratified conversation keeps a row with a way in to the result; the row says where the cut stops and the day the room ratified it, so two cuts of one conversation read differently. [built] {R-0275}
 - Every coder's single task card is derived from that screen. [drawn] {R-0265}
 - Asking a coder to correct the coach's pass instead of coding from scratch was dropped, because coding is blind. [drawn] {R-0250}
@@ -531,8 +531,8 @@ What it is for: what the meeting produced, with nothing left to choose.
 - Every vote, decision and ratification is a row in the app's own tables with who did it and when. [drawn] {R-0262}
 - How last year's coding material is carried over is a choice Patrick has not made; the plan under consideration keeps the rules and the agreement tables as rows and the written deliberations as text. [open] {R-0262}
 - Every rule the AI wrote carries a "flag for next meeting" link, and flagged rules go on the next meeting's agenda by themselves; an event the room left unresolved stays unresolved as data and is never brought back to a later meeting; who has not finished a coding is the coder list's own line, not the agenda's. [built] {R-0276, R-0308, R-0312}
-- Only an administrator sees the "flag for next meeting" link, and tapping it again takes the flag off; anyone else sees a flagged rule said as text rather than a link. [drawn] {R-0346}
-- Only an administrator puts a conversation on the agenda, moves the cut, opens the vote or runs the meeting; a coder never does. [drawn] {R-0346}
+- Only an administrator sees the "flag for next meeting" link, and tapping it again takes the flag off; anyone else sees a flagged rule said as text rather than a link. [built] {R-0346}
+- Only an administrator puts a conversation on the agenda, moves the cut, opens the vote or runs the meeting; a coder never does. [built] {R-0346}
 - The meeting's results are rows in the database — codings, votes, decisions, rules with the decision each came from — so everything is traceable; the coding guidelines are the one written output. [drawn] {R-0275}
 - Anyone can read the current coding guidelines inside the app from an (i) button at the top of the coding screen. [drawn] {R-0275, R-0278}
 - The coding guidelines file in the code is generated from the rules the app holds and is never edited by hand. [drawn] {R-0275}

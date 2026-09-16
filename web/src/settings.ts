@@ -107,7 +107,7 @@ export class Settings {
       api.passkeys().catch(() => []),
       available(),
     ]);
-    this.avatar.innerHTML = this.initial() || SILHOUETTE;
+    this.mark();
     this.applyTheme();
     this.handlers.onPrefs(this.prefs);
     // The title row names the family the app is on, not a stock phrase.
@@ -120,6 +120,13 @@ export class Settings {
    * speak-replies shortcut on the chat view is the one ruled case. */
   async set(body: Partial<Preferences>): Promise<void> {
     await this.write(body);
+  }
+
+  /** The disc behind the mark is a positioned pseudo-element, so a bare text
+   * node would paint under it; the initial goes in its own element. */
+  private mark(): void {
+    const initial = this.initial();
+    this.avatar.innerHTML = initial ? `<span>${initial}</span>` : SILHOUETTE;
   }
 
   private initial(): string {
@@ -206,7 +213,7 @@ export class Settings {
 
   private async write(body: Partial<Preferences>): Promise<void> {
     this.prefs = await api.setPreferences(body);
-    this.avatar.innerHTML = this.initial() || SILHOUETTE;
+    this.mark();
     this.applyTheme();
     this.handlers.onPrefs(this.prefs);
     // The title row names the family the app is on, not a stock phrase.

@@ -471,6 +471,8 @@ export interface Rule {
   source: Record<string, unknown>;
   drafted_by: RuleSource;
   flags: RuleFlag[];
+  /** Whether a flag for the next meeting stands on it right now. */
+  flagged: boolean;
   ratified_at: string | null;
   retired_at: string | null;
 }

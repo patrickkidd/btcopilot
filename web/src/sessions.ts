@@ -1,5 +1,5 @@
 import * as api from "./api";
-import { $, el, esc } from "./dom";
+import { $, el, esc, isAdmin } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { dayKey, groupLabel, meetingTitle, whenText } from "./when";
@@ -60,7 +60,7 @@ export class Sessions {
   private opening = false;
   private drag: { kind: "open" | "close"; y0: number; dy: number } | null = null;
   /** Only Patrick puts a conversation on the agenda, so only he is offered it. */
-  private admin = window.BOOTSTRAP.user?.admin === true;
+  private admin = isAdmin();
 
   private scrim = el("div", "fs-scrim");
   private sheet = el(

@@ -1,5 +1,6 @@
 """Rules: the coding guidelines, one row each. Never deleted; retired
-instead (R-0275). Anyone may flag one for the next meeting (R-0276)."""
+instead (R-0275). Patrick alone flags one for the next meeting, and the same
+tap takes the flag off again (R-0276, R-0346)."""
 
 from flask import jsonify, request
 
@@ -10,7 +11,7 @@ from btcopilot.review.routes import admin, bp, coder
 
 
 def payload(rule: Rule) -> dict:
-    return rule.as_dict()
+    return dict(rule.as_dict(), flagged=bool(rule.open_flags()))
 
 
 @bp.route("/rules")
@@ -41,31 +42,31 @@ def rule_create():
 
 @bp.route("/rules/<int:rule_id>", methods=["PATCH"])
 def rule_patch(rule_id: int):
-    user = coder()
+    coder()
     rule = db.session.get(Rule, rule_id)
     if rule is None:
         return "no rule by that id", 404
     body = request.get_json() or {}
-    flags = list(rule.flags or [])
 
-    if body.get("flag"):
-        flags.append(
-            {
-                "user_id": user.id,
-                "reason": body.get("reason"),
-                "flagged_at": adapter.utcnow().isoformat(),
-            }
-        )
-    if body.get("close_flag"):
-        flags = [
-            (
-                dict(f, closed_at=adapter.utcnow().isoformat())
-                if f.get("user_id") == user.id and not f.get("closed_at")
-                else f
+    if "flag" in body:
+        user = admin()
+        flags = list(rule.flags or [])
+        if body["flag"]:
+            flags.append(
+                {
+                    "user_id": user.id,
+                    "reason": body.get("reason"),
+                    "flagged_at": adapter.utcnow().isoformat(),
+                }
             )
-            for f in flags
-        ]
-    rule.flags = flags
+        else:
+            flags = [
+                dict(f, closed_at=adapter.utcnow().isoformat())
+                if not f.get("closed_at")
+                else f
+                for f in flags
+            ]
+        rule.flags = flags
 
     if body.get("ratified_at"):
         admin()

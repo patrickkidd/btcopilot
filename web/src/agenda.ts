@@ -135,7 +135,7 @@ export class Agenda {
     }
     const close = target.closest<HTMLElement>(".agx");
     if (close) {
-      await api.flagClosed(Number(close.dataset.rule));
+      await api.flagRule(Number(close.dataset.rule), false);
       await this.load();
     }
   }

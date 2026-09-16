@@ -70,3 +70,8 @@ export function setTitle(title: string | Title): void {
   tail.textContent = ` · ${title.tail}`;
   host.replaceChildren(name, tail);
 }
+
+/** Patrick alone runs the agenda, the meeting and the guidelines (R-0346). */
+export function isAdmin(): boolean {
+  return window.BOOTSTRAP.user?.admin === true;
+}

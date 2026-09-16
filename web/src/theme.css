@@ -2349,7 +2349,7 @@ button { font-family: inherit; }
   font: 500 15px var(--sans);
   cursor: pointer;
 }
-.rl-flag[disabled] { color: var(--faint); cursor: default; }
+.rl-flag.said { display: block; line-height: 44px; color: var(--faint); font-weight: 400; }
 
 /* the one task card: the row with room for its button (R-0265) */
 .tkcard { cursor: default; gap: 8px; padding: 14px 16px; }
@@ -2780,6 +2780,9 @@ button { font-family: inherit; }
 .rcard .flag {
   display: inline-block;
   margin-left: 13px;
+  padding: 0;
+  border: none;
+  background: none;
   min-height: 44px;
   line-height: 44px;
   color: var(--faint);
@@ -2787,6 +2790,7 @@ button { font-family: inherit; }
   text-decoration: underline;
   cursor: pointer;
 }
+.rcard .flag.said { text-decoration: none; cursor: default; }
 .rcard .who2 { font: 400 14px/1.5 var(--sans); color: var(--ink); margin-top: 6px; }
 
 /* Where the AI read the cut differently: a row per place, which stacks to one

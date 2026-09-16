@@ -373,9 +373,7 @@ export const agenda = () => ask<NextMeeting>("GET", "/agenda");
 
 export const rules = () => ask<Rule[]>("GET", "/rules");
 
-/** Closing your own line on the agenda: the flag you put on a rule (R-0276). */
-export const flagClosed = (id: number) =>
-  ask<Rule>("PATCH", `/rules/${id}`, { close_flag: true });
-
-export const flagRule = (id: number) =>
-  ask<Rule>("PATCH", `/rules/${id}`, { flag: true });
+/** Flagging a guideline for the next meeting, and taking the flag off again.
+ * Patrick alone may do either (R-0276, R-0346). */
+export const flagRule = (id: number, on: boolean) =>
+  ask<Rule>("PATCH", `/rules/${id}`, { flag: on });

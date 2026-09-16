@@ -1,5 +1,6 @@
 import * as api from "./api";
 import { esc, type Title } from "./dom";
+import { flagLine } from "./rules";
 import { toast } from "./toast";
 import { dayText } from "./when";
 import type { Differed, Result, Rule, Tendency } from "./types";
@@ -146,9 +147,7 @@ export class ResultScreen {
           (rule) =>
             `<div class="rule">${esc(rule.text)}</div>` +
             `<div class="prov">${esc(from(rule))}</div>` +
-            `<div><span class="flag rs-flag" data-rule="${rule.id}">` +
-            `${rule.flags.some((one) => !one.closed_at) ? "flagged for next meeting" : "flag for next meeting"}` +
-            `</span></div>`,
+            `<div>${flagLine(rule, "flag rs-flag")}</div>`,
         )
         .join("") +
       `<div class="prov" style="margin-top:12px">flagged rules and unresolved ` +
@@ -197,12 +196,14 @@ export class ResultScreen {
   }
 
   /** Flagging a rule does one thing: it puts that rule on the next meeting's
-   * agenda (R-0276). */
+   * agenda, and the same tap takes it off again (R-0276, R-0346). */
   private async onTap(clicked: Event): Promise<void> {
-    const flag = (clicked.target as Element).closest<HTMLElement>(".rs-flag");
+    const flag = (clicked.target as Element).closest<HTMLElement>("button.rs-flag");
     if (!flag) return;
-    await api.flagRule(Number(flag.dataset.rule));
-    toast("On the next meeting's agenda");
+    const id = Number(flag.dataset.rule);
+    const was = this.result?.rules.find((rule) => rule.id === id)?.flagged === true;
+    const after = await api.flagRule(id, !was);
+    toast(after.flagged ? "On the next meeting's agenda" : "Flag taken off");
     if (this.result) await this.open(this.result.cut_id);
   }
 }
