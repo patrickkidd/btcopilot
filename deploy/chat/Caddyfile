@@ -1,6 +1,25 @@
-# TLS from Let's Encrypt, automatic. The one host name is the app's; the Pro
-# API name stays on the old box and is never listed here.
-familydiagram.com, www.familydiagram.com {
+# familydiagram.com on the chat box. /app is the app (R-0356); the desktop app's
+# update feeds are served from the deployment; everything else keeps redirecting
+# to alaskafamilysystems.com as the old box did, until a product homepage exists.
+# Until the app's own mount is renamed from /personal to /app, /app lands on it.
+familydiagram.com {
     encode gzip
-    reverse_proxy fd-app:8888
+    handle /appcast_*.xml {
+        root * /srv/appcast
+        file_server
+    }
+    redir /app /personal/ 302
+    redir /app/* /personal/ 302
+    handle /personal* {
+        reverse_proxy fd-app:8888
+    }
+    handle /review* {
+        reverse_proxy fd-app:8888
+    }
+    handle {
+        redir https://alaskafamilysystems.com/family-diagram{uri} 301
+    }
+}
+www.familydiagram.com {
+    redir https://familydiagram.com{uri} 301
 }

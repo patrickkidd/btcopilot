@@ -35,6 +35,7 @@ services:
       - "443:443"
     volumes:
       - ${CADDYFILE:-./Caddyfile}:/etc/caddy/Caddyfile:ro
+      - ./appcast:/srv/appcast:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:
