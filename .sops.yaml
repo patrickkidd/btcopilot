@@ -9,3 +9,8 @@ creation_rules:
     age: >-
       age13p5vtq39x8vs6w43kdwsnkark3e6h40unmny76hxcsdy4mhp6ydqmma3yl,
       age105g6wq3zc6xszu75ejeqryqjq69xrfm4hp8hktq89u3jpyafvq7sf23nqu
+  - path_regex: ^deploy/chat/secrets\.env(\.enc)?$
+    input_type: dotenv
+    age: >-
+      age13p5vtq39x8vs6w43kdwsnkark3e6h40unmny76hxcsdy4mhp6ydqmma3yl,
+      age105g6wq3zc6xszu75ejeqryqjq69xrfm4hp8hktq89u3jpyafvq7sf23nqu

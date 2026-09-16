@@ -13,7 +13,6 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent
 DOC = HERE / "doc" / "chat-first"
-FD = HERE.parent.parent.parent.parent / "fdserver" / ".claude" / "worktrees" / "FD-362"
 YEAR = "2026"
 
 # Topic keywords: the same words the topic blocks use. A record that matches none stays
@@ -182,7 +181,7 @@ def artifacts() -> list[dict]:
 
 
 def main() -> int:
-    events = history() + rulings() + decisions() + review_rows() + commits(HERE, "btcopilot") + commits(FD, "fdserver") + artifacts()
+    events = history() + rulings() + decisions() + review_rows() + commits(HERE, "btcopilot") + artifacts()
     # an undated artifact takes the date of the first history entry that cites it
     hist = history()
     for e in events:

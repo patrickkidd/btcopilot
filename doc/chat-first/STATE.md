@@ -69,8 +69,10 @@ supersedes the old hard-cutover plan.
 
 ## Where the build stands (live — revise, do not append)
 
-**Branch `FD-362` in both repos; draft PRs btcopilot #136 and fdserver #30.** The beta build
-is real code against the real database, not a throwaway.
+**Branch `FD-362` in btcopilot, draft PR #136. fdserver is out of this work (2026-09-16):**
+the prompts and the rulings are encrypted files in this repo, the new box's deployment is
+`deploy/chat/` here, and Patrick closed fdserver PR #30 unmerged. Nothing the chat app runs
+reads from fdserver. The beta build is real code against the real database, not a throwaway.
 
 **Overnight 2026-09-16, while Patrick is away five days, on his word to build whatever needs no
 input from him.** Built and pushed: the chat database boundary (tests build only the chat
@@ -80,8 +82,11 @@ green on the runner with Linux goldens; the sandbox walks and golden specs rewri
 rulings; three defects they found fixed (up one step at a time, the list button's ring, the
 settings switch's size); a tap with no item kind refused in words; the chat box's own compose,
 Caddyfile, secrets template, runbook and release workflow drafted in fdserver (nothing has run).
-Not done, needs him: the importer dry run against the July dump (restoring it was refused here
-as personal-data handling); secrets rotation; keys; the droplet; the import run; DNS; pricing.
+Ruled after: the beta starts from empty records, no import at cutover, a per-diagram import
+later [R-0355]; the old diagram and the record are the same class field for field, proven by
+tests including the relationship sub-fields (page "Old Record, New Record"); Claude creates the
+droplet and changes DNS only on his confirmation [R-0353]; pricing waits for the first bill
+[R-0354]. Left for him: the new credentials.
 
 **What the Personal app does today.** A signed-in person chats with the coach. The coach
 answers and calls tools that add, change and remove people, pair-bonds, events, variable

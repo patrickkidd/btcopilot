@@ -1,0 +1,6 @@
+# TLS from Let's Encrypt, automatic. The one host name is the app's; the Pro
+# API name stays on the old box and is never listed here.
+familydiagram.com, www.familydiagram.com {
+    encode gzip
+    reverse_proxy fd-app:8888
+}

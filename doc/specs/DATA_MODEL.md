@@ -95,7 +95,7 @@ class Event:
     anxiety: VariableShift | None = None
     relationship: RelationshipKind | None = None
     relationshipTargets: list[int] = field(default_factory=list)
-    relationshipTriangles: list[tuple[int, int]] = field(default_factory=list)
+    relationshipTriangles: list[int] = field(default_factory=list)
     functioning: VariableShift | None = None
     confidence: float | None = None
 ```
