@@ -1,0 +1,84 @@
+# Record the visual goldens on the same Ubuntu the CI runner uses, and commit
+# them to the branch this was started on. Goldens recorded on a Mac never match
+# a Linux runner's fonts, so CI can only be green against goldens made here.
+name: Record goldens
+
+on:
+  workflow_dispatch:
+
+jobs:
+  record:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      FLASK_APP: btcopilot.app:create_app
+      FLASK_CONFIG: development
+      FLASK_SQLALCHEMY_DATABASE_URI: sqlite:////tmp/personal-visual.db
+      SANDBOX_URL: http://127.0.0.1:8889
+      FIXTURE_CWD: ${{ github.workspace }}
+      FIXTURE_CMD: python -m flask personal fixtures
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[app,test]
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        run: npm --prefix web ci
+
+      - name: Install Playwright chromium
+        run: npx --prefix web playwright install --with-deps chromium
+
+      - name: Build the chat web bundle
+        run: npm --prefix web run build
+
+      - name: Create sandbox database
+        run: |
+          python -c "
+          from btcopilot.app import create_app
+          from btcopilot.extensions import db
+          app = create_app()
+          with app.app_context():
+              db.create_all()
+          "
+
+      - name: Start Flask sandbox
+        run: |
+          nohup python -m flask run -p 8889 --no-reload > /tmp/flask-sandbox.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf "$SANDBOX_URL/" > /dev/null && exit 0
+            sleep 1
+          done
+          echo "sandbox did not come up in time" >&2
+          cat /tmp/flask-sandbox.log
+          exit 1
+
+      - name: Record the goldens
+        run: npm --prefix web run test:visual -- --project=phone --project=desktop --update-snapshots
+
+      - name: Commit the goldens to this branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A web/tests/visual
+          git diff --cached --quiet && { echo "goldens unchanged"; exit 0; }
+          git commit -m "Visual goldens recorded on ubuntu-24.04"
+          git push

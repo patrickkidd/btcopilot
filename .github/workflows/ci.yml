@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[app,test]
+          pip install -e .[app,test]
 
       - name: Verify test package import
         run: python -c "import btcopilot.tests; print(btcopilot.tests)"
@@ -47,7 +47,9 @@ jobs:
         run: npm --prefix web test
 
       - name: Run unit tests
-        run: pytest -svv --disable-warnings --pyargs btcopilot.tests
+        # from the checkout, not the installed copy: bin/t and the chain files
+        # live beside the package, and the runner test reads them
+        run: pytest -svv --disable-warnings btcopilot/tests
 
   web-visual:
     runs-on: ubuntu-24.04

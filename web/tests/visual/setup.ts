@@ -167,7 +167,7 @@ export default async function setup() {
     // invite answers with the sign-in page and the state below would be
     // anonymous — every golden then shows a logged-out shell. Fail here
     // instead, where the cause is still visible.
-    const me = await page.request.get(`${base}/me`);
+    const me = await page.request.get(`${base}/personal/me`);
     if (!me.ok() || !(await me.json()).user)
       throw new Error(
         `the sign-in link for "${key}" did not open a session (GET /me returned ${me.status()}). ` +
