@@ -27,7 +27,7 @@ jobs:
             cd /var/www/btcopilot
             git pull origin master
             cd deploy/chat
-            docker compose pull
-            docker compose up -d --remove-orphans
-            docker compose exec -T fd-app flask admin db upgrade
-            docker compose ps
+            docker compose --env-file /etc/fd/secrets.env pull
+            docker compose --env-file /etc/fd/secrets.env up -d --remove-orphans
+            docker compose --env-file /etc/fd/secrets.env exec -T fd-app flask admin db upgrade
+            docker compose --env-file /etc/fd/secrets.env ps

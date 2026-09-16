@@ -20,10 +20,12 @@ from the Pro box on purpose. Nothing in it has run yet; the droplet does not exi
    ssh key turin, tag familydiagram-app. Install docker and sops. Clone this repo
    to `/var/www/btcopilot`, `cd deploy/chat`, decrypt the secrets into
    `/etc/fd/secrets.env` (root, 600).
-4. **First start.** `docker compose pull && docker compose up -d`, then
-   `docker compose exec fd-app flask admin db upgrade` — the chat chain from
-   empty — then `docker compose exec fd-app flask admin users invite <email>`
-   for your own account and open the link.
+4. **First start.** `docker compose --env-file /etc/fd/secrets.env pull && docker compose --env-file /etc/fd/secrets.env up -d`,
+   then `docker compose --env-file /etc/fd/secrets.env exec fd-app flask admin db upgrade` — the chat chain from
+   empty — then `docker compose --env-file /etc/fd/secrets.env exec fd-app flask admin users invite <email>`
+   for your own account and open the link. The `--env-file` flag makes compose
+   read `/etc/fd/secrets.env` for `${...}` interpolation in the compose file
+   itself, in addition to the `env_file:` that feeds it into the containers.
 5. **Import.** Restore a copy of the Pro dump beside it, dry-run twice, then
    `flask admin imports run` once (step 13 of PLATFORM_BUILD).
 6. **DNS.** Lower the TTL on familydiagram.com a day ahead, then point the
