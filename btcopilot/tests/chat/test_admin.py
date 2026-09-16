@@ -1,5 +1,7 @@
 import json
 
+import difflib
+
 import pytest
 
 import btcopilot
@@ -121,8 +123,15 @@ def test_skill_file_names_every_command():
 
 
 def test_skill_file_on_disk_is_current(flask_app):
-    result = flask_app.test_cli_runner().invoke(admin, ["skill", "--check"])
-    assert result.exit_code == 0, result.output
+    with flask_app.app_context():
+        rendered = skill.render(admin)
+    on_disk = skill.PATH.read_text()
+    diff = "".join(
+        difflib.unified_diff(
+            on_disk.splitlines(True), rendered.splitlines(True), "on disk", "rendered"
+        )
+    )
+    assert rendered == on_disk, diff
 
 
 def test_db_upgrade_builds_the_chain_from_empty(flask_app, tmp_path):

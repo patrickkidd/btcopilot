@@ -1,4 +1,5 @@
 import json
+import os
 import pickle
 
 import pytest
@@ -20,6 +21,9 @@ def _load(path):
 
 @pytest.mark.parametrize("path", FIXTURES, ids=lambda p: p.split("/")[-2])
 def test_roundtrip_through_wire_json(path):
+    # the fixtures are the desktop app's own files, in a checkout beside this one
+    if not os.path.exists(path):
+        pytest.skip(f"no desktop checkout at {path}")
     data = _load(path)
     wire = json.loads(json.dumps(diagramjson.to_json(data), allow_nan=False))
     back = diagramjson.from_json(wire)
