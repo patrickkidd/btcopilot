@@ -1081,3 +1081,21 @@ its list button (R-0352), and walk 8 was rewritten to drive the upload, a note a
 chat, every step driven in a browser before hand-over. Open: deleting a session with content
 fails on the chat database (row 124), and the plan codes are the Pro app's (row 132); he said
 pricing and plans are not decided. He then asked what is left before deploy.
+
+## 2026-09-16 overnight — the deploy path, while he is away
+
+He said to build whatever needs no input from him and asked how to use five days. The night went
+to the two blockers and the checks. The chat tests were building every table in the process,
+which is how a delete that reached the training app's feedback table passed in tests and failed
+on the chat database; they build the chat chain's tables now, and that guard found the coder's
+notes table missing from the chain altogether (rows 133, 124 closed). The image already built
+the browser app but carried no encrypted prompts and no way to run the chain from an installed
+box; both are in it now, and the release workflow starts the image on an empty database and
+fetches the chat page (row 134). Continuous integration went green on the runner for the first
+time: the runner tests run from the checkout, the visual harness signs in at the right path, the
+picture and sheet selectors are scoped, and the goldens are recorded on the runner by a manual
+run of CI and committed (row 135). Two builders under auditors rewrote the sandbox walks and the
+golden specs to the rulings; between them they found four product defects, all fixed (rows 136,
+138, 140–142). The chat box's own compose, Caddyfile, secrets template, runbook and release
+workflow were drafted in fdserver. The importer dry run could not be repeated: restoring the
+July dump here was refused as personal-data handling (row 137).

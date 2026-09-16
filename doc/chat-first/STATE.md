@@ -72,6 +72,17 @@ supersedes the old hard-cutover plan.
 **Branch `FD-362` in both repos; draft PRs btcopilot #136 and fdserver #30.** The beta build
 is real code against the real database, not a throwaway.
 
+**Overnight 2026-09-16, while Patrick is away five days, on his word to build whatever needs no
+input from him.** Built and pushed: the chat database boundary (tests build only the chat
+chain's tables; the coder's notes table joins the chain; a session with content deletes); the
+image with prompts and sops inside and `flask admin db upgrade` to run the chain on a box; CI
+green on the runner with Linux goldens; the sandbox walks and golden specs rewritten to the
+rulings; three defects they found fixed (up one step at a time, the list button's ring, the
+settings switch's size); a tap with no item kind refused in words; the chat box's own compose,
+Caddyfile, secrets template, runbook and release workflow drafted in fdserver (nothing has run).
+Not done, needs him: the importer dry run against the July dump (restoring it was refused here
+as personal-data handling); secrets rotation; keys; the droplet; the import run; DNS; pricing.
+
 **What the Personal app does today.** A signed-in person chats with the coach. The coach
 answers and calls tools that add, change and remove people, pair-bonds, events, variable
 shifts and clusters; each edit is named in the thread in its own formatting, and the picture
@@ -251,14 +262,16 @@ that has already cost one sandbox.
   resolves over the network, and with Tailscale off the Mac cannot look it up. On his phone,
   on his own wifi, turin works.
 
-**Suites (re-run 2026-09-09 evening).** Backend Personal tests: 389 pass, 23 skipped, run in
-this worktree; the whole backend was last recorded at 905 passed, 33 skipped. Web unit tests:
-44 pass, 10 fail — all ten are assertions written before the round 2–4 rulings (a second tap on
-the picked moment now leaves it picked; the spotlight rows; cluster chips by cluster id; the
-reload step the turn handler no longer sends) and not yet rewritten to them. The 95 visual
-tests were last recorded green on a Mac. Continuous integration fails on this branch (unit
-tests and visual both red on the pull request), and neither suite has ever been watched green
-on a runner; the causes are under Open issues.
+**Suites and continuous integration (2026-09-16 morning, first green on a runner).** The chat
+suite is 572 passed and 25 skipped in 31 seconds, built on the chat chain's tables alone. The
+whole backend ran green on the Ubuntu runner (1147 passed, 40 skipped) once the runner tests ran
+from the checkout and the desktop-fixture round trips skipped without a desktop checkout. The
+visual suite is 275 passed and 21 skipped on the runner, with its goldens recorded there by a
+manual run of CI and committed to the branch; the specs were brought to the rulings by a builder
+under an auditor. The Playwright sandbox walks pass at phone and desktop for the app, the table,
+the ballot, the meeting and the meeting detail; the tap, scribe and structure walks skip on fixture
+state. The release workflow builds the browser app into the wheel, ships sops and the encrypted
+prompts in the image, and starts the image on an empty database to fetch the chat page.
 
 **Found by Patrick testing alone, 2026-09-09 evening** (rows 67–69 of the review log): a
 failed coach turn used to leave the user's words stored, so a retry stored them again — fixed,
