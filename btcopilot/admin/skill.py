@@ -68,7 +68,9 @@ def _usage(command: click.Command) -> str:
 
 
 def _named(param: click.Parameter) -> bool:
-    return param.name not in ("help", "yes")
+    # click's own --help is named differently across its versions; the runner
+    # rendered it as a row where a Mac did not
+    return param.name not in ("help", "yes") and "--help" not in getattr(param, "opts", ())
 
 
 def _help(command: click.Command) -> str:

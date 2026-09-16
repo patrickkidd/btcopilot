@@ -130,9 +130,9 @@ jobs:
 
   record-goldens:
     # Goldens recorded on a Mac never match the Linux runner's fonts, so they
-    # are recorded here, on the runner, when a commit message says [goldens],
-    # and committed back to the branch.
-    if: contains(github.event.head_commit.message, '[goldens]')
+    # are recorded here, on the runner, when this workflow is started by hand
+    # on a branch (gh workflow run ci.yml --ref <branch>), and committed back.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
