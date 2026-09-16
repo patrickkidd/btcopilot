@@ -255,7 +255,7 @@ What it is for: your past conversations.
 - The sheet rises from the input bar and can be dragged back down to close. [built]
 - Sessions are searchable by their titles and their summaries. [built] {R-0347}
 - The list is drawn on the notes-list precedent: a small uppercase grey heading per period — today, yesterday, previous 7 days, previous 30 days, then the month — over a rounded group of rows; no clock column, no badges, no pencil. [built] {R-0347}
-- Each row is a bold title over one grey line: the day (left out under today and yesterday), the word recording or note when it is one, and the first thing the client said. A session nobody titled is named by its first six words, or "New session". [built] {R-0347}
+- Each row is a bold title with the day small at its right (left out under today and yesterday), then two lines of the first thing the client said, so a session can be told apart without opening it. A session nobody titled is named by its first six words, or "New session". [built] {R-0347}
 - A "⋯" at the row's right opens the same rename and delete actions as the swipe. [built] {R-0347}
 - The coach titles a session after the first exchange, and you can rename it by hand. [built]
 - A session you renamed by hand is not marked; the coach simply never overwrites it. [built] {R-0347}

@@ -435,18 +435,19 @@ export class Sessions {
   /** A row the way a notes or messages list draws one: the title, then one
    * grey line with the day and the first thing the client said. A recording
    * or a note says which it is in that line. */
+  /** A row the way a messages list draws one: the title with the day small
+   * at its right, then two lines of what the client first said. */
   private rowHtml(session: Session, now: Date, period: string): string {
     const when = new Date(session.date ? `${session.date}T12:00:00` : session.last_activity);
-    const parts: string[] = [];
     // inside Today and Yesterday the heading already says the day
-    if (!DAY_HEADINGS.has(period)) parts.push(rowDate(when, now));
-    if (session.kind !== SessionKind.Chat) parts.push(session.kind);
-    parts.push(session.preview ?? "Nothing said yet");
+    const day = DAY_HEADINGS.has(period) ? "" : rowDate(when, now);
+    const said = session.preview ?? (session.kind === SessionKind.Chat ? "Nothing said yet" : `A ${session.kind} with nothing in it yet`);
     return (
       `<div class="row${session.id === this.current ? " cur" : ""}" data-id="${session.id}">` +
       `<div class="rmain">` +
-      `<div class="r1 rtitle">${esc(sessionTitle(session))}</div>` +
-      `<div class="r2 rsub">${esc(parts.join(" · "))}</div>` +
+      `<div class="rhead"><div class="r1 rtitle">${esc(sessionTitle(session))}</div>` +
+      `<div class="rday">${esc(day)}</div></div>` +
+      `<div class="rsub">${esc(said)}</div>` +
       `</div>` +
       `<button class="rmore" type="button" aria-label="Rename or delete">&#8943;</button>` +
       `</div>`

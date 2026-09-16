@@ -1576,7 +1576,17 @@ button { font-family: inherit; }
 .fs-group .row { border-bottom: 1px solid var(--line); }
 .fs-group .row:last-child { border-bottom: 0; }
 .fs-body .rtitle { font-weight: 600; }
-.fs-body .rsub { font: 400 14px/1.3 var(--sans); color: var(--faint); }
+.rhead { display: flex; align-items: baseline; gap: 8px; }
+.rhead .rtitle { flex: 1; min-width: 0; }
+.rday { flex: none; font: 400 13px/1.3 var(--sans); color: var(--faint); }
+.fs-body .rsub {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font: 400 14px/1.35 var(--sans);
+  color: var(--faint);
+}
 .fs-body .fs-hint { padding-top: 24px; }
 
 /* what the app says about what it just did */
