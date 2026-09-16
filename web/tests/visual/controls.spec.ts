@@ -18,7 +18,7 @@ const settle = async (page: Page) => {
 /** What the control row is: each control's words, in order, and whether it can
  * be taken. */
 const controls = (page: Page) =>
-  page.locator(".pctl").evaluate((row) =>
+  page.locator("#chat-screen .pctl").evaluate((row) =>
     [...row.children].map((c) => ({
       words: (c as HTMLElement).innerText.trim(),
       dead: (c as HTMLButtonElement).disabled,
@@ -77,8 +77,8 @@ test.describe("the words under the board", () => {
     const heights = new Set<number>();
     const tops = new Set<number>();
     for (let i = 0; i < 17; i += 1) {
-      const cap = await page.locator(".bcap").boundingBox();
-      const row = await page.locator(".pctl").boundingBox();
+      const cap = await page.locator("#chat-screen .bcap").boundingBox();
+      const row = await page.locator("#chat-screen .pctl").boundingBox();
       heights.add(Math.round(cap?.height ?? 0));
       tops.add(Math.round(row?.y ?? 0));
       if (await next.isEnabled()) await next.click();
@@ -91,7 +91,7 @@ test.describe("the words under the board", () => {
 
   test("say a person and their own words, and never a count", async ({ page }) => {
     await fromTheWire(page);
-    const words = await page.locator(".bcap").innerText();
+    const words = await page.locator("#chat-screen .bcap").innerText();
     expect(words).toMatch(/^Ada · /);
     expect(words).not.toMatch(/\d+\/\d+/);
   });

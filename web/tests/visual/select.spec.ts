@@ -35,7 +35,7 @@ test.describe("what the app says can be taken away", () => {
   test("a session row's words select", async ({ page }) => {
     await settle(page);
     await page.locator("#sessions-open").click();
-    await expect(page.locator(".fs-body .row").first()).toBeVisible();
+    await expect(page.locator("#sessions-sheet .fs-body .row").first()).toBeVisible();
     await page.waitForTimeout(400);
     expect((await dragAcross(page, ".fs-body .row .r1")).trim()).not.toBe("");
   });

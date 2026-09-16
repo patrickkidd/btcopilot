@@ -171,7 +171,7 @@ test.describe("what a chip does", () => {
     await expect(offer).toHaveText("[winter 1993]");
     await offer.click();
     await expect(page.locator("#composer .chip")).toHaveCount(1);
-    await expect(page.locator(".inbar")).toHaveScreenshot("offer-in-composer.png");
+    await expect(page.locator("#chat-screen .inbar")).toHaveScreenshot("offer-in-composer.png");
   });
 
   test("what the coach named stays lit on the picture", async ({ page }) => {
@@ -179,7 +179,7 @@ test.describe("what a chip does", () => {
     await expect(page.locator("#view .ss")).toBeVisible();
     await page.waitForTimeout(500);
     await expect(page.locator("#view .ss-t.on").first()).toBeVisible();
-    await expect(page.locator(".pic")).toHaveScreenshot("spotlight-at-rest.png");
+    await expect(page.locator("#chat-screen .pic")).toHaveScreenshot("spotlight-at-rest.png");
   });
 });
 

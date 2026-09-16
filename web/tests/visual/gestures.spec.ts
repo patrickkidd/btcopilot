@@ -14,7 +14,7 @@ const settle = async (page: Page) => {
 
 const openSheet = async (page: Page) => {
   await page.locator("#sessions-open").click();
-  await expect(page.locator(".fs-sheet")).toBeVisible();
+  await expect(page.locator("#sessions-sheet")).toBeVisible();
   await page.waitForTimeout(400);
 };
 
@@ -34,7 +34,7 @@ test.describe("a session row's own actions", () => {
   test("swiping left reveals Rename and Delete", async ({ page }) => {
     await settle(page);
     await openSheet(page);
-    const row = page.locator(".fs-body .row").first();
+    const row = page.locator("#sessions-sheet .fs-body .row").first();
     await expect(row.locator(".fs-acts")).toHaveCount(0);
     await swipeLeft(page, row);
     await expect(row.locator(".fs-act.ren")).toHaveText("Rename");
@@ -50,7 +50,7 @@ test.describe("a session row's own actions", () => {
   }) => {
     await settle(page);
     await openSheet(page);
-    const row = page.locator(".fs-body .row").first();
+    const row = page.locator("#sessions-sheet .fs-body .row").first();
     await swipeLeft(page, row);
     await row.locator(".fs-act.ren").click();
     await expect(row.locator("input.rename")).toBeVisible();
@@ -63,10 +63,10 @@ test.describe("a session row's own actions", () => {
     await settle(page);
     const moments = await page.locator("#view .ss .dot").count();
     await openSheet(page);
-    const rows = page.locator(".fs-body .row");
+    const rows = page.locator("#sessions-sheet .fs-body .row");
     const before = await rows.count();
-    await page.locator(".fs-new").click();
-    await expect(page.locator(".fs-sheet")).toBeHidden();
+    await page.locator("#sessions-sheet .fs-new").click();
+    await expect(page.locator("#sessions-sheet")).toBeHidden();
     await openSheet(page);
     await expect(rows).toHaveCount(before + 1);
     await swipeLeft(page, rows.first());
@@ -87,14 +87,14 @@ test.describe("a tap on a message's own words", () => {
     await expect(page.locator("#view .ss")).toBeVisible();
     await page.waitForTimeout(600);
     const bubble = page.locator(".bub.coach").last();
-    const before = (await page.locator(".pic").boundingBox())!;
+    const before = (await page.locator("#chat-screen .pic").boundingBox())!;
     await bubble.click({ position: { x: 6, y: 6 } });
     await page.waitForTimeout(300);
     // words appear on the picture for what the message named
     expect(await page.locator("#view .ss-t").count()).toBeGreaterThan(0);
     // nothing entered the composer, and nothing above the chat moved
     expect(await page.locator("#composer").innerText()).toBe("");
-    const after = (await page.locator(".pic").boundingBox())!;
+    const after = (await page.locator("#chat-screen .pic").boundingBox())!;
     expect(after.height).toBe(before.height);
   });
 

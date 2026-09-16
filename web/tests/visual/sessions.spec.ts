@@ -12,7 +12,7 @@ const settle = async (page: Page) => {
 
 const openSheet = async (page: Page) => {
   await page.locator("#sessions-open").click();
-  await expect(page.locator(".fs-sheet")).toBeVisible();
+  await expect(page.locator("#sessions-sheet")).toBeVisible();
   await page.waitForTimeout(400);
 };
 
@@ -36,14 +36,14 @@ test.describe("the sessions sheet", () => {
     await settle(page);
     await openSheet(page);
     const frame = (await page.locator(".app").boundingBox())!;
-    const sheet = (await page.locator(".fs-sheet").boundingBox())!;
+    const sheet = (await page.locator("#sessions-sheet").boundingBox())!;
     expect(Math.round(sheet.height)).toBe(Math.round(frame.height * 0.92));
     await expect(page.locator(".fs-grab")).toBeVisible();
-    await expect(page.locator(".fs-search input")).toHaveAttribute(
+    await expect(page.locator("#sessions-sheet .fs-search input")).toHaveAttribute(
       "placeholder",
       "Search sessions and families",
     );
-    const field = (await page.locator(".fs-search input").boundingBox())!;
+    const field = (await page.locator("#sessions-sheet .fs-search input").boundingBox())!;
     expect(Math.round(field.height)).toBe(44);
   });
 
@@ -52,25 +52,25 @@ test.describe("the sessions sheet", () => {
   }) => {
     await settle(page);
     await openSheet(page);
-    await expect(page.locator(".fs-body .ghead").first()).not.toBeEmpty();
-    await expect(page.locator(".fs-body .row").first()).toBeVisible();
-    await expect(page.locator(".fs-body .row.cur")).toHaveCount(1);
-    await expect(page.locator(".fs-new")).toContainText("New session with");
+    await expect(page.locator("#sessions-sheet .fs-body .ghead").first()).not.toBeEmpty();
+    await expect(page.locator("#sessions-sheet .fs-body .row").first()).toBeVisible();
+    await expect(page.locator("#sessions-sheet .fs-body .row.cur")).toHaveCount(1);
+    await expect(page.locator("#sessions-sheet .fs-new")).toContainText("New session with");
   });
 
   test("a search that matches nothing says so, in those words", async ({ page }) => {
     await settle(page);
     await openSheet(page);
-    await page.locator(".fs-search input").fill("zzzzz-no-such-session");
+    await page.locator("#sessions-sheet .fs-search input").fill("zzzzz-no-such-session");
     await expect(page.locator(".fs-hint")).toHaveText("No sessions match");
   });
 
   test("tapping the scrim closes it", async ({ page }) => {
     await settle(page);
     await openSheet(page);
-    await page.locator(".fs-scrim").click({ position: { x: 195, y: 20 } });
+    await page.locator("#sessions-scrim").click({ position: { x: 195, y: 20 } });
     await page.waitForTimeout(400);
-    await expect(page.locator(".fs-sheet")).toBeHidden();
+    await expect(page.locator("#sessions-sheet")).toBeHidden();
   });
 
   test("every row and control in the sheet meets the 44px floor", async ({
@@ -100,7 +100,7 @@ test.describe("the sessions sheet", () => {
   }) => {
     await settle(page);
     await openSheet(page);
-    const sheet = page.locator(".fs-sheet");
+    const sheet = page.locator("#sessions-sheet");
     expect(await sheet.innerText()).not.toMatch(/\bcases?\b/i);
     // the family is chosen on the account page, never here (R-0347)
     await expect(page.locator(".fs-fhead")).toHaveCount(0);

@@ -55,7 +55,7 @@ const freeze = (page: Page, ms = 2400) =>
     }
   }, ms);
 
-const picture = (page: Page) => page.locator(".pic");
+const picture = (page: Page) => page.locator("#chat-screen .pic");
 
 test.describe("the moves board", () => {
   test.use({ storageState: stateFor("moves") });
@@ -71,7 +71,7 @@ test.describe("the moves board", () => {
     await settle(page);
     await enter(page);
     // the words under the board name the move, and never count them
-    await expect(page.locator(".bcap")).toHaveText("Ada · toward");
+    await expect(page.locator("#chat-screen .bcap")).toHaveText("Ada · toward");
     await freeze(page);
     await expect(picture(page)).toHaveScreenshot("board-first-move.png", steady(page));
   });
@@ -81,7 +81,7 @@ test.describe("the moves board", () => {
     await enter(page);
     for (let i = 0; i < 4; i += 1)
       await page.locator('.pctl [data-target="next"]').click();
-    await expect(page.locator(".bcap")).toHaveText("Ada · conflict");
+    await expect(page.locator("#chat-screen .bcap")).toHaveText("Ada · conflict");
     await freeze(page);
     await expect(picture(page)).toHaveScreenshot("board-fifth-move.png", steady(page));
   });

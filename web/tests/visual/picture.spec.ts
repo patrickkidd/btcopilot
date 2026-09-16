@@ -14,7 +14,7 @@ const settle = async (page: import("@playwright/test").Page) => {
   await page.waitForTimeout(400);
 };
 
-const picture = (page: import("@playwright/test").Page) => page.locator(".pic");
+const picture = (page: import("@playwright/test").Page) => page.locator("#chat-screen .pic");
 
 test.describe("the resting picture", () => {
   for (const [key, what] of [
@@ -69,7 +69,7 @@ test.describe("a tap on the wire", () => {
     await page.locator('.ss-hit[data-target="zone"]').first().click();
     await page.locator("#cap-chip").click();
     await expect(page.locator("#composer .chip")).toHaveCount(1);
-    await expect(page.locator(".inbar")).toHaveScreenshot("chip-in-composer.png", steady(page));
+    await expect(page.locator("#chat-screen .inbar")).toHaveScreenshot("chip-in-composer.png", steady(page));
   });
 });
 

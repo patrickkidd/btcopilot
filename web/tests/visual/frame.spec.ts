@@ -60,7 +60,7 @@ function collisions(all: Box[]): string[] {
 }
 
 const frame = (page: Page) =>
-  page.locator(".pic").evaluate((node) => {
+  page.locator("#chat-screen .pic").evaluate((node) => {
     const at = node.getBoundingClientRect();
     return { x: at.x, right: at.right };
   });

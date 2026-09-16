@@ -89,6 +89,9 @@ export class Sessions {
   ) {
     this.scrim.hidden = true;
     this.sheet.hidden = true;
+    // the page holds several sheets of one class; this one is the sessions'
+    this.sheet.id = "sessions-sheet";
+    this.scrim.id = "sessions-scrim";
     this.overlay.append(this.scrim, this.sheet);
     this.body = this.sheet.querySelector<HTMLElement>(".fs-body")!;
     this.search = this.sheet.querySelector<HTMLInputElement>(".fs-search input")!;

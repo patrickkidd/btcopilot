@@ -32,16 +32,16 @@ test.describe("a chip in a play-by-play", () => {
     await expect(board(page)).toHaveCount(0);
     await walk(page).nth(2).click();
     await expect(board(page)).toBeVisible();
-    await expect(page.locator(".bcap")).toHaveText("Ada · distance");
+    await expect(page.locator("#chat-screen .bcap")).toHaveText("Ada · distance");
   });
 
   test("a further chip steps the board and never leaves it", async ({ page }) => {
     await settle(page);
     await walk(page).nth(2).click();
-    await expect(page.locator(".bcap")).toHaveText("Ada · distance");
+    await expect(page.locator("#chat-screen .bcap")).toHaveText("Ada · distance");
     await walk(page).nth(6).click();
     await expect(board(page)).toBeVisible();
-    await expect(page.locator(".bcap")).toHaveText("Ada · defined self");
+    await expect(page.locator("#chat-screen .bcap")).toHaveText("Ada · defined self");
   });
 
   test("the picture keeps its height while the walk is stepped", async ({
@@ -51,10 +51,10 @@ test.describe("a chip in a play-by-play", () => {
     await walk(page).nth(2).click();
     await expect(board(page)).toBeVisible();
     await page.waitForTimeout(800);
-    const before = await page.locator(".pic").boundingBox();
+    const before = await page.locator("#chat-screen .pic").boundingBox();
     await walk(page).nth(6).click();
     await page.waitForTimeout(500);
-    const after = await page.locator(".pic").boundingBox();
+    const after = await page.locator("#chat-screen .pic").boundingBox();
     expect(after?.height).toBe(before?.height);
   });
 });

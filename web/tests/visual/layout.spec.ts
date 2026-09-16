@@ -106,7 +106,7 @@ test.describe("nothing moves when a chip is tapped", () => {
     await page.locator("#crumb").click();
     await page.waitForTimeout(400);
     const empty = await frame(page);
-    await expect(page.locator(".caption .cta")).toHaveText("tap a cluster");
+    await expect(page.locator("#chat-screen .caption .cta")).toHaveText("tap a cluster");
 
     await page.locator('.ss-hit[data-target="cluster"]').first().click();
     await page.waitForTimeout(400);
@@ -135,7 +135,7 @@ test.describe("nothing moves when a chip is tapped", () => {
     await expect(page.locator("#cap-chip")).toBeVisible();
     // The three chips are 26 tall in the middle of the 44 band, on one line,
     // and each is as wide as its own word (picked plate F).
-    const strip = await page.locator(".caption").evaluate((node) => ({
+    const strip = await page.locator("#chat-screen .caption").evaluate((node) => ({
       height: Math.round(node.getBoundingClientRect().height),
       children: node.childElementCount,
       rows: new Set(
@@ -177,9 +177,9 @@ for (const key of ["one", "three40", "dense60", "hostile", "moves", "play", "lon
       }
       const zones = page.locator('.ss-hit[data-target="zone"]');
       await zones.first().click();
-      await expect(page.locator(".caption .tok").first()).toBeVisible();
+      await expect(page.locator("#chat-screen .caption .tok").first()).toBeVisible();
 
-      const row = await page.locator(".caption").evaluate((node) => {
+      const row = await page.locator("#chat-screen .caption").evaluate((node) => {
         const box = node.getBoundingClientRect();
         return {
           height: Math.round(box.height),
@@ -225,7 +225,7 @@ test.describe("the message bar never pushes the thread", () => {
   }) => {
     await settle(page);
     const before = await frame(page);
-    const bar = await page.locator(".inbar").boundingBox();
+    const bar = await page.locator("#chat-screen .inbar").boundingBox();
 
     const field = await page.locator("#composer").boundingBox();
     // Playwright scrolls a target into view before clicking it, so the thread's
@@ -239,7 +239,7 @@ test.describe("the message bar never pushes the thread", () => {
     await page.locator("#chat").evaluate((n, at) => (n.scrollTop = at), held);
 
     const after = await frame(page);
-    expect(Math.round((await page.locator(".inbar").boundingBox())!.height)).toBe(
+    expect(Math.round((await page.locator("#chat-screen .inbar").boundingBox())!.height)).toBe(
       Math.round(bar!.height),
     );
     expect(Math.round((await page.locator("#composer").boundingBox())!.height)).toBe(
@@ -354,7 +354,7 @@ test.describe("the moves board fills the room it takes", () => {
     expect(fit.regionBottom - fit.lastBottom).toBeLessThanOrEqual(1);
 
     // and the ruled control height survives
-    for (const box of await page.locator(".pctl .btn").all())
+    for (const box of await page.locator("#chat-screen .pctl .btn").all())
       expect(Math.round((await box.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
   });
 });
