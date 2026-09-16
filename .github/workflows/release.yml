@@ -76,6 +76,8 @@ jobs:
     needs: build
     steps:
 
+    - uses: actions/checkout@v4
+
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
@@ -87,15 +89,18 @@ jobs:
         name: python-wheel
         path: dist
 
-    - name: Install wheels
+    - name: The wheel installs and imports
       run: |
         pip install --upgrade pip
         pip install --extra-index-url=$TWINE_REPOSITORY_URL `ls dist/*.whl`[app,test]
         python -c "import btcopilot.tests; print(btcopilot.tests)"
 
+    # The suite reads files that live beside the package in a checkout (bin/t,
+    # the chain's ini, the skill file, git), so it runs the way CI runs it.
     - name: Test with pytest
       run: |
-        pytest -svv --disable-warnings --pyargs btcopilot.tests
+        pip install -e .[app,test]
+        pytest -svv --disable-warnings btcopilot/tests
 
   build-docker:
     runs-on: ubuntu-latest
