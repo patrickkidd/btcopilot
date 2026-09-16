@@ -47,12 +47,12 @@ test.describe("the sessions sheet", () => {
     expect(Math.round(field.height)).toBe(44);
   });
 
-  test("it lists the family and its sessions, and marks the current one", async ({
+  test("it lists the sessions under a day heading, and marks the current one", async ({
     page,
   }) => {
     await settle(page);
     await openSheet(page);
-    await expect(page.locator(".fs-fhead .fs-fname")).not.toBeEmpty();
+    await expect(page.locator(".fs-body .ghead").first()).not.toBeEmpty();
     await expect(page.locator(".fs-body .row").first()).toBeVisible();
     await expect(page.locator(".fs-body .row.cur")).toHaveCount(1);
     await expect(page.locator(".fs-new")).toContainText("New session with");
@@ -81,7 +81,7 @@ test.describe("the sessions sheet", () => {
     const small = await page.evaluate(() =>
       [
         ...document.querySelectorAll(
-          ".fs-sheet button, .fs-sheet input, .fs-body .row, .fs-more",
+          ".fs-sheet button, .fs-sheet input, .fs-body .row",
         ),
       ]
         .map((node) => ({
@@ -102,7 +102,7 @@ test.describe("the sessions sheet", () => {
     await openSheet(page);
     const sheet = page.locator(".fs-sheet");
     expect(await sheet.innerText()).not.toMatch(/\bcases?\b/i);
-    const families = await page.locator(".fs-fhead").count();
-    expect(await page.locator(".fs-fhead .fs-plus").count()).toBe(families);
+    // the family is chosen on the account page, never here (R-0347)
+    await expect(page.locator(".fs-fhead")).toHaveCount(0);
   });
 });

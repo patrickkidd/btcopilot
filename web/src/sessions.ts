@@ -2,7 +2,7 @@ import * as api from "./api";
 import { $, el, esc, isAdmin } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
-import { dayKey, groupLabel, meetingTitle, whenText } from "./when";
+import { clockTime, dayKey, dayLabel, meetingTitle } from "./when";
 import {
   matching,
   sessionTitle,
@@ -11,15 +11,14 @@ import {
   type Family,
 } from "./search";
 import { SessionKind, type Diagram, type Session } from "./types";
-import { PRO, RECORDS } from "./pro";
+import { PRO } from "./pro";
 import { Recording } from "./recording";
 
 /** The session door: the button beside the message box, and the searchable
- * bottom sheet it raises — the `family-sections` option the owner picked. Every
- * family's sessions in one scroll under sticky family headers, each family
- * collapsed to its three most recent. */
+ * bottom sheet it raises. The sessions of the family the app is on, newest
+ * first under a heading per day; the family itself is chosen on the account
+ * page, never here. */
 
-const COLLAPSED = 3;
 const TITLE_CAP = 120;
 /** Drag up from the input bar this far to open; drag the grabber down this far
  * to close. */
@@ -51,8 +50,6 @@ export class Sessions {
   private families: Family[] = [];
   private current: number | null = null;
   private filter = "";
-  /** The families the reader has opened past their three most recent. */
-  private expanded = new Set<number>();
   private open = false;
   /** The row whose Rename and Delete are showing, if any. */
   private swiped: HTMLElement | null = null;
@@ -68,8 +65,8 @@ export class Sessions {
     "fs-sheet",
     `<div class="fs-handle"><div class="fs-grab"></div></div>
      <div class="fs-search">
-       <input type="search" placeholder="Search sessions and ${RECORDS}"
-              aria-label="Search sessions and ${RECORDS}">
+       <input type="search" placeholder="Search sessions"
+              aria-label="Search sessions">
      </div>
      <div class="fs-body"></div>
      <div class="fs-foot"><button class="fs-new" type="button"></button>
@@ -199,7 +196,7 @@ export class Sessions {
       this.recording.pick();
     });
     this.noteButton.addEventListener("click", () =>
-      void this.start(undefined, SessionKind.Note),
+      void this.start(SessionKind.Note),
     );
     this.taskButton.addEventListener("click", () => {
       this.lower();
@@ -239,26 +236,6 @@ export class Sessions {
     // a tap anywhere else puts an open row's actions away rather than firing
     if (this.swiped) {
       this.closeActions();
-      return;
-    }
-    const plus = target.closest<HTMLElement>(".fs-plus");
-    if (plus) {
-      e.stopPropagation();
-      void this.start(Number(plus.dataset.family));
-      return;
-    }
-    const more = target.closest<HTMLElement>(".fs-more");
-    if (more) {
-      this.expanded.add(Number(more.dataset.family));
-      this.render();
-      return;
-    }
-    const head = target.closest<HTMLElement>(".fs-fhead");
-    if (head) {
-      const id = Number(head.parentElement?.dataset.family);
-      if (this.expanded.has(id)) this.expanded.delete(id);
-      else this.expanded.add(id);
-      this.render();
       return;
     }
     const row = target.closest<HTMLElement>(".row");
@@ -421,64 +398,36 @@ export class Sessions {
     }, 280);
   }
 
-  /** What one family shows right now: the matching sessions, collapsed to the
-   * three most recent unless it is expanded or a search is running. A search
-   * matching the family's own name keeps all of its sessions. */
-  private shown(family: Family): {
-    rows: Session[];
-    more: number;
-    byName: boolean;
-  } {
-    const query = this.filter.trim();
-    const { rows: found, byName } = matching(family, query);
-    if (query || this.expanded.has(family.diagram.id) || found.length <= COLLAPSED)
-      return { rows: found, more: 0, byName };
-    const rows = found.filter((s, i) => i < COLLAPSED || s.id === this.current);
-    return { rows, more: found.length - rows.length, byName };
-  }
-
   private render(): void {
     const home = this.home();
     this.newButton.textContent = `New session with ${home?.diagram.name ?? "your family"}`;
     const now = new Date();
     const searching = !!this.filter.trim();
+    const rows = home ? matching(home, this.filter).rows : [];
 
+    // the clock only earns its place when a day holds more than one session
+    const counts = new Map<number, number>();
+    for (const s of rows) {
+      const key = dayKey(new Date(s.last_activity));
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
     let html = "";
-    let total = 0;
-    for (const family of this.families) {
-      const { rows, more, byName } = this.shown(family);
-      total += family.sessions.length;
-      if (searching && !rows.length && !byName) continue;
-      const id = family.diagram.id;
-      html += `<section class="fs-sec" data-family="${id}">${this.headHtml(family)}`;
-      // the clock only earns its place when a day holds more than one session
-      const counts = new Map<number, number>();
-      for (const s of family.sessions) {
-        const key = dayKey(new Date(s.last_activity));
-        counts.set(key, (counts.get(key) ?? 0) + 1);
+    let day = 0;
+    for (const session of rows) {
+      const when = new Date(session.last_activity);
+      const key = dayKey(when);
+      if (key !== day) {
+        day = key;
+        html += `<div class="ghead">${esc(dayLabel(when, now))}</div>`;
       }
-      let group = "";
-      for (const session of rows) {
-        const when = new Date(session.last_activity);
-        const label = searching ? "" : groupLabel(when, now);
-        if (label && label !== group) {
-          group = label;
-          html += `<div class="ghead">${esc(label)}</div>`;
-        }
-        html += this.rowHtml(
-          session,
-          whenText(when, now, counts.get(dayKey(when)) ?? 1),
-        );
-      }
-      if (more) html += `<div class="fs-more" data-family="${id}">${more} more…</div>`;
-      html += "</section>";
+      html += this.rowHtml(session, (counts.get(key) ?? 1) >= 2 ? clockTime(when) : "");
     }
 
     if (!html)
       html = `<div class="fs-hint">${
         searching ? "No sessions match" : "Past conversations collect here"
       }</div>`;
-    else if (!searching && total <= 1)
+    else if (!searching && rows.length <= 1)
       html += `<div class="fs-hint">Past conversations collect here</div>`;
 
     this.swiped = null;
@@ -487,49 +436,11 @@ export class Sessions {
     this.body.scrollTop = top;
   }
 
-  private headHtml(family: Family): string {
-    const name = family.diagram.name;
-    const last = family.sessions[0];
-    return (
-      `<div class="fs-fhead${family.diagram.current ? " cur" : ""}">` +
-      this.thumb(family) +
-      `<div class="fs-fmain">` +
-      `<div class="fs-fname">${esc(name)}</div>` +
-      `<div class="fs-flast">${
-        last ? `last: ${esc(summaryOf(last))}` : "no sessions yet"
-      }</div>` +
-      `</div>` +
-      (PRO
-        ? ""
-        : `<button class="fs-plus" type="button" data-family="${family.diagram.id}" ` +
-          `aria-label="New session with ${esc(name)}">+</button>`) +
-      `</div>`
-    );
-  }
-
-  /** The family's wire, small: one mark per session so the header carries the
-   * same picture the app draws large. */
-  private thumb(family: Family): string {
-    const w = 60;
-    const h = 14;
-    const times = family.sessions.map((s) => new Date(s.last_activity).getTime());
-    let svg =
-      `<svg class="thumb" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true">` +
-      `<line x1="1" y1="${h / 2}" x2="${w - 1}" y2="${h / 2}" stroke="var(--line)" stroke-width="1"/>`;
-    if (times.length) {
-      const min = Math.min(...times);
-      const max = Math.max(...times);
-      for (const t of times) {
-        const x = times.length === 1 ? w / 2 : 1 + ((t - min) / (max - min || 1)) * (w - 2);
-        svg += `<circle cx="${x.toFixed(1)}" cy="${h / 2}" r="2" fill="var(--data)"/>`;
-      }
-    }
-    return svg + "</svg>";
-  }
-
   private rowHtml(session: Session, when: string): string {
+    // an untitled session is named by its clock, which the row's own clock
+    // already says when the day holds more than one
     const title = untitled(session)
-      ? `<span class="untitled">${esc(sessionTitle(session))}</span>`
+      ? `<span class="untitled">${esc(when ? "Untitled" : sessionTitle(session))}</span>`
       : esc(session.title as string);
     // The app has one list row: the timeline list's `.row` with its `.r1`
     // title and `.r2` secondary line. A session row is that row with a date
@@ -560,24 +471,10 @@ export class Sessions {
   }
 
   /** A new session is refused while the one you are in has nothing in it: two
-   * empty sessions say nothing the first one does not. A new session can only
-   * start on the family the app is on, because that is the diagram the coach
-   * writes to. */
-  private async start(
-    familyId?: number,
-    kind: SessionKind = SessionKind.Chat,
-  ): Promise<void> {
-    let home = this.home();
-    // The "+" on another family moves the app there first: the coach writes to
-    // the diagram the app is on, so there is nowhere else to put the session.
-    if (familyId !== undefined && home && familyId !== home.diagram.id) {
-      const moved = this.families.find((f) => f.diagram.id === familyId);
-      if (!moved) return;
-      await api.selectDiagram(familyId);
-      this.handlers.onDiagram(moved.diagram, { switched: true });
-      await this.load(null);
-      home = this.home();
-    }
+   * empty sessions say nothing the first one does not. It starts on the family
+   * the app is on, because that is the diagram the coach writes to. */
+  private async start(kind: SessionKind = SessionKind.Chat): Promise<void> {
+    const home = this.home();
     const current = this.current === null ? undefined : this.find(this.current);
     if (current && current.message_count === 0) {
       this.lower();

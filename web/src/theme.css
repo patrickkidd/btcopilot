@@ -1453,62 +1453,6 @@ button { font-family: inherit; }
 .fs-act.ren { color: var(--move-text); }
 .fs-act:active { background: var(--tint); }
 
-.fs-fhead {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 8px 0 16px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--line);
-  cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
-}
-.fs-fmain { flex: 1; min-width: 0; }
-.fs-fname {
-  font: 600 15px/1.25 var(--sans);
-  color: var(--ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.fs-flast {
-  font: 400 13px/1.25 var(--mono);
-  color: var(--faint);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.fs-plus {
-  flex: none;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: none;
-  color: var(--move-text);
-  font: 600 22px/1 var(--sans);
-  cursor: pointer;
-}
-.fs-plus:active { background: var(--tint); }
-.fs-more {
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--line);
-  font: 500 13px var(--mono);
-  color: var(--faint);
-  cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
-}
-.fs-more:active { background: var(--tint); }
 .fs-hint {
   padding: 18px 16px;
   text-align: center;
@@ -1517,6 +1461,9 @@ button { font-family: inherit; }
 }
 .fs-foot {
   flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding: 8px 12px calc(12px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
   background: var(--panel);
@@ -1600,16 +1547,14 @@ button { font-family: inherit; }
 /* the day the sessions under it fall on */
 .ghead {
   position: sticky;
-  top: 44px;
+  top: 0;
   z-index: 1;
-  height: 24px;
-  line-height: 24px;
+  height: 32px;
+  line-height: 32px;
   padding: 0 16px;
   background: var(--panel);
-  font: 500 13px var(--mono);
-  color: var(--faint);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font: 600 13px var(--sans);
+  color: var(--ink);
 }
 
 /* what the app says about what it just did */
@@ -1881,8 +1826,8 @@ button { font-family: inherit; }
 }
 .sn-tick { flex: none; color: var(--data); font: 500 17px/1 var(--mono); }
 /* the diagram in use, marked the same way the current session is */
-.sn-row.cur, .fs-fhead.cur { position: relative; }
-.sn-row.cur::before, .fs-fhead.cur::before {
+.sn-row.cur { position: relative; }
+.sn-row.cur::before {
   content: "";
   position: absolute;
   left: 0;
@@ -2369,7 +2314,6 @@ button { font-family: inherit; }
 .fs-task {
   width: 100%;
   height: 44px;
-  margin-top: 8px;
   padding: 0 14px;
   border: 1.5px solid var(--data);
   border-radius: 22px;

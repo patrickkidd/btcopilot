@@ -253,9 +253,9 @@ What it is for: your past conversations.
 
 - A button beside the chat input opens a sheet holding your past sessions. [built]
 - The sheet rises from the input bar and can be dragged back down to close. [built]
-- Sessions are searchable by their titles, their summaries and the family they belong to. [built]
-- Each row shows a title, the coach's one-line summary of that session, and when it was. [built]
-- Rows are grouped under today, yesterday, this week, this month, and then by month. [built]
+- Sessions are searchable by their titles and their summaries. [built] {R-0347}
+- Each row shows a title, the coach's one-line summary of that session, and its clock when the day holds more than one. [built] {R-0347}
+- Rows are grouped by day under a heading: today, yesterday, then the weekday and date. [built] {R-0347}
 - The coach titles a session after the first exchange, and you can rename it by hand. [built]
 - A session you renamed by hand is marked as such. [built]
 - Emptying a rename puts the coach's own title back and says so. [built]
@@ -263,8 +263,8 @@ What it is for: your past conversations.
 - Newest activity is first, and the order never changes while you are looking at it. [built]
 - A button at the foot starts a new session, and refuses while the current one is still empty. [built]
 - With no sessions at all it says past conversations collect here. [built]
-- When you have several families, sessions are grouped under the family they belong to, each showing its three most recent. [built]
-- Sessions are started from within the case you are on; there is no "+" beside other cases in the sessions sheet, and a personal user never sees the word case at all. [built] {R-0285}
+- The sheet holds only the sessions of the family the app is on; the family is chosen on the account page, never in the sheet, and a personal user never sees the word case at all. [built] {R-0285, R-0347}
+- The three buttons at the foot are spaced apart. [built] {R-0347}
 - Someone else's session is simply not found rather than refused, so the app never confirms a session it will not show you. [built]
 - The history in the review database is kept across code changes rather than reset. [built] {R-0191}
 - Existing diagrams and conversations made before this app must open in it as sessions; old training transcripts are kept out of the list. [built]
