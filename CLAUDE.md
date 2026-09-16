@@ -26,6 +26,10 @@ Backend for Pro/Personal apps, training app, AI extraction system.
 - **Never repeat in the reply what an artifact already says (2026-09-16).** When a page is
   published, the reply is the link and only what is not on the page: the decision he must
   make, or what changed since. Duplicated content makes him read both.
+- **Sub-agents do the work; this context stays small (2026-09-16, repeated).** Mechanics run in
+  Sonnet or Haiku sub-agents under an auditor; the coordinator holds one-line summaries only,
+  relays nothing mid-run, and posts one final message when everything is done or when there is
+  something for Patrick to do.
 - **Cost estimates are for the work, not for validation.** Squashing seven migrations is a few
   tool calls, not an hour. Verify only what changed, once, at the cheapest level that proves it;
   never re-verify before a merge is even in sight.
