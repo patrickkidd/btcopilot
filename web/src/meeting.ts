@@ -311,9 +311,9 @@ export class Meeting {
    * top of the list rather than scrolling away with the title (R-0340). */
   private legend(): string {
     return (
-      `<span><i class="sw ok"></i>agreed</span>` +
-      `<span><i class="sw no"></i>disputed</span>` +
-      `<span><i class="sw now"></i>now</span>`
+      `<span><i class="st ok"></i>agreed</span>` +
+      `<span><i class="st no"></i>disputed</span>` +
+      `<span><i class="st now"></i>now</span>`
     );
   }
 

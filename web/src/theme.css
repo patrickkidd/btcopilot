@@ -1316,8 +1316,10 @@ button { font-family: inherit; }
 .fs-glyph:active::before { background: var(--tint); }
 /* The way into the lists: the three lines alone, no ring, no fill (owner
    review 2026-09-09), in the ruled 44px target flush with the row's edge. */
+/* dressed like the sessions button: the same 40px ring inside a 44px target */
 .listglyph {
   flex: none;
+  position: relative;
   width: 44px;
   height: 44px;
   display: flex;
@@ -1329,8 +1331,17 @@ button { font-family: inherit; }
   color: var(--ink);
   cursor: pointer;
 }
-.listglyph svg { display: block; width: 20px; height: 15px; }
-.listglyph:active { color: var(--data); }
+.listglyph::before {
+  content: "";
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+.listglyph svg { position: relative; display: block; opacity: 0.8; width: 20px; height: 15px; }
+.listglyph:active::before { background: var(--tint); }
 /* The home-screen badge: a quiet phone outline beside the account button,
    only while the app runs inside a browser. */
 /* Two 44px targets side by side would put 30px of air between the marks; the
@@ -2589,10 +2600,10 @@ button { font-family: inherit; }
   color: var(--line);
 }
 .mkey span { display: inline-flex; align-items: center; gap: 6px; }
-.sw { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-.sw.ok { background: var(--data); }
-.sw.no { background: var(--ask); }
-.sw.now { background: var(--move); }
+.st { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.st.ok { background: var(--data); }
+.st.no { background: var(--ask); }
+.st.now { background: var(--move); }
 /* The family is a count beside the wire's colours, because a person and a bond
  * have no place on a line of years (R-0326). */
 .mkey .mcount { color: var(--faint); }
@@ -2632,7 +2643,7 @@ button { font-family: inherit; }
 .mband .mkey { flex: 0 1 auto; gap: 2px 5px; font-size: 11px; }
 .mband .mkey span { white-space: nowrap; gap: 4px; }
 .mband .mkey span + span::before { margin-right: 5px; }
-.mband .sw { width: 8px; height: 8px; }
+.mband .st { width: 8px; height: 8px; }
 .mband .sortbar { flex: none; gap: 5px; padding: 0; border: none; background: none; }
 .mband .seg { padding: 3px 7px; font-size: 11px; }
 /* Which order the list is read in (R-0316). */

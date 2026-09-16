@@ -529,6 +529,13 @@ export class Picture {
       return;
     }
     if (this.level !== Level.Board) {
+      // one step at a time: a picked moment is put down first, and only the
+      // next tap closes the cluster it sits in
+      if (this.selected !== null && this.opened()) {
+        this.selected = null;
+        this.render();
+        return;
+      }
       this.dismiss();
       return;
     }
