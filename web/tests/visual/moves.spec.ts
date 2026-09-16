@@ -176,9 +176,9 @@ test.describe("what a chip does", () => {
 
   test("what the coach named stays lit on the picture", async ({ page }) => {
     await page.goto("/personal/");
-    await expect(page.locator(".ss")).toBeVisible();
+    await expect(page.locator("#view .ss")).toBeVisible();
     await page.waitForTimeout(500);
-    await expect(page.locator(".ss-t.on").first()).toBeVisible();
+    await expect(page.locator("#view .ss-t.on").first()).toBeVisible();
     await expect(page.locator(".pic")).toHaveScreenshot("spotlight-at-rest.png");
   });
 });

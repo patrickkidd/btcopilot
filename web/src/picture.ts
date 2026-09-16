@@ -42,6 +42,12 @@ import {
   type View,
 } from "./types";
 
+const YEAR_W = 60;
+/** The year sits centred under its dot, but never past the picture's edge: a
+ * dot at either end keeps its year inside the box. */
+const yearLeft = (x: number, width: number): string =>
+  Math.max(0, Math.min(width - YEAR_W, x - YEAR_W / 2)).toFixed(1);
+
 /** The ratified hold: 1000ms after each move before the prose continues. */
 const HOLD_MS = 1000;
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -845,8 +851,8 @@ export class Picture {
       const mark = marks.find((m) => m.event.id === this.selected) as Mark;
       words =
         laid.text +
-        `<div class="ss-yr on" style="left:${(mark.x - 30).toFixed(1)}px;` +
-        `top:${YEAR_TOP}px;width:60px;text-align:center">${esc(this.yearOf(mark.event))}</div>`;
+        `<div class="ss-yr on" style="left:${yearLeft(mark.x, width)}px;` +
+        `top:${YEAR_TOP}px;width:${YEAR_W}px;text-align:center">${esc(this.yearOf(mark.event))}</div>`;
     }
 
     // A cluster's target goes down last so it wins where a loose moment's
@@ -1118,8 +1124,8 @@ export class Picture {
     // mockup, A).
     const picked = marks.find((m) => m.event.id === this.selected);
     const html = picked
-      ? `<div class="ss-yr on" style="left:${(picked.x - 30).toFixed(1)}px;` +
-        `top:${YEAR_TOP}px;width:60px;text-align:center">` +
+      ? `<div class="ss-yr on" style="left:${yearLeft(picked.x, width)}px;` +
+        `top:${YEAR_TOP}px;width:${YEAR_W}px;text-align:center">` +
         `${esc(this.yearOf(picked.event))}</div>`
       : "";
 

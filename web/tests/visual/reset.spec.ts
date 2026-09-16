@@ -13,7 +13,7 @@ import { stateFor } from "./setup";
 
 const settle = async (page: Page) => {
   await page.goto("/personal/");
-  await expect(page.locator(".ss")).toBeVisible();
+  await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(500);
 };
 
@@ -28,7 +28,7 @@ const openCluster = async (page: Page) => {
 
 const pickMoment = async (page: Page) => {
   await page.locator('.ss-hit[data-target="zone"]').first().click();
-  await expect(page.locator(".ss-t.on").first()).toBeVisible();
+  await expect(page.locator("#view .ss-t.on").first()).toBeVisible();
 };
 
 test.describe("putting the picture down", () => {
@@ -40,10 +40,10 @@ test.describe("putting the picture down", () => {
     await pickMoment(page);
 
     // the far right of the picture, clear of every moment and every label
-    const box = (await page.locator(".ss").boundingBox())!;
+    const box = (await page.locator("#view .ss").boundingBox())!;
     await page.mouse.click(box.x + box.width - 4, box.y + box.height - 4);
 
-    await expect(page.locator(".ss-t.on")).toHaveCount(0);
+    await expect(page.locator("#view .ss-t.on")).toHaveCount(0);
     await expect(resting(page).first()).toBeVisible();
   });
 
@@ -54,8 +54,8 @@ test.describe("putting the picture down", () => {
 
     // from the moment picked back to the cluster it is in
     await page.locator("#crumb").click();
-    await expect(page.locator(".ss-yr.on")).toHaveCount(0);
-    await expect(page.locator(".ss-t.on").first()).toHaveText("Leaving and losing");
+    await expect(page.locator("#view .ss-yr.on")).toHaveCount(0);
+    await expect(page.locator("#view .ss-t.on").first()).toHaveText("Leaving and losing");
 
     // and from the cluster back to all of them
     await page.locator("#crumb").click();
@@ -67,7 +67,7 @@ test.describe("putting the picture down", () => {
 /** The labels sit under the band's tap target, so a tap on one is a press at
  * its own place on the picture. */
 const tapWords = async (page: Page, index = 0) => {
-  const label = page.locator(".ss-t.on").nth(index);
+  const label = page.locator("#view .ss-t.on").nth(index);
   const box = (await label.boundingBox())!;
   await page.mouse.click(box.x + Math.min(40, box.width / 2), box.y + box.height / 2);
 };
@@ -78,7 +78,7 @@ test.describe("a tap on the words of the moment picked", () => {
   /** Pick a moment, so the band carries its words rather than the cluster's. */
   const pickOne = async (page: Page) => {
     await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator(".ss-yr.on")).toHaveCount(1);
+    await expect(page.locator("#view .ss-yr.on")).toHaveCount(1);
   };
 
   test("opens its editor", async ({ page }) => {
@@ -95,7 +95,7 @@ test.describe("a tap on the words of the moment picked", () => {
     await pickOne(page);
     // the same dot again: still picked, and the thread has not moved
     await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator(".ss-yr.on")).toHaveCount(1);
+    await expect(page.locator("#view .ss-yr.on")).toHaveCount(1);
     await expect(page.locator(".bub.traced")).toHaveCount(0);
   });
 });

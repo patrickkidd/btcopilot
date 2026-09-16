@@ -11,7 +11,7 @@ import { stateFor } from "./setup";
 
 const settle = async (page: Page) => {
   await page.goto("/personal/");
-  await expect(page.locator(".ss")).toBeVisible();
+  await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(400);
 };
 
@@ -34,7 +34,7 @@ const fromTheWire = async (page: Page) => {
     await page.waitForTimeout(400);
   }
   await page.locator("#cap-play").click();
-  await expect(page.locator(".ss.board")).toBeVisible();
+  await expect(page.locator("#view .ss.board")).toBeVisible();
   await page.waitForTimeout(800);
 };
 
@@ -58,7 +58,7 @@ test.describe("the board opened from the coach's words", () => {
     await settle(page);
     // the third chip of the walk, which opens the board on the third move
     await page.locator(".bub .chip.data").nth(2).click();
-    await expect(page.locator(".ss.board")).toBeVisible();
+    await expect(page.locator("#view .ss.board")).toBeVisible();
     await page.waitForTimeout(800);
     expect(await controls(page)).toEqual([
       { words: "◀", dead: false },

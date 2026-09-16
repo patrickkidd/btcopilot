@@ -16,7 +16,7 @@ import { stateFor, steady } from "./setup";
 
 const settle = async (page: Page) => {
   await page.goto("/personal/");
-  await expect(page.locator(".ss")).toBeVisible();
+  await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(400);
 };
 
@@ -36,7 +36,7 @@ const enter = async (page: Page) => {
   await pickCluster(page);
   await page.locator("#cap-play").click();
   // the way in opens the board itself now, with no coach turn behind it
-  await expect(page.locator(".ss.board")).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator("#view .ss.board")).toBeVisible({ timeout: 30_000 });
   // past the .6s zoom, so the board is settled rather than mid-flight
   await page.waitForTimeout(800);
 };
@@ -106,7 +106,7 @@ test.describe("the moves board", () => {
     await enter(page);
     await expect(page.locator('[data-target="back"]')).toHaveCount(0);
     await page.locator("#up").click();
-    await expect(page.locator(".ss.board")).toHaveCount(0);
+    await expect(page.locator("#view .ss.board")).toHaveCount(0);
     // past the .25s height transition, or the box is read mid-flight
     await page.waitForTimeout(500);
     const after = await picture(page).boundingBox();

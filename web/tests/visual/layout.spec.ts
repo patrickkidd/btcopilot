@@ -9,7 +9,7 @@ import { stateFor } from "./setup";
 
 const settle = async (page: Page) => {
   await page.goto("/personal/");
-  await expect(page.locator(".ss")).toBeVisible();
+  await expect(page.locator("#view .ss")).toBeVisible();
   // A bubble still typing itself out keeps growing, and the first-run greeting
   // starts a moment after load, so waiting on a class is racy. Wait instead
   // until the thread stops changing shape: that is the page at rest, whatever
@@ -89,7 +89,7 @@ test.describe("nothing moves when a chip is tapped", () => {
     await settle(page);
     const before = await frame(page);
     await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator(".ss-t.on").first()).toBeVisible();
+    await expect(page.locator("#view .ss-t.on").first()).toBeVisible();
     const after = await frame(page);
 
     expect(after.picture).toEqual(before.picture);
@@ -333,7 +333,7 @@ test.describe("the moves board fills the room it takes", () => {
   test("no empty band under the drawing or the controls", async ({ page }) => {
     await settle(page);
     await page.locator("#cap-play").click();
-    await expect(page.locator(".ss.board")).toBeVisible();
+    await expect(page.locator("#view .ss.board")).toBeVisible();
     await page.waitForTimeout(600);
 
     const fit = await page.evaluate(() => {

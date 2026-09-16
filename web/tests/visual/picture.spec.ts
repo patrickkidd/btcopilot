@@ -10,7 +10,7 @@ import { stateFor, steady } from "./setup";
 
 const settle = async (page: import("@playwright/test").Page) => {
   await page.goto("/personal/");
-  await expect(page.locator(".ss")).toBeVisible();
+  await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(400);
 };
 
@@ -59,7 +59,7 @@ test.describe("a tap on the wire", () => {
     await settle(page);
     await openCluster(page);
     await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator(".ss-t.on").first()).toBeVisible();
+    await expect(page.locator("#view .ss-t.on").first()).toBeVisible();
     await expect(picture(page)).toHaveScreenshot("tap-moment.png", steady(page));
   });
 

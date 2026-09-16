@@ -8,7 +8,7 @@ import { stateFor } from "./setup";
 
 const settle = async (page: Page) => {
   await page.goto("/personal/");
-  await expect(page.locator(".ss")).toBeVisible();
+  await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(500);
 };
 
@@ -120,9 +120,9 @@ test.describe("the picture with one cluster open", () => {
     await settle(page);
     await openCluster(page);
     await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator(".ss-t.on").first()).toBeVisible();
+    await expect(page.locator("#view .ss-t.on").first()).toBeVisible();
 
-    const label = page.locator(".ss-t.on").first();
+    const label = page.locator("#view .ss-t.on").first();
     const box = (await label.boundingBox())!;
     await page.mouse.click(box.x + 30, box.y + box.height / 2);
 

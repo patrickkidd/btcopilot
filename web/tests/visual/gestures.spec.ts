@@ -8,7 +8,7 @@ import { stateFor } from "./setup";
 
 const settle = async (page: Page) => {
   await page.goto("/personal/");
-  await expect(page.locator(".ss")).toBeVisible();
+  await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(600);
 };
 
@@ -61,7 +61,7 @@ test.describe("a session row's own actions", () => {
   // carries is still there for the play-by-play spec.
   test("Delete removes the session and the record survives it", async ({ page }) => {
     await settle(page);
-    const moments = await page.locator(".ss .dot").count();
+    const moments = await page.locator("#view .ss .dot").count();
     await openSheet(page);
     const rows = page.locator(".fs-body .row");
     const before = await rows.count();
@@ -73,9 +73,9 @@ test.describe("a session row's own actions", () => {
     await rows.first().locator(".fs-act.del").click();
     await expect(rows).toHaveCount(before);
     await page.reload();
-    await expect(page.locator(".ss")).toBeVisible();
+    await expect(page.locator("#view .ss")).toBeVisible();
     await page.waitForTimeout(600);
-    expect(await page.locator(".ss .dot").count()).toBe(moments);
+    expect(await page.locator("#view .ss .dot").count()).toBe(moments);
   });
 });
 
@@ -84,14 +84,14 @@ test.describe("a tap on a message's own words", () => {
 
   test("lights what that message named, and costs no turn", async ({ page }) => {
     await page.goto("/personal/");
-    await expect(page.locator(".ss")).toBeVisible();
+    await expect(page.locator("#view .ss")).toBeVisible();
     await page.waitForTimeout(600);
     const bubble = page.locator(".bub.coach").last();
     const before = (await page.locator(".pic").boundingBox())!;
     await bubble.click({ position: { x: 6, y: 6 } });
     await page.waitForTimeout(300);
     // words appear on the picture for what the message named
-    expect(await page.locator(".ss-t").count()).toBeGreaterThan(0);
+    expect(await page.locator("#view .ss-t").count()).toBeGreaterThan(0);
     // nothing entered the composer, and nothing above the chat moved
     expect(await page.locator("#composer").innerText()).toBe("");
     const after = (await page.locator(".pic").boundingBox())!;
@@ -100,10 +100,10 @@ test.describe("a tap on a message's own words", () => {
 
   test("never writes more than three rows of words", async ({ page }) => {
     await page.goto("/personal/");
-    await expect(page.locator(".ss")).toBeVisible();
+    await expect(page.locator("#view .ss")).toBeVisible();
     await page.waitForTimeout(600);
     await page.locator(".bub.coach").last().click({ position: { x: 6, y: 6 } });
     await page.waitForTimeout(300);
-    expect(await page.locator(".ss-t").count()).toBeLessThanOrEqual(3);
+    expect(await page.locator("#view .ss-t").count()).toBeLessThanOrEqual(3);
   });
 });

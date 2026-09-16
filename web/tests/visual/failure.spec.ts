@@ -8,7 +8,7 @@ import { stateFor } from "./setup";
 
 const settle = async (page: Page) => {
   await page.goto("/personal/");
-  await expect(page.locator(".ss")).toBeVisible();
+  await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(400);
 };
 
@@ -117,11 +117,11 @@ test.describe("an explain that does not go through", () => {
       route.fulfill({ status: 500, body: "no" }),
     );
     await page.locator("#cap-play").click();
-    await expect(page.locator(".ss.board")).toBeVisible();
+    await expect(page.locator("#view .ss.board")).toBeVisible();
 
     await page.locator('.pctl [data-target="explain"]').click();
     await expect(warning(page)).toHaveText(/server broke/);
-    await expect(page.locator(".ss.board")).toBeVisible();
+    await expect(page.locator("#view .ss.board")).toBeVisible();
     // and the control is live again, so it can be asked a second time
     await expect(page.locator('.pctl [data-target="explain"]')).toBeEnabled();
   });

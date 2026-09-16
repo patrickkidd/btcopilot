@@ -15,8 +15,14 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 WEB = REPO / "web"
-WORKSPACE = next(p for p in REPO.parents if (p / ".venv").is_dir())
-PYTEST = ["uv", "run", "--project", str(WORKSPACE), "python", "-m", "pytest", "-q"]
+# On a developer's Mac the venv is the uv workspace above the repo; on a runner
+# the package is installed into the interpreter running this script.
+WORKSPACE = next((p for p in REPO.parents if (p / ".venv").is_dir()), None)
+PYTEST = (
+    ["uv", "run", "--project", str(WORKSPACE), "python", "-m", "pytest", "-q"]
+    if WORKSPACE
+    else [sys.executable, "-m", "pytest", "-q"]
+)
 
 
 class Suite(Enum):

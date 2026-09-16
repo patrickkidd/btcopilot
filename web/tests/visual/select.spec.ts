@@ -7,7 +7,7 @@ import { stateFor } from "./setup";
 
 const settle = async (page: Page) => {
   await page.goto("/personal/");
-  await expect(page.locator(".ss")).toBeVisible();
+  await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(500);
 };
 
@@ -43,7 +43,7 @@ test.describe("what the app says can be taken away", () => {
   test("the words under the picture select", async ({ page }) => {
     await settle(page);
     await page.locator("#cap-play").click();
-    await expect(page.locator(".ss.board")).toBeVisible();
+    await expect(page.locator("#view .ss.board")).toBeVisible();
     await page.waitForTimeout(800);
     expect((await dragAcross(page, ".bcap")).trim()).not.toBe("");
   });
@@ -84,7 +84,7 @@ test.describe("a label that runs onto a second line", () => {
     if (await box.isVisible().catch(() => false)) await box.click();
     await page.locator('.ss-hit[data-target="zone"]').first().click();
     await page.waitForTimeout(400);
-    const rows = page.locator(".ss-t");
+    const rows = page.locator("#view .ss-t");
     await expect(rows).toHaveCount(2);
 
     for (const row of [0, 1]) {

@@ -7,7 +7,7 @@ import { stateFor } from "./setup";
 
 const settle = async (page: Page) => {
   await page.goto("/personal/");
-  await expect(page.locator(".ss")).toBeVisible();
+  await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(500);
 };
 
@@ -65,8 +65,8 @@ test.describe("what the coach did, one line at a time", () => {
     // the line the coach's work is reported in
     await expect(page.locator(".bub.coach .did").last()).toHaveText(/Added/);
     // and the moment it made is the one the picture is now writing out
-    await expect(page.locator(".ss-t.on").first()).toBeVisible();
-    await expect(page.locator(".ss-t.on").first()).toContainText("distance");
+    await expect(page.locator("#view .ss-t.on").first()).toBeVisible();
+    await expect(page.locator("#view .ss-t.on").first()).toContainText("distance");
   });
 });
 
@@ -107,7 +107,7 @@ test.describe("someone the coach has just put in the record", () => {
     );
     // people are drawn on the board, so the board is what is on screen
     await page.locator("#cap-play").click();
-    await expect(page.locator(".ss.board")).toBeVisible();
+    await expect(page.locator("#view .ss.board")).toBeVisible();
     await page.waitForTimeout(800);
 
     await page.locator("#composer").fill("My mum is Ada.");
