@@ -96,7 +96,20 @@ jobs:
         python -c "import btcopilot.tests; print(btcopilot.tests)"
 
     # The suite reads files that live beside the package in a checkout (bin/t,
-    # the chain's ini, the skill file, git), so it runs the way CI runs it.
+    # the chain's ini, the skill file, git) and serves the built browser app,
+    # so it runs the way CI runs it.
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: npm
+        cache-dependency-path: web/package-lock.json
+
+    - name: Build the chat web bundle
+      run: |
+        npm --prefix web ci
+        npm --prefix web run build
+
     - name: Test with pytest
       run: |
         pip install -e .[app,test]
