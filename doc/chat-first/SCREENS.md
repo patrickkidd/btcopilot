@@ -6,7 +6,7 @@ behaviour, tagged `[built]` if it is in the app today, `[drawn]` if it is approv
 but not built, and `[open]` if it is a choice Patrick has not made yet. It is rewritten as
 decisions land; the exact sizes and colours live in the internal interface spec, not here.
 
-Updated: 2026-09-14
+Updated: 2026-09-15
 
 ---
 
@@ -19,6 +19,7 @@ What it is for: getting into the app without a password.
 - You get an emailed link and tapping it signs you in, so there is no password to make or remember. [built]
 - Signing in with an emailed code also creates the account, so there is no separate sign-up step. [built]
 - A sign-in lasts about six months, so you rarely sign in twice on the same phone. [built]
+- A sign-in is never thrown away early; a session older than the other apps' limit is still read, so you are not signed out in the middle of what you are doing. [built] {R-0337}
 - After the first sign-in the app offers to let you use Face ID or a fingerprint instead, and asks only once per phone. [built]
 - If you say no to Face ID it waits a month before offering again. [built]
 - On a phone the app offers, once, to add itself to your home screen, and shows the exact button to tap. [built]
@@ -274,6 +275,8 @@ What it is for: your past conversations.
 
 @frame built#f17 | Your name and address, the coach and appearance settings, your records and plan, and signing out.
 
+- The button that opens the account page shows its icon. [drawn] {R-0346}
+
 What it is for: you, your families, your plan, and signing out.
 
 - Your account is reached by the mark at the top right of the title row. [built]
@@ -423,6 +426,7 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 - One control nudges the people who are not done. [drawn] {R-0258}
 - Taking a conversation off the agenda is one tap, before anyone has started. [drawn]
 - The button that runs the meeting is the app's filled primary button, reads "run the meeting", and has the same room after it as before it. [built] {R-0341}
+- Only an administrator sees the controls on this screen; a coder who reaches it sees the work but not the way to move it. [drawn] {R-0346}
 - A ratified conversation keeps a row with a way in to the result; the row says where the cut stops and the day the room ratified it, so two cuts of one conversation read differently. [built] {R-0275}
 - Every coder's single task card is derived from that screen. [drawn] {R-0265}
 - Asking a coder to correct the coach's pass instead of coding from scratch was dropped, because coding is blind. [drawn] {R-0250}
@@ -447,6 +451,10 @@ What it is for: deciding as much as possible on your own phone, so the meeting o
 - You may say why you voted as you did, and you may skip it. [drawn]
 - An item you skip stays on your list until the ballot closes. [drawn]
 - You can open the transcript at the line in question from the ballot. [drawn]
+- Opening the transcript outlines the statement the version was written from, the way the coding screen does. [built] {R-0337}
+- A version you have chosen is lit without a box drawn round its family picture. [built] {R-0337}
+- "None" is the last choice in the relationship field, as it is for the three variables. [built] {R-0337}
+- A prev button sits beside next, so a dot that moved you on can be walked back. [built] {R-0337}
 - The transcript line and the session it came from stay attached to the event and are not edited here. [drawn]
 - Names are hidden whenever anyone is voting; only the meeting shows who coded what. [drawn] {R-0272}
 - The vote opens when Patrick opens it, never at a coder count. [drawn] {R-0273}
@@ -492,6 +500,9 @@ What it is for: closing what the vote could not, and ratifying the record.
 - People and bonds are in the meeting's list, read before the events, each version its own row with its own drawing. [built] {R-0326}
 - Tapping a version's row keeps that version, and the kept row lights the way a chosen opinion lights on the ballot; tapping another version changes the choice, and tapping the kept one does nothing. [built] {R-0339}
 - Under the versions are the two other choices, "change…" and "mark unresolved". [built] {R-0339}
+- A version row carries the initials of the coders who wrote it and no count. [built] {R-0342}
+- Structure cards are laid out like the event cards: the version rows and the family picture line up the same way. [built] {R-0338}
+- Work on the screens goes on while the meeting screen is being read; a page reloading under you is accepted. [built] {R-0338}
 - They are not on the wire: the wire stays one dot per event, and how many people and bonds the cut holds is a count on the header's line of figures. [built] {R-0326, R-0340}
 - One timeline above the list shows agreement and disagreement at a glance: one dot per event, teal where the vote agreed, amber where it did not, with a small count beside a disputed dot. [built] {R-0277, R-0278}
 
@@ -509,6 +520,9 @@ What it is for: what the meeting produced, with nothing left to choose.
 - One more count says how many people and bonds the room ratified and how many it left open; an unresolved person is the one that matters most, because every event about them stands on it. [built] {R-0326}
 - It shows how the coach's own pass scored against the agreed record. [built] {R-0242}
 - When the coach never coded that conversation, the screen says so in both places rather than leaving the score and the differences blank. [built]
+- The summary at the top scrolls away with the page rather than pinning, and reads as a title, one labelled figures line, then the sections, not a block of typewriter output. [built] {R-0344}
+- The result can be opened again after you leave it: from a coder's finished tasks and from the agenda for a ratified conversation. [built] {R-0343}
+- A coder's finished tasks look tappable and open their meeting's result; they are never greyed like rows you cannot use. [built] {R-0344}
 - The word for the agreed record is ratified; what the coach proposes is a proposal and is never called gold. [drawn] {R-0249}
 - The AI writes the guideline changes itself out of what the room decided, and they are live; there is nothing to choose on this screen. [built] {R-0259, R-0310}
 - Each new rule shows the decided item it came from and the margin it was decided by. [built] {R-0259}
@@ -517,6 +531,8 @@ What it is for: what the meeting produced, with nothing left to choose.
 - Every vote, decision and ratification is a row in the app's own tables with who did it and when. [drawn] {R-0262}
 - How last year's coding material is carried over is a choice Patrick has not made; the plan under consideration keeps the rules and the agreement tables as rows and the written deliberations as text. [open] {R-0262}
 - Every rule the AI wrote carries a "flag for next meeting" link, and flagged rules go on the next meeting's agenda by themselves; an event the room left unresolved stays unresolved as data and is never brought back to a later meeting; who has not finished a coding is the coder list's own line, not the agenda's. [built] {R-0276, R-0308, R-0312}
+- Only an administrator sees the "flag for next meeting" link, and tapping it again takes the flag off; anyone else sees a flagged rule said as text rather than a link. [drawn] {R-0346}
+- Only an administrator puts a conversation on the agenda, moves the cut, opens the vote or runs the meeting; a coder never does. [drawn] {R-0346}
 - The meeting's results are rows in the database — codings, votes, decisions, rules with the decision each came from — so everything is traceable; the coding guidelines are the one written output. [drawn] {R-0275}
 - Anyone can read the current coding guidelines inside the app from an (i) button at the top of the coding screen. [drawn] {R-0275, R-0278}
 - The coding guidelines file in the code is generated from the rules the app holds and is never edited by hand. [drawn] {R-0275}

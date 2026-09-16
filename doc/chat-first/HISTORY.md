@@ -881,8 +881,8 @@ committed compose file holds every live key in plain text and the TLS private ke
 production has no automated database backup. A process rule was added after his correction:
 never repeat an artifact's content in the console.
 
-## 2026-09-12 to 14 — the review loop built and walked, the pivot to people and family structure, the platform built on its own database, and a learning loop [T-3, T-2, T-5, T-9, T-11, T-12]
-<!-- session: session_01Y2tN76fgnoJ9pFbjbieQkB · flushed: 2026-09-14T09:00:00Z -->
+## 2026-09-12 to 15 — the review loop built and walked, the pivot to people and family structure, the platform built on its own database, a learning loop, and Patrick's own walk of the first six sections [T-3, T-2, T-5, T-9, T-11, T-12]
+<!-- session: session_01Y2tN76fgnoJ9pFbjbieQkB · flushed: 2026-09-15T08:00:00Z -->
 
 **The overnight build of the review loop.** Five Opus builders in sequence under a Sonnet
 auditor, then an independent Opus verifier and an Opus fixer, all in the one btcopilot
@@ -1000,3 +1000,67 @@ the year rather than gaining a month. TEST_2026-09-14.md is his walk: the whole 
 dependency order, on the new sandbox, with three reusable sign-in links and every step waiting
 for what it asked for rather than a fixed count. TEST_2026-09-12.md is archived, superseded by
 it.
+
+**Patrick walked sections one to six himself, 14 and 15 September, and ruled as he went**
+[R-0337..R-0346]. The first thing he hit was being signed out mid-walk: a session older than
+the training app's eight hours was thrown away, and he ruled that sessions are never dropped
+fast, because no gold is being protected yet and logins are not wanted [R-0337]. He also said
+at first that no agent may edit the front end while he is walking, since every save reloads his
+page, and then withdrew it the same day — a reload is acceptable, so fixes land as they are
+made rather than queueing [R-0338].
+
+On the ballot he ruled there is no box around a selected family fragment, that "open in
+transcript" outlines the statement the way the coding screen does, that "none" is the last
+choice in the relationship field as it is for the three variables, and that a prev button sits
+beside next once a dot can take you back [R-0337]. On the walk document itself: every section
+carries the link it needs rather than sending him back, every click is written as its own step,
+and the action verb — tap, type, scroll — is set in a different colour [R-0337].
+
+The meeting screen took most of the rulings. A tap on a dot travels the list to the item with an
+animated scroll, because iOS Safari does not honour the browser's own smooth scrolling from
+every tap; the meeting title and its figures scroll away while the agreement wire, its legend and
+the sort control stay at the top [R-0338, R-0340]. Structure cards are laid out like the event
+cards, version rows and fragment aligned [R-0338]. Keeping a version is the ballot's language —
+a tap on the version keeps it and the row lights, with no separate keep button — and the version
+the room kept is stored on the item, so it lights on every later reading [R-0339]. Version rows
+carry the coders' initials only, never a count [R-0342]. A decided item never disappears or
+moves: it keeps the seat the sort gave it, collapses in place the way agreed items do, and the
+choice can be changed [R-0341]. On the agenda, the way into the meeting is a filled primary
+button reading exactly "run the meeting" [R-0341], and a ratified conversation offers its result
+from the agenda, ratified rows told apart by their date.
+
+He then found he could not get back to a result once he had left it, which became a process rule
+as well as a screen one: a walk document is driven literally, step by step, in a real browser by
+an independent agent on the same fixture accounts before it is handed to him, and every step
+that does not match the screen is corrected first [R-0343]. The result screen is reachable again
+from the task card's done list and from the agenda. Its summary scrolls with the page rather than
+pinning, and is a title, one labelled figures line and then the sections, not a block of
+monospaced output; a coder's finished tasks look tappable and open their meeting result
+[R-0344]. A coach pass that was never coded is said in words rather than shown as a bare figure.
+
+On the record he ruled that the list button inside the picture opens the events and people list
+sliding in full screen over the chat and the picture, the way the sessions sheet slides in but
+full height, not an overlay that leaves the chat showing; and that the person editor never says
+"bond" — the section is the person's biological parents, picked as a mother and a father by
+name or added, worded "born to", with the pair-bond staying a data-model fact behind it, and the
+rows beneath reading "Partners" [R-0345]. Adoptive and foster parents, possibly several, he
+named as a known open design question rather than deciding it.
+
+The last ruling of the session was about who controls the work [R-0346]: only an admin may flag
+a ratified guideline for the next meeting and tapping the flag again unflags it, a non-admin sees
+a flagged guideline as text rather than a link, and only an admin puts a cut on the agenda, moves
+it, opens the vote or runs the meeting — never a coder. The account button shows its icon. That
+one was still being built when the session stopped; nothing of it has landed on the branch.
+
+Two design questions were opened and not closed. The event model review wrote down his three
+complaints with the timeline shape the chat app inherited from the desktop app — a move is filed
+as the couple's event and an ordinary event like finishing an apprenticeship has nowhere to go; a
+birth is the mother's event with the child in a side field; and one actor field carries four
+different role shapes — proposed a normalised shape, and ends in six rulings he has not made,
+including whether the change happens now or after the beta. Separately, a page compares a
+person's name written above the shape against below it, which he has not ruled on either.
+Fixture realism was repaired again on the sandbox so the screens read as a real case, on Lena's
+family and the Ortega case.
+
+Walks seven, eight and nine were driven end to end in a browser by an independent agent and their
+steps rewritten to what the screen actually shows, but Patrick has not walked them.

@@ -35,6 +35,11 @@ the scout's brief, and never touches this project's process files.
 **Counts, kept here.** Scout runs since the last loop review: 0. Predictions with a measured
 outcome: 0.
 
+**2026-09-15 — pending: extension.** The flush of this build did not run the scout. The build did
+hand Patrick a walk, so the run is due, but the Chrome extension is not connected and the brief
+says to wait for the source rather than skip it. The run stands owed until the extension is
+connected.
+
 **The fallback.** Two cloud routines exist, both disabled, to cover a stretch where no build
 happens and so no flush runs — a weekly scout and a monthly loop review. They are turned on
 deliberately by Patrick and are not the normal path. Neither skill creates or enables a

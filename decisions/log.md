@@ -1489,3 +1489,49 @@ every fourth scout run or two measured outcomes. Kill rules: fewer than one prop
 merged after eight runs retires the scout; a merged change that does not move its number
 within two builds stops that kind of proposal. Two cloud routines exist as a fallback and
 stay disabled.
+
+## 2026-09-15: A walk is driven in a real browser before Patrick is handed it
+
+An independent agent walks the document literally, step by step, on the same fixture accounts,
+and every step that does not match what the screen shows is corrected first. The document carries
+its sign-in link in every section, puts one action in a step, and colours the action verb.
+Sessions are never dropped fast, so he is not signed out mid-walk, and agents may keep editing
+the front end while he walks because a page reload is acceptable. [R-0337, R-0338, R-0343]
+
+## 2026-09-15: The meeting speaks the ballot's language, and a decision stays where it sat
+
+Tapping a version keeps it and the row lights; the kept version is stored on the item so it
+lights on every later reading; version rows carry the coders' initials and no count; a decided
+item keeps the seat the sort gave it and collapses in place rather than moving or disappearing.
+The agreement wire, its legend and the sort control stay at the top while the title and figures
+scroll away, and a dot tap travels the list with an animated scroll because iOS Safari does not
+honour the browser's own smooth scrolling. [R-0338, R-0339, R-0340, R-0341, R-0342]
+
+## 2026-09-15: A meeting result is reachable again, and reads as words
+
+The result screen is opened again from a coder's done list and from the agenda for a ratified
+conversation, ratified rows told apart by their date. Its summary scrolls with the page under a
+title and one labelled figures line rather than pinning as monospaced output, and a coach pass
+that was never coded is said in words. [R-0343, R-0344]
+
+## 2026-09-15: The person editor says "born to", never "bond"
+
+The section is the person's biological parents, picked as a mother and a father by name or added,
+with the pair-bond staying a data-model fact behind it; the rows beneath read "Partners". The
+list button inside the picture opens the events and people list sliding in full screen over the
+chat and the picture. Adoptive and foster parents, possibly several, are a known open design
+question. [R-0345]
+
+## 2026-09-15: Only an admin controls the meeting and the guideline flags
+
+Only an admin flags a ratified guideline for the next meeting, tapping again unflags it, and a
+non-admin sees a flagged guideline as text rather than a link; only an admin puts a cut on the
+agenda, moves it, opens the vote or runs the meeting. Ruled and started, not landed. [R-0346]
+
+## 2026-09-15: The event model is written up and waits for six of his rulings
+
+Three complaints with the timeline shape inherited from the desktop app, a normalised shape, and
+six questions — whether an ordinary event is a named kind or no kind, whether a birth ever
+carries parents, whether "moved" keeps its own kind, whether a triangle's two positions are named
+or ordered, whether the three variables nest, and whether any of it changes now or after the
+beta. Nothing is built from it.

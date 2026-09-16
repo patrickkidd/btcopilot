@@ -37,9 +37,9 @@ unmeasured until the coding loop produces numbers.
 **Lives in:** btcopilot PR #136, fdserver PR #30; merge-risk review with the seven fixes
 landed: doc/chat-first/MERGE_REVIEW.md (fix commit 9f1707a); review log
 doc/chat-first/REVIEW_LOG.md; sandbox scripts /Users/patrick/worktrees/fd362-sandbox/.
-**Next action:** Patrick walks doc/chat-first/TEST_2026-09-14.md; then, on his word, the deploy
-work starts (T-11) and the three are invited.
-**Updated:** 2026-09-14.
+**Next action:** Patrick walks sections seven to nine of doc/chat-first/TEST_2026-09-14.md; then,
+on his word, the deploy work starts (T-11) and the three are invited.
+**Updated:** 2026-09-15.
 
 ## T-2 · The coach knows the clinical definitions, and we can measure it
 
@@ -76,9 +76,11 @@ harness once.
 ## T-3 · One app: Pro and Training as thin layers on the chat
 
 **Status:** the whole loop is built, including people and family structure, and stands on the
-chat app's own database on a fresh sandbox. An independent agent that read no builder's report
-walked every screen a browser can drive, in three browsers, and passed 671 of 683 checks
-(VERIFY_2026-09-14.md). Patrick's own walk is written and waiting: doc/chat-first/TEST_2026-09-14.md.
+chat app's own database on the beta3 sandbox. Patrick walked sections one to six himself on
+14 and 15 September and ruled ten times as he went; every one of those rulings is built except
+the last, R-0346, which was in flight when the session stopped. Sections seven, eight and nine
+of doc/chat-first/TEST_2026-09-14.md were driven step by step in a browser and corrected to the
+screen, but he has not walked them.
 **Decided:** one Vite app, features by licence, role and view; coding is documenting a case,
 Pro on desktop; training is auditor/admin features on top [R-0237]; never a new view where an
 existing surface can carry the addition [R-0243]; Pro adds cases, sessions with a recording
@@ -118,18 +120,47 @@ chat; the person editor gains "born to" and lists pair-bonds one per other perso
 ballot shows a family fragment per version; structure items stay off the meeting wire and are
 counted in the legend. The costs he weighs are technical and architectural complexity,
 inference cost and accuracy — never agent effort.
-**Open:** (1) [verify] Patrick has not walked this build; TEST_2026-09-14.md is nine walks in
-dependency order with three reusable sign-in links; (2) [ruling] two questions his walk raises:
-whether a professional signing in should land on their chat rather than anything from the
-review, and whether the ratify wait should move to a background worker the sandbox does not
-run; (3) [build] the catalogue for beta users still draws its built screens by hand rather than
-from captures of a running fixture sandbox [R-0279]; (4) [build] Pro "notes" has no mockup;
-(5) [build] the two-sided compare view folds into the ballot or the meeting screen; (6) [build]
-the old SARF coding page becomes a legacy link, deleted after re-coding [R-0238]; (7) [waiting]
-migrating last year's IRR material — 25 rules keyed to meeting number, six meetings'
-agreement tables of about 40–60 rows, six deliberation records in prose, six raw transcripts
-never migrated — needs his yes on the plan [R-0262, R-0273]; (8) [waiting] the interface calls
-still on the drawing page, none of which block the beta.
+**Ruled walking it himself, 2026-09-14/15, and built:** sessions are never dropped fast, so he
+is not signed out mid-walk [R-0337]; agents may edit the front end while he walks, because a page
+reload is acceptable [R-0338]; on the ballot, no box round a selected family fragment, the
+statement outlined in the transcript, "none" last in the relationship field, and a prev button
+beside next [R-0337]; the walk document carries its link in every section, one action per step,
+and the action verb in a different colour [R-0337]; on the meeting, a dot tap travels the list
+with an animated scroll, the title and figures scroll away while the wire, its legend and the
+sort control stay at the top [R-0338, R-0340], structure cards are laid out like event cards
+[R-0338], a tap on a version keeps it and the kept version is stored on the item so it lights on
+every later reading [R-0339], version rows carry initials only [R-0342], and a decided item keeps
+its seat and collapses in place [R-0341]; the agenda's way in is a filled button reading "run the
+meeting", and a ratified conversation offers its result, ratified rows told apart by date
+[R-0341]; the result screen is reachable again from the task card's done list and the agenda, its
+summary scrolls under a title and one labelled figures line, finished tasks look tappable, and a
+coach pass that was never coded is said in words [R-0343, R-0344]; the list button opens the
+events and people list full screen over the chat and the picture, and the person editor says
+"born to" with a mother and father picked by name and "Partners" beneath, never "bond" [R-0345].
+A walk document is now driven literally in a real browser by an independent agent before it is
+handed to him [R-0343].
+**Open:** (1) [verify] Patrick has walked sections one to six; seven, eight and nine are driven
+and corrected but he has not walked them; (2) [build] only an admin may flag a ratified guideline
+or control the agenda, the vote and the meeting, and the account button shows its icon [R-0346] —
+this was being built when the session stopped and nothing has landed; (3) [ruling] the event
+model: his three complaints with the inherited timeline shape are written up with a normalised
+shape and six questions he has not answered, the last of which is whether it changes now or after
+the beta (doc/chat-first/EVENT_MODEL.md, page
+https://claude.ai/code/artifact/d4dbc090-fbde-464c-bcdc-0cc31e1a5c53); (4) [ruling] whether a
+person's name is written above the shape or below it
+(https://claude.ai/code/artifact/2c391e04-6283-4590-b9ba-9e46910b5fab); (5) [ruling] adoptive and
+foster parents, possibly several on one person, are a known open design question [R-0345];
+(6) [ruling] two questions his earlier walk raised: whether a professional signing in should land
+on their chat rather than anything from the review, and whether the ratify wait should move to a
+background worker the sandbox does not run; (7) [build] the catalogue for beta users still draws
+its built screens by hand rather than from captures of a running fixture sandbox [R-0279];
+(8) [build] Pro "notes" has no mockup; (9) [build] the two-sided compare view folds into the
+ballot or the meeting screen; (10) [build] the old SARF coding page becomes a legacy link,
+deleted after re-coding [R-0238]; (11) [waiting] migrating last year's IRR material — 25 rules
+keyed to meeting number, six meetings' agreement tables of about 40–60 rows, six deliberation
+records in prose, six raw transcripts never migrated — needs his yes on the plan [R-0262,
+R-0273]; (12) [waiting] the interface calls still on the drawing page, none of which block the
+beta.
 **Lives in:** the spec sheet for beta users, doc/chat-first/SCREENS.md, rendered by
 bin/screenspage.py to https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba; the
 review screens https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9; the coding
@@ -137,9 +168,14 @@ page https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a; Pro's
 https://claude.ai/code/artifact/fdb8a5b5-d043-46f4-afea-700a886210a3; the fragment conventions
 doc/chat-first/FRAGMENT_CONVENTIONS.md and the gallery doc/chat-first/mockups/fragment.html;
 btcopilot/review/, web/src/, the walks in web/tests/walks/, the chat suite btcopilot/tests/chat
-run by bin/t; VERIFY_2026-09-14.md; TEST_2026-09-14.md.
-**Next action:** Patrick walks doc/chat-first/TEST_2026-09-14.md.
-**Updated:** 2026-09-14.
+run by bin/t; VERIFY_2026-09-14.md; TEST_2026-09-14.md; doc/chat-first/EVENT_MODEL.md and its
+page https://claude.ai/code/artifact/d4dbc090-fbde-464c-bcdc-0cc31e1a5c53; the names
+comparison https://claude.ai/code/artifact/2c391e04-6283-4590-b9ba-9e46910b5fab; the walk page
+https://claude.ai/code/artifact/ad9750a2-d38c-469c-b5af-5a143f7ab3ab.
+**Next action:** Patrick walks sections seven, eight and nine of
+doc/chat-first/TEST_2026-09-14.md, rules on the event model page and on the names comparison
+page, and says whether the deploy work may start.
+**Updated:** 2026-09-15.
 
 ## T-4 · Existing records and conversations in the new app; wipe and re-code
 
@@ -243,7 +279,12 @@ realistic, because filler hides what a screen shows [R-0307]; the corpus's own v
 not his, so it is said in plain words; an Opus-level auditor watches wall-clock time, that no
 suite is run too early or unfiltered, and that tests are derived from rulings [R-0331]; the
 chat app's tests are their own suite, filtered to the changed component and run whole once at
-the end [R-0332].
+the end [R-0332]. Added 2026-09-15: a walk document is driven literally, step by step, in a real
+browser by an independent agent on the same fixture accounts before it is handed to him, and
+every step that does not match the screen is corrected first [R-0343]; the document carries its
+sign-in link in every section, puts one action in a step, and colours the action verb [R-0337];
+agents may keep editing the front end while he walks, because a page reload is acceptable
+[R-0338].
 **Open:** none.
 **Lives in:** doc/chat-first/HOW_THIS_PROJECT_WORKS.md; doc/chat-first/TEST_STRATEGY.md;
 btcopilot/CLAUDE.md; .claude/skills/two-clocks/SKILL.md; bin/flushcheck.py; bin/t.
@@ -329,12 +370,12 @@ any build that handed him a walk, and the review after every fourth scout run or
 outcomes; two cloud routines exist as a fallback for weeks with no build and stay disabled
 [R-0336]. Kill rules: fewer than one proposal in six merged after eight runs retires the scout;
 a merged change that does not move its number within two builds stops that kind of proposal.
-**Open:** (1) [waiting] the first scout run has not happened: it reads a fixed list of accounts
-on X.com through the Chrome extension, and the extension is not connected in this session, so
-the run waits rather than skipping the source; (2) [verify] none of the four baseline numbers
+**Open:** (1) [waiting] the first scout run has still not happened: it reads a fixed list of
+accounts on X.com through the Chrome extension, the extension was not connected on 15 September
+either, and the run waits rather than skipping the source; (2) [verify] none of the four baseline numbers
 has been measured twice, so no prediction can yet be scored.
 **Lives in:** doc/chat-first/SCOUT.md (the ledger and the counts);
 .claude/skills/scout/SKILL.md; .claude/skills/loop-review/SKILL.md; the two disabled cloud
 routines.
 **Next action:** connect the Chrome extension, then the next flush after a walk runs the scout.
-**Updated:** 2026-09-14.
+**Updated:** 2026-09-15.

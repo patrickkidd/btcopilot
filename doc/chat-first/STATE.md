@@ -140,9 +140,45 @@ mismatch with the written spec — a second faint line under a name in the peopl
 a ruled behaviour the gate misread, and ten were walk-script artefacts. The list is the name
 alone again, and a year the coder gave only as a year reads back as the year.
 
-**Patrick's walk is written and waiting: doc/chat-first/TEST_2026-09-14.md** — the whole app by
-hand in dependency order, nine walks, three reusable sign-in links. The walk of 12 September is
-archived.
+**Patrick walked sections one to six himself, 14 and 15 September.** The walk is
+doc/chat-first/TEST_2026-09-14.md — the whole app by hand in dependency order, nine sections,
+four reusable sign-in links; the walk of 12 September is archived. Every step of sections six
+to nine was then driven literally in a real browser by an independent agent on the same fixture
+accounts and corrected to what the screen shows, which is now the rule before any walk is handed
+to him [R-0343]. He has not walked seven, eight or nine.
+
+Ten rulings came out of his walk [R-0337..R-0346] and all but the last are built. Sessions are
+never dropped fast, so he is not signed out mid-walk [R-0337]. Agents may keep editing the front
+end while he walks [R-0338]. On the ballot: no box round a selected family fragment, the
+statement outlined in the transcript, "none" last in the relationship field, a prev button beside
+next [R-0337]. On the meeting: a dot tap travels the list with an animated scroll; the title and
+figures scroll away while the wire, its legend and the sort control stay at the top [R-0338,
+R-0340]; structure cards are laid out like event cards [R-0338]; a tap on a version keeps it and
+the kept version is stored on the item, so it lights on every later reading [R-0339]; version
+rows carry initials only [R-0342]; a decided item keeps its seat and collapses in place [R-0341].
+On the agenda: a filled button reading "run the meeting", and a ratified conversation offers its
+result, ratified rows told apart by date [R-0341]. The result screen is reachable again from the
+task card's done list and from the agenda, its summary scrolls under a title and one labelled
+figures line, finished tasks look tappable, and a coach pass that was never coded is said in
+words [R-0343, R-0344]. The list button opens the events and people list full screen over the
+chat and the picture, and the person editor says "born to" with a mother and father picked by
+name and "Partners" beneath, never "bond" [R-0345]. The one not built is R-0346 — only an admin
+flags a ratified guideline or controls the agenda, the vote and the meeting, and the account
+button shows its icon — which was in flight when the session stopped; nothing of it has landed
+on the branch and one edit to the account button's mark is uncommitted in the worktree.
+
+**Two design questions are open and neither is decided.** doc/chat-first/EVENT_MODEL.md, with its
+page at https://claude.ai/code/artifact/d4dbc090-fbde-464c-bcdc-0cc31e1a5c53, writes down his
+three complaints with the timeline shape the chat app inherited from the desktop app — a move is
+filed as the couple's event and an ordinary event like finishing an apprenticeship has nowhere to
+go, a birth is the mother's event with the child in a side field, and one actor field carries
+four different role shapes — proposes a normalised shape, and ends in six questions for him,
+including whether it changes now or after the beta. Nothing is built from it. A second page
+compares a person's name written above the shape against below it:
+https://claude.ai/code/artifact/2c391e04-6283-4590-b9ba-9e46910b5fab. Adoptive and foster
+parents, possibly several on one person, he named as open rather than deciding [R-0345]. The
+sandbox fixtures were repaired again so the screens read as a real case, on Lena's family and
+the Ortega case.
 
 **Built 2026-09-11/12 on the same branch:** the review's tables
 (`review_cuts`, `review_codings`, `review_items`, `review_votes`, `review_rules`, one column
@@ -175,8 +211,7 @@ at phone size and Chromium at desktop; the 24 failures were fixed at the cause; 
 remain that are fixture or walk artefacts (VERIFY_2026-09-12.md). Suites: review and
 personal 495 passed, web units 58 passed (the ten stale ones rewritten), type check clean.
 Patrick's coding-screen eyeball on 2026-09-11 night: works; the bubbles were reshaped to his
-pick (C6). Next: Patrick walks `doc/chat-first/TEST_2026-09-12.md` (nine walks with their
-sign-in links) and rules on the three questions in T-3's Next action.
+pick (C6).
 
 **His own record is small**: seven events, and one cluster he made himself holding two events.
 It predates the three-event floor and is grandfathered; see Open issues.
