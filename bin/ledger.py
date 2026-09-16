@@ -65,10 +65,13 @@ def history() -> list[dict]:
 
 def rulings() -> list[dict]:
     out = []
-    path = FD / "doc" / "oracle" / "rulings.md"
+    path = HERE / "private" / "oracle" / "rulings.md"
     if not path.exists():
         return out
-    for row in path.read_text().splitlines():
+    plain = subprocess.run(
+        ["sops", "-d", str(path)], capture_output=True, text=True, check=True
+    ).stdout
+    for row in plain.splitlines():
         if not re.match(r"^R-\d{4} \|", row):
             continue
         cols = [c.strip() for c in row.split(" | ")]
@@ -88,7 +91,7 @@ def rulings() -> list[dict]:
             "title": text[:110],
             "text": text,
             "supersedes": [s for pair in succ for s in pair if s],
-            "source": "fdserver doc/oracle/rulings.md",
+            "source": "private/oracle/rulings.md",
         })
     return out
 
