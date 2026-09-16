@@ -1535,3 +1535,45 @@ six questions — whether an ordinary event is a named kind or no kind, whether 
 carries parents, whether "moved" keeps its own kind, whether a triangle's two positions are named
 or ordered, whether the three variables nest, and whether any of it changes now or after the
 beta. Nothing is built from it.
+
+## 2026-09-16: The beta starts from empty records, proved safe by a shape test
+
+People are invited by email onto empty records; no import of the old Pro database at cutover, and
+a per-diagram manual import later. Patrick would agree only if nothing would be lost by importing
+later, so a test stores a Pro-shaped record with relationship moves and targets, triangles, an
+emotion, a layer, intensity, colour, Qt dates and points, reads it back through the chat page with
+the sub-fields intact, returns it to Pro equal, and keeps the desktop-only fields after a hand
+edit. The comparison page is "Old Record, New Record". The data model document's triangle type was
+wrong (pairs) and is fixed to a list of person ids. [R-0355]
+
+## 2026-09-16: Claude creates the droplet and changes DNS, on his confirmation each time
+
+Patrick does not do those steps himself; Claude does them, and only after he says so for that
+specific step. [R-0353]
+
+## 2026-09-16: Pricing and plans wait for the first bill
+
+No plan or price is decided until the app runs in production and the first $20–40 bill shows what
+the usage costs. Nothing on the deploy path waits on this. [R-0354]
+
+## 2026-09-16: The app is served at familydiagram.com/app
+
+familydiagram.com otherwise keeps doing what the old box does today, redirecting to
+alaskafamilysystems.com/family-diagram, until a new product homepage exists later. Until the app's
+mount is renamed from /personal to /app, Caddy redirects /app to /personal/ — the rename is about
+13 places in the web sources and 70 in Python and tests, and is asked of him, not answered.
+[R-0356]
+
+## 2026-09-16: fdserver leaves this ticket; deployment lives in this repo
+
+Patrick closed the fdserver pull request unmerged. The compose file, Caddyfile, secrets template,
+runbook, release workflow and the desktop app's four update feeds are `deploy/chat/` here. The
+prompts and the rulings had already moved into this repo encrypted on 13 September; the
+deployment had been drafted in fdserver out of habit.
+
+## 2026-09-16: Two commands on the box are refused to sub-agents
+
+The permission rules refuse a sub-agent the command that rewrites the secret store's keys and the
+compose commands that pull and start the stack on the box, because those count as writing secrets
+and deploying to production; reads against the box are refused too. Both ran at the top level on
+Patrick's direct grant. A session that plans box work must plan for that.

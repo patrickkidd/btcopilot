@@ -20,30 +20,29 @@ record only.
 
 ## T-1 · Ship the personal app to the first beta users
 
-**Status:** ready for Patrick's review before merge. Deployment target changed 2026-09-13:
-the chat app gets its own droplet and the old server is frozen for Pro (see T-11), which
-supersedes the merge-first-on-production direction of 2026-09-10.
+**Status:** the code is ready for his review and the box is built; the beta waits on four keys,
+the migration chain on the box, and DNS.
 **Decided:** one server for Pro, training and the chat app; old Pro diagrams stay pickle and
 new rows are JSON in the same column [Oracle: R-0241]; the beta users are the app working
 group of three clinicians [R-0079]; sign-in is passwordless with Face ID on a capable phone;
-the sandbox is https at turin:8891 with a dev CA the phone trusts once.
+the sandbox is https at turin:8891 with a dev CA the phone trusts once. Added this session: the
+beta starts from empty records, invited by email, with no import of the old Pro database at
+cutover [R-0355]; the app is served at familydiagram.com/app [R-0356]; pricing and plans are
+deferred to the first $20–40 bill [R-0354].
 **Open:** (1) [ruling] his code review of the branch, and of the coach's prompt section, which
-is the first open item on the coach topic; (2) [build] continuous integration is red — ten web
-unit tests written before rounds 2–4, screenshot goldens recorded only on macOS, and nine older
-extraction tests that fail only when the whole backend suite runs in one process;
-(3) [verify] the app has never been opened on Android; (4) [verify] passkeys have never been
-tried on a real https domain; (5) [waiting] cluster quality on anyone else's record stays
-unmeasured until the coding loop produces numbers.
-**Lives in:** btcopilot PR #136, fdserver PR #30; merge-risk review with the seven fixes
-landed: doc/chat-first/MERGE_REVIEW.md (fix commit 9f1707a); review log
-doc/chat-first/REVIEW_LOG.md; sandbox scripts /Users/patrick/worktrees/fd362-sandbox/.
-**Next action:** the delete defect and the image are done and CI is green on the runner
-(2026-09-16 morning). What is left is his: rotate the secrets, add his key and the box's key to
-the encryption rules, create the droplet, run the importer dry run and then the import, point
-DNS, freeze the old box. The runbook is fdserver `chat/README.md`. The coach's prompt review
-stays open beside it. Pricing and plans are not decided and nothing on the deploy path waits on
-them.
-**Updated:** 2026-09-16 morning.
+is the first open item on the coach topic; (2) [waiting] the four service keys for the box —
+Anthropic, AssemblyAI, and the Brevo mail username and password — without which the coach does
+not answer and no sign-in mail is sent; (3) [verify] the app has never been opened on Android;
+(4) [verify] passkeys have never been tried on a real https domain, and cannot be until DNS
+points at the new box; (5) [waiting] cluster quality on anyone else's record stays unmeasured
+until the coding loop produces numbers.
+**Lives in:** btcopilot PR #136 (fdserver PR #30 closed unmerged, 2026-09-16); merge-risk review
+with the seven fixes landed: doc/chat-first/MERGE_REVIEW.md; review log
+doc/chat-first/REVIEW_LOG.md, 146 rows; sandbox scripts
+/Users/patrick/worktrees/fd362-sandbox/; the box's deployment deploy/chat/.
+**Next action:** his four keys, then the migration chain and DNS on the deploy topic; his code
+review and the coach's prompt review run alongside.
+**Updated:** 2026-09-16.
 
 ## T-2 · The coach knows the clinical definitions, and we can measure it
 
@@ -183,11 +182,19 @@ page, and says whether the deploy work may start.
 
 ## T-4 · Existing records and conversations in the new app; wipe and re-code
 
-**Status:** understood; one part fixed, the feature unbuilt.
+**Status:** the shape question is answered by test; the import itself is deferred past the beta.
 **Decided:** previously released Personal app versions do not matter; existing diagrams and
 discussions must work in the new app; colleagues' earlier sessions must be migrated in; "wipe
 all coding and re-run the agent loop over the conversation" is a feature to build, like the
-old training app's clear-and-re-extract.
+old training app's clear-and-re-extract. Added this session: the beta starts from empty records
+and a per-diagram manual import comes later, on the evidence that the old diagram format maps
+onto the new record field for field [R-0355].
+**Proved this session:** a Pro-shaped record carrying relationship moves with their targets,
+triangles, an emotion, a layer, intensity, colour, Qt dates and points is stored, read back by
+the chat page with the sub-fields intact, returned to the Pro app equal, and keeps its
+desktop-only fields after a hand edit. The comparison page "Old Record, New Record" is
+https://claude.ai/artifact/VAUvng5FkgXs16eUQzxCLi. Writing it found that DATA_MODEL.md gave a
+triangle's type as pairs; it is a list of person ids, and the document is fixed.
 **Open:** (1) [build] old training transcripts are now kept out of the session list, the fix
 having landed, but they are not yet importable on purpose — that is the upload and
 speaker-mapping path on the one-app topic; (2) [build] three carry-over defects: diagrams
@@ -196,11 +203,14 @@ a chat carries an "Assistant" person, and items extracted but never committed on
 are unreachable; (3) [build] after a wipe, chips in the old thread point at deleted events and
 read as plain words, so the re-code should re-link matches on kind, date and people;
 (4) [build] the by-hand re-code script is ephemeral and the feature needs the same thing as a
-session-menu item.
-**Lives in:** MERGE_REVIEW.md §4; run_agent_f1.replay; the by-hand script
-/Users/patrick/.claude/jobs/33d688bb/tmp/recode.py.
-**Next action:** build "re-code with the coach" in the session menu (T-3 build).
-**Updated:** 2026-09-11.
+session-menu item; (5) [verify] the importer dry run against a restored July dump stays
+Patrick's to run — restoring the dump here was refused as personal-data handling (review log
+row 137).
+**Lives in:** btcopilot/tests/chat/personal/test_prorecord.py; doc/chat-first/DATA_MODEL.md;
+MERGE_REVIEW.md §4; run_agent_f1.replay.
+**Next action:** build "re-code with the coach" in the session menu (T-3 build); the per-diagram
+import waits until after the beta.
+**Updated:** 2026-09-16.
 
 ## T-5 · Picture and interface rulings still open
 
@@ -318,44 +328,68 @@ doc/chat-first/{TOPICS.md,HISTORY.md,trace.json,events.json}; private/oracle/ (e
 
 ## T-11 · Platform reset: repo, deployment, billing, identity, admin
 
-**Status:** the local half is built and proved on the sandbox; the box, the DNS name and the
-money wait for his word after he walks the app.
+**Status:** the box exists and the stack runs on it; the name does not point at it yet and the
+database is still empty. fdserver is out of this ticket.
 **Decided:** one public repo; prompts leave the Python constants for one `.prompty` file per
 prompt with shared fragments, encrypted in place with sops and age, one key pair per machine,
 private keys never copied; files naming real people never enter a repo. The chat app gets its
 own 2 GB droplet with Caddy and the backup add-on; the old droplet is frozen to serve the Pro
 desktop app. Stripe owns money only: flat monthly plans through the hosted page and customer
-portal, tokens metered in our own table with a hard cap. Old Pro users are imported once. No
-admin web app: an agent runs a command line whose skill file is generated from its own
-declarations and checked by a test. The coach stays on Claude Opus 4.6 with thinking; launch
-US-only with Stripe Tax on; fdserver leaves the daily loop and is archived. Added this session:
-the chat app starts over with its own accounts on its own database [R-0327]; observability is
-Datadog on the recommended low-cost set — one host, logs ingest-only with exclusion filters and
-errors indexed, LLM observability inside the free tier with a span-count monitor, one uptime
-check, browser logs and error tracking — plus session replay from day one, with APM and product
-analytics later [R-0328]; the paid infrastructure host waits and the free tier serves for now
-[R-0329]; the droplet is created only after he has tested this build and says deploy work may
-start, and the region is sfo3 because sfo1 has no volumes [R-0330].
-**Built and proved locally:** prompts as encrypted files with a fragment-resolving renderer;
-the private prompts and the oracle rulings moved into this repo; files naming real people moved
-out of every repo; the chat app on its own migration chain and its own database from empty; the
-importer of the old Pro accounts and diagrams, dry-run; the admin command line and its
-generated skill file.
-**Open:** (1) [build] rotate every secret in the committed compose file, which still holds live
-keys and a TLS private key in git history — he issues the new credentials; (2) [build] a key
-pair on his Mac and on the new box, private keys never copied; (3) [build] create the droplet
-to the written spec — familydiagram-app, sfo3, 2 GB, backups and monitoring on — and point
-familydiagram.com at it; (4) [build] freeze the old droplet for Pro; (5) [verify] run the
-importer for real against a live dump and have a named clinician sign in and see their own
-diagram; (6) [build] money through Stripe: account, keys, and the price; (7) [build] archive
-the fdserver repo once nothing refers to it; (8) [waiting] the plan price waits for real beta
-usage, his word 2026-09-13: he does not trust projections; (9) [verify] production still has no
-automated database backup.
-**Lives in:** doc/chat-first/PLATFORM_BUILD.md (fifteen steps, eight local and seven needing
-him); doc/chat-first/DATADOG.md; private/prompts/ and private/oracle/, encrypted;
-decisions/log.md entries of 2026-09-12, 13 and 14.
-**Next action:** on his word after the walk, start the deploy work at step 9.
-**Updated:** 2026-09-14.
+portal, tokens metered in our own table with a hard cap. No admin web app: an agent runs a
+command line whose skill file is generated from its own declarations and checked by a test. The
+coach stays on Claude Opus 4.6 with thinking; launch US-only with Stripe Tax on; fdserver leaves
+the daily loop and is archived. The chat app starts over with its own accounts on its own
+database [R-0327]; observability is Datadog on the recommended low-cost set plus session replay
+[R-0328]; the paid infrastructure host waits [R-0329]; the region is sfo3 because sfo1 has no
+volumes [R-0330]. Added this session: Claude creates the droplet and changes DNS only on
+Patrick's explicit confirmation, each time [R-0353]; pricing and plans wait until the app runs
+in production and the first $20–40 bill shows what the usage costs [R-0354]; the beta starts
+from empty records with no import at cutover [R-0355]; the app is served at
+familydiagram.com/app while familydiagram.com otherwise keeps redirecting to
+alaskafamilysystems.com/family-diagram until a new product homepage exists [R-0356].
+**Built this session, on the box:** droplet familydiagram-app, id 601097408, at 209.38.135.250
+in sfo3, 2 vCPU and 2 GB, Ubuntu 24.04, backups and monitoring on, tagged familydiagram-app,
+reached with the turin ssh key. Docker, sops 3.9.4 and age 1.2.1 installed; the firewall passes
+22, 80 and 443 only. The box's own age public key was added to the encryption rules and every
+encrypted file re-encrypted for it. The repo is cloned at /var/www/btcopilot. Secrets live in
+/etc/fd/secrets.env, owned by root at mode 600, with a generated database password and Flask
+secret, the site address https://familydiagram.com, and the image tag pinned; every compose
+command on the box passes `--env-file /etc/fd/secrets.env`. All five containers are up — the
+web app, the worker, Postgres, Redis and Caddy — after a fix to the compose file where a
+service's own environment block was replacing the shared one. The Caddyfile serves
+familydiagram.com: /app redirects to /personal/ until the mount is renamed, the app and review
+paths are proxied, the desktop app's four update feeds are served from the repo, and everything
+else redirects to alaskafamilysystems.com/family-diagram, with www redirecting to the bare name.
+**Deployment moved out of fdserver:** Patrick closed fdserver PR #30 unmerged. The compose file,
+Caddyfile, secrets template, runbook, release workflow and the four update feeds are
+`deploy/chat/` in this repo. The root CLAUDE.md was edited once on his word to say so.
+**Open:** (1) [waiting] four keys are still REPLACE_ME in /etc/fd/secrets.env — Anthropic,
+AssemblyAI, and the Brevo mail username and password. Until Patrick supplies them the coach
+does not answer and no sign-in mail is sent; an invite link minted on the box by
+`flask admin users invite` works without mail. (2) [build] the database on the box has no tables:
+`flask admin db current` returns nothing, so the migration chain has never been run there.
+(3) [build] DNS still points familydiagram.com at the old box, 107.170.236.117, and www at
+198.199.116.86; nothing resolves to 209.38.135.250, so Caddy cannot get a certificate and
+https to the box refuses the connection. Changing it needs his confirmation each time [R-0353].
+(4) [ruling] rename the app's mount from /personal to /app — about 13 places in the web sources
+and 70 in Python and tests — so the address bar and the sign-in links read familydiagram.com/app
+rather than the Caddy redirect standing in for it. Asked, not answered. (5) [verify] the worker
+container reports unhealthy while the other four are healthy; the cause is unexamined.
+(6) [build] rotate every secret in the committed compose file, which still holds live keys and a
+TLS private key in git history — he issues the new credentials. (7) [build] freeze the old
+droplet for Pro. (8) [build] money through Stripe: account, keys and the price, after the first
+bill [R-0354]. (9) [build] archive the fdserver repo once nothing refers to it. (10) [verify]
+production still has no automated database backup.
+**Note for the next session:** the permission classifier refuses a sub-agent both `sops
+updatekeys`, because it writes the secret store, and `docker compose pull` and `up` on the box,
+because that is a production deploy. Those two ran at the top level on Patrick's direct grant.
+Production reads on the box are refused to sub-agents too.
+**Lives in:** deploy/chat/ (compose, Caddyfile, secrets template, README, the release workflow
+and the four appcast feeds); doc/chat-first/PLATFORM_BUILD.md; doc/chat-first/DATADOG.md;
+private/prompts/ and private/oracle/, encrypted; commits 974c29e, 1423f0a, eae997e.
+**Next action:** get the four keys from him, then on his confirmation run the migration chain on
+the box, mint his invite, and point the two DNS records at 209.38.135.250.
+**Updated:** 2026-09-16.
 
 ## T-12 · The learning loop: a scout that looks outward and a review of the scout
 

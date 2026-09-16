@@ -8,7 +8,10 @@ description: Flush this session's decisions, learnings, rationale and code state
 Two clocks per topic. The **state clock** is `doc/chat-first/TOPICS.md`: one block per topic,
 headed by the topic's plain name, rewritten in full. The **event clock** is
 `doc/chat-first/HISTORY.md`: one entry per session, never rewritten by a later session.
-Rulings go to the private oracle store in the fdserver worktree. After a flush nothing the
+Rulings go to the private oracle store **in this repo** — `private/oracle/rulings.md` and
+`private/oracle/evidence.md`, encrypted with sops. Never fdserver; fdserver left this ticket on
+2026-09-16. Decrypt with `SOPS_AGE_KEY_FILE=/Users/patrick/worktrees/fd362-sandbox/keys/dev.agekey
+sops -d <path>`; re-encrypt with `sops -e --filename-override <path> <plainfile>`. After a flush nothing the
 owner said, decided, learned or built in the session is missing, and running the flush again
 changes nothing.
 
@@ -58,8 +61,9 @@ run from rewording what an earlier run already captured:
    decision, question, finding, build and correction to a topic by name, opening a new block
    only for a thread of work no block covers.
 2. Rulings: for each owner statement that decides something, append to
-   `<fdserver worktree>/doc/oracle/rulings.md` (next id) with his words in `evidence.md`,
-   unless the words are already there.
+   `private/oracle/rulings.md` in this repo (next id) with his words in `private/oracle/evidence.md`,
+   unless the words are already there. Both files are sops-encrypted: decrypt, edit, re-encrypt
+   with `sops -e --filename-override <path> <plainfile>`.
 3. Rewrite every touched block with its six fields — **Status · Decided** (ruling ids) ·
    **Open** (numbered, each self-contained with its example inline) · **Lives in** (files,
    commits, PRs, artifact URLs, sandbox paths) · **Next action · Updated** (today). Every
@@ -75,8 +79,8 @@ run from rewording what an earlier run already captured:
    for prompt changes; `REVIEW_LOG.md` for what Patrick found testing; `MERGE_REVIEW.md` if
    merge risks changed; the Jira epic's description only with his one-line yes.
 7. Run `python bin/flushcheck.py` from the btcopilot worktree; fix what it reports.
-8. Commit and push both worktrees, one git mutation per command, corpus commits titled
-   `FD-362 flush: <date>`.
+8. Commit and push **this worktree only** (btcopilot `FD-362`), one git mutation per command,
+   corpus commits titled `FD-362 flush: <date>`. There is no second worktree to flush.
 9. Refresh Patrick's two pages, same links every time (URLs at the top of TOPICS.md, passed
    to the Artifact tool as `url`), in this order:
    a. `python bin/ledger.py` — rewrites doc/chat-first/events.json from every dated source

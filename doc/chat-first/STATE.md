@@ -74,19 +74,33 @@ the prompts and the rulings are encrypted files in this repo, the new box's depl
 `deploy/chat/` here, and Patrick closed fdserver PR #30 unmerged. Nothing the chat app runs
 reads from fdserver. The beta build is real code against the real database, not a throwaway.
 
-**Overnight 2026-09-16, while Patrick is away five days, on his word to build whatever needs no
-input from him.** Built and pushed: the chat database boundary (tests build only the chat
-chain's tables; the coder's notes table joins the chain; a session with content deletes); the
-image with prompts and sops inside and `flask admin db upgrade` to run the chain on a box; CI
-green on the runner with Linux goldens; the sandbox walks and golden specs rewritten to the
-rulings; three defects they found fixed (up one step at a time, the list button's ring, the
-settings switch's size); a tap with no item kind refused in words; the chat box's own compose,
-Caddyfile, secrets template, runbook and release workflow drafted in fdserver (nothing has run).
-Ruled after: the beta starts from empty records, no import at cutover, a per-diagram import
-later [R-0355]; the old diagram and the record are the same class field for field, proven by
-tests including the relationship sub-fields (page "Old Record, New Record"); Claude creates the
-droplet and changes DNS only on his confirmation [R-0353]; pricing waits for the first bill
-[R-0354]. Left for him: the new credentials.
+**2026-09-16 — the overnight build, then the box.** Overnight, on his word to build whatever
+needs no input from him: the chat database boundary (tests build only the chat chain's tables;
+the coder's notes table joins the chain; a session with content deletes); the image with prompts
+and sops inside and the migration chain runnable on a box; continuous integration green on the
+runner with Linux goldens; the sandbox walks and golden specs rewritten to the rulings; three
+defects they found fixed. Then, on his confirmation, a box: droplet familydiagram-app at
+209.38.135.250 in sfo3, two processors and 2 GB, Ubuntu 24.04, backups and monitoring on,
+firewall open on 22, 80 and 443 only, the repo cloned at /var/www/btcopilot, secrets in a
+root-owned /etc/fd/secrets.env that every compose command passes, and the box's own encryption
+key added so it can read the encrypted prompts and rulings. All five containers run — the web
+app, the worker, Postgres, Redis and Caddy — and the Caddyfile serves familydiagram.com with
+/app redirecting to /personal/ until the mount is renamed, everything else redirecting to
+alaskafamilysystems.com/family-diagram [R-0356].
+
+**What is not true yet on the box.** The migration chain has never been run there, so the
+database has no tables and no invite exists. DNS is untouched: familydiagram.com still resolves
+to the old box and nothing points at the new one, so Caddy has no certificate, https straight to
+the box refuses the connection, and https://familydiagram.com/app still lands on the old site.
+Four keys in the secrets file are placeholders — Anthropic, AssemblyAI, and the Brevo mail
+username and password — so the coach cannot answer and no sign-in mail is sent. The worker
+container reports unhealthy while the other four are healthy, cause unexamined.
+
+**Ruled 2026-09-16.** The beta starts from empty records, invited by email, with no import at
+cutover and a per-diagram import later [R-0355], which he agreed to only once a test proved the
+old diagram format maps onto the record field for field, relationship sub-fields included (page
+"Old Record, New Record"). Claude creates the droplet and changes DNS only on his explicit
+confirmation, each time [R-0353]. Pricing waits for the first $20–40 bill [R-0354].
 
 **What the Personal app does today.** A signed-in person chats with the coach. The coach
 answers and calls tools that add, change and remove people, pair-bonds, events, variable

@@ -1082,7 +1082,8 @@ chat, every step driven in a browser before hand-over. Open: deleting a session 
 fails on the chat database (row 124), and the plan codes are the Pro app's (row 132); he said
 pricing and plans are not decided. He then asked what is left before deploy.
 
-## 2026-09-16 overnight — the deploy path, while he is away
+## 2026-09-16 — the deploy path, the box built, and fdserver off the ticket [T-1, T-4, T-11]
+<!-- session: 4919907a · flushed: 2026-09-16T07:56:57-08:00 -->
 
 He said to build whatever needs no input from him and asked how to use five days. The night went
 to the two blockers and the checks. The chat tests were building every table in the process,
@@ -1099,3 +1100,64 @@ golden specs to the rulings; between them they found four product defects, all f
 138, 140–142). The chat box's own compose, Caddyfile, secrets template, runbook and release
 workflow were drafted in fdserver. The importer dry run could not be repeated: restoring the
 July dump here was refused as personal-data handling (row 137).
+
+Then Patrick came back and the day went to getting a real box. He ruled four things. Claude
+creates the droplet and changes DNS, each time only on his explicit confirmation, rather than
+him doing those steps himself [R-0353]. Pricing and plans wait until the app is running in
+production and the first $20–40 bill shows what the usage actually costs [R-0354]. The beta
+starts from scratch: people are invited by email onto empty records, with no import of the old
+Pro database at cutover and a per-diagram manual import later [R-0355]. And the app is served at
+familydiagram.com/app, while familydiagram.com otherwise keeps doing what the old box does
+today, redirecting to alaskafamilysystems.com/family-diagram, until a new product homepage
+exists [R-0356].
+
+He would only agree to start from empty records if the old diagram format could be imported
+later without losing anything, so that was proved before the ruling was taken as settled. A test
+stores a record shaped like the Pro app's — relationship moves with their targets, triangles, an
+emotion, a layer, intensity, colour, Qt dates and points — reads it back through the chat page
+with the sub-fields intact, returns it to Pro equal, and shows the desktop-only fields survive a
+hand edit. A comparison page, "Old Record, New Record", shows the two side by side. Writing it
+caught a mistake in the data model document: a triangle's type was written as pairs and is a
+list of person ids (review log rows 144 and 145).
+
+fdserver left the ticket. Patrick closed its pull request unmerged; the compose file, Caddyfile,
+secrets template, runbook, release workflow and the desktop app's four update feeds now live in
+`deploy/chat/` in this repo, and the root instructions were edited once on his word to say so.
+
+The box itself was created on his confirmation: familydiagram-app, id 601097408, at
+209.38.135.250 in sfo3, two processors and 2 GB, Ubuntu 24.04, backups and monitoring on, tagged
+familydiagram-app, reached with the turin ssh key. Docker, sops and age are installed and the
+firewall passes only 22, 80 and 443. The box's own encryption key was added to the rules and
+every encrypted file re-encrypted for it. The repo is cloned at /var/www/btcopilot and the
+secrets file lives at /etc/fd/secrets.env, root-owned at mode 600, holding a generated database
+password and Flask secret and the site address; every compose command on the box passes that
+file. All five containers came up — the web app, the worker, Postgres, Redis and Caddy — after a
+fix where a service's own settings block was replacing the shared one. The Caddyfile serves
+familydiagram.com with /app redirecting to /personal/ until the mount is renamed, the app and
+review paths proxied, the update feeds served from the repo, and everything else redirected to
+the old site.
+
+Three things were asked for and did not happen, and the flush checked each one rather than
+taking the report for it. The migration chain has never been run on the box: asked for the
+current revision, the app answers with nothing, so the database has no tables and no invite was
+minted. DNS is untouched: familydiagram.com still resolves to the old box at 107.170.236.117 and
+www to 198.199.116.86, nothing points at 209.38.135.250, and because of that Caddy has no
+certificate and https straight to the box refuses the connection. Fetching
+https://familydiagram.com/app therefore still lands on the old site's forum page. The worker
+container reports unhealthy while the other four are healthy, and the cause has not been looked
+at.
+
+Two things wait on Patrick and nothing on the box moves without them. Four keys in the secrets
+file are still placeholders — Anthropic, AssemblyAI, and the Brevo mail username and password —
+so the coach cannot answer and no sign-in mail is sent, though an invite link minted on the box
+works without mail. And he was asked, and has not answered, whether to rename the app's mount
+from /personal to /app, about 13 places in the web sources and 70 in Python and tests, so that
+the address bar and the sign-in links read familydiagram.com/app rather than the redirect
+standing in for it.
+
+Worth knowing next time: the permission rules refuse a sub-agent both the command that rewrites
+the secret store's keys and the compose commands that pull and start the stack on the box,
+because those count as writing secrets and deploying to production; both ran at the top level on
+Patrick's direct grant. Reads against the box are refused to sub-agents too. Two corrections of
+his also landed in the branch instructions: never repeat in the reply what a published page
+already says, and sub-agents do the work while this session's context stays small.
