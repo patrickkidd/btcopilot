@@ -329,8 +329,7 @@ doc/chat-first/{TOPICS.md,HISTORY.md,trace.json,events.json}; private/oracle/ (e
 ## T-11 · Platform reset: repo, deployment, billing, identity, admin
 
 **Status:** the box runs the stack with its database built and Patrick's invite minted; the two
-DNS records point at it as of 2026-09-16 16:17 UTC; the certificate and the first sign-in are
-the open verification. Four secret values are still placeholders. fdserver is out of this ticket.
+DNS records point at it and Caddy holds the certificate; his sign-in is the open verification. Four secret values are still placeholders. fdserver is out of this ticket.
 **Decided:** one public repo; prompts leave the Python constants for one `.prompty` file per
 prompt with shared fragments, encrypted in place with sops and age, one key pair per machine,
 private keys never copied; files naming real people never enter a repo. The chat app gets its
@@ -381,8 +380,8 @@ classifier as credential movement, so that step is his.
 **Open:** (1) [waiting] four keys are still REPLACE_ME in /etc/fd/secrets.env — Anthropic,
 AssemblyAI, and the Brevo mail username and password. Until Patrick puts them there the coach
 does not answer and no sign-in mail is sent; his invite link works without mail. (2) [verify]
-Caddy's certificate for familydiagram.com and www after DNS propagates, then his sign-in
-through the invite and one chat turn. (3) [build] the fixed migration is committed on the branch
+his sign-in through the second invite (the first was consumed by the verification request,
+which created his account) and one chat turn. (3) [build] the fixed migration is committed on the branch
 but the running image predates it; the file was copied into the running container by hand, so
 the next image from CI carries it and nothing on the box depends on the hand copy.
 (4) [ruling] rename the app's mount from /personal to /app — about 13 places in the web sources

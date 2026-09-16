@@ -97,8 +97,13 @@ compose file now sets the Flask app path so the admin commands resolve, and the 
 healthcheck pings celery, so all five containers are healthy. The root and www records of
 familydiagram.com were pointed at 209.38.135.250 at TTL 300.
 
-**What is not true yet on the box.** The certificate and the first sign-in are unverified
-until DNS propagates. Four keys in the secrets file are placeholders — Anthropic, AssemblyAI,
+**Verified after DNS propagated (about 35 minutes; DigitalOcean's edge served the old record
+until its one-hour TTL ran out):** Caddy holds the certificate; https://familydiagram.com/app
+redirects to the app, www redirects to the bare name, the update feeds serve, and everything
+else redirects to the old site. The first invite was consumed by the verification request
+itself, which created his account; a second invite was minted and left untouched.
+
+**What is not true yet on the box.** His own sign-in and first chat turn. Four keys in the secrets file are placeholders — Anthropic, AssemblyAI,
 and the Brevo mail username and password — so the coach cannot answer and no sign-in mail is
 sent; copying the real values there was refused by the permission classifier as credential
 movement, so it is his step. The app's mount is still /personal, reached through the /app
