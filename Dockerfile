@@ -12,6 +12,12 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /tmp/deps
 RUN pip install --upgrade pip
 
+# sops opens the encrypted prompts at run time, with the box's own age key
+ARG SOPS_VERSION=3.9.4
+RUN curl -fsSL -o /usr/local/bin/sops \
+    "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64" \
+    && chmod +x /usr/local/bin/sops
+
 # Application layer - install from wheel
 FROM base AS application
 WORKDIR /app
@@ -20,6 +26,11 @@ RUN mkdir -p ./instance/logs
 ARG WHEEL_FILE
 COPY ${WHEEL_FILE} /tmp/
 RUN pip install "/tmp/$(ls /tmp/*.whl | xargs basename)[app]" && rm /tmp/*.whl
+
+# The private prompts ship encrypted; the key comes from the environment
+# (SOPS_AGE_KEY_FILE) on the box, never from the image.
+COPY private/prompts /app/private/prompts
+ENV FD_PRIVATE_PROMPTS=/app/private/prompts
 EXPOSE 8888
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:8888/v1/health || exit 1

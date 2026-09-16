@@ -87,7 +87,7 @@ test = [
 repository = "https://github.com/patrickkidd/btcopilot"
 
 [tool.setuptools]
-packages = {find = {}}
+packages = {find = {exclude = ["build*", "dist*"]}}
 package-dir = {"" = "."}
 
 [tool.setuptools.package-data]

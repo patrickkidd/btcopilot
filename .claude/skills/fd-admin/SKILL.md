@@ -17,6 +17,18 @@ not edit it by hand; change the commands and generate it again.
 
 ## The commands
 
+### `flask admin db`
+
+The chat database's own migration chain.
+
+### `flask admin db current`
+
+Which revision the database is at.
+
+### `flask admin db upgrade`
+
+Bring the database up to the newest revision, creating it from empty if it holds nothing yet.
+
 ### `flask admin diagrams`
 
 The family records.

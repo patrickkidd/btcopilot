@@ -158,6 +158,23 @@ jobs:
           docker run --rm ghcr.io/${{ github.repository }}:ci-${{ github.sha }} python -c "import btcopilot; print('✓ btcopilot imported successfully')"
           docker run --rm ghcr.io/${{ github.repository }}:ci-${{ github.sha }} gunicorn --check-config "btcopilot.app:create_app()"
 
+      - name: The image serves the chat app from an empty database
+        run: |
+          IMAGE=ghcr.io/${{ github.repository }}:ci-${{ github.sha }}
+          docker run -d --name smoke -p 8888:8888 \
+            -e FLASK_APP=btcopilot.app:create_app \
+            -e FLASK_SQLALCHEMY_DATABASE_URI=sqlite:////tmp/smoke.db \
+            $IMAGE sh -c "flask admin db upgrade && exec gunicorn --bind 0.0.0.0:8888 'btcopilot.app:create_app()'"
+          for i in $(seq 1 40); do
+            code=$(curl -s -o /tmp/page.html -w '%{http_code}' -L http://127.0.0.1:8888/personal/ || true)
+            [ "$code" = "200" ] && break
+            sleep 1
+          done
+          docker logs smoke | tail -20
+          [ "$code" = "200" ] || { echo "page did not answer: $code" >&2; exit 1; }
+          grep -q "Family Diagram" /tmp/page.html || { echo "no chat page in the image" >&2; head -c 600 /tmp/page.html; exit 1; }
+          docker rm -f smoke
+
   release-wheel:
     runs-on: ubuntu-24.04
     if: ${{ github.ref == 'refs/heads/master' && (github.event.inputs.skip_release != 'true') }}

@@ -4,6 +4,7 @@ themselves (T-11)."""
 
 import click
 
+from btcopilot.admin.database import database
 from btcopilot.admin.diagrams import diagrams
 from btcopilot.admin.imports import imports
 from btcopilot.admin.licences import licences
@@ -19,7 +20,7 @@ def admin():
     coding meeting."""
 
 
-for group in (users, licences, diagrams, imports, token_cap, review, write_skill):
+for group in (users, licences, diagrams, imports, token_cap, review, database, write_skill):
     admin.add_command(group)
 
 

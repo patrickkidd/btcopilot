@@ -14,13 +14,17 @@ from sqlalchemy import engine_from_config, pool
 from btcopilot.chattables import TABLES, metadata
 
 config = context.config
-fileConfig(config.config_file_name)
+# run from the ini on a checkout, or from `flask admin db` on an installed box
+if config.config_file_name:
+    fileConfig(config.config_file_name)
 
 target_metadata = metadata()
 
 
 def url() -> str:
-    uri = os.getenv("FLASK_SQLALCHEMY_DATABASE_URI")
+    uri = config.get_main_option("sqlalchemy.url") or os.getenv(
+        "FLASK_SQLALCHEMY_DATABASE_URI"
+    )
     if not uri:
         raise RuntimeError(
             "FLASK_SQLALCHEMY_DATABASE_URI must name the chat app's own database"
