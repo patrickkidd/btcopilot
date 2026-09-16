@@ -55,7 +55,10 @@ test.describe("putting the picture down", () => {
     // from the moment picked back to the cluster it is in
     await page.locator("#crumb").click();
     await expect(page.locator("#view .ss-yr.on")).toHaveCount(0);
-    await expect(page.locator("#view .ss-t.on").first()).toHaveText("Leaving and losing");
+    // one cluster open and nothing picked in it writes no words on the drawing;
+    // the cluster's name is the title of the view instead (owner, 2026-09-09)
+    await expect(page.locator("#view .ss-t.on")).toHaveCount(0);
+    await expect(page.locator("#crumb")).toHaveText("Leaving and losing");
 
     // and from the cluster back to all of them
     await page.locator("#crumb").click();

@@ -178,7 +178,9 @@ test.describe("what a chip does", () => {
     await page.goto("/personal/");
     await expect(page.locator("#view .ss")).toBeVisible();
     await page.waitForTimeout(500);
-    await expect(page.locator("#view .ss-t.on").first()).toBeVisible();
+    // the record rests on one open cluster, which writes no words on the
+    // drawing (owner, 2026-09-09): what the coach named is lit on its dots
+    await expect(page.locator("#view .dot.lit").first()).toBeVisible();
     await expect(page.locator("#chat-screen .pic")).toHaveScreenshot("spotlight-at-rest.png");
   });
 });

@@ -65,7 +65,8 @@ test.describe("a session row's own actions", () => {
     await openSheet(page);
     const rows = page.locator("#sessions-sheet .fs-body .row");
     const before = await rows.count();
-    await page.locator("#sessions-sheet .fs-new").click();
+    // the foot also carries the upload and note buttons of the same class
+    await page.locator("#sessions-sheet .fs-new").first().click();
     await expect(page.locator("#sessions-sheet")).toBeHidden();
     await openSheet(page);
     await expect(rows).toHaveCount(before + 1);
@@ -90,8 +91,9 @@ test.describe("a tap on a message's own words", () => {
     const before = (await page.locator("#chat-screen .pic").boundingBox())!;
     await bubble.click({ position: { x: 6, y: 6 } });
     await page.waitForTimeout(300);
-    // words appear on the picture for what the message named
-    expect(await page.locator("#view .ss-t").count()).toBeGreaterThan(0);
+    // what the message named is lit on the picture; with a cluster open the
+    // drawing carries no words at all (owner, 2026-09-09), only lit dots
+    expect(await page.locator("#view .dot.lit").count()).toBeGreaterThan(0);
     // nothing entered the composer, and nothing above the chat moved
     expect(await page.locator("#composer").innerText()).toBe("");
     const after = (await page.locator("#chat-screen .pic").boundingBox())!;

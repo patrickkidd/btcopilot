@@ -30,8 +30,11 @@ test.describe("the person editor", () => {
     await page.locator("#tab-people").click();
     await page.locator("#menu-body .row").first().click();
 
-    await expect(editor(page).locator(".lab").last()).toHaveText("Kind");
-    await expect(editor(page).locator(".hint")).toHaveText(
+    // R-0345: the editor's last field is the person's partners, in those words
+    await expect(editor(page).locator(".lab").last()).toHaveText("Partners");
+    // the editor carries a hint under several of its fields; the one under the
+    // events it offers is the last
+    await expect(editor(page).locator(".hint").last()).toHaveText(
       "Add birth and death events by chatting with the coach.",
     );
     // never sex, never gender: two of the five are kinds of person symbol
@@ -109,7 +112,10 @@ test.describe("the picture with one cluster open", () => {
     // the name of the picture is the way back, and says so while one is open
     await expect(page.locator("#crumb")).toHaveText("Family timeline");
     await openCluster(page);
-    await expect(page.locator("#crumb")).toHaveText("← Family timeline");
+    // the name row says the open cluster's own name, and the way back up is
+    // the green arrow beside it, which does the same thing (ruling 2026-09-08)
+    await expect(page.locator("#crumb")).toHaveText("Leaving and losing");
+    await expect(page.locator("#up")).toBeVisible();
 
     await page.locator("#crumb").click();
     await expect(page.locator('.ss-hit[data-target="cluster"]').first()).toBeVisible();

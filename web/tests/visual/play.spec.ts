@@ -24,6 +24,16 @@ const walk = (page: Page) => page.locator(".bub .chip.data");
 
 const board = (page: Page) => page.locator("#view .ss.board");
 
+/** The words under the board. The board that is leaving and the board that is
+ * arriving are both on the page for the length of the zoom, so wait for the
+ * one caption before reading it. A move names the pair it is aimed at, which
+ * is who the moment is about. */
+const expectCaption = async (page: Page, words: string) => {
+  const caption = page.locator("#chat-screen .bcap");
+  await expect(caption).toHaveCount(1);
+  await expect(caption).toHaveText(words);
+};
+
 test.describe("a chip in a play-by-play", () => {
   test.use({ storageState: stateFor("play") });
 
@@ -32,16 +42,17 @@ test.describe("a chip in a play-by-play", () => {
     await expect(board(page)).toHaveCount(0);
     await walk(page).nth(2).click();
     await expect(board(page)).toBeVisible();
-    await expect(page.locator("#chat-screen .bcap")).toHaveText("Ada · distance");
+    await expectCaption(page, "Ada \u2192 Ben · distance");
   });
 
   test("a further chip steps the board and never leaves it", async ({ page }) => {
     await settle(page);
     await walk(page).nth(2).click();
-    await expect(page.locator("#chat-screen .bcap")).toHaveText("Ada · distance");
+    await expectCaption(page, "Ada \u2192 Ben · distance");
     await walk(page).nth(6).click();
     await expect(board(page)).toBeVisible();
-    await expect(page.locator("#chat-screen .bcap")).toHaveText("Ada · defined self");
+    // a move aimed at nobody names only the person it is about
+    await expectCaption(page, "Ada · defined self");
   });
 
   test("the picture keeps its height while the walk is stepped", async ({

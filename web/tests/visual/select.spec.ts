@@ -85,9 +85,14 @@ test.describe("a label that runs onto a second line", () => {
     await page.locator('.ss-hit[data-target="zone"]').first().click();
     await page.waitForTimeout(400);
     const rows = page.locator("#view .ss-t");
-    await expect(rows).toHaveCount(2);
+    // the label wraps onto a second line on the phone's narrower picture; the
+    // desktop window is wide enough to hold it on one. Every line it does take
+    // has to answer, which is the bug this guards.
+    await expect(rows).not.toHaveCount(0);
+    const lines = await rows.count();
+    if ((page.viewportSize()?.width ?? 0) < 500) expect(lines).toBe(2);
 
-    for (const row of [0, 1]) {
+    for (let row = 0; row < lines; row += 1) {
       const at = await rows.nth(row).boundingBox();
       if (!at) throw new Error(`row ${row} is not drawn`);
       await page.mouse.click(at.x + at.width / 2, at.y + at.height / 2);

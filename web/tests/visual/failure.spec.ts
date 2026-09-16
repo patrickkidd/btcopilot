@@ -119,10 +119,13 @@ test.describe("an explain that does not go through", () => {
     await page.locator("#cap-play").click();
     await expect(page.locator("#view .ss.board")).toBeVisible();
 
-    await page.locator('.pctl [data-target="explain"]').click();
+    // the board leaving and the board arriving overlap for the zoom
+    const explain = page.locator('#chat-screen .pctl [data-target="explain"]');
+    await expect(explain).toHaveCount(1);
+    await explain.click();
     await expect(warning(page)).toHaveText(/server broke/);
     await expect(page.locator("#view .ss.board")).toBeVisible();
     // and the control is live again, so it can be asked a second time
-    await expect(page.locator('.pctl [data-target="explain"]')).toBeEnabled();
+    await expect(explain).toBeEnabled();
   });
 });

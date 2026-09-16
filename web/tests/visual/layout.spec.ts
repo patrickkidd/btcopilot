@@ -25,7 +25,10 @@ const settle = async (page: Page) => {
       const w = window as unknown as { __shape?: string; __same?: number };
       w.__same = shape === w.__shape ? (w.__same ?? 0) + 1 : 0;
       w.__shape = shape;
-      return !!shape && w.__same >= 6;
+      // R-0350: an untouched session carries no bubble at all, only the block
+      // of words inviting the first message, so no bubbles is also at rest.
+      const started = !!shape || !!document.querySelector("#chat .cta");
+      return started && w.__same >= 6;
     },
     null,
     { timeout: 30000, polling: 100 },

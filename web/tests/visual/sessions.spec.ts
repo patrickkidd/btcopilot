@@ -38,10 +38,12 @@ test.describe("the sessions sheet", () => {
     const frame = (await page.locator(".app").boundingBox())!;
     const sheet = (await page.locator("#sessions-sheet").boundingBox())!;
     expect(Math.round(sheet.height)).toBe(Math.round(frame.height * 0.92));
-    await expect(page.locator(".fs-grab")).toBeVisible();
+    // the page holds several sheets of this class; only this one is the sessions'
+    await expect(page.locator("#sessions-sheet .fs-grab")).toBeVisible();
+    // R-0347: the sheet lists only this family's sessions, so it searches sessions
     await expect(page.locator("#sessions-sheet .fs-search input")).toHaveAttribute(
       "placeholder",
-      "Search sessions and families",
+      "Search sessions",
     );
     const field = (await page.locator("#sessions-sheet .fs-search input").boundingBox())!;
     expect(Math.round(field.height)).toBe(44);
@@ -55,7 +57,10 @@ test.describe("the sessions sheet", () => {
     await expect(page.locator("#sessions-sheet .fs-body .ghead").first()).not.toBeEmpty();
     await expect(page.locator("#sessions-sheet .fs-body .row").first()).toBeVisible();
     await expect(page.locator("#sessions-sheet .fs-body .row.cur")).toHaveCount(1);
-    await expect(page.locator("#sessions-sheet .fs-new")).toContainText("New session with");
+    // the foot also carries the upload and note buttons of the same class
+    await expect(page.locator("#sessions-sheet .fs-new").first()).toContainText(
+      "New session with",
+    );
   });
 
   test("a search that matches nothing says so, in those words", async ({ page }) => {
