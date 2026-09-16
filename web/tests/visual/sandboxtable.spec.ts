@@ -30,6 +30,45 @@ test.describe(() => {
       await page.waitForTimeout(300);
     };
 
+    /** The sessions sheet lists only the case the app is on (R-0347), so the
+     * walk switches to the case that holds the conversation first: the account
+     * mark at the top right, the Cases row, then the case. */
+    const switchCase = async (name) => {
+      await page.locator("#account").click();
+      await page.waitForTimeout(700);
+      await page
+        .locator(".sn-row.push")
+        .filter({ hasText: /^(Cases|Your diagrams)/ })
+        .first()
+        .click();
+      await page.waitForTimeout(700);
+      const row = page.locator(`.sn-row.push[data-name="${name.toLowerCase()}"]`);
+      say(`cases on the account page: ${JSON.stringify(await page.locator(".sn-row.push .sn-t").allInnerTexts())}`);
+      if ((await row.count()) && !(await row.first().getAttribute("class")).includes("cur"))
+        await row.first().click();
+      await page.waitForTimeout(2500);
+      // Picking a case closes the whole account stack on its own; the back
+      // chevron is only needed when the walk was already on the right case.
+      for (let i = 0; i < 8 && !(await visible("#sessions-open")); i += 1) {
+        if (await visible("#settings-back")) await page.locator("#settings-back").click();
+        else if (await visible("#coding-back")) await page.locator("#coding-back").click();
+        await page.waitForTimeout(900);
+      }
+      say(
+        `on screen after the switch: ${JSON.stringify(
+          await page.evaluate(() =>
+            [...document.querySelectorAll("[id$='-screen']")]
+              .filter((e) => (e as HTMLElement).offsetParent !== null)
+              .map((e) => e.id),
+          ),
+        )}`,
+      );
+      check(
+        await visible("#sessions-open"),
+        `switching to ${name} lands back on the chat, beside its sessions button`,
+      );
+    };
+
     /** Open the sessions sheet and swipe the conversation the walk cuts. */
     const openActions = async () => {
       // The sessions button lives beside the message box, so the sheet is
@@ -50,6 +89,7 @@ test.describe(() => {
     await page.goto(invite, { waitUntil: "networkidle" });
     await page.waitForTimeout(900);
     say(`url after invite: ${page.url()}`);
+    await switchCase("Marcus's side");
     const row = await openActions();
     const acts = (await text(".fs-acts")).replace(/\s+/g, " ");
     say(`swipe actions: "${acts}"`);
@@ -106,8 +146,8 @@ test.describe(() => {
     check(cuts >= 2, `what is on the table is listed (${cuts})`);
     check((await text(".tb-cut")).includes("up to turn"), "each one says how far it is cut");
     check(rows.length >= 4, `one line per coder (${rows.length})`);
-    check(rows.some((r) => /not started/.test(r)) && rows.some((r) => /coding|done|voted/.test(r)),
-      "the lines say not started, coding, done or voted");
+    check(rows.every((r) => /not started|coding|done|voted/.test(r)),
+      `every line says not started, coding, done or voted (${JSON.stringify(rows.slice(0, 3))})`);
     check(/^closed out: \d+ of \d+/.test(note.trim()), `the count of who is closed out reads "${note.trim()}"`);
     check(await visible(".tb-nudge"), "one control nudges the ones who are not done");
     check(await visible(".tb-vote"), "one button opens the vote");

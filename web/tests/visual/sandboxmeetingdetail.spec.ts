@@ -42,7 +42,8 @@ test.describe(() => {
     const key = await page.locator(".mkey span").allInnerTexts();
     say(`title="${title}" figs=${JSON.stringify(figs)} key=${JSON.stringify(key)}`);
     check(/^Meeting · /.test(title), "one title line: Meeting, the day, the conversation");
-    check(figs.length === 3, `three labelled figures (${figs.length})`);
+    // The family count joins the three figures as a count of its own (R-0326).
+    check(figs.length === 4, `four labelled figures (${figs.length})`);
     check(
       /event/.test(figs.join(" ")) && /disputed/.test(figs.join(" ")) &&
         /agreed before the vote/.test(figs.join(" ")),
@@ -75,10 +76,12 @@ test.describe(() => {
     // ── 3. a keep button per version ──────────────────────────────────────
     const first = page.locator(".drow").first();
     const sides = await first.locator(".side").count();
-    const keeps = await first.locator(".mt-keep").count();
+    // Keeping a version is tapping the version; the keep button beside it is
+    // gone, so every version but "left this out" is the thing you tap.
+    const keeps = await first.locator(".side.tap").count();
     const missing = await first.locator('.slab:has-text("left this")').count();
-    say(`first item: sides=${sides} keep buttons=${keeps}`);
-    check(keeps === sides - missing, `each version carries its own keep (${keeps} of ${sides - missing})`);
+    say(`first item: sides=${sides} versions you can tap=${keeps}`);
+    check(keeps === sides - missing, `every version can be kept by tapping it (${keeps} of ${sides - missing})`);
     check(
       (await first.locator(".mt-choice").count()) === 2,
       "change and mark unresolved sit under the versions",
@@ -123,30 +126,39 @@ test.describe(() => {
         (await card.locator(".mt-close").count()) === 1,
         "the card has a close button at its top right",
       );
-      // Keeping is live until the room has kept it, and dead afterwards.
-      const keep = card.locator(".mt-keep").first();
-      check(await keep.isEnabled(), "an agreed item the room has not kept can still be kept");
-      await keep.click();
-      await page.waitForTimeout(1200);
-      const again = page.locator(".drow.hasx").first();
-      const after = again.locator(".mt-keep");
-      const nkeep = await after.count();
-      let disabled = 0;
-      for (let i = 0; i < nkeep; i += 1)
-        if (await after.nth(i).isDisabled()) disabled += 1;
-      check(nkeep > 0 && nkeep === disabled, `keeping is disabled once it is kept (${disabled} of ${nkeep})`);
       check(
         (await card.locator(".mt-choice").count()) === 2,
-        "change and mark unresolved stay",
+        "change and mark unresolved sit under the versions",
       );
+      const versions = await card.locator(".side.tap").count();
+      check(versions > 0, `an agreed item still offers its versions to keep (${versions})`);
       await gates("an agreed card");
       await shot("3-agreed");
+
+      // The close button puts the row back exactly as it was.
       await card.locator(".mt-close").click();
       await page.waitForTimeout(400);
       check(
         (await page.locator(".drow.hasx").count()) === 0,
         "the close button puts the agreed row back",
       );
+
+      // Tapping a version is what keeps it, and keeping settles the item, so
+      // the card goes back down to a settled row rather than staying open.
+      const settled = await page.locator(".collapsed").count();
+      await page.locator(".collapsed").first().click();
+      await page.waitForTimeout(600);
+      await page.locator(".drow.hasx .side.tap").first().click();
+      await page.waitForTimeout(1600);
+      check(
+        (await page.locator(".drow.hasx").count()) === 0,
+        "keeping a version settles the item and closes its card",
+      );
+      check(
+        (await page.locator(".collapsed").count()) === settled,
+        "the item stays among the settled rows",
+      );
+      await shot("3b-kept");
     } else check(false, "the vote agreed on something to open");
 
     // ── 7. the two sorts ──────────────────────────────────────────────────

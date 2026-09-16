@@ -52,8 +52,11 @@ test.describe(() => {
       sides.length > 0 && sides.every((t) => !/=/.test(t)),
       "a reading carries initials and no count",
     );
-    const split = await page.locator(".drow .verdict").allInnerTexts();
-    say(`verdicts in order: ${JSON.stringify(split)}`);
+    say(
+      `items in order: ${JSON.stringify(
+        (await page.locator(".drow .pick").allInnerTexts()).slice(0, 4),
+      )}`,
+    );
     const stats = await text("#meeting-stats");
     say(`figures: "${stats.replace(/\s+/g, " ")}"`);
     // R-0321: one title line, then three labelled figures and nothing twice.
@@ -76,7 +79,9 @@ test.describe(() => {
 
     // ── 3. keep one ───────────────────────────────────────────────────────
     const before = await page.locator(".drow").count();
-    await page.locator('.drow .mt-keep:not([disabled])').first().click();
+    // A version is kept by tapping the version itself; there is no separate
+    // keep button beside it any more.
+    await page.locator(".drow .side.tap:not(.on)").first().click();
     await page.waitForTimeout(1600);
     const afterKeep = await page.locator(".drow").count();
     check(afterKeep === before - 1, `keeping settles one item (${before} → ${afterKeep})`);
@@ -132,7 +137,7 @@ test.describe(() => {
       const row = page.locator(".drow").first();
       if ((await row.count()) === 0) break;
       const item = await row.getAttribute("data-item");
-      const keep = row.locator(".mt-keep:not([disabled])").first();
+      const keep = row.locator(".side.tap:not(.on)").first();
       if (await keep.count()) await keep.click();
       else await row.locator('.mt-choice[data-choice="unresolved"]').click();
       await page
@@ -173,8 +178,8 @@ test.describe(() => {
     check(/ratified/.test(figures), "how many were ratified");
     check(/unresolved/.test(figures), "how many were left unresolved");
     check(
-      /first pass/.test(figures) && /after ratification/.test(figures),
-      "agreement before the ballot and after ratification, side by side",
+      /agreed before the vote/.test(figures) && /% after\b/.test(figures),
+      "agreement before the vote and after it, side by side",
     );
     check(
       await visible(".rcard"),
@@ -192,7 +197,7 @@ test.describe(() => {
       await page.locator(".rs-flag").first().click();
       await page.waitForTimeout(1800);
       check(
-        /flagged for next meeting/.test(await text(".rs-flag")),
+        /flagged for the next meeting/.test(await text(".rs-flag")),
         "the rule reads as flagged afterwards",
       );
       await shot("9-flagged");
@@ -215,6 +220,12 @@ test.describe(() => {
 
     // ── the way back to the result once the cut is ratified (R-0275) ──────
 
+    // The sessions button lives beside the message box, so the walk steps back
+    // out of whatever full-screen it ended on before it can open the sheet.
+    for (let i = 0; i < 4 && !(await visible("#sessions-open")); i += 1) {
+      if (await visible("#coding-back")) await page.locator("#coding-back").click();
+      await page.waitForTimeout(1000);
+    }
     await page.locator("#sessions-open").click();
     await page.waitForTimeout(900);
     check(

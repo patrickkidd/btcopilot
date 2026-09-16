@@ -713,10 +713,9 @@ function actions(): void {
 }
 
 function wireList(): void {
-  $("menu-open").addEventListener("click", () => {
-    if (pinned()) $("menu-search").focus({ preventScroll: true });
-    else screen(Screen.Menu);
-  });
+  // on the wide layout the drawer is pinned open and no button is drawn (R-0352)
+  if (pinned()) return;
+  $("menu-open").addEventListener("click", () => screen(Screen.Menu));
 }
 
 /** A wider window stands the events and people drawer beside the thread

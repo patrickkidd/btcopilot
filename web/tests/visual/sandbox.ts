@@ -93,6 +93,31 @@ export function walker(page: Page, info: TestInfo) {
         // actions behind it, so its own words sit off the edge while it is
         // open. Everything else must stay inside.
         if (e.closest(".row.swiped")) continue;
+        // A strip that scrolls sideways on purpose — the caption band under the
+        // picture is one — keeps what does not fit off to the side until the
+        // reader pushes it along. What sits in such a strip is measured
+        // against the strip's own content instead of the window, so a token
+        // waiting to be scrolled to is fine while one hanging off the front of
+        // the strip is still caught.
+        let strip: HTMLElement | null = null;
+        for (let up = e.parentElement; up; up = up.parentElement) {
+          const how = getComputedStyle(up).overflowX;
+          if (how === "auto" || how === "scroll") {
+            strip = up;
+            break;
+          }
+        }
+        if (strip) {
+          const box = strip.getBoundingClientRect();
+          const from = box.left - strip.scrollLeft;
+          const b = e.getBoundingClientRect();
+          if (b.width === 0 || b.height === 0) continue;
+          if (b.left < from - 1 || b.right > from + strip.scrollWidth + 1)
+            out.push(
+              `${e.tagName.toLowerCase()}.${[...e.classList].join(".")} ${Math.round(b.left)}..${Math.round(b.right)}`,
+            );
+          continue;
+        }
         const r = e.getBoundingClientRect();
         if (r.width === 0 || r.height === 0) continue;
         if (r.right > innerWidth + 1 || r.left < -1)

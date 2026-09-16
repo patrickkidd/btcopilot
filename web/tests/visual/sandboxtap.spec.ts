@@ -43,7 +43,7 @@ test.describe(() => {
       // A card with nothing to open is the vote that is waiting on Patrick;
       // the skip below is what says so.
       const open = page.locator("#task-screen .addbtn").first();
-      if (await open.count()) await open.click();
+      if ((await open.count()) && (await open.isEnabled())) await open.click();
     } else {
       await page.locator("#sessions-open").click();
       await page.waitForTimeout(800);
