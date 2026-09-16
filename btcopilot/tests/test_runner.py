@@ -2,7 +2,13 @@
 
 import importlib.util
 
+import pytest
+
 from btcopilot.tests.repo import REPO
+
+# bin/t lives beside the package in a checkout; the installed copy has no bin
+if not (REPO / "bin" / "t").is_file():
+    pytest.skip("no checkout: bin/t is not installed", allow_module_level=True)
 
 spec = importlib.util.spec_from_loader(
     "t", importlib.machinery.SourceFileLoader("t", str(REPO / "bin" / "t"))
