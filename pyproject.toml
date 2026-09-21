@@ -53,7 +53,7 @@ app = [
     "pymupdf4llm",
 
     # personal
-    "anthropic",
+    "anthropic>=0.97,<1",
     "google-genai",
 
     # training
