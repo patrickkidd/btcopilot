@@ -373,3 +373,7 @@ Source: his messages in the session. Status as of the last flush.
 4. A tag on master marking where the chat-first rebuild diverged, to become the Pro
    maintenance stream once the new app is proven on the box. Tag `pre-chat-first` at
    fc52fd3, which is also master's tip today. DONE
+5. Chat still broken after item 3: the image pulled the Anthropic SDK 1.7, which drops the
+   temperature argument the app passes in six places (tests ran on 0.97). SDK pinned
+   below 1.0, image rebuilt, deployed; a real coach call with the real prompt and tools
+   ran inside the container and answered. FIXED @82b960e
