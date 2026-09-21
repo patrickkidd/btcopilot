@@ -386,3 +386,17 @@ Source: his messages in the session. Status as of the last flush.
    https as a scratch account (claude-test@familydiagram.com, which stays in the database:
    there is no delete command yet): 200, the coach added the mother and her death.
    Lesson: every earlier check was a piece of the path, not the path. FIXED @56f98bd
+
+Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each OPEN until fixed):
+
+8. Coach bubble: the closing question is in the same gold as the chips under it, which reads
+   as a formatting error. OPEN
+9. The chips under a coach bubble: tapping one inserts it into the chat, but what that means
+   or does is not obvious; make it obvious, or drop them. OPEN
+10. Timeline: an event the coach adds shows as a bare dot with no other information, and a
+   "?" sits at the end of the timeline; nobody will know what that means. The "?" was also
+   there on the right before any event existed, which looks like a bug. OPEN
+11. Timeline shows one event at 2021, but the events talked about were high school and ages
+   25–26 with no years given, so 2021 comes from nowhere. OPEN
+12. Opening the invite lands straight in the chat with no onboarding: never asked for name,
+   age or birthdate. Was a form not planned? OPEN
