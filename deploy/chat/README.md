@@ -39,8 +39,12 @@ The release workflow pushes the image to GHCR on a merge to master;
 `release-chat.yml` then pulls it on the box and runs `flask admin db upgrade`.
 Nothing is built on the box.
 
+## Datadog
+
+The agent runs as `fd-datadog` in the same compose file: host metrics and every
+container's log lines, no traces (doc/chat-first/DATADOG.md, the cheap set). It
+reads `DD_API_KEY` from the secrets file like everything else.
+
 ## What is not here yet
 
-- Datadog agent on this box (kept on the Pro box; add when there is something
-  to watch).
 - Stripe, which waits on the price.

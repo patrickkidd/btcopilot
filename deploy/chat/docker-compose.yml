@@ -94,6 +94,26 @@ services:
       timeout: 5s
       retries: 5
 
+  fd-datadog:
+    image: gcr.io/datadoghq/agent:7
+    container_name: fd-datadog
+    restart: unless-stopped
+    env_file: /etc/fd/secrets.env
+    environment:
+      DD_SITE: datadoghq.com
+      DD_ENV: production
+      DD_HOSTNAME: familydiagram-app
+      DD_LOGS_ENABLED: "true"
+      DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL: "true"
+      DD_CONTAINER_EXCLUDE: "name:fd-datadog"
+      DD_APM_ENABLED: "false"
+      DD_PROCESS_CONFIG_PROCESS_COLLECTION_ENABLED: "false"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+
 volumes:
   caddy-data:
   caddy-config:
