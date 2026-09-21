@@ -41,9 +41,10 @@ Nothing is built on the box.
 
 ## Datadog
 
-The agent runs as `fd-datadog` in the same compose file: host metrics and every
-container's log lines, no traces (doc/chat-first/DATADOG.md, the cheap set). It
-reads `DD_API_KEY` from the secrets file like everything else.
+Off by default (Patrick may leave Datadog, 2026-09-21). The agent is defined as
+`fd-datadog` under the compose profile `datadog`: host metrics and every container's
+log lines, no traces. Turn it on with `--profile datadog up -d fd-datadog`; it reads
+`DD_API_KEY` from the secrets file like everything else.
 
 ## What is not here yet
 

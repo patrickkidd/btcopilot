@@ -377,3 +377,6 @@ Source: his messages in the session. Status as of the last flush.
    temperature argument the app passes in six places (tests ran on 0.97). SDK pinned
    below 1.0, image rebuilt, deployed; a real coach call with the real prompt and tools
    ran inside the container and answered. FIXED @82b960e
+6. Shut Datadog down on this box; he may leave Datadog. Agent stopped and removed; the
+   service is now behind an opt-in compose profile so a restart does not revive it.
+   DONE

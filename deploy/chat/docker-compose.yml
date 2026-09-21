@@ -97,6 +97,7 @@ services:
   fd-datadog:
     image: gcr.io/datadoghq/agent:7
     container_name: fd-datadog
+    profiles: ["datadog"]
     restart: unless-stopped
     env_file: /etc/fd/secrets.env
     environment:
