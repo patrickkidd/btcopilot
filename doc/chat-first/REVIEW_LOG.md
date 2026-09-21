@@ -366,3 +366,10 @@ Source: his messages in the session. Status as of the last flush.
 2. Datadog on this box, as part of the compose stack with config in the repo. Agent
    service added: host metrics and container logs, no traces. Needs DD_API_KEY on the box.
    FIXED @f1543aa
+3. Chat still broken after item 1. Cause: the private tool-meanings prompt lacked three
+   entries the tools now require (parents, person_a, person_b); the public default had
+   them, so tests passed. Added, re-encrypted, hot-copied into the containers, image
+   rebuilt. FIXED @0df98c3
+4. A tag on master marking where the chat-first rebuild diverged, to become the Pro
+   maintenance stream once the new app is proven on the box. Tag `pre-chat-first` at
+   fc52fd3, which is also master's tip today. DONE
