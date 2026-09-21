@@ -400,3 +400,13 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    25–26 with no years given, so 2021 comes from nowhere. OPEN
 12. Opening the invite lands straight in the chat with no onboarding: never asked for name,
    age or birthdate. Was a form not planned? OPEN
+   Findings on 8–12 (2026-09-21): 8 and 9 are the built design — the bubble's last sentence
+   is split off as "the ask" in amber and the bracketed amber chips are offered answers a
+   tap drops into the composer (R-0072, R-0073, R-0139); not a formatting bug, a legibility
+   failure. 10: the trailing "?" is the undated shelf marker (DRAWABILITY, R-0047); it shows
+   whenever any fact has no usable date, which happened on the first reply because the
+   high-school event was dated "unknown". 11: no birthdate on his record, so the coach
+   turned "high school" into 2010 (unknown, shelved) and "25 to 26" into 2021 (approximate,
+   drawn) as its rules tell it to; the year is invented because the age has no anchor. 12: no
+   onboarding form was ruled — the first journey is chat straight from the link (R-0087);
+   name and birthdate live in preferences (R-0099). Decisions put to Patrick.
