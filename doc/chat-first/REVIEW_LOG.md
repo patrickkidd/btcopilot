@@ -354,3 +354,15 @@ These two are still genuinely open:
 | 144 | 2026-09-16 | data model | Does the old diagram format map onto the record without loss, relationship sub-fields included? | VERIFIED | test_prorecord.py: a Pro-shaped record with relationship moves, targets, triangles, an emotion, a layer, intensity, colour, Qt dates and points is stored, read by the chat page with the sub-fields intact, returned to Pro equal, and keeps desktop-only fields after a hand edit; DATA_MODEL.md's "pairs" type for triangles was wrong and is fixed |
 | 145 | 2026-09-16 | repos | Why was fdserver on this ticket at all? | CLOSED | the prompts and rulings once lived there and moved into this repo encrypted on 13 September; the deployment was drafted there by habit; PR #30 closed by Patrick, deployment moved to deploy/chat/ here, the ledger no longer reads fdserver |
 | 146 | 2026-09-16 | the box | Did the migration chain, the invite and the DNS change actually happen on the new box? | NEEDS-OWNER | no. `flask admin db current` on the box returns nothing, so the database has no tables and no invite was minted; DNS still sends familydiagram.com to 107.170.236.117 and www to 198.199.116.86, nothing resolves to 209.38.135.250, so Caddy has no certificate and https to the box refuses the connection; https://familydiagram.com/app still lands on the old site. Five containers run; the worker reports unhealthy. Each step needs his confirmation [R-0353] |
+
+## Round 5 (2026-09-20, Patrick's first use on the box, from his phone)
+
+Source: his messages in the session. Status as of the last flush.
+
+1. First chat message threw an error. Cause: the twelve shared prompt fragments were
+   never re-encrypted for the box's key on the 16th, so the server could not decrypt them.
+   All 31 encrypted files re-keyed; copied into the running containers; image rebuilt.
+   FIXED @a6d848f
+2. Datadog on this box, as part of the compose stack with config in the repo. Agent
+   service added: host metrics and container logs, no traces. Needs DD_API_KEY on the box.
+   FIXED @f1543aa
