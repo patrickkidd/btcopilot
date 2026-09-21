@@ -380,3 +380,9 @@ Source: his messages in the session. Status as of the last flush.
 6. Shut Datadog down on this box; he may leave Datadog. Agent stopped and removed; the
    service is now behind an opt-in compose profile so a restart does not revive it.
    DONE
+7. Chat still broken after item 5: the wheel never shipped the public prompt directory,
+   so the image had only the private files and the session-title prompt (public only)
+   was missing. Package data fixed, image rebuilt, deployed; proven with a full turn over
+   https as a scratch account (claude-test@familydiagram.com, which stays in the database:
+   there is no delete command yet): 200, the coach added the mother and her death.
+   Lesson: every earlier check was a piece of the path, not the path. FIXED @56f98bd
