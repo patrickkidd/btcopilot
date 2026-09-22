@@ -55,3 +55,11 @@ Grafana's Postgres data source reaches `fd-postgres:5432` through it as the read
 ## What is not here yet
 
 - Stripe, which waits on the price.
+
+## The bot's admin key
+
+Patrick's local assistant runs the admin CLI over SSH with its own key. The key's
+line in `/root/.ssh/authorized_keys` is pinned to `bin/fd-admin-gate` (installed at
+`/usr/local/bin/fd-admin-gate`), which hands the words it was given to
+`flask admin run -- <words>` inside fd-app and nothing else. Reads run at once; a
+command that changes data prints a preview and stops until the words carry `--yes`.

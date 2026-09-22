@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+"""The one command the bot's SSH key may run on the box: the words it sent,
+handed to the app's admin CLI behind its confirmation step."""
+import os
+import shlex
+import subprocess
+import sys
+
+words = shlex.split(os.environ.get("SSH_ORIGINAL_COMMAND", ""))
+if not words:
+    sys.exit("usage: ssh fd-admin <admin words>, e.g. users list")
+sys.exit(
+    subprocess.call(
+        [
+            "docker", "compose",
+            "--env-file", "/etc/fd/secrets.env",
+            "-f", "/var/www/btcopilot/deploy/chat/docker-compose.yml",
+            "exec", "-T", "fd-app",
+            "flask", "admin", "run", "--", *words,
+        ]
+    )
+)
