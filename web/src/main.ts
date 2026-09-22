@@ -720,12 +720,14 @@ function wireList(): void {
 }
 
 /** A wider window stands the events and people drawer beside the thread
- * instead of sliding it over, for a professional (R-0243). The one drawer
- * moves between the full screen and the pinned column, so both carry the same
- * list, the same search and the same editors rather than two of each. */
+ * instead of sliding it over (R-0243). Since 2026-09-22 that is for everyone,
+ * not only a professional, so a phone turned on its side gets it too, to see
+ * how it feels (R-0367). The one drawer moves between the full screen and the
+ * pinned column, so both carry the same list, the same search and the same
+ * editors rather than two of each. */
 const wide = window.matchMedia(WIDE);
 
-const pinned = () => PRO && wide.matches;
+const pinned = () => wide.matches;
 
 const DRAWER = ["menu-tabs", "menu-searchrow", "menu-body", "menu-foot"];
 
@@ -985,12 +987,22 @@ $("crumb").addEventListener("keydown", (e) => {
   }
 });
 
+// Return starts a new line; only the send button sends (R-0368), so a message
+// can have paragraphs. The break is a plain newline so the draft keeps it.
 $("composer").addEventListener("keydown", (e) => {
   const key = e as KeyboardEvent;
-  if (key.key === "Enter" && !key.shiftKey) {
-    key.preventDefault();
-    void send();
-  }
+  if (key.key !== "Enter") return;
+  key.preventDefault();
+  const selection = window.getSelection();
+  if (!selection?.rangeCount) return;
+  const range = selection.getRangeAt(0);
+  range.deleteContents();
+  const br = document.createTextNode("\n");
+  range.insertNode(br);
+  range.setStartAfter(br);
+  range.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(range);
 });
 $("send").addEventListener("click", () => void send());
 $("menu-close").addEventListener("click", () => {

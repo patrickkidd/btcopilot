@@ -450,8 +450,8 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
 19. Patrick asks whether the app is meant to go landscape on an iPhone 14 or whether that
    breaks the layout. Finding: nothing locks orientation and nothing was designed for a
    phone on its side; the one width rule is the professional's pinned drawer at 840px,
-   which an iPhone 14 on its side (844px) crosses. OPEN — his call: lock the installed
-   app to portrait, or design for landscape.
+   which an iPhone 14 on its side (844px) crosses. RULED: the wide layout activates for
+   everyone on rotation, to see how it feels [R-0367]. FIXED.
 20. In an open cluster, tap a moment, tap the back arrow: it only put the moment down and
    stayed in the cluster. RULED: the arrow always closes the cluster [R-0362]. FIXED.
 21. Patrick: "moved" is still a first-class event kind; he said before that a move is one of
@@ -468,3 +468,6 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    whether they play in, though they are no structural or functional change. RULED
    [R-0366]. FIXED: a noted event raises the order question beside a shift the way a
    structural event does; it still counts as no change to the family.
+23. Return on the keyboard sent the message, so a message could not have paragraphs.
+   RULED: Return starts a new line, only the send button sends [R-0368]. FIXED; the
+   composer and the bubbles keep the line breaks.
