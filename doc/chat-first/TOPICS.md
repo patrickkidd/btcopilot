@@ -436,9 +436,9 @@ it, and money out of his own pocket is the lesser of his two concerns. What thos
 has not been designed. (2) [ruling] cost per user over time has to reach a dashboard, and
 whether we leave Datadog for our own Grafana, Prometheus and Loki is a brainstorm he asked for
 in a separate session that reports its findings back here by message rather than in this
-context; the per-user token table already meters each user. (3) [build] rotate every secret in the
-committed compose file, which still holds live keys and a TLS private key in git history — he
-issues the new credentials. (4) [build] freeze the old droplet for Pro. (5) [build] money
+context; the per-user token table already meters each user. (3) closed: fdserver is private, its old
+compose values are not exposed, no rotation (his word, 2026-09-22); its FD-362, oracle-store and
+chat-first-app branches and worktrees are deleted. (4) [build] freeze the old droplet for Pro. (5) [build] money
 through Stripe: account, keys and the price, after the first bill [R-0354]. (6) [build] archive
 the fdserver repo once nothing refers to it. (7) [verify] production still has no automated
 database backup. (8) [ruling] nine scratch accounts with chats, made while proving each deploy end to end, sit
@@ -459,7 +459,7 @@ and the four appcast feeds); doc/chat-first/PLATFORM_BUILD.md; doc/chat-first/DA
 private/prompts/ and private/oracle/, encrypted.
 **Next action:** he puts the Grafana token on the box and refreshes the dependency lock so the
 observability commit can deploy; his merge of btcopilot PR #137 and fdserver PR #31 finishes the
-Pro maintenance stream; then his word on the nine scratch accounts and the secret rotation.
+Pro maintenance stream; the nine scratch accounts are deleted and one test account remains.
 **Updated:** 2026-09-22.
 
 ## T-12 · The learning loop: a scout that looks outward and a review of the scout

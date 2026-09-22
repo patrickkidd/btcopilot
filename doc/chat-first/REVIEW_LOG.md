@@ -532,3 +532,7 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    Item 34 DONE 2026-09-22 22:20 UTC on his word: claude-test2 to claude-test10 deleted with
    everything they owned, one transaction; claude-test@familydiagram.com kept as the single
    reusable test account. Production now holds 4 accounts, 1 of them the test account.
+35. Patrick, correcting me: fdserver is private, so the values in its old compose file are
+   not exposed; the secret-rotation item is closed, not open. And every fdserver branch made for
+   this work goes: FD-362 and its worktree, oracle-store and its worktree, chat-first-app, all
+   deleted 2026-09-22 (remote and local). legacy-image-tag stays until PR 31 merges. DONE
