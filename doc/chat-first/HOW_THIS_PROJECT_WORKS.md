@@ -183,3 +183,9 @@ thing to test [R-0302]. His words: "You need total freedom to stand up test fixt
 **A walk is serial, step by step, and never cross-references (2026-09-14, Patrick).** Each step says what to tap and what he sees, in place; never "see Walk 5", never "this is the line the spec disagrees with", never a list of known differences to hold in mind. Anything known to be wrong is fixed before the walk is handed over, not annotated.
 
 **A walk is driven before it is handed over (2026-09-15, R-0343).** An independent agent, not the author, follows the walk document literally in a real browser on the fixture accounts, step by step, and corrects every step that does not match the screen. Only then does Patrick get it. His words: "There are big inconsistencies between the walk instructions and what I actually see, seemingly at every walk."
+
+- **2026-09-22 — one test account, never a spray of them (Patrick).** Deploy walks and sandbox
+  checks on production made nine claude-test accounts that showed up as "people who chatted" on
+  the dashboard. Rule: a test account is deleted the moment it is not needed, or one account is
+  reused: `claude-test@familydiagram.com`. Never create a numbered series. Dashboards exclude
+  the `claude-test` prefix, and the review walks run against a sandbox, not the box.
