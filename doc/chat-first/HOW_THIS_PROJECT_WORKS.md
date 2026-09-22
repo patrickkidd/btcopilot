@@ -187,5 +187,5 @@ thing to test [R-0302]. His words: "You need total freedom to stand up test fixt
 - **2026-09-22 — one test account, never a spray of them (Patrick).** Deploy walks and sandbox
   checks on production made nine claude-test accounts that showed up as "people who chatted" on
   the dashboard. Rule: a test account is deleted the moment it is not needed, or one account is
-  reused: `claude-test@familydiagram.com`. Never create a numbered series. Dashboards exclude
+  reused: `the claude-test account`. Never create a numbered series. Dashboards exclude
   the `claude-test` prefix, and the review walks run against a sandbox, not the box.

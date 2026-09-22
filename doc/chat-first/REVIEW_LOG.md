@@ -530,7 +530,7 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    sandbox (the Tailscale dev server, item under "how the beta iterates"), never the box. The
    rows stay until his word: delete or keep. OPEN
    Item 34 DONE 2026-09-22 22:20 UTC on his word: claude-test2 to claude-test10 deleted with
-   everything they owned, one transaction; claude-test@familydiagram.com kept as the single
+   everything they owned, one transaction; the claude-test account kept as the single
    reusable test account. Production now holds 4 accounts, 1 of them the test account.
 35. Patrick, correcting me: fdserver is private, so the values in its old compose file are
    not exposed; the secret-rotation item is closed, not open. And every fdserver branch made for

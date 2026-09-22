@@ -1632,6 +1632,6 @@ the record of the rejected option. The Datadog agent leaves the compose file whe
 
 Patrick, after nine claude-test accounts from deploy verification walks appeared on the new
 Grafana dashboard as people who chatted. Ruling: test accounts are deleted the moment they are
-not needed, or one account (claude-test@familydiagram.com) is reused; never a numbered series.
+not needed, or one account (the claude-test account) is reused; never a numbered series.
 The nine are deleted by the deployment session; the dashboards exclude the prefix; verification
 walks move to a sandbox. Recorded in HOW_THIS_PROJECT_WORKS.md.
