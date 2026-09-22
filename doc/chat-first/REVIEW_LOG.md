@@ -461,3 +461,6 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    including whether a move becomes an ordinary noted event or keeps a kind untied to the
    couple, and whether the rework happens now or after the beta. OPEN — a brainstorm, not a
    fix; he wants it re-opened.
+   Item 21 built (2026-09-22): the noted kind is in, moved is out (R-0363, R-0364, R-0365),
+   commit bda417d. The eight stored moves in his record were rewritten in place on the box at
+   the storage level, no read-time translation, before the new image was deployed. DONE.
