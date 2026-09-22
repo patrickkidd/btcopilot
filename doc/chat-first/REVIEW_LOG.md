@@ -454,3 +454,10 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    app to portrait, or design for landscape.
 20. In an open cluster, tap a moment, tap the back arrow: it only put the moment down and
    stayed in the cluster. RULED: the arrow always closes the cluster [R-0362]. FIXED.
+21. Patrick: "moved" is still a first-class event kind; he said before that a move is one of
+   many notable events with no structural or functional shift of its own. Finding: the
+   complaint is recorded in doc/chat-first/EVENT_MODEL.md as complaint 1, a proposed shape
+   exists, nothing is built, and six questions at the end of that page are unruled —
+   including whether a move becomes an ordinary noted event or keeps a kind untied to the
+   couple, and whether the rework happens now or after the beta. OPEN — a brainstorm, not a
+   fix; he wants it re-opened.
