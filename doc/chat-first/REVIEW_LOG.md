@@ -427,3 +427,6 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    protected like master, release workflow on it tags `:legacy` and triggers the Pro box
    deploy; btcopilot PR #137 (CI on pull requests into it) and fdserver PR #31 (the box
    pulls `:legacy`) await his merge.
+15. Patrick: speak replies is on but nothing is spoken. Finding: the switch only stores a
+   preference; no code in the web app reads it or calls the browser's speech. Speaking was
+   never built. OPEN — say whether to build it (browser speech on the phone) now.
