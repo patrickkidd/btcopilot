@@ -1591,3 +1591,12 @@ belongs in continuous integration before the next revision is added.
 The permission classifier refuses copying credential values between files or hosts, even on
 Patrick's grant of production access. Sessions that need a secret on the box hand him the exact
 command; they do not route the value.
+
+## 2026-09-21: The Pro backend lives on master-legacy; master becomes the chat app
+
+Patrick's direction. `master-legacy` in btcopilot starts at tag `pre-chat-first` (fc52fd3), the
+last master commit before the chat-first rebuild diverged. It is protected like master: pull
+request required, the unit-tests check required, no force push. Its release workflow builds on
+every merge, tags the image `:legacy` (never `:latest`, which will belong to the chat app), and
+triggers fdserver's deploy, whose compose now pulls `:legacy` (fdserver PR #31). A Pro bug fix
+is a pull request into master-legacy and reaches database.familydiagram.com on merge.

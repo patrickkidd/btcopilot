@@ -422,3 +422,8 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
 13. Seen while verifying onboarding on the box: the session summary shown in the sessions
    list (a separate model call) answered the person's first message with generic sleep
    advice instead of summarising the exchange. OPEN
+14. Patrick: a branch `master-legacy` for Pro bug fixes with the same release flow, deploying
+   to database.familydiagram.com on every merged pull request. DONE: branch at the tag,
+   protected like master, release workflow on it tags `:legacy` and triggers the Pro box
+   deploy; btcopilot PR #137 (CI on pull requests into it) and fdserver PR #31 (the box
+   pulls `:legacy`) await his merge.
