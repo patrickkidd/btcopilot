@@ -13,7 +13,7 @@ import logging
 import uuid
 
 from btcopilot.extensions import ai_log, db
-from btcopilot.personal import chips, clusters, recordtext
+from btcopilot.personal import chips, clusters, profile, recordtext
 from btcopilot.personal.coachmodel import CoachModel
 from btcopilot.personal.models import (
     Change,
@@ -22,7 +22,7 @@ from btcopilot.personal.models import (
     Statement,
     StatementKind,
 )
-from btcopilot.personal.prompts import get_agent_prompt, note_register
+from btcopilot.personal.prompts import get_agent_prompt, note_register, onboarding
 from btcopilot.personal.interactions import recent
 from btcopilot.personal.toolbox import ToolError, Toolbox, schemas
 from btcopilot.schema import DiagramData, ItemKind
@@ -181,6 +181,10 @@ class CoachTurn:
         )
         if DiscussionKind(self.discussion.kind) is DiscussionKind.Note:
             system = f"{system}\n\n{note_register()}"
+        gaps = profile.missing(data)
+        if gaps:
+            own = profile.own(data)
+            system = f"{system}\n\n{onboarding(gaps, own['id'] if own else 1)}"
         messages = self._history()
         spoken = ""
         events = []
@@ -255,6 +259,7 @@ class CoachTurn:
         if self.discussion.title is None:
             self.discussion.update_title()
             self.discussion.update_summary()
+        profile.mirror(self.discussion.user, self.data)
         db.session.commit()
 
         return {

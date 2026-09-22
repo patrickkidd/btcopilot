@@ -383,23 +383,31 @@ Source: his messages in the session. Status as of the last flush.
 7. Chat still broken after item 5: the wheel never shipped the public prompt directory,
    so the image had only the private files and the session-title prompt (public only)
    was missing. Package data fixed, image rebuilt, deployed; proven with a full turn over
-   https as a scratch account (claude-test@familydiagram.com, which stays in the database:
-   there is no delete command yet): 200, the coach added the mother and her death.
+   https as a scratch test account (which stays in the database: there is no delete command
+   yet): 200, the coach added the mother and her death.
    Lesson: every earlier check was a piece of the path, not the path. FIXED @56f98bd
 
 Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each OPEN until fixed):
 
 8. Coach bubble: the closing question is in the same gold as the chips under it, which reads
-   as a formatting error. OPEN
+   as a formatting error. RULED: reads as bold, fine if that is where the eye should go;
+   kept [R-0358].
 9. The chips under a coach bubble: tapping one inserts it into the chat, but what that means
-   or does is not obvious; make it obvious, or drop them. OPEN
+   or does is not obvious; make it obvious, or drop them. OPEN — he asked what they gain;
+   answered in the session; his ruling pending.
 10. Timeline: an event the coach adds shows as a bare dot with no other information, and a
    "?" sits at the end of the timeline; nobody will know what that means. The "?" was also
-   there on the right before any event existed, which looks like a bug. OPEN
+   there on the right before any event existed, which looks like a bug. RULED: hide both
+   question marks for now, with the reasoning kept in comments so the thread is not lost
+   [R-0359]. FIXED in the picture code; the rule in DRAWABILITY stands.
 11. Timeline shows one event at 2021, but the events talked about were high school and ages
-   25–26 with no years given, so 2021 comes from nowhere. OPEN
+   25–26 with no years given, so 2021 comes from nowhere. Cause: no birthdate to anchor
+   an age. Addressed by 12: the coach gets the birth date before any other event.
 12. Opening the invite lands straight in the chat with no onboarding: never asked for name,
-   age or birthdate. Was a form not planned? OPEN
+   age or birthdate. Was a form not planned? RULED: the coach onboards; first name, last
+   name and birth date are required before it goes on [R-0360]. FIXED: the coach's
+   prompt carries what is still missing until all three are in the record, and the
+   account row mirrors them for the preferences page.
    Findings on 8–12 (2026-09-21): 8 and 9 are the built design — the bubble's last sentence
    is split off as "the ask" in amber and the bracketed amber chips are offered answers a
    tap drops into the composer (R-0072, R-0073, R-0139); not a formatting bug, a legibility

@@ -106,6 +106,12 @@ def get_conversation_flow_prompt(
     )
 
 
+def onboarding(missing: list[str], person_id: int) -> str:
+    """What the coach must get first while the person's own name or birth date
+    is not in the record."""
+    return files().text("onboarding", missing=", ".join(missing), person_id=person_id)
+
+
 def get_agent_prompt(record: str = "", interactions: str = "") -> str:
     """The coach's system prompt for one agent-loop turn. `record` is the whole
     family record rendered by `btcopilot.personal.recordtext`; `interactions` is

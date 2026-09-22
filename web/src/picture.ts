@@ -43,6 +43,8 @@ import {
 } from "./types";
 
 const YEAR_W = 60;
+/** Patrick, 2026-09-21: the undated shelf's "?" stays off until it explains itself. */
+const HIDE_SHELF_MARK = true;
 /** The year sits centred under its dot, but never past the picture's edge: a
  * dot at either end keeps its year inside the box. */
 const yearLeft = (x: number, width: number): string =>
@@ -1061,7 +1063,11 @@ export class Picture {
         `<div class="ss">` +
         `<svg viewBox="0 0 ${width} ${PIC_H}" aria-hidden="true">` +
         `<line class="wire empty" x1="${x0}" y1="${WIRE}" x2="${x1}" y2="${WIRE}"/>` +
-        `<text class="qm" x="${width / 2}" y="${WIRE + 6}" text-anchor="middle">?</text>` +
+        // The "?" in the middle of an empty wire was the question language
+        // (DRAWABILITY): "the record is still asking". Hidden on Patrick's word,
+        // 2026-09-21: distracting before anyone knows what it means. The rule
+        // stands; the glyph waits for a first-time explanation. To restore:
+        // `<text class="qm" x="${width / 2}" y="${WIRE + 6}" text-anchor="middle">?</text>`
         `</svg>` +
         `<button class="ss-hit" data-target="${Target.Shelf}" ` +
         `aria-label="Nothing has a date yet" ` +
@@ -1307,6 +1313,12 @@ export class Picture {
    * It sits above the wire where there is room for it and on the wire where
    * there is not, which is the case at the resting level. */
   private shelfHit(x1: number, wire: number): string {
+    // The "?" past the end of the line is the undated shelf: facts the record
+    // holds but cannot place (DRAWABILITY, R-0047). Hidden on Patrick's word,
+    // 2026-09-21, because nothing tells a first-time reader what it means; the
+    // shelf itself stays, reached from the events list. Drop the next line to
+    // bring the marker back.
+    if (HIDE_SHELF_MARK) return "";
     if (!this.data?.shelf.length) return "";
     const above = wire - ZONE - 4;
     const top = above >= 0 ? above : wire - ZONE / 2;
