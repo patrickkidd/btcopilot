@@ -256,11 +256,10 @@ stays and its flag follows the clinical definition [R-0283]; no trend lines unti
 [R-0284]; (3) [build] the event editor's relationship fields; (4) [ruling] whether tapping an
 event's words inside an open cluster jumps to its editor, which he will say after testing
 [R-0207]; (5) [build] a play button under each coach bubble that plays or replays that message,
-the way the Claude Code app has one; (6) [ruling] whether to pay for a better voice than the
-phone's built-in one: a paid service costs roughly one cent a reply, and he will not turn it on
-until each beta user can see their own use and what it costs, and that feeds back into whether
-people pay for the app and whether they like it — tabled, not dropped, and money out of his own
-pocket is the lesser of his two concerns.
+the way the Claude Code app has one; (6) [ruling] which voice reads the replies: the phone's own
+built-in one today, cloud neural voices at roughly one cent a reply, ElevenLabs at several times
+that, or self-hosted models the box cannot run. He has not picked, and anything paid also waits
+on the measurement question on the platform topic.
 **Lives in:** doc/chat-first/UI_GAP.md, REVIEW_LOG.md round 5, STATE.md,
 doc/chat-first/FRAGMENT_CONVENTIONS.md, the drawn round in
 ~/theapp/btcopilot-sources/fd-corpus/design/round6/.
@@ -408,17 +407,20 @@ because the app looked for Redis on the local machine, and was rolled back in tw
 branch starts there, is protected like master, builds an image tagged `:legacy` on every merge
 and deploys the old box. btcopilot PR #137 and fdserver PR #31 carry the last two pieces and
 await his merge.
-**Open:** (1) [ruling] cost per user over time has to reach a dashboard, and whether we leave
-Datadog for our own Grafana, Prometheus and Loki is a brainstorm he asked for in a separate
-session that reports its findings back here by message rather than in this context; the per-user
-token table already exists. What he wants out of it is not only the bill: he wants each beta
-user's spending and use tied back to whether they would pay for the app and whether they like
-it, and he has not settled what those measures are. (2) [build] rotate every secret in the
+**Open:** (1) [ruling] no feature that costs money per use is switched on until each beta user
+can see their own use and what it costs, and that measurement sits inside the learning this app
+exists for — will people pay for it, and do they like it. The example on the table is a paid
+voice reading the coach's replies at roughly one cent a reply: he tabled it rather than dropping
+it, and money out of his own pocket is the lesser of his two concerns. What those measures are
+has not been designed. (2) [ruling] cost per user over time has to reach a dashboard, and
+whether we leave Datadog for our own Grafana, Prometheus and Loki is a brainstorm he asked for
+in a separate session that reports its findings back here by message rather than in this
+context; the per-user token table already meters each user. (3) [build] rotate every secret in the
 committed compose file, which still holds live keys and a TLS private key in git history — he
-issues the new credentials. (3) [build] freeze the old droplet for Pro. (4) [build] money
-through Stripe: account, keys and the price, after the first bill [R-0354]. (5) [build] archive
-the fdserver repo once nothing refers to it. (6) [verify] production still has no automated
-database backup. (7) [verify] a scratch test account made while proving the coach is still in
+issues the new credentials. (4) [build] freeze the old droplet for Pro. (5) [build] money
+through Stripe: account, keys and the price, after the first bill [R-0354]. (6) [build] archive
+the fdserver repo once nothing refers to it. (7) [verify] production still has no automated
+database backup. (8) [verify] a scratch test account made while proving the coach is still in
 the production database; there is no command to delete an account yet.
 **Note for the next session:** the permission classifier refuses a sub-agent both `sops
 updatekeys`, because it writes the secret store, and `docker compose pull` and `up` on the box,

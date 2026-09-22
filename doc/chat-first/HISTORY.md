@@ -1260,3 +1260,11 @@ record is a thick unreadable line at 39 events with no way to tap a single dot a
 own; and the summary shown for a session in the list answers the person's first message with
 generic advice instead of summarising the exchange. A drawn round on the first two is running as
 this flush is written.
+
+**One principle he asked to be remembered.** Speaking the coach's replies is done today by the
+phone's own voice, which costs nothing; a better voice would cost roughly a cent a reply, and he
+will not switch on anything that costs money per use until each beta user can see their own use
+and what it costs. That measurement has to sit inside the learning this app exists for — will
+people pay for it, and do they like it — and money out of his own pocket is the lesser of his two
+concerns. He also wants a play button under each coach reply, to hear it again. Tabled, not
+dropped.
