@@ -442,3 +442,8 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    in the logs, and the next turn ran cluster detection cleanly. Every deploy has this
    window today. NOTED — a restart that keeps the old container up until the new one is
    healthy is a later improvement.
+18. Select an event on the timeline, tap "in chat": "Those words are no longer here". Cause: a
+   coach bubble written in the session on screen never carried its statement id (only a
+   reopened session bubbles did), so a moment coded in this very session could not find
+   its words. FIXED: the live bubble is stamped with its statement id the moment the reply
+   arrives.

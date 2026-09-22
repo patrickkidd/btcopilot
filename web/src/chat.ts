@@ -315,6 +315,9 @@ export class Chat {
     this.scroll();
     const words = bubble.querySelector(".words") as HTMLElement;
     return {
+      stamp: (statementId) => {
+        bubble.dataset.statement = String(statementId);
+      },
       note: (line) => {
         bubble.insertBefore(el("div", "did", esc(line)), words);
         this.scroll();
@@ -504,6 +507,9 @@ export class Chat {
 }
 
 export interface LiveBubble {
+  /** The bubble carries its statement once the server has one, so a moment
+   * coded in this very session can point back at it (review item 18). */
+  stamp(statementId: number): void;
   note(line: string): void;
   type(text: string, onChip: (chip: Chip) => void, pace?: number): Promise<void>;
 }

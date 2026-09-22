@@ -831,6 +831,7 @@ async function deliver(statement: string): Promise<void> {
   chat.settled();
 
   const bubble = chat.live();
+  bubble.stamp(reply.statement_id);
   for (const step of steps(reply)) {
     if (step.kind === StepKind.Note) {
       bubble.note(step.line);
