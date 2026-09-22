@@ -1600,3 +1600,11 @@ request required, the unit-tests check required, no force push. Its release work
 every merge, tags the image `:legacy` (never `:latest`, which will belong to the chat app), and
 triggers fdserver's deploy, whose compose now pulls `:legacy` (fdserver PR #31). A Pro bug fix
 is a pull request into master-legacy and reaches database.familydiagram.com on merge.
+
+## 2026-09-22: How the beta iterates
+
+Patrick, brainstorming with Claude. Production stays the place to try things with the first beta
+testers. Web-only changes are hot-copied into the running container (no restart) and the image is
+rebuilt behind them; the rebuilt image is pulled with the old container kept up until the new one
+is healthy, and CI caches the wheel and web layers so a build is minutes, not twelve. A dev server
+on this Mac reachable from his phone over Tailscale (100.71.164.31) is the next step, timing open.
