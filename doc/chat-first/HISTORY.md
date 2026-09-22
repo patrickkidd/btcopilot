@@ -1301,3 +1301,12 @@ assistant drives, and the per-call cost rows; it works on this same branch and c
 minutes of each change. This session kept the app itself. The drawn options for the two cluster
 problems — the picture changing under him between messages, and the crowded line on a phone —
 were finished and published, and they wait on his picks.
+
+**2026-09-22, late — features dashboard.** Every screen change and about sixty named taps in the
+web app post to a product_events table (one enum of names in the web code, a test keeps the
+server's copy equal); Grafana's Features dashboard reads it with a people picker and an exclude
+pattern: features by use, by person, per day, first use, days active, each person's first-session
+path, cost per tap, coach edits by kind. Patrick's first taps arrived within a minute of the roll.
+Per-container metrics fixed by mounting the containerd socket into Alloy. The nine test accounts
+are deleted; one reusable test account remains and the dashboards exclude it.
+
