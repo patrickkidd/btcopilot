@@ -32,8 +32,10 @@ def create_app(config: dict = None, **kwargs):
         SQLALCHEMY_DATABASE_URI="postgresql://familydiagram:pks@localhost:5432/familydiagram",
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         COPILOT_BASE_URL="http://localhost:4999",
-        CELERY_BROKER_URL="redis://localhost:6379/0",
-        CELERY_RESULT_BACKEND="redis://localhost:6379/0",
+        # The box sets these unprefixed for the worker; the app reads the same
+        # values so the turn log and the queue share one Redis.
+        CELERY_BROKER_URL=os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0"),
+        CELERY_RESULT_BACKEND=os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0"),
         WTF_CSRF_CHECK_DEFAULT=False,
         # A token stamped into a page lives as long as the session that page
         # belongs to. The default hour expires it under a reader who is still
