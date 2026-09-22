@@ -9,6 +9,9 @@ Backend for Pro/Personal apps, training app, AI extraction system.
   unless he used it. That includes the corpus's own vocabulary: "topic block", "two clocks",
   "state clock", "flush", "T-11" (verified failure 2026-09-13: "topic block?? again, with the
   clever language!"). Say "the notes on the branch", "the list of open items", "the file".
+- **One test account, reused (2026-09-22, Patrick).** claude-test@familydiagram.com is the only
+  test account on production; never create another, and delete any scratch account the moment
+  it is no longer needed.
 - **Never verify on production (2026-09-22, Patrick objected to nine scratch accounts on the
   dashboard).** A deploy is checked with a probe of public pages only; every walk that signs
   in, chats or writes runs on a sandbox stack, never the box.

@@ -529,3 +529,6 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    objected on seeing them on the dashboard. From now on verification walks run against a
    sandbox (the Tailscale dev server, item under "how the beta iterates"), never the box. The
    rows stay until his word: delete or keep. OPEN
+   Item 34 DONE 2026-09-22 22:20 UTC on his word: claude-test2 to claude-test10 deleted with
+   everything they owned, one transaction; claude-test@familydiagram.com kept as the single
+   reusable test account. Production now holds 4 accounts, 1 of them the test account.
