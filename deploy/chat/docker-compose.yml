@@ -112,6 +112,7 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /run/containerd/containerd.sock:/run/containerd/containerd.sock:ro
       - /var/lib/docker:/var/lib/docker:ro
       - /dev/disk:/dev/disk:ro
     expose:
