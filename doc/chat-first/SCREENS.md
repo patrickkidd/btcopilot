@@ -6,7 +6,7 @@ behaviour, tagged `[built]` if it is in the app today, `[drawn]` if it is approv
 but not built, and `[open]` if it is a choice Patrick has not made yet. It is rewritten as
 decisions land; the exact sizes and colours live in the internal interface spec, not here.
 
-Updated: 2026-09-16
+Updated: 2026-09-22
 
 ---
 
@@ -53,19 +53,26 @@ What it is for: talking to the coach, which is how everything else in the app ge
 - The coach does not message you first unless you ask it to. [built] {R-0017}
 - Correcting something in conversation changes the record in place, and older references still point at the right thing. [built]
 - You can also undo the last thing the coach did by telling it to. [built]
+- Before anything else, the coach asks you for your first name, your last name and your birth date, and keeps asking until it has all three. [built] {R-0360}
+- Without your birth date the coach has nothing to turn an age into a year, so early events land on years it invented. [built] {R-0360}
+- The last sentence of a coach reply is its question and is set in amber. It reads as bold, which is where your eye should go. [built] {R-0358}
+- The coach no longer holds out answers for you to tap; you type your own words. [built] {R-0361}
+- The Return key starts a new line, and only the send button sends, so a message can have paragraphs. [built] {R-0368}
+- The coach's words and the steps it takes arrive as they happen rather than all at the end, so a long turn is never a blank wait. [built] {R-0369}
+- The turn runs on the server on its own, so reloading the page, or leaving the app and coming back, picks the turn up where it is. [built] {R-0369}
 
 ## The picture at rest
 
 @frame built#f5 | One event on the line: a single dot, no box around it.
 @frame built#f6 | A dense record: events that belong together are boxes on the line, each showing how many it holds.
-@frame built#f4 | A brand new record: nothing is on the line yet, with an amber question mark where the record has something to ask.
+@frame built#f4 | A brand new record: nothing is on the line yet.
 
 What it is for: the one picture, always above the chat, that is the app's memory of your family.
 
 - One picture sits pinned above the chat and never appears and disappears. [built] {R-0002}
 - It keeps a fixed height whatever it is showing, so the chat below it never jumps. [built] {R-0210}
 - At rest it shows your clusters over time on one line: a horizontal line with marks on it and nothing else. [built]
-- Only three kinds of mark exist at this size: the line, the marks on it, and an amber question mark. [built] {R-0005}
+- Only the line and the marks on it are drawn at this size. [built] {R-0005, R-0359}
 - The band under the picture reads "tap a cluster" when nothing is picked. [built]
 - Tapping a mark once shows its words; nothing is sent to the coach and it costs you nothing. [built] {R-0073}
 - Tapping it again sends it to the coach as something you are asking about. [built] {R-0072, R-0073}
@@ -73,8 +80,8 @@ What it is for: the one picture, always above the chat, that is the app's memory
 - A picked event shows its date and its own words in two lines above the line, and the year is written once under the mark. [built] {R-0210, R-0235}
 - A picked loose event that is not in any cluster reads exactly like a picked event inside a cluster. [built] {R-0235}
 - Tapping the words of the event already picked jumps to where it was coded in the chat. [built] {R-0192}
-- An amber question mark appears where the record has a question, and only in three situations: an order it cannot tell, an open state it cannot confirm, and facts with no date at all. [built] {R-0005}
-- Facts with no date sit on a shelf at the end of the line rather than being placed on it. [built] {R-0013}
+- The amber question mark is hidden for now, because nobody could tell what it meant. The record still holds its questions and the coach still asks them in words. [built] {R-0359}
+- Facts with no date sit on a shelf at the end of the line rather than being placed on it, and the question mark that used to mark that shelf is hidden with the rest. [built] {R-0013, R-0359}
 - Tapping a shelf item says the fact out loud and offers to ask the coach when it happened; a shelf item that does nothing is a defect. [built] {R-0047}
 - There are no legends anywhere; every mark says itself in a plain sentence when you tap it. [built] {R-0005}
 - There is no progress bar and no sense of being finished; what more information would buy is shown as specific questions instead. [built] {R-0007}
@@ -110,6 +117,8 @@ What it is for: one group of related events, opened from the line.
 - A stored cluster carries only its name, its reason, where it came from, and the events in it. [built] {R-0205}
 - The coach may group and name events but may never invent an event to put in one. [built] {R-0076}
 - The word for these is clusters, in the app and in the code. [built] {R-0197}
+- The back arrow inside an open cluster always closes the cluster and returns you to the whole line, whether or not an event is picked. [built] {R-0362}
+- Clusters are rebuilt from scratch after every turn that touches an event, so the same events can come back under different names; they are meant to stay put and change only when there is a reason. [open]
 - Whether tapping an event's words inside an open cluster should jump straight to its editor is unconfirmed, and Patrick will say after testing it. [open] {R-0207}
 
 ## The play-by-play
@@ -212,7 +221,10 @@ What it is for: correcting or adding one event by hand.
 
 - The editor holds everything an event carries: its kind, the people on it, a summary, details, where it happened, when, an optional end, and how sure you are. [built]
 - Its fields are big enough to tap comfortably. [built] {R-0174}
-- The kinds are shift, birth, adopted, bonded, married, separated, divorced, moved and death. [built]
+- The kinds are shift, birth, adopted, bonded, married, separated, divorced, noted and death. [built] {R-0363}
+- A noted event is any other notable event: one person, words that must be there, and a place and a date if you know them. [built] {R-0363}
+- A move is a noted event with the place kept; there is no longer a kind of its own for moving. [built] {R-0364}
+- A noted event changes nothing about the family, but it is a lead: sitting near a shift it raises the question of what came first, the way a structural event does. [built] {R-0366}
 - How sure you are is one of unknown, approximate or certain. [built]
 - Symptom, anxiety and functioning are each set to up, down, same or not said. [built]
 - A relationship change sits at the same level as those three, under one heading, never in its own section. [built]
@@ -287,6 +299,7 @@ What it is for: you, your families, your plan, and signing out.
 - Your profile page holds your first name, last name and birthdate. [built]
 - There is a row for whether the coach speaks its replies out loud. [built]
 - The same speaking switch appears once in the chat as a named shortcut, writing the same setting. [built]
+- With it on, your phone's own voice reads each reply as it starts arriving, and sending the next message cuts it off. [built] {R-0099}
 - No other setting appears in two places. [built]
 - There is a row for how often the coach may message you first, and it says the coach never messages first unless you ask. [built]
 - There is a row for light, dark or matching your phone. [built]
@@ -331,6 +344,7 @@ What it is for: the same app, wider, for professionals.
 
 - It is one app on the phone and on the desktop, with features turned on by your licence, your role and which view you are in. [built] {R-0237}
 - A wider screen pins the events and people drawer open on the right instead of sliding it over the chat. [built] {R-0243}
+- That wider layout now comes up for anyone on a wide window, a phone turned on its side included, not only a professional. [built] {R-0367}
 - A professional gets the same chat screen with things added to it, never a different app. [built] {R-0243}
 - Nothing gets a new screen where an existing screen can carry it. [drawn] {R-0243}
 - Nothing is ruled about how the existing desktop app fits in, and the chat app is not allowed to corner that decision. [open] {R-0081}

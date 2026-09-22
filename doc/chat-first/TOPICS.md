@@ -20,29 +20,33 @@ record only.
 
 ## T-1 · Ship the personal app to the first beta users
 
-**Status:** the code is ready for his review; the box has its database, his invite is minted,
-and DNS points at it; the beta waits on the four keys and his first sign-in.
+**Status:** the app is live at familydiagram.com/app and Patrick used it from his phone on 20,
+21 and 22 September; seven faults stopped the first turn answering at all and are fixed, and
+twenty more findings came out of his real chats. The beta now waits on his word to invite the
+three clinicians.
 **Decided:** one server for Pro, training and the chat app; old Pro diagrams stay pickle and
 new rows are JSON in the same column [Oracle: R-0241]; the beta users are the app working
 group of three clinicians [R-0079]; sign-in is passwordless with Face ID on a capable phone;
-the sandbox is https at turin:8891 with a dev CA the phone trusts once. Added this session: the
-beta starts from empty records, invited by email, with no import of the old Pro database at
+the beta starts from empty records, invited by email, with no import of the old Pro database at
 cutover [R-0355]; the app is served at familydiagram.com/app [R-0356]; pricing and plans are
-deferred to the first $20–40 bill [R-0354].
-**Open:** (1) [ruling] his code review of the branch, and of the coach's prompt section, which
-is the first open item on the coach topic; (2) [waiting] the four service keys for the box —
-Anthropic, AssemblyAI, and the Brevo mail username and password — without which the coach does
-not answer and no sign-in mail is sent; (3) [verify] the app has never been opened on Android;
-(4) [verify] passkeys have never been tried on a real https domain; DNS now points at the new
-box, so his first sign-in through the invite is the test; (5) [waiting] cluster quality on anyone else's record stays unmeasured
-until the coding loop produces numbers.
+deferred to the first $20–40 bill [R-0354]. Added this session: production is where the beta
+iterates — a change to the web pages is copied into the running container and the image is
+rebuilt behind it, and every deploy keeps the old container up until the new one answers.
+**Open:** (1) [ruling] whether to invite the three clinicians now or hold until the open
+findings from his own use are closed; (2) [ruling] his code review of the branch, and of the
+coach's prompt section, which is the first open item on the coach topic; (3) [build] the
+summary shown for a session in the sessions list answers the person's first message with
+generic advice instead of summarising the exchange (review item 13); (4) [verify] no sign-in
+mail has been sent to anybody — Patrick signed in through an invite link, so whether the mail
+credentials on the box work is unproven; (5) [verify] the app has never been opened on Android;
+(6) [verify] passkeys have never been tried on a real https domain; (7) [waiting] cluster
+quality on anyone else's record stays unmeasured until the coding loop produces numbers.
 **Lives in:** btcopilot PR #136 (fdserver PR #30 closed unmerged, 2026-09-16); merge-risk review
-with the seven fixes landed: doc/chat-first/MERGE_REVIEW.md; review log
-doc/chat-first/REVIEW_LOG.md, 146 rows; sandbox scripts
-/Users/patrick/worktrees/fd362-sandbox/; the box's deployment deploy/chat/.
-**Next action:** his four keys on the box, then his sign-in through the invite link and one chat
-turn; his code review and the coach's prompt review run alongside.
-**Updated:** 2026-09-16, second session.
+doc/chat-first/MERGE_REVIEW.md; review log doc/chat-first/REVIEW_LOG.md, round 5 items 1–27;
+the box's deployment deploy/chat/; sandbox scripts /Users/patrick/worktrees/fd362-sandbox/.
+**Next action:** his word on inviting the three clinicians, and his code review of the branch
+and the coach's prompt.
+**Updated:** 2026-09-22.
 
 ## T-2 · The coach knows the clinical definitions, and we can measure it
 
@@ -60,6 +64,10 @@ the private text says the meaning, coach and scribe alike [R-0305]; the scribe's
 private too, because anything prompt induction will run on is valuable [R-0314]; the prompts
 and the rulings are encrypted in place with sops and live in this repo, so the public checkout
 holds only ciphertext and there is no second repo to reach for.
+Added this session: the coach onboards the person before anything else — first name, last name
+and birth date are required, because without a birth date it has nothing to turn an age into a
+year and it invents one [R-0360]; the offered answers under a reply are gone, so the coach ends
+with one question and any offer it still writes is stripped [R-0361].
 **Open:** (1) [ruling] his review of the "What goes in the record" section, which is his
 clinical content rewritten for the loop; the author's list of what was dropped is in the prompt
 engineering log; (2) [waiting] the first measurement cannot run: the replay harness has nothing
@@ -74,7 +82,7 @@ the prompts as encrypted `.prompty` files under private/prompts/ with shared fra
 doc/PROMPT_ENGINEERING_LOG.md; his sandbox record re-coded once by the loop.
 **Next action:** his prompt review after he walks the app; code his two conversations; run the
 harness once.
-**Updated:** 2026-09-14.
+**Updated:** 2026-09-22.
 
 ## T-3 · One app: Pro and Training as thin layers on the chat
 
@@ -142,13 +150,19 @@ events and people list full screen over the chat and the picture, and the person
 "born to" with a mother and father picked by name and "Partners" beneath, never "bond" [R-0345].
 A walk document is now driven literally in a real browser by an independent agent before it is
 handed to him [R-0343].
+**Ruled from his own use of the app, 2026-09-22:** the wider layout, with the events and
+people list standing beside the chat, is no longer held back for a professional licence — it
+comes up for anyone on a wide window, a phone turned on its side included, to see how it feels
+[R-0367]. The first of his three complaints about the inherited event shape is answered: a move
+is no longer a kind of its own, ordinary notable events carry a "noted" kind, and the change
+was made before the beta rather than after [R-0363, R-0364, R-0365].
 **Open:** (1) [verify] Patrick has walked sections one to six; seven, eight and nine are driven
 and corrected but he has not walked them; (2) [build] only an admin may flag a ratified guideline
 or control the agenda, the vote and the meeting, and the account button shows its icon [R-0346] —
 this was being built when the session stopped and nothing has landed; (3) [ruling] the event
-model: his three complaints with the inherited timeline shape are written up with a normalised
-shape and six questions he has not answered, the last of which is whether it changes now or after
-the beta (doc/chat-first/EVENT_MODEL.md, page
+model: the first complaint is answered by the noted kind, and the rest of the normalised shape
+and the remaining questions on that page are still unanswered (doc/chat-first/EVENT_MODEL.md,
+page
 https://claude.ai/code/artifact/d4dbc090-fbde-464c-bcdc-0cc31e1a5c53); (4) [ruling] whether a
 person's name is written above the shape or below it
 (https://claude.ai/code/artifact/2c391e04-6283-4590-b9ba-9e46910b5fab); (5) [ruling] adoptive and
@@ -176,9 +190,9 @@ page https://claude.ai/code/artifact/d4dbc090-fbde-464c-bcdc-0cc31e1a5c53; the n
 comparison https://claude.ai/code/artifact/2c391e04-6283-4590-b9ba-9e46910b5fab; the walk page
 https://claude.ai/code/artifact/ad9750a2-d38c-469c-b5af-5a143f7ab3ab.
 **Next action:** Patrick walks sections seven, eight and nine of
-doc/chat-first/TEST_2026-09-14.md, rules on the event model page and on the names comparison
-page, and says whether the deploy work may start.
-**Updated:** 2026-09-15.
+doc/chat-first/TEST_2026-09-14.md, and rules on the rest of the event model page and on the
+names comparison page.
+**Updated:** 2026-09-22.
 
 ## T-4 · Existing records and conversations in the new app; wipe and re-code
 
@@ -195,6 +209,10 @@ the chat page with the sub-fields intact, returned to the Pro app equal, and kee
 desktop-only fields after a hand edit. The comparison page "Old Record, New Record" is
 https://claude.ai/artifact/VAUvng5FkgXs16eUQzxCLi. Writing it found that DATA_MODEL.md gave a
 triangle's type as pairs; it is a list of person ids, and the document is fixed.
+Added this session: the event kinds changed under the beta — "moved" left the kind list and
+ordinary notable events became a "noted" kind, so a diagram imported from the desktop app has
+to have its moves translated at the import boundary [R-0365]. The eight moves already stored on
+the box were rewritten in place at the storage level, with no translation at read time.
 **Open:** (1) [build] old training transcripts are now kept out of the session list, the fix
 having landed, but they are not yet importable on purpose — that is the upload and
 speaker-mapping path on the one-app topic; (2) [build] three carry-over defects: diagrams
@@ -210,42 +228,58 @@ row 137).
 MERGE_REVIEW.md §4; run_agent_f1.replay.
 **Next action:** build "re-code with the coach" in the session menu (T-3 build); the per-diagram
 import waits until after the beta.
-**Updated:** 2026-09-16.
+**Updated:** 2026-09-22.
 
 ## T-5 · Picture and interface rulings still open
 
-**Status:** waiting on Patrick; none block the beta.
+**Status:** eleven things Patrick hit using the app on his phone were ruled and built this
+session; two are open and a drawn round on them is running.
 **Decided:** the picked-moment words on the timeline (option A) [R-0235]; the about page
 behind an i, ✕ in the arrow's place; one icon-button size [R-0234]; the card slides the whole
-region; who·what words [T-2].
-**Open:** (1) [build] grouping is the coach's judgement with a one-line scope and the floor
-binds only the automatic draft [R-0287]; the nodal ring stays and its flag follows the clinical
-definition [R-0283]; the thirteen interface rows are closed as built [R-0291]; no trend lines
-until real data [R-0284]; (2) [build] the event editor's relationship fields; its hiding of
-fields by event kind landed 2026-09-12 and no longer saves a hidden field; (3) [ruling] whether
-tapping an event's words inside an open cluster jumps to its editor, which he will say after
-testing [R-0207]. Closed since the last flush: the play-by-play now steps every event of a
-cluster including one the move language has no mark for [R-0292]; "moment" became "event"
-throughout the app's own copy [R-0289]; the sessions sheet keeps a "+" per family and a
-personal reader never meets the word case [R-0285]; the app draws a family fragment to twelve
-fixed rules [R-0325].
-**Lives in:** doc/chat-first/UI_GAP.md, REVIEW_LOG.md, STATE.md,
-doc/chat-first/FRAGMENT_CONVENTIONS.md.
-**Next action:** the relationship fields; one ruling after he tests the cluster tap.
-**Updated:** 2026-09-14.
+region; who·what words [T-2]. Ruled and built from his own use, 20–22 September: the amber
+question mark on the line is hidden for now, both where the line is empty and past the end for
+undated facts, with the reasoning kept in comments and the drawing rule left standing [R-0359];
+the amber closing question in a coach reply stays, because it reads as bold and that is where
+the eye should go [R-0358]; the back arrow inside an open cluster always closes the cluster
+rather than only putting a picked moment down [R-0362]; a noted event is a lead, so it raises
+the question of order beside a shift the way a structural event does, while still counting as
+no change to the family [R-0366]; the wide layout comes up for anyone on a wide window, a phone
+turned on its side included [R-0367]; Return starts a new line and only the send button sends
+[R-0368]; selecting an event and tapping "in chat" now finds the words even when the coach
+wrote them in the session on screen.
+**Open:** (1) [ruling] the main view of clusters on a phone: 39 dated events already read as
+one thick line, a tap cannot pick a single dot, and the view has no name of its own — drawn
+options on his own record are being made now; (2) [build] grouping is the coach's judgement
+with a one-line scope and the floor binds only the automatic draft [R-0287]; the nodal ring
+stays and its flag follows the clinical definition [R-0283]; no trend lines until real data
+[R-0284]; (3) [build] the event editor's relationship fields; (4) [ruling] whether tapping an
+event's words inside an open cluster jumps to its editor, which he will say after testing
+[R-0207].
+**Lives in:** doc/chat-first/UI_GAP.md, REVIEW_LOG.md round 5, STATE.md,
+doc/chat-first/FRAGMENT_CONVENTIONS.md, the drawn round in
+~/theapp/btcopilot-sources/fd-corpus/design/round6/.
+**Next action:** he picks from the drawn options for the crowded line; then the relationship
+fields.
+**Updated:** 2026-09-22.
 
 ## T-6 · Clusters by example
 
-**Status:** waiting on examples he marks.
+**Status:** a real fault found in his own use — clusters appear and vanish between messages —
+and a drawn round on stability and on the crowded line is running now.
 **Decided:** the rules make the candidates, the model names them and gives a reason
 [R-0193, R-0194]; the floor is three events, enforced at the commit; user groupings under the
 old floor are grandfathered.
-**Open:** (1) [ruling] he has marked no example clusters yet, and the examples are the input
-only he can give; (2) [waiting] cluster quality on anyone else's record stays unmeasured until
-the coding loop produces numbers.
-**Lives in:** btcopilot/personal/clusters.py; the cluster prompt in the private prompt file.
-**Next action:** none until T-3 yields coded conversations.
-**Updated:** 2026-09-11.
+**Open:** (1) [ruling] clusters must stay put and change only when there is a reason: today
+every turn that touches an event re-runs detection and rewrites every cluster, so in one turn
+seven clusters became five, all renamed with new ids, and the eye never sees the same picture
+twice — a stability rule is needed and the drawn round is preparing the options; (2) [ruling]
+he has marked no example clusters yet, and the examples are the input only he can give;
+(3) [waiting] cluster quality on anyone else's record stays unmeasured until the coding loop
+produces numbers.
+**Lives in:** btcopilot/personal/clusters.py; the cluster prompt in the private prompt file;
+the drawn round in ~/theapp/btcopilot-sources/fd-corpus/design/round6/ (in flight).
+**Next action:** he rules on the stability options when the drawn round lands.
+**Updated:** 2026-09-22.
 
 ## T-7 · The drawn family and auto-arrange
 
@@ -299,11 +333,14 @@ every step that does not match the screen is corrected first [R-0343]; the docum
 sign-in link in every section, puts one action in a step, and colours the action verb [R-0337];
 agents may keep editing the front end while he walks, because a page reload is acceptable
 [R-0338].
+Added this session: the branch instructions now carry the correction that sub-agents do the
+mechanical work while the coordinator holds one-line summaries, relays nothing while a run is
+going, and posts one message at the end.
 **Open:** none.
 **Lives in:** doc/chat-first/HOW_THIS_PROJECT_WORKS.md; doc/chat-first/TEST_STRATEGY.md;
 btcopilot/CLAUDE.md; .claude/skills/two-clocks/SKILL.md; bin/flushcheck.py; bin/t.
 **Next action:** none.
-**Updated:** 2026-09-14.
+**Updated:** 2026-09-22.
 
 ## T-10 · Project memory: the two clocks, the flush, the trace
 
@@ -328,80 +365,62 @@ doc/chat-first/{TOPICS.md,HISTORY.md,trace.json,events.json}; private/oracle/ (e
 
 ## T-11 · Platform reset: repo, deployment, billing, identity, admin
 
-**Status:** the box runs the stack with its database built and Patrick's invite minted; the two
-DNS records point at it and Caddy holds the certificate; his sign-in is the open verification. Four secret values are still placeholders. fdserver is out of this ticket.
-**Decided:** one public repo; prompts leave the Python constants for one `.prompty` file per
-prompt with shared fragments, encrypted in place with sops and age, one key pair per machine,
-private keys never copied; files naming real people never enter a repo. The chat app gets its
-own 2 GB droplet with Caddy and the backup add-on; the old droplet is frozen to serve the Pro
-desktop app. Stripe owns money only: flat monthly plans through the hosted page and customer
-portal, tokens metered in our own table with a hard cap. No admin web app: an agent runs a
-command line whose skill file is generated from its own declarations and checked by a test. The
-coach stays on Claude Opus 4.6 with thinking; launch US-only with Stripe Tax on; fdserver leaves
-the daily loop and is archived. The chat app starts over with its own accounts on its own
-database [R-0327]; observability is Datadog on the recommended low-cost set plus session replay
-[R-0328]; the paid infrastructure host waits [R-0329]; the region is sfo3 because sfo1 has no
-volumes [R-0330]. Added this session: Claude creates the droplet and changes DNS only on
-Patrick's explicit confirmation, each time [R-0353]; pricing and plans wait until the app runs
-in production and the first $20–40 bill shows what the usage costs [R-0354]; the beta starts
-from empty records with no import at cutover [R-0355]; the app is served at
-familydiagram.com/app while familydiagram.com otherwise keeps redirecting to
-alaskafamilysystems.com/family-diagram until a new product homepage exists [R-0356].
-**Built this session, on the box:** droplet familydiagram-app, id 601097408, at 209.38.135.250
-in sfo3, 2 vCPU and 2 GB, Ubuntu 24.04, backups and monitoring on, tagged familydiagram-app,
-reached with the turin ssh key. Docker, sops 3.9.4 and age 1.2.1 installed; the firewall passes
-22, 80 and 443 only. The box's own age public key was added to the encryption rules and every
-encrypted file re-encrypted for it. The repo is cloned at /var/www/btcopilot. Secrets live in
-/etc/fd/secrets.env, owned by root at mode 600, with a generated database password and Flask
-secret, the site address https://familydiagram.com, and the image tag pinned; every compose
-command on the box passes `--env-file /etc/fd/secrets.env`. All five containers are up — the
-web app, the worker, Postgres, Redis and Caddy — after a fix to the compose file where a
-service's own environment block was replacing the shared one. The Caddyfile serves
-familydiagram.com: /app redirects to /personal/ until the mount is renamed, the app and review
-paths are proxied, the desktop app's four update feeds are served from the repo, and everything
-else redirects to alaskafamilysystems.com/family-diagram, with www redirecting to the bare name.
-**Deployment moved out of fdserver:** Patrick closed fdserver PR #30 unmerged. The compose file,
-Caddyfile, secrets template, runbook, release workflow and the four update feeds are
-`deploy/chat/` in this repo. The root CLAUDE.md was edited once on his word to say so.
-**Picked up later the same day, on his grant of DNS and production access [R-0357]:** the
-admin commands could not find the Flask app inside the container, so the compose file now
-sets the app path for every service; the worker was unhealthy only because it inherited the
-image's web healthcheck, so it now pings celery instead. The migration chain failed on
-Postgres from empty: the generated revision created tables in alphabetical order and Postgres
-refuses a foreign key to a table that does not exist yet, which SQLite, where the chain was
-tested, does not. The revision was rewritten in dependency order with the two cycles
-(users↔diagrams, discussions↔speakers) closed by four keys added after the tables; proven on a
-scratch Postgres database on the box, then run for real: the database is at the head revision
-with all 23 tables. His invite was minted (valid to 2026-09-30). The root and www records of
-familydiagram.com were changed to 209.38.135.250 at TTL 300. Copying the four real secret
-values (Anthropic and AssemblyAI keys from his local environment, the Brevo mail login from the
-old box's compose file) into the box's secrets file was refused twice by the permission
-classifier as credential movement, so that step is his.
-**Open:** (1) [waiting] four keys are still REPLACE_ME in /etc/fd/secrets.env — Anthropic,
-AssemblyAI, and the Brevo mail username and password. Until Patrick puts them there the coach
-does not answer and no sign-in mail is sent; his invite link works without mail. (2) [verify]
-his sign-in through the second invite (the first was consumed by the verification request,
-which created his account) and one chat turn. (3) [build] the fixed migration is committed on the branch
-but the running image predates it; the file was copied into the running container by hand, so
-the next image from CI carries it and nothing on the box depends on the hand copy.
-(4) done: the mount is /app, on his word that R-0356 covered it — no separate ruling. Was: rename the app's mount from /personal to /app — about 13 places in the web sources
-and 70 in Python and tests — so the address bar and the sign-in links read familydiagram.com/app
-rather than the Caddy redirect standing in for it. Asked, not answered. (5) [build] rotate every secret in the committed compose file, which still holds live keys and a
-TLS private key in git history — he issues the new credentials. (6) [build] freeze the old
-droplet for Pro. (7) [build] money through Stripe: account, keys and the price, after the first
-bill [R-0354]. (8) [build] archive the fdserver repo once nothing refers to it. (9) [verify]
-production still has no automated database backup.
+**Status:** the app is live at https://familydiagram.com/app with its certificate, its database
+and Patrick's account; he has chatted with the coach from his phone. Deploys now roll without
+dropping a request. Datadog was added and then switched off at his word. fdserver is out of this
+ticket and the Pro backend has its own maintenance branch.
+**Decided:** one public repo; every prompt is one encrypted file with shared fragments, one key
+pair per machine, private keys never copied; files naming real people never enter a repo. The
+chat app has its own 2 GB droplet with Caddy and backups; the old droplet stays for the Pro
+desktop app. Stripe owns money only, with tokens metered in our own table and a hard cap. No
+admin web app: an agent runs a command line. The coach stays on Claude Opus 4.6 with thinking;
+launch US-only with Stripe Tax on. The chat app starts over with its own accounts on its own
+database [R-0327]; the region is sfo3 [R-0330]; Claude creates the droplet and changes DNS only
+on his explicit confirmation each time [R-0353]; pricing waits for the first bill [R-0354]; the
+beta starts from empty records [R-0355]; the app is served at familydiagram.com/app while
+everything else on familydiagram.com keeps redirecting to alaskafamilysystems.com/family-diagram
+[R-0356]; he granted DNS and production access to get it running [R-0357]. Observability was
+ruled Datadog [R-0328] and then switched off this session, pending a brainstorm about running
+our own.
+**Live on the box:** droplet familydiagram-app at 209.38.135.250 in sfo3; five containers — the
+web app, the worker, Postgres, Redis and Caddy; secrets in a root-owned file every compose
+command passes; the migration chain rewritten in dependency order because Postgres refuses a
+foreign key to a table that does not exist yet, and the database at its head revision; the root
+and www records pointing at the box; Caddy holding the certificate; the app mounted at /app.
+**Built this session:** seven faults that stopped the very first coach turn — the twelve shared
+prompt fragments never re-encrypted for the box's key, three tool meanings missing from the
+private prompt that the tools now require, the Anthropic client library pulled forward to a
+version that drops an argument the app passes in six places, the public prompt directory missing
+from the installed package, and the Gemini key having no home in the secrets template. A test
+now fails when any setting the app reads without a fallback has no home on the box. Dependencies
+are their own image layer, so a build is minutes rather than twelve. Every deploy keeps the old
+container answering until the new one is healthy: 106 probes during a roll, none failed. The
+coach turn now runs on the server independent of the request and streams, with its log going
+through Redis at the address the box sets [R-0369]; the first deploy of that broke every message
+because the app looked for Redis on the local machine, and was rolled back in two minutes.
+**The Pro maintenance stream:** master on btcopilot is tagged `pre-chat-first`; a `master-legacy`
+branch starts there, is protected like master, builds an image tagged `:legacy` on every merge
+and deploys the old box. btcopilot PR #137 and fdserver PR #31 carry the last two pieces and
+await his merge.
+**Open:** (1) [ruling] cost per user over time has to reach a dashboard, and whether we leave
+Datadog for our own Grafana, Prometheus and Loki is a brainstorm he asked for in a separate
+session; the per-user token table already exists. (2) [build] rotate every secret in the
+committed compose file, which still holds live keys and a TLS private key in git history — he
+issues the new credentials. (3) [build] freeze the old droplet for Pro. (4) [build] money
+through Stripe: account, keys and the price, after the first bill [R-0354]. (5) [build] archive
+the fdserver repo once nothing refers to it. (6) [verify] production still has no automated
+database backup. (7) [verify] a scratch test account made while proving the coach is still in
+the production database; there is no command to delete an account yet.
 **Note for the next session:** the permission classifier refuses a sub-agent both `sops
 updatekeys`, because it writes the secret store, and `docker compose pull` and `up` on the box,
-because that is a production deploy. Those two ran at the top level on Patrick's direct grant.
-Production reads on the box are refused to sub-agents too.
+because that is a production deploy. Production reads on the box are refused to sub-agents too.
+Those run at the top level on Patrick's direct grant.
 **Lives in:** deploy/chat/ (compose, Caddyfile, secrets template, README, the release workflow
 and the four appcast feeds); doc/chat-first/PLATFORM_BUILD.md; doc/chat-first/DATADOG.md;
-private/prompts/ and private/oracle/, encrypted; commits 974c29e, 1423f0a, eae997e.
-**Next action:** he puts the four real values into /etc/fd/secrets.env on the box and restarts
-the app and worker containers; then he opens his invite link at familydiagram.com and sends one
-message to the coach. A ProxyFix so Flask sees https behind Caddy is a small follow-up.
-**Updated:** 2026-09-16, second session.
+private/prompts/ and private/oracle/, encrypted.
+**Next action:** his merge of btcopilot PR #137 and fdserver PR #31 to finish the Pro
+maintenance stream; then the Grafana brainstorm and the secret rotation.
+**Updated:** 2026-09-22.
 
 ## T-12 · The learning loop: a scout that looks outward and a review of the scout
 

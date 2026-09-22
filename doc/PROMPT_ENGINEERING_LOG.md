@@ -1132,3 +1132,26 @@ guessing; a missing parent is named.
 
 **Change**: the scribe keeps a date at the precision the coder gave it, so a
 year given as a year reads back as the year alone.
+
+### September 2026: The coach asks who you are before anything else
+
+**Change**: the coach's prompt carries which of first name, last name and birth
+date are still missing from the record, and asks for them before it goes on with
+anything else. Without a birth date it has no anchor for an age, so "twenty-five
+or twenty-six" became a year it invented. The account row mirrors the three
+values for the preferences page. [R-0360]
+
+### September 2026: The coach no longer offers answers to tap
+
+**Change**: the coach is no longer told to end a reply with bracketed answers the
+reader can tap, and any it still writes is stripped before the transcript is
+stored. Its closing question keeps its own amber line. The public prompt goldens
+were re-captured after the change. [R-0358, R-0361]
+
+### September 2026: The private tool meanings must cover every required parameter
+
+**Change**: the private text that gives each tool parameter its meaning was
+missing three entries the tools now require — parents, person_a and person_b —
+while the public default happened to carry them, so every test passed and only the
+box failed. The private text is now the one that must be complete; the public
+default is not a fallback for it.

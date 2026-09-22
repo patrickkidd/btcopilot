@@ -112,11 +112,27 @@ other path. A third invite was minted under /app. Known wart: the sign-in redire
 carries http, not https, because Flask does not read the proxy's scheme header; harmless
 because Caddy upgrades http, but a ProxyFix belongs in the app.
 
-**What is not true yet on the box.** His own sign-in and first chat turn. Four keys in the secrets file are placeholders — Anthropic, AssemblyAI,
-and the Brevo mail username and password — so the coach cannot answer and no sign-in mail is
-sent; copying the real values there was refused by the permission classifier as credential
-movement, so it is his step. The app's mount is still /personal, reached through the /app
-redirect.
+**2026-09-20 to 22 — the app is live and Patrick has used it.** He signed in through his invite
+link, put the service keys on the box himself, and chatted with the coach from his phone. His
+first message threw an error, and six more faults sat behind it, each hidden by the last: the
+twelve shared prompt fragments were never re-encrypted for the box's key; the private text
+giving the tools' parameters their meaning was missing three entries the tools now require, which
+the public default happened to have, so the tests passed; the image pulled a newer Anthropic
+client library that drops an argument the app passes in six places; the installed package never
+shipped the public prompt directory, so the one prompt defined only publicly was absent; and the
+Gemini key that groups events into clusters had no home in the secrets template. All are fixed,
+and a test now fails when any setting the app reads without a fallback has nowhere to come from
+on the box.
+
+Deploying changed with it. Dependencies are their own image layer, so a build takes minutes
+rather than twelve, and every deploy keeps the old container answering until the new one is
+healthy (106 probes during a roll, none failed). Production is where the beta iterates: a change
+to the web pages is copied into the running container while the image rebuilds behind it.
+
+**What is not true yet on the box.** No sign-in mail has been sent to anybody, so whether the
+mail credentials work is unproven; there is no automated database backup; a scratch test account
+made while proving the coach is still in the production database, because there is no command to
+delete an account; and every secret in the committed compose file still needs rotating.
 
 **Ruled 2026-09-16.** The beta starts from empty records, invited by email, with no import at
 cutover and a per-diagram import later [R-0355], which he agreed to only once a test proved the
@@ -133,12 +149,25 @@ moves board for a play-by-play. A lower level slides in from the right as a card
 level it came from, and back reverses it. The grey line above the picture is the title of the
 level you are on, with a back arrow beside it; tapping either goes up one level. Under the
 picture, one chip row — ask, explain, in chat, and the list button — reads the same however
-the level was reached. The list button opens one drawer with Events and People tabs, each row
+the level was reached. The back arrow inside an open cluster always closes the cluster [R-0362],
+and the amber question mark is hidden for now, both on an empty line and past the end for
+undated facts [R-0359]. The list button opens one drawer with Events and People tabs, each row
 opening an editor with 44px fields; a person's birth and death jump to those events and back.
 A sessions sheet holds past sessions with rename and sort. The account page slides over the
 content. Sign-in is passwordless from an emailed invite link and lasts 180 days. A send that
 fails says which of three things happened and offers to go again. Three dots show while the
-coach is thinking. Every word the app says is selectable and copyable. Users see the name
+coach is thinking, and the coach's words and tool steps arrive as they
+happen: the turn runs on the server independent of the request, so a reload or a switch away and
+back reattaches to it [R-0369]. Before anything else the coach asks for first name, last name and
+birth date, because without a birth date it turns an age into a year it invented [R-0360]. It no
+longer holds out answers to tap; people type their own words [R-0361], and its closing question
+stays amber [R-0358]. Return starts a new line and only the send button sends [R-0368]. With the
+speaking preference on, the phone's own voice reads each reply as it arrives. A wide window, a
+phone turned on its side included, gives anyone the wider layout with the list beside the chat
+[R-0367]. Ordinary notable events carry a "noted" kind — one person, words that must be there, an
+optional place and date — and "moved" has left the kind list; a noted event changes nothing about
+the family but raises the question of order beside a shift [R-0363, R-0364, R-0366]. Every word
+the app says is selectable and copyable. Users see the name
 "Family Diagram" everywhere; "Personal app" is the internal name only.
 
 **Patrick reviewed it on his phone over four rounds, 2026-09-08 and 09**, and his word at

@@ -480,3 +480,18 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    and the reply landed 28 s later in one bubble carrying its statement id, three events coded.
    A first deploy of it broke every message (the app looked for Redis on localhost); rolled back
    in two minutes, fixed, redeployed. Every deploy now rolls: 106 probes during a roll, 0 failed.
+25. Clusters appear and then vanish between messages; they must stay stable and change only
+   when justified. Evidence: every turn that touches an event re-runs detection and rewrites
+   the clusters wholesale (36 deltas in one turn: seven clusters became five, all retitled,
+   new ids), so the eye never sees the same picture twice. OPEN — a stability rule needed.
+26. The main clusters view on a phone: 39 dated events already read as a thick line; a tap on
+   a coordinate cannot pick one dot; clusters compress but must be meaningful; the view needs
+   one word for its name. OPEN — a mockup round on his own record; drawn options, not data.
+27. Cost per user over time must end up on a dashboard. The tokens table already meters each
+   user; the dashboard, and moving off Datadog to Grafana/Prometheus/Loki, is a brainstorm for
+   a separate session that reports back here by message. OPEN
+28. A play button under each coach bubble to play or replay that message, as in the Claude
+   app. OPEN
+29. A better voice than the phone built-in one. Options given: cloud neural voices at about
+   a cent a reply, ElevenLabs at several times that, self-hosted models the box cannot run.
+   OPEN — his pick.

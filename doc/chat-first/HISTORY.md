@@ -1162,8 +1162,8 @@ Patrick's direct grant. Reads against the box are refused to sub-agents too. Two
 his also landed in the branch instructions: never repeat in the reply what a published page
 already says, and sub-agents do the work while this session's context stays small.
 
-## 2026-09-16, later — the deployment picked up: the chain fixed for Postgres, the database built, the invite minted, DNS moved [T-1, T-11]
-<!-- session: 1a988ef4 · flushed: 2026-09-16T16:20:00Z -->
+## 2026-09-16 to 22 — the deployment picked up, the app went live, and Patrick used it [T-1, T-2, T-4, T-5, T-6, T-9, T-11]
+<!-- session: 1a988ef4 · flushed: 2026-09-22T16:05:00Z -->
 
 Patrick opened with "FD-362, pick up the deployment", then, when the first read of the box was
 refused as a production read, granted access to DNS and every other production resource to get
@@ -1193,3 +1193,70 @@ AssemblyAI keys from his local environment and the Brevo mail login from the old
 file — into /etc/fd/secrets.env. The permission classifier refused it twice as credential
 movement, once as a local file and once as a pipe straight into the box. That step is his, and
 it is the only thing between him and a coach that answers.
+
+**20 to 22 September — the app live, and his first real use.** The first message he sent threw
+an error, and six more faults sat behind it, each one hidden by the last. The twelve shared
+prompt fragments had never been re-encrypted for the box's key, so the server could not read
+them. The private text that gives each tool's parameters their meaning was missing three entries
+the tools now require, which the public default happened to have, so every test passed. The
+image pulled a newer Anthropic client library that drops the temperature argument the app passes
+in six places. The installed package never shipped the public prompt directory, so the one
+prompt defined only publicly was absent. And the Gemini key, which groups events into clusters
+after a turn, had no home in the secrets template at all. Each was found, fixed, rebuilt and
+deployed in turn; the lesson written down is that every check before the last was a piece of the
+path rather than the path. A test now fails when any setting the app reads without a fallback
+has nowhere to come from on the box.
+
+Then he used it, and twenty findings came out of real chats on his phone. Some were rulings on
+what was already built: the amber closing question stays, because it reads as bold and that is
+where the eye should go [R-0358]; the offered answers under a reply are dropped, because what a
+tap on one does was not obvious and people can type their own words [R-0361]; the question marks
+on the picture are hidden for now, both the one on an empty line and the one past the end for
+undated facts, with the reasoning kept in comments [R-0359]. Some were things nobody had built:
+the app never asked him his name or his birth date, so the coach turned "twenty-five or
+twenty-six" into a year out of nowhere — the coach now asks for first name, last name and birth
+date before it goes on [R-0360]. Speaking replies out loud was a switch that wrote a preference
+and nothing else; the phone's own voice now reads each reply as it arrives. Return sent the
+message, so no message could have paragraphs; Return now starts a new line and only the send
+button sends [R-0368]. The back arrow inside an open cluster only put a picked moment down;
+it now always closes the cluster [R-0362]. Selecting an event and asking to see it in the chat
+said the words were gone, because a coach bubble written in the session on screen never carried
+its statement id; it does now. He asked whether the app is meant to work on a phone turned on
+its side, and ruled that the wider layout comes up for everyone on a wide window rather than
+only for a professional licence [R-0367].
+
+Two larger things came out of that use. He re-opened his old complaint that "moved" is a kind of
+its own when a move is just one of many notable events: ordinary notable events now have a
+"noted" kind with one person, words that must be there, and an optional place and date; "moved"
+left the kind list; and a noted event is a lead, raising the question of order beside a shift the
+way a structural event does [R-0363, R-0364, R-0365, R-0366]. The change was made before the beta
+rather than after, and the eight moves already stored on the box were rewritten in place at the
+storage level. And a 51-second turn came back from the server after the phone had given up, so a
+coach turn now runs on the server independent of the request and streams its words and its tool
+steps as they happen; a reload, or leaving the app and coming back, reattaches to the turn in
+progress [R-0369]. Proven on the box with a fresh account: the send came back in under a second,
+the page was reloaded three seconds in, and the reply landed 28 seconds later with its three
+events coded. The first deploy of it broke every message, because the app looked for Redis on its
+own machine rather than at the address the box sets, and was rolled back in two minutes.
+
+**The way we deploy changed with it.** Dependencies are their own image layer now, so a build
+takes minutes rather than twelve. Every deploy keeps the old container answering until the new
+one is healthy — 106 probes during a roll, none failed — after a send that landed during a
+restart came back as a server error. He also settled how the beta iterates: production is where
+things are tried, a change to the web pages is copied straight into the running container while
+the image rebuilds behind it, and a development server on his Mac reachable from his phone is
+the next step.
+
+**Alongside it, the Pro app got its own lane.** Master is tagged at the point the chat-first
+rebuild diverged, a `master-legacy` branch starts there and is protected the same way, and its
+release builds an image tagged for the old box and deploys it on every merge. Two pull requests
+finish that and wait on him. Datadog was added to the box as part of the stack and then switched
+off the same day at his word, now behind an opt-in switch so a restart does not revive it; what
+replaces it, and where cost per user shows up, is a brainstorm he asked for separately.
+
+Three things he found are open and unfixed: clusters appear and vanish between messages, because
+every turn that touches an event rebuilds all of them; the main view of clusters on his own
+record is a thick unreadable line at 39 events with no way to tap a single dot and no name of its
+own; and the summary shown for a session in the list answers the person's first message with
+generic advice instead of summarising the exchange. A drawn round on the first two is running as
+this flush is written.
