@@ -437,3 +437,8 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    the secrets template never listed it. FIXED: template and runbook carry it, and a test
    now fails when any setting the app reads without a fallback has no home on the box.
    The value itself is his to put on the box (the key script now includes it).
+17. "Server error" on one send, fine on retry, 2026-09-22 02:56 UTC. Cause: the send landed
+   while the app container restarted after the key script; no failed response or exception
+   in the logs, and the next turn ran cluster detection cleanly. Every deploy has this
+   window today. NOTED — a restart that keeps the old container up until the new one is
+   healthy is a later improvement.
