@@ -507,6 +507,11 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    session for its brainstorm. OPEN
    Item 31 and the dashboards (27): built by the dashboarding session, not this one (Patrick,
    2026-09-22). This session stays off the admin CLI, its skill file and deploy/chat observability.
+   Item 31 BUILT @6454186, live on the box 2026-09-22 20:15 UTC: `flask admin run -- <words>` with a
+   `writes` marker on every mutating command (preview and stop without `--yes`), `skill --print`,
+   `users invite --send`; on the box one SSH key pinned to bin/fd-admin-gate; the bot's tool notes
+   are a section Patrick appends to his openclaw workspace. Not yet verified: one invite driven from
+   Discord end to end.
 32. Prompt caching: no coach call used it; every step of a turn re-sent the whole system prompt
    (record inside), tools and history at full price. Patrick: "absolutely do it". BUILDING —
    fixed coaching text and tools cached, a breakpoint on the last message so each step of a turn

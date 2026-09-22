@@ -1270,3 +1270,14 @@ concerns. He also wants a play button under each coach reply, to hear it again. 
 dropped.
 
 **2026-09-22 — observability moves to Grafana Cloud.** Datadog cannot go under $10 a month with the host agent on; Grafana Cloud Free covers metrics, logs, traces and browser sessions at $0 and is the stack Patrick runs at work [R-0370]. Self-hosting the stores on the 2 GB box and hosting them on his laptop were weighed and set aside. The stack was renamed to alaskafamilysystems and its sign-in broke on a stale redirect until a restart through the Cloud API. Built: Alloy replaces the Datadog agent in the compose file, the Faro SDK in the web bundle, a `coach.turn` span per model call, and the per-user token meter now written by every turn (cache tokens counted apart). Private health data stays out of every log, metric, trace and recording.
+
+**2026-09-22, evening — Grafana live, cost ledger, the bot's admin key.** Alloy and the private
+data source connect agent run on the box; Grafana reads Postgres through the tunnel, so the people
+and cost dashboard has full history and no retention cap; the box dashboard reads Alloy's metrics
+and logs. Every coach call writes a row to model_calls (user, model, four token counts, cost,
+duration); the browser SDK and the coach.run span carry the user's email. Nine claude-test
+accounts from deploy walks are filtered out of the dashboards, not deleted. The admin CLI gained a
+confirmation step for anything that changes data, and Patrick's local Discord assistant reaches it
+over one pinned SSH key [item 31]. Open: Session Replay preview form, per-container metrics after
+the Alloy remount, the first invite from Discord, revoking the Admin service-account token.
+
