@@ -531,13 +531,9 @@ export class Picture {
       return;
     }
     if (this.level !== Level.Board) {
-      // one step at a time: a picked moment is put down first, and only the
-      // next tap closes the cluster it sits in
-      if (this.selected !== null && this.opened()) {
-        this.selected = null;
-        this.render();
-        return;
-      }
+      // The arrow always closes the cluster, picked moment or not (Patrick,
+      // 2026-09-22: putting the moment down first was tap-for-tap logical and
+      // felt wrong). Putting a moment down is a tap on empty ground.
       this.dismiss();
       return;
     }

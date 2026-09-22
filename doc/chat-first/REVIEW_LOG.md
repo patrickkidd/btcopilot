@@ -447,3 +447,10 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    reopened session bubbles did), so a moment coded in this very session could not find
    its words. FIXED: the live bubble is stamped with its statement id the moment the reply
    arrives.
+19. Patrick asks whether the app is meant to go landscape on an iPhone 14 or whether that
+   breaks the layout. Finding: nothing locks orientation and nothing was designed for a
+   phone on its side; the one width rule is the professional's pinned drawer at 840px,
+   which an iPhone 14 on its side (844px) crosses. OPEN — his call: lock the installed
+   app to portrait, or design for landscape.
+20. In an open cluster, tap a moment, tap the back arrow: it only put the moment down and
+   stayed in the cluster. RULED: the arrow always closes the cluster [R-0362]. FIXED.
