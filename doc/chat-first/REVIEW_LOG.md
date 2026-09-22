@@ -536,3 +536,8 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    not exposed; the secret-rotation item is closed, not open. And every fdserver branch made for
    this work goes: FD-362 and its worktree, oracle-store and its worktree, chat-first-app, all
    deleted 2026-09-22 (remote and local). legacy-image-tag stays until PR 31 merges. DONE
+   Round 6 part B, his review 2026-09-22: withdrawn. B1 blobs with no meaning; B2 so busy it is
+   a diagnostic tool; B3 a good idea (one more row) drawn badly — an invented word ("pull"),
+   events vanishing between frames, unexplained question marks, both expanded frames too busy.
+   Part A settled by rulings R-0371 to R-0373, no option picked. Next: derive the message from
+   the sources, redraw B from it, visual critique gate, then publish.

@@ -17,6 +17,12 @@ Backend for Pro/Personal apps, training app, AI extraction system.
 - **Never verify on production (2026-09-22, Patrick objected to nine scratch accounts on the
   dashboard).** A deploy is checked with a probe of public pages only; every walk that signs
   in, chats or writes runs on a sandbox stack, never the box.
+- **Every gallery passes a visual critique before Patrick sees it (2026-09-22, his words: "there
+  are so many obvious, visual and aesthetic errors in these").** A separate agent, not the
+  designer, reviews every frame: what is the message, is every mark explained in the caption, is
+  it busier than the app today, did anything vanish without the caption saying why, any invented
+  word; it argues keep or kill per frame and only survivors are published. The message the picture
+  must carry is derived first, from the sources, and the drawing walks back from it.
 - **A gallery gives direction, not a menu (2026-09-22, Patrick: "keep the prose in these
   artifacts more to the point and actually give clear and simple direction").** Say at the top
   whether options exclude each other or combine, recommend one, and keep every caption to what
