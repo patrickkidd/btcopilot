@@ -471,3 +471,7 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
 23. Return on the keyboard sent the message, so a message could not have paragraphs.
    RULED: Return starts a new line, only the send button sends [R-0368]. FIXED; the
    composer and the bubbles keep the line breaks.
+24. A 51-second turn (five tool rounds plus cluster naming) came back 200 from the server
+   but the phone had given up: browser patience 60s, gunicorn 45s. RULED: stream the turn,
+   run it independent of the request, and let any reload reattach and sync [R-0369].
+   BUILDING.

@@ -28,6 +28,9 @@ jobs:
             git pull origin master
             cd deploy/chat
             docker compose --env-file /etc/fd/secrets.env pull
+            # the new app and worker start beside the old ones; the old stop once the new are healthy
+            docker rollout --env-file /etc/fd/secrets.env fd-app
+            docker rollout --env-file /etc/fd/secrets.env fd-worker
             docker compose --env-file /etc/fd/secrets.env up -d --remove-orphans
             docker compose --env-file /etc/fd/secrets.env exec -T fd-app flask admin db upgrade
             docker compose --env-file /etc/fd/secrets.env ps

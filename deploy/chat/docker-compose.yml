@@ -17,6 +17,9 @@ x-app-env: &app-env
   DD_SITE: datadoghq.com
   DD_LOGS_INJECTION: "true"
 
+# No container_name on the app and the worker: `docker rollout <service>` starts the
+# new container beside the old one and stops the old one only once the new one is
+# healthy, so a deploy drops no request (2026-09-22).
 x-app: &app
   image: ghcr.io/patrickkidd/btcopilot:${BTCOPILOT_TAG:-latest}
   restart: unless-stopped
@@ -47,7 +50,6 @@ services:
 
   fd-app:
     <<: *app
-    container_name: fd-app
     environment:
       <<: *app-env
       DD_SERVICE: fd-app
@@ -56,7 +58,6 @@ services:
 
   fd-worker:
     <<: *app
-    container_name: fd-worker
     environment:
       <<: *app-env
       FD_IS_CELERY: "1"

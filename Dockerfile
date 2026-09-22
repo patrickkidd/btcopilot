@@ -23,9 +23,15 @@ FROM base AS application
 WORKDIR /app
 RUN mkdir -p ./instance/logs
 
+# The dependencies are their own layer, keyed on pyproject.toml, so a code
+# change rebuilds only the thin wheel layer below (2026-09-22: the image build
+# was 3.5 minutes of reinstalling the same packages every commit).
+COPY pyproject.toml /tmp/pyproject.toml
+RUN python -c "import tomllib; p = tomllib.load(open('/tmp/pyproject.toml', 'rb'))['project']; print('\n'.join(p.get('dependencies', []) + p['optional-dependencies']['app']))" > /tmp/requirements.txt \
+    && pip install -r /tmp/requirements.txt && rm /tmp/requirements.txt /tmp/pyproject.toml
 ARG WHEEL_FILE
 COPY ${WHEEL_FILE} /tmp/
-RUN pip install "/tmp/$(ls /tmp/*.whl | xargs basename)[app]" && rm /tmp/*.whl
+RUN pip install --no-deps "/tmp/$(ls /tmp/*.whl | xargs basename)" && rm /tmp/*.whl
 
 # The private prompts ship encrypted; the key comes from the environment
 # (SOPS_AGE_KEY_FILE) on the box, never from the image.
