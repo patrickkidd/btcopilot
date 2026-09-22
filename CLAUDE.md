@@ -9,6 +9,9 @@ Backend for Pro/Personal apps, training app, AI extraction system.
   unless he used it. That includes the corpus's own vocabulary: "topic block", "two clocks",
   "state clock", "flush", "T-11" (verified failure 2026-09-13: "topic block?? again, with the
   clever language!"). Say "the notes on the branch", "the list of open items", "the file".
+- **Mockups are always published as artifacts (2026-09-22, Patrick: "mockups should always be in
+  artifacts. remember that").** A gallery on disk is not a deliverable; publish it (private by
+  default) and give the link. The source stays in ~/theapp/btcopilot-sources/fd-corpus/design/.
 - **He is Patrick (2026-09-11).** Never "the owner" in a document or a reply; it is ambiguous.
 - **Sandbox addresses use `turin`, never `turin.local` (2026-09-11).** The review app is
   https://turin:8891/personal/.

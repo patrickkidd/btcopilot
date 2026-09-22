@@ -14,6 +14,9 @@ from pathlib import Path
 from btcopilot.llmutil import RESPONSE_MODEL, _is_claude_model
 from btcopilot.personal.promptdir import PromptDir
 
+# Stands in for the record while the fixed head of the agent prompt is found.
+MARK = "\ue000"
+
 PUBLIC = Path(__file__).parent / "prompty"
 PRIVATE = Path(__file__).parents[2] / "private" / "prompts"
 
@@ -118,6 +121,29 @@ def get_agent_prompt(record: str = "", interactions: str = "") -> str:
     family record rendered by `btcopilot.personal.recordtext`; `interactions` is
     what the user has been looking at."""
     return files().text("agent", committed_state=record, interactions=interactions)
+
+
+@functools.cache
+def _agent_fixed() -> str:
+    """The head of the agent prompt that does not move with the record or with
+    what the person has been looking at. Found by rendering the template both
+    ways rather than declared, so a private template splits where it differs."""
+    return os.path.commonprefix(
+        [
+            files().text("agent", committed_state="", interactions=""),
+            files().text("agent", committed_state=MARK, interactions=MARK),
+        ]
+    )
+
+
+def agent_prompt(record: str = "", interactions: str = "") -> tuple[str, str]:
+    """The same prompt in two parts: the coaching text that repeats every call,
+    which the wire caches, and the tail that changes with the record."""
+    text = get_agent_prompt(record, interactions)
+    fixed = _agent_fixed()
+    if not text.startswith(fixed):
+        raise ValueError("The agent prompt no longer opens with its fixed part")
+    return fixed, text[len(fixed) :]
 
 
 def note_register() -> str:

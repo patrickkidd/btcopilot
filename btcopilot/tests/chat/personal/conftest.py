@@ -48,8 +48,8 @@ class Model:
         self.histories = []
         self.offered = []
 
-    def turn(self, system, messages, tools):
-        self.systems.append(system)
+    def turn(self, system, messages, tools, turn_id=""):
+        self.systems.append(system if isinstance(system, str) else "".join(system))
         self.histories.append(messages)
         self.offered.append([schema["name"] for schema in tools])
         scripted = self.turns.pop(0)

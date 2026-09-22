@@ -22,7 +22,7 @@ from btcopilot.personal.models import (
     Statement,
     StatementKind,
 )
-from btcopilot.personal.prompts import get_agent_prompt, note_register, onboarding
+from btcopilot.personal.prompts import agent_prompt, note_register, onboarding
 from btcopilot.personal.interactions import recent
 from btcopilot.personal.toolbox import ToolError, Toolbox, schemas
 from btcopilot.personal.turnlog import TurnEventKind
@@ -75,14 +75,14 @@ class BareList(Exception):
     that can turn one into sentences."""
 
 
-def _again(model, system: str, messages: list[dict], spoken: str, ask: str) -> str:
+def _again(model, system, messages: list[dict], spoken: str, ask: str, turn_id: str):
     """Ask once for the reply again. The words are the coach's own, so nothing
     here rewrites them — it asks the coach to."""
     asked = messages + [
         {"role": "assistant", "content": spoken},
         {"role": "user", "content": ask},
     ]
-    words = model.turn(system, asked, [])
+    words = model.turn(system, asked, [], turn_id)
     while True:
         try:
             next(words)
@@ -90,7 +90,9 @@ def _again(model, system: str, messages: list[dict], spoken: str, ask: str) -> s
             return stop.value.text
 
 
-def shorten_labels(model, system: str, messages: list[dict], spoken: str, data) -> str:
+def shorten_labels(
+    model, system, messages: list[dict], spoken: str, data, turn_id=""
+) -> str:
     """Ask once for shorter chip labels."""
     over = chips.too_long(spoken, data)
     if not over:
@@ -104,6 +106,7 @@ def shorten_labels(model, system: str, messages: list[dict], spoken: str, data) 
         SHORTEN.format(
             labels="; ".join(repr(label) for label in over), limit=chips.CHIP_MAX
         ),
+        turn_id,
     )
     still = chips.too_long(shortened, data)
     if still:
@@ -111,12 +114,12 @@ def shorten_labels(model, system: str, messages: list[dict], spoken: str, data) 
     return shortened
 
 
-def narrate(model, system: str, messages: list[dict], spoken: str) -> str:
+def narrate(model, system, messages: list[dict], spoken: str, turn_id="") -> str:
     """Ask once for sentences when the reply is a bare run of chips."""
     if not chips.bare_list(spoken):
         return spoken
     _log.warning("Reply is a bare list of chips, asking again")
-    told = _again(model, system, messages, spoken, NARRATE)
+    told = _again(model, system, messages, spoken, NARRATE, turn_id)
     if chips.bare_list(told):
         raise BareList("Reply is still a bare list of chips after asking again")
     return told
@@ -183,18 +186,21 @@ class CoachTurn:
             db.session.add(user_statement)
             db.session.flush()
 
-        system = get_agent_prompt(
+        # The coaching text is the same every turn and the rest is not, so they
+        # go over the wire apart: the first is kept there, the second re-read.
+        fixed, tail = agent_prompt(
             record=recordtext.render(data),
             interactions=recordtext.interactions(
                 recent(self.diagram.id, RECENT_INTERACTIONS)
             ),
         )
         if DiscussionKind(self.discussion.kind) is DiscussionKind.Note:
-            system = f"{system}\n\n{note_register()}"
+            tail = f"{tail}\n\n{note_register()}"
         gaps = profile.missing(data)
         if gaps:
             own = profile.own(data)
-            system = f"{system}\n\n{onboarding(gaps, own['id'] if own else 1)}"
+            tail = f"{tail}\n\n{onboarding(gaps, own['id'] if own else 1)}"
+        system = [fixed, tail]
         messages = self._history()
         spoken = ""
         events = []
@@ -247,8 +253,10 @@ class CoachTurn:
 
         if not spoken.strip():
             raise EmptyReply(f"Turn {self.turn_id} produced no words for the user")
-        spoken = shorten_labels(self.model, system, messages, spoken, self.data)
-        spoken = narrate(self.model, system, messages, spoken)
+        spoken = shorten_labels(
+            self.model, system, messages, spoken, self.data, self.turn_id
+        )
+        spoken = narrate(self.model, system, messages, spoken, self.turn_id)
 
         change = self._regroup()
         if change:
@@ -325,10 +333,10 @@ class CoachTurn:
         events.append(event)
         self._send(event)
 
-    def _say(self, system: str, messages: list[dict], tools: list[dict], stream=False):
+    def _say(self, system, messages: list[dict], tools: list[dict], stream=False):
         """One model call. The words go out as they arrive; a step that ends in
         a tool call was the coach thinking aloud, so those words are dropped."""
-        words = self.model.turn(system, messages, tools)
+        words = self.model.turn(system, messages, tools, self.turn_id)
         sent = False
         while True:
             try:

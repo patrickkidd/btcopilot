@@ -140,7 +140,7 @@ def test_the_coach_can_write_a_noted_event(discussion, family):
 
 def test_a_turn_that_fails_before_the_coach_answers_stores_no_words(discussion, family):
     class Down:
-        def turn(self, system, messages, tools):
+        def turn(self, system, messages, tools, turn_id=""):
             raise RuntimeError("model unreachable")
             yield
 

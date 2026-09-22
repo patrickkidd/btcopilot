@@ -499,3 +499,15 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    money but the feedback loops — beta users must see how much they use and what it costs, and
    that has to sit inside the data-driven principle for the app: does anyone pay, do they like
    it. The loops are not designed yet. TABLED, to be remembered; no paid voice until they exist.
+31. Patrick wants his local Qwen agent in openclaw to administer the backend from a markdown
+   file linked in its own instructions, always matching the deployed code: invites, licences,
+   costs, everything the admin CLI does; reads free, writes confirmed. Options given: link the
+   file on GitHub; the running app serves its own copy (recommended); the CLI prints it. Gating
+   by an SSH forced-command wrapper from the same declarations. Handed to the dashboarding
+   session for its brainstorm. OPEN
+   Item 31 and the dashboards (27): built by the dashboarding session, not this one (Patrick,
+   2026-09-22). This session stays off the admin CLI, its skill file and deploy/chat observability.
+32. Prompt caching: no coach call used it; every step of a turn re-sent the whole system prompt
+   (record inside), tools and history at full price. Patrick: "absolutely do it". BUILDING —
+   fixed coaching text and tools cached, a breakpoint on the last message so each step of a turn
+   reuses the steps before it, cache reads logged per call.
