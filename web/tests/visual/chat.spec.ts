@@ -69,7 +69,7 @@ test.describe("the coach's words", () => {
 test.describe("the question that closes a reply", () => {
   test.use({ storageState: stateFor("moves") });
 
-  test("it stands apart in amber above the answers held out", async ({ page }) => {
+  test("it stands apart in amber", async ({ page }) => {
     await page.goto("/app/");
     await expect(page.locator(".bub").first()).toBeVisible();
     await page.waitForTimeout(400);
@@ -77,6 +77,8 @@ test.describe("the question that closes a reply", () => {
     await expect(bubble.locator("> .ask")).toHaveText(
       "What do you remember about the winter it started?",
     );
+    // offered answers are no longer written (Patrick, 2026-09-21); an old
+    // transcript's run of them is still laid out under the question
     await expect(bubble.locator("> .offer .chip.ask")).toHaveCount(3);
     // the question is lifted out of the narration, not repeated in it
     expect(await bubble.locator("> .ask").evaluate((n) => getComputedStyle(n).fontWeight)).toBe("500");

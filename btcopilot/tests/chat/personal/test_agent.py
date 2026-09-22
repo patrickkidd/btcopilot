@@ -324,9 +324,9 @@ def test_the_words_before_a_tool_call_are_not_the_coach_speaking(discussion, fam
     assert "placeholder" not in " ".join(spoken)
 
 
-def test_play_by_play_ends_in_offered_chips(test_user):
-    """The walk closes with two or three offers of where to look next. An offer
-    carries its own words, not an id, so it survives validation whole."""
+def test_offered_chips_never_reach_the_transcript(test_user):
+    """Offered answers are dropped (Patrick, 2026-09-21): people type their own
+    words. A model that still writes them loses only the offers."""
     data = DiagramData(
         people=[asdict(Person(id=1, name="Wren"))],
         events=[asdict(Event(id=10, kind=Kind.Moved, person=1, dateTime="1994-06-01"))],
@@ -334,20 +334,15 @@ def test_play_by_play_ends_in_offered_chips(test_user):
     )
     model = Model(
         said(
-            "[[event:10|he moved out]] is where it starts.\n\n"
+            "[[event:10|he moved out]] is where it starts. What came next?\n\n"
             "[[ask:the winter after he left]] [[ask:how Wren took it]]"
         )
     )
     statement = PlayTurn.stored(data, "c1", model=model).run()["statement"]
 
-    offered = [
-        target
-        for kind, target, _ in chips.parse(statement, data)
-        if kind is chips.ChipKind.Ask
-    ]
-    assert 2 <= len(offered) <= 3
-    assert offered == ["the winter after he left", "how Wren took it"]
-    assert statement.endswith("[[ask:how Wren took it]]")
+    assert "[[ask:" not in statement
+    assert statement.endswith("What came next?")
+    assert chips.parse(statement, data) == [(chips.ChipKind.Event, "10", "he moved out")]
 
 
 def test_a_turn_that_never_stops_calling_tools_still_says_something(

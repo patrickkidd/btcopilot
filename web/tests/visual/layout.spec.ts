@@ -220,38 +220,6 @@ for (const key of ["one", "three40", "dense60", "hostile", "moves", "play", "lon
   });
 }
 
-test.describe("the message bar never pushes the thread", () => {
-  test.use({ storageState: stateFor("moves") });
-
-  test("an offered chip lands in the composer without growing it", async ({
-    page,
-  }) => {
-    await settle(page);
-    const before = await frame(page);
-    const bar = await page.locator("#chat-screen .inbar").boundingBox();
-
-    const field = await page.locator("#composer").boundingBox();
-    // Playwright scrolls a target into view before clicking it, so the thread's
-    // own scroll offset is taken out of the comparison: what is under test is
-    // whether the message bar grew and pushed the thread, not where the reader
-    // had scrolled to.
-    const held = await page.locator("#chat").evaluate((n) => n.scrollTop);
-    await page.locator(".bub .chip.ask").first().click();
-    await expect(page.locator("#composer .chip")).toHaveCount(1);
-    await page.waitForTimeout(300);
-    await page.locator("#chat").evaluate((n, at) => (n.scrollTop = at), held);
-
-    const after = await frame(page);
-    expect(Math.round((await page.locator("#chat-screen .inbar").boundingBox())!.height)).toBe(
-      Math.round(bar!.height),
-    );
-    expect(Math.round((await page.locator("#composer").boundingBox())!.height)).toBe(
-      Math.round(field!.height),
-    );
-    expect(after.chat).toEqual(before.chat);
-    expect(after.bubbles).toEqual(before.bubbles);
-  });
-});
 
 test.describe("a scrollbar appearing never shifts the page", () => {
   test.use({ storageState: stateFor("empty") });

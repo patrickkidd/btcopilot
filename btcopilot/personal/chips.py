@@ -128,13 +128,17 @@ def validate(text: str, data: DiagramData) -> str:
 
     def _keep(match):
         kind, target = ChipKind(match.group(1)), match.group(2).strip()
+        # Offered answers are dropped (Patrick, 2026-09-21): people type their
+        # own words. The token is still parsed so an old transcript renders.
+        if kind is ChipKind.Ask:
+            return ""
         if resolves(kind, target, data):
             return match.group(0)
         label = (match.group(3) or "").strip() or KIND_WORDS[kind]
         _log.warning(f"Chip to unknown {kind.value} {target!r} replaced with {label!r}")
         return label
 
-    return TOKEN.sub(_keep, text)
+    return TOKEN.sub(_keep, text).rstrip()
 
 
 def _describe(kind: ChipKind, target: str, data: DiagramData) -> str:

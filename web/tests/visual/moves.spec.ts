@@ -162,18 +162,6 @@ test.describe("the move language", () => {
 test.describe("what a chip does", () => {
   test.use({ storageState: stateFor("moves") });
 
-  test("an offered chip goes into the message instead of aiming the picture", async ({
-    page,
-  }) => {
-    await page.goto("/app/");
-    await expect(page.locator(".bub.coach").first()).toBeVisible();
-    const offer = page.locator(".bub .chip.ask").first();
-    await expect(offer).toHaveText("[winter 1993]");
-    await offer.click();
-    await expect(page.locator("#composer .chip")).toHaveCount(1);
-    await expect(page.locator("#chat-screen .inbar")).toHaveScreenshot("offer-in-composer.png");
-  });
-
   test("what the coach named stays lit on the picture", async ({ page }) => {
     await page.goto("/app/");
     await expect(page.locator("#view .ss")).toBeVisible();

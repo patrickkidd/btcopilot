@@ -39,13 +39,14 @@ const OFFER_MS = 160;
 const ASK_MS = 260;
 /** The closing question types faster than the narration it follows. */
 const ASK_TICK_MS = 16;
-/** The question that closes a reply is the last sentence written before the
- * first offered chip. */
-const LAST_SENTENCE = /[^.?!]*[.?!]?\s*$/;
+/** The question that closes a reply is its last sentence, when that sentence
+ * is a question. */
+const LAST_SENTENCE = /[^.?!]*\?\s*$/;
 
 /** How a reply is laid out: the words, then the question that closes it set
- * apart in amber, then the answers the coach holds out. A reply with no offered
- * chips is words alone. */
+ * apart in amber (R-0358). Offered chips are no longer written (Patrick,
+ * 2026-09-21: people type their own words), but an old transcript may still
+ * hold some, so a run of them is still laid out after the question. */
 interface Written {
   words: Piece[];
   ask: string;
@@ -54,10 +55,10 @@ interface Written {
 }
 
 function layout(pieces: Piece[]): Written {
-  const first = pieces.findIndex(
+  const offered = pieces.findIndex(
     (p) => "chip" in p && p.chip.tone === ChipTone.Ask,
   );
-  if (first < 0) return { words: pieces, ask: "", offers: [], tail: [] };
+  const first = offered < 0 ? pieces.length : offered;
   const words = pieces.slice(0, first);
   let ask = "";
   const last = words[words.length - 1];
@@ -69,6 +70,7 @@ function layout(pieces: Piece[]): Written {
     };
   }
   const rest = pieces.slice(first);
+  if (!rest.length) return { words, ask, offers: [], tail: [] };
   const lastOffer =
     rest.length -
     1 -

@@ -393,8 +393,9 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    as a formatting error. RULED: reads as bold, fine if that is where the eye should go;
    kept [R-0358].
 9. The chips under a coach bubble: tapping one inserts it into the chat, but what that means
-   or does is not obvious; make it obvious, or drop them. OPEN — he asked what they gain;
-   answered in the session; his ruling pending.
+   or does is not obvious; make it obvious, or drop them. RULED: dropped, people type their
+   own words [R-0361]. FIXED: the coach is no longer told to offer them, any it still writes
+   is stripped before the transcript, and the closing question keeps its amber line.
 10. Timeline: an event the coach adds shows as a bare dot with no other information, and a
    "?" sits at the end of the timeline; nobody will know what that means. The "?" was also
    there on the right before any event existed, which looks like a bug. RULED: hide both
@@ -418,3 +419,6 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    drawn) as its rules tell it to; the year is invented because the age has no anchor. 12: no
    onboarding form was ruled — the first journey is chat straight from the link (R-0087);
    name and birthdate live in preferences (R-0099). Decisions put to Patrick.
+13. Seen while verifying onboarding on the box: the session summary shown in the sessions
+   list (a separate model call) answered the person's first message with generic sleep
+   advice instead of summarising the exchange. OPEN
