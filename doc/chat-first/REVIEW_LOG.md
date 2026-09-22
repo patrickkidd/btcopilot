@@ -511,3 +511,7 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    (record inside), tools and history at full price. Patrick: "absolutely do it". BUILDING —
    fixed coaching text and tools cached, a breakpoint on the last message so each step of a turn
    reuses the steps before it, cache reads logged per call.
+   Item 32 FIXED @d0bc169, live 2026-09-22 18:04 UTC. Measured on the box, one four-step turn:
+   each step read 10,200–10,800 tokens from cache and paid full price for 86–360 new ones; the
+   fixed coaching text is 3,893 tokens. Not wired: the per-user token meter table, which nothing
+   writes yet; usage is logged per call for the dashboarding session to pick up.
