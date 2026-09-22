@@ -1163,7 +1163,7 @@ his also landed in the branch instructions: never repeat in the reply what a pub
 already says, and sub-agents do the work while this session's context stays small.
 
 ## 2026-09-16 to 22 — the deployment picked up, the app went live, and Patrick used it [T-1, T-2, T-4, T-5, T-6, T-9, T-11]
-<!-- session: 1a988ef4 · flushed: 2026-09-22T16:05:00Z -->
+<!-- session: 1a988ef4 · flushed: 2026-09-22T21:10:00Z -->
 
 Patrick opened with "FD-362, pick up the deployment", then, when the first read of the box was
 refused as a production read, granted access to DNS and every other production resource to get
@@ -1281,3 +1281,23 @@ confirmation step for anything that changes data, and Patrick's local Discord as
 over one pinned SSH key [item 31]. Open: Session Replay preview form, per-container metrics after
 the Alloy remount, the first invite from Discord, revoking the Admin service-account token.
 
+**2026-09-22, late — what the turns cost, and where checks may run.** No coach call had ever used
+the model's cache: every step of a turn re-sent the whole prompt, the record inside it, the tool
+definitions and the history at full price. Patrick's word was "absolutely do it". Now the fixed
+coaching text and the tools are cached and each step of a turn reuses the steps before it;
+measured live on a four-step turn, each step read between ten and eleven thousand words from
+cache and paid full price for a few hundred. Every call also writes a row saying who it was for,
+which model, four counts of words and what it cost, which is what the dashboards read.
+
+Patrick then found nine scratch accounts with chats on his own dashboard: this session had made
+them to prove each deploy end to end, because the live site was the only place to check. He
+objected, and the rule is now in the branch instructions — a verification walk never runs against
+the live site; it runs against the development server on his Mac. The nine rows are filtered out
+of the dashboards and stay until he says delete or keep. The invite mail was also sent and
+received for the first time, so sign-in by mail works.
+
+Work split in two here. A second session took the dashboards, the command line Patrick's own
+assistant drives, and the per-call cost rows; it works on this same branch and commits within
+minutes of each change. This session kept the app itself. The drawn options for the two cluster
+problems — the picture changing under him between messages, and the crowded line on a phone —
+were finished and published, and they wait on his picks.

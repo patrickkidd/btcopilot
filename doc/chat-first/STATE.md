@@ -129,10 +129,22 @@ rather than twelve, and every deploy keeps the old container answering until the
 healthy (106 probes during a roll, none failed). Production is where the beta iterates: a change
 to the web pages is copied into the running container while the image rebuilds behind it.
 
-**What is not true yet on the box.** No sign-in mail has been sent to anybody, so whether the
-mail credentials work is unproven; there is no automated database backup; a scratch test account
-made while proving the coach is still in the production database, because there is no command to
-delete an account; and every secret in the committed compose file still needs rotating.
+**Later on 2026-09-22.** Observability left Datadog for Grafana Cloud Free, which costs nothing
+and covers figures, logs, traces and browser sessions [R-0370]; no health information of any kind
+reaches any of them. Every coach call now reads the fixed coaching text and the tool definitions
+from the model's cache, and each step of a turn reuses the steps before it: measured live, a step
+read about ten thousand words from cache and paid full price for a few hundred. Every call writes
+a row saying who it was for, which model, how many words of each kind and what it cost. The
+command line that runs the site previews and stops before anything that changes data unless told
+to go ahead, and Patrick's own assistant reaches it over one pinned key. The invite mail has been
+sent and received.
+
+**What is not true yet on the box.** The dashboards and the cost rows are built but not deployed:
+that waits on Patrick putting the Grafana token there and refreshing the dependency lock. There is
+no automated database backup. Nine scratch accounts with chats, made while proving deploys, sit in
+the live database, filtered out of the dashboards and waiting on his word to delete or keep; from
+now on checks run against the development server on his Mac, never the live site. Every secret in
+the committed compose file still needs rotating.
 
 **Ruled 2026-09-16.** The beta starts from empty records, invited by email, with no import at
 cutover and a per-diagram import later [R-0355], which he agreed to only once a test proved the

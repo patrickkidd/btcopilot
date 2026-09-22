@@ -31,15 +31,17 @@ the beta starts from empty records, invited by email, with no import of the old 
 cutover [R-0355]; the app is served at familydiagram.com/app [R-0356]; pricing and plans are
 deferred to the first $20–40 bill [R-0354]. Added this session: production is where the beta
 iterates — a change to the web pages is copied into the running container and the image is
-rebuilt behind it, and every deploy keeps the old container up until the new one answers.
-**Open:** (1) [ruling] whether to invite the three clinicians now or hold until the open
-findings from his own use are closed; (2) [ruling] his code review of the branch, and of the
+rebuilt behind it, and every deploy keeps the old container up until the new one answers. Proving a deploy is no
+longer done on the live site: nine scratch accounts made that way ended up on his dashboard, so
+checks run against the development server on his Mac instead. The invite mail has now been sent
+and received, so sign-in by mail works.
+**Open:** (1) [ruling] when to invite the three clinicians. He leans to starting them now,
+because the basic chat is stable and he does not expect the picture to block them; what is left
+is his word to send the invites; (2) [ruling] his code review of the branch, and of the
 coach's prompt section, which is the first open item on the coach topic; (3) [build] the
 summary shown for a session in the sessions list answers the person's first message with
-generic advice instead of summarising the exchange (review item 13); (4) [verify] no sign-in
-mail has been sent to anybody — Patrick signed in through an invite link, so whether the mail
-credentials on the box work is unproven; (5) [verify] the app has never been opened on Android;
-(6) [verify] passkeys have never been tried on a real https domain; (7) [waiting] cluster
+generic advice instead of summarising the exchange (review item 13); (4) [verify] the app has still never been
+opened on Android; (5) [verify] passkeys have never been tried on a real https domain; (6) [waiting] cluster
 quality on anyone else's record stays unmeasured until the coding loop produces numbers.
 **Lives in:** btcopilot PR #136 (fdserver PR #30 closed unmerged, 2026-09-16); merge-risk review
 doc/chat-first/MERGE_REVIEW.md; review log doc/chat-first/REVIEW_LOG.md, round 5 items 1–27;
@@ -249,8 +251,9 @@ turned on its side included [R-0367]; Return starts a new line and only the send
 [R-0368]; selecting an event and tapping "in chat" now finds the words even when the coach
 wrote them in the session on screen.
 **Open:** (1) [ruling] the main view of clusters on a phone: 39 dated events already read as
-one thick line, a tap cannot pick a single dot, and the view has no name of its own — drawn
-options on his own record are being made now; (2) [build] grouping is the coach's judgement
+one thick line, a tap cannot pick a single dot, and the view has no name of its own. The drawn
+options are finished and published at https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj, and they
+wait on his picks; (2) [build] grouping is the coach's judgement
 with a one-line scope and the floor binds only the automatic draft [R-0287]; the nodal ring
 stays and its flag follows the clinical definition [R-0283]; no trend lines until real data
 [R-0284]; (3) [build] the event editor's relationship fields; (4) [ruling] whether tapping an
@@ -262,7 +265,8 @@ that, or self-hosted models the box cannot run. He has not picked, and anything 
 on the measurement question on the platform topic.
 **Lives in:** doc/chat-first/UI_GAP.md, REVIEW_LOG.md round 5, STATE.md,
 doc/chat-first/FRAGMENT_CONVENTIONS.md, the drawn round in
-~/theapp/btcopilot-sources/fd-corpus/design/round6/.
+~/theapp/btcopilot-sources/fd-corpus/design/round6/ and its page
+https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj.
 **Next action:** he picks from the drawn options for the crowded line; then the relationship
 fields.
 **Updated:** 2026-09-22.
@@ -270,20 +274,22 @@ fields.
 ## T-6 · Clusters by example
 
 **Status:** a real fault found in his own use — clusters appear and vanish between messages —
-and a drawn round on stability and on the crowded line is running now.
+and the drawn round on stability and on the crowded line is finished and waiting on his picks.
 **Decided:** the rules make the candidates, the model names them and gives a reason
 [R-0193, R-0194]; the floor is three events, enforced at the commit; user groupings under the
 old floor are grandfathered.
 **Open:** (1) [ruling] clusters must stay put and change only when there is a reason: today
 every turn that touches an event re-runs detection and rewrites every cluster, so in one turn
 seven clusters became five, all renamed with new ids, and the eye never sees the same picture
-twice — a stability rule is needed and the drawn round is preparing the options; (2) [ruling]
+twice — a stability rule is needed and the drawn options are published at
+https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj; (2) [ruling]
 he has marked no example clusters yet, and the examples are the input only he can give;
 (3) [waiting] cluster quality on anyone else's record stays unmeasured until the coding loop
 produces numbers.
 **Lives in:** btcopilot/personal/clusters.py; the cluster prompt in the private prompt file;
-the drawn round in ~/theapp/btcopilot-sources/fd-corpus/design/round6/ (in flight).
-**Next action:** he rules on the stability options when the drawn round lands.
+the drawn round in ~/theapp/btcopilot-sources/fd-corpus/design/round6/ and its page
+https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj.
+**Next action:** he picks a stability rule from the drawn options.
 **Updated:** 2026-09-22.
 
 ## T-7 · The drawn family and auto-arrange
@@ -340,7 +346,9 @@ agents may keep editing the front end while he walks, because a page reload is a
 [R-0338].
 Added this session: the branch instructions now carry the correction that sub-agents do the
 mechanical work while the coordinator holds one-line summaries, relays nothing while a run is
-going, and posts one message at the end.
+going, and posts one message at the end; and that no verification walk ever runs against the live
+site, because nine scratch accounts made that way turned up on Patrick's own dashboard — walks
+run against the development server on his Mac instead.
 **Open:** none.
 **Lives in:** doc/chat-first/HOW_THIS_PROJECT_WORKS.md; doc/chat-first/TEST_STRATEGY.md;
 btcopilot/CLAUDE.md; .claude/skills/two-clocks/SKILL.md; bin/flushcheck.py; bin/t.
@@ -371,9 +379,12 @@ doc/chat-first/{TOPICS.md,HISTORY.md,trace.json,events.json}; private/oracle/ (e
 ## T-11 · Platform reset: repo, deployment, billing, identity, admin
 
 **Status:** the app is live at https://familydiagram.com/app with its certificate, its database
-and Patrick's account; he has chatted with the coach from his phone. Deploys now roll without
-dropping a request. Datadog was added and then switched off at his word. fdserver is out of this
-ticket and the Pro backend has its own maintenance branch.
+and Patrick's account; he has chatted with the coach from his phone, and the invite mail has been
+sent and received. Deploys roll without dropping a request. Datadog is gone and Grafana Cloud is
+live in its place. Every coach call now reads most of its words from the model's cache and writes
+what it cost to a table. fdserver is out of this ticket and the Pro backend has its own
+maintenance branch. A second session owns the dashboards, the command line the bot drives and the
+per-call cost rows; it shares this branch and commits within minutes of each change.
 **Decided:** one public repo; every prompt is one encrypted file with shared fragments, one key
 pair per machine, private keys never copied; files naming real people never enter a repo. The
 chat app has its own 2 GB droplet with Caddy and backups; the old droplet stays for the Pro
@@ -385,8 +396,11 @@ on his explicit confirmation each time [R-0353]; pricing waits for the first bil
 beta starts from empty records [R-0355]; the app is served at familydiagram.com/app while
 everything else on familydiagram.com keeps redirecting to alaskafamilysystems.com/family-diagram
 [R-0356]; he granted DNS and production access to get it running [R-0357]. Observability was
-ruled Datadog [R-0328] and then switched off this session, pending a brainstorm about running
-our own.
+ruled Datadog [R-0328] and this session moved it to Grafana Cloud Free, which covers metrics,
+logs, traces and browser sessions at no cost and is the stack Patrick already runs at work
+[R-0370]; self-hosting the stores on the 2 GB box and running them on his laptop were both set
+aside. No health information of any kind goes into a log, a metric, a trace or a session
+recording.
 **Live on the box:** droplet familydiagram-app at 209.38.135.250 in sfo3; five containers — the
 web app, the worker, Postgres, Redis and Caddy; secrets in a root-owned file every compose
 command passes; the migration chain rewritten in dependency order because Postgres refuses a
@@ -403,6 +417,13 @@ container answering until the new one is healthy: 106 probes during a roll, none
 coach turn now runs on the server independent of the request and streams, with its log going
 through Redis at the address the box sets [R-0369]; the first deploy of that broke every message
 because the app looked for Redis on the local machine, and was rolled back in two minutes.
+**Built later the same day:** every coach call reads the fixed coaching text and the tool
+definitions from the model's cache, and each step of a turn reuses the steps before it. Measured
+live on one four-step turn: each step read between 10,200 and 10,800 words from cache and paid
+full price for between 86 and 360 new ones; the fixed coaching text alone is 3,893. Every call
+also writes a row saying who it was for, which model, four counts of words and what it cost. The
+command line that runs the site now previews and stops before anything that changes data unless
+it is told to go ahead, and Patrick's own assistant reaches it over one pinned key on the box.
 **The Pro maintenance stream:** master on btcopilot is tagged `pre-chat-first`; a `master-legacy`
 branch starts there, is protected like master, builds an image tagged `:legacy` on every merge
 and deploys the old box. btcopilot PR #137 and fdserver PR #31 carry the last two pieces and
@@ -420,8 +441,15 @@ committed compose file, which still holds live keys and a TLS private key in git
 issues the new credentials. (4) [build] freeze the old droplet for Pro. (5) [build] money
 through Stripe: account, keys and the price, after the first bill [R-0354]. (6) [build] archive
 the fdserver repo once nothing refers to it. (7) [verify] production still has no automated
-database backup. (8) [verify] a scratch test account made while proving the coach is still in
-the production database; there is no command to delete an account yet.
+database backup. (8) [ruling] nine scratch accounts with chats, made while proving each deploy end to end, sit
+in the live database; Patrick saw them on the dashboard and objected. They are filtered out of
+every dashboard and stay until he says delete or keep. (9) [verify] one invite driven from his
+Discord assistant end to end has never been done. (10) [build] three loose ends on the
+dashboards, all the other session's: the form for the browser session recordings, per-container
+figures after the metrics agent was remounted, and revoking the administrator token used to set
+the stack up. (11) [waiting] the dashboards are built but not on the box: deploying them
+needs the Grafana token there, a refresh of the dependency lock at the workspace root that only
+Patrick can run, and a release build.
 **Note for the next session:** the permission classifier refuses a sub-agent both `sops
 updatekeys`, because it writes the secret store, and `docker compose pull` and `up` on the box,
 because that is a production deploy. Production reads on the box are refused to sub-agents too.
@@ -429,8 +457,9 @@ Those run at the top level on Patrick's direct grant.
 **Lives in:** deploy/chat/ (compose, Caddyfile, secrets template, README, the release workflow
 and the four appcast feeds); doc/chat-first/PLATFORM_BUILD.md; doc/chat-first/DATADOG.md;
 private/prompts/ and private/oracle/, encrypted.
-**Next action:** his merge of btcopilot PR #137 and fdserver PR #31 to finish the Pro
-maintenance stream; then the Grafana brainstorm and the secret rotation.
+**Next action:** he puts the Grafana token on the box and refreshes the dependency lock so the
+observability commit can deploy; his merge of btcopilot PR #137 and fdserver PR #31 finishes the
+Pro maintenance stream; then his word on the nine scratch accounts and the secret rotation.
 **Updated:** 2026-09-22.
 
 ## T-12 · The learning loop: a scout that looks outward and a review of the scout

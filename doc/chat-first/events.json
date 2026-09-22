@@ -1,54 +1,5 @@
 [
 {
-"id": "btcopilot@fc52fd3",
-"kind": "build",
-"date": "2026-08-25",
-"session": "",
-"topics": [
-"T-5",
-"T-9"
-],
-"title": "Jira rules → root CLAUDE.md; ignore built-in worktree dir; log lifecycle decision (#130)",
-"text": "Jira rules → root CLAUDE.md; ignore built-in worktree dir; log lifecycle decision (#130)",
-"source": "btcopilot git log"
-},
-{
-"id": "btcopilot@c2939f7",
-"kind": "build",
-"date": "2026-08-25",
-"session": "",
-"topics": [
-"T-1"
-],
-"title": "docs: cross-reference first-beta epic FD-341 in decision log and direction brainstorm",
-"text": "docs: cross-reference first-beta epic FD-341 in decision log and direction brainstorm",
-"source": "btcopilot git log"
-},
-{
-"id": "btcopilot@ae92bcf",
-"kind": "build",
-"date": "2026-08-25",
-"session": "",
-"topics": [
-"T-9"
-],
-"title": "decisions: MVP done condition = returning long-horizon chat with diagram improved through chat; re-sequence Fa",
-"text": "decisions: MVP done condition = returning long-horizon chat with diagram improved through chat; re-sequence Fall plan",
-"source": "btcopilot git log"
-},
-{
-"id": "btcopilot@7e3f805",
-"kind": "build",
-"date": "2026-08-25",
-"session": "",
-"topics": [
-"T-9"
-],
-"title": "docs: Fall 2026 direction — voice ruling (fine for now)",
-"text": "docs: Fall 2026 direction — voice ruling (fine for now)",
-"source": "btcopilot git log"
-},
-{
 "id": "D:2026-08-25: MVP done condition = returning long-horizon chat",
 "kind": "decision",
 "date": "2026-08-25",
@@ -7105,6 +7056,66 @@
 ],
 "title": "Patrick, on turning on a paid voice at about a cent a reply: the primary concern is not the money but the feed",
 "text": "Patrick, on turning on a paid voice at about a cent a reply: the primary concern is not the money but the feedback loops — beta users must see how much they use and what it costs, and that has to sit inside the data-driven principle for the app: does anyone pay, do they like it. The loops are not designed yet. TABLED, to be remembered; no paid voice until they exist.",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-31",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-1",
+"T-2",
+"T-5"
+],
+"title": "Patrick wants his local Qwen agent in openclaw to administer the backend from a markdown file linked in its ow",
+"text": "Patrick wants his local Qwen agent in openclaw to administer the backend from a markdown file linked in its own instructions, always matching the deployed code: invites, licences, costs, everything the admin CLI does; reads free, writes confirmed. Options given: link the file on GitHub; the running app serves its own copy (recommended); the CLI prints it. Gating by an SSH forced-command wrapper from the same declarations. Handed to the dashboarding session for its brainstorm. OPEN Item 31 and the dashboards (27): built by the dashboarding session, not this one (Patrick, 2026-09-22). This sessi",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-32",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-2",
+"T-5",
+"T-9"
+],
+"title": "Prompt caching: no coach call used it; every step of a turn re-sent the whole system prompt (record inside), t",
+"text": "Prompt caching: no coach call used it; every step of a turn re-sent the whole system prompt (record inside), tools and history at full price. Patrick: \"absolutely do it\". BUILDING — fixed coaching text and tools cached, a breakpoint on the last message so each step of a turn reuses the steps before it, cache reads logged per call. Item 32 FIXED @d0bc169, live 2026-09-22 18:04 UTC. Measured on the box, one four-step turn: each step read 10,200–10,800 tokens from cache and paid full price for 86–360 new ones; the fixed coaching text is 3,893 tokens. Not wired: the per-user token meter table, whi",
+"commit": "d0bc169",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-33",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-1",
+"T-4",
+"T-5",
+"T-9"
+],
+"title": "Deployed 062eb63 to the box 2026-09-22 19:00 UTC: CI green, the token meter migration applied (chain at 1a0000",
+"text": "Deployed 062eb63 to the box 2026-09-22 19:00 UTC: CI green, the token meter migration applied (chain at 1a00000000ac). The Grafana commit 1f4b3dc is NOT deployed: it needs the Grafana token on the box (his key script now carries it and drops the Datadog key), a lock refresh at the workspace root that only he runs there, and a release build. WAITING on him.",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-34",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-1",
+"T-5"
+],
+"title": "Nine scratch accounts (claude-test1 to 10) with chats sit in production: this session made them to verify each",
+"text": "Nine scratch accounts (claude-test1 to 10) with chats sit in production: this session made them to verify each deploy end to end, because production was the only stack. Patrick objected on seeing them on the dashboard. From now on verification walks run against a sandbox (the Tailscale dev server, item under \"how the beta iterates\"), never the box. The rows stay until his word: delete or keep. OPEN",
 "commit": "",
 "source": "doc/chat-first/REVIEW_LOG.md"
 },
@@ -14562,6 +14573,199 @@
 "source": "private/oracle/rulings.md"
 },
 {
+"id": "btcopilot@54e2d1c",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362: review log and history for the Grafana move and the admin key",
+"text": "FD-362: review log and history for the Grafana move and the admin key",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@6454186",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: the bot's SSH gate on the box hands its words to flask admin run",
+"text": "FD-362: the bot's SSH gate on the box hands its words to flask admin run",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@8664b71",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-1"
+],
+"title": "FD-362: admin CLI confirmation guard: writes marker, flask admin run, skill --print, invite --send",
+"text": "FD-362: admin CLI confirmation guard: writes marker, flask admin run, skill --print, invite --send",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@0ef99b2",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-1"
+],
+"title": "FD-362: item 34 — no verification walks on production; the rule in the branch instructions",
+"text": "FD-362: item 34 — no verification walks on production; the rule in the branch instructions",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@32b9676",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: Alloy mounts the host cgroup tree and Docker data dir so cadvisor sees every container",
+"text": "FD-362: Alloy mounts the host cgroup tree and Docker data dir so cadvisor sees every container",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@f098a19",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: per-call cost ledger, user email on traces and in Faro, PDC agent for Grafana's Postgres source",
+"text": "FD-362: per-call cost ledger, user email on traces and in Faro, PDC agent for Grafana's Postgres source",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@51e921b",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-1",
+"T-9"
+],
+"title": "FD-362: item 33, deploy state and the Grafana handoff",
+"text": "FD-362: item 33, deploy state and the Grafana handoff",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@1f4b3dc",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: observability moves to Grafana Cloud (R-0370)",
+"text": "FD-362: observability moves to Grafana Cloud (R-0370)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@062eb63",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362: the visual specs follow today's rulings",
+"text": "FD-362: the visual specs follow today's rulings",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@60bbb5f",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362: a turn charges its tokens to the user's month on the meter",
+"text": "FD-362: a turn charges its tokens to the user's month on the meter",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@8057fa8",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: item 32 measured live",
+"text": "FD-362: item 32 measured live",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@d0bc169",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-2"
+],
+"title": "FD-362: prompt caching on every coach call — fixed coaching text, tools and the turn so far read from cache; u",
+"text": "FD-362: prompt caching on every coach call — fixed coaching text, tools and the turn so far read from cache; usage logged per call (review item 32)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@a7dfb01",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362: ruling R-0370, observability moves from Datadog to Grafana Cloud Free",
+"text": "FD-362: ruling R-0370, observability moves from Datadog to Grafana Cloud Free",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@c40d650",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: the turn log picks its store from config, not always Redis",
+"text": "FD-362: the turn log picks its store from config, not always Redis",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@7a7dcc4",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 flush: 2026-09-22 the money principle sits with pricing",
+"text": "FD-362 flush: 2026-09-22 the money principle sits with pricing",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@6b62fd5",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 flush: 2026-09-22 ledger and trace",
+"text": "FD-362 flush: 2026-09-22 ledger and trace",
+"source": "btcopilot git log"
+},
+{
 "id": "btcopilot@12b7f25",
 "kind": "build",
 "date": "2026-09-22",
@@ -14633,6 +14837,18 @@
 ],
 "title": "2026-09-22: No paid per-use feature before the feedback loops exist",
 "text": "Patrick, on a paid voice at about a cent a reply: the primary concern is the incentive and\nfeedback loops with beta users — each must see their own use and cost — and those must be part\nof the data-driven learning the app exists for (will people pay, do they like it). Money from\nhis own pocket is secondary. The loops are undesigned; the paid voice waits on them. Tabled.",
+"source": "decisions/log.md"
+},
+{
+"id": "D:2026-09-22: Observability moves to Grafana Cloud Free",
+"kind": "decision",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-6"
+],
+"title": "2026-09-22: Observability moves to Grafana Cloud Free",
+"text": "Patrick, after an evaluation against current vendor pricing. Datadog cannot go under $10 a\nmonth with the host agent on ($15 host floor, no free logs); Grafana Cloud Free covers metrics,\nlogs, traces and 50,000 frontend sessions a month at $0, is the stack he runs at work, and its\nFrontend Observability groups browser errors by stack-trace fingerprint. Self-hosting Loki and\nPrometheus on the 2 GB box was rejected (1 to 1.5 GB idle); hosting the stores on his laptop was\nweighed and set aside in favour of Cloud. Session Replay is a Cloud-only public preview, enabled\nper stack by form; it is requested, not relied on. Alerting while his laptop is closed is not a\nconcern until past beta. [R-0370, supersedes the Datadog half of R-0328]. DATADOG.md becomes\nthe record of the rejected option. The D",
 "source": "decisions/log.md"
 },
 {
@@ -14746,6 +14962,20 @@
 ],
 "title": "A coach turn streams: the words and the tool steps arrive as they happen, with no long wait for the whole repl",
 "text": "A coach turn streams: the words and the tool steps arrive as they happen, with no long wait for the whole reply. The turn runs on the server independent of the request, so a page reload, a switch away from and back to the home-screen app, or any other reload reattaches and syncs to the turn's current state in real time",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0370",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-1"
+],
+"title": "Observability moves from Datadog to Grafana Cloud Free: Alloy on the box ships host metrics, container logs an",
+"text": "Observability moves from Datadog to Grafana Cloud Free: Alloy on the box ships host metrics, container logs and browser telemetry; Frontend Observability groups browser errors; Session Replay requested on the preview; alerting while his laptop is closed is deferred past beta. Supersedes the Datadog half of R-0328; the sfo3 half stands",
 "supersedes": [],
 "source": "private/oracle/rulings.md"
 },

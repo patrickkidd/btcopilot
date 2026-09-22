@@ -300,6 +300,8 @@ What it is for: you, your families, your plan, and signing out.
 - There is a row for whether the coach speaks its replies out loud. [built]
 - The same speaking switch appears once in the chat as a named shortcut, writing the same setting. [built]
 - With it on, your phone's own voice reads each reply as it starts arriving, and sending the next message cuts it off. [built] {R-0099}
+- A button under each coach reply that plays it again, the way the Claude app has one, is not built yet. [open]
+- Which voice reads the replies is not settled: today it is your phone's own, which costs nothing, and a better-sounding paid one waits on Patrick. [open]
 - No other setting appears in two places. [built]
 - There is a row for how often the coach may message you first, and it says the coach never messages first unless you ask. [built]
 - There is a row for light, dark or matching your phone. [built]
