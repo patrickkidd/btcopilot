@@ -1,6 +1,7 @@
 """The agent loop: tools that change the record, chips that resolve, one view
 kind at a time, and a play-by-play that cannot invent a move."""
 
+import datetime
 import pytest
 
 from btcopilot.extensions import db
@@ -658,3 +659,24 @@ def test_a_moment_the_coach_wrote_traces_to_the_message_that_wrote_it(
     newest = str(max(made))
     assert coded[newest]["statement_id"] == reply["statement_id"]
     assert coded[newest]["discussion_id"] == reply["discussion_id"]
+
+
+def test_a_turn_charges_every_model_call_to_the_user_for_the_month(discussion, family):
+    from btcopilot.personal.coachmodel import Spent
+    from btcopilot.personal.models import TokenMeter
+
+    first = called(ToolName.EditPerson, name="Nell")
+    first.spent = Spent(input=1000, output=50, cache_creation=800, cache_read=0)
+    second = said("Added [[person:11|Nell]].")
+    second.spent = Spent(input=1100, output=40, cache_creation=0, cache_read=800)
+    run(discussion, "My aunt Nell.", Model(first, second))
+    run(discussion, "Thanks.", Model(said("Any time.")))
+
+    meter = TokenMeter.query.filter_by(user_id=discussion.user_id).one()
+    assert meter.period == datetime.date.today().strftime("%Y-%m")
+    assert (
+        meter.input_tokens,
+        meter.output_tokens,
+        meter.cache_creation_tokens,
+        meter.cache_read_tokens,
+    ) == (2100, 90, 800, 800)

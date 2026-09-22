@@ -63,10 +63,25 @@ class ToolCall:
 
 
 @dataclass
+class Spent:
+    input: int = 0
+    output: int = 0
+    cache_creation: int = 0
+    cache_read: int = 0
+
+    def add(self, other: "Spent") -> None:
+        self.input += other.input
+        self.output += other.output
+        self.cache_creation += other.cache_creation
+        self.cache_read += other.cache_read
+
+
+@dataclass
 class ModelTurn:
     text: str = ""
     calls: list[ToolCall] = field(default_factory=list)
     blocks: list[dict] = field(default_factory=list)
+    spent: Spent = field(default_factory=Spent)
 
 
 class CoachModel:
@@ -119,6 +134,12 @@ class CoachModel:
                     }
                 )
         used = message.usage
+        turn.spent = Spent(
+            input=used.input_tokens,
+            output=used.output_tokens,
+            cache_creation=used.cache_creation_input_tokens or 0,
+            cache_read=used.cache_read_input_tokens or 0,
+        )
         _log.info(
             f"Coach model {self.model} turn {turn_id}: {len(turn.text)} chars, "
             f"{len(turn.calls)} tool calls, {used.input_tokens} tokens in, "

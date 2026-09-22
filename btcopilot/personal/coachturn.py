@@ -14,13 +14,14 @@ from typing import Callable
 
 from btcopilot.extensions import ai_log, db
 from btcopilot.personal import chips, clusters, profile, recordtext
-from btcopilot.personal.coachmodel import CoachModel
+from btcopilot.personal.coachmodel import CoachModel, Spent
 from btcopilot.personal.models import (
     Change,
     Discussion,
     DiscussionKind,
     Statement,
     StatementKind,
+    TokenMeter,
 )
 from btcopilot.personal.prompts import agent_prompt, note_register, onboarding
 from btcopilot.personal.interactions import recent
@@ -133,6 +134,19 @@ def record_of(discussion: Discussion) -> DiagramData:
     )
 
 
+class Metered:
+    """The model with every call's tokens summed, so one turn charges one row."""
+
+    def __init__(self, model):
+        self.model = model
+        self.spent = Spent()
+
+    def turn(self, system, messages: list[dict], tools: list[dict], turn_id: str = ""):
+        turn = yield from self.model.turn(system, messages, tools, turn_id)
+        self.spent.add(turn.spent)
+        return turn
+
+
 class CoachTurn:
     """One user message in, one coach statement and its edits out."""
 
@@ -154,7 +168,7 @@ class CoachTurn:
         self.statement_id = statement_id
         self.sink = sink
         self.streamed = ""
-        self.model = model or CoachModel()
+        self.model = Metered(model or CoachModel())
         self.session_id = session_id or str(discussion.id)
         self.turn_id = turn_id or uuid.uuid4().hex
         self.diagram = discussion.diagram
@@ -294,6 +308,7 @@ class CoachTurn:
             self.discussion.update_title()
             self.discussion.update_summary()
         profile.mirror(self.discussion.user, self.data)
+        TokenMeter.charge(self.discussion.user_id, self.model.spent)
         db.session.commit()
 
         return {
