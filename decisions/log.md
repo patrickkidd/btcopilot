@@ -1608,3 +1608,10 @@ testers. Web-only changes are hot-copied into the running container (no restart)
 rebuilt behind them; the rebuilt image is pulled with the old container kept up until the new one
 is healthy, and CI caches the wheel and web layers so a build is minutes, not twelve. A dev server
 on this Mac reachable from his phone over Tailscale (100.71.164.31) is the next step, timing open.
+
+## 2026-09-22: No paid per-use feature before the feedback loops exist
+
+Patrick, on a paid voice at about a cent a reply: the primary concern is the incentive and
+feedback loops with beta users — each must see their own use and cost — and those must be part
+of the data-driven learning the app exists for (will people pay, do they like it). Money from
+his own pocket is secondary. The loops are undesigned; the paid voice waits on them. Tabled.

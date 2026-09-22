@@ -6694,6 +6694,421 @@
 "source": "doc/chat-first/REVIEW_LOG.md"
 },
 {
+"id": "review-1",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "First chat message threw an error. Cause: the twelve shared prompt fragments were never re-encrypted for the b",
+"text": "First chat message threw an error. Cause: the twelve shared prompt fragments were never re-encrypted for the box's key on the 16th, so the server could not decrypt them. All 31 encrypted files re-keyed; copied into the running containers; image rebuilt. FIXED @a6d848f",
+"commit": "a6d848f",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-2",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-2"
+],
+"title": "Datadog on this box, as part of the compose stack with config in the repo. Agent service added: host metrics a",
+"text": "Datadog on this box, as part of the compose stack with config in the repo. Agent service added: host metrics and container logs, no traces. Needs DD_API_KEY on the box. FIXED @f1543aa",
+"commit": "f1543aa",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-3",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "Chat still broken after item 1. Cause: the private tool-meanings prompt lacked three entries the tools now req",
+"text": "Chat still broken after item 1. Cause: the private tool-meanings prompt lacked three entries the tools now require (parents, person_a, person_b); the public default had them, so tests passed. Added, re-encrypted, hot-copied into the containers, image rebuilt. FIXED @0df98c3",
+"commit": "0df98c3",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-4",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "A tag on master marking where the chat-first rebuild diverged, to become the Pro maintenance stream once the n",
+"text": "A tag on master marking where the chat-first rebuild diverged, to become the Pro maintenance stream once the new app is proven on the box. Tag `pre-chat-first` at fc52fd3, which is also master's tip today. DONE",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-5",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-1",
+"T-2",
+"T-5"
+],
+"title": "Chat still broken after item 3: the image pulled the Anthropic SDK 1.7, which drops the temperature argument t",
+"text": "Chat still broken after item 3: the image pulled the Anthropic SDK 1.7, which drops the temperature argument the app passes in six places (tests ran on 0.97). SDK pinned below 1.0, image rebuilt, deployed; a real coach call with the real prompt and tools ran inside the container and answered. FIXED @82b960e",
+"commit": "82b960e",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-6",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "Shut Datadog down on this box; he may leave Datadog. Agent stopped and removed; the service is now behind an o",
+"text": "Shut Datadog down on this box; he may leave Datadog. Agent stopped and removed; the service is now behind an opt-in compose profile so a restart does not revive it. DONE",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-7",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-1",
+"T-2",
+"T-5"
+],
+"title": "Chat still broken after item 5: the wheel never shipped the public prompt directory, so the image had only the",
+"text": "Chat still broken after item 5: the wheel never shipped the public prompt directory, so the image had only the private files and the session-title prompt (public only) was missing. Package data fixed, image rebuilt, deployed; proven with a full turn over https as a scratch test account (which stays in the database: there is no delete command yet): 200, the coach added the mother and her death. Lesson: every earlier check was a piece of the path, not the path. FIXED @56f98bd Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each OPEN until fixed):",
+"commit": "56f98bd",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-8",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "Coach bubble: the closing question is in the same gold as the chips under it, which reads as a formatting erro",
+"text": "Coach bubble: the closing question is in the same gold as the chips under it, which reads as a formatting error. RULED: reads as bold, fine if that is where the eye should go; kept [R-0358].",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-9",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-2",
+"T-4",
+"T-5"
+],
+"title": "The chips under a coach bubble: tapping one inserts it into the chat, but what that means or does is not obvio",
+"text": "The chips under a coach bubble: tapping one inserts it into the chat, but what that means or does is not obvious; make it obvious, or drop them. RULED: dropped, people type their own words [R-0361]. FIXED: the coach is no longer told to offer them, any it still writes is stripped before the transcript, and the closing question keeps its amber line.",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-10",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "Timeline: an event the coach adds shows as a bare dot with no other information, and a \"?\" sits at the end of ",
+"text": "Timeline: an event the coach adds shows as a bare dot with no other information, and a \"?\" sits at the end of the timeline; nobody will know what that means. The \"?\" was also there on the right before any event existed, which looks like a bug. RULED: hide both question marks for now, with the reasoning kept in comments so the thread is not lost [R-0359]. FIXED in the picture code; the rule in DRAWABILITY stands.",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-11",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-2"
+],
+"title": "Timeline shows one event at 2021, but the events talked about were high school and ages 25–26 with no years gi",
+"text": "Timeline shows one event at 2021, but the events talked about were high school and ages 25–26 with no years given, so 2021 comes from nowhere. Cause: no birthdate to anchor an age. Addressed by 12: the coach gets the birth date before any other event.",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-12",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-1",
+"T-2",
+"T-5"
+],
+"title": "Opening the invite lands straight in the chat with no onboarding: never asked for name, age or birthdate. Was ",
+"text": "Opening the invite lands straight in the chat with no onboarding: never asked for name, age or birthdate. Was a form not planned? RULED: the coach onboards; first name, last name and birth date are required before it goes on [R-0360]. FIXED: the coach's prompt carries what is still missing until all three are in the record, and the account row mirrors them for the preferences page. Findings on 8–12 (2026-09-21): 8 and 9 are the built design — the bubble's last sentence is split off as \"the ask\" in amber and the bracketed amber chips are offered answers a tap drops into the composer (R-0072, R-",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-13",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "Seen while verifying onboarding on the box: the session summary shown in the sessions list (a separate model c",
+"text": "Seen while verifying onboarding on the box: the session summary shown in the sessions list (a separate model call) answered the person's first message with generic sleep advice instead of summarising the exchange. OPEN",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-14",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-1"
+],
+"title": "Patrick: a branch `master-legacy` for Pro bug fixes with the same release flow, deploying to database.familydi",
+"text": "Patrick: a branch `master-legacy` for Pro bug fixes with the same release flow, deploying to database.familydiagram.com on every merged pull request. DONE: branch at the tag, protected like master, release workflow on it tags `:legacy` and triggers the Pro box deploy; btcopilot PR #137 (CI on pull requests into it) and fdserver PR #31 (the box pulls `:legacy`) await his merge.",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-15",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "Patrick: speak replies is on but nothing is spoken. Finding: the switch only stores a preference; no code in t",
+"text": "Patrick: speak replies is on but nothing is spoken. Finding: the switch only stores a preference; no code in the web app reads it or calls the browser's speech. Speaking was never built. RULED: build it. FIXED @4ec3a0b: the phone's own voice reads each reply as it starts typing, cut by the next message; verified on the box with the speech call stubbed to record one utterance carrying the reply.",
+"commit": "4ec3a0b",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-16",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-5",
+"T-6"
+],
+"title": "Server error on a later turn: the Gemini key is missing on the box. Gemini groups the record's events into clu",
+"text": "Server error on a later turn: the Gemini key is missing on the box. Gemini groups the record's events into clusters on the picture after a turn once there are enough of them; the secrets template never listed it. FIXED: template and runbook carry it, and a test now fails when any setting the app reads without a fallback has no home on the box. The value itself is his to put on the box (the key script now includes it).",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-17",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-1",
+"T-6"
+],
+"title": "\"Server error\" on one send, fine on retry, 2026-09-22 02:56 UTC. Cause: the send landed while the app containe",
+"text": "\"Server error\" on one send, fine on retry, 2026-09-22 02:56 UTC. Cause: the send landed while the app container restarted after the key script; no failed response or exception in the logs, and the next turn ran cluster detection cleanly. Every deploy has this window today. NOTED — a restart that keeps the old container up until the new one is healthy is a later improvement.",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-18",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "Select an event on the timeline, tap \"in chat\": \"Those words are no longer here\". Cause: a coach bubble writte",
+"text": "Select an event on the timeline, tap \"in chat\": \"Those words are no longer here\". Cause: a coach bubble written in the session on screen never carried its statement id (only a reopened session bubbles did), so a moment coded in this very session could not find its words. FIXED: the live bubble is stamped with its statement id the moment the reply arrives.",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-19",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "Patrick asks whether the app is meant to go landscape on an iPhone 14 or whether that breaks the layout. Findi",
+"text": "Patrick asks whether the app is meant to go landscape on an iPhone 14 or whether that breaks the layout. Finding: nothing locks orientation and nothing was designed for a phone on its side; the one width rule is the professional's pinned drawer at 840px, which an iPhone 14 on its side (844px) crosses. RULED: the wide layout activates for everyone on rotation, to see how it feels [R-0367]. FIXED.",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-20",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-5",
+"T-6"
+],
+"title": "In an open cluster, tap a moment, tap the back arrow: it only put the moment down and stayed in the cluster. R",
+"text": "In an open cluster, tap a moment, tap the back arrow: it only put the moment down and stayed in the cluster. RULED: the arrow always closes the cluster [R-0362]. FIXED.",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-21",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-1",
+"T-2",
+"T-5"
+],
+"title": "Patrick: \"moved\" is still a first-class event kind; he said before that a move is one of many notable events w",
+"text": "Patrick: \"moved\" is still a first-class event kind; he said before that a move is one of many notable events with no structural or functional shift of its own. Finding: the complaint is recorded in doc/chat-first/EVENT_MODEL.md as complaint 1, a proposed shape exists, nothing is built, and six questions at the end of that page are unruled — including whether a move becomes an ordinary noted event or keeps a kind untied to the couple, and whether the rework happens now or after the beta. OPEN — a brainstorm, not a fix; he wants it re-opened. Item 21 built (2026-09-22): the noted kind is in, mov",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-22",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-2"
+],
+"title": "Patrick: moves and other events he could not name are leads — a coach may wonder whether they play in, though ",
+"text": "Patrick: moves and other events he could not name are leads — a coach may wonder whether they play in, though they are no structural or functional change. RULED [R-0366]. FIXED: a noted event raises the order question beside a shift the way a structural event does; it still counts as no change to the family.",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-23",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "Return on the keyboard sent the message, so a message could not have paragraphs. RULED: Return starts a new li",
+"text": "Return on the keyboard sent the message, so a message could not have paragraphs. RULED: Return starts a new line, only the send button sends [R-0368]. FIXED; the composer and the bubbles keep the line breaks.",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-24",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-1",
+"T-2",
+"T-5",
+"T-6"
+],
+"title": "A 51-second turn (five tool rounds plus cluster naming) came back 200 from the server but the phone had given ",
+"text": "A 51-second turn (five tool rounds plus cluster naming) came back 200 from the server but the phone had given up: browser patience 60s, gunicorn 45s. RULED: stream the turn, run it independent of the request, and let any reload reattach and sync [R-0369]. BUILDING. Item 24 FIXED @6a3b851 + 17788ae, live 2026-09-22 10:07 UTC. Proven on the box with a fresh account: the post came back 202 in 0.6 s, the page was reloaded three seconds into the turn, and the reply landed 28 s later in one bubble carrying its statement id, three events coded. A first deploy of it broke every message (the app looked",
+"commit": "6a3b851",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-25",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-5",
+"T-6"
+],
+"title": "Clusters appear and then vanish between messages; they must stay stable and change only when justified. Eviden",
+"text": "Clusters appear and then vanish between messages; they must stay stable and change only when justified. Evidence: every turn that touches an event re-runs detection and rewrites the clusters wholesale (36 deltas in one turn: seven clusters became five, all retitled, new ids), so the eye never sees the same picture twice. OPEN — a stability rule needed.",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-26",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-5",
+"T-6"
+],
+"title": "The main clusters view on a phone: 39 dated events already read as a thick line; a tap on a coordinate cannot ",
+"text": "The main clusters view on a phone: 39 dated events already read as a thick line; a tap on a coordinate cannot pick one dot; clusters compress but must be meaningful; the view needs one word for its name. OPEN — a mockup round on his own record; drawn options, not data.",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-27",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "Cost per user over time must end up on a dashboard. The tokens table already meters each user; the dashboard, ",
+"text": "Cost per user over time must end up on a dashboard. The tokens table already meters each user; the dashboard, and moving off Datadog to Grafana/Prometheus/Loki, is a brainstorm for a separate session that reports back here by message. OPEN",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-28",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "A play button under each coach bubble to play or replay that message, as in the Claude app. OPEN",
+"text": "A play button under each coach bubble to play or replay that message, as in the Claude app. OPEN",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-29",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "A better voice than the phone built-in one. Options given: cloud neural voices at about a cent a reply, Eleven",
+"text": "A better voice than the phone built-in one. Options given: cloud neural voices at about a cent a reply, ElevenLabs at several times that, self-hosted models the box cannot run. OPEN — his pick.",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-30",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-1"
+],
+"title": "Patrick, on turning on a paid voice at about a cent a reply: the primary concern is not the money but the feed",
+"text": "Patrick, on turning on a paid voice at about a cent a reply: the primary concern is not the money but the feedback loops — beta users must see how much they use and what it costs, and that has to sit inside the data-driven principle for the app: does anyone pay, do they like it. The loops are not designed yet. TABLED, to be remembered; no paid voice until they exist.",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
 "id": "R-0160",
 "kind": "ruling",
 "status": "OK",
@@ -13179,6 +13594,93 @@
 "source": "private/oracle/rulings.md"
 },
 {
+"id": "btcopilot@e6830b5",
+"kind": "build",
+"date": "2026-09-16",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 flush: /app live on the box",
+"text": "FD-362 flush: /app live on the box",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@cf0544b",
+"kind": "build",
+"date": "2026-09-16",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: the app's mount is /app, as ruled (R-0356); Caddy proxies it directly",
+"text": "FD-362: the app's mount is /app, as ruled (R-0356); Caddy proxies it directly",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@6c234eb",
+"kind": "build",
+"date": "2026-09-16",
+"session": "",
+"topics": [
+"T-1",
+"T-9"
+],
+"title": "FD-362 flush: certificate live at familydiagram.com; invite re-minted",
+"text": "FD-362 flush: certificate live at familydiagram.com; invite re-minted",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@4999e8e",
+"kind": "build",
+"date": "2026-09-16",
+"session": "",
+"topics": [
+"T-1",
+"T-5",
+"T-9"
+],
+"title": "FD-362 flush: the deployment picked up — chain fixed for Postgres, database built, invite minted, DNS moved; R",
+"text": "FD-362 flush: the deployment picked up — chain fixed for Postgres, database built, invite minted, DNS moved; R-0357",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@3aa8eaa",
+"kind": "build",
+"date": "2026-09-16",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "FD-362 chat chain: tables in dependency order so Postgres builds it from empty; the two cycles closed after",
+"text": "FD-362 chat chain: tables in dependency order so Postgres builds it from empty; the two cycles closed after",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@c242fa4",
+"kind": "build",
+"date": "2026-09-16",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362 chat box: FLASK_APP for the admin commands; worker healthcheck pings celery",
+"text": "FD-362 chat box: FLASK_APP for the admin commands; worker healthcheck pings celery",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@e8e824b",
+"kind": "build",
+"date": "2026-09-16",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 flush: 2026-09-16 ledger and trace",
+"text": "FD-362 flush: 2026-09-16 ledger and trace",
+"source": "btcopilot git log"
+},
+{
 "id": "btcopilot@4dd2157",
 "kind": "build",
 "date": "2026-09-16",
@@ -13490,6 +13992,31 @@
 "source": "decisions/log.md"
 },
 {
+"id": "D:2026-09-16: The chat chain's first revision is ordered by de",
+"kind": "decision",
+"date": "2026-09-16",
+"session": "",
+"topics": [
+"T-2"
+],
+"title": "2026-09-16: The chat chain's first revision is ordered by dependency, not regenerated",
+"text": "The generated from-empty revision created tables alphabetically, which SQLite accepts and\nPostgres refuses. Rather than a second revision or a regeneration, the same revision was reordered\nin place — no database anywhere had run it — with the two cycles closed by keys added after the\ntables. The chain's own tests stay on SQLite and did not catch this; a Postgres run of the chain\nbelongs in continuous integration before the next revision is added.",
+"source": "decisions/log.md"
+},
+{
+"id": "D:2026-09-16: Secret values do not move through Claude",
+"kind": "decision",
+"date": "2026-09-16",
+"session": "",
+"topics": [
+"T-1",
+"T-2"
+],
+"title": "2026-09-16: Secret values do not move through Claude",
+"text": "The permission classifier refuses copying credential values between files or hosts, even on\nPatrick's grant of production access. Sessions that need a secret on the box hand him the exact\ncommand; they do not route the value.",
+"source": "decisions/log.md"
+},
+{
 "id": "H:2026-09-16 — the deploy path, the box built, and fdserver of",
 "kind": "history",
 "date": "2026-09-16",
@@ -13501,6 +14028,24 @@
 ],
 "title": "2026-09-16 — the deploy path, the box built, and fdserver off the ticket",
 "text": "He said to build whatever needs no input from him and asked how to use five days. The night went\nto the two blockers and the checks. The chat tests were building every table in the process,\nwhich is how a delete that reached the training app's feedback table passed in tests and failed\non the chat database; they build the chat chain's tables now, and that guard found the coder's\nnotes table missing from the chain altogether (rows 133, 124 closed). The image already built\nthe browser app but carried no encrypted prompts and no way to run the chain from an installed\nbox; both are in it now, and the release workflow starts the image on an empty database and\nfetches the chat page (row 134). Continuous integration went green on the runner for the first\ntime: the runner tests run from the checkout, the visual harness signs in at the right path, the\npicture and sheet selectors are scoped, and the goldens are recorded on the runner by a manual\nrun of CI and committed (row 135). Two builders under auditors rewrote the sandbox walks and the\ngolden specs to the rulings; between them they found four product defects, all fixed (rows 136,\n138, 140–142). The chat box's own compose, Caddyfile, secr",
+"source": "doc/chat-first/HISTORY.md"
+},
+{
+"id": "H:2026-09-16 to 22 — the deployment picked up, the app went li",
+"kind": "history",
+"date": "2026-09-16",
+"session": "",
+"topics": [
+"T-1",
+"T-2",
+"T-4",
+"T-5",
+"T-6",
+"T-9",
+"T-11"
+],
+"title": "2026-09-16 to 22 — the deployment picked up, the app went live, and Patrick used it",
+"text": "Patrick opened with \"FD-362, pick up the deployment\", then, when the first read of the box was\nrefused as a production read, granted access to DNS and every other production resource to get\nthe app running at familydiagram.com/app so he could test the chat through an invite for his own\naddress [R-0357]. That grant is the explicit confirmation R-0353 asks for.\n\nThe box was in the state the morning flush recorded. Three things stood in the way and each was\nsmaller than it looked. The admin commands could not find the Flask app inside the container: the\ncompose file names no app path, so `flask admin` was an unknown command; one shared setting fixed\nit. The worker was \"unhealthy\" only because it inherited the image's healthcheck, a web request\nto port 8888 that a celery process never answers; it now pings celery. And the migration chain,\ntested overnight on SQLite, failed on Postgres from empty: the generated revision creates tables\nalphabetically, and Postgres refuses a foreign key to a table that does not exist yet while\nSQLite does not check. The revision was rewritten mechanically — the same 22 tables in dependency\norder, the two cycles (users to diagrams, discussions to speakers)",
 "source": "doc/chat-first/HISTORY.md"
 },
 {
@@ -13561,14 +14106,658 @@
 "source": "private/oracle/rulings.md"
 },
 {
+"id": "R-0357",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-16",
+"session": "S 09-16",
+"topics": [
+"T-1",
+"T-5",
+"T-9"
+],
+"title": "Patrick grants access to DNS and every other production resource needed to get the app running at familydiagra",
+"text": "Patrick grants access to DNS and every other production resource needed to get the app running at familydiagram.com/app so he can test the chat through an invite for his own address; this is the explicit confirmation R-0353 requires for the DNS change and the first start on the box",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "btcopilot@74fc3ed",
+"kind": "build",
+"date": "2026-09-20",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: review round 5 opened — first use on the box",
+"text": "FD-362: review round 5 opened — first use on the box",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@f1543aa",
+"kind": "build",
+"date": "2026-09-20",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362 chat box: Datadog agent in the compose file — host metrics and container logs, no traces",
+"text": "FD-362 chat box: Datadog agent in the compose file — host metrics and container logs, no traces",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@a6d848f",
+"kind": "build",
+"date": "2026-09-20",
+"session": "",
+"topics": [
+"T-2",
+"T-9"
+],
+"title": "FD-362: every encrypted prompt fragment and ruling file re-keyed for the box (the fragments were missed on the",
+"text": "FD-362: every encrypted prompt fragment and ruling file re-keyed for the box (the fragments were missed on the 16th)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@27cfe62",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"T-1",
+"T-3"
+],
+"title": "FD-362 chat box: dependencies cached as their own image layer; deploys roll the app and worker without droppin",
+"text": "FD-362 chat box: dependencies cached as their own image layer; deploys roll the app and worker without dropping a request; R-0369 logged",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@401e0d0",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"T-1"
+],
+"title": "FD-362: how the beta iterates, logged",
+"text": "FD-362: how the beta iterates, logged",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@5ea055a",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: the wide layout for everyone on a wide window (R-0367); Return starts a new line, only send sends (R-0",
+"text": "FD-362: the wide layout for everyone on a wide window (R-0367); Return starts a new line, only send sends (R-0368)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@ea99cae",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"T-2"
+],
+"title": "FD-362: a noted event is a lead — it raises the order question beside a shift (R-0366)",
+"text": "FD-362: a noted event is a lead — it raises the order question beside a shift (R-0366)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@85b8c06",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "FD-362: item 21 built and the box rewritten",
+"text": "FD-362: item 21 built and the box rewritten",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@bda417d",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: the noted event kind; moved leaves the kind list (R-0363, R-0364, R-0365)",
+"text": "FD-362: the noted event kind; moved leaves the kind list (R-0363, R-0364, R-0365)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@2db112b",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: review item 21 — the moved kind, re-opened",
+"text": "FD-362: review item 21 — the moved kind, re-opened",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@57652cb",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"T-5",
+"T-6"
+],
+"title": "FD-362: the back arrow always closes an open cluster (R-0362); landscape logged as review item 19",
+"text": "FD-362: the back arrow always closes an open cluster (R-0362); landscape logged as review item 19",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@b7d14db",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "FD-362: a coach bubble in the current session carries its statement id, so in-chat finds the words that coded ",
+"text": "FD-362: a coach bubble in the current session carries its statement id, so in-chat finds the words that coded a moment (review item 18)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@26239d6",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: review item 17",
+"text": "FD-362: review item 17",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@4925350",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "FD-362 chat box: the Gemini key has a home in the secrets template; a test fails when any required setting has",
+"text": "FD-362 chat box: the Gemini key has a home in the secrets template; a test fails when any required setting has none",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@92d895d",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: review item 15 fixed and verified",
+"text": "FD-362: review item 15 fixed and verified",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@4ec3a0b",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "FD-362: speak replies built — the phone's own voice reads each coach reply when the preference is on (R-0099)",
+"text": "FD-362: speak replies built — the phone's own voice reads each coach reply when the preference is on (R-0099)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@fedb7e5",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "FD-362: review item 15 — speak replies never built",
+"text": "FD-362: review item 15 — speak replies never built",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@07ddd6f",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: master-legacy maintenance stream logged",
+"text": "FD-362: master-legacy maintenance stream logged",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@46ae894",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "FD-362: public prompt goldens re-captured after the offers were dropped",
+"text": "FD-362: public prompt goldens re-captured after the offers were dropped",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@cfbc324",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "FD-362: offered-answer chips dropped (R-0361) — the coach ends with one question, any offer it still writes is",
+"text": "FD-362: offered-answer chips dropped (R-0361) — the coach ends with one question, any offer it still writes is stripped, the amber question stays",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@1453f12",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "FD-362: the coach onboards — first name, last name and birth date before anything else (R-0360); the picture's",
+"text": "FD-362: the coach onboards — first name, last name and birth date before anything else (R-0360); the picture's question marks hidden with the reasoning kept (R-0359); the amber ask stays (R-0358)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@2c32222",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: findings on review items 8–12",
+"text": "FD-362: findings on review items 8–12",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@058d12a",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: review round 5 items 8–12 from Patrick's first chats",
+"text": "FD-362: review round 5 items 8–12 from Patrick's first chats",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@97d2ee7",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: review round 5 item 7",
+"text": "FD-362: review round 5 item 7",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@56f98bd",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"T-2"
+],
+"title": "FD-362: the public prompt directory ships in the wheel; the image had only the private files, so any prompt de",
+"text": "FD-362: the public prompt directory ships in the wheel; the image had only the private files, so any prompt defined publicly alone was missing",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@dc754b0",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362 chat box: Datadog agent off by default, behind an opt-in compose profile",
+"text": "FD-362 chat box: Datadog agent off by default, behind an opt-in compose profile",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@4a63baf",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: review round 5 item 5",
+"text": "FD-362: review round 5 item 5",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@82b960e",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: pin the Anthropic SDK below 1.0 — 1.x drops the temperature argument the app passes in six places",
+"text": "FD-362: pin the Anthropic SDK below 1.0 — 1.x drops the temperature argument the app passes in six places",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@3ad90fc",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: review round 5 items 3 and 4",
+"text": "FD-362: review round 5 items 3 and 4",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@0df98c3",
+"kind": "build",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "FD-362: private tool meanings carry parents, person_a and person_b, which the tools now require",
+"text": "FD-362: private tool meanings carry parents, person_a and person_b, which the tools now require",
+"source": "btcopilot git log"
+},
+{
+"id": "D:2026-09-21: The Pro backend lives on master-legacy; master b",
+"kind": "decision",
+"date": "2026-09-21",
+"session": "",
+"topics": [
+"T-1",
+"T-5"
+],
+"title": "2026-09-21: The Pro backend lives on master-legacy; master becomes the chat app",
+"text": "Patrick's direction. `master-legacy` in btcopilot starts at tag `pre-chat-first` (fc52fd3), the\nlast master commit before the chat-first rebuild diverged. It is protected like master: pull\nrequest required, the unit-tests check required, no force push. Its release workflow builds on\nevery merge, tags the image `:legacy` (never `:latest`, which will belong to the chat app), and\ntriggers fdserver's deploy, whose compose now pulls `:legacy` (fdserver PR #31). A Pro bug fix\nis a pull request into master-legacy and reaches database.familydiagram.com on merge.",
+"source": "decisions/log.md"
+},
+{
+"id": "R-0358",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-21",
+"session": "S 09-21",
+"topics": [
+"T-2"
+],
+"title": "The coach bubble's closing question in amber stays: it reads as bold, which is fine when that is what the read",
+"text": "The coach bubble's closing question in amber stays: it reads as bold, which is fine when that is what the reader should focus on",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0359",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-21",
+"session": "S 09-21",
+"topics": [
+"T-5"
+],
+"title": "The picture's question marks — the one on an empty wire and the one past the end of the line for undated facts",
+"text": "The picture's question marks — the one on an empty wire and the one past the end of the line for undated facts — are hidden for now as distracting; the reasoning stays in code comments so the thread is not lost, and the rule in DRAWABILITY stands",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0360",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-21",
+"session": "S 09-21",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "The coach onboards the person: first name, last name and birth date are required before it proceeds with anyth",
+"text": "The coach onboards the person: first name, last name and birth date are required before it proceeds with anything else",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0361",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-21",
+"session": "S 09-21",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "The offered-answer chips under a coach reply are dropped: people type their own words, and what the chips do i",
+"text": "The offered-answer chips under a coach reply are dropped: people type their own words, and what the chips do is not obvious. Supersedes the offer half of R-0072 and R-0073; reference chips that name people and events stay",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "btcopilot@12b7f25",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 flush: 2026-09-22",
+"text": "FD-362 flush: 2026-09-22",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@be3029e",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362: item 24 verified live; branch instructions carry the sub-agent correction",
+"text": "FD-362: item 24 verified live; branch instructions carry the sub-agent correction",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@17788ae",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: the app reads the broker address the box sets, so the turn log reaches Redis",
+"text": "FD-362: the app reads the broker address the box sets, so the turn log reaches Redis",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@6a3b851",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-2"
+],
+"title": "FD-362: the coach turn streams and survives a reload (R-0369)",
+"text": "FD-362: the coach turn streams and survives a reload (R-0369)",
+"source": "btcopilot git log"
+},
+{
+"id": "D:2026-09-22: How the beta iterates",
+"kind": "decision",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-1",
+"T-3",
+"T-5"
+],
+"title": "2026-09-22: How the beta iterates",
+"text": "Patrick, brainstorming with Claude. Production stays the place to try things with the first beta\ntesters. Web-only changes are hot-copied into the running container (no restart) and the image is\nrebuilt behind them; the rebuilt image is pulled with the old container kept up until the new one\nis healthy, and CI caches the wheel and web layers so a build is minutes, not twelve. A dev server\non this Mac reachable from his phone over Tailscale (100.71.164.31) is the next step, timing open.",
+"source": "decisions/log.md"
+},
+{
+"id": "D:2026-09-22: No paid per-use feature before the feedback loop",
+"kind": "decision",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-1"
+],
+"title": "2026-09-22: No paid per-use feature before the feedback loops exist",
+"text": "Patrick, on a paid voice at about a cent a reply: the primary concern is the incentive and\nfeedback loops with beta users — each must see their own use and cost — and those must be part\nof the data-driven learning the app exists for (will people pay, do they like it). Money from\nhis own pocket is secondary. The loops are undesigned; the paid voice waits on them. Tabled.",
+"source": "decisions/log.md"
+},
+{
+"id": "R-0362",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-5",
+"T-6"
+],
+"title": "The back arrow inside an open cluster always closes the cluster and returns to the whole timeline, whether or ",
+"text": "The back arrow inside an open cluster always closes the cluster and returns to the whole timeline, whether or not a moment is picked; putting a moment down first was tap-for-tap logical and felt wrong",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0363",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"untagged"
+],
+"title": "Ordinary notable events get a kind of their own, \"noted\": one person, a description that must be present, opti",
+"text": "Ordinary notable events get a kind of their own, \"noted\": one person, a description that must be present, optional location and date; the kind list stays closed",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0364",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-2"
+],
+"title": "A move is a noted event with its location kept; \"moved\" leaves the kind list. A move is one of many notable ev",
+"text": "A move is a noted event with its location kept; \"moved\" leaves the kind list. A move is one of many notable events with no structural or functional shift of its own",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0365",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-1"
+],
+"title": "The event-kind rework happens now, before the beta: unreleased records on the box are rewritten, and old deskt",
+"text": "The event-kind rework happens now, before the beta: unreleased records on the box are rewritten, and old desktop diagrams are translated at the import boundary",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0366",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "A noted event is a lead: a move, and other kinds Patrick could not name on the spot, may lead a coach to wonde",
+"text": "A noted event is a lead: a move, and other kinds Patrick could not name on the spot, may lead a coach to wonder whether they play into the story. Not a structural or functional change, but it raises the order question when it sits near a shift, the way a structural event does",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0367",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"untagged"
+],
+"title": "The wide layout (the events and people list standing beside the chat) activates for everyone on a wide window,",
+"text": "The wide layout (the events and people list standing beside the chat) activates for everyone on a wide window, a phone turned on its side included, to see how it feels; no longer gated on a professional licence",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0368",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-5"
+],
+"title": "Return on the keyboard starts a new line in the message; only the send button sends, so a message can have par",
+"text": "Return on the keyboard starts a new line in the message; only the send button sends, so a message can have paragraphs",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0369",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-2"
+],
+"title": "A coach turn streams: the words and the tool steps arrive as they happen, with no long wait for the whole repl",
+"text": "A coach turn streams: the words and the tool steps arrive as they happen, with no long wait for the whole reply. The turn runs on the server independent of the request, so a page reload, a switch away from and back to the home-screen app, or any other reload reattaches and syncs to the turn's current state in real time",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
 "id": "d4dbc090",
 "kind": "artifact",
 "date": "",
 "session": "",
 "topics": [
-"T-1"
+"untagged"
 ],
-"title": " he has not answered, the last of which is whether it changes now or after the beta (doc/chat-first/EVENT_MODEL.md, page",
+"title": " the normalised shape and the remaining questions on that page are still unanswered (doc/chat-first/EVENT_MODEL.md, page",
 "text": "https://claude.ai/code/artifact/d4dbc090-fbde-464c-bcdc-0cc31e1a5c53",
 "link": "https://claude.ai/code/artifact/d4dbc090-fbde-464c-bcdc-0cc31e1a5c53",
 "source": "doc/chat-first/TOPICS.md"

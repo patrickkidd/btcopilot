@@ -495,3 +495,7 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
 29. A better voice than the phone built-in one. Options given: cloud neural voices at about
    a cent a reply, ElevenLabs at several times that, self-hosted models the box cannot run.
    OPEN — his pick.
+30. Patrick, on turning on a paid voice at about a cent a reply: the primary concern is not the
+   money but the feedback loops — beta users must see how much they use and what it costs, and
+   that has to sit inside the data-driven principle for the app: does anyone pay, do they like
+   it. The loops are not designed yet. TABLED, to be remembered; no paid voice until they exist.

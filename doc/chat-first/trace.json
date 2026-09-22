@@ -11217,8 +11217,7 @@
   "summary": "Opens walk seven on the sandbox",
   "text": "FD-362, walk 7",
   "named_by": "session",
-  "uuid": "8a2510fc-018a-4338-a9f5-31ef27133733",
-  "topic": "T-1"
+  "uuid": "8a2510fc-018a-4338-a9f5-31ef27133733"
  },
  {
   "id": "4919907a#1",
@@ -11230,8 +11229,7 @@
   "summary": "A person he expected is not on the record in walk seven",
   "text": "I don't see a Raphael Ortega",
   "named_by": "session",
-  "uuid": "5c481c46-247d-47b8-8a52-046a30370a6f",
-  "topic": "T-1"
+  "uuid": "5c481c46-247d-47b8-8a52-046a30370a6f"
  },
  {
   "id": "4919907a#2",
@@ -11243,8 +11241,7 @@
   "summary": "Asks for the walk document's address",
   "text": "Give me the walk URL again",
   "named_by": "session",
-  "uuid": "65161d41-586d-466c-9e5e-57c945b97c31",
-  "topic": "T-1"
+  "uuid": "65161d41-586d-466c-9e5e-57c945b97c31"
  },
  {
   "id": "4919907a#3",
@@ -11256,8 +11253,7 @@
   "summary": "Wants the walk document itself, not the running app",
   "text": "No, I mean the artifact with the instructions",
   "named_by": "session",
-  "uuid": "f67ce161-f954-4967-8152-699bedeb17d1",
-  "topic": "T-1"
+  "uuid": "f67ce161-f954-4967-8152-699bedeb17d1"
  },
  {
   "id": "4919907a#4",
@@ -11269,8 +11265,7 @@
   "summary": "Buttons unspaced, headings unclear; asks for grouping by day",
   "text": "Walk number seven passes\n\nin walk 8, there are is no spacing between the three buttons in the sessions list. [Image #1] Also, the view is too busy. The headings are not clear and shouldn't the sessions just be by day or week or something?\n\nWhen I tap on a case nothing happens. That's confusing. and why is the search box in the sessions view say \"search sessions and cases\" when you select the active case from the account view? That seems like a hierarchy error.",
   "named_by": "session",
-  "uuid": "935996a0-531d-4e19-a4a8-eba54f73dfac",
-  "topic": "T-1"
+  "uuid": "935996a0-531d-4e19-a4a8-eba54f73dfac"
  },
  {
   "id": "4919907a#5",
@@ -11282,8 +11277,7 @@
   "summary": "Audio upload must transcribe with two speakers told apart, and work",
   "text": "And does the audio upload actually work? it needs to use assemblyai for transcription with diaritrization. And speaker mapping. And it needs to work.\n\nthe sticky headers in the sessions list don't look aligned right. And do you think that's a professional design? [Image #2]\n\nLook at the subtext for each session, they all say either one thing or another thing. how useful is that? And also, do we need the time?",
   "named_by": "session",
-  "uuid": "ffab4860-d207-43fc-936a-c3688456a32e",
-  "topic": "T-1"
+  "uuid": "ffab4860-d207-43fc-936a-c3688456a32e"
  },
  {
   "id": "4919907a#6",
@@ -11295,8 +11289,7 @@
   "summary": "Asks for adversarial review of the sessions list design",
   "text": "The session list headings still don't look good. And the sub-text is still not helpful in their content. Seriously, use adversarial review or something because you are not tackling them. The visual concepts ar enot good for these headers and sub-texts. Also, the pencil title edit button is too small to use. Did you get the intern to design this view?? There is plenty of precendent for it out there",
   "named_by": "session",
-  "uuid": "af965a04-53b6-45c1-8b2f-954e1c9a434f",
-  "topic": "T-1"
+  "uuid": "af965a04-53b6-45c1-8b2f-954e1c9a434f"
  },
  {
   "id": "4919907a#7",
@@ -11308,8 +11301,7 @@
   "summary": "The summary under each session is unreadable",
   "text": "Thats much better. the sub-text got worse. What is it even for? You can't read any of the summary",
   "named_by": "session",
-  "uuid": "70e88bd4-e42d-471b-9fde-e1e794524d9e",
-  "topic": "T-1"
+  "uuid": "70e88bd4-e42d-471b-9fde-e1e794524d9e"
  },
  {
   "id": "4919907a#8",
@@ -11321,8 +11313,7 @@
   "summary": "Chat does not scroll to the bottom; the upload needs a cost warning",
   "text": "this is fine for now. Now for Walk 8:\n\nthe chat window - at least nadin'es view - doesnt' scroll all the way to the bottom on load as it should.\n\nensure that when you tap the upload recording button, that there is a warning saying that using that service costs money to AFS and that they should check with patrick@alaskafamilysystems.com first.\n\nSo a note is something where the professional chats to fill out case details?\n\nshouldn't we be testing all of these features?",
   "named_by": "session",
-  "uuid": "e303607d-aca7-4018-b394-78479569ec05",
-  "topic": "T-1"
+  "uuid": "e303607d-aca7-4018-b394-78479569ec05"
  },
  {
   "id": "4919907a#9",
@@ -11334,8 +11325,7 @@
   "summary": "Pricing undecided; asks what stands between here and deployment",
   "text": "I think this is all fine. We have yet to figure out what the pricing/plans will be. Now what's next before we get this thing deployed?",
   "named_by": "session",
-  "uuid": "fa987c16-6ece-4cf2-a57c-eed934bc6ebf",
-  "topic": "T-1"
+  "uuid": "fa987c16-6ece-4cf2-a57c-eed934bc6ebf"
  },
  {
   "id": "4919907a#10",
@@ -11347,8 +11337,7 @@
   "summary": "Away five days; asks how best to use the time",
   "text": "definitely continua on to build anything that doesn't require input from me. I am going to be gone for about five days. How can you make best use of this time?",
   "named_by": "session",
-  "uuid": "ea45ea39-d64a-471b-8ddf-4741de682b7b",
-  "topic": "T-1"
+  "uuid": "ea45ea39-d64a-471b-8ddf-4741de682b7b"
  },
  {
   "id": "4919907a#11",
@@ -11360,8 +11349,7 @@
   "summary": "Droplet and DNS by Claude on his confirmation; pricing deferred",
   "text": "1 - Import what data? \n2 - whyat is the ask here? Rotation or migration?\n3 - ask?\n4 - you will create the droptlet and manage DNS when the correct time comes and only on my confirmation.\n5 - can we defer this until we get it up and running in prod and get through the first $20-$40 bill to see what we got for it?",
   "named_by": "session",
-  "uuid": "daffb3ff-a1f5-4bfd-9f50-cf35c35f3617",
-  "topic": "T-11"
+  "uuid": "daffb3ff-a1f5-4bfd-9f50-cf35c35f3617"
  },
  {
   "id": "4919907a#12",
@@ -11373,8 +11361,7 @@
   "summary": "Invite by email, manual import later, if nothing would be lost",
   "text": "1 - Without a manual forced migration/import, invite is just via email right? Can we just start from scratch Data Wise and have them start chatting and then provide them with Manual import path later? But I also want to make sure that the diagram data format that we have is going to be able to accept imported diagrams from the old system without losing data.\n\n2 - Why are these and get history if we are not making any changes to fdserver repo and instead Or just writing a new Branch on btcopilot?",
   "named_by": "session",
-  "uuid": "3ecabf47-a080-4698-94c9-6198e84fc4c6",
-  "topic": "T-4"
+  "uuid": "3ecabf47-a080-4698-94c9-6198e84fc4c6"
  },
  {
   "id": "4919907a#13",
@@ -11386,8 +11373,7 @@
   "summary": "Worried the old diagram classes and fields lose data on import",
   "text": "1 - OK, start from scratch. But when I was getting out with. What I'm concerned about is that the classes and fields in the old diagram format (btcopilot.schema.DiagramData, for example, maybe more?) are going to map onto the new data shape. If so, Then we can afford to defer writing a per Diagram import until later. So I need to know this and I need to know how we know, I need to see the shape comparson.\n\n2 - I am still totally confused with what you're talking about. We are moving to SOPS which means we are not gonna use fdserver at all. fdserver is a private repo on GH and should not fall into this jira/PR. If you're going to issue a PR for fdserver  Then that is a red flag for me and we have to figure out how to fix that. If you're not talking about that then clearly show me what files you and commits you're talking about.",
   "named_by": "session",
-  "uuid": "86d86b00-c7b8-4dd7-bd2b-a086e34f0107",
-  "topic": "T-4"
+  "uuid": "86d86b00-c7b8-4dd7-bd2b-a086e34f0107"
  },
  {
   "id": "4919907a#14",
@@ -11399,8 +11385,7 @@
   "summary": "Worried the old diagram classes and fields lose data on import",
   "text": "1 - OK, start from scratch. But when I was getting out with. What I'm concerned about is that the classes and fields in the old diagram format (btcopilot.schema.DiagramData, for example, maybe more?) are going to map onto the new data shape. If so, Then we can afford to defer writing a per Diagram import until later. So I need to know this and I need to know how we know, I need to see the shape comparson.\n\n2 - I am still totally confused with what you're talking about. We are moving to SOPS with new credentials which means we are not gonna use fdserver at all. fdserver is a private repo on GH and should not fall into this jira/PR. If you're going to issue a PR for fdserver  Then that is a red flag for me and we have to figure out how to fix that. If you're not talking about that then clearly show me what files you and commits you're talking about.",
   "named_by": "session",
-  "uuid": "3f26c866-af58-4425-8c9c-8f0272dafdcf",
-  "topic": "T-4"
+  "uuid": "3f26c866-af58-4425-8c9c-8f0272dafdcf"
  },
  {
   "id": "4919907a#15",
@@ -11412,8 +11397,7 @@
   "summary": "Use another diagram; check the relationship sub-fields on events",
   "text": "1 - in the artifact, you need to find another diagram to test against. And what about the complex people sub-fields associated with Event.relationship?\n\n2 - You still haven't answered my main question which is why is there any changes for fdserver at all? And I gave you the reason I'm answering this question so you have to address that. Yes,  If your plan actually works by moving all of those changes into btcopilot Then you should do that because that was my mental model. But make sure that this is all going to work and you're not just blindly following my direction here.",
   "named_by": "session",
-  "uuid": "e729ffe2-cbfd-492b-a3b5-8c0dc9088bba",
-  "topic": "T-4"
+  "uuid": "e729ffe2-cbfd-492b-a3b5-8c0dc9088bba"
  },
  {
   "id": "4919907a#16",
@@ -11425,8 +11409,7 @@
   "summary": "Reading both the page and the reply wastes his time",
   "text": "don't give me redundant messages here that are also in an artifact. otherwise I feel I have to read them both which wastes a lot of time",
   "named_by": "session",
-  "uuid": "46cfbde6-f6bd-4ab7-ace1-4bd5335be70d",
-  "topic": "T-9"
+  "uuid": "46cfbde6-f6bd-4ab7-ace1-4bd5335be70d"
  },
  {
   "id": "4919907a#17",
@@ -11438,8 +11421,7 @@
   "summary": "Asks for the previous answer again",
   "text": "now give me your last response again",
   "named_by": "session",
-  "uuid": "71af0f69-529d-40f3-a524-92ec350e87ed",
-  "topic": "T-9"
+  "uuid": "71af0f69-529d-40f3-a524-92ec350e87ed"
  },
  {
   "id": "4919907a#18",
@@ -11451,8 +11433,7 @@
   "summary": "Set up the deployment; asks which keys are needed up front",
   "text": "This all looks good. Now, go ahead and create the droplet and get it set up with the new deployment. Tell me what keys you need up front.  Go ahead and make the CLAUDE.md changes just this once.",
   "named_by": "session",
-  "uuid": "ceb6279f-1396-4a31-8141-924f047f9e5d",
-  "topic": "T-11"
+  "uuid": "ceb6279f-1396-4a31-8141-924f047f9e5d"
  },
  {
   "id": "4919907a#19",
@@ -11464,8 +11445,7 @@
   "summary": "The old forwarding to the existing site stays for everything else",
   "text": "and I want this box to serve the app as familydiagram.com/app, which means that you are going to need to check the previous server that forwards web requests from familydiagram.com -> alaskafamilysystems.com. I think we still want that, But we also want the new observed under that domain. So we're gonna have to probably shuffle around some configurations. Also, eventually we're going to create A new product homepage under familydiagram.com but for now all we have is the existing website",
   "named_by": "session",
-  "uuid": "53a7df4e-82dc-45b7-b89f-4147258fc9d1",
-  "topic": "T-11"
+  "uuid": "53a7df4e-82dc-45b7-b89f-4147258fc9d1"
  },
  {
   "id": "4919907a#20",
@@ -11477,8 +11457,7 @@
   "summary": "Top-level context should not be doing the work",
   "text": "I told you to remember your instructions for using sub agents and managing your contact window. You're not supposed to be doing work at this top level context. And you're supposed to Limit how much you're putting into your contacts window here with only one line sub agent summaries, things like that, and only posting a final term response once they're all done or there's something for me to actually do\n\nYes, I grant you production access to this machine and secret store rights. Tell me if there's something Manual that I have to do and exactly how to do it.",
   "named_by": "session",
-  "uuid": "37a86cae-c710-40e8-b8e8-c780e2083023",
-  "topic": "T-9"
+  "uuid": "37a86cae-c710-40e8-b8e8-c780e2083023"
  },
  {
   "id": "4919907a#21",
@@ -11490,7 +11469,630 @@
   "summary": "Wants the deployment picked up cleanly next time",
   "text": "OK, new plan. FLush everything so I can pick up the deployment task in a new session.",
   "named_by": "session",
-  "uuid": "0f95e72a-6122-4e4c-97a0-625e2f0a9abb",
-  "topic": "T-10"
+  "uuid": "0f95e72a-6122-4e4c-97a0-625e2f0a9abb"
+ },
+ {
+  "id": "4919907a#22",
+  "time": "2026-09-16T16:03:37.607Z",
+  "session": "4919907a",
+  "session_title": "fd-362 walk 7",
+  "thread": "T-1",
+  "name": "Can I just start a new session",
+  "summary": "Can I just start a new session and say pick up with FD – 362 deployment?",
+  "text": "Can I just start a new session and say pick up with FD – 362 deployment? Or do I need to do something else?",
+  "named_by": "script",
+  "uuid": "15027681-4af8-4081-adf3-4836e64aefa3"
+ },
+ {
+  "id": "1a988ef4#0",
+  "time": "2026-09-16T16:03:50.835Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "pick up the deployment",
+  "summary": "Start the session by getting the app running on the new box.",
+  "text": "FD-362, pick up the deployment",
+  "named_by": "session",
+  "uuid": "523369f0-c5dc-4094-8387-af8e33ef021b"
+ },
+ {
+  "id": "1a988ef4#1",
+  "time": "2026-09-16T18:18:53.571Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-1",
+  "name": "what blocks full function",
+  "summary": "Asks whether the Anthropic key is needed before he can chat at all.",
+  "text": "I'm confused, do you actually need the Anthropic API key to get the LLMs to work or can I just start typing in to my invite chatting with you? Tell me what the blockers are full functionality.",
+  "named_by": "session",
+  "uuid": "df6d5600-59cc-4678-9e49-01d379da98aa"
+ },
+ {
+  "id": "1a988ef4#2",
+  "time": "2026-09-16T18:19:16.033Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "the address must be /app",
+  "summary": "Repeats that the app is served at /app, not /personal.",
+  "text": "Yes and I already told you to change the URL to /app",
+  "named_by": "session",
+  "uuid": "1f01430f-9316-4cbf-afa5-3a5e7644faa2"
+ },
+ {
+  "id": "1a988ef4#3",
+  "time": "2026-09-21T04:36:47.739Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-9",
+  "name": "ask me, do not refuse",
+  "summary": "Objects to a refusal on a step he had already asked for.",
+  "text": "What \"classifier\", and why nit just ask for permission when I explicitly asked you to do something yet there was a some rule for it.\n\nI ran the python file.",
+  "named_by": "session",
+  "uuid": "8c5eb90c-dabf-450c-b811-ad0b7edec74b"
+ },
+ {
+  "id": "1a988ef4#4",
+  "time": "2026-09-21T04:39:47.516Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-9",
+  "name": "catalogue my bugs as I go",
+  "summary": "Wants every bug, comment and brainstorm from his use written down.",
+  "text": "What \"classifier\", and why nit just ask for permission when I explicitly asked you to do something yet there was a some rule for it.\n\nI ran the python file.\n\nAs I start using this I am going to report lots of bugs and comments and brainstorms. I need you to catalog them as we go just like in previous sessions and fix when I say to.",
+  "named_by": "session",
+  "uuid": "c8660408-ae9c-46f2-b91f-ee1bda6d71da"
+ },
+ {
+  "id": "1a988ef4#5",
+  "time": "2026-09-21T04:40:07.704Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "first chat message errored",
+  "summary": "His very first message to the coach threw an error.",
+  "text": "My first chat message threw an error. And I assume I can see that error in datadog now?",
+  "named_by": "session",
+  "uuid": "7706623e-b393-4062-8bcd-e5f47a29e15a"
+ },
+ {
+  "id": "1a988ef4#6",
+  "time": "2026-09-21T04:47:18.578Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "just move the key",
+  "summary": "Expected to be asked rather than told a key move was refused.",
+  "text": "You just need to move that key, I thought you were at least going to ask??",
+  "named_by": "session",
+  "uuid": "b7084b40-1164-4bda-8d28-67fedc43f10f"
+ },
+ {
+  "id": "1a988ef4#7",
+  "time": "2026-09-21T04:54:36.473Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-9",
+  "name": "never leave a task open ended",
+  "summary": "A status line must say whether it is done and what happens next.",
+  "text": "\"The Datadog key is still empty on the box\" - this is ambiguous, never leave a task open ended. is it done? what happens next",
+  "named_by": "session",
+  "uuid": "ec01730c-044e-49a6-a5e2-bbd3a9232c1f"
+ },
+ {
+  "id": "1a988ef4#8",
+  "time": "2026-09-21T16:06:33.511Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "what came from the old box",
+  "summary": "Asks which Datadog settings were carried over from the old box.",
+  "text": "what of either either datadog config or patterns or actual settings did you take from the old box to this new one?",
+  "named_by": "session",
+  "uuid": "3d7b6c10-12e2-4905-ad08-3b2b2321003a"
+ },
+ {
+  "id": "1a988ef4#9",
+  "time": "2026-09-21T16:50:25.599Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "tag master before the rebuild",
+  "summary": "Wants a tag at the point the chat-first rebuild diverged from master.",
+  "text": "- we are going to need a tag on the current master branch to mark the last SHA from where I diverged this new chat-first app rebuild. Because once I have this new branch working and tested on the new box, I am going to deprecate that tag and make it a maintenance stream only.\n\n- chat is still broken",
+  "named_by": "session",
+  "uuid": "fadcf3d7-7a42-486d-b281-66a9733eafb9"
+ },
+ {
+  "id": "1a988ef4#10",
+  "time": "2026-09-21T16:53:56.977Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "test with a real call",
+  "summary": "Tells the session to trust evidence from a real prompt, not assumption.",
+  "text": "still didn't work. did you actually test using a real prompt and call? don't assume, only trust evidence",
+  "named_by": "session",
+  "uuid": "e58a4a1d-56db-41c7-9920-60e3581d43fa"
+ },
+ {
+  "id": "1a988ef4#11",
+  "time": "2026-09-21T16:59:05.508Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-1",
+  "name": "use the exception emails",
+  "summary": "Server exception mails arrived; asks whether their detail is being used.",
+  "text": "I got server exception emails with a TypeError, are you actually using all available info in your root casing?",
+  "named_by": "session",
+  "uuid": "7642f7ca-947b-4a21-8fd0-a22cfa526a7a"
+ },
+ {
+  "id": "94fe21b6#0",
+  "time": "2026-09-21T17:05:08.679Z",
+  "session": "94fe21b6",
+  "session_title": "monitoring stack comparison",
+  "thread": "T-1",
+  "name": "resuming FD-362, I need you to tell",
+  "summary": "resuming FD-362, I need you to tell me what are the pros and cons using grafana/prometheus/loki over datadog…",
+  "text": "resuming FD-362, I need you to tell me what are the pros and cons using grafana/prometheus/loki over datadog for the newchat-first app box. I am using the open source stack at work and it would help to learn and use the same thing. and of course it would be free and I am not going to pay more than $10/mo for DD, especially right now. But I am also familiar with DD and remember from 4-5 years ago that their RUM feature was great, and was curious about their bug dedupe + clustering feature as well. And then at the same time, I am in a pre-beta stage about to move into beta and am still rapidly iterating with a lot of manual work and do not need a scaled solution yet. Evaluate the two from current info from the web, and separate facts from your opinions",
+  "named_by": "script",
+  "uuid": "925dee00-4538-45c2-8639-5b0996595f31"
+ },
+ {
+  "id": "1a988ef4#12",
+  "time": "2026-09-21T17:09:05.531Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "shut datadog down",
+  "summary": "Switch Datadog off on this box; he may leave it altogether.",
+  "text": "shut down datadog on this box since I may swithc off of it.",
+  "named_by": "session",
+  "uuid": "5a8986d9-607d-4251-9f9f-696c7c81e7a5"
+ },
+ {
+  "id": "94fe21b6#1",
+  "time": "2026-09-21T17:49:01.449Z",
+  "session": "94fe21b6",
+  "session_title": "monitoring stack comparison",
+  "thread": "unplaced",
+  "name": "can the open source stack do suer",
+  "summary": "can the open source stack do suer session replay like datadog?",
+  "text": "can the open source stack do suer session replay like datadog? I remember seeing a screencast video with user clicks and stuff and seeing the stack trace all happen at the same time in DD",
+  "named_by": "script",
+  "uuid": "4e3683d0-a8f0-47bc-bceb-5c5d6094e677"
+ },
+ {
+  "id": "1a988ef4#13",
+  "time": "2026-09-21T19:59:44.993Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "still a server error",
+  "summary": "The chat is still broken after the previous fix.",
+  "text": "I still got a server error. If you actually followed my instructions this would be working by now. What did you do wrong? and go fix it",
+  "named_by": "session",
+  "uuid": "98b0b86c-2cf2-43c6-aca5-56968f20bef8"
+ },
+ {
+  "id": "1a988ef4#14",
+  "time": "2026-09-21T23:50:03.603Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-5",
+  "name": "the closing question looks wrong",
+  "summary": "First working chat: the amber closing question reads as a formatting error.",
+  "text": "OK, so this is working and now I'm chatting with it and have some feedback and brainstorms that we need to catalog and then fix and for you to test locally.\n\nIt looks like maybe there's a formatting error in the chat bubble for the Coach responses? The final question text is in the same sort of yellow/gold font color as the badges that the coach presents at the end of the bubble? And it's unclear to the user what those badges are for?\n\n<pasted_content id=\"2846\">\nYou can tap on them and then have them inserted into the chat, but what does that even mean? What does it do? And how can we make that obvious to the user? Or do we even need it?\n</pasted_content id=\"2846\">\n\n\nIt looks like the agent Toole calls are working to add events and things like that which is pretty cool. \n\n<pasted_content id=\"2846\">\nBut when it adds an event on the timeline, it just shows a dot with no other information. And a? At the end of the timeline. Nobody's going to know what this means. Is this just because there's not enough data or something? And also The? Was there on the right side of where the timeline would go before there were any events added at all which honestly looks like a bug to me.\n</pasted_content id=\"2846\">\n\n\nRight now on my free Diagram I have just a few statements and it has correctly added a high school pattern and another event for around 25 to 26 years old with racing, and then it added my girlfriend at the time and a couple for that girlfriend and myself,\n\n<pasted_content id=\"2846\">\nbut I only see an event on the timeline for 2021, which is not the years we are talking about. And I don't even think we've specified any years.\n</pasted_content id=\"2846\">\n\n\n\n\n<pasted_content id=\"2846\">\nWhen I opened up the invite, it took me straight to the chat channel and I think that the calls to action that were there. We're probably appropriate. But it never had me enter in my name or age or birthdate or anything like that weren't we going to have an Onboarding form?\n</pasted_content id=\"2846\">",
+  "named_by": "session",
+  "uuid": "3ec53afc-5a1a-4a38-ba6c-582237e12bb0"
+ },
+ {
+  "id": "1a988ef4#15",
+  "time": "2026-09-21T23:57:01.596Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-5",
+  "name": "what do the chips buy us",
+  "summary": "Asks what is lost by dropping the offered answers under a reply.",
+  "text": "1. The Amber text reads as bold to the user. I think that that's fine if that's what the users is supposed to focus on.\n\n2. This looks like multiple-choice. What does adding these chips gain in functionality? In other words, what do we lose if we drop them? I can't remember.\n\n3. Comment and hide the questions marks for now. They are distracting enough but I don't want to lose the train of thought that we had when we had them in there. So make sure it's properly commented.\n\n4. Yes the coach should onboard the user, and first and last name and birthdate are required before proceeding.",
+  "named_by": "session",
+  "uuid": "89bf262f-7e9c-4ffb-8821-5a77b1f81665"
+ },
+ {
+  "id": "1a988ef4#16",
+  "time": "2026-09-22T00:06:59.992Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-5",
+  "name": "drop the chips",
+  "summary": "People should type their own words; what a chip does is not obvious.",
+  "text": "Drop the chips. I'd rather have users just type in. And it's not obvious what they do.",
+  "named_by": "session",
+  "uuid": "1736494e-c8bc-45fd-9edc-acb555608507"
+ },
+ {
+  "id": "1a988ef4#17",
+  "time": "2026-09-22T00:19:38.140Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "where do Pro bug fixes go",
+  "summary": "Asks how he will find the branch to patch the existing desktop app.",
+  "text": "and remind me, if a user of the existing PyQt5 familydiagram app reports a bug or some macos or windows change breaks it and I need to publish a bugfix or workaround to btcopilot, how am I going to find the branch or SHA that I need to patch so that changes to the BE will be pushed automatically to that legacy production service?",
+  "named_by": "session",
+  "uuid": "c97def12-2587-4db6-9920-eeed8e0912ed"
+ },
+ {
+  "id": "1a988ef4#18",
+  "time": "2026-09-22T00:23:43.777Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "a master-legacy branch",
+  "summary": "Wants Pro bug fixes on their own branch with the same release flow.",
+  "text": "Yes I want a new branch to be called master-legacy. Then I will issue bug fixes to that branch and I want to be able to use the same release flow, where every time I merge a bugfix PR to that branch then it will trigger the CD flow that rebuilds the docker image and deployes it to database.familydiagram.com today.",
+  "named_by": "session",
+  "uuid": "e49a9b46-73a8-4eea-a0a0-50a639893e28"
+ },
+ {
+  "id": "1a988ef4#19",
+  "time": "2026-09-22T00:31:42.647Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-5",
+  "name": "speak replies does nothing",
+  "summary": "Onboarding worked; the speaking preference is on but nothing is spoken.",
+  "text": "The coach correctly asked me for my first and last name and birthdate on the next chat message. It looks like TTS does not work? I have \"speak replies\" enabled.",
+  "named_by": "session",
+  "uuid": "58d43667-74b6-4781-98b9-eefa399b8ea1"
+ },
+ {
+  "id": "1a988ef4#20",
+  "time": "2026-09-22T00:36:55.603Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-5",
+  "name": "build speaking",
+  "summary": "Says to build reading replies out loud.",
+  "text": "yes build TTS",
+  "named_by": "session",
+  "uuid": "b81039f3-d131-49c7-9334-20c7687c8d89"
+ },
+ {
+  "id": "1a988ef4#21",
+  "time": "2026-09-22T02:30:36.713Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "what is the gemini key for",
+  "summary": "Another server error, this one looking for a key with no home on the box.",
+  "text": "I hit another server error. it slooking for a gemini key. What is the gemini key used for?",
+  "named_by": "session",
+  "uuid": "04ba6c09-cc4f-4857-9e17-e45142a1a021"
+ },
+ {
+  "id": "1a988ef4#22",
+  "time": "2026-09-22T02:54:35.578Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "same error again",
+  "summary": "Asks whether the missing-key error was actually fixed.",
+  "text": "I just hit the same error. did you fix it?",
+  "named_by": "session",
+  "uuid": "3ec7087b-17ab-4c4b-8f1e-515896ac85a3"
+ },
+ {
+  "id": "1a988ef4#23",
+  "time": "2026-09-22T02:56:51.554Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-6",
+  "name": "how a turn reaches clusters",
+  "summary": "Asks what triggers cluster detection after a turn.",
+  "text": "I ran the script. remind me how a turn reaches cluster detection? Some rules based check or a haiku check or something?",
+  "named_by": "session",
+  "uuid": "82ffa3cc-5210-4efa-a736-c11fc729fd5a"
+ },
+ {
+  "id": "1a988ef4#24",
+  "time": "2026-09-22T03:00:30.270Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "another server error",
+  "summary": "Reports a further server error while chatting.",
+  "text": "I just hit another server error.",
+  "named_by": "session",
+  "uuid": "b0f6ed39-aef5-4189-be5c-668ae2cf23e5"
+ },
+ {
+  "id": "1a988ef4#25",
+  "time": "2026-09-22T03:02:06.117Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "errored once, worked on retry",
+  "summary": "One send failed and the same words went through on a second try.",
+  "text": "The chat UI said the server had an error. I clicked the chip to re-send it, it worked the second time",
+  "named_by": "session",
+  "uuid": "1c60dca6-6a00-40ee-be16-e848400a2274"
+ },
+ {
+  "id": "1a988ef4#26",
+  "time": "2026-09-22T03:07:13.705Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-5",
+  "name": "in chat cannot find the words",
+  "summary": "Selecting an event and asking to see it in chat says the words are gone.",
+  "text": "when I select an event on the timeline and then tap the `in chat` chip it just says `Thise words are no longer there`",
+  "named_by": "session",
+  "uuid": "130ef1d5-2c54-4b64-a335-01c0246ea9fc"
+ },
+ {
+  "id": "1a988ef4#27",
+  "time": "2026-09-22T04:46:06.930Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-5",
+  "name": "landscape, and the back arrow",
+  "summary": "Asks about a phone on its side; the back arrow does not leave the cluster.",
+  "text": "is this thing supposed to go into landscape on my iPhone 14 or does that break the layout?\n\nsmall detail, when i tap a cluster, then tap an event in the cluster view, then tap the back arrow, it should send you back to the original timeline view. instead it just deselects the event and reamins in the cluster view. I could see how that is logical since the drill down and back up is tap for tap, but it doesn't feel right. The back button in the cluster view should always close the cluster view.",
+  "named_by": "session",
+  "uuid": "6812fb92-45c3-4186-ab80-6dfda53ff32e"
+ },
+ {
+  "id": "1a988ef4#28",
+  "time": "2026-09-22T04:49:58.841Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-3",
+  "name": "moved is not its own kind",
+  "summary": "Repeats that a move is a notable event, not a first-class kind.",
+  "text": "Also, we need to re-brainstorm the fact that there is a `moved` event kind still in there. I told you in a previous session that moved should not be a first class event type. they are important, but another one of many events that are notable but don't have a specific structural or functional shift associated",
+  "named_by": "session",
+  "uuid": "2c66efd9-c9a0-4a74-a323-921c3eda2099"
+ },
+ {
+  "id": "1a988ef4#29",
+  "time": "2026-09-22T04:59:26.096Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-3",
+  "name": "fix the moved kind",
+  "summary": "Says to go ahead and fix the event kind.",
+  "text": "I want to fix the event `moved` problem.",
+  "named_by": "session",
+  "uuid": "977a0196-8477-4aa8-9f71-862f23a66d98"
+ },
+ {
+  "id": "1a988ef4#30",
+  "time": "2026-09-22T05:03:52.334Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-3",
+  "name": "call it noted, change it now",
+  "summary": "Answers the three questions: the noted kind, yes, and before the beta.",
+  "text": "1 - yes, noted.\n2 - yes\n3 - now",
+  "named_by": "session",
+  "uuid": "d53a65a8-13fd-4245-aede-6094a2bb61be"
+ },
+ {
+  "id": "1a988ef4#31",
+  "time": "2026-09-22T05:12:41.759Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-4",
+  "name": "migrate the moves on production",
+  "summary": "Wants the moves already stored on the box changed too.",
+  "text": "then I also need you to migrate any `moved` events on production",
+  "named_by": "session",
+  "uuid": "9cfe1e08-6db6-4700-a045-9fd4b852161a"
+ },
+ {
+  "id": "1a988ef4#32",
+  "time": "2026-09-22T05:23:34.324Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-4",
+  "name": "fix them in the database",
+  "summary": "A handful of rows needs a direct database fix, not migration code.",
+  "text": "there is probably only a few of them in my one session so it doesn't need extra code to migrate those events, just a direct database fix",
+  "named_by": "session",
+  "uuid": "4c454b0b-9d01-4fe2-af6e-f2ba9a03f1c9"
+ },
+ {
+  "id": "1a988ef4#33",
+  "time": "2026-09-22T06:01:03.446Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-5",
+  "name": "moves are leads",
+  "summary": "A move may lead a coach to wonder whether it plays into the story.",
+  "text": "yeah moves and some other kinds of events that I can't remember right now can lead a coach to wonder if they play into the story. More like leads than actual structural or functional changes.",
+  "named_by": "session",
+  "uuid": "52868fb1-e067-4aae-8c33-3c226ba91c62"
+ },
+ {
+  "id": "1a988ef4#34",
+  "time": "2026-09-22T06:12:46.569Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-5",
+  "name": "reuse the wide layout",
+  "summary": "Asks whether the existing wide layout can just activate on rotation.",
+  "text": "for landscape, don't we already have a landscape concept and it just needs to activate when phones are rotated into landscape? Or no?",
+  "named_by": "session",
+  "uuid": "2cb31c4d-e113-45b3-bc4e-8c92d152a89c"
+ },
+ {
+  "id": "1a988ef4#35",
+  "time": "2026-09-22T06:18:16.153Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-5",
+  "name": "wide on rotation, Return newlines",
+  "summary": "Let the wide layout come up on rotation; Return must not send.",
+  "text": "let's \n\n<pasted_content id=\"2846\">\nlet the wide layout activate for everyone on rotation and see how it feels\n</pasted_content id=\"2846\">\n\n.\n\nAlso, the return button on the keyboard should not submit the chat message, only the submit button should do that. otherwise there is no way to add newlines between paragraphs.",
+  "named_by": "session",
+  "uuid": "986e7e8a-7f56-4aba-8a6d-bce0f2c7da13"
+ },
+ {
+  "id": "1a988ef4#36",
+  "time": "2026-09-22T06:23:58.092Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-1",
+  "name": "can a local server do it",
+  "summary": "Asks whether a development server can take the place of trying things live.",
+  "text": "I like at least #1. the risk on #2 doesn't sound like the drift affects testing at all though?\n\n\"\n\n<pasted_content id=\"2846\">\nproduction must stop being the place you try things\n</pasted_content id=\"2846\">\n\n\" - can local dev server hadnle that? I can still hit it on my phone wherever I am through tailscale...just an idea.",
+  "named_by": "session",
+  "uuid": "510755c5-18b4-4c33-a283-d02add0efe19"
+ },
+ {
+  "id": "1a988ef4#37",
+  "time": "2026-09-22T06:26:03.428Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-1",
+  "name": "tailscale later, prod for now",
+  "summary": "Testing stays on production with the first beta users for the moment.",
+  "text": "OK tailscale is the next step, though I'm not sure when to do it. I think we can proceed testing on prod with the first beta testers. but lets' see.",
+  "named_by": "session",
+  "uuid": "9a73df9f-cad1-4cb9-a44f-a2f5c4437788"
+ },
+ {
+  "id": "1a988ef4#38",
+  "time": "2026-09-22T06:29:38.295Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-1",
+  "name": "do it on the next item",
+  "summary": "Tells the session to apply the change from the next item onward.",
+  "text": "do it on the next item",
+  "named_by": "session",
+  "uuid": "85e80998-f788-4abf-8a10-968a69ff1ca0"
+ },
+ {
+  "id": "1a988ef4#39",
+  "time": "2026-09-22T06:33:27.419Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "see my last two errors",
+  "summary": "Asks whether the two recent server errors are visible.",
+  "text": "Do you see the last two server errors in the last 10 minutes?",
+  "named_by": "session",
+  "uuid": "319b488d-b7f8-461f-bec0-00e6b72e09c2"
+ },
+ {
+  "id": "1a988ef4#40",
+  "time": "2026-09-22T06:38:24.481Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "stream the turn",
+  "summary": "The turn must stream and any reload must sync to where it is.",
+  "text": "Definitely need to stream the turn. And you should be able to reload the page, or switch from and back to the Home Screen web app on the iPhone or any other kind of app reload and sync to the current status of the turn in real time, if that makes sense",
+  "named_by": "session",
+  "uuid": "bccb1a74-1597-4855-8685-d8ec50ca34ec"
+ },
+ {
+  "id": "1a988ef4#41",
+  "time": "2026-09-22T06:53:09.401Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-9",
+  "name": "remember the sub-agent rule",
+  "summary": "Reminds the session that sub-agents do the work.",
+  "text": "don't forget your isntructions about sub-agents",
+  "named_by": "session",
+  "uuid": "9c943982-034d-4616-bbd2-c3568afe17f8"
+ },
+ {
+  "id": "1a988ef4#42",
+  "time": "2026-09-22T09:22:05.630Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "how will the loop scale",
+  "summary": "Asks where the agent loop runs per request and how it scales.",
+  "text": "So the agentic loop runs on the BE for each request? And that occurs in a greener worker or something since those at I/O bound? How will it scale?",
+  "named_by": "session",
+  "uuid": "be5a9c9c-1380-4e1f-9b86-46a986c9ed7c"
+ },
+ {
+  "id": "1a988ef4#43",
+  "time": "2026-09-22T09:52:32.787Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-9",
+  "name": "keep the pull request current",
+  "summary": "Asks for the pull request to be updated as well.",
+  "text": "Also make sure to update the PR",
+  "named_by": "session",
+  "uuid": "ee6a64e9-a98e-4a85-9fbf-9b858d538174"
+ },
+ {
+  "id": "1a988ef4#44",
+  "time": "2026-09-22T15:39:13.727Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-6",
+  "name": "clusters must stay stable",
+  "summary": "Clusters vanish between messages, and the crowded line needs a redesign.",
+  "text": "Back to normal feedback now. It seems like clusters appear and then disappear when I send messages. For example, there were quite a few clusters there before my last message, and now there are none, those need to stay relatively stable and only change when really justified. Otherwise people are not going to understand what is there. Also, we need to brainstorm how much the main/full clusters timeline view (we need a single word for that view) works on mobile with so many timeline dots and so little space on mobile. The clusters themselves are a way to compress all the event dots but they have to be meaningful. Seeing a large number of dots is useful so long as it merely shows that some kind of activity is occurring activity without detail being necessary, but of course at the same time even with the number of chat messages that I have now the dots are already to many to make sense of and will quickly become just a continuous thicker line over the wire where no tap at a particular coordinate to \"select\" an event dots can possibly be meaningful. So the clusters need to become more stable to the eye while remaining reactive in a meaningful way, and some other avenue to show more info like just a *smidge* more scrolling or even some other a re-think of the timeline with non-happy path data needs to happen. That will require more UI brainstorming through mockups. And remember, users want a picture drawn for them to get a message across, not a research project through a mountain of data. Now you have enough data in this one case and also data on how this conversation evolved step by step, to get a better idea about what can be shown. And I think I can turn my first three users into this now too to build the sample size. But let's get going on my own data here which is probably enough for a first round of improvement to deal with more events than the current timeline and single cluster view and various chalk board views can handle.",
+  "named_by": "session",
+  "uuid": "a495a42e-d4e7-4ff7-a740-1f517118ab11"
+ },
+ {
+  "id": "1a988ef4#45",
+  "time": "2026-09-22T15:44:36.953Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "invites, and cost per user",
+  "summary": "Asks how to mint two invites and wants cost per user on a dashboard.",
+  "text": "Oh, and I need you to remind me how to get invite links for my first two users emails. And then, we also need to track cost overtime per user. That has to end up in dashboarding. Maybe I can have you flush this session and then take up that brainstorming on how to get off Datadog onto grafana/prometheus/loki in another CC session so as not to pollute this context window and then use inter-session messages to communicate the findings back here?",
+  "named_by": "session",
+  "uuid": "54bd207b-71b6-494b-9a35-0b2f29e0dff3"
+ },
+ {
+  "id": "1a988ef4#46",
+  "time": "2026-09-22T16:00:00.966Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-5",
+  "name": "a play button per reply",
+  "summary": "Wants a play button under each coach bubble and a better voice.",
+  "text": "We need to add a play button under each coach chat bubble to play or replay the message just like the Claude code app has. And then what are our options for better text to speech then this iPhone built-in one? I can't remember. Are good sounding TTS tool kits just really expensive or what?",
+  "named_by": "session",
+  "uuid": "99f45bce-3ef0-410f-bfda-fc9d9864d94b"
+ },
+ {
+  "id": "1a988ef4#47",
+  "time": "2026-09-22T16:01:31.795Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-5",
+  "name": "will the phone voice improve",
+  "summary": "Asks whether the phone's built-in voice is getting better soon.",
+  "text": "And remind me if the built-in Apple/iPhone one is going to get better sometime soon?",
+  "named_by": "session",
+  "uuid": "c1eab474-8fd7-40fa-9387-4bde36a82c31"
+ },
+ {
+  "id": "1a988ef4#48",
+  "time": "2026-09-22T16:04:12.954Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-11",
+  "name": "align cost with what they pay",
+  "summary": "A paid voice waits until spending and use feed back into willingness to pay.",
+  "text": "I think that if we're going to add one cent per bubble then we are going to have to have a good way to align the incentive loops with the beta users directly on how much they're spending and how much they're using. And that all has to fit into our data driven principle for this app to determine if people will even pay for it and if they actually like it etc. That is my primary concern to just turning on a paid TTS. The secondary concern is money coming out of my own pocket but the primary concern is getting those feedback loops and data driven learning figured out. I'm not clearing what those would be yet. We can table that for now but I want you to remember all of this in the flush.",
+  "named_by": "session",
+  "uuid": "d45f4eba-4656-4d5a-8587-7ebdc8c5b3a9"
  }
 ]

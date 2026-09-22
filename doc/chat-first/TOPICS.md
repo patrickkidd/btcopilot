@@ -44,8 +44,9 @@ quality on anyone else's record stays unmeasured until the coding loop produces 
 **Lives in:** btcopilot PR #136 (fdserver PR #30 closed unmerged, 2026-09-16); merge-risk review
 doc/chat-first/MERGE_REVIEW.md; review log doc/chat-first/REVIEW_LOG.md, round 5 items 1–27;
 the box's deployment deploy/chat/; sandbox scripts /Users/patrick/worktrees/fd362-sandbox/.
-**Next action:** his word on inviting the three clinicians, and his code review of the branch
-and the coach's prompt.
+**Next action:** he asked how to mint invite links for his first two users' email addresses —
+the command line on the box does it, and he wants the reminder before he sends them; then his
+code review of the branch and the coach's prompt.
 **Updated:** 2026-09-22.
 
 ## T-2 · The coach knows the clinical definitions, and we can measure it
@@ -254,7 +255,12 @@ with a one-line scope and the floor binds only the automatic draft [R-0287]; the
 stays and its flag follows the clinical definition [R-0283]; no trend lines until real data
 [R-0284]; (3) [build] the event editor's relationship fields; (4) [ruling] whether tapping an
 event's words inside an open cluster jumps to its editor, which he will say after testing
-[R-0207].
+[R-0207]; (5) [build] a play button under each coach bubble that plays or replays that message,
+the way the Claude Code app has one; (6) [ruling] whether to pay for a better voice than the
+phone's built-in one: a paid service costs roughly one cent a reply, and he will not turn it on
+until each beta user can see their own use and what it costs, and that feeds back into whether
+people pay for the app and whether they like it — tabled, not dropped, and money out of his own
+pocket is the lesser of his two concerns.
 **Lives in:** doc/chat-first/UI_GAP.md, REVIEW_LOG.md round 5, STATE.md,
 doc/chat-first/FRAGMENT_CONVENTIONS.md, the drawn round in
 ~/theapp/btcopilot-sources/fd-corpus/design/round6/.
@@ -404,7 +410,10 @@ and deploys the old box. btcopilot PR #137 and fdserver PR #31 carry the last tw
 await his merge.
 **Open:** (1) [ruling] cost per user over time has to reach a dashboard, and whether we leave
 Datadog for our own Grafana, Prometheus and Loki is a brainstorm he asked for in a separate
-session; the per-user token table already exists. (2) [build] rotate every secret in the
+session that reports its findings back here by message rather than in this context; the per-user
+token table already exists. What he wants out of it is not only the bill: he wants each beta
+user's spending and use tied back to whether they would pay for the app and whether they like
+it, and he has not settled what those measures are. (2) [build] rotate every secret in the
 committed compose file, which still holds live keys and a TLS private key in git history — he
 issues the new credentials. (3) [build] freeze the old droplet for Pro. (4) [build] money
 through Stripe: account, keys and the price, after the first bill [R-0354]. (5) [build] archive
