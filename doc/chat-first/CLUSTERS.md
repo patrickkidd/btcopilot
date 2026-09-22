@@ -199,3 +199,58 @@ re-detects clusters for the whole record and writes the result through
 record change does. Back up the database first — `sync` writes through the
 normal delta/apply path, so a mistaken run is just another change to correct,
 not something reversible in place.
+
+## What a cluster is, from the sources (2026-09-22)
+
+The books have no word "cluster". Their word is **period**, and a period is
+bounded by stress and symptoms, not by the calendar: "There may be several
+periods in a family's history when a series of stressful events converged and/or
+when symptoms were prominent" (Family Evaluation, line 3373).
+
+**What opens one.** A disturbance of the family's balance: "An event, or more
+likely a series of events, can disturb the balance of a relationship system and
+trigger symptoms" (Family Evaluation, 2875). Bowen is narrower: the balance "is disturbed by
+either the addition of a new member or the loss of a member", and a loss may be
+physical, functional, or emotional (Family Therapy in Clinical Practice, 2470;
+quoted again in Gilbert 2006, 781).
+
+**What closes one.** The return of the earlier level of anxiety. "If family
+anxiety soon returns to 'pre-event' levels, the symptom will usually be
+short-lived" (Family Evaluation, 2881); if anxiety instead binds around the
+symptomatic person, the trouble becomes chronic (same line). Bowen puts the same
+boundary as a new balance reached, and its length varies with the family and
+with the size of the disturbance (Family Therapy in Clinical Practice, 2470).
+Lengths on record run from several months to several years (Family Evaluation,
+3213, 2885).
+
+**What belongs together.** Weight and nearness in time: "The magnitude of the
+events, the number of events, and the time spacing between events are used to
+determine the level of stress a family is under" (Family Evaluation, 3355).
+Dates lining up between an event and a symptom's onset, "suggestive" and never
+proof (3127, 3569). A symptom lifting in one person as it appears in
+another is one story, not two (3179). Aftershocks months or years later still
+belong to the event that started them, and without that knowledge the sequence
+"is treated as separate, unrelated events" (Family Therapy in Clinical Practice,
+2474, 2478). One period turns on one key shift; earlier shifts set the stage and
+later ones sustain, and the timeline is what settles which is which (Havstad,
+line 58). A structural event is not itself a shift — "A birth is not an SARF
+shift, and neither is getting married or divorced or death" (coders, 2026-04-13,
+line 14) — it is placed on the line and the shifts in response are recorded
+separately.
+
+**When a reading may change.** "Assessments are not written in stone, but are
+continually modified as new information comes to light" (Family Evaluation, line
+37). The bar for hardening a link is repetition, not one coincidence (3571). The
+coders are narrower: code the shift once, and add another entry only when a
+genuinely different date appears (2026-02-23, line 241; 2026-04-13, line 44).
+
+**The rule.** A cluster opens where an event, or a run of events, disturbs the
+family's balance — someone added, someone lost, someone's position changed. It
+closes where anxiety comes back to the level it sat at before. Events belong to
+the same cluster when they are close in time and weighty together, when a
+symptom's date lines up with them, when trouble moves from one person to another,
+or when they are the later consequences of the opening event. A cluster is kept
+as it stands and is reshaped only when new information gives a strong reason —
+a genuinely new date, or a symptom that turns out to sit elsewhere. The coach
+never says "cluster" and never says an event was added to one. It speaks of the
+story: what happened, what the record shows changed, and why it matters now.
