@@ -76,11 +76,12 @@ test.describe("a tap on the wire", () => {
 test.describe("the undated shelf", () => {
   test.use({ storageState: stateFor("empty") });
 
-  test("asks when, and nothing else", async ({ page }) => {
+  test("is not drawn on the picture at all", async ({ page }) => {
     await settle(page);
-    // an empty record has no cluster to open, so the shelf is reachable at rest
-    await page.locator('.ss-hit[data-target="shelf"]').first().click();
-    await expect(page.locator("#cap-chip")).toBeVisible();
-    await expect(picture(page)).toHaveScreenshot("shelf-asked.png", steady(page));
+    // Both question marks are off (R-0359): nothing told a first-time reader
+    // what they meant. The shelf itself stays, reached from the events list,
+    // so the picture offers no way to tap it and no mark to read.
+    await expect(page.locator('#view .ss-hit[data-target="shelf"]')).toHaveCount(0);
+    await expect(page.locator("#view .qm")).toHaveCount(0);
   });
 });

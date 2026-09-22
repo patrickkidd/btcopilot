@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { stateFor } from "./setup";
+import { mockTurn, SEND } from "./turn";
 
 /** What the reader sees when a send does not go through. The failure was an
  * empty coach bubble that looked like it was still coming; it must be a
@@ -19,9 +20,6 @@ const say = async (page: Page, words: string) => {
 
 const warning = (page: Page) => page.locator(".sys.warn");
 
-/** Where a turn is posted: a new thread, or the session already on screen. */
-const SEND = /\/app\/(chat|sessions\/\d+\/statements)$/;
-
 test.describe("a send that does not go through", () => {
   test.use({ storageState: stateFor("moves") });
 
@@ -30,21 +28,11 @@ test.describe("a send that does not go through", () => {
   }) => {
     await settle(page);
     let refuse = true;
-    await page.route(SEND, (route) =>
-      refuse
-        ? route.fulfill({ status: 400, body: "no" })
-        : route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({
-              statement: "I put that down.",
-              statement_id: 9001,
-              discussion_id: 1,
-              kind: "turn",
-              events: [],
-            }),
-          }),
-    );
+    await mockTurn(page, {
+      statement: "I put that down.",
+      statement_id: 9001,
+      refuse: () => (refuse ? 400 : null),
+    });
 
     await say(page, "My dad moved out.");
     await expect(warning(page)).toHaveText(/would not take that/);
@@ -76,21 +64,11 @@ test.describe("a send that does not go through", () => {
   }) => {
     await settle(page);
     let refuse = true;
-    await page.route(SEND, (route) =>
-      refuse
-        ? route.fulfill({ status: 500, body: "no" })
-        : route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({
-              statement: "I put that down.",
-              statement_id: 9002,
-              discussion_id: 1,
-              kind: "turn",
-              events: [],
-            }),
-          }),
-    );
+    await mockTurn(page, {
+      statement: "I put that down.",
+      statement_id: 9002,
+      refuse: () => (refuse ? 500 : null),
+    });
 
     await say(page, "My dad moved out.");
     await expect(warning(page)).toHaveText(/server broke/);

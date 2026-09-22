@@ -222,12 +222,17 @@ for (const key of ["one", "three40", "dense60", "hostile", "moves", "play", "lon
 
 
 test.describe("a scrollbar appearing never shifts the page", () => {
-  test.use({ storageState: stateFor("empty") });
+  // The undated shelf used to be the tap this watched. It is no longer drawn
+  // or tappable (R-0359) — the empty record offers nothing on the picture to
+  // touch at all — so the tap that brings the row of controls in is a moment
+  // picked on a record that has some.
+  test.use({ storageState: stateFor("three40") });
 
-  test("tapping the undated shelf moves nothing sideways", async ({ page }) => {
+  test("picking a moment moves nothing sideways", async ({ page }) => {
     await settle(page);
     const before = await frame(page);
-    await page.locator('.ss-hit[data-target="shelf"]').first().click();
+    await page.locator('#view .ss-hit[data-target="cluster"]').first().click();
+    await page.locator('#view .ss-hit[data-target="zone"]').first().click();
     await expect(page.locator("#cap-chip")).toBeVisible();
     await page.waitForTimeout(300);
     const after = await frame(page);

@@ -219,7 +219,8 @@ test.describe("the editor's fields by kind", () => {
     ["bonded", true, false],
     ["separated", true, false],
     ["divorced", true, false],
-    ["moved", true, false],
+    // a noted event is only its own words: nobody else is named on it (R-0363)
+    ["noted", false, false],
     ["birth", true, true],
     ["adopted", true, true],
   ] as [string, boolean, boolean][]) {
@@ -241,8 +242,9 @@ test.describe("the editor's fields by kind", () => {
     await pick(page, "kind", "birth");
     await expect(page.locator('.editor [data-label="person"]')).toHaveText("Parent 1");
     await expect(page.locator('.editor [data-label="spouse"]')).toHaveText("Parent 2");
-    await pick(page, "kind", "moved");
-    await expect(page.locator('.editor [data-label="spouse"]')).toHaveText("Partner");
+    // a noted event names nobody but the person it is about
+    await pick(page, "kind", "noted");
+    await expect(block(page, "pair")).toBeHidden();
   });
 
   test("targets appear with a relationship, triangles only inside and outside", async ({

@@ -47,21 +47,19 @@ test.describe("putting the picture down", () => {
     await expect(resting(page).first()).toBeVisible();
   });
 
-  test("the name of the picture goes back one step at a time", async ({ page }) => {
+  test("the name of the picture closes the cluster, picked moment or not", async ({
+    page,
+  }) => {
     await settle(page);
     await openCluster(page);
     await pickMoment(page);
 
-    // from the moment picked back to the cluster it is in
+    // The name, and the arrow beside it, close the cluster outright: putting
+    // the moment down first was tap-for-tap logical and felt wrong (R-0362).
+    // A moment is put down by tapping empty ground instead.
     await page.locator("#crumb").click();
     await expect(page.locator("#view .ss-yr.on")).toHaveCount(0);
-    // one cluster open and nothing picked in it writes no words on the drawing;
-    // the cluster's name is the title of the view instead (owner, 2026-09-09)
     await expect(page.locator("#view .ss-t.on")).toHaveCount(0);
-    await expect(page.locator("#crumb")).toHaveText("Leaving and losing");
-
-    // and from the cluster back to all of them
-    await page.locator("#crumb").click();
     await expect(resting(page).first()).toBeVisible();
     await expect(page.locator("#crumb")).toHaveText("Family timeline");
   });

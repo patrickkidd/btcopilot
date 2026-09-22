@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { stateFor } from "./setup";
+import { mockTurn } from "./turn";
 
 /** What the coach did, said one line at a time, lights the thing it put in the
  * record as its line lands. A moment lights as its dot on the wire; a person
@@ -11,18 +12,12 @@ const settle = async (page: Page) => {
   await page.waitForTimeout(500);
 };
 
-const SEND = /\/app\/(chat|sessions\/\d+\/statements)$/;
-
 /** A turn that added one moment, told the way the server tells it: the call,
  * then the patch naming what it made. Event 22 is on the moves record. */
 const added = {
   statement: "I put that down. [[event:22|that winter]]",
   statement_id: 9201,
-  discussion_id: 1,
-  kind: "turn",
-  views: null,
-  turn_id: "t1",
-  events: [
+  did: [
     {
       type: "tool_call",
       name: "edit_event",
@@ -51,22 +46,21 @@ test.describe("what the coach did, one line at a time", () => {
     page,
   }) => {
     await settle(page);
-    await page.route(SEND, (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(added),
-      }),
-    );
+    // the work shows for a beat before the words land, which is the moment
+    // this test is about
+    await mockTurn(page, { ...added, pause: 800 });
 
     await page.locator("#composer").fill("She stopped calling in 1992.");
     await page.locator("#send").click();
 
     // the line the coach's work is reported in
     await expect(page.locator(".bub.coach .did").last()).toHaveText(/Added/);
-    // and the moment it made is the one the picture is now writing out
-    await expect(page.locator("#view .ss-t.on").first()).toBeVisible();
-    await expect(page.locator("#view .ss-t.on").first()).toContainText("distance");
+    // and the moment it made is lit on the wire, before a word has been said.
+    // The words on the picture belong to a moment the reader has picked; a
+    // moment the coach has just made is its dot, lit.
+    await expect(page.locator("#view circle.dot.lit")).toHaveCount(1);
+    // and when the words land they name that same moment
+    await expect(page.locator(".bub.coach .chip").last()).toHaveText("that winter");
   });
 });
 
@@ -75,11 +69,7 @@ test.describe("what the coach did, one line at a time", () => {
 const met = {
   statement: "I put that down.",
   statement_id: 9202,
-  discussion_id: 1,
-  kind: "turn",
-  views: null,
-  turn_id: "t2",
-  events: [
+  did: [
     { type: "tool_call", name: "edit_person", args: { name: "Ada" } },
     {
       type: "record_patch",
@@ -98,13 +88,7 @@ test.describe("someone the coach has just put in the record", () => {
     page,
   }) => {
     await settle(page);
-    await page.route(SEND, (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(met),
-      }),
-    );
+    await mockTurn(page, met);
     // people are drawn on the board, so the board is what is on screen
     await page.locator("#cap-play").click();
     await expect(page.locator("#view .ss.board")).toBeVisible();

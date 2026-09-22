@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { stateFor } from "./setup";
+import { mockTurn, SEND } from "./turn";
 
 /** From the moment a message is sent until the coach's first words arrive,
  * the coach's side of the thread shows that something is coming. It is never
@@ -12,17 +13,7 @@ const settle = async (page: Page) => {
   await page.waitForTimeout(500);
 };
 
-const SEND = /\/app\/(chat|sessions\/\d+\/statements)$/;
-
 const waiting = (page: Page) => page.locator(".bub.coach.typing");
-
-const reply = {
-  statement: "I put that down.",
-  statement_id: 9101,
-  discussion_id: 1,
-  kind: "turn",
-  events: [],
-};
 
 test.describe("waiting for the coach", () => {
   test.use({ storageState: stateFor("moves") });
@@ -31,13 +22,11 @@ test.describe("waiting for the coach", () => {
     await settle(page);
     let answer: () => void = () => {};
     const held = new Promise<void>((go) => (answer = go));
-    await page.route(SEND, async (route) => {
-      await held;
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(reply),
-      });
+    // the turn is taken at once; nothing it does arrives until the test says so
+    await mockTurn(page, {
+      statement: "I put that down.",
+      statement_id: 9101,
+      hold: held,
     });
 
     await page.locator("#composer").fill("My dad moved out.");
