@@ -254,3 +254,16 @@ as it stands and is reshaped only when new information gives a strong reason —
 a genuinely new date, or a symptom that turns out to sit elsewhere. The coach
 never says "cluster" and never says an event was added to one. It speaks of the
 story: what happened, what the record shows changed, and why it matters now.
+
+## The message the picture must carry when a record holds many events (2026-09-22)
+
+At a glance a person should take in two things: where their history gathers into
+a few clusters, and that trouble moved between people and between the four
+variables rather than sitting still. The books warn that a picture risks showing a static
+situation instead of a moving one, and that events read as unrelated unless
+something ties them. The picture's job is to make one tie visible unasked.
+
+The person must never be asked to count events, to scan a dense cluster, to
+compare how full one year looks against another, or to work out for themselves
+which events belong together. A crowded cluster means it was remembered, not that
+it was worse.
