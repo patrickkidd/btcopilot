@@ -475,3 +475,8 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    but the phone had given up: browser patience 60s, gunicorn 45s. RULED: stream the turn,
    run it independent of the request, and let any reload reattach and sync [R-0369].
    BUILDING.
+   Item 24 FIXED @6a3b851 + 17788ae, live 2026-09-22 10:07 UTC. Proven on the box with a fresh
+   account: the post came back 202 in 0.6 s, the page was reloaded three seconds into the turn,
+   and the reply landed 28 s later in one bubble carrying its statement id, three events coded.
+   A first deploy of it broke every message (the app looked for Redis on localhost); rolled back
+   in two minutes, fixed, redeployed. Every deploy now rolls: 106 probes during a roll, 0 failed.
