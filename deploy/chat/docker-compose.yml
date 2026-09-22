@@ -102,6 +102,8 @@ services:
     container_name: fd-alloy
     restart: unless-stopped
     env_file: /etc/fd/secrets.env
+    # The host cgroup tree and Docker data dir, read-only, so cadvisor sees every
+    # container and not only its own (verified empty without, 2026-09-22).
     command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "--storage.path=/var/lib/alloy/data", "/etc/alloy/config.alloy"]
     volumes:
       - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
@@ -109,6 +111,9 @@ services:
       - /:/rootfs:ro
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
     expose:
       - "4317"
       - "4318"
