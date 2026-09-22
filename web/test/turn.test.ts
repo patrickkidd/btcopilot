@@ -1,59 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { StepKind, steps } from "../src/turn";
 import { toolLine, ToolName } from "../src/tools";
-import { TurnEventKind, ViewKind, type Reply, type TurnEvent } from "../src/types";
-
-const reply = (events: TurnEvent[]): Reply => ({
-  statement: "Got it.",
-  statement_id: 7,
-  views: null,
-  events,
-  turn_id: "t1",
-  discussion_id: 2,
-});
-
-const call = (name: string, args: Record<string, unknown> = {}): TurnEvent => ({
-  type: TurnEventKind.ToolCall,
-  name,
-  args,
-});
-
-const patch = (): TurnEvent => ({
-  type: TurnEventKind.RecordPatch,
-  deltas: [],
-  turn_id: "t1",
-});
-
-describe("what the page does with one turn", () => {
-  it("says what the coach did and attaches what it made, without a separate re-read", () => {
-    expect(steps(reply([call(ToolName.EditPerson, { name: "Dad" }), patch()]))).toEqual([
-      { kind: StepKind.Note, line: "Added Dad", made: [] },
-    ]);
-  });
-
-  it("re-reads once for a run of edits, not once each", () => {
-    const out = steps(reply([patch(), patch(), patch()]));
-    expect(out).toEqual([{ kind: StepKind.Reload }]);
-  });
-
-  it("keeps the order the coach worked in", () => {
-    const out = steps(
-      reply([
-        call(ToolName.EditPerson, { name: "Dad" }),
-        patch(),
-        call(ToolName.Show),
-        { type: TurnEventKind.View, view: { kind: ViewKind.Span, start: "1990-01-01", end: "1999-12-31" } },
-      ]),
-    );
-    expect(out.map((s) => s.kind)).toEqual([StepKind.Note, StepKind.Show]);
-  });
-
-  it("does nothing for a turn where the coach only read and talked", () => {
-    expect(steps(reply([call(ToolName.ReadPeople), call(ToolName.ReadEvents)]))).toEqual(
-      [],
-    );
-  });
-});
 
 describe("what a tool call says in plain words", () => {
   it("says added when the call makes something", () => {

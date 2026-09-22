@@ -55,9 +55,7 @@ interface Written {
 }
 
 function layout(pieces: Piece[]): Written {
-  const offered = pieces.findIndex(
-    (p) => "chip" in p && p.chip.tone === ChipTone.Ask,
-  );
+  const offered = pieces.findIndex((p) => "chip" in p && p.chip.tone === ChipTone.Ask);
   const first = offered < 0 ? pieces.length : offered;
   const words = pieces.slice(0, first);
   let ask = "";
@@ -74,9 +72,7 @@ function layout(pieces: Piece[]): Written {
   const lastOffer =
     rest.length -
     1 -
-    [...rest]
-      .reverse()
-      .findIndex((p) => "chip" in p && p.chip.tone === ChipTone.Ask);
+    [...rest].reverse().findIndex((p) => "chip" in p && p.chip.tone === ChipTone.Ask);
   return {
     words,
     ask,
@@ -86,6 +82,10 @@ function layout(pieces: Piece[]): Written {
     tail: rest.slice(lastOffer + 1),
   };
 }
+/** A reference the server has only half sent: it is held back until the rest
+ * of it arrives, so the reader never sees brackets. */
+const PART = /\[\[[^\]]*$/;
+
 /** How long a traced bubble stays outlined after a moment jumps to it. */
 const TRACE_MS = 2200;
 
@@ -134,9 +134,7 @@ export class Chat {
           kind: button.dataset.kind as Chip["kind"],
           target: button.dataset.target ?? "",
           label: button.dataset.full ?? "",
-          tone: button.classList.contains(ChipTone.Ask)
-            ? ChipTone.Ask
-            : ChipTone.Data,
+          tone: button.classList.contains(ChipTone.Ask) ? ChipTone.Ask : ChipTone.Data,
           bare: false,
         },
         playTap(button),
@@ -169,9 +167,7 @@ export class Chat {
   }
 
   private render(pieces: Piece[]): string {
-    return pieces
-      .map((p) => ("chip" in p ? this.pill(p.chip) : esc(p.text)))
-      .join("");
+    return pieces.map((p) => ("chip" in p ? this.pill(p.chip) : esc(p.text))).join("");
   }
 
   /** A whole reply as it stands when nothing is typing: the words, the closing
@@ -314,12 +310,65 @@ export class Chat {
     this.stuck = true;
     this.scroll();
     const words = bubble.querySelector(".words") as HTMLElement;
+    // What the coach has said so far this turn, as the server has sent it. The
+    // words are re-drawn from it on every delta, so a chip becomes a pill the
+    // moment its reference is whole and never shows as brackets.
+    let sofar = "";
+    const seen = new Set<string>();
+    const paint = (onChip: (chip: Chip) => void) => {
+      const whole = sofar.replace(PART, "");
+      const pieces = tokenize(whole);
+      words.innerHTML = this.render(pieces);
+      const lit = words.lastElementChild;
+      if (lit?.classList.contains("chip")) lit.classList.add("lit");
+      for (const piece of pieces) {
+        if (!("chip" in piece)) continue;
+        const at = `${piece.chip.kind}:${piece.chip.target}`;
+        if (seen.has(at)) continue;
+        seen.add(at);
+        onChip(piece.chip);
+      }
+      this.scroll();
+    };
     return {
       stamp: (statementId) => {
         bubble.dataset.statement = String(statementId);
       },
       note: (line) => {
         bubble.insertBefore(el("div", "did", esc(line)), words);
+        this.scroll();
+      },
+      append: (text, onChip) => {
+        sofar += text;
+        paint(onChip);
+      },
+      reset: () => {
+        sofar = "";
+        seen.clear();
+        words.innerHTML = "";
+      },
+      settle: (text, onChip) => {
+        this.said.set(bubble, text);
+        for (const extra of bubble.querySelectorAll(".ask, .offer, .words + .words"))
+          extra.remove();
+        const { words: said, ask, offers, tail } = layout(tokenize(text));
+        words.innerHTML = this.render(said);
+        if (ask) bubble.append(el("div", "ask", esc(ask)));
+        if (offers.length) {
+          const row = el("div", "offer");
+          for (const offer of offers)
+            row.insertAdjacentHTML("beforeend", this.pill(offer));
+          bubble.append(row);
+        }
+        if (tail.length) {
+          const after = el("span", "words");
+          after.innerHTML = this.render(tail);
+          bubble.append(after);
+        }
+        for (const chip of [...said, ...offers.map((c) => ({ chip: c })), ...tail])
+          if ("chip" in chip) onChip(chip.chip);
+        bubble.classList.remove("typing");
+        this.typing = null;
         this.scroll();
       },
       type: async (text, onChip, pace = READ_MS) => {
@@ -511,6 +560,13 @@ export interface LiveBubble {
    * coded in this very session can point back at it (review item 18). */
   stamp(statementId: number): void;
   note(line: string): void;
+  /** The next words off the wire, drawn as they land. */
+  append(text: string, onChip: (chip: Chip) => void): void;
+  /** The coach said those words again: what is on screen is dropped. */
+  reset(): void;
+  /** The reply as it will be stored: the words, the closing question, and the
+   * offers, laid out for good. */
+  settle(text: string, onChip: (chip: Chip) => void): void;
   type(text: string, onChip: (chip: Chip) => void, pace?: number): Promise<void>;
 }
 

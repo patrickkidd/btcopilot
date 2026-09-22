@@ -1,6 +1,6 @@
 import "./theme.css";
 import * as api from "./api";
-import { Chat, wait, type PlayTap } from "./chat";
+import { Chat, wait, type LiveBubble, type PlayTap } from "./chat";
 import { Picture, Target, type Tap } from "./picture";
 import { Menu, Tab } from "./menu";
 import { Ballot } from "./ballot";
@@ -15,7 +15,7 @@ import { Sessions } from "./sessions";
 import { sessionTitle, summaryOf } from "./search";
 import { Settings } from "./settings";
 import { aimedEvents, chips, itemKind } from "./chips";
-import { StepKind, steps } from "./turn";
+import { feed } from "./turn";
 import {
   CHIP_KIND,
   PicEvent,
@@ -67,7 +67,7 @@ declare global {
         coder: boolean;
       } | null;
       diagram: { id: number; name: string } | null;
-      session: { id: number } | null;
+      session: { id: number; turn: string | null } | null;
       statements: Statement[];
     };
   }
@@ -107,11 +107,7 @@ let known: Session[] = [];
 
 /** A tap can only be recorded against a diagram; without one there is nothing to
  * record it on. */
-function tapped(
-  kind: InteractionKind,
-  item: ItemKind,
-  id: string | null = null,
-): void {
+function tapped(kind: InteractionKind, item: ItemKind, id: string | null = null): void {
   const diagram = window.BOOTSTRAP.diagram;
   if (diagram) void api.record(diagram.id, kind, item, id);
 }
@@ -193,9 +189,13 @@ function onTap(tap: Tap): void {
 function chipLabel(chip: Chip): string {
   if (!chip.bare) return chip.label;
   if (chip.kind === ChipKind.Person)
-    return timeline.people.find((p) => String(p.id) === chip.target)?.name ?? chip.label;
+    return (
+      timeline.people.find((p) => String(p.id) === chip.target)?.name ?? chip.label
+    );
   if (chip.kind === ChipKind.Event)
-    return timeline.events.find((e) => String(e.id) === chip.target)?.label ?? chip.label;
+    return (
+      timeline.events.find((e) => String(e.id) === chip.target)?.label ?? chip.label
+    );
   return (
     timeline.clusters.find(
       (c) => c.id === chip.target || c.cluster_ids.includes(chip.target),
@@ -464,7 +464,8 @@ function onDiagram(diagram: Diagram, how = { switched: true }): void {
 /** The title row shows the current view's title, and the family's name again
  * when the settings stack closes. The name follows whichever family the app is
  * on. */
-let familyTitle = window.BOOTSTRAP.diagram?.name ?? $("title").textContent ?? "Your family";
+let familyTitle =
+  window.BOOTSTRAP.diagram?.name ?? $("title").textContent ?? "Your family";
 $("title").textContent = familyTitle;
 
 /** Speak replies is the one ruled duplicate: this row and the Coach settings
@@ -615,9 +616,7 @@ function apply(outcome: Outcome): void {
 
 function selLabel(sel: Sel): string {
   if (sel.kind === SelKind.Event)
-    return (
-      timeline.events.find((e) => String(e.id) === sel.id)?.label ?? "this event"
-    );
+    return timeline.events.find((e) => String(e.id) === sel.id)?.label ?? "this event";
   if (sel.kind === SelKind.Cluster)
     return timeline.clusters.find((c) => c.id === sel.id)?.title ?? "this cluster";
   const n = timeline.shelf.length;
@@ -628,17 +627,13 @@ function selLabel(sel: Sel): string {
  * coded it, and tapping that says which words. */
 const TRACE_TITLE_CAP = 30;
 
-function codedIn(
-  eventId: number,
-): { label: string; where: CodedIn } | null {
+function codedIn(eventId: number): { label: string; where: CodedIn } | null {
   const where = timeline.coded_in[String(eventId)];
   if (!where) return null;
   const found = known.find((s) => s.id === where.discussion_id);
   const title = found ? sessionTitle(found) : "an earlier session";
   const cut =
-    title.length > TRACE_TITLE_CAP
-      ? `${title.slice(0, TRACE_TITLE_CAP - 1)}…`
-      : title;
+    title.length > TRACE_TITLE_CAP ? `${title.slice(0, TRACE_TITLE_CAP - 1)}…` : title;
   const when = found ? shortDate(new Date(found.last_activity), new Date()) : "";
   return { label: `coded in: ${cut}${when ? ` · ${when}` : ""} →`, where };
 }
@@ -677,7 +672,8 @@ function actions(): void {
     // the about page is words already, and an empty picture has nothing to
     // tap; no hint under either
     const hint = picture.aboutOpen() || picture.empty() ? "" : "tap a cluster";
-    host.innerHTML = `<span class="cta">${hint}</span>` + (pinned() ? "" : listButton("menu-open"));
+    host.innerHTML =
+      `<span class="cta">${hint}</span>` + (pinned() ? "" : listButton("menu-open"));
     wireList();
     return;
   }
@@ -704,8 +700,7 @@ function actions(): void {
           }),
     ),
   );
-  if (trace)
-    $("cap-trace").addEventListener("click", () => void traceTo(trace.where));
+  if (trace) $("cap-trace").addEventListener("click", () => void traceTo(trace.where));
   if (moves && open)
     $("cap-play").addEventListener("click", () =>
       apply(reduce(pic, PicEvent.TapPlay, { kind: SelKind.Cluster, id: open.id })),
@@ -818,42 +813,118 @@ async function deliver(statement: string): Promise<void> {
   chat.busy(true);
   speech.hush();
 
-  let reply;
+  let started;
   try {
-    reply = await api.say(statement, session);
+    started = await api.say(statement, session);
   } catch (error) {
     inFlight = false;
     chat.busy(false);
     chat.warn(whatFailed(error), () => void deliver(statement));
     return;
   }
-  inFlight = false;
-  session = reply.discussion_id;
-  chat.busy(false);
+  session = started.discussion_id;
   chat.settled();
+  follow(started.turn_id, () => void deliver(statement));
+}
 
-  const bubble = chat.live();
-  bubble.stamp(reply.statement_id);
-  for (const step of steps(reply)) {
-    if (step.kind === StepKind.Note) {
-      bubble.note(step.line);
-      // what the line put in the record lights as the line lands, so the
-      // reader sees the thing the coach is telling them about
-      if (step.made.length) {
+/** The turn the coach is running, drawn as it happens. Everything the page
+ * shows comes off the stream, so attaching to a turn already under way — after
+ * a reload, or coming back to the app — reads it from its first event and
+ * builds the same bubble. Nothing is ever shown twice: the bubble is built
+ * again, not added to. */
+let watching: EventSource | null = null;
+let onTurn: string | null = null;
+/** The turn the page believes is still running, which is how a page coming
+ * back finds out it has already finished and reads the thread again. */
+let awaiting: string | null = null;
+
+function follow(turnId: string, again: () => void): void {
+  if (onTurn === turnId) return;
+  stopFollowing();
+  onTurn = turnId;
+  awaiting = turnId;
+  inFlight = true;
+  chat.busy(true);
+
+  let bubble: LiveBubble | null = null;
+  // The typing dots stay until the coach's first word or first step, and the
+  // bubble takes their place.
+  const opened = () => {
+    if (!bubble) {
+      chat.busy(false);
+      bubble = chat.live();
+    }
+    return bubble;
+  };
+  // The events are drawn in the order they happened, and re-reading the record
+  // takes a moment, so each one waits for the one before it.
+  let queue: Promise<void> = Promise.resolve();
+  const step = (work: () => Promise<void> | void) => {
+    queue = queue.then(work).catch((error) => console.warn(error));
+  };
+
+  const take = feed({
+    note: (line) => step(() => void opened().note(line)),
+    made: (items) =>
+      step(async () => {
         await load();
-        picture.light(step.made);
-      }
-    } else if (step.kind === StepKind.Reload) await load();
-    else await picture.show(step.view);
+        if (items.length) picture.light(items);
+      }),
+    show: (view) => step(() => picture.show(view)),
+    text: (text) => step(() => void opened().append(text, (chip) => aim(chip))),
+    reset: () => step(() => void opened().reset()),
+    done: (reply) =>
+      step(async () => {
+        const said = opened();
+        said.stamp(reply.statement_id);
+        if (speak.checked) speech.say(reply.statement);
+        said.settle(reply.statement, (chip) => aim(chip));
+        awaiting = null;
+        stopFollowing();
+        await load();
+        void sessions.load(session);
+        // What the message named stays lit after it is written: the spotlight
+        // is the resting state of the picture, not a flourish while it types.
+        spotlightFrom(reply.statement);
+      }),
+    failed: (message) =>
+      step(() => {
+        awaiting = null;
+        stopFollowing();
+        chat.busy(false);
+        chat.warn(message, again);
+      }),
+  });
+
+  const source = api.turnEvents(turnId);
+  watching = source;
+  source.addEventListener("message", (event) => take(JSON.parse(event.data)));
+  source.addEventListener("error", () => {
+    // The browser reconnects on its own and says where it got to; only a turn
+    // that has already ended leaves nothing to reconnect to.
+    if (source.readyState === EventSource.CLOSED) stopFollowing();
+  });
+}
+
+function stopFollowing(): void {
+  watching?.close();
+  watching = null;
+  onTurn = null;
+  inFlight = false;
+}
+
+/** A page that has just loaded, or come back to the front, attaches to the
+ * turn the session says is running. */
+async function reattach(): Promise<void> {
+  if (session === null || watching) return;
+  const { turn } = await api.session(session);
+  if (turn) follow(turn, () => {});
+  else if (awaiting) {
+    // It finished while the page was away: the thread is read again, which is
+    // what a reload would have shown.
+    awaiting = null;
+    await openSession(session);
   }
-  // The voice starts as the words start, not after they have all been typed.
-  if (speak.checked) speech.say(reply.statement);
-  await bubble.type(reply.statement, (chip) => aim(chip));
-  await load();
-  void sessions.load(session);
-  // What the message named stays lit after it is written: the spotlight is the
-  // resting state of the picture, not a flourish while it types.
-  spotlightFrom(reply.statement);
 }
 
 function spotlightFrom(text: string): void {
@@ -930,15 +1001,16 @@ function screen(which: Screen): void {
   $("rules-screen").hidden = which !== Screen.Rules;
   // The list covers the title row rather than taking its place: it is over
   // everything, with its own back arrow.
-  document.querySelector<HTMLElement>(".titlerow")!.hidden =
-    which === Screen.Rules;
+  document.querySelector<HTMLElement>(".titlerow")!.hidden = which === Screen.Rules;
   // The app is a phone everywhere else; it widens only where the drawer
   // stands beside the thread — the coding screen, and the chat screen for a
   // professional on a wide window.
-  document.querySelector<HTMLElement>(".app")!.classList.toggle(
-    "wide",
-    which === Screen.Coding || (which === Screen.Chat && pinned()),
-  );
+  document
+    .querySelector<HTMLElement>(".app")!
+    .classList.toggle(
+      "wide",
+      which === Screen.Coding || (which === Screen.Chat && pinned()),
+    );
   // Done and the guidelines belong to the coding screen; the back arrow also
   // stands on the one task card, which is where Done returns to.
   // A submitted coding is read, not added to: no Done and nothing to type
@@ -1055,6 +1127,18 @@ chat.toEnd();
 
 void sessions.load(session);
 void settings.load();
+
+// A turn the coach is still running when the page opens is drawn from its first
+// event, so a reload lands back in the middle of it rather than on nothing.
+const running = window.BOOTSTRAP.session?.turn ?? null;
+if (running) follow(running, () => {});
+
+// Coming back to the app — a phone returning to it, a tab shown again, the page
+// restored from the back cache — attaches to whatever the coach is doing now.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") void reattach();
+});
+window.addEventListener("pageshow", () => void reattach());
 
 void load().then(async () => {
   const said = window.BOOTSTRAP.statements;

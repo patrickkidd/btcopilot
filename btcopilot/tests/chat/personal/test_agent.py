@@ -11,9 +11,9 @@ from btcopilot.personal.coachturn import (
     BareList,
     CoachTurn,
     EmptyReply,
-    EventKind,
     LabelTooLong,
 )
+from btcopilot.personal.turnlog import TurnEventKind as EventKind
 from btcopilot.personal.models import Author, Change, StatementKind
 from btcopilot.personal.playturn import PlayTurn
 from btcopilot.personal.toolbox import ToolName
@@ -27,7 +27,13 @@ from btcopilot.schema import (
     Person,
     asdict,
 )
-from btcopilot.tests.chat.personal.conftest import Model, called, calling, said
+from btcopilot.tests.chat.personal.conftest import (
+    Model,
+    called,
+    calling,
+    replied,
+    said,
+)
 
 
 def run(discussion, statement, model) -> dict:
@@ -282,9 +288,9 @@ def test_chat_returns_the_words_and_the_events_behind_them(web, family, monkeypa
         json={"statement": "My sister is Nell."},
         headers={"X-CSRFToken": token},
     )
-    assert response.status_code == 200
+    assert response.status_code == 202
 
-    reply = response.get_json()
+    reply = replied(response)
     assert reply["statement"] == "Added [[person:11|Nell]]."
     assert [e["type"] for e in reply["events"]] == ["tool_call", "record_patch"]
     assert reply["events"][0]["name"] == "edit_person"
@@ -563,11 +569,13 @@ def test_every_message_the_page_reads_back_carries_its_kind(web, family, monkeyp
     )
     token = csrf_token(web)
 
-    said_reply = web.post(
-        "/app/chat",
-        json={"statement": "My dad moved out."},
-        headers={"X-CSRFToken": token},
-    ).get_json()
+    said_reply = replied(
+        web.post(
+            "/app/chat",
+            json={"statement": "My dad moved out."},
+            headers={"X-CSRFToken": token},
+        )
+    )
     assert said_reply["kind"] == StatementKind.Turn.value
 
     played = web.post(
@@ -610,8 +618,8 @@ def test_a_csrf_token_older_than_an_hour_still_posts(web, family, monkeypatch):
         json={"statement": "My dad moved out."},
         headers={"X-CSRFToken": token},
     )
-    assert reply.status_code == 200
-    assert reply.get_json()["kind"] == StatementKind.Turn.value
+    assert reply.status_code == 202
+    assert replied(reply)["kind"] == StatementKind.Turn.value
 
 
 def test_a_moment_the_coach_wrote_traces_to_the_message_that_wrote_it(
@@ -637,11 +645,13 @@ def test_a_moment_the_coach_wrote_traces_to_the_message_that_wrote_it(
         ),
     )
     token = csrf_token(web)
-    reply = web.post(
-        "/app/chat",
-        json={"statement": "My mum got sick that winter."},
-        headers={"X-CSRFToken": token},
-    ).get_json()
+    reply = replied(
+        web.post(
+            "/app/chat",
+            json={"statement": "My mum got sick that winter."},
+            headers={"X-CSRFToken": token},
+        )
+    )
 
     coded = web.get("/app/timeline").get_json()["coded_in"]
     made = [event["id"] for event in web.get("/app/timeline").get_json()["events"]]

@@ -1,7 +1,6 @@
 """Discussion lifecycle shared by every surface that starts or continues a
 session."""
 
-
 import datetime
 
 from btcopilot import auth, diagramjson
@@ -14,6 +13,61 @@ from btcopilot.personal.models import (
     SpeakerType,
     Statement,
 )
+from btcopilot.personal import turnlog
+
+PREVIEW_CHARS = 120
+
+
+def utc_iso(when: datetime.datetime) -> str:
+    """Stored times are naive UTC; the browser needs to be told so, or it reads
+    them as its own local time."""
+    return when.replace(tzinfo=datetime.timezone.utc).isoformat()
+
+
+def last_activity(discussion: Discussion):
+    times = [s.created_at for s in discussion.statements if s.created_at]
+    return max(times) if times else discussion.created_at
+
+
+def preview(discussion: Discussion) -> str | None:
+    """The first thing the client said, the way a notes or messages list
+    previews its content under the title."""
+    said = next(
+        (
+            s.text
+            for s in discussion.statements
+            if s.text and s.speaker_id != discussion.chat_ai_speaker_id
+        ),
+        None,
+    )
+    if said is None:
+        return None
+    words = " ".join(said.split())
+    return (
+        words if len(words) <= PREVIEW_CHARS else words[:PREVIEW_CHARS].rstrip() + "…"
+    )
+
+
+def session_payload(discussion: Discussion) -> dict:
+    """`turn` is the turn the coach is running on this session, so a page that
+    has just loaded, or come back to the front, knows to attach to it."""
+    return {
+        "id": discussion.id,
+        "title": discussion.title,
+        "summary": discussion.summary,
+        "preview": preview(discussion),
+        "title_set_by_user": discussion.title_set_by_user,
+        "last_activity": utc_iso(last_activity(discussion)),
+        "message_count": len(discussion.statements),
+        "kind": DiscussionKind(discussion.kind).value,
+        "turn": turnlog.running(discussion.id),
+        "date": (
+            discussion.discussion_date.isoformat()
+            if discussion.discussion_date
+            else None
+        ),
+    }
+
 
 def create_discussion(data: dict, diagram: Diagram | None = None) -> Discussion:
     """A caller that knows which diagram the session belongs on says so; the

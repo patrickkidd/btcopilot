@@ -16,7 +16,7 @@ from btcopilot.personal.models import (
 )
 from btcopilot.personal.interactions import recent
 from btcopilot.schema import Event, EventKind, ItemKind
-from btcopilot.tests.chat.personal.conftest import Model, csrf_token, said
+from btcopilot.tests.chat.personal.conftest import Model, csrf_token, replied, said
 
 
 @pytest.fixture(autouse=True)
@@ -88,8 +88,8 @@ def test_chat_round_trip(web, test_user):
         json={"statement": "hello there"},
         headers={"X-CSRFToken": token},
     )
-    assert response.status_code == 200
-    assert response.get_json()["statement"] == "a coach reply"
+    assert response.status_code == 202
+    assert replied(response)["statement"] == "a coach reply"
 
     discussion = Discussion.query.filter_by(user_id=test_user.id).one()
     assert discussion.diagram_id == test_user.free_diagram_id

@@ -31,7 +31,8 @@ from btcopilot import diagramjson
 from btcopilot.app import create_app
 from btcopilot.extensions import db
 from btcopilot.personal.coachmodel import CoachModel
-from btcopilot.personal.coachturn import CoachTurn, EventKind
+from btcopilot.personal.coachturn import CoachTurn
+from btcopilot.personal.turnlog import TurnEventKind as EventKind
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
 from btcopilot.personal.recordtext import date_text
 from btcopilot.pro.models import Diagram

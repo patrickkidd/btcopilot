@@ -8,8 +8,6 @@ from btcopilot import auth
 from btcopilot.personal.routes import (
     bp,
     current_session,
-    last_activity,
-    utc_iso,
     owned_session,
     require_write_access,
     user_sessions,
@@ -17,51 +15,14 @@ from btcopilot.personal.routes import (
 )
 from btcopilot.personal.routes.diagrams import readable
 from btcopilot.extensions import db
-from btcopilot.personal.coachturn import CoachTurn
 from btcopilot.personal.licence import require_professional
 from btcopilot.personal.models import Discussion, DiscussionKind, StatementKind
 from btcopilot.personal.discussions import (
     create_discussion,
+    session_payload,
     sync_chat_speakers,
 )
-
-
-PREVIEW_CHARS = 120
-
-
-def preview(discussion: Discussion) -> str | None:
-    """The first thing the client said, the way a notes or messages list
-    previews its content under the title."""
-    said = next(
-        (
-            s.text
-            for s in discussion.statements
-            if s.text and s.speaker_id != discussion.chat_ai_speaker_id
-        ),
-        None,
-    )
-    if said is None:
-        return None
-    words = " ".join(said.split())
-    return words if len(words) <= PREVIEW_CHARS else words[:PREVIEW_CHARS].rstrip() + "…"
-
-
-def session_payload(discussion: Discussion) -> dict:
-    return {
-        "id": discussion.id,
-        "title": discussion.title,
-        "summary": discussion.summary,
-        "preview": preview(discussion),
-        "title_set_by_user": discussion.title_set_by_user,
-        "last_activity": utc_iso(last_activity(discussion)),
-        "message_count": len(discussion.statements),
-        "kind": DiscussionKind(discussion.kind).value,
-        "date": (
-            discussion.discussion_date.isoformat()
-            if discussion.discussion_date
-            else None
-        ),
-    }
+from btcopilot.personal import turns
 
 
 def statements_payload(discussion: Discussion) -> list[dict]:
@@ -79,18 +40,17 @@ def statements_payload(discussion: Discussion) -> list[dict]:
     ]
 
 
-def _reply(discussion: Discussion, statement: str) -> dict:
-    """One agent-loop turn. The words carry their own chips; `events` carries
-    what the coach did behind them, in the order it happened, so the page can
-    move the picture and the list from the same reply."""
+def _start(discussion: Discussion, statement: str):
+    """The words are stored and the turn is handed to the worker, which answers
+    at its own pace. The page follows it on /turns/<id>/events; nothing waits
+    here, because a turn takes longer than a request may."""
     require_write_access(discussion.diagram)
     sync_chat_speakers(discussion)
     db.session.commit()
-    reply = CoachTurn(discussion, statement, session_id=str(discussion.id)).run()
-    reply["kind"] = StatementKind.Turn.value
-    reply["discussion_id"] = discussion.id
-    reply["session"] = session_payload(discussion)
-    return reply
+    try:
+        return jsonify(turns.start(discussion, statement)), 202
+    except turns.Busy as busy:
+        abort(409, description=str(busy))
 
 
 def _statement_text() -> str:
@@ -102,7 +62,7 @@ def _statement_text() -> str:
 @bp.route("/chat", methods=["POST"])
 def chat():
     statement = _statement_text()
-    return jsonify(_reply(current_session(auth.current_user(), create=True), statement))
+    return _start(current_session(auth.current_user(), create=True), statement)
 
 
 @bp.route("/sessions")
@@ -178,4 +138,4 @@ def session_delete(session_id: int):
 @bp.route("/sessions/<int:session_id>/statements", methods=["POST"])
 def add_statement(session_id: int):
     statement = _statement_text()
-    return jsonify(_reply(owned_session(session_id), statement))
+    return _start(owned_session(session_id), statement)

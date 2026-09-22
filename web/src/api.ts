@@ -22,7 +22,7 @@ import type {
   Passkey,
   PasskeyCreationOptions,
   Preferences,
-  Reply,
+  Started,
   Result,
   Session,
   SessionKind,
@@ -108,12 +108,18 @@ export const timeline = (diagramId?: number) =>
     diagramId === undefined ? "/timeline" : `/timeline?diagram_id=${diagramId}`,
   );
 
-/** One agent-loop turn. The coach answers with its words and, behind them, the
- * tool calls, the deltas already applied and the views it asked for. */
+/** One agent-loop turn. The send is short: it stores the words and hands the
+ * turn to the coach, which answers on the turn's own stream. */
 export const say = (statement: string, sessionId: number | null) =>
   sessionId === null
-    ? call<Reply>("POST", "/chat", { statement })
-    : call<Reply>("POST", `/sessions/${sessionId}/statements`, { statement });
+    ? call<Started>("POST", "/chat", { statement })
+    : call<Started>("POST", `/sessions/${sessionId}/statements`, { statement });
+
+/** Follow a running turn. A page attaching to one reads it from the start and
+ * draws the bubble again; the browser's own reconnect says where it got to
+ * with Last-Event-ID, so nothing already read is read twice. */
+export const turnEvents = (turnId: string) =>
+  new EventSource(`${ROOT}/turns/${turnId}/events`);
 
 export const play = (clusterId: string) =>
   call<PlayReply>("POST", "/play", { cluster_id: clusterId });
@@ -135,7 +141,7 @@ export const record = (
   });
 
 export const session = (id: number) =>
-  call<{ statements: Statement[] }>("GET", `/sessions/${id}`);
+  call<Session & { statements: Statement[] }>("GET", `/sessions/${id}`);
 
 /** Which record a write lands on: the one the app is on, or the one a coding
  * is of. Every writing route takes the same query. */
@@ -193,8 +199,7 @@ export const sessionIndex = (diagramId?: number) =>
 export const newSession = (kind?: SessionKind) =>
   call<Session>("POST", "/sessions", kind ? { kind } : {});
 
-export const deleteSession = (id: number) =>
-  call<void>("DELETE", `/sessions/${id}`);
+export const deleteSession = (id: number) => call<void>("DELETE", `/sessions/${id}`);
 
 export const renameSession = (id: number, title: string) =>
   call<Session>("PATCH", `/sessions/${id}`, { title });
@@ -234,10 +239,11 @@ export async function startTranscription(file: File): Promise<string> {
 }
 
 export const transcription = (id: string) =>
-  call<{ status: string; utterances: Utterance[] | null; error: string | null }>(
-    "GET",
-    `/transcriptions/${id}`,
-  );
+  call<{
+    status: string;
+    utterances: Utterance[] | null;
+    error: string | null;
+  }>("GET", `/transcriptions/${id}`);
 
 /** The voices a transcript holds, each with the first thing it said. */
 export const recordingVoices = (utterances: Utterance[]) =>
@@ -381,8 +387,7 @@ export const ratify = (cutId: number) =>
   ask<Cut>("PATCH", `/cuts/${cutId}`, { ratified_at: true });
 
 /** What the meeting produced, readable by everyone who took part. */
-export const result = (cutId: number) =>
-  ask<Result>("GET", `/result?cut_id=${cutId}`);
+export const result = (cutId: number) => ask<Result>("GET", `/result?cut_id=${cutId}`);
 
 export const agenda = () => ask<NextMeeting>("GET", "/agenda");
 

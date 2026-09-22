@@ -9,7 +9,8 @@ import btcopilot
 from btcopilot import auth
 from btcopilot.personal.routes import bp, current_session, diagram
 from btcopilot.personal.routes.diagrams import readable
-from btcopilot.personal.routes.sessions import session_payload, statements_payload
+from btcopilot.personal.discussions import session_payload
+from btcopilot.personal.routes.sessions import statements_payload
 from btcopilot.personal import record
 from btcopilot.personal.licence import professional
 from btcopilot.personal.timeline import build_timeline

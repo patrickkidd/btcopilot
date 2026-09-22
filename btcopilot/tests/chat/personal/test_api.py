@@ -23,7 +23,7 @@ from btcopilot.schema import (
     VariableShift,
     asdict,
 )
-from btcopilot.tests.chat.personal.conftest import csrf_token
+from btcopilot.tests.chat.personal.conftest import csrf_token, replied
 
 
 @pytest.fixture(autouse=True)
@@ -216,7 +216,7 @@ def test_chat_keeps_the_chips_the_record_resolves(web, token, family):
     family.set_diagram_data(data)
     db.session.commit()
 
-    body = post(web, token, "/app/chat", {"statement": "hi"}).get_json()
+    body = replied(post(web, token, "/app/chat", {"statement": "hi"}))
     assert body["statement"] == (
         "That sits in [[event:10|two winters]], with [[person:1|Wren]]."
     )
@@ -227,7 +227,7 @@ def test_chat_keeps_the_chips_the_record_resolves(web, token, family):
 
 @pytest.mark.chat_flow(response="I mean [[person:99|someone]].")
 def test_a_chip_pointing_at_nothing_becomes_its_own_words(web, token, family):
-    body = post(web, token, "/app/chat", {"statement": "hi"}).get_json()
+    body = replied(post(web, token, "/app/chat", {"statement": "hi"}))
     assert body["statement"] == "I mean someone."
 
 
@@ -278,13 +278,13 @@ def test_clusters_survive_a_server_side_write(dated):
 
 @pytest.mark.chat_flow(response="That cluster: [[cluster:c1|the run]].")
 def test_a_cluster_chip_survives_when_the_record_holds_it(web, token, dated):
-    body = post(web, token, "/app/chat", {"statement": "hi"}).get_json()
+    body = replied(post(web, token, "/app/chat", {"statement": "hi"}))
     assert body["statement"] == "That cluster: [[cluster:c1|the run]]."
 
 
 @pytest.mark.chat_flow(response="Off the line: [[cluster:c9|elsewhere]].")
 def test_a_cluster_chip_the_record_does_not_hold_is_dropped(web, token, dated):
-    body = post(web, token, "/app/chat", {"statement": "hi"}).get_json()
+    body = replied(post(web, token, "/app/chat", {"statement": "hi"}))
     assert body["statement"] == "Off the line: elsewhere."
 
 
@@ -300,7 +300,7 @@ def test_a_chip_may_name_an_undated_event(web, token, dated):
     dated.set_diagram_data(data)
     db.session.commit()
 
-    body = post(web, token, "/app/chat", {"statement": "hi"}).get_json()
+    body = replied(post(web, token, "/app/chat", {"statement": "hi"}))
     assert body["statement"] == "An undated one: [[event:12|that]]."
 
 

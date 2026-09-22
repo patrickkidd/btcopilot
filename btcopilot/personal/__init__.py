@@ -8,7 +8,7 @@ def init_app(app):
 
 
 def init_celery(celery):
-    from . import tasks
+    from . import tasks, turns
     from google.genai.errors import ClientError
     from openai import PermissionDeniedError, RateLimitError
 
@@ -22,3 +22,4 @@ def init_celery(celery):
         retry_jitter=True,
         max_retries=5,
     )
+    celery.task(turns.run, name=turns.TASK)

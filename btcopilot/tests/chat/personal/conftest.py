@@ -11,6 +11,8 @@ from btcopilot.extensions import db
 from btcopilot.personal.coachmodel import ModelTurn, ToolCall
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.personal.toolbox import ToolName
+from btcopilot.personal import turnlog, turns
+from btcopilot.personal.turnlog import TurnEventKind
 from btcopilot.tests.fixtures import pro_client, subscriber, admin  # noqa: F401
 
 
@@ -65,6 +67,24 @@ def pytest_configure(config):
         "markers",
         "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     )
+
+
+@pytest.fixture(autouse=True)
+def turn_log():
+    """Turns run where the test can read them: one log in this process, and the
+    worker's task run as the POST returns rather than on a broker."""
+    turnlog.use(turnlog.MemoryLog())
+    with patch("btcopilot.personal.turns.enqueue", new=turns.run):
+        yield turnlog.store()
+    turnlog.use(None)
+
+
+def replied(response) -> dict:
+    """What the coach said, from the turn the POST started."""
+    turn_id = response.get_json()["turn_id"]
+    done = turnlog.read_from(turn_id, 0)[-1][1]
+    assert done["type"] == TurnEventKind.Done.value, done
+    return done
 
 
 @pytest.fixture(autouse=True)

@@ -1,4 +1,3 @@
-import datetime
 import logging
 
 from flask import Blueprint, abort, request
@@ -9,7 +8,11 @@ from btcopilot.extensions import csrf, db
 from btcopilot.personal import record
 from btcopilot.personal.models import Discussion
 from btcopilot.pro.models import Diagram
-from btcopilot.personal.discussions import create_discussion
+from btcopilot.personal.discussions import (  # noqa: F401  routes import them from here
+    create_discussion,
+    last_activity,
+    utc_iso,
+)
 from btcopilot.review.freeze import frozen
 
 _log = logging.getLogger(__name__)
@@ -54,17 +57,6 @@ def _invalid_record(e):
 @bp.context_processor
 def _inject_globals():
     return {"csrf_token": generate_csrf}
-
-
-def utc_iso(when: datetime.datetime) -> str:
-    """Stored times are naive UTC; the browser needs to be told so, or it reads
-    them as its own local time."""
-    return when.replace(tzinfo=datetime.timezone.utc).isoformat()
-
-
-def last_activity(discussion: Discussion):
-    times = [s.created_at for s in discussion.statements if s.created_at]
-    return max(times) if times else discussion.created_at
 
 
 def user_sessions(user, diagram_id: int | None = None) -> list[Discussion]:
@@ -161,6 +153,7 @@ from btcopilot.personal.routes import (  # noqa: E402  bp must exist first
     recordings,
     sessions,
     settings,
+    turns,
     web,
 )
 

@@ -30,6 +30,12 @@ Backend for Pro/Personal apps, training app, AI extraction system.
   Sonnet or Haiku sub-agents under an auditor; the coordinator holds one-line summaries only,
   relays nothing mid-run, and posts one final message when everything is done or when there is
   something for Patrick to do.
+- **Verified failure 2026-09-22 (Patrick: "don't forget your instructions about sub-agents").**
+  The coordinator ran deploys, probes, log reads and file edits itself for hours, with an interim
+  reply after each. Every mechanical step — a deploy, a probe, a log read, a golden regeneration, a
+  box fix — goes to a Sonnet or Haiku sub-agent with a one-page brief; a build goes to Opus; an
+  Opus auditor is spawned before the workers on every multi-agent run. The coordinator's own tool
+  calls are limited to reading briefs and reports, spawning, and the final message.
 - **Cost estimates are for the work, not for validation.** Squashing seven migrations is a few
   tool calls, not an hour. Verify only what changed, once, at the cheapest level that proves it;
   never re-verify before a merge is even in sight.

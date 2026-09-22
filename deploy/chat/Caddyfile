@@ -9,10 +9,16 @@ familydiagram.com {
     }
     redir /app /app/ 302
     handle /app* {
-        reverse_proxy fd-app:8888
+        # The coach's turn arrives as it happens, so nothing here may hold it
+        # back waiting for a buffer to fill.
+        reverse_proxy fd-app:8888 {
+            flush_interval -1
+        }
     }
     handle /review* {
-        reverse_proxy fd-app:8888
+        reverse_proxy fd-app:8888 {
+            flush_interval -1
+        }
     }
     handle {
         redir https://alaskafamilysystems.com/family-diagram{uri} 301

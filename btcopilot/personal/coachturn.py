@@ -8,9 +8,9 @@ The turn returns the coach's words plus the typed events behind them, so the
 page can move the picture with the same reply it types out.
 """
 
-import enum
 import logging
 import uuid
+from typing import Callable
 
 from btcopilot.extensions import ai_log, db
 from btcopilot.personal import chips, clusters, profile, recordtext
@@ -25,6 +25,7 @@ from btcopilot.personal.models import (
 from btcopilot.personal.prompts import get_agent_prompt, note_register, onboarding
 from btcopilot.personal.interactions import recent
 from btcopilot.personal.toolbox import ToolError, Toolbox, schemas
+from btcopilot.personal.turnlog import TurnEventKind
 from btcopilot.schema import DiagramData, ItemKind
 
 _log = logging.getLogger(__name__)
@@ -121,12 +122,12 @@ def narrate(model, system: str, messages: list[dict], spoken: str) -> str:
     return told
 
 
-class EventKind(enum.StrEnum):
-    """What happened behind the words, in the order it happened."""
-
-    ToolCall = "tool_call"
-    RecordPatch = "record_patch"
-    View = "view"
+def record_of(discussion: Discussion) -> DiagramData:
+    """The record a session is about; a session with no record has an empty
+    one, which is what a first message lands in."""
+    return (
+        discussion.diagram.get_diagram_data() if discussion.diagram else DiagramData()
+    )
 
 
 class CoachTurn:
@@ -139,12 +140,20 @@ class CoachTurn:
         *,
         model: CoachModel | None = None,
         session_id: str | None = None,
+        statement_id: int | None = None,
+        sink: Callable[[dict], None] | None = None,
+        turn_id: str | None = None,
     ):
         self.discussion = discussion
         self.statement = statement
+        # The route stores the user's words before the turn is handed to the
+        # worker, so the turn is told which statement it is answering.
+        self.statement_id = statement_id
+        self.sink = sink
+        self.streamed = ""
         self.model = model or CoachModel()
         self.session_id = session_id or str(discussion.id)
-        self.turn_id = uuid.uuid4().hex
+        self.turn_id = turn_id or uuid.uuid4().hex
         self.diagram = discussion.diagram
         self.toolbox = Toolbox(
             self.diagram.id,
@@ -155,23 +164,24 @@ class CoachTurn:
 
     @property
     def data(self) -> DiagramData:
-        return self.diagram.get_diagram_data() if self.diagram else DiagramData()
+        return record_of(self.discussion)
 
     def run(self) -> dict:
         """The coach's reply, its views, and the events behind it."""
         ai_log.info(f"User statement: {self.statement}")
         data = self.data
-        user_statement = Statement(
-            discussion_id=self.discussion.id,
-            text=chips.validate(self.statement, data),
-            speaker=self.discussion.chat_user_speaker,
-            order=self.discussion.next_order(),
-            kind=StatementKind.Turn,
-        )
-        # Flushed, not committed: a turn that fails before the coach answers
-        # leaves no words behind, so a retry does not store them twice.
-        db.session.add(user_statement)
-        db.session.flush()
+        if self.statement_id is None:
+            user_statement = Statement(
+                discussion_id=self.discussion.id,
+                text=chips.validate(self.statement, data),
+                speaker=self.discussion.chat_user_speaker,
+                order=self.discussion.next_order(),
+                kind=StatementKind.Turn,
+            )
+            # Flushed, not committed: a turn that fails before the coach answers
+            # leaves no words behind, so a retry does not store them twice.
+            db.session.add(user_statement)
+            db.session.flush()
 
         system = get_agent_prompt(
             record=recordtext.render(data),
@@ -190,7 +200,7 @@ class CoachTurn:
         events = []
 
         for step in range(MAX_STEPS):
-            turn = self._say(system, messages, schemas())
+            turn = self._say(system, messages, schemas(), stream=True)
             # A turn ends on words, never on a tool call. Text written before a
             # call is the model working out what to do and the user never sees
             # it, so only a step that calls nothing is the coach speaking.
@@ -202,8 +212,13 @@ class CoachTurn:
 
             results = []
             for call in turn.calls:
-                events.append(
-                    {"type": EventKind.ToolCall.value, "name": call.name, "args": call.args}
+                self._note(
+                    events,
+                    {
+                        "type": TurnEventKind.ToolCall.value,
+                        "name": call.name,
+                        "args": call.args,
+                    },
                 )
                 text, event, refused = self._call(call)
                 results.append(
@@ -215,8 +230,12 @@ class CoachTurn:
                     }
                 )
                 if event:
-                    kind = EventKind.View if "view" in event else EventKind.RecordPatch
-                    events.append(dict(event, type=kind.value))
+                    kind = (
+                        TurnEventKind.View
+                        if "view" in event
+                        else TurnEventKind.RecordPatch
+                    )
+                    self._note(events, dict(event, type=kind.value))
             messages.append({"role": "assistant", "content": turn.blocks})
             messages.append({"role": "user", "content": results})
         else:
@@ -224,7 +243,7 @@ class CoachTurn:
                 f"Turn {self.turn_id} used all {MAX_STEPS} steps; asking for the reply"
             )
             messages.append({"role": "user", "content": FINISH})
-            spoken = self._say(system, messages, []).text
+            spoken = self._say(system, messages, [], stream=True).text
 
         if not spoken.strip():
             raise EmptyReply(f"Turn {self.turn_id} produced no words for the user")
@@ -233,15 +252,22 @@ class CoachTurn:
 
         change = self._regroup()
         if change:
-            events.append(
+            self._note(
+                events,
                 {
-                    "type": EventKind.RecordPatch.value,
+                    "type": TurnEventKind.RecordPatch.value,
                     "deltas": change.deltas,
                     "turn_id": change.turn_id,
-                }
+                },
             )
 
         reply = chips.validate(spoken.strip(), self.data)
+        # What was typed out live is the words as the model first said them. A
+        # retry for shorter labels or for sentences replaces them, so the page
+        # is told to drop what it has and take these instead.
+        if reply != self.streamed:
+            self._send({"type": TurnEventKind.TextReset.value})
+            self._send({"type": TurnEventKind.Text.value, "text": reply})
         ai_log.info(f"AI response: {reply}")
         coach_statement = Statement(
             discussion_id=self.discussion.id,
@@ -253,9 +279,9 @@ class CoachTurn:
         )
         db.session.add(coach_statement)
         db.session.flush()
-        Change.query.filter_by(
-            diagram_id=self.diagram.id, turn_id=self.turn_id
-        ).update({"statement_id": coach_statement.id})
+        Change.query.filter_by(diagram_id=self.diagram.id, turn_id=self.turn_id).update(
+            {"statement_id": coach_statement.id}
+        )
         if self.discussion.title is None:
             self.discussion.update_title()
             self.discussion.update_summary()
@@ -274,8 +300,7 @@ class CoachTurn:
         """Re-cluster the line when the turn moved an event, so the clusters
         the coach and the picture point at are stored, not derived on read."""
         if not any(
-            delta["item_kind"] == ItemKind.Event.value
-            for delta in self.toolbox.deltas
+            delta["item_kind"] == ItemKind.Event.value for delta in self.toolbox.deltas
         ):
             return None
         return clusters.sync(
@@ -285,13 +310,35 @@ class CoachTurn:
             session_id=self.session_id,
         )
 
-    def _say(self, system: str, messages: list[dict], tools: list[dict]):
-        """One model call. The words arrive whole; the page types them out."""
+    def _send(self, event: dict) -> None:
+        """Tell whoever is watching, as it happens."""
+        if event["type"] == TurnEventKind.Text.value:
+            self.streamed += event["text"]
+        elif event["type"] == TurnEventKind.TextReset.value:
+            self.streamed = ""
+        if self.sink:
+            self.sink(event)
+
+    def _note(self, events: list[dict], event: dict) -> None:
+        """What the turn returns at the end and what it says as it goes are the
+        same events, in the same order."""
+        events.append(event)
+        self._send(event)
+
+    def _say(self, system: str, messages: list[dict], tools: list[dict], stream=False):
+        """One model call. The words go out as they arrive; a step that ends in
+        a tool call was the coach thinking aloud, so those words are dropped."""
         words = self.model.turn(system, messages, tools)
+        sent = False
         while True:
             try:
-                next(words)
+                piece = next(words)
+                if stream:
+                    self._send({"type": TurnEventKind.Text.value, "text": piece})
+                    sent = True
             except StopIteration as stop:
+                if sent and stop.value.calls:
+                    self._send({"type": TurnEventKind.TextReset.value})
                 return stop.value
 
     def _call(self, call) -> tuple[str, dict | None, bool]:

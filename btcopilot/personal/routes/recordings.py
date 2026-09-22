@@ -8,11 +8,14 @@ import datetime
 from flask import jsonify, request
 
 from btcopilot.personal import transcription
-from btcopilot.personal.discussions import create_recording, transcript_voices
+from btcopilot.personal.discussions import (
+    create_recording,
+    session_payload,
+    transcript_voices,
+)
 from btcopilot.personal.licence import require_professional
 from btcopilot.personal.models import SpeakerType
 from btcopilot.personal.routes import bp, writable_diagram
-from btcopilot.personal.routes.sessions import session_payload
 
 
 @bp.route("/transcriptions", methods=["POST"])

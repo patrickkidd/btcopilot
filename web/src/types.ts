@@ -193,6 +193,12 @@ export enum TurnEventKind {
   ToolCall = "tool_call",
   RecordPatch = "record_patch",
   View = "view",
+  /** The next words of the reply, as the coach says them. */
+  Text = "text",
+  /** The coach said those words again: drop what has been drawn. */
+  TextReset = "text_reset",
+  Done = "done",
+  Failed = "failed",
 }
 
 export enum ViewKind {
@@ -211,9 +217,25 @@ export type View =
   | { kind: ViewKind.Cluster; cluster: string };
 
 export type TurnEvent =
-  | { type: TurnEventKind.ToolCall; name: string; args: Record<string, unknown> }
+  | {
+      type: TurnEventKind.ToolCall;
+      name: string;
+      args: Record<string, unknown>;
+    }
   | { type: TurnEventKind.RecordPatch; deltas: Delta[]; turn_id: string }
-  | { type: TurnEventKind.View; view: View };
+  | { type: TurnEventKind.View; view: View }
+  | { type: TurnEventKind.Text; text: string }
+  | { type: TurnEventKind.TextReset }
+  | ({ type: TurnEventKind.Done } & Reply)
+  | { type: TurnEventKind.Failed; message: string };
+
+/** What a send answers with: the turn now running, to be followed on its own
+ * stream. The words come later, down that stream. */
+export interface Started {
+  turn_id: string;
+  discussion_id: number;
+  statement_id: number;
+}
 
 export interface Delta {
   item_kind: ItemKind;
@@ -287,6 +309,9 @@ export interface Session {
   preview: string | null;
   last_activity: string;
   message_count: number;
+  /** The turn the coach is running on this session, if one is running: a page
+   * that has just loaded attaches to it instead of showing nothing. */
+  turn: string | null;
 }
 
 export interface Diagram {
@@ -357,7 +382,11 @@ export interface PasskeyCreationOptions {
   timeout?: number;
   attestation?: string;
   authenticatorSelection?: Record<string, string>;
-  excludeCredentials?: { id: string; type: "public-key"; transports?: string[] }[];
+  excludeCredentials?: {
+    id: string;
+    type: "public-key";
+    transports?: string[];
+  }[];
 }
 
 /** ── The review ─────────────────────────────────────────────────────────

@@ -1,0 +1,241 @@
+"""The turn runs in the worker and the page follows it.
+
+The POST stores the words and hands the turn over; everything the coach does
+lands in the turn's log, in order, and the page reads that log from wherever it
+got to.
+"""
+
+import json
+
+import pytest
+from mock import patch
+
+from btcopilot.extensions import db
+from btcopilot.personal import turnlog, turns
+from btcopilot.personal.coachturn import EmptyReply
+from btcopilot.personal.models import Discussion, Statement
+from btcopilot.personal.toolbox import ToolName
+from btcopilot.personal.turnlog import TurnEventKind
+from btcopilot.schema import Person, asdict
+from btcopilot.tests.chat.personal.conftest import Model, called, csrf_token, said
+
+
+@pytest.fixture(autouse=True)
+def titles(monkeypatch):
+    """Naming a session is its own model call; the turn is what is under test
+    here."""
+    monkeypatch.setattr(
+        "btcopilot.personal.models.discussion.response_text_sync",
+        lambda *a, **k: "A session title",
+    )
+
+
+@pytest.fixture
+def token(web):
+    return csrf_token(web)
+
+
+@pytest.fixture
+def family(test_user):
+    """One person to hang a turn on. Invented names only."""
+    diagram = test_user.free_diagram
+    data = diagram.get_diagram_data()
+    data.people = [asdict(Person(id=1, name="Wren"))]
+    data.lastItemId = 1
+    diagram.set_diagram_data(data)
+    db.session.commit()
+    return diagram
+
+
+def coach(monkeypatch, *scripted):
+    monkeypatch.setattr(
+        "btcopilot.personal.coachturn.CoachModel",
+        lambda *a, **k: Model(*scripted),
+    )
+
+
+def post(web, token, statement="My sister is Nell."):
+    return web.post(
+        "/app/chat", json={"statement": statement}, headers={"X-CSRFToken": token}
+    )
+
+
+def logged(turn_id):
+    return [event for _, event in turnlog.read_from(turn_id, 0)]
+
+
+def test_the_turn_is_handed_over_and_the_post_answers_at_once(
+    web, token, family, monkeypatch
+):
+    coach(monkeypatch, said("Tell me about Nell."))
+    response = post(web, token)
+    assert response.status_code == 202
+
+    body = response.get_json()
+    assert set(body) == {"turn_id", "discussion_id", "statement_id"}
+    assert db.session.get(Statement, body["statement_id"]).text == "My sister is Nell."
+
+
+def test_the_turn_writes_what_it_did_in_order_and_ends_in_done(
+    web, token, family, monkeypatch
+):
+    coach(
+        monkeypatch,
+        called(ToolName.EditPerson, name="Nell"),
+        said("Added Nell."),
+    )
+    body = post(web, token).get_json()
+
+    events = logged(body["turn_id"])
+    assert [e["type"] for e in events] == [
+        TurnEventKind.ToolCall.value,
+        TurnEventKind.RecordPatch.value,
+        TurnEventKind.Text.value,
+        TurnEventKind.Done.value,
+    ]
+    assert events[-1]["statement"] == "Added Nell."
+    assert events[-1]["session"]["id"] == body["discussion_id"]
+
+
+def test_a_turn_that_breaks_ends_in_failed_and_stores_no_coach_words(
+    web, token, family, monkeypatch
+):
+    """A coach that says nothing is a bare bubble on the page, so the turn
+    fails — and the page is told in a sentence, not left waiting."""
+    coach(monkeypatch, said(""))
+    with patch("btcopilot.personal.turns.enqueue"):
+        body = post(web, token).get_json()
+    with pytest.raises(EmptyReply):
+        turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
+
+    assert logged(body["turn_id"])[-1] == {
+        "type": TurnEventKind.Failed.value,
+        "message": turns.BROKE,
+    }
+    discussion = Discussion.query.one()
+    assert [s.text for s in discussion.statements] == ["My sister is Nell."]
+    assert turnlog.running(discussion.id) is None
+
+
+def test_a_second_message_while_the_coach_is_answering_is_refused(
+    web, token, family, monkeypatch
+):
+    coach(monkeypatch, said("Still going."))
+    with patch("btcopilot.personal.turns.enqueue"):
+        assert post(web, token).status_code == 202
+        second = post(web, token, "And another thing.")
+    assert second.status_code == 409
+
+
+def test_a_hold_left_by_a_dead_worker_runs_out(web, token, family, monkeypatch):
+    """A worker that dies mid-turn says nothing. The hold on the session has to
+    run out on its own, or the reader can never send anything again."""
+    coach(monkeypatch, said("Still going."), said("Back to you."))
+    monkeypatch.setattr(turnlog, "RUNNING_TTL", 0)
+    with patch("btcopilot.personal.turns.enqueue"):
+        body = post(web, token).get_json()
+    assert turnlog.running(body["discussion_id"]) is None
+
+    assert post(web, token, "And another thing.").status_code == 202
+
+
+def test_the_session_says_which_turn_is_running(web, token, family, monkeypatch):
+    coach(monkeypatch, said("Still going."))
+    with patch("btcopilot.personal.turns.enqueue"):
+        body = post(web, token).get_json()
+
+    session = web.get(f"/app/sessions/{body['discussion_id']}").get_json()
+    assert session["turn"] == body["turn_id"]
+
+    turnlog.clear(body["discussion_id"])
+    assert web.get(f"/app/sessions/{body['discussion_id']}").get_json()["turn"] is None
+
+
+def read(response) -> list[dict]:
+    """The events an SSE response carried, in order."""
+    out = []
+    for block in response.get_data(as_text=True).split("\n\n"):
+        for line in block.splitlines():
+            if line.startswith("data: "):
+                out.append(json.loads(line[len("data: ") :]))
+    return out
+
+
+def test_the_stream_replays_from_where_the_page_got_to(web, token, family, monkeypatch):
+    coach(
+        monkeypatch,
+        called(ToolName.EditPerson, name="Nell"),
+        said("Added Nell."),
+    )
+    body = post(web, token).get_json()
+
+    whole = web.get(f"/app/turns/{body['turn_id']}/events")
+    assert whole.status_code == 200
+    assert [e["type"] for e in read(whole)] == [
+        TurnEventKind.ToolCall.value,
+        TurnEventKind.RecordPatch.value,
+        TurnEventKind.Text.value,
+        TurnEventKind.Done.value,
+    ]
+
+    rest = web.get(
+        f"/app/turns/{body['turn_id']}/events", headers={"Last-Event-ID": "2"}
+    )
+    assert [e["type"] for e in read(rest)] == [
+        TurnEventKind.Text.value,
+        TurnEventKind.Done.value,
+    ]
+
+
+def test_the_stream_numbers_every_event(web, token, family, monkeypatch):
+    coach(monkeypatch, said("Tell me about Nell."))
+    body = post(web, token).get_json()
+
+    lines = web.get(f"/app/turns/{body['turn_id']}/events").get_data(as_text=True)
+    assert [line for line in lines.splitlines() if line.startswith("id: ")] == [
+        "id: 1",
+        "id: 2",
+    ]
+
+
+def test_another_users_turn_is_not_found(web, token, family, monkeypatch, test_user_2):
+    coach(monkeypatch, said("Tell me about Nell."))
+    body = post(web, token).get_json()
+    discussion = db.session.get(Discussion, body["discussion_id"])
+    discussion.user_id = test_user_2.id
+    db.session.commit()
+
+    assert web.get(f"/app/turns/{body['turn_id']}/events").status_code == 404
+
+
+def test_a_turn_nobody_started_is_not_found(web, token):
+    assert web.get("/app/turns/nosuchturn/events").status_code == 404
+
+
+def test_the_task_can_be_run_on_its_own(discussion, family, monkeypatch):
+    """The worker calls the task with ids, and what it returns is the reply the
+    page would have been handed before."""
+    coach(monkeypatch, said("Go on."))
+    said_statement = Statement(
+        discussion_id=discussion.id,
+        text="My sister is Nell.",
+        speaker=discussion.chat_user_speaker,
+        order=discussion.next_order(),
+    )
+    db.session.add(said_statement)
+    db.session.commit()
+    turnlog.start(discussion.id, "t1")
+
+    reply = turns.run("t1", discussion.id, said_statement.id)
+    assert reply["statement"] == "Go on."
+    assert reply["turn_id"] == "t1"
+
+
+def test_the_log_hands_a_watcher_what_lands_after_it_started(turn_log):
+    """Following is how the page sees a turn that is still running: what is
+    appended after it attaches reaches it without asking again."""
+    watching = turnlog.subscribe("t2")
+    turnlog.append("t2", {"type": TurnEventKind.Text.value, "text": "a word"})
+
+    seen = next(carried for carried in watching if carried is not None)
+    assert seen == (1, {"type": TurnEventKind.Text.value, "text": "a word"})
