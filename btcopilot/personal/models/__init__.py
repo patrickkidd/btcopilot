@@ -5,3 +5,4 @@ from .syntheticpersona import SyntheticPersona
 from .change import Change, Author
 from .interaction import Interaction, InteractionKind
 from .tokenmeter import TokenMeter
+from .modelcall import ModelCall

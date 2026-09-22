@@ -49,6 +49,8 @@ once at /root/.docker/cli-plugins/docker-rollout (github.com/wowu/docker-rollout
 lines and the app's and worker's traces to Grafana Cloud; nothing is stored on the box.
 It reads `GRAFANA_CLOUD_TOKEN` from the secrets file like everything else, and its config
 is `alloy/config.alloy`. Its UI on port 12345 has no host port, so it is not exposed.
+`fd-pdc` (Grafana's Private Data source Connect agent) holds an outbound tunnel to Grafana Cloud with `GRAFANA_PDC_TOKEN`; no port is opened.
+Grafana's Postgres data source reaches `fd-postgres:5432` through it as the read-only role `grafana`, password `GRAFANA_PG_PASSWORD`.
 
 ## What is not here yet
 

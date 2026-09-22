@@ -38,6 +38,7 @@ TABLES = frozenset(
         "invitations",
         "licenses",
         "login_codes",
+        "model_calls",
         "passkeys",
         "policies",
         "review_codings",

@@ -7,7 +7,8 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from btcopilot.extensions import db
-from btcopilot.personal import chips, record, tracing
+from btcopilot.personal import chips, pricing, record, tracing
+from btcopilot.personal.coachmodel import Spent
 from btcopilot.personal.coachturn import (
     FINISH,
     MAX_STEPS,
@@ -17,7 +18,7 @@ from btcopilot.personal.coachturn import (
     LabelTooLong,
 )
 from btcopilot.personal.turnlog import TurnEventKind as EventKind
-from btcopilot.personal.models import Author, Change, StatementKind
+from btcopilot.personal.models import Author, Change, ModelCall, StatementKind
 from btcopilot.personal.playturn import PlayTurn
 from btcopilot.personal.toolbox import ToolName
 from btcopilot.schema import (
@@ -664,7 +665,6 @@ def test_a_moment_the_coach_wrote_traces_to_the_message_that_wrote_it(
 
 
 def test_a_turn_charges_every_model_call_to_the_user_for_the_month(discussion, family):
-    from btcopilot.personal.coachmodel import Spent
     from btcopilot.personal.models import TokenMeter
 
     first = called(ToolName.EditPerson, name="Nell")
@@ -682,6 +682,64 @@ def test_a_turn_charges_every_model_call_to_the_user_for_the_month(discussion, f
         meter.cache_creation_tokens,
         meter.cache_read_tokens,
     ) == (2100, 90, 800, 800)
+
+
+def test_a_turn_writes_down_each_model_call_with_its_cost(discussion, family):
+    first = called(ToolName.EditPerson, name="Nell")
+    first.spent = Spent(input=1000, output=50, cache_creation=800, cache_read=0)
+    second = said("Added [[person:11|Nell]].")
+    second.spent = Spent(input=1100, output=40, cache_creation=0, cache_read=800)
+    reply = run(discussion, "My aunt Nell.", Model(first, second))
+
+    calls = ModelCall.query.order_by(ModelCall.id).all()
+    rate = pricing.PRICES["claude-opus-4-6"]
+    assert [
+        (
+            c.user_id,
+            c.diagram_id,
+            c.turn_id,
+            c.model,
+            c.input_tokens,
+            c.output_tokens,
+            c.cache_creation_tokens,
+            c.cache_read_tokens,
+            c.tool_calls,
+            c.cost_usd,
+        )
+        for c in calls
+    ] == [
+        (
+            discussion.user_id,
+            discussion.diagram_id,
+            reply["turn_id"],
+            "claude-opus-4-6",
+            1000,
+            50,
+            800,
+            0,
+            1,
+            (1000 * rate.input + 50 * rate.output + 800 * rate.cache_write)
+            / 1_000_000,
+        ),
+        (
+            discussion.user_id,
+            discussion.diagram_id,
+            reply["turn_id"],
+            "claude-opus-4-6",
+            1100,
+            40,
+            0,
+            800,
+            0,
+            (1100 * rate.input + 40 * rate.output + 800 * rate.cache_read)
+            / 1_000_000,
+        ),
+    ]
+
+
+def test_a_model_with_no_price_raises():
+    with pytest.raises(KeyError):
+        pricing.cost("gpt-5", Spent())
 
 
 def test_tracing_provider(monkeypatch):

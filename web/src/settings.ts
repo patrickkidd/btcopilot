@@ -2,6 +2,7 @@ import * as api from "./api";
 import { $, el, esc } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
+import { identify } from "./telemetry";
 import { shortDate } from "./when";
 import { addPasskey, available, deviceWords } from "./passkey";
 import { PRO, RECORD, RECORDS, Records } from "./pro";
@@ -107,6 +108,7 @@ export class Settings {
       api.passkeys().catch(() => []),
       available(),
     ]);
+    identify(this.account.email);
     this.mark();
     this.applyTheme();
     this.handlers.onPrefs(this.prefs);

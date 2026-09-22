@@ -113,6 +113,15 @@ services:
       - "4317"
       - "4318"
 
+  # Opens an outbound tunnel so Grafana Cloud's Postgres data source can query
+  # fd-postgres; nothing listens on the box.
+  fd-pdc:
+    image: grafana/pdc-agent:latest
+    container_name: fd-pdc
+    restart: unless-stopped
+    env_file: /etc/fd/secrets.env
+    command: ["-token", "${GRAFANA_PDC_TOKEN}", "-cluster", "prod-us-west-0", "-gcloud-hosted-grafana-id", "1840239"]
+
 volumes:
   caddy-data:
   caddy-config:

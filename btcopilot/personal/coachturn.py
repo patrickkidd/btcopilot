@@ -9,16 +9,21 @@ page can move the picture with the same reply it types out.
 """
 
 import logging
+import time
 import uuid
 from typing import Callable
 
+from opentelemetry import trace
+
 from btcopilot.extensions import ai_log, db
 from btcopilot.personal import chips, clusters, profile, recordtext
+from btcopilot.personal.pricing import cost
 from btcopilot.personal.coachmodel import CoachModel, Spent
 from btcopilot.personal.models import (
     Change,
     Discussion,
     DiscussionKind,
+    ModelCall,
     Statement,
     StatementKind,
     TokenMeter,
@@ -30,6 +35,7 @@ from btcopilot.personal.turnlog import TurnEventKind
 from btcopilot.schema import DiagramData, ItemKind
 
 _log = logging.getLogger(__name__)
+_tracer = trace.get_tracer(__name__)
 
 MAX_STEPS = 6
 RECENT_INTERACTIONS = 50
@@ -135,15 +141,35 @@ def record_of(discussion: Discussion) -> DiagramData:
 
 
 class Metered:
-    """The model with every call's tokens summed, so one turn charges one row."""
+    """The model with every call's tokens summed, so one turn charges one meter
+    row, and each call written down with its cost."""
 
-    def __init__(self, model):
+    def __init__(self, model, user_id: int, diagram_id: int, turn_id: str):
         self.model = model
+        self.user_id = user_id
+        self.diagram_id = diagram_id
+        self.turn_id = turn_id
         self.spent = Spent()
 
     def turn(self, system, messages: list[dict], tools: list[dict], turn_id: str = ""):
+        started = time.monotonic()
         turn = yield from self.model.turn(system, messages, tools, turn_id)
         self.spent.add(turn.spent)
+        db.session.add(
+            ModelCall(
+                user_id=self.user_id,
+                diagram_id=self.diagram_id,
+                turn_id=self.turn_id,
+                model=self.model.model,
+                input_tokens=turn.spent.input,
+                output_tokens=turn.spent.output,
+                cache_creation_tokens=turn.spent.cache_creation,
+                cache_read_tokens=turn.spent.cache_read,
+                cost_usd=cost(self.model.model, turn.spent),
+                duration_ms=round((time.monotonic() - started) * 1000),
+                tool_calls=len(turn.calls),
+            )
+        )
         return turn
 
 
@@ -168,10 +194,12 @@ class CoachTurn:
         self.statement_id = statement_id
         self.sink = sink
         self.streamed = ""
-        self.model = Metered(model or CoachModel())
         self.session_id = session_id or str(discussion.id)
         self.turn_id = turn_id or uuid.uuid4().hex
         self.diagram = discussion.diagram
+        self.model = Metered(
+            model or CoachModel(), discussion.user_id, self.diagram.id, self.turn_id
+        )
         self.toolbox = Toolbox(
             self.diagram.id,
             self.turn_id,
@@ -185,6 +213,18 @@ class CoachTurn:
 
     def run(self) -> dict:
         """The coach's reply, its views, and the events behind it."""
+        with _tracer.start_as_current_span(
+            "coach.run",
+            attributes={
+                "user.email": self.discussion.user.username,
+                "user.id": self.discussion.user_id,
+                "turn_id": self.turn_id,
+                "discussion_id": self.discussion.id,
+            },
+        ):
+            return self._run()
+
+    def _run(self) -> dict:
         ai_log.info(f"User statement: {self.statement}")
         data = self.data
         if self.statement_id is None:
