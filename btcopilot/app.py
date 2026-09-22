@@ -3,6 +3,7 @@ from flask import Flask, render_template, redirect, request, url_for
 from werkzeug.exceptions import Unauthorized, HTTPException
 
 import btcopilot
+from btcopilot.personal.turnlog import TurnLogBackend
 
 
 _log = logging.getLogger(__name__)
@@ -47,6 +48,15 @@ def create_app(config: dict = None, **kwargs):
         app.config["CONFIG"] = config.get("CONFIG")
     elif os.getenv("FLASK_CONFIG"):
         app.config["CONFIG"] = os.getenv("FLASK_CONFIG")
+
+    # Redis in production, so the worker's events reach the web process; in
+    # one process everywhere else, where no separate worker is assumed to be
+    # running and the turn log needs no Redis of its own.
+    app.config["TURN_LOG"] = (
+        TurnLogBackend.Redis
+        if app.config["CONFIG"] == "production"
+        else TurnLogBackend.Memory
+    )
 
     # 2. Overrides from environment vars (i.e. from Docker)
     _log.debug("Importing config overrides from environment variables.")

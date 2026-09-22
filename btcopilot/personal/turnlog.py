@@ -24,6 +24,13 @@ TICK = 1.0
 RUNNING_TTL = 180
 
 
+class TurnLogBackend(enum.StrEnum):
+    """Which store `store()` builds. An explicit config choice, not a fallback."""
+
+    Memory = "memory"
+    Redis = "redis"
+
+
 class TurnEventKind(enum.StrEnum):
     """Everything the page can be told while a turn runs."""
 
@@ -192,7 +199,11 @@ def use(store) -> None:
 def store():
     global _store
     if _store is None:
-        _store = RedisLog(current_app.config["CELERY_BROKER_URL"])
+        backend = current_app.config["TURN_LOG"]
+        if backend == TurnLogBackend.Memory:
+            _store = MemoryLog()
+        else:
+            _store = RedisLog(current_app.config["CELERY_BROKER_URL"])
     return _store
 
 
