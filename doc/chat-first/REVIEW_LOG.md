@@ -519,3 +519,8 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    applied (chain at 1a00000000ac). The Grafana commit 1f4b3dc is NOT deployed: it needs the
    Grafana token on the box (his key script now carries it and drops the Datadog key), a lock
    refresh at the workspace root that only he runs there, and a release build. WAITING on him.
+34. Nine scratch accounts (claude-test1 to 10) with chats sit in production: this session made
+   them to verify each deploy end to end, because production was the only stack. Patrick
+   objected on seeing them on the dashboard. From now on verification walks run against a
+   sandbox (the Tailscale dev server, item under "how the beta iterates"), never the box. The
+   rows stay until his word: delete or keep. OPEN
