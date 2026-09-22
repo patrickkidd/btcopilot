@@ -20,7 +20,7 @@ export enum EventKind {
   Married = "married",
   Separated = "separated",
   Divorced = "divorced",
-  Moved = "moved",
+  Noted = "noted",
   Death = "death",
 }
 
@@ -59,7 +59,6 @@ const PAIR_KINDS = [
   EventKind.Married,
   EventKind.Separated,
   EventKind.Divorced,
-  EventKind.Moved,
   EventKind.Birth,
   EventKind.Adopted,
 ] as string[];
@@ -82,11 +81,7 @@ const personLabel = (kind: string, relationship: string): string => {
 };
 
 const spouseLabel = (kind: string): string =>
-  CHILD_KINDS.includes(kind)
-    ? "Parent 2"
-    : kind === EventKind.Moved
-      ? "Partner"
-      : "Partner 2";
+  CHILD_KINDS.includes(kind) ? "Parent 2" : "Partner 2";
 const SHIFT_VARIABLES = ["symptom", "anxiety", "functioning"] as const;
 
 const TARGET_LABELS: Partial<Record<Relationship, string>> = {
@@ -313,8 +308,14 @@ export function openEditor(
   });
 
   editor.querySelector(".save")?.addEventListener("click", () => {
-    if (onSave) onSave(values(editor));
-    else void save(event, editor, done, diagramId);
+    const body = values(editor);
+    // A noted event is only its own words: with none it says nothing (R-0363).
+    if (body.kind === EventKind.Noted && !body.description) {
+      toast("A noted event needs a few words saying what happened");
+      return;
+    }
+    if (onSave) onSave(body);
+    else void save(event, body, done, diagramId);
   });
   editor.querySelector(".del")?.addEventListener("click", () => {
     if (event) void api.deleteEvent(event.id, diagramId).then(done);
@@ -384,11 +385,11 @@ export function values(editor: HTMLElement): Partial<TimelineEvent> {
 
 async function save(
   event: TimelineEvent | null,
-  editor: HTMLElement,
+  body: Partial<TimelineEvent>,
   done: () => void,
   diagramId?: number,
 ): Promise<void> {
-  await api.saveEvent(event ? event.id : null, values(editor), diagramId);
+  await api.saveEvent(event ? event.id : null, body, diagramId);
   done();
 }
 

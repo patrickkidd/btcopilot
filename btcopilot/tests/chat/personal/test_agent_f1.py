@@ -73,8 +73,9 @@ def gt_discussion(test_user):
                 "events": [
                     {
                         "id": 2,
-                        "kind": "moved",
+                        "kind": "noted",
                         "person": 1,
+                        "description": "moved out",
                         "dateTime": "1994-06-01",
                         "dateCertainty": "certain",
                     }
@@ -91,7 +92,13 @@ def test_a_replay_that_records_the_right_person_and_event_scores_one(gt_discussi
     coach = Model(
         called(ToolName.EditPerson, name="Wren"),
         said("Wren is in the record now."),
-        called(ToolName.EditEvent, kind="moved", date="1994-06-01", person=1),
+        called(
+            ToolName.EditEvent,
+            kind="noted",
+            date="1994-06-01",
+            person=1,
+            description="moved out",
+        ),
         said("I put that down."),
     )
     totals = run_agent_f1(discussion_id=gt_discussion.id, model=coach)
@@ -113,7 +120,13 @@ def test_a_replay_never_writes_to_the_ground_truth_discussion(gt_discussion):
         model=Model(
             called(ToolName.EditPerson, name="Wren"),
             said("Wren is in the record now."),
-            called(ToolName.EditEvent, kind="moved", date="1994-06-01", person=1),
+            called(
+            ToolName.EditEvent,
+            kind="noted",
+            date="1994-06-01",
+            person=1,
+            description="moved out",
+        ),
             said("I put that down."),
         ),
     )

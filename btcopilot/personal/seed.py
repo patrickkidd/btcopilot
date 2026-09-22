@@ -104,18 +104,18 @@ def seed_diagram_data() -> DiagramData:
         # Structural events
         _event(28, EventKind.Married, person=1, spouse=3, dateTime="2018-05-20",
                dateCertainty=C),
-        _event(29, EventKind.Moved, person=1, spouse=3, dateTime="2019-03-01",
+        _event(29, EventKind.Noted, person=1, dateTime="2019-03-01",
                dateCertainty=A, description="Moved across town"),
-        # Touching approximate pair: this 1994 move vs Alex's 1995 sleep onset
-        _event(30, EventKind.Moved, person=1, dateTime="1994-08-01",
-               dateCertainty=A, description="The family moved"),
+        _event(30, EventKind.Noted, person=1, dateTime="1994-08-01",
+               dateCertainty=A, description="Moved to the coast",
+               location="Homer"),
         _event(31, EventKind.Married, person=4, spouse=5, dateTime="1985-06-15",
                dateCertainty=A),
         _event(32, EventKind.Birth, person=4, spouse=5, child=1,
                dateTime="1980-04-12", dateCertainty=C),
         _event(33, EventKind.Birth, person=4, spouse=5, child=6,
                dateTime="1983-09-30", dateCertainty=C),
-        # Also touches Alex's 1995 sleep onset range
+        # Touches Alex's 1995 sleep onset range
         _event(34, EventKind.Separated, person=4, spouse=5, dateTime="1996-10-01",
                dateCertainty=A),
         _event(35, EventKind.Death, person=7, dateTime="2009-05-01",

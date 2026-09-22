@@ -495,7 +495,7 @@ Parameters:
                                                 <option value="married">married</option>
                                                 <option value="separated">separated</option>
                                                 <option value="divorced">divorced</option>
-                                                <option value="moved">moved</option>
+                                                <option value="noted">noted</option>
                                                 <option disabled class="select-divider">──────</option>
                                                 <option value="death">death</option>
                                             </select>
@@ -535,9 +535,9 @@ Parameters:
                                     </template>
 
                                     <!-- Event Spouse -->
-                                    <template x-if="(['bonded', 'married', 'separated', 'divorced', 'moved', 'birth', 'adopted'].includes(event.kind) && (event.spouse || {{ 'true' if editable_mode else 'false' }})) || (event.spouse && {{ 'true' if editable_mode else 'false' }})">
+                                    <template x-if="(['bonded', 'married', 'separated', 'divorced', 'birth', 'adopted'].includes(event.kind) && (event.spouse || {{ 'true' if editable_mode else 'false' }})) || (event.spouse && {{ 'true' if editable_mode else 'false' }})">
                                         <div class="sarf-field-row">
-                                            <span class="sarf-label" x-text="(event.kind === 'birth' || event.kind === 'adopted') ? 'Parent 2:' : (event.kind === 'moved') ? 'Partner:' : 'Partner 2:'"></span>
+                                            <span class="sarf-label" x-text="(event.kind === 'birth' || event.kind === 'adopted') ? 'Parent 2:' : 'Partner 2:'"></span>
                                             <span class="sarf-value">
                                                 <template x-if="event.spouse">
                                                     <span class="person-tag"
@@ -614,8 +614,8 @@ Parameters:
                                         </div>
                                     </template>
 
-                                    <!-- Event Location (for moved events only) -->
-                                    <template x-if="event.kind === 'moved'">
+                                    <!-- Event Location (for noted events only) -->
+                                    <template x-if="event.kind === 'noted'">
                                         <div class="sarf-field-row">
                                             <span class="sarf-label">Location:</span>
                                             <span class="sarf-value">
@@ -1317,7 +1317,7 @@ Parameters:
                                                 <option value="married">married</option>
                                                 <option value="separated">separated</option>
                                                 <option value="divorced">divorced</option>
-                                                <option value="moved">moved</option>
+                                                <option value="noted">noted</option>
                                                 <option disabled class="select-divider">──────</option>
                                                 <option value="death">death</option>
                                             </select>
@@ -1357,9 +1357,9 @@ Parameters:
                                     </template>
 
                                     <!-- Event Spouse -->
-                                    <template x-if="(['bonded', 'married', 'separated', 'divorced', 'moved', 'birth', 'adopted'].includes(event.kind) && (event.spouse || {{ 'true' if editable_mode else 'false' }})) || (event.spouse && {{ 'true' if editable_mode else 'false' }})">
+                                    <template x-if="(['bonded', 'married', 'separated', 'divorced', 'birth', 'adopted'].includes(event.kind) && (event.spouse || {{ 'true' if editable_mode else 'false' }})) || (event.spouse && {{ 'true' if editable_mode else 'false' }})">
                                         <div class="sarf-field-row">
-                                            <span class="sarf-label" x-text="(event.kind === 'birth' || event.kind === 'adopted') ? 'Parent 2:' : (event.kind === 'moved') ? 'Partner:' : 'Partner 2:'"></span>
+                                            <span class="sarf-label" x-text="(event.kind === 'birth' || event.kind === 'adopted') ? 'Parent 2:' : 'Partner 2:'"></span>
                                             <span class="sarf-value">
                                                 <template x-if="event.spouse">
                                                     <span class="person-tag"
@@ -1436,8 +1436,8 @@ Parameters:
                                         </div>
                                     </template>
 
-                                    <!-- Event Location (for moved events only) -->
-                                    <template x-if="event.kind === 'moved'">
+                                    <!-- Event Location (for noted events only) -->
+                                    <template x-if="event.kind === 'noted'">
                                         <div class="sarf-field-row">
                                             <span class="sarf-label">Location:</span>
                                             <span class="sarf-value">

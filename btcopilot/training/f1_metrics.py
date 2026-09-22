@@ -49,7 +49,7 @@ _log = logging.getLogger(__name__)
 
 NAME_SIMILARITY_THRESHOLD = 0.60
 
-# Structural event kinds to track individually (excludes Moved, which is deprecated)
+# Structural event kinds to track individually
 STRUCTURAL_KINDS = [
     EventKind.Birth,
     EventKind.Death,

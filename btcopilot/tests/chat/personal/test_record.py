@@ -8,7 +8,7 @@ from btcopilot.extensions import db
 from btcopilot.personal import record
 from btcopilot.personal.models import Author, Change
 from btcopilot.pro.models import Diagram
-from btcopilot.schema import ItemKind
+from btcopilot.schema import EventKind, ItemKind
 
 
 def _diagram(user, data: dict) -> Diagram:
@@ -484,3 +484,35 @@ def test_a_shift_that_names_its_move_beside_an_anchoring_birth_commits(subscribe
         turn_id="t1",
     )
     assert len(diagram.get_diagram_data().events) == 2
+
+
+def test_the_write_refuses_a_noted_event_with_no_words(subscriber):
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
+
+    with pytest.raises(record.Invalid, match="say what happened"):
+        record.apply(
+            diagram.id,
+            [
+                {
+                    "item_kind": ItemKind.Event,
+                    "item_id": 30,
+                    "field": "kind",
+                    "after": EventKind.Noted.value,
+                },
+                {
+                    "item_kind": ItemKind.Event,
+                    "item_id": 30,
+                    "field": "person",
+                    "after": 1,
+                },
+                {
+                    "item_kind": ItemKind.Event,
+                    "item_id": 30,
+                    "field": "dateTime",
+                    "after": "2019-03-01",
+                },
+            ],
+            author=Author.Coach,
+            turn_id="t1",
+            user_id=subscriber.user.id,
+        )

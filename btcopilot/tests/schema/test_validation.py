@@ -239,13 +239,13 @@ def test_validate_deltas_allows_offspring_without_spouse():
         validate_pdp_deltas(pdp, deltas)
 
 
-def test_validate_deltas_allows_moved_without_spouse():
+def test_validate_deltas_allows_a_noted_event_without_spouse():
     pdp = PDP()
     deltas = PDPDeltas(
         events=[
             Event(
                 id=-1,
-                kind=EventKind.Moved,
+                kind=EventKind.Noted,
                 person=1,
                 spouse=None,
                 description="relocation",

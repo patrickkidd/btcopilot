@@ -67,7 +67,10 @@ def test_full_picture():
     events = [
         {"id": 500, "kind": "married", "person": 2, "spouse": 3, "dateTime": "1980-01-01"},
         {"id": 501, "kind": "death", "person": 6, "dateTime": "2010-01-01"},
-        {"id": 502, "kind": "moved", "person": 1, "dateTime": "2018-01-01"},
+        {"id": 507, "kind": "separated", "person": 2, "spouse": 3,
+         "dateTime": "2018-01-01"},
+        {"id": 502, "kind": "noted", "person": 1, "description": "moved to Homer",
+         "dateTime": "2018-01-01"},
         # Shift events with SARF + dates near structural anchors
         {"id": 503, "kind": "shift", "person": 1, "symptom": "up", "dateTime": "2010-04-01"},
         {"id": 504, "kind": "shift", "person": 1, "symptom": "up", "dateTime": "2018-03-01"},
@@ -267,7 +270,9 @@ def test_committed_scene_format_contract():
          "dateTime": _qdt("1980-01-01")},
         {"id": 501, "kind": "death", "person": 6,
          "dateTime": _qdt("2010-01-01")},
-        {"id": 502, "kind": "moved", "person": 1,
+        {"id": 507, "kind": "separated", "person": 2, "spouse": 3,
+         "dateTime": _qdt("2018-01-01")},
+        {"id": 502, "kind": "noted", "person": 1, "description": "moved to Homer",
          "dateTime": _qdt("2018-01-01")},
         {"id": 503, "kind": "shift", "person": 1, "symptom": "up",
          "dateTime": _qdt("2010-04-01")},

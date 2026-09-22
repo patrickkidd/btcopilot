@@ -62,7 +62,7 @@ def family(test_user):
         asdict(
             Event(
                 id=10,
-                kind=Kind.Moved,
+                kind=Kind.Noted,
                 person=2,
                 dateTime="1994-06-01",
                 description="moved out",
@@ -105,6 +105,31 @@ def test_edit_writes_a_coach_change_and_the_record_moves(discussion, family):
     assert len(added) == 1
     assert added[0]["description"] == "got sick"
     assert reply["statement"] == "I put that down. [[event:11|that winter]]"
+
+
+def test_the_coach_can_write_a_noted_event(discussion, family):
+    """A move is a noted event carrying what happened and where [Oracle: R-0364]."""
+    run(
+        discussion,
+        "We moved to Arizona in the spring of 2019.",
+        Model(
+            called(
+                ToolName.EditEvent,
+                kind=Kind.Noted.value,
+                date="2019-03-01",
+                description="moved to Arizona",
+                location="Arizona",
+                person=1,
+            ),
+            said("I put that down."),
+        ),
+    )
+
+    added = [e for e in family.get_diagram_data().events if e["id"] == 11]
+    assert len(added) == 1
+    assert added[0]["kind"] == Kind.Noted.value
+    assert added[0]["description"] == "moved to Arizona"
+    assert added[0]["location"] == "Arizona"
 
 
 def test_a_turn_that_fails_before_the_coach_answers_stores_no_words(discussion, family):
@@ -206,7 +231,7 @@ def test_the_coach_is_handed_the_record_and_what_the_user_pointed_at(
     model = Model(said("Say more about that."))
     run(discussion, "[[event:10]]", model)
 
-    assert "10 1994-06-01 [moved] person=2 \"moved out\"" in model.systems[0]
+    assert "10 1994-06-01 [noted] person=2 \"moved out\"" in model.systems[0]
     assert "tell me about this" in model.histories[0][-1]["content"]
 
 
@@ -214,7 +239,15 @@ def test_play_by_play_names_every_event_once_in_date_order(test_user):
     data = DiagramData(
         people=[asdict(Person(id=1, name="Wren"))],
         events=[
-            asdict(Event(id=10, kind=Kind.Moved, person=1, dateTime="1994-06-01")),
+            asdict(
+                Event(
+                    id=10,
+                    kind=Kind.Noted,
+                    person=1,
+                    dateTime="1994-06-01",
+                    description="moved out",
+                )
+            ),
             asdict(Event(id=11, kind=Kind.Shift, person=1, dateTime="1994-12-01")),
         ],
         clusters=[asdict(Cluster(id="c1", title="That year", summary="", eventIds=[10, 11]))],
@@ -275,7 +308,7 @@ def test_people_and_their_events_all_land_in_one_turn(discussion, family):
                 (
                     ToolName.EditEvent,
                     {
-                        "kind": "moved",
+                        "kind": "noted",
                         "date": "1994-01-01",
                         "person": 11,
                         "description": "left",
@@ -329,7 +362,17 @@ def test_offered_chips_never_reach_the_transcript(test_user):
     words. A model that still writes them loses only the offers."""
     data = DiagramData(
         people=[asdict(Person(id=1, name="Wren"))],
-        events=[asdict(Event(id=10, kind=Kind.Moved, person=1, dateTime="1994-06-01"))],
+        events=[
+            asdict(
+                Event(
+                    id=10,
+                    kind=Kind.Noted,
+                    person=1,
+                    dateTime="1994-06-01",
+                    description="moved out",
+                )
+            )
+        ],
         clusters=[asdict(Cluster(id="c1", title="That year", summary="", eventIds=[10]))],
     )
     model = Model(

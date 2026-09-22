@@ -155,6 +155,10 @@ def schemas() -> list[dict]:
                         "type": "string",
                         "description": means[prompts.ToolText.Description],
                     },
+                    "location": {
+                        "type": "string",
+                        "description": means[prompts.ToolText.Location],
+                    },
                     "person": {
                         "type": "integer",
                         "description": means[prompts.ToolText.Person],
@@ -403,6 +407,8 @@ class Toolbox:
         ).value
         if args.get("description"):
             fields["description"] = args["description"]
+        if args.get("location"):
+            fields["location"] = args["location"]
         for key in ("person", "spouse", "child"):
             if args.get(key) is not None:
                 fields[key] = self._person(data, args[key])

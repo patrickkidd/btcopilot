@@ -185,11 +185,11 @@ class EventKind(enum.Enum):
     Married = "married"
     Birth = "birth"
     Adopted = "adopted"
-    Moved = "moved"
     Separated = "separated"
     Divorced = "divorced"
 
     Shift = "shift"
+    Noted = "noted"
     Death = "death"
 
     def isPairBond(self) -> bool:
@@ -198,7 +198,6 @@ class EventKind(enum.Enum):
             self.Married,
             self.Birth,
             self.Adopted,
-            self.Moved,
             self.Separated,
             self.Divorced,
         )
@@ -212,13 +211,13 @@ class EventKind(enum.Enum):
             self.Separated,
             self.Divorced,
             self.Bonded,
-            self.Moved,
             self.Death,
         )
 
     def isStructural(self) -> bool:
-        """Non-shift events: birth, death, married, bonded, separated, divorced, adopted, moved."""
-        return self != self.Shift
+        """Birth, death, married, bonded, separated, divorced, adopted: the
+        events that say who the family is. A shift and a noted event do not."""
+        return self not in (self.Shift, self.Noted)
 
     def isOffspring(self) -> bool:
         return self in (self.Birth, self.Adopted)
@@ -229,11 +228,11 @@ class EventKind(enum.Enum):
             self.Married: "Married",
             self.Separated: "Separated",
             self.Divorced: "Divorced",
-            self.Moved: "Moved",
             self.Birth: "Birth",
             self.Adopted: "Adopted",
             self.Death: "Death",
             self.Shift: "Shift",
+            self.Noted: "Noted",
         }
         return labels[self]
 

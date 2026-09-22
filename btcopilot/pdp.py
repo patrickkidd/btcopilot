@@ -701,9 +701,8 @@ def validate_pdp_deltas(
             )
 
     for event in deltas.events:
-        # Offspring and moved events may lack spouse at extraction time; commit logic infers it
-        spouse_exempt = event.kind.isOffspring() or event.kind == EventKind.Moved
-        if event.kind.isPairBond() and not spouse_exempt and event.spouse is None:
+        # Offspring events may lack spouse at extraction time; commit logic infers it
+        if event.kind.isPairBond() and not event.kind.isOffspring() and event.spouse is None:
             errors.append(
                 f"PairBond event {event.id} (kind={event.kind.value}) requires spouse"
             )

@@ -12,7 +12,7 @@ import re
 import uuid
 
 from btcopilot.review import adapter
-from btcopilot.schema import DateCertainty
+from btcopilot.schema import DateCertainty, EventKind
 
 _log = logging.getLogger(__name__)
 
@@ -360,8 +360,12 @@ def _event_words(event: dict, people: dict) -> str:
     if about is None:
         about = event.get("person")
     who = _name(people.get(str(about), {})) if about is not None else "the family"
-    kind = _plain(event.get("kind")) or "event"
-    return f"+ {who} · {kind} · {_when(*_dated(event))}"
+    # A noted event's own words are what happened; its kind says nothing.
+    if kind == EventKind.Noted.value:
+        said = (event.get("description") or "").strip()
+    else:
+        said = kind or "event"
+    return f"+ {who} · {said} · {_when(*_dated(event))}"
 
 
 MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()

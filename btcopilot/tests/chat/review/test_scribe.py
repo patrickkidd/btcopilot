@@ -60,7 +60,7 @@ def test_adds_the_person_the_coder_names(coder, cut, turns):
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
     model = Scripted(
         [("edit_person", {"name": "James Cooper"})],
-        [("edit_event", {"kind": "moved", "date": "1971-01-01", "person": "{person}"})],
+        [("edit_event", {"kind": "noted", "description": "moved to Ohio", "date": "1971-01-01", "person": "{person}"})],
     )
     response = scribe(
         coder, coding, turns[0], model, "James Cooper moved to Ohio in 1971"
@@ -71,7 +71,7 @@ def test_adds_the_person_the_coder_names(coder, cut, turns):
     record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
     assert [p["name"] for p in record["people"]] == ["Marcus", "James Cooper"]
     assert [(e["kind"], adapter.date_text(e["dateTime"])) for e in record["events"]] == [
-        ("moved", "1971-01-01")
+        ("noted", "1971-01-01")
     ]
     changes = Change.query.filter_by(diagram_id=coding.diagram_id).all()
     assert [c.statement_id for c in changes] == [turns[0].id] * len(changes)
@@ -83,7 +83,7 @@ def test_the_coders_words_stay_in_the_thread(coder, cut, turns):
     line they coded, with the scribe's line after them (R-0270)."""
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
     model = Scripted(
-        [("edit_event", {"kind": "moved", "date": "1971-01-01", "person": "1"})]
+        [("edit_event", {"kind": "noted", "description": "moved to Ohio", "date": "1971-01-01", "person": "1"})]
     )
     scribe(coder, coding, turns[0], model, "Marcus moved to Ohio in 1971")
 
@@ -102,14 +102,14 @@ def test_two_things_said_about_one_turn_keep_their_own_lines(coder, cut, turns):
         coder,
         coding,
         turns[0],
-        Scripted([("edit_event", {"kind": "moved", "date": "1971-01-01", "person": "1"})]),
+        Scripted([("edit_event", {"kind": "noted", "description": "moved to Ohio", "date": "1971-01-01", "person": "1"})]),
         "Marcus moved to Ohio in 1971",
     )
     scribe(
         coder,
         coding,
         turns[0],
-        Scripted([("edit_event", {"kind": "moved", "date": "1972-01-01", "person": "1"})]),
+        Scripted([("edit_event", {"kind": "noted", "description": "moved to Ohio", "date": "1972-01-01", "person": "1"})]),
         "Marcus moved again the year after",
     )
 
@@ -176,7 +176,7 @@ def test_a_whole_name_settles_shared_words(coder, cut, turns):
         done=False,
     )
     model = Scripted(
-        [("edit_event", {"kind": "moved", "date": "1969-03-01", "person": 1})]
+        [("edit_event", {"kind": "noted", "description": "moved to Ohio", "date": "1969-03-01", "person": 1})]
     )
     response = scribe(coder, coding, turns[0], model, "Marcus's father drove to Arizona")
     assert response.json["asked"] == ""
@@ -208,7 +208,7 @@ def test_a_gendered_pronoun_with_one_candidate_is_not_asked(coder, cut, turns):
         coder.user, cut, {"people": [{"id": 1, "name": "father"}, person(2, "mother")]}, done=False
     )
     model = Scripted(
-        [("edit_event", {"kind": "moved", "date": "1970-01-01", "person": 1})]
+        [("edit_event", {"kind": "noted", "description": "moved to Ohio", "date": "1970-01-01", "person": 1})]
     )
     response = scribe(coder, coding, turns[0], model, "he came round the next year")
     assert response.json["asked"] == ""
@@ -218,7 +218,7 @@ def test_a_turn_that_names_nobody_still_reaches_the_model(coder, cut, turns):
     """No name and no pronoun is not ambiguity: the model reads the turn."""
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
     model = Scripted(
-        [("edit_event", {"kind": "moved", "date": "1971-01-01", "person": 1})]
+        [("edit_event", {"kind": "noted", "description": "moved to Ohio", "date": "1971-01-01", "person": 1})]
     )
     response = scribe(coder, coding, turns[0], model, "the family moved in 1971")
     assert response.json["asked"] == ""
@@ -230,14 +230,15 @@ def test_writes_the_event_after_a_wasted_guess(coder, cut, turns):
     two people before the event. The loop must outlast that: the event lands."""
     coding = coded(coder.user, cut, {"people": []}, done=False)
     model = Scripted(
-        [("edit_event", {"kind": "moved", "date": "1969-03-01", "person": 1})],
+        [("edit_event", {"kind": "noted", "description": "moved to Ohio", "date": "1969-03-01", "person": 1})],
         [("edit_person", {"name": "Marcus"})],
         [("edit_person", {"name": "Marcus's father"})],
         [
             (
                 "edit_event",
                 {
-                    "kind": "moved",
+                    "kind": "noted",
+                    "description": "moved to Arizona",
                     "date": "1969-03-01",
                     "date_certainty": "approximate",
                     "person": "{person}",
@@ -253,12 +254,12 @@ def test_writes_the_event_after_a_wasted_guess(coder, cut, turns):
         "Marcus's father moved from Michigan to Arizona in March 1969",
     )
     assert response.status_code == 200
-    assert response.json["lines"] == ["+ Marcus's father · moved · Mar 1969", "+ Marcus"]
+    assert response.json["lines"] == ["+ Marcus's father · moved to Arizona · Mar 1969", "+ Marcus"]
 
     record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
     assert [p["name"] for p in record["people"]] == ["Marcus", "Marcus's father"]
     assert [(e["kind"], adapter.date_text(e["dateTime"])) for e in record["events"]] == [
-        ("moved", "1969-03-01")
+        ("noted", "1969-03-01")
     ]
 
 

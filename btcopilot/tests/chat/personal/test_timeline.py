@@ -149,11 +149,11 @@ def test_lane_picker_data_from_diagram():
 
 
 def test_order_question_for_touching_ranges():
-    """Move 1994+/-1yr vs sleep onset 1995+/-1yr: ranges touch -> a '?'."""
+    """Separation 1996+/-1yr vs sleep onset 1995+/-1yr: ranges touch -> a '?'."""
     timeline = build_timeline(seed_diagram_data())
     pairs = {(q["event_id"], q["other_event_id"]) for q in timeline["questions"]}
-    assert (10, 30) in pairs
-    question = next(q for q in timeline["questions"] if q["other_event_id"] == 30)
+    assert (10, 34) in pairs
+    question = next(q for q in timeline["questions"] if q["other_event_id"] == 34)
     assert question["lane"] == "p1:symptom"
     assert "Which came first" in question["sentence"]
 
@@ -164,8 +164,9 @@ def test_no_question_for_distant_ranges():
         asdict(
             Event(
                 id=11,
-                kind=EventKind.Moved,
+                kind=EventKind.Noted,
                 person=1,
+                description="moved out",
                 dateTime="2010-01-01",
                 dateCertainty=DateCertainty.Certain,
             )

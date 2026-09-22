@@ -50,7 +50,6 @@ KIND_WORDS = {
     EventKind.Separated.value: "separated",
     EventKind.Divorced.value: "divorced",
     EventKind.Bonded.value: "bonded",
-    EventKind.Moved.value: "moved",
     EventKind.Death.value: "died",
 }
 PAIR_KINDS = (

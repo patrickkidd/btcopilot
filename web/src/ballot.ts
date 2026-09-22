@@ -159,7 +159,7 @@ const KIND_WORDS: Record<string, string> = {
   married: "a marriage",
   separated: "a separation",
   divorced: "a divorce",
-  moved: "a move",
+  noted: "something noted",
   death: "a death",
 };
 

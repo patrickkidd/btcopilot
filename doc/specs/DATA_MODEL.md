@@ -121,7 +121,7 @@ Represents a reproductive/emotional pair bond. Central to Bowen theory.
 2. **Inferred**: System auto-creates at commit time when a committed event
    requires a PairBond between its person and spouse but none exists.
    - `_create_inferred_pair_bond_items()` handles non-offspring `isPairBond()`
-     events: Bonded, Married, Separated, Divorced, Moved
+     events: Bonded, Married, Separated, Divorced
    - `_create_inferred_birth_items()` handles Birth/Adopted events, also
      inferring missing people (spouse, child) and setting `child.parents`
 
@@ -172,18 +172,18 @@ class EventKind(enum.Enum):
     Married = "married"
     Birth = "birth"
     Adopted = "adopted"
-    Moved = "moved"
     Separated = "separated"
     Divorced = "divorced"
     Shift = "shift"
+    Noted = "noted"
     Death = "death"
 ```
 
 **Taxonomy** (used in 2-pass extraction split):
-- **Structural events** (`isStructural()`): All non-shift kinds — birth, death, married, bonded, separated, divorced, adopted, moved. Represent family structure changes. Extracted in Pass 1.
+- **Structural events** (`isStructural()`): birth, death, married, bonded, separated, divorced, adopted. Represent family structure changes. Extracted in Pass 1. A shift and a noted event are not structural.
 - **Shift events** (`kind == Shift`): SARF-coded incidents — symptom/anxiety/functioning/relationship changes at a point in time. Extracted in Pass 2.
 
-`isPairBond()` returns True for: Bonded, Married, Birth, Adopted, Moved,
+`isPairBond()` returns True for: Bonded, Married, Birth, Adopted,
 Separated, Divorced. These require a Marriage (pair bond) in the Qt scene.
 
 ### VariableShift
@@ -236,8 +236,8 @@ ID collisions across entity types.
 
 ### Event.description Rules (source of truth: Pro app `Event.updateDescription`)
 - **Self-describing kinds** (`EventKind.isSelfDescribing()`): `birth`, `adopted`,
-  `married`, `separated`, `divorced`, `bonded`, `moved`, `death` — description
-  auto-generated from kind name. `moved` uses `"Moved to {location}"`.
+  `married`, `separated`, `divorced`, `bonded`, `death` — description
+  auto-generated from kind name. `noted` says its own description, which is required.
   User-typed description not required.
 - **`shift`**: description **required** — describes what happened
 

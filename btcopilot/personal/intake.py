@@ -53,7 +53,6 @@ NODAL_KINDS = frozenset(
         EventKind.Married,
         EventKind.Divorced,
         EventKind.Separated,
-        EventKind.Moved,
     }
 )
 _MARITAL_KINDS = frozenset(

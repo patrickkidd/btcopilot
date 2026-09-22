@@ -1,6 +1,10 @@
 # The event model — the three complaints, and a normalised shape
 
-Status: **proposal, nothing built.** Three problems Patrick raised with the timeline data
+Status: **complaint 1 built; the rest still a proposal.** Rulings 1, 3 and 6 are ruled
+[Oracle: R-0363, R-0364, R-0365]: `noted` is a kind, a move is a noted event, and it was
+done now rather than after the beta. `moved` has left the kind list, and no code translates
+a stored event carrying the old kind. Rulings 2, 4 and 5 are open and
+nothing under them is built. Three problems Patrick raised with the timeline data
 model the chat app inherited from the desktop app, each mapped to the field that causes it,
 one proposed shape, and the rulings at the end. Page version: `mockups/eventmodel.html`.
 Examples use the stand-in family (`mockups/family.md`).
@@ -109,7 +113,7 @@ After the beta: all of the above plus migrating real users' records.
 
 ## The rulings
 
-1. **Is "noted" a kind, or is kind optional?** "Marcus finished his apprenticeship, Mar
+1. **RULED [Oracle: R-0363] — "noted" is a kind, and its description is required.** Is "noted" a kind, or is kind optional? "Marcus finished his apprenticeship, Mar
    1969" has no home today. Either it is written `{kind: "noted", about: 3, description:
    "finished his apprenticeship"}`, or events carry no kind at all when nothing structural
    or SARF happened, and a kind is the exception. A named kind keeps the enum closed and the
@@ -120,7 +124,7 @@ After the beta: all of the above plus migrating real users' records.
    when the person telling the story gives them in the same breath, and the parents are
    derived from the bond otherwise. Never carrying them is one way to say a thing; allowing
    them means two places can disagree about who Corinne's mother is.
-3. **Is "moved" a noted event, or does it keep its own kind?** `{kind: "noted", about: 3,
+3. **RULED [Oracle: R-0364] — a move is a noted event; `moved` has left the kind list.** Is "moved" a noted event, or does it keep its own kind? `{kind: "noted", about: 3,
    description: "moved to Arizona", location: "Arizona"}` versus keeping `moved` as a kind
    that is no longer tied to the couple. Keeping it means the word "moved" is drawn and
    searched without reading anyone's description; dropping it means one less kind and the
@@ -132,6 +136,6 @@ After the beta: all of the above plus migrating real users' records.
    versus the three flat fields `symptom`, `anxiety`, `functioning` as today. Nesting says
    "these three are one thing, and only a shift has them"; flat fields are what the Pro app
    already reads.
-6. **Now, or after the beta?** Now is one rewrite of unreleased records plus a permanent
+6. **RULED [Oracle: R-0365] — now, before the beta. No migration and no translation on read: Patrick fixes the few stored rows in the database himself after the deploy.** Now, or after the beta? Now is one rewrite of unreleased records plus a permanent
    translation layer at the Pro app boundary. After the beta is the same work plus a
    migration of real people's records, and every refusal and tool text written twice.

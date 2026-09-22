@@ -411,8 +411,9 @@ def _words(data: dict, deltas: list[dict]):
 
 
 def _moves(data: dict, deltas: list[dict]):
-    """A shift says which way something moved, and an early birth says nothing
-    but when someone was born (owner ruling R-0037). Checked on the events this
+    """A noted event says what happened, a shift says which way something
+    moved, and an early birth says nothing but when someone was born (owner
+    ruling R-0037). Checked on the events this
     write touches, the way the cluster floor is."""
     events = _collection(data, ItemKind.Event)
     for event_id in _touched(deltas):
@@ -420,6 +421,11 @@ def _moves(data: dict, deltas: list[dict]):
         if event is None:
             continue
         kind = _val(event.get("kind"))
+        if kind == EventKind.Noted.value and not (event.get("description") or "").strip():
+            raise Invalid(
+                f"event {event_id} is a noted event with no words: say what "
+                "happened"
+            )
         if kind == EventKind.Shift.value and not _moved(event):
             raise Invalid(
                 f"event {event_id} is a shift with no variable and no "

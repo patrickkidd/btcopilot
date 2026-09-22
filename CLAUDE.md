@@ -199,11 +199,11 @@ The isolation test at `btcopilot/tests/schema/test_isolation.py` enforces this b
 - All other events: `person` is the primary link.
 - When displaying person name for an event, always check `event.kind` first.
 
-**Description** — `EventKind.isSelfDescribing()` (Birth, Adopted, Married, Separated, Divorced, Bonded, Moved, Death):
+**Description** — `EventKind.isSelfDescribing()` (Birth, Adopted, Married, Separated, Divorced, Bonded, Death):
 - The kind name IS the description; `Event.description` is optional supplementary detail.
 - Display: use `kind.value.capitalize()` as the primary label. Append description only if it adds information beyond the kind name.
 - Placeholder descriptions ("New Event", "Unknown", "") should be treated as empty.
-- Only Shift events require and rely on `Event.description` as their primary label.
+- Only Shift and Noted events require and rely on `Event.description` as their primary label. A move is a Noted event [Oracle: R-0364].
 
 **F1 matching**: Structural events skip description matching — only Shift events use descriptions. Events match on kind + date + person links.
 

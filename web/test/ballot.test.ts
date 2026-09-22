@@ -36,7 +36,7 @@ describe("the date word", () => {
 
 describe("what a row is named", () => {
   it("uses the description when there is one", () => {
-    expect(what(item(1, { kind: "moved", description: "left for Juneau" }))).toBe(
+    expect(what(item(1, { kind: "noted", description: "left for Juneau" }))).toBe(
       "left for Juneau",
     );
   });
@@ -56,7 +56,7 @@ describe("the events of a cut", () => {
   it("reads in the order they happened", () => {
     const events = eventsOf([
       item(1, { kind: "shift", dateTime: "2021-06-02" }),
-      item(2, { kind: "moved", dateTime: "1998-01-09" }),
+      item(2, { kind: "noted", description: "left for Juneau", dateTime: "1998-01-09" }),
       item(3, { kind: "death", dateTime: "2010-03-11" }),
     ]);
     expect(events.map((one) => one.id)).toEqual([2, 3, 1]);

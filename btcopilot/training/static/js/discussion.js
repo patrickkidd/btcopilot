@@ -500,7 +500,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             } else if (kind === 'death') {
                 const personName = event.person ? this.getPersonName(event.person) : 'Unknown';
                 return `${kindLabel}: ${personName}`;
-            } else if (['bonded', 'married', 'adopted', 'moved', 'separated', 'divorced'].includes(kind)) {
+            } else if (['bonded', 'married', 'adopted', 'separated', 'divorced'].includes(kind)) {
                 const personName = event.person ? this.getPersonName(event.person) : 'Unknown';
                 const spouseName = event.spouse ? this.getPersonName(event.spouse) : 'Unknown';
                 return `${kindLabel}: ${personName} & ${spouseName}`;
@@ -553,7 +553,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                 dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 100px; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1); padding: 0;';
                 button.parentNode.appendChild(dropdown);
 
-                const eventKinds = ['shift', '---', 'birth', 'adopted', 'bonded', 'married', 'separated', 'divorced', 'moved', '---', 'death'];
+                const eventKinds = ['shift', 'noted', '---', 'birth', 'adopted', 'bonded', 'married', 'separated', 'divorced', '---', 'death'];
                 eventKinds.forEach(kind => {
                     if (kind === '---') {
                         const divider = document.createElement('hr');
@@ -1811,7 +1811,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             } else if (kind === 'death') {
                 const personName = event.person ? this.getPersonName(event.person) : 'Unknown';
                 return `${kindLabel}: ${personName}`;
-            } else if (['bonded', 'married', 'adopted', 'moved', 'separated', 'divorced'].includes(kind)) {
+            } else if (['bonded', 'married', 'adopted', 'separated', 'divorced'].includes(kind)) {
                 const personName = event.person ? this.getPersonName(event.person) : 'Unknown';
                 const spouseName = event.spouse ? this.getPersonName(event.spouse) : 'Unknown';
                 return `${kindLabel}: ${personName} & ${spouseName}`;
@@ -2698,7 +2698,7 @@ function renderEventsEditor() {
                                         <option value="married" ${event.kind === 'married' ? 'selected' : ''}>Married</option>
                                         <option value="birth" ${event.kind === 'birth' ? 'selected' : ''}>Birth</option>
                                         <option value="adopted" ${event.kind === 'adopted' ? 'selected' : ''}>Adopted</option>
-                                        <option value="moved" ${event.kind === 'moved' ? 'selected' : ''}>Moved</option>
+                                        <option value="noted" ${event.kind === 'noted' ? 'selected' : ''}>Noted</option>
                                         <option value="separated" ${event.kind === 'separated' ? 'selected' : ''}>Separated</option>
                                         <option value="divorced" ${event.kind === 'divorced' ? 'selected' : ''}>Divorced</option>
                                         <option value="death" ${event.kind === 'death' ? 'selected' : ''}>Death</option>
@@ -2720,10 +2720,9 @@ function renderEventsEditor() {
                             </div>
                         </div>
 
-                        <div class="field" style="display: ${['bonded', 'married', 'separated', 'divorced', 'moved', 'birth', 'adopted'].includes(event.kind) ? 'block' : 'none'}">
+                        <div class="field" style="display: ${['bonded', 'married', 'separated', 'divorced', 'birth', 'adopted'].includes(event.kind) ? 'block' : 'none'}">
                             <label class="label is-small">${
                                 event.kind === 'birth' || event.kind === 'adopted' ? 'Parent 2' :
-                                event.kind === 'moved' ? 'Partner' :
                                 'Partner 2'
                             } (ID)</label>
                             <div class="control">
