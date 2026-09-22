@@ -515,3 +515,7 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    each step read 10,200–10,800 tokens from cache and paid full price for 86–360 new ones; the
    fixed coaching text is 3,893 tokens. Not wired: the per-user token meter table, which nothing
    writes yet; usage is logged per call for the dashboarding session to pick up.
+33. Deployed 062eb63 to the box 2026-09-22 19:00 UTC: CI green, the token meter migration
+   applied (chain at 1a00000000ac). The Grafana commit 1f4b3dc is NOT deployed: it needs the
+   Grafana token on the box (his key script now carries it and drops the Datadog key), a lock
+   refresh at the workspace root that only he runs there, and a release build. WAITING on him.
