@@ -1615,3 +1615,15 @@ Patrick, on a paid voice at about a cent a reply: the primary concern is the inc
 feedback loops with beta users — each must see their own use and cost — and those must be part
 of the data-driven learning the app exists for (will people pay, do they like it). Money from
 his own pocket is secondary. The loops are undesigned; the paid voice waits on them. Tabled.
+
+## 2026-09-22: Observability moves to Grafana Cloud Free
+
+Patrick, after an evaluation against current vendor pricing. Datadog cannot go under $10 a
+month with the host agent on ($15 host floor, no free logs); Grafana Cloud Free covers metrics,
+logs, traces and 50,000 frontend sessions a month at $0, is the stack he runs at work, and its
+Frontend Observability groups browser errors by stack-trace fingerprint. Self-hosting Loki and
+Prometheus on the 2 GB box was rejected (1 to 1.5 GB idle); hosting the stores on his laptop was
+weighed and set aside in favour of Cloud. Session Replay is a Cloud-only public preview, enabled
+per stack by form; it is requested, not relied on. Alerting while his laptop is closed is not a
+concern until past beta. [R-0370, supersedes the Datadog half of R-0328]. DATADOG.md becomes
+the record of the rejected option. The Datadog agent leaves the compose file when Alloy lands.
