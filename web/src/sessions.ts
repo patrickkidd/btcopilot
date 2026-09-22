@@ -1,4 +1,5 @@
 import * as api from "./api";
+import { Feature, tap } from "./track";
 import { $, el, esc, isAdmin } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
@@ -180,27 +181,37 @@ export class Sessions {
   }
 
   private wire(): void {
-    this.button.addEventListener("click", () => void this.raise(false));
+    this.button.addEventListener("click", () => {
+      tap(Feature.OpenSessions);
+      void this.raise(false);
+    });
     this.scrim.addEventListener("click", () => this.lower());
     this.search.addEventListener("input", () => {
       this.filter = this.search.value;
       this.render();
     });
-    this.newButton.addEventListener("click", () => void this.start());
+    this.newButton.addEventListener("click", () => {
+      tap(Feature.SessionNew);
+      void this.start();
+    });
     // One sheet is up at a time: the upload sheet takes the sessions sheet's
     // place rather than standing on top of it.
     this.uploadButton.addEventListener("click", () => {
+      tap(Feature.UploadOpen);
       this.lower();
       this.recording.pick();
     });
-    this.noteButton.addEventListener("click", () =>
-      void this.start(SessionKind.Note),
-    );
+    this.noteButton.addEventListener("click", () => {
+      tap(Feature.NoteNew);
+      void this.start(SessionKind.Note);
+    });
     this.taskButton.addEventListener("click", () => {
+      tap(Feature.TaskOpen);
       this.lower();
       this.handlers.onTask();
     });
     this.agendaButton.addEventListener("click", () => {
+      tap(Feature.AgendaOpen);
       this.lower();
       this.handlers.onAgendaScreen();
     });
@@ -217,12 +228,17 @@ export class Sessions {
       e.stopPropagation();
       const row = action.closest<HTMLElement>(".row")!;
       if (action.classList.contains("tbl")) {
+        tap(Feature.SessionToAgenda);
         this.closeActions();
         this.openAgenda(row);
       } else if (action.classList.contains("ren")) {
+        tap(Feature.SessionRename);
         this.closeActions();
         this.rename(row);
-      } else void this.remove(row);
+      } else {
+        tap(Feature.SessionDelete);
+        void this.remove(row);
+      }
       return;
     }
     // The gesture that revealed the actions ends in a click of its own, which
@@ -243,6 +259,7 @@ export class Sessions {
       this.opening = false;
       return;
     }
+    tap(Feature.SessionOpen);
     this.pick(row);
   }
 

@@ -41,6 +41,7 @@ TABLES = frozenset(
         "model_calls",
         "passkeys",
         "policies",
+        "product_events",
         "review_codings",
         "review_cuts",
         "review_items",

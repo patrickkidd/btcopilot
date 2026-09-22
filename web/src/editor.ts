@@ -1,4 +1,5 @@
 import { esc, el } from "./dom";
+import { Feature, tap } from "./track";
 import { fullName } from "./rows";
 import { toast } from "./toast";
 import * as api from "./api";
@@ -314,10 +315,12 @@ export function openEditor(
       toast("A noted event needs a few words saying what happened");
       return;
     }
+    tap(Feature.EventSave);
     if (onSave) onSave(body);
     else void save(event, body, done, diagramId);
   });
   editor.querySelector(".del")?.addEventListener("click", () => {
+    tap(Feature.EventDelete);
     if (event) void api.deleteEvent(event.id, diagramId).then(done);
   });
   return editor;
@@ -646,6 +649,7 @@ export function openPersonEditor(
   });
 
   editor.querySelector(".save")?.addEventListener("click", () => {
+    tap(Feature.PersonSave);
     const body = personValues(editor);
     if (onSave) {
       onSave(body);
@@ -654,6 +658,7 @@ export function openPersonEditor(
     void api.savePerson(person ? person.id : null, body, diagramId).then(done);
   });
   editor.querySelector(".del")?.addEventListener("click", () => {
+    tap(Feature.PersonDelete);
     if (person) void api.deletePerson(person.id, diagramId).then(done);
   });
   return editor;
@@ -751,6 +756,7 @@ export function openParentsPicker(
   pickOne(editor);
 
   editor.querySelector(".save")?.addEventListener("click", () => {
+    tap(Feature.ParentsSave);
     void (async () => {
       const mother = await pickedPerson(
         editor,
@@ -854,6 +860,7 @@ export function openBondEditor(
   pickOne(editor);
 
   editor.querySelector(".save")?.addEventListener("click", () => {
+    tap(Feature.PairBondSave);
     const married = !!editor.querySelector(
       '.segs[data-name="married"] .seg.on[data-value="yes"]',
     );
@@ -885,6 +892,7 @@ export function openBondEditor(
     })();
   });
   editor.querySelector(".del")?.addEventListener("click", () => {
+    tap(Feature.PairBondDelete);
     if (bond) void api.deletePairBond(bond.id, opts.diagramId).then(opts.done);
   });
   return editor;

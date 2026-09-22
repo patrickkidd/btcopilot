@@ -36,6 +36,8 @@ import { offerPasskey } from "./passkey";
 import { PRO, WIDE } from "./pro";
 import { shortDate } from "./when";
 import * as speech from "./speech";
+import * as track from "./track";
+import { Feature, Screen } from "./track";
 import {
   ChipKind,
   ChipTone,
@@ -72,19 +74,6 @@ declare global {
       statements: Statement[];
     };
   }
-}
-
-enum Screen {
-  Chat = "chat",
-  Menu = "menu",
-  Task = "task",
-  Coding = "coding",
-  Ballot = "ballot",
-  Rules = "rules",
-  Cut = "cut",
-  Agenda = "agenda",
-  Meeting = "meeting",
-  Result = "result",
 }
 
 /** Which screens the coding title row belongs to. */
@@ -208,6 +197,7 @@ const chat = new Chat($("chat"), $("composer"), {
   label: chipLabel,
   onChip: (chip, play) => {
     tapped(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
+    track.tap(Feature.ChipTap, { kind: itemKind(chip.kind), id: chip.target });
     // Two kinds of chip, and the colour says which. An amber chip is an offer:
     // it names nothing in the record, so it goes into the message as words. A
     // teal chip is a reference into the record, so it aims the picture.
@@ -223,6 +213,7 @@ const chat = new Chat($("chat"), $("composer"), {
     const named = aimedFrom(text);
     if (!named.length) return;
     tapped(InteractionKind.Look, ItemKind.Event, String(named[0]));
+    track.tap(Feature.MessageLook, { kind: ItemKind.Event, id: String(named[0]) });
     picture.spotlight(named);
     pic = REST;
     actions();
@@ -429,10 +420,17 @@ async function openRules(): Promise<void> {
   screen(Screen.Rules);
 }
 
-$("coding-done").addEventListener("click", () => coding.confirm());
-$("coding-info").addEventListener("click", () => void openRules());
+$("coding-done").addEventListener("click", () => {
+  track.tap(Feature.CodingDone);
+  coding.confirm();
+});
+$("coding-info").addEventListener("click", () => {
+  track.tap(Feature.RulesOpen);
+  void openRules();
+});
 $("rules-close").addEventListener("click", () => screen(readingFrom));
 $("coding-back").addEventListener("click", () => {
+  track.tap(Feature.Back);
   // Reading the transcript is a step out of the ballot, so it steps back into
   // it on the item it was left on.
   if (here === Screen.Coding && voting)
@@ -450,6 +448,7 @@ $("coding-back").addEventListener("click", () => {
  * the picture and the title all start again on it. Opening on a family only
  * names it; nothing is thrown away. */
 function onDiagram(diagram: Diagram, how = { switched: true }): void {
+  track.diagram(diagram.id);
   familyTitle = diagram.name;
   // The settings stack owns the title while it is open, so only write it when
   // the chat is what the title row is naming.
@@ -489,7 +488,10 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
   },
 });
 
-speak.addEventListener("change", () => void settings.set({ speak: speak.checked }));
+speak.addEventListener("change", () => {
+  track.tap(Feature.SettingChange);
+  void settings.set({ speak: speak.checked });
+});
 
 // Every scroll area takes wheel, trackpad, touch AND mouse drag (UI_STANDARDS).
 for (const id of ["chat", "menu-body"]) dragScroll($(id));
@@ -701,7 +703,11 @@ function actions(): void {
           }),
     ),
   );
-  if (trace) $("cap-trace").addEventListener("click", () => void traceTo(trace.where));
+  if (trace)
+    $("cap-trace").addEventListener("click", () => {
+      track.tap(Feature.TraceToChat);
+      void traceTo(trace.where);
+    });
   if (moves && open)
     $("cap-play").addEventListener("click", () =>
       apply(reduce(pic, PicEvent.TapPlay, { kind: SelKind.Cluster, id: open.id })),
@@ -712,7 +718,10 @@ function actions(): void {
 function wireList(): void {
   // on the wide layout the drawer is pinned open and no button is drawn (R-0352)
   if (pinned()) return;
-  $("menu-open").addEventListener("click", () => screen(Screen.Menu));
+  $("menu-open").addEventListener("click", () => {
+    track.tap(Feature.OpenMenu);
+    screen(Screen.Menu);
+  });
 }
 
 /** A wider window stands the events and people drawer beside the thread
@@ -756,6 +765,7 @@ function enterBoard(clusterId: string): void {
  * screen. The board is already up, so nothing here changes the picture's
  * height; the words land beneath it and step it as they are typed. */
 async function explain(clusterId: string): Promise<void> {
+  track.tap(Feature.Play, { kind: ItemKind.Cluster, id: clusterId });
   picture.explains(true);
   chat.busy(true);
   let reply;
@@ -802,6 +812,7 @@ let inFlight = false;
 async function send(): Promise<void> {
   const statement = chat.draft();
   if (!statement || inFlight) return;
+  track.tap(Feature.SendMessage);
   chat.add(Role.User, statement);
   chat.resetDraft();
   await deliver(statement);
@@ -988,6 +999,7 @@ function upOne(): void {
 /** The list is full screen with its own back button, so it takes the title row
  * over rather than stacking a second bar under it (ruling 2026-09-03 05:53). */
 function screen(which: Screen): void {
+  if (which !== here) track.screen(which);
   // The list comes up over the chat rather than replacing it, so the chat is
   // still there underneath while the list travels (R-0345).
   $("chat-split").hidden = which !== Screen.Chat && which !== Screen.Menu;
@@ -1033,6 +1045,7 @@ function screen(which: Screen): void {
 
 /** Which screen is up, so the title row and the back arrow say the same. */
 let here = Screen.Chat;
+track.start(here, window.BOOTSTRAP.diagram?.id ?? null);
 
 /** The name of the picture is also the way back to it: tapping it puts the
  * picture down, the same as tapping empty ground on it. */
@@ -1042,13 +1055,20 @@ function putDown(): void {
   actions();
 }
 
-$("up").addEventListener("click", upOne);
+$("up").addEventListener("click", () => {
+  track.tap(Feature.PictureUp);
+  upOne();
+});
 $("info").addEventListener("click", () => {
+  track.tap(Feature.PictureInfo);
   picture.about();
   pic = REST;
   actions();
 });
-$("clear").addEventListener("click", putDown);
+$("clear").addEventListener("click", () => {
+  track.tap(Feature.PictureClear);
+  putDown();
+});
 $("crumb").addEventListener("click", () => {
   if (picture.deep()) upOne();
 });
@@ -1079,21 +1099,25 @@ $("composer").addEventListener("keydown", (e) => {
 });
 $("send").addEventListener("click", () => void send());
 $("menu-close").addEventListener("click", () => {
+  track.tap(Feature.CloseMenu);
   const field = $("menu-search") as HTMLInputElement;
   field.value = "";
   menu.search("");
   screen(Screen.Chat);
 });
-$("menu-add").addEventListener("click", () => menu.add());
+$("menu-add").addEventListener("click", () => {
+  track.tap(menu.showing() === Tab.People ? Feature.PersonAdd : Feature.EventAdd);
+  menu.add();
+});
 $("menu-search").addEventListener("input", (e) =>
   menu.search((e.target as HTMLInputElement).value),
 );
 
 /** The two lists behind the one button: what happened, and who it happened to.
  * The search and the add button say which one they are for. */
-const TABS: [string, Tab, string, string][] = [
-  ["tab-events", Tab.Events, "Search events", "+ Add event"],
-  ["tab-people", Tab.People, "Search people", "+ Add someone"],
+const TABS: [string, Tab, string, string, Feature][] = [
+  ["tab-events", Tab.Events, "Search events", "+ Add event", Feature.TabEvents],
+  ["tab-people", Tab.People, "Search people", "+ Add someone", Feature.TabPeople],
 ];
 
 /** Dress the drawer for one of its two lists. */
@@ -1111,8 +1135,9 @@ function onTab(tab: Tab): void {
   }
 }
 
-for (const [id, tab] of TABS)
+for (const [id, tab, , , feature] of TABS)
   $(id).addEventListener("click", () => {
+    track.tap(feature);
     onTab(tab);
     menu.search("");
     menu.open(tab);

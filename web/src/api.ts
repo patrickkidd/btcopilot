@@ -76,11 +76,17 @@ async function ask<T>(method: string, path: string, body?: unknown): Promise<T> 
   return send(method, REVIEW + path, body);
 }
 
-async function send<T>(method: string, url: string, body?: unknown): Promise<T> {
+async function send<T>(
+  method: string,
+  url: string,
+  body?: unknown,
+  keepalive = false,
+): Promise<T> {
   let response: Response;
   try {
     response = await fetch(url, {
       method,
+      keepalive,
       headers: {
         "Content-Type": "application/json",
         "X-CSRFToken": csrf(),
@@ -139,6 +145,24 @@ export const record = (
     item_kind: itemKind,
     item_id: itemId,
   });
+
+export interface ProductEvent {
+  screen: string;
+  name: string;
+  item_kind: ItemKind | null;
+  item_id: string | null;
+  diagram_id: number | null;
+  at: string;
+}
+
+/** Sent with keepalive so the batch flushed as the page hides still lands. */
+export const productEvents = (sessionId: string, events: ProductEvent[]) =>
+  send<{ stored: number }>(
+    "POST",
+    ROOT + "/product-events",
+    { session_id: sessionId, events },
+    true,
+  );
 
 export const session = (id: number) =>
   call<Session & { statements: Statement[] }>("GET", `/sessions/${id}`);

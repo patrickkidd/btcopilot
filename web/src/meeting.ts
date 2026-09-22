@@ -1,4 +1,5 @@
 import * as api from "./api";
+import { Feature, tap } from "./track";
 import {
   LINE,
   drawTimeline,
@@ -522,6 +523,7 @@ export class Meeting {
       const coding = Number(side.dataset.coding);
       // Keeping the version that is already kept is no decision at all.
       if (item.kept_coding_id === coding) return;
+      tap(Feature.MeetingKeep);
       const before = item.kept_coding_id ?? null;
       item.kept_coding_id = coding;
       this.render();
@@ -532,9 +534,13 @@ export class Meeting {
       return;
     }
     const choice = target.closest<HTMLElement>(".mt-choice")?.dataset.choice;
-    if (choice === Decision.Change) this.change(item);
-    else if (choice === Decision.Unresolved)
+    if (choice === Decision.Change) {
+      tap(Feature.MeetingChange);
+      this.change(item);
+    } else if (choice === Decision.Unresolved) {
+      tap(Feature.MeetingUnresolved);
       await this.decide(item, Decision.Unresolved);
+    }
   }
 
   /** Every dot answers: it puts the room on that event and brings its card up,
@@ -710,6 +716,7 @@ export class Meeting {
     if (!button || button.disabled) return;
     const cut = this.cut;
     if (!cut) return;
+    tap(Feature.MeetingEnd);
     button.disabled = true;
     button.textContent = "ratifying";
     button.classList.add("dots3");

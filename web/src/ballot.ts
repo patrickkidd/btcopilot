@@ -1,4 +1,5 @@
 import * as api from "./api";
+import { Feature, tap } from "./track";
 import { esc, el, type Title } from "./dom";
 import {
   openBondEditor,
@@ -520,6 +521,7 @@ export class Ballot {
   ): Promise<void> {
     const item = this.item();
     if (!item) return;
+    tap(Feature.BallotVote);
     const vote = await api.castVote(item.id, choice, value, this.reason());
     this.mine.set(item.id, vote);
     this.render();
@@ -584,6 +586,7 @@ export class Ballot {
    * (R-0257). A person or a bond opens their own editor, the same one the record
    * is corrected in (R-0326). The turn it came from is kept with the item. */
   private change(item: BallotItem): void {
+    tap(Feature.BallotChange);
     const vote = this.mine.get(item.id);
     const from =
       vote?.choice === VoteChoice.Change

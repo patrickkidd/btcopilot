@@ -1,6 +1,7 @@
 import { openEditor, openPersonEditor } from "./editor";
+import { Feature, tap } from "./track";
 import { eventDivider, eventRow, fullName, personRow } from "./rows";
-import { emptyTimeline, type Cluster, type Person, type Timeline, type TimelineEvent } from "./types";
+import { emptyTimeline, ItemKind, type Cluster, type Person, type Timeline, type TimelineEvent } from "./types";
 
 /** The full timeline list behind the menu: full screen, searched, and divided
  * by cluster with a sticky header, so you always know which cluster you are in
@@ -146,6 +147,8 @@ export class Menu {
     this.body.querySelectorAll<HTMLElement>(".row").forEach((row) => {
       row.addEventListener("click", () => {
         const id = Number(row.dataset.event);
+        if (this.editing !== id)
+          tap(Feature.EventOpen, { kind: ItemKind.Event, id: String(id) });
         this.editing = this.editing === id ? null : id;
         this.adding = false;
         this.render();
@@ -179,12 +182,15 @@ export class Menu {
     this.body.innerHTML = html;
     this.body.scrollTop = top;
     this.body.querySelector('[data-order]')?.addEventListener("click", () => {
+      tap(Feature.PeopleOrder);
       this.byName = !this.byName;
       this.render();
     });
     this.body.querySelectorAll<HTMLElement>(".row").forEach((row) => {
       row.addEventListener("click", () => {
         const id = Number(row.dataset.person);
+        if (this.editing !== id)
+          tap(Feature.PersonOpen, { kind: ItemKind.Person, id: String(id) });
         this.editing = this.editing === id ? null : id;
         this.adding = false;
         this.render();

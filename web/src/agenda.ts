@@ -1,4 +1,5 @@
 import * as api from "./api";
+import { Feature, tap } from "./track";
 import { esc, type Title } from "./dom";
 import { toast } from "./toast";
 import { dayText, meetingTitle } from "./when";
@@ -103,33 +104,40 @@ export class Agenda {
     const target = e.target as Element;
     const off = target.closest<HTMLElement>(".pl-btn");
     if (off) {
+      tap(Feature.AgendaTakeOff);
       await this.take(Number(off.dataset.cut));
       return;
     }
     const cut = target.closest<HTMLElement>(".tb-cut");
     if (cut) {
+      tap(Feature.AgendaOpenItem);
       this.handlers.onPlace(Number(cut.dataset.discussion));
       return;
     }
     if (target.closest(".tb-add")) {
+      tap(Feature.AgendaAdd);
       this.handlers.onAdd();
       return;
     }
     if (target.closest(".tb-nudge")) {
+      tap(Feature.AgendaNudge);
       await this.nudge();
       return;
     }
     if (target.closest(".tb-vote")) {
+      tap(Feature.AgendaOpenVote);
       await this.openVote();
       return;
     }
     const result = target.closest<HTMLElement>(".tb-result");
     if (result) {
+      tap(Feature.AgendaResult);
       this.handlers.onResult(Number(result.dataset.cut));
       return;
     }
     const meet = target.closest<HTMLElement>(".tb-meet");
     if (meet) {
+      tap(Feature.MeetingStart);
       this.handlers.onMeeting(Number(meet.dataset.cut));
       return;
     }

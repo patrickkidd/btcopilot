@@ -1,4 +1,5 @@
 import * as api from "./api";
+import { Feature, tap } from "./track";
 import { el, esc, type Title } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
@@ -61,6 +62,7 @@ export class Cut {
       toast("That part was already ratified");
       return;
     }
+    tap(Feature.CutLine);
     this.at = turnId;
     this.render();
   }
@@ -70,6 +72,7 @@ export class Cut {
   private async place(): Promise<void> {
     const read = this.read;
     if (!read || this.at === null) return;
+    tap(Feature.CutConfirm);
     if (read.cut_id === null) await api.putOnAgenda(read.discussion_id, this.at);
     else await api.moveCut(read.cut_id, this.at);
     this.handlers.onPlaced();

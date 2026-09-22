@@ -1,4 +1,5 @@
 import * as api from "./api";
+import { Feature, tap } from "./track";
 import { $, el, esc } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
@@ -96,7 +97,10 @@ export class Settings {
     this.host.hidden = true;
     overlay.append(this.host);
     this.back.hidden = true;
-    this.avatar.addEventListener("click", () => void this.raise());
+    this.avatar.addEventListener("click", () => {
+      tap(Feature.OpenSettings);
+      void this.raise();
+    });
     this.back.addEventListener("click", () => this.pop());
   }
 
@@ -296,7 +300,10 @@ export class Settings {
       button.type = "button";
       button.className = option === current ? "on" : "";
       button.textContent = option;
-      button.addEventListener("click", () => pick(option));
+      button.addEventListener("click", () => {
+        tap(Feature.SettingChange);
+        pick(option);
+      });
       seg.append(button);
     }
     row.append(el("div", "sn-lbl", esc(label)), seg);
@@ -317,7 +324,10 @@ export class Settings {
     button.setAttribute("aria-checked", String(on));
     button.setAttribute("aria-label", label);
     button.innerHTML = `<span class="sw-thumb"></span>`;
-    button.addEventListener("click", () => set(!on));
+    button.addEventListener("click", () => {
+      tap(Feature.SettingChange);
+      set(!on);
+    });
     row.append(el("div", "sn-lbl", esc(label)), el("div", "sn-seg"), button);
     return row;
   }
@@ -377,7 +387,10 @@ export class Settings {
     out.type = "button";
     out.className = "sn-out";
     out.textContent = "Sign out";
-    out.addEventListener("click", () => void signOut(account.email));
+    out.addEventListener("click", () => {
+      tap(Feature.SignOut);
+      void signOut(account.email);
+    });
     const last = el("div", "sn-grp");
     last.append(out);
     pane.append(last, el("div", "sn-foot", "Family Diagram · beta"));
@@ -440,14 +453,20 @@ export class Settings {
       remove.type = "button";
       remove.className = "sn-manage";
       remove.textContent = "Remove";
-      remove.addEventListener("click", () => void this.dropPasskey(passkey));
+      remove.addEventListener("click", () => {
+        tap(Feature.PasskeyRemove);
+        void this.dropPasskey(passkey);
+      });
       row.append(main, remove);
       return row;
     });
     if (!this.passkeys.length && this.canPasskey) {
       const row = el("div", "sn-row push");
       row.append(el("div", "sn-lbl", esc(`Set up ${deviceWords()}`)), el("div", "sn-chev", "\u203a"));
-      row.addEventListener("click", () => void this.makePasskey());
+      row.addEventListener("click", () => {
+        tap(Feature.PasskeyAdd);
+        void this.makePasskey();
+      });
       rows.push(row);
     }
     if (!rows.length) rows.push(el("div", "sn-hint", "This device signs in by email."));
@@ -529,7 +548,10 @@ export class Settings {
       );
       row.append(main, el("span", "sn-tick", diagram.current ? "✓" : ""));
       if (!diagram.current)
-        row.addEventListener("click", () => void this.switchTo(diagram));
+        row.addEventListener("click", () => {
+          tap(Feature.FamilySwitch);
+          void this.switchTo(diagram);
+        });
       box.append(row);
     }
 
