@@ -9,6 +9,7 @@ from the Pro box on purpose. Nothing in it has run yet; the droplet does not exi
 ## What Patrick does, once, in this order
 
 1. **Secrets.** Copy `secrets.env.example` to `secrets.env`, fill every value
+   (Gemini is the model that groups events into clusters on the picture)
    with a new credential (none of the old compose file's values are reused),
    encrypt it: `sops -e secrets.env > secrets.env.enc`, delete the plain file,
    commit `secrets.env.enc`.

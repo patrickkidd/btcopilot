@@ -432,3 +432,8 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    never built. RULED: build it. FIXED @4ec3a0b: the phone's own voice reads each reply as it
    starts typing, cut by the next message; verified on the box with the speech call stubbed
    to record one utterance carrying the reply.
+16. Server error on a later turn: the Gemini key is missing on the box. Gemini groups the
+   record's events into clusters on the picture after a turn once there are enough of them;
+   the secrets template never listed it. FIXED: template and runbook carry it, and a test
+   now fails when any setting the app reads without a fallback has no home on the box.
+   The value itself is his to put on the box (the key script now includes it).
