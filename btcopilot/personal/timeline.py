@@ -621,12 +621,13 @@ def build_timeline(data: DiagramData) -> dict:
 
 def _order_questions(lanes: list, dated: list, people_by_id: dict) -> list:
     """DRAWABILITY's deterministic query: a '?' between a variable point and a
-    structural family event whose certainty ranges touch."""
+    family event whose certainty ranges touch — a structural change, or a noted
+    event, which is a lead (R-0366)."""
     structural = []
     for event, date, certainty in dated:
         kind = _enum_val(event.get("kind"))
         try:
-            if not EventKind(kind).isStructural():
+            if not EventKind(kind).isLead():
                 continue
         except ValueError:
             continue

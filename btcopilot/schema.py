@@ -219,6 +219,12 @@ class EventKind(enum.Enum):
         events that say who the family is. A shift and a noted event do not."""
         return self not in (self.Shift, self.Noted)
 
+    def isLead(self) -> bool:
+        """What a coach may wonder about when it sits near a shift: every
+        structural event, and a noted event — a move, a new job — which is a
+        lead rather than a change in the family (Patrick, 2026-09-22)."""
+        return self is not self.Shift
+
     def isOffspring(self) -> bool:
         return self in (self.Birth, self.Adopted)
 

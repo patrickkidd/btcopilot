@@ -452,3 +452,24 @@ def test_a_moment_says_who_from_its_links_and_what_without_the_name():
     assert said[11] == ("Ray & Nora", "divorced")
     assert said[12] == ("Elizabeth & Nora", "anxiety went up")
     assert said[13] == ("Elizabeth → Ray", "conflict")
+
+
+def test_a_noted_event_near_a_shift_is_a_lead_and_raises_the_question():
+    """A move is not a change in the family, but a coach may wonder whether it
+    played in (R-0366)."""
+    events = [
+        _shift(10, 1, "2000-03-01", "symptom", VariableShift.Up),
+        asdict(
+            Event(
+                id=11,
+                kind=EventKind.Noted,
+                person=1,
+                description="moved to Arizona",
+                location="Arizona",
+                dateTime="2000-01-01",
+                dateCertainty=DateCertainty.Approximate,
+            )
+        ),
+    ]
+    timeline = build_timeline(_data([1], events))
+    assert {(q["event_id"], q["other_event_id"]) for q in timeline["questions"]} == {(10, 11)}

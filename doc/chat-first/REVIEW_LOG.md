@@ -464,3 +464,7 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    Item 21 built (2026-09-22): the noted kind is in, moved is out (R-0363, R-0364, R-0365),
    commit bda417d. The eight stored moves in his record were rewritten in place on the box at
    the storage level, no read-time translation, before the new image was deployed. DONE.
+22. Patrick: moves and other events he could not name are leads — a coach may wonder
+   whether they play in, though they are no structural or functional change. RULED
+   [R-0366]. FIXED: a noted event raises the order question beside a shift the way a
+   structural event does; it still counts as no change to the family.
