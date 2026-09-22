@@ -429,4 +429,6 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    pulls `:legacy`) await his merge.
 15. Patrick: speak replies is on but nothing is spoken. Finding: the switch only stores a
    preference; no code in the web app reads it or calls the browser's speech. Speaking was
-   never built. OPEN — say whether to build it (browser speech on the phone) now.
+   never built. RULED: build it. FIXED @4ec3a0b: the phone's own voice reads each reply as it
+   starts typing, cut by the next message; verified on the box with the speech call stubbed
+   to record one utterance carrying the reply.
