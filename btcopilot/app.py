@@ -1,8 +1,9 @@
-import os, os.path, sys, logging
+import os, os.path, logging
 from flask import Flask, render_template, redirect, request, url_for
 from werkzeug.exceptions import Unauthorized, HTTPException
 
 import btcopilot
+from btcopilot.personal import tracing
 from btcopilot.personal.turnlog import TurnLogBackend
 
 
@@ -156,16 +157,10 @@ def create_app(config: dict = None, **kwargs):
                 }
             },
         )
-        if "ddtrace" in sys.modules:
-            from ddtrace import tracer
-            from btcopilot import version
-
-            span = tracer.current_span()
-            if span:
-                span.set_tag("version", version())
 
     ## Initialize Modules
 
+    tracing.init_app()
     extensions.init_app(app)
     auth.init_app(app)
     pro.init_app(app)

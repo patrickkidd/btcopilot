@@ -1,3 +1,4 @@
+import "./telemetry";
 import "./theme.css";
 import * as api from "./api";
 import { Chat, wait, type LiveBubble, type PlayTap } from "./chat";

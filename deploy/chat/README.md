@@ -43,12 +43,12 @@ stops once the new one is healthy, so no request is dropped), and runs
 `flask admin db upgrade`. Nothing is built on the box. The plugin is installed
 once at /root/.docker/cli-plugins/docker-rollout (github.com/wowu/docker-rollout).
 
-## Datadog
+## Grafana Cloud
 
-Off by default (Patrick may leave Datadog, 2026-09-21). The agent is defined as
-`fd-datadog` under the compose profile `datadog`: host metrics and every container's
-log lines, no traces. Turn it on with `--profile datadog up -d fd-datadog`; it reads
-`DD_API_KEY` from the secrets file like everything else.
+`fd-alloy` (Grafana Alloy) ships host and container metrics, every container's log
+lines and the app's and worker's traces to Grafana Cloud; nothing is stored on the box.
+It reads `GRAFANA_CLOUD_TOKEN` from the secrets file like everything else, and its config
+is `alloy/config.alloy`. Its UI on port 12345 has no host port, so it is not exposed.
 
 ## What is not here yet
 

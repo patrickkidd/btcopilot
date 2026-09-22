@@ -1268,3 +1268,5 @@ and what it costs. That measurement has to sit inside the learning this app exis
 people pay for it, and do they like it — and money out of his own pocket is the lesser of his two
 concerns. He also wants a play button under each coach reply, to hear it again. Tabled, not
 dropped.
+
+**2026-09-22 — observability moves to Grafana Cloud.** Datadog cannot go under $10 a month with the host agent on; Grafana Cloud Free covers metrics, logs, traces and browser sessions at $0 and is the stack Patrick runs at work [R-0370]. Self-hosting the stores on the 2 GB box and hosting them on his laptop were weighed and set aside. The stack was renamed to alaskafamilysystems and its sign-in broke on a stale redirect until a restart through the Cloud API. Built: Alloy replaces the Datadog agent in the compose file, the Faro SDK in the web bundle, a `coach.turn` span per model call, and the per-user token meter now written by every turn (cache tokens counted apart). Private health data stays out of every log, metric, trace and recording.

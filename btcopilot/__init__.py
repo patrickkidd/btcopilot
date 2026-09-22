@@ -87,12 +87,6 @@ ANON_USER = "anonymous"
 
 ## https://www.redmadrobot.com/fyi/designing-mobile-app-architecture
 
-# if os.getenv("FLASK_CONFIG") == "production":
-#     import ddtrace
-
-#     ddtrace.patch_all(logging=True)
-
-
 _log = logging.getLogger(__name__)
 
 

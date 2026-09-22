@@ -21,20 +21,9 @@ def main_celery():
         celery -A btcopilot.celery:celery flower
     """
 
-    import os, sys
+    import os
 
     os.environ["FD_IS_CELERY"] = "true"
-
-    if "ddtrace" in sys.modules:
-        from ddtrace import patch, config
-
-        print("setting up datadog tracing for celery...")
-        patch(celery=True)
-
-        # Configure Datadog
-        config.celery["distributed_tracing_enabled"] = True
-        config.celery["producer_span_enabled"] = True
-        config.celery["worker_span_enabled"] = True
 
     from btcopilot.app import create_app
 

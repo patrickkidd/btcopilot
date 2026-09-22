@@ -13,9 +13,9 @@ x-app-env: &app-env
   CELERY_RESULT_BACKEND: redis://fd-redis:6379/0
   BTCOPILOT_INSTANCE_PATH: /app/instance
   SOPS_AGE_KEY_FILE: /run/secrets/age.key
-  DD_ENV: production
-  DD_SITE: datadoghq.com
-  DD_LOGS_INJECTION: "true"
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://fd-alloy:4318
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=production
 
 # No container_name on the app and the worker: `docker rollout <service>` starts the
 # new container beside the old one and stops the old one only once the new one is
@@ -52,7 +52,7 @@ services:
     <<: *app
     environment:
       <<: *app-env
-      DD_SERVICE: fd-app
+      OTEL_SERVICE_NAME: fd-app
     expose:
       - "8888"
 
@@ -61,7 +61,7 @@ services:
     environment:
       <<: *app-env
       FD_IS_CELERY: "1"
-      DD_SERVICE: fd-worker
+      OTEL_SERVICE_NAME: fd-worker
     command: ["python", "-m", "celery", "-A", "btcopilot.celery:celery", "worker", "--pool=solo", "--loglevel=info"]
     healthcheck:
       test: ["CMD-SHELL", "python -m celery -A btcopilot.celery:celery inspect ping -d celery@$$HOSTNAME --timeout 10 || exit 1"]
@@ -95,26 +95,23 @@ services:
       timeout: 5s
       retries: 5
 
-  fd-datadog:
-    image: gcr.io/datadoghq/agent:7
-    container_name: fd-datadog
-    profiles: ["datadog"]
+  # Ships host and container metrics, every container's log lines and the app's
+  # traces to Grafana Cloud; nothing is stored on the box. Its UI on 12345 has no host port.
+  fd-alloy:
+    image: grafana/alloy:latest
+    container_name: fd-alloy
     restart: unless-stopped
     env_file: /etc/fd/secrets.env
-    environment:
-      DD_SITE: datadoghq.com
-      DD_ENV: production
-      DD_HOSTNAME: familydiagram-app
-      DD_LOGS_ENABLED: "true"
-      DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL: "true"
-      DD_CONTAINER_EXCLUDE: "name:fd-datadog"
-      DD_APM_ENABLED: "false"
-      DD_PROCESS_CONFIG_PROCESS_COLLECTION_ENABLED: "false"
+    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "--storage.path=/var/lib/alloy/data", "/etc/alloy/config.alloy"]
     volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /proc/:/host/proc/:ro
-      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /:/rootfs:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+    expose:
+      - "4317"
+      - "4318"
 
 volumes:
   caddy-data:

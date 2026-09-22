@@ -1,3 +1,5 @@
+> **Superseded 2026-09-22 by R-0370.** Observability is Grafana Cloud Free; see PLATFORM_BUILD.md. Kept as the record of the rejected option and its prices.
+
 # Datadog for this app — what it costs, what to turn on
 
 Researched 2026-09-13. List prices, annual-commit column, US region. On-demand (no commit) is

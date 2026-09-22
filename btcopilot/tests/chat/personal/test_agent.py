@@ -3,9 +3,11 @@ kind at a time, and a play-by-play that cannot invent a move."""
 
 import datetime
 import pytest
+from opentelemetry import trace
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from btcopilot.extensions import db
-from btcopilot.personal import chips, record
+from btcopilot.personal import chips, record, tracing
 from btcopilot.personal.coachturn import (
     FINISH,
     MAX_STEPS,
@@ -680,3 +682,16 @@ def test_a_turn_charges_every_model_call_to_the_user_for_the_month(discussion, f
         meter.cache_creation_tokens,
         meter.cache_read_tokens,
     ) == (2100, 90, 800, 800)
+
+
+def test_tracing_provider(monkeypatch):
+    monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
+    assert isinstance(tracing.provider(), trace.NoOpTracerProvider)
+
+    exported = InMemorySpanExporter()
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://fd-alloy:4318")
+    monkeypatch.setattr(tracing, "OTLPSpanExporter", lambda: exported)
+    sdk = tracing.provider()
+    sdk.get_tracer(__name__).start_span("coach.turn").end()
+    sdk.force_flush()
+    assert [s.name for s in exported.get_finished_spans()] == ["coach.turn"]

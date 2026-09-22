@@ -9,10 +9,12 @@ import os
 from dataclasses import dataclass, field
 
 import anthropic
+from opentelemetry import trace
 
 from btcopilot.llmutil import RESPONSE_MODEL, resolve_model
 
 _log = logging.getLogger(__name__)
+_tracer = trace.get_tracer(__name__)
 
 MAX_TOKENS = 4096
 TEMPERATURE = 0.45
@@ -101,49 +103,63 @@ class CoachModel:
         to end in words. A system prompt in two parts is the coaching text and
         then the record, so the wire keeps the first and re-reads the second.
         """
-        client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-        try:
-            with client.messages.stream(
-                model=self.model,
-                max_tokens=MAX_TOKENS,
-                temperature=TEMPERATURE,
-                system=system_blocks(system),
-                messages=marked_messages(messages),
-                **({"tools": marked_tools(tools)} if tools else {}),
-            ) as stream:
-                yield from stream.text_stream
-                message = stream.get_final_message()
-        finally:
-            client.close()
+        # Counts only: no prompt or message text, which is private health data.
+        with _tracer.start_span(
+            "coach.turn",
+            attributes={"model": self.model, "turn_id": turn_id, "tools": len(tools)},
+        ) as span:
+            client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+            try:
+                with client.messages.stream(
+                    model=self.model,
+                    max_tokens=MAX_TOKENS,
+                    temperature=TEMPERATURE,
+                    system=system_blocks(system),
+                    messages=marked_messages(messages),
+                    **({"tools": marked_tools(tools)} if tools else {}),
+                ) as stream:
+                    yield from stream.text_stream
+                    message = stream.get_final_message()
+            finally:
+                client.close()
 
-        # Echo back only the fields the API accepts: a whole block dump carries
-        # SDK-side extras the next request rejects.
-        turn = ModelTurn()
-        for block in message.content:
-            if block.type == "text":
-                turn.text += block.text
-                turn.blocks.append({"type": "text", "text": block.text})
-            elif block.type == "tool_use":
-                turn.calls.append(ToolCall(id=block.id, name=block.name, args=block.input))
-                turn.blocks.append(
-                    {
-                        "type": "tool_use",
-                        "id": block.id,
-                        "name": block.name,
-                        "input": block.input,
-                    }
-                )
-        used = message.usage
-        turn.spent = Spent(
-            input=used.input_tokens,
-            output=used.output_tokens,
-            cache_creation=used.cache_creation_input_tokens or 0,
-            cache_read=used.cache_read_input_tokens or 0,
-        )
-        _log.info(
-            f"Coach model {self.model} turn {turn_id}: {len(turn.text)} chars, "
-            f"{len(turn.calls)} tool calls, {used.input_tokens} tokens in, "
-            f"{used.output_tokens} out, {used.cache_creation_input_tokens} kept, "
-            f"{used.cache_read_input_tokens} read back"
-        )
-        return turn
+            # Echo back only the fields the API accepts: a whole block dump carries
+            # SDK-side extras the next request rejects.
+            turn = ModelTurn()
+            for block in message.content:
+                if block.type == "text":
+                    turn.text += block.text
+                    turn.blocks.append({"type": "text", "text": block.text})
+                elif block.type == "tool_use":
+                    turn.calls.append(ToolCall(id=block.id, name=block.name, args=block.input))
+                    turn.blocks.append(
+                        {
+                            "type": "tool_use",
+                            "id": block.id,
+                            "name": block.name,
+                            "input": block.input,
+                        }
+                    )
+            used = message.usage
+            turn.spent = Spent(
+                input=used.input_tokens,
+                output=used.output_tokens,
+                cache_creation=used.cache_creation_input_tokens or 0,
+                cache_read=used.cache_read_input_tokens or 0,
+            )
+            _log.info(
+                f"Coach model {self.model} turn {turn_id}: {len(turn.text)} chars, "
+                f"{len(turn.calls)} tool calls, {used.input_tokens} tokens in, "
+                f"{used.output_tokens} out, {used.cache_creation_input_tokens} kept, "
+                f"{used.cache_read_input_tokens} read back"
+            )
+            span.set_attributes(
+                {
+                    "tool_calls": len(turn.calls),
+                    "tokens.input": turn.spent.input,
+                    "tokens.output": turn.spent.output,
+                    "tokens.cache_creation": turn.spent.cache_creation,
+                    "tokens.cache_read": turn.spent.cache_read,
+                }
+            )
+            return turn

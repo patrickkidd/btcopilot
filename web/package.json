@@ -15,5 +15,8 @@
     "typescript": "^5.6.3",
     "vite": "^5.4.10",
     "vitest": "^2.1.4"
+  },
+  "dependencies": {
+    "@grafana/faro-web-sdk": "^2.12.1"
   }
 }
