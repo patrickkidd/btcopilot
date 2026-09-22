@@ -8,6 +8,7 @@ from btcopilot.admin.users import find as find_user
 from btcopilot.admin.output import rows_option
 from btcopilot.extensions import db
 from btcopilot.pro.models import License, Policy
+from btcopilot.admin.guard import writes
 
 
 def row(licence: License) -> dict:
@@ -47,6 +48,7 @@ def licence_list(email, plan):
     return [row(licence) for licence in query.all()]
 
 
+@writes
 @licences.command("grant")
 @click.argument("email")
 @click.argument("plan")
@@ -68,6 +70,7 @@ def licence_grant(email, plan):
     return [row(licence)]
 
 
+@writes
 @licences.command("revoke")
 @click.argument("key")
 @rows_option

@@ -10,6 +10,7 @@ from btcopilot.admin.setting import SettingKey
 from btcopilot.review.models import Coding, Cut, Rule
 from btcopilot.review.routes.coders import roster, state_of
 from btcopilot.review.routes.cuts import agenda_cuts, payload as cut_payload
+from btcopilot.admin.guard import writes
 
 
 
@@ -95,6 +96,7 @@ def nudge():
     """Whether the app may nudge the coders who are not done."""
 
 
+@writes
 @nudge.command("on")
 @rows_option
 def nudge_on():
@@ -103,6 +105,7 @@ def nudge_on():
     return [{"nudges": "on"}]
 
 
+@writes
 @nudge.command("off")
 @rows_option
 def nudge_off():

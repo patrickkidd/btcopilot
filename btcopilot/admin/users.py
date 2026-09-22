@@ -6,10 +6,12 @@ from flask import current_app
 
 import btcopilot
 from btcopilot.admin.output import rows_option
+from btcopilot.auth.emails import send_invitation
 from btcopilot.auth.invitation import Invitation
 from btcopilot.extensions import db
 from btcopilot.personal.licence import professional
 from btcopilot.pro.models import User
+from btcopilot.admin.guard import writes
 
 ROLES = (btcopilot.ROLE_SUBSCRIBER, btcopilot.ROLE_AUDITOR, btcopilot.ROLE_ADMIN)
 
@@ -63,6 +65,7 @@ def user_show(email):
     return [data]
 
 
+@writes
 @users.command("roles")
 @click.argument("email")
 @click.argument("roles", nargs=-1, type=click.Choice(ROLES))
@@ -76,19 +79,25 @@ def user_roles(email, roles):
     return [{"email": user.username, "roles": user.roles or ""}]
 
 
+@writes
 @users.command("invite")
 @click.argument("email")
 @click.option("--base-url", help="Overrides the site address the link points at.")
+@click.option("--send", is_flag=True, help="Also email the link to the address.")
 @rows_option
-def user_invite(email, base_url):
+def user_invite(email, base_url, send):
     """A one-time sign-in link, which also creates the account on first use."""
     address = email.strip().lower()
     invitation = Invitation.issue(address, current_app.config["INVITATION_DAYS"])
     base = (base_url or current_app.config["SITE_URL"]).rstrip("/")
+    url = f"{base}/app/invite/{invitation.token}"
+    if send:
+        send_invitation(address, url)
     return [
         {
             "email": address,
-            "url": f"{base}/app/invite/{invitation.token}",
+            "url": url,
+            "sent": send,
             "expires_at": invitation.expires_at,
         }
     ]

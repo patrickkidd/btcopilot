@@ -4,6 +4,7 @@ import click
 
 from btcopilot.admin import proimport
 from btcopilot.admin.output import rows_option
+from btcopilot.admin.guard import writes
 
 
 @click.group()
@@ -20,6 +21,7 @@ def import_dry_run(dump):
     return proimport.dry_run(dump)
 
 
+@writes
 @imports.command("run")
 @click.argument("dump")
 @click.confirmation_option(prompt="This writes accounts and records. Go ahead?")

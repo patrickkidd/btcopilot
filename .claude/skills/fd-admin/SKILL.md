@@ -8,6 +8,15 @@ description: Run the Family Diagram site from the command line — accounts, lic
 There is no admin web page. Everything below is run on the engine, from the
 repository, as `flask admin ...`.
 
+## Confirmation
+
+Run every command as `flask admin run -- <words>`, for example
+`flask admin run -- users list`.
+A command that only reads runs at once.
+A command that changes something needs `--yes` among the words. Without it
+nothing runs: the preview line and the command's help are printed instead.
+Show that preview to the person and wait for their yes before adding `--yes`.
+
 Every command prints a table. Add `--json` to any of them to get the same rows
 as JSON, which is what to use when the answer is going to be read by a program.
 A command that changes something prints the row it changed.
@@ -28,6 +37,8 @@ Which revision the database is at.
 ### `flask admin db upgrade`
 
 Bring the database up to the newest revision, creating it from empty if it holds nothing yet.
+
+Changes something: needs `--yes`.
 
 ### `flask admin diagrams`
 
@@ -77,6 +88,8 @@ Read the dump, or a live connection string, and report what would come across, w
 
 Read the dump and write the accounts and records it holds.
 
+Changes something: needs `--yes`.
+
 | Argument | What it is |
 |---|---|
 | `dump` | required |
@@ -89,6 +102,8 @@ What people have bought.
 ### `flask admin licences grant <email> <plan>`
 
 Give somebody a licence on the plan named.
+
+Changes something: needs `--yes`.
 
 | Argument | What it is |
 |---|---|
@@ -117,6 +132,8 @@ The plans a licence can be granted on.
 ### `flask admin licences revoke <key>`
 
 Turn a licence off, which stops the app it unlocks.
+
+Changes something: needs `--yes`.
 
 | Argument | What it is |
 |---|---|
@@ -164,6 +181,8 @@ Whether the app may nudge the coders who are not done.
 
 Stop the app nudging anybody.
 
+Changes something: needs `--yes`.
+
 | Argument | What it is |
 |---|---|
 | `--json` | Print JSON, not a table. |
@@ -171,6 +190,8 @@ Stop the app nudging anybody.
 ### `flask admin review nudge on`
 
 Let the app nudge coders again.
+
+Changes something: needs `--yes`.
 
 | Argument | What it is |
 |---|---|
@@ -184,6 +205,14 @@ Whether nudging is on, and when the agenda was last nudged.
 |---|---|
 | `--json` | Print JSON, not a table. |
 
+### `flask admin run [words]`
+
+Run an admin command given after --. One that changes something needs --yes; without it the preview is printed and nothing runs.
+
+| Argument | What it is |
+|---|---|
+| `words` | optional |
+
 ### `flask admin skill`
 
 Write the skill file an agent reads before running these commands.
@@ -192,6 +221,7 @@ Write the skill file an agent reads before running these commands.
 |---|---|
 | `--check` | Fail if the file on disk is not what the commands say. |
 | `--out` | Write somewhere else. |
+| `--print` | Print the file instead of writing it. |
 
 ### `flask admin token-cap`
 
@@ -200,6 +230,8 @@ The monthly ceiling on coach use.
 ### `flask admin token-cap set <email> <tokens>`
 
 Set the cap, in tokens a month. Use the word default for everyone else.
+
+Changes something: needs `--yes`.
 
 | Argument | What it is |
 |---|---|
@@ -224,10 +256,13 @@ The people with accounts.
 
 A one-time sign-in link, which also creates the account on first use.
 
+Changes something: needs `--yes`.
+
 | Argument | What it is |
 |---|---|
 | `email` | required |
 | `--base-url` | Overrides the site address the link points at. |
+| `--send` | Also email the link to the address. |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin users list`
@@ -243,6 +278,8 @@ Every account, one line each.
 ### `flask admin users roles <email> [roles]`
 
 Show somebody's roles, or set them to the roles named.
+
+Changes something: needs `--yes`.
 
 | Argument | What it is |
 |---|---|

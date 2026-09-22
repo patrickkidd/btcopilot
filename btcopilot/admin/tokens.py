@@ -8,6 +8,7 @@ from btcopilot.admin.users import find as find_user
 from btcopilot.admin.output import rows_option
 from btcopilot.admin.setting import SettingKey
 from btcopilot.pro.models import User
+from btcopilot.admin.guard import writes
 
 #: The cap for anyone with no cap of their own.
 DEFAULT = "default"
@@ -42,6 +43,7 @@ def token_cap_show(email):
     return rows
 
 
+@writes
 @token_cap.command("set")
 @click.argument("email")
 @click.argument("tokens", type=int)

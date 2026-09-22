@@ -5,6 +5,8 @@ import pathlib
 
 import click
 
+from btcopilot.admin.guard import marked
+
 PATH = pathlib.Path(__file__).parents[2] / ".claude/skills/fd-admin/SKILL.md"
 
 HEADER = """---
@@ -16,6 +18,15 @@ description: Run the Family Diagram site from the command line — accounts, lic
 
 There is no admin web page. Everything below is run on the engine, from the
 repository, as `flask admin ...`.
+
+## Confirmation
+
+Run every command as `flask admin run -- <words>`, for example
+`flask admin run -- users list`.
+A command that only reads runs at once.
+A command that changes something needs `--yes` among the words. Without it
+nothing runs: the preview line and the command's help are printed instead.
+Show that preview to the person and wait for their yes before adding `--yes`.
 
 Every command prints a table. Add `--json` to any of them to get the same rows
 as JSON, which is what to use when the answer is going to be read by a program.
@@ -50,6 +61,8 @@ def _section(path: str, command: click.Command, parent: click.Context) -> str:
     heading = f"{path} {_usage(command)}".rstrip()
     lines = [f"\n### `{heading}`\n"]
     lines.append(f"\n{_help(command)}\n")
+    if marked(command):
+        lines.append("\nChanges something: needs `--yes`.\n")
     rows = [_param(param) for param in command.get_params(context) if _named(param)]
     if rows:
         lines.append("\n| Argument | What it is |\n|---|---|\n")
@@ -94,11 +107,15 @@ def _param(param: click.Parameter) -> tuple[str, str]:
     help="Fail if the file on disk is not what the commands say.",
 )
 @click.option("--out", type=click.Path(dir_okay=False), help="Write somewhere else.")
-def write_skill(check, out):
+@click.option("--print", "show", is_flag=True, help="Print the file instead of writing it.")
+def write_skill(check, out, show):
     """Write the skill file an agent reads before running these commands."""
     from btcopilot.admin import admin
 
     text = render(admin)
+    if show:
+        click.echo(text, nl=False)
+        return
     path = pathlib.Path(out) if out else PATH
     if check:
         if not path.exists() or path.read_text() != text:

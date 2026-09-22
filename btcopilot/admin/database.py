@@ -11,6 +11,7 @@ from flask import current_app
 from sqlalchemy import create_engine
 
 import btcopilot
+from btcopilot.admin.guard import writes
 
 CHAIN = Path(btcopilot.__file__).parents[1] / "alembic-chat"
 
@@ -27,6 +28,7 @@ def database():
     """The chat database's own migration chain."""
 
 
+@writes
 @database.command("upgrade")
 def db_upgrade():
     """Bring the database up to the newest revision, creating it from empty
