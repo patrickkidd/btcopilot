@@ -34,6 +34,7 @@ import { offerHomeScreen, showHomeScreen, homeScreenBadge } from "./homescreen";
 import { offerPasskey } from "./passkey";
 import { PRO, WIDE } from "./pro";
 import { shortDate } from "./when";
+import * as speech from "./speech";
 import {
   ChipKind,
   ChipTone,
@@ -813,6 +814,7 @@ async function deliver(statement: string): Promise<void> {
   // the words again.
   inFlight = true;
   chat.busy(true);
+  speech.hush();
 
   let reply;
   try {
@@ -841,6 +843,8 @@ async function deliver(statement: string): Promise<void> {
     } else if (step.kind === StepKind.Reload) await load();
     else await picture.show(step.view);
   }
+  // The voice starts as the words start, not after they have all been typed.
+  if (speak.checked) speech.say(reply.statement);
   await bubble.type(reply.statement, (chip) => aim(chip));
   await load();
   void sessions.load(session);
