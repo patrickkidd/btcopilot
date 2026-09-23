@@ -148,6 +148,8 @@ the two-clocks regime in [doc/chat-first/](doc/chat-first/):
 - [doc/DRAWABILITY.md](doc/DRAWABILITY.md) — ruled drawing/asking rules.
 - [doc/chat-first/PICTURE_IDEAS.md](doc/chat-first/PICTURE_IDEAS.md) — round 7 (2026-09-23):
   fourteen picture-spot concepts, the passage each draws from, and the critic's verdict.
+- [doc/chat-first/MOBILE_VIEWS.md](doc/chat-first/MOBILE_VIEWS.md) — twenty-four small-screen
+  data views from shipped phone apps, each mapped onto the eight things the picture must say.
 - **The human oracle (MANDATORY regime; store lives in the PRIVATE fdserver repo)**: Patrick's direction is the binding input to all agentic development on this app and is maintained as a BKM store — fdserver `doc/oracle/` (SPEC + rulings index + evidence). Public docs cite rulings by id (`[Oracle: R-0001]`) and never restate quotes. Mining ops are append/merge/split/reword ONLY; withdrawal = status SUPERSEDED naming the successor (newest statement wins); never author a ruling the human did not say; capture his new statements into the store immediately. No raw transcripts anywhere — mine and maintain, never archive (R-0064). Nothing store-shaped may live in this public repo (the SPEC's oracle-outside-the-store guard will police this once built).
 These are living documents: every session refines them as part of its work (append to
 HISTORY, revise STATE).
