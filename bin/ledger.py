@@ -1,6 +1,6 @@
 """The event ledger: every dated item the corpus holds, one record each, from the
 sources that already exist — history entries, rulings, decision-log entries, review-log
-rows, commits in both worktrees, artifacts. Written to doc/chat-first/events.json by
+rows, commits in both worktrees, artifacts. Written to doc/events.json by
 the flush; nothing is authored here, only gathered and tagged.
 
   python bin/ledger.py            writes events.json and prints the counts
@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent
-DOC = HERE / "doc" / "chat-first"
+DOC = HERE / "doc"
 YEAR = "2026"
 
 # Topic keywords: the same words the topic blocks use. A record that matches none stays
@@ -58,7 +58,7 @@ def history() -> list[dict]:
             "topics": topics,
             "title": re.sub(r"\s*\[T-[^\]]*\]", "", head).strip(),
             "text": re.sub(r"<!--.*?-->", "", body).strip()[:1200],
-            "source": "doc/chat-first/HISTORY.md",
+            "source": "doc/HISTORY.md",
         })
     return out
 
@@ -132,7 +132,7 @@ def review_rows() -> list[dict]:
             "title": body[:110],
             "text": body[:600],
             "commit": fixed.group(1) if fixed else "",
-            "source": "doc/chat-first/REVIEW_LOG.md",
+            "source": "doc/REVIEW_LOG.md",
         })
     return out
 
