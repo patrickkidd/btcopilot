@@ -309,6 +309,10 @@ whether the two unbuilt hybrids (a fixed row of words naming the newest cluster,
 stacked sparklines one per variable) are worth drawing once the data exists. Standing rule
 throughout: when a view cannot be drawn until the record holds more, say so plainly [R-0380].
 
+A fault reported in the last drawing is explained and closed: a tap on a cluster there only
+selected it and showed its title, because the brief gave the designer the tap language for dots
+and left out the app's own behaviour, where a cluster slides in as a card [R-0224, R-0230,
+R-0223, R-0213]; no ruling changed it and the app itself is unaffected.
 **Open:** (1) [ruling] the coach writes the line of words above the picture, so every load spends
 a model call on one sentence that can be wrong: may it put two things side by side when the
 record holds only their dates, the way the drawn one pairs the 1994 move with the trouble
@@ -317,27 +321,28 @@ own, so the picture grows from 132 to 154 pixels and the chat under it loses 22:
 words worth that room? Same page; (3) [ruling] with the sentence there the line comes to rest
 where the sentence points rather than at the present, so the first thing on screen is the middle
 of the record instead of today: should the picture follow the words or always open on today?
-Same page; (4) [ruling] the earlier page on the crowded line https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj and the
+Same page. He has tested the sideways scroll on the deployed app and says it works well.
+The recommendation put to him, which is a recommendation and not his decision, is to build
+nothing from round 8 now and to fold the line of words into the cluster work instead, where the
+coach names each cluster's key shift; (4) [ruling] the earlier page on the crowded line https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj and the
 brainstorm of concepts https://claude.ai/artifact/G5gYDqzhvar5KXPJAhtbzm carry their own decisions and are unanswered; the
 withdrawn redraw is https://claude.ai/artifact/FzfjSGH6EQVt61vC5R2DFi ; (5) [ruling] whether a cluster's height should mean
 how much clinical signal sits under it — which of the four variables moved, in how many people,
-how close together — never the number of events; his own idea, unruled; (6) [verify] in the round 8 drawing a tap on a cluster
-only selects it and shows its title instead of opening it, which is what the app does and what he
-expects; the cause is not established; (7) [build] two faults
+how close together — never the number of events; his own idea, unruled; (6) [build] two faults
 of the line found while drawing round 8: at true scale the seven dots of the 2009 to 2011 cluster
 merge into one solid bar, and the 1996 dot cannot be tapped because the 1997 dot's target covers
-it; (8) [build] a third fault: the two-events-face-to-face drawing reads a row that does not
+it; (7) [build] a third fault: the two-events-face-to-face drawing reads a row that does not
 exist, so its second label and seam come out as nothing — nothing on his own path reaches it
-yet; (9) [build] grouping is the coach's judgement with a one-line scope and the floor binds only
+yet; (8) [build] grouping is the coach's judgement with a one-line scope and the floor binds only
 the automatic draft [R-0287]; the nodal ring stays and its flag follows the clinical definition
-[R-0283]; no trend lines until real data [R-0284]; (10) [build] the event editor's relationship
-fields; (11) [ruling] whether tapping an event's words inside an open cluster jumps to its
-editor, which he will say after testing [R-0207]; (12) [waiting] the gap between a cluster's
-opening event and its symptom waits for a record with enough data [R-0382]; (13) [waiting] the
+[R-0283]; no trend lines until real data [R-0284]; (9) [build] the event editor's relationship
+fields; (10) [ruling] whether tapping an event's words inside an open cluster jumps to its
+editor, which he will say after testing [R-0207]; (11) [waiting] the gap between a cluster's
+opening event and its symptom waits for a record with enough data [R-0382]; (12) [waiting] the
 family drawing waits for the traditional diagram and automatic arrangement [R-0379], and the
 lanes of generations wait for a record that carries shocks between households [R-0380];
-(14) [build] a play button under each coach bubble that plays or replays that message, the way
-the Claude app has one [R-0387]; (15) [ruling] which voice reads the replies: the phone's own
+(13) [build] a play button under each coach bubble that plays or replays that message, the way
+the Claude app has one [R-0387]; (14) [ruling] which voice reads the replies: the phone's own
 today, cloud neural voices at roughly a cent a reply, ElevenLabs at several times that, or
 self-hosted models the box cannot run. Anything paid also waits on the measurement question on
 the platform topic [R-0388].

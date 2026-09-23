@@ -595,5 +595,8 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    that view). Published; three decisions. WAITING on his word.
 
 43. In the round 8 drawing, tapping a cluster only selects it and shows its title instead of
-   opening it, which is what he expects from the app. Asked 2026-09-23; the cause has not been
-   established and the drawing has not been corrected. OPEN
+   opening it, which is what he expects from the app. EXPLAINED: the brief to the designer gave
+   the tap language for dots — first tap picks, second tap speaks, nothing else — and the designer
+   applied it to clusters too; the app's own behaviour, where a cluster tap slides the cluster in
+   as a card [R-0224, R-0230, R-0223, R-0213], was left out of the brief. No ruling changed it,
+   and the app itself is unaffected.
