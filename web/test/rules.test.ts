@@ -20,6 +20,7 @@ const signIn = (admin: boolean) => {
     diagram: null,
     session: null,
     statements: [],
+    version: "3.0.0",
   };
 };
 
