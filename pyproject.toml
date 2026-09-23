@@ -36,6 +36,7 @@ app = [
     "regex",
     "pygments",
     "python-dateutil",
+    "pyyaml",
     "stripe",
     "alembic",
     "rich",
