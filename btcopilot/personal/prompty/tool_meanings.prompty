@@ -6,6 +6,8 @@ meanings:
     Which kind of event this is. Use noted for anything worth writing down that is not a birth, adoption, marriage, bonding, separation, divorce, death or shift — a move, a new job, finishing a course. A noted event must say what happened in its description.
   description: |-
     What happened, with no names of the people this event links: the person, spouse, child and targets are said by their fields.
+  notes: |-
+    Free text kept on the event beside its description. Changing it replaces what is there, so write the whole text.
   location: |-
     Where it happened, when the conversation says where. On a noted event about a move it is the place they moved to.
   person: |-

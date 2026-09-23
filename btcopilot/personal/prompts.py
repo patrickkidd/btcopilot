@@ -34,6 +34,7 @@ class ToolText(enum.StrEnum):
 
     EventKind = "kind"
     Description = "description"
+    Notes = "notes"
     Location = "location"
     Person = "person"
     Spouse = "spouse"
