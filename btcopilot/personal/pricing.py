@@ -21,6 +21,9 @@ OPUS = Price(Decimal("5.00"), Decimal("25.00"), Decimal("6.25"), Decimal("0.50")
 PRICES = {
     "claude-opus-4-6": OPUS,
     "claude-opus-5": OPUS,
+    "claude-opus-5-5": Price(
+        Decimal("4.00"), Decimal("20.00"), Decimal("5.00"), Decimal("0.20")
+    ),
     "claude-sonnet-5": Price(
         Decimal("2.00"), Decimal("10.00"), Decimal("2.50"), Decimal("0.20")
     ),

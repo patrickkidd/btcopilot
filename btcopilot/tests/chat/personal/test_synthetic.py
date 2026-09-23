@@ -636,7 +636,7 @@ def test_opus_vs_gemini_baseline(test_user):
 
     evaluator = QualityEvaluator()
     models = {
-        "opus": "claude-opus-4-6",
+        "opus": "claude-opus-5-5",
         "gemini": "gemini-2.5-flash",
     }
     all_results = {}

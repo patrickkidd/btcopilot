@@ -16,8 +16,10 @@ from btcopilot.llmutil import RESPONSE_MODEL, resolve_model
 _log = logging.getLogger(__name__)
 _tracer = trace.get_tracer(__name__)
 
-MAX_TOKENS = 4096
-TEMPERATURE = 0.45
+# Thinking counts toward the cap even though its text is not returned.
+MAX_TOKENS = 16000
+# How hard the coach thinks before it speaks. Medium keeps the first word quick.
+COACH_EFFORT = "medium"
 
 # What the wire keeps between calls. One turn is several calls over the same
 # coaching text, the same tools and a growing history, so everything up to a
@@ -86,9 +88,16 @@ class ModelTurn:
     spent: Spent = field(default_factory=Spent)
 
 
+class Refusal(Exception):
+    """The API declined the call on safety grounds. The turn fails with the
+    category it named rather than ending in silence."""
+
+
 class CoachModel:
-    def __init__(self, model: str | None = None):
+    def __init__(self, model: str | None = None, effort: str | None = COACH_EFFORT):
+        """No effort is for a model that rejects the setting (Haiku 4.5)."""
         self.model = resolve_model(model) if model else RESPONSE_MODEL
+        self.effort = effort
 
     def turn(
         self,
@@ -113,25 +122,52 @@ class CoachModel:
                 with client.messages.stream(
                     model=self.model,
                     max_tokens=MAX_TOKENS,
-                    temperature=TEMPERATURE,
                     system=system_blocks(system),
                     messages=marked_messages(messages),
                     **({"tools": marked_tools(tools)} if tools else {}),
+                    **(
+                        {"output_config": {"effort": self.effort}}
+                        if self.effort
+                        else {}
+                    ),
                 ) as stream:
                     yield from stream.text_stream
                     message = stream.get_final_message()
             finally:
                 client.close()
 
+            if message.stop_reason == "refusal":
+                category = (
+                    message.stop_details.category if message.stop_details else None
+                )
+                raise Refusal(
+                    f"Coach model {self.model} turn {turn_id} refused: {category}"
+                )
+
             # Echo back only the fields the API accepts: a whole block dump carries
-            # SDK-side extras the next request rejects.
+            # SDK-side extras the next request rejects. Thinking goes back
+            # unchanged, or the next call in a tool loop fails.
             turn = ModelTurn()
             for block in message.content:
-                if block.type == "text":
+                if block.type == "thinking":
+                    turn.blocks.append(
+                        {
+                            "type": "thinking",
+                            "thinking": block.thinking,
+                            "signature": block.signature,
+                        }
+                    )
+                elif block.type == "redacted_thinking":
+                    turn.blocks.append(
+                        {"type": "redacted_thinking", "data": block.data}
+                    )
+                elif block.type == "text":
                     turn.text += block.text
                     turn.blocks.append({"type": "text", "text": block.text})
                 elif block.type == "tool_use":
-                    turn.calls.append(ToolCall(id=block.id, name=block.name, args=block.input))
+                    turn.calls.append(
+                        ToolCall(id=block.id, name=block.name, args=block.input)
+                    )
                     turn.blocks.append(
                         {
                             "type": "tool_use",

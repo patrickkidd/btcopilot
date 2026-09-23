@@ -20,24 +20,27 @@ CALIBRATION_MODEL = "gemini-3-flash-preview"
 
 # Chat/response model: configurable via env var for A/B testing.
 # Set BTCOPILOT_RESPONSE_MODEL to override. Supported values:
-#   "claude-opus-4-6" (default) — Anthropic Claude Opus 4.6
+#   "claude-opus-5-5" (default) — Anthropic Claude Opus 5.5
+#   "claude-opus-4-6" — Anthropic Claude Opus 4.6
 #   "gemini-3-flash-preview" — Google Gemini Flash (legacy)
 #   Any valid Anthropic or Gemini model identifier.
 # The backend is auto-detected from the model name prefix.
-RESPONSE_MODEL = os.environ.get("BTCOPILOT_RESPONSE_MODEL", "claude-opus-4-6")
+RESPONSE_MODEL = os.environ.get("BTCOPILOT_RESPONSE_MODEL", "claude-opus-5-5")
 GEMINI_RESPONSE_MODEL = "gemini-3-flash-preview"
 
-CLAUDE_THINKING_ENABLED = True
+TEXT_EFFORT = "medium"
+STRUCTURED_EFFORT = "high"
 
 # Client-facing model aliases → actual API model IDs.
 # The Personal app sends these aliases; the backend resolves them here.
 MODEL_ALIASES = {
+    "opus-5.5": "claude-opus-5-5",
     "opus-4.6": "claude-opus-4-6",
     "gemini-2.5-flash": "gemini-2.5-flash",
     "haiku-4.5": "claude-haiku-4-5-20251001",
 }
 
-DEFAULT_RESPONSE_MODEL_ALIAS = "opus-4.6"
+DEFAULT_RESPONSE_MODEL_ALIAS = "opus-5.5"
 
 
 def resolve_model(alias: str | None) -> str:
@@ -287,13 +290,11 @@ async def claude_text(prompt=None, **kwargs):
       - model: str — Claude model identifier (default: RESPONSE_MODEL)
       - system_instruction: str — system prompt
       - turns: list of (role, text) tuples — "user"/"model" mapped to "user"/"assistant"
-      - temperature: float (ignored when thinking is enabled — API forces 1.0)
       - max_output_tokens: int (default 8192, covers thinking + response)
       - prompt: str — simple single-turn prompt (alternative to turns)
 
-    When CLAUDE_THINKING_ENABLED, adaptive extended thinking is on (forces
-    temperature=1.0 per Anthropic API). Otherwise thinking is off and
-    temperature from kwargs is respected.
+    Thinking is always on and there is no sampling control; effort is the
+    only knob.
     """
     start_time = time.time()
     model = kwargs.get("model", RESPONSE_MODEL)
@@ -308,12 +309,9 @@ async def claude_text(prompt=None, **kwargs):
         "model": resolved_model,
         "max_tokens": max_output_tokens,
         "messages": messages,
+        "thinking": {"type": "adaptive"},
+        "output_config": {"effort": TEXT_EFFORT},
     }
-    if CLAUDE_THINKING_ENABLED:
-        api_kwargs["thinking"] = {"type": "adaptive"}
-    else:
-        temperature = kwargs.get("temperature", 0.45)
-        api_kwargs["temperature"] = temperature
     if system_instruction:
         api_kwargs["system"] = system_instruction
 
@@ -450,6 +448,7 @@ async def claude_structured(prompt, response_format, model):
         model=model,
         max_tokens=32000,
         thinking={"type": "adaptive"},
+        output_config={"effort": STRUCTURED_EFFORT},
         messages=[{"role": "user", "content": full_prompt}],
     ) as stream:
         response = await stream.get_final_message()

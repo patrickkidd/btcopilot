@@ -9,6 +9,7 @@ from btcopilot.llmutil import (
     response_text_sync,
     _is_claude_model,
     _prepare_claude_messages,
+    TEXT_EFFORT,
 )
 
 
@@ -16,7 +17,7 @@ from btcopilot.llmutil import (
 
 
 def test_is_claude_model_positive():
-    assert _is_claude_model("claude-opus-4-6")
+    assert _is_claude_model("claude-opus-5-5")
     assert _is_claude_model("claude-sonnet-4-20250514")
     assert _is_claude_model("claude-3-opus-20240229")
 
@@ -100,12 +101,13 @@ async def test_claude_text_with_turns():
         result = await claude_text(
             system_instruction="You are a coach.",
             turns=[("user", "Hi"), ("model", "Hello"), ("user", "How are you?")],
-            temperature=0.45,
         )
 
     assert result == "AI response"
     call_kwargs = mock_create.call_args[1]
     assert call_kwargs["system"] == "You are a coach."
+    assert call_kwargs["output_config"] == {"effort": TEXT_EFFORT}
+    assert "temperature" not in call_kwargs
     messages = call_kwargs["messages"]
     assert messages[0]["role"] == "user"
     assert messages[1]["role"] == "assistant"
@@ -152,7 +154,7 @@ def test_claude_text_sync():
 def test_response_text_sync_routes_to_claude():
     """response_text_sync routes to Claude when RESPONSE_MODEL starts with claude-."""
     with (
-        patch("btcopilot.llmutil.RESPONSE_MODEL", "claude-opus-4-6"),
+        patch("btcopilot.llmutil.RESPONSE_MODEL", "claude-opus-5-5"),
         patch("btcopilot.llmutil._is_claude_model", return_value=True),
         patch(
             "btcopilot.llmutil.claude_text",

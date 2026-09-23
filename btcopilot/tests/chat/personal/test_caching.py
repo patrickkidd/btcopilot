@@ -11,7 +11,7 @@ import pytest
 from mock import patch
 
 from btcopilot.personal import prompts
-from btcopilot.personal.coachmodel import CACHE, CoachModel
+from btcopilot.personal.coachmodel import CACHE, COACH_EFFORT, CoachModel, Refusal
 
 TOOLS = [
     {"name": "first", "description": "one", "input_schema": {"type": "object"}},
@@ -26,9 +26,17 @@ class Usage:
     cache_read_input_tokens = 8200
 
 
+class Block:
+    def __init__(self, **fields):
+        self.__dict__.update(fields)
+
+
 class Reply:
-    content = []
-    usage = Usage()
+    def __init__(self, content=(), stop_reason="end_turn", stop_details=None):
+        self.content = list(content)
+        self.stop_reason = stop_reason
+        self.stop_details = stop_details
+        self.usage = Usage()
 
 
 class Wire:
@@ -36,6 +44,7 @@ class Wire:
 
     def __init__(self, **_):
         self.sent = {}
+        self.reply = Reply()
 
     def messages_stream(self, **kwargs):
         self.sent = dict(kwargs)
@@ -56,7 +65,7 @@ class Wire:
         return iter(["hello"])
 
     def get_final_message(self):
-        return Reply()
+        return self.reply
 
     def close(self):
         pass
@@ -70,13 +79,18 @@ def wire(monkeypatch):
         yield sent
 
 
-def call(wire, system, messages, tools=TOOLS, turn_id="abc123"):
-    words = CoachModel(model="claude-opus-4-6").turn(system, messages, tools, turn_id)
+def run(model, system, messages, tools=TOOLS, turn_id="abc123"):
+    words = model.turn(system, messages, tools, turn_id)
     while True:
         try:
             next(words)
-        except StopIteration:
-            return wire.sent
+        except StopIteration as stop:
+            return stop.value
+
+
+def call(wire, system, messages, tools=TOOLS, turn_id="abc123"):
+    run(CoachModel(model="claude-opus-5-5"), system, messages, tools, turn_id)
+    return wire.sent
 
 
 def marks(sent: dict) -> int:
@@ -145,3 +159,40 @@ def test_the_two_halves_of_the_coach_prompt_are_the_whole_prompt():
     assert "Marcus, 40" not in fixed
     assert "looked at 3" not in fixed
     assert fixed == prompts.agent_prompt(record="Someone else, 12")[0]
+
+
+def test_the_coach_asks_for_its_effort_and_no_sampling(wire):
+    sent = call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
+    assert sent["output_config"] == {"effort": COACH_EFFORT}
+    assert "temperature" not in sent
+
+
+def test_a_model_without_effort_sends_none(wire):
+    model = CoachModel(model="haiku-4.5", effort=None)
+    run(model, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
+    assert "output_config" not in wire.sent
+
+
+def test_thinking_goes_back_unchanged_before_the_tool_call(wire):
+    wire.reply = Reply(
+        [
+            Block(type="thinking", thinking="", signature="sig", extra="sdk"),
+            Block(type="redacted_thinking", data="opaque"),
+            Block(type="tool_use", id="t1", name="first", input={}),
+        ],
+        stop_reason="tool_use",
+    )
+    turn = run(
+        CoachModel(), ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}]
+    )
+    assert turn.blocks[:2] == [
+        {"type": "thinking", "thinking": "", "signature": "sig"},
+        {"type": "redacted_thinking", "data": "opaque"},
+    ]
+    assert [call.id for call in turn.calls] == ["t1"]
+
+
+def test_a_refusal_fails_the_turn_with_its_category(wire):
+    wire.reply = Reply(stop_reason="refusal", stop_details=Block(category="bio"))
+    with pytest.raises(Refusal, match="bio"):
+        run(CoachModel(), ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])

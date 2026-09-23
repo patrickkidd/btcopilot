@@ -64,7 +64,7 @@ def returning_user_setup(test_user):
 def test_smoke_opus_returning_user(returning_user_setup):
     discussion = returning_user_setup
     user_msg = "Hey, I've been having a rough week. My boss has been on my case and I haven't been sleeping well."
-    response = ask(discussion, user_msg, model="claude-opus-4-6")
+    response = ask(discussion, user_msg, model="claude-opus-5-5")
     tr = [("user", user_msg), ("ai", response.statement)]
     _judge("(a) opening-current-events Opus", tr)
     assert response.statement and len(response.statement) > 20
@@ -126,7 +126,7 @@ def test_pattern_b_shallow_cycling_opus(returning_user_setup):
         "Yeah, I guess. Same kind of stuff.",
         "It is what it is.",
     ]
-    transcript = _multi_turn(returning_user_setup, user_turns, model="claude-opus-4-6")
+    transcript = _multi_turn(returning_user_setup, user_turns, model="claude-opus-5-5")
     _print_transcript("Pattern (b) Opus", transcript)
     _judge("(b) shallow-cycling Opus", transcript)
     assert transcript[-1][1]
@@ -214,7 +214,7 @@ def test_pattern_c_long_session_opus(heavy_structure_thin_functioning):
         "I guess. Mary has been calling more lately too. That doesn't help.",
         "She gets in her head about things. Always has.",
     ]
-    transcript = _multi_turn(heavy_structure_thin_functioning, user_turns, model="claude-opus-4-6")
+    transcript = _multi_turn(heavy_structure_thin_functioning, user_turns, model="claude-opus-5-5")
     _print_transcript("Pattern (c) Opus", transcript)
     _judge("(c) long-session Opus", transcript)
     assert transcript[-1][1]

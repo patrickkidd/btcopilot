@@ -38,10 +38,10 @@ def rendered(module, names) -> dict:
     out["scribe_prompt/empty"] = module.scribe_prompt()
     out["scribe_prompt/record"] = module.scribe_prompt(record=RECORD)
     out["get_conversation_flow_prompt/claude"] = module.get_conversation_flow_prompt(
-        model="claude-opus-4-6", committed_state=STATE
+        model="claude-opus-5-5", committed_state=STATE
     )
     out["get_conversation_flow_prompt/claude_empty"] = (
-        module.get_conversation_flow_prompt(model="claude-opus-4-6")
+        module.get_conversation_flow_prompt(model="claude-opus-5-5")
     )
     out["get_conversation_flow_prompt/gemini"] = module.get_conversation_flow_prompt(
         model="gemini-2.5-flash", committed_state=STATE

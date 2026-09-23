@@ -14,7 +14,7 @@ from btcopilot import diagramjson
 from btcopilot.extensions import db
 from btcopilot.personal import prompts, record
 from btcopilot.personal.record import Invalid
-from btcopilot.personal.coachmodel import CoachModel
+from btcopilot.personal.coachmodel import COACH_EFFORT, CoachModel
 from btcopilot.personal.coachturn import CoachTurn
 from btcopilot.personal.models import (
     Author,
@@ -263,8 +263,10 @@ def next_statement(discussion_id: int, after_id: int) -> Statement | None:
     return None
 
 
-def coach_model(name: str | None = None) -> CoachModel:
-    return CoachModel(model=name)
+def coach_model(
+    name: str | None = None, effort: str | None = COACH_EFFORT
+) -> CoachModel:
+    return CoachModel(model=name, effort=effort)
 
 
 def replay_into(diagram: Diagram, discussion: Discussion, statements, model=None):

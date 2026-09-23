@@ -42,7 +42,7 @@ def calling(*wanted: tuple[ToolName, dict], text: str = "") -> ModelTurn:
 class Model:
     """A coach that says exactly what the test scripted, in order."""
 
-    model = "claude-opus-4-6"
+    model = "claude-opus-5-5"
 
     def __init__(self, *turns: ModelTurn):
         self.turns = list(turns)

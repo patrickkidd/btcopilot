@@ -692,7 +692,7 @@ def test_a_turn_writes_down_each_model_call_with_its_cost(discussion, family):
     reply = run(discussion, "My aunt Nell.", Model(first, second))
 
     calls = ModelCall.query.order_by(ModelCall.id).all()
-    rate = pricing.PRICES["claude-opus-4-6"]
+    rate = pricing.PRICES["claude-opus-5-5"]
     assert [
         (
             c.user_id,
@@ -712,7 +712,7 @@ def test_a_turn_writes_down_each_model_call_with_its_cost(discussion, family):
             discussion.user_id,
             discussion.diagram_id,
             reply["turn_id"],
-            "claude-opus-4-6",
+            "claude-opus-5-5",
             1000,
             50,
             800,
@@ -725,7 +725,7 @@ def test_a_turn_writes_down_each_model_call_with_its_cost(discussion, family):
             discussion.user_id,
             discussion.diagram_id,
             reply["turn_id"],
-            "claude-opus-4-6",
+            "claude-opus-5-5",
             1100,
             40,
             0,
