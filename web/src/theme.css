@@ -308,6 +308,38 @@ button { font-family: inherit; }
    so a tap that opens a chapter changes nothing below it. */
 .ss svg[height] { height: auto; }
 
+/* The resting line is drawn wider than the screen and slides sideways under
+   it, so a crowded record reads at a scale a thumb can pick from (R-0381).
+   Two screens at the most, and it settles where a cluster is not cut in half.
+   No scrollbar: the picture is a drawing, and a bar in it would take height
+   the region does not have. A vertical swipe is left alone, so the chat under
+   the picture still scrolls from a thumb that starts on it. */
+.ss-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.ss-scroll::-webkit-scrollbar { display: none; }
+.ss-line { position: relative; height: 100%; }
+.ss-snap { position: absolute; top: 0; width: 1px; height: 1px; scroll-snap-align: start; }
+/* The years at the two ends of the stretch on screen, rewritten as it slides.
+   They stand still while the line moves under them. */
+.ss-yrs {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 51px;
+  display: flex;
+  justify-content: space-between;
+  font: 400 10.5px/11px var(--mono);
+  color: var(--faint);
+  pointer-events: none;
+}
+
 /* the wire, and the years at its ends */
 .ss .wire { stroke: var(--line); stroke-width: 1.5; }
 .ss .wire.empty { stroke-dasharray: 3 6; }

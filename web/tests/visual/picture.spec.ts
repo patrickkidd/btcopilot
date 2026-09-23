@@ -85,3 +85,83 @@ test.describe("the undated shelf", () => {
     await expect(page.locator("#view .qm")).toHaveCount(0);
   });
 });
+
+/** The line is drawn a little wider than the screen and slides sideways under
+ * it, so a crowded record reads at a scale a thumb can pick from (R-0381).
+ * The dense record is the one wide enough to slide. */
+test.describe("the resting line slides sideways", () => {
+  test.use({ storageState: stateFor("dense60") });
+
+  const line = (page: import("@playwright/test").Page) =>
+    page.locator("#view .ss-scroll");
+
+  const at = (page: import("@playwright/test").Page) =>
+    line(page).evaluate((node) => ({
+      left: node.scrollLeft,
+      end: node.scrollWidth - node.clientWidth,
+      screen: node.clientWidth,
+    }));
+
+  /** A swipe across the picture, which takes the line back into the earlier
+   * years. */
+  const swipe = async (page: import("@playwright/test").Page, by: number) => {
+    await line(page).hover();
+    await page.mouse.wheel(-by, 0);
+    await page.waitForTimeout(600);
+  };
+
+  const yearsUnder = (page: import("@playwright/test").Page) =>
+    page.locator("#view .ss-yrs span").allTextContents();
+
+  test("opens with the most recent stretch filling the width", async ({ page }) => {
+    await settle(page);
+    const { left, end, screen } = await at(page);
+    expect(end).toBeGreaterThan(0);
+    expect(left).toBe(end);
+    // one or two swipes, never a data project: two screens is the whole line
+    expect(end + screen).toBeLessThanOrEqual(2 * screen);
+  });
+
+  test("a swipe takes it back to the earlier years", async ({ page }) => {
+    await settle(page);
+    const before = await yearsUnder(page);
+    expect(before).toHaveLength(2);
+    await swipe(page, 300);
+    const now = await at(page);
+    expect(now.left).toBeLessThan(now.end);
+    const after = await yearsUnder(page);
+    expect(Number(after[0])).toBeLessThan(Number(before[0]));
+  });
+
+  test("every dot stays on the wire, wherever the line stands", async ({ page }) => {
+    await settle(page);
+    const onWire = async () =>
+      page.locator("#view .ss svg").evaluate((svg) => {
+        const wire = svg.querySelector("line.wire") as SVGLineElement;
+        const y = Number(wire.getAttribute("y1"));
+        return [...svg.querySelectorAll("circle")].every(
+          (dot) => Number(dot.getAttribute("cy")) === y,
+        );
+      });
+    expect(await onWire()).toBe(true);
+    await swipe(page, 300);
+    expect(await onWire()).toBe(true);
+  });
+
+  test("settles where a cluster is not cut in half", async ({ page }) => {
+    await settle(page);
+    const settled = await line(page).evaluate((node) => ({
+      type: getComputedStyle(node).scrollSnapType,
+      stops: node.querySelectorAll(".ss-snap").length,
+    }));
+    expect(settled.type).toContain("x");
+    expect(settled.stops).toBeGreaterThan(1);
+  });
+
+  test("a tap still picks the cluster under the thumb", async ({ page }) => {
+    await settle(page);
+    await swipe(page, 300);
+    await page.locator('.ss-hit[data-target="cluster"]').first().click();
+    await expect(page.locator('.ss-hit[data-target="zone"]').first()).toBeVisible();
+  });
+});

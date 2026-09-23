@@ -73,6 +73,11 @@ What it is for: the one picture, always above the chat, that is the app's memory
 - It keeps a fixed height whatever it is showing, so the chat below it never jumps. [built] {R-0210}
 - At rest it shows your clusters over time on one line: a horizontal line with marks on it and nothing else. [built]
 - Only the line and the marks on it are drawn at this size. [built] {R-0005, R-0359}
+- The line is drawn a little wider than the screen and slides sideways, so a crowded record still reads at a size you can tap. The most recent years fill the width when it opens; the earlier ones are one swipe to the left, at most two. [built] {R-0381}
+- The whole line is never more than two screens wide. A record with far more events on it draws at a coarser scale instead of reaching further, so it is never something you have to work through. [built] {R-0381}
+- What stays put while it slides: the height of the picture, the line itself from edge to edge, and the years underneath, which say which stretch you are looking at and change as it moves. [built] {R-0381}
+- After a swipe it settles so a cluster is not cut in half at either edge when one is near enough to settle on, and it goes back to the present when the coach answers. [built] {R-0381}
+- Marks never move up or down: every event sits on the line at the same height, wherever the line stands. [built] {R-0377}
 - The band under the picture reads "tap a cluster" when nothing is picked. [built]
 - Tapping a mark once shows its words; nothing is sent to the coach and it costs you nothing. [built] {R-0073}
 - Tapping it again sends it to the coach as something you are asking about. [built] {R-0072, R-0073}

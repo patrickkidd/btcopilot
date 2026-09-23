@@ -45,10 +45,10 @@ import {
 const YEAR_W = 60;
 /** Patrick, 2026-09-21: the undated shelf's "?" stays off until it explains itself. */
 const HIDE_SHELF_MARK = true;
-/** The year sits centred under its dot, but never past the picture's edge: a
- * dot at either end keeps its year inside the box. */
-const yearLeft = (x: number, width: number): string =>
-  Math.max(0, Math.min(width - YEAR_W, x - YEAR_W / 2)).toFixed(1);
+/** The year sits centred under its dot, but never past the edges of what is on
+ * screen: a dot at either end keeps its year inside the picture. */
+const yearLeft = (x: number, from: number, to: number): string =>
+  Math.max(from, Math.min(to - YEAR_W, x - YEAR_W / 2)).toFixed(1);
 
 /** The ratified hold: 1000ms after each move before the prose continues. */
 const HOLD_MS = 1000;
@@ -74,6 +74,13 @@ const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * (picked phone mockup, 2026-09-08). */
 /** The least space left between two cluster boxes that would otherwise touch. */
 const BOX_GAP = 6;
+/** How far a box reaches past the moments it holds, at each end. */
+const BOX_PAD = 10;
+/** IBM Plex Mono's advance at the 10.5px the years inside a box are written. */
+const YEAR_CH = 6.3;
+/** The resting line is never drawn wider than this many screens: past it the
+ * scale coarsens rather than the line reaching further (R-0381). */
+const REACH = 2;
 
 const REST_H = 60;
 const REST_WIRE = 30;
@@ -88,6 +95,35 @@ function shortYears(start: string, end: string): string {
   const a = start.slice(2, 4);
   const b = end.slice(2, 4);
   return a === b ? a : `${a}\u2013${b}`;
+}
+
+/** How wide the resting line is drawn, for a picture this many pixels wide.
+ *
+ * Wide enough that no two cluster boxes run into each other and every box keeps
+ * room for the years written in it, and never more than two screens: on a
+ * record too crowded for that the scale coarsens rather than the line reaching
+ * further, so the whole history is always one or two swipes (R-0381). The
+ * clusters come in time order; the dates are every dated moment, in order. */
+export function restWidth(
+  clusters: { start: string; end: string }[],
+  dates: string[],
+  screen: number,
+): number {
+  if (dates.length < 2) return screen;
+  const span = years(dates[dates.length - 1]) - years(dates[0]);
+  if (span <= 0) return screen;
+  let scale = (screen - 2 * X_PAD) / span;
+  clusters.forEach((cluster, i) => {
+    const room =
+      shortYears(cluster.start, cluster.end).length * YEAR_CH + 8 - 2 * BOX_PAD;
+    const held = years(cluster.end) - years(cluster.start);
+    if (held > 0 && room > 0) scale = Math.max(scale, room / held);
+    // two clusters that already touch in time can never be pulled apart, and
+    // the boxes give way to each other instead
+    const apart = i ? years(cluster.start) - years(clusters[i - 1].end) : 0;
+    if (apart > 0) scale = Math.max(scale, (2 * BOX_PAD + BOX_GAP) / apart);
+  });
+  return Math.round(Math.min(REACH * screen, 2 * X_PAD + scale * span));
 }
 
 /** The picture's levels. The middle "cluster drilldown" is CUT (R-0074): the
@@ -153,10 +189,25 @@ const DEPTH: Record<Level, number> = {
   [Level.About]: 2,
 };
 
-const STILL = window.matchMedia("(prefers-reduced-motion: reduce)");
+const still = (): boolean =>
+  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
+/** Where the resting line sits once it has been drawn again. */
+enum Park {
+  /** The present at the right end: at load, and when the record changes. */
+  Present = "present",
+  /** Where the reader left it. */
+  Held = "held",
+  /** On the moment the coach's words, or a chip in them, just named. */
+  Named = "named",
+}
+
+const SCROLLER = ".ss-scroll";
 
 /** A still picture of the region as it is now, laid over it: the live rows
- * are cloned without their ids so nothing on the page can find the copies. */
+ * are cloned without their ids so nothing on the page can find the copies.
+ * How far the line was scrolled is carried across, because a clone starts at
+ * the left end and the copy has to stand where the reader left it. */
 function snapshot(region: HTMLElement, ...skip: Element[]): HTMLElement {
   const lay = document.createElement("div");
   lay.className = "slide-lay";
@@ -164,9 +215,19 @@ function snapshot(region: HTMLElement, ...skip: Element[]): HTMLElement {
     if (skip.includes(child) || child.classList.contains("slide-lay")) continue;
     const copy = child.cloneNode(true) as HTMLElement;
     for (const el of [copy, ...copy.querySelectorAll("[id]")]) el.removeAttribute("id");
+    const live = [...child.querySelectorAll<HTMLElement>(SCROLLER)];
+    copy.querySelectorAll<HTMLElement>(SCROLLER).forEach((el, i) => {
+      el.dataset.left = String(live[i]?.scrollLeft ?? 0);
+    });
     lay.append(copy);
   }
   return lay;
+}
+
+/** Stand a snapshot's lines where the live ones were, once it is on the page. */
+function keepScroll(lay: HTMLElement): void {
+  for (const el of lay.querySelectorAll<HTMLElement>(SCROLLER))
+    el.scrollLeft = Number(el.dataset.left ?? 0);
 }
 
 export interface Tap {
@@ -191,6 +252,12 @@ export function years(iso: string): number {
   return new Date(iso + "T00:00:00Z").getTime() / YEAR;
 }
 
+/** The calendar year a point on the line falls in. years() counts from 1970,
+ * so the way back to a year is through the date that point stands for. */
+export function yearAt(at: number): number {
+  return new Date(at * YEAR).getUTCFullYear();
+}
+
 interface Mark {
   event: TimelineEvent;
   x: number;
@@ -198,8 +265,8 @@ interface Mark {
 
 /** "2006", or "2004–2006": the span in full years, for a page with room. */
 function fullYears(start: string, end: string): string {
-  const a = Math.floor(years(start));
-  const b = Math.floor(years(end));
+  const a = yearAt(years(start));
+  const b = yearAt(years(end));
   return a === b ? String(a) : `${a}\u2013${b}`;
 }
 
@@ -232,6 +299,10 @@ export class Picture {
    * spotlit moment does: until the next thing is aimed at or picked. */
   private litPeople: number[] = [];
   private band: { start: string; end: string } | null = null;
+  /** Where the resting line stands after the next draw, and the moment it goes
+   * to when the coach's words name one. */
+  private park = Park.Present;
+  private aimed: number | null = null;
   private focus: Cluster | null = null;
   private range = { min: 0, max: 1 };
   private laid: { zones: Mark[][]; rows: LabelRow[] } = {
@@ -284,10 +355,13 @@ export class Picture {
 
   private tapAt(target: Target, e: Event, index = -1): Tap {
     const box = this.host.getBoundingClientRect();
+    // the marks and the words sit on the line, which slides under the picture,
+    // so where the thumb landed is read in the line's own places
+    const slid = this.host.querySelector<HTMLElement>(SCROLLER)?.scrollLeft ?? 0;
     return {
       target,
       index,
-      x: (e as MouseEvent).clientX - box.left,
+      x: (e as MouseEvent).clientX - box.left + slid,
       y: (e as MouseEvent).clientY - box.top,
     };
   }
@@ -316,6 +390,7 @@ export class Picture {
     this.named = [];
     this.selected = null;
     this.litPeople = [];
+    this.park = Park.Present;
     this.focus = null;
     this.cluster = null;
     this.level = Level.Rest;
@@ -325,6 +400,9 @@ export class Picture {
 
   setData(data: Timeline): void {
     this.data = data;
+    // the record has changed under the picture, which is what a reply leaves
+    // behind: the line goes back to the present (R-0381)
+    this.park = Park.Present;
     this.rescale();
     this.render();
   }
@@ -334,6 +412,7 @@ export class Picture {
     this.named = eventIds;
     this.selected = null;
     this.litPeople = [];
+    this.aim(eventIds[0] ?? null);
     // naming something opens the cluster it belongs to; naming nothing leaves
     // the picture at rest, showing the whole line
     this.level = eventIds.length ? Level.Wire : Level.Rest;
@@ -346,7 +425,15 @@ export class Picture {
   select(eventId: number | null): void {
     this.selected = eventId;
     this.litPeople = [];
+    // a tap moves nothing: the reader is already looking at what they touched
     this.render();
+  }
+
+  /** The line goes to the moment the coach's words, or a chip in them, just
+   * named, and stays where it is when they name nothing. */
+  private aim(eventId: number | null): void {
+    this.aimed = eventId;
+    this.park = eventId === null ? Park.Held : Park.Named;
   }
 
   selection(): number | null {
@@ -397,6 +484,7 @@ export class Picture {
       return;
     }
     this.selected = eventId;
+    this.aim(eventId);
     this.render();
   }
 
@@ -601,6 +689,7 @@ export class Picture {
   clear(): void {
     this.named = [];
     this.selected = null;
+    this.park = Park.Present;
     this.cast = [];
     this.band = null;
     this.focus = null;
@@ -670,10 +759,8 @@ export class Picture {
   /** Where a tap target of this size sits when it is meant to be centred on a
    * point: a target for a thumb is wider than the gap at the ends of the wire,
    * so one near an end is slid inside rather than left hanging off the edge. */
-  private hitLeft(middle: number, size: number): string {
-    return Math.min(Math.max(middle - size / 2, 0), this.width - size).toFixed(
-      1,
-    );
+  private hitLeft(middle: number, size: number, width = this.width): string {
+    return Math.min(Math.max(middle - size / 2, 0), width - size).toFixed(1);
   }
 
   private x(iso: string): number {
@@ -720,16 +807,14 @@ export class Picture {
   }
 
   private renderRest(): void {
-    const width = this.width;
-    const x0 = X_PAD;
-    const x1 = width - X_PAD;
+    const screen = this.width;
     const dated = this.dated();
     this.laid = { zones: [], rows: [] };
     this.pin(PIC_H);
 
     // What has no date exists at every level: it is the one thing on the
     // picture the record is still asking about.
-    const shelf = this.shelfHit(x1, REST_WIRE);
+    const shelf = this.shelfHit(screen - X_PAD, REST_WIRE);
 
     if (!dated.length) {
       this.host.innerHTML =
@@ -739,6 +824,16 @@ export class Picture {
     }
 
     const clusters = this.restClusters();
+    // The line is drawn wider than the screen and slides sideways under it, so
+    // a crowded record reads at a scale a thumb can pick from (R-0381).
+    const width = restWidth(
+      clusters,
+      dated.map((e) => e.dateTime as string),
+      screen,
+    );
+    const held = this.host.querySelector<HTMLElement>(SCROLLER)?.scrollLeft ?? null;
+    const x0 = X_PAD;
+    const x1 = width - X_PAD;
     // A picked loose moment gets the words, dot and year the open cluster gives
     // one — the same two lines above the wire — so the wire drops to where the
     // words leave room and the boxes, which live where the words go, become
@@ -753,6 +848,11 @@ export class Picture {
       dated.length === 1
         ? (x0 + x1) / 2
         : x0 + ((years(iso) - first) / span) * (x1 - x0);
+    const aimed = dated.find((e) => e.id === this.aimed);
+    const onX = aimed ? at(aimed.dateTime as string) : null;
+    // where the line comes to rest, so the words of a picked moment are
+    // written across the stretch the reader will be looking at
+    const shows = this.stands({ width, screen }, held, onX);
 
     let svg =
       `<svg viewBox="0 0 ${width} ${REST_H}" height="${REST_H}" preserveAspectRatio="xMinYMin meet">` +
@@ -769,8 +869,8 @@ export class Picture {
     // month apart would then draw over one another. Where that happens the two
     // boxes give way to each other and leave a gap between them.
     const edges = clusters.map((cluster) => ({
-      left: at(cluster.start) - 10,
-      right: at(cluster.end) + 10,
+      left: at(cluster.start) - BOX_PAD,
+      right: at(cluster.end) + BOX_PAD,
     }));
     for (let i = 1; i < edges.length; i += 1) {
       const gap = edges[i].left - edges[i - 1].right;
@@ -827,7 +927,7 @@ export class Picture {
       clusterHits +=
         `<button class="ss-hit" data-target="${Target.Cluster}" data-index="${i}" ` +
         `aria-label="${esc(cluster.title || shortYears(cluster.start, cluster.end))}" ` +
-        `style="left:${this.hitLeft(middle, target)}px;top:${wireY - ZONE / 2}px;` +
+        `style="left:${this.hitLeft(middle, target, width)}px;top:${wireY - ZONE / 2}px;` +
         `width:${target.toFixed(1)}px;height:${ZONE}px"></button>`;
     });
     // A moment no cluster claims is drawn as itself: a dot on the wire where it
@@ -843,7 +943,7 @@ export class Picture {
       hits +=
         `<button class="ss-hit" data-target="${Target.Zone}" data-index="${i}" ` +
         `aria-label="${esc(event.label)}" ` +
-        `style="left:${this.hitLeft(x, ZONE)}px;top:${wireY - ZONE / 2}px;` +
+        `style="left:${this.hitLeft(x, ZONE, width)}px;top:${wireY - ZONE / 2}px;` +
         `width:${ZONE}px;height:${ZONE}px"></button>`;
     });
 
@@ -851,18 +951,93 @@ export class Picture {
 
     let words = "";
     if (picked) {
-      const laid = this.labels(marks, x0, x1, wireY);
+      // the words are written across the stretch on screen and travel with
+      // their own mark from there
+      const laid = this.labels(marks, shows + X_PAD, shows + screen - X_PAD, wireY);
       this.laid.rows = laid.rowsLaid;
       const mark = marks.find((m) => m.event.id === this.selected) as Mark;
       words =
         laid.text +
-        `<div class="ss-yr on" style="left:${yearLeft(mark.x, width)}px;` +
+        `<div class="ss-yr on" style="left:${yearLeft(mark.x, shows, shows + screen)}px;` +
         `top:${YEAR_TOP}px;width:${YEAR_W}px;text-align:center">${esc(this.yearOf(mark.event))}</div>`;
     }
 
+    // Where the line settles after a swipe: at a box's near edge, so a cluster
+    // is never cut in half, and at the present.
+    const stops = new Set<string>();
+    for (const edge of edges) {
+      stops.add(Math.max(0, edge.left - X_PAD).toFixed(1));
+      stops.add(Math.max(0, edge.right + X_PAD - screen).toFixed(1));
+    }
+    stops.add(Math.max(0, width - screen).toFixed(1));
+    const snaps = [...stops]
+      .map((left) => `<i class="ss-snap" style="left:${left}px"></i>`)
+      .join("");
+    // The years say which stretch of the record is on screen, and are written
+    // again as it slides. They belong to a line long enough to slide.
+    const ends =
+      width > screen && !picked
+        ? `<div class="ss-yrs"><span></span><span></span></div>`
+        : "";
+
     // A cluster's target goes down last so it wins where a loose moment's
     // thumb-sized target reaches over its box: a tap on a box opens the box.
-    this.host.innerHTML = `<div class="ss">${svg}${words}${hits}${clusterHits}${shelf}</div>`;
+    this.host.innerHTML =
+      `<div class="ss"><div class="ss-scroll"><div class="ss-line" style="width:${width.toFixed(1)}px">` +
+      `${svg}${words}${hits}${clusterHits}${snaps}</div></div>${ends}${shelf}</div>`;
+    this.settle({ width, screen, first, span }, held, onX);
+  }
+
+  /** Where the line comes to rest after this draw: on the moment just named,
+   * where the reader left it, or parked at the present. */
+  private stands(
+    view: { width: number; screen: number },
+    held: number | null,
+    onX: number | null,
+  ): number {
+    const end = Math.max(0, view.width - view.screen);
+    if (this.park === Park.Named && onX !== null)
+      return Math.max(0, Math.min(end, onX - view.screen / 2));
+    if (this.park === Park.Held && held !== null) return Math.min(end, held);
+    return end;
+  }
+
+  /** Where the line stands once it has been drawn: parked at the present, on
+   * the moment just named, or where the reader left it. The years under it are
+   * written from the stretch on screen, and again on every slide. */
+  private settle(
+    view: { width: number; screen: number; first: number; span: number },
+    held: number | null,
+    onX: number | null,
+  ): void {
+    const scroll = this.host.querySelector<HTMLElement>(SCROLLER);
+    if (!scroll) return;
+    const reach = view.width - 2 * X_PAD;
+    const ends = [...this.host.querySelectorAll<HTMLElement>(".ss-yrs span")];
+    const write = () => {
+      if (ends.length !== 2) return;
+      const year = (x: number) =>
+        String(
+          yearAt(
+            view.first +
+              ((Math.max(X_PAD, Math.min(view.width - X_PAD, x)) - X_PAD) / reach) *
+                view.span,
+          ),
+        );
+      ends[0].textContent = year(scroll.scrollLeft);
+      ends[1].textContent = year(scroll.scrollLeft + view.screen);
+    };
+    scroll.addEventListener("scroll", write);
+    const named = this.park === Park.Named && onX !== null;
+    const to = this.stands(view, held, onX);
+    this.park = Park.Held;
+    this.aimed = null;
+    // the line travelling to what was named is the picture answering the
+    // coach's words; every other draw puts it down where it belongs at once
+    if (named && held !== null && !still())
+      scroll.scrollTo({ left: to, behavior: "smooth" });
+    else scroll.scrollLeft = to;
+    write();
   }
 
   /** The clusters the resting level draws, in time order. They are the ones
@@ -920,7 +1095,7 @@ export class Picture {
         0,
       ),
     );
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)
+    if (still())
       this.host.querySelector("svg")?.pauseAnimations();
   }
 
@@ -963,7 +1138,7 @@ export class Picture {
     const from = this.depth;
     this.depth = to;
     this.land();
-    if (to === from || !this.host.firstChild || STILL.matches) {
+    if (to === from || !this.host.firstChild || still()) {
       this.draw();
       return;
     }
@@ -987,9 +1162,11 @@ export class Picture {
     this.draw();
     region.classList.add("sliding");
     region.append(leaving);
+    keepScroll(leaving);
     requestAnimationFrame(() => {
       const arriving = snapshot(region, leaving);
       region.append(dir === 1 ? arriving : leaving);
+      keepScroll(arriving);
       const mover = dir === 1 ? arriving : leaving;
       const off = { transform: "translateX(100%)" };
       const on = { transform: "translateX(0)" };
@@ -1133,7 +1310,7 @@ export class Picture {
     // mockup, A).
     const picked = marks.find((m) => m.event.id === this.selected);
     const html = picked
-      ? `<div class="ss-yr on" style="left:${yearLeft(picked.x, width)}px;` +
+      ? `<div class="ss-yr on" style="left:${yearLeft(picked.x, 0, width)}px;` +
         `top:${YEAR_TOP}px;width:${YEAR_W}px;text-align:center">` +
         `${esc(this.yearOf(picked.event))}</div>`
       : "";
@@ -1154,7 +1331,7 @@ export class Picture {
     this.host.innerHTML = `<div class="ss">${svg}${text}${html}${hits}</div>`;
     // CSS cannot reach the move language's SVG animations, so reduced motion
     // holds them on their first frame the same way it stops the rest
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)
+    if (still())
       this.host.querySelector("svg")?.pauseAnimations();
   }
 
