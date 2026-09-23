@@ -1394,3 +1394,21 @@ to Opus 5.5 [R-0405], that Grafana session replay goes live now that the stack i
 and that after his review toward merge the beta continues in small fast-follow pull requests
 [R-0407]. Two agent runs were stopped and restarted because the pinned-model agent definition ran
 Fable 5.1 while the plain Opus alias ran Opus 5.5; the alias is the configuration that works.
+
+**2026-09-23, the review round.** Patrick reviewed the pull request and asked to be walked
+through each open question one at a time, with no batching, and twice corrected the walk: once
+for a description that reframed and invented terms, once for answers that only restated the
+diff instead of answering why. His rulings, in order: fallback chain so no conversation is left
+dead, all of it logged [R-0409, R-0410]; the tool-call cap to twenty with a log [R-0411]; regroup
+sentences into the tool answer [R-0412]; the meetings' findings published de-identified [R-0413];
+the extraction pipeline removed with its knowledge kept [R-0414], and a general rule for telling
+dead from useful [R-0415]; few screenshot goldens, geometry gates, his approval of picture
+changes [R-0416]; one migration and a stamp on deploy [R-0417]; delete-with-reference for the
+auto-arrange code and its kind [R-0418]; date versions with a leading three and the appcast out
+[R-0419]; the docs folder made top-level with archiving, never deletion, of history [R-0420];
+every test cites its ruling, swept now, "we need to set a standard for tests and then stick to
+it" [R-0421]; the old-diagram reader kept [R-0422]. The prompt review guide came back massive
+against his instruction to keep it short; he asked instead for a page he can comment on, with
+links, and got one. Three times an agent was refused permission to decrypt private files, and he
+decrypted them himself into the corpus folder; that folder sat untracked but not ignored in a
+repository with a GitHub remote, and is now ignored.

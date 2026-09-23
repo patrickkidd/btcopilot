@@ -176,6 +176,25 @@ about three cents. Session replay is on in Grafana with every element masked [R-
 run on Opus 5.5 [R-0408]. After Patrick reviews this pull request toward merge, beta work
 proceeds in small fast-follow pull requests [R-0407].
 
+**2026-09-23, the review round.** Patrick reviewed PR #136 and ruled, one item at a time. The
+coach: a refused turn is never a dead end — it falls back to Opus 5, then Opus 4.8, every hop
+logged with its category, and only a whole-chain refusal shows one sentence in the coach's voice
+with no retry [R-0409, R-0410]; the tool-call cap is twenty and hitting it is logged [R-0411]; what
+a regroup says goes into the tool answer so the model keeps its reasoning and the cached prefix
+holds [R-0412]. The repo: the extraction pipeline and the pending data pool are gone [R-0414];
+names are canonical, one app, with the migration chain squashed to one migration and the box
+stamped on deploy [R-0417]; the version is 3.YYYY.M.D.N+g<sha>, stamped by the release workflow,
+which now builds, tags and deploys [R-0419]; bin/ holds only what runs; the old-diagram reader
+stays as the import-later path [R-0422]; the auto-arrange code is gone with its analysis naming the
+commit that held it [R-0418]. The corpus: the chat-first folder is the top-level docs folder,
+old-state documents are archived with dated headers, the screen images and two unused skills are
+deleted [R-0420]; the inter-rater meetings' de-identified findings are public in doc/irr [R-0413].
+Tests: every test cites its ruling id or says "no ruling", checked by a test; screenshot goldens
+are down to nine phone pictures, everything else gated by words and geometry, desktop out of the
+gate [R-0416, R-0421]. His prompt review is a published sheet with 22 gaps and 4 contradictions
+to rule on. The private prompts and the rulings store now also exist decrypted in the corpus
+folder outside every repo, by his hand, because agents are refused the decrypt.
+
 **What is not true yet on the box.** The dashboards and the cost rows are built but not deployed:
 that waits on Patrick putting the Grafana token there and refreshing the dependency lock. There is
 no automated database backup. Nine scratch accounts with chats, made while proving deploys, sit in

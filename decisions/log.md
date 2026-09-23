@@ -1679,3 +1679,16 @@ removed because the model rejects it, and a refusal now raises with its category
 merits: whether a refused coaching turn should fall back to another model, and whether a
 mid-turn regroup should write its sentences somewhere other than the system prompt so the model
 keeps its reasoning for the rest of the turn.
+
+## 2026-09-23: The review round on PR #136
+
+Patrick, one ruling at a time. A refused coach turn falls back down a chain and is logged rather
+than left dead [R-0409, R-0410]. The tool-call cap is twenty, measured before judged [R-0411].
+Regroup sentences travel in the tool answer, not the system prompt, so the model's reasoning and
+the cache survive a turn [R-0412]. The extraction pipeline goes; its knowledge stays [R-0414];
+the general pruning rule is R-0415. Tests: few goldens, human-approved; every test cites its
+ruling; a checker enforces it [R-0416, R-0421]. One migration from empty, box stamped on deploy
+[R-0417]. Versions 3.YYYY.M.D.N+g<sha> from the release workflow [R-0419]. Docs top-level,
+history archived never deleted [R-0420]. The old-diagram reader stays for the ruled import
+[R-0422]. Rejected: a new repository for the chat app, a separate PR for the deletion, a
+pinned single fallback model, a sweep of citations deferred to as-touched.
