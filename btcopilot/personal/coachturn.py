@@ -8,6 +8,7 @@ The turn returns the coach's words plus the typed events behind them, so the
 page can move the picture with the same reply it types out.
 """
 
+import datetime
 import logging
 import time
 import uuid
@@ -250,17 +251,20 @@ class CoachTurn:
 
         # The coaching text is the same every turn and the rest is not, so they
         # go over the wire apart: the first is kept there, the second re-read.
+        # In a note the clinician is writing, not the person whose entry it is.
+        note = DiscussionKind(self.discussion.kind) is DiscussionKind.Note
+        own = profile.own(data)
         fixed, tail = agent_prompt(
-            record=recordtext.render(data),
+            record=recordtext.render(data, None if note or not own else own["id"]),
             interactions=recordtext.interactions(
                 recent(self.diagram.id, RECENT_INTERACTIONS)
             ),
+            today=datetime.date.today().isoformat(),
         )
-        if DiscussionKind(self.discussion.kind) is DiscussionKind.Note:
+        if note:
             tail = f"{tail}\n\n{note_register()}"
         gaps = profile.missing(data)
         if gaps:
-            own = profile.own(data)
             tail = f"{tail}\n\n{onboarding(gaps, own['id'] if own else 1)}"
         system = [fixed, tail]
         messages = self._history()

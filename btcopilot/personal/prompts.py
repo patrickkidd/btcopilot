@@ -117,11 +117,13 @@ def onboarding(missing: list[str], person_id: int) -> str:
     return files().text("onboarding", missing=", ".join(missing), person_id=person_id)
 
 
-def get_agent_prompt(record: str = "", interactions: str = "") -> str:
+def get_agent_prompt(record: str = "", interactions: str = "", today: str = "") -> str:
     """The coach's system prompt for one agent-loop turn. `record` is the whole
     family record rendered by `btcopilot.personal.recordtext`; `interactions` is
-    what the user has been looking at."""
-    return files().text("agent", committed_state=record, interactions=interactions)
+    what the user has been looking at; `today` is the date as YYYY-MM-DD."""
+    return files().text(
+        "agent", committed_state=record, interactions=interactions, today=today
+    )
 
 
 @functools.cache
@@ -131,16 +133,21 @@ def _agent_fixed() -> str:
     ways rather than declared, so a private template splits where it differs."""
     return os.path.commonprefix(
         [
-            files().text("agent", committed_state="", interactions=""),
-            files().text("agent", committed_state=MARK, interactions=MARK),
+            files().text("agent", committed_state="", interactions="", today=""),
+            files().text(
+                "agent", committed_state=MARK, interactions=MARK, today=MARK
+            ),
         ]
     )
 
 
-def agent_prompt(record: str = "", interactions: str = "") -> tuple[str, str]:
+def agent_prompt(
+    record: str = "", interactions: str = "", today: str = ""
+) -> tuple[str, str]:
     """The same prompt in two parts: the coaching text that repeats every call,
-    which the wire caches, and the tail that changes with the record."""
-    text = get_agent_prompt(record, interactions)
+    which the wire caches, and the tail that changes with the record and the
+    day."""
+    text = get_agent_prompt(record, interactions, today)
     fixed = _agent_fixed()
     if not text.startswith(fixed):
         raise ValueError("The agent prompt no longer opens with its fixed part")

@@ -148,8 +148,9 @@ def schemas() -> list[dict]:
                     "date_certainty": _enum_param(
                         DateCertainty,
                         "Certain for a date they stated, approximate for within a "
-                        "year or so, unknown for a guess. Default certain. Never "
-                        "leave the date itself out: a vague date beats none.",
+                        "year or so, unknown for a guess. Left out on a new event "
+                        "it is unknown; left out on a change it stays as it is. "
+                        "Never leave the date itself out: a vague date beats none.",
                     ),
                     "description": {
                         "type": "string",
@@ -399,6 +400,8 @@ class Toolbox:
 
     def _edit_event(self, args: dict) -> tuple[str, dict]:
         data = self.data
+        start = len(self.deltas)
+        new = args.get("id") is None
         fields = {}
         if args.get("kind"):
             fields["kind"] = EventKind(args["kind"]).value
@@ -406,9 +409,10 @@ class Toolbox:
             fields["dateTime"] = args["date"]
         if args.get("end_date"):
             fields["endDateTime"] = args["end_date"]
-        fields["dateCertainty"] = DateCertainty(
-            args.get("date_certainty") or DateCertainty.Certain
-        ).value
+        if args.get("date_certainty"):
+            fields["dateCertainty"] = DateCertainty(args["date_certainty"]).value
+        elif new:
+            fields["dateCertainty"] = DateCertainty.Unknown.value
         if args.get("description"):
             fields["description"] = args["description"]
         for key in ("notes", "location"):
@@ -428,7 +432,7 @@ class Toolbox:
         ):
             if args.get(arg) is not None:
                 fields[key] = [self._person(data, p) for p in args[arg]]
-        if args.get("id") is None and not args.get("kind"):
+        if new and not args.get("kind"):
             raise ToolError("A new event needs a kind")
         if (
             fields.get("kind") in (EventKind.Birth.value, EventKind.Adopted.value)
@@ -441,7 +445,36 @@ class Toolbox:
                 _enum_value(known.get("gender")), prompts.Role.Partner
             )
             fields["spouse"] = self._generic(fields["child"], role)
-        return self._write(ItemKind.Event, args.get("id"), fields)
+        text, patch = self._write(ItemKind.Event, args.get("id"), fields)
+        self._born_to(patch["deltas"][0]["item_id"])
+        return text, {"deltas": self.deltas[start:], "turn_id": self.turn_id}
+
+    def _born_to(self, event_id):
+        """A birth naming both parents makes the child the offspring of their
+        bond, adding the bond when they have none yet, so the child hangs from
+        the parents in the picture (R-0438)."""
+        data = self.data
+        event = next(e for e in data.events if str(e.get("id")) == str(event_id))
+        parents = (event.get("person"), event.get("spouse"))
+        if (
+            _enum_value(event.get("kind")) != EventKind.Birth.value
+            or None in parents
+            or event.get("child") is None
+            or self._find_person(event["child"]).get("parents") is not None
+        ):
+            return
+        pair = record.pair({"person_a": parents[0], "person_b": parents[1]})
+        bond = next((b for b in data.pair_bonds if record.pair(b) == pair), None)
+        if bond is None:
+            _, made = self._write(
+                ItemKind.PairBond,
+                None,
+                {"person_a": parents[0], "person_b": parents[1]},
+            )
+            bond_id = made["deltas"][0]["item_id"]
+        else:
+            bond_id = bond["id"]
+        self._write(ItemKind.Person, event["child"], {"parents": bond_id})
 
     def _edit_cluster(self, args: dict) -> tuple[str, dict]:
         data = self.data

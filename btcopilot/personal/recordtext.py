@@ -33,14 +33,17 @@ def _name(person: dict) -> str:
     ) or "unnamed"
 
 
-def person_line(person: dict) -> str:
+SPEAKER = " — the person you are talking with"
+
+
+def person_line(person: dict, speaker: bool = False) -> str:
     line = f"{person['id']} {_name(person)}"
     gender = _enum_val(person.get("gender"))
     if gender:
         line += f" ({gender})"
     if person.get("parents") is not None:
         line += f" parents={person['parents']}"
-    return line
+    return line + SPEAKER if speaker else line
 
 
 def bond_line(bond: dict) -> str:
@@ -101,15 +104,19 @@ def _rows(items: list[dict]) -> list[dict]:
     return [i for i in items if isinstance(i, dict) and i.get("id") is not None]
 
 
-def render(data: DiagramData | None) -> str:
-    """The whole record, ids first. Empty when nothing is stored yet."""
+def render(data: DiagramData | None, speaker: int | None = None) -> str:
+    """The whole record, ids first, the person the coach is talking with marked
+    (R-0438). Empty when nothing is stored yet."""
     if data is None:
         return ""
     events = sorted(
         _rows(data.events), key=lambda e: (date_text(e.get("dateTime")) or "", e["id"])
     )
     sections = [
-        _section("PEOPLE", [person_line(p) for p in _rows(data.people)]),
+        _section(
+            "PEOPLE",
+            [person_line(p, p["id"] == speaker) for p in _rows(data.people)],
+        ),
         _section("PAIR BONDS", [bond_line(b) for b in _rows(data.pair_bonds)]),
         _section("EVENTS (date order)", [event_line(e) for e in events]),
         _section("CLUSTERS", [cluster_line(c) for c in _rows(data.clusters)]),

@@ -90,3 +90,40 @@ def test_a_same_day_shift_moving_the_same_variable_is_refused(subscriber):
             symptom="up",
             description="Drinking more",
         )
+
+
+def test_an_omitted_certainty_is_unknown_and_a_change_leaves_it(subscriber):
+    # R-0438
+    diagram = _diagram(subscriber.user)
+    added = _event(
+        diagram,
+        kind="shift",
+        date="2019-03-01",
+        person=1,
+        anxiety="up",
+        description="On edge",
+        date_certainty="approximate",
+    )
+    changed = _event(diagram, id=added["id"], description="On edge at work")
+    assert changed["dateCertainty"] == "approximate"
+    guessed = _event(
+        diagram,
+        kind="shift",
+        date="2001-01-01",
+        person=2,
+        symptom="up",
+        description="Back pain",
+    )
+    assert guessed["dateCertainty"] == "unknown"
+
+
+def test_a_birth_naming_both_parents_makes_the_child_their_offspring(subscriber):
+    # R-0438
+    diagram = _diagram(
+        subscriber.user,
+        {"people": FAMILY["people"] + [{"id": 3, "name": "Corinne"}], "lastItemId": 3},
+    )
+    _event(diagram, kind="birth", date="1990-05-05", person=1, spouse=2, child=3)
+    data = diagram.get_diagram_data()
+    assert len(data.pair_bonds) == 1
+    assert data.people[2]["parents"] == data.pair_bonds[0]["id"]

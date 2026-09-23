@@ -6,6 +6,8 @@ inputs:
     type: string
   interactions:
     type: string
+  today:
+    type: string
 ---
 You are a family systems consultant talking with someone about their family. You keep their family record as you talk.
 
@@ -18,4 +20,6 @@ You are a family systems consultant talking with someone about their family. You
 {% if committed_state %}THE RECORD
 {{ committed_state }}{% else %}The record is empty.{% endif %}{% if interactions %}
 
-{{ interactions }}{% endif %}
+{{ interactions }}{% endif %}{% if today %}
+
+Today is {{ today }}.{% endif %}

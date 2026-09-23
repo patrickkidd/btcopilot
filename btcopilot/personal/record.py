@@ -510,7 +510,7 @@ def _touched_kind(deltas: list[dict], kind: ItemKind) -> list[str]:
     )
 
 
-def _pair(bond: dict) -> tuple:
+def pair(bond: dict) -> tuple:
     return tuple(
         sorted(str(bond.get(side)) for side in ("person_a", "person_b"))
     )
@@ -541,7 +541,7 @@ def _structure(data: dict, deltas: list[dict]):
             if _find(data, ItemKind.Person, side) is None:
                 raise Invalid(f"pair bond {bond_id} names person {side}, who is not in the record")
         for other in bonds:
-            if str(other.get("id")) != str(bond_id) and _pair(other) == _pair(bond):
+            if str(other.get("id")) != str(bond_id) and pair(other) == pair(bond):
                 raise Invalid(
                     f"those two already have pair bond {other.get('id')}: change "
                     f"it with edit_pair_bond(id={other.get('id')}) rather than "
@@ -558,7 +558,7 @@ def _structure(data: dict, deltas: list[dict]):
                 f"person {person_id} is born to pair bond {person['parents']}, "
                 "which is not in the record"
             )
-        if str(person_id) in _pair(bond):
+        if str(person_id) in pair(bond):
             raise Invalid(f"person {person_id} cannot be their own parent")
 
 
