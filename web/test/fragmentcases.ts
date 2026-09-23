@@ -1,6 +1,6 @@
 /** The sixteen hostile fragments the conventions sheet demands, plus the small
  * ones the open rules are judged on. Names come from the stand-in family in
- * doc/chat-first/mockups/family.md; no real person appears here. */
+ * doc/mockups/family.md; no real person appears here. */
 
 import { Sex, Kind, type Fragment, type FragPerson } from "../src/fragment";
 

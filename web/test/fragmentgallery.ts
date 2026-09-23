@@ -1,4 +1,4 @@
-/** Writes doc/chat-first/mockups/fragment.html — the record of what was ruled
+/** Writes doc/mockups/fragment.html — the record of what was ruled
  * about the family fragment (R-0325). Every picture is produced by the shipping
  * renderer, so the page shows what the code now draws, and only that: the rows
  * keep their numbers and letters so the ruling can still be read off the page,

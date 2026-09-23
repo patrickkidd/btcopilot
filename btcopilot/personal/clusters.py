@@ -5,7 +5,7 @@ a proposal rather than a boundary. The grouping the record already has is handed
 to the model with its ids and kept unless the record now says otherwise; the
 model may merge, split, or reach for a further event whenever it says in one
 sentence what made the old shape wrong. Spec and ruling ids:
-doc/chat-first/CLUSTERS.md.
+doc/CLUSTERS.md.
 """
 
 import datetime

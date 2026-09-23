@@ -1,7 +1,7 @@
 /** The family fragment: one person in the middle, their parents' bond above,
  * their own bond or bonds beside, the children under each bond. Fixed template
  * positions, no search, no crossing avoidance. Every measure is a fraction of
- * `u`, the person box, exactly as doc/chat-first/FRAGMENT_CONVENTIONS.md sets
+ * `u`, the person box, exactly as doc/FRAGMENT_CONVENTIONS.md sets
  * it out. Every rule the gallery put to Patrick is ruled (R-0325); there are no
  * drawing options left, only the size the picture is drawn at. */
 

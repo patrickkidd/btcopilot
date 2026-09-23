@@ -1,4 +1,4 @@
-/** What the two fragment pages in doc/chat-first/mockups share: where they are
+/** What the two fragment pages in doc/mockups share: where they are
  * written, the app's own stylesheet, and the phone frame each picture sits in.
  * Run from the web/ directory. */
 
@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 export const root = join(process.cwd(), "..");
-export const mockups = join(root, "doc", "chat-first", "mockups");
+export const mockups = join(root, "doc", "mockups");
 
 /** Pixels per person box. */
 export const u = 40;

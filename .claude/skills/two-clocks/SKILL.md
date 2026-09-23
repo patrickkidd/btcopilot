@@ -5,9 +5,9 @@ description: Flush this session's decisions, learnings, rationale and code state
 
 # /two-clocks — the idempotent end-of-session flush (FD-362)
 
-Two clocks per topic. The **state clock** is `doc/chat-first/TOPICS.md`: one block per topic,
+Two clocks per topic. The **state clock** is `doc/TOPICS.md`: one block per topic,
 headed by the topic's plain name, rewritten in full. The **event clock** is
-`doc/chat-first/HISTORY.md`: one entry per session, never rewritten by a later session.
+`doc/HISTORY.md`: one entry per session, never rewritten by a later session.
 Rulings go to the private oracle store **in this repo** — `private/oracle/rulings.md` and
 `private/oracle/evidence.md`, encrypted with sops. Never fdserver; fdserver left this ticket on
 2026-09-16. Decrypt with `SOPS_AGE_KEY_FILE=/Users/patrick/worktrees/fd362-sandbox/keys/dev.agekey
@@ -57,7 +57,7 @@ run from rewording what an earlier run already captured:
 
 ## Steps, in order
 
-1. Read `doc/chat-first/TOPICS.md`. Walk the session from its first message and assign every
+1. Read `doc/TOPICS.md`. Walk the session from its first message and assign every
    decision, question, finding, build and correction to a topic by name, opening a new block
    only for a thread of work no block covers.
 2. Rulings: for each owner statement that decides something, append to
@@ -83,10 +83,10 @@ run from rewording what an earlier run already captured:
    corpus commits titled `FD-362 flush: <date>`. There is no second worktree to flush.
 9. Refresh Patrick's two pages, same links every time (URLs at the top of TOPICS.md, passed
    to the Artifact tool as `url`), in this order:
-   a. `python bin/ledger.py` — rewrites doc/chat-first/events.json from every dated source
+   a. `python bin/ledger.py` — rewrites doc/events.json from every dated source
       (history, rulings, decision log, review log, commits in both worktrees, artifacts).
    b. `python bin/trace.py` — mines Patrick's own statements out of the local transcripts
-      into doc/chat-first/trace.json, one row per thing he typed, in order. It writes nothing
+      into doc/trace.json, one row per thing he typed, in order. It writes nothing
       but his words.
    c. **The judgement step, and it is this session's job, not the script's.** trace.py gives
       every new row a mechanical short name and a one-line summary and marks it `named_by`
@@ -118,10 +118,10 @@ Binding throughout: plain words, no coined terms; his terms only; no raw transcr
 clinical content or real names in the public repo.
 
 ## The spec sheet for beta users (added 2026-09-11, Patrick's ask)
-`doc/chat-first/SCREENS.md` is the state clock of every screen's behaviour in plain words, one
+`doc/SCREENS.md` is the state clock of every screen's behaviour in plain words, one
 sentence per item tagged `[built]`, `[drawn]` or `[open]` with ruling ids in braces, written for
 the beta users. Every flush revises its items for the session's rulings (an `[open]` item whose
 choice landed becomes `[drawn]` or `[built]` with its id; a new ruled behaviour gets a new item),
-sets its `Updated:` line to today, renders the catalogue with `python bin/screenspage.py <tmp>/fd362-screens.html` — every section's `@frame <mockup>#<id> | caption` lines lift whole-screen frames LIVE from doc/chat-first/mockups/*.html (built screens from mockups/built.html, drawn ones from their mockups); no images, one HTML file [R-0279] — and publishes it
+sets its `Updated:` line to today, renders the catalogue with `python bin/screenspage.py <tmp>/fd362-screens.html` — every section's `@frame <mockup>#<id> | caption` lines lift whole-screen frames LIVE from doc/mockups/*.html (built screens from mockups/built.html, drawn ones from their mockups); no images, one HTML file [R-0279] — and publishes it
 and republishes it to the same link every time — **https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba**.
 `bin/flushcheck.py` fails if it is not updated today or an item lacks a tag.

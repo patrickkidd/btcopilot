@@ -51,7 +51,7 @@ Synthesize insights from neuroscience (Sridhar/Couzin), philosophy of mind (Stin
 | Implementation Spec | [IMPLEMENTATION_SPEC.md](/Users/patrick/ccmemory/doc/IMPLEMENTATION_SPEC.md) |
 | Pattern Intelligence Vision | [PATTERN_INTELLIGENCE_VISION.md](../PATTERN_INTELLIGENCE_VISION.md) |
 | Learn Tab Evaluation | [LEARN_TAB_EVALUATION.md](../LEARN_TAB_EVALUATION.md) |
-| Chat Flow Architecture | [CHAT_FLOW.md](../../CHAT_FLOW.md) |
+| Chat Flow Architecture | [CHAT_FLOW.md](../../archive/2026-09-CHAT_FLOW.md) |
 | Bowen Theory Context | [CONTEXT.md](../../../CONTEXT.md) |
 
 ---

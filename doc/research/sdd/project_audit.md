@@ -28,15 +28,15 @@ Classification of all existing docs against SoR / Process Artifact / Agent Instr
 | btcopilot/doc/specs/DATA_MODEL.md | DiagramData, Person, Event, PairBond, PDPDeltas | Living, well-maintained |
 | btcopilot/doc/specs/PDP_DATA_FLOW.md | Extraction pipeline, sparse deltas, apply_deltas | Living, updated 2026-02-26 |
 | btcopilot/doc/SARF_GROUND_TRUTH_TECHNICAL.md | GT coding workflow, approval state machine | Living but stale (2025-12-21) |
-| btcopilot/doc/F1_METRICS.md | F1 calculation, entity matching | Living, updated 2026-03-03 |
-| btcopilot/doc/CHAT_FLOW.md | Chat-only architecture | Current |
+| btcopilot/doc/archive/2026-09-F1_METRICS.md | F1 calculation, entity matching | Living, updated 2026-03-03 |
+| btcopilot/doc/archive/2026-09-CHAT_FLOW.md | Chat-only architecture | Current |
 | familydiagram/doc/specs/DATA_SYNC_FLOW.md | Five sync functional requirements | Current |
 
 ### Developer Guides
 | File | Subsystem | Status |
 |------|-----------|--------|
 | btcopilot/doc/PROMPT_ENGINEERING_LOG.md | Model selection, known issues, lessons | Living, updated 2026-03-03 |
-| btcopilot/doc/PROMPT_ENG_EXTRACTION_STRATEGY.md | Extraction prompt strategy | **Living but NOT INDEXED in btcopilot/CLAUDE.md** |
+| btcopilot/doc/archive/2026-09-PROMPT_ENG_EXTRACTION_STRATEGY.md | Extraction prompt strategy | **Living but NOT INDEXED in btcopilot/CLAUDE.md** |
 
 ## Category B: Process Artifacts (Frozen)
 

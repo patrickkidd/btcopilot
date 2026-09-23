@@ -2,7 +2,7 @@
 
 Clinical NLP system for extracting structured data from therapy transcripts. Uses zero-shot LLM prompting to detect people, events, and relationship patterns from natural conversation—no fine-tuning required. Implements the SARF clinical data model (Symptom, Anxiety, Relationship, Functioning) for family systems assessment. Powers the [Family Diagram](https://familydiagram.com) app.
 
-**📊 [F1 Dashboard](doc/F1_DASHBOARD.md)** | **📈 [F1 Timeseries](doc/f1_timeseries.html)** | **📋 [Decision Log](decisions/log.md)** | **📚 [Domain Context](CONTEXT.md)** | **📖 [Dev Journal](#development-journal)**
+**📊 [F1 Dashboard](doc/archive/2026-09-F1_DASHBOARD.md)** | **📈 [F1 Timeseries](doc/archive/2026-09-f1_timeseries.html)** | **📋 [Decision Log](decisions/log.md)** | **📚 [Domain Context](CONTEXT.md)** | **📖 [Dev Journal](#development-journal)**
 
 [SARF Data Model White Paper](https://docs.google.com/document/d/1k6ZvYEG1644L4SKqXzXoOvBnepmus2-8WwUfMh4R_4Y/edit?usp=sharing)
 
@@ -477,7 +477,7 @@ This fits comfortably within an 8k-token model. For larger datasets, you'd need 
 ## 2025-12-08 - Prompt induction framework
 
 - Added prompt induction framework:
-  [btcopilot/doc/PROMPT_OPTIMIZATION.md](btcopilot/doc/PROMPT_OPTIMIZATION.md)
+  [btcopilot/doc/archive/2026-09-PROMPT_OPTIMIZATION.md](btcopilot/doc/archive/2026-09-PROMPT_OPTIMIZATION.md)
   Using Claude Code's command line API to run it from a script. Get baseline F1,
   tweak system prompts, run AI extraction, compare baseline. Run 10 iterations
   or until F1 improvement plateaus. Super cool!

@@ -1,5 +1,5 @@
 """Mine the owner's own statements out of the local Claude Code transcripts into
-doc/chat-first/trace.json — one row per thing he typed, in the order he typed it.
+doc/trace.json — one row per thing he typed, in the order he typed it.
 
 Nothing the assistant, a tool, a sub-agent or the harness produced is ever written.
 Names and summaries written here are deterministic placeholders (named_by "script");
@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ledger import TOPIC_WORDS  # noqa: E402
 
 HERE = Path(__file__).resolve().parent.parent
-DOC = HERE / "doc" / "chat-first"
+DOC = HERE / "doc"
 OUT = DOC / "trace.json"
 PROJECTS = Path.home() / ".claude" / "projects"
 DIRS = [

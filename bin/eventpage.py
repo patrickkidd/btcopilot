@@ -11,7 +11,7 @@ from datetime import date
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent
-DOC = HERE / "doc" / "chat-first"
+DOC = HERE / "doc"
 
 ROOT_NAME = "A coach who never forgets your family"
 DECISION_KINDS = ("ruling", "defect", "decision")

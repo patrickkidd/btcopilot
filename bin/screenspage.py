@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent
-DOC = HERE / "doc" / "chat-first"
+DOC = HERE / "doc"
 MOCKUPS = DOC / "mockups"
 THEME = HERE / "web" / "src" / "theme.css"
 

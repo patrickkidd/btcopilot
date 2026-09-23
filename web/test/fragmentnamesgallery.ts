@@ -1,4 +1,4 @@
-/** Writes doc/chat-first/mockups/fragment-names.html — the same family fragment
+/** Writes doc/mockups/fragment-names.html — the same family fragment
  * drawn twice, once with each person's name under the shape (the way it is
  * ruled and built today) and once with the name over it. Every picture comes
  * from the shipping renderer.

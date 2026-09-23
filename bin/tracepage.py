@@ -6,9 +6,9 @@ Zooming changes what a lane shows, not how far away it is: the whole project as 
 story arcs, then the sessions inside an arc, then his single statements, then a summary
 under each one.
 
-Statements come from doc/chat-first/trace.json (written by bin/trace.py); the arcs from
-doc/chat-first/arcs.json; the sessions and what followed each statement from
-doc/chat-first/events.json; the second view is the topic register from TOPICS.md.
+Statements come from doc/trace.json (written by bin/trace.py); the arcs from
+doc/archive/2026-09-arcs.json; the sessions and what followed each statement from
+doc/events.json; the second view is the topic register from TOPICS.md.
 
   python bin/tracepage.py <out.html>
 """
@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from eventpage import topic_blocks  # noqa: E402
 
 HERE = Path(__file__).resolve().parent.parent
-DOC = HERE / "doc" / "chat-first"
+DOC = HERE / "doc"
 COLORS = {
     "T-1": "#0e7d78", "T-2": "#c98a1b", "T-3": "#7a5cc4", "T-4": "#b8555f",
     "T-5": "#2e9e57", "T-6": "#2f7fb5", "T-7": "#b4453b", "T-8": "#8a6d3b",
@@ -139,7 +139,7 @@ def arcs(statements: list[dict]) -> list[dict]:
     is not the arc before it wins, so the trace shows the story changing subject.
     """
     out, previous = [], ""
-    for arc in json.loads((DOC / "arcs.json").read_text()):
+    for arc in json.loads((DOC / "archive" / "2026-09-arcs.json").read_text()):
         first, last, counted = span(statements, arc["start"], arc["end"])
         if first < 0:
             continue

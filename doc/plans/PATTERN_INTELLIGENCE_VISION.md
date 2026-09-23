@@ -284,7 +284,7 @@ See [LEARN_TAB_EVALUATION.md](LEARN_TAB_EVALUATION.md) for the related feature.
 
 - [UNIVERSAL_CONTEXT_GRAPH.md](/Users/patrick/ccmemory/doc/UNIVERSAL_CONTEXT_GRAPH.md) — ccmemory architecture that inspired this
 - [LEARN_TAB_EVALUATION.md](LEARN_TAB_EVALUATION.md) — related Learn tab feature
-- [CHAT_FLOW.md](../CHAT_FLOW.md) — existing chat architecture
+- [CHAT_FLOW.md](../archive/2026-09-CHAT_FLOW.md) — existing chat architecture
 - [CONTEXT.md](../../CONTEXT.md) — Bowen theory domain model
 - [DATA_MODEL.md](../specs/DATA_MODEL.md) — schema definitions
 - [specs/PDP_DATA_FLOW.md](../specs/PDP_DATA_FLOW.md) — PDP extraction pipeline
