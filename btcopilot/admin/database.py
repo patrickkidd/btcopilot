@@ -13,7 +13,7 @@ from sqlalchemy import create_engine
 import btcopilot
 from btcopilot.admin.guard import writes
 
-CHAIN = Path(btcopilot.__file__).parents[1] / "alembic-chat"
+CHAIN = Path(btcopilot.__file__).parents[1] / "alembic"
 
 
 def config() -> Config:

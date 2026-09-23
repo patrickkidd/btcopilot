@@ -12,7 +12,7 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, inspect
 
-from btcopilot import chattables
+from btcopilot import tables
 from btcopilot.extensions import db
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -22,8 +22,8 @@ PRO_ONLY = {"activations", "feedbacks", "machines", "reconciliation_notes", "ses
 
 def chain_db(path) -> str:
     url = f"sqlite:///{path}"
-    config = Config(os.path.join(ROOT, "alembic-chat.ini"))
-    config.set_main_option("script_location", os.path.join(ROOT, "alembic-chat"))
+    config = Config(os.path.join(ROOT, "alembic.ini"))
+    config.set_main_option("script_location", os.path.join(ROOT, "alembic"))
     os.environ["FLASK_SQLALCHEMY_DATABASE_URI"] = url
     command.upgrade(config, "head")
     return url
@@ -50,7 +50,7 @@ def chain(tmp_path):
 
 
 def test_chain_builds_the_chat_tables_and_no_others(chain):
-    assert set(shape(chain)) == set(chattables.TABLES)
+    assert set(shape(chain)) == set(tables.TABLES)
 
 
 CHAT_PACKAGES = ("btcopilot.review", "btcopilot.personal", "btcopilot.auth", "btcopilot.admin")
@@ -65,24 +65,24 @@ def test_every_chat_model_is_in_the_chain():
         for mapper in db.Model.registry.mappers
         if mapper.class_.__module__.startswith(CHAT_PACKAGES)
     }
-    assert owned - set(chattables.TABLES) == set()
+    assert owned - set(tables.TABLES) == set()
 
 
 def test_chain_matches_what_the_models_declare(chain, tmp_path):
     engine = create_engine(f"sqlite:///{tmp_path / 'models.db'}")
-    chattables.create_all(engine)
+    tables.create_all(engine)
     assert shape(chain) == shape(str(engine.url))
 
 
 def test_every_foreign_key_points_inside_the_chat_database():
     outside = {
         f"{table.name}.{fk.parent.name} -> {fk.column.table.name}"
-        for table in chattables.tables()
+        for table in tables.tables()
         for fk in table.foreign_keys
-        if fk.column.table.name not in chattables.TABLES
+        if fk.column.table.name not in tables.TABLES
     }
     assert not outside
 
 
 def test_the_pro_desktop_tables_are_gone():
-    assert not chattables.TABLES & PRO_ONLY
+    assert not tables.TABLES & PRO_ONLY

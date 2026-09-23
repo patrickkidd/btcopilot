@@ -7,7 +7,7 @@ the Pro tables the chat app used to join against are either its own from here
 (users, diagrams, licences) or gone (desktop sessions, machines, activations),
 and the Training tables are gone with them.
 
-`alembic-chat` creates exactly this set from empty. A test asserts the chain's
+`alembic` creates exactly this set from empty. A test asserts the chain's
 output matches what the models declare, so a new column with no revision fails
 rather than silently missing from a fresh database.
 """

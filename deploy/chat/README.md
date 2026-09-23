@@ -37,7 +37,7 @@ from the Pro box on purpose. Nothing in it has run yet; the droplet does not exi
 ## Every deploy after that
 
 The release workflow pushes the image to GHCR on a merge to master;
-`release-chat.yml` then pulls it on the box, rolls the app and the worker with
+`release.yml` then pulls it on the box, rolls the app and the worker with
 `docker rollout` (the new container comes up beside the old one and the old one
 stops once the new one is healthy, so no request is dropped), and runs
 `flask admin db upgrade`. Nothing is built on the box. The plugin is installed

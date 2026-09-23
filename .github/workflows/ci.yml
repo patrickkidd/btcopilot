@@ -44,7 +44,7 @@ jobs:
       - name: Install web dependencies
         run: npm --prefix web ci
 
-      - name: Build the chat web bundle
+      - name: Build the web bundle
         run: npm --prefix web run build
 
       - name: Run web unit tests
@@ -91,7 +91,7 @@ jobs:
       - name: Install Playwright chromium
         run: npx --prefix web playwright install --with-deps chromium
 
-      - name: Build the chat web bundle
+      - name: Build the web bundle
         run: npm --prefix web run build
 
       - name: Create sandbox database
@@ -177,7 +177,7 @@ jobs:
       - name: Install Playwright chromium
         run: npx --prefix web playwright install --with-deps chromium
 
-      - name: Build the chat web bundle
+      - name: Build the web bundle
         run: npm --prefix web run build
 
       - name: Create sandbox database

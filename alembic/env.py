@@ -11,7 +11,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from btcopilot.chattables import TABLES, metadata
+from btcopilot.tables import TABLES, metadata
 
 config = context.config
 # run from the ini on a checkout, or from `flask admin db` on an installed box

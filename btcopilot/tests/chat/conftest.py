@@ -8,7 +8,7 @@ taking Pro's by directory: Stripe is never started here at all.
 
 import pytest
 
-from btcopilot.chattables import TABLES
+from btcopilot.tables import TABLES
 from btcopilot.tests.fixtures import (
     make_app,
     STUBS,

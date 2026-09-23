@@ -8,7 +8,7 @@ from mock import MagicMock, patch
 from btcopilot.extensions import db
 from btcopilot.tests.repo import REPO
 
-REVISION = REPO / "alembic-chat/versions/1a00000000aa_the_chat_app_from_empty.py"
+REVISION = REPO / "alembic/versions/1a00000000aa_the_chat_app_from_empty.py"
 
 RENAMED = {"diagram_changes", "diagram_interactions"}
 REVIEW = {

@@ -1,12 +1,12 @@
 # Deploy the chat app's box from this folder on a push to master that touches
 # it, or by hand. The host is a repository variable so no address is committed
 # before the droplet exists.
-name: Release chat box
+name: Release
 
 on:
   push:
     branches: [master]
-    paths: ["deploy/chat/**", ".github/workflows/release-chat.yml"]
+    paths: ["deploy/chat/**", ".github/workflows/release.yml"]
   workflow_dispatch:
 
 jobs:
