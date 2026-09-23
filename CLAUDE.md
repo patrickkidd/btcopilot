@@ -17,6 +17,10 @@ Backend for Pro/Personal apps, training app, AI extraction system.
 - **Never verify on production (2026-09-22, Patrick objected to nine scratch accounts on the
   dashboard).** A deploy is checked with a probe of public pages only; every walk that signs
   in, chats or writes runs on a sandbox stack, never the box.
+- **A picture that needs that much prose does not speak (2026-09-23, Patrick: "if you have to
+  include that much prose/copy then your visual concepts don't speak for themselves enough. a
+  little is ok, but not this much").** What he sees: the frames, one sentence per concept, the
+  decisions. Gates, passages, costs and checks live in the verdict file, never on his page.
 - **Every gallery passes a visual critique before Patrick sees it (2026-09-22, his words: "there
   are so many obvious, visual and aesthetic errors in these").** A separate agent, not the
   designer, reviews every frame: what is the message, is every mark explained in the caption, is
