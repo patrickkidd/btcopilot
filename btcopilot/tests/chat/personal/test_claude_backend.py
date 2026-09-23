@@ -9,6 +9,7 @@ from btcopilot.llmutil import (
     response_text_sync,
     _is_claude_model,
     _prepare_claude_messages,
+    FALLBACK_BETA,
     TEXT_EFFORT,
 )
 
@@ -83,6 +84,7 @@ def _make_mock_response(text="Hello there"):
     text_block.text = text
     response = MagicMock()
     response.content = [thinking_block, text_block]
+    response.usage.iterations = None
     return response
 
 
@@ -94,7 +96,7 @@ async def test_claude_text_with_turns():
 
     with patch("btcopilot.llmutil._anthropic_client") as mock_client_fn:
         mock_client = MagicMock()
-        mock_client.messages.create = mock_create
+        mock_client.beta.messages.create = mock_create
         mock_client.close = AsyncMock()
         mock_client_fn.return_value = mock_client
 
@@ -107,6 +109,10 @@ async def test_claude_text_with_turns():
     call_kwargs = mock_create.call_args[1]
     assert call_kwargs["system"] == "You are a coach."
     assert call_kwargs["output_config"] == {"effort": TEXT_EFFORT}
+    assert call_kwargs["betas"] == [FALLBACK_BETA]
+    assert call_kwargs["extra_body"] == {
+        "fallbacks": [{"model": "claude-opus-5"}, {"model": "claude-opus-4-8"}]
+    }
     assert "temperature" not in call_kwargs
     messages = call_kwargs["messages"]
     assert messages[0]["role"] == "user"
@@ -121,7 +127,7 @@ async def test_claude_text_with_simple_prompt():
 
     with patch("btcopilot.llmutil._anthropic_client") as mock_client_fn:
         mock_client = MagicMock()
-        mock_client.messages.create = mock_create
+        mock_client.beta.messages.create = mock_create
         mock_client.close = AsyncMock()
         mock_client_fn.return_value = mock_client
 
@@ -139,7 +145,7 @@ def test_claude_text_sync():
 
     with patch("btcopilot.llmutil._anthropic_client") as mock_client_fn:
         mock_client = MagicMock()
-        mock_client.messages.create = mock_create
+        mock_client.beta.messages.create = mock_create
         mock_client.close = AsyncMock()
         mock_client_fn.return_value = mock_client
 

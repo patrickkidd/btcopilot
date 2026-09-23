@@ -4,7 +4,7 @@ import enum
 import json
 import time
 import logging
-from dataclasses import fields, MISSING
+from dataclasses import dataclass, field, fields, MISSING
 from typing import get_origin, get_args, Union
 
 from google.genai.errors import ClientError, ServerError
@@ -226,6 +226,88 @@ ANTHROPIC_TIMEOUT = 120  # seconds
 ANTHROPIC_MAX_RETRIES = 3
 
 
+# Who answers when the requested model refuses on safety grounds: the API runs
+# the same request on the next model in the list [Oracle: R-0409]. Only the
+# models listed take the parameter; the API rejects it for the others.
+FALLBACK_BETA = "server-side-fallback-2026-06-01"
+FALLBACKS = {
+    "claude-opus-5-5": ["claude-opus-5", "claude-opus-4-8"],
+    "claude-opus-5": ["claude-opus-4-8"],
+}
+
+
+def fallback_args(model: str) -> dict:
+    """The request arguments that ask for the fallbacks, on the beta client."""
+    chain = FALLBACKS.get(model)
+    if not chain:
+        return {}
+    return {
+        "betas": [FALLBACK_BETA],
+        "extra_body": {"fallbacks": [{"model": name} for name in chain]},
+    }
+
+
+@dataclass
+class Hop:
+    source: str
+    target: str
+    category: str | None = None
+
+
+@dataclass
+class Served:
+    """Which model answered, every hop the fallbacks made on the way, and
+    whether a fallback model answered straight away because it answered this
+    conversation before (the API keeps that for about an hour)."""
+
+    model: str
+    hops: list[Hop] = field(default_factory=list)
+    sticky: bool = False
+
+    @property
+    def fallback(self) -> dict | None:
+        if not self.hops and not self.sticky:
+            return None
+        return {
+            "hops": [
+                {"from": hop.source, "to": hop.target, "category": hop.category}
+                for hop in self.hops
+            ],
+            "sticky": self.sticky,
+        }
+
+
+def served(message, label: str) -> Served:
+    """Read the fallbacks off a response and log one line per hop. The SDK this
+    app pins does not type the fallback block, so its ends arrive as dicts."""
+    iterations = message.usage.iterations or []
+    declined = {
+        entry.model: getattr(entry, "stop_details", None)
+        for entry in iterations
+        if entry.type == "message"
+    }
+    hops = []
+    for block in message.content:
+        if block.type != "fallback":
+            continue
+        source = getattr(block, "from")["model"]
+        details = declined.get(source)
+        hop = Hop(
+            source=source,
+            target=block.to["model"],
+            category=details.get("category") if details else None,
+        )
+        _log.warning(
+            f"{label}: {hop.source} refused ({hop.category}), {hop.target} took over"
+        )
+        hops.append(hop)
+    fell = any(entry.type == "fallback_message" for entry in iterations)
+    sticky = fell and not hops
+    if sticky:
+        _log.warning(f"{label}: served by {message.model}, which took over earlier")
+    return Served(model=message.model, hops=hops, sticky=sticky)
+
+
 def _anthropic_client():
     import anthropic
 
@@ -316,7 +398,10 @@ async def claude_text(prompt=None, **kwargs):
         api_kwargs["system"] = system_instruction
 
     try:
-        response = await client.messages.create(**api_kwargs)
+        response = await client.beta.messages.create(
+            **api_kwargs, **fallback_args(resolved_model)
+        )
+        served(response, f"claude_text {resolved_model}")
         content = "".join(
             block.text for block in response.content if block.type == "text"
         )

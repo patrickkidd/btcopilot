@@ -42,6 +42,9 @@ function watch(): { shown: Shown; take: (event: TurnEvent) => void } {
     failed: (message) => {
       shown.warning = message;
     },
+    refused: (message) => {
+      shown.words = message;
+    },
   };
   return { shown, take: feed(sink) };
 }
@@ -140,6 +143,18 @@ describe("following a turn", () => {
       message: "The coach did not finish that turn.",
     });
     expect(shown.warning).toBe("The coach did not finish that turn.");
+    expect(shown.statement).toBe(null);
+  });
+
+  it("speaks a refusal in the coach's voice and offers no retry", () => {
+    const { shown, take } = watch();
+    take({ type: TurnEventKind.Text, text: "half a" });
+    take({
+      type: TurnEventKind.Refused,
+      message: "I can't take that one up here.",
+    });
+    expect(shown.words).toBe("I can't take that one up here.");
+    expect(shown.warning).toBe(null);
     expect(shown.statement).toBe(null);
   });
 });

@@ -199,6 +199,9 @@ export enum TurnEventKind {
   TextReset = "text_reset",
   Done = "done",
   Failed = "failed",
+  /** Every model declined the message: a sentence in the coach's voice, and
+   * no retry, since the same words would be declined again. */
+  Refused = "refused",
 }
 
 export enum ViewKind {
@@ -227,7 +230,8 @@ export type TurnEvent =
   | { type: TurnEventKind.Text; text: string }
   | { type: TurnEventKind.TextReset }
   | ({ type: TurnEventKind.Done } & Reply)
-  | { type: TurnEventKind.Failed; message: string };
+  | { type: TurnEventKind.Failed; message: string }
+  | { type: TurnEventKind.Refused; message: string };
 
 /** What a send answers with: the turn now running, to be followed on its own
  * stream. The words come later, down that stream. */

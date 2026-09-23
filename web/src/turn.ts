@@ -25,6 +25,7 @@ export interface TurnSink {
   reset(): void;
   done(reply: Reply): void;
   failed(message: string): void;
+  refused(message: string): void;
 }
 
 type Delta = { item_kind: ItemKind; item_id: string | number };
@@ -75,6 +76,9 @@ export function feed(sink: TurnSink): (event: TurnEvent) => void {
         break;
       case TurnEventKind.Failed:
         sink.failed(event.message);
+        break;
+      case TurnEventKind.Refused:
+        sink.refused(event.message);
         break;
     }
   };

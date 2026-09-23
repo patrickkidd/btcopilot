@@ -45,9 +45,17 @@ class TurnEventKind(enum.StrEnum):
     Story = "story"
     Done = "done"
     Failed = "failed"
+    # Every model declined the message on safety grounds. The page says so in
+    # the coach's voice and offers no retry, since the same words would be
+    # declined again [Oracle: R-0410].
+    Refused = "refused"
 
 
-ENDS = (TurnEventKind.Done.value, TurnEventKind.Failed.value)
+ENDS = (
+    TurnEventKind.Done.value,
+    TurnEventKind.Failed.value,
+    TurnEventKind.Refused.value,
+)
 
 
 def ended(event: dict) -> bool:

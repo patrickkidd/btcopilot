@@ -906,6 +906,14 @@ function follow(turnId: string, again: () => void): void {
         chat.busy(false);
         chat.warn(message, again);
       }),
+    refused: (message) =>
+      step(() => {
+        awaiting = null;
+        stopFollowing();
+        const said = opened();
+        said.reset();
+        said.settle(message, (chip) => aim(chip));
+      }),
   });
 
   const source = api.turnEvents(turnId);

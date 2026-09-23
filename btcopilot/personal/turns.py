@@ -12,6 +12,7 @@ import uuid
 from btcopilot import extensions
 from btcopilot.extensions import db
 from btcopilot.personal import chips, turnlog
+from btcopilot.personal.coachmodel import Refusal
 from btcopilot.personal.coachturn import CoachTurn, record_of
 from btcopilot.personal.discussions import session_payload
 from btcopilot.personal.models import Discussion, Statement, StatementKind
@@ -23,6 +24,10 @@ TASK = "coach_turn"
 
 BUSY = "the coach is still answering the last message"
 BROKE = "The coach did not finish that turn."
+REFUSED = (
+    "I can't take that one up here. Say it another way, or tell me what "
+    "happened next."
+)
 
 
 class Busy(Exception):
@@ -80,6 +85,15 @@ def run(turn_id: str, discussion_id: int, statement_id: int) -> dict:
     )
     try:
         reply = turn.run()
+    # A refusal is not a fault to retry: the same words would be declined
+    # again. The page gets the coach's sentence and the category stays here.
+    except Refusal as refused:
+        db.session.rollback()
+        turnlog.clear(discussion_id)
+        _log.warning(f"coach_turn {turn_id} refused: {refused.category}")
+        event = {"type": TurnEventKind.Refused.value, "message": REFUSED}
+        turnlog.append(turn_id, event)
+        return event
     # The one router in this file: whatever went wrong, the page is told the
     # turn ended, and the error goes on to be logged and retried as usual.
     except Exception:

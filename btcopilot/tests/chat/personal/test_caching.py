@@ -6,12 +6,23 @@ paying for it again.
 """
 
 import logging
+from decimal import Decimal
 
 import pytest
 from mock import patch
 
+from btcopilot.llmutil import FALLBACK_BETA
 from btcopilot.personal import prompts
-from btcopilot.personal.coachmodel import CACHE, COACH_EFFORT, CoachModel, Refusal
+from btcopilot.personal.coachmodel import (
+    CACHE,
+    COACH_EFFORT,
+    CoachModel,
+    Refusal,
+    Spent,
+)
+from btcopilot.personal.coachturn import CoachTurn
+from btcopilot.personal.models import ModelCall
+from btcopilot.personal.pricing import cost
 
 TOOLS = [
     {"name": "first", "description": "one", "input_schema": {"type": "object"}},
@@ -25,6 +36,9 @@ class Usage:
     cache_creation_input_tokens = 4100
     cache_read_input_tokens = 8200
 
+    def __init__(self, iterations=None):
+        self.iterations = iterations
+
 
 class Block:
     def __init__(self, **fields):
@@ -32,11 +46,19 @@ class Block:
 
 
 class Reply:
-    def __init__(self, content=(), stop_reason="end_turn", stop_details=None):
+    def __init__(
+        self,
+        content=(),
+        stop_reason="end_turn",
+        stop_details=None,
+        model="claude-opus-5-5",
+        iterations=None,
+    ):
         self.content = list(content)
         self.stop_reason = stop_reason
         self.stop_details = stop_details
-        self.usage = Usage()
+        self.model = model
+        self.usage = Usage(iterations)
 
 
 class Wire:
@@ -51,8 +73,9 @@ class Wire:
         return self
 
     @property
-    def messages(self):
-        return type("M", (), {"stream": self.messages_stream})()
+    def beta(self):
+        messages = type("M", (), {"stream": self.messages_stream})()
+        return type("B", (), {"messages": messages})()
 
     def __enter__(self):
         return self
@@ -196,3 +219,91 @@ def test_a_refusal_fails_the_turn_with_its_category(wire):
     wire.reply = Reply(stop_reason="refusal", stop_details=Block(category="bio"))
     with pytest.raises(Refusal, match="bio"):
         run(CoachModel(), ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
+
+
+def test_the_coach_asks_for_the_fallbacks(wire):
+    sent = call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
+    assert sent["betas"] == [FALLBACK_BETA]
+    assert sent["extra_body"] == {
+        "fallbacks": [{"model": "claude-opus-5"}, {"model": "claude-opus-4-8"}]
+    }
+
+
+def test_a_model_that_takes_no_fallbacks_is_sent_none(wire):
+    run(
+        CoachModel(model="haiku-4.5", effort=None),
+        ["COACHING", "RECORD"],
+        [{"role": "user", "content": "hi"}],
+    )
+    assert "betas" not in wire.sent
+    assert "extra_body" not in wire.sent
+
+
+FELL = dict(
+    content=[
+        Block(
+            type="fallback",
+            to={"model": "claude-opus-5"},
+            **{"from": {"model": "claude-opus-5-5"}},
+        ),
+        Block(type="text", text="Tell me more about that."),
+    ],
+    model="claude-opus-5",
+    iterations=[
+        Block(type="message", model="claude-opus-5-5", stop_details={"category": "bio"}),
+        Block(type="fallback_message", model="claude-opus-5"),
+    ],
+)
+
+
+def test_a_refused_call_answered_by_a_fallback_is_priced_and_logged_as_its(
+    wire, discussion, caplog, monkeypatch
+):
+    monkeypatch.setattr(
+        "btcopilot.personal.models.discussion.response_text_sync",
+        lambda *a, **k: "A session title",
+    )
+    wire.reply = Reply(**FELL)
+    reply = CoachTurn(discussion, "hi", model=CoachModel()).run()
+    assert reply["statement"] == "Tell me more about that."
+
+    row = ModelCall.query.one()
+    assert row.model == "claude-opus-5"
+    assert row.fallback == {
+        "hops": [{"from": "claude-opus-5-5", "to": "claude-opus-5", "category": "bio"}],
+        "sticky": False,
+    }
+    spent = Spent(input=120, output=30, cache_creation=4100, cache_read=8200)
+    assert row.cost_usd == cost("claude-opus-5", spent).quantize(Decimal("0.000001"))
+    assert row.cost_usd != cost("claude-opus-5-5", spent).quantize(Decimal("0.000001"))
+    hop = [r for r in caplog.records if "took over" in r.message]
+    assert len(hop) == 1
+    assert "claude-opus-5-5 refused (bio), claude-opus-5 took over" in hop[0].message
+
+
+def test_a_turn_served_by_an_earlier_fallback_is_marked_sticky(wire):
+    wire.reply = Reply(
+        [Block(type="text", text="Go on.")],
+        model="claude-opus-5",
+        iterations=[Block(type="fallback_message", model="claude-opus-5")],
+    )
+    turn = run(CoachModel(), ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
+    assert turn.served.model == "claude-opus-5"
+    assert turn.served.hops == []
+    assert turn.served.fallback == {"hops": [], "sticky": True}
+
+
+def test_a_model_cut_off_mid_answer_leaves_no_tool_call_to_run(wire):
+    wire.reply = Reply(
+        [
+            Block(type="text", text="Let me "),
+            Block(type="tool_use", id="t0", name="first", input={}),
+            *FELL["content"],
+        ],
+        model="claude-opus-5",
+        iterations=FELL["iterations"],
+    )
+    turn = run(CoachModel(), ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
+    assert turn.calls == []
+    assert [b["type"] for b in turn.blocks] == ["text", "text"]
+

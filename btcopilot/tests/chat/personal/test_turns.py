@@ -12,6 +12,7 @@ from mock import patch
 
 from btcopilot.extensions import db
 from btcopilot.personal import turnlog, turns
+from btcopilot.personal.coachmodel import Refusal
 from btcopilot.personal.coachturn import EmptyReply
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal.toolbox import ToolName
@@ -114,6 +115,44 @@ def test_a_turn_that_breaks_ends_in_failed_and_stores_no_coach_words(
     }
     discussion = Discussion.query.one()
     assert [s.text for s in discussion.statements] == ["My sister is Nell."]
+    assert turnlog.running(discussion.id) is None
+
+
+class Refuses:
+    """A coach every model of which declines the message."""
+
+    model = "claude-opus-5-5"
+
+    def __init__(self):
+        self.calls = 0
+
+    def turn(self, system, messages, tools, turn_id=""):
+        self.calls += 1
+        raise Refusal("refused", "bio")
+        yield
+
+
+def test_a_refused_turn_says_so_in_the_coachs_voice_and_is_not_retried(
+    web, token, family, monkeypatch
+):
+    refuses = Refuses()
+    monkeypatch.setattr(
+        "btcopilot.personal.coachturn.CoachModel", lambda *a, **k: refuses
+    )
+    with patch("btcopilot.personal.turns.enqueue"):
+        body = post(web, token).get_json()
+    turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
+
+    assert refuses.calls == 1
+    assert logged(body["turn_id"])[-1] == {
+        "type": TurnEventKind.Refused.value,
+        "message": turns.REFUSED,
+    }
+    assert turns.REFUSED == (
+        "I can't take that one up here. Say it another way, or tell me what "
+        "happened next."
+    )
+    discussion = Discussion.query.one()
     assert turnlog.running(discussion.id) is None
 
 

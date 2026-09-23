@@ -8,6 +8,7 @@ from mock import patch
 
 import btcopilot
 from btcopilot.extensions import db
+from btcopilot.llmutil import Served
 from btcopilot.personal.coachmodel import ModelTurn, ToolCall
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.personal.toolbox import ToolName
@@ -16,8 +17,13 @@ from btcopilot.personal.turnlog import TurnEventKind
 from btcopilot.tests.fixtures import web_client, subscriber, admin  # noqa: F401
 
 
+SERVED = "claude-opus-5-5"
+
+
 def said(text: str) -> ModelTurn:
-    return ModelTurn(text=text, blocks=[{"type": "text", "text": text}])
+    return ModelTurn(
+        text=text, blocks=[{"type": "text", "text": text}], served=Served(SERVED)
+    )
 
 
 def called(tool: ToolName, text: str = "", **args) -> ModelTurn:
@@ -27,7 +33,7 @@ def called(tool: ToolName, text: str = "", **args) -> ModelTurn:
 def calling(*wanted: tuple[ToolName, dict], text: str = "") -> ModelTurn:
     """One model call that asks for several tools at once, optionally saying
     something first — which is how a real model leaks its planning."""
-    turn = ModelTurn(text=text)
+    turn = ModelTurn(text=text, served=Served(SERVED))
     if text:
         turn.blocks.append({"type": "text", "text": text})
     for index, (tool, args) in enumerate(wanted):
@@ -42,7 +48,7 @@ def calling(*wanted: tuple[ToolName, dict], text: str = "") -> ModelTurn:
 class Model:
     """A coach that says exactly what the test scripted, in order."""
 
-    model = "claude-opus-5-5"
+    model = SERVED
 
     def __init__(self, *turns: ModelTurn):
         self.turns = list(turns)

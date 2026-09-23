@@ -11,7 +11,13 @@ from dataclasses import dataclass, field
 import anthropic
 from opentelemetry import trace
 
-from btcopilot.llmutil import RESPONSE_MODEL, resolve_model
+from btcopilot.llmutil import (
+    RESPONSE_MODEL,
+    Served,
+    fallback_args,
+    resolve_model,
+    served,
+)
 
 _log = logging.getLogger(__name__)
 _tracer = trace.get_tracer(__name__)
@@ -86,11 +92,16 @@ class ModelTurn:
     calls: list[ToolCall] = field(default_factory=list)
     blocks: list[dict] = field(default_factory=list)
     spent: Spent = field(default_factory=Spent)
+    served: Served | None = None
 
 
 class Refusal(Exception):
-    """The API declined the call on safety grounds. The turn fails with the
-    category it named rather than ending in silence."""
+    """Every model in the fallback chain declined the call on safety grounds.
+    The turn fails with the category it named rather than ending in silence."""
+
+    def __init__(self, message: str, category: str | None):
+        super().__init__(message)
+        self.category = category
 
 
 class CoachModel:
@@ -119,7 +130,7 @@ class CoachModel:
         ) as span:
             client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
             try:
-                with client.messages.stream(
+                with client.beta.messages.stream(
                     model=self.model,
                     max_tokens=MAX_TOKENS,
                     system=system_blocks(system),
@@ -130,25 +141,35 @@ class CoachModel:
                         if self.effort
                         else {}
                     ),
+                    **fallback_args(self.model),
                 ) as stream:
                     yield from stream.text_stream
                     message = stream.get_final_message()
             finally:
                 client.close()
 
+            answered = served(message, f"Coach turn {turn_id}")
             if message.stop_reason == "refusal":
                 category = (
                     message.stop_details.category if message.stop_details else None
                 )
                 raise Refusal(
-                    f"Coach model {self.model} turn {turn_id} refused: {category}"
+                    f"Coach model {answered.model} turn {turn_id} refused, "
+                    f"with every fallback: {category}",
+                    category,
                 )
 
             # Echo back only the fields the API accepts: a whole block dump carries
             # SDK-side extras the next request rejects. Thinking goes back
-            # unchanged, or the next call in a tool loop fails.
-            turn = ModelTurn()
-            for block in message.content:
+            # unchanged, or the next call in a tool loop fails. A model that was
+            # cut off mid-answer leaves only its words: its thinking and tool
+            # calls before the last hop were never finished and are not run.
+            turn = ModelTurn(served=answered)
+            hops = [i for i, b in enumerate(message.content) if b.type == "fallback"]
+            boundary = hops[-1] if hops else -1
+            for index, block in enumerate(message.content):
+                if index < boundary and block.type != "text":
+                    continue
                 if block.type == "thinking":
                     turn.blocks.append(
                         {
@@ -184,7 +205,7 @@ class CoachModel:
                 cache_read=used.cache_read_input_tokens or 0,
             )
             _log.info(
-                f"Coach model {self.model} turn {turn_id}: {len(turn.text)} chars, "
+                f"Coach model {answered.model} turn {turn_id}: {len(turn.text)} chars, "
                 f"{len(turn.calls)} tool calls, {used.input_tokens} tokens in, "
                 f"{used.output_tokens} out, {used.cache_creation_input_tokens} kept, "
                 f"{used.cache_read_input_tokens} read back"
