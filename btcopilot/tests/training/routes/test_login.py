@@ -5,14 +5,14 @@ from mock import patch
 
 import btcopilot
 from btcopilot.extensions import db
-from btcopilot.pro.models import Session
+from btcopilot.models import Session
 
 from btcopilot.tests.training.conftest import flask_json
 
 
 def test_success_new(anonymous, test_user):
     assert Session.query.count() == 0
-    with patch("btcopilot.pro.models.User.check_password", return_value=True):
+    with patch("btcopilot.models.User.check_password", return_value=True):
         response = anonymous.post(
             "/training/login",
             data={"username": test_user.username, "password": "bad-password"},
@@ -28,7 +28,7 @@ def test_success_existing(anonymous, test_user):
     db.session.add(session)
     db.session.commit()
     assert Session.query.count() == 1
-    with patch("btcopilot.pro.models.User.check_password", return_value=True):
+    with patch("btcopilot.models.User.check_password", return_value=True):
         response = anonymous.post(
             "/training/login",
             data={"username": test_user.username, "password": "bad-password"},

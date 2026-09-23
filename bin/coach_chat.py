@@ -48,7 +48,7 @@ from btcopilot.app import create_app
 from btcopilot.extensions import db
 from btcopilot.personal import ask
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
-from btcopilot.pro.models import User
+from btcopilot.models import User
 from btcopilot.schema import DiagramData, asdict
 
 try:

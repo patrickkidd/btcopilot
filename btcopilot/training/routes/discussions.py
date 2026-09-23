@@ -23,7 +23,7 @@ import btcopilot
 from btcopilot import auth, pdp
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
-from btcopilot.pro.models import Diagram, User
+from btcopilot.models import Diagram, User
 from btcopilot.schema import (
     DiagramData,
     PDP,

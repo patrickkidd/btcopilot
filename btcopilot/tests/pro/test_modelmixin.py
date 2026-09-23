@@ -8,7 +8,7 @@ from freezegun import freeze_time
 import dateutil
 
 from btcopilot.extensions import db
-from btcopilot.pro.models import User, License
+from btcopilot.models import User, License
 
 FIXED_TIME = datetime.datetime.fromisoformat("2025-01-15T12:00:00")
 

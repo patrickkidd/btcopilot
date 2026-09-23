@@ -1,7 +1,7 @@
 import pytest
 import btcopilot
 from btcopilot.extensions import db
-from btcopilot.pro.models import User, Diagram
+from btcopilot.models import User, Diagram
 
 
 def test_import_discussion_requires_write_access_to_diagram(auditor, test_user_2):

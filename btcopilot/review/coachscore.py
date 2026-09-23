@@ -5,7 +5,7 @@ what the room ratified, the same way the harness scores any pass (R-0249).
 """
 
 from btcopilot.review import adapter, export, snapshot
-from btcopilot.training.f1_metrics import (
+from btcopilot.matching import (
     calculate_f1_from_counts,
     calculate_sarf_macro_f1,
     match_events,

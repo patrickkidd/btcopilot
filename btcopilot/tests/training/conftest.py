@@ -66,7 +66,7 @@ def admin(flask_app, test_user):
 @pytest.fixture
 def diagram_with_full_data(test_user):
     """Create a diagram with discussions, speakers, statements, feedbacks, and access rights"""
-    from btcopilot.pro.models import Diagram, AccessRight
+    from btcopilot.models import Diagram, AccessRight
     from btcopilot.schema import DiagramData
     from btcopilot.training.models import Feedback
 
@@ -148,7 +148,7 @@ def diagram_with_full_data(test_user):
 @pytest.fixture
 def simple_diagram(test_user):
     """Create a simple diagram without discussions"""
-    from btcopilot.pro.models import Diagram
+    from btcopilot.models import Diagram
     from btcopilot.schema import DiagramData
 
     diagram = Diagram(

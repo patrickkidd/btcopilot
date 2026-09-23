@@ -14,7 +14,7 @@ from btcopilot.extensions import db
 from btcopilot.personal import prompts, record
 from btcopilot.personal.models import Author
 from btcopilot.personal.toolbox import ToolName, Toolbox
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 from btcopilot.schema import ItemKind
 
 FAMILY = {

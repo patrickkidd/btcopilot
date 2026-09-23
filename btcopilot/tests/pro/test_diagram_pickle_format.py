@@ -4,7 +4,7 @@ from btcopilot import diagramjson
 import json
 import pytest
 
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 from btcopilot.schema import (
     DiagramData,
     PDP,

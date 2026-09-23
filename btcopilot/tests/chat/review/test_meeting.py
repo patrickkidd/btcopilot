@@ -7,7 +7,7 @@ import pytest
 from mock import patch
 
 from btcopilot.extensions import db
-from btcopilot.pro.models import User
+from btcopilot.models import User
 from btcopilot.review import divergence, export, ruledraft, snapshot
 from btcopilot.review.models import Cut, Item, ReviewStatus, Rule, RuleSource
 from btcopilot.tests.chat.review.conftest import coded, person, shift

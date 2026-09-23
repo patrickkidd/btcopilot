@@ -1,8 +1,7 @@
 import os, os.path, logging
-from flask import Flask, render_template, redirect, request, url_for
+from flask import Flask, redirect, request, url_for
 from werkzeug.exceptions import Unauthorized, HTTPException
 
-import btcopilot
 from btcopilot.personal import tracing
 from btcopilot.personal.turnlog import TurnLogBackend
 
@@ -11,8 +10,7 @@ _log = logging.getLogger(__name__)
 
 
 def create_app(config: dict = None, **kwargs):
-    from btcopilot.pro.copilot.engine import Engine
-    from btcopilot import auth, extensions, pro, personal, training
+    from btcopilot import auth, extensions, personal
     from btcopilot.review import routes as review_routes
     from btcopilot import admin
     from btcopilot.auth import signin
@@ -84,14 +82,6 @@ def create_app(config: dict = None, **kwargs):
     else:
         _log.info(f"Created instance dir {app.instance_path}")
 
-    engine = Engine(
-        data_dir=app.config.get(
-            "VECTOR_DB_PATH", os.path.join(app.instance_path, "vector_db")
-        ),
-        k=20,
-    )
-    app.engine = engine
-
     ## Exception Notifs
 
     @app.errorhandler(405)
@@ -116,31 +106,19 @@ def create_app(config: dict = None, **kwargs):
 
     @app.errorhandler(403)
     def _(e):
-        from flask import redirect, url_for, request
-        from btcopilot.auth import is_chat_app_request, is_pro_app_request
+        from btcopilot.auth import is_chat_app_request
 
-        if is_pro_app_request() or is_chat_app_request():
+        if is_chat_app_request():
             return "Forbidden", 403
-        else:
-            return redirect(url_for("training.auth.login", next=request.url))
+        return redirect(url_for("chatauth.login", next=request.url))
 
     @app.errorhandler(404)
     def _(e):
-        try:
-            user = auth.current_user()
-        except HTTPException as e:
-            user = None
-        # if not user or user.IS_ANONYMOUS:
-        #     return redirect(url_for("training.auth.login", next=request.url))
-        # else:
-        return (
-            render_template("errors/404.html", current_user=user, btcopilot=btcopilot),
-            404,
-        )
+        return "Not Found", 404
 
     @app.before_request
     def _():
-        if request.path == "/v1/health":
+        if request.path == "/health":
             return
 
         _log.info(
@@ -163,19 +141,19 @@ def create_app(config: dict = None, **kwargs):
     tracing.init_app()
     extensions.init_app(app)
     auth.init_app(app)
-    pro.init_app(app)
     personal.init_app(app)
-    training.init_app(app)
     review_routes.init_app(app)
     admin.init_app(app)
 
+    @app.route("/health")
+    def health():
+        return "OK"
+
     @app.route("/")
     def root():
-        """Someone who comes back to the site with a live chat session belongs
-        in their chat, not at the training app's login."""
         if signin.current_web_session():
             return redirect(app.config["CHAT_HOME"])
-        return redirect(url_for("training.auth.login"))
+        return redirect(url_for("chatauth.login"))
 
     _log.debug("btcopilot.create_app() complete")
     return app

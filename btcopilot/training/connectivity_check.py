@@ -181,7 +181,7 @@ def _dump_disconnected(disc_ids: list[int]) -> None:
 
 
 def _measure_diagram(diagram_id: int):
-    from btcopilot.pro.models.diagram import Diagram
+    from btcopilot.models.diagram import Diagram
 
     diagram = Diagram.query.get(diagram_id)
     if diagram is None:

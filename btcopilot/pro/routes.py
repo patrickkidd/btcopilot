@@ -44,7 +44,7 @@ from btcopilot.extensions import (
     create_stripe_Subscription,
     ensure_stripe_Customer,
 )
-from btcopilot.pro.models import (
+from btcopilot.models import (
     Activation,
     AccessRight,
     Diagram,

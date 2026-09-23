@@ -7,7 +7,7 @@ import btcopilot
 from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
-from btcopilot.pro.models import User
+from btcopilot.models import User
 from btcopilot.training.utils import get_breadcrumbs
 from btcopilot.tests.chat.personal.synthetic import PersonaTrait, AttachmentStyle
 

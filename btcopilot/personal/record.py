@@ -14,7 +14,7 @@ from sqlalchemy import update as sql_update
 from btcopilot import diagramjson
 from btcopilot.extensions import db
 from btcopilot.personal.models import Author, Change
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 from btcopilot.schema import (
     ITEM_COLLECTIONS,
     MIN_CLUSTER_EVENTS,

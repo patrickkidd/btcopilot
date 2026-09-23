@@ -29,7 +29,7 @@ from sqlalchemy import MetaData, create_engine, select
 from btcopilot import diagramjson
 from btcopilot.app import create_app
 from btcopilot.extensions import db
-from btcopilot.pro.models import Diagram, User
+from btcopilot.models import Diagram, User
 
 _log = logging.getLogger(__name__)
 

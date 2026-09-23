@@ -28,7 +28,7 @@ from btcopilot.schema import (
 from btcopilot import pdp as pdp_mod
 from btcopilot.familygraph import default_ids, speaker_ids
 from btcopilot.personal.dock import dock, transcript_text
-from btcopilot.training.f1_metrics import match_people, normalize_name_for_matching
+from btcopilot.matching import match_people, normalize_name_for_matching
 
 _log = logging.getLogger(__name__)
 
@@ -552,7 +552,7 @@ def deep_reextract(
         raise ValueError(f"k must be in {VALID_K}, got {k}")
 
     from btcopilot.personal.models import Discussion
-    from btcopilot.pro.models.diagram import Diagram
+    from btcopilot.models.diagram import Diagram
 
     disc = Discussion.query.get(discussion_id)
     if disc is None:

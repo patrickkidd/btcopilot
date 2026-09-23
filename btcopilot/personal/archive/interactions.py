@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, request, abort
 
 from btcopilot import auth
 from btcopilot.personal.interactions import recent, record_interaction
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 
 _log = logging.getLogger(__name__)
 

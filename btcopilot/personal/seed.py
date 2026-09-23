@@ -183,7 +183,7 @@ def seed_diagram_data() -> DiagramData:
 
 def seed(username: str, diagram_data: DiagramData | None = None):
     from btcopilot.extensions import db
-    from btcopilot.pro.models import Diagram, User
+    from btcopilot.models import Diagram, User
 
     user = User.query.filter_by(username=username).first()
     if user is None:

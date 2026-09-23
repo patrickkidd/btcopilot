@@ -11,7 +11,7 @@ import btcopilot
 from btcopilot import params
 from btcopilot.extensions import db, mail, create_stripe_Subscription, sync_with_stripe
 from btcopilot.pro import validate_uuid4
-from btcopilot.pro.models import (
+from btcopilot.models import (
     User,
     Machine,
     Activation,

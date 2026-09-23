@@ -11,8 +11,8 @@ from btcopilot.personal.licence import require_professional
 from btcopilot.personal.routes import bp, last_activity, utc_iso
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion
-from btcopilot.pro.models import Diagram
-from btcopilot.pro.models.etc import AccessRight
+from btcopilot.models import Diagram
+from btcopilot.models.etc import AccessRight
 
 GRANTED = (btcopilot.ACCESS_READ_ONLY, btcopilot.ACCESS_READ_WRITE)
 

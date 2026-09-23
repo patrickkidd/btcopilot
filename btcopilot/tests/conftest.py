@@ -1,6 +1,6 @@
-"""The Pro and training world: the paid services stubbed out, licences,
-machines and activations. The chat app's suite lives in chat/ and imports what
-it wants by name (R-0332)."""
+"""The Pro and training world: the paid services stubbed out and licences.
+The chat app's suite lives in chat/ and imports what it wants by name
+(R-0332)."""
 
 import pickle
 import datetime
@@ -10,17 +10,9 @@ from unittest.mock import Mock
 import btcopilot
 import btcopilot.extensions as extension_module
 from btcopilot.extensions import db
-from btcopilot.pro.models import (
-    Session,
-    Activation,
-    License,
-    Machine,
-    Policy,
-    Diagram,
-)
+from btcopilot.models import License, Policy, Diagram
 from btcopilot.tests.fixtures import (
     PRO_STUBS,
-    HARDWARE_UUID,
     add_e2e_option,
     add_markers,
     stubbed,
@@ -52,30 +44,6 @@ def extensions():
 
 
 @pytest.fixture
-def test_machine(test_user):
-    machine = Machine(user=test_user, name="Some user's iMac", code=HARDWARE_UUID)
-    db.session.add(machine)
-    db.session.commit()
-    return machine
-
-
-@pytest.fixture
-def test_activation(test_license, test_machine):
-    activation = Activation(license=test_license, machine=test_machine)
-    db.session.add(activation)
-    db.session.commit()
-    return activation
-
-
-@pytest.fixture
-def test_session(test_user):
-    session = Session(user=test_user)
-    db.session.add(session)
-    db.session.commit()
-    return session
-
-
-@pytest.fixture
 def test_client_policy(flask_app):
     policy = Policy(
         code=btcopilot.LICENSE_CLIENT_ONCE,
@@ -98,14 +66,6 @@ def test_client_license(test_user, test_client_policy):
     db.session.add(license)
     db.session.commit()
     return license
-
-
-@pytest.fixture
-def test_client_activation(test_client_license, test_machine):
-    activation = Activation(license=test_client_license, machine=test_machine)
-    db.session.add(activation)
-    db.session.commit()
-    return activation
 
 
 @pytest.fixture

@@ -8,7 +8,7 @@ from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
 from sqlalchemy import func
-from btcopilot.pro.models import User
+from btcopilot.models import User
 from btcopilot.personal.models import Statement, SpeakerType, Discussion
 from btcopilot.training.models import Feedback
 from btcopilot.training.utils import get_auditor_id

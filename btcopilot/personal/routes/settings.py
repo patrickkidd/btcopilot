@@ -11,7 +11,7 @@ from btcopilot.personal.routes import bp
 from btcopilot.personal.licence import professional
 from btcopilot.personal.routes.diagrams import diagrams_payload
 from btcopilot.extensions import db
-from btcopilot.pro.models.preferences import PrefKey
+from btcopilot.models.preferences import PrefKey
 
 PROFILE_FIELDS = ("first_name", "last_name", "birthdate")
 

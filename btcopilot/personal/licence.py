@@ -7,7 +7,7 @@ from flask import abort
 
 import btcopilot
 from btcopilot import auth
-from btcopilot.pro.models.license import LicenseStatus
+from btcopilot.models.license import LicenseStatus
 
 
 def professional(user) -> bool:

@@ -5,7 +5,7 @@ from flask import abort
 
 from btcopilot.extensions import db
 from btcopilot.personal.models import Interaction, InteractionKind
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 from btcopilot.schema import ItemKind
 
 

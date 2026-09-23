@@ -7,7 +7,7 @@ import click
 from btcopilot.admin.users import find as find_user
 from btcopilot.admin.output import rows_option
 from btcopilot.extensions import db
-from btcopilot.pro.models import License, Policy
+from btcopilot.models import License, Policy
 from btcopilot.admin.guard import writes
 
 

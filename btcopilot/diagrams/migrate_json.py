@@ -12,7 +12,7 @@ import sys
 from btcopilot import diagramjson
 from btcopilot.app import create_app
 from btcopilot.extensions import db
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 
 _log = logging.getLogger(__name__)
 

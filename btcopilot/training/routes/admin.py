@@ -10,7 +10,7 @@ import btcopilot
 from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
-from btcopilot.pro.models import User, License, Diagram
+from btcopilot.models import User, License, Diagram
 from btcopilot.schema import DiagramData
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.training.models import Feedback

@@ -8,7 +8,7 @@ import btcopilot
 from btcopilot.extensions import db, ensure_stripe_Plan, sync_with_stripe
 from btcopilot.pro import tasks, SESSION_EXPIRATION_DAYS
 from btcopilot.pro.routes import bp
-from btcopilot.pro.models import License, Policy, Session, User
+from btcopilot.models import License, Policy, Session, User
 
 
 _log = logging.getLogger(__name__)

@@ -8,8 +8,7 @@ import json
 
 from btcopilot.extensions import ai_log
 from btcopilot.llmutil import gemini_structured, SARF_REVIEW_MODEL
-from btcopilot.personal.models import SpeakerType
-from btcopilot.training.f1_metrics import match_people
+from btcopilot.matching import match_people
 from btcopilot.personal import prompts
 from btcopilot.schema import (
     DateCertainty,
@@ -355,7 +354,7 @@ def _committed_person_matches(
 ) -> dict[int, int]:
     """Return {negative delta person id -> committed positive person id} for
     delta people that duplicate an already-committed person. Reuses
-    f1_metrics.match_people (name + gender + parent similarity)."""
+    matching.match_people (name + gender + parent similarity)."""
     new_people = [p for p in deltas.people if p.id is not None and p.id < 0 and p.name]
     if not new_people:
         return {}
@@ -921,97 +920,6 @@ def cleanup_pair_bonds(pdp: PDP) -> PDP:
         cleaned_pair_bonds.append(pb)
 
     pdp.pair_bonds = cleaned_pair_bonds
-    return pdp
-
-
-def cumulative(discussion, up_to_statement, auditor_id: str | None = None) -> PDP:
-    """
-    Build cumulative PDP from discussion statements up to a given statement.
-
-    Args:
-        discussion: Discussion object with statements
-        up_to_statement: Include statements up to and including this one
-        auditor_id: If provided, use auditor's edited_extraction instead of AI pdp_deltas.
-                   Pass "AI" or None to use AI extractions.
-
-    Returns:
-        PDP with accumulated people, events, pair_bonds (cleaned of invalid/duplicate/orphaned)
-    """
-    sorted_statements = sorted(
-        discussion.statements, key=lambda s: (s.order or 0, s.id or 0)
-    )
-
-    people_by_id = {}
-    events_by_id = {}
-    pair_bonds_by_id = {}
-
-    # Get auditor feedback if requested
-    feedback_by_stmt = {}
-    if auditor_id and auditor_id != "AI":
-        from btcopilot.training.models import (
-            Feedback,
-        )  # circular: training.routes.prompts imports pdp
-
-        feedbacks = Feedback.query.filter(
-            Feedback.statement_id.in_([s.id for s in sorted_statements]),
-            Feedback.auditor_id == auditor_id,
-            Feedback.feedback_type == "extraction",
-        ).all()
-        for fb in feedbacks:
-            feedback_by_stmt[fb.statement_id] = fb
-
-    up_to_order = up_to_statement.order or 0
-    for stmt in sorted_statements:
-        stmt_order = stmt.order or 0
-        if stmt_order > up_to_order:
-            break
-
-        # Only process Subject statements (where extraction data is stored)
-        if not stmt.speaker or stmt.speaker.type != SpeakerType.Subject:
-            continue
-
-        # Get deltas from auditor feedback or AI extraction
-        deltas_source = None
-        if auditor_id and auditor_id != "AI":
-            fb = feedback_by_stmt.get(stmt.id)
-            if fb and fb.edited_extraction:
-                deltas_source = fb.edited_extraction
-        elif stmt.pdp_deltas:
-            deltas_source = stmt.pdp_deltas
-
-        if not deltas_source:
-            continue
-
-        # Parse and accumulate
-        for person_data in deltas_source.get("people", []):
-            person = from_dict(Person, person_data)
-            if person.id:
-                people_by_id[person.id] = person
-
-        for event_data in deltas_source.get("events", []):
-            event = from_dict(Event, event_data)
-            if event.id:
-                events_by_id[event.id] = event
-
-        for pb_data in deltas_source.get("pair_bonds", []):
-            pair_bond = from_dict(PairBond, pb_data)
-            if pair_bond.id:
-                pair_bonds_by_id[pair_bond.id] = pair_bond
-
-        # Handle deletes
-        for delete_id in deltas_source.get("delete", []):
-            people_by_id.pop(delete_id, None)
-            events_by_id.pop(delete_id, None)
-            pair_bonds_by_id.pop(delete_id, None)
-
-    pdp = PDP()
-    pdp.people = list(people_by_id.values())
-    pdp.events = list(events_by_id.values())
-    pdp.pair_bonds = list(pair_bonds_by_id.values())
-
-    # Clean up invalid, duplicate, and orphaned pair bonds
-    pdp = cleanup_pair_bonds(pdp)
-
     return pdp
 
 

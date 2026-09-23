@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from btcopilot.extensions import db
 from btcopilot.llmutil import gemini_text_sync
 from btcopilot.personal.models import Discussion, DiscussionStatus, Speaker, SpeakerType
-from btcopilot.pro.models import Diagram, User
+from btcopilot.models import Diagram, User
 from btcopilot.schema import DiagramData, asdict
 
 

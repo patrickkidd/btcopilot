@@ -19,11 +19,9 @@ if not key_present():
 import pickle
 import contextlib
 import logging
-import warnings
 import datetime
 
 import pytest
-import pydantic
 import typing_extensions  # noqa: F401  preemptive
 from mock import patch
 from flask.testing import FlaskClient
@@ -36,7 +34,7 @@ from btcopilot.app import create_app
 from btcopilot.extensions import db
 import btcopilot.extensions as extension_module
 from btcopilot.params import truthy
-from btcopilot.pro.models import License, Policy, User
+from btcopilot.models import License, Policy, User
 
 # Importing the chat's models registers them with SQLAlchemy.
 from btcopilot.personal.models import Discussion, Statement, Speaker  # noqa: F401
@@ -49,11 +47,11 @@ HARDWARE_UUID = "1B825A8F-32CB-5419-B6C2-BB08A7DEA901"
 # reach Datadog.
 CORE_STUBS = ("init_logging", "init_excepthook", "init_datadog")
 
-# The chat app owns a vector store and a task queue, and a unit run should start
-# neither. Stripe is Pro's and the chat never reaches it.
-CHAT_STUBS = CORE_STUBS + ("init_chroma", "init_celery")
+# The chat app owns a task queue, and a unit run should not start it. Stripe
+# is Pro's and the chat never reaches it.
+CHAT_STUBS = CORE_STUBS + ("init_celery",)
 
-PRO_STUBS = CORE_STUBS + ("init_stripe", "init_chroma", "init_celery")
+PRO_STUBS = CORE_STUBS + ("init_stripe", "init_celery")
 
 MARKERS = (
     "access_rights: set access rights prior to init",
@@ -80,11 +78,6 @@ def add_e2e_option(parser):
 def add_markers(config):
     for marker in MARKERS:
         config.addinivalue_line("markers", marker)
-    warnings.filterwarnings(
-        "ignore",
-        category=pydantic.warnings.PydanticDeprecatedSince211,
-        module="chromadb.types",
-    )
 
 
 # Read before any suite stubs anything, so a run that collects two suites still
@@ -166,12 +159,6 @@ def make_app(request, tmp_path, tables=None):
 
     logging.getLogger("btcopilot").setLevel(logging.DEBUG)
 
-    vector_db = request.node.get_closest_marker("vector_db")
-    if vector_db and "path" in vector_db.kwargs:
-        VECTOR_DB_PATH = vector_db.kwargs["path"]
-    else:
-        VECTOR_DB_PATH = os.path.join(tmp_path, "vector_db")
-
     kwargs = {
         "ENV": "unittest",
         "CONFIG": "testing",
@@ -179,14 +166,12 @@ def make_app(request, tmp_path, tables=None):
         "SECRET_KEY": "test_secret_key",
         "FD_DIR": tmp_path,
         "DATABASE": tmp_path,
-        "VECTOR_DB_PATH": VECTOR_DB_PATH,
         "MAIL_DEFAULT_SENDER": "patrickkidd@gmail.com",
         "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
         "SQLALCHEMY_TRACK_MODIFICATIONS": False,
         "SERVER_NAME": "127.0.0.1",
         "STRIPE_ENABLED": truthy(os.getenv("ENABLE_STRIPE", False)),
         "STRIPE_KEY": os.getenv("FD_TEST_STRIPE_KEY"),
-        "CHROMA_PERSIST_PATH": f"{tmp_path}/vector_db",
         "SCHEDULER_API_ENABLED": False,
         "CELERY_BROKER_URL": "memory://",
         "CELERY_RESULT_BACKEND": "cache+memory://",

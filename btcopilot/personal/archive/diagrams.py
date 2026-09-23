@@ -8,7 +8,7 @@ import btcopilot
 from btcopilot import auth, pdp
 from btcopilot.extensions import db
 from btcopilot.schema import DiagramData, Event, asdict, from_dict
-from btcopilot.pro.models import Diagram, AccessRight
+from btcopilot.models import Diagram, AccessRight
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal import clusters
 

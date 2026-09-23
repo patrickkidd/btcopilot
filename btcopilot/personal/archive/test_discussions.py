@@ -3,7 +3,7 @@ import pickle
 import pytest
 
 from btcopilot.extensions import db
-from btcopilot.pro.models import User, Diagram
+from btcopilot.models import User, Diagram
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.schema import (
     DiagramData,

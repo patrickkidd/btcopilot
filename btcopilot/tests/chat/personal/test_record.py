@@ -7,7 +7,7 @@ from btcopilot import diagramjson
 from btcopilot.extensions import db
 from btcopilot.personal import record
 from btcopilot.personal.models import Author, Change
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 from btcopilot.schema import EventKind, ItemKind
 
 

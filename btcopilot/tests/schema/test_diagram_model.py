@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 from btcopilot import diagramjson
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 from btcopilot.schema import DiagramData, asdict
 from btcopilot.extensions import db
 
@@ -99,7 +99,7 @@ def test_model_imports_without_the_qt_gui_module():
             sys.executable,
             "-c",
             "import sys; sys.modules['PyQt5.QtGui'] = None; "
-            "import btcopilot.pro.routes, btcopilot.pro.models.diagram",
+            "import btcopilot.app, btcopilot.personal.routes, btcopilot.models.diagram",
         ],
         cwd=root,
         env={**os.environ, "PYTHONPATH": str(root)},

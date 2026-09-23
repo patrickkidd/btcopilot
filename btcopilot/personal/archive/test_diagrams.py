@@ -2,7 +2,7 @@ import pickle
 import base64
 
 import btcopilot
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 from btcopilot.schema import DiagramData, PDP, Person, Event, EventKind, asdict
 from btcopilot.extensions import db
 

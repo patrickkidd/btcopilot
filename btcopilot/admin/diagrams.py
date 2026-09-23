@@ -9,7 +9,7 @@ from btcopilot import diagramjson
 from btcopilot.admin.users import find as find_user
 from btcopilot.admin.output import rows_option
 from btcopilot.extensions import db
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 
 
 def find(diagram_id: int) -> Diagram:

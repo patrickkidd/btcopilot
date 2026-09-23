@@ -3,7 +3,7 @@ import pickle
 from btcopilot import diagramjson
 from btcopilot.diagrams import migrate_json
 from btcopilot.extensions import db
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 
 
 def test_converts_once_and_is_idempotent(subscriber):

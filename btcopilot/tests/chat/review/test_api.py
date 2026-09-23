@@ -8,7 +8,7 @@ from mock import patch
 
 from btcopilot.review import export, ruledraft, snapshot
 from btcopilot.review.adapter import initials
-from btcopilot.pro.models import User
+from btcopilot.models import User
 from btcopilot.review.freeze import frozen
 from btcopilot.review.models import Coding, Cut, Item, ReviewStatus, Rule, RuleSource
 from btcopilot.tests.chat.review.conftest import coded, person, shift

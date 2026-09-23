@@ -8,7 +8,7 @@ import flask.testing
 
 import btcopilot
 from btcopilot import version
-from btcopilot.pro.models import User
+from btcopilot.models import User
 
 
 class FDEncryptionTestClient(flask.testing.FlaskClient):

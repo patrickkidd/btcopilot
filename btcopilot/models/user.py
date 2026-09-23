@@ -10,7 +10,7 @@ import flask_bcrypt
 import btcopilot
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
-from btcopilot.pro.models.preferences import PREF_DEFAULTS, PrefKey, coerce_pref
+from btcopilot.models.preferences import PREF_DEFAULTS, PrefKey, coerce_pref
 
 
 def randomString(length=32):
@@ -43,9 +43,7 @@ class User(db.Model, ModelMixin):
 
     stripe_id = Column(String(200))
 
-    machines = relationship("Machine", back_populates="user")
     licenses = relationship("License", back_populates="user")
-    sessions = relationship("Session", back_populates="user")
     diagrams = relationship(
         "Diagram", primaryjoin="Diagram.user_id == User.id", back_populates="user"
     )
@@ -171,7 +169,7 @@ class User(db.Model, ModelMixin):
             return False
 
     def set_free_diagram(self, bdata=None, updated_at=None, _commit=False):
-        from btcopilot.pro.models import Diagram
+        from btcopilot.models import Diagram
 
         if bdata is None:
             bdata = pickle.dumps({})

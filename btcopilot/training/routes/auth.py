@@ -16,7 +16,7 @@ from flask import (
 )
 
 import btcopilot
-from btcopilot.pro.models import User
+from btcopilot.models import User
 from btcopilot.extensions import db
 from btcopilot.training.security import add_security_headers
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature

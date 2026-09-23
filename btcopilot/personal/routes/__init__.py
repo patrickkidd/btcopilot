@@ -7,7 +7,7 @@ from btcopilot import auth
 from btcopilot.extensions import csrf, db
 from btcopilot.personal import record
 from btcopilot.personal.models import Discussion
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 from btcopilot.personal.discussions import (  # noqa: F401  routes import them from here
     create_discussion,
     last_activity,
@@ -30,7 +30,7 @@ bp = Blueprint(
 def _authenticate():
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
         csrf.protect()
-    auth._authenticate_training_app()
+    auth.authenticate_web()
 
 
 @bp.errorhandler(CSRFError)

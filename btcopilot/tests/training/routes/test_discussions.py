@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 
 from btcopilot.extensions import db
-from btcopilot.pro.models import User, Diagram
+from btcopilot.models import User, Diagram
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.training.models import Feedback
 from btcopilot.schema import (
@@ -445,7 +445,7 @@ def discussion_with_statements(admin):
 
 
 def test_clear_ai_extractions_resets_diagram_pdp(admin, discussion_with_statements):
-    from btcopilot.pro.models import Diagram
+    from btcopilot.models import Diagram
 
     discussion, stmts = discussion_with_statements
 

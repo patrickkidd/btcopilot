@@ -4,7 +4,7 @@ from mock import patch
 
 import btcopilot
 from btcopilot.extensions import db
-from btcopilot.pro.models import User
+from btcopilot.models import User
 
 
 @pytest.mark.parametrize(

@@ -27,7 +27,7 @@ from btcopilot.personal.models import (
 )
 from btcopilot.personal.recordtext import date_text, render
 from btcopilot.personal.toolbox import EDITS, ToolError, Toolbox, schemas
-from btcopilot.pro.models import Diagram, User
+from btcopilot.models import Diagram, User
 from btcopilot.schema import PDP, Event, ItemKind, PairBond, Person, from_dict
 
 __all__ = [

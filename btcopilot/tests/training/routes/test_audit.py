@@ -1,6 +1,6 @@
 import btcopilot
 from btcopilot.extensions import db
-from btcopilot.pro.models import Diagram, User
+from btcopilot.models import Diagram, User
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.schema import DiagramData
 from btcopilot.tests.pro.fdencryptiontestclient import FDEncryptionTestClient

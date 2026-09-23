@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from playwright.sync_api import Page, Browser, BrowserContext, Route
 from flask.testing import FlaskClient
 from btcopilot.extensions import db
-from btcopilot.pro.models import User
+from btcopilot.models import User
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 import btcopilot
 

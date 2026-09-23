@@ -9,9 +9,9 @@ from btcopilot import diagramjson
 from btcopilot.personal.routes.settings import PLAN_PLACEHOLDER
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement
-from btcopilot.pro.models import Diagram, License, Policy
-from btcopilot.pro.models.license import LicenseStatus
-from btcopilot.pro.models.preferences import ChatMode, PrefKey, Proactive, Theme
+from btcopilot.models import Diagram, License, Policy
+from btcopilot.models.license import LicenseStatus
+from btcopilot.models.preferences import ChatMode, PrefKey, Proactive, Theme
 from btcopilot.schema import (
     Cluster,
     DateCertainty,

@@ -16,13 +16,14 @@ make an item disputed and it is not counted in the agreement figures (R-0242).
 
 import enum
 
+from rapidfuzz import fuzz
+
 from btcopilot.extensions import db
 from btcopilot.review import adapter
 from btcopilot.review.models import Coding, Item, ReviewStatus
 from btcopilot.schema import ItemKind, PersonKind, asdict
-from btcopilot.training.f1_metrics import (
+from btcopilot.matching import (
     NAME_SIMILARITY_THRESHOLD,
-    fuzz,
     match_events,
     match_pair_bonds,
     match_people,

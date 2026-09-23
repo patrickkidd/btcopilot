@@ -39,6 +39,6 @@ COPY private/prompts /app/private/prompts
 ENV FD_PRIVATE_PROMPTS=/app/private/prompts
 EXPOSE 8888
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8888/v1/health || exit 1
+  CMD curl -f http://localhost:8888/health || exit 1
 
 CMD ["sh", "-c", "mkdir -p ./instance/logs && gunicorn --bind 0.0.0.0:8888 --worker-class gthread --workers 1 --threads 8 --timeout 120 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50 --access-logfile ./instance/logs/access.log --error-logfile ./instance/logs/error.log --log-level info 'btcopilot.app:create_app()'"]

@@ -9,7 +9,7 @@ import pytest
 
 import btcopilot
 from btcopilot.extensions import db
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 
 from btcopilot.tests.fixtures import TEST_USER_2_ATTRS
 

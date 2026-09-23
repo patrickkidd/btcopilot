@@ -13,7 +13,7 @@ import pytest
 import PyQt5.sip  # required for unpickling QtCore types in diagram blobs
 
 from btcopilot.extensions import db
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 
 
 def test_reserve_id_block_basic(flask_app, test_user):

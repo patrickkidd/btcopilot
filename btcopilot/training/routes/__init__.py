@@ -18,7 +18,7 @@ from flask_wtf.csrf import CSRFError
 import btcopilot
 from btcopilot import auth as btcopilot_auth
 from btcopilot.extensions import db
-from btcopilot.pro.models import User, Session
+from btcopilot.models import User, Session
 from btcopilot.personal.chat import Response, ask
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.training.security import add_security_headers
@@ -98,7 +98,7 @@ def _():
     if current_app.config.get("CONFIG") == "development":
         auto_auth_user = current_app.config.get("AUTO_AUTH_USER")
         if auto_auth_user and "user_id" not in session:
-            from btcopilot.pro.models import User
+            from btcopilot.models import User
 
             user = User.query.filter_by(username=auto_auth_user).first()
             if user:
@@ -204,7 +204,7 @@ def subscriber_landing():
 @btcopilot_auth.minimum_role(btcopilot.ROLE_AUDITOR)
 def account():
     """Account page with user info and licenses"""
-    from btcopilot.pro.models import License
+    from btcopilot.models import License
     from btcopilot.training.utils import get_breadcrumbs
 
     current_user = btcopilot_auth.current_user()

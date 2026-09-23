@@ -33,7 +33,6 @@ class License(db.Model, ModelMixin):
     policy_id = Column(Integer, ForeignKey("policies.id"), nullable=False)
     policy = relationship("Policy", uselist=False, back_populates="licenses")
 
-    activations = relationship("Activation", back_populates="license")
     key = Column(String(64), nullable=False, unique=True)
 
     # License allows use on machine

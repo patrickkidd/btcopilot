@@ -19,7 +19,7 @@ from btcopilot.personal import record
 from btcopilot.personal.intake import NODAL_KINDS, SHIFT_FIELDS, _parse_iso_date
 from btcopilot.personal.models import Author, Change
 from btcopilot.personal import prompts
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 from btcopilot.schema import (
     MIN_CLUSTER_EVENTS,
     Cluster,

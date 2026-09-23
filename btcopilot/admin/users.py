@@ -10,7 +10,7 @@ from btcopilot.auth.emails import send_invitation
 from btcopilot.auth.invitation import Invitation
 from btcopilot.extensions import db
 from btcopilot.personal.licence import professional
-from btcopilot.pro.models import User
+from btcopilot.models import User
 from btcopilot.admin.guard import writes
 
 ROLES = (btcopilot.ROLE_SUBSCRIBER, btcopilot.ROLE_AUDITOR, btcopilot.ROLE_ADMIN)

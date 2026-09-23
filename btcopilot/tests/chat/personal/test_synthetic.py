@@ -556,7 +556,7 @@ def test_regression_robotic_patterns(test_user):
 @pytest.mark.e2e
 @pytest.mark.chat_flow(response="Tell me about your family.")
 def test_persist_synthetic_conversation(test_user):
-    from btcopilot.pro.models import Diagram
+    from btcopilot.models import Diagram
 
     persona = Persona(
         name="TestPersist",

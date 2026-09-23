@@ -3,7 +3,7 @@ from playwright.sync_api import Page, expect
 from tests.frontend.conftest import _flask_route_handler, sign_in
 from btcopilot import diagramjson
 from btcopilot.extensions import db
-from btcopilot.pro.models import User, Diagram
+from btcopilot.models import User, Diagram
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 import btcopilot
 

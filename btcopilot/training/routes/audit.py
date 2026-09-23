@@ -5,7 +5,7 @@ import btcopilot
 from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
-from btcopilot.pro.models import User, Diagram, License, AccessRight
+from btcopilot.models import User, Diagram, License, AccessRight
 from btcopilot.personal.models import Discussion
 from btcopilot.training.utils import (
     get_breadcrumbs,

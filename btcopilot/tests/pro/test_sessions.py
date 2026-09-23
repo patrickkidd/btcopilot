@@ -3,7 +3,7 @@ import datetime
 
 from btcopilot.extensions import db
 from btcopilot.pro import DEACTIVATED_VERSIONS, SESSION_EXPIRATION_DAYS
-from btcopilot.pro.models import Session
+from btcopilot.models import Session
 from btcopilot.personal.models import Discussion
 
 

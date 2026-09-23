@@ -1,7 +1,7 @@
 import pytest
 import btcopilot
 from btcopilot.extensions import db
-from btcopilot.pro.models import User, Diagram, AccessRight
+from btcopilot.models import User, Diagram, AccessRight
 
 
 def test_get_access_rights_owner_can_view(auditor):

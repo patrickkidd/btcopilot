@@ -441,7 +441,7 @@ def install(key: str):
     """Make the fixture user, replace their diagram, and replay their chat."""
     from btcopilot.extensions import db
     from btcopilot.personal.models import Discussion, Speaker, Statement
-    from btcopilot.pro.models import Diagram, User
+    from btcopilot.models import Diagram, User
 
     builder, chat = FIXTURES[key]
     name = username(key)

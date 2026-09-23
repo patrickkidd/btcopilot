@@ -14,7 +14,7 @@ from btcopilot.personal import clusters, prompts, record, views
 from btcopilot.personal.models import Author, Change
 from btcopilot.personal.recordtext import date_text, event_line, person_line
 from btcopilot.extensions import db
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 from btcopilot.schema import (
     MIN_CLUSTER_EVENTS,
     ClusterSource,

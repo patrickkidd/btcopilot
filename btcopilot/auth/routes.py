@@ -27,7 +27,7 @@ from btcopilot.auth.signin import (
 )
 from btcopilot.auth.websession import WebSession
 from btcopilot.extensions import db
-from btcopilot.pro.models import User
+from btcopilot.models import User
 
 REGISTER_CHALLENGE = "passkey_register_challenge"
 LOGIN_CHALLENGE = "passkey_login_challenge"

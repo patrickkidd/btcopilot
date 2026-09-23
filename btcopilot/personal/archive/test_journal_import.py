@@ -1,7 +1,7 @@
 import pytest
 from mock import patch, AsyncMock
 
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 from btcopilot.schema import PDP, PDPDeltas, Person, Event, EventKind, asdict
 
 

@@ -2,7 +2,7 @@ import btcopilot
 from btcopilot import auth, pdp
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
-from btcopilot.pro.models import Diagram, AccessRight, User
+from btcopilot.models import Diagram, AccessRight, User
 from btcopilot.schema import DiagramData, EventKind, asdict
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal.models.speaker import Speaker

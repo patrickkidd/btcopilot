@@ -5,7 +5,7 @@ import pytest
 from mock import patch
 
 from btcopilot.extensions import db
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
 
 

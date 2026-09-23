@@ -18,7 +18,7 @@ from btcopilot.auth.passkey import Passkey
 from btcopilot.auth.signin import SESSION_TOKEN
 from btcopilot.auth.websession import WebSession
 from btcopilot.extensions import db
-from btcopilot.pro.models import User
+from btcopilot.models import User
 
 INVITED = "invited+unittest@gmail.com"
 

@@ -4,7 +4,7 @@ import pytest
 
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion
-from btcopilot.pro.models.preferences import ChatMode, PrefKey, Proactive, Theme
+from btcopilot.models.preferences import ChatMode, PrefKey, Proactive, Theme
 
 
 def test_defaults(test_user):

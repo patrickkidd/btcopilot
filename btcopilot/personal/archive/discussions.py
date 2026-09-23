@@ -8,7 +8,7 @@ from sqlalchemy.orm import subqueryload
 import asyncio
 from btcopilot import auth, pdp
 from btcopilot.extensions import db
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 from btcopilot.schema import asdict, get_all_pdp_item_ids, is_parents_edit
 from btcopilot.personal import Response, ask
 from btcopilot.personal.deepreextract import (

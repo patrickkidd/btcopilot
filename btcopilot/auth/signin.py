@@ -6,7 +6,7 @@ from flask import current_app, request, session
 import btcopilot
 from btcopilot.auth.websession import WebSession
 from btcopilot.extensions import db
-from btcopilot.pro.models import User
+from btcopilot.models import User
 
 SESSION_TOKEN = "web_session_token"
 

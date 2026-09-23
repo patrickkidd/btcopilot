@@ -5,7 +5,7 @@ import pytest
 
 from btcopilot import diagramjson, proimport
 from btcopilot.extensions import db
-from btcopilot.pro.models import Diagram, User
+from btcopilot.models import Diagram, User
 from btcopilot.tests.olddump import WHITLOCK, build
 
 

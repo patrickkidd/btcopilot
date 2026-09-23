@@ -23,7 +23,7 @@ import btcopilot.auth.logincode  # noqa: F401
 import btcopilot.auth.passkey  # noqa: F401
 import btcopilot.auth.websession  # noqa: F401
 import btcopilot.personal.models  # noqa: F401
-import btcopilot.pro.models  # noqa: F401
+import btcopilot.models  # noqa: F401
 import btcopilot.review.models  # noqa: F401
 
 

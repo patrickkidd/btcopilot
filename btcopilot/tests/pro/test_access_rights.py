@@ -3,7 +3,7 @@ import pickle
 import pytest
 
 import btcopilot
-from btcopilot.pro.models import User, Diagram
+from btcopilot.models import User, Diagram
 
 
 @pytest.mark.access_rights

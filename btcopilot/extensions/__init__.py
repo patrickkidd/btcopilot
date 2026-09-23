@@ -31,20 +31,15 @@ from celery import Celery
 
 from btcopilot import version
 from .handlers import ColorfulSMTPHandler
-from .chroma import Chroma
 
 SERVER_FOLDER_PATH = os.path.realpath(
     os.path.join(os.path.dirname(os.path.realpath(__file__)), "..")
 )
 
 
-EMBEDDINGS_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-
-
 _log = logging.getLogger(__name__)
 
 
-chroma = Chroma()
 db = SQLAlchemy()
 mail = Mail()
 csrf = CSRFProtect()
@@ -355,16 +350,6 @@ def init_celery(app):
         enable_utc=True,
         worker_hijack_root_logger=False,
         worker_redirect_stdouts=False,
-        beat_schedule={
-            "sync-with-stripe-daily": {
-                "task": "sync_with_stripe",
-                "schedule": 86400.0,  # 24 hours
-            },
-            "expire-stale-sessions-hourly": {
-                "task": "expire_stale_sessions",
-                "schedule": 3600.0,  # 1 hour
-            },
-        },
     )
 
     class ContextTask(celery.Task):
@@ -379,35 +364,14 @@ def init_celery(app):
     # Register tasks only once
     if not hasattr(celery, "_tasks_registered"):
 
-        from btcopilot import pro, personal, training
+        from btcopilot import personal
         from btcopilot.review import tasks as review_tasks
 
-        pro.init_celery(celery)
         personal.init_celery(celery)
-        training.init_celery(celery)
         celery.task(review_tasks.replay_cut, name="review_replay_cut")
 
         # Mark tasks as registered to avoid duplicate registration
         celery._tasks_registered = True
-
-
-def cron_daily():
-    from btcopilot import commands
-
-    _log.info(f"cron_daily() {datetime.datetime.now()}")
-    sync_with_stripe()
-    commands.expire_stale_sessions()
-
-
-def cron_hourly():
-    from btcopilot import commands
-
-    _log.info(f"cron_hourly() {datetime.datetime.now()}")
-    commands.expire_stale_sessions()
-
-
-def init_chroma(app):
-    chroma.init_app(app)
 
 
 def init_mail(app):
@@ -434,12 +398,6 @@ def init_app(app):
     init_mail(app)
     mail.init_app(app)
     init_csrf(app)
-    init_chroma(app)
-
-    if os.environ.get("ENABLE_GRAPHQL", False) and "pytest" not in sys.modules:
-        from btcopilot.extensions import graphql
-
-        graphql.init_app(app)
 
 
 _log = logging.getLogger(__name__)
@@ -536,7 +494,7 @@ def create_stripe_Subscription(user, policy, license, card):
 ## TODO: Maybe also cancel licenses in a webhook from Stripe?
 def sync_with_stripe():
     import stripe
-    from btcopilot.pro.models import License, Policy, User
+    from btcopilot.models import License, Policy, User
 
     _log.info(f"Starting...")
     # Expire old subscriptions

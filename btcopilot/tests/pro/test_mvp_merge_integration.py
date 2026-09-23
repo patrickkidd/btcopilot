@@ -18,7 +18,7 @@ from datetime import datetime
 import PyQt5.sip  # for unpickling QtCore types
 
 from btcopilot.extensions import db
-from btcopilot.pro.models import Diagram
+from btcopilot.models import Diagram
 
 
 def _put_diagram(client, diagram_id, blob, expected_version):

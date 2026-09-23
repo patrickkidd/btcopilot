@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from btcopilot.extensions import db
 from btcopilot.app import create_app
-from btcopilot.pro.models import Session
+from btcopilot.models import Session
 from btcopilot.pro import tasks, SESSION_EXPIRATION_DAYS, DEACTIVATED_VERSIONS
 
 

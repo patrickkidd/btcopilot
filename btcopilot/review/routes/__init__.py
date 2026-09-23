@@ -24,7 +24,7 @@ bp = Blueprint("review", __name__, url_prefix="/review")
 def _authenticate():
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
         csrf.protect()
-    auth._authenticate_training_app()
+    auth.authenticate_web()
 
 
 @bp.errorhandler(CSRFError)

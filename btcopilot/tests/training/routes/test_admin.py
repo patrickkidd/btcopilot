@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import btcopilot
 from btcopilot.extensions import db
-from btcopilot.pro.models import User
+from btcopilot.models import User
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.training.models import Feedback
 
