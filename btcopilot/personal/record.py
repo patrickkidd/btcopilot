@@ -432,6 +432,12 @@ def _moves(data: dict, deltas: list[dict]):
                 "relationship move: say which of symptom, anxiety, functioning "
                 "or relationship moved, and which way"
             )
+        end = _day(event.get("endDateTime"))
+        if end and end < (_day(event.get("dateTime")) or end):
+            raise Invalid(
+                f"event {event_id} ends before it begins: date is when it began, "
+                "end_date when it ended"
+            )
         if kind not in (EventKind.Birth.value, EventKind.Adopted.value):
             continue
         # early = before the first moment that moved anything: that is where

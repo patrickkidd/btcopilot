@@ -58,6 +58,9 @@ def event_line(event: dict) -> str:
         date_text(event.get("dateTime")) or "undated",
         f"[{_enum_val(event.get('kind')) or 'shift'}]",
     ]
+    end = date_text(event.get("endDateTime"))
+    if end:
+        parts.insert(2, f"to {end}")
     for key in ("person", "spouse", "child"):
         if event.get(key) is not None:
             parts.append(f"{key}={event[key]}")

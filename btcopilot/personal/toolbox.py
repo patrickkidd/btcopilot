@@ -144,7 +144,10 @@ def schemas() -> list[dict]:
                     "id": {"type": "integer"},
                     "kind": _enum_param(EventKind, means[prompts.ToolText.EventKind]),
                     "date": {"type": "string", "description": "YYYY-MM-DD"},
-                    "end_date": {"type": "string", "description": "YYYY-MM-DD"},
+                    "end_date": {
+                        "type": "string",
+                        "description": means[prompts.ToolText.EndDate],
+                    },
                     "date_certainty": _enum_param(
                         DateCertainty,
                         "Certain for a date they stated, approximate for within a "

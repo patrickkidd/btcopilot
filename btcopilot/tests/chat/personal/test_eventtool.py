@@ -6,6 +6,7 @@ import pytest
 
 from btcopilot.extensions import db
 from btcopilot.personal.recordtext import event_line
+from btcopilot.personal.timeline import build_timeline
 from btcopilot.personal.toolbox import ToolError, ToolName, Toolbox
 from btcopilot.models import Diagram
 
@@ -162,3 +163,37 @@ def test_an_adoption_invents_no_parent(subscriber):
     assert len(data.people) == 3
     assert data.pair_bonds == []
     assert data.people[2].get("parents") is None
+
+
+def test_an_event_carries_its_end_into_the_record_and_the_picture(subscriber):
+    # R-0437
+    diagram = _diagram(subscriber.user)
+    added = _event(
+        diagram,
+        kind="shift",
+        date="2015-01-01",
+        end_date="2019-06-01",
+        person=1,
+        relationship="cutoff",
+        relationship_targets=[2],
+        description="Stopped speaking",
+    )
+    assert added["endDateTime"] == "2019-06-01"
+    assert "2015-01-01 to 2019-06-01" in event_line(added)
+    [drawn] = build_timeline(diagram.get_diagram_data())["events"]
+    assert (drawn["dateTime"], drawn["endDateTime"]) == ("2015-01-01", "2019-06-01")
+
+
+def test_an_end_before_the_start_is_refused(subscriber):
+    # R-0437
+    diagram = _diagram(subscriber.user)
+    with pytest.raises(ToolError, match="ends before it begins"):
+        _event(
+            diagram,
+            kind="shift",
+            date="2019-06-01",
+            end_date="2015-01-01",
+            person=1,
+            anxiety="up",
+            description="On edge",
+        )

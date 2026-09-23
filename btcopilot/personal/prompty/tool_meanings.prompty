@@ -8,6 +8,8 @@ meanings:
     What happened, with no names of the people this event links: the person, spouse, child and targets are said by their fields.
   notes: |-
     Free text kept on the event beside its description. Changing it replaces what is there, so write the whole text.
+  end_date: |-
+    YYYY-MM-DD. When the event ended, given only when an end date is known; date is when it began.
   location: |-
     Where it happened, when the conversation says where. On a noted event about a move it is the place they moved to.
   person: |-
