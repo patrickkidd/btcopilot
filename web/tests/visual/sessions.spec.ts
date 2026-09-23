@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { EXACT, stateFor } from "./setup";
 
 /** The session door: the button beside the message box and the family-sections
  * sheet it raises. */
@@ -61,6 +61,11 @@ test.describe("the sessions sheet", () => {
     await expect(page.locator("#sessions-sheet .fs-new").first()).toContainText(
       "New session with",
     );
+    // the days and titles follow the day the fixtures were installed
+    await expect(page.locator("#sessions-sheet")).toHaveScreenshot("sessions-sheet.png", {
+      ...EXACT,
+      mask: [page.locator("#sessions-sheet .ghead, #sessions-sheet .rday, #sessions-sheet .rtitle")],
+    });
   });
 
   test("a search that matches nothing says so, in those words", async ({ page }) => {

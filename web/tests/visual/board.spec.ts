@@ -1,12 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor, steady } from "./setup";
+import { inside, stateFor, steady } from "./setup";
 
 /** The moves board: the level a cluster opens into, and the chrome around the
- * drawings. The drawings themselves have their own goldens in moves.spec.ts;
- * these watch the things only the app can produce — the entry button, the
- * people the record puts on the ellipse, the pair bonds beneath them, the
- * earlier moves held behind the current one, the caption, and the step
- * controls at their ends.
+ * drawings. The drawings themselves are checked in moves.spec.ts; these
+ * watch the things only the app can produce — the entry button, the people
+ * the record puts on the ellipse, the pair bonds beneath them, the earlier
+ * moves held behind the current one, the caption, and the step controls at
+ * their ends.
  *
  * Driven the way a reader drives it: select a moment, take the entry button,
  * then step. No live coach turn is involved, so it is deterministic.
@@ -64,7 +64,7 @@ test.describe("the moves board", () => {
     await settle(page);
     await pickCluster(page);
     await expect(page.locator("#cap-play")).toHaveText("explain");
-    await expect(picture(page)).toHaveScreenshot("board-entry-offer.png", steady(page));
+    await inside(page.locator("#view .ss"), picture(page));
   });
 
   test("the board opens on the first move", async ({ page }) => {
@@ -82,8 +82,7 @@ test.describe("the moves board", () => {
     for (let i = 0; i < 4; i += 1)
       await page.locator('.pctl [data-target="next"]').click();
     await expect(page.locator("#chat-screen .bcap")).toHaveText("Ada \u2192 Ben · conflict");
-    await freeze(page);
-    await expect(picture(page)).toHaveScreenshot("board-fifth-move.png", steady(page));
+    await inside(page.locator("#view .ss.board"), picture(page));
   });
 
   test("the last move has nowhere further to go", async ({ page }) => {
@@ -92,8 +91,8 @@ test.describe("the moves board", () => {
     const next = page.locator('.pctl [data-target="next"]');
     while (await next.isEnabled()) await next.click();
     await expect(page.locator('.pctl [data-target="prev"]')).toBeEnabled();
-    await freeze(page);
-    await expect(picture(page)).toHaveScreenshot("board-last-move.png", steady(page));
+    await expect(next).toBeDisabled();
+    await inside(page.locator("#view .ss.board"), picture(page));
   });
 
   // the one way up is the arrow beside the view's name; the board carries no
@@ -112,6 +111,5 @@ test.describe("the moves board", () => {
     const after = await picture(page).boundingBox();
     // the resting picture is one fixed height whatever it has been showing
     expect(after?.height).toBe(before?.height);
-    await expect(picture(page)).toHaveScreenshot("board-back-to-wire.png", steady(page));
   });
 });

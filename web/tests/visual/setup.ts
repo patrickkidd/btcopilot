@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import {
   closeSync,
@@ -125,6 +125,18 @@ export const steady = (page: Page) => ({
   ...EXACT,
   mask: [page.locator("#caption")],
 });
+
+/** The inner box lies within the outer one, give or take a pixel of
+ * antialiasing; `across` checks only left and right, for a box that scrolls. */
+export async function inside(inner: Locator, outer: Locator, across = false) {
+  const a = (await inner.boundingBox())!;
+  const b = (await outer.boundingBox())!;
+  expect(a.x).toBeGreaterThanOrEqual(b.x - 1);
+  expect(a.x + a.width).toBeLessThanOrEqual(b.x + b.width + 1);
+  if (across) return;
+  expect(a.y).toBeGreaterThanOrEqual(b.y - 1);
+  expect(a.y + a.height).toBeLessThanOrEqual(b.y + b.height + 1);
+}
 
 export default async function setup() {
   // The review walks sign in with links the review sandbox minted and drive its

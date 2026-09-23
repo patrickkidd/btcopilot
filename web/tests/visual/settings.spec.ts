@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { EXACT, stateFor } from "./setup";
 
 /** The settings stack: the avatar in the title row, and the pages it pushes.
  * Every value has one home, and the chat view's speak-replies row is the one
@@ -45,6 +45,10 @@ test.describe("the settings stack", () => {
     ]);
     await expect(page.locator(".sn-out")).toHaveText("Sign out");
     await expect(page.locator(".sn-foot")).toHaveText("Family Diagram · beta");
+    await expect(page.locator('.sn-pane[data-page="root"]')).toHaveScreenshot(
+      "settings-root.png",
+      EXACT,
+    );
   });
 
   test("a row pushes its own page and the chevron pops it", async ({ page }) => {

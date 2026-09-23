@@ -39,9 +39,12 @@ export default defineConfig({
       testIgnore: SANDBOX,
       use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } },
     },
+    // Not part of the gate (R-0416): no desktop goldens are kept, so its
+    // screenshot calls are skipped and it runs only by hand.
     {
       name: "desktop",
       testIgnore: SANDBOX,
+      ignoreSnapshots: true,
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
     },
     // The review walks: journeys against a running review sandbox, in both

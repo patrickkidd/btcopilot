@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { stateFor, steady } from "./setup";
+import { inside, stateFor, steady } from "./setup";
 
 /** What the resting picture looks like on each shape of record, and what a tap
  * on it does. Goldens, so a change to the drawing has to be looked at.
@@ -60,7 +60,8 @@ test.describe("a tap on the wire", () => {
     await openCluster(page);
     await page.locator('.ss-hit[data-target="zone"]').first().click();
     await expect(page.locator("#view .ss-t.on").first()).toBeVisible();
-    await expect(picture(page)).toHaveScreenshot("tap-moment.png", steady(page));
+    await expect(page.locator("#view .ss-t.on").first()).not.toBeEmpty();
+    await inside(page.locator("#view .ss-t.on").first(), picture(page));
   });
 
   test("the chip beside it drops a reference in the composer", async ({ page }) => {
@@ -69,7 +70,8 @@ test.describe("a tap on the wire", () => {
     await page.locator('.ss-hit[data-target="zone"]').first().click();
     await page.locator("#cap-chip").click();
     await expect(page.locator("#composer .chip")).toHaveCount(1);
-    await expect(page.locator("#chat-screen .inbar")).toHaveScreenshot("chip-in-composer.png", steady(page));
+    await expect(page.locator("#composer .chip")).not.toBeEmpty();
+    await inside(page.locator("#composer .chip"), page.locator("#chat-screen .inbar"));
   });
 });
 

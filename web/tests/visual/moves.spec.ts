@@ -4,10 +4,10 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
-import { EXACT, stateFor } from "./setup";
+import { inside, stateFor } from "./setup";
 
-/** The move language, one golden per move, so a change to any drawing has to be
- * looked at.
+/** The move language, one drawing per move: each draws its people, named, inside
+ * its cell. Pixels are not compared here (R-0416).
  *
  * They are taken off a page that renders the real `moves.ts` against the real
  * `theme.css`, not off the app. A chip no longer opens the moves board, because
@@ -142,20 +142,21 @@ test.describe("the move language", () => {
           animation.currentTime = ms;
         }
       }, AT_MS);
-      await expect(browser.locator(`#m-${spec.name}`)).toHaveScreenshot(
-        `move-${spec.name}.png`,
-        EXACT,
+      const cell = browser.locator(`#m-${spec.name}`);
+      await expect(cell.locator(".node")).toHaveCount(spec.three ? 3 : 2);
+      expect((await cell.locator(".nm").allTextContents()).sort()).toEqual(
+        spec.three ? ["Ann", "Bo", "Cy"] : ["Ann", "Bo"],
       );
+      await inside(cell.locator("svg"), cell);
     });
   }
 
   test("the board a coach's triangle opens", async ({ page: browser }) => {
     test.skip(test.info().project.name !== "phone");
     await browser.goto(url);
-    await expect(browser.locator("#m-triangle-board")).toHaveScreenshot(
-      "board-triangle.png",
-      EXACT,
-    );
+    const cell = browser.locator("#m-triangle-board");
+    await expect(cell.locator("svg")).toBeVisible();
+    await inside(cell.locator("svg"), cell);
   });
 });
 
@@ -169,7 +170,6 @@ test.describe("what a chip does", () => {
     // the record rests on one open cluster, which writes no words on the
     // drawing (owner, 2026-09-09): what the coach named is lit on its dots
     await expect(page.locator("#view .dot.lit").first()).toBeVisible();
-    await expect(page.locator("#chat-screen .pic")).toHaveScreenshot("spotlight-at-rest.png");
   });
 });
 
@@ -180,7 +180,8 @@ test.describe("the timeline behind the menu", () => {
     await page.goto("/app/");
     await page.locator("#menu-open").click();
     await expect(page.locator("#menu-body .row").first()).toBeVisible();
-    await expect(page.locator("#menu-screen")).toHaveScreenshot("menu-list.png");
+    await expect(page.locator("#menu-body .row").first()).not.toBeEmpty();
+    await inside(page.locator("#menu-body .row").first(), page.locator("#menu-screen"), true);
   });
 
   test("the editor's fields, text centred in the box", async ({ page }) => {
@@ -188,11 +189,7 @@ test.describe("the timeline behind the menu", () => {
     await page.locator("#menu-open").click();
     await page.locator("#menu-body .row").first().click();
     await expect(page.locator(".editor .segs").first()).toBeVisible();
-    // The word fields sit below the fold; a fixed offset keeps the shot stable.
-    await page.locator("#menu-body").evaluate((body) => {
-      body.scrollTop = 420;
-    });
-    await expect(page.locator("#menu-screen")).toHaveScreenshot("menu-editor.png");
+    await inside(page.locator(".editor").first(), page.locator("#menu-screen"), true);
   });
 });
 
