@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { restWidth, yearAt, years } from "../src/picture";
+import { dotXs, hitSpans, pairSvg, restWidth, yearAt, years } from "../src/picture";
+import { DateCertainty, type TimelineEvent } from "../src/types";
 
 const PHONE = 390;
 const PAD = 16;
@@ -84,6 +85,81 @@ describe("how wide the resting line is drawn", () => {
     expect(width).toBeGreaterThan(PHONE);
     // parked at the far right, the last moment is the last thing on screen
     expect(at(dates[3], dates, width) - (width - PHONE)).toBeLessThanOrEqual(PHONE);
+  });
+});
+
+describe("the dots inside a cluster box", () => {
+  it("stay where they fall when they already read apart", () => {
+    const xs = [40, 60, 90];
+    expect(dotXs(xs, 30, 70)).toEqual(xs);
+  });
+
+  it("spreads seven moments held inside a few weeks across the box", () => {
+    const xs = Array.from({ length: 7 }, (_, i) => 100 + i * 0.4);
+    const drawn = dotXs(xs, 96, 88);
+    expect(new Set(drawn.map((x) => x.toFixed(1))).size).toBe(7);
+    drawn.forEach((x, i) => {
+      if (i) expect(x - drawn[i - 1]).toBeGreaterThanOrEqual(11);
+      expect(x).toBeGreaterThanOrEqual(96);
+      expect(x).toBeLessThanOrEqual(96 + 88);
+    });
+  });
+});
+
+describe("the tap target of a dot on the line", () => {
+  it("is a whole thumb where the dot stands alone", () => {
+    const [only] = hitSpans([200], PHONE);
+    expect(only.size).toBe(44);
+  });
+
+  it("lets a tap on either of two dots 6px apart pick that dot", () => {
+    const xs = [200, 206];
+    const spans = hitSpans(xs, PHONE);
+    xs.forEach((x, i) => {
+      const covering = spans.filter(
+        (span) => x >= span.left && x <= span.left + span.size,
+      );
+      expect(covering).toContain(spans[i]);
+      expect(spans[i].left + spans[i].size).toBeLessThanOrEqual(
+        i < xs.length - 1 ? (xs[i] + xs[i + 1]) / 2 : PHONE,
+      );
+    });
+  });
+});
+
+describe("the two moments face to face", () => {
+  const event = (id: number, label: string): TimelineEvent =>
+    ({
+      id,
+      label,
+      sentence: label,
+      person_name: "Ann",
+      person: 1,
+      dateTime: "2009-04-02",
+      endDateTime: null,
+      dateCertainty: DateCertainty.Certain,
+      kind: null,
+      description: null,
+      notes: null,
+      location: null,
+      symptom: null,
+      anxiety: null,
+      functioning: null,
+      relationship: null,
+      relationshipTargets: [],
+      relationshipTriangles: [],
+      spouse: null,
+      child: null,
+    }) as TimelineEvent;
+
+  it("draws both labels and the seam with real numbers", () => {
+    const svg = pairSvg(
+      event(1, "she moved out of the house that spring"),
+      event(2, "he took the job in another town"),
+      PHONE,
+    );
+    expect(svg).not.toContain("NaN");
+    expect(svg.match(/class="ss-w"/g)?.length).toBe(4);
   });
 });
 

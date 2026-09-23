@@ -84,6 +84,13 @@ const REACH = 2;
 
 const REST_H = 60;
 const REST_WIRE = 30;
+/** A dot on the resting line. */
+const DOT_R = 4.5;
+/** The least space between two dot centres inside a box for the two to read as
+ * two rather than as one solid bar. */
+const DOT_GAP = 11;
+/** The narrowest tap target a dot keeps when its neighbours crowd it. */
+const HIT_MIN = 6;
 /** A cluster of more than this many moments collapses to a ring and a count. */
 const DENSE = 8;
 /** A gap of this many years or more between clusters earns the amber question. */
@@ -105,7 +112,7 @@ function shortYears(start: string, end: string): string {
  * further, so the whole history is always one or two swipes (R-0381). The
  * clusters come in time order; the dates are every dated moment, in order. */
 export function restWidth(
-  clusters: { start: string; end: string }[],
+  clusters: { start: string; end: string; count?: number }[],
   dates: string[],
   screen: number,
 ): number {
@@ -114,8 +121,13 @@ export function restWidth(
   if (span <= 0) return screen;
   let scale = (screen - 2 * X_PAD) / span;
   clusters.forEach((cluster, i) => {
+    const dots = cluster.count && cluster.count <= DENSE ? cluster.count : 0;
     const room =
-      shortYears(cluster.start, cluster.end).length * YEAR_CH + 8 - 2 * BOX_PAD;
+      Math.max(
+        shortYears(cluster.start, cluster.end).length * YEAR_CH + 8,
+        dots ? (dots - 1) * DOT_GAP + 2 * DOT_R : 0,
+      ) -
+      2 * BOX_PAD;
     const held = years(cluster.end) - years(cluster.start);
     if (held > 0 && room > 0) scale = Math.max(scale, room / held);
     // two clusters that already touch in time can never be pulled apart, and
@@ -124,6 +136,70 @@ export function restWidth(
     if (apart > 0) scale = Math.max(scale, (2 * BOX_PAD + BOX_GAP) / apart);
   });
   return Math.round(Math.min(REACH * screen, 2 * X_PAD + scale * span));
+}
+
+/** Where a cluster's dots are drawn inside its box: where they fall in time,
+ * unless that draws them over each other — a cluster held inside a few weeks
+ * would be one solid bar — in which case they are spread evenly across the box
+ * in the same order, and never outside it. */
+export function dotXs(xs: number[], left: number, boxWidth: number): number[] {
+  if (xs.every((x, i) => !i || x - xs[i - 1] >= DOT_GAP)) return xs;
+  const from = left + DOT_R;
+  const to = left + boxWidth - DOT_R;
+  if (xs.length < 2) return [(from + to) / 2];
+  return xs.map((_, i) => from + ((to - from) * i) / (xs.length - 1));
+}
+
+/** The tap target of each dot on the line: a thumb's full width where the dot
+ * has room, and otherwise the space split with its neighbours, so a tap always
+ * picks the nearest dot centre and no dot is covered by another's target. */
+export function hitSpans(
+  xs: number[],
+  width: number,
+): { left: number; size: number }[] {
+  return xs.map((x, i) => {
+    const near = Math.min(
+      i ? x - xs[i - 1] : Infinity,
+      i < xs.length - 1 ? xs[i + 1] - x : Infinity,
+    );
+    const size = Math.max(HIT_MIN, Math.min(ZONE, near));
+    return { left: Math.min(Math.max(x - size / 2, 0), width - size), size };
+  });
+}
+
+/** The second line of a label in the two-moments drawing: one row below the
+ * first, since the shared rows stop at two and the drawing needs three. */
+const PAIR_TWO = ROWS[1] + ROW_H;
+
+/** Two moments side by side with the record's one asking mark between them.
+ * No axis: a comparison is not a measurement. */
+export function pairSvg(
+  a: TimelineEvent,
+  b: TimelineEvent,
+  width: number,
+): string {
+  const mid = width / 2;
+  const column = (event: TimelineEvent, left: number): string => {
+    const wide = Math.floor((mid - X_PAD - 22) / CH);
+    const [one, two] = wrap2(event.label, wide);
+    const when = event.dateTime
+      ? dateText(event.dateTime, event.dateCertainty)
+      : "no date yet";
+    return (
+      `<text class="ss-w meta" x="${left}" y="${ROWS[0]}">${esc(when)}</text>` +
+      `<text class="ss-w" x="${left}" y="${ROWS[1] + 6}">${esc(one)}</text>` +
+      (two ? `<text class="ss-w" x="${left}" y="${PAIR_TWO + 6}">${esc(two)}</text>` : "")
+    );
+  };
+  return (
+    `<div class="ss">` +
+    `<svg viewBox="0 0 ${width} ${PIC_H}" aria-hidden="true">` +
+    column(a, X_PAD) +
+    column(b, mid + 11) +
+    `<line class="seam" x1="${mid}" y1="${ROWS[0] - 12}" x2="${mid}" y2="${PAIR_TWO + 12}"/>` +
+    `<text class="qm" x="${mid}" y="${ROWS[1] + 6}" text-anchor="middle">?</text>` +
+    `</svg></div>`
+  );
 }
 
 /** The picture's levels. The middle "cluster drilldown" is CUT (R-0074): the
@@ -902,13 +978,17 @@ export class Picture {
           `<circle class="ep-many" cx="${middle.toFixed(1)}" cy="${wireY}" r="11"/>` +
           `<text class="ep-count" x="${middle.toFixed(1)}" y="${wireY + 4}" ` +
           `text-anchor="middle">${cluster.count}</text>`;
-      else
-        for (let j = 0; j < cluster.count; j += 1) {
-          const spread = cluster.count > 1 ? j / (cluster.count - 1) : 0.5;
-          svg +=
-            `<circle class="dot" cx="${(a + (b - a) * spread).toFixed(1)}" ` +
-            `cy="${wireY}" r="4.5"/>`;
-        }
+      else {
+        const inBox = dated.filter((e) => cluster.event_ids.includes(e.id));
+        const when =
+          inBox.length === cluster.count
+            ? inBox.map((e) => at(e.dateTime as string))
+            : Array.from({ length: cluster.count }, (_, j) =>
+                cluster.count > 1 ? a + ((b - a) * j) / (cluster.count - 1) : middle,
+              );
+        for (const cx of dotXs(when, left, boxWidth))
+          svg += `<circle class="dot" cx="${cx.toFixed(1)}" cy="${wireY}" r="${DOT_R}"/>`;
+      }
       if (!picked)
         svg +=
           `<text class="ep-yrs" x="${middle.toFixed(1)}" y="21" text-anchor="middle">` +
@@ -937,14 +1017,15 @@ export class Picture {
       x: at(event.dateTime as string),
     }));
     this.laid.zones = marks.map((mark) => [mark]);
+    const spans = hitSpans(marks.map((mark) => mark.x), width);
     marks.forEach(({ event, x }, i) => {
       const on = event.id === this.selected ? " on" : "";
-      svg += `<circle class="dot${on}" cx="${x.toFixed(1)}" cy="${wireY}" r="${on ? 7 : 4.5}"/>`;
+      svg += `<circle class="dot${on}" cx="${x.toFixed(1)}" cy="${wireY}" r="${on ? 7 : DOT_R}"/>`;
       hits +=
         `<button class="ss-hit" data-target="${Target.Zone}" data-index="${i}" ` +
         `aria-label="${esc(event.label)}" ` +
-        `style="left:${this.hitLeft(x, ZONE, width)}px;top:${wireY - ZONE / 2}px;` +
-        `width:${ZONE}px;height:${ZONE}px"></button>`;
+        `style="left:${spans[i].left.toFixed(1)}px;top:${wireY - ZONE / 2}px;` +
+        `width:${spans[i].size.toFixed(1)}px;height:${ZONE}px"></button>`;
     });
 
     svg += `</svg>`;
@@ -1104,32 +1185,8 @@ export class Picture {
   private renderPair(): string | null {
     const [a, b] = (this.pair ?? [0, 0]).map((id) => this.event(id));
     if (!a || !b) return null;
-    const width = this.width;
-    const mid = width / 2;
-    const column = (event: TimelineEvent, left: number): string => {
-      const wide = Math.floor((mid - X_PAD - 22) / CH);
-      const [one, two] = wrap2(event.label, wide);
-      const when = event.dateTime
-        ? dateText(event.dateTime, event.dateCertainty)
-        : "no date yet";
-      return (
-        `<text class="ss-w meta" x="${left}" y="${ROWS[0]}">${esc(when)}</text>` +
-        `<text class="ss-w" x="${left}" y="${ROWS[1] + 6}">${esc(one)}</text>` +
-        (two
-          ? `<text class="ss-w" x="${left}" y="${ROWS[2] + 6}">${esc(two)}</text>`
-          : "")
-      );
-    };
     this.pin(PIC_H);
-    return (
-      `<div class="ss">` +
-      `<svg viewBox="0 0 ${width} ${PIC_H}" aria-hidden="true">` +
-      column(a, X_PAD) +
-      column(b, mid + 11) +
-      `<line class="seam" x1="${mid}" y1="${ROWS[0] - 12}" x2="${mid}" y2="${ROWS[2] + 12}"/>` +
-      `<text class="qm" x="${mid}" y="${ROWS[1] + 6}" text-anchor="middle">?</text>` +
-      `</svg></div>`
-    );
+    return pairSvg(a, b, this.width);
   }
 
   private render(): void {

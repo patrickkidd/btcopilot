@@ -585,7 +585,10 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    seven dots merge into one solid bar; (b) the 1996 dot cannot be tapped because the 1997 dot's
    44px target covers it; (c) the two-moments-face-to-face drawing in picture.ts reads ROWS[2],
    which is undefined, so its second label line and seam get NaN — nothing reaches it on his path
-   yet. OPEN
+   yet. FIXED: dots that would draw over each other are spread evenly inside their box and the
+   line is drawn wide enough to hold them; a dot's tap target is now split with its neighbours, so
+   the nearest dot centre wins and no dot is covered; the face-to-face drawing takes its second
+   label row from a row that exists. Unit tests cover all three.
 42. Round 8 (2026-09-23): three hybrids from the mobile-views catalogue drawn on the app's own
    line, critic-gated. Survived: one line of words above the line (the coach's sentence naming
    the nearest thing worth saying today), on the real line, live on his record; it needs 22 more
