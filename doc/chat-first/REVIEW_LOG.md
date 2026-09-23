@@ -557,3 +557,8 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    carved strip of hills. Finding: nothing beat the line, and each survivor says one thing the
    line cannot, which argues for the picture changing with what the coach is talking about.
    Published; four decisions on the page. Item 37 WAITING on his picks.
+38. Idea from Patrick (free association, 2026-09-23): the height in the hills concept could mean
+   the amount of clinical signal under the SARF model in that cluster — which of the four
+   variables moved, in how many people, how close together — never the count of events. Sources:
+   stress by magnitude, number and spacing (Kerr and Bowen), the four variables moving together
+   (Havstad). Not ruled; a candidate for what a cluster box conveys at rest. OPEN
