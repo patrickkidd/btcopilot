@@ -12,6 +12,8 @@ from btcopilot.personal.chips import ChipKind
 from btcopilot.personal.clusters import ClusterError, sync
 from btcopilot.personal.coachturn import CoachTurn
 from btcopilot.personal.models import Author, Change
+from btcopilot.personal.prompts import get_agent_prompt
+from btcopilot.personal.turnlog import TurnEventKind
 from btcopilot.personal.toolbox import ToolError, Toolbox, ToolName
 from btcopilot.schema import (
     Cluster,
@@ -68,17 +70,23 @@ def family(test_user):
     return diagram
 
 
-def detects(*groups: tuple[str, list[int]]):
-    """Script the model's grouping: one (name, event ids) pair per group."""
+def detects(*groups: tuple, changes: tuple[str, ...] = ()):
+    """Script the model's grouping: (name, event ids) per group, or (id, name,
+    event ids) when the model hands back a grouping the record already has."""
+    made = []
+    for n, group in enumerate(groups):
+        cluster_id, name, ids = group if len(group) == 3 else (f"model{n}", *group)
+        made.append(
+            Cluster(
+                id=cluster_id,
+                title=name,
+                summary=f"{name} summary",
+                eventIds=list(ids),
+            )
+        )
     return patch(
         "btcopilot.personal.clusters.detect_clusters",
-        return_value=ClusterResult(
-            clusters=[
-                Cluster(id=f"model{n}", title=name, summary=f"{name} summary",
-                         eventIds=list(ids))
-                for n, (name, ids) in enumerate(groups)
-            ]
-        ),
+        return_value=ClusterResult(clusters=made, changes=list(changes)),
     )
 
 
@@ -337,7 +345,9 @@ def test_the_coach_is_never_told_the_model_made_a_grouping_it_may_not_have(famil
     assert "(unknown)" in recordtext.cluster_line(stale)
 
 
-def test_regrouping_keeps_the_id_the_coach_already_pointed_at(family):
+def test_the_grouping_keeps_the_id_the_model_handed_back(family):
+    """The model says which stored grouping each one it returns is, so what the
+    coach already pointed at still resolves after the line is regrouped."""
     with detects(("The hard spring", [10, 11, 12])):
         sync(family.id, turn_id="t1")
     first = next(iter(clusters_of(family)))
@@ -347,9 +357,10 @@ def test_regrouping_keeps_the_id_the_coach_already_pointed_at(family):
     family.set_diagram_data(data)
     db.session.commit()
 
-    with detects(("The hard spring", [10, 11, 12, 13])):
+    with detects((first, "The hard spring", [10, 11, 12, 13])):
         sync(family.id, turn_id="t2")
     assert list(clusters_of(family)) == [first]
+    assert clusters_of(family)[first]["eventIds"] == [10, 11, 12, 13]
 
 
 def test_the_same_events_are_not_regrouped_twice(family):
@@ -406,3 +417,59 @@ def test_the_play_endpoint_resolves_a_stored_cluster(web, test_user, family):
         )
     assert response.status_code == 200
     play.assert_called_once()
+
+
+MOVED = "The summer she got sick sits with the spring they argued, not apart from it."
+
+
+def test_what_changed_is_in_the_system_prompt_before_the_coach_answers(
+    discussion, family
+):
+    """The regrouping runs before the last thing the coach says, so the
+    sentences it wrote are in the system prompt of the call that answers."""
+    with detects(("The hard spring", [10, 11, 12]), changes=(MOVED,)):
+        model = Model(
+            called(
+                ToolName.EditEvent,
+                kind="shift",
+                date="1994-07-01",
+                description="got sick",
+                person=1,
+                symptom="up",
+            ),
+            said("Those look like one story to me now, not two."),
+        )
+        reply = CoachTurn(discussion, "She got sick that summer.", model=model).run()
+
+    assert MOVED in model.systems[-1]
+    assert "What changed in the story" in model.systems[-1]
+    assert MOVED not in model.systems[0]
+    assert "cluster" not in reply["statement"].lower()
+
+
+def test_what_changed_goes_out_on_the_turn_for_nobody_to_draw(discussion, family):
+    with detects(("The hard spring", [10, 11, 12]), changes=(MOVED,)):
+        reply = CoachTurn(
+            discussion,
+            "She got sick that summer.",
+            model=Model(
+                called(
+                    ToolName.EditEvent,
+                    kind="shift",
+                    date="1994-07-01",
+                    description="got sick",
+                    person=1,
+                    symptom="up",
+                ),
+                said("Those look like one story to me now, not two."),
+            ),
+        ).run()
+
+    story = [e for e in reply["events"] if e["type"] == TurnEventKind.Story.value]
+    assert [e["sentences"] for e in story] == [[MOVED]]
+
+
+def test_the_coach_is_told_never_to_name_the_grouping_out_loud():
+    system = get_agent_prompt()
+    assert 'Never say "cluster"' in system
+    assert "was regrouped, recalculated, or updated" in system

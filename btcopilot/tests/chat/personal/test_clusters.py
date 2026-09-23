@@ -1,8 +1,10 @@
-"""The rules make the clusters; the model only names them and says why.
+"""The rules propose the clusters; the model decides them and says what it
+changed.
 
 The first half of this file runs without a model at all — that is the point of
 the deterministic pass. The second half scripts the model and checks what the
-record refuses to store.
+record refuses to store, and that a grouping already there is kept rather than
+rebuilt.
 """
 
 import pytest
@@ -17,6 +19,8 @@ from btcopilot.personal.clusters import (
 )
 from btcopilot.personal.seed import seed_diagram_data
 from btcopilot.schema import (
+    Cluster,
+    ClusterSource,
     DiagramData,
     Event,
     EventKind,
@@ -33,11 +37,14 @@ def moment(event_id: int, date: str, **kwargs) -> dict:
     return asdict(Event(id=event_id, dateTime=date, **kwargs))
 
 
-def record(*events: dict, people: int = 3, bonds: list = ()) -> DiagramData:
+def record(
+    *events: dict, people: int = 3, bonds: list = (), clusters: list = ()
+) -> DiagramData:
     return DiagramData(
         people=[asdict(Person(id=n, name=f"P{n}")) for n in range(1, people + 1)],
         events=list(events),
         pair_bonds=[asdict(b) for b in bonds],
+        clusters=[asdict(c) for c in clusters],
     )
 
 
@@ -249,12 +256,17 @@ def answers(*clusters: ModelCluster) -> ClusterListResponse:
 
 def named(
     *event_ids: int,
+    cluster_id=None,
     name="A hard spring",
     reason="one thing led to the next",
     change=None,
 ):
     return ModelCluster(
-        eventIds=list(event_ids), name=name, reason=reason, change=change
+        id=cluster_id,
+        eventIds=list(event_ids),
+        name=name,
+        reason=reason,
+        change=change,
     )
 
 
@@ -424,3 +436,89 @@ def test_a_real_model_does_not_repeat_the_words_it_was_fed():
     for name, reason in spoken:
         words = f"{name} {reason}".lower()
         assert not [word for word in FORBIDDEN if word in words]
+
+
+SPRING = "The spring they argued"
+
+
+def already(*event_ids: int, cluster_id="c1", name=SPRING) -> Cluster:
+    return Cluster(
+        id=cluster_id,
+        title=name,
+        name=name,
+        summary="one thing led to the next",
+        reason="one thing led to the next",
+        eventIds=list(event_ids),
+        source=ClusterSource.Model,
+    )
+
+
+KEPT = record(
+    moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
+    moment(2, "1994-09-01", person=1, description="they argued"),
+    moment(3, "1994-11-01", person=1, description="she stepped back"),
+    clusters=[already(1, 2, 3)],
+)
+
+
+def test_a_grouping_already_there_is_handed_back_and_kept():
+    """Nothing changed about it, so it keeps its id and the name that has
+    already been read, and says nothing about a change."""
+    with replies(answers(named(1, 2, 3, cluster_id="c1", name=SPRING))) as ask:
+        result = detect_clusters(KEPT)
+    assert [(c.id, c.name) for c in result.clusters] == [("c1", SPRING)]
+    assert result.changes == []
+    assert SPRING in ask.call_args_list[0].args[0]
+
+
+def test_a_grouping_already_there_is_given_to_the_model_with_its_id():
+    with replies(answers(named(1, 2, 3, cluster_id="c1", name=SPRING))) as ask:
+        detect_clusters(KEPT)
+    asked = ask.call_args_list[0].args[0]
+    assert "EXISTING GROUPS" in asked
+    assert '"id": "c1"' in asked
+
+
+def test_renaming_a_grouping_already_there_and_saying_nothing_is_rejected():
+    renamed = answers(named(1, 2, 3, cluster_id="c1", name="A better sounding name"))
+    with replies(renamed, renamed) as ask:
+        with pytest.raises(ClusterError, match="says no reason"):
+            detect_clusters(KEPT)
+    assert ask.call_count == 2
+    assert "thrown out" in ask.call_args_list[1].args[0]
+
+
+def test_changing_a_grouping_already_there_is_kept_when_it_says_what_changed():
+    moved = "She stepped back a month later than the record first said."
+    with replies(
+        answers(named(1, 2, 3, cluster_id="c1", name="The autumn after", change=moved))
+    ):
+        result = detect_clusters(KEPT)
+    assert [(c.id, c.name) for c in result.clusters] == [("c1", "The autumn after")]
+    assert result.changes == [moved]
+
+
+def test_an_id_the_record_does_not_have_is_rejected():
+    invented = answers(named(1, 2, 3, cluster_id="c99", name=SPRING))
+    with replies(invented, invented):
+        with pytest.raises(ClusterError, match="c99"):
+            detect_clusters(KEPT)
+
+
+FAR = record(
+    moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
+    moment(2, "1994-09-01", person=1, description="they argued"),
+    moment(3, "1994-11-01", person=1, description="she stepped back"),
+    moment(7, "1999-03-01", person=2, description="five years later"),
+)
+
+
+def test_an_event_years_outside_the_proposal_joins_when_the_model_says_why():
+    """The 18 months the rules reach is a proposal, not a wall: an event five
+    years later joins on a stated reason."""
+    assert grouped(FAR) == [[1, 2, 3]]
+    late = "The trouble she had in 1999 started in the year they argued."
+    with replies(answers(named(1, 2, 3, 7, change=late))):
+        result = detect_clusters(FAR)
+    assert [c.eventIds for c in result.clusters] == [[1, 2, 3, 7]]
+    assert result.changes == [late]

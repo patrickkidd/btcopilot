@@ -57,6 +57,11 @@ SHORTEN = (
 )
 
 
+# Where the sentences the regrouping wrote are put for the coach to read. The
+# coach_story_shape fragment in its system prompt says what to do with them.
+STORY = "**What changed in the story since last time**\n\n{sentences}"
+
+
 NARRATE = (
     "That reply is a list of chips, not something you said. Write it again as "
     "sentences: name the people, say what happened in order and what it meant, "
@@ -258,9 +263,12 @@ class CoachTurn:
         messages = self._history()
         spoken = ""
         events = []
+        story: list[str] = []
 
         for step in range(MAX_STEPS):
-            turn = self._say(system, messages, schemas(), stream=True)
+            turn = self._say(
+                self._told(system, story), messages, schemas(), stream=True
+            )
             # A turn ends on words, never on a tool call. Text written before a
             # call is the model working out what to do and the user never sees
             # it, so only a step that calls nothing is the coach speaking.
@@ -298,12 +306,15 @@ class CoachTurn:
                     self._note(events, dict(event, type=kind.value))
             messages.append({"role": "assistant", "content": turn.blocks})
             messages.append({"role": "user", "content": results})
+            self._regroup(events, story)
         else:
             _log.warning(
                 f"Turn {self.turn_id} used all {MAX_STEPS} steps; asking for the reply"
             )
             messages.append({"role": "user", "content": FINISH})
-            spoken = self._say(system, messages, [], stream=True).text
+            spoken = self._say(
+                self._told(system, story), messages, [], stream=True
+            ).text
 
         if not spoken.strip():
             raise EmptyReply(f"Turn {self.turn_id} produced no words for the user")
@@ -311,17 +322,6 @@ class CoachTurn:
             self.model, system, messages, spoken, self.data, self.turn_id
         )
         spoken = narrate(self.model, system, messages, spoken, self.turn_id)
-
-        change = self._regroup()
-        if change:
-            self._note(
-                events,
-                {
-                    "type": TurnEventKind.RecordPatch.value,
-                    "deltas": change.deltas,
-                    "turn_id": change.turn_id,
-                },
-            )
 
         reply = chips.validate(spoken.strip(), self.data)
         # What was typed out live is the words as the model first said them. A
@@ -359,19 +359,48 @@ class CoachTurn:
             "turn_id": self.turn_id,
         }
 
-    def _regroup(self):
-        """Re-cluster the line when the turn moved an event, so the clusters
-        the coach and the picture point at are stored, not derived on read."""
+    def _told(self, system: list[str], story: list[str]) -> list[str]:
+        """The system prompt with what the regrouping said added to its tail.
+        The head is the coaching text the wire caches, so nothing moves there."""
+        if not story:
+            return system
+        fixed, tail = system
+        said = STORY.format(sentences="\n".join(story))
+        return [fixed, f"{tail}\n\n{said}"]
+
+    def _regroup(self, events: list[dict], story: list[str]) -> None:
+        """Re-group the line when the turn has moved an event, before the coach
+        speaks, so the grouping it points at is stored and the sentences saying
+        what changed are in the system prompt of the call that answers."""
         if not any(
             delta["item_kind"] == ItemKind.Event.value for delta in self.toolbox.deltas
         ):
-            return None
-        return clusters.sync(
+            return
+        regrouped = clusters.sync(
             self.diagram.id,
             turn_id=self.turn_id,
             user_id=self.discussion.user_id,
             session_id=self.session_id,
         )
+        if not regrouped:
+            return
+        self._note(
+            events,
+            {
+                "type": TurnEventKind.RecordPatch.value,
+                "deltas": regrouped.change.deltas,
+                "turn_id": regrouped.change.turn_id,
+            },
+        )
+        if regrouped.sentences:
+            story.extend(regrouped.sentences)
+            self._note(
+                events,
+                {
+                    "type": TurnEventKind.Story.value,
+                    "sentences": regrouped.sentences,
+                },
+            )
 
     def _send(self, event: dict) -> None:
         """Tell whoever is watching, as it happens."""

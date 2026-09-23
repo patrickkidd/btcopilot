@@ -13,6 +13,8 @@ You are a family systems consultant talking with someone about their family. You
 
 {% include "fragments/narration.md" %}
 
+{% include "fragments/coach_story_shape.md" %}
+
 {% if committed_state %}THE RECORD
 {{ committed_state }}{% else %}The record is empty.{% endif %}{% if interactions %}
 

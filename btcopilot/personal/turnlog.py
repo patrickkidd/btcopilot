@@ -39,6 +39,10 @@ class TurnEventKind(enum.StrEnum):
     View = "view"
     Text = "text"
     TextReset = "text_reset"
+    # What the grouping of the record's events now says that it did not before,
+    # one sentence each. The coach says it in its own words; the page shows
+    # nothing for it.
+    Story = "story"
     Done = "done"
     Failed = "failed"
 

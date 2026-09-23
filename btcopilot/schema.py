@@ -460,6 +460,9 @@ ITEM_COLLECTIONS = {
 class ClusterResult:
     clusters: list[Cluster] = field(default_factory=list)
     cacheKey: str | None = None
+    # One sentence per grouping the model reshaped, saying what in the record
+    # made the old shape wrong, for the coach to say in its own words.
+    changes: list[str] = field(default_factory=list)
 
 
 def hash_sarf_dicts(event_data: list[dict]) -> str:

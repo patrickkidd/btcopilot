@@ -1,9 +1,11 @@
-"""Grouping the record's events into clusters: rules first, model second.
+"""Grouping the record's events into clusters: the rules propose, the model rules.
 
-The candidates are computed from the record with no model call at all. The
-model only names each one, says in a sentence what its events have in common,
-and may merge, split, or reach for a further event when it states why. Spec and
-ruling ids: doc/chat-first/CLUSTERS.md.
+The candidates are computed from the record with no model call at all, and are
+a proposal rather than a boundary. The grouping the record already has is handed
+to the model with its ids and kept unless the record now says otherwise; the
+model may merge, split, or reach for a further event whenever it says in one
+sentence what made the old shape wrong. Spec and ruling ids:
+doc/chat-first/CLUSTERS.md.
 """
 
 import datetime
@@ -15,7 +17,7 @@ from btcopilot.extensions import db
 from btcopilot.llmutil import gemini_structured_sync
 from btcopilot.personal import record
 from btcopilot.personal.intake import NODAL_KINDS, SHIFT_FIELDS, _parse_iso_date
-from btcopilot.personal.models import Author
+from btcopilot.personal.models import Author, Change
 from btcopilot.personal import prompts
 from btcopilot.pro.models import Diagram
 from btcopilot.schema import (
@@ -36,13 +38,15 @@ _log = logging.getLogger(__name__)
 
 # Bumped whenever the candidate rules or the naming prompt change, so a record
 # grouped by the older rules re-groups on its next event-changing turn.
-DETECTION_VERSION = 4
+DETECTION_VERSION = 5
 
-# How far either side of a nodal event or shift a related event may sit and
-# still be part of the same cluster.
+# How far either side of a nodal event or shift a related event is proposed as
+# part of the same cluster. A suggestion to the model, not a limit on what it
+# may hand back: an event outside it joins when the model says why. Same for
+# CALM_GAP_DAYS, the stretch with nothing recorded that proposes a break. The
+# floor of three events is the one number that is ruled and enforced
+# (MIN_CLUSTER_EVENTS in schema.py), at the model's answer and again at the write.
 SPAN_DAYS = 548
-
-# A stretch this long with no nodal event or shift in it ends a cluster.
 CALM_GAP_DAYS = 730
 
 # Diagnostic and popular-psychology words the definitions the model is given do
@@ -219,6 +223,7 @@ def candidates(data: DiagramData) -> list[Candidate]:
 
 @dataclass
 class ModelCluster:
+    id: str | None = None
     eventIds: list[int] = field(default_factory=list)
     name: str = ""
     reason: str = ""
@@ -262,7 +267,7 @@ def _event_json(event: Event) -> dict:
     return chunk
 
 
-def _prompt(cands: list[Candidate], free: list[Event]) -> str:
+def _prompt(cands: list[Candidate], free: list[Event], stored: dict[str, dict]) -> str:
     by_id = {e.id: e for e in free}
     blocks = [
         {
@@ -274,6 +279,18 @@ def _prompt(cands: list[Candidate], free: list[Event]) -> str:
     ]
     grouped = {i for candidate in cands for i in candidate.eventIds}
     return prompts.CLUSTER_PROMPT.format(
+        existing=json.dumps(
+            [
+                {
+                    "id": cluster_id,
+                    "name": _title(cluster),
+                    "reason": cluster.get("reason") or cluster.get("summary") or "",
+                    "eventIds": cluster.get("eventIds") or [],
+                }
+                for cluster_id, cluster in stored.items()
+            ],
+            indent=2,
+        ),
         candidates=json.dumps(blocks, indent=2),
         unclustered=json.dumps(
             [_event_json(e) for e in free if e.id not in grouped], indent=2
@@ -281,10 +298,22 @@ def _prompt(cands: list[Candidate], free: list[Event]) -> str:
     )
 
 
+def _title(cluster: dict) -> str:
+    return cluster.get("name") or cluster.get("title") or ""
+
+
+def _sculpted(cluster: ModelCluster, was: dict) -> bool:
+    """Whether the model handed a stored grouping back other than as it was."""
+    return set(cluster.eventIds) != set(was.get("eventIds") or []) or (
+        cluster.name != _title(was)
+    )
+
+
 def _check(
     response: ClusterListResponse | None,
     cands: list[Candidate],
     free: list[Event],
+    stored: dict[str, dict],
 ) -> list[ModelCluster]:
     if response is None:
         raise ClusterError("No grouping came back.")
@@ -293,6 +322,7 @@ def _check(
     shapes = {frozenset(candidate.eventIds) for candidate in cands}
     marked = {i for candidate in cands for i in candidate.nodalOrShiftIds}
     seen: set[int] = set()
+    claimed: set[str] = set()
     for cluster in response.clusters:
         unknown = [event_id for event_id in cluster.eventIds if event_id not in known]
         if unknown:
@@ -312,12 +342,24 @@ def _check(
             raise ClusterError("Every cluster needs a name.")
         if not cluster.reason.strip():
             raise ClusterError("Every cluster needs a reason.")
-        if (
-            frozenset(cluster.eventIds) not in shapes
-            and not (cluster.change or "").strip()
-        ):
+        if cluster.id is not None:
+            if cluster.id not in stored:
+                raise ClusterError(
+                    f"Group {cluster.id!r} is not one of the groups this record "
+                    "already has."
+                )
+            if cluster.id in claimed:
+                raise ClusterError(f"Group {cluster.id!r} came back twice.")
+            claimed.add(cluster.id)
+        was = stored.get(cluster.id) if cluster.id is not None else None
+        changed = (
+            _sculpted(cluster, was)
+            if was is not None
+            else frozenset(cluster.eventIds) not in shapes
+        )
+        if changed and not (cluster.change or "").strip():
             raise ClusterError(
-                f"Cluster {cluster.name!r} is not one of the candidates as given "
+                f"Cluster {cluster.name!r} is not the grouping you were given "
                 "and says no reason for the change."
             )
         spoken = " ".join([cluster.name, cluster.reason, cluster.change or ""]).lower()
@@ -333,6 +375,14 @@ def _check(
     return response.clusters
 
 
+def _stored(data: DiagramData) -> list[dict]:
+    return [
+        cluster
+        for cluster in data.clusters
+        if isinstance(cluster, dict) and cluster.get("id") is not None
+    ]
+
+
 def detect_clusters(data: DiagramData) -> ClusterResult:
     cache_key = compute_cache_key(_dated(data))
     cands = candidates(data)
@@ -340,27 +390,42 @@ def detect_clusters(data: DiagramData) -> ClusterResult:
         return ClusterResult(clusters=[], cacheKey=cache_key)
 
     free = joinable(data)
-    prompt = _prompt(cands, free)
-    _log.info(f"Naming {len(cands)} candidate clusters over {len(free)} events")
+    taken = {str(cluster["id"]) for cluster in _stored(data)}
+    mine = {
+        str(cluster["id"]): cluster
+        for cluster in _stored(data)
+        if _regroupable(cluster)
+    }
+    prompt = _prompt(cands, free, mine)
+    _log.info(
+        f"Grouping {len(free)} events: {len(mine)} groups already there, "
+        f"{len(cands)} proposed"
+    )
     try:
-        named = _check(gemini_structured_sync(prompt, ClusterListResponse), cands, free)
+        named = _check(
+            gemini_structured_sync(prompt, ClusterListResponse), cands, free, mine
+        )
     except ClusterError as rejected:
         _log.warning(f"Grouping sent back: {rejected}")
         named = _check(
             gemini_structured_sync(
-                prompt + prompts.CLUSTER_REJECTED.format(why=rejected), ClusterListResponse
+                prompt + prompts.CLUSTER_REJECTED.format(why=rejected),
+                ClusterListResponse,
             ),
             cands,
             free,
+            mine,
         )
 
     when = {e.id: e.dateTime for e in free}
-    clusters = []
-    for n, cluster in enumerate(named):
+    clusters, changes = [], []
+    for cluster in named:
         spanned = sorted(when[event_id] for event_id in cluster.eventIds)
+        cluster_id = cluster.id or next_id(taken)
+        taken.add(cluster_id)
         clusters.append(
             Cluster(
-                id=f"detected{n}",
+                id=cluster_id,
                 title=cluster.name,
                 name=cluster.name,
                 summary=cluster.reason,
@@ -372,8 +437,9 @@ def detect_clusters(data: DiagramData) -> ClusterResult:
             )
         )
         if cluster.change:
+            changes.append(cluster.change)
             _log.info(f"Regrouped {cluster.name!r}: {cluster.change}")
-    return ClusterResult(clusters=clusters, cacheKey=cache_key)
+    return ClusterResult(clusters=clusters, cacheKey=cache_key, changes=changes)
 
 
 STORED_FIELDS = (
@@ -408,34 +474,20 @@ def _regroupable(cluster: dict) -> bool:
     return _source(cluster) is ClusterSource.Model
 
 
-def _reuse(mine: list[dict], event_ids: list[int], used: set[str]) -> str | None:
-    """The stored grouping this detection continues: the one sharing the most
-    events. Keeping its id keeps what the coach already said about it pointing
-    at something the record still holds."""
-    best, shared = None, 0
-    for cluster in mine:
-        cluster_id = str(cluster["id"])
-        if cluster_id in used:
-            continue
-        overlap = len(set(cluster.get("eventIds") or []) & set(event_ids))
-        if overlap > shared:
-            best, shared = cluster_id, overlap
-    return best
-
-
 def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
     """The model's grouping, with every event a grouping it may not touch owns
-    held out, and each group carrying the id of the stored grouping it
-    continues. A grouping that arrives under the minimum is a bug in whatever
-    produced it and raises; one that only falls under it once the held-out
-    events are taken out stays dots on the line."""
-    mine = [c for c in stored if _regroupable(c)]
+    held out. Each group already carries its own id, the model's own statement
+    of which stored grouping it is, so what the coach said about it last turn
+    still points at something the record holds. A grouping that arrives under
+    the minimum is a bug in whatever produced it and raises; one that only falls
+    under it once the held-out events are taken out stays dots on the line."""
     theirs = {
         event_id
         for c in stored
         if not _regroupable(c)
         for event_id in c.get("eventIds") or []
     }
+    others = {str(c["id"]) for c in stored if not _regroupable(c)}
     taken = {str(c["id"]) for c in stored}
     kept: dict[str, Cluster] = {}
     for cluster in detected:
@@ -452,7 +504,11 @@ def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
         cluster.name = cluster.name or cluster.title
         spanned = sorted(dates[e] for e in event_ids)
         cluster.startDate, cluster.endDate = spanned[0], spanned[-1]
-        cluster.id = _reuse(mine, event_ids, set(kept)) or next_id(taken | set(kept))
+        cluster.id = str(cluster.id) if cluster.id else next_id(taken | set(kept))
+        if cluster.id in others:
+            raise ClusterError(
+                f"Grouping {cluster.id} is not one the model may write over."
+            )
         kept[cluster.id] = cluster
     return kept
 
@@ -488,20 +544,30 @@ def _deltas(stored: list[dict], detected: list[Cluster], dates: dict) -> list[di
     return deltas
 
 
+@dataclass
+class Regroup:
+    """What one recompute did: the record change it wrote, and one sentence per
+    grouping it reshaped, in story rather than in the language of grouping."""
+
+    change: Change
+    sentences: list[str]
+
+
 def sync(
     diagram_id: int,
     *,
     turn_id: str,
     user_id: int | None = None,
     session_id: str | None = None,
-):
+) -> Regroup | None:
     """Re-group the record's events and store the grouping.
 
     Clusters are stored, not derived on read, so the coach can point at one and
-    have it still be there next turn. The rules make the groups; the model names
-    them and says why. It never invents a member, and it never touches a cluster
-    the user made — those events are held out of the detection and a model
-    grouping that overlaps one yields the overlap to it.
+    have it still be there next turn. The rules propose the groups; the model
+    decides them, keeping what is already there unless the record now says
+    otherwise. It never invents a member, and it never touches a cluster the
+    user made — those events are held out of the detection and a model grouping
+    that overlaps one yields the overlap to it.
     """
     diagram = db.session.get(Diagram, diagram_id)
     data = diagram.get_diagram_data()
@@ -515,7 +581,8 @@ def sync(
         return None
 
     dates = {e.id: e.dateTime for e in events if e.dateTime}
-    deltas = _deltas(data.clusters, detect_clusters(data).clusters, dates)
+    result = detect_clusters(data)
+    deltas = _deltas(data.clusters, result.clusters, dates)
     deltas.append(
         {
             "item_kind": ItemKind.Diagram.value,
@@ -524,7 +591,7 @@ def sync(
             "after": cache_key,
         }
     )
-    return record.apply(
+    change = record.apply(
         diagram_id,
         deltas,
         author=Author.Coach,
@@ -532,3 +599,4 @@ def sync(
         user_id=user_id,
         session_id=session_id,
     )
+    return Regroup(change=change, sentences=result.changes)

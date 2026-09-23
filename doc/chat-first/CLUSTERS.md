@@ -2,7 +2,13 @@
 
 How the record's events become clusters. Rules first, model second.
 
-## The rules make the candidates
+## The rules propose the candidates (revised 2026-09-22)
+
+The rules no longer decide the clusters. They compute a **proposal** the model is
+free to overrule whenever it says why, because a cluster is a chapter of the
+story of family emotional process, found by judgement under Bowen theory, and no
+fixed time window bounds one [Oracle: R-0371, R-0373, R-0375]. Only the floor of
+three events is a wall.
 
 Computed from `DiagramData` alone, no model call, in `btcopilot/personal/clusters.py`:
 
@@ -15,7 +21,12 @@ Computed from `DiagramData` alone, no model call, in `btcopilot/personal/cluster
   raw strings.
 - A **candidate** is a seeding event plus every event within **18 months** either
   side of it that shares a person, or shares a couple, with it. Sharing a couple
-  means each event names a member of the same pair-bond.
+  means each event names a member of the same pair-bond. The 18 months are a
+  suggestion, not a boundary: an event years outside it joins a cluster when the
+  model says in one sentence what in the record puts it there. A structural event
+  (birth, marriage, divorce, death) opens a chapter and the shifts recorded
+  around it are what that chapter is about; consequences years on can still
+  belong [Oracle: R-0375].
 - **Scaffolding never joins.** A structural event that is neither nodal nor
   carries a shift — in practice a birth or an adoption — and is dated before the
   first seeding event is age and generation scaffolding, diagnostically inert.
@@ -24,14 +35,17 @@ Computed from `DiagramData` alone, no model call, in `btcopilot/personal/cluster
   period and the births after it are no longer scaffolding.
 - Candidates sharing any event **merge**.
 - Two years with no nodal event and no shift inside a merged candidate **split**
-  it, at the widest silence between the two seeding events either side.
+  the proposal, at the widest silence between the two seeding events either side.
+  This too is only a suggestion to the model.
 - A candidate holding fewer than **three** events is **not a cluster** — a lone
   shift with no related move, or a bare pair, stays dots on the line. The
   minimum is `MIN_CLUSTER_EVENTS` in `btcopilot/schema.py`, one number for every
   writer (see "The floor is enforced at the write" below).
 
-Parameters `SPAN_DAYS` and `CALM_GAP_DAYS` are module constants. Undated events
-never enter a candidate.
+Parameters `SPAN_DAYS` and `CALM_GAP_DAYS` are module constants and shape only
+the proposal. `MIN_CLUSTER_EVENTS` is the one ruled number and is enforced twice,
+at the model's answer and again at the write. Undated events never enter a
+candidate.
 
 ## Open for the owner
 
@@ -44,18 +58,23 @@ engine has always meant by it, and a cluster is seeded by one of those kinds or
 by any recorded shift. If the owner wants a per-event nodal flag it is an
 additive schema field and one more term in the seeding predicate.
 
-## The model only names and explains
+## The model decides, names and explains (revised 2026-09-22)
 
-It receives the candidates and the events that fell outside them. It returns one
-entry per final group: `eventIds`, `name`, `reason`, and `change`.
+It receives the clusters the record already has, the candidates the rules
+propose, and the events that fell outside them. It returns one entry per final
+group: `id` when the group already exists, `eventIds`, `name`, `reason`, and
+`change`.
 
 - `reason` is one sentence saying what the record shows the events have in
   common: who they involve, when they happened, which shifts were recorded.
   Required on every group. It is not an interpretation and not a claim the events
   do not carry.
 - The model may **join** two candidates, **break** one apart, or **pull in** an
-  event that fell outside them. Any group that is not a candidate exactly as
-  given requires `change`, a sentence saying why. Changes are logged.
+  event that fell outside them, including one years outside the proposed window.
+  Any group that is not a candidate exactly as given, and any stored cluster
+  handed back with different events or a different name, requires `change`: a
+  sentence in story saying what in the record made the old shape wrong. Changes
+  are logged and given to the coach.
 - It may not name an event it was not given, put one event in two groups, or drop
   a seeding event. [Oracle: R-0076 — the model may group and name, never invent
   members.]
@@ -80,12 +99,13 @@ theory spec and carries no cluster content.
 
 ## The prompt
 
-The public default (`btcopilot/personal/prompts.py`) asks for the naming and
-nothing else. The terms live only in the private prompt
-(`fdserver/prompts/private_prompts.py`), quoted rather than referenced, with the
-closed-vocabulary instruction: use only the terms given, no outside Bowen theory,
-family therapy, or popular psychology. Rule-by-example examples are an empty
-owner-marked section, pending.
+Every prompt is a file. The public default (`btcopilot/personal/prompty/cluster.prompty`)
+asks for the grouping in plain words and nothing clinical. The terms live only in
+the encrypted private prompt (`private/prompts/cluster.prompty` and its fragments),
+quoted rather than referenced, with the closed-vocabulary instruction: use only
+the terms given, no outside Bowen theory, family therapy, or popular psychology.
+`fragments/cluster_terms.md` carries what opens and closes a cluster and that a
+reading already given to a record is kept rather than rebuilt.
 
 ## What a stored cluster holds
 
@@ -114,15 +134,36 @@ A cluster the user corrected (`source=user`) is never touched by a recompute —
 those events are held out of detection entirely, and a recomputed cluster that
 overlaps a user-corrected one yields the overlapping events to it.
 
-A recomputed cluster keeps the id of the stored cluster it shares the most
-events with, so a chip already placed in an earlier coach message keeps
-resolving to the same cluster after the record is re-clustered.
+**A cluster is sculpted, never rewritten (ruled 2026-09-22, R-0374).** Every
+stored cluster the model made is handed to it with its id, its name and its
+events. It keeps all three by default. It may reshape one only when it returns
+`change`: one sentence, in story, saying what in the record makes the old shape
+wrong. A better-sounding name is not a reason. Validation rejects an entry
+carrying an id whose events or name differ from the stored cluster and says
+nothing in `change`, and rejects any id the record does not hold.
+
+Ids come from the model's own statement of which stored cluster each returned
+group is. The old heuristic that re-attached ids after the fact by event overlap
+is gone. A chip placed in an earlier coach message therefore keeps resolving to
+the same cluster after a recompute, and the write refuses a detected group whose
+id belongs to a cluster the user made.
+
+Every `change` sentence of a turn is carried to the coach. The regrouping runs
+inside the agent loop, after the step that moved an event and before the step
+that answers, so the sentences sit in the system prompt of the call that
+produces the reply under the heading "What changed in the story since last
+time". They also go out on the turn as a `story` event, which the page draws
+nothing for: nothing about a regrouping is ever drawn on the picture, and the
+coach never says "cluster", "group", "chapter", "period" or "timeline", never
+that an event was added, never that anything was regrouped [Oracle: R-0373]. The
+fragment `coach_story_shape.md`, included in the coach's system prompt, holds
+that instruction.
 
 **Nothing selective exists.** There is no logic that limits recomputation to
 only the clusters touched by the new event — it is whole-record every time.
 Cost is one model call per event-changing turn, for the whole record.
 
-A change to the candidate rules or the naming prompt bumps `DETECTION_VERSION`,
+A change to the candidate rules or the grouping prompt bumps `DETECTION_VERSION`,
 which changes the cache key, so the next event-changing turn re-clusters the
 whole record even though no event itself changed.
 
