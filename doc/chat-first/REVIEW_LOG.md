@@ -586,3 +586,10 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    44px target covers it; (c) the two-moments-face-to-face drawing in picture.ts reads ROWS[2],
    which is undefined, so its second label line and seam get NaN — nothing reaches it on his path
    yet. OPEN
+42. Round 8 (2026-09-23): three hybrids from the mobile-views catalogue drawn on the app's own
+   line, critic-gated. Survived: one line of words above the line (the coach's sentence naming
+   the nearest thing worth saying today), on the real line, live on his record; it needs 22 more
+   pixels of the picture spot, his decision on the page. Killed: the gap inside a box (dots inside
+   a box are spread by count, so the bracket contradicts its words) and before-and-after on a tap
+   (the app's cluster tap already opens the cluster in full; the idea belongs as a mark inside
+   that view). Published; three decisions. WAITING on his word.
