@@ -434,8 +434,10 @@ class Toolbox:
                 fields[key] = [self._person(data, p) for p in args[arg]]
         if new and not args.get("kind"):
             raise ToolError("A new event needs a kind")
+        # An adoption invents no parent: adoptive parents are not yet designed
+        # (R-0345), and a generic one would be named by biological role (R-0430).
         if (
-            fields.get("kind") in (EventKind.Birth.value, EventKind.Adopted.value)
+            fields.get("kind") == EventKind.Birth.value
             and fields.get("person") is not None
             and fields.get("spouse") is None
             and fields.get("child") is not None
@@ -446,31 +448,45 @@ class Toolbox:
             )
             fields["spouse"] = self._generic(fields["child"], role)
         text, patch = self._write(ItemKind.Event, args.get("id"), fields)
-        self._born_to(patch["deltas"][0]["item_id"])
+        event_id = patch["deltas"][0]["item_id"]
+        event = next(e for e in self.data.events if str(e.get("id")) == str(event_id))
+        self._married(event)
+        self._born_to(event)
         return text, {"deltas": self.deltas[start:], "turn_id": self.turn_id}
 
-    def _born_to(self, event_id):
+    def _bond(self, a: int, b: int) -> dict | None:
+        pair = record.pair({"person_a": a, "person_b": b})
+        return next((x for x in self.data.pair_bonds if record.pair(x) == pair), None)
+
+    def _married(self, event: dict):
+        """A marriage sets married on the couple's bond, adding the bond when
+        they have none yet, so the picture draws them married (R-0430)."""
+        a, b = event.get("person"), event.get("spouse")
+        if _enum_value(event.get("kind")) != EventKind.Married.value or None in (a, b):
+            return
+        bond = self._bond(a, b)
+        if bond is None:
+            self._write(
+                ItemKind.PairBond, None, {"person_a": a, "person_b": b, "married": True}
+            )
+        elif bond.get("married") is not True:
+            self._write(ItemKind.PairBond, bond["id"], {"married": True})
+
+    def _born_to(self, event: dict):
         """A birth naming both parents makes the child the offspring of their
         bond, adding the bond when they have none yet, so the child hangs from
         the parents in the picture (R-0438)."""
-        data = self.data
-        event = next(e for e in data.events if str(e.get("id")) == str(event_id))
-        parents = (event.get("person"), event.get("spouse"))
+        a, b = event.get("person"), event.get("spouse")
         if (
             _enum_value(event.get("kind")) != EventKind.Birth.value
-            or None in parents
+            or None in (a, b)
             or event.get("child") is None
             or self._find_person(event["child"]).get("parents") is not None
         ):
             return
-        pair = record.pair({"person_a": parents[0], "person_b": parents[1]})
-        bond = next((b for b in data.pair_bonds if record.pair(b) == pair), None)
+        bond = self._bond(a, b)
         if bond is None:
-            _, made = self._write(
-                ItemKind.PairBond,
-                None,
-                {"person_a": parents[0], "person_b": parents[1]},
-            )
+            _, made = self._write(ItemKind.PairBond, None, {"person_a": a, "person_b": b})
             bond_id = made["deltas"][0]["item_id"]
         else:
             bond_id = bond["id"]

@@ -127,3 +127,38 @@ def test_a_birth_naming_both_parents_makes_the_child_their_offspring(subscriber)
     data = diagram.get_diagram_data()
     assert len(data.pair_bonds) == 1
     assert data.people[2]["parents"] == data.pair_bonds[0]["id"]
+
+
+def test_a_marriage_sets_married_on_the_couples_bond(subscriber):
+    # R-0430
+    diagram = _diagram(
+        subscriber.user,
+        dict(
+            FAMILY, pair_bonds=[{"id": 9, "person_a": 1, "person_b": 2}], lastItemId=9
+        ),
+    )
+    _event(diagram, kind="married", date="1988-06-11", person=1, spouse=2)
+    assert diagram.get_diagram_data().pair_bonds == [
+        {"id": 9, "person_a": 1, "person_b": 2, "married": True}
+    ]
+
+
+def test_a_marriage_with_no_bond_adds_a_married_bond(subscriber):
+    # R-0430
+    diagram = _diagram(subscriber.user)
+    _event(diagram, kind="married", date="1988-06-11", person=1, spouse=2)
+    [bond] = diagram.get_diagram_data().pair_bonds
+    assert (bond["person_a"], bond["person_b"], bond["married"]) == (1, 2, True)
+
+
+def test_an_adoption_invents_no_parent(subscriber):
+    # R-0430
+    diagram = _diagram(
+        subscriber.user,
+        {"people": FAMILY["people"] + [{"id": 3, "name": "Corinne"}], "lastItemId": 3},
+    )
+    _event(diagram, kind="adopted", date="1995-01-01", person=2, child=3)
+    data = diagram.get_diagram_data()
+    assert len(data.people) == 3
+    assert data.pair_bonds == []
+    assert data.people[2].get("parents") is None
