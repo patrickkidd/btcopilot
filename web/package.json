@@ -17,6 +17,7 @@
     "vitest": "^2.1.4"
   },
   "dependencies": {
+    "@grafana/faro-instrumentation-replay": "^2.12.1",
     "@grafana/faro-web-sdk": "^2.12.1"
   }
 }

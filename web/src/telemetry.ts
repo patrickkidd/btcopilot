@@ -1,3 +1,4 @@
+import { ReplayInstrumentation } from "@grafana/faro-instrumentation-replay";
 import { getWebInstrumentations, initializeFaro } from "@grafana/faro-web-sdk";
 
 const FARO_URL =
@@ -7,7 +8,7 @@ const faro = FARO_URL
   ? initializeFaro({
       url: FARO_URL,
       app: { name: "fd-app", environment: import.meta.env.MODE },
-      instrumentations: getWebInstrumentations(),
+      instrumentations: [...getWebInstrumentations(), new ReplayInstrumentation()],
     })
   : undefined;
 
