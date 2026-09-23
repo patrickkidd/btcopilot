@@ -1412,3 +1412,14 @@ against his instruction to keep it short; he asked instead for a page he can com
 links, and got one. Three times an agent was refused permission to decrypt private files, and he
 decrypted them himself into the corpus folder; that folder sat untracked but not ignored in a
 repository with a GitHub remote, and is now ignored.
+
+**2026-09-23, evening.** Patrick asked, with the most effort the session allowed, whether the
+nuanced domain knowledge of the old extraction prompts survived the move into the coach prompts,
+and why any wording changed. A multi-agent audit answered from the record: there had been no
+claim-by-claim mapping before that day; the 09-10 rewrite copied from the two-pass file, never
+read the one-block prompt, and explained no wording change inside a kept rule. He answered 23 of
+27 questions in one message, left the coding-judgment ones to the coders with literature-worded
+best guesses [R-0440], and asked for his own opinion on whether the agentic loop makes a second
+pass redundant. The answer he took: the loop is a standing opportunity for a second pass, not one
+by nature; users correct what they can see, not the invisible codings; so a narrow independent
+review returns at session end, in a fast-follow PR [R-0443, R-0444].

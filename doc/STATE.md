@@ -195,6 +195,25 @@ gate [R-0416, R-0421]. His prompt review is a published sheet with 22 gaps and 4
 to rule on. The private prompts and the rulings store now also exist decrypted in the corpus
 folder outside every repo, by his hand, because agents are refused the decrypt.
 
+**2026-09-23, evening — the prompt fidelity round.** A claim-by-claim audit traced every old
+extraction-prompt claim into the coach prompts: most survived, but worked examples, value mappings
+and the machinery the rules assume had been lost in a one-commit rewrite of 09-10 that never
+read the one-block prompt, and nothing from the IRR meetings had reached any prompt. Patrick
+ruled the open points [R-0424 to R-0442]: the symptom interference test, a diagnosis as symptom up
+on the diagnosed person, the coach infers and the user corrects, functioning in the spec's
+wording, the worked examples as he coded them, projection coded without asking, replies end in a
+question while the family evaluation's minimum data has gaps, notes on events with detail folded
+in, a re-mention folded into the existing event, ask before removing someone left off a list.
+The coding-judgment questions stay open for the coders, with a best-guess rule worded from the
+literature and marked provisional [R-0439, R-0440]; any change resting on last year's IRR
+agreements comes to him first [R-0423]. Code: events carry notes; two same-day shifts with
+different variables both land; the coach is told the speaker and today's date; omitted certainty
+is unknown; a marriage sets the bond's flag; adoption invents no parent; end dates are carried;
+one name per unnamed person. The second look returns in a fast-follow PR as a narrow independent
+review at session end, shown as coaching, measured by replay against the IRR codes [R-0443,
+R-0444]. The plain mirror of the private prompts lives in the private btcopilot-sources repo for
+review links.
+
 **What is not true yet on the box.** The dashboards and the cost rows are built but not deployed:
 that waits on Patrick putting the Grafana token there and refreshing the dependency lock. There is
 no automated database backup. Nine scratch accounts with chats, made while proving deploys, sit in

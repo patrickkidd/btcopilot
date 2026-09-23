@@ -1692,3 +1692,11 @@ ruling; a checker enforces it [R-0416, R-0421]. One migration from empty, box st
 history archived never deleted [R-0420]. The old-diagram reader stays for the ruled import
 [R-0422]. Rejected: a new repository for the chat app, a separate PR for the deletion, a
 pinned single fallback model, a sweep of citations deferred to as-touched.
+
+## 2026-09-23: Prompt fidelity, and the second look
+
+Patrick. The coach prompts now carry the old prompts' domain rules as he confirmed them
+[R-0424 to R-0442]; open coding questions carry literature-worded provisional rules [R-0440];
+IRR-derived changes need his confirmation [R-0423]. Rejected: relying on the agentic loop alone as
+the second pass. Chosen: a narrow independent review at session end, shown as coaching, measured
+by replay against IRR codes, in a fast-follow PR [R-0443, R-0444].
