@@ -51,8 +51,8 @@ jobs:
         run: npm --prefix web test
 
       - name: Run unit tests
-        # from the checkout, not the installed copy: bin/t and the chain files
-        # live beside the package, and the runner test reads them
+        # from the checkout, not the installed copy: the suite reads files that
+        # live beside the package (alembic.ini, deploy, private, the docs)
         run: pytest -svv --disable-warnings btcopilot/tests
 
   web-visual:
