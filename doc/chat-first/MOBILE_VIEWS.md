@@ -186,3 +186,32 @@ built [R-0379], plus recorded shifts in the older generations.
    way Oura fixes its score row, with the line drawn underneath.
 5. Four short stacked sparklines, one per variable, over a row of event dots at one height
    — worth building only once functioning and relationship shifts exist.
+
+## What happened to the hybrids (2026-09-23)
+
+Three of the five were drawn on the app's own line as round 8 and judged as a stranger would
+read them, at phone width in both themes, with every tap driven:
+https://claude.ai/artifact/WrGWM6m2cXJfQ3FLHnNMu3
+
+- **1, one line of words above the line — kept, and to be built first.** It is the app's line
+  untouched with one row of words over it, the only one a stranger can act on without reading an
+  explanation, and the only one unchanged at 120 events. Two faults to fix first: at rest the
+  line parks on 2002 to 2024 while the sentence names 1994 and 1996, so words and picture talk
+  about different stretches; and the sentence is written in the row that names the view, so the
+  first tap replaces it with a cluster title.
+- **2, the gap drawn inside a cluster box — killed.** Inside a box the app spreads the dots
+  evenly rather than at their dates, so two brackets both reading "about a year" came out 9 and
+  13 pixels long: the picture contradicts its own words.
+- **3, before and after on a tap — killed as drawn, the idea kept.** The app's cluster tap
+  already opens the whole cluster; replacing that with two moments in words is a narrower view
+  than the one it costs. It belongs as a mark inside the cluster view that already exists.
+
+Not drawn: hybrid 4 (a fixed row of words naming the newest cluster) and hybrid 5 (four stacked
+sparklines, one per variable), the second of which needs functioning and relationship shifts that
+the record does not hold.
+
+Three decisions sit on that page and are unanswered: whether the coach's sentence may put two
+things side by side when the record holds only their dates; whether one line of words is worth
+the picture growing from 132 to 154 pixels and the chat losing 22; and whether the line should
+come to rest where the sentence points or always open on today.
+

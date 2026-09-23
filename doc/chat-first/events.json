@@ -7242,6 +7242,20 @@
 "source": "doc/chat-first/REVIEW_LOG.md"
 },
 {
+"id": "review-43",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-5",
+"T-6"
+],
+"title": "In the round 8 drawing, tapping a cluster only selects it and shows its title instead of opening it, which is ",
+"text": "In the round 8 drawing, tapping a cluster only selects it and shows its title instead of opening it, which is what he expects from the app. Asked 2026-09-23; the cause has not been established and the drawing has not been corrected. OPEN",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
 "id": "R-0160",
 "kind": "ruling",
 "status": "OK",
@@ -14737,6 +14751,20 @@
 "text": "Never assume a fix works; trust only evidence. A fix to the running path is proven by making the real call with the real prompt, not by reasoning about it",
 "supersedes": [],
 "source": "private/oracle/rulings.md"
+},
+{
+"id": "btcopilot@3d0fda6",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-4",
+"T-5",
+"T-9"
+],
+"title": "FD-362 flush: rebuilt from the whole transcript, not the summary",
+"text": "FD-362 flush: rebuilt from the whole transcript, not the summary",
+"source": "btcopilot git log"
 },
 {
 "id": "btcopilot@625f92e",

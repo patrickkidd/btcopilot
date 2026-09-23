@@ -316,3 +316,31 @@ the ring never actually turns, since every symptom event is his alone.
 > Patrick, 2026-09-23 [R-0382]: a big idea, fundamental to an ideal family evaluation; kept and
 > tracked, to be drawn once a case holds enough data — a cluster with a dated opening event and a
 > dated symptom after it, in more than a couple of clusters.
+
+## Where this thread stands (2026-09-23)
+
+**Read:** Family Evaluation (Kerr and Bowen) and the SARF sources, at the passages cited under
+each concept above. Patrick approved items 2, 3, 4, 5 and 7 of the source list put to him before
+the reading began [R-0395]; the rest of that list is unmined.
+
+**Concluded:** nothing beat the line already in the app, and each survivor says one thing the
+line cannot — which argues for the picture changing with whatever the coach is talking about
+rather than for replacing the line.
+
+**Ruled by Patrick:** words-only is out, the picture spot holds a picture [R-0378]; the family
+drawing needs the traditional diagram and automatic arrangement, a goal for later [R-0379]; the
+lanes of generations are kept but carry no message on a record where one person holds every
+recorded change [R-0380]; the gap between a cluster's opening event and its symptom is
+fundamental to a proper family evaluation and is kept and tracked [R-0382]; build the short
+sideways scroll rather than draw more [R-0381]; dots sit at one height [R-0377]; depth or motion
+only where it communicates what flat cannot, and a drawing's tap does what the app's tap does
+[R-0399]; a concept carries a title and a citation and nothing else [R-0398].
+
+**Unread or undecided:** the rest of the approved source list; whether a cluster's height should
+mean how much clinical signal sits under it, which is his own idea and unruled; and what the
+picture should do once a record holds symptoms in more than one person, on which nothing has been
+read.
+
+**Next action:** his three decisions on the round 8 page,
+https://claude.ai/artifact/WrGWM6m2cXJfQ3FLHnNMu3
+

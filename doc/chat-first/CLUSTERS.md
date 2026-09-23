@@ -47,15 +47,16 @@ the proposal. `MIN_CLUSTER_EVENTS` is the one ruled number and is enforced twice
 at the model's answer and again at the write. Undated events never enter a
 candidate.
 
-## Open for the owner
+## Open for Patrick
 
 **The record has no nodal flag.** The `Event` dataclass at `btcopilot/schema.py:317`
 has no `nodal` field and never has; the word does not appear in that file. The
 owner ruled the flags in the old corpus are used inconsistently and are to be
 ignored (`doc/chat-first/NATURE_OF_THE_DATA.md`). So nodal here means the event
-kind — death, married, divorced, separated, moved — which is what the intake
-engine has always meant by it, and a cluster is seeded by one of those kinds or
-by any recorded shift. If the owner wants a per-event nodal flag it is an
+kind — death, married, divorced, separated — which is what the intake engine has
+always meant by it (a move stopped being a kind of its own on 2026-09-22
+[R-0364], and a noted event does not seed a cluster), and a cluster is seeded by one of those kinds or
+by any recorded shift. If Patrick wants a per-event nodal flag it is an
 additive schema field and one more term in the seeding predicate.
 
 ## The model decides, names and explains (revised 2026-09-22)
@@ -112,7 +113,7 @@ reading already given to a record is kept rather than rebuilt.
 Name, reason, source, event ids, and the dates they span. The invented pattern
 vocabulary (anxiety cascade, triangle activation and the rest) and the dominant
 variable are removed from the schema and from persistence; they came from earlier
-AI output, not from the owner. Old rows carrying them are not migrated — the next
+AI output, not from Patrick. Old rows carrying them are not migrated — the next
 regrouping overwrites them.
 
 `reason` is additive on `schema.Cluster`, is in `STORED_FIELDS` so a change row is
@@ -167,7 +168,7 @@ A change to the candidate rules or the grouping prompt bumps `DETECTION_VERSION`
 which changes the cache key, so the next event-changing turn re-clusters the
 whole record even though no event itself changed.
 
-The owner ruled: "let's just play with it and see how it works in the Beta."
+Patrick ruled: "let's just play with it and see how it works in the Beta."
 [Oracle: R-0208] Selective invalidation is not being built now — revisit only
 if whole-record recompute shows a problem in use.
 
@@ -223,7 +224,7 @@ data, not a second rule.
 process* stale. A long-running sandbox server keeps the module it imported at
 start, so a rules or prompt change reaches real turns only after that server is
 restarted. On 2026-09-08 a server started before the detection-version
-change stored one-event clusters on the owner's record hours after the
+change stored one-event clusters on Patrick's record hours after the
 two-event minimum was committed. It was identified by the cache key it wrote:
 that key is reproduced only by hashing the events with no detection version in
 the hash, which is the code from before 15:08 that day, while both later
@@ -308,3 +309,11 @@ The person must never be asked to count events, to scan a dense cluster, to
 compare how full one year looks against another, or to work out for themselves
 which events belong together. A crowded cluster means it was remembered, not that
 it was worse.
+
+Ruled 2026-09-23 [R-0376]: what one cluster shows is its one key shift — the
+moment the trouble moved — where the trouble sits and that it moved between
+people, the opening event and the aftershocks on a tap, and dates lining up with
+a symptom shown as nearness and never as proof. Never a count. Nothing is drawn
+to show what changed between one reading and the next: when a cluster changes the
+coach says so in ordinary conversation [R-0372]. Neither is built yet; the model
+does not name a key shift or say who carries the trouble.
