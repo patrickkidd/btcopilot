@@ -139,6 +139,17 @@ command line that runs the site previews and stops before anything that changes 
 to go ahead, and Patrick's own assistant reaches it over one pinned key. The invite mail has been
 sent and received.
 
+**2026-09-23.** Which events belong together is now the coach's judgement rather than a rule
+about dates: it is handed the groups that already exist and keeps them unless the story gives it
+a reason to change one, so the picture stops changing under him between messages [R-0371, R-0374].
+A birth, marriage, divorce or death opens a chapter and the changes recorded around it are what
+the chapter is about [R-0375]. Nothing is drawn to show what changed between readings; the coach
+mentions it in ordinary words instead, and never uses a technical word for a group [R-0372,
+R-0373]. The line now scrolls sideways a little — the recent years fill the width, the rest is one
+swipe away, never more than two screens — and an opened group prints its real years [R-0381].
+Event dots sit on the line at one height, always [R-0377], and the picture spot always shows a
+picture rather than a list of words [R-0378].
+
 **What is not true yet on the box.** The dashboards and the cost rows are built but not deployed:
 that waits on Patrick putting the Grafana token there and refreshing the dependency lock. There is
 no automated database backup. Nine scratch accounts with chats, made while proving deploys, sit in

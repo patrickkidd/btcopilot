@@ -33,7 +33,9 @@ deferred to the first $20–40 bill [R-0354]. Added this session: production is 
 iterates — a change to the web pages is copied into the running container and the image is
 rebuilt behind it, and every deploy keeps the old container up until the new one answers. Proving a deploy is no
 longer done on the live site: nine scratch accounts made that way ended up on his dashboard, so
-checks run against the development server on his Mac instead. The invite mail has now been sent
+checks run against the development server on his Mac instead. On his word the nine were deleted
+with everything they owned, and one reusable test account stays; the live database now holds four
+accounts. The invite mail has now been sent
 and received, so sign-in by mail works.
 **Open:** (1) [ruling] when to invite the three clinicians. He leans to starting them now,
 because the basic chat is stable and he does not expect the picture to block them; what is left
@@ -71,13 +73,22 @@ Added this session: the coach onboards the person before anything else — first
 and birth date are required, because without a birth date it has nothing to turn an age into a
 year and it invents one [R-0360]; the offered answers under a reply are gone, so the coach ends
 with one question and any offer it still writes is stripped [R-0361].
+Added 2026-09-22 and 23: the coach owns which events belong together, keeps what is already
+there unless the story gives it a reason, and never says the technical word for a grouping
+[R-0371, R-0373, R-0374]. A gap in what it asks for surfaced while drawing: on his own record
+only he carries a recorded shift, and the two deaths have no recorded consequence in anybody
+else, so the picture cannot yet show trouble travelling between households. The coach is what
+would draw that out — the anxiety, functioning and relationship shifts in the older households
+after each death, separation and move.
 **Open:** (1) [ruling] his review of the "What goes in the record" section, which is his
 clinical content rewritten for the loop; the author's list of what was dropped is in the prompt
 engineering log; (2) [waiting] the first measurement cannot run: the replay harness has nothing
 to score against until his two conversations are coded as ground truth; (3) [build] the
 induction instructions have not yet been retargeted at the agent path; (4) [build] the coach
 codes the clinical variables in session, and the goal is that its coding matches the review's
-agreement — the F1 outcome of the project [R-0293]; (5) [build] the scribe now has to add a
+agreement — the F1 outcome of the project [R-0293]; (5) [build] the coach does not yet ask about the older households around each death,
+separation and move, so nothing in the record can show a shock travelling between generations;
+(6) [build] the scribe now has to add a
 generically named parent or partner when the coder names a relation that is not on the record,
 which is a drawing ruling that reaches extraction [R-0325].
 **Lives in:** btcopilot/personal/{record.py,toolbox.py,timeline.py}, training/run_agent_f1.py;
@@ -235,8 +246,9 @@ import waits until after the beta.
 
 ## T-5 · Picture and interface rulings still open
 
-**Status:** eleven things Patrick hit using the app on his phone were ruled and built this
-session; two are open and a drawn round on them is running.
+**Status:** eleven things Patrick hit using the app on his phone were ruled and built; the
+line now scrolls sideways a little and is live; three further rounds of drawings have been
+published and three of his decisions are outstanding.
 **Decided:** the picked-moment words on the timeline (option A) [R-0235]; the about page
 behind an i, ✕ in the arrow's place; one icon-button size [R-0234]; the card slides the whole
 region; who·what words [T-2]. Ruled and built from his own use, 20–22 September: the amber
@@ -249,47 +261,77 @@ the question of order beside a shift the way a structural event does, while stil
 no change to the family [R-0366]; the wide layout comes up for anyone on a wide window, a phone
 turned on its side included [R-0367]; Return starts a new line and only the send button sends
 [R-0368]; selecting an event and tapping "in chat" now finds the words even when the coach
-wrote them in the session on screen.
-**Open:** (1) [ruling] the main view of clusters on a phone: 39 dated events already read as
-one thick line, a tap cannot pick a single dot, and the view has no name of its own. The drawn
-options are finished and published at https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj, and they
-wait on his picks; (2) [build] grouping is the coach's judgement
+wrote them in the session on screen. Ruled 2026-09-23 on the drawings: event dots sit on the
+line at one height always, never sometimes below it, or people get confused; the soft boxes round
+a cluster are good enough for the beta but do not feel right yet [R-0377]; the picture spot always
+shows a picture, so a words-only view does not belong there, though a list could go elsewhere
+later [R-0378]; the line gets a short sideways scroll, built on what exists rather than another
+round of drawings [R-0381]. Built and live: the recent years fill the width, the rest is one swipe
+away, never more than two screens, and an open cluster prints its real years.
+**Open:** (1) [ruling] three published pages of drawings wait on him, each with its decisions
+written on it: the first round on the crowded line
+https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj, the wide brainstorm of picture concepts https://claude.ai/artifact/G5gYDqzhvar5KXPJAhtbzm , and the three hybrids drawn on the app's own line https://claude.ai/artifact/WrGWM6m2cXJfQ3FLHnNMu3 . The
+survivor of the last one is a line of words above the line, the coach's sentence naming the
+nearest thing worth saying today, already drawn on his real record; it needs 22 more pixels of
+the picture's height, which is his call; (2) [build] grouping is the coach's judgement
 with a one-line scope and the floor binds only the automatic draft [R-0287]; the nodal ring
 stays and its flag follows the clinical definition [R-0283]; no trend lines until real data
 [R-0284]; (3) [build] the event editor's relationship fields; (4) [ruling] whether tapping an
 event's words inside an open cluster jumps to its editor, which he will say after testing
-[R-0207]; (5) [build] a play button under each coach bubble that plays or replays that message,
-the way the Claude Code app has one; (6) [ruling] which voice reads the replies: the phone's own
+[R-0207]; (5) [build] three faults of the line found while drawing round 8: at true scale the
+seven dots of the 2009 to 2011 cluster merge into one solid bar, the 1996 dot cannot be tapped
+because the 1997 dot's target covers it, and the two-events-face-to-face drawing reads a row that
+does not exist, so its second label and seam come out as nothing — nothing on his own path
+reaches that last one yet; (6) [ruling] whether the height of a cluster should mean how much
+clinical signal sits under it — which of the four variables moved, in how many people, how close
+together — never the number of events; his own idea, unruled; (7) [waiting] the gap between a
+cluster's opening event and its symptom is kept and tracked as a big idea, to be drawn once a
+case holds enough data for it [R-0382]; (8) [waiting] the family drawing with the trouble lit
+needs the traditional diagram and automatic arrangement, so it is a goal for later [R-0379], and
+the lanes of generations are kept in the corpus until a record carries the shocks that travel
+between households [R-0380]; (9) [build] a play button under each coach bubble that plays or replays that message,
+the way the Claude Code app has one; (10) [ruling] which voice reads the replies: the phone's own
 built-in one today, cloud neural voices at roughly one cent a reply, ElevenLabs at several times
 that, or self-hosted models the box cannot run. He has not picked, and anything paid also waits
 on the measurement question on the platform topic.
 **Lives in:** doc/chat-first/UI_GAP.md, REVIEW_LOG.md round 5, STATE.md,
-doc/chat-first/FRAGMENT_CONVENTIONS.md, the drawn round in
-~/theapp/btcopilot-sources/fd-corpus/design/round6/ and its page
-https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj.
-**Next action:** he picks from the drawn options for the crowded line; then the relationship
-fields.
+doc/chat-first/FRAGMENT_CONVENTIONS.md; the concepts and where each comes from in the literature
+in doc/chat-first/PICTURE_IDEAS.md, and the mobile views they were drawn from in
+doc/chat-first/MOBILE_VIEWS.md; the drawings in ~/theapp/btcopilot-sources/fd-corpus/design/ and
+their pages https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj , https://claude.ai/artifact/G5gYDqzhvar5KXPJAhtbzm and https://claude.ai/artifact/WrGWM6m2cXJfQ3FLHnNMu3 .
+**Next action:** his decisions on the three published pages, starting with whether the coach's
+sentence may take 22 more pixels above the line; then the three faults of the line.
 **Updated:** 2026-09-22.
 
 ## T-6 · Clusters by example
 
-**Status:** a real fault found in his own use — clusters appear and vanish between messages —
-and the drawn round on stability and on the crowded line is finished and waiting on his picks.
+**Status:** the fault he found — clusters appearing and vanishing between messages — is fixed
+and live: the model is handed the clusters that already exist and keeps them unless there is a
+stated reason in the story to change one.
 **Decided:** the rules make the candidates, the model names them and gives a reason
 [R-0193, R-0194]; the floor is three events, enforced at the commit; user groupings under the
-old floor are grandfathered.
-**Open:** (1) [ruling] clusters must stay put and change only when there is a reason: today
-every turn that touches an event re-runs detection and rewrites every cluster, so in one turn
-seven clusters became five, all renamed with new ids, and the eye never sees the same picture
-twice — a stability rule is needed and the drawn options are published at
-https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj; (2) [ruling]
+old floor are grandfathered. Ruled 2026-09-22 and 23, and built: which events belong together is
+a judgement under Bowen theory rather than a rule about dates, so the coach's own guidelines do
+it, keeping what exists so the picture does not thrash and reshaping only on a strong reason
+[R-0371]; no fixed stretch of time bounds one, and the work is sculpting rather than rewriting
+[R-0374]; a birth, marriage, divorce or death opens a chapter and the shifts recorded around it
+are what the chapter is about [R-0375]; nothing on the picture draws what changed between one
+reading and the next — when it changes the coach says so in ordinary conversation [R-0372]; and
+the coach never says the word for these groupings, nor that an event was added to one, because
+that is technical: it talks about the story [R-0373]. What one should show, taken from the
+sources: the one key shift, where the trouble sits and that it moved between people, the opening
+event and what followed, dates lining up with a symptom shown as nearness and never as proof,
+and never a count [R-0376].
+**Open:** (1) [build] the model does not yet name the one key shift of each grouping, nor who
+carries the trouble in it, which is what the picture has to show [R-0376]; (2) [ruling]
 he has marked no example clusters yet, and the examples are the input only he can give;
 (3) [waiting] cluster quality on anyone else's record stays unmeasured until the coding loop
 produces numbers.
-**Lives in:** btcopilot/personal/clusters.py; the cluster prompt in the private prompt file;
-the drawn round in ~/theapp/btcopilot-sources/fd-corpus/design/round6/ and its page
-https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj.
-**Next action:** he picks a stability rule from the drawn options.
+**Lives in:** btcopilot/personal/clusters.py; the grouping prompt in the private prompt files;
+doc/chat-first/PICTURE_IDEAS.md; the drawings in ~/theapp/btcopilot-sources/fd-corpus/design/ and
+their pages https://claude.ai/artifact/FzfjSGH6EQVt61vC5R2DFi , https://claude.ai/artifact/G5gYDqzhvar5KXPJAhtbzm and https://claude.ai/artifact/WrGWM6m2cXJfQ3FLHnNMu3 .
+**Next action:** teach the model to name each grouping's key shift and who carries the trouble,
+so the picture can say it.
 **Updated:** 2026-09-22.
 
 ## T-7 · The drawn family and auto-arrange
@@ -348,7 +390,14 @@ Added this session: the branch instructions now carry the correction that sub-ag
 mechanical work while the coordinator holds one-line summaries, relays nothing while a run is
 going, and posts one message at the end; and that no verification walk ever runs against the live
 site, because nine scratch accounts made that way turned up on Patrick's own dashboard — walks
-run against the development server on his Mac instead.
+run against the development server on his Mac instead. Added 2026-09-22 and 23, from the drawing
+rounds: a drawing is published as a page, never left as a file on disk; a separate agent reviews
+every frame before he sees it and only survivors are published; a page gives direction and a
+recommendation rather than a menu, with the prose cut to what he must decide; motion or depth is
+used only when it says something flat cannot; a drawing's tap behaves exactly as the app's tap
+does, built on the app's own picture code; and a frame a stranger cannot read unaided has failed,
+because users never see the prose beside it. One test account exists on the live site and no
+other is ever made.
 **Open:** none.
 **Lives in:** doc/chat-first/HOW_THIS_PROJECT_WORKS.md; doc/chat-first/TEST_STRATEGY.md;
 btcopilot/CLAUDE.md; .claude/skills/two-clocks/SKILL.md; bin/flushcheck.py; bin/t.
@@ -433,21 +482,14 @@ can see their own use and what it costs, and that measurement sits inside the le
 exists for — will people pay for it, and do they like it. The example on the table is a paid
 voice reading the coach's replies at roughly one cent a reply: he tabled it rather than dropping
 it, and money out of his own pocket is the lesser of his two concerns. What those measures are
-has not been designed. (2) [ruling] cost per user over time has to reach a dashboard, and
-whether we leave Datadog for our own Grafana, Prometheus and Loki is a brainstorm he asked for
-in a separate session that reports its findings back here by message rather than in this
-context; the per-user token table already meters each user. (3) closed: fdserver is private, its old
-compose values are not exposed, no rotation (his word, 2026-09-22); its FD-362, oracle-store and
-chat-first-app branches and worktrees are deleted. (4) [build] freeze the old droplet for Pro. (5) [build] money
-through Stripe: account, keys and the price, after the first bill [R-0354]. (6) [build] archive
-the fdserver repo once nothing refers to it. (7) [verify] production still has no automated
-database backup. (8) [ruling] nine scratch accounts with chats, made while proving each deploy end to end, sit
-in the live database; Patrick saw them on the dashboard and objected. They are filtered out of
-every dashboard and stay until he says delete or keep. (9) [verify] one invite driven from his
-Discord assistant end to end has never been done. (10) [build] three loose ends on the
+has not been designed. (2) [build] freeze the old droplet for Pro. (3) [build] money
+through Stripe: account, keys and the price, after the first bill [R-0354]. (4) [build] archive
+the fdserver repo once nothing refers to it. (5) [verify] production still has no automated
+database backup. (6) [verify] one invite driven from his
+Discord assistant end to end has never been done. (7) [build] three loose ends on the
 dashboards, all the other session's: the form for the browser session recordings, per-container
 figures after the metrics agent was remounted, and revoking the administrator token used to set
-the stack up. (11) [waiting] the dashboards are built but not on the box: deploying them
+the stack up. (8) [waiting] the dashboards are built but not on the box: deploying them
 needs the Grafana token there, a refresh of the dependency lock at the workspace root that only
 Patrick can run, and a release build.
 **Note for the next session:** the permission classifier refuses a sub-agent both `sops

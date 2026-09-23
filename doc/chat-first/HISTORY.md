@@ -1163,7 +1163,7 @@ his also landed in the branch instructions: never repeat in the reply what a pub
 already says, and sub-agents do the work while this session's context stays small.
 
 ## 2026-09-16 to 22 — the deployment picked up, the app went live, and Patrick used it [T-1, T-2, T-4, T-5, T-6, T-9, T-11]
-<!-- session: 1a988ef4 · flushed: 2026-09-22T21:10:00Z -->
+<!-- session: 1a988ef4 · flushed: 2026-09-22T23:30:00Z -->
 
 Patrick opened with "FD-362, pick up the deployment", then, when the first read of the box was
 refused as a production read, granted access to DNS and every other production resource to get
@@ -1310,3 +1310,38 @@ path, cost per tap, coach edits by kind. Patrick's first taps arrived within a m
 Per-container metrics fixed by mounting the containerd socket into Alloy. The nine test accounts
 are deleted; one reusable test account remains and the dashboards exclude it.
 
+**2026-09-22, late evening — what a group of events is, and what the picture can say.** The fault he found,
+the picture changing under him between messages, was fixed at its root: which events belong
+together is a judgement under Bowen theory, not a rule about dates, so the coach does it, is
+handed the groups that already exist, and keeps them unless the story gives it a reason
+[R-0371, R-0374]. A birth, marriage, divorce or death opens a chapter and the changes recorded
+around it are what the chapter is about [R-0375]. Nothing on the picture draws what changed
+between readings; the coach says it in ordinary words, and never uses a technical word for a
+group or mentions that an event was added to one [R-0372, R-0373]. What a group should show was
+taken from the sources rather than invented: the one moment the trouble moved, where it sits and
+that it moved between people, what opened it and what followed, dates near a symptom shown as
+nearness and never as proof, and never a count [R-0376]. His own words for why: he still has a
+lot to learn from his own timeline and wants the app to show him the light in it.
+
+Three rounds of drawings followed. The first redraw was withdrawn on his review — shapes with no
+meaning, a frame so busy it read as a diagnostic tool, an invented word, events vanishing between
+frames. He then asked for a wide, creative range of concepts, three dimensions included, keeping
+the data the chat and the picture exchange unchanged [R-0377]. Fourteen were drawn from the
+literature and his own record by three designers behind a critic and an auditor; six survived. His
+verdicts: the picture spot always shows a picture, so a words-only view does not belong there
+[R-0378]; the traditional family drawing with the trouble lit needs automatic arrangement and is a
+goal for later [R-0379]; the lanes of generations carry no message on a record where only one
+person has a recorded change, so they are kept in the corpus until the coach draws out the older
+households [R-0380]; the gap between what opened a chapter and the symptom that followed is a big
+idea, kept and tracked [R-0382]; and rather than another round, build the short sideways scroll
+into the real line [R-0381]. It is built and live: the recent years fill the width, the rest is
+one swipe away, never more than two screens.
+
+He also corrected how this work is done: depth or motion only when it says something flat cannot,
+a drawing's tap must behave exactly as the app's tap does, a title and a citation under each
+concept and nothing more, and a frame a stranger cannot read unaided has failed. All of it is in
+the branch instructions. A last round drew three hybrids on the app's own line; one survived, a
+line of words above the line where the coach names the nearest thing worth saying today, and it
+waits on him for a little more height. Porting the line for that round turned up three faults in
+it: seven dots merging into a bar at true scale, one dot unreachable because its neighbour's tap
+target covers it, and a drawing that reads a row that does not exist.

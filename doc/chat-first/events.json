@@ -7115,7 +7115,129 @@
 "T-5"
 ],
 "title": "Nine scratch accounts (claude-test1 to 10) with chats sit in production: this session made them to verify each",
-"text": "Nine scratch accounts (claude-test1 to 10) with chats sit in production: this session made them to verify each deploy end to end, because production was the only stack. Patrick objected on seeing them on the dashboard. From now on verification walks run against a sandbox (the Tailscale dev server, item under \"how the beta iterates\"), never the box. The rows stay until his word: delete or keep. OPEN",
+"text": "Nine scratch accounts (claude-test1 to 10) with chats sit in production: this session made them to verify each deploy end to end, because production was the only stack. Patrick objected on seeing them on the dashboard. From now on verification walks run against a sandbox (the Tailscale dev server, item under \"how the beta iterates\"), never the box. The rows stay until his word: delete or keep. OPEN Item 34 DONE 2026-09-22 22:20 UTC on his word: claude-test2 to claude-test10 deleted with everything they owned, one transaction; the claude-test account kept as the single reusable test account. Pr",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-35",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-1",
+"T-2",
+"T-9"
+],
+"title": "Patrick, correcting me: fdserver is private, so the values in its old compose file are not exposed; the secret",
+"text": "Patrick, correcting me: fdserver is private, so the values in its old compose file are not exposed; the secret-rotation item is closed, not open. And every fdserver branch made for this work goes: FD-362 and its worktree, oracle-store and its worktree, chat-first-app, all deleted 2026-09-22 (remote and local). legacy-image-tag stays until PR 31 merges. DONE Round 6 part B, his review 2026-09-22: withdrawn. B1 blobs with no meaning; B2 so busy it is a diagnostic tool; B3 a good idea (one more row) drawn badly — an invented word (\"pull\"), events vanishing between frames, unexplained question mar",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-36",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-2",
+"T-5",
+"T-6"
+],
+"title": "What a cluster shows [R-0376]: its one key shift, where the trouble sits and that it moved between people; the",
+"text": "What a cluster shows [R-0376]: its one key shift, where the trouble sits and that it moved between people; the opening event and aftershocks on a tap; nearness of dates, never proof; never a count. Patrick wants the app to show him the light from his own timeline. BUILDING through the round-6b redraw; the cluster model must then name the key shift and who carries the trouble for each cluster.",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-37",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-1",
+"T-2",
+"T-5",
+"T-6",
+"T-9"
+],
+"title": "Round 6b reviewed: dots must never change height (fixed as a rule, R-0377); soft boxes acceptable for beta but",
+"text": "Round 6b reviewed: dots must never change height (fixed as a rule, R-0377); soft boxes acceptable for beta but not right; he wants a wide creative range of picture concepts, 3-D included, from an agent team, with the chat-picture data exchange unchanged. OPEN — round 7 brainstorm. Round 7 (2026-09-23): fourteen concepts drawn from the literature and his record by three designers, a critic gate, an auditor; six survived, ranked: the line with a short sideways scroll; only words, one line per cluster; the family drawing with the trouble lit and a strip of clusters; a stack of generations; the ga",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-38",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-2",
+"T-6"
+],
+"title": "Idea from Patrick (free association, 2026-09-23): the height in the hills concept could mean the amount of cli",
+"text": "Idea from Patrick (free association, 2026-09-23): the height in the hills concept could mean the amount of clinical signal under the SARF model in that cluster — which of the four variables moved, in how many people, how close together — never the count of events. Sources: stress by magnitude, number and spacing (Kerr and Bowen), the four variables moving together (Havstad). Not ruled; a candidate for what a cluster box conveys at rest. OPEN",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-39",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-1",
+"T-2",
+"T-5",
+"T-6",
+"T-7"
+],
+"title": "Round 7 review: the family drawing (rank 3) needs the traditional family diagram and auto-arrangement — a goal",
+"text": "Round 7 review: the family drawing (rank 3) needs the traditional family diagram and auto-arrangement — a goal, not now [R-0379]. The generation lanes (rank 4) carry no diagnostic message on his record: only he carries a shift, the two deaths have no recorded consequences in anyone else; the lanes' true message is the shock wave across generations. More data is needed for that: the older generations' anxiety, functioning and relationship shifts after each death, separation and move — which the coach should be drawing out. Kept in the corpus as ideas [R-0380]. Three survivors remain on the page",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-40",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "Patrick: research the most effective mobile data views (Garmin sleep views and the like), map them onto the me",
+"text": "Patrick: research the most effective mobile data views (Garmin sleep views and the like), map them onto the messages from the literature, and say plainly what needs more data. Told him: on his one thread the picture can show where the history gathers, the quiet stretch and nearness of a symptom to its opening event; it cannot show trouble moving between people, the four variables moving together, or aftershocks in other generations until the coach draws out the older households around each death, separation and move. Research running; catalogue goes to doc/chat-first/MOBILE_VIEWS.md. OPEN",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-41",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-1",
+"T-5",
+"T-6"
+],
+"title": "Found while porting the line for round 8 mockups: (a) at true scale the 2009–2011 cluster's seven dots merge i",
+"text": "Found while porting the line for round 8 mockups: (a) at true scale the 2009–2011 cluster's seven dots merge into one solid bar; (b) the 1996 dot cannot be tapped because the 1997 dot's 44px target covers it; (c) the two-moments-face-to-face drawing in picture.ts reads ROWS[2], which is undefined, so its second label line and seam get NaN — nothing reaches it on his path yet. OPEN",
+"commit": "",
+"source": "doc/chat-first/REVIEW_LOG.md"
+},
+{
+"id": "review-42",
+"kind": "review",
+"date": "2026-09-08",
+"session": "",
+"topics": [
+"T-2",
+"T-5",
+"T-6"
+],
+"title": "Round 8 (2026-09-23): three hybrids from the mobile-views catalogue drawn on the app's own line, critic-gated.",
+"text": "Round 8 (2026-09-23): three hybrids from the mobile-views catalogue drawn on the app's own line, critic-gated. Survived: one line of words above the line (the coach's sentence naming the nearest thing worth saying today), on the real line, live on his record; it needs 22 more pixels of the picture spot, his decision on the page. Killed: the gap inside a box (dots inside a box are spread by count, so the bracket contradicts its words) and before-and-after on a tap (the app's cluster tap already opens the cluster in full; the idea belongs as a mark inside that view). Published; three decisions. ",
 "commit": "",
 "source": "doc/chat-first/REVIEW_LOG.md"
 },
@@ -14573,6 +14695,400 @@
 "source": "private/oracle/rulings.md"
 },
 {
+"id": "btcopilot@6943525",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: round 8 result",
+"text": "FD-362: round 8 result",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@97fad6c",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: item 41, three faults of the line found in round 8",
+"text": "FD-362: item 41, three faults of the line found in round 8",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@e7a4a9a",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "FD-362: mobile views catalogue, mapped to the picture's messages and to what the record can show (item 40)",
+"text": "FD-362: mobile views catalogue, mapped to the picture's messages and to what the record can show (item 40)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@82c1883",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: R-0382 the gap between opening event and symptom, kept and tracked",
+"text": "FD-362: R-0382 the gap between opening event and symptom, kept and tracked",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@3b5733a",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-4",
+"T-6"
+],
+"title": "FD-362: the line scrolls sideways a little — the recent years fill the width, the rest one swipe away, two scr",
+"text": "FD-362: the line scrolls sideways a little — the recent years fill the width, the rest one swipe away, two screens at most (R-0381); the open cluster's span prints real years",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@d299ba2",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: item 40, mobile views research",
+"text": "FD-362: item 40, mobile views research",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@81154a8",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-5",
+"T-6"
+],
+"title": "FD-362: the picture ideas of round 7 kept in the corpus with their grounding in the literature (R-0381)",
+"text": "FD-362: the picture ideas of round 7 kept in the corpus with their grounding in the literature (R-0381)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@4dfc28b",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-5",
+"T-6"
+],
+"title": "FD-362: R-0381 build the scroll; keep the round-7 ideas in the corpus",
+"text": "FD-362: R-0381 build the scroll; keep the round-7 ideas in the corpus",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@f5e7a5f",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: mockup method corrected after round 7",
+"text": "FD-362: mockup method corrected after round 7",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@44b1735",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: R-0379 and R-0380 on round 7 ranks 3 and 4",
+"text": "FD-362: R-0379 and R-0380 on round 7 ranks 3 and 4",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@f9878cb",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "FD-362: R-0378 the picture spot shows a picture",
+"text": "FD-362: R-0378 the picture spot shows a picture",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@cd53964",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: item 38, signal as height",
+"text": "FD-362: item 38, signal as height",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@64076e7",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: galleries carry frames and one sentence, not prose",
+"text": "FD-362: galleries carry frames and one sentence, not prose",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@2deb14b",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: round 7 result logged",
+"text": "FD-362: round 7 result logged",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@eaa5e1d",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "FD-362: R-0377 dots at one height; round 7 brainstorm opened",
+"text": "FD-362: R-0377 dots at one height; round 7 brainstorm opened",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@a323150",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-6"
+],
+"title": "FD-362: R-0376 what a cluster shows",
+"text": "FD-362: R-0376 what a cluster shows",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@0b44556",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-2",
+"T-5",
+"T-6"
+],
+"title": "FD-362: clusters are sculpted, not rewritten (R-0371, R-0373–R-0375) — existing clusters handed to the model a",
+"text": "FD-362: clusters are sculpted, not rewritten (R-0371, R-0373–R-0375) — existing clusters handed to the model and kept unless a stated story reason; no fixed window; the coach speaks of the story, never of clusters",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@2c893cd",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: R-0375 a structural event opens a chapter",
+"text": "FD-362: R-0375 a structural event opens a chapter",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@f4cfaa3",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-2",
+"T-5",
+"T-6"
+],
+"title": "FD-362: R-0374 clusters sculpted, not rewritten; the prompt draft kept encrypted in the project; the picture's",
+"text": "FD-362: R-0374 clusters sculpted, not rewritten; the prompt draft kept encrypted in the project; the picture's message in the cluster doc",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@ae95701",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-6"
+],
+"title": "FD-362: what a cluster is, from the sources (R-0371 to R-0373)",
+"text": "FD-362: what a cluster is, from the sources (R-0371 to R-0373)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@1614006",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "FD-362: history and platform doc for the features dashboard",
+"text": "FD-362: history and platform doc for the features dashboard",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@e3add3a",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: round 6 part B withdrawn; the visual critique gate recorded",
+"text": "FD-362: round 6 part B withdrawn; the visual critique gate recorded",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@58fe55d",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-2",
+"T-5",
+"T-6"
+],
+"title": "FD-362: R-0373 the coach speaks of the story, never of clusters",
+"text": "FD-362: R-0373 the coach speaks of the story, never of clusters",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@bcf23db",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-2",
+"T-6"
+],
+"title": "FD-362: R-0371 clusters by judgement, R-0372 the coach says what changed; galleries give direction",
+"text": "FD-362: R-0371 clusters by judgement, R-0372 the coach says what changed; galleries give direction",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@1b6d131",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-6"
+],
+"title": "FD-362: his terms are cluster and event; the correction recorded",
+"text": "FD-362: his terms are cluster and event; the correction recorded",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@3ed087d",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "FD-362: the test account is named without its address, so the no-private-address check passes",
+"text": "FD-362: the test account is named without its address, so the no-private-address check passes",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@8f589c9",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: product_events stream — every screen and named tap per user and page load, for Grafana",
+"text": "FD-362: product_events stream — every screen and named tap per user and page load, for Grafana",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@e05dcb2",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: secret rotation closed on Patrick's word; fdserver chat-first branches deleted",
+"text": "FD-362: secret rotation closed on Patrick's word; fdserver chat-first branches deleted",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@a3f8d62",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "FD-362: scratch accounts deleted; one reusable test account, the rule recorded",
+"text": "FD-362: scratch accounts deleted; one reusable test account, the rule recorded",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@9b5b228",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: Alloy mounts the containerd socket so cadvisor can read each container",
+"text": "FD-362: Alloy mounts the containerd socket so cadvisor can read each container",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@d7640bf",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "FD-362: rule: one reusable test account, test accounts deleted when done",
+"text": "FD-362: rule: one reusable test account, test accounts deleted when done",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@7e2c181",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 flush: 2026-09-22, the rest of the day",
+"text": "FD-362 flush: 2026-09-22, the rest of the day",
+"source": "btcopilot git log"
+},
+{
 "id": "btcopilot@54e2d1c",
 "kind": "build",
 "date": "2026-09-22",
@@ -14852,6 +15368,20 @@
 "source": "decisions/log.md"
 },
 {
+"id": "D:2026-09-22: One reusable test account; test accounts are del",
+"kind": "decision",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-1",
+"T-5",
+"T-9"
+],
+"title": "2026-09-22: One reusable test account; test accounts are deleted when done",
+"text": "Patrick, after nine claude-test accounts from deploy verification walks appeared on the new\nGrafana dashboard as people who chatted. Ruling: test accounts are deleted the moment they are\nnot needed, or one account (the claude-test account) is reused; never a numbered series.\nThe nine are deleted by the deployment session; the dashboards exclude the prefix; verification\nwalks move to a sandbox. Recorded in HOW_THIS_PROJECT_WORKS.md.",
+"source": "decisions/log.md"
+},
+{
 "id": "R-0362",
 "kind": "ruling",
 "status": "OK",
@@ -14976,6 +15506,197 @@
 ],
 "title": "Observability moves from Datadog to Grafana Cloud Free: Alloy on the box ships host metrics, container logs an",
 "text": "Observability moves from Datadog to Grafana Cloud Free: Alloy on the box ships host metrics, container logs and browser telemetry; Frontend Observability groups browser errors; Session Replay requested on the preview; alerting while his laptop is closed is deferred past beta. Supersedes the Datadog half of R-0328; the sfo3 half stands",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0371",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-2",
+"T-5",
+"T-6",
+"T-9"
+],
+"title": "Clusters are not found by deterministic rules about where they start and when new ones are made; they are a ju",
+"text": "Clusters are not found by deterministic rules about where they start and when new ones are made; they are a judgement, the professional's domain expertise picking the events pertinent under the clinical hypothesis of Bowen theory, which SARF formalises. So the coach's guidelines and prompt do it: clusters are retained where possible so the picture does not thrash, and new information may reshape them when there is a strong rationale. Clusters are the episodes or chapters of the story of family emotional process — functioning over time — that help a person explain what they are up against today with their symptoms and goals",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0372",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-1",
+"T-2",
+"T-5",
+"T-6"
+],
+"title": "Nothing draws what changed between clusters (no ghosts, no animation of splits or merges): the picture is usef",
+"text": "Nothing draws what changed between clusters (no ghosts, no animation of splits or merges): the picture is useful at a single glance, not for analysis. When a cluster changes, the coach says so in plain conversation — a comment on how the new information changes the story, as a person would — never technically",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0373",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-2",
+"T-5",
+"T-6"
+],
+"title": "The coach may use chips that refer to clusters, but the word \"cluster\" and the fact that an event was added to",
+"text": "The coach may use chips that refer to clusters, but the word \"cluster\" and the fact that an event was added to one are never said, because that is technical. All of the prose in the coach's reply is in terms of the story itself: what the data indicate and why it matters",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0374",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-1",
+"T-2",
+"T-5",
+"T-6"
+],
+"title": "No fixed time window bounds a cluster; the model judges its edges, with an instruction against thrashing: clus",
+"text": "No fixed time window bounds a cluster; the model judges its edges, with an instruction against thrashing: clusters emerge and become clearer like an artist sculpting a sculpture, never a rewrite. The build that hands the model the existing clusters each time is approved",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0375",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-2",
+"T-3",
+"T-6"
+],
+"title": "A structural event — a birth, marriage, divorce, death — opens a chapter of the story; the shifts in symptoms,",
+"text": "A structural event — a birth, marriage, divorce, death — opens a chapter of the story; the shifts in symptoms, anxiety, functioning and relationships recorded around it are what the chapter is about. Resolves the coders' view (such an event is not itself a shift) with the books' (such events open a period)",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0376",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-23",
+"session": "S 09-23",
+"topics": [
+"T-2",
+"T-5",
+"T-6"
+],
+"title": "What a cluster shows, from the sources: one key shift per cluster (the moment the trouble moved), where the tr",
+"text": "What a cluster shows, from the sources: one key shift per cluster (the moment the trouble moved), where the trouble sits and that it moved between people, the opening event and its aftershocks; dates lining up with a symptom shown as nearness, never proof; never a count of events. Patrick: \"let's figure out how to do this if even possible … I still have a lot to learn from my own timeline and I want this app to show me the light\"",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0377",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-23",
+"session": "S 09-23",
+"topics": [
+"T-1",
+"T-5",
+"T-6"
+],
+"title": "Event dots sit on the line, always, never sometimes on it and sometimes below it: one height, or people get co",
+"text": "Event dots sit on the line, always, never sometimes on it and sometimes below it: one height, or people get confused. The soft cluster boxes are acceptable for the beta but do not feel right yet; a wide, creative range of visual concepts for the picture is wanted from an agent team, including 3-D rendering on phones, while keeping the data the chat and the picture exchange (events, clusters, people, chips) unchanged",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0378",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-23",
+"session": "S 09-23",
+"topics": [
+"T-5"
+],
+"title": "The picture spot always shows a simple visual picture; a words-only view does not belong there. A tabular or l",
+"text": "The picture spot always shows a simple visual picture; a words-only view does not belong there. A tabular or list view may be added elsewhere later if needed",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0379",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-23",
+"session": "S 09-23",
+"topics": [
+"T-5",
+"T-7"
+],
+"title": "The family drawing with the trouble lit (round 7, rank 3) must be the traditional family diagram, which needs ",
+"text": "The family drawing with the trouble lit (round 7, rank 3) must be the traditional family diagram, which needs auto-arrangement the app does not have; too ambitious now, kept as a goal for down the road",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0380",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-23",
+"session": "S 09-23",
+"topics": [
+"T-5",
+"T-6",
+"T-9"
+],
+"title": "The multigenerational lanes (round 7, rank 4) are a great idea kept in the corpus, but a concept is only usefu",
+"text": "The multigenerational lanes (round 7, rank 4) are a great idea kept in the corpus, but a concept is only useful when the message it carries makes sense and is valuable; showing only that a cluster includes people from earlier generations, with no diagnostic connection, is not enough. Visual concepts on real data must use examples that make sense, otherwise they are speculation; when more data is needed to do that, say so",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0381",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-23",
+"session": "S 09-23",
+"topics": [
+"T-5",
+"T-6",
+"T-9"
+],
+"title": "Build the short sideways scroll into the line as it is; and keep every round-7 concept with its connection to ",
+"text": "Build the short sideways scroll into the line as it is; and keep every round-7 concept with its connection to the literature in the corpus, so they can be picked up again with more data and against the rulings store",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0382",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-23",
+"session": "S 09-23",
+"topics": [
+"T-5",
+"T-6"
+],
+"title": "The gap between a cluster's opening event and its symptom is a big idea, fundamental to an ideal family evalua",
+"text": "The gap between a cluster's opening event and its symptom is a big idea, fundamental to an ideal family evaluation; kept and tracked, to be drawn once a case holds enough data for it",
 "supersedes": [],
 "source": "private/oracle/rulings.md"
 },

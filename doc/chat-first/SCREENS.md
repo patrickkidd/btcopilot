@@ -72,6 +72,9 @@ What it is for: the one picture, always above the chat, that is the app's memory
 - One picture sits pinned above the chat and never appears and disappears. [built] {R-0002}
 - It keeps a fixed height whatever it is showing, so the chat below it never jumps. [built] {R-0210}
 - At rest it shows your clusters over time on one line: a horizontal line with marks on it and nothing else. [built]
+- The line scrolls sideways a little: the most recent years fill the width and the rest is one swipe away, never more than two screens wide. [built] {R-0381}
+- Every event is a dot sitting on the line itself, always at the same height, never sometimes below it. [built] {R-0377}
+- An opened group of events prints the real years it covers. [built]
 - Only the line and the marks on it are drawn at this size. [built] {R-0005, R-0359}
 - The line is drawn a little wider than the screen and slides sideways, so a crowded record still reads at a size you can tap. The most recent years fill the width when it opens; the earlier ones are one swipe to the left, at most two. [built] {R-0381}
 - The whole line is never more than two screens wide. A record with far more events on it draws at a coarser scale instead of reaching further, so it is never something you have to work through. [built] {R-0381}
@@ -121,6 +124,12 @@ What it is for: one group of related events, opened from the line.
 - Grouping is the coach's judgement, made from what you say as you say it; every grouping carries a one-line reason that says what is in it and what is not; the automatic grouping is only a first draft the coach may overwrite. [drawn] {R-0287}
 - A stored cluster carries only its name, its reason, where it came from, and the events in it. [built] {R-0205}
 - The coach may group and name events but may never invent an event to put in one. [built] {R-0076}
+- The coach decides which events belong together and keeps the groups it already made unless the story gives it a reason to change one, so the picture does not change under you between messages. [built] {R-0371, R-0374}
+- Nothing is drawn to show what changed between one reading and the next; if a group changes, the coach mentions it in ordinary conversation. [built] {R-0372}
+- The coach never uses a technical word for these groups and never says that an event was added to one; it talks about your family's story. [built] {R-0373}
+- A birth, marriage, divorce or death opens a chapter, and the changes recorded around it are what that chapter is about. [built] {R-0375}
+- What a group is meant to show you: the one moment the trouble moved, where it sits, who it moved between, what opened it and what followed. That is not built yet. [open] {R-0376}
+- A line of words above the picture, the coach naming the nearest thing worth saying today, is drawn and waits on Patrick, because it needs a little more height. [drawn]
 - The word for these is clusters, in the app and in the code. [built] {R-0197}
 - The back arrow inside an open cluster always closes the cluster and returns you to the whole line, whether or not an event is picked. [built] {R-0362}
 - Clusters are rebuilt from scratch after every turn that touches an event, so the same events can come back under different names; they are meant to stay put and change only when there is a reason. [open]
