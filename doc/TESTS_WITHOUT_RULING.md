@@ -5,12 +5,6 @@ behaviour nobody has ruled. For each, the owner either rules the behaviour (and 
 test cites the new id) or the test is deleted. One line each: the test, then what it
 proves, taken from its own docstring or name. Swept 2026-09-23.
 
-## Found during the sweep, for the owner
-
-- **Tests that contradict a live ruling.** `web/test/chips.test.ts` tones chips in an offered message, which R-0361 dropped. `web/test/picture.test.ts` draws two moments face to face, which R-0286 dropped. `web/test/search.test.ts` (two tests) and `web/tests/visual/sessions.spec.ts` list families in the sessions sheet, against R-0347. `test_clusters.py::test_a_birth_alone_seeds_nothing` sits against R-0375. `test_migrate_json.py` converts every old diagram, against R-0241. `test_timeline.py::test_events_no_cluster_claims_stay_off_every_cluster` draws a two-event cluster, against R-0215. Three tests cite R-0008 for trend-line logic that R-0284 deferred. `test_proimport.py` cites R-0327 (import once), which R-0355 may have made stale.
-- **A ruling the tests name that the store does not hold.** Two docstrings cite an owner ruling of 2026-09-09 that an event's words never repeat a linked person's name; those tests say `no ruling`.
-- **Rulings tagged both process and product.** The review suite treated R-0242, R-0250, R-0252, R-0254, R-0267, R-0272 and R-0312 as process and left about twelve tests uncited. Other suites cited mixed-tag rulings (R-0078, R-0087, R-0305, R-0314, R-0322, R-0337) for their product clause. One rule for mixed tags would settle both.
-
 ## btcopilot/tests/chat/personal/test_agent.py
 
 - `test_a_turn_that_fails_before_the_coach_answers_stores_no_words` — a turn that fails before the coach answers stores no words.
@@ -691,3 +685,13 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 ## web/tests/visual/settings.spec.ts
 
 - `the back chevron on the root page closes the stack` — the back chevron on the root page closes the stack.
+
+## For Patrick to rule
+
+1. **A birth opens a chapter.** R-0375 says a birth, marriage, divorce or death opens a chapter of the story. `test_clusters.py::test_a_birth_alone_seeds_nothing` proves a birth alone starts no cluster, and passes only because two events can never be a cluster (R-0215).
+2. **Import once, or no import.** `test_proimport.py`'s apply and second-run tests cite R-0327, "old Pro users are imported once". R-0355 says there is no import at the switch-over. Which stands decides whether those tests keep their id or are deleted.
+3. **Where the private prompts live.** `test_scribe.py::test_a_private_file_replaces_the_scribe_prompt` cites R-0314, which says the prompt lives in fdserver. It now lives in btcopilot, so the ruling's wording is stale.
+4. **Review rulings tagged process.** R-0242 (blind until Done), R-0250 (three stages to ground truth), R-0252 and R-0272 (names hidden during the vote), R-0254 (no AI on the ballot), R-0267 (the record reused across cuts) and R-0312 (unresolved never re-raised) carry the process tag, so about twelve review tests that prove them exactly say `no ruling`. Other suites cited mixed-tag rulings (R-0078, R-0087, R-0305, R-0322, R-0337) for their product clause. One rule for mixed tags settles both.
+5. **Converting old diagrams.** `test_migrate_json.py::test_converts_once_and_is_idempotent` converts every pickled diagram to JSON. R-0241 says old diagrams stay pickle and converting one is its owner's later choice.
+6. **Other tests that contradict a live ruling.** `web/test/chips.test.ts` tones chips in an offered message (dropped by R-0361). `web/test/picture.test.ts` draws two moments face to face (dropped by R-0286). Two tests in `web/test/search.test.ts` and one in `web/tests/visual/sessions.spec.ts` list families in the sessions sheet (against R-0347). `test_timeline.py::test_events_no_cluster_claims_stay_off_every_cluster` draws a two-event cluster (against R-0215). Three tests cite R-0008 for trend-line logic that R-0284 deferred.
+7. **A ruling the tests name that the store lacks.** Two docstrings cite an owner ruling of 2026-09-09 that an event's words never repeat a linked person's name; it is not in the store, so those tests say `no ruling`.
