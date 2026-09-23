@@ -25,6 +25,7 @@ test.describe("the resting picture", () => {
   ] as const) {
     test.describe(() => {
       test.use({ storageState: stateFor(key) });
+      // no ruling
       test(`at rest: ${what}`, async ({ page }) => {
         await settle(page);
         await expect(picture(page)).toHaveScreenshot(`rest-${key}.png`, steady(page));
@@ -44,6 +45,7 @@ const openCluster = async (page: import("@playwright/test").Page) => {
 test.describe("a tap on a cluster", () => {
   test.use({ storageState: stateFor("three40") });
 
+  // no ruling
   test("opens it, and the wire underneath is tappable", async ({ page }) => {
     await settle(page);
     await expect(page.locator('.ss-hit[data-target="cluster"]').first()).toBeVisible();
@@ -55,6 +57,7 @@ test.describe("a tap on a cluster", () => {
 test.describe("a tap on the wire", () => {
   test.use({ storageState: stateFor("three40") });
 
+  // R-0073
   test("picks the moment under it and writes it out", async ({ page }) => {
     await settle(page);
     await openCluster(page);
@@ -64,6 +67,7 @@ test.describe("a tap on the wire", () => {
     await inside(page.locator("#view .ss-t.on").first(), picture(page));
   });
 
+  // R-0072
   test("the chip beside it drops a reference in the composer", async ({ page }) => {
     await settle(page);
     await openCluster(page);
@@ -78,6 +82,7 @@ test.describe("a tap on the wire", () => {
 test.describe("the undated shelf", () => {
   test.use({ storageState: stateFor("empty") });
 
+  // R-0359, R-0013
   test("is not drawn on the picture at all", async ({ page }) => {
     await settle(page);
     // Both question marks are off (R-0359): nothing told a first-time reader
@@ -115,6 +120,7 @@ test.describe("the resting line slides sideways", () => {
   const yearsUnder = (page: import("@playwright/test").Page) =>
     page.locator("#view .ss-yrs span").allTextContents();
 
+  // R-0381, R-0111
   test("opens with the most recent stretch filling the width", async ({ page }) => {
     await settle(page);
     const { left, end, screen } = await at(page);
@@ -124,6 +130,7 @@ test.describe("the resting line slides sideways", () => {
     expect(end + screen).toBeLessThanOrEqual(2 * screen);
   });
 
+  // R-0381, R-0111
   test("a swipe takes it back to the earlier years", async ({ page }) => {
     await settle(page);
     const before = await yearsUnder(page);
@@ -135,6 +142,7 @@ test.describe("the resting line slides sideways", () => {
     expect(Number(after[0])).toBeLessThan(Number(before[0]));
   });
 
+  // R-0377
   test("every dot stays on the wire, wherever the line stands", async ({ page }) => {
     await settle(page);
     const onWire = async () =>
@@ -150,6 +158,7 @@ test.describe("the resting line slides sideways", () => {
     expect(await onWire()).toBe(true);
   });
 
+  // no ruling
   test("settles where a cluster is not cut in half", async ({ page }) => {
     await settle(page);
     const settled = await line(page).evaluate((node) => ({
@@ -160,6 +169,7 @@ test.describe("the resting line slides sideways", () => {
     expect(settled.stops).toBeGreaterThan(1);
   });
 
+  // no ruling
   test("a tap still picks the cluster under the thumb", async ({ page }) => {
     await settle(page);
     await swipe(page, 300);

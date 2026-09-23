@@ -20,6 +20,7 @@ const openSettings = async (page: Page) => {
 test.describe("the settings stack", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0089, R-0234
   test("the avatar sits in the title row at the ruled size", async ({ page }) => {
     await settle(page);
     const avatar = page.locator("#account");
@@ -30,6 +31,7 @@ test.describe("the settings stack", () => {
     expect(Math.round(box.height)).toBe(44);
   });
 
+  // R-0098
   test("it opens on Account with the ruled rows in the ruled order", async ({
     page,
   }) => {
@@ -51,6 +53,7 @@ test.describe("the settings stack", () => {
     );
   });
 
+  // R-0098
   test("a row pushes its own page and the chevron pops it", async ({ page }) => {
     await settle(page);
     await openSettings(page);
@@ -62,6 +65,7 @@ test.describe("the settings stack", () => {
     await expect(page.locator("#title")).toHaveText("Account");
   });
 
+  // no ruling
   test("the back chevron on the root page closes the stack", async ({ page }) => {
     await settle(page);
     await openSettings(page);
@@ -72,6 +76,7 @@ test.describe("the settings stack", () => {
     await expect(page.locator("#title")).toHaveText("FD-362 visual fixture");
   });
 
+  // R-0103
   test("speak replies is a switch of the ruled size, not a checkbox", async ({
     page,
   }) => {
@@ -85,6 +90,7 @@ test.describe("the settings stack", () => {
     expect(await page.locator(".sn-pane.in input[type=checkbox]").count()).toBe(0);
   });
 
+  // R-0101
   test("the chat row and the coach page write the same speak value", async ({
     page,
   }) => {
@@ -110,6 +116,7 @@ test.describe("the settings stack", () => {
     expect(await row.isChecked()).toBe(before);
   });
 
+  // R-0099
   test("the profile page carries the three ruled fields", async ({ page }) => {
     await settle(page);
     await openSettings(page);
@@ -128,6 +135,7 @@ test.describe("the settings stack", () => {
     ]);
   });
 
+  // R-0103
   test("nothing in the stack falls under the 44px floor", async ({ page }) => {
     await settle(page);
     await openSettings(page);

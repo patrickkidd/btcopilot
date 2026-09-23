@@ -88,6 +88,7 @@ const TURN: TurnEvent[] = [
 ];
 
 describe("following a turn", () => {
+  // R-0185, R-0369
   it("draws what the coach did, then what it said", () => {
     const { shown, take } = watch();
     for (const event of TURN) take(event);
@@ -98,6 +99,7 @@ describe("following a turn", () => {
     expect(shown.statement).toBe(7);
   });
 
+  // R-0369
   it("reads back the same way it was followed live", () => {
     const live = watch();
     for (const event of TURN) live.take(event);
@@ -106,6 +108,7 @@ describe("following a turn", () => {
     expect(replayed.shown).toEqual(live.shown);
   });
 
+  // R-0369
   it("shows nothing twice when the page attaches part way through", () => {
     const away = watch();
     // the page followed the first half, went away, then read the turn back
@@ -118,6 +121,7 @@ describe("following a turn", () => {
     expect(back.shown.words).toBe("Added Nell.");
   });
 
+  // no ruling
   it("re-reads the record once for a run of edits, not once each", () => {
     const { shown, take } = watch();
     take(patch());
@@ -127,6 +131,7 @@ describe("following a turn", () => {
     expect(shown.reloads).toBe(1);
   });
 
+  // no ruling
   it("drops words the coach said again", () => {
     const { shown, take } = watch();
     take({ type: TurnEventKind.Text, text: "A first go." });
@@ -135,6 +140,7 @@ describe("following a turn", () => {
     expect(shown.words).toBe("The one to keep.");
   });
 
+  // R-0182
   it("says in a sentence when the turn did not finish", () => {
     const { shown, take } = watch();
     take({ type: TurnEventKind.Text, text: "half a" });
@@ -146,6 +152,7 @@ describe("following a turn", () => {
     expect(shown.statement).toBe(null);
   });
 
+  // R-0410
   it("speaks a refusal in the coach's voice and offers no retry", () => {
     const { shown, take } = watch();
     take({ type: TurnEventKind.Text, text: "half a" });

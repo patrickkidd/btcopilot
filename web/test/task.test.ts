@@ -6,10 +6,12 @@ vi.stubGlobal("window", { BOOTSTRAP: { user: { coder: true } } });
 const { finishedRow, wayIn } = await import("../src/task");
 
 describe("wayIn", () => {
+  // R-0311
   it("offers the card to a coder whether or not a task is open", () => {
     expect(wayIn(true)).toBe("Your coding task");
   });
 
+  // R-0311
   it("offers nothing to a reader who does no coding", () => {
     expect(wayIn(false)).toBeNull();
   });
@@ -24,6 +26,7 @@ const done = (ratified: boolean): FinishedTask => ({
 });
 
 describe("finishedRow", () => {
+  // R-0344
   it("makes a ratified row a way in to the result", () => {
     const row = finishedRow(done(true));
     expect(row).toContain('data-result="8"');
@@ -31,6 +34,7 @@ describe("finishedRow", () => {
     expect(row).toContain("sn-chev");
   });
 
+  // no ruling
   it("leaves a row the room has not ratified as a faint record", () => {
     const row = finishedRow(done(false));
     expect(row).not.toContain("data-result");

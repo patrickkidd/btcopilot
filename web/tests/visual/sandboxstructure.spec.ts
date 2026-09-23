@@ -8,6 +8,7 @@ test.describe(() => {
   sandboxOnly("editor", "coder", "table");
   test.describe.configure({ timeout: 600_000 });
 
+  // R-0326
   test("people and family structure: the editor, the ballot and the meeting", async ({ page }, info) => {
     const { say, check, shot, text, visible, gates, changed, quiet } = walker(
       page,

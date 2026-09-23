@@ -31,6 +31,7 @@ const swipeLeft = async (page: Page, row: ReturnType<Page["locator"]>) => {
 test.describe("a session row's own actions", () => {
   test.use({ storageState: stateFor("play") });
 
+  // R-0095, R-0097
   test("swiping left reveals Rename and Delete", async ({ page }) => {
     await settle(page);
     await openSheet(page);
@@ -45,6 +46,7 @@ test.describe("a session row's own actions", () => {
     }
   });
 
+  // R-0097
   test("Rename opens the title in place, and a tap elsewhere puts the actions away", async ({
     page,
   }) => {
@@ -59,6 +61,7 @@ test.describe("a session row's own actions", () => {
 
   // A session started here and deleted here, so the walk this fixture also
   // carries is still there for the play-by-play spec.
+  // no ruling
   test("Delete removes the session and the record survives it", async ({ page }) => {
     await settle(page);
     const moments = await page.locator("#view .ss .dot").count();
@@ -83,6 +86,7 @@ test.describe("a session row's own actions", () => {
 test.describe("a tap on a message's own words", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0073, R-0168
   test("lights what that message named, and costs no turn", async ({ page }) => {
     await page.goto("/app/");
     await expect(page.locator("#view .ss")).toBeVisible();
@@ -100,6 +104,7 @@ test.describe("a tap on a message's own words", () => {
     expect(after.height).toBe(before.height);
   });
 
+  // no ruling
   test("never writes more than three rows of words", async ({ page }) => {
     await page.goto("/app/");
     await expect(page.locator("#view .ss")).toBeVisible();

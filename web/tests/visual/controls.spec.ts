@@ -41,6 +41,7 @@ const fromTheWire = async (page: Page) => {
 test.describe("the board opened from a dot on the wire", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0180
   test("shows back, explain and forward", async ({ page }) => {
     await fromTheWire(page);
     expect(await controls(page)).toEqual([
@@ -54,6 +55,7 @@ test.describe("the board opened from a dot on the wire", () => {
 test.describe("the board opened from the coach's words", () => {
   test.use({ storageState: stateFor("play") });
 
+  // R-0180
   test("shows the same three controls", async ({ page }) => {
     await settle(page);
     // the third chip of the walk, which opens the board on the third move
@@ -71,6 +73,7 @@ test.describe("the board opened from the coach's words", () => {
 test.describe("the words under the board", () => {
   test.use({ storageState: stateFor("longmove") });
 
+  // R-0178
   test("keep their height when a long moment wraps", async ({ page }) => {
     await fromTheWire(page);
     const next = page.locator('.pctl [data-target="next"]');
@@ -89,6 +92,7 @@ test.describe("the words under the board", () => {
     expect([...tops]).toHaveLength(1);
   });
 
+  // R-0178, R-0162
   test("say a person and their own words, and never a count", async ({ page }) => {
     await fromTheWire(page);
     const words = await page.locator("#chat-screen .bcap").innerText();

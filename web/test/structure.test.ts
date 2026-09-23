@@ -47,6 +47,7 @@ const item = (
   }) as unknown as BallotItem;
 
 describe("what is on the ballot", () => {
+  // R-0326
   it("takes people and bonds as well as events", () => {
     expect(onBallot(item(1, ItemKind.Person, [{ id: 3, name: "Corinne" }]))).toBe(
       true,
@@ -56,6 +57,7 @@ describe("what is on the ballot", () => {
     ).toBe(true);
   });
 
+  // no ruling
   it("reads the people and the bonds before the events", () => {
     const events = item(5, ItemKind.Event, [{ kind: "shift", dateTime: "1980-01-01" }]);
     const people = item(6, ItemKind.Person, [{ id: 3, name: "Corinne" }]);
@@ -69,6 +71,7 @@ describe("two versions of a person", () => {
     { id: 3, name: "Corinne", gender: "female", parents: null },
   ]);
 
+  // R-0326
   it("differ by who they were born to, said as the couple", () => {
     expect(telling(disputed.opinions, ItemKind.Person)).toEqual(["parents"]);
     const sides = group(disputed, records).map((one) => one.label);
@@ -78,12 +81,14 @@ describe("two versions of a person", () => {
     ]);
   });
 
+  // R-0326, R-0324
   it("are each drawn as a family with that person in the middle", () => {
     const drawn = drawVersion(records, ItemKind.Person, disputed.opinions[0]);
     expect(drawn).toContain("<svg");
     expect(drawn).toContain("Marcus");
   });
 
+  // R-0325
   it("draws a person with no parents standing on their own", () => {
     const fragment = fragmentOf(record, ItemKind.Person, {
       id: 3,
@@ -97,6 +102,7 @@ describe("two versions of a person", () => {
 });
 
 describe("a bond", () => {
+  // no ruling
   it("is named by both people", () => {
     expect(
       structureName(
@@ -107,6 +113,7 @@ describe("a bond", () => {
     ).toBe("Marcus & Delphine");
   });
 
+  // no ruling
   it("says whether they married rather than showing a true or a false", () => {
     expect(
       versionWords(record, { person_a: 1, person_b: 2, married: false }, [

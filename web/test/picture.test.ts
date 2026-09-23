@@ -22,6 +22,7 @@ const box = (
 });
 
 describe("how wide the resting line is drawn", () => {
+  // no ruling
   it("fills the screen and no more when one cluster is all there is", () => {
     const dates = ["1981-05-01", "1994-02-14", "2003-09-10", "2021-11-02"];
     const width = restWidth(
@@ -32,11 +33,13 @@ describe("how wide the resting line is drawn", () => {
     expect(width).toBe(PHONE);
   });
 
+  // no ruling
   it("is the screen for a record with nothing to separate", () => {
     expect(restWidth([], ["2014-03-02"], PHONE)).toBe(PHONE);
     expect(restWidth([], [], PHONE)).toBe(PHONE);
   });
 
+  // no ruling
   it("pulls two clusters apart until their boxes clear each other", () => {
     const dates = ["2001-01-01", "2001-08-01", "2004-02-01", "2006-06-01"];
     const clusters = [
@@ -48,6 +51,7 @@ describe("how wide the resting line is drawn", () => {
     expect(two.left - one.right).toBeGreaterThanOrEqual(6);
   });
 
+  // no ruling
   it("keeps a box wide enough for the two years written in it", () => {
     const dates = ["2001-01-01", "2002-04-01", "2030-01-01"];
     const cluster = { start: "2001-01-01", end: "2002-04-01" };
@@ -57,6 +61,7 @@ describe("how wide the resting line is drawn", () => {
     expect(only.right - only.left).toBeGreaterThanOrEqual(39);
   });
 
+  // no ruling
   it("never reaches past two screens, however crowded the record", () => {
     const dates = Array.from({ length: 120 }, (_, i) =>
       new Date(Date.UTC(2019, 0, 5 + i * 15)).toISOString().slice(0, 10),
@@ -72,6 +77,7 @@ describe("how wide the resting line is drawn", () => {
     expect(width).toBe(2 * PHONE);
   });
 
+  // no ruling
   it("parks the present at the right edge, one screen of line behind it", () => {
     const dates = ["2019-01-05", "2020-08-01", "2020-09-01", "2023-12-01"];
     const width = restWidth(
@@ -89,11 +95,13 @@ describe("how wide the resting line is drawn", () => {
 });
 
 describe("the dots inside a cluster box", () => {
+  // no ruling
   it("stay where they fall when they already read apart", () => {
     const xs = [40, 60, 90];
     expect(dotXs(xs, 30, 70)).toEqual(xs);
   });
 
+  // no ruling
   it("spreads seven moments held inside a few weeks across the box", () => {
     const xs = Array.from({ length: 7 }, (_, i) => 100 + i * 0.4);
     const drawn = dotXs(xs, 96, 88);
@@ -107,11 +115,13 @@ describe("the dots inside a cluster box", () => {
 });
 
 describe("the tap target of a dot on the line", () => {
+  // R-0103
   it("is a whole thumb where the dot stands alone", () => {
     const [only] = hitSpans([200], PHONE);
     expect(only.size).toBe(44);
   });
 
+  // no ruling
   it("lets a tap on either of two dots 6px apart pick that dot", () => {
     const xs = [200, 206];
     const spans = hitSpans(xs, PHONE);
@@ -152,6 +162,7 @@ describe("the two moments face to face", () => {
       child: null,
     }) as TimelineEvent;
 
+  // no ruling
   it("draws both labels and the seam with real numbers", () => {
     const svg = pairSvg(
       event(1, "she moved out of the house that spring"),
@@ -164,6 +175,7 @@ describe("the two moments face to face", () => {
 });
 
 describe("the year a point on the line falls in", () => {
+  // no ruling
   it("is the calendar year, not the count since 1970", () => {
     expect(yearAt(years("2003-09-10"))).toBe(2003);
     expect(yearAt(years("1981-05-01"))).toBe(1981);

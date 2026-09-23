@@ -128,6 +128,7 @@ test.describe("the move language", () => {
   const url = page();
 
   for (const spec of CASES) {
+    // no ruling
     test(`the ${spec.name} drawing`, async ({ page: browser }) => {
       // the drawings do not change with the window, so one size is the story
       test.skip(test.info().project.name !== "phone");
@@ -151,6 +152,7 @@ test.describe("the move language", () => {
     });
   }
 
+  // R-0288
   test("the board a coach's triangle opens", async ({ page: browser }) => {
     test.skip(test.info().project.name !== "phone");
     await browser.goto(url);
@@ -163,6 +165,7 @@ test.describe("the move language", () => {
 test.describe("what a chip does", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0168
   test("what the coach named stays lit on the picture", async ({ page }) => {
     await page.goto("/app/");
     await expect(page.locator("#view .ss")).toBeVisible();
@@ -176,6 +179,7 @@ test.describe("what a chip does", () => {
 test.describe("the timeline behind the menu", () => {
   test.use({ storageState: stateFor("three40") });
 
+  // R-0141
   test("the list of everything", async ({ page }) => {
     await page.goto("/app/");
     await page.locator("#menu-open").click();
@@ -184,6 +188,7 @@ test.describe("the timeline behind the menu", () => {
     await inside(page.locator("#menu-body .row").first(), page.locator("#menu-screen"), true);
   });
 
+  // R-0174
   test("the editor's fields, text centred in the box", async ({ page }) => {
     await page.goto("/app/");
     await page.locator("#menu-open").click();
@@ -221,6 +226,7 @@ test.describe("the editor's fields by kind", () => {
     ["birth", true, true],
     ["adopted", true, true],
   ] as [string, boolean, boolean][]) {
+    // R-0144
     test(`${kind} shows ${spouse ? "a" : "no"} second person and ${child ? "a" : "no"} child`, async ({
       page,
     }) => {
@@ -232,6 +238,7 @@ test.describe("the editor's fields by kind", () => {
     });
   }
 
+  // R-0144
   test("the second person is named for the kind", async ({ page }) => {
     await openEditor(page);
     await pick(page, "kind", "married");
@@ -244,6 +251,7 @@ test.describe("the editor's fields by kind", () => {
     await expect(block(page, "pair")).toBeHidden();
   });
 
+  // R-0144, R-0049
   test("targets appear with a relationship, triangles only inside and outside", async ({
     page,
   }) => {
@@ -265,6 +273,7 @@ test.describe("the editor's fields by kind", () => {
     await expect(page.locator('.editor [data-label="person"]')).toHaveText("Overfunctioner");
   });
 
+  // R-0142
   test("a relationship saves with two targets", async ({ page }) => {
     await openEditor(page);
     await pick(page, "kind", "shift");
@@ -291,6 +300,7 @@ test.describe("the editor's fields by kind", () => {
   /** A kind that does not use the shift fields does not save them either: the
    * editor keeps what was picked so switching back restores it, but the write
    * carries only the fields the chosen kind uses. */
+  // R-0144
   test("a kind with no shift fields saves none of them", async ({ page }) => {
     await openEditor(page);
     await pick(page, "kind", "shift");

@@ -8,6 +8,7 @@ test.describe(() => {
   sandboxOnly("table");
   test.describe.configure({ timeout: 600_000 });
 
+  // R-0346
   test("the table: a conversation goes on the agenda and the vote opens", async ({ page }, info) => {
     const { say, check, shot, text, visible, gates, changed, quiet } = walker(
       page,

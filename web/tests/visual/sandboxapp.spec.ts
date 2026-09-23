@@ -8,6 +8,7 @@ test.describe(() => {
   sandboxOnly("pro");
   test.describe.configure({ timeout: 600_000 });
 
+  // no ruling
   test("the chat app: the picture, the lists, the sessions sheet and the account", async ({ page }, info) => {
     const { say, check, shot, text, visible, gates, changed, quiet } = walker(
       page,

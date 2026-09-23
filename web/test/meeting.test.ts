@@ -29,6 +29,7 @@ const side = (label: string, coding: number): Side => ({
 });
 
 describe("seated", () => {
+  // R-0341
   it("keeps an item where it sat when the room decides on it", () => {
     const first = [
       item(7, ItemStatus.Disputed),
@@ -43,6 +44,7 @@ describe("seated", () => {
     expect(seated(order, after).indexOf(9)).toBe(order.indexOf(9));
   });
 
+  // no ruling
   it("seats what the list has newly gained at the end and drops what it lost", () => {
     const order = seated([7, 9], [item(9, ItemStatus.Disputed), item(11, ItemStatus.Disputed)]);
     expect(order).toEqual([9, 11]);
@@ -50,11 +52,13 @@ describe("seated", () => {
 });
 
 describe("markOf", () => {
+  // R-0257
   it("says the words of the version the room kept", () => {
     const sides = [side("moved to Arizona", 2), side("moved in 1969", 3)];
     expect(markOf(item(7, ItemStatus.Decided, 3), sides)).toBe("moved in 1969");
   });
 
+  // R-0257
   it("says unresolved when the room left it so, and agreed when the vote settled it", () => {
     expect(markOf(item(7, ItemStatus.Unresolved), [])).toBe("unresolved");
     expect(markOf(item(7, ItemStatus.Agreed), [side("as written", 2)])).toBe("agreed");
@@ -62,6 +66,7 @@ describe("markOf", () => {
 });
 
 describe("choiceOf", () => {
+  // R-0339, R-0317
   it("lights the choice the reopened card was decided with", () => {
     expect(choiceOf(item(7, ItemStatus.Decided))).toBe(Decision.Keep);
     expect(choiceOf(item(7, ItemStatus.Unresolved))).toBe(Decision.Unresolved);

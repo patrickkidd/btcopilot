@@ -15,6 +15,7 @@ const stretch: Sel = { kind: SelKind.Cluster, id: "ch0" };
 const shelf: Sel = { kind: SelKind.Shelf, id: "shelf" };
 
 describe("two taps on the picture", () => {
+  // R-0073
   it("the first tap picks a moment, records a look, and says nothing", () => {
     const out = reduce(REST, PicEvent.Tap, moment);
     expect(out.state).toEqual({ sel: moment, playing: null });
@@ -26,6 +27,7 @@ describe("two taps on the picture", () => {
     });
   });
 
+  // R-0073
   it("the second tap is the chip, and it speaks", () => {
     const open = reduce(REST, PicEvent.Tap, moment).state;
     const out = reduce(open, PicEvent.TapChip);
@@ -37,6 +39,7 @@ describe("two taps on the picture", () => {
     );
   });
 
+  // R-0073
   it("tapping the same moment again leaves it picked and records another look", () => {
     const open = reduce(REST, PicEvent.Tap, moment).state;
     const out = reduce(open, PicEvent.Tap, moment);
@@ -48,6 +51,7 @@ describe("two taps on the picture", () => {
     });
   });
 
+  // R-0073
   it("tapping the next moment moves the words to it", () => {
     const open = reduce(REST, PicEvent.Tap, moment).state;
     const out = reduce(open, PicEvent.Tap, other);
@@ -55,17 +59,20 @@ describe("two taps on the picture", () => {
     expect(out.record?.item_id).toBe("43");
   });
 
+  // no ruling
   it("a tap that lands on no moment lets go of the one that was picked", () => {
     const open = reduce(REST, PicEvent.Tap, moment).state;
     expect(reduce(open, PicEvent.Tap).state).toEqual(REST);
   });
 
+  // no ruling
   it("the undated shelf is recorded against the diagram itself", () => {
     expect(reduce(REST, PicEvent.Tap, shelf).record?.item_kind).toBe(
       ItemKind.Diagram,
     );
   });
 
+  // no ruling
   it("only a stretch can be played, and a moment plays the stretch it is in", () => {
     const open = reduce(REST, PicEvent.Tap, moment).state;
     expect(reduce(open, PicEvent.TapPlay).play).toBeNull();
@@ -75,6 +82,7 @@ describe("two taps on the picture", () => {
     expect(out.state).toEqual({ sel: stretch, playing: "ch0" });
   });
 
+  // no ruling
   it("a chip tap with nothing picked does nothing at all", () => {
     const out = reduce(REST, PicEvent.TapChip);
     expect(out.state).toEqual(REST);
@@ -82,6 +90,7 @@ describe("two taps on the picture", () => {
     expect(out.insert).toBeNull();
   });
 
+  // no ruling
   it("dismiss returns to rest", () => {
     const playing = reduce(
       reduce(REST, PicEvent.Tap, moment).state,

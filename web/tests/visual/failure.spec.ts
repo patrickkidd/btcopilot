@@ -23,6 +23,7 @@ const warning = (page: Page) => page.locator(".sys.warn");
 test.describe("a send that does not go through", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0182
   test("says the server refused it, and sends again on the retry", async ({
     page,
   }) => {
@@ -50,6 +51,7 @@ test.describe("a send that does not go through", () => {
     await expect(warning(page)).toHaveCount(0);
   });
 
+  // R-0182
   test("says nothing came back when the server never answers", async ({ page }) => {
     await settle(page);
     await page.route(SEND, (route) => route.abort("failed"));
@@ -59,6 +61,7 @@ test.describe("a send that does not go through", () => {
     await expect(page.locator(".bub.typing")).toHaveCount(0);
   });
 
+  // R-0182
   test("goes when a later message lands, not only on the retry", async ({
     page,
   }) => {
@@ -89,6 +92,7 @@ test.describe("a send that does not go through", () => {
 test.describe("an explain that does not go through", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // no ruling
   test("warns under the board and leaves the board up", async ({ page }) => {
     await settle(page);
     await page.route("**/app/play", (route) =>

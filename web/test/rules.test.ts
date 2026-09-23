@@ -26,16 +26,19 @@ const signIn = (admin: boolean) => {
 
 beforeEach(() => signIn(false));
 
+// R-0346
 it("a coder reads that a guideline is flagged, and taps nothing", () => {
   const said = flagLine(rule(true), "rl-flag");
   expect(said).toContain("flagged for the next meeting");
   expect(said).not.toContain("<button");
 });
 
+// R-0346
 it("a coder sees nothing at all when no flag stands", () => {
   expect(flagLine(rule(false), "rl-flag")).toBe("");
 });
 
+// R-0346
 it("Patrick gets the tap, on and off", () => {
   signIn(true);
   expect(flagLine(rule(false), "rl-flag")).toContain("flag for next meeting");

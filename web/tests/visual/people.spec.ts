@@ -21,6 +21,7 @@ const openList = async (page: Page) => {
 test.describe("the button that opens the list", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0221, R-0234
   test("sits at the end of the row of chips, dressed like the sessions button", async ({
     page,
   }) => {
@@ -55,6 +56,7 @@ test.describe("the button that opens the list", () => {
 test.describe("the two lists behind it", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0345
   test("open on events, and people are a tap away", async ({ page }) => {
     await settle(page);
     await openList(page);
@@ -69,6 +71,7 @@ test.describe("the two lists behind it", () => {
     await expect(page.locator("#menu-body .row").first()).toContainText("Ada");
   });
 
+  // R-0345
   test("a person opens the editor on the fields the record keeps", async ({
     page,
   }) => {
@@ -85,6 +88,7 @@ test.describe("the two lists behind it", () => {
     await expect(editor.locator(".del")).toBeVisible();
   });
 
+  // R-0141
   test("a name typed in the editor is on the record after saving", async ({
     page,
   }) => {
@@ -98,6 +102,7 @@ test.describe("the two lists behind it", () => {
     await expect(page.locator("#menu-body .row").first()).toContainText("Ellis");
   });
 
+  // no ruling
   test("the people list orders by birth until the reader asks for names", async ({
     page,
   }) => {
@@ -113,6 +118,7 @@ test.describe("the two lists behind it", () => {
 test.describe("the picture", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0203
   test("never says it is behind the conversation", async ({ page }) => {
     await settle(page);
     await expect(page.locator("#fresh")).toHaveCount(0);

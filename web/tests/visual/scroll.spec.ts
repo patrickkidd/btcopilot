@@ -35,6 +35,7 @@ const dragUp = async (page: Page, selector: string, by: number) => {
 test.describe("scrolling the thread", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0104, R-0105
   test("a mouse drag scrolls the chat", async ({ page }) => {
     await settle(page);
     // A tall window can hold the whole thread, and a surface with nothing below
@@ -50,6 +51,7 @@ test.describe("scrolling the thread", () => {
     expect(await at()).toBeGreaterThan(before);
   });
 
+  // R-0104
   test("the wheel scrolls the chat and never the page behind it", async ({
     page,
   }) => {
@@ -67,6 +69,7 @@ test.describe("scrolling the thread", () => {
       ).toBeGreaterThan(0);
   });
 
+  // R-0104
   test("a mouse drag scrolls the sessions sheet", async ({ page }) => {
     await settle(page);
     await page.locator("#sessions-open").click();

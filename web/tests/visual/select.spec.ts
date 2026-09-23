@@ -27,11 +27,13 @@ const dragAcross = async (page: Page, selector: string) => {
 test.describe("what the app says can be taken away", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0183
   test("a coach bubble's words select", async ({ page }) => {
     await settle(page);
     expect((await dragAcross(page, ".bub.coach")).trim()).not.toBe("");
   });
 
+  // R-0183
   test("a session row's words select", async ({ page }) => {
     await settle(page);
     await page.locator("#sessions-open").click();
@@ -40,6 +42,7 @@ test.describe("what the app says can be taken away", () => {
     expect((await dragAcross(page, ".fs-body .row .r1")).trim()).not.toBe("");
   });
 
+  // R-0183
   test("the words under the picture select", async ({ page }) => {
     await settle(page);
     await page.locator("#cap-play").click();
@@ -54,6 +57,7 @@ test.describe("dragging the thread", () => {
   // a record whose thread is long enough to have somewhere to scroll
   test.use({ storageState: stateFor("hostile") });
 
+  // R-0104
   test("still scrolls when the press lands off the words", async ({ page }) => {
     await settle(page);
     const chat = page.locator("#chat");
@@ -78,6 +82,7 @@ test.describe("dragging the thread", () => {
 test.describe("a label that runs onto a second line", () => {
   test.use({ storageState: stateFor("hostile") });
 
+  // no ruling
   test("answers on both of its lines, not just the first", async ({ page }) => {
     await settle(page);
     const box = page.locator('.ss-hit[data-target="cluster"]').first();

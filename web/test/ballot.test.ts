@@ -24,28 +24,33 @@ const item = (
   }) as unknown as BallotItem;
 
 describe("the date word", () => {
+  // R-0318
   it("says an event has no date yet rather than calling it undated", () => {
     expect(when(null)).toBe("no date yet");
     expect(when("")).toBe("no date yet");
   });
 
+  // no ruling
   it("reads a year on its own as the year", () => {
     expect(when("1998")).toBe("1998");
   });
 });
 
 describe("what a row is named", () => {
+  // R-0318
   it("uses the description when there is one", () => {
     expect(what(item(1, { kind: "noted", description: "left for Juneau" }))).toBe(
       "left for Juneau",
     );
   });
 
+  // R-0318
   it("says the kind in words when the description is empty", () => {
     expect(what(item(1, { kind: "shift", description: "" }))).toBe("a shift");
     expect(what(item(2, { kind: "death" }))).toBe("a death");
   });
 
+  // R-0318
   it("names who and what together, never a placeholder", () => {
     expect(names(item(1, { kind: "birth" }, "Marcus"))).toBe("Marcus · a birth");
     expect(names(item(2, { kind: "shift" }))).toBe("a shift");
@@ -53,6 +58,7 @@ describe("what a row is named", () => {
 });
 
 describe("the events of a cut", () => {
+  // no ruling
   it("reads in the order they happened", () => {
     const events = eventsOf([
       item(1, { kind: "shift", dateTime: "2021-06-02" }),
@@ -70,15 +76,18 @@ describe("which version is lit", () => {
       value: { coding_id: coding },
     }) as unknown as Vote;
 
+  // R-0339
   it("is the one this coder chose while the vote is open", () => {
     expect(litCoding(item(1, { kind: "birth" }), vote(7), false)).toBe(7);
   });
 
+  // R-0339
   it("is the one the meeting kept once the cut is ratified", () => {
     const decided = { ...item(1, { kind: "birth" }), kept_coding_id: 9 };
     expect(litCoding(decided, vote(7), true)).toBe(9);
   });
 
+  // R-0339
   it("lights nothing when a ratified item was written out rather than kept", () => {
     expect(litCoding(item(1, { kind: "birth" }), vote(7), true)).toBeNull();
   });

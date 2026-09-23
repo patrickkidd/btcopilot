@@ -22,6 +22,7 @@ const editor = (page: Page) => page.locator("#menu-body .editor");
 test.describe("the person editor", () => {
   test.use({ storageState: stateFor("three40") });
 
+  // R-0345, R-0326
   test("says what the record keeps, and where the rest is kept", async ({
     page,
   }) => {
@@ -46,6 +47,7 @@ test.describe("the person editor", () => {
 test.describe("an event and the people in it", () => {
   test.use({ storageState: stateFor("three40") });
 
+  // R-0201
   test("the person it is about opens their own editor", async ({ page }) => {
     await settle(page);
     await openList(page);
@@ -59,6 +61,7 @@ test.describe("an event and the people in it", () => {
     await expect(editor(page).locator('[data-name="name"]')).toHaveValue("Ada");
   });
 
+  // no ruling
   test("a person not yet chosen is still chosen by tapping", async ({ page }) => {
     await settle(page);
     await openList(page);
@@ -77,6 +80,7 @@ test.describe("an event and the people in it", () => {
 test.describe("a person the record knows the birth and death of", () => {
   test.use({ storageState: stateFor("longmove") });
 
+  // R-0201
   test("offers those two events, and one opens its own editor", async ({
     page,
   }) => {
@@ -107,6 +111,7 @@ test.describe("the picture with one cluster open", () => {
     await page.waitForTimeout(400);
   };
 
+  // R-0202
   test("shows the way back to all of them", async ({ page }) => {
     await settle(page);
     // the name of the picture is the way back, and says so while one is open
@@ -122,6 +127,7 @@ test.describe("the picture with one cluster open", () => {
     await expect(page.locator("#crumb")).toHaveText("Family timeline");
   });
 
+  // no ruling
   test("the words of the moment picked open its editor", async ({ page }) => {
     await settle(page);
     await openCluster(page);

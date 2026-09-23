@@ -57,6 +57,7 @@ const frame = (page: Page) =>
 test.describe("nothing moves when a chip is tapped", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0168
   test("a chip in a coach bubble aims the picture and moves nothing", async ({
     page,
   }) => {
@@ -88,6 +89,7 @@ test.describe("nothing moves when a chip is tapped", () => {
     expect(after.bubbles).toEqual(before.bubbles);
   });
 
+  // R-0210
   test("tapping the wire selects a moment and moves nothing", async ({ page }) => {
     await settle(page);
     const before = await frame(page);
@@ -100,6 +102,7 @@ test.describe("nothing moves when a chip is tapped", () => {
     expect(after.bubbles).toEqual(before.bubbles);
   });
 
+  // R-0212
   test("the row keeps its height and its three chips whatever is picked", async ({
     page,
   }) => {
@@ -130,6 +133,7 @@ test.describe("nothing moves when a chip is tapped", () => {
     expect(picked.caption).toEqual(empty.caption);
   });
 
+  // R-0212
   test("the caption stays one strip however many controls it holds", async ({
     page,
   }) => {
@@ -170,6 +174,7 @@ for (const key of ["one", "three40", "dense60", "hostile", "moves", "play", "lon
   test.describe(`the caption row on the ${key} record`, () => {
     test.use({ storageState: stateFor(key) });
 
+    // R-0212
     test("holds every control inside itself, on one line", async ({ page }) => {
       await settle(page);
       // a record whose moments are inside a cluster needs it opened first
@@ -228,6 +233,7 @@ test.describe("a scrollbar appearing never shifts the page", () => {
   // picked on a record that has some.
   test.use({ storageState: stateFor("three40") });
 
+  // no ruling
   test("picking a moment moves nothing sideways", async ({ page }) => {
     await settle(page);
     const before = await frame(page);
@@ -245,6 +251,7 @@ test.describe("a scrollbar appearing never shifts the page", () => {
 test.describe("the board is the only thing that resizes the picture", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0212
   test("the way onto the board says explain, and moves nothing until it is tapped", async ({
     page,
   }) => {
@@ -266,6 +273,7 @@ test.describe("the board is the only thing that resizes the picture", () => {
 test.describe("a long family name", () => {
   test.use({ storageState: stateFor("longname") });
 
+  // no ruling
   test("is cut with an ellipsis rather than spilling over the picture", async ({
     page,
   }) => {
@@ -306,6 +314,7 @@ test.describe("a long family name", () => {
 test.describe("the moves board fills the room it takes", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0210
   test("no empty band under the drawing or the controls", async ({ page }) => {
     await settle(page);
     await page.locator("#cap-play").click();
@@ -338,6 +347,7 @@ test.describe("the moves board fills the room it takes", () => {
 test.describe("a moment traces back to the words that coded it", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0220, R-0192
   test("the said chip takes the thread to where it was said", async ({
     page,
   }) => {
@@ -382,6 +392,7 @@ test.describe("each level is one fixed height", () => {
   for (const key of ["empty", "one", "three40", "dense60"] as const) {
     test.describe(() => {
       test.use({ storageState: stateFor(key) });
+      // R-0210
       test(`the band the line is drawn in is ${BAND} high at rest on the ${key} record`, async ({
         page,
       }) => {
@@ -399,6 +410,7 @@ test.describe("each level is one fixed height", () => {
   for (const key of ["one", "three40", "dense60"] as const) {
     test.describe(() => {
       test.use({ storageState: stateFor(key) });
+      // R-0210
       test(`opening a cluster moves nothing on the ${key} record`, async ({
         page,
       }) => {

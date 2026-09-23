@@ -60,6 +60,7 @@ const picture = (page: Page) => page.locator("#chat-screen .pic");
 test.describe("the moves board", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0180, R-0212
   test("a cluster offers to walk its moves", async ({ page }) => {
     await settle(page);
     await pickCluster(page);
@@ -67,6 +68,7 @@ test.describe("the moves board", () => {
     await inside(page.locator("#view .ss"), picture(page));
   });
 
+  // R-0178
   test("the board opens on the first move", async ({ page }) => {
     await settle(page);
     await enter(page);
@@ -76,6 +78,7 @@ test.describe("the moves board", () => {
     await expect(picture(page)).toHaveScreenshot("board-first-move.png", steady(page));
   });
 
+  // no ruling
   test("earlier moves stay behind the one being drawn", async ({ page }) => {
     await settle(page);
     await enter(page);
@@ -85,6 +88,7 @@ test.describe("the moves board", () => {
     await inside(page.locator("#view .ss.board"), picture(page));
   });
 
+  // no ruling
   test("the last move has nowhere further to go", async ({ page }) => {
     await settle(page);
     await enter(page);
@@ -97,6 +101,7 @@ test.describe("the moves board", () => {
 
   // the one way up is the arrow beside the view's name; the board carries no
   // corner arrow of its own (owner ruling 2026-09-08)
+  // R-0223
   test("back goes up one level, to the cluster the board was showing", async ({
     page,
   }) => {

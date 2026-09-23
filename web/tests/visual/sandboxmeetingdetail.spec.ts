@@ -8,6 +8,7 @@ test.describe(() => {
   sandboxOnly("table");
   test.describe.configure({ timeout: 600_000 });
 
+  // R-0321, R-0339, R-0341
   test("the meeting read line by line: header, sorts, keeps and dots", async ({ page }, info) => {
     const { say, check, shot, text, visible, gates, changed, quiet } = walker(
       page,

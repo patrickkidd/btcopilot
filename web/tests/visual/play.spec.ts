@@ -37,6 +37,7 @@ const expectCaption = async (page: Page, words: string) => {
 test.describe("a chip in a play-by-play", () => {
   test.use({ storageState: stateFor("play") });
 
+  // R-0170
   test("the third chip opens the board on the third move", async ({ page }) => {
     await settle(page);
     await expect(board(page)).toHaveCount(0);
@@ -45,6 +46,7 @@ test.describe("a chip in a play-by-play", () => {
     await expectCaption(page, "Ada \u2192 Ben · distance");
   });
 
+  // R-0170
   test("a further chip steps the board and never leaves it", async ({ page }) => {
     await settle(page);
     await walk(page).nth(2).click();
@@ -55,6 +57,7 @@ test.describe("a chip in a play-by-play", () => {
     await expectCaption(page, "Ada · defined self");
   });
 
+  // R-0178
   test("the picture keeps its height while the walk is stepped", async ({
     page,
   }) => {

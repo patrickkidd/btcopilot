@@ -3,8 +3,13 @@
 Each test below says `no ruling` on its top line: it proves plumbing, a helper, or a
 behaviour nobody has ruled. For each, the owner either rules the behaviour (and the
 test cites the new id) or the test is deleted. One line each: the test, then what it
-proves, taken from its own docstring or name. Swept 2026-09-23 over the Python suite;
-the TypeScript unit tests and Playwright specs are not yet swept.
+proves, taken from its own docstring or name. Swept 2026-09-23.
+
+## Found during the sweep, for the owner
+
+- **Tests that contradict a live ruling.** `web/test/chips.test.ts` tones chips in an offered message, which R-0361 dropped. `web/test/picture.test.ts` draws two moments face to face, which R-0286 dropped. `web/test/search.test.ts` (two tests) and `web/tests/visual/sessions.spec.ts` list families in the sessions sheet, against R-0347. `test_clusters.py::test_a_birth_alone_seeds_nothing` sits against R-0375. `test_migrate_json.py` converts every old diagram, against R-0241. `test_timeline.py::test_events_no_cluster_claims_stay_off_every_cluster` draws a two-event cluster, against R-0215. Three tests cite R-0008 for trend-line logic that R-0284 deferred. `test_proimport.py` cites R-0327 (import once), which R-0355 may have made stale.
+- **A ruling the tests name that the store does not hold.** Two docstrings cite an owner ruling of 2026-09-09 that an event's words never repeat a linked person's name; those tests say `no ruling`.
+- **Rulings tagged both process and product.** The review suite treated R-0242, R-0250, R-0252, R-0254, R-0267, R-0272 and R-0312 as process and left about twelve tests uncited. Other suites cited mixed-tag rulings (R-0078, R-0087, R-0305, R-0314, R-0322, R-0337) for their product clause. One rule for mixed tags would settle both.
 
 ## btcopilot/tests/chat/personal/test_agent.py
 
@@ -502,3 +507,187 @@ the TypeScript unit tests and Playwright specs are not yet swept.
 
 - `test_dry_run_counts_and_writes_nothing` — dry run counts and writes nothing.
 - `test_every_failure_is_named_with_its_reason` — every failure is named with its reason.
+
+## web/test/ballot.test.ts
+
+- `reads a year on its own as the year` — reads a year on its own as the year.
+- `reads in the order they happened` — reads in the order they happened.
+
+## web/test/board.test.ts
+
+- `keeps every moment, not only the ones with a mark to draw` — keeps every moment, not only the ones with a mark to draw.
+- `puts the people a bond ties on stage with the one who shifted` — puts the people a bond ties on stage with the one who shifted.
+- `keeps a moment that names nobody, so the walk still steps past it` — keeps a moment that names nobody, so the walk still steps past it.
+
+## web/test/caption.test.ts
+
+- `a tap that lands on no moment lets go of the one that was picked` — a tap that lands on no moment lets go of the one that was picked.
+- `the undated shelf is recorded against the diagram itself` — the undated shelf is recorded against the diagram itself.
+- `only a stretch can be played, and a moment plays the stretch it is in` — only a stretch can be played, and a moment plays the stretch it is in.
+- `a chip tap with nothing picked does nothing at all` — a chip tap with nothing picked does nothing at all.
+- `dismiss returns to rest` — dismiss returns to rest.
+
+## web/test/chips.test.ts
+
+- `tones every chip in an offered message amber` — tones every chip in an offered message amber.
+- `leaves text with no markup alone` — leaves text with no markup alone.
+- `does not treat an unknown kind as a chip` — does not treat an unknown kind as a chip.
+- `keeps a span of time as plain words, not a chip that goes nowhere` — keeps a span of time as plain words, not a chip that goes nowhere.
+- `finds every chip in a play-by-play` — finds every chip in a play-by-play.
+- `aims nothing when the chip names something the picture has not got` — aims nothing when the chip names something the picture has not got.
+
+## web/test/editor.test.ts
+
+- `takes the text's own height until ten lines, then stays` — takes the text's own height until ten lines, then stays.
+
+## web/test/meeting.test.ts
+
+- `seats what the list has newly gained at the end and drops what it lost` — seats what the list has newly gained at the end and drops what it lost.
+
+## web/test/parents.test.ts
+
+- `takes the couple those two already are, named either way round` — takes the couple those two already are, named either way round.
+- `finds none for two people who are not a couple` — finds none for two people who are not a couple.
+
+## web/test/picture.test.ts
+
+- `fills the screen and no more when one cluster is all there is` — fills the screen and no more when one cluster is all there is.
+- `is the screen for a record with nothing to separate` — is the screen for a record with nothing to separate.
+- `pulls two clusters apart until their boxes clear each other` — pulls two clusters apart until their boxes clear each other.
+- `keeps a box wide enough for the two years written in it` — keeps a box wide enough for the two years written in it.
+- `never reaches past two screens, however crowded the record` — never reaches past two screens, however crowded the record.
+- `parks the present at the right edge, one screen of line behind it` — parks the present at the right edge, one screen of line behind it.
+- `stay where they fall when they already read apart` — stay where they fall when they already read apart.
+- `spreads seven moments held inside a few weeks across the box` — spreads seven moments held inside a few weeks across the box.
+- `lets a tap on either of two dots 6px apart pick that dot` — lets a tap on either of two dots 6px apart pick that dot.
+- `draws both labels and the seam with real numbers` — draws both labels and the seam with real numbers.
+- `is the calendar year, not the count since 1970` — is the calendar year, not the count since 1970.
+
+## web/test/rows.test.ts
+
+- `is the name alone, with no second line under it` — is the name alone, with no second line under it.
+- `says nothing about a birth the record does hold` — says nothing about a birth the record does hold.
+
+## web/test/search.test.ts
+
+- `keeps a family whose own name matches, even with no sessions on it` — keeps a family whose own name matches, even with no sessions on it.
+- `keeps every session of a family whose name matches` — keeps every session of a family whose name matches.
+- `names an untitled session by the first words said in it` — names an untitled session by the first words said in it.
+
+## web/test/spotlight.test.ts
+
+- `a date the record is sure of says its month` — a date the record is sure of says its month.
+- `a date it only guessed says its year and nothing more` — a date it only guessed says its year and nothing more.
+- `the person is named only when the record is not about them` — the person is named only when the record is not about them.
+- `a pair keeps the other person and leaves out the one reading` — a pair keeps the other person and leaves out the one reading.
+- `a long line wraps onto a second row at a space` — a long line wraps onto a second row at a space.
+- `a word too long to break is cut rather than left hanging` — a word too long to break is cut rather than left hanging.
+- `clip leaves short text alone and marks what it cuts` — clip leaves short text alone and marks what it cuts.
+- `dots shrink as the record gets busier` — dots shrink as the record gets busier.
+- `what the coach did not name recedes only when it named something` — what the coach did not name recedes only when it named something.
+- `with more named moments than rows, the first and last take one row each` — with more named moments than rows, the first and last take one row each.
+- `a moment near the right edge writes its words to the left instead` — a moment near the right edge writes its words to the left instead.
+- `a moment with no room for words keeps its row so its leader is drawn` — a moment with no room for words keeps its row so its leader is drawn.
+- `more named moments than rows keeps the first and last` — more named moments than rows keeps the first and last.
+- `a single moment still gets a zone` — a single moment still gets a zone.
+- `a tap steps through the moments under it, then comes back to the first` — a tap steps through the moments under it, then comes back to the first.
+
+## web/test/stream.test.ts
+
+- `re-reads the record once for a run of edits, not once each` — re-reads the record once for a run of edits, not once each.
+- `drops words the coach said again` — drops words the coach said again.
+
+## web/test/structure.test.ts
+
+- `reads the people and the bonds before the events` — reads the people and the bonds before the events.
+- `is named by both people` — is named by both people.
+- `says whether they married rather than showing a true or a false` — says whether they married rather than showing a true or a false.
+
+## web/test/task.test.ts
+
+- `leaves a row the room has not ratified as a faint record` — leaves a row the room has not ratified as a faint record.
+
+## web/test/turn.test.ts
+
+- `says nothing for reads and for showing the picture` — says nothing for reads and for showing the picture.
+- `says nothing for a tool it does not know` — says nothing for a tool it does not know.
+
+## web/test/when.test.ts
+
+- `names the day, and the year only when it is another year` — names the day, and the year only when it is another year.
+- `reads twelve-hour with midnight and noon as 12` — reads twelve-hour with midnight and noon as 12.
+- `drops the clock` — drops the clock.
+
+## web/tests/visual/board.spec.ts
+
+- `earlier moves stay behind the one being drawn` — earlier moves stay behind the one being drawn.
+- `the last move has nowhere further to go` — the last move has nowhere further to go.
+
+## web/tests/visual/chat.spec.ts
+
+- `a coach bubble says who is speaking` — a coach bubble says who is speaking.
+- `it stands apart in amber` — it stands apart in amber.
+
+## web/tests/visual/crosslinks.spec.ts
+
+- `a person not yet chosen is still chosen by tapping` — a person not yet chosen is still chosen by tapping.
+- `the words of the moment picked open its editor` — the words of the moment picked open its editor.
+
+## web/tests/visual/failure.spec.ts
+
+- `warns under the board and leaves the board up` — warns under the board and leaves the board up.
+
+## web/tests/visual/frame.spec.ts
+
+- `holds what it draws, at rest and with a cluster open` — holds what it draws, at rest and with a cluster open.
+
+## web/tests/visual/gestures.spec.ts
+
+- `Delete removes the session and the record survives it` — Delete removes the session and the record survives it.
+- `never writes more than three rows of words` — never writes more than three rows of words.
+
+## web/tests/visual/layout.spec.ts
+
+- `picking a moment moves nothing sideways` — picking a moment moves nothing sideways.
+- `is cut with an ellipsis rather than spilling over the picture` — is cut with an ellipsis rather than spilling over the picture.
+
+## web/tests/visual/moves.spec.ts
+
+- `the ${spec.name} drawing` — the ${spec.name} drawing.
+
+## web/tests/visual/people.spec.ts
+
+- `the people list orders by birth until the reader asks for names` — the people list orders by birth until the reader asks for names.
+
+## web/tests/visual/picture.spec.ts
+
+- `at rest: ${what}` — at rest: ${what}.
+- `opens it, and the wire underneath is tappable` — opens it, and the wire underneath is tappable.
+- `settles where a cluster is not cut in half` — settles where a cluster is not cut in half.
+- `a tap still picks the cluster under the thumb` — a tap still picks the cluster under the thumb.
+
+## web/tests/visual/reset.spec.ts
+
+- `a tap on empty wire shows the whole line again` — a tap on empty wire shows the whole line again.
+- `opens its editor` — opens its editor.
+- `a dot picks its moment and never travels` — a dot picks its moment and never travels.
+
+## web/tests/visual/sandboxapp.spec.ts
+
+- `the chat app: the picture, the lists, the sessions sheet and the account` — the chat app: the picture, the lists, the sessions sheet and the account.
+
+## web/tests/visual/sandboxtap.spec.ts
+
+- `a tap on the thread keeps its place` — a tap on the thread keeps its place.
+
+## web/tests/visual/select.spec.ts
+
+- `answers on both of its lines, not just the first` — answers on both of its lines, not just the first.
+
+## web/tests/visual/sessions.spec.ts
+
+- `tapping the scrim closes it` — tapping the scrim closes it.
+
+## web/tests/visual/settings.spec.ts
+
+- `the back chevron on the root page closes the stack` — the back chevron on the root page closes the stack.

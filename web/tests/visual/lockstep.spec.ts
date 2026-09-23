@@ -42,6 +42,7 @@ const added = {
 test.describe("what the coach did, one line at a time", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0185
   test("lights the moment its line names, before the words are typed", async ({
     page,
   }) => {
@@ -84,6 +85,7 @@ const met = {
 test.describe("someone the coach has just put in the record", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0185
   test("lights on the board, and stays lit like a spotlit moment", async ({
     page,
   }) => {

@@ -19,6 +19,7 @@ const openSheet = async (page: Page) => {
 test.describe("the sessions sheet", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0234
   test("the button sits in the input bar, not the title row", async ({ page }) => {
     await settle(page);
     const button = page.locator("#sessions-open");
@@ -30,6 +31,7 @@ test.describe("the sessions sheet", () => {
     expect(Math.round(box.height)).toBe(44);
   });
 
+  // R-0347, R-0095
   test("it opens to 92% of the frame with a grabber and a search field", async ({
     page,
   }) => {
@@ -49,6 +51,7 @@ test.describe("the sessions sheet", () => {
     expect(Math.round(field.height)).toBe(44);
   });
 
+  // R-0347
   test("it lists the sessions under a day heading, and marks the current one", async ({
     page,
   }) => {
@@ -68,6 +71,7 @@ test.describe("the sessions sheet", () => {
     });
   });
 
+  // R-0347
   test("a search that matches nothing says so, in those words", async ({ page }) => {
     await settle(page);
     await openSheet(page);
@@ -75,6 +79,7 @@ test.describe("the sessions sheet", () => {
     await expect(page.locator(".fs-hint")).toHaveText("No sessions match");
   });
 
+  // no ruling
   test("tapping the scrim closes it", async ({ page }) => {
     await settle(page);
     await openSheet(page);
@@ -83,6 +88,7 @@ test.describe("the sessions sheet", () => {
     await expect(page.locator("#sessions-sheet")).toBeHidden();
   });
 
+  // R-0103
   test("every row and control in the sheet meets the 44px floor", async ({
     page,
   }) => {
@@ -105,6 +111,7 @@ test.describe("the sessions sheet", () => {
 
   /** A reader without the professional licence never meets the word case, and
    * the plus beside a family starts a session on that family [R-0285]. */
+  // R-0285
   test("the sheet never says case, and each family carries its own plus", async ({
     page,
   }) => {

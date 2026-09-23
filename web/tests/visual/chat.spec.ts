@@ -9,6 +9,7 @@ import { stateFor } from "./setup";
 test.describe("chips in a bubble", () => {
   test.use({ storageState: stateFor("hostile") });
 
+  // R-0169, R-0072
   test("twelve long chips wrap inside the bubble", async ({ page }) => {
     await page.goto("/app/");
     await expect(page.locator(".bub").first()).toBeVisible();
@@ -18,6 +19,7 @@ test.describe("chips in a bubble", () => {
     await expect(bubble).toHaveScreenshot("twelve-chips.png");
   });
 
+  // R-0169
   test("no chip anywhere reaches past the edge of its bubble", async ({ page }) => {
     await page.goto("/app/");
     await expect(page.locator(".bub").first()).toBeVisible();
@@ -36,6 +38,7 @@ test.describe("chips in a bubble", () => {
     expect(escaped).toEqual([]);
   });
 
+  // R-0169
   test("every chip shows its whole label, at one size", async ({ page }) => {
     await page.goto("/app/");
     await expect(page.locator(".bub").first()).toBeVisible();
@@ -60,6 +63,7 @@ test.describe("chips in a bubble", () => {
 test.describe("the coach's words", () => {
   test.use({ storageState: stateFor("hostile") });
 
+  // no ruling
   test("a coach bubble says who is speaking", async ({ page }) => {
     await page.goto("/app/");
     await expect(page.locator(".bub.coach .who").first()).toHaveText("Coach");
@@ -69,6 +73,7 @@ test.describe("the coach's words", () => {
 test.describe("the question that closes a reply", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // no ruling
   test("it stands apart in amber", async ({ page }) => {
     await page.goto("/app/");
     await expect(page.locator(".bub").first()).toBeVisible();

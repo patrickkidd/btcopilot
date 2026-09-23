@@ -17,6 +17,7 @@ const person = (over: Partial<Person> = {}): Person => ({
 });
 
 describe("a row in the people list", () => {
+  // no ruling
   it("is the name alone, with no second line under it", () => {
     const html = personRow(person());
     expect(html).toContain("Marcus Halloran");
@@ -24,6 +25,7 @@ describe("a row in the people list", () => {
     expect(html).not.toContain("no birth on the record");
   });
 
+  // no ruling
   it("says nothing about a birth the record does hold", () => {
     const html = personRow(person({ birth: "1946-04-02" }));
     expect(html).not.toContain("1946");

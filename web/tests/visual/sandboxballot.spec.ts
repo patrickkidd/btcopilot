@@ -8,6 +8,7 @@ test.describe(() => {
   sandboxOnly("coder");
   test.describe.configure({ timeout: 600_000 });
 
+  // R-0257
   test("the ballot: a coder votes on every disputed item", async ({ page }, info) => {
     const { say, check, shot, text, visible, gates, changed, quiet } = walker(
       page,

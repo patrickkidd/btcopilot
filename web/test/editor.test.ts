@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MAX_FIELD_LINES, grownHeight } from "../src/editor";
 
 describe("grownHeight", () => {
+  // no ruling
   it("takes the text's own height until ten lines, then stays", () => {
     const line = 22;
     const pad = 22;

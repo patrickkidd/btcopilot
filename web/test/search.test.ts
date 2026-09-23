@@ -17,6 +17,7 @@ const family = (name: string, sessions: Session[]): Family => ({
 });
 
 describe("searching the sessions sheet", () => {
+  // R-0347
   it("finds a session by part of its title, whatever the case", () => {
     const whitlock = family("Whitlock", [
       session(1, "Marcus's move to Arizona"),
@@ -26,6 +27,7 @@ describe("searching the sessions sheet", () => {
     expect(matching(whitlock, "corinne").rows.map((s) => s.id)).toEqual([2]);
   });
 
+  // R-0347, R-0097
   it("finds a session by words in its summary", () => {
     const whitlock = family("Whitlock", [
       session(1, "Marcus's move to Arizona", "the year he left the mine"),
@@ -33,21 +35,25 @@ describe("searching the sessions sheet", () => {
     expect(matching(whitlock, "mine").rows.map((s) => s.id)).toEqual([1]);
   });
 
+  // no ruling
   it("keeps a family whose own name matches, even with no sessions on it", () => {
     const empty = family("Whitlock", []);
     expect(matching(empty, "whit")).toEqual({ rows: [], byName: true });
   });
 
+  // no ruling
   it("keeps every session of a family whose name matches", () => {
     const whitlock = family("Whitlock", [session(1, "Corinne's second session")]);
     expect(matching(whitlock, "whit").rows.map((s) => s.id)).toEqual([1]);
   });
 
+  // R-0347
   it("finds nothing when nothing carries the words", () => {
     const whitlock = family("Whitlock", [session(1, "Corinne's second session")]);
     expect(matching(whitlock, "ballot")).toEqual({ rows: [], byName: false });
   });
 
+  // no ruling
   it("names an untitled session by the first words said in it", () => {
     const said = { ...session(1, ""), preview: "It has been tense since my mother moved in with us" };
     expect(sessionTitle(said)).toBe("It has been tense since my…");

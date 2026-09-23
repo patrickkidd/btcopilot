@@ -18,6 +18,7 @@ const waiting = (page: Page) => page.locator(".bub.coach.typing");
 test.describe("waiting for the coach", () => {
   test.use({ storageState: stateFor("moves") });
 
+  // R-0184
   test("shows it is coming until the words arrive", async ({ page }) => {
     await settle(page);
     let answer: () => void = () => {};
@@ -61,6 +62,7 @@ test.describe("waiting for the coach", () => {
     await expect(page.locator(".bub.typing")).toHaveCount(0);
   });
 
+  // R-0182
   test("gives way to the warning when nothing comes back", async ({ page }) => {
     await settle(page);
     await page.route(SEND, (route) => route.abort("failed"));

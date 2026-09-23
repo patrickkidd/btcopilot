@@ -8,6 +8,7 @@ test.describe(() => {
   sandboxOnly("coder");
   test.describe.configure({ timeout: 600_000 });
 
+  // R-0270, R-0326
   test("a coder's sentence adds a person and a bond", async ({ page }, info) => {
     const { say, check, shot, text, visible, gates, changed, quiet } = walker(
       page,

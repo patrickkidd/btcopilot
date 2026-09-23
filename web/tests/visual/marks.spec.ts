@@ -10,6 +10,7 @@ const LOOP = [0, 1000, 2400, 4000, 5200, 6800, 7900];
 
 test.use({ storageState: stateFor("moves") });
 
+// R-0163
 test("the symptom mark is on screen for the whole loop", async ({ page }) => {
   test.skip(test.info().project.name !== "phone");
   await page.goto("/app/");

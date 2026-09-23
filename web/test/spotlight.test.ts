@@ -16,14 +16,17 @@ import {
 } from "../src/spotlight";
 
 describe("the words a moment says about itself", () => {
+  // no ruling
   it("a date the record is sure of says its month", () => {
     expect(dateText("1996-06-15", Certainty.Certain)).toBe("Jun 1996");
   });
 
+  // no ruling
   it("a date it only guessed says its year and nothing more", () => {
     expect(dateText("1996-06-15", Certainty.Approximate)).toBe("1996");
   });
 
+  // no ruling
   it("the person is named only when the record is not about them", () => {
     expect(words("2001-03-01", Certainty.Certain, "Ada", "Ada", "Moved out")).toBe(
       "Moved out",
@@ -33,6 +36,7 @@ describe("the words a moment says about itself", () => {
     );
   });
 
+  // no ruling
   it("a pair keeps the other person and leaves out the one reading", () => {
     expect(whoText("Ada & Ben", "Ada")).toBe("& Ben");
     expect(whoText("Ben & Ada", "Ada")).toBe("Ben");
@@ -41,6 +45,7 @@ describe("the words a moment says about itself", () => {
     expect(whoText("Ada", "Ada")).toBe("");
   });
 
+  // no ruling
   it("a long line wraps onto a second row at a space", () => {
     expect(wrap2("the winter everybody stopped speaking", 20)).toEqual([
       "the winter everybody",
@@ -48,11 +53,13 @@ describe("the words a moment says about itself", () => {
     ]);
   });
 
+  // no ruling
   it("a word too long to break is cut rather than left hanging", () => {
     const [first] = wrap2("x".repeat(40), 20);
     expect(first).toHaveLength(20);
   });
 
+  // no ruling
   it("clip leaves short text alone and marks what it cuts", () => {
     expect(clip("short", 10)).toBe("short");
     expect(clip("a much longer line", 10).endsWith("…")).toBe(true);
@@ -60,6 +67,7 @@ describe("the words a moment says about itself", () => {
 });
 
 describe("the spotlight: dense and sparse", () => {
+  // no ruling
   it("dots shrink as the record gets busier", () => {
     expect(dotRadius(6)).toBe(4.5);
     expect(dotRadius(20)).toBe(3.5);
@@ -67,12 +75,14 @@ describe("the spotlight: dense and sparse", () => {
     expect(dotRadius(200)).toBe(1.8);
   });
 
+  // no ruling
   it("what the coach did not name recedes only when it named something", () => {
     expect(baseOpacity(6, 0)).toBe(1);
     expect(baseOpacity(6, 2)).toBe(0.35);
     expect(baseOpacity(60, 0)).toBe(0.6);
   });
 
+  // no ruling
   it("with more named moments than rows, the first and last take one row each", () => {
     const laid = rows(
       [
@@ -88,12 +98,14 @@ describe("the spotlight: dense and sparse", () => {
     expect(laid.length).toBeLessThanOrEqual(ROWS.length);
   });
 
+  // no ruling
   it("a moment near the right edge writes its words to the left instead", () => {
     const [row] = rows([{ id: 1, x: 366, text: "at the very end" }], 16, 374);
     expect(row.align).toBe("right");
     expect(row.left).toBeLessThan(366);
   });
 
+  // no ruling
   it("a moment with no room for words keeps its row so its leader is drawn", () => {
     // two dots almost on top of each other at the right edge: the second has
     // nothing to write into, but the picture must still point at it
@@ -110,6 +122,7 @@ describe("the spotlight: dense and sparse", () => {
     expect(laid[1].x).toBe(370);
   });
 
+  // no ruling
   it("more named moments than rows keeps the first and last", () => {
     const laid = rows(
       Array.from({ length: 6 }, (_, i) => ({ id: i, x: 20 + i * 50, text: "x" })),
@@ -119,6 +132,7 @@ describe("the spotlight: dense and sparse", () => {
     expect(laid).toHaveLength(2);
   });
 
+  // R-0103
   it("every tap zone is at least the 44px floor and holds its own moments", () => {
     const marks = Array.from({ length: 60 }, (_, i) => ({
       id: i,
@@ -129,10 +143,12 @@ describe("the spotlight: dense and sparse", () => {
     expect(zoned.reduce((n, z) => n + z.marks.length, 0)).toBe(60);
   });
 
+  // no ruling
   it("a single moment still gets a zone", () => {
     expect(zones([{ x: 200 }], 16, 374)).toHaveLength(1);
   });
 
+  // no ruling
   it("a tap steps through the moments under it, then comes back to the first", () => {
     const inZone = [7, 8, 9];
     expect(cycle(inZone, null)).toBe(7);
