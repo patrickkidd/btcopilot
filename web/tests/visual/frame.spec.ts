@@ -21,6 +21,9 @@ interface Box {
   y: number;
   right: number;
   bottom: number;
+  /** The span it must stay inside: the scroller's scrollable content when it
+   * rides in the line that scrolls sideways, the picture's frame otherwise. */
+  edge: { x: number; right: number };
 }
 
 /** What the picture is showing, as boxes: the button that opens the list, the
@@ -29,10 +32,17 @@ interface Box {
 const boxes = (page: Page): Promise<Box[]> =>
   page.evaluate(() => {
     const seen: Box[] = [];
+    const pic = document.querySelector("#chat-screen .pic")!.getBoundingClientRect();
+    const span = (node: Element) => {
+      const scroller = node.closest(".ss-scroll");
+      if (!scroller) return { x: pic.x, right: pic.right };
+      const x = scroller.getBoundingClientRect().x - scroller.scrollLeft;
+      return { x, right: x + scroller.scrollWidth };
+    };
     const take = (what: string, node: Element) => {
       const at = node.getBoundingClientRect();
       if (at.width < 1 || at.height < 1) return;
-      seen.push({ what, x: at.x, y: at.y, right: at.right, bottom: at.bottom });
+      seen.push({ what, x: at.x, y: at.y, right: at.right, bottom: at.bottom, edge: span(node) });
     };
     take("the list button", document.getElementById("menu-open")!);
     for (const box of document.querySelectorAll(".ss .ep")) take("a cluster box", box);
@@ -59,19 +69,11 @@ function collisions(all: Box[]): string[] {
   return out;
 }
 
-const frame = (page: Page) =>
-  page.locator("#chat-screen .pic").evaluate((node) => {
-    const at = node.getBoundingClientRect();
-    return { x: at.x, right: at.right };
-  });
-
 /** Whatever the picture has written, inside the frame it is written in. */
-const escaped = async (page: Page) => {
-  const edge = await frame(page);
-  return (await boxes(page))
-    .filter((box) => box.x < edge.x - 1 || box.right > edge.right + 1)
+const escaped = async (page: Page) =>
+  (await boxes(page))
+    .filter((box) => box.x < box.edge.x - 1 || box.right > box.edge.right + 1)
     .map((box) => box.what);
-};
 
 for (const key of KEYS) {
   test.describe(`the picture on the ${key} record`, () => {

@@ -5,6 +5,10 @@ on:
     branches:
       - master
   workflow_dispatch:
+    inputs:
+      projects:
+        description: Playwright projects to record goldens for, space separated
+        default: phone
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -198,7 +202,9 @@ jobs:
           exit 1
 
       - name: Record the goldens
-        run: npm --prefix web run test:visual -- --project=phone --project=desktop --update-snapshots
+        run: npm --prefix web run test:visual -- $(printf -- '--project=%s ' $PROJECTS) --update-snapshots
+        env:
+          PROJECTS: ${{ inputs.projects }}
 
       - name: Commit the goldens to this branch
         run: |
