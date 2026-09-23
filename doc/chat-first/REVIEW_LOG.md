@@ -581,3 +581,8 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    variables moving together, or aftershocks in other generations until the coach draws out the
    older households around each death, separation and move. Research running; catalogue goes to
    doc/chat-first/MOBILE_VIEWS.md. OPEN
+41. Found while porting the line for round 8 mockups: (a) at true scale the 2009–2011 cluster's
+   seven dots merge into one solid bar; (b) the 1996 dot cannot be tapped because the 1997 dot's
+   44px target covers it; (c) the two-moments-face-to-face drawing in picture.ts reads ROWS[2],
+   which is undefined, so its second label line and seam get NaN — nothing reaches it on his path
+   yet. OPEN
