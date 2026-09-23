@@ -569,3 +569,8 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    More data is needed for that: the older generations' anxiety, functioning and relationship
    shifts after each death, separation and move — which the coach should be drawing out.
    Kept in the corpus as ideas [R-0380]. Three survivors remain on the page.
+   Round 7 review by Patrick (2026-09-23): the rotation of the hills communicates nothing; rank 1
+   invented its own tap (a misplaced circle, a chip in the box) instead of the app's ruled tap;
+   title and citation only; pictures must speak unaided. Method corrected in CLAUDE.md.
+   Recommendation given: build the short sideways scroll into the real app on a sandbox rather
+   than another mockup round. WAITING on his word.

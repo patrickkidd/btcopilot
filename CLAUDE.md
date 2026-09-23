@@ -17,6 +17,14 @@ Backend for Pro/Personal apps, training app, AI extraction system.
 - **Never verify on production (2026-09-22, Patrick objected to nine scratch accounts on the
   dashboard).** A deploy is checked with a probe of public pages only; every walk that signs
   in, chats or writes runs on a sandbox stack, never the box.
+- **Mockup method, corrected 2026-09-23 (Patrick: "nifty tech should only be used when it gives
+  flexibility that actually helps communicate"; "you click somewhere and a circle appears that
+  doesn't line up with anything"; "should it just be title and citation?").** (1) 3-D or motion only
+  when it communicates what flat cannot, and the frame must say what that is by itself. (2) A
+  mockup's tap does what the app's tap does — the ruled tap language (pick, words on the picture,
+  chip lights, second tap speaks) — built on the app's own picture code, never reinvented. (3)
+  Title and citation only under a concept. (4) If a stranger cannot read the frame unaided, the
+  concept fails; users never see prose.
 - **A picture that needs that much prose does not speak (2026-09-23, Patrick: "if you have to
   include that much prose/copy then your visual concepts don't speak for themselves enough. a
   little is ok, but not this much").** What he sees: the frames, one sentence per concept, the
