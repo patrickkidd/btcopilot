@@ -32,38 +32,10 @@ continue designing the pro and training features", "list the open issues" — an
 matches the words to a block and continues from its Open and Next action; ids are for tags
 only and are never said to him.
 
-## The scout: every session reads SCOUT.md after STATE.md
+## The scout and the loop review
 
-A scout runs locally, inside a session, at the flush of any build that handed Patrick a
-testing walk — `/two-clocks` invokes it, there is no schedule [R-0336] — and looks outward: at
-what Anthropic and OpenAI published, at what the Claude Code changelog changed, at new
-research on evaluating agents and deriving tests from a specification, and at a fixed list of
-accounts on X.com through the Chrome extension, asking Patrick to connect or sign in when it
-cannot reach them rather than skipping the source. It reads inward too — the corpus, and
-Patrick's own typed statements as the trace script mines them out of the local transcripts —
-so a bottleneck is one he hit, not one inferred from a commit. It proposes at most ten ranked
-changes to this project's own
-process files, each carrying a source, the dated line in the corpus it answers, the exact
-file it would change, and a prediction on one of four measured numbers: hours from brief to
-walk-ready, Patrick's findings per walk, re-walks per screen, chat suite minutes. It never
-touches application code and never applies its own proposals; its top three arrive as a draft
-pull request on a branch of their own. [SCOUT.md](SCOUT.md) carries the current baselines, the
-open items, the rules that retire the scout if it stops earning its keep, and the record of
-every proposal and whether its number moved. **Every session reads SCOUT.md immediately after
-STATE.md and says in its first reply whether any open item applies to today's work** — naming
-the item and what it would change, or saying plainly that none applies.
-
-A second pair of agents reviews the scout itself [R-0334]: an adversarial auditor who argues
-kill or keep on each kind of scout proposal, catching proposals that were safe trivia, sources
-picked because they agreed, and numbers moved by covering less rather than working better; and
-a designer who proposes exactly one change to the scout's brief per run, framed as an
-experiment with a stopping rule. They write one ledger entry together and open one draft pull
-request touching the scout's brief alone — never these process rules and never code. The same
-flush step invokes it, after every fourth scout run or as soon as two predictions have a
-measured outcome, both counted in SCOUT.md. Its brief is
-`.claude/skills/loop-review/SKILL.md`. Every proposal and every experiment at both levels
-must come from a development on the internet, cited with a link and a date [R-0335]; an item
-with no external source is dropped.
+The scout (`.claude/skills/scout/`) retired 2026-09-23 [R-0420].
+The loop review (`.claude/skills/loop-review/`) retired 2026-09-23 [R-0420].
 
 ## Sessions start at any altitude, from any angle
 Patrick will start sessions this week to learn and to pivot, sometimes at product

@@ -102,15 +102,7 @@ run from rewording what an earlier run already captured:
    topic land in the audit lane; assign them by adding the missing words to the topic block or
    the ledger's word list — never by hand-editing events.json. He never runs a command; he
    reads the pages, or the files in VS Code, or asks in plain words.
-10. **The scout, when this build handed Patrick a testing walk** [R-0336]. If the session
-    being flushed produced a walk for him, invoke `.claude/skills/scout/SKILL.md` now, in
-    this session — the loop is local and there is no schedule. It reads the corpus, the
-    session transcripts through `bin/trace.json`, and the outside world, and writes its
-    ledger. If this is the fourth scout run since the last loop review, or two of the
-    scout's predictions have landed a measured outcome in the ledger, invoke
-    `.claude/skills/loop-review/SKILL.md` straight after it. Both count themselves from
-    `doc/chat-first/SCOUT.md`; neither runs on a date. A flush of a build with no walk skips
-    this step entirely.
+10. The scout and the loop review retired 2026-09-23 [R-0420]; this step is empty.
 11. Report in one message: the topics touched by name, one line of next action each, and what
     needs his word. No page links. Nothing else.
 
