@@ -148,7 +148,7 @@ def test_importing_the_app_decrypts_nothing(tmp_path):
     env.pop("FD_PRIVATE_PROMPTS", None)
     env["PYTHONPATH"] = str(REPO)
     done = subprocess.run(
-        [sys.executable, "-c", "import btcopilot.app, btcopilot.pdp"],
+        [sys.executable, "-c", "import btcopilot.app, btcopilot.personal.prompts"],
         capture_output=True,
         text=True,
         env=env,

@@ -28,7 +28,6 @@ app = [
     "flask-mail",
     "flask-sqlalchemy",
     "flask-wtf",
-    "openai",
     "opentelemetry-api",
     "opentelemetry-sdk",
     "opentelemetry-exporter-otlp-proto-http",
@@ -47,7 +46,6 @@ app = [
     "pyqt5-qt5==5.15.2",
     "anthropic>=0.97,<1",
     "google-genai",
-    "nest_asyncio",
     "rapidfuzz>=3.0.0",
 ]
 

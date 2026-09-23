@@ -2,6 +2,7 @@
 
 Backend for the chat app (the personal app, the review and the admin commands). The Pro
 backend and the training app live on branch `master-legacy`, not here.
+The extraction pipeline and the pending data pool were removed 2026-09-23 (R-0414); last commit holding them: a7eeb2c.
 
 ## Owner corrections that bind every reply (2026-09-09)
 

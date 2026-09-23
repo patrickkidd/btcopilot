@@ -8,18 +8,6 @@ def init_app(app):
 
 
 def init_celery(celery):
-    from . import tasks, turns
-    from google.genai.errors import ClientError
-    from openai import PermissionDeniedError, RateLimitError
+    from . import turns
 
-    celery.task(
-        tasks.deep_reextract_task,
-        name="deep_reextract",
-        bind=True,
-        autoretry_for=(ClientError, PermissionDeniedError, RateLimitError),
-        retry_backoff=60,
-        retry_backoff_max=600,
-        retry_jitter=True,
-        max_retries=5,
-    )
     celery.task(turns.run, name=turns.TASK)

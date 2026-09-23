@@ -38,6 +38,9 @@ MODEL_ALIASES = {
     "opus-4.6": "claude-opus-4-6",
     "gemini-2.5-flash": "gemini-2.5-flash",
     "haiku-4.5": "claude-haiku-4-5-20251001",
+    "claude-opus-5-5": "claude-opus-5-5",
+    "claude-opus-5": "claude-opus-5",
+    "claude-opus-4-8": "claude-opus-4-8",
 }
 
 DEFAULT_RESPONSE_MODEL_ALIAS = "opus-5.5"

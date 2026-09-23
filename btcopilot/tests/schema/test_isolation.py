@@ -1,7 +1,7 @@
 """Verify btcopilot.schema has no transitive imports of private btcopilot modules.
 
 btcopilot.schema is the ONLY public submodule — it must work in the desktop
-app builds where Flask, btcopilot.pdp, btcopilot.extensions, etc. are not
+app builds where Flask, btcopilot.extensions, etc. are not
 available.
 """
 
@@ -12,7 +12,6 @@ import unittest.mock
 import pytest
 
 PRIVATE_MODULES = [
-    "btcopilot.pdp",
     "btcopilot.extensions",
     "btcopilot.personal",
     "btcopilot.app",
