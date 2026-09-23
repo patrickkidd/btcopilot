@@ -562,3 +562,10 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    variables moved, in how many people, how close together — never the count of events. Sources:
    stress by magnitude, number and spacing (Kerr and Bowen), the four variables moving together
    (Havstad). Not ruled; a candidate for what a cluster box conveys at rest. OPEN
+39. Round 7 review: the family drawing (rank 3) needs the traditional family diagram and
+   auto-arrangement — a goal, not now [R-0379]. The generation lanes (rank 4) carry no
+   diagnostic message on his record: only he carries a shift, the two deaths have no recorded
+   consequences in anyone else; the lanes' true message is the shock wave across generations.
+   More data is needed for that: the older generations' anxiety, functioning and relationship
+   shifts after each death, separation and move — which the coach should be drawing out.
+   Kept in the corpus as ideas [R-0380]. Three survivors remain on the page.
