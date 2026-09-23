@@ -162,6 +162,20 @@ drawn on the app's own line; one survived, a single line of words above the pict
 on three of his decisions. The standing rule from both threads is that when a view cannot be
 drawn until the record holds more, it is said plainly [R-0380].
 
+**2026-09-23, later — the branch is the chat app and nothing else [R-0404].** The Pro backend,
+the training app, the old migration chain, the old release workflow and the scratch folders are
+deleted from this branch; master-legacy keeps them for long-term support, and the deletion is in
+PR #136 rather than a new repository because the rebuild is one unit of work. What the chat app
+keeps moved out from under the old names: the user, diagram and licence tables, and the matching
+code the coders' review app also uses. The coach now speaks through Opus 5.5 [R-0405]: thinking
+is always on there, so temperature is gone and effort is the control, set to medium for a coach
+turn and high for extraction; the reply budget grew so thinking fits inside it; the model's
+thinking blocks are echoed back through a turn's tool steps; and a refused turn now fails
+naming its category instead of arriving as empty words. A live turn with three tool steps cost
+about three cents. Session replay is on in Grafana with every element masked [R-0406]. Sub-agents
+run on Opus 5.5 [R-0408]. After Patrick reviews this pull request toward merge, beta work
+proceeds in small fast-follow pull requests [R-0407].
+
 **What is not true yet on the box.** The dashboards and the cost rows are built but not deployed:
 that waits on Patrick putting the Grafana token there and refreshing the dependency lock. There is
 no automated database backup. Nine scratch accounts with chats, made while proving deploys, sit in

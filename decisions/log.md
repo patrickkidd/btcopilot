@@ -1664,3 +1664,18 @@ traditional diagram and automatic arrangement [R-0379]; the lanes of generations
 [R-0380]; the gap between a cluster's opening event and its symptom is kept as fundamental
 [R-0382]. Three decisions from the last round are on its page and unanswered.
 
+
+## 2026-09-23: The branch sheds the Pro backend and training app; the coach moves to Opus 5.5
+
+Patrick. The dead code is deleted on branch FD-362 inside PR #136 rather than in a new
+repository or a separate PR [R-0404]: master-legacy is the long-term-support pointer, and a new
+repository would have lost the box's clone, the image name, blame on the shared schema and
+tests, and the public repository's identity. The Pro desktop app, which imports this package in
+about a hundred files, must pin master-legacy before FD-362 merges to master; that pin lives in
+familydiagram and is not in this PR. The coach's conversational calls move from Opus 4.6 to Opus
+5.5 because it is better and cheaper [R-0405]; effort is set explicitly (medium for a coach turn,
+high for extraction) since the model's default is one level lower than before, temperature is
+removed because the model rejects it, and a refusal now raises with its category. Open on the
+merits: whether a refused coaching turn should fall back to another model, and whether a
+mid-turn regroup should write its sentences somewhere other than the system prompt so the model
+keeps its reasoning for the rest of the turn.

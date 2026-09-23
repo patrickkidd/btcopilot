@@ -1381,3 +1381,16 @@ branches for this work should be deleted [R-0394]. He deleted the scratch accoun
 test account to be reused [R-0393]. And he decided the first beta users start now and generate
 data, because the chat is stable and the picture is not expected to block them [R-0400] — he has
 asked for their two invite links and they have not been sent.
+
+**2026-09-23, the closure session.** Patrick asked what to do with the dead Pro and training
+code on this branch now that master-legacy keeps it, and whether to start a new repository. The
+answer he took: delete it here, in this pull request, because the rebuild is one unit of work and
+a new repository would lose the box's clone, the image name, the history on the shared code and
+the open-source identity [R-0404]. The deletion ran as a moved-then-deleted pair of commits with
+CI green on the tests; three phone goldens were already red from the line fixes and were
+re-recorded on the runner. He also ruled that wherever the app used Opus for conversation it moves
+to Opus 5.5 [R-0405], that Grafana session replay goes live now that the stack is approved
+[R-0406], that sub-agents run on Opus 5.5 with the coordinator owning the configuration [R-0408],
+and that after his review toward merge the beta continues in small fast-follow pull requests
+[R-0407]. Two agent runs were stopped and restarted because the pinned-model agent definition ran
+Fable 5.1 while the plain Opus alias ran Opus 5.5; the alias is the configuration that works.
