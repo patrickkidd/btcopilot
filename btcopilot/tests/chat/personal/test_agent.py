@@ -429,7 +429,7 @@ def test_a_turn_that_never_stops_calling_tools_still_says_something(
     assert discussion.statements[-1].id == reply["statement_id"]
 
 
-def test_the_edits_of_a_capped_turn_are_all_kept(discussion, family):
+def test_the_edits_of_a_capped_turn_are_all_kept(discussion, family, caplog):
     """Running out of steps ends the talking, not the record: everything the
     coach put in before the cap stays in."""
     working = [
@@ -440,6 +440,11 @@ def test_the_edits_of_a_capped_turn_are_all_kept(discussion, family):
         "There were six of them.",
         Model(*working, said("All six are down.")),
     )
+    capped = [r for r in caplog.records if "hit the step cap" in r.message]
+    assert [r.levelname for r in capped] == ["WARNING"]
+    assert reply["turn_id"] in capped[0].message
+    assert f"{MAX_STEPS} steps used" in capped[0].message
+    assert ToolName.EditPerson.value in capped[0].message
     assert kinds(reply).count(EventKind.ToolCall.value) == MAX_STEPS
 
     names = [p.get("name") for p in family.get_diagram_data().people]

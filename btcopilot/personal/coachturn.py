@@ -37,7 +37,7 @@ from btcopilot.schema import DiagramData, ItemKind
 _log = logging.getLogger(__name__)
 _tracer = trace.get_tracer(__name__)
 
-MAX_STEPS = 6
+MAX_STEPS = 20
 RECENT_INTERACTIONS = 50
 
 # What the coach is told when it has used every step and is still working. The
@@ -309,7 +309,8 @@ class CoachTurn:
             self._regroup(events, story)
         else:
             _log.warning(
-                f"Turn {self.turn_id} used all {MAX_STEPS} steps; asking for the reply"
+                f"Turn {self.turn_id} hit the step cap: {MAX_STEPS} steps used, "
+                f"last tool {turn.calls[-1].name}"
             )
             messages.append({"role": "user", "content": FINISH})
             spoken = self._say(
