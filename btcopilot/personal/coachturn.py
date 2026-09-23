@@ -57,7 +57,9 @@ SHORTEN = (
 )
 
 
-# Where the sentences the regrouping wrote are put for the coach to read. The
+# Where the sentences the regrouping wrote are put for the coach to read: after
+# the tool answer of the step that moved an event, so the system prompt stays
+# the same for every call in the turn and the wire keeps it. The
 # coach_story_shape fragment in its system prompt says what to do with them.
 STORY = "**What changed in the story since last time**\n\n{sentences}"
 
@@ -263,12 +265,9 @@ class CoachTurn:
         messages = self._history()
         spoken = ""
         events = []
-        story: list[str] = []
 
         for step in range(MAX_STEPS):
-            turn = self._say(
-                self._told(system, story), messages, schemas(), stream=True
-            )
+            turn = self._say(system, messages, schemas(), stream=True)
             # A turn ends on words, never on a tool call. Text written before a
             # call is the model working out what to do and the user never sees
             # it, so only a step that calls nothing is the coach speaking.
@@ -304,18 +303,20 @@ class CoachTurn:
                         else TurnEventKind.RecordPatch
                     )
                     self._note(events, dict(event, type=kind.value))
+            sentences = self._regroup(events)
+            if sentences:
+                last = results[-1]
+                said = STORY.format(sentences="\n".join(sentences))
+                last["content"] = f"{last['content']}\n\n{said}"
             messages.append({"role": "assistant", "content": turn.blocks})
             messages.append({"role": "user", "content": results})
-            self._regroup(events, story)
         else:
             _log.warning(
                 f"Turn {self.turn_id} hit the step cap: {MAX_STEPS} steps used, "
                 f"last tool {turn.calls[-1].name}"
             )
             messages.append({"role": "user", "content": FINISH})
-            spoken = self._say(
-                self._told(system, story), messages, [], stream=True
-            ).text
+            spoken = self._say(system, messages, [], stream=True).text
 
         if not spoken.strip():
             raise EmptyReply(f"Turn {self.turn_id} produced no words for the user")
@@ -360,23 +361,14 @@ class CoachTurn:
             "turn_id": self.turn_id,
         }
 
-    def _told(self, system: list[str], story: list[str]) -> list[str]:
-        """The system prompt with what the regrouping said added to its tail.
-        The head is the coaching text the wire caches, so nothing moves there."""
-        if not story:
-            return system
-        fixed, tail = system
-        said = STORY.format(sentences="\n".join(story))
-        return [fixed, f"{tail}\n\n{said}"]
-
-    def _regroup(self, events: list[dict], story: list[str]) -> None:
+    def _regroup(self, events: list[dict]) -> list[str]:
         """Re-group the line when the turn has moved an event, before the coach
-        speaks, so the grouping it points at is stored and the sentences saying
-        what changed are in the system prompt of the call that answers."""
+        speaks, so the grouping it points at is stored. Returns the sentences
+        saying what changed, for the coach to read in the tool answer."""
         if not any(
             delta["item_kind"] == ItemKind.Event.value for delta in self.toolbox.deltas
         ):
-            return
+            return []
         regrouped = clusters.sync(
             self.diagram.id,
             turn_id=self.turn_id,
@@ -384,7 +376,7 @@ class CoachTurn:
             session_id=self.session_id,
         )
         if not regrouped:
-            return
+            return []
         self._note(
             events,
             {
@@ -394,7 +386,6 @@ class CoachTurn:
             },
         )
         if regrouped.sentences:
-            story.extend(regrouped.sentences)
             self._note(
                 events,
                 {
@@ -402,6 +393,7 @@ class CoachTurn:
                     "sentences": regrouped.sentences,
                 },
             )
+        return regrouped.sentences
 
     def _send(self, event: dict) -> None:
         """Tell whoever is watching, as it happens."""

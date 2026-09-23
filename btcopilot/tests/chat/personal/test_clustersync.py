@@ -422,11 +422,12 @@ def test_the_play_endpoint_resolves_a_stored_cluster(web, test_user, family):
 MOVED = "The summer she got sick sits with the spring they argued, not apart from it."
 
 
-def test_what_changed_is_in_the_system_prompt_before_the_coach_answers(
+def test_what_changed_is_in_the_tool_answer_before_the_coach_answers(
     discussion, family
 ):
     """The regrouping runs before the last thing the coach says, so the
-    sentences it wrote are in the system prompt of the call that answers."""
+    sentences it wrote are in the tool answer the coach reads next. The system
+    prompt is the same for every call in the turn, so the wire keeps it."""
     with detects(("The hard spring", [10, 11, 12]), changes=(MOVED,)):
         model = Model(
             called(
@@ -441,9 +442,12 @@ def test_what_changed_is_in_the_system_prompt_before_the_coach_answers(
         )
         reply = CoachTurn(discussion, "She got sick that summer.", model=model).run()
 
-    assert MOVED in model.systems[-1]
-    assert "What changed in the story" in model.systems[-1]
+    assert len(set(model.systems)) == 1
     assert MOVED not in model.systems[0]
+    answer = model.histories[-1][-1]["content"][-1]
+    assert answer["type"] == "tool_result"
+    assert MOVED in answer["content"]
+    assert "What changed in the story" in answer["content"]
     assert "cluster" not in reply["statement"].lower()
 
 
