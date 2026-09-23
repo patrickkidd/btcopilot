@@ -574,3 +574,10 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    title and citation only; pictures must speak unaided. Method corrected in CLAUDE.md.
    Recommendation given: build the short sideways scroll into the real app on a sandbox rather
    than another mockup round. WAITING on his word.
+40. Patrick: research the most effective mobile data views (Garmin sleep views and the like), map
+   them onto the messages from the literature, and say plainly what needs more data. Told him: on
+   his one thread the picture can show where the history gathers, the quiet stretch and nearness
+   of a symptom to its opening event; it cannot show trouble moving between people, the four
+   variables moving together, or aftershocks in other generations until the coach draws out the
+   older households around each death, separation and move. Research running; catalogue goes to
+   doc/chat-first/MOBILE_VIEWS.md. OPEN
