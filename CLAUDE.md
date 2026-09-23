@@ -111,14 +111,11 @@ runtime copy is needed, update this section.
 | Domain | Doc |
 |--------|-----|
 | Data model (schema, enums, validation) | [doc/specs/DATA_MODEL.md](doc/specs/DATA_MODEL.md) |
-| PDP extraction, deltas, cumulative logic | [doc/specs/PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md) |
 | Prompt engineering decisions | [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) |
-| Prompt optimization process | [doc/archive/2026-09-PROMPT_OPTIMIZATION.md](doc/archive/2026-09-PROMPT_OPTIMIZATION.md) |
 | Bowen theory concepts | [CONTEXT.md](CONTEXT.md) |
 | Drawability — when the timeline picture may draw vs must ask (5 rules, ruled 2026-08-31) | [doc/DRAWABILITY.md](doc/DRAWABILITY.md) |
 
 | Diagram layout/rendering/SVG | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) |
-| Chat flow, personal app AI | [doc/archive/2026-09-CHAT_FLOW.md](doc/archive/2026-09-CHAT_FLOW.md) |
 | Client-server data sync | [familydiagram DATA_SYNC_FLOW.md](../familydiagram/doc/specs/DATA_SYNC_FLOW.md) |
 | Decisions (career, strategy) | [decisions/log.md](decisions/log.md) — see top-level CLAUDE.md "Documentation Routing > Decisions" for triggers and rules |
 | Architecture decisions (backend) | [adrs/](adrs/) — durable patterns only, not point-in-time choices (those go in decisions/log.md) |
@@ -128,11 +125,8 @@ runtime copy is needed, update this section.
 | Synthetic client dev log | [doc/log/synthetic-clients/](doc/log/synthetic-clients/) |
 | Psychological foundations | [doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md](doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md) |
 | Feature/behavior specs | [doc/specs/](doc/specs/) |
-| Prompt extraction strategy | [doc/archive/2026-09-PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/archive/2026-09-PROMPT_ENG_EXTRACTION_STRATEGY.md) (self-updating after each induction run) |
-| **Model evaluations catalog — START HERE to compare extraction models/configs** (F1, cost, latency per model; benchmark-era comparability rules) | [doc/archive/2026-09-MODEL_EVALUATIONS.md](doc/archive/2026-09-MODEL_EVALUATIONS.md) |
 | Bowen theory formal spec | [doc/specs/BOWEN_THEORY.md](doc/specs/BOWEN_THEORY.md) |
 | Diagram layout — language-agnostic spec | [doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md](doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md) |
-| Probabilistic extraction issues (watch list) | [doc/archive/2026-09-EXTRACTION_QUALITY.md](doc/archive/2026-09-EXTRACTION_QUALITY.md) |
 
 ## Chat-first rebuild (CANONICAL)
 
@@ -140,7 +134,6 @@ The chat-first rebuild ("a coach who never forgets your family") is documented u
 the two-clocks regime in [doc/](doc/):
 - **Read [doc/STATE.md](doc/STATE.md) FIRST in every session touching this work** — it is the current system of record — **then [doc/TOPICS.md](doc/TOPICS.md)**, the register of open topics by plain name; the owner names a topic in his own words and the session continues from its block. **End every session with `/two-clocks`.**
 - [doc/HISTORY.md](doc/HISTORY.md) — the event clock: decision/brainstorm history; append, never rewrite.
-- [doc/archive/2026-09-NEXT_SESSIONS.md](doc/archive/2026-09-NEXT_SESSIONS.md) — kickoff briefs for the corpus FUNCTION/STRUCTURE sessions.
 - [doc/DRAWABILITY.md](doc/DRAWABILITY.md) — ruled drawing/asking rules.
 - [doc/PICTURE_IDEAS.md](doc/PICTURE_IDEAS.md) — round 7 (2026-09-23):
   fourteen picture-spot concepts, the passage each draws from, and the critic's verdict.
@@ -153,7 +146,6 @@ The clinical corpus itself lives OUTSIDE all repos at ~/fd-corpus (see STATE.md)
 
 Other: [README.md](README.md), [doc/plans/](doc/plans/)
 
-**Key prompt engineering lessons** (details in PROMPT_ENGINEERING_LOG.md): production extraction model is gemini-3.6-flash for Pass 1+2 AND Pass 3 SARF self-review, thinking=1024 — see `llmutil.py` for current constants and doc/archive/2026-09-MODEL_EVALUATIONS.md for alternatives; verbose definitions killed F1 scores; see log for what NOT to include in prompts.
 
 ### MVP State Tracking
 
@@ -173,17 +165,13 @@ Process: make change → create `doc/log/synthetic-clients/YYYY-MM-DD_HH-MM--des
 
 btcopilot provides:
 - Backend for the chat app
-- PDP (Pending Data Pool) extraction — **one mode only**: `pdp.extract_full()`
-  - Full conversation → two-pass LLM call → complete PDP.
-  - `POST /personal/discussions/<id>/extract` → stores result in `diagram_data.pdp` via `set_diagram_data`.
-  - `pdp.update()` (per-statement extraction) **no longer exists**. Do not reference it.
 
 ### Core Structure
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
 | App factory | `btcopilot/app.py:create_app()` | Flask init, extensions, error handlers |
-| Personal backend | `btcopilot/personal/` | The chat app's API (JSON), chat-only conversation + endpoint-driven extraction |
+| Personal backend | `btcopilot/personal/` | The chat app's API (JSON): the coach's turns and the tools it edits the record with |
 | Review | `btcopilot/review/` | The coders' app |
 | Admin | `btcopilot/admin/` | Flask CLI commands for the box |
 | Schema | `btcopilot/schema.py` | Core data model shared with the desktop app (PUBLIC — see boundary rule below) |
@@ -214,7 +202,6 @@ The isolation test at `btcopilot/tests/schema/test_isolation.py` enforces this b
 
 | Component | Key Files | Purpose |
 |-----------|-----------|---------|
-| Chat Flow | [doc/archive/2026-09-CHAT_FLOW.md](doc/archive/2026-09-CHAT_FLOW.md) | Chat-only AI conversation (no extraction). Extraction is endpoint-driven via `pdp.extract_full()` — see [PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md) |
 | Synthetic Testing | `btcopilot.tests.chat.personal.synthetic`, [tests README](btcopilot/tests/chat/personal/README.md) | Persona generator, conversation simulator, quality evaluator. Run: `uv run pytest btcopilot/btcopilot/tests/chat/personal/test_synthetic.py -v -m e2e` |
 | Visual Spec | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) | Platform-independent layout spec: person symbols, PairBond geometry, ChildOf connections, MultipleBirth, generational layout, label positioning |
 
@@ -279,37 +266,6 @@ All web UI must work in **both light and dark modes**:
 - QtCore types from PyQt5 (e.g., `QDate`, `QDateTime`)
 
 **NEVER pickle**: classes from `btcopilot.*`, `fdserver.*`, dataclasses, Pydantic models, third-party classes (except QtCore). User will manually delete broken discussions with `ModuleNotFoundError`.
-
----
-
-## Prompt Optimization Workflow
-
-**MANDATORY for ALL changes to extraction prompts**, including:
-- `fdserver/prompts/private_prompts.py` (production prompt overrides)
-- `btcopilot/personal/prompts.py` (default prompts)
-- `btcopilot/extensions/llm.py` (`PDP_FIELD_DESCRIPTIONS`)
-
-**Process overview**: [doc/archive/2026-09-PROMPT_OPTIMIZATION.md](doc/archive/2026-09-PROMPT_OPTIMIZATION.md) — Interactive Claude Code sessions with comprehensive documentation. No CLI automation, no autonomous agents.
-
-**Non-negotiable requirements**:
-1. Read strategy doc FIRST: [doc/archive/2026-09-PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/archive/2026-09-PROMPT_ENG_EXTRACTION_STRATEGY.md)
-2. Create timestamped run folder + report in `fdserver/training/induction-reports/`
-3. Establish baseline F1 before any changes
-4. Log EVERY experiment (kept AND reverted) with F1 scores
-5. Generate final report (`.md`) in the run folder
-6. Update strategy doc with what worked AND what failed
-7. Update [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md)
-8. Append entry to [doc/archive/2026-09-f1_timeseries.json](doc/archive/2026-09-f1_timeseries.json) (feeds admin/auditor dashboard chart)
-
-**Log negative results as thoroughly as positive ones** — prevents future thrashing.
-
-| Doc | Purpose |
-|-----|---------|
-| [doc/archive/2026-09-PROMPT_OPTIMIZATION.md](doc/archive/2026-09-PROMPT_OPTIMIZATION.md) | Process overview — how sessions work, where prompts live, what to document |
-| [doc/archive/2026-09-PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/archive/2026-09-PROMPT_ENG_EXTRACTION_STRATEGY.md) | Cumulative strategy doc — read before, update after |
-| [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) | Decision log — update after every run |
-
-**Rules**: ADD nuance, don't replace sections. Never remove working examples without F1 validation. Track iterations in reports. Large refactors need approval. Test after EVERY edit.
 
 ---
 
