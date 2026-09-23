@@ -22,19 +22,14 @@ def test_a_review_change_runs_only_review():
     assert list(chosen) == [t.Suite.Review]
 
 
-def test_a_pro_change_runs_nothing_of_the_chats():
-    chosen = t.route(["btcopilot/pro/models/license.py"])
-    assert list(chosen) == [t.Suite.Pro]
-
-
 def test_a_screen_change_runs_the_front_end_and_its_walks():
     chosen = t.route(["web/src/meeting.ts"])
     assert set(chosen) == {t.Suite.Web, t.Suite.Walks}
 
 
-def test_the_shared_fixtures_run_every_python_suite():
+def test_the_shared_fixtures_run_the_whole_python_suite():
     chosen = t.route(["btcopilot/tests/fixtures.py"])
-    assert set(chosen) == {t.Suite.Chat, t.Suite.Pro, t.Suite.Training}
+    assert set(chosen) == {t.Suite.Chat}
 
 
 def test_a_path_no_suite_covers_runs_nothing():

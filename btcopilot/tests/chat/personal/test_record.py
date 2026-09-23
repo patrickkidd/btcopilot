@@ -344,40 +344,6 @@ def test_delete_of_a_missing_item_raises(subscriber):
         )
 
 
-def test_pro_put_round_trip_and_logs_a_change(flask_app, test_user):
-    diagram = test_user.free_diagram
-    diagram.data = pickle.dumps({"people": [{"id": 1, "name": "Ada"}]})
-    db.session.commit()
-
-    payload = pickle.dumps({"people": [{"id": 1, "name": "Bea"}]})
-    with flask_app.test_client(user=test_user) as client:
-        response = client.patch(
-            f"/v1/diagrams/{diagram.id}",
-            data=pickle.dumps(
-                {"updated_at": datetime.datetime.utcnow(), "data": payload}
-            ),
-        )
-    assert response.status_code == 200
-
-    body = pickle.loads(response.data)
-    assert pickle.loads(body["data"]) == {"people": [{"id": 1, "name": "Bea"}]}
-
-    db.session.refresh(diagram)
-    assert diagram.data == payload
-
-    change = Change.query.filter_by(diagram_id=diagram.id).one()
-    assert change.author == Author.Pro
-    assert change.deltas == [
-        {
-            "item_id": 1,
-            "item_kind": "person",
-            "field": "name",
-            "before": "Ada",
-            "after": "Bea",
-        }
-    ]
-
-
 def test_the_write_refuses_a_shift_that_says_nothing_moved(subscriber):
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
 

@@ -1,9 +1,9 @@
-"""The one door between the review and the two apps it reads.
+"""The one door between the review and the chat app it reads.
 
-Nothing else under btcopilot/review may import btcopilot.personal or
-btcopilot.pro; the import test in the review tests enforces it. Keeping the
-whole surface in one file means the review can be read, moved or replaced
-without hunting for the places it reached into the apps.
+Nothing else under btcopilot/review may import btcopilot.personal; the import
+test in the review tests enforces it. Keeping the whole surface in one file
+means the review can be read, moved or replaced without hunting for the places
+it reached into the app.
 """
 
 import datetime

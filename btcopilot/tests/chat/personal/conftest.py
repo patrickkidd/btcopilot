@@ -13,7 +13,7 @@ from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerTyp
 from btcopilot.personal.toolbox import ToolName
 from btcopilot.personal import turnlog, turns
 from btcopilot.personal.turnlog import TurnEventKind
-from btcopilot.tests.fixtures import pro_client, subscriber, admin  # noqa: F401
+from btcopilot.tests.fixtures import web_client, subscriber, admin  # noqa: F401
 
 
 def said(text: str) -> ModelTurn:

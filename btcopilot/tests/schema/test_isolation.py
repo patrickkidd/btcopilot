@@ -1,8 +1,8 @@
 """Verify btcopilot.schema has no transitive imports of private btcopilot modules.
 
-btcopilot.schema is the ONLY public submodule — it must work in the pro and
-personal app builds where Flask, btcopilot.pdp, btcopilot.extensions, etc. are
-not available.
+btcopilot.schema is the ONLY public submodule — it must work in the desktop
+app builds where Flask, btcopilot.pdp, btcopilot.extensions, etc. are not
+available.
 """
 
 import importlib
@@ -15,8 +15,6 @@ PRIVATE_MODULES = [
     "btcopilot.pdp",
     "btcopilot.extensions",
     "btcopilot.personal",
-    "btcopilot.pro",
-    "btcopilot.training",
     "btcopilot.app",
     "btcopilot.auth",
     "btcopilot.llmutil",

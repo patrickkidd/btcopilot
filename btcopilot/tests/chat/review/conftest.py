@@ -10,7 +10,7 @@ from btcopilot.personal.models import Discussion, Speaker, SpeakerType, Statemen
 from btcopilot.models import Diagram
 from btcopilot.review import ruledraft
 from btcopilot.review.models import Coding, Cut
-from btcopilot.tests.fixtures import pro_client  # noqa: F401  autouse client
+from btcopilot.tests.fixtures import web_client  # noqa: F401  autouse client
 
 
 @pytest.fixture(autouse=True)

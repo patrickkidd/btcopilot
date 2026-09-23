@@ -1,4 +1,4 @@
-"""The review reaches the chat app and the desktop app through one module."""
+"""The review reaches the chat app through one module."""
 
 import ast
 from pathlib import Path
@@ -7,7 +7,7 @@ from btcopilot.tests.repo import PACKAGE as SOURCE
 
 PACKAGE = SOURCE / "review"
 DOOR = "adapter.py"
-FORBIDDEN = ("btcopilot.personal", "btcopilot.pro")
+FORBIDDEN = ("btcopilot.personal",)
 
 
 def imported_modules(path: Path) -> list[str]:
@@ -21,7 +21,7 @@ def imported_modules(path: Path) -> list[str]:
     return names
 
 
-def test_only_the_adapter_reaches_the_two_apps():
+def test_only_the_adapter_reaches_the_app():
     leaks = {
         str(path.relative_to(PACKAGE)): [
             name
@@ -34,7 +34,7 @@ def test_only_the_adapter_reaches_the_two_apps():
     assert {where: names for where, names in leaks.items() if names} == {}
 
 
-def test_the_adapter_is_where_they_are_reached():
+def test_the_adapter_is_where_it_is_reached():
     assert [
         name
         for name in imported_modules(PACKAGE / DOOR)

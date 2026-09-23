@@ -1,6 +1,7 @@
 # CLAUDE.md — btcopilot
 
-Backend for Pro/Personal apps, training app, AI extraction system.
+Backend for the chat app (the personal app, the review and the admin commands). The Pro
+backend and the training app live on branch `master-legacy`, not here.
 
 ## Owner corrections that bind every reply (2026-09-09)
 
@@ -110,15 +111,12 @@ runtime copy is needed, update this section.
 |--------|-----|
 | Data model (schema, enums, validation) | [doc/specs/DATA_MODEL.md](doc/specs/DATA_MODEL.md) |
 | PDP extraction, deltas, cumulative logic | [doc/specs/PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md) |
-| SARF coding, GT workflow, approval | [doc/SARF_GROUND_TRUTH_TECHNICAL.md](doc/SARF_GROUND_TRUTH_TECHNICAL.md) |
-| SARF visual language (badges, colors, dates) | [doc/specs/SARF_VISUAL_SPEC.md](doc/specs/SARF_VISUAL_SPEC.md) |
 | Prompt engineering decisions | [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) |
 | Prompt optimization process | [doc/PROMPT_OPTIMIZATION.md](doc/PROMPT_OPTIMIZATION.md) |
 | Bowen theory concepts | [CONTEXT.md](CONTEXT.md) |
 | Drawability — when the timeline picture may draw vs must ask (5 rules, ruled 2026-08-31) | [doc/DRAWABILITY.md](doc/DRAWABILITY.md) |
 
 | Diagram layout/rendering/SVG | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) |
-| F1 metrics, evaluation | [doc/F1_METRICS.md](doc/F1_METRICS.md) |
 | Chat flow, personal app AI | [doc/CHAT_FLOW.md](doc/CHAT_FLOW.md) |
 | Client-server data sync | [familydiagram DATA_SYNC_FLOW.md](../familydiagram/doc/specs/DATA_SYNC_FLOW.md) |
 | Decisions (career, strategy) | [decisions/log.md](decisions/log.md) — see top-level CLAUDE.md "Documentation Routing > Decisions" for triggers and rules |
@@ -132,10 +130,7 @@ runtime copy is needed, update this section.
 | Prompt extraction strategy | [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md) (self-updating after each induction run) |
 | **Model evaluations catalog — START HERE to compare extraction models/configs** (F1, cost, latency per model; benchmark-era comparability rules) | [doc/MODEL_EVALUATIONS.md](doc/MODEL_EVALUATIONS.md) |
 | Bowen theory formal spec | [doc/specs/BOWEN_THEORY.md](doc/specs/BOWEN_THEORY.md) |
-| F1 dashboard (operational tracking) | [doc/F1_DASHBOARD.md](doc/F1_DASHBOARD.md) |
 | Diagram layout — language-agnostic spec | [doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md](doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md) |
-| **Auto-arrange algorithm implementation — READ FIRST before changing `btcopilot/arrange/`**. Lives at `btcopilot/btcopilot/arrange/{layout,refine}.py`. Workstream history, decision log D-1..D-26, MVP context, GT calibration, painter analogy, tried-and-rejected paths, watchdog protocol, dev workflow. | [familydiagram doc/plans/2026-05-02--auto-arrange-layout.md](../familydiagram/doc/plans/2026-05-02--auto-arrange-layout.md) |
-| Audio upload (AssemblyAI, Celery) | [doc/AUDIO_UPLOAD_FLOW.md](doc/AUDIO_UPLOAD_FLOW.md) |
 | Probabilistic extraction issues (watch list) | [doc/EXTRACTION_QUALITY.md](doc/EXTRACTION_QUALITY.md) |
 
 ## Chat-first rebuild (CANONICAL)
@@ -163,8 +158,6 @@ Other: [README.md](README.md), [doc/plans/](doc/plans/)
 
 Jira is the single source of truth (MVP epic **FD-264**). Site, id format, API auth, and the approval rule live in the top-level [CLAUDE.md "Jira (CANONICAL)"](../CLAUDE.md#jira-canonical) — not redefined here.
 
-[MVP_DASHBOARD.md](MVP_DASHBOARD.md) is **DEPRECATED (2026-05-03)**, read-only archaeology. Never add rows or update statuses.
-
 ### Synthetic Client Dev Log (MANDATORY)
 
 After ANY change to synthetic conversation generation, create a timestamped entry in `doc/log/synthetic-clients/`. See [README.md](doc/log/synthetic-clients/README.md) for triggers and format.
@@ -178,12 +171,10 @@ Process: make change → create `doc/log/synthetic-clients/YYYY-MM-DD_HH-MM--des
 ## Architecture
 
 btcopilot provides:
-- Backend for Pro/Personal apps
-- AI/ML interface for SARF research
+- Backend for the chat app
 - PDP (Pending Data Pool) extraction — **one mode only**: `pdp.extract_full()`
-  - Full conversation → two-pass LLM call → complete PDP. Used by both apps.
-  - **Personal app**: `POST /personal/discussions/<id>/extract` → stores result in `diagram_data.pdp` via `set_diagram_data`.
-  - **Training app**: `POST /training/discussions/<id>/extract` → same. Result stored in `discussion.diagram.set_diagram_data(diagram_data)`. The discussion view then surfaces the full PDP as `cumulative_pdp` on the last subject statement for display in the SARF editor.
+  - Full conversation → two-pass LLM call → complete PDP.
+  - `POST /personal/discussions/<id>/extract` → stores result in `diagram_data.pdp` via `set_diagram_data`.
   - `pdp.update()` (per-statement extraction) **no longer exists**. Do not reference it.
 
 ### Core Structure
@@ -191,19 +182,18 @@ btcopilot provides:
 | Component | Location | Purpose |
 |-----------|----------|---------|
 | App factory | `btcopilot/app.py:create_app()` | Flask init, extensions, error handlers |
-| Pro backend | `btcopilot/pro/` | Desktop app API (pickle over HTTPS) |
-| Personal backend | `btcopilot/personal/` | Mobile app API (JSON), chat-only conversation + endpoint-driven extraction |
-| Training app | `btcopilot/training/` | Domain-expert feedback for AI fine-tuning |
-| Schema | `btcopilot/schema.py` | Core data model shared with Pro/Personal apps (PUBLIC — see boundary rule below) |
-| Personal DB | `btcopilot/personal/database.py` | JSON-based data schema |
-| Extensions | `btcopilot/extensions/` | Flask extensions (DB, LLM, ChromaDB) |
-| Auth | `btcopilot/auth.py` | User authentication with `current_user` |
-| CLI | `manage.py`, `btcopilot/commands.py` | Flask CLI commands |
-| Pro models | `btcopilot/pro/models/` | SQLAlchemy: User, Diagram, License, Session, Statement/Discussion |
+| Personal backend | `btcopilot/personal/` | The chat app's API (JSON), chat-only conversation + endpoint-driven extraction |
+| Review | `btcopilot/review/` | The coders' app |
+| Admin | `btcopilot/admin/` | Flask CLI commands for the box |
+| Schema | `btcopilot/schema.py` | Core data model shared with the desktop app (PUBLIC — see boundary rule below) |
+| Extensions | `btcopilot/extensions/` | Flask extensions (DB, mail, Celery, tracing) |
+| Auth | `btcopilot/auth/` | Passwordless sign-in, `current_user` |
+| Models | `btcopilot/models/` | SQLAlchemy: User, Diagram, License, Policy, AccessRight |
+| Matching | `btcopilot/matching.py` | Content matching of two PDPs (people, events, pair bonds) and the F1 built on it |
 
 ### Public API Boundary (MANDATORY)
 
-`btcopilot.schema` is the ONLY public submodule — it is imported by the Pro and Personal app builds where Flask, SQLAlchemy, and all other server dependencies are unavailable. **schema.py must NEVER import from any other btcopilot module** (pdp, extensions, personal, pro, training, app, auth, llmutil, celery, modelmixin). This includes deferred/lazy imports inside methods.
+`btcopilot.schema` is the ONLY public submodule — it is imported by the desktop app builds where Flask, SQLAlchemy, and all other server dependencies are unavailable. **schema.py must NEVER import from any other btcopilot module** (pdp, extensions, personal, app, auth, llmutil, celery, modelmixin). This includes deferred/lazy imports inside methods.
 
 If schema.py needs a utility function that currently lives in a private module, move that function INTO schema.py. Do not import it.
 
@@ -211,10 +201,9 @@ The isolation test at `btcopilot/tests/schema/test_isolation.py` enforces this b
 
 ### External Services
 
-- **AI/ML**: OpenAI (GPT-4o-mini), HuggingFace embeddings, ChromaDB, LangChain
+- **AI/ML**: Anthropic and Gemini (see `llmutil.py`)
 - **Payments**: Stripe licensing
 - **Database**: PostgreSQL + SQLAlchemy (`postgresql://familydiagram:pks@localhost:5432/familydiagram`)
-- **Vector DB**: ChromaDB in `instance/vector_db/`
 - **Config**: Environment-based (`FLASK_CONFIG=development/production`)
 - **Docker**: Multi-service with Flask + PostgreSQL
 
@@ -224,11 +213,8 @@ The isolation test at `btcopilot/tests/schema/test_isolation.py` enforces this b
 
 | Component | Key Files | Purpose |
 |-----------|-----------|---------|
-| SARF Editor | `training/templates/components/sarf_editor.html` | Review/edit extracted clinical data (collapsed/expanded views, in-place editing, feedback, cumulative display) |
-| Diagram Renderer | `training/templates/components/family_diagram_svg.html`, `training/routes/diagrams.py` | SVG family diagram visualization. Standalone: `/training/diagrams/render/<statement_id>/<auditor_id>`, embed: `?embed=true`, modal via Discussion page "Diagram" buttons |
 | Chat Flow | [doc/CHAT_FLOW.md](doc/CHAT_FLOW.md) | Chat-only AI conversation (no extraction). Extraction is endpoint-driven via `pdp.extract_full()` — see [PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md) |
 | Synthetic Testing | `btcopilot.tests.chat.personal.synthetic`, [tests README](btcopilot/tests/chat/personal/README.md) | Persona generator, conversation simulator, quality evaluator. Run: `uv run pytest btcopilot/btcopilot/tests/chat/personal/test_synthetic.py -v -m e2e` |
-| F1 Metrics | [doc/F1_METRICS.md](doc/F1_METRICS.md) | F1 score calculation, entity matching, GT workflow, matching criteria, cache strategy |
 | Visual Spec | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) | Platform-independent layout spec: person symbols, PairBond geometry, ChildOf connections, MultipleBirth, generational layout, label positioning |
 
 ---
@@ -250,7 +236,7 @@ The isolation test at `btcopilot/tests/schema/test_isolation.py` enforces this b
 
 **F1 matching**: Structural events skip description matching — only Shift events use descriptions. Events match on kind + date + person links.
 
-**Duplicate people**: `match_people` produces a 1:1 `id_map`. Same-named people are disambiguated by parent name similarity (resolves `Person.parents` PairBond → parent names → fuzzy match, weight `PARENTS_BOOST=0.1`). When either side still has duplicate people after matching (e.g., two "Michael" entries), use `_augment_duplicate_person_id_map` for A-side duplicates. For symmetric comparisons (auditor vs auditor), B-side duplicates also need remapping — see `_dedup_b_people` in `compare.py`.
+**Duplicate people**: `match_people` produces a 1:1 `id_map`. Same-named people are disambiguated by parent name similarity (resolves `Person.parents` PairBond → parent names → fuzzy match, weight `PARENTS_BOOST=0.1`).
 
 ### IRR Deliberation Records
 
@@ -304,8 +290,6 @@ All web UI must work in **both light and dark modes**:
 
 **Process overview**: [doc/PROMPT_OPTIMIZATION.md](doc/PROMPT_OPTIMIZATION.md) — Interactive Claude Code sessions with comprehensive documentation. No CLI automation, no autonomous agents.
 
-**Documentation protocol**: [btcopilot/training/prompts/induction_agent.md](btcopilot/training/prompts/induction_agent.md) — Authoritative spec for logging format, report structure, iteration rules. Follow its documentation requirements even in interactive sessions.
-
 **Non-negotiable requirements**:
 1. Read strategy doc FIRST: [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md)
 2. Create timestamped run folder + report in `fdserver/training/induction-reports/`
@@ -321,7 +305,6 @@ All web UI must work in **both light and dark modes**:
 | Doc | Purpose |
 |-----|---------|
 | [doc/PROMPT_OPTIMIZATION.md](doc/PROMPT_OPTIMIZATION.md) | Process overview — how sessions work, where prompts live, what to document |
-| [btcopilot/training/prompts/induction_agent.md](btcopilot/training/prompts/induction_agent.md) | Documentation protocol — logging spec, report format, iteration rules |
 | [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md) | Cumulative strategy doc — read before, update after |
 | [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) | Decision log — update after every run |
 
@@ -373,10 +356,10 @@ Ask user to start/restart before using chrome-devtools MCP: `cd dashboard && uv 
 - **All tests**: `uv run pytest -vv tests`
 - **E2e tests** (real LLM calls): `uv run pytest --e2e -m e2e` — requires `GOOGLE_GEMINI_API_KEY` from `theapp/.env`
 - **Async**: `--asyncio-mode=auto` (configured in `btcopilot/tests/pytest.ini`)
-- **Directories**: `tests/` (main), `tests/training/` (training module)
+- **Directories**: `btcopilot/tests/chat/` (the chat app's suite), `btcopilot/tests/schema/`, `btcopilot/tests/test_*.py`
 
 ### Database
-- **Migrations**: Alembic (`alembic.ini`, `alembic/versions/`)
+- **Migrations**: Alembic (`alembic-chat.ini`, `alembic-chat/versions/`)
 - **Query**: `docker exec fd-postgres psql -U familydiagram -d familydiagram -c "SQL"`
 - **Interactive**: `docker exec -it fd-postgres psql -U familydiagram -d familydiagram`
 - **Table structure**: append `-c "\d table_name"`
@@ -391,51 +374,3 @@ Ask user to start/restart before using chrome-devtools MCP: `cd dashboard && uv 
 - **Debug**: VSCode configs "Celery Worker (Debug)" and "Celery Beat"
 
 ---
-
-## Documentation Maintenance Triggers
-
-### SARF Ground Truth Technical Reference
-
-When changing SARF-related code, check and update [doc/SARF_GROUND_TRUTH_TECHNICAL.md](doc/SARF_GROUND_TRUTH_TECHNICAL.md).
-
-**Trigger files**: `training/routes/*.py`, `training/models.py`, `training/templates/discussion.html`, `training/templates/components/sarf_editor.html`, `training/export_tests.py`, `schema.py` (Event, PDPDeltas, SARF enums), `pdp.py` (cumulative/apply_deltas), `personal/models/statement.py`
-
-**Update**: code examples, function signatures, file paths, business logic, API routes/payloads, data schemas, Alpine.js state changes, line number references, testing scenarios. Use TodoWrite to add "Verify SARF_GROUND_TRUTH_TECHNICAL.md accuracy" task. Commit doc updates with code changes.
-
-**Skip**: typo fixes, non-SARF changes in same files, purely cosmetic UI changes.
-
-### Family Diagram Visual Spec
-
-When changing diagram rendering, update [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md).
-
-**Trigger files**: `training/templates/components/family_diagram_svg.html`, `training/routes/diagram_render.py`, any diagram layout code.
-
-**Process**: update spec FIRST with new rule → implement in code → test → confirm sync.
-
-### Auto-Arrange Algorithm (MANDATORY before any change to `btcopilot/arrange/`)
-
-**Trigger keywords (in user prompts)**: `auto-arrange`, `auto arrange`, `arrange selection`, `arrange algorithm`, `btcopilot.arrange`, `arrange/layout`, `arrange/refine`, `fd_layout`, `fd_refine`, `fd_fitness`, `fd_arrange_test`, `bin/arrange`, `Bowen layout`, `family diagram layout` (when in implementation context).
-
-**Trigger files**: `btcopilot/arrange/layout.py`, `btcopilot/arrange/refine.py`, `btcopilot/arrange/__init__.py`, `familydiagram/bin/arrange/*`, `familydiagram/pkdiagram/documentview/documentcontroller.py` (`onArrangeSelection`).
-
-**When triggered**: BEFORE writing any code or proposing changes, read the workstream plan in full: [familydiagram/doc/plans/2026-05-02--auto-arrange-layout.md](../familydiagram/doc/plans/2026-05-02--auto-arrange-layout.md). It contains:
-
-- Decision log (D-1 through D-26) — what was tried, kept, rejected, and why. Many "obvious" approaches have already failed.
-- MVP context and the "GT is loose, not strict ground truth" principle.
-- Painter analogy that shaped `refine.py`'s move set.
-- GT calibration data (label-overlap p75=60px, sibling-gap median 0.74×, etc.).
-- "What was tried and failed" table — do not re-attempt these without new evidence.
-- Watchdog protocol — spawn a sub-agent proactively if same root cause appears 3+ iterations or a proposed fix is in the rejected-paths table.
-- Dev workflow: `familydiagram/bin/arrange/README.md` covers the `~/Desktop/fd_algorithm/` + `~/Desktop/fd_corrections/` cycle and the `fd_fitness.py` regression oracle.
-
-**Process for any algorithm change**:
-1. Read the plan doc.
-2. Run baseline: `uv run python familydiagram/bin/arrange/fd_fitness.py` (record current fitness number).
-3. Make change.
-4. Re-run fitness; refuse to ship a change that regresses fitness AND visual review.
-5. Refresh `~/Desktop/fd_algorithm/` via `fd_arrange_test.py` and ask Patrick for visual review.
-6. Append a new decision-log entry (D-N) to the plan doc with what changed, why, and outcome.
-
-**Skip**: typo fixes, comment edits, dev-tool refactors that don't touch the algorithm.
-
-**PHI**: Clinic case names are PHI. Never include real case names in source, comments, commit messages, or docs — anonymize as Case A/B/etc. See plan doc D-26 area for the established anonymization scheme.

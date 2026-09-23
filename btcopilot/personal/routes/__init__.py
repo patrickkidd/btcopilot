@@ -146,7 +146,6 @@ from btcopilot.personal.routes import (  # noqa: E402  bp must exist first
     events,
     fixtures,
     interactions,
-    migrate,
     pairbonds,
     productevents,
     people,

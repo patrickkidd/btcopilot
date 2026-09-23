@@ -38,20 +38,19 @@ from btcopilot.models import License, Policy, User
 
 # Importing the chat's models registers them with SQLAlchemy.
 from btcopilot.personal.models import Discussion, Statement, Speaker  # noqa: F401
-from btcopilot.tests.pro.fdencryptiontestclient import FDEncryptionTestClient
 
 
-HARDWARE_UUID = "1B825A8F-32CB-5419-B6C2-BB08A7DEA901"
+class WebClient(FlaskClient):
+    """A test client that remembers who it signs in as."""
 
-# Initializers every suite replaces: they write logs, install excepthooks, or
-# reach Datadog.
-CORE_STUBS = ("init_logging", "init_excepthook", "init_datadog")
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
 
-# The chat app owns a task queue, and a unit run should not start it. Stripe
-# is Pro's and the chat never reaches it.
-CHAT_STUBS = CORE_STUBS + ("init_celery",)
 
-PRO_STUBS = CORE_STUBS + ("init_stripe", "init_celery")
+# Initializers every suite replaces: they write logs, install excepthooks, reach
+# Datadog, or start the task queue.
+STUBS = ("init_logging", "init_excepthook", "init_datadog", "init_celery")
 
 MARKERS = (
     "access_rights: set access rights prior to init",
@@ -82,7 +81,7 @@ def add_markers(config):
 
 # Read before any suite stubs anything, so a run that collects two suites still
 # hands a marked test the real initializer rather than the other suite's stand-in.
-ORIGINALS = {name: getattr(extension_module, name) for name in PRO_STUBS}
+ORIGINALS = {name: getattr(extension_module, name) for name in STUBS}
 
 
 @contextlib.contextmanager
@@ -255,8 +254,8 @@ def set_test_session(sess, user_id):
 
 
 @pytest.fixture(autouse=True)
-def pro_client(flask_app):
-    flask_app.test_client_class = FDEncryptionTestClient
+def web_client(flask_app):
+    flask_app.test_client_class = WebClient
 
 
 @pytest.fixture
@@ -265,7 +264,6 @@ def subscriber(test_user, flask_app):
     db.session.merge(test_user)
     db.session.commit()
     with flask_app.test_client(use_cookies=True, user=test_user) as client:
-        client.user = test_user
         with client.session_transaction() as sess:
             set_test_session(sess, test_user.id)
         yield client
@@ -277,7 +275,6 @@ def admin(flask_app, test_user):
     db.session.merge(test_user)
     db.session.commit()
     with flask_app.test_client(use_cookies=True, user=test_user) as client:
-        client.user = test_user
         with client.session_transaction() as sess:
             set_test_session(sess, test_user.id)
         yield client

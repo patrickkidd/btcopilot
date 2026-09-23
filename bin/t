@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run one component's tests, or the ones the current diff touches.
 
-    bin/t chat|review|personal|admin|prompts|web|walks|pro|training|all
+    bin/t chat|review|personal|admin|prompts|web|walks|all
     bin/t              the suites the working diff touches
 
 Prints what it chose and why. Exits non-zero if any suite fails.
@@ -33,8 +33,6 @@ class Suite(Enum):
     Prompts = "prompts"
     Web = "web"
     Walks = "walks"
-    Pro = "pro"
-    Training = "training"
 
 
 COMMANDS = {
@@ -43,30 +41,24 @@ COMMANDS = {
     Suite.Personal: PYTEST + ["btcopilot/tests/chat/personal"],
     Suite.Admin: PYTEST + ["btcopilot/tests/chat/test_admin.py"],
     Suite.Prompts: PYTEST + ["btcopilot/tests/chat/personal/test_promptfiles.py"],
-    Suite.Pro: PYTEST + ["btcopilot/tests/pro"],
-    Suite.Training: PYTEST + ["btcopilot/tests/training"],
     Suite.Web: ["npm", "run", "test"],
     Suite.Walks: ["npm", "run", "test:visual"],
 }
 
 CWD = {Suite.Web: WEB, Suite.Walks: WEB}
 
-ALL = (Suite.Chat, Suite.Pro, Suite.Training, Suite.Web)
+ALL = (Suite.Chat, Suite.Web)
 
 # A changed path picks its suites. First match wins, longest prefix first.
 ROUTES = (
     ("btcopilot/tests/chat/review", (Suite.Review,)),
     ("btcopilot/tests/chat/personal", (Suite.Personal,)),
     ("btcopilot/tests/chat", (Suite.Chat,)),
-    ("btcopilot/tests/pro", (Suite.Pro,)),
-    ("btcopilot/tests/training", (Suite.Training,)),
-    ("btcopilot/tests/fixtures.py", (Suite.Chat, Suite.Pro, Suite.Training)),
+    ("btcopilot/tests/fixtures.py", (Suite.Chat,)),
     ("btcopilot/review", (Suite.Review,)),
     ("btcopilot/personal/promptdir", (Suite.Prompts,)),
     ("btcopilot/personal", (Suite.Personal,)),
     ("btcopilot/admin", (Suite.Admin,)),
-    ("btcopilot/pro", (Suite.Pro,)),
-    ("btcopilot/training", (Suite.Training,)),
     ("private/prompts", (Suite.Prompts,)),
     ("web/tests/visual", (Suite.Walks,)),
     ("web/test", (Suite.Web,)),

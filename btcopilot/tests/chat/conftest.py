@@ -11,7 +11,7 @@ import pytest
 from btcopilot.chattables import TABLES
 from btcopilot.tests.fixtures import (
     make_app,
-    CHAT_STUBS,
+    STUBS,
     add_e2e_option,
     add_markers,
     stubbed,
@@ -21,7 +21,7 @@ from btcopilot.tests.fixtures import (
     e2e,  # noqa: F401
     fast_passwords,  # noqa: F401
     flask_app,  # noqa: F401
-    pro_client,  # noqa: F401
+    web_client,  # noqa: F401
     subscriber,  # noqa: F401
     test_license,  # noqa: F401
     test_policy,  # noqa: F401
@@ -41,7 +41,7 @@ def pytest_configure(config):
 
 @pytest.fixture(scope="session", autouse=True)
 def extensions():
-    with stubbed(CHAT_STUBS) as originals:
+    with stubbed(STUBS) as originals:
         yield originals
 
 
