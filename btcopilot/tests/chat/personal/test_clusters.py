@@ -53,6 +53,7 @@ def grouped(data: DiagramData) -> list[list[int]]:
 
 
 def test_a_shift_gathers_the_moves_around_it():
+    # no ruling
     data = record(
         moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
         moment(2, "1994-08-01", person=1, description="stopped sleeping"),
@@ -63,6 +64,7 @@ def test_a_shift_gathers_the_moves_around_it():
 
 
 def test_a_move_beyond_the_span_stays_out():
+    # no ruling
     data = record(
         moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
         moment(2, "1994-08-01", person=1, description="the month after"),
@@ -73,6 +75,7 @@ def test_a_move_beyond_the_span_stays_out():
 
 
 def test_a_pair_of_related_moves_is_not_yet_a_cluster():
+    # R-0215
     data = record(
         moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
         moment(2, "1994-08-01", person=1, description="the month after"),
@@ -81,6 +84,7 @@ def test_a_pair_of_related_moves_is_not_yet_a_cluster():
 
 
 def test_a_birth_before_anything_is_recorded_is_scaffolding():
+    # R-0037, R-0038
     data = record(
         asdict(Event(id=1, kind=EventKind.Birth, child=1, dateTime="1994-01-01")),
         moment(2, "1994-06-01", person=1, anxiety=VariableShift.Up),
@@ -91,6 +95,7 @@ def test_a_birth_before_anything_is_recorded_is_scaffolding():
 
 
 def test_structure_from_the_recorded_period_belongs_to_the_cluster():
+    # R-0037, R-0375
     data = record(
         moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
         asdict(
@@ -104,6 +109,7 @@ def test_structure_from_the_recorded_period_belongs_to_the_cluster():
 
 
 def test_a_couple_share_a_cluster_through_their_pair_bond():
+    # no ruling
     data = record(
         moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
         moment(2, "1994-09-01", person=2, description="her side of it"),
@@ -115,6 +121,7 @@ def test_a_couple_share_a_cluster_through_their_pair_bond():
 
 
 def test_a_lone_shift_with_no_related_move_stays_a_dot():
+    # R-0215
     data = record(
         moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
         moment(2, "1994-09-01", person=2, description="someone else entirely"),
@@ -123,6 +130,7 @@ def test_a_lone_shift_with_no_related_move_stays_a_dot():
 
 
 def test_two_shifts_that_reach_the_same_move_are_one_cluster():
+    # no ruling
     data = record(
         moment(1, "1994-01-01", person=1, anxiety=VariableShift.Up),
         moment(2, "1994-11-01", person=1, description="the middle of it"),
@@ -132,6 +140,7 @@ def test_two_shifts_that_reach_the_same_move_are_one_cluster():
 
 
 def test_two_recorded_years_apart_end_the_cluster():
+    # no ruling
     """The two shifts reach the same middle event, so the rules first put all
     five together; nothing is recorded in the stretch between them, so it breaks
     at the widest silence."""
@@ -147,6 +156,7 @@ def test_two_recorded_years_apart_end_the_cluster():
 
 
 def test_a_break_can_leave_a_shift_standing_alone():
+    # no ruling
     """When the break takes the only companion away, what is left is a shift
     with no related move, which is a dot and not a cluster."""
     data = record(
@@ -159,6 +169,7 @@ def test_a_break_can_leave_a_shift_standing_alone():
 
 
 def test_an_undated_event_never_enters_a_cluster():
+    # R-0013
     data = record(
         moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
         moment(2, "1994-09-01", person=1, description="dated"),
@@ -169,6 +180,7 @@ def test_an_undated_event_never_enters_a_cluster():
 
 
 def test_a_nodal_event_seeds_a_cluster_with_no_variable_on_it():
+    # R-0375
     """The intake engine's nodal kinds seed a cluster on their own; a birth is
     not one of them."""
     data = record(
@@ -180,6 +192,7 @@ def test_a_nodal_event_seeds_a_cluster_with_no_variable_on_it():
 
 
 def test_a_birth_alone_seeds_nothing():
+    # no ruling
     data = record(
         asdict(Event(id=1, kind=EventKind.Birth, child=1, dateTime="1994-06-01")),
         moment(2, "1994-09-01", person=1, description="the months after"),
@@ -188,6 +201,7 @@ def test_a_birth_alone_seeds_nothing():
 
 
 def test_a_nodal_event_opens_the_recorded_period_for_the_births_after_it():
+    # R-0038, R-0037
     """The period starts at the first nodal event or shift, so a birth dated
     after an early marriage is no longer scaffolding."""
     data = record(
@@ -204,6 +218,7 @@ def test_a_nodal_event_opens_the_recorded_period_for_the_births_after_it():
 
 
 def test_a_relationship_move_seeds_a_cluster():
+    # no ruling
     data = record(
         moment(
             1,
@@ -225,6 +240,7 @@ CONTAMINATED = {
 
 
 def test_the_words_in_a_description_never_move_a_boundary():
+    # R-0195
     """A record full of popular-psychology phrasing groups exactly as the same
     record in plain words does."""
     plain = record(
@@ -278,6 +294,7 @@ def replies(*responses):
 
 
 def test_the_model_names_the_candidates_it_was_given():
+    # R-0076, R-0287
     with replies(answers(named(1, 2, 3), named(4, 5, 6, name="The winter after"))):
         result = detect_clusters(RECORD)
     assert [c.eventIds for c in result.clusters] == [[1, 2, 3], [4, 5, 6]]
@@ -286,12 +303,14 @@ def test_the_model_names_the_candidates_it_was_given():
 
 
 def test_a_grouping_that_names_an_event_the_record_does_not_hold_is_rejected():
+    # R-0076
     with replies(answers(named(1, 2, 3, 99)), answers(named(1, 2, 3, 99))):
         with pytest.raises(ClusterError, match="99"):
             detect_clusters(RECORD)
 
 
 def test_a_group_that_is_not_a_candidate_and_says_no_why_is_rejected():
+    # R-0287, R-0371
     joined = named(1, 2, 3, 4, 5, 6)
     with replies(answers(joined), answers(joined)):
         with pytest.raises(ClusterError, match="says no reason"):
@@ -299,6 +318,7 @@ def test_a_group_that_is_not_a_candidate_and_says_no_why_is_rejected():
 
 
 def test_the_model_may_join_two_candidates_when_it_says_why():
+    # R-0287, R-0371
     with replies(
         answers(named(1, 2, 3, 4, 5, 6, change="the same argument came back in 1997"))
     ):
@@ -307,6 +327,7 @@ def test_the_model_may_join_two_candidates_when_it_says_why():
 
 
 def test_a_seeding_event_may_not_be_left_out():
+    # no ruling
     left_out = named(1, 2, 3)
     with replies(answers(left_out), answers(left_out)):
         with pytest.raises(ClusterError, match=r"\[4\]"):
@@ -314,6 +335,7 @@ def test_a_seeding_event_may_not_be_left_out():
 
 
 def test_one_event_may_not_sit_in_two_groups():
+    # no ruling
     twice = answers(named(1, 2, 3), named(3, 4, 5, 6, change="it reads both ways"))
     with replies(twice, twice):
         with pytest.raises(ClusterError, match="two clusters"):
@@ -321,6 +343,7 @@ def test_one_event_may_not_sit_in_two_groups():
 
 
 def test_a_group_under_three_events_is_rejected():
+    # R-0215
     """Three moments is the minimum, whatever the model says. Asked once more,
     still handing back a pair, it fails rather than storing it."""
     small = answers(
@@ -336,6 +359,7 @@ def test_a_group_under_three_events_is_rejected():
 
 
 def test_a_split_under_the_minimum_that_is_corrected_is_stored():
+    # R-0215
     with replies(
         answers(named(1, 2, 3), named(4, 5), named(6)),
         answers(named(1, 2, 3), named(4, 5, 6)),
@@ -345,6 +369,7 @@ def test_a_split_under_the_minimum_that_is_corrected_is_stored():
 
 
 def test_a_group_with_no_reason_is_rejected():
+    # R-0287, R-0205
     silent = answers(named(1, 2, 3, reason=""), named(4, 5, 6))
     with replies(silent, silent):
         with pytest.raises(ClusterError, match="needs a reason"):
@@ -352,6 +377,7 @@ def test_a_group_with_no_reason_is_rejected():
 
 
 def test_words_from_outside_the_given_definitions_are_rejected():
+    # R-0195
     """The prompt tells the model to use only the terms it was handed; the
     record refuses to store the diagnostic vocabulary anyway. Asked once more,
     still contaminated, it fails rather than storing the words."""
@@ -367,6 +393,7 @@ def test_words_from_outside_the_given_definitions_are_rejected():
 
 
 def test_a_contaminated_name_that_is_corrected_on_the_second_ask_is_stored():
+    # R-0195
     with replies(
         answers(named(1, 2, 3, name="The gaslighting spring"), named(4, 5, 6)),
         answers(named(1, 2, 3, name="The spring they argued"), named(4, 5, 6)),
@@ -380,6 +407,7 @@ def test_a_contaminated_name_that_is_corrected_on_the_second_ask_is_stored():
 
 
 def test_a_rejected_grouping_is_asked_for_once_more():
+    # no ruling
     with replies(
         answers(named(1, 2, 99)), answers(named(1, 2, 3), named(4, 5, 6))
     ) as ask:
@@ -409,6 +437,7 @@ FORBIDDEN = (
 
 @pytest.mark.e2e
 def test_a_real_model_names_the_seeded_record():
+    # R-0076, R-0287
     data = seed_diagram_data()
     proposed = candidates(data)
     result = detect_clusters(data)
@@ -421,6 +450,7 @@ def test_a_real_model_names_the_seeded_record():
 
 @pytest.mark.e2e
 def test_a_real_model_does_not_repeat_the_words_it_was_fed():
+    # R-0195
     """Every description in this record is written in popular-psychology terms
     the prompt does not define. Nothing the model writes back may use them."""
     data = seed_diagram_data()
@@ -462,6 +492,7 @@ KEPT = record(
 
 
 def test_a_grouping_already_there_is_handed_back_and_kept():
+    # R-0374, R-0371
     """Nothing changed about it, so it keeps its id and the name that has
     already been read, and says nothing about a change."""
     with replies(answers(named(1, 2, 3, cluster_id="c1", name=SPRING))) as ask:
@@ -472,6 +503,7 @@ def test_a_grouping_already_there_is_handed_back_and_kept():
 
 
 def test_a_grouping_already_there_is_given_to_the_model_with_its_id():
+    # R-0374
     with replies(answers(named(1, 2, 3, cluster_id="c1", name=SPRING))) as ask:
         detect_clusters(KEPT)
     asked = ask.call_args_list[0].args[0]
@@ -480,6 +512,7 @@ def test_a_grouping_already_there_is_given_to_the_model_with_its_id():
 
 
 def test_renaming_a_grouping_already_there_and_saying_nothing_is_rejected():
+    # R-0371, R-0374
     renamed = answers(named(1, 2, 3, cluster_id="c1", name="A better sounding name"))
     with replies(renamed, renamed) as ask:
         with pytest.raises(ClusterError, match="says no reason"):
@@ -489,6 +522,7 @@ def test_renaming_a_grouping_already_there_and_saying_nothing_is_rejected():
 
 
 def test_changing_a_grouping_already_there_is_kept_when_it_says_what_changed():
+    # R-0371, R-0372
     moved = "She stepped back a month later than the record first said."
     with replies(
         answers(named(1, 2, 3, cluster_id="c1", name="The autumn after", change=moved))
@@ -499,6 +533,7 @@ def test_changing_a_grouping_already_there_is_kept_when_it_says_what_changed():
 
 
 def test_an_id_the_record_does_not_have_is_rejected():
+    # no ruling
     invented = answers(named(1, 2, 3, cluster_id="c99", name=SPRING))
     with replies(invented, invented):
         with pytest.raises(ClusterError, match="c99"):
@@ -514,6 +549,7 @@ FAR = record(
 
 
 def test_an_event_years_outside_the_proposal_joins_when_the_model_says_why():
+    # R-0374, R-0194
     """The 18 months the rules reach is a proposal, not a wall: an event five
     years later joins on a stated reason."""
     assert grouped(FAR) == [[1, 2, 3]]

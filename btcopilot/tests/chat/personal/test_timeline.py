@@ -40,6 +40,7 @@ def _lane(timeline, key):
 
 
 def test_per_person_isolation():
+    # no ruling
     """One person's line must never be influenced by another's events (the
     known QML mixed-sum bug)."""
     up, down = VariableShift.Up, VariableShift.Down
@@ -58,6 +59,7 @@ def test_per_person_isolation():
 
 
 def test_two_directed_points_render_dots_only():
+    # R-0008
     events = [
         _shift(10, 1, "2000-01-01", "anxiety", VariableShift.Up),
         _shift(11, 1, "2005-01-01", "anxiety", VariableShift.Down),
@@ -69,6 +71,7 @@ def test_two_directed_points_render_dots_only():
 
 
 def test_line_spans_only_its_own_points():
+    # R-0008
     events = [
         _shift(10, 1, "2000-06-01", "symptom", VariableShift.Up),
         _shift(11, 1, "2001-06-01", "symptom", VariableShift.Up),
@@ -81,6 +84,7 @@ def test_line_spans_only_its_own_points():
 
 
 def test_certainty_bands_and_undated_shelf():
+    # R-0013, R-0009
     events = [
         _shift(10, 1, "2000-01-01", "symptom", VariableShift.Up),
         _shift(
@@ -97,6 +101,7 @@ def test_certainty_bands_and_undated_shelf():
 
 
 def test_gap_distinct_from_recorded_no_change():
+    # R-0010
     up, same = VariableShift.Up, VariableShift.Same
     events = [
         _shift(10, 1, "2000-01-01", "symptom", up),
@@ -115,6 +120,7 @@ def test_gap_distinct_from_recorded_no_change():
 
 
 def test_same_events_do_not_count_toward_line():
+    # R-0008
     up, same = VariableShift.Up, VariableShift.Same
     events = [
         _shift(10, 1, "2000-01-01", "symptom", up),
@@ -127,6 +133,7 @@ def test_same_events_do_not_count_toward_line():
 
 
 def test_strip_vocabulary_is_line_dots_question_only():
+    # R-0005
     timeline = build_timeline(seed_diagram_data())
     strip = timeline["strip"]["lanes"]
     assert 1 <= len(strip) <= 2
@@ -139,6 +146,7 @@ def test_strip_vocabulary_is_line_dots_question_only():
 
 
 def test_lane_picker_data_from_diagram():
+    # no ruling
     timeline = build_timeline(seed_diagram_data())
     assert {p["id"] for p in timeline["people"]} == {1, 3, 4, 5, 6, 7}
     assert {b["id"] for b in timeline["pair_bonds"]} == {8, 9}
@@ -149,6 +157,7 @@ def test_lane_picker_data_from_diagram():
 
 
 def test_order_question_for_touching_ranges():
+    # R-0011
     """Separation 1996+/-1yr vs sleep onset 1995+/-1yr: ranges touch -> a '?'."""
     timeline = build_timeline(seed_diagram_data())
     pairs = {(q["event_id"], q["other_event_id"]) for q in timeline["questions"]}
@@ -159,6 +168,7 @@ def test_order_question_for_touching_ranges():
 
 
 def test_no_question_for_distant_ranges():
+    # R-0011
     events = [
         _shift(10, 1, "2000-01-01", "symptom", VariableShift.Up),
         asdict(
@@ -177,6 +187,7 @@ def test_no_question_for_distant_ranges():
 
 
 def test_every_mark_has_a_sentence():
+    # R-0005
     timeline = build_timeline(seed_diagram_data())
     for lane in timeline["lanes"]:
         for entry in lane["points"] + lane["same_marks"]:
@@ -191,6 +202,7 @@ def test_every_mark_has_a_sentence():
 
 
 def test_seed_fixture_covers_every_move_the_play_by_play_draws():
+    # no ruling
     """The play-by-play has one symbol per move kind; the fixture has to walk
     through all of them or the stepping is never exercised."""
     events = seed_diagram_data().events
@@ -207,6 +219,7 @@ def test_seed_fixture_covers_every_move_the_play_by_play_draws():
 
 
 def test_seed_fixture_covers_every_rule():
+    # no ruling
     data = seed_diagram_data()
     assert len(data.people) >= 5
     assert len(data.pair_bonds) == 2
@@ -233,6 +246,7 @@ def test_seed_fixture_covers_every_rule():
 
 
 def test_a_record_with_no_stored_cluster_draws_none():
+    # R-0371, R-0076
     """The picture draws the clusters the record holds. Moments no cluster
     claims are dots on the wire, never boxed with whatever happened near
     them."""
@@ -248,6 +262,7 @@ def test_a_record_with_no_stored_cluster_draws_none():
 
 
 def test_a_cluster_takes_its_title_from_a_stored_cluster_inside_it():
+    # R-0076
     events = [
         _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
         _shift(11, 1, "1991-01-01", "symptom", VariableShift.Down),
@@ -271,6 +286,7 @@ def test_a_cluster_takes_its_title_from_a_stored_cluster_inside_it():
 
 
 def test_two_clusters_inside_one_run_of_events_stay_two_groupings():
+    # R-0371
     """Without this the picture draws a single blob over a dense record, which
     is the shape Patrick's first look at the beta rejected."""
     events = [
@@ -309,6 +325,7 @@ def test_two_clusters_inside_one_run_of_events_stay_two_groupings():
 
 
 def test_events_no_cluster_claims_stay_off_every_cluster():
+    # R-0076
     events = [
         _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
         _shift(11, 1, "1990-06-01", "symptom", VariableShift.Down),
@@ -336,6 +353,7 @@ def test_events_no_cluster_claims_stay_off_every_cluster():
 
 
 def test_every_dated_event_says_itself_in_a_sentence():
+    # R-0005
     events = [
         _shift(10, 1, "1996-01-01", "symptom", VariableShift.Up, DateCertainty.Approximate),
     ]
@@ -345,6 +363,7 @@ def test_every_dated_event_says_itself_in_a_sentence():
 
 
 def test_the_axis_spans_every_dated_event_not_only_the_lane_marks():
+    # no ruling
     events = [
         asdict(
             Event(
@@ -365,6 +384,7 @@ def test_the_axis_spans_every_dated_event_not_only_the_lane_marks():
 
 
 def test_undated_events_belong_to_no_cluster_but_stay_in_the_list():
+    # no ruling
     events = [
         _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
         _shift(
@@ -377,6 +397,7 @@ def test_undated_events_belong_to_no_cluster_but_stay_in_the_list():
 
 
 def test_every_event_carries_the_words_the_list_shows():
+    # no ruling
     timeline = build_timeline(seed_diagram_data())
     assert len(timeline["events"]) == len(seed_diagram_data().events)
     for event in timeline["events"]:
@@ -385,6 +406,7 @@ def test_every_event_carries_the_words_the_list_shows():
 
 
 def test_an_event_carries_the_fields_whoever_stored_it_left_out():
+    # no ruling
     events = [{"id": 10, "kind": EventKind.Shift.value, "dateTime": "1990-01-01"}]
     event = build_timeline(_data([1], events))["events"][0]
     assert event["relationshipTargets"] == []
@@ -400,6 +422,7 @@ def _named(ids_and_names, events):
 
 
 def test_a_moment_says_who_from_its_links_and_what_without_the_name():
+    # no ruling
     """Owner ruling 2026-09-09: who comes from the links, what never repeats a
     linked person's name."""
     events = [
@@ -455,6 +478,7 @@ def test_a_moment_says_who_from_its_links_and_what_without_the_name():
 
 
 def test_a_noted_event_near_a_shift_is_a_lead_and_raises_the_question():
+    # R-0366
     """A move is not a change in the family, but a coach may wonder whether it
     played in (R-0366)."""
     events = [

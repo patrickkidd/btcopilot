@@ -33,6 +33,7 @@ def stream_client(text, stop_reason="end_turn", in_tokens=100, out_tokens=50):
 
 @pytest.mark.asyncio
 async def test_gemini_structured_dispatches_claude_models():
+    # no ruling
     with patch(
         "btcopilot.llmutil.claude_structured", new_callable=AsyncMock
     ) as structured:
@@ -44,6 +45,7 @@ async def test_gemini_structured_dispatches_claude_models():
 
 @pytest.mark.asyncio
 async def test_claude_structured_parses_fenced_json_and_counts_usage():
+    # no ruling
     payload = {
         "people": [{"id": -1, "name": "Mary", "gender": "female"}],
         "events": [],
@@ -62,6 +64,7 @@ async def test_claude_structured_parses_fenced_json_and_counts_usage():
 
 @pytest.mark.asyncio
 async def test_claude_structured_raises_on_truncation():
+    # no ruling
     client = stream_client('{"people": []}', stop_reason="max_tokens")
     with patch("btcopilot.llmutil._extraction_anthropic_client", return_value=client):
         with pytest.raises(OutputTruncatedError):

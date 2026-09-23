@@ -9,14 +9,17 @@ from btcopilot.schema import (
 
 
 def test_validatedDateTimeText_empty():
+    # no ruling
     assert validatedDateTimeText("") is None
 
 
 def test_validatedDateTimeText_blank():
+    # no ruling
     assert validatedDateTimeText(BLANK_DATE_TEXT) is None
 
 
 def test_validatedDateTimeText_standard_format():
+    # no ruling
     result = validatedDateTimeText("03/15/2024")
     assert result is not None
     assert result.date().year() == 2024
@@ -25,6 +28,7 @@ def test_validatedDateTimeText_standard_format():
 
 
 def test_validatedDateTimeText_with_time():
+    # no ruling
     result = validatedDateTimeText("03/15/2024", "2:30 pm")
     assert result is not None
     assert result.time().hour() == 14
@@ -32,12 +36,14 @@ def test_validatedDateTimeText_with_time():
 
 
 def test_validatedDateTimeText_blank_time():
+    # no ruling
     result = validatedDateTimeText("03/15/2024", BLANK_TIME_TEXT)
     assert result is not None
     assert result.date().year() == 2024
 
 
 def test_validatedDateTimeText_8digit_format():
+    # no ruling
     result = validatedDateTimeText("03/15/24")
     assert result is not None
     assert result.date().month() == 3
@@ -45,6 +51,7 @@ def test_validatedDateTimeText_8digit_format():
 
 
 def test_pyDateTimeString_datetime():
+    # no ruling
     dt = datetime.datetime(2024, 3, 15, 14, 30)
     result = pyDateTimeString(dt)
     assert "03/15/2024" in result
@@ -52,6 +59,7 @@ def test_pyDateTimeString_datetime():
 
 
 def test_pyDateTimeString_from_string():
+    # no ruling
     result = pyDateTimeString("2024-03-15 14:30:00")
     assert "03/15/2024" in result
     assert "02:30 PM" in result

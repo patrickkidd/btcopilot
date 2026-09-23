@@ -3,6 +3,21 @@
 Audited 2026-09-14 under R-0331, extended under R-0332. Measured on this branch. No
 code was changed.
 
+## The standard, 2026-09-23 (R-0421, R-0416)
+
+Every test cites the ruling it proves on a comment line at its top: `# R-0NNN` under a
+Python test's def, `// R-0NNN` above a TypeScript or Playwright test. A test that proves
+no ruling says `no ruling` there instead, and is listed with what it proves in
+`doc/TESTS_WITHOUT_RULING.md` for the owner to rule on or delete. A process ruling is
+never cited for product behaviour. `btcopilot/tests/test_citations.py` fails on any test
+in the three trees without one of the two. This replaces the "as tests are touched,
+never as a sweep" fix in section 1: the sweep was ordered. Screenshots are compared only
+where pixels matter: the resting picture on each fixture record, one open cluster, the
+board on its first move, a reply in the chat, the sessions sheet and the settings root,
+at phone size only. Everything else asserts words, roles and geometry (visible words,
+no box outside its parent, the 44px floor). The desktop project keeps its assertions
+but skips every screenshot and is not part of the gate; it runs by hand.
+
 ## The headline: the test suites are not where the time goes
 
 The review back end runs 89 tests in 6.4 seconds; the front end unit suite runs 113 in

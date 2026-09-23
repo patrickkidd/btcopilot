@@ -68,6 +68,7 @@ def logged(turn_id):
 def test_the_turn_is_handed_over_and_the_post_answers_at_once(
     web, token, family, monkeypatch
 ):
+    # R-0369
     coach(monkeypatch, said("Tell me about Nell."))
     response = post(web, token)
     assert response.status_code == 202
@@ -80,6 +81,7 @@ def test_the_turn_is_handed_over_and_the_post_answers_at_once(
 def test_the_turn_writes_what_it_did_in_order_and_ends_in_done(
     web, token, family, monkeypatch
 ):
+    # R-0369
     coach(
         monkeypatch,
         called(ToolName.EditPerson, name="Nell"),
@@ -101,6 +103,7 @@ def test_the_turn_writes_what_it_did_in_order_and_ends_in_done(
 def test_a_turn_that_breaks_ends_in_failed_and_stores_no_coach_words(
     web, token, family, monkeypatch
 ):
+    # R-0182
     """A coach that says nothing is a bare bubble on the page, so the turn
     fails — and the page is told in a sentence, not left waiting."""
     coach(monkeypatch, said(""))
@@ -135,6 +138,7 @@ class Refuses:
 def test_a_refused_turn_says_so_in_the_coachs_voice_and_is_not_retried(
     web, token, family, monkeypatch
 ):
+    # R-0410
     refuses = Refuses()
     monkeypatch.setattr(
         "btcopilot.personal.coachturn.CoachModel", lambda *a, **k: refuses
@@ -159,6 +163,7 @@ def test_a_refused_turn_says_so_in_the_coachs_voice_and_is_not_retried(
 def test_a_second_message_while_the_coach_is_answering_is_refused(
     web, token, family, monkeypatch
 ):
+    # no ruling
     coach(monkeypatch, said("Still going."))
     with patch("btcopilot.personal.turns.enqueue"):
         assert post(web, token).status_code == 202
@@ -167,6 +172,7 @@ def test_a_second_message_while_the_coach_is_answering_is_refused(
 
 
 def test_a_hold_left_by_a_dead_worker_runs_out(web, token, family, monkeypatch):
+    # no ruling
     """A worker that dies mid-turn says nothing. The hold on the session has to
     run out on its own, or the reader can never send anything again."""
     coach(monkeypatch, said("Still going."), said("Back to you."))
@@ -179,6 +185,7 @@ def test_a_hold_left_by_a_dead_worker_runs_out(web, token, family, monkeypatch):
 
 
 def test_the_session_says_which_turn_is_running(web, token, family, monkeypatch):
+    # R-0369
     coach(monkeypatch, said("Still going."))
     with patch("btcopilot.personal.turns.enqueue"):
         body = post(web, token).get_json()
@@ -201,6 +208,7 @@ def read(response) -> list[dict]:
 
 
 def test_the_stream_replays_from_where_the_page_got_to(web, token, family, monkeypatch):
+    # R-0369
     coach(
         monkeypatch,
         called(ToolName.EditPerson, name="Nell"),
@@ -227,6 +235,7 @@ def test_the_stream_replays_from_where_the_page_got_to(web, token, family, monke
 
 
 def test_the_stream_numbers_every_event(web, token, family, monkeypatch):
+    # no ruling
     coach(monkeypatch, said("Tell me about Nell."))
     body = post(web, token).get_json()
 
@@ -238,6 +247,7 @@ def test_the_stream_numbers_every_event(web, token, family, monkeypatch):
 
 
 def test_another_users_turn_is_not_found(web, token, family, monkeypatch, test_user_2):
+    # no ruling
     coach(monkeypatch, said("Tell me about Nell."))
     body = post(web, token).get_json()
     discussion = db.session.get(Discussion, body["discussion_id"])
@@ -248,10 +258,12 @@ def test_another_users_turn_is_not_found(web, token, family, monkeypatch, test_u
 
 
 def test_a_turn_nobody_started_is_not_found(web, token):
+    # no ruling
     assert web.get("/app/turns/nosuchturn/events").status_code == 404
 
 
 def test_the_task_can_be_run_on_its_own(discussion, family, monkeypatch):
+    # no ruling
     """The worker calls the task with ids, and what it returns is the reply the
     page would have been handed before."""
     coach(monkeypatch, said("Go on."))
@@ -271,6 +283,7 @@ def test_the_task_can_be_run_on_its_own(discussion, family, monkeypatch):
 
 
 def test_the_log_hands_a_watcher_what_lands_after_it_started(turn_log):
+    # R-0369
     """Following is how the page sees a turn that is still running: what is
     appended after it attaches reaches it without asking again."""
     watching = turnlog.subscribe("t2")

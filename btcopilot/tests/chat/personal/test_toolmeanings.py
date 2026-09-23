@@ -36,6 +36,7 @@ def private(tmp_path):
 
 
 def test_every_tool_parameter_has_a_default_meaning():
+    # no ruling
     means = prompts.tool_meanings()
     assert set(means) == set(prompts.ToolText)
 
@@ -52,6 +53,7 @@ def public(monkeypatch):
 
 
 def test_the_default_schemas_say_nothing_clinical(public):
+    # R-0305
     overridable = {member.value for member in prompts.ToolText}
     said = " ".join(
         str(field.get("description", ""))
@@ -64,12 +66,14 @@ def test_the_default_schemas_say_nothing_clinical(public):
 
 
 def test_a_private_prompt_file_replaces_the_tool_meanings(private):
+    # R-0305
     properties = _event_properties()
     assert properties["relationship"]["description"] == "private relationship"
     assert properties["anxiety"]["description"] == "private anxiety"
 
 
 def test_the_scribe_reads_the_same_meanings(private):
+    # R-0305
     from btcopilot.review import adapter
 
     written = {schema["name"]: schema for schema in adapter.write_tools()}

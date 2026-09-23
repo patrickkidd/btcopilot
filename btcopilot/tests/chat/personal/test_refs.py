@@ -13,6 +13,7 @@ from btcopilot.schema import DateCertainty, DiagramData
 
 
 def test_every_kind_parses():
+    # R-0072, R-0085
     clean, refs = parse(
         "In [[cluster:c2|those years]] — [[events:10,11|two moments]], "
         "[[person:4|Nell]], [[range:1992-01-01..1998-12-31|92 to 98]]."
@@ -26,6 +27,7 @@ def test_every_kind_parses():
 
 
 def test_a_reply_naming_nothing_has_no_references():
+    # no ruling
     assert parse("What did that look like from where you sat?") == (
         "What did that look like from where you sat?",
         [],
@@ -33,16 +35,19 @@ def test_a_reply_naming_nothing_has_no_references():
 
 
 def test_unparseable_target_keeps_its_words_and_makes_no_reference():
+    # no ruling
     clean, refs = parse("I mean [[events:the winter|that winter]].")
     assert clean == "I mean that winter."
     assert refs == []
 
 
 def test_backwards_range_is_not_a_reference():
+    # no ruling
     assert parse("[[range:1998-01-01..1992-01-01|x]]")[1] == []
 
 
 def test_resolve_drops_targets_the_diagram_does_not_have():
+    # R-0085
     data = DiagramData(people=[{"id": 1}], events=[{"id": 10}], clusters=[{"id": "c1"}])
     refs = [
         Ref(kind=RefKind.Person, label="a", person_id=2),
@@ -109,6 +114,7 @@ def _seeded() -> DiagramData:
 
 
 def test_index_names_every_kind_of_id_the_markup_takes():
+    # no ruling
     out = index(_seeded())
     assert "1 Nell" in out and "3 Wren" in out
     assert "c1 1992–1995 The move north" in out
@@ -116,17 +122,20 @@ def test_index_names_every_kind_of_id_the_markup_takes():
 
 
 def test_index_leaves_out_what_the_picture_cannot_aim_at():
+    # no ruling
     out = index(_seeded())
     assert "13 " not in out
     assert "c9" not in out
 
 
 def test_index_is_empty_without_a_dated_record():
+    # no ruling
     assert index(DiagramData(people=[{"id": 1, "name": "Nell"}])) == ""
     assert index(None) == ""
 
 
 def test_index_is_capped():
+    # no ruling
     data = DiagramData(
         people=[{"id": 1, "name": "Nell"}],
         events=[
@@ -145,6 +154,7 @@ def test_index_is_capped():
 
 
 def test_a_reply_citing_the_index_resolves_to_real_targets():
+    # R-0085
     data = _seeded()
     out = index(data)
     assert "c1" in out and "12 " in out and "3 Wren" in out
@@ -197,6 +207,7 @@ def _section(out: str, name: str) -> list[str]:
 
 
 def test_clusters_are_listed_newest_first():
+    # no ruling
     """Ids sort as text, so double digits are where a by-id sort goes wrong."""
     entries = _section(index(_wide(5)), "Clusters")
     years = [int(entry.split(" ")[1][:4]) for entry in entries]
@@ -205,6 +216,7 @@ def test_clusters_are_listed_newest_first():
 
 
 def test_a_large_cast_cannot_crowd_out_the_events():
+    # no ruling
     out = index(_wide(300))
     assert len(out) <= INDEX_BUDGET_TOKENS * 4
     for name in ("People", "Clusters", "Events"):

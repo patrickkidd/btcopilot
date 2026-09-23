@@ -32,6 +32,7 @@ def event(**over):
 
 
 def test_events_are_stored_with_user_and_session(web, test_user):
+    # no ruling
     response = post(
         web,
         event(),
@@ -58,6 +59,7 @@ def test_events_are_stored_with_user_and_session(web, test_user):
 
 @pytest.mark.parametrize("bad", [{"screen": "nowhere"}, {"name": "nothing"}])
 def test_an_unknown_screen_or_name_is_refused(web, bad):
+    # no ruling
     response = post(web, event(), event(**bad))
     assert response.status_code == 400
     assert ProductEvent.query.count() == 0
@@ -69,6 +71,7 @@ def enum_values(source: str, name: str) -> set[str]:
 
 
 def test_web_and_server_name_the_same_screens_and_features():
+    # no ruling
     source = TRACK.read_text()
     assert enum_values(source, "Screen") == {s.value for s in Screen}
     assert enum_values(source, "Feature") == {f.value for f in Feature}

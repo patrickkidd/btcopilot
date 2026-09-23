@@ -15,6 +15,7 @@ from btcopilot.llmutil import (
 
 
 def test_get_all_pdp_item_ids():
+    # no ruling
     pdp = PDP(
         people=[Person(id=-1, name="Bob"), Person(id=-2, name="David")],
         events=[
@@ -27,6 +28,7 @@ def test_get_all_pdp_item_ids():
 
 
 def test_dataclass_to_json_schema_force_required():
+    # no ruling
     """Verify force_required adds fields to required list even if they have defaults."""
     from btcopilot.llmutil import dataclass_to_json_schema
 
@@ -45,6 +47,7 @@ def test_dataclass_to_json_schema_force_required():
 
 
 def test_pdp_deltas_schema_has_event_required_fields():
+    # no ruling
     """Verify PDPDeltas schema marks Event required fields via PDP_FORCE_REQUIRED."""
     from btcopilot.llmutil import (
         dataclass_to_json_schema,
@@ -72,6 +75,7 @@ def test_pdp_deltas_schema_has_event_required_fields():
 
 
 def test_pdp_deltas_schema_has_pair_bond_required_fields():
+    # no ruling
     schema = dataclass_to_json_schema(
         PDPDeltas, PDP_SCHEMA_DESCRIPTIONS, PDP_FORCE_REQUIRED
     )
@@ -83,6 +87,7 @@ def test_pdp_deltas_schema_has_pair_bond_required_fields():
 
 
 def test_commit_repairs_dangling_parents():
+    # no ruling
     diagram_data = DiagramData(
         people=[{"id": 1, "name": "User"}],
         events=[],
@@ -111,6 +116,7 @@ def test_commit_repairs_dangling_parents():
 
 
 def test_commit_with_positive_id_people_in_pdp():
+    # no ruling
     """Positive-ID people in PDP (committed item updates) should not be committed."""
     diagram_data = DiagramData(
         people=[{"id": 1, "name": "User"}],

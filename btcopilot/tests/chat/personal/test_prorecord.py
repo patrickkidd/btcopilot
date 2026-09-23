@@ -58,6 +58,7 @@ RECORD = {
 
 
 def test_a_pro_record_survives_storage_and_comes_back_to_pro_equal(flask_app, test_user):
+    # R-0083, R-0422
     """The importer's own step: the pickle the Pro app saved becomes the JSON
     row the chat app keeps, and Pro gets an equal pickle back."""
     diagram = test_user.free_diagram
@@ -70,6 +71,7 @@ def test_a_pro_record_survives_storage_and_comes_back_to_pro_equal(flask_app, te
 
 
 def test_the_chat_app_reads_the_relationship_sub_fields(web, test_user):
+    # R-0076
     diagram = test_user.free_diagram
     diagram.data = diagramjson.store(pickle.dumps(RECORD))
     db.session.commit()
@@ -86,6 +88,7 @@ def test_the_chat_app_reads_the_relationship_sub_fields(web, test_user):
 
 
 def test_editing_an_event_by_hand_keeps_the_fields_only_the_desktop_knows(web, test_user):
+    # no ruling
     """The chat editor writes the fields it shows; relationshipIntensity and the
     desktop's drawing fields on the same event are not its to drop."""
     diagram = test_user.free_diagram

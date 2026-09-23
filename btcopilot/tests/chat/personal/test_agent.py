@@ -90,6 +90,7 @@ def family(test_user):
 
 
 def test_edit_writes_a_coach_change_and_the_record_moves(discussion, family):
+    # R-0086, R-0084
     reply = run(
         discussion,
         "My dad moved out in 1994 and my mum got sick that winter.",
@@ -118,6 +119,7 @@ def test_edit_writes_a_coach_change_and_the_record_moves(discussion, family):
 
 
 def test_the_coach_can_write_a_noted_event(discussion, family):
+    # R-0364, R-0363
     """A move is a noted event carrying what happened and where [Oracle: R-0364]."""
     run(
         discussion,
@@ -143,6 +145,7 @@ def test_the_coach_can_write_a_noted_event(discussion, family):
 
 
 def test_a_turn_that_fails_before_the_coach_answers_stores_no_words(discussion, family):
+    # no ruling
     class Down:
         def turn(self, system, messages, tools, turn_id=""):
             raise RuntimeError("model unreachable")
@@ -158,6 +161,7 @@ def test_a_turn_that_fails_before_the_coach_answers_stores_no_words(discussion, 
 def test_a_chip_the_record_cannot_resolve_never_reaches_the_transcript(
     discussion, family
 ):
+    # R-0085
     reply = run(
         discussion,
         "Tell me about that.",
@@ -167,6 +171,7 @@ def test_a_chip_the_record_cannot_resolve_never_reaches_the_transcript(
 
 
 def test_undo_puts_back_what_the_previous_turn_changed(discussion, family):
+    # R-0084
     record.apply(
         family.id,
         [{"item_kind": ItemKind.Person, "item_id": 1, "field": "name", "after": "Wrenn"}],
@@ -187,6 +192,7 @@ def test_undo_puts_back_what_the_previous_turn_changed(discussion, family):
 
 
 def test_undoing_the_same_turn_twice_is_refused_in_plain_words(discussion, family):
+    # R-0084
     record.apply(
         family.id,
         [{"item_kind": ItemKind.Person, "item_id": 1, "field": "name", "after": "Wrenn"}],
@@ -208,6 +214,7 @@ def test_undoing_the_same_turn_twice_is_refused_in_plain_words(discussion, famil
 
 
 def test_show_with_an_unknown_id_fails_where_the_model_can_see_it(discussion, family):
+    # R-0075
     model = Model(
         called(ToolName.Show, kind="triangle", persons=[1, 2, 77]),
         said("I cannot draw that yet."),
@@ -222,6 +229,7 @@ def test_show_with_an_unknown_id_fails_where_the_model_can_see_it(discussion, fa
 
 
 def test_show_stores_the_view_on_the_coach_statement(discussion, family):
+    # R-0075, R-0085
     reply = run(
         discussion,
         "Show me that cluster.",
@@ -238,6 +246,7 @@ def test_show_stores_the_view_on_the_coach_statement(discussion, family):
 def test_the_coach_is_handed_the_record_and_what_the_user_pointed_at(
     discussion, family
 ):
+    # R-0072
     model = Model(said("Say more about that."))
     run(discussion, "[[event:10]]", model)
 
@@ -246,6 +255,7 @@ def test_the_coach_is_handed_the_record_and_what_the_user_pointed_at(
 
 
 def test_play_by_play_names_every_event_once_in_date_order(test_user):
+    # R-0074
     data = DiagramData(
         people=[asdict(Person(id=1, name="Wren"))],
         events=[
@@ -278,6 +288,7 @@ def test_play_by_play_names_every_event_once_in_date_order(test_user):
 
 
 def test_chat_returns_the_words_and_the_events_behind_them(web, family, monkeypatch):
+    # R-0185
     from btcopilot.tests.chat.personal.conftest import csrf_token
 
     monkeypatch.setattr(
@@ -304,6 +315,7 @@ def test_chat_returns_the_words_and_the_events_behind_them(web, family, monkeypa
 
 
 def test_people_and_their_events_all_land_in_one_turn(discussion, family):
+    # no ruling
     """A turn that adds the people and stops has lost what was said about them:
     the coach keeps calling tools until every dated fact is in the record."""
     reply = run(
@@ -347,6 +359,7 @@ def test_people_and_their_events_all_land_in_one_turn(discussion, family):
 
 
 def test_the_words_before_a_tool_call_are_not_the_coach_speaking(discussion, family):
+    # no ruling
     """The model works out what to do in the open. Only its last words, the
     ones with no tool call behind them, are the reply."""
     reply = run(
@@ -368,6 +381,7 @@ def test_the_words_before_a_tool_call_are_not_the_coach_speaking(discussion, fam
 
 
 def test_offered_chips_never_reach_the_transcript(test_user):
+    # R-0361
     """Offered answers are dropped (Patrick, 2026-09-21): people type their own
     words. A model that still writes them loses only the offers."""
     data = DiagramData(
@@ -401,6 +415,7 @@ def test_offered_chips_never_reach_the_transcript(test_user):
 def test_a_turn_that_never_stops_calling_tools_still_says_something(
     discussion, family
 ):
+    # no ruling
     """The page shows what the coach said, so a turn may not end on a tool
     call. When the steps run out the coach is asked for its reply with no tools
     at all, and that is what the person reads."""
@@ -430,6 +445,7 @@ def test_a_turn_that_never_stops_calling_tools_still_says_something(
 
 
 def test_the_edits_of_a_capped_turn_are_all_kept(discussion, family, caplog):
+    # R-0411
     """Running out of steps ends the talking, not the record: everything the
     coach put in before the cap stays in."""
     working = [
@@ -460,11 +476,13 @@ def test_the_edits_of_a_capped_turn_are_all_kept(discussion, family, caplog):
 def test_a_turn_with_no_words_at_all_fails_rather_than_showing_a_bare_bubble(
     discussion, family
 ):
+    # no ruling
     with pytest.raises(EmptyReply):
         run(discussion, "Hello?", Model(said("")))
 
 
 def test_a_label_of_exactly_the_limit_is_left_alone(discussion, family):
+    # R-0169
     """Twenty-eight fits. The boundary is where this goes wrong, so it is
     pinned on both sides."""
     label = "a" * chips.CHIP_MAX
@@ -477,6 +495,7 @@ def test_a_label_of_exactly_the_limit_is_left_alone(discussion, family):
 
 
 def test_one_label_over_the_limit_is_asked_again_never_trimmed(discussion, family):
+    # R-0169
     """Twenty-nine does not fit. The coach is asked once to shorten it, and its
     own shorter words are what the person reads — nothing here cuts them."""
     long_label = "a" * (chips.CHIP_MAX + 1)
@@ -505,6 +524,7 @@ TOLD = (
 
 
 def test_a_reply_that_is_only_chips_is_asked_again_for_sentences(discussion, family):
+    # R-0160
     """A comma list of chips is not the coach speaking, so it is sent back once
     and the coach's own sentences are what the person reads."""
     model = Model(said(BARE), said(TOLD))
@@ -515,11 +535,13 @@ def test_a_reply_that_is_only_chips_is_asked_again_for_sentences(discussion, fam
 
 
 def test_a_reply_that_stays_a_list_of_chips_fails(discussion, family):
+    # R-0160
     with pytest.raises(BareList):
         run(discussion, "Walk me through it.", Model(said(BARE), said(BARE)))
 
 
 def test_a_label_that_stays_too_long_fails_rather_than_being_cut(discussion, family):
+    # R-0169
     long_label = "a" * (chips.CHIP_MAX + 1)
     with pytest.raises(LabelTooLong):
         run(
@@ -533,6 +555,7 @@ def test_a_label_that_stays_too_long_fails_rather_than_being_cut(discussion, fam
 
 
 def test_a_label_is_measured_in_what_a_reader_sees(discussion, family):
+    # R-0169
     """An accented letter is two code points and one character to read, so a
     label of accents at the limit fits."""
     label = "e\u0301" * chips.CHIP_MAX
@@ -548,6 +571,7 @@ def test_a_label_is_measured_in_what_a_reader_sees(discussion, family):
 
 
 def test_a_play_by_play_is_marked_as_one_and_names_its_stretch(discussion, family):
+    # R-0170
     """The page routes a tap by the kind of message it is in: a chip in a walk
     steps the board, a chip anywhere else selects the moment."""
     data = family.get_diagram_data()
@@ -564,6 +588,7 @@ def test_a_play_by_play_is_marked_as_one_and_names_its_stretch(discussion, famil
 
 
 def test_every_message_the_page_reads_back_carries_its_kind(web, family, monkeypatch):
+    # R-0170
     """The page routes a chip tap by the kind of message it sits in, so the
     kind travels with the message everywhere the page reads one."""
     from btcopilot.tests.chat.personal.conftest import csrf_token
@@ -607,6 +632,7 @@ TWO_HOURS = 2 * 3600
 
 
 def test_a_csrf_token_older_than_an_hour_still_posts(web, family, monkeypatch):
+    # no ruling
     """The token the page is stamped with lives as long as the session it
     belongs to. It expired after an hour, so a reader still signed in and still
     typing had every send refused and read an empty coach bubble."""
@@ -634,6 +660,7 @@ def test_a_csrf_token_older_than_an_hour_still_posts(web, family, monkeypatch):
 def test_a_moment_the_coach_wrote_traces_to_the_message_that_wrote_it(
     web, family, monkeypatch
 ):
+    # R-0140
     """The page offers the way back to where a moment was said. Nothing stamps
     that on the moment itself outside the fixtures, so it is read from the
     command log: the coach's own message against the commands that turn made."""
@@ -670,6 +697,7 @@ def test_a_moment_the_coach_wrote_traces_to_the_message_that_wrote_it(
 
 
 def test_a_turn_charges_every_model_call_to_the_user_for_the_month(discussion, family):
+    # R-0388
     from btcopilot.personal.models import TokenMeter
 
     first = called(ToolName.EditPerson, name="Nell")
@@ -690,6 +718,7 @@ def test_a_turn_charges_every_model_call_to_the_user_for_the_month(discussion, f
 
 
 def test_a_turn_writes_down_each_model_call_with_its_cost(discussion, family):
+    # R-0388
     first = called(ToolName.EditPerson, name="Nell")
     first.spent = Spent(input=1000, output=50, cache_creation=800, cache_read=0)
     second = said("Added [[person:11|Nell]].")
@@ -743,11 +772,13 @@ def test_a_turn_writes_down_each_model_call_with_its_cost(discussion, family):
 
 
 def test_a_model_with_no_price_raises():
+    # no ruling
     with pytest.raises(KeyError):
         pricing.cost("gpt-5", Spent())
 
 
 def test_tracing_provider(monkeypatch):
+    # no ruling
     monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
     assert isinstance(tracing.provider(), trace.NoOpTracerProvider)
 

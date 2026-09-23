@@ -314,6 +314,9 @@ Ask user to start/restart before using chrome-devtools MCP: `cd dashboard && uv 
 - **E2e tests** (real LLM calls): `uv run pytest --e2e -m e2e` — requires `GOOGLE_GEMINI_API_KEY` from `theapp/.env`
 - **Async**: `--asyncio-mode=auto` (configured in `btcopilot/tests/pytest.ini`)
 - **Directories**: `btcopilot/tests/chat/` (the chat app's suite), `btcopilot/tests/schema/`, `btcopilot/tests/test_*.py`
+- **Every test cites the ruling it proves (R-0421)**: `# R-0NNN` as the first line under a Python test's def, `// R-0NNN` on the line above a TypeScript/Playwright test; several ids comma-separated; never a process ruling for product behaviour.
+- **A test that proves no ruling** says `# no ruling` / `// no ruling` and gets one line in `doc/TESTS_WITHOUT_RULING.md` saying what it proves; never guess an id.
+- **A new test without a citation fails review**, and `btcopilot/tests/test_citations.py` fails the suite.
 
 ### Database
 - **Migrations**: Alembic (`alembic.ini`, `btcopilot/migrations/versions/`)

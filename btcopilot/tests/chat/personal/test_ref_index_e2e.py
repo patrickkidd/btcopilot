@@ -15,12 +15,14 @@ def _cited(out: str, section: str) -> list[str]:
 
 
 def test_the_state_handed_to_the_coach_carries_the_index():
+    # no ruling
     state = summarize_committed_state(seed_diagram_data())
     assert "Reference index" in state
     assert "People on file" in state
 
 
 def test_every_id_the_index_offers_survives_the_whole_loop():
+    # R-0072
     data = seed_diagram_data()
     out = index(data)
     person = _cited(out, "People")[0]
@@ -43,6 +45,7 @@ def test_every_id_the_index_offers_survives_the_whole_loop():
 
 
 def test_an_id_the_index_withholds_is_thrown_away():
+    # R-0085
     data = seed_diagram_data()
     out = index(data)
     unknown = max(int(i) for i in _cited(out, "Events")) + 1000
@@ -51,6 +54,7 @@ def test_an_id_the_index_withholds_is_thrown_away():
 
 
 def test_the_instruction_teaches_the_markup_the_parser_reads():
+    # no ruling
     """Guards the one thing that silently breaks chips: the instruction and
     the parser drifting apart on the markup."""
     for kind in RefKind:

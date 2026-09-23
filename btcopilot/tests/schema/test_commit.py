@@ -14,6 +14,7 @@ from btcopilot.schema import (
 
 
 def test_commit_single_person():
+    # no ruling
     data = DiagramData(pdp=PDP(people=[Person(id=-1, name="Bob")]))
     id_mapping = data.commit_pdp_items([-1])
 
@@ -26,6 +27,7 @@ def test_commit_single_person():
 
 
 def test_commit_single_event():
+    # no ruling
     data = DiagramData(pdp=PDP(events=[Event(id=-1, kind=EventKind.Shift, person=1)]))
     id_mapping = data.commit_pdp_items([-1])
 
@@ -37,6 +39,7 @@ def test_commit_single_event():
 
 
 def test_commit_event_with_pdp_person_reference():
+    # no ruling
     data = DiagramData(
         pdp=PDP(
             people=[Person(id=-1, name="Alice")],
@@ -54,6 +57,7 @@ def test_commit_event_with_pdp_person_reference():
 
 
 def test_commit_person_with_pdp_parent_references():
+    # no ruling
     data = DiagramData(
         pdp=PDP(
             pair_bonds=[PairBond(id=-4, person_a=-1, person_b=-2)],
@@ -79,6 +83,7 @@ def test_commit_person_with_pdp_parent_references():
 
 
 def test_commit_event_with_pdp_relationship_targets():
+    # no ruling
     data = DiagramData(
         pdp=PDP(
             people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
@@ -101,6 +106,7 @@ def test_commit_event_with_pdp_relationship_targets():
 
 
 def test_commit_event_with_pdp_triangles():
+    # no ruling
     data = DiagramData(
         pdp=PDP(
             people=[
@@ -129,6 +135,7 @@ def test_commit_event_with_pdp_triangles():
 
 
 def test_commit_preserves_committed_references():
+    # no ruling
     data = DiagramData(
         people=[{"id": 1, "name": "Committed Person"}],
         lastItemId=1,
@@ -147,6 +154,7 @@ def test_commit_preserves_committed_references():
 
 
 def test_commit_multiple_items_at_once():
+    # no ruling
     data = DiagramData(
         pdp=PDP(
             people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
@@ -162,6 +170,7 @@ def test_commit_multiple_items_at_once():
 
 
 def test_commit_partial_pdp():
+    # no ruling
     data = DiagramData(
         pdp=PDP(
             people=[Person(id=-1, name="Keep"), Person(id=-2, name="Commit")],
@@ -176,6 +185,7 @@ def test_commit_partial_pdp():
 
 
 def test_commit_rejects_positive_id():
+    # no ruling
     data = DiagramData(pdp=PDP(people=[Person(id=-1, name="Bob")]))
     with pytest.raises(ValueError) as exc_info:
         data.commit_pdp_items([1])
@@ -183,6 +193,7 @@ def test_commit_rejects_positive_id():
 
 
 def test_commit_rejects_nonexistent_pdp_id():
+    # no ruling
     data = DiagramData(pdp=PDP(people=[Person(id=-1, name="Bob")]))
     with pytest.raises(ValueError) as exc_info:
         data.commit_pdp_items([-999])
@@ -190,6 +201,7 @@ def test_commit_rejects_nonexistent_pdp_id():
 
 
 def test_commit_complex_transitive_closure():
+    # no ruling
     data = DiagramData(
         pdp=PDP(
             pair_bonds=[
@@ -230,6 +242,7 @@ def test_commit_complex_transitive_closure():
 
 
 def test_commit_birth_event_creates_inferred_parents():
+    # R-0325
     data = DiagramData(
         pdp=PDP(
             people=[Person(id=-1, name="Baby")],
@@ -263,6 +276,7 @@ def test_commit_birth_event_creates_inferred_parents():
 
 
 def test_commit_birth_event_creates_inferred_spouse():
+    # R-0325
     data = DiagramData(
         pdp=PDP(
             people=[Person(id=-1, name="Alice"), Person(id=-2, name="Baby")],
@@ -302,6 +316,7 @@ def test_commit_birth_event_creates_inferred_spouse():
 
 
 def test_commit_birth_event_creates_inferred_child():
+    # no ruling
     data = DiagramData(
         pdp=PDP(
             people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
@@ -333,6 +348,7 @@ def test_commit_birth_event_creates_inferred_child():
 
 
 def test_commit_married_event_creates_inferred_pair_bond():
+    # no ruling
     """When committing a Married event with person/spouse but no PairBond, create one."""
     data = DiagramData(
         pdp=PDP(
@@ -366,6 +382,7 @@ def test_commit_married_event_creates_inferred_pair_bond():
 
 
 def test_commit_bonded_event_creates_inferred_pair_bond():
+    # no ruling
     """When committing a Bonded event with person/spouse but no PairBond, create one."""
     data = DiagramData(
         pdp=PDP(
@@ -394,6 +411,7 @@ def test_commit_bonded_event_creates_inferred_pair_bond():
 
 
 def test_commit_married_event_uses_existing_pair_bond():
+    # no ruling
     """When committing a Married event with existing PairBond, don't create duplicate."""
     data = DiagramData(
         pdp=PDP(
@@ -418,6 +436,7 @@ def test_commit_married_event_uses_existing_pair_bond():
 
 
 def test_commit_separated_event_creates_inferred_pair_bond():
+    # no ruling
     data = DiagramData(
         pdp=PDP(
             people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
@@ -444,6 +463,7 @@ def test_commit_separated_event_creates_inferred_pair_bond():
 
 
 def test_commit_divorced_event_creates_inferred_pair_bond():
+    # no ruling
     data = DiagramData(
         pdp=PDP(
             people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
@@ -463,6 +483,7 @@ def test_commit_divorced_event_creates_inferred_pair_bond():
 
 
 def test_commit_birth_case3_creates_pair_bond():
+    # no ruling
     """Birth with person+spouse but no child creates pair bond and inferred child."""
     data = DiagramData(
         pdp=PDP(
@@ -493,6 +514,7 @@ def test_commit_birth_case3_creates_pair_bond():
 
 
 def test_commit_birth_existing_pair_bond_sets_child_parents():
+    # no ruling
     """Birth Case 2 with existing pair bond should still set child.parents."""
     data = DiagramData(
         pdp=PDP(
@@ -521,6 +543,7 @@ def test_commit_birth_existing_pair_bond_sets_child_parents():
 
 
 def test_commit_dedup_pair_bond_against_committed():
+    # no ruling
     """Committing a PDP pair bond whose dyad already exists in committed should reuse the committed one."""
     data = DiagramData(
         people=[{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}],
@@ -543,6 +566,7 @@ def test_commit_dedup_pair_bond_against_committed():
 
 
 def test_commit_dedup_pair_bond_child_parents_remapped():
+    # no ruling
     """When a PDP pair bond is deduped, Person.parents should remap to the existing committed PB."""
     data = DiagramData(
         people=[{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}],
@@ -567,6 +591,7 @@ def test_commit_dedup_pair_bond_child_parents_remapped():
 
 
 def test_commit_birth_case2_finds_committed_pair_bond():
+    # no ruling
     """Birth Case 2 with committed person should find committed pair bond and spouse."""
     data = DiagramData(
         people=[{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}],
@@ -593,6 +618,7 @@ def test_commit_birth_case2_finds_committed_pair_bond():
 
 
 def test_reject_transitive_cascade():
+    # no ruling
     """Rejecting a person should transitively cascade through pair bonds to children."""
     data = DiagramData(
         pdp=PDP(
@@ -617,6 +643,7 @@ def test_reject_transitive_cascade():
 
 
 def test_commit_backfills_committed_child_parents():
+    # no ruling
     # FD-337: children + their couple committed in an earlier session, no parent links.
     data = DiagramData(
         pdp=PDP(
@@ -650,6 +677,7 @@ def test_commit_backfills_committed_child_parents():
 
 
 def test_commit_backfill_does_not_overwrite_existing_parents():
+    # no ruling
     data = DiagramData(
         pdp=PDP(
             people=[Person(id=-i, name=n) for i, n in enumerate(["Kid", "A", "B", "C", "D"], 1)],
@@ -670,6 +698,7 @@ def test_commit_backfill_does_not_overwrite_existing_parents():
 
 
 def test_commit_pair_bond_married_none_defaults_true():
+    # no ruling
     data = DiagramData(
         pdp=PDP(
             people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
@@ -681,6 +710,7 @@ def test_commit_pair_bond_married_none_defaults_true():
 
 
 def test_commit_pair_bond_married_false_preserved():
+    # no ruling
     data = DiagramData(
         pdp=PDP(
             people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
@@ -692,6 +722,7 @@ def test_commit_pair_bond_married_false_preserved():
 
 
 def test_apply_parent_edits_leaves_non_parents_update_rows_staged():
+    # no ruling
     dd = DiagramData()
     dd.people = [
         {"id": 1, "name": "Ann Park", "parents": None},

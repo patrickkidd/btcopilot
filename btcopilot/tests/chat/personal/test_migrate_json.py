@@ -7,6 +7,7 @@ from btcopilot.models import Diagram
 
 
 def test_converts_once_and_is_idempotent(subscriber):
+    # no ruling
     pickled = Diagram(user_id=subscriber.user.id, name="Old")
     pickled.data = pickle.dumps({"people": [{"id": 1, "name": "Ada"}]})
     empty = Diagram(user_id=subscriber.user.id, name="Empty", data=b"")

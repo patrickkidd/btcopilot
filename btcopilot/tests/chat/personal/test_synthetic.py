@@ -37,6 +37,7 @@ _log = logging.getLogger(__name__)
 
 
 def test_system_prompt_includes_anti_patterns():
+    # no ruling
     persona = Persona(
         name="Test",
         background="Test background.",
@@ -48,6 +49,7 @@ def test_system_prompt_includes_anti_patterns():
 
 
 def test_system_prompt_includes_attachment_narrative():
+    # no ruling
     persona = Persona(
         name="Test",
         background="Test background.",
@@ -59,6 +61,7 @@ def test_system_prompt_includes_attachment_narrative():
 
 
 def test_system_prompt_includes_trait_behaviors():
+    # no ruling
     persona = Persona(
         name="Test",
         background="Test background.",
@@ -72,6 +75,7 @@ def test_system_prompt_includes_trait_behaviors():
 
 
 def test_system_prompt_deduplicates_high_functioning():
+    # no ruling
     persona = Persona(
         name="Test",
         background="Test background.",
@@ -84,6 +88,7 @@ def test_system_prompt_deduplicates_high_functioning():
 
 
 def test_system_prompt_no_old_conditional_sections():
+    # no ruling
     persona = Persona(
         name="Test",
         background="Test background.",
@@ -100,6 +105,7 @@ def test_system_prompt_no_old_conditional_sections():
 
 
 def test_detects_therapist_cliches():
+    # no ruling
     evaluator = QualityEvaluator()
     persona = Persona(
         name="Test",
@@ -119,6 +125,7 @@ def test_detects_therapist_cliches():
 
 
 def test_detects_repetitive_starters():
+    # no ruling
     evaluator = QualityEvaluator()
     persona = Persona(
         name="Test",
@@ -139,6 +146,7 @@ def test_detects_repetitive_starters():
 
 
 def test_counts_questions():
+    # no ruling
     evaluator = QualityEvaluator()
     persona = Persona(
         name="Test",
@@ -157,6 +165,7 @@ def test_counts_questions():
 
 
 def test_words_per_response():
+    # no ruling
     evaluator = QualityEvaluator()
     persona = Persona(name="Test", background="Test.", attachmentStyle=AttachmentStyle.Secure)
     turns = [
@@ -173,6 +182,7 @@ def test_words_per_response():
 
 
 def test_question_only_ratio():
+    # no ruling
     evaluator = QualityEvaluator()
     persona = Persona(name="Test", background="Test.", attachmentStyle=AttachmentStyle.Secure)
     turns = [
@@ -189,6 +199,7 @@ def test_question_only_ratio():
 
 
 def test_response_type_classification():
+    # no ruling
     evaluator = QualityEvaluator()
     persona = Persona(name="Test", background="Test.", attachmentStyle=AttachmentStyle.Secure)
     turns = [
@@ -206,6 +217,7 @@ def test_response_type_classification():
 
 
 def test_detects_echoing():
+    # no ruling
     evaluator = QualityEvaluator()
     persona = Persona(
         name="Test",
@@ -224,6 +236,7 @@ def test_detects_echoing():
 
 
 def test_good_conversation_scores_higher():
+    # no ruling
     evaluator = QualityEvaluator()
     persona = Persona(
         name="Test",
@@ -261,6 +274,7 @@ def test_good_conversation_scores_higher():
 
 
 def test_coverage_detects_missing_categories():
+    # no ruling
     persona = Persona(
         name="Test",
         background="Test",
@@ -284,6 +298,7 @@ def test_coverage_detects_missing_categories():
 
 
 def test_coverage_tracks_matched_keywords():
+    # no ruling
     persona = Persona(
         name="Test",
         background="Test",
@@ -304,6 +319,7 @@ def test_coverage_tracks_matched_keywords():
 
 
 def test_coverage_full_persona():
+    # no ruling
     evaluator = CoverageEvaluator()
     persona = Persona(
         name="CoverageTest",
@@ -359,6 +375,7 @@ def test_coverage_full_persona():
 
 
 def test_coverage_empty_datapoints():
+    # no ruling
     persona = Persona(
         name="Test",
         background="Test",
@@ -377,6 +394,7 @@ def test_coverage_empty_datapoints():
 
 @pytest.mark.e2e
 def test_generate_persona(test_user, monkeypatch):
+    # no ruling
     from btcopilot.personal.models import SyntheticPersona
 
     mock_response = json.dumps(
@@ -422,6 +440,7 @@ def test_generate_persona(test_user, monkeypatch):
 
 @pytest.mark.e2e
 def test_coverage_in_live_conversation(test_user):
+    # no ruling
     logging.getLogger("btcopilot").setLevel(logging.INFO)
 
     persona = Persona(
@@ -463,6 +482,7 @@ def test_coverage_in_live_conversation(test_user):
 
 @pytest.mark.e2e
 def test_single_persona_conversation(test_user):
+    # no ruling
     logging.getLogger("btcopilot").setLevel(logging.INFO)
 
     persona = Persona(
@@ -493,6 +513,7 @@ def test_single_persona_conversation(test_user):
 @pytest.mark.e2e
 @pytest.mark.slow
 def test_full_synthetic_suite(test_user):
+    # no ruling
     logging.getLogger("btcopilot").setLevel(logging.INFO)
 
     personas = [
@@ -530,6 +551,7 @@ def test_full_synthetic_suite(test_user):
 
 @pytest.mark.e2e
 def test_regression_robotic_patterns(test_user):
+    # no ruling
     logging.getLogger("btcopilot").setLevel(logging.INFO)
 
     persona = Persona(
@@ -556,6 +578,7 @@ def test_regression_robotic_patterns(test_user):
 @pytest.mark.e2e
 @pytest.mark.chat_flow(response="Tell me about your family.")
 def test_persist_synthetic_conversation(test_user):
+    # no ruling
     from btcopilot.models import Diagram
 
     persona = Persona(
@@ -610,6 +633,7 @@ def test_persist_synthetic_conversation(test_user):
 
 @pytest.mark.e2e
 def test_opus_vs_gemini_baseline(test_user):
+    # no ruling
     """Run matched conversations with Opus and Gemini, print metrics side by side."""
     from functools import partial
 
@@ -674,6 +698,7 @@ def test_opus_vs_gemini_baseline(test_user):
 @pytest.mark.e2e
 @pytest.mark.chat_flow(response="Tell me about your family.")
 def test_non_persist_cleans_up(test_user):
+    # no ruling
     initial_count = Discussion.query.filter_by(synthetic=True).count()
 
     persona = Persona(

@@ -50,6 +50,7 @@ def chain(tmp_path):
 
 
 def test_chain_builds_the_chat_tables_and_no_others(chain):
+    # R-0327
     assert set(shape(chain)) == set(tables.TABLES)
 
 
@@ -57,6 +58,7 @@ CHAT_PACKAGES = ("btcopilot.review", "btcopilot.personal", "btcopilot.auth", "bt
 
 
 def test_every_chat_model_is_in_the_chain():
+    # no ruling
     """A model in a chat-app package whose table the chain does not build is a
     table that exists on the sandbox by hand and on a fresh server not at all,
     which is how review_notes went missing."""
@@ -69,12 +71,14 @@ def test_every_chat_model_is_in_the_chain():
 
 
 def test_chain_matches_what_the_models_declare(chain, tmp_path):
+    # no ruling
     engine = create_engine(f"sqlite:///{tmp_path / 'models.db'}")
     tables.create_all(engine)
     assert shape(chain) == shape(str(engine.url))
 
 
 def test_every_foreign_key_points_inside_the_chat_database():
+    # R-0327
     outside = {
         f"{table.name}.{fk.parent.name} -> {fk.column.table.name}"
         for table in tables.tables()
@@ -85,4 +89,5 @@ def test_every_foreign_key_points_inside_the_chat_database():
 
 
 def test_the_pro_desktop_tables_are_gone():
+    # R-0327
     assert not tables.TABLES & PRO_ONLY

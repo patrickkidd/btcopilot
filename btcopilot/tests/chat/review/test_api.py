@@ -15,6 +15,7 @@ from btcopilot.tests.chat.review.conftest import coded, person, shift
 
 
 def test_cut_starts_after_the_previous_one(patrick, session, turns, cut):
+    # R-0296
     made = patrick.post(
         "/review/cuts",
         json={"discussion_id": session.id, "end_statement_id": turns[3].id},
@@ -24,6 +25,7 @@ def test_cut_starts_after_the_previous_one(patrick, session, turns, cut):
 
 
 def test_first_cut_starts_at_the_first_turn(patrick, session, turns):
+    # R-0296
     made = patrick.post(
         "/review/cuts",
         json={"discussion_id": session.id, "end_statement_id": turns[1].id},
@@ -32,6 +34,7 @@ def test_first_cut_starts_at_the_first_turn(patrick, session, turns):
 
 
 def test_an_overlapping_window_is_refused(patrick, session, turns, cut):
+    # R-0296
     made = patrick.post(
         "/review/cuts",
         json={
@@ -45,6 +48,7 @@ def test_an_overlapping_window_is_refused(patrick, session, turns, cut):
 
 
 def test_a_coder_cannot_open_the_vote(coder, cut):
+    # R-0346
     """A refused role lands on the login page, which is how this app says no."""
     refused = coder.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
     assert refused.status_code == 302
@@ -54,6 +58,7 @@ def test_a_coder_cannot_open_the_vote(coder, cut):
 def test_coding_reuses_the_coders_record_from_the_last_cut(
     coder, test_user_2, session, turns, cut
 ):
+    # no ruling
     first = coder.post("/review/codings", json={"cut_id": cut.id}).get_json()
     later = Cut(
         discussion_id=session.id,
@@ -69,6 +74,7 @@ def test_coding_reuses_the_coders_record_from_the_last_cut(
 
 
 def test_done_freezes_the_coders_record(coder, cut):
+    # no ruling
     coding = coder.post("/review/codings", json={"cut_id": cut.id}).get_json()
     assert not frozen(coding["diagram_id"])
 
@@ -79,6 +85,7 @@ def test_done_freezes_the_coders_record(coder, cut):
 def test_a_coder_sees_no_one_elses_coding_until_their_own_is_done(
     coder, test_user, test_user_2, cut
 ):
+    # no ruling
     coded(test_user, cut, {"people": [person(1, "Ann")]})
     mine = coder.post("/review/codings", json={"cut_id": cut.id}).get_json()
     assert len(coder.get(f"/review/codings?cut_id={cut.id}").get_json()) == 1
@@ -88,6 +95,7 @@ def test_a_coder_sees_no_one_elses_coding_until_their_own_is_done(
 
 
 def test_names_are_hidden_on_codings_until_ratification(coder, test_user, cut):
+    # no ruling
     coded(test_user, cut, {"people": [person(1, "Ann")]})
     mine = coder.post("/review/codings", json={"cut_id": cut.id}).get_json()
     coder.patch(f"/review/codings/{mine['id']}", json={"done_at": True})
@@ -142,6 +150,7 @@ def disputed_event(cut) -> Item:
 def test_snapshot_marks_the_shared_event_agreed_and_the_lone_one_disputed(
     patrick, test_user, test_user_2, cut
 ):
+    # no ruling
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
 
@@ -152,6 +161,7 @@ def test_snapshot_marks_the_shared_event_agreed_and_the_lone_one_disputed(
 
 
 def test_agreement_lands_on_the_cut(patrick, test_user, test_user_2, cut):
+    # no ruling
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
 
@@ -161,6 +171,7 @@ def test_agreement_lands_on_the_cut(patrick, test_user, test_user_2, cut):
 
 
 def test_one_vote_per_coder_per_item(patrick, coder, test_user, test_user_2, cut):
+    # no ruling
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
     item = disputed_event(cut)
@@ -173,6 +184,7 @@ def test_one_vote_per_coder_per_item(patrick, coder, test_user, test_user_2, cut
 
 
 def test_a_coder_reads_only_their_own_votes(patrick, coder, test_user, test_user_2, cut):
+    # no ruling
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
     item = disputed_event(cut)
@@ -187,6 +199,7 @@ def test_a_coder_reads_only_their_own_votes(patrick, coder, test_user, test_user
 def test_decision_writes_a_change_on_the_case_record(
     patrick, test_user, test_user_2, case, cut
 ):
+    # R-0275
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
     item = next(
@@ -212,6 +225,7 @@ def test_decision_writes_a_change_on_the_case_record(
 def test_ratifying_writes_the_ground_truth_export(
     patrick, flask_app, test_user, test_user_2, cut
 ):
+    # no ruling
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
     agreed = next(
@@ -235,6 +249,7 @@ def test_ratifying_writes_the_ground_truth_export(
 def test_ratifying_asks_the_coach_for_a_first_draft_of_the_rules(
     patrick, no_coach, test_user, test_user_2, cut
 ):
+    # R-0313
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
     decide_everything(patrick, db.session.get(Cut, cut.id))
@@ -243,6 +258,7 @@ def test_ratifying_asks_the_coach_for_a_first_draft_of_the_rules(
 
 
 def test_the_coachs_draft_lands_as_ai_rules(patrick, test_user, test_user_2, cut):
+    # no ruling
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
     item = Item.query.filter_by(cut_id=cut.id, item_kind="event").first()
@@ -259,6 +275,7 @@ def test_the_coachs_draft_lands_as_ai_rules(patrick, test_user, test_user_2, cut
 
 
 def test_a_post_without_a_csrf_token_is_refused(flask_app, patrick, session, turns):
+    # no ruling
     flask_app.config["WTF_CSRF_METHODS"] = ["POST"]
     refused = patrick.post(
         "/review/cuts",
@@ -269,6 +286,7 @@ def test_a_post_without_a_csrf_token_is_refused(flask_app, patrick, session, tur
 
 
 def test_patrick_flags_a_rule_and_the_same_tap_takes_the_flag_off(patrick):
+    # R-0346
     made = patrick.post(
         "/review/rules", json={"text": "Date a shift by when it began"}
     )
@@ -286,6 +304,7 @@ def test_patrick_flags_a_rule_and_the_same_tap_takes_the_flag_off(patrick):
 
 
 def test_a_coder_reads_the_rules_but_cannot_flag_one(patrick, coder):
+    # R-0346
     rule_id = patrick.post("/review/rules", json={"text": "A rule"}).get_json()["id"]
 
     assert coder.get("/review/rules").status_code == 200
@@ -295,6 +314,7 @@ def test_a_coder_reads_the_rules_but_cannot_flag_one(patrick, coder):
 
 
 def test_only_patrick_runs_the_agenda(patrick, coder, session, turns, cut):
+    # R-0346
     put = coder.post(
         "/review/cuts",
         json={"discussion_id": session.id, "end_statement_id": turns[3].id},
@@ -319,6 +339,7 @@ def test_only_patrick_runs_the_agenda(patrick, coder, session, turns, cut):
 
 
 def test_only_patrick_decides_an_item(patrick, coder, test_user, test_user_2, cut):
+    # R-0346
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
     item = Item.query.filter_by(cut_id=cut.id).first()
@@ -330,6 +351,7 @@ def test_only_patrick_decides_an_item(patrick, coder, test_user, test_user_2, cu
 def test_the_agenda_gathers_what_the_meeting_must_take_up(
     patrick, coder, test_user, test_user_2, cut
 ):
+    # no ruling
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
     item = Item.query.filter_by(cut_id=cut.id).first()
@@ -343,6 +365,7 @@ def test_the_agenda_gathers_what_the_meeting_must_take_up(
 
 
 def test_the_coachs_replay_is_a_coding_with_its_model(patrick, test_user, cut):
+    # no ruling
     coding = Coding(
         cut_id=cut.id,
         user_id=test_user.id,
@@ -358,6 +381,7 @@ def test_the_coachs_replay_is_a_coding_with_its_model(patrick, test_user, cut):
 
 
 def test_the_agenda_says_what_each_coder_is_doing(patrick, coder, cut, test_user_2):
+    # no ruling
     """Patrick has not started; the other coder has a coding under way."""
     coder.post("/review/codings", json={"cut_id": cut.id})
     rows = patrick.get("/review/coders").get_json()
@@ -368,6 +392,7 @@ def test_the_agenda_says_what_each_coder_is_doing(patrick, coder, cut, test_user
 
 
 def test_a_coder_who_pressed_done_reads_as_done(patrick, test_user_2, cut):
+    # no ruling
     coded(test_user_2, cut, {})
     rows = patrick.get("/review/coders").get_json()
     assert {r["user_id"]: r["state"] for r in rows}[test_user_2.id] == "done"
@@ -377,18 +402,21 @@ def test_a_coder_who_pressed_done_reads_as_done(patrick, test_user_2, cut):
 def test_the_coach_is_not_one_of_the_coders_the_agenda_waits_on(
     patrick, test_user_2, cut
 ):
+    # no ruling
     coded(test_user_2, cut, {}, agent={"model": "claude-sonnet-5"})
     rows = patrick.get("/review/coders").get_json()
     assert test_user_2.id not in [row["user_id"] for row in rows]
 
 
 def test_taking_a_conversation_off_the_agenda(patrick, cut):
+    # no ruling
     gone = patrick.delete(f"/review/cuts/{cut.id}")
     assert gone.status_code == 200
     assert db.session.get(Cut, cut.id) is None
 
 
 def test_a_cut_someone_started_cannot_be_taken_off_the_agenda(patrick, coder, cut):
+    # no ruling
     coder.post("/review/codings", json={"cut_id": cut.id})
     refused = patrick.delete(f"/review/cuts/{cut.id}")
     assert refused.status_code == 400
@@ -399,6 +427,7 @@ def test_a_cut_someone_started_cannot_be_taken_off_the_agenda(patrick, coder, cu
 def test_a_cut_cannot_be_placed_before_the_last_ratified_one(
     patrick, session, turns, cut
 ):
+    # R-0296
     cut.ratified_at = datetime.datetime.utcnow()
     db.session.commit()
     refused = patrick.post(
@@ -410,6 +439,7 @@ def test_a_cut_cannot_be_placed_before_the_last_ratified_one(
 
 
 def test_a_nudge_reaches_everyone_not_done(patrick, coder, test_user_2, cut):
+    # no ruling
     coder.post("/review/codings", json={"cut_id": cut.id})
     with patch("btcopilot.review.routes.nudges.send_nudge") as sent:
         made = patrick.post("/review/nudges", json={})
@@ -420,11 +450,13 @@ def test_a_nudge_reaches_everyone_not_done(patrick, coder, test_user_2, cut):
 
 
 def test_a_coder_cannot_nudge(coder, cut):
+    # no ruling
     refused = coder.post("/review/nudges", json={})
     assert refused.status_code == 302
 
 
 def test_the_turns_of_a_session_carry_the_ratified_line(patrick, session, turns, cut):
+    # R-0271
     cut.ratified_at = datetime.datetime.utcnow()
     db.session.commit()
     read = patrick.get(f"/review/turns?discussion_id={session.id}").get_json()
@@ -434,6 +466,7 @@ def test_the_turns_of_a_session_carry_the_ratified_line(patrick, session, turns,
 
 
 def test_a_coder_cannot_read_a_session_whole(coder, session):
+    # no ruling
     refused = coder.get(f"/review/turns?discussion_id={session.id}")
     assert refused.status_code == 302
 
@@ -465,6 +498,7 @@ def wrote_from(
 def test_the_ballot_carries_the_turn_and_the_person_of_each_opinion(
     patrick, test_user, test_user_2, cut, turns
 ):
+    # no ruling
     first, _ = two_codings(test_user, test_user_2, cut)
     wrote_from(first, 10, turns[1].id, test_user.id)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
@@ -484,6 +518,7 @@ def test_the_ballot_carries_the_turn_and_the_person_of_each_opinion(
 def test_each_version_of_a_person_carries_the_line_its_coder_wrote_it_from(
     patrick, test_user, test_user_2, cut, turns
 ):
+    # no ruling
     first, second = two_codings(test_user, test_user_2, cut)
     wrote_from(first, 1, turns[0].id, test_user.id, kind="person")
     wrote_from(second, 1, turns[1].id, test_user_2.id, kind="person")
@@ -497,6 +532,7 @@ def test_each_version_of_a_person_carries_the_line_its_coder_wrote_it_from(
 def test_a_person_nobody_wrote_from_a_turn_carries_no_line(
     patrick, test_user, test_user_2, cut
 ):
+    # no ruling
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
 
@@ -508,6 +544,7 @@ def test_a_person_nobody_wrote_from_a_turn_carries_no_line(
 def test_an_item_one_coder_left_out_says_how_many_left_it_out(
     patrick, test_user, test_user_2, cut
 ):
+    # R-0315
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
 
@@ -519,6 +556,7 @@ def test_an_item_one_coder_left_out_says_how_many_left_it_out(
 
 
 def test_no_name_reaches_the_ballot(patrick, test_user, test_user_2, cut):
+    # no ruling
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
 
@@ -530,6 +568,7 @@ def test_no_name_reaches_the_ballot(patrick, test_user, test_user_2, cut):
 def test_the_coachs_own_reading_is_not_on_the_ballot(
     patrick, test_user, test_user_2, cut
 ):
+    # no ruling
     two_codings(test_user, test_user_2, cut)
     robot = User(username="coach@example.com", roles="subscriber")
     db.session.add(robot)
@@ -549,6 +588,7 @@ def test_the_coachs_own_reading_is_not_on_the_ballot(
 
 
 def test_an_agreed_item_cannot_be_voted_on(patrick, test_user, test_user_2, cut):
+    # R-0257
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
     agreed = next(
@@ -563,6 +603,7 @@ def test_an_agreed_item_cannot_be_voted_on(patrick, test_user, test_user_2, cut)
 
 
 def test_a_disputed_person_can_be_voted_on(patrick, test_user, test_user_2, cut):
+    # R-0323, R-0326
     """People and bonds are on the ballot, read before the events, because an
     event about somebody nobody has agreed on yet cannot be settled (R-0326)."""
     coded(test_user, cut, {"people": [person(1, "Ann")]})
@@ -581,6 +622,7 @@ def test_a_disputed_person_can_be_voted_on(patrick, test_user, test_user_2, cut)
 def test_the_vote_task_goes_when_every_disputed_event_has_a_vote(
     patrick, coder, test_user, test_user_2, cut
 ):
+    # no ruling
     two_codings(test_user, test_user_2, cut)
     coder.post("/review/codings", json={"cut_id": cut.id})
     mine = Coding.query.filter_by(cut_id=cut.id, user_id=coder.user.id).first()
@@ -599,6 +641,7 @@ def test_the_vote_task_goes_when_every_disputed_event_has_a_vote(
 
 
 def test_only_an_auditor_reaches_the_coding_work(subscriber, cut):
+    # R-0311
     """A professional licence or a plain subscription is not a coding role
     (R-0311)."""
     refused = subscriber.get("/review/tasks")
@@ -606,10 +649,12 @@ def test_only_an_auditor_reaches_the_coding_work(subscriber, cut):
 
 
 def test_an_auditor_reaches_the_coding_work(coder, cut):
+    # R-0311
     assert coder.get("/review/tasks").status_code == 200
 
 
 def test_a_coder_without_a_name_is_still_shown_as_initials(flask_app):
+    # R-0342
     named = User(username="s.a@example.com", first_name="Sam", last_name="Ang")
     assert initials(named) == "S.A."
     assert initials(User(username="ballot1@fd362-fixture.invalid")) == "B1."
@@ -618,6 +663,7 @@ def test_a_coder_without_a_name_is_still_shown_as_initials(flask_app):
 
 
 def test_nudges_switched_off_are_refused(patrick, cut):
+    # no ruling
     setting.write(SettingKey.NudgesOn, False)
     refused = patrick.post("/review/nudges", json={})
     assert refused.status_code == 400

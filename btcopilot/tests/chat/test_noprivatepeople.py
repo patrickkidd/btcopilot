@@ -76,6 +76,7 @@ def tracked() -> list[str]:
 
 
 def test_no_meeting_record_of_real_people_is_in_the_repo():
+    # R-0413, R-0053
     found = [name for name in tracked() if MEETING.search(name)]
     assert not found, (
         "these name real people and belong in fd-corpus/private, not here: "
@@ -84,11 +85,13 @@ def test_no_meeting_record_of_real_people_is_in_the_repo():
 
 
 def test_no_database_dump_is_in_the_repo():
+    # R-0053
     found = [name for name in tracked() if DUMP.search(name)]
     assert not found, f"a database holds real people's records: {found}"
 
 
 def test_no_outside_email_address_is_in_the_repo():
+    # R-0053
     offenders = {}
     for name in tracked():
         path = REPO / name

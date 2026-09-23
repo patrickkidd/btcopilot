@@ -65,6 +65,7 @@ def decide_all(patrick, cut, choice="keep"):
 def test_the_coach_is_not_counted_as_a_coder(
     patrick, test_user, test_user_2, coach_user, cut
 ):
+    # no ruling
     three_readings(test_user, test_user_2, coach_user, cut)
     open_vote(patrick, cut)
 
@@ -75,6 +76,7 @@ def test_the_coach_is_not_counted_as_a_coder(
 def test_what_only_the_coach_read_differently_is_not_disputed(
     patrick, test_user, test_user_2, coach_user, cut
 ):
+    # no ruling
     """The two people wrote the second moment the same way; only the coach
     dated it otherwise, and that does not put it in front of the room."""
     three_readings(test_user, test_user_2, coach_user, cut)
@@ -91,6 +93,7 @@ def test_what_only_the_coach_read_differently_is_not_disputed(
 def test_the_meeting_lists_people_as_well_as_events(
     patrick, test_user, test_user_2, cut
 ):
+    # R-0323, R-0326
     """People and bonds are read before the events, on the ballot and in the
     meeting alike (R-0326)."""
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": []})
@@ -108,6 +111,7 @@ def test_the_meeting_lists_people_as_well_as_events(
 def test_names_are_on_the_meetings_reading_and_not_the_ballots(
     patrick, coder, test_user, test_user_2, cut
 ):
+    # R-0321
     three_opinions = {"people": [person(1, "Ann")], "events": [shift(10, 1, "a shift")]}
     coded(test_user, cut, three_opinions)
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
@@ -122,6 +126,7 @@ def test_names_are_on_the_meetings_reading_and_not_the_ballots(
 def test_the_kept_version_is_read_back_on_a_later_reading(
     patrick, test_user, test_user_2, cut
 ):
+    # R-0339, R-0341
     """Which coder's version the room kept is on the item itself, so a decided
     item opens with that row lit long after the meeting (R-0339). Writing one
     out or leaving it unresolved keeps nothing lit."""
@@ -149,6 +154,7 @@ def test_the_kept_version_is_read_back_on_a_later_reading(
 def test_the_kept_version_is_not_on_the_blind_reading(
     patrick, coder, test_user, test_user_2, cut
 ):
+    # no ruling
     three_readings_users(test_user, test_user_2, cut)
     open_vote(patrick, cut)
     blind = coder.get(f"/review/items?cut_id={cut.id}").get_json()
@@ -170,6 +176,7 @@ def three_readings_users(test_user, test_user_2, cut):
 
 
 def test_a_coder_cannot_ask_for_the_names(coder, test_user, test_user_2, cut):
+    # no ruling
     coded(test_user, cut, {"people": [person(1, "Ann")]})
     refused = coder.get(f"/review/items?cut_id={cut.id}&named=true")
     assert refused.status_code == 302
@@ -178,6 +185,7 @@ def test_a_coder_cannot_ask_for_the_names(coder, test_user, test_user_2, cut):
 def test_the_tally_names_who_voted_which_way(
     patrick, coder, test_user, test_user_2, cut
 ):
+    # no ruling
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
@@ -197,6 +205,7 @@ def test_the_tally_names_who_voted_which_way(
 def test_ratify_waits_until_every_open_item_has_a_choice(
     patrick, test_user, test_user_2, cut
 ):
+    # R-0257
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
@@ -214,6 +223,7 @@ def test_ratify_waits_until_every_open_item_has_a_choice(
 def test_an_item_marked_unresolved_is_kept_and_left_out_of_the_record(
     patrick, test_user, test_user_2, cut
 ):
+    # R-0257
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
@@ -230,6 +240,7 @@ def test_an_item_marked_unresolved_is_kept_and_left_out_of_the_record(
 def test_reopening_a_decided_item_puts_it_back_in_front_of_the_room(
     patrick, test_user, test_user_2, cut
 ):
+    # R-0341, R-0257
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
@@ -243,6 +254,7 @@ def test_reopening_a_decided_item_puts_it_back_in_front_of_the_room(
 
 
 def test_both_agreement_figures_are_kept(patrick, test_user, test_user_2, cut):
+    # no ruling
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
@@ -256,6 +268,7 @@ def test_both_agreement_figures_are_kept(patrick, test_user, test_user_2, cut):
 def test_what_every_coder_read_the_same_way_is_ratified_too(
     patrick, flask_app, test_user, test_user_2, cut
 ):
+    # no ruling
     """An agreed item is never argued over, so ratifying is what confirms it
     onto the record."""
     same = {"people": [person(1, "Ann")], "events": [shift(10, 1, "a shift")]}
@@ -281,6 +294,7 @@ def test_what_every_coder_read_the_same_way_is_ratified_too(
 def test_the_result_scores_the_coachs_own_pass(
     patrick, test_user, test_user_2, coach_user, cut
 ):
+    # R-0293
     three_readings(test_user, test_user_2, coach_user, cut)
     open_vote(patrick, cut)
     decide_all(patrick, cut)
@@ -294,6 +308,7 @@ def test_the_result_scores_the_coachs_own_pass(
 def test_a_cut_the_coach_never_coded_says_so_rather_than_scoring_it(
     patrick, test_user, test_user_2, cut
 ):
+    # no ruling
     """No score and no differences, so the screen can say the coach did not
     code this conversation instead of showing an empty space."""
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
@@ -310,6 +325,7 @@ def test_a_cut_the_coach_never_coded_says_so_rather_than_scoring_it(
 def test_where_the_coach_differed_is_written_once_at_ratification(
     patrick, test_user, test_user_2, coach_user, cut
 ):
+    # no ruling
     three_readings(test_user, test_user_2, coach_user, cut)
     open_vote(patrick, cut)
     decide_all(patrick, cut)
@@ -323,6 +339,7 @@ def test_where_the_coach_differed_is_written_once_at_ratification(
 def test_a_rule_carries_the_decision_it_came_from(
     patrick, test_user, test_user_2, cut
 ):
+    # R-0275
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
@@ -339,6 +356,7 @@ def test_a_rule_carries_the_decision_it_came_from(
 def test_the_result_says_what_each_coder_tends_to_do(
     patrick, test_user, test_user_2, cut
 ):
+    # no ruling
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
@@ -351,6 +369,7 @@ def test_the_result_says_what_each_coder_tends_to_do(
 
 
 def test_changing_an_opinion_rewords_the_same_moment(patrick, test_user, test_user_2, cut):
+    # no ruling
     """A change is a rewording, not a second event beside the first: it lands
     on the moment the opinions already name."""
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
@@ -373,6 +392,7 @@ def test_changing_an_opinion_rewords_the_same_moment(patrick, test_user, test_us
 def test_a_person_can_be_decided_before_what_they_stand_on_is_ratified(
     patrick, test_user, test_user_2, cut
 ):
+    # no ruling
     """Keeping a person born to a bond the coders all read the same way puts
     that bond on the case first, so the record has what the person needs and
     the room is not refused (R-0326)."""
@@ -410,6 +430,7 @@ def test_a_person_can_be_decided_before_what_they_stand_on_is_ratified(
 def test_a_decision_the_record_refuses_is_the_rooms_fault(
     patrick, test_user, test_user_2, cut
 ):
+    # no ruling
     """A shift with no variable is refused in the record's own words, not as a
     server error."""
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
@@ -429,6 +450,7 @@ def test_a_decision_the_record_refuses_is_the_rooms_fault(
 
 
 def test_a_cut_that_is_not_ratified_has_no_result(patrick, cut):
+    # no ruling
     refused = patrick.get(f"/review/result?cut_id={cut.id}")
     assert refused.status_code == 400
 
@@ -436,6 +458,7 @@ def test_a_cut_that_is_not_ratified_has_no_result(patrick, cut):
 def test_every_contributor_can_read_the_result(
     patrick, coder, test_user, test_user_2, cut
 ):
+    # R-0344
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
@@ -446,6 +469,7 @@ def test_every_contributor_can_read_the_result(
 
 
 def test_a_ratified_cut_cannot_be_decided_again(patrick, test_user, test_user_2, cut):
+    # no ruling
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)

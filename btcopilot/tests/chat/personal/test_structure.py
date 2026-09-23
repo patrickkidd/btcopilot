@@ -53,12 +53,14 @@ def _write(diagram, deltas):
 
 
 def test_a_bond_of_one_person_with_themselves_is_refused(subscriber):
+    # no ruling
     diagram = _diagram(subscriber.user)
     with pytest.raises(record.Invalid, match="one person with themselves"):
         _write(diagram, _bond(11, 1, 1))
 
 
 def test_a_bond_with_one_side_is_refused(subscriber):
+    # no ruling
     diagram = _diagram(subscriber.user)
     with pytest.raises(record.Invalid, match="needs two people"):
         _write(
@@ -75,12 +77,14 @@ def test_a_bond_with_one_side_is_refused(subscriber):
 
 
 def test_a_second_bond_between_the_same_two_is_refused(subscriber):
+    # R-0326
     diagram = _diagram(subscriber.user)
     with pytest.raises(record.Invalid, match="already have pair bond 10"):
         _write(diagram, _bond(11, 2, 1))
 
 
 def test_nobody_is_born_to_a_bond_they_are_in(subscriber):
+    # no ruling
     diagram = _diagram(subscriber.user)
     with pytest.raises(record.Invalid, match="their own parent"):
         _write(
@@ -97,6 +101,7 @@ def test_nobody_is_born_to_a_bond_they_are_in(subscriber):
 
 
 def test_a_bond_between_two_different_people_commits(subscriber):
+    # no ruling
     diagram = _diagram(subscriber.user)
     _write(diagram, _bond(11, 2, 3))
     assert [b["id"] for b in diagram.get_diagram_data().pair_bonds] == [10, 11]
@@ -107,6 +112,7 @@ def _toolbox(diagram) -> Toolbox:
 
 
 def test_a_bond_named_on_one_side_gets_the_other_generically(subscriber):
+    # R-0325
     diagram = _diagram(
         subscriber.user,
         {"people": [{"id": 1, "name": "Sarah", "gender": "female"}], "lastItemId": 1},
@@ -119,6 +125,7 @@ def test_a_bond_named_on_one_side_gets_the_other_generically(subscriber):
 
 
 def test_a_birth_naming_one_parent_gets_the_other_generically(subscriber):
+    # R-0325
     diagram = _diagram(
         subscriber.user,
         {
@@ -140,4 +147,5 @@ def test_a_birth_naming_one_parent_gets_the_other_generically(subscriber):
 
 
 def test_the_generic_name_is_the_overridable_wording():
+    # R-0325
     assert prompts.generic_name("Sarah", prompts.Role.Father) == "Sarah's father"

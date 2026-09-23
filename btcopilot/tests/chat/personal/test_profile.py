@@ -30,6 +30,7 @@ def own_person(test_user):
 
 
 def test_an_empty_record_is_missing_all_three(test_user):
+    # R-0360
     data = test_user.free_diagram.get_diagram_data()
     assert profile.missing(data) == [
         profile.Required.FirstName,
@@ -39,6 +40,7 @@ def test_an_empty_record_is_missing_all_three(test_user):
 
 
 def test_the_coach_is_told_what_to_get_first(discussion):
+    # R-0360
     model = Model(said("What is your name?"))
     CoachTurn(discussion, "I have not been sleeping", model=model).run()
     assert "FIRST, BEFORE ANYTHING ELSE" in model.systems[0]
@@ -46,6 +48,7 @@ def test_the_coach_is_told_what_to_get_first(discussion):
 
 
 def test_a_complete_profile_lifts_the_gate_and_reaches_the_account(discussion, test_user):
+    # R-0360
     model = Model(
         called(ToolName.EditPerson, id=1, name="Wren", last_name="Hale"),
         called(

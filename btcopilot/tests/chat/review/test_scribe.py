@@ -57,6 +57,7 @@ def scribe(client, coding, statement, model, said="what happened"):
 
 
 def test_adds_the_person_the_coder_names(coder, cut, turns):
+    # no ruling
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
     model = Scripted(
         [("edit_person", {"name": "James Cooper"})],
@@ -79,6 +80,7 @@ def test_adds_the_person_the_coder_names(coder, cut, turns):
 
 
 def test_the_coders_words_stay_in_the_thread(coder, cut, turns):
+    # R-0270
     """Re-reading the thread gives the coder their own words back under the
     line they coded, with the scribe's line after them (R-0270)."""
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
@@ -95,6 +97,7 @@ def test_the_coders_words_stay_in_the_thread(coder, cut, turns):
 
 
 def test_two_things_said_about_one_turn_keep_their_own_lines(coder, cut, turns):
+    # R-0270
     """Each utterance carries the lines the scribe wrote from it, so the thread
     reads words, then what they did, then the next words (R-0270)."""
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
@@ -134,6 +137,7 @@ class Never:
 
 
 def test_asks_when_the_coder_points_without_naming(coder, cut, turns):
+    # no ruling
     """A bare pronoun with more than one person in the record is asked about
     before any model call, so nothing can be written (R-0270)."""
     coding = coded(
@@ -153,6 +157,7 @@ def test_asks_when_the_coder_points_without_naming(coder, cut, turns):
 
 
 def test_asks_when_one_name_could_be_two_people(coder, cut, turns):
+    # no ruling
     coding = coded(
         coder.user,
         cut,
@@ -168,6 +173,7 @@ def test_asks_when_one_name_could_be_two_people(coder, cut, turns):
 
 
 def test_a_whole_name_settles_shared_words(coder, cut, turns):
+    # no ruling
     """"Marcus's father" against "Marcus's grandmother" is not ambiguity."""
     coding = coded(
         coder.user,
@@ -184,6 +190,7 @@ def test_a_whole_name_settles_shared_words(coder, cut, turns):
 
 
 def test_a_relation_word_names_a_person(coder, cut, turns):
+    # no ruling
     """"grandmother stopped speaking to him" names one person and, by gender,
     points at the other: no question."""
     coding = coded(
@@ -204,6 +211,7 @@ def test_a_relation_word_names_a_person(coder, cut, turns):
 
 
 def test_a_gendered_pronoun_with_one_candidate_is_not_asked(coder, cut, turns):
+    # no ruling
     coding = coded(
         coder.user, cut, {"people": [{"id": 1, "name": "father"}, person(2, "mother")]}, done=False
     )
@@ -215,6 +223,7 @@ def test_a_gendered_pronoun_with_one_candidate_is_not_asked(coder, cut, turns):
 
 
 def test_a_turn_that_names_nobody_still_reaches_the_model(coder, cut, turns):
+    # no ruling
     """No name and no pronoun is not ambiguity: the model reads the turn."""
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
     model = Scripted(
@@ -226,6 +235,7 @@ def test_a_turn_that_names_nobody_still_reaches_the_model(coder, cut, turns):
 
 
 def test_writes_the_event_after_a_wasted_guess(coder, cut, turns):
+    # no ruling
     """On an empty record the cheap model guesses an id, is refused, then adds
     two people before the event. The loop must outlast that: the event lands."""
     coding = coded(coder.user, cut, {"people": []}, done=False)
@@ -280,6 +290,7 @@ class Endless:
 
 
 def test_says_so_when_it_runs_out_of_steps(coder, cut, turns):
+    # no ruling
     """What was written stays, and the coder is told, never shown it as done."""
     coding = coded(coder.user, cut, {"people": []}, done=False)
     response = scribe(coder, coding, turns[0], Endless(), "a sentence that never ends")
@@ -306,6 +317,7 @@ class Heard:
 
 
 def test_a_private_file_replaces_the_scribe_prompt(coder, cut, turns, tmp_path):
+    # R-0314
     """The words the scribe works by come from the private prompt file when one
     is installed, and reach the model whole (R-0314)."""
     (tmp_path / "scribe.prompty").write_text(
@@ -327,6 +339,7 @@ def test_a_private_file_replaces_the_scribe_prompt(coder, cut, turns, tmp_path):
 
 
 def test_a_marriage_and_a_child_are_written_and_said_back(coder, cut, turns):
+    # R-0326
     """The coder says who belongs to whom; the lines under their words are the
     marriage and the child, in the record's own words (R-0326, drawing 1a)."""
     coding = coded(
@@ -391,6 +404,7 @@ STRUCTURE = {
 
 
 def test_a_marriage_reads_as_both_names_and_the_year():
+    # R-0326
     """The line the coder sees for a structure write (R-0326, drawing 1a)."""
     assert written(STRUCTURE, ["20"], [], ["10"]) == [
         "+ Marcus & Delphine · married · Jun 1970"
@@ -398,6 +412,7 @@ def test_a_marriage_reads_as_both_names_and_the_year():
 
 
 def test_a_child_reads_as_whose_child_they_are():
+    # R-0326
     assert written(STRUCTURE, [], ["3", "4"]) == [
         "+ Corinne · daughter of Marcus & Delphine",
         "+ Theo · son of Marcus & Delphine",
@@ -405,6 +420,7 @@ def test_a_child_reads_as_whose_child_they_are():
 
 
 def test_a_bond_with_no_event_says_it_has_no_date_yet():
+    # no ruling
     record = dict(STRUCTURE, events=[])
     assert written(record, [], [], ["10"]) == [
         "+ Marcus & Delphine · married · no date yet"
@@ -412,6 +428,7 @@ def test_a_bond_with_no_event_says_it_has_no_date_yet():
 
 
 def test_a_year_the_coder_only_said_as_a_year_reads_as_the_year():
+    # no ruling
     """A year alone is stored as the first of January, approximate; the month
     was never said, so it is not read back (R-0326)."""
     record = dict(
@@ -430,6 +447,7 @@ def test_a_year_the_coder_only_said_as_a_year_reads_as_the_year():
 
 
 def test_a_january_date_the_coder_stated_keeps_its_month():
+    # no ruling
     record = dict(
         STRUCTURE,
         events=[

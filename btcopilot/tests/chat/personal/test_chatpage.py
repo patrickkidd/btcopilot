@@ -25,6 +25,7 @@ def no_auto_auth(monkeypatch):
 
 
 def test_page_loads(web):
+    # no ruling
     """The page is the built web bundle: the picture, the composer, and the
     menu that holds the timeline."""
     response = web.get("/app/")
@@ -38,6 +39,7 @@ def test_page_loads(web):
 
 
 def test_page_carries_what_only_the_server_knows(web, test_user):
+    # no ruling
     """The bundle is static; the CSRF token, the diagram and the session the
     user returns to are injected into it."""
     page = web.get("/app/").get_data(as_text=True)
@@ -48,10 +50,12 @@ def test_page_carries_what_only_the_server_knows(web, test_user):
 
 
 def test_health_reports_the_version(flask_app):
+    # no ruling
     assert flask_app.test_client().get("/health").get_data(as_text=True) == btcopilot.__version__
 
 
 def test_page_requires_login(flask_app):
+    # no ruling
     flask_app.test_client_class = flask.testing.FlaskClient
     with flask_app.test_client(use_cookies=True) as client:
         response = client.get("/app/")
@@ -60,6 +64,7 @@ def test_page_requires_login(flask_app):
 
 
 def test_timeline_shows_own_data_only(web, test_user):
+    # no ruling
     diagram = test_user.free_diagram
     diagram.set_diagram_data(seed_diagram_data())
     db.session.commit()
@@ -70,6 +75,7 @@ def test_timeline_shows_own_data_only(web, test_user):
 
 
 def test_timeline_empty_for_user_without_diagram(flask_app, test_user_2):
+    # no ruling
     test_user_2.roles = btcopilot.ROLE_SUBSCRIBER
     db.session.merge(test_user_2)
     db.session.commit()
@@ -87,6 +93,7 @@ def test_timeline_empty_for_user_without_diagram(flask_app, test_user_2):
 
 @pytest.mark.chat_flow(response="a coach reply")
 def test_chat_round_trip(web, test_user):
+    # no ruling
     token = csrf_token(web)
     response = web.post(
         "/app/chat",
@@ -110,6 +117,7 @@ def test_chat_round_trip(web, test_user):
 
 @pytest.mark.chat_flow
 def test_chat_reuses_discussion(web, test_user):
+    # no ruling
     token = csrf_token(web)
     first = web.post(
         "/app/chat", json={"statement": "one"}, headers={"X-CSRFToken": token}
@@ -122,12 +130,14 @@ def test_chat_reuses_discussion(web, test_user):
 
 
 def test_chat_rejects_missing_csrf(web):
+    # no ruling
     response = web.post("/app/chat", json={"statement": "forged"})
     assert response.status_code == 400
     assert Statement.query.count() == 0
 
 
 def test_chat_rejects_bad_csrf(web):
+    # no ruling
     response = web.post(
         "/app/chat",
         json={"statement": "forged"},
@@ -156,6 +166,7 @@ def _make_discussion(test_user, order):
 
 
 def test_the_timeline_says_nothing_about_extraction(web, test_user):
+    # R-0203
     """The picture is written by the coach as it talks, so there is no cursor
     behind the conversation to report and no badge saying so."""
     _make_discussion(test_user, order=3)
@@ -163,6 +174,7 @@ def test_the_timeline_says_nothing_about_extraction(web, test_user):
 
 
 def test_pwa_files_are_served_from_the_app_root(web):
+    # no ruling
     """The service worker has to answer from /app/ or its scope cannot
     cover the app."""
     assert web.get("/app/sw.js").status_code == 200
@@ -170,6 +182,7 @@ def test_pwa_files_are_served_from_the_app_root(web):
 
 
 def test_a_tap_is_recorded_against_the_diagram(web, test_user):
+    # R-0077
     """The page runs on a session cookie, so it cannot reach /app/, which
     is signed by the native apps. It writes to the same store through here."""
     token = csrf_token(web)
@@ -191,6 +204,7 @@ def test_a_tap_is_recorded_against_the_diagram(web, test_user):
 
 
 def test_a_tap_that_names_no_item_kind_is_refused_in_words(web, test_user):
+    # no ruling
     response = web.post(
         "/app/interactions",
         json={
@@ -207,6 +221,7 @@ def test_a_tap_that_names_no_item_kind_is_refused_in_words(web, test_user):
 def test_play_hands_the_coach_the_cluster_events_in_date_order(
     web, test_user, monkeypatch
 ):
+    # R-0074
     """The play-by-play is coach-authored (R-0074): the words are the model's,
     the events it may name are not."""
     diagram = test_user.free_diagram
@@ -241,6 +256,7 @@ def test_play_hands_the_coach_the_cluster_events_in_date_order(
 
 
 def test_play_refuses_a_cluster_that_is_not_on_the_line(web, test_user):
+    # R-0075
     diagram = test_user.free_diagram
     diagram.set_diagram_data(seed_diagram_data())
     db.session.commit()

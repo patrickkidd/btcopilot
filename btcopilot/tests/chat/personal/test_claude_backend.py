@@ -18,12 +18,14 @@ from btcopilot.llmutil import (
 
 
 def test_is_claude_model_positive():
+    # no ruling
     assert _is_claude_model("claude-opus-5-5")
     assert _is_claude_model("claude-sonnet-4-20250514")
     assert _is_claude_model("claude-3-opus-20240229")
 
 
 def test_is_claude_model_negative():
+    # no ruling
     assert not _is_claude_model("gemini-3-flash-preview")
     assert not _is_claude_model("gpt-4o")
     assert not _is_claude_model("mistral-large-latest")
@@ -33,6 +35,7 @@ def test_is_claude_model_negative():
 
 
 def test_prepare_messages_from_turns():
+    # no ruling
     messages = _prepare_claude_messages(turns=[("user", "Hi"), ("model", "Hello")])
     assert messages == [
         {"role": "user", "content": "Hi"},
@@ -41,11 +44,13 @@ def test_prepare_messages_from_turns():
 
 
 def test_prepare_messages_from_prompt():
+    # no ruling
     messages = _prepare_claude_messages(prompt="What is 2+2?")
     assert messages == [{"role": "user", "content": "What is 2+2?"}]
 
 
 def test_prepare_messages_prepends_user_if_starts_with_assistant():
+    # no ruling
     messages = _prepare_claude_messages(
         turns=[("model", "Welcome!"), ("user", "Thanks")]
     )
@@ -56,6 +61,7 @@ def test_prepare_messages_prepends_user_if_starts_with_assistant():
 
 
 def test_prepare_messages_merges_consecutive_same_role():
+    # no ruling
     messages = _prepare_claude_messages(
         turns=[("user", "First"), ("user", "Second"), ("model", "Reply")]
     )
@@ -67,6 +73,7 @@ def test_prepare_messages_merges_consecutive_same_role():
 
 
 def test_prepare_messages_no_args_raises():
+    # no ruling
     with pytest.raises(ValueError, match="Requires either"):
         _prepare_claude_messages()
 
@@ -90,6 +97,7 @@ def _make_mock_response(text="Hello there"):
 
 @pytest.mark.asyncio
 async def test_claude_text_with_turns():
+    # R-0410
     """Verify turns are mapped correctly and API is called."""
     mock_response = _make_mock_response("AI response")
     mock_create = AsyncMock(return_value=mock_response)
@@ -122,6 +130,7 @@ async def test_claude_text_with_turns():
 
 @pytest.mark.asyncio
 async def test_claude_text_with_simple_prompt():
+    # no ruling
     mock_response = _make_mock_response("Simple response")
     mock_create = AsyncMock(return_value=mock_response)
 
@@ -140,6 +149,7 @@ async def test_claude_text_with_simple_prompt():
 
 
 def test_claude_text_sync():
+    # no ruling
     mock_response = _make_mock_response("Sync response")
     mock_create = AsyncMock(return_value=mock_response)
 
@@ -158,6 +168,7 @@ def test_claude_text_sync():
 
 
 def test_response_text_sync_routes_to_claude():
+    # no ruling
     """response_text_sync routes to Claude when RESPONSE_MODEL starts with claude-."""
     with (
         patch("btcopilot.llmutil.RESPONSE_MODEL", "claude-opus-5-5"),
@@ -176,6 +187,7 @@ def test_response_text_sync_routes_to_claude():
 
 
 def test_response_text_sync_routes_to_gemini():
+    # no ruling
     """response_text_sync routes to Gemini when RESPONSE_MODEL is not Claude."""
     with (
         patch("btcopilot.llmutil.RESPONSE_MODEL", "gemini-3-flash-preview"),
@@ -198,6 +210,7 @@ def test_response_text_sync_routes_to_gemini():
 
 @pytest.mark.chat_flow(response="Claude says hello")
 def test_chat_flow_mock_still_works(test_user):
+    # no ruling
     """Existing chat_flow mock works regardless of backend (mocks _generate_response)."""
     from btcopilot.extensions import db
     from btcopilot.personal import ask
@@ -212,6 +225,7 @@ def test_chat_flow_mock_still_works(test_user):
 
 
 def test_chat_generate_response_uses_response_text_sync():
+    # no ruling
     """_generate_response in chat.py uses the unified response_text_sync."""
     with patch(
         "btcopilot.personal.chat.response_text_sync", return_value="Routed reply"
@@ -229,6 +243,7 @@ def test_chat_generate_response_uses_response_text_sync():
 
 
 def test_discussion_update_summary_uses_response_text_sync():
+    # no ruling
     """Discussion.update_summary uses the unified response_text_sync."""
     with patch(
         "btcopilot.personal.models.discussion.response_text_sync",

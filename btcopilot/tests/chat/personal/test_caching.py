@@ -125,6 +125,7 @@ def marks(sent: dict) -> int:
 
 
 def test_the_coaching_text_goes_over_as_its_own_block_and_is_kept(wire):
+    # R-0392
     sent = call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
     assert [block["text"] for block in sent["system"]] == ["COACHING", "RECORD"]
     assert sent["system"][0]["cache_control"] == CACHE
@@ -132,12 +133,14 @@ def test_the_coaching_text_goes_over_as_its_own_block_and_is_kept(wire):
 
 
 def test_the_last_tool_is_marked_so_the_whole_list_is_kept(wire):
+    # R-0392
     sent = call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
     assert "cache_control" not in sent["tools"][0]
     assert sent["tools"][-1]["cache_control"] == CACHE
 
 
 def test_the_end_of_the_chat_is_marked_so_the_next_call_reads_it_back(wire):
+    # R-0392
     messages = [
         {"role": "user", "content": "first"},
         {"role": "assistant", "content": [{"type": "text", "text": "said"}]},
@@ -150,6 +153,7 @@ def test_the_end_of_the_chat_is_marked_so_the_next_call_reads_it_back(wire):
 
 
 def test_a_message_of_plain_words_becomes_a_block_so_it_can_be_marked(wire):
+    # R-0392
     sent = call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
     assert sent["messages"][-1]["content"] == [
         {"type": "text", "text": "hi", "cache_control": CACHE}
@@ -157,6 +161,7 @@ def test_a_message_of_plain_words_becomes_a_block_so_it_can_be_marked(wire):
 
 
 def test_no_more_than_four_places_are_ever_marked(wire):
+    # R-0392
     sent = call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
     assert marks(sent) == 3
     sent = call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}], [])
@@ -164,6 +169,7 @@ def test_no_more_than_four_places_are_ever_marked(wire):
 
 
 def test_what_the_call_cost_and_what_it_read_back_is_logged(wire, caplog):
+    # no ruling
     with caplog.at_level(logging.INFO, logger="btcopilot.personal.coachmodel"):
         call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
     logged = caplog.text
@@ -175,6 +181,7 @@ def test_what_the_call_cost_and_what_it_read_back_is_logged(wire, caplog):
 
 
 def test_the_two_halves_of_the_coach_prompt_are_the_whole_prompt():
+    # R-0392
     fixed, tail = prompts.agent_prompt(record="Marcus, 40", interactions="looked at 3")
     assert fixed + tail == prompts.get_agent_prompt(
         record="Marcus, 40", interactions="looked at 3"
@@ -185,18 +192,21 @@ def test_the_two_halves_of_the_coach_prompt_are_the_whole_prompt():
 
 
 def test_the_coach_asks_for_its_effort_and_no_sampling(wire):
+    # no ruling
     sent = call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
     assert sent["output_config"] == {"effort": COACH_EFFORT}
     assert "temperature" not in sent
 
 
 def test_a_model_without_effort_sends_none(wire):
+    # no ruling
     model = CoachModel(model="haiku-4.5", effort=None)
     run(model, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
     assert "output_config" not in wire.sent
 
 
 def test_thinking_goes_back_unchanged_before_the_tool_call(wire):
+    # no ruling
     wire.reply = Reply(
         [
             Block(type="thinking", thinking="", signature="sig", extra="sdk"),
@@ -216,12 +226,14 @@ def test_thinking_goes_back_unchanged_before_the_tool_call(wire):
 
 
 def test_a_refusal_fails_the_turn_with_its_category(wire):
+    # R-0410
     wire.reply = Reply(stop_reason="refusal", stop_details=Block(category="bio"))
     with pytest.raises(Refusal, match="bio"):
         run(CoachModel(), ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
 
 
 def test_the_coach_asks_for_the_fallbacks(wire):
+    # R-0410, R-0409
     sent = call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
     assert sent["betas"] == [FALLBACK_BETA]
     assert sent["extra_body"] == {
@@ -230,6 +242,7 @@ def test_the_coach_asks_for_the_fallbacks(wire):
 
 
 def test_a_model_that_takes_no_fallbacks_is_sent_none(wire):
+    # no ruling
     run(
         CoachModel(model="haiku-4.5", effort=None),
         ["COACHING", "RECORD"],
@@ -259,6 +272,7 @@ FELL = dict(
 def test_a_refused_call_answered_by_a_fallback_is_priced_and_logged_as_its(
     wire, discussion, caplog, monkeypatch
 ):
+    # R-0409, R-0410
     monkeypatch.setattr(
         "btcopilot.personal.models.discussion.response_text_sync",
         lambda *a, **k: "A session title",
@@ -282,6 +296,7 @@ def test_a_refused_call_answered_by_a_fallback_is_priced_and_logged_as_its(
 
 
 def test_a_turn_served_by_an_earlier_fallback_is_marked_sticky(wire):
+    # R-0410
     wire.reply = Reply(
         [Block(type="text", text="Go on.")],
         model="claude-opus-5",
@@ -294,6 +309,7 @@ def test_a_turn_served_by_an_earlier_fallback_is_marked_sticky(wire):
 
 
 def test_a_model_cut_off_mid_answer_leaves_no_tool_call_to_run(wire):
+    # no ruling
     wire.reply = Reply(
         [
             Block(type="text", text="Let me "),

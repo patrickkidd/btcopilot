@@ -33,6 +33,7 @@ def _build_pdp_with_birth_unknown_parents():
 
 
 def test_commit_then_replay_on_fresh_pdp_no_duplicates():
+    # no ruling
     """
     Simulate the 409-retry semantic: each attempt runs commit_pdp_items on a
     fresh DiagramData (because server rejects and returns its untouched
@@ -59,6 +60,7 @@ def test_commit_then_replay_on_fresh_pdp_no_duplicates():
 
 
 def test_double_commit_on_same_diagramData_fails_fast():
+    # no ruling
     """
     If commit_pdp_items is called twice on the SAME DiagramData with the
     same item_ids, the second call raises ValueError because the item is

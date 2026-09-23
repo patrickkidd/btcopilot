@@ -62,6 +62,7 @@ def returning_user_setup(test_user):
 
 @pytest.mark.e2e
 def test_smoke_opus_returning_user(returning_user_setup):
+    # no ruling
     discussion = returning_user_setup
     user_msg = "Hey, I've been having a rough week. My boss has been on my case and I haven't been sleeping well."
     response = ask(discussion, user_msg, model="claude-opus-5-5")
@@ -72,6 +73,7 @@ def test_smoke_opus_returning_user(returning_user_setup):
 
 @pytest.mark.e2e
 def test_smoke_gemini_returning_user(returning_user_setup):
+    # no ruling
     discussion = returning_user_setup
     user_msg = "Hey, I've been having a rough week. My boss has been on my case and I haven't been sleeping well."
     response = ask(discussion, user_msg, model="gemini-2.5-flash")
@@ -119,6 +121,7 @@ def _print_transcript(label, transcript):
 # By turn 4-5 the coach should bridge gracefully rather than continue probing.
 @pytest.mark.e2e
 def test_pattern_b_shallow_cycling_opus(returning_user_setup):
+    # no ruling
     user_turns = [
         "Hey, I've been having a rough week. My boss has been on my case and I haven't been sleeping well.",
         "I dunno, just stuff piling up.",
@@ -134,6 +137,7 @@ def test_pattern_b_shallow_cycling_opus(returning_user_setup):
 
 @pytest.mark.e2e
 def test_pattern_b_shallow_cycling_gemini(returning_user_setup):
+    # no ruling
     user_turns = [
         "Hey, I've been having a rough week. My boss has been on my case and I haven't been sleeping well.",
         "I dunno, just stuff piling up.",
@@ -207,6 +211,7 @@ def heavy_structure_thin_functioning(test_user):
 
 @pytest.mark.e2e
 def test_pattern_c_long_session_opus(heavy_structure_thin_functioning):
+    # no ruling
     user_turns = [
         "Sleep has been bad again. Started a couple weeks back.",
         "Yeah, just lying there. Mind racing about work.",
@@ -222,6 +227,7 @@ def test_pattern_c_long_session_opus(heavy_structure_thin_functioning):
 
 @pytest.mark.e2e
 def test_pattern_c_long_session_gemini(heavy_structure_thin_functioning):
+    # no ruling
     user_turns = [
         "Sleep has been bad again. Started a couple weeks back.",
         "Yeah, just lying there. Mind racing about work.",

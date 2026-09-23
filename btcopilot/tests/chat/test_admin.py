@@ -32,6 +32,7 @@ def rows(output: str) -> list[dict]:
 
 
 def test_users_list_and_show(run, test_user):
+    # no ruling
     listed = rows(run("users", "list", "--json"))
     assert [one["email"] for one in listed] == [test_user.username]
 
@@ -40,6 +41,7 @@ def test_users_list_and_show(run, test_user):
 
 
 def test_users_roles_set_then_read(run, test_user):
+    # no ruling
     run("users", "roles", test_user.username, btcopilot.ROLE_AUDITOR)
     assert rows(run("users", "roles", test_user.username, "--json"))[0]["roles"] == (
         btcopilot.ROLE_AUDITOR
@@ -47,16 +49,19 @@ def test_users_roles_set_then_read(run, test_user):
 
 
 def test_users_invite_prints_a_link(run, flask_app):
+    # R-0390
     invited = rows(run("users", "invite", "new@fd362-fixture.invalid", "--json"))
     assert "/app/invite/" in invited[0]["url"]
 
 
 def test_unknown_user_is_named(flask_app):
+    # no ruling
     result = flask_app.test_cli_runner().invoke(admin, ["users", "show", "nobody@x.com"])
     assert result.exit_code != 0 and "no account for nobody@x.com" in result.output
 
 
 def test_licence_granted_then_revoked(run, test_user, test_policy):
+    # no ruling
     granted = rows(run("licences", "grant", test_user.username, test_policy.code, "--json"))
     assert granted[0]["status"] == "active"
 
@@ -65,6 +70,7 @@ def test_licence_granted_then_revoked(run, test_user, test_policy):
 
 
 def test_diagram_counts_and_export(run, test_user):
+    # no ruling
     listed = rows(run("diagrams", "list", "--json"))
     assert listed[0]["id"] == test_user.free_diagram_id
 
@@ -73,6 +79,7 @@ def test_diagram_counts_and_export(run, test_user):
 
 
 def test_import_dry_run_counts_and_writes_nothing(run, tmp_path):
+    # no ruling
     dump = olddump.build(tmp_path / "old.db")
     counted = rows(run("imports", "dry-run", dump, "--json"))
     assert [one["what"] for one in counted[:2]] == ["users", "diagrams"]
@@ -82,6 +89,7 @@ def test_import_dry_run_counts_and_writes_nothing(run, tmp_path):
 
 
 def test_token_cap_default_and_one_person(run, test_user):
+    # no ruling
     run("token-cap", "set", "default", "100000")
     run("token-cap", "set", test_user.username, "250000")
 
@@ -92,6 +100,7 @@ def test_token_cap_default_and_one_person(run, test_user):
 
 
 def test_token_cap_refuses_a_negative(flask_app, test_user):
+    # no ruling
     result = flask_app.test_cli_runner().invoke(
         admin, ["token-cap", "set", test_user.username, "--", "-1"]
     )
@@ -99,6 +108,7 @@ def test_token_cap_refuses_a_negative(flask_app, test_user):
 
 
 def test_nudge_switch(run):
+    # no ruling
     assert rows(run("review", "nudge", "off", "--json"))[0]["nudges"] == "off"
     assert setting.read(SettingKey.NudgesOn) is False
 
@@ -107,25 +117,30 @@ def test_nudge_switch(run):
 
 
 def test_agenda_is_empty_before_any_cut(run):
+    # no ruling
     assert rows(run("review", "agenda", "--json")) == []
 
 
 def test_table_output_has_a_header(run, test_user):
+    # no ruling
     output = run("users", "list")
     assert "email" in output.splitlines()[0]
 
 
 def test_skill_file_is_the_same_bytes_twice():
+    # no ruling
     assert skill.render(admin) == skill.render(admin)
 
 
 def test_skill_file_names_every_command():
+    # R-0390
     text = skill.render(admin)
     for path, command, _ in skill._walk(admin, "flask admin"):
         assert f"`{path}" in text
 
 
 def test_skill_file_on_disk_is_current(flask_app):
+    # R-0390
     with flask_app.app_context():
         rendered = skill.render(admin)
     on_disk = skill.PATH.read_text()
@@ -138,6 +153,7 @@ def test_skill_file_on_disk_is_current(flask_app):
 
 
 def test_db_upgrade_builds_the_chain_from_empty(flask_app, tmp_path):
+    # R-0417
     flask_app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{tmp_path / 'fresh.db'}"
     result = flask_app.test_cli_runner().invoke(admin, ["db", "upgrade"])
     assert result.exit_code == 0, result.output
@@ -153,6 +169,7 @@ READS = {
 
 
 def test_every_command_is_a_read_or_marked_writes():
+    # R-0390
     for path, command, _ in skill._walk(admin, ""):
         name = path.strip()
         if isinstance(command, click.Group):
@@ -161,12 +178,14 @@ def test_every_command_is_a_read_or_marked_writes():
 
 
 def test_run_executes_a_read(flask_app, test_user):
+    # R-0390
     result = flask_app.test_cli_runner().invoke(admin, ["run", "--", "users", "list"])
     assert result.exit_code == 0, result.output
     assert rows(result.output)[0]["email"] == test_user.username
 
 
 def test_run_refuses_a_write_without_yes(flask_app, test_user, test_policy):
+    # R-0390
     result = flask_app.test_cli_runner().invoke(
         admin, ["run", "--", "licences", "grant", test_user.username, test_policy.code]
     )
@@ -178,6 +197,7 @@ def test_run_refuses_a_write_without_yes(flask_app, test_user, test_policy):
 
 
 def test_run_executes_a_write_with_yes(flask_app, test_user, test_policy):
+    # R-0390
     result = flask_app.test_cli_runner().invoke(
         admin,
         ["run", "--", "licences", "grant", test_user.username, test_policy.code, "--yes"],
@@ -187,11 +207,13 @@ def test_run_executes_a_write_with_yes(flask_app, test_user, test_policy):
 
 
 def test_run_rejects_an_unknown_command(flask_app):
+    # no ruling
     result = flask_app.test_cli_runner().invoke(admin, ["run", "--", "users", "nope"])
     assert result.exit_code == 2
 
 
 def test_users_invite_send_emails_the_link(run):
+    # R-0390
     with mock.patch("btcopilot.admin.users.send_invitation") as send_invitation:
         invited = rows(run("users", "invite", "new@fd362-fixture.invalid", "--send", "--json"))
     send_invitation.assert_called_once_with("new@fd362-fixture.invalid", invited[0]["url"])

@@ -30,6 +30,7 @@ def _post(web, body):
 
 
 def test_adding_a_bond_writes_it(web, family):
+    # no ruling
     added = _post(web, {"person_a": 1, "person_b": 2, "married": True})
     assert added.status_code == 201
     assert added.get_json() == {
@@ -41,12 +42,14 @@ def test_adding_a_bond_writes_it(web, family):
 
 
 def test_a_bond_of_one_person_with_themselves_is_refused(web, family):
+    # no ruling
     refused = _post(web, {"person_a": 1, "person_b": 1})
     assert refused.status_code == 400
     assert "themselves" in refused.get_data(as_text=True)
 
 
 def test_a_second_bond_between_the_same_two_is_refused(web, family):
+    # R-0326
     _post(web, {"person_a": 1, "person_b": 2})
     refused = _post(web, {"person_a": 2, "person_b": 1})
     assert refused.status_code == 400
@@ -54,6 +57,7 @@ def test_a_second_bond_between_the_same_two_is_refused(web, family):
 
 
 def test_a_child_is_born_to_a_bond_and_never_to_one_they_are_in(web, family):
+    # R-0326, R-0345
     bond = _post(web, {"person_a": 1, "person_b": 2}).get_json()
     token = csrf_token(web)
 
@@ -74,6 +78,7 @@ def test_a_child_is_born_to_a_bond_and_never_to_one_they_are_in(web, family):
 
 
 def test_add_parents_makes_a_bond_of_two_generically_named_people(web, family):
+    # R-0325
     """"Add parents" on a person with none: the record gains a father and a
     mother named after them, and the person is born to their bond."""
     added = _post(web, {"parent_of": 3})
@@ -87,6 +92,7 @@ def test_add_parents_makes_a_bond_of_two_generically_named_people(web, family):
 
 
 def test_ending_a_bond_leaves_its_children_without_parents(web, family):
+    # no ruling
     bond = _post(web, {"person_a": 1, "person_b": 2}).get_json()
     token = csrf_token(web)
     web.patch(

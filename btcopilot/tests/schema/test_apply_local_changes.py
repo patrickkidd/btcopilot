@@ -10,6 +10,7 @@ from btcopilot.schema import DiagramData
 
 
 def test_clean_item_takes_server_state():
+    # no ruling
     """User didn't touch the item → server's concurrent edit survives."""
     snapshot = [{"id": 1, "name": "A", "cutoff": False}]
     local = [{"id": 1, "name": "A", "cutoff": False}]  # same as snapshot
@@ -21,6 +22,7 @@ def test_clean_item_takes_server_state():
 
 
 def test_dirty_item_takes_local_state():
+    # no ruling
     """User edited the item → local wins (item-level last-write-wins)."""
     snapshot = [{"id": 1, "name": "A", "cutoff": False}]
     local = [{"id": 1, "name": "A_new", "cutoff": False}]  # user changed name
@@ -32,6 +34,7 @@ def test_dirty_item_takes_local_state():
 
 
 def test_same_item_both_sides_edited_local_wins():
+    # no ruling
     """Both sides edited the same item different fields → local item wins whole."""
     snapshot = [{"id": 1, "name": "A", "cutoff": False}]
     local = [{"id": 1, "name": "A_local", "cutoff": False}]
@@ -44,6 +47,7 @@ def test_same_item_both_sides_edited_local_wins():
 
 
 def test_local_deletion_survives_server_unchanged():
+    # no ruling
     """User deleted the item locally → it stays deleted, even if server still has it."""
     snapshot = [{"id": 1, "name": "A"}, {"id": 2, "name": "B"}]
     local = [{"id": 2, "name": "B"}]  # deleted 1
@@ -55,6 +59,7 @@ def test_local_deletion_survives_server_unchanged():
 
 
 def test_local_addition_preserved():
+    # no ruling
     """User added a new item → it appears in result."""
     snapshot = [{"id": 1, "name": "A"}]
     local = [{"id": 1, "name": "A"}, {"id": 2, "name": "B"}]
@@ -67,6 +72,7 @@ def test_local_addition_preserved():
 
 
 def test_server_addition_preserved():
+    # no ruling
     """Other client added an item → it appears in result alongside local additions."""
     snapshot = [{"id": 1, "name": "A"}]
     local = [{"id": 1, "name": "A"}, {"id": 2, "name": "Local2"}]
@@ -83,6 +89,7 @@ def test_server_addition_preserved():
 
 
 def test_simultaneous_delete_both_sides():
+    # no ruling
     """Both sides deleted the same item → it stays deleted (idempotent)."""
     snapshot = [{"id": 1, "name": "A"}, {"id": 2, "name": "B"}]
     local = [{"id": 2, "name": "B"}]  # deleted 1 locally
@@ -94,6 +101,7 @@ def test_simultaneous_delete_both_sides():
 
 
 def test_empty_snapshot_treats_all_as_added():
+    # no ruling
     snapshot = []
     local = [{"id": 1, "name": "A"}]
     server = []
@@ -104,6 +112,7 @@ def test_empty_snapshot_treats_all_as_added():
 
 
 def test_qpointf_field_unchanged_not_marked_dirty():
+    # no ruling
     """QtCore types in dicts compare correctly via pickle bytes (regression guard)."""
     pos = QPointF(10.5, 20.5)
     snapshot = [{"id": 1, "name": "A", "itemPos": pos}]
@@ -118,6 +127,7 @@ def test_qpointf_field_unchanged_not_marked_dirty():
 
 
 def test_qdatetime_field_unchanged_not_marked_dirty():
+    # no ruling
     dt = QDateTime(QDate(2026, 5, 1))
     snapshot = [{"id": 1, "dateTime": dt}]
     local = [{"id": 1, "dateTime": QDateTime(QDate(2026, 5, 1))}]
@@ -129,6 +139,7 @@ def test_qdatetime_field_unchanged_not_marked_dirty():
 
 
 def test_id_collision_between_local_add_and_server_add_local_wins():
+    # no ruling
     """If both sides somehow allocated the same id (shouldn't happen with block
     allocation, but verify behavior is item-level LWW = local wins)."""
     snapshot = []
@@ -142,6 +153,7 @@ def test_id_collision_between_local_add_and_server_add_local_wins():
 
 
 def test_items_without_ids_skipped():
+    # no ruling
     """Items missing an id are silently skipped (defensive)."""
     snapshot = [{"id": 1, "name": "A"}]
     local = [{"id": 1, "name": "A"}, {"name": "no-id"}]
@@ -153,6 +165,7 @@ def test_items_without_ids_skipped():
 
 
 def test_local_edit_beats_server_delete():
+    # no ruling
     """Item-level last-write-wins: if user edited an item locally and another
     client deleted it server-side, the user's edit wins (item resurrects with
     the user's edit). Per docstring: "Take local (the user's edit wins;
@@ -168,6 +181,7 @@ def test_local_edit_beats_server_delete():
 
 
 def test_local_add_with_server_unchanged_no_other_items():
+    # no ruling
     """Edge case: local has new id, server is empty (or has unrelated items).
     The local add must appear in result even when server has nothing.
     """
@@ -181,6 +195,7 @@ def test_local_add_with_server_unchanged_no_other_items():
 
 
 def test_regression_snapshot_must_reflect_local_view_not_canonical():
+    # no ruling
     """
     Regression for the bug discovered by e2e harness 2026-05-02:
 
@@ -221,6 +236,7 @@ def test_regression_snapshot_must_reflect_local_view_not_canonical():
 
 
 def test_regression_subsequent_save_preserves_other_client_items_after_delete():
+    # no ruling
     """
     Regression for the bug's second-half scenario:
 

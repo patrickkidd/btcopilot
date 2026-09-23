@@ -53,6 +53,7 @@ def request_code(browser, email: str):
 
 
 def test_invite_creates_user_and_signs_in(flask_app, browser):
+    # R-0087, R-0078
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
     response = browser.get(f"/app/invite/{invitation.token}")
     assert response.status_code == 302
@@ -63,6 +64,7 @@ def test_invite_creates_user_and_signs_in(flask_app, browser):
 
 
 def test_coming_back_to_the_site_root_lands_in_the_chat(flask_app, browser):
+    # no ruling
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
     browser.get(f"/app/invite/{invitation.token}")
 
@@ -71,6 +73,7 @@ def test_coming_back_to_the_site_root_lands_in_the_chat(flask_app, browser):
 
 
 def test_signing_in_stamps_the_session_the_training_app_ages(flask_app, browser):
+    # no ruling
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
     browser.get(f"/app/invite/{invitation.token}")
     with browser.session_transaction() as cookie:
@@ -78,6 +81,7 @@ def test_signing_in_stamps_the_session_the_training_app_ages(flask_app, browser)
 
 
 def test_fixture_token_signs_in(flask_app, browser):
+    # no ruling
     """The visual suite mints its links through the fixture installer, so the
     installer's own token has to open a session, not the sign-in page."""
     printed = flask_app.test_cli_runner().invoke(args=["personal", "fixtures", "empty"])
@@ -90,6 +94,7 @@ def test_fixture_token_signs_in(flask_app, browser):
 
 
 def test_chat_cookie_outlives_the_training_timeout(flask_app, browser):
+    # R-0337
     """The training app pins the cookie to eight hours; a chat sign-in must
     still come back months later."""
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
@@ -104,6 +109,7 @@ def test_chat_cookie_outlives_the_training_timeout(flask_app, browser):
 def test_chat_session_older_than_the_training_timeout_is_still_read(
     flask_app, browser
 ):
+    # R-0337
     """The signature itself used to be refused past the training app's eight
     hours, which signed a reader out overnight whatever the cookie said."""
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
@@ -126,12 +132,14 @@ def test_chat_session_older_than_the_training_timeout_is_still_read(
 
 
 def test_invite_is_single_use(flask_app, browser):
+    # no ruling
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
     browser.get(f"/app/invite/{invitation.token}")
     assert browser.get(f"/app/invite/{invitation.token}").status_code == 400
 
 
 def test_invite_is_reusable_where_the_sandbox_says_so(flask_app, browser):
+    # no ruling
     flask_app.config["INVITATION_REUSABLE"] = True
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
     browser.get(f"/app/invite/{invitation.token}")
@@ -140,6 +148,7 @@ def test_invite_is_reusable_where_the_sandbox_says_so(flask_app, browser):
 
 
 def test_code_signs_in_an_existing_user(flask_app, browser, test_user):
+    # R-0078
     response, outbox = request_code(browser, test_user.username)
     assert response.status_code == 200
     code = re.search(r"\b(\d{6})\b", outbox[0].body).group(1)
@@ -153,6 +162,7 @@ def test_code_signs_in_an_existing_user(flask_app, browser, test_user):
 
 
 def test_expired_code_is_rejected(flask_app, browser, test_user):
+    # no ruling
     _, outbox = request_code(browser, test_user.username)
     code = re.search(r"\b(\d{6})\b", outbox[0].body).group(1)
     issued = LoginCode.query.filter_by(email=test_user.username).one()
@@ -168,6 +178,7 @@ def test_expired_code_is_rejected(flask_app, browser, test_user):
 
 
 def test_used_code_is_rejected(flask_app, browser, test_user):
+    # no ruling
     _, outbox = request_code(browser, test_user.username)
     code = re.search(r"\b(\d{6})\b", outbox[0].body).group(1)
     form = {"csrf_token": token(browser), "email": test_user.username, "code": code}
@@ -182,18 +193,21 @@ def test_used_code_is_rejected(flask_app, browser, test_user):
 
 
 def test_unknown_email_gets_no_code(flask_app, browser):
+    # no ruling
     response, outbox = request_code(browser, "nobody+unittest@gmail.com")
     assert response.status_code == 200
     assert outbox == []
 
 
 def test_code_requests_are_rate_limited(flask_app, browser, test_user):
+    # no ruling
     for _ in range(flask_app.config["LOGIN_CODES_PER_HOUR"]):
         assert request_code(browser, test_user.username)[0].status_code == 200
     assert request_code(browser, test_user.username)[0].status_code == 429
 
 
 def test_revoking_the_session_logs_out(flask_app, browser):
+    # no ruling
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
     browser.get(f"/app/invite/{invitation.token}")
     listed = browser.get("/app/signins").get_json()["sessions"]
@@ -207,6 +221,7 @@ def test_revoking_the_session_logs_out(flask_app, browser):
 
 
 def test_logout_revokes_the_session_record(flask_app, browser):
+    # R-0099
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
     browser.get(f"/app/invite/{invitation.token}")
     with browser.session_transaction() as cookie:
@@ -259,6 +274,7 @@ def stored_passkey(user, revoked=False) -> Passkey:
 
 
 def test_registering_a_passkey_stores_it(flask_app, browser, monkeypatch):
+    # no ruling
     user = signed_in(browser, flask_app)
     assert json_post(browser, "/app/passkeys/register/options").status_code == 200
 
@@ -272,6 +288,7 @@ def test_registering_a_passkey_stores_it(flask_app, browser, monkeypatch):
 
 
 def test_passkey_signs_the_user_in(flask_app, browser, monkeypatch):
+    # R-0078
     user = signed_in(browser, flask_app)
     passkey = stored_passkey(user)
     browser.post("/app/logout", data={"csrf_token": token(browser)})
@@ -287,6 +304,7 @@ def test_passkey_signs_the_user_in(flask_app, browser, monkeypatch):
 
 
 def test_revoked_passkey_is_refused(flask_app, browser, monkeypatch):
+    # no ruling
     user = signed_in(browser, flask_app)
     stored_passkey(user, revoked=True)
     browser.post("/app/logout", data={"csrf_token": token(browser)})

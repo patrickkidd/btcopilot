@@ -20,6 +20,7 @@ def _diagram(user, data: dict) -> Diagram:
 
 
 def test_pickle_row_reads_and_stays_pickle(subscriber):
+    # R-0241
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
     assert not diagramjson.is_json(diagram.data)
 
@@ -38,6 +39,7 @@ def test_pickle_row_reads_and_stays_pickle(subscriber):
 
 
 def test_change_written_with_compression(subscriber):
+    # R-0084
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
 
     change = record.apply(
@@ -59,6 +61,7 @@ def test_change_written_with_compression(subscriber):
 
 
 def test_undo_turn_restores_and_logs(subscriber):
+    # R-0084
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
     record.apply(
         diagram.id,
@@ -73,6 +76,7 @@ def test_undo_turn_restores_and_logs(subscriber):
 
 
 def test_undo_conflict_names_the_failing_delta(subscriber):
+    # R-0084
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
     record.apply(
         diagram.id,
@@ -95,6 +99,7 @@ def test_undo_conflict_names_the_failing_delta(subscriber):
 
 
 def test_write_path_creates_a_cluster(subscriber):
+    # R-0076, R-0085
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
 
     record.apply(
@@ -113,6 +118,7 @@ def test_write_path_creates_a_cluster(subscriber):
 
 
 def test_the_write_refuses_a_cluster_under_three_events(subscriber):
+    # R-0215
     """The floor is enforced where every writer passes, on the record the write
     would leave behind, not on the delta that carries the events."""
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
@@ -134,6 +140,7 @@ def test_the_write_refuses_a_cluster_under_three_events(subscriber):
 def test_the_write_refuses_a_description_that_names_a_person_the_event_links(
     subscriber,
 ):
+    # no ruling
     """Owner ruling 2026-09-09: the links say who, so the words may not say the
     same person again."""
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Elizabeth"}]})
@@ -158,6 +165,7 @@ def test_the_write_refuses_a_description_that_names_a_person_the_event_links(
 
 
 def test_the_write_refuses_a_birth_hung_on_the_person_instead_of_the_child(subscriber):
+    # no ruling
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Elizabeth"}]})
 
     with pytest.raises(record.Invalid, match="set child, not person"):
@@ -174,6 +182,7 @@ def test_the_write_refuses_a_birth_hung_on_the_person_instead_of_the_child(subsc
 
 
 def test_a_birth_about_the_child_with_words_of_its_own_commits(subscriber):
+    # no ruling
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Elizabeth"}]})
 
     record.apply(
@@ -197,6 +206,7 @@ def test_a_birth_about_the_child_with_words_of_its_own_commits(subscriber):
 def test_a_write_that_only_renames_a_cluster_is_not_held_to_events_it_did_not_touch(
     subscriber,
 ):
+    # R-0215
     """A rename touches no events, so it is judged on the cluster it leaves
     behind -- which still holds three."""
     diagram = _diagram(
@@ -214,6 +224,7 @@ def test_a_write_that_only_renames_a_cluster_is_not_held_to_events_it_did_not_to
 
 
 def test_a_grouping_stored_under_the_older_floor_blocks_nothing_else(subscriber):
+    # no ruling
     """A record can hold a grouping made when two events were enough. The write
     answers for what it touches, so unrelated work still commits."""
     diagram = _diagram(
@@ -235,6 +246,7 @@ def test_a_grouping_stored_under_the_older_floor_blocks_nothing_else(subscriber)
 
 
 def test_undo_may_not_put_back_a_cluster_under_three_events(subscriber):
+    # R-0215
     """Undo reaches the record without going through apply, so the floor has to
     live where both of them commit; otherwise undoing the removal of a pair puts
     the pair straight back."""
@@ -256,6 +268,7 @@ def test_undo_may_not_put_back_a_cluster_under_three_events(subscriber):
 
 
 def test_diff_at_item_and_field_level():
+    # R-0084
     old = {"people": [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Gone"}]}
     new = {"people": [{"id": 1, "name": "Bea"}, {"id": 3, "name": "New"}]}
 
@@ -285,6 +298,7 @@ def _family(user) -> Diagram:
 
 
 def test_delete_person_cascades_like_the_scene(subscriber):
+    # no ruling
     diagram = _family(subscriber.user)
 
     record.apply(
@@ -302,6 +316,7 @@ def test_delete_person_cascades_like_the_scene(subscriber):
 
 
 def test_undo_of_delete_restores_the_family(subscriber):
+    # R-0084
     diagram = _family(subscriber.user)
     before = diagram.get_diagram_data()
 
@@ -326,6 +341,7 @@ def test_undo_of_delete_restores_the_family(subscriber):
 
 
 def test_delete_of_a_missing_item_raises(subscriber):
+    # no ruling
     diagram = _family(subscriber.user)
 
     with pytest.raises(ValueError):
@@ -345,6 +361,7 @@ def test_delete_of_a_missing_item_raises(subscriber):
 
 
 def test_the_write_refuses_a_shift_that_says_nothing_moved(subscriber):
+    # no ruling
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
 
     with pytest.raises(record.Invalid, match="shift with no variable"):
@@ -367,6 +384,7 @@ def test_the_write_refuses_a_shift_that_says_nothing_moved(subscriber):
 
 
 def test_the_write_refuses_an_early_birth_that_carries_a_variable(subscriber):
+    # R-0037
     """Owner ruling R-0037: a birth before the story starts anchors age only."""
     diagram = _diagram(
         subscriber.user,
@@ -399,6 +417,7 @@ def test_the_write_refuses_an_early_birth_that_carries_a_variable(subscriber):
 
 
 def test_the_write_refuses_a_moment_already_in_the_record(subscriber):
+    # no ruling
     diagram = _diagram(
         subscriber.user,
         {
@@ -430,6 +449,7 @@ def test_the_write_refuses_a_moment_already_in_the_record(subscriber):
 
 
 def test_a_shift_that_names_its_move_beside_an_anchoring_birth_commits(subscriber):
+    # R-0037
     diagram = _diagram(
         subscriber.user,
         {
@@ -453,6 +473,7 @@ def test_a_shift_that_names_its_move_beside_an_anchoring_birth_commits(subscribe
 
 
 def test_the_write_refuses_a_noted_event_with_no_words(subscriber):
+    # R-0363
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
 
     with pytest.raises(record.Invalid, match="say what happened"):

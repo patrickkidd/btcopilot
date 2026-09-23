@@ -15,6 +15,7 @@ def dump(tmp_path):
 
 
 def test_dry_run_counts_and_writes_nothing(flask_app, dump):
+    # no ruling
     result = proimport.run(dump, apply=False)
     assert (result.users.read, result.users.written) == (1, 1)
     assert (result.diagrams.read, result.diagrams.written) == (3, 1)
@@ -23,12 +24,14 @@ def test_dry_run_counts_and_writes_nothing(flask_app, dump):
 
 
 def test_every_failure_is_named_with_its_reason(flask_app, dump):
+    # no ruling
     result = proimport.run(dump, apply=False)
     assert len(result.failures) == 1
     assert result.failures[0].startswith("diagram 13:")
 
 
 def test_apply_writes_the_person_their_diagram_as_json(flask_app, dump):
+    # R-0327
     proimport.run(dump, apply=True)
     user = db.session.query(User).one()
     assert user.username == "marcus@fd362-fixture.invalid"
@@ -41,6 +44,7 @@ def test_apply_writes_the_person_their_diagram_as_json(flask_app, dump):
 
 
 def test_a_second_run_writes_nobody_twice(flask_app, dump):
+    # R-0327
     proimport.run(dump, apply=True)
     again = proimport.run(dump, apply=True)
     assert (again.users.skipped, again.users.written) == (1, 0)

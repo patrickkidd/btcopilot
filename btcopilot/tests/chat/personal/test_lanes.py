@@ -47,6 +47,7 @@ JOURNAL_DOC = {
 
 
 def test_people_and_bonds_from_structure():
+    # no ruling
     data = lanes_diagram_data([LANES_DOC])
     names = {p["name"] for p in data.people}
     assert names == {"Owner", "Mara", "Wren", "Bobby (dad)", "Gran", "Rita"}
@@ -61,6 +62,7 @@ def test_people_and_bonds_from_structure():
 
 
 def test_certainty_grades_map_to_schema():
+    # no ruling
     data = lanes_diagram_data([LANES_DOC])
     by_desc = {e["description"]: e for e in data.events if e.get("description")}
     assert by_desc["insomnia onset"]["dateCertainty"] == DateCertainty.Approximate.value
@@ -72,6 +74,7 @@ def test_certainty_grades_map_to_schema():
 
 
 def test_structure_events_created():
+    # no ruling
     data = lanes_diagram_data([LANES_DOC])
     kinds = [e["kind"] for e in data.events]
     assert EventKind.Birth.value in kinds
@@ -81,6 +84,7 @@ def test_structure_events_created():
 
 
 def test_same_direction_only_for_unchanged_descriptions():
+    # no ruling
     data = lanes_diagram_data([LANES_DOC])
     by_desc = {e["description"]: e for e in data.events if e.get("description")}
     assert by_desc["sleep unchanged while traveling"]["symptom"] == "same"
@@ -88,6 +92,7 @@ def test_same_direction_only_for_unchanged_descriptions():
 
 
 def test_relationship_polarity_normalized_per_doc():
+    # no ruling
     data = lanes_diagram_data([LANES_DOC, JOURNAL_DOC])
     by_desc = {e["description"]: e for e in data.events if e.get("description")}
     assert by_desc["chronic arguing began"]["relationship"] == (
@@ -100,6 +105,7 @@ def test_relationship_polarity_normalized_per_doc():
 
 
 def test_strip_prefers_primary_symptom_then_household():
+    # no ruling
     data = lanes_diagram_data([LANES_DOC, JOURNAL_DOC])
     timeline = build_timeline(data)
     strip = timeline["strip"]["lanes"]
@@ -109,6 +115,7 @@ def test_strip_prefers_primary_symptom_then_household():
 
 
 def test_relationship_events_stamp_household_lane():
+    # no ruling
     data = lanes_diagram_data([LANES_DOC, JOURNAL_DOC])
     timeline = build_timeline(data)
     owner_wren = next(
@@ -119,6 +126,7 @@ def test_relationship_events_stamp_household_lane():
 
 
 def test_aliases_merge_spellings_without_code_changes():
+    # no ruling
     doc = {
         "entries": [
             {"t": 2020.5, "t_end": None, "certainty": "day", "who": "Bobby (dad)",

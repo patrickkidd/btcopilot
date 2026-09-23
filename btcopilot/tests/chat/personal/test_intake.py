@@ -25,6 +25,7 @@ def _diagram(people=None, pair_bonds=None, events=None):
 
 
 def test_no_diagram_all_not_covered_except_presenting_problem():
+    # no ruling
     cov = coverage(None)
     for cat in DataCategory:
         if cat == DataCategory.PresentingProblem:
@@ -34,6 +35,7 @@ def test_no_diagram_all_not_covered_except_presenting_problem():
 
 
 def test_empty_diagram_outstanding_excludes_presenting_problem():
+    # no ruling
     out = outstanding_categories(_diagram())
     cats = {c.category for c in out}
     assert DataCategory.PresentingProblem not in cats
@@ -42,6 +44,7 @@ def test_empty_diagram_outstanding_excludes_presenting_problem():
 
 
 def test_full_picture():
+    # no ruling
     # Speaker (User=1, primary), parents Mary+John, siblings Sarah, maternal
     # grandparents Linda+Tom, paternal grandparents Anne+Bob, spouse Lisa,
     # child Emma, plus 3 nodal events.
@@ -95,6 +98,7 @@ def test_full_picture():
 
 
 def test_partial_grandparents_when_parent_known_but_no_grandparent_bond():
+    # no ruling
     # Mother known but no maternal-grandparents PairBond → maternal GP not_covered
     people = [
         {"id": 1, "name": "User", "primary": True, "parents": 100},
@@ -108,6 +112,7 @@ def test_partial_grandparents_when_parent_known_but_no_grandparent_bond():
 
 
 def test_functioning_coverage_thin_when_no_shift_events():
+    # no ruling
     people = [{"id": 1, "name": "User", "primary": True}]
     cov = coverage(_diagram(people))
     assert cov[DataCategory.FamilyFunctioning].status == CoverageStatus.NotCovered
@@ -117,6 +122,7 @@ def test_functioning_coverage_thin_when_no_shift_events():
 
 
 def test_functioning_coverage_rich_when_sarf_and_timeline_present():
+    # no ruling
     people = [{"id": 1, "name": "User", "primary": True}]
     events = [
         # Structural anchor
@@ -139,6 +145,7 @@ def test_functioning_coverage_rich_when_sarf_and_timeline_present():
 
 
 def test_format_coverage_renders_known_and_outstanding():
+    # no ruling
     out = format_coverage_for_prompt(coverage(None))
     assert "Already known" not in out  # nothing known
     assert "Still outstanding" in out
@@ -146,12 +153,14 @@ def test_format_coverage_renders_known_and_outstanding():
 
 
 def test_format_coverage_empty_when_only_presenting_problem():
+    # no ruling
     # All categories covered → empty/known-only prompt
     cov = {DataCategory.PresentingProblem: coverage(None)[DataCategory.PresentingProblem]}
     assert format_coverage_for_prompt(cov) == ""
 
 
 def test_roster_lists_all_named_people_even_without_speaker_links():
+    # no ruling
     # Speaker (Marcus, id 1) has NO parents link and is not primary — coverage()
     # goes blank on the family, but the roster must still name everyone. This is
     # the FD-325 graceful-degradation contract: extraction connectivity is
@@ -190,6 +199,7 @@ def test_roster_lists_all_named_people_even_without_speaker_links():
 
 
 def test_real_desktop_quirks_dont_crash():
+    # no ruling
     # Regression for two crashes found only on real desktop-synced diagrams
     # (synthetic fixtures missed both): a scene-stub person with name=None,
     # and a shift event whose `relationship` is a RelationshipKind enum object
@@ -220,6 +230,7 @@ def test_real_desktop_quirks_dont_crash():
 
 
 def test_committed_scene_format_contract():
+    # no ruling
     """Regression: pins the real committed-data contract for the Personal app.
 
     Committed family data lives in DiagramData.people/events/pair_bonds (Scene

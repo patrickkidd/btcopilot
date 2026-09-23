@@ -65,6 +65,7 @@ def patch(web, token, url, body):
 
 @pytest.mark.chat_flow(response="a coach reply", title="Sleep and the move")
 def test_session_auto_titled_after_first_exchange(web, token, test_user):
+    # R-0097
     post(web, token, "/app/chat", {"statement": "hello"})
 
     discussion = Discussion.query.one()
@@ -73,6 +74,7 @@ def test_session_auto_titled_after_first_exchange(web, token, test_user):
 
 @pytest.mark.chat_flow(title="Sleep and the move")
 def test_session_title_kept_after_later_exchanges(web, token):
+    # R-0097
     post(web, token, "/app/chat", {"statement": "one"})
     Discussion.query.one().update(title="Hand written")
     db.session.commit()
@@ -83,6 +85,7 @@ def test_session_title_kept_after_later_exchanges(web, token):
 
 @pytest.mark.chat_flow
 def test_session_list(web, token):
+    # R-0097
     post(web, token, "/app/chat", {"statement": "hello"})
 
     sessions = web.get("/app/sessions").get_json()
@@ -93,6 +96,7 @@ def test_session_list(web, token):
 
 
 def test_session_list_omits_a_transcript_import(web, token, test_user):
+    # no ruling
     """A discussion brought in from a recording has no chat speaker ids and
     is not a session the chat app can open."""
     imported = Discussion(
@@ -108,6 +112,7 @@ def test_session_list_omits_a_transcript_import(web, token, test_user):
 
 
 def test_session_create(web, token, test_user):
+    # no ruling
     response = post(web, token, "/app/sessions", {})
     assert response.status_code == 201
     assert response.get_json()["message_count"] == 0
@@ -116,6 +121,7 @@ def test_session_create(web, token, test_user):
 
 @pytest.mark.chat_flow
 def test_session_switch_by_last_activity(web, token):
+    # no ruling
     first = post(web, token, "/app/chat", {"statement": "one"}).get_json()
     second = post(web, token, "/app/sessions", {}).get_json()
     post(
@@ -131,6 +137,7 @@ def test_session_switch_by_last_activity(web, token):
 
 @pytest.mark.chat_flow(response="a coach reply")
 def test_session_statements(web, token):
+    # no ruling
     created = post(web, token, "/app/chat", {"statement": "hello"}).get_json()
 
     session = web.get(f"/app/sessions/{created['discussion_id']}").get_json()
@@ -141,6 +148,7 @@ def test_session_statements(web, token):
 
 
 def test_session_rename(web, token):
+    # R-0097
     created = post(web, token, "/app/sessions", {}).get_json()
 
     renamed = patch(
@@ -152,6 +160,7 @@ def test_session_rename(web, token):
 
 @pytest.mark.chat_flow(response="a coach reply")
 def test_session_delete_keeps_the_record(web, token, test_user):
+    # no ruling
     created = post(web, token, "/app/chat", {"statement": "hello"}).get_json()
     events = len(test_user.free_diagram.get_diagram_data().events)
 
@@ -164,6 +173,7 @@ def test_session_delete_keeps_the_record(web, token, test_user):
 
 
 def test_session_delete_of_another_user_is_not_found(web, token, test_user_2):
+    # no ruling
     other = Discussion(user_id=test_user_2.id, summary="theirs")
     db.session.add(other)
     db.session.commit()
@@ -176,6 +186,7 @@ def test_session_delete_of_another_user_is_not_found(web, token, test_user_2):
 
 
 def test_session_rename_rejects_unknown_field(web, token):
+    # no ruling
     created = post(web, token, "/app/sessions", {}).get_json()
 
     response = patch(
@@ -185,11 +196,13 @@ def test_session_rename_rejects_unknown_field(web, token):
 
 
 def test_chat_requires_json(web, token):
+    # no ruling
     response = web.post("/app/chat", data="hello", headers={"X-CSRFToken": token})
     assert response.status_code == 415
 
 
 def test_session_of_another_user_is_not_found(web, token, test_user_2):
+    # no ruling
     other = Discussion(user_id=test_user_2.id, summary="theirs")
     db.session.add(other)
     db.session.commit()
@@ -202,6 +215,7 @@ def test_session_of_another_user_is_not_found(web, token, test_user_2):
     response="That sits in [[event:10|two winters]], with [[person:1|Wren]]."
 )
 def test_chat_keeps_the_chips_the_record_resolves(web, token, family):
+    # R-0072, R-0085
     """Chips are the primitive (R-0072): they live in the words the page
     renders. Three kinds only — event, cluster, person."""
     data = family.get_diagram_data()
@@ -227,6 +241,7 @@ def test_chat_keeps_the_chips_the_record_resolves(web, token, family):
 
 @pytest.mark.chat_flow(response="I mean [[person:99|someone]].")
 def test_a_chip_pointing_at_nothing_becomes_its_own_words(web, token, family):
+    # R-0085
     body = replied(post(web, token, "/app/chat", {"statement": "hi"}))
     assert body["statement"] == "I mean someone."
 
@@ -268,6 +283,7 @@ def dated(family):
 
 
 def test_clusters_survive_a_server_side_write(dated):
+    # R-0076
     """The cluster chip aims at a stored cluster, so a server write that keeps
     events but drops clusters would silently kill it."""
     data = dated.get_diagram_data()
@@ -278,18 +294,21 @@ def test_clusters_survive_a_server_side_write(dated):
 
 @pytest.mark.chat_flow(response="That cluster: [[cluster:c1|the run]].")
 def test_a_cluster_chip_survives_when_the_record_holds_it(web, token, dated):
+    # R-0072, R-0085
     body = replied(post(web, token, "/app/chat", {"statement": "hi"}))
     assert body["statement"] == "That cluster: [[cluster:c1|the run]]."
 
 
 @pytest.mark.chat_flow(response="Off the line: [[cluster:c9|elsewhere]].")
 def test_a_cluster_chip_the_record_does_not_hold_is_dropped(web, token, dated):
+    # R-0085
     body = replied(post(web, token, "/app/chat", {"statement": "hi"}))
     assert body["statement"] == "Off the line: elsewhere."
 
 
 @pytest.mark.chat_flow(response="An undated one: [[event:12|that]].")
 def test_a_chip_may_name_an_undated_event(web, token, dated):
+    # R-0072
     """The old chip mechanism could only aim at the drawn line, so an undated
     event was dropped. A chip is a reference into the record, and the record
     holds undated events."""
@@ -309,6 +328,7 @@ def test_a_chip_may_name_an_undated_event(web, token, dated):
 
 
 def test_preferences_defaults(web, test_user):
+    # R-0099, R-0017
     body = web.get("/app/preferences").get_json()
     assert body == {
         PrefKey.Speak.value: False,
@@ -322,6 +342,7 @@ def test_preferences_defaults(web, test_user):
 
 
 def test_preferences_round_trip(web, token, test_user):
+    # R-0099
     body = patch(
         web,
         token,
@@ -343,6 +364,7 @@ def test_preferences_round_trip(web, token, test_user):
 
 
 def test_preferences_rejects_unknown_key(web, token):
+    # no ruling
     assert (
         patch(web, token, "/app/preferences", {"colour": "blue"}).status_code
         == 400
@@ -350,6 +372,7 @@ def test_preferences_rejects_unknown_key(web, token):
 
 
 def test_preferences_rejects_bad_value(web, token):
+    # no ruling
     response = patch(
         web, token, "/app/preferences", {PrefKey.Theme.value: "aubergine"}
     )
@@ -360,6 +383,7 @@ def test_preferences_rejects_bad_value(web, token):
 
 
 def test_account(web, test_user):
+    # R-0100
     policy = Policy(code="beta", name="Beta")
     db.session.add(policy)
     db.session.flush()
@@ -376,6 +400,7 @@ def test_account(web, test_user):
 
 
 def test_account_license_status_follows_the_license(web, test_user):
+    # R-0100
     policy = Policy(code="beta", name="Beta")
     db.session.add(policy)
     db.session.flush()
@@ -392,6 +417,7 @@ def test_account_license_status_follows_the_license(web, test_user):
 
 
 def test_read_only_grant_is_not_listed_or_writable(web, token, test_user, test_user_2):
+    # no ruling
     shared = Diagram(
         user_id=test_user_2.id, name="Shared Family", data=diagramjson.dumps({})
     )
@@ -431,6 +457,7 @@ SHIFT = {
 
 
 def test_event_round_trip(web, token, family):
+    # R-0141
     created = post(web, token, "/app/events", SHIFT)
     assert created.status_code == 201
     event = created.get_json()
@@ -465,6 +492,7 @@ def test_event_round_trip(web, token, family):
 def test_a_named_record_takes_the_write_and_a_stranger_s_does_not(
     web, token, family, test_user, test_user_2
 ):
+    # no ruling
     """The coding screen writes onto the record its coding is of, which it names
     on the request; a record the user may not write is refused."""
     mine = Diagram(user_id=test_user.id, name="Coding", data=diagramjson.dumps({}))
@@ -507,6 +535,7 @@ def test_a_named_record_takes_the_write_and_a_stranger_s_does_not(
 
 
 def test_event_write_takes_the_diagram_lock(web, token, family):
+    # R-0084
     before = family.version
     post(web, token, "/app/events", SHIFT)
     db.session.refresh(family)
@@ -514,6 +543,7 @@ def test_event_write_takes_the_diagram_lock(web, token, family):
 
 
 def test_event_variables_dropped_when_kind_is_not_shift(web, token, family):
+    # R-0144
     event = post(
         web, token, "/app/events", dict(SHIFT, kind=EventKind.Death.value)
     ).get_json()
@@ -523,6 +553,7 @@ def test_event_variables_dropped_when_kind_is_not_shift(web, token, family):
 
 
 def test_event_switching_kind_drops_the_shift_values(web, token, family):
+    # R-0144
     event = post(web, token, "/app/events", SHIFT).get_json()
 
     updated = patch(
@@ -537,6 +568,7 @@ def test_event_switching_kind_drops_the_shift_values(web, token, family):
 
 
 def test_event_targets_dropped_without_a_relationship(web, token, family):
+    # R-0144
     body = dict(SHIFT)
     del body["relationship"]
     event = post(web, token, "/app/events", body).get_json()
@@ -544,6 +576,7 @@ def test_event_targets_dropped_without_a_relationship(web, token, family):
 
 
 def test_event_triangles_kept_only_for_inside_and_outside(web, token, family):
+    # R-0144, R-0076
     conflict = post(
         web,
         token,
@@ -566,17 +599,20 @@ def test_event_triangles_kept_only_for_inside_and_outside(web, token, family):
 
 
 def test_event_rejects_unknown_field(web, token, family):
+    # no ruling
     response = post(web, token, "/app/events", dict(SHIFT, mood="blue"))
     assert response.status_code == 400
     assert b"mood" in response.get_data()
 
 
 def test_event_rejects_unknown_person(web, token, family):
+    # no ruling
     response = post(web, token, "/app/events", dict(SHIFT, person=99))
     assert response.status_code == 400
 
 
 def test_event_rejects_bad_kind(web, token, family):
+    # R-0363
     assert (
         post(web, token, "/app/events", dict(SHIFT, kind="wedding")).status_code
         == 400
@@ -584,6 +620,7 @@ def test_event_rejects_bad_kind(web, token, family):
 
 
 def test_event_of_missing_id_is_404(web, token, family):
+    # no ruling
     assert (
         patch(web, token, "/app/events/404", {"description": "x"}).status_code
         == 404
@@ -594,6 +631,7 @@ def test_event_of_missing_id_is_404(web, token, family):
 
 
 def test_timeline_reports_where_an_event_was_coded(web, family):
+    # R-0140
     data = family.get_diagram_data()
     data.events = [
         {
@@ -613,6 +651,7 @@ def test_timeline_reports_where_an_event_was_coded(web, family):
 
 
 def test_timeline_omits_events_never_traced(web, family):
+    # R-0140
     data = family.get_diagram_data()
     data.events = [
         {

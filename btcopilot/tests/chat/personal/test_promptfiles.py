@@ -69,12 +69,14 @@ def compare(want: dict, got: dict):
 
 
 def test_the_open_source_prompts_say_what_their_constants_said(public):
+    # no ruling
     with open(GOLDENS) as f:
         want = json.load(f)
     compare(want, rendered(public, want))
 
 
 def test_the_private_prompts_say_what_their_constants_said(monkeypatch):
+    # no ruling
     goldens = REAL_PRIVATE.parent / "goldens.json"
     if not goldens.exists() or not key_present():
         pytest.skip("the private prompts are not installed, or no key opens them")
@@ -89,12 +91,14 @@ def test_the_private_prompts_say_what_their_constants_said(monkeypatch):
 
 
 def test_the_app_runs_whole_with_no_private_prompts(public):
+    # no ruling
     assert public.get_agent_prompt(record="Marcus, 40")
     assert public.scribe_prompt(record="Marcus, 40")
     assert set(public.tool_meanings()) == set(public.ToolText)
 
 
 def test_a_prompt_renders_the_fragments_it_includes(tmp_path):
+    # no ruling
     (tmp_path / "fragments").mkdir()
     (tmp_path / "fragments" / "one.md").write_text("FIRST")
     (tmp_path / "fragments" / "two.md").write_text("SECOND")
@@ -106,6 +110,7 @@ def test_a_prompt_renders_the_fragments_it_includes(tmp_path):
 
 
 def test_a_missing_fragment_raises_rather_than_rendering_empty(tmp_path):
+    # no ruling
     (tmp_path / "lonely.prompty").write_text(
         '---\nname: lonely\ndescription: nothing to include\n---\n'
         '{% include "fragments/gone.md" %}'
@@ -115,6 +120,7 @@ def test_a_missing_fragment_raises_rather_than_rendering_empty(tmp_path):
 
 
 def test_a_private_file_wins_over_the_public_one_of_the_same_name(tmp_path):
+    # R-0305
     pub, priv = tmp_path / "pub", tmp_path / "priv"
     (pub / "fragments").mkdir(parents=True)
     priv.mkdir()
@@ -130,6 +136,7 @@ def test_a_private_file_wins_over_the_public_one_of_the_same_name(tmp_path):
 
 
 def test_an_encrypted_prompt_reads_as_its_plain_text():
+    # R-0322
     if not key_present() or not REAL_PRIVATE.is_dir():
         pytest.skip("the private prompts are not installed, or no key opens them")
     head, body = split(read(REAL_PRIVATE / "scribe.prompty"))
@@ -138,6 +145,7 @@ def test_an_encrypted_prompt_reads_as_its_plain_text():
 
 
 def test_importing_the_app_decrypts_nothing(tmp_path):
+    # no ruling
     """A prompt is read when it is called for, never when a module loads, or a
     test run and the migration chain would need a key before they could start."""
     fake = tmp_path / "bin"

@@ -35,24 +35,28 @@ def created_tables() -> set[str]:
 
 
 def test_revision_creates_the_renamed_and_review_tables():
+    # R-0299, R-0296
     created = created_tables()
     assert RENAMED | REVIEW <= created
     assert not {"changes", "interactions"} & created
 
 
 def test_models_map_to_the_renamed_and_review_tables(flask_app):
+    # R-0299, R-0296
     names = set(db.metadata.tables)
     assert RENAMED | REVIEW <= names
     assert not {"changes", "interactions"} & names
 
 
 def test_author_enum_takes_review(flask_app):
+    # no ruling
     from btcopilot.personal.models import Author
 
     assert Author("review") is Author.Review
 
 
 def test_discussion_kind_defaults_to_chat(flask_app, test_user):
+    # no ruling
     from btcopilot.personal.models import Discussion, DiscussionKind
 
     discussion = Discussion(user_id=test_user.id)

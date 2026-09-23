@@ -21,6 +21,7 @@ def _load(path):
 
 @pytest.mark.parametrize("path", FIXTURES, ids=lambda p: p.split("/")[-2])
 def test_roundtrip_through_wire_json(path):
+    # R-0083
     # the fixtures are the desktop app's own files, in a checkout beside this one
     if not os.path.exists(path):
         pytest.skip(f"no desktop checkout at {path}")
@@ -38,10 +39,12 @@ def test_roundtrip_through_wire_json(path):
 
 
 def test_encode_rejects_unknown_type():
+    # no ruling
     with pytest.raises(TypeError):
         diagramjson.to_json({"x": object()})
 
 
 def test_dict_carrying_the_tag_key_survives():
+    # R-0083
     data = {"a": {diagramjson.TAG: 1, "b": 2}, "c": {3: "x"}}
     assert diagramjson.from_json(diagramjson.to_json(data)) == data

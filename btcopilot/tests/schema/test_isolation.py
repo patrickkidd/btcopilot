@@ -24,6 +24,7 @@ PRIVATE_MODULES = [
 
 
 def test_schema_import_isolation():
+    # no ruling
     blocked = {mod: None for mod in PRIVATE_MODULES}
     with unittest.mock.patch.dict(sys.modules, blocked):
         if "btcopilot.schema" in sys.modules:
@@ -35,6 +36,7 @@ def test_schema_import_isolation():
 
 
 def test_commit_pdp_items_no_private_imports():
+    # no ruling
     """commit_pdp_items must not import private btcopilot modules at call time."""
     from btcopilot.schema import (
         DiagramData,
