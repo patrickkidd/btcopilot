@@ -43,6 +43,10 @@ stops once the new one is healthy, so no request is dropped), and runs
 `flask admin db upgrade`. Nothing is built on the box. The plugin is installed
 once at /root/.docker/cli-plugins/docker-rollout (github.com/wowu/docker-rollout).
 
+**One-time stamp (R-0417).** The seven old migrations became one revision, `1b00000000aa`.
+Before its upgrade the deploy moves a database at the old head `1a00000000af` to it (from
+`1a00000000ae` it adds the one missing column first); any other old revision stops the deploy.
+
 ## Grafana Cloud
 
 `fd-alloy` (Grafana Alloy) ships host and container metrics, every container's log

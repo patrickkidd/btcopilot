@@ -23,7 +23,7 @@ PRO_ONLY = {"activations", "feedbacks", "machines", "reconciliation_notes", "ses
 def chain_db(path) -> str:
     url = f"sqlite:///{path}"
     config = Config(os.path.join(ROOT, "alembic.ini"))
-    config.set_main_option("script_location", os.path.join(ROOT, "alembic"))
+    config.set_main_option("script_location", os.path.join(ROOT, "btcopilot", "migrations"))
     os.environ["FLASK_SQLALCHEMY_DATABASE_URI"] = url
     command.upgrade(config, "head")
     return url

@@ -1,14 +1,8 @@
-"""The chat app's database, from empty.
+"""The app's database, from empty: every table the models declare, in one
+revision (R-0417). It replaces the chain 1a00000000aa..1a00000000af; a database
+already at 1a00000000af is stamped to this revision once, never upgraded.
 
-Every table the chat app reads or writes, and nothing the Pro desktop app or the
-Training app kept: no desktop sessions, no machines, no activations, no
-feedbacks, no reconciliation notes. The chat app's accounts are its own; the old
-Pro accounts arrive once through the importer (R-0322, R-0327).
-
-The one revision this chain starts from: no database ever ran a chat revision of
-the Pro chain, so there is nothing to upgrade from.
-
-Revision ID: 1a00000000aa
+Revision ID: 1b00000000aa
 Revises:
 """
 
@@ -18,7 +12,7 @@ from sqlalchemy import Text
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '1a00000000aa'
+revision = '1b00000000aa'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -38,123 +32,7 @@ def upgrade():
     with op.batch_alter_table('admin_settings', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_admin_settings_id'), ['id'], unique=False)
         batch_op.create_index(batch_op.f('ix_admin_settings_key'), ['key'], unique=False)
-    op.create_table('invitations',
-    sa.Column('email', sa.String(length=255), nullable=False),
-    sa.Column('token', sa.String(length=64), nullable=False),
-    sa.Column('expires_at', sa.DateTime(), nullable=False),
-    sa.Column('used_at', sa.DateTime(), nullable=True),
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
-    )
-    with op.batch_alter_table('invitations', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_invitations_email'), ['email'], unique=False)
-        batch_op.create_index(batch_op.f('ix_invitations_id'), ['id'], unique=False)
-        batch_op.create_index(batch_op.f('ix_invitations_token'), ['token'], unique=True)
-    op.create_table('login_codes',
-    sa.Column('email', sa.String(length=255), nullable=False),
-    sa.Column('code_hash', sa.String(length=255), nullable=False),
-    sa.Column('expires_at', sa.DateTime(), nullable=False),
-    sa.Column('used_at', sa.DateTime(), nullable=True),
-    sa.Column('tries', sa.Integer(), server_default='0', nullable=False),
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
-    )
-    with op.batch_alter_table('login_codes', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_login_codes_email'), ['email'], unique=False)
-        batch_op.create_index(batch_op.f('ix_login_codes_id'), ['id'], unique=False)
-    op.create_table('policies',
-    sa.Column('code', sa.String(length=255), nullable=True),
-    sa.Column('interval', sa.String(length=32), nullable=True),
-    sa.Column('product', sa.String(length=128), nullable=True),
-    sa.Column('maxActivations', sa.Integer(), nullable=True),
-    sa.Column('name', sa.String(length=64), nullable=True),
-    sa.Column('description', sa.String(length=2048), nullable=True),
-    sa.Column('amount', sa.Float(precision=2), nullable=True),
-    sa.Column('active', sa.Boolean(), nullable=True),
-    sa.Column('public', sa.Boolean(), nullable=True),
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('code')
-    )
-    with op.batch_alter_table('policies', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_policies_id'), ['id'], unique=False)
-    op.create_table('review_rules',
-    sa.Column('text', sa.Text(), nullable=False),
-    sa.Column('source', postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), 'sqlite'), nullable=False),
-    sa.Column('drafted_by', sa.Enum('ai', 'migration', 'human', name='rulesource'), nullable=False),
-    sa.Column('flags', postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), 'sqlite'), nullable=False),
-    sa.Column('ratified_at', sa.DateTime(), nullable=True),
-    sa.Column('retired_at', sa.DateTime(), nullable=True),
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
-    )
-    with op.batch_alter_table('review_rules', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_review_rules_id'), ['id'], unique=False)
-    op.create_table('synthetic_personas',
-    sa.Column('name', sa.Text(), nullable=False),
-    sa.Column('background', sa.Text(), nullable=False),
-    sa.Column('traits', sa.JSON(), nullable=False),
-    sa.Column('attachment_style', sa.Text(), nullable=False),
-    sa.Column('presenting_problem', sa.Text(), nullable=False),
-    sa.Column('data_points', sa.JSON(), nullable=True),
-    sa.Column('sex', sa.Text(), nullable=False),
-    sa.Column('age', sa.Integer(), nullable=False),
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('name')
-    )
-    with op.batch_alter_table('synthetic_personas', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_synthetic_personas_id'), ['id'], unique=False)
-    op.create_table('users',
-    sa.Column('active', sa.Boolean(), server_default='1', nullable=False),
-    sa.Column('username', sa.String(length=100), nullable=False),
-    sa.Column('password', sa.String(length=255), server_default='', nullable=False),
-    sa.Column('reset_password_code', sa.String(length=100), nullable=True),
-    sa.Column('status', sa.String(length=64), nullable=False),
-    sa.Column('secret', sa.String(length=64), nullable=True),
-    sa.Column('roles', sa.String(length=255), nullable=True),
-    sa.Column('first_name', sa.String(length=100), server_default='', nullable=False),
-    sa.Column('last_name', sa.String(length=100), server_default='', nullable=False),
-    sa.Column('birthdate', sa.Date(), nullable=True),
-    sa.Column('preferences', sa.JSON(), server_default='{}', nullable=False),
-    sa.Column('stripe_id', sa.String(length=200), nullable=True),
-    sa.Column('free_diagram_id', sa.Integer(), nullable=True),
-    sa.Column('current_diagram_id', sa.Integer(), nullable=True),
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('username')
-    )
-    with op.batch_alter_table('users', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_users_id'), ['id'], unique=False)
-    op.create_table('diagrams',
-    sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('name', sa.String(), nullable=True),
-    sa.Column('alias', sa.String(), nullable=True),
-    sa.Column('use_real_names', sa.Boolean(), nullable=True),
-    sa.Column('require_password_for_real_names', sa.Boolean(), nullable=True),
-    sa.Column('data', sa.LargeBinary(), nullable=True),
-    sa.Column('version', sa.Integer(), nullable=False),
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
-    with op.batch_alter_table('diagrams', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_diagrams_id'), ['id'], unique=False)
-        batch_op.create_index(batch_op.f('ix_diagrams_user_id'), ['user_id'], unique=False)
+
     op.create_table('discussions',
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('diagram_id', sa.Integer(), nullable=True),
@@ -186,6 +64,71 @@ def upgrade():
     )
     with op.batch_alter_table('discussions', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_discussions_id'), ['id'], unique=False)
+
+    op.create_table('invitations',
+    sa.Column('email', sa.String(length=255), nullable=False),
+    sa.Column('token', sa.String(length=64), nullable=False),
+    sa.Column('expires_at', sa.DateTime(), nullable=False),
+    sa.Column('used_at', sa.DateTime(), nullable=True),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('invitations', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_invitations_email'), ['email'], unique=False)
+        batch_op.create_index(batch_op.f('ix_invitations_id'), ['id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_invitations_token'), ['token'], unique=True)
+
+    op.create_table('login_codes',
+    sa.Column('email', sa.String(length=255), nullable=False),
+    sa.Column('code_hash', sa.String(length=255), nullable=False),
+    sa.Column('expires_at', sa.DateTime(), nullable=False),
+    sa.Column('used_at', sa.DateTime(), nullable=True),
+    sa.Column('tries', sa.Integer(), server_default='0', nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('login_codes', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_login_codes_email'), ['email'], unique=False)
+        batch_op.create_index(batch_op.f('ix_login_codes_id'), ['id'], unique=False)
+
+    op.create_table('policies',
+    sa.Column('code', sa.String(length=255), nullable=True),
+    sa.Column('interval', sa.String(length=32), nullable=True),
+    sa.Column('product', sa.String(length=128), nullable=True),
+    sa.Column('maxActivations', sa.Integer(), nullable=True),
+    sa.Column('name', sa.String(length=64), nullable=True),
+    sa.Column('description', sa.String(length=2048), nullable=True),
+    sa.Column('amount', sa.Float(precision=2), nullable=True),
+    sa.Column('active', sa.Boolean(), nullable=True),
+    sa.Column('public', sa.Boolean(), nullable=True),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('code')
+    )
+    with op.batch_alter_table('policies', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_policies_id'), ['id'], unique=False)
+
+    op.create_table('review_rules',
+    sa.Column('text', sa.Text(), nullable=False),
+    sa.Column('source', postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), 'sqlite'), nullable=False),
+    sa.Column('drafted_by', sa.Enum('ai', 'migration', 'human', name='rulesource'), nullable=False),
+    sa.Column('flags', postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), 'sqlite'), nullable=False),
+    sa.Column('ratified_at', sa.DateTime(), nullable=True),
+    sa.Column('retired_at', sa.DateTime(), nullable=True),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('review_rules', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_review_rules_id'), ['id'], unique=False)
+
     op.create_table('speakers',
     sa.Column('discussion_id', sa.Integer(), nullable=True),
     sa.Column('person_id', sa.Integer(), nullable=True),
@@ -199,6 +142,69 @@ def upgrade():
     )
     with op.batch_alter_table('speakers', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_speakers_id'), ['id'], unique=False)
+
+    op.create_table('synthetic_personas',
+    sa.Column('name', sa.Text(), nullable=False),
+    sa.Column('background', sa.Text(), nullable=False),
+    sa.Column('traits', sa.JSON(), nullable=False),
+    sa.Column('attachment_style', sa.Text(), nullable=False),
+    sa.Column('presenting_problem', sa.Text(), nullable=False),
+    sa.Column('data_points', sa.JSON(), nullable=True),
+    sa.Column('sex', sa.Text(), nullable=False),
+    sa.Column('age', sa.Integer(), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name')
+    )
+    with op.batch_alter_table('synthetic_personas', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_synthetic_personas_id'), ['id'], unique=False)
+
+    op.create_table('users',
+    sa.Column('active', sa.Boolean(), server_default='1', nullable=False),
+    sa.Column('username', sa.String(length=100), nullable=False),
+    sa.Column('password', sa.String(length=255), server_default='', nullable=False),
+    sa.Column('reset_password_code', sa.String(length=100), nullable=True),
+    sa.Column('status', sa.String(length=64), nullable=False),
+    sa.Column('secret', sa.String(length=64), nullable=True),
+    sa.Column('roles', sa.String(length=255), nullable=True),
+    sa.Column('first_name', sa.String(length=100), server_default='', nullable=False),
+    sa.Column('last_name', sa.String(length=100), server_default='', nullable=False),
+    sa.Column('birthdate', sa.Date(), nullable=True),
+    sa.Column('preferences', sa.JSON(), server_default='{}', nullable=False),
+    sa.Column('stripe_id', sa.String(length=200), nullable=True),
+    sa.Column('free_diagram_id', sa.Integer(), nullable=True),
+    sa.Column('current_diagram_id', sa.Integer(), nullable=True),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['current_diagram_id'], ['diagrams.id'], use_alter=True),
+    sa.ForeignKeyConstraint(['free_diagram_id'], ['diagrams.id'], use_alter=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('username')
+    )
+    with op.batch_alter_table('users', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_users_id'), ['id'], unique=False)
+
+    op.create_table('diagrams',
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('name', sa.String(), nullable=True),
+    sa.Column('alias', sa.String(), nullable=True),
+    sa.Column('use_real_names', sa.Boolean(), nullable=True),
+    sa.Column('require_password_for_real_names', sa.Boolean(), nullable=True),
+    sa.Column('data', sa.LargeBinary(), nullable=True),
+    sa.Column('version', sa.Integer(), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('diagrams', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_diagrams_id'), ['id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_diagrams_user_id'), ['user_id'], unique=False)
+
     op.create_table('licenses',
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('policy_id', sa.Integer(), nullable=False),
@@ -220,6 +226,7 @@ def upgrade():
         batch_op.create_index('(no name)', ['key'], unique=False)
         batch_op.create_index(batch_op.f('ix_licenses_id'), ['id'], unique=False)
         batch_op.create_index(batch_op.f('ix_licenses_user_id'), ['user_id'], unique=False)
+
     op.create_table('passkeys',
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('credential_id', sa.String(length=255), nullable=False),
@@ -239,6 +246,7 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_passkeys_credential_id'), ['credential_id'], unique=True)
         batch_op.create_index(batch_op.f('ix_passkeys_id'), ['id'], unique=False)
         batch_op.create_index(batch_op.f('ix_passkeys_user_id'), ['user_id'], unique=False)
+
     op.create_table('statements',
     sa.Column('text', sa.Text(), nullable=True),
     sa.Column('discussion_id', sa.Integer(), nullable=True),
@@ -262,11 +270,14 @@ def upgrade():
     )
     with op.batch_alter_table('statements', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_statements_id'), ['id'], unique=False)
+
     op.create_table('token_meters',
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('period', sa.String(length=7), nullable=False),
     sa.Column('input_tokens', sa.Integer(), nullable=False),
     sa.Column('output_tokens', sa.Integer(), nullable=False),
+    sa.Column('cache_creation_tokens', sa.Integer(), nullable=False),
+    sa.Column('cache_read_tokens', sa.Integer(), nullable=False),
     sa.Column('cap', sa.Integer(), nullable=True),
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
@@ -278,6 +289,7 @@ def upgrade():
     with op.batch_alter_table('token_meters', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_token_meters_id'), ['id'], unique=False)
         batch_op.create_index(batch_op.f('ix_token_meters_user_id'), ['user_id'], unique=False)
+
     op.create_table('web_sessions',
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('token', sa.String(length=64), nullable=False),
@@ -295,6 +307,7 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_web_sessions_id'), ['id'], unique=False)
         batch_op.create_index(batch_op.f('ix_web_sessions_token'), ['token'], unique=True)
         batch_op.create_index(batch_op.f('ix_web_sessions_user_id'), ['user_id'], unique=False)
+
     op.create_table('access_rights',
     sa.Column('diagram_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -310,6 +323,7 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_access_rights_diagram_id'), ['diagram_id'], unique=False)
         batch_op.create_index(batch_op.f('ix_access_rights_id'), ['id'], unique=False)
         batch_op.create_index(batch_op.f('ix_access_rights_user_id'), ['user_id'], unique=False)
+
     op.create_table('diagram_changes',
     sa.Column('diagram_id', sa.Integer(), nullable=False),
     sa.Column('statement_id', sa.Integer(), nullable=True),
@@ -330,6 +344,7 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_diagram_changes_diagram_id'), ['diagram_id'], unique=False)
         batch_op.create_index(batch_op.f('ix_diagram_changes_id'), ['id'], unique=False)
         batch_op.create_index(batch_op.f('ix_diagram_changes_turn_id'), ['turn_id'], unique=False)
+
     op.create_table('diagram_interactions',
     sa.Column('diagram_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=True),
@@ -349,6 +364,53 @@ def upgrade():
     with op.batch_alter_table('diagram_interactions', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_diagram_interactions_diagram_id'), ['diagram_id'], unique=False)
         batch_op.create_index(batch_op.f('ix_diagram_interactions_id'), ['id'], unique=False)
+
+    op.create_table('model_calls',
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('diagram_id', sa.Integer(), nullable=False),
+    sa.Column('turn_id', sa.String(length=64), nullable=False),
+    sa.Column('model', sa.String(length=64), nullable=False),
+    sa.Column('fallback', postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), 'sqlite'), nullable=True),
+    sa.Column('input_tokens', sa.Integer(), nullable=False),
+    sa.Column('output_tokens', sa.Integer(), nullable=False),
+    sa.Column('cache_creation_tokens', sa.Integer(), nullable=False),
+    sa.Column('cache_read_tokens', sa.Integer(), nullable=False),
+    sa.Column('cost_usd', sa.Numeric(precision=10, scale=6), nullable=False),
+    sa.Column('duration_ms', sa.Integer(), nullable=False),
+    sa.Column('tool_calls', sa.Integer(), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['diagram_id'], ['diagrams.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('model_calls', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_model_calls_id'), ['id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_model_calls_turn_id'), ['turn_id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_model_calls_user_id'), ['user_id'], unique=False)
+
+    op.create_table('product_events',
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('session_id', sa.String(length=64), nullable=False),
+    sa.Column('diagram_id', sa.Integer(), nullable=True),
+    sa.Column('screen', sa.String(length=32), nullable=False),
+    sa.Column('name', sa.String(length=64), nullable=False),
+    sa.Column('item_kind', sa.String(length=32), nullable=True),
+    sa.Column('item_id', sa.String(length=64), nullable=True),
+    sa.Column('client_at', sa.DateTime(), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['diagram_id'], ['diagrams.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('product_events', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_product_events_id'), ['id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_product_events_user_id'), ['user_id'], unique=False)
+        batch_op.create_index('ix_product_events_user_id_created_at', ['user_id', 'created_at'], unique=False)
+
     op.create_table('review_cuts',
     sa.Column('discussion_id', sa.Integer(), nullable=False),
     sa.Column('start_statement_id', sa.Integer(), nullable=False),
@@ -372,6 +434,7 @@ def upgrade():
     with op.batch_alter_table('review_cuts', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_review_cuts_discussion_id'), ['discussion_id'], unique=False)
         batch_op.create_index(batch_op.f('ix_review_cuts_id'), ['id'], unique=False)
+
     op.create_table('review_codings',
     sa.Column('cut_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -390,6 +453,7 @@ def upgrade():
     with op.batch_alter_table('review_codings', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_review_codings_cut_id'), ['cut_id'], unique=False)
         batch_op.create_index(batch_op.f('ix_review_codings_id'), ['id'], unique=False)
+
     op.create_table('review_items',
     sa.Column('cut_id', sa.Integer(), nullable=False),
     sa.Column('item_kind', sa.Enum('person', 'event', 'pair_bond', 'emotion', 'cluster', 'diagram', name='itemkind'), nullable=False),
@@ -412,6 +476,24 @@ def upgrade():
     with op.batch_alter_table('review_items', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_review_items_cut_id'), ['cut_id'], unique=False)
         batch_op.create_index(batch_op.f('ix_review_items_id'), ['id'], unique=False)
+
+    op.create_table('review_notes',
+    sa.Column('coding_id', sa.Integer(), nullable=False),
+    sa.Column('statement_id', sa.Integer(), nullable=False),
+    sa.Column('text', sa.Text(), nullable=False),
+    sa.Column('turn_id', sa.String(length=64), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['coding_id'], ['review_codings.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('review_notes', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_review_notes_coding_id'), ['coding_id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_review_notes_id'), ['id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_review_notes_statement_id'), ['statement_id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_review_notes_turn_id'), ['turn_id'], unique=False)
+
     op.create_table('review_votes',
     sa.Column('review_item_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -429,7 +511,7 @@ def upgrade():
     with op.batch_alter_table('review_votes', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_review_votes_id'), ['id'], unique=False)
         batch_op.create_index(batch_op.f('ix_review_votes_review_item_id'), ['review_item_id'], unique=False)
-
+    # the tables that point at each other get those links once both exist
     with op.batch_alter_table('discussions', schema=None) as batch_op:
         batch_op.create_foreign_key('fk_discussions_chat_ai_speaker_id_speakers', 'speakers', ['chat_ai_speaker_id'], ['id'])
     with op.batch_alter_table('discussions', schema=None) as batch_op:
@@ -454,6 +536,13 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_review_votes_id'))
 
     op.drop_table('review_votes')
+    with op.batch_alter_table('review_notes', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_review_notes_turn_id'))
+        batch_op.drop_index(batch_op.f('ix_review_notes_statement_id'))
+        batch_op.drop_index(batch_op.f('ix_review_notes_id'))
+        batch_op.drop_index(batch_op.f('ix_review_notes_coding_id'))
+
+    op.drop_table('review_notes')
     with op.batch_alter_table('review_items', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_review_items_id'))
         batch_op.drop_index(batch_op.f('ix_review_items_cut_id'))
@@ -469,6 +558,18 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_review_cuts_discussion_id'))
 
     op.drop_table('review_cuts')
+    with op.batch_alter_table('product_events', schema=None) as batch_op:
+        batch_op.drop_index('ix_product_events_user_id_created_at')
+        batch_op.drop_index(batch_op.f('ix_product_events_user_id'))
+        batch_op.drop_index(batch_op.f('ix_product_events_id'))
+
+    op.drop_table('product_events')
+    with op.batch_alter_table('model_calls', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_model_calls_user_id'))
+        batch_op.drop_index(batch_op.f('ix_model_calls_turn_id'))
+        batch_op.drop_index(batch_op.f('ix_model_calls_id'))
+
+    op.drop_table('model_calls')
     with op.batch_alter_table('diagram_interactions', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_diagram_interactions_id'))
         batch_op.drop_index(batch_op.f('ix_diagram_interactions_diagram_id'))
@@ -513,14 +614,6 @@ def downgrade():
         batch_op.drop_index('(no name)')
 
     op.drop_table('licenses')
-    with op.batch_alter_table('speakers', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_speakers_id'))
-
-    op.drop_table('speakers')
-    with op.batch_alter_table('discussions', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_discussions_id'))
-
-    op.drop_table('discussions')
     with op.batch_alter_table('diagrams', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_diagrams_user_id'))
         batch_op.drop_index(batch_op.f('ix_diagrams_id'))
@@ -534,6 +627,10 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_synthetic_personas_id'))
 
     op.drop_table('synthetic_personas')
+    with op.batch_alter_table('speakers', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_speakers_id'))
+
+    op.drop_table('speakers')
     with op.batch_alter_table('review_rules', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_review_rules_id'))
 
@@ -553,6 +650,10 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_invitations_email'))
 
     op.drop_table('invitations')
+    with op.batch_alter_table('discussions', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_discussions_id'))
+
+    op.drop_table('discussions')
     with op.batch_alter_table('admin_settings', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_admin_settings_key'))
         batch_op.drop_index(batch_op.f('ix_admin_settings_id'))

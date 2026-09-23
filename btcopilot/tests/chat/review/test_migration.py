@@ -1,4 +1,4 @@
-"""The chat chain's first revision, run against SQLite."""
+"""The single revision, run against SQLite."""
 
 import importlib.util
 
@@ -8,7 +8,7 @@ from mock import MagicMock, patch
 from btcopilot.extensions import db
 from btcopilot.tests.repo import REPO
 
-REVISION = REPO / "alembic/versions/1a00000000aa_the_chat_app_from_empty.py"
+REVISION = REPO / "btcopilot/migrations/versions/1b00000000aa_the_app_from_empty.py"
 
 RENAMED = {"diagram_changes", "diagram_interactions"}
 REVIEW = {

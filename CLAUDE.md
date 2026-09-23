@@ -360,7 +360,7 @@ Ask user to start/restart before using chrome-devtools MCP: `cd dashboard && uv 
 - **Directories**: `btcopilot/tests/chat/` (the chat app's suite), `btcopilot/tests/schema/`, `btcopilot/tests/test_*.py`
 
 ### Database
-- **Migrations**: Alembic (`alembic.ini`, `alembic/versions/`)
+- **Migrations**: Alembic (`alembic.ini`, `btcopilot/migrations/versions/`)
 - **Query**: `docker exec fd-postgres psql -U familydiagram -d familydiagram -c "SQL"`
 - **Interactive**: `docker exec -it fd-postgres psql -U familydiagram -d familydiagram`
 - **Table structure**: append `-c "\d table_name"`
