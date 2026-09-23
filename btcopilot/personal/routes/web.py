@@ -48,6 +48,7 @@ def _page() -> str:
         "diagram": (
             {"id": in_use.id, "name": in_use.name} if in_use else None
         ),
+        "version": btcopilot.__version__,
     }
     head = (
         f'<meta name="csrf-token" content="{escape(generate_csrf())}">'

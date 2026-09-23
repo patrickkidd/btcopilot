@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "btcopilot"
-version = "1.0.0"
+version = "3.0.0"
 description = "BT Copilot"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }

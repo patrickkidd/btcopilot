@@ -2,6 +2,8 @@ import os, os.path, logging
 from flask import Flask, redirect, request, url_for
 from werkzeug.exceptions import Unauthorized, HTTPException
 
+import btcopilot
+
 from btcopilot.personal import tracing
 from btcopilot.personal.turnlog import TurnLogBackend
 
@@ -147,7 +149,7 @@ def create_app(config: dict = None, **kwargs):
 
     @app.route("/health")
     def health():
-        return "OK"
+        return btcopilot.__version__
 
     @app.route("/")
     def root():

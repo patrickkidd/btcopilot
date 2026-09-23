@@ -29,7 +29,7 @@ from flask_mail import Mail
 from flask_wtf.csrf import CSRFProtect
 from celery import Celery
 
-from btcopilot import version
+from btcopilot import __version__
 from .handlers import ColorfulSMTPHandler
 
 SERVER_FOLDER_PATH = os.path.realpath(
@@ -89,7 +89,7 @@ class DatadogJSONFormatter(logging.Formatter):
             "status": record.levelname,
             "message": record.getMessage(),
             "btcopilot": {
-                "version": version(),
+                "version": __version__,
             },
             "client": {
                 "version": (

@@ -1,6 +1,7 @@
 import sys
 import os, logging
 import hashlib, hmac, base64
+import importlib.metadata
 
 IS_TEST = "pytest" in sys.modules
 
@@ -92,22 +93,7 @@ _log = logging.getLogger(__name__)
 
 ## Version
 
-_version = None
-
-
-def version():
-    global _version
-
-    if not _version:
-        try:
-            from importlib.metadata import version as get_version
-
-            _version = get_version("btcopilot")
-        except Exception as e:
-            _log.debug(f"Could not get package version: {e}")
-            _version = "unknown"
-
-    return _version
+__version__ = importlib.metadata.version("btcopilot")
 
 
 ## Add Git SHA and Cache Headers

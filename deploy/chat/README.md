@@ -36,8 +36,9 @@ from the Pro box on purpose. Nothing in it has run yet; the droplet does not exi
 
 ## Every deploy after that
 
-The release workflow pushes the image to GHCR on a merge to master;
-`release.yml` then pulls it on the box, rolls the app and the worker with
+On a merge to master `release.yml` builds the image, tags it with the release
+version `3.YYYY.M.D.N+g<sha7>` (UTC commit date, N counts that day's releases; the
+image tag has `-` for `+`; R-0419), pushes it to GHCR, then pulls it on the box, rolls the app and the worker with
 `docker rollout` (the new container comes up beside the old one and the old one
 stops once the new one is healthy, so no request is dropped), and runs
 `flask admin db upgrade`. Nothing is built on the box. The plugin is installed
@@ -55,6 +56,8 @@ It reads `GRAFANA_CLOUD_TOKEN` from the secrets file like everything else, and i
 is `alloy/config.alloy`. Its UI on port 12345 has no host port, so it is not exposed.
 `fd-pdc` (Grafana's Private Data source Connect agent) holds an outbound tunnel to Grafana Cloud with `GRAFANA_PDC_TOKEN`; no port is opened.
 Grafana's Postgres data source reaches `fd-postgres:5432` through it as the read-only role `grafana`, password `GRAFANA_PG_PASSWORD`.
+
+The desktop app's update feeds are not served here; they live with `master-legacy`.
 
 ## What is not here yet
 

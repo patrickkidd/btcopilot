@@ -72,6 +72,7 @@ declare global {
       diagram: { id: number; name: string } | null;
       session: { id: number; turn: string | null } | null;
       statements: Statement[];
+      version: string;
     };
   }
 }
