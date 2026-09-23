@@ -388,6 +388,10 @@ class Toolbox:
         they are called comes from the overridable prompts."""
         other = self._find_person(other_id)
         name = prompts.generic_name(other.get("name") or "someone", role)
+        key = record.generic_key({"name": name})
+        for person in self.data.people:
+            if record.generic_key(person) == key:
+                return int(person["id"])
         _, patch = self._write(
             ItemKind.Person,
             None,

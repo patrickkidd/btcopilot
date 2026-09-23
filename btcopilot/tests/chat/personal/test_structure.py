@@ -13,7 +13,7 @@ import pytest
 from btcopilot.extensions import db
 from btcopilot.personal import prompts, record
 from btcopilot.personal.models import Author
-from btcopilot.personal.toolbox import ToolName, Toolbox
+from btcopilot.personal.toolbox import ToolError, ToolName, Toolbox
 from btcopilot.models import Diagram
 from btcopilot.schema import ItemKind
 
@@ -149,3 +149,39 @@ def test_a_birth_naming_one_parent_gets_the_other_generically(subscriber):
 def test_the_generic_name_is_the_overridable_wording():
     # R-0325
     assert prompts.generic_name("Sarah", prompts.Role.Father) == "Sarah's father"
+
+
+def test_one_unnamed_mother_under_two_words_is_refused(subscriber):
+    # R-0429
+    diagram = _diagram(
+        subscriber.user,
+        {
+            "people": [{"id": 1, "name": "Sarah"}, {"id": 2, "name": "Sarah's mother"}],
+            "lastItemId": 2,
+        },
+    )
+    with pytest.raises(ToolError, match="already person 2"):
+        _toolbox(diagram).call(ToolName.EditPerson.value, {"name": "Sarah's Mum"})
+    assert len(diagram.get_diagram_data().people) == 2
+
+
+def test_a_birth_reuses_the_unnamed_mother_already_there(subscriber):
+    # R-0429
+    diagram = _diagram(
+        subscriber.user,
+        {
+            "people": [
+                {"id": 1, "name": "Marcus", "gender": "male"},
+                {"id": 2, "name": "Sarah", "gender": "female"},
+                {"id": 3, "name": "Sarah's Mum", "gender": "female"},
+            ],
+            "lastItemId": 3,
+        },
+    )
+    _toolbox(diagram).call(
+        ToolName.EditEvent.value,
+        {"kind": "birth", "date": "1975-04-02", "person": 1, "child": 2},
+    )
+    data = diagram.get_diagram_data()
+    assert len(data.people) == 3
+    assert data.events[0]["spouse"] == 3

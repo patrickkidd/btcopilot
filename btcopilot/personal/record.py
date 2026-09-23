@@ -14,6 +14,7 @@ from sqlalchemy import update as sql_update
 from btcopilot import diagramjson
 from btcopilot.extensions import db
 from btcopilot.personal.models import Author, Change
+from btcopilot.personal.prompts import Role
 from btcopilot.models import Diagram
 from btcopilot.schema import (
     ITEM_COLLECTIONS,
@@ -319,6 +320,7 @@ def _validate(data: dict, deltas: list[dict]):
     _words(data, deltas)
     _moves(data, deltas)
     _twins(data, deltas)
+    _people(data, deltas)
     _structure(data, deltas)
 
 
@@ -520,6 +522,49 @@ def pair(bond: dict) -> tuple:
     return tuple(
         sorted(str(bond.get(side)) for side in ("person_a", "person_b"))
     )
+
+
+#: The words people use for a role, as the record's own generic names spell it
+#: (R-0429: "Sarah's mother", never beside "Sarah's Mum").
+ROLE_WORDS = {
+    "mother": Role.Mother,
+    "mum": Role.Mother,
+    "mom": Role.Mother,
+    "mommy": Role.Mother,
+    "mummy": Role.Mother,
+    "mama": Role.Mother,
+    "father": Role.Father,
+    "dad": Role.Father,
+    "daddy": Role.Father,
+    "papa": Role.Father,
+    "partner": Role.Partner,
+}
+GENERIC = re.compile(r"^(.+?)['\u2019]s\s+(\w+)$")
+
+
+def generic_key(person: dict) -> tuple | None:
+    """Whose what a generically named person is: ("sarah", Role.Mother) for
+    "Sarah's Mum" and "Sarah's mother" alike."""
+    match = GENERIC.match((person.get("name") or "").strip())
+    if not match or match.group(2).lower() not in ROLE_WORDS:
+        return None
+    return match.group(1).strip().lower(), ROLE_WORDS[match.group(2).lower()]
+
+
+def _people(data: dict, deltas: list[dict]):
+    """One person is not written down twice under two words for the same role."""
+    people = _collection(data, ItemKind.Person)
+    for person_id in _touched_kind(deltas, ItemKind.Person):
+        person = _find(data, ItemKind.Person, person_id)
+        key = person and generic_key(person)
+        if not key:
+            continue
+        for other in people:
+            if str(other.get("id")) != person_id and generic_key(other) == key:
+                raise Invalid(
+                    f"{person['name']} is already person {other['id']} "
+                    f"({other['name']}): use that person rather than adding another"
+                )
 
 
 def _structure(data: dict, deltas: list[dict]):
