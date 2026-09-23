@@ -546,3 +546,7 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    never a count. Patrick wants the app to show him the light from his own timeline. BUILDING
    through the round-6b redraw; the cluster model must then name the key shift and who carries
    the trouble for each cluster.
+37. Round 6b reviewed: dots must never change height (fixed as a rule, R-0377); soft boxes
+   acceptable for beta but not right; he wants a wide creative range of picture concepts,
+   3-D included, from an agent team, with the chat-picture data exchange unchanged. OPEN —
+   round 7 brainstorm.
