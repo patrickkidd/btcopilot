@@ -1635,3 +1635,32 @@ Grafana dashboard as people who chatted. Ruling: test accounts are deleted the m
 not needed, or one account (the claude-test account) is reused; never a numbered series.
 The nine are deleted by the deployment session; the dashboards exclude the prefix; verification
 walks move to a sandbox. Recorded in HOW_THIS_PROJECT_WORKS.md.
+
+## 2026-09-22: The admin path and the dashboards belong to a second session
+
+Patrick's direction. His locally hosted model in openclaw will administer the backend from a
+markdown file linked in its own instructions and kept current with the deployed source: invites,
+licences, costs, everything the admin command line does, with read-only commands running freely
+and anything destructive confirmed first [R-0390]. He then assigned that work, the dashboards and
+the per-call cost rows to a second Claude session and told this one to stay off them; the two
+sessions sync only on the code they touch in the shared worktree and on the production box
+[R-0391].
+
+## 2026-09-23: How the picture work is decided, and what the research produced
+
+Patrick, over the drawing rounds. Method: the sources to be read are confirmed with him before
+the reading starts [R-0395]; a gallery passes an aesthetic critique before he sees it [R-0396];
+each concept carries a title and a citation and nothing else, because a concept that needs prose
+does not speak for itself [R-0398]; clever technology earns its place only where it communicates
+what flat cannot, and a drawing's tap does what the app's tap does [R-0399]; findings are
+consolidated into the conversation rather than left in documents [R-0397]; and the flush records
+where each research thread stands so he can resume it [R-0401].
+
+Outcome: fourteen concepts drawn from the literature (doc/chat-first/PICTURE_IDEAS.md) and
+twenty-four phone-app views mapped onto the eight messages the picture must carry
+(doc/chat-first/MOBILE_VIEWS.md). Nothing beat the line already in the app, so the short sideways
+scroll was built [R-0381]; words-only is out [R-0378]; the family drawing waits on the
+traditional diagram and automatic arrangement [R-0379]; the lanes of generations wait on data
+[R-0380]; the gap between a cluster's opening event and its symptom is kept as fundamental
+[R-0382]. Three decisions from the last round are on its page and unanswered.
+

@@ -13030,5 +13030,29 @@
   "text": "be very careful to preserve your context window so that you can flush after your job is done before you blow your window",
   "named_by": "session",
   "uuid": "8dd8249e-88fd-4fff-94cc-4d1ce801f037"
+ },
+ {
+  "id": "1a988ef4#90",
+  "time": "2026-09-23T05:06:51.253Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-5",
+  "name": "capture the research status",
+  "summary": "The flush must record where the two research threads stand.",
+  "text": "and make sure that it captures the status of these recent literare and mobile app market innovations research. I want to be able to pick up where I left off",
+  "named_by": "session",
+  "uuid": "55953f8b-8e08-4762-afcc-7cdc7a3c1277"
+ },
+ {
+  "id": "1a988ef4#91",
+  "time": "2026-09-23T05:11:55.795Z",
+  "session": "1a988ef4",
+  "session_title": "deployment pickup fd-362",
+  "thread": "T-5",
+  "name": "the cluster tap only selects",
+  "summary": "In the drawing a cluster tap shows its title instead of opening it.",
+  "text": "now refer to that flushed context and explain to me why in the mockup when I click on a cluster then all it does is select it and show it's title. Isn't it supposed to drill down into it and then show the play-by-play view if requested like we designed previously? Or is that something implied by the mockup",
+  "named_by": "session",
+  "uuid": "a627909b-1cb0-4e34-b6d4-2629e2f529c7"
  }
 ]

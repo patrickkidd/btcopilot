@@ -150,6 +150,18 @@ swipe away, never more than two screens — and an opened group prints its real 
 Event dots sit on the line at one height, always [R-0377], and the picture spot always shows a
 picture rather than a list of words [R-0378].
 
+**What the research says the picture should show (2026-09-23).** Two threads finished this
+session and both are written up so they can be picked up cold. The literature thread read Family
+Evaluation and the SARF sources and produced fourteen concepts for the picture spot, each tied to
+the passage behind it, with the critic's verdict and Patrick's ruling on each:
+[PICTURE_IDEAS.md](PICTURE_IDEAS.md). The phone-app thread read twenty-four small-screen data
+views from shipped apps and mapped them onto the eight things this picture has to say, marking
+which three his record can show today and which five need data it does not hold:
+[MOBILE_VIEWS.md](MOBILE_VIEWS.md). Three of the five hybrids that came out of the mapping were
+drawn on the app's own line; one survived, a single line of words above the picture, and it waits
+on three of his decisions. The standing rule from both threads is that when a view cannot be
+drawn until the record holds more, it is said plainly [R-0380].
+
 **What is not true yet on the box.** The dashboards and the cost rows are built but not deployed:
 that waits on Patrick putting the Grafana token there and refreshing the dependency lock. There is
 no automated database backup. Nine scratch accounts with chats, made while proving deploys, sit in

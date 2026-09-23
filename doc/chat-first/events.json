@@ -14695,6 +14695,62 @@
 "source": "private/oracle/rulings.md"
 },
 {
+"id": "R-0383",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-21",
+"session": "S 09-21",
+"topics": [
+"T-9"
+],
+"title": "As Patrick uses the app he reports bugs, comments and brainstorms continuously; every one is catalogued in the",
+"text": "As Patrick uses the app he reports bugs, comments and brainstorms continuously; every one is catalogued in the review log as it arrives and fixed when he says to fix it, never before",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0384",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-21",
+"session": "S 09-21",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "A status line is never open ended: it says whether the thing is done and what happens next. Ambiguity about st",
+"text": "A status line is never open ended: it says whether the thing is done and what happens next. Ambiguity about state is itself the defect",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0385",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-21",
+"session": "S 09-21",
+"topics": [
+"T-2",
+"T-9"
+],
+"title": "Never assume a fix works; trust only evidence. A fix to the running path is proven by making the real call wit",
+"text": "Never assume a fix works; trust only evidence. A fix to the running path is proven by making the real call with the real prompt, not by reasoning about it",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "btcopilot@625f92e",
+"kind": "build",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 flush: what a group of events is, and the line that scrolls",
+"text": "FD-362 flush: what a group of events is, and the line that scrolls",
+"source": "btcopilot git log"
+},
+{
 "id": "btcopilot@6943525",
 "kind": "build",
 "date": "2026-09-22",
@@ -15382,6 +15438,19 @@
 "source": "decisions/log.md"
 },
 {
+"id": "D:2026-09-22: The admin path and the dashboards belong to a se",
+"kind": "decision",
+"date": "2026-09-22",
+"session": "",
+"topics": [
+"T-1",
+"T-5"
+],
+"title": "2026-09-22: The admin path and the dashboards belong to a second session",
+"text": "Patrick's direction. His locally hosted model in openclaw will administer the backend from a\nmarkdown file linked in its own instructions and kept current with the deployed source: invites,\nlicences, costs, everything the admin command line does, with read-only commands running freely\nand anything destructive confirmed first [R-0390]. He then assigned that work, the dashboards and\nthe per-call cost rows to a second Claude session and told this one to stay off them; the two\nsessions sync only on the code they touch in the shared worktree and on the production box\n[R-0391].",
+"source": "decisions/log.md"
+},
+{
 "id": "R-0362",
 "kind": "ruling",
 "status": "OK",
@@ -15593,6 +15662,241 @@
 "source": "private/oracle/rulings.md"
 },
 {
+"id": "R-0386",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-1",
+"T-5"
+],
+"title": "The Pro desktop app's backend continues on a branch called master-legacy, cut at the point the chat-first rebu",
+"text": "The Pro desktop app's backend continues on a branch called master-legacy, cut at the point the chat-first rebuild diverged: bug fixes are pull requests into it, and merging one triggers the same release flow, rebuilding the image and deploying it to the old box",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0387",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "Each coach reply carries a play button under it that plays or replays that message, the way the Claude app doe",
+"text": "Each coach reply carries a play button under it that plays or replays that message, the way the Claude app does",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0388",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-1"
+],
+"title": "No feature that costs money for each use is switched on before the feedback loops exist: each beta user must s",
+"text": "No feature that costs money for each use is switched on before the feedback loops exist: each beta user must see how much they are using and what it costs, and that has to sit inside the data-driven question the app exists to answer — will people pay for it and do they actually like it. Money out of his own pocket is the secondary concern. A paid voice at about a cent a reply is the example, tabled and to be remembered",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0389",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "Cost over time per user has to end up in the dashboards; the brainstorm about leaving Datadog for Grafana, Pro",
+"text": "Cost over time per user has to end up in the dashboards; the brainstorm about leaving Datadog for Grafana, Prometheus and Loki runs in a separate session so it does not fill this one's context, and reports its findings back here by message",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0390",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-1",
+"T-2"
+],
+"title": "Patrick's locally hosted model in openclaw administers the backend from a markdown file linked in its own inst",
+"text": "Patrick's locally hosted model in openclaw administers the backend from a markdown file linked in its own instructions, kept always current with the deployed source: inviting users by email, listing licences and costs, everything the admin command line does. Read-only commands run freely; anything surgical or destructive is confirmed first. The repository is open source, which constrains how that file is served",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0391",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-1",
+"T-5",
+"T-9"
+],
+"title": "The admin path and the dashboards are built by the other session, not this one; the two sessions keep off each",
+"text": "The admin path and the dashboards are built by the other session, not this one; the two sessions keep off each other's ground and sync only on the code they touch in the shared worktree and on the production box",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0392",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-2"
+],
+"title": "Prompt caching is used on every coach call: the cost of running this is already going to be noticeable",
+"text": "Prompt caching is used on every coach call: the cost of running this is already going to be noticeable",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0393",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-1",
+"T-5",
+"T-9"
+],
+"title": "The scratch accounts made while checking deploys are deleted; exactly one test account is kept, remembered and",
+"text": "The scratch accounts made while checking deploys are deleted; exactly one test account is kept, remembered and reused from then on",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0394",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"untagged"
+],
+"title": "fdserver is a private repository, so the values in its old committed compose file were never exposed and no ro",
+"text": "fdserver is a private repository, so the values in its old committed compose file were never exposed and no rotation is needed. Every branch made there for this work is deleted, because the new app lives entirely in btcopilot",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0395",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-6",
+"T-9"
+],
+"title": "Before research on the primary sources begins, the list of sources to be read is put to Patrick so he can conf",
+"text": "Before research on the primary sources begins, the list of sources to be read is put to Patrick so he can confirm they are the right ones",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0396",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "Every gallery is put through an aesthetic critique — a separate agent, or an argument between agents — before ",
+"text": "Every gallery is put through an aesthetic critique — a separate agent, or an argument between agents — before Patrick sees it; obvious visual errors reaching him means the gate did not run",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0397",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-6"
+],
+"title": "Findings are consolidated into the conversation rather than left for him to dig out of documents; the document",
+"text": "Findings are consolidated into the conversation rather than left for him to dig out of documents; the documents themselves stay in the project's own context",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0400",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-1",
+"T-5"
+],
+"title": "The first beta users are started now so they generate data: the basic chat is stable and the picture is not ex",
+"text": "The first beta users are started now so they generate data: the basic chat is stable and the picture is not expected to block them",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0402",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-5"
+],
+"title": "The main view of the line needs one word for its name. As events multiply the dots become a continuous thicker",
+"text": "The main view of the line needs one word for its name. As events multiply the dots become a continuous thicker line where tapping a coordinate cannot pick anything, so the picture must keep carrying a message at a glance: a number of dots is useful only as a sign that something was going on, and more room comes from a little more scrolling or a rethink of the line for records that are not the happy path",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0403",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-22",
+"session": "S 09-22",
+"topics": [
+"T-1",
+"T-5",
+"T-9"
+],
+"title": "Production stops being the place things are tried: a development server on his Mac, reachable from his phone o",
+"text": "Production stops being the place things are tried: a development server on his Mac, reachable from his phone over Tailscale wherever he is, is the next step, with the timing open. Until then testing continues on the box with the first beta users",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "D:2026-09-23: How the picture work is decided, and what the re",
+"kind": "decision",
+"date": "2026-09-23",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "2026-09-23: How the picture work is decided, and what the research produced",
+"text": "Patrick, over the drawing rounds. Method: the sources to be read are confirmed with him before\nthe reading starts [R-0395]; a gallery passes an aesthetic critique before he sees it [R-0396];\neach concept carries a title and a citation and nothing else, because a concept that needs prose\ndoes not speak for itself [R-0398]; clever technology earns its place only where it communicates\nwhat flat cannot, and a drawing's tap does what the app's tap does [R-0399]; findings are\nconsolidated into the conversation rather than left in documents [R-0397]; and the flush records\nwhere each research thread stands so he can resume it [R-0401].\n\nOutcome: fourteen concepts drawn from the literature (doc/chat-first/PICTURE_IDEAS.md) and\ntwenty-four phone-app views mapped onto the eight messages the picture m",
+"source": "decisions/log.md"
+},
+{
 "id": "R-0376",
 "kind": "ruling",
 "status": "OK",
@@ -15697,6 +16001,52 @@
 ],
 "title": "The gap between a cluster's opening event and its symptom is a big idea, fundamental to an ideal family evalua",
 "text": "The gap between a cluster's opening event and its symptom is a big idea, fundamental to an ideal family evaluation; kept and tracked, to be drawn once a case holds enough data for it",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0398",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-23",
+"session": "S 09-23",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "A visual concept that needs a paragraph of prose to explain does not speak for itself: under each concept ther",
+"text": "A visual concept that needs a paragraph of prose to explain does not speak for itself: under each concept there is a title and a citation and nothing else, because users never see the prose",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0399",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-23",
+"session": "S 09-23",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "Clever technology is used only where it gives flexibility that actually helps communicate something flat space",
+"text": "Clever technology is used only where it gives flexibility that actually helps communicate something flat space cannot carry; rotation for its own sake communicates nothing. A drawing's tap does exactly what the app's tap does and never invents its own behaviour",
+"supersedes": [],
+"source": "private/oracle/rulings.md"
+},
+{
+"id": "R-0401",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-23",
+"session": "S 09-23",
+"topics": [
+"T-3",
+"T-6",
+"T-9"
+],
+"title": "The flush records the state of the research threads — what was read in the literature and in other phone apps,",
+"text": "The flush records the state of the research threads — what was read in the literature and in other phone apps, what was concluded, what he ruled, what is still unread — so he can pick up exactly where he left off",
 "supersedes": [],
 "source": "private/oracle/rulings.md"
 },

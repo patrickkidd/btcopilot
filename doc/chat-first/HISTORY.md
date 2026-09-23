@@ -1163,7 +1163,7 @@ his also landed in the branch instructions: never repeat in the reply what a pub
 already says, and sub-agents do the work while this session's context stays small.
 
 ## 2026-09-16 to 22 — the deployment picked up, the app went live, and Patrick used it [T-1, T-2, T-4, T-5, T-6, T-9, T-11]
-<!-- session: 1a988ef4 · flushed: 2026-09-22T23:30:00Z -->
+<!-- session: 1a988ef4 · flushed: 2026-09-23T05:20:00Z -->
 
 Patrick opened with "FD-362, pick up the deployment", then, when the first read of the box was
 refused as a production read, granted access to DNS and every other production resource to get
@@ -1345,3 +1345,39 @@ line of words above the line where the coach names the nearest thing worth sayin
 waits on him for a little more height. Porting the line for that round turned up three faults in
 it: seven dots merging into a bar at true scale, one dot unreachable because its neighbour's tap
 target covers it, and a drawing that reads a row that does not exist.
+
+**How he wanted the work done, said as it went.** At the start of his own use he set the regime:
+he would report bugs, comments and brainstorms continuously, every one was to be written down as
+it arrived, and each fixed only when he said to fix it [R-0383]. Three corrections followed
+quickly. A status line that said a key was "still empty on the box" was ambiguous — a status
+never leaves a thing open ended, it says whether it is done and what happens next [R-0384]. After
+the third failed attempt at the first coach turn he said not to assume anything and to trust only
+evidence, which meant making the real call with the real prompt inside the container [R-0385].
+And when a permission refusal stopped a step he had explicitly asked for, he said to ask him
+rather than route around it.
+
+Later the same rules reached the design work. Before reading the primary sources, the list of
+what would be read goes to him so he can confirm they are the right ones [R-0395]. Findings are
+consolidated into the conversation rather than left for him to dig out of documents, while the
+documents stay in the project [R-0397]. A gallery passes an aesthetic critique, an argument
+between agents if that is what it takes, before he sees it [R-0396]. A concept that needs a
+paragraph to explain does not speak for itself: title and citation only, because users never see
+the prose [R-0398]. Clever technology earns its place only where it communicates what flat space
+cannot [R-0399]. And the flush itself must record where each research thread stands so he can
+pick it up where he left off [R-0401].
+
+**The admin path, and the split between two sessions.** He wants his own locally hosted model in
+openclaw to administer the site from a markdown file linked in its instructions and kept current
+with the deployed source: invites, licences, costs, everything the command line does, with
+read-only commands running freely and anything destructive confirmed first [R-0390]. He then gave
+that work, the dashboards and the cost rows to a second session and told this one to stay off
+them, the two syncing only on the code they touch in the shared worktree and on the box [R-0391].
+He also asked whether prompt caching was being used; on hearing it was not, his word was to do it
+because the cost was already going to be noticeable [R-0392]. He asked how the agent loop would
+scale with a worker per request, and was answered. The Pro backend got its own branch with the
+same release flow, so a merged bug fix rebuilds the image and deploys the old box [R-0386]. He
+corrected the session on the old secrets: that repository is private, nothing was exposed, and its
+branches for this work should be deleted [R-0394]. He deleted the scratch accounts and kept one
+test account to be reused [R-0393]. And he decided the first beta users start now and generate
+data, because the chat is stable and the picture is not expected to block them [R-0400] — he has
+asked for their two invite links and they have not been sent.

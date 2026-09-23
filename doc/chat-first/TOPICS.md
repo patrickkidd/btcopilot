@@ -37,9 +37,9 @@ checks run against the development server on his Mac instead. On his word the ni
 with everything they owned, and one reusable test account stays; the live database now holds four
 accounts. The invite mail has now been sent
 and received, so sign-in by mail works.
-**Open:** (1) [ruling] when to invite the three clinicians. He leans to starting them now,
-because the basic chat is stable and he does not expect the picture to block them; what is left
-is his word to send the invites; (2) [ruling] his code review of the branch, and of the
+**Open:** (1) [build] the first beta users start now and generate data, because the basic chat
+is stable and the picture is not expected to block them [R-0400]; he asked for the two invite
+links for their email addresses and they have not been sent; (2) [ruling] his code review of the branch, and of the
 coach's prompt section, which is the first open item on the coach topic; (3) [build] the
 summary shown for a session in the sessions list answers the person's first message with
 generic advice instead of summarising the exchange (review item 13); (4) [verify] the app has still never been
@@ -246,61 +246,109 @@ import waits until after the beta.
 
 ## T-5 · Picture and interface rulings still open
 
-**Status:** eleven things Patrick hit using the app on his phone were ruled and built; the
-line now scrolls sideways a little and is live; three further rounds of drawings have been
-published and three of his decisions are outstanding.
-**Decided:** the picked-moment words on the timeline (option A) [R-0235]; the about page
-behind an i, ✕ in the arrow's place; one icon-button size [R-0234]; the card slides the whole
-region; who·what words [T-2]. Ruled and built from his own use, 20–22 September: the amber
-question mark on the line is hidden for now, both where the line is empty and past the end for
-undated facts, with the reasoning kept in comments and the drawing rule left standing [R-0359];
-the amber closing question in a coach reply stays, because it reads as bold and that is where
-the eye should go [R-0358]; the back arrow inside an open cluster always closes the cluster
-rather than only putting a picked moment down [R-0362]; a noted event is a lead, so it raises
-the question of order beside a shift the way a structural event does, while still counting as
-no change to the family [R-0366]; the wide layout comes up for anyone on a wide window, a phone
-turned on its side included [R-0367]; Return starts a new line and only the send button sends
-[R-0368]; selecting an event and tapping "in chat" now finds the words even when the coach
-wrote them in the session on screen. Ruled 2026-09-23 on the drawings: event dots sit on the
-line at one height always, never sometimes below it, or people get confused; the soft boxes round
-a cluster are good enough for the beta but do not feel right yet [R-0377]; the picture spot always
-shows a picture, so a words-only view does not belong there, though a list could go elsewhere
-later [R-0378]; the line gets a short sideways scroll, built on what exists rather than another
-round of drawings [R-0381]. Built and live: the recent years fill the width, the rest is one swipe
-away, never more than two screens, and an open cluster prints its real years.
-**Open:** (1) [ruling] three published pages of drawings wait on him, each with its decisions
-written on it: the first round on the crowded line
-https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj, the wide brainstorm of picture concepts https://claude.ai/artifact/G5gYDqzhvar5KXPJAhtbzm , and the three hybrids drawn on the app's own line https://claude.ai/artifact/WrGWM6m2cXJfQ3FLHnNMu3 . The
-survivor of the last one is a line of words above the line, the coach's sentence naming the
-nearest thing worth saying today, already drawn on his real record; it needs 22 more pixels of
-the picture's height, which is his call; (2) [build] grouping is the coach's judgement
-with a one-line scope and the floor binds only the automatic draft [R-0287]; the nodal ring
-stays and its flag follows the clinical definition [R-0283]; no trend lines until real data
-[R-0284]; (3) [build] the event editor's relationship fields; (4) [ruling] whether tapping an
-event's words inside an open cluster jumps to its editor, which he will say after testing
-[R-0207]; (5) [build] three faults of the line found while drawing round 8: at true scale the
-seven dots of the 2009 to 2011 cluster merge into one solid bar, the 1996 dot cannot be tapped
-because the 1997 dot's target covers it, and the two-events-face-to-face drawing reads a row that
-does not exist, so its second label and seam come out as nothing — nothing on his own path
-reaches that last one yet; (6) [ruling] whether the height of a cluster should mean how much
-clinical signal sits under it — which of the four variables moved, in how many people, how close
-together — never the number of events; his own idea, unruled; (7) [waiting] the gap between a
-cluster's opening event and its symptom is kept and tracked as a big idea, to be drawn once a
-case holds enough data for it [R-0382]; (8) [waiting] the family drawing with the trouble lit
-needs the traditional diagram and automatic arrangement, so it is a goal for later [R-0379], and
-the lanes of generations are kept in the corpus until a record carries the shocks that travel
-between households [R-0380]; (9) [build] a play button under each coach bubble that plays or replays that message,
-the way the Claude Code app has one; (10) [ruling] which voice reads the replies: the phone's own
-built-in one today, cloud neural voices at roughly one cent a reply, ElevenLabs at several times
-that, or self-hosted models the box cannot run. He has not picked, and anything paid also waits
-on the measurement question on the platform topic.
-**Lives in:** doc/chat-first/UI_GAP.md, REVIEW_LOG.md round 5, STATE.md,
-doc/chat-first/FRAGMENT_CONVENTIONS.md; the concepts and where each comes from in the literature
-in doc/chat-first/PICTURE_IDEAS.md, and the mobile views they were drawn from in
-doc/chat-first/MOBILE_VIEWS.md; the drawings in ~/theapp/btcopilot-sources/fd-corpus/design/ and
-their pages https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj , https://claude.ai/artifact/G5gYDqzhvar5KXPJAhtbzm and https://claude.ai/artifact/WrGWM6m2cXJfQ3FLHnNMu3 .
-**Next action:** his decisions on the three published pages, starting with whether the coach's
-sentence may take 22 more pixels above the line; then the three faults of the line.
+**Status:** everything Patrick hit using the app on his phone is ruled and built; the line now
+scrolls sideways a little and is live; two threads of research finished and are written up; four
+pages of drawings are published and waiting on him.
+**Decided:** the picked-moment words on the timeline (option A) [R-0235]; the about page behind
+an i, ✕ in the arrow's place; one icon-button size [R-0234]; the card slides the whole region;
+who·what words [T-2]. Ruled and built from his own use, 20–22 September: the amber question mark
+on the line is hidden for now, both where the line is empty and past the end for undated facts,
+with the reasoning kept in comments and the drawing rule left standing [R-0359]; the amber
+closing question in a coach reply stays, because it reads as bold and that is where the eye
+should go [R-0358]; the back arrow inside an open cluster always closes the cluster rather than
+only putting a picked event down [R-0362]; a noted event is a lead, so it raises the question of
+order beside a shift the way a structural event does [R-0366]; the wide layout comes up for
+anyone on a wide window, a phone turned on its side included [R-0367]; Return starts a new line
+and only the send button sends [R-0368]; selecting an event and tapping "in chat" finds the words
+even when the coach wrote them in the session on screen. Ruled on the drawings, 22 and 23
+September: event dots sit on the line at one height always, or people get confused, and the soft
+boxes round a cluster are good enough for the beta but do not feel right [R-0377]; the picture
+spot always shows a picture, so a words-only view does not belong there, though a list could go
+elsewhere later [R-0378]; the line gets a short sideways scroll built on what exists, rather than
+another round of drawings [R-0381] — built and live, the recent years filling the width, the rest
+one swipe away, never more than two screens, and an open cluster printing its real years; the
+main view still needs one word for its name, and as the dots multiply the picture must keep
+saying something at a glance rather than becoming a wall of dots nobody can tap [R-0402].
+
+**The literature research (finished, written up, his verdicts in):** what was read — Family
+Evaluation (Kerr and Bowen) and the SARF sources, the passages listed one per concept in
+doc/chat-first/PICTURE_IDEAS.md. What came out of it — fourteen concepts for the picture spot
+drawn by three designers from those passages and from his own record, put through a critic and
+an auditor; six survived, ranked: the line we have with a short sideways scroll; only words, one
+line per cluster; the family drawn with the trouble lit and a strip of clusters beside it; a
+stack of generations; the gap between a cluster's opening event and its symptom; a carved strip
+of hills. The finding was that nothing beat the line, and each survivor says one thing the line
+cannot, which argues for the picture changing with whatever the coach is talking about. What he
+ruled — words-only is out, because the picture spot must hold a picture [R-0378]; the family
+drawing needs the traditional diagram and automatic arrangement, so it is a goal for later
+[R-0379]; the lanes of generations carry no message on a record where only one person has a
+recorded change, and are kept in the corpus until there is data [R-0380]; the gap between what
+opened a cluster and the symptom that followed is fundamental to a proper family evaluation and
+is kept and tracked [R-0382]; build the scroll rather than draw more [R-0381]; and depth or
+motion only where it communicates what flat cannot [R-0399]. What is unread or undecided — the
+sources he approved for this reading were items 2, 3, 4, 5 and 7 of the list put to him, and the
+rest of that list is unmined; his own idea that a cluster's height could mean how much clinical
+signal sits under it is unruled; and no source has yet been read on what the picture should do
+when a record holds several people's symptoms.
+
+**The phone-app research (finished, written up, one round drawn from it):** what was read —
+twenty-four small-screen data views from shipped apps, Garmin Connect's sleep views among them,
+with Apple Health, Oura, Whoop, Bearable, Flighty and Carrot, each written up in
+doc/chat-first/MOBILE_VIEWS.md. What came out of it — each view mapped onto the eight things the
+picture has to say, with three of the eight showable on his record today (where the history
+gathers, the long quiet years, and nearness of a date to a symptom on two of his five clusters)
+and five needing data the record does not hold (a named key shift per cluster, a symptom in a
+second person, consequences in other people after the two deaths, functioning and relationship
+shifts at the dates already on the line, and the older generations). Five hybrids came out of
+that mapping and three were drawn as round 8 on the app's own line: one line of words above the
+line survived, the gap drawn inside a cluster box was killed because the app spreads dots evenly
+inside a box so the bracket contradicts its own words, and before-and-after on a tap was killed
+as drawn because the app's cluster tap already opens the whole cluster — the idea belongs as a
+mark inside that view. What is undecided — the three questions on the round 8 page below, and
+whether the two unbuilt hybrids (a fixed row of words naming the newest cluster, and four
+stacked sparklines one per variable) are worth drawing once the data exists. Standing rule
+throughout: when a view cannot be drawn until the record holds more, say so plainly [R-0380].
+
+**Open:** (1) [ruling] the coach writes the line of words above the picture, so every load spends
+a model call on one sentence that can be wrong: may it put two things side by side when the
+record holds only their dates, the way the drawn one pairs the 1994 move with the trouble
+sleeping in 1996? On the round 8 page https://claude.ai/artifact/WrGWM6m2cXJfQ3FLHnNMu3 ; (2) [ruling] that sentence needs a row of its
+own, so the picture grows from 132 to 154 pixels and the chat under it loses 22: is one line of
+words worth that room? Same page; (3) [ruling] with the sentence there the line comes to rest
+where the sentence points rather than at the present, so the first thing on screen is the middle
+of the record instead of today: should the picture follow the words or always open on today?
+Same page; (4) [ruling] the earlier page on the crowded line https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj and the
+brainstorm of concepts https://claude.ai/artifact/G5gYDqzhvar5KXPJAhtbzm carry their own decisions and are unanswered; the
+withdrawn redraw is https://claude.ai/artifact/FzfjSGH6EQVt61vC5R2DFi ; (5) [ruling] whether a cluster's height should mean
+how much clinical signal sits under it — which of the four variables moved, in how many people,
+how close together — never the number of events; his own idea, unruled; (6) [verify] in the round 8 drawing a tap on a cluster
+only selects it and shows its title instead of opening it, which is what the app does and what he
+expects; the cause is not established; (7) [build] two faults
+of the line found while drawing round 8: at true scale the seven dots of the 2009 to 2011 cluster
+merge into one solid bar, and the 1996 dot cannot be tapped because the 1997 dot's target covers
+it; (8) [build] a third fault: the two-events-face-to-face drawing reads a row that does not
+exist, so its second label and seam come out as nothing — nothing on his own path reaches it
+yet; (9) [build] grouping is the coach's judgement with a one-line scope and the floor binds only
+the automatic draft [R-0287]; the nodal ring stays and its flag follows the clinical definition
+[R-0283]; no trend lines until real data [R-0284]; (10) [build] the event editor's relationship
+fields; (11) [ruling] whether tapping an event's words inside an open cluster jumps to its
+editor, which he will say after testing [R-0207]; (12) [waiting] the gap between a cluster's
+opening event and its symptom waits for a record with enough data [R-0382]; (13) [waiting] the
+family drawing waits for the traditional diagram and automatic arrangement [R-0379], and the
+lanes of generations wait for a record that carries shocks between households [R-0380];
+(14) [build] a play button under each coach bubble that plays or replays that message, the way
+the Claude app has one [R-0387]; (15) [ruling] which voice reads the replies: the phone's own
+today, cloud neural voices at roughly a cent a reply, ElevenLabs at several times that, or
+self-hosted models the box cannot run. Anything paid also waits on the measurement question on
+the platform topic [R-0388].
+**Lives in:** doc/chat-first/PICTURE_IDEAS.md (the fourteen concepts, the passage behind each,
+the critic's verdicts); doc/chat-first/MOBILE_VIEWS.md (the twenty-four phone views, the mapping
+onto the eight messages, the five hybrids); doc/chat-first/UI_GAP.md; REVIEW_LOG.md round 5;
+STATE.md; doc/chat-first/FRAGMENT_CONVENTIONS.md; the drawings and their verdict files in
+~/theapp/btcopilot-sources/fd-corpus/design/round6, round7 and round8; the published pages
+https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj , https://claude.ai/artifact/FzfjSGH6EQVt61vC5R2DFi , https://claude.ai/artifact/G5gYDqzhvar5KXPJAhtbzm and https://claude.ai/artifact/WrGWM6m2cXJfQ3FLHnNMu3 .
+**Next action:** his three decisions on the round 8 page, starting with whether one line of words
+is worth 22 pixels of the chat; then the two faults of the line.
 **Updated:** 2026-09-22.
 
 ## T-6 · Clusters by example
@@ -390,14 +438,28 @@ Added this session: the branch instructions now carry the correction that sub-ag
 mechanical work while the coordinator holds one-line summaries, relays nothing while a run is
 going, and posts one message at the end; and that no verification walk ever runs against the live
 site, because nine scratch accounts made that way turned up on Patrick's own dashboard — walks
-run against the development server on his Mac instead. Added 2026-09-22 and 23, from the drawing
-rounds: a drawing is published as a page, never left as a file on disk; a separate agent reviews
+run against the development server on his Mac instead. Added 2026-09-21 to 23, from his own use and the drawing rounds: he reports bugs, comments and
+brainstorms continuously while he uses the app, and every one is written down as it arrives and
+fixed only when he says to fix it [R-0383]; a status line never leaves a thing open ended — it
+says whether it is done and what happens next [R-0384]; nothing is called fixed on reasoning, only
+on evidence from the real call with the real prompt [R-0385]; before research begins, the list of
+sources to be read goes to him so he can confirm they are the right ones [R-0395]; findings are
+consolidated into the conversation rather than left for him to dig out of documents, while the
+documents themselves stay in the project [R-0397]; the flush records where each research thread
+stands, so he can pick it up where he left off [R-0401]; the admin path and the dashboards belong
+to the other session, and the two sessions sync only on the code they touch in the shared
+worktree and on the box [R-0391]; exactly one test account exists and is reused [R-0393]; and
+production stops being the place things are tried, with a development server on his Mac reachable
+from his phone over Tailscale as the next step, timing open, while testing continues on the box
+with the first beta users meanwhile [R-0403]. From the drawing rounds: a drawing is published as a page, never left as a file on disk; a separate agent reviews
 every frame before he sees it and only survivors are published; a page gives direction and a
 recommendation rather than a menu, with the prose cut to what he must decide; motion or depth is
 used only when it says something flat cannot; a drawing's tap behaves exactly as the app's tap
 does, built on the app's own picture code; and a frame a stranger cannot read unaided has failed,
-because users never see the prose beside it. One test account exists on the live site and no
-other is ever made.
+because users never see the prose beside it [R-0398]; clever technology earns its place only
+where it communicates what flat space cannot, and rotation for its own sake communicates nothing
+[R-0399]; and a gallery passes an aesthetic critique, an argument between agents if that is what
+it takes, before he sees it [R-0396].
 **Open:** none.
 **Lives in:** doc/chat-first/HOW_THIS_PROJECT_WORKS.md; doc/chat-first/TEST_STRATEGY.md;
 btcopilot/CLAUDE.md; .claude/skills/two-clocks/SKILL.md; bin/flushcheck.py; bin/t.
@@ -473,6 +535,16 @@ full price for between 86 and 360 new ones; the fixed coaching text alone is 3,8
 also writes a row saying who it was for, which model, four counts of words and what it cost. The
 command line that runs the site now previews and stops before anything that changes data unless
 it is told to go ahead, and Patrick's own assistant reaches it over one pinned key on the box.
+**Ruled this session:** the Pro backend continues on its own branch with the same release flow,
+so a merged bug fix rebuilds the image and deploys the old box [R-0386]; cost over time per user
+has to reach the dashboards, and the brainstorm about leaving Datadog ran in a separate session
+that reported back by message rather than filling this one [R-0389]; his own model in openclaw
+administers the site from a markdown file linked in its instructions and kept current with the
+deployed source, running read-only commands freely and confirming anything destructive [R-0390];
+prompt caching is used on every coach call because the cost is already noticeable [R-0392]; the
+old committed compose values were never exposed because that repository is private, so there is
+no rotation, and its branches for this work are deleted [R-0394]; and the scratch accounts are
+deleted with one test account kept and reused [R-0393].
 **The Pro maintenance stream:** master on btcopilot is tagged `pre-chat-first`; a `master-legacy`
 branch starts there, is protected like master, builds an image tagged `:legacy` on every merge
 and deploys the old box. btcopilot PR #137 and fdserver PR #31 carry the last two pieces and

@@ -593,3 +593,7 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    a box are spread by count, so the bracket contradicts its words) and before-and-after on a tap
    (the app's cluster tap already opens the cluster in full; the idea belongs as a mark inside
    that view). Published; three decisions. WAITING on his word.
+
+43. In the round 8 drawing, tapping a cluster only selects it and shows its title instead of
+   opening it, which is what he expects from the app. Asked 2026-09-23; the cause has not been
+   established and the drawing has not been corrected. OPEN
