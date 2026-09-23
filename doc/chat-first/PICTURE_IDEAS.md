@@ -311,3 +311,8 @@ Gives up: the whole history at once — only one time is visible per turn of the
 Critic's verdict: killed because a stranger can name no mark — ten unlabeled shapes on an
 oval, with a row of event dots underneath doing the picture's real work — and on this record
 the ring never actually turns, since every symptom event is his alone.
+
+
+> Patrick, 2026-09-23 [R-0382]: a big idea, fundamental to an ideal family evaluation; kept and
+> tracked, to be drawn once a case holds enough data — a cluster with a dated opening event and a
+> dated symptom after it, in more than a couple of clusters.
