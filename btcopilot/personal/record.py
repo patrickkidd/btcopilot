@@ -462,9 +462,15 @@ def _links(event: dict) -> tuple:
     return tuple(out)
 
 
+def _moves_of(event: dict) -> tuple:
+    return tuple(_val(event.get(field)) for field in (*VARIABLES, "relationship"))
+
+
 def _twins(data: dict, deltas: list[dict]):
-    """The same moment is not written down twice: an event this write adds that
-    matches one already in the record is refused, naming the one that is there."""
+    """The same event is not written down twice: an event this write adds that
+    matches one already in the record on kind, day, people and what moved is
+    refused, naming the one that is there. Two shifts for one person on one day
+    that move different variables are two events (R-0432)."""
     added = {
         str(delta["item_id"])
         for delta in deltas
@@ -486,6 +492,7 @@ def _twins(data: dict, deltas: list[dict]):
                 _val(other.get("kind")) == _val(event.get("kind"))
                 and _day(other.get("dateTime")) == _day(event.get("dateTime"))
                 and _links(other) == _links(event)
+                and _moves_of(other) == _moves_of(event)
             ):
                 raise Invalid(
                     f"that event is already event {other.get('id')}: change it "
