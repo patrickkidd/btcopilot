@@ -541,3 +541,8 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    events vanishing between frames, unexplained question marks, both expanded frames too busy.
    Part A settled by rulings R-0371 to R-0373, no option picked. Next: derive the message from
    the sources, redraw B from it, visual critique gate, then publish.
+36. What a cluster shows [R-0376]: its one key shift, where the trouble sits and that it moved
+   between people; the opening event and aftershocks on a tap; nearness of dates, never proof;
+   never a count. Patrick wants the app to show him the light from his own timeline. BUILDING
+   through the round-6b redraw; the cluster model must then name the key shift and who carries
+   the trouble for each cluster.
