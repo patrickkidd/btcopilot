@@ -550,3 +550,10 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    acceptable for beta but not right; he wants a wide creative range of picture concepts,
    3-D included, from an agent team, with the chat-picture data exchange unchanged. OPEN —
    round 7 brainstorm.
+   Round 7 (2026-09-23): fourteen concepts drawn from the literature and his record by three
+   designers, a critic gate, an auditor; six survived, ranked: the line with a short sideways
+   scroll; only words, one line per cluster; the family drawing with the trouble lit and a strip
+   of clusters; a stack of generations; the gap between the opening event and the symptom; a
+   carved strip of hills. Finding: nothing beat the line, and each survivor says one thing the
+   line cannot, which argues for the picture changing with what the coach is talking about.
+   Published; four decisions on the page. Item 37 WAITING on his picks.
