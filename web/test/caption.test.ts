@@ -59,6 +59,20 @@ describe("two taps on the picture", () => {
     expect(out.record?.item_id).toBe("43");
   });
 
+  // R-0065
+  it("every kind of thing a tap can land on is recorded for the coach", () => {
+    for (const [sel, kind] of [
+      [moment, ItemKind.Event],
+      [stretch, ItemKind.Cluster],
+      [shelf, ItemKind.Diagram],
+    ] as const)
+      expect(reduce(REST, PicEvent.Tap, sel).record).toEqual({
+        kind: InteractionKind.Look,
+        item_kind: kind,
+        item_id: sel.id,
+      });
+  });
+
   // no ruling
   it("a tap that lands on no moment lets go of the one that was picked", () => {
     const open = reduce(REST, PicEvent.Tap, moment).state;

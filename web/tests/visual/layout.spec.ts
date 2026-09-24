@@ -57,7 +57,7 @@ const frame = (page: Page) =>
 test.describe("nothing moves when a chip is tapped", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0168
+  // R-0168, R-0001
   test("a chip in a coach bubble aims the picture and moves nothing", async ({
     page,
   }) => {
@@ -314,7 +314,7 @@ test.describe("a long family name", () => {
 test.describe("the moves board fills the room it takes", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0210
+  // R-0210, R-0132
   test("no empty band under the drawing or the controls", async ({ page }) => {
     await settle(page);
     await page.locator("#cap-play").click();
@@ -410,7 +410,7 @@ test.describe("each level is one fixed height", () => {
   for (const key of ["one", "three40", "dense60"] as const) {
     test.describe(() => {
       test.use({ storageState: stateFor(key) });
-      // R-0210
+      // R-0210, R-0132
       test(`opening a cluster moves nothing on the ${key} record`, async ({
         page,
       }) => {
@@ -440,4 +440,95 @@ test.describe("each level is one fixed height", () => {
       });
     });
   }
+});
+
+/** Which of the row's buttons can be pressed right now. */
+const live = (page: Page) =>
+  page
+    .locator("#caption button.tok:not(.dim)")
+    .evaluateAll((buttons) => buttons.map((b) => b.id));
+
+test.describe("the row under the picture from one view to the next", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  // R-0450
+  test("the picture stays put while the row's buttons change", async ({ page }) => {
+    await settle(page);
+    await page.locator("#up").click();
+    await expect(page.locator('#view .ss-hit[data-target="cluster"]').first()).toBeVisible();
+    await page.waitForTimeout(400);
+    const rest = { at: await frame(page), live: await live(page) };
+
+    await page.locator('#view .ss-hit[data-target="cluster"]').first().click();
+    await page.waitForTimeout(400);
+    const open = { at: await frame(page), live: await live(page) };
+
+    await page.locator('#view .ss-hit[data-target="zone"]').first().click();
+    await page.waitForTimeout(300);
+    const picked = { at: await frame(page), live: await live(page) };
+
+    // what can be pressed follows what is on the picture
+    expect(rest.live).toEqual([]);
+    expect(open.live).toEqual(["cap-chip", "cap-play"]);
+    expect(picked.live).toEqual(["cap-chip", "cap-trace"]);
+    // and nothing above or around the row moves for it
+    for (const now of [open.at, picked.at]) {
+      expect(now.picture).toEqual(rest.at.picture);
+      expect(now.caption).toEqual(rest.at.caption);
+      expect(now.bubbles).toEqual(rest.at.bubbles);
+    }
+    expect(rest.at.caption?.[3]).toBe(44);
+  });
+
+  // R-0450
+  test("the row keeps its height with the board open", async ({ page }) => {
+    test.fail(true, "the row is taken away entirely while the board is open");
+    await settle(page);
+    const before = await frame(page);
+    await page.locator("#cap-play").click();
+    await expect(page.locator("#view .ss.board")).toBeVisible();
+    await page.waitForTimeout(600);
+    const after = await frame(page);
+    expect(after.caption?.[3]).toBe(before.caption?.[3]);
+  });
+});
+
+test.describe("the button that opens the lists", () => {
+  test.use({ storageState: stateFor("three40") });
+
+  const place = (page: Page) =>
+    page.evaluate(() => {
+      const row = document.querySelector("#caption")!;
+      const box = row.getBoundingClientRect();
+      const button = document.querySelector("#menu-open")!.getBoundingClientRect();
+      return {
+        inRow: button.top >= box.top - 1 && button.bottom <= box.bottom + 1,
+        fromRight: Math.round(box.right - button.right),
+        last: row.lastElementChild?.id,
+        order: [...row.children].map((c) => c.id).filter(Boolean),
+      };
+    });
+
+  // R-0221
+  test("sits in the row under the picture, at its right end", async ({ page }) => {
+    await settle(page);
+    const at = await place(page);
+    expect(at.inRow).toBe(true);
+    expect(at.last).toBe("menu-open");
+    expect(at.fromRight).toBeGreaterThanOrEqual(0);
+    expect(at.fromRight).toBeLessThanOrEqual(16);
+  });
+
+  // R-0221
+  test("stays at the right end after ask, explain and in chat", async ({ page }) => {
+    await settle(page);
+    await page.locator('#view .ss-hit[data-target="cluster"]').first().click();
+    await page.locator('#view .ss-hit[data-target="zone"]').first().click();
+    await expect(page.locator("#cap-chip")).toBeVisible();
+    const at = await place(page);
+    expect(at.order).toEqual(["cap-chip", "cap-play", "cap-trace", "menu-open"]);
+    expect(at.inRow).toBe(true);
+    expect(at.fromRight).toBeGreaterThanOrEqual(0);
+    expect(at.fromRight).toBeLessThanOrEqual(16);
+  });
 });
