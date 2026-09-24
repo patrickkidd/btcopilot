@@ -1,5 +1,5 @@
 """Mine the owner's own statements out of the local Claude Code transcripts into
-doc/trace.json — one row per thing he typed, in the order he typed it.
+trace.json in the private corpus — one row per thing he typed, in the order he typed it.
 
 Nothing the assistant, a tool, a sub-agent or the harness produced is ever written.
 Names and summaries written here are deterministic placeholders (named_by "script");
@@ -14,11 +14,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from ledger import TOPIC_WORDS  # noqa: E402
+from ledger import TOPIC_WORDS, TRACE  # noqa: E402
 
 HERE = Path(__file__).resolve().parent.parent
 DOC = HERE / "doc"
-OUT = DOC / "trace.json"
+OUT = TRACE
 PROJECTS = Path.home() / ".claude" / "projects"
 DIRS = [
     "-Users-patrick-theapp-btcopilot--claude-worktrees-FD-362",

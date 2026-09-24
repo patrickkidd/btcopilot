@@ -10,6 +10,9 @@ import sys
 from datetime import date
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ledger import EVENTS  # noqa: E402
+
 HERE = Path(__file__).resolve().parent.parent
 DOC = HERE / "doc"
 
@@ -370,7 +373,7 @@ render();
 
 
 def main(out: str) -> int:
-    events = json.loads((DOC / "events.json").read_text())
+    events = json.loads(EVENTS.read_text())
     topics = topic_blocks()
     goals, counts = build_tree(events, topics)
     page = (

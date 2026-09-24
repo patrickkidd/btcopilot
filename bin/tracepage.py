@@ -6,9 +6,9 @@ Zooming changes what a lane shows, not how far away it is: the whole project as 
 story arcs, then the sessions inside an arc, then his single statements, then a summary
 under each one.
 
-Statements come from doc/trace.json (written by bin/trace.py); the arcs from
+Statements come from trace.json in the private corpus (written by bin/trace.py); the arcs from
 doc/archive/2026-09-arcs.json; the sessions and what followed each statement from
-doc/events.json; the second view is the topic register from TOPICS.md.
+events.json in the private corpus; the second view is the topic register from TOPICS.md.
 
   python bin/tracepage.py <out.html>
 """
@@ -19,6 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from eventpage import topic_blocks  # noqa: E402
+from ledger import EVENTS, TRACE  # noqa: E402
 
 HERE = Path(__file__).resolve().parent.parent
 DOC = HERE / "doc"
@@ -803,8 +804,8 @@ selectArc(ARCS[ARCS.length-1]);
 
 
 def main(out: str) -> int:
-    statements = json.loads((DOC / "trace.json").read_text())
-    events = json.loads((DOC / "events.json").read_text())
+    statements = json.loads(TRACE.read_text())
+    events = json.loads(EVENTS.read_text())
     topics = topic_blocks()
     lanes = threads(statements, topics)
     slim = [

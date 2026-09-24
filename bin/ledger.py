@@ -1,6 +1,7 @@
 """The event ledger: every dated item the corpus holds, one record each, from the
 sources that already exist — history entries, rulings, decision-log entries, review-log
-rows, commits in both worktrees, artifacts. Written to doc/events.json by
+rows, commits in both worktrees, artifacts. Written to events.json in the private corpus
+(outside every repo: it carries ruling text) by
 the flush; nothing is authored here, only gathered and tagged.
 
   python bin/ledger.py            writes events.json and prints the counts
@@ -15,6 +16,9 @@ from btcopilot import oracle
 
 HERE = Path(__file__).resolve().parent.parent
 DOC = HERE / "doc"
+CORPUS = Path.home() / "theapp" / "btcopilot-sources" / "fd-corpus" / "private"
+EVENTS = CORPUS / "events.json"
+TRACE = CORPUS / "trace.json"
 YEAR = "2026"
 
 # Topic keywords: the same words the topic blocks use. A record that matches none stays
@@ -183,7 +187,7 @@ def main() -> int:
                     e["date"] = h["date"]
                     break
     events.sort(key=lambda e: (e["date"] or "9999", e["kind"]))
-    (DOC / "events.json").write_text(json.dumps(events, indent=0, ensure_ascii=False))
+    EVENTS.write_text(json.dumps(events, indent=0, ensure_ascii=False))
     counts = {}
     for e in events:
         counts[e["kind"]] = counts.get(e["kind"], 0) + 1

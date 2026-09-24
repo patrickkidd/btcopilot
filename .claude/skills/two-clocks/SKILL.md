@@ -83,10 +83,10 @@ run from rewording what an earlier run already captured:
    corpus commits titled `FD-362 flush: <date>`. There is no second worktree to flush.
 9. Refresh Patrick's two pages, same links every time (URLs at the top of TOPICS.md, passed
    to the Artifact tool as `url`), in this order:
-   a. `python bin/ledger.py` — rewrites doc/events.json from every dated source
+   a. `python bin/ledger.py` — rewrites events.json in `~/theapp/btcopilot-sources/fd-corpus/private/` from every dated source
       (history, rulings, decision log, review log, commits in both worktrees, artifacts).
    b. `python bin/trace.py` — mines Patrick's own statements out of the local transcripts
-      into doc/trace.json, one row per thing he typed, in order. It writes nothing
+      into trace.json in the same private folder, one row per thing he typed, in order. It writes nothing
       but his words.
    c. **The judgement step, and it is this session's job, not the script's.** trace.py gives
       every new row a mechanical short name and a one-line summary and marks it `named_by`
@@ -98,7 +98,8 @@ run from rewording what an earlier run already captured:
    d. `python bin/tracepage.py <tmp>/fd362-clocks.html` (the dashboard: his one line of thought,
       each piece of work a horizontal line, and a second view of where every piece stands) and
       `python bin/topicpage.py <tmp>/fd362-topics.html` (the topic register as a page).
-   Commit events.json and trace.json with the corpus. Records the ledger could not assign to a
+   events.json and trace.json stay outside every repo: they carry ruling text and his words
+   (the oracle guard fails on any tracked file quoting a ruling). Records the ledger could not assign to a
    topic land in the audit lane; assign them by adding the missing words to the topic block or
    the ledger's word list — never by hand-editing events.json. He never runs a command; he
    reads the pages, or the files in VS Code, or asks in plain words.
