@@ -34,7 +34,7 @@ const pickMoment = async (page: Page) => {
 test.describe("putting the picture down", () => {
   test.use({ storageState: stateFor("three40") });
 
-  // no ruling
+  // R-0462
   test("a tap on empty wire shows the whole line again", async ({ page }) => {
     await settle(page);
     await openCluster(page);
@@ -84,7 +84,7 @@ test.describe("a tap on the words of the moment picked", () => {
     await expect(page.locator("#view .ss-yr.on")).toHaveCount(1);
   };
 
-  // no ruling
+  // R-0207
   test("opens its editor", async ({ page }) => {
     await settle(page);
     await pickOne(page);
@@ -94,7 +94,7 @@ test.describe("a tap on the words of the moment picked", () => {
     await expect(page.locator("#menu-body .editor")).toBeVisible();
   });
 
-  // no ruling
+  // R-0460
   test("a dot picks its moment and never travels", async ({ page }) => {
     await settle(page);
     await pickOne(page);

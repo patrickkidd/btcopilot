@@ -61,7 +61,7 @@ test.describe("an event and the people in it", () => {
     await expect(editor(page).locator('[data-name="name"]')).toHaveValue("Ada");
   });
 
-  // no ruling
+  // R-0141
   test("a person not yet chosen is still chosen by tapping", async ({ page }) => {
     await settle(page);
     await openList(page);
@@ -127,7 +127,7 @@ test.describe("the picture with one cluster open", () => {
     await expect(page.locator("#crumb")).toHaveText("Family timeline");
   });
 
-  // no ruling
+  // R-0207
   test("the words of the moment picked open its editor", async ({ page }) => {
     await settle(page);
     await openCluster(page);

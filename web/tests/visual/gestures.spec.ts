@@ -61,7 +61,7 @@ test.describe("a session row's own actions", () => {
 
   // A session started here and deleted here, so the walk this fixture also
   // carries is still there for the play-by-play spec.
-  // no ruling
+  // R-0019
   test("Delete removes the session and the record survives it", async ({ page }) => {
     await settle(page);
     const moments = await page.locator("#view .ss .dot").count();
@@ -104,7 +104,7 @@ test.describe("a tap on a message's own words", () => {
     expect(after.height).toBe(before.height);
   });
 
-  // no ruling
+  // R-0134
   test("never writes more than three rows of words", async ({ page }) => {
     await page.goto("/app/");
     await expect(page.locator("#view .ss")).toBeVisible();

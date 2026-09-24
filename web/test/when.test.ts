@@ -16,7 +16,7 @@ describe("the heading a session sits under", () => {
 });
 
 describe("the date in a row", () => {
-  // no ruling
+  // R-0347
   it("names the day, and the year only when it is another year", () => {
     expect(rowDate(new Date(2026, 8, 12), NOW)).toBe("Sep 12");
     expect(rowDate(new Date(2019, 1, 3), NOW)).toBe("Feb 3, 2019");
@@ -24,7 +24,7 @@ describe("the date in a row", () => {
 });
 
 describe("the clock", () => {
-  // no ruling
+  // R-0347
   it("reads twelve-hour with midnight and noon as 12", () => {
     expect(clockTime(new Date(2026, 8, 7, 0, 7))).toBe("12:07 am");
     expect(clockTime(new Date(2026, 8, 7, 12, 0))).toBe("12:00 pm");
@@ -33,7 +33,7 @@ describe("the clock", () => {
 });
 
 describe("the short date on the account page", () => {
-  // no ruling
+  // R-0347
   it("drops the clock", () => {
     expect(shortDate(new Date(2026, 8, 20, 9, 5), NOW)).toBe("today");
     expect(shortDate(new Date(2026, 8, 16, 9, 5), NOW)).toBe("Wednesday");

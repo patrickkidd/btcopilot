@@ -10,7 +10,7 @@ test.describe(() => {
   sandboxOnly("coder");
   test.describe.configure({ timeout: 600_000 });
 
-  // no ruling
+  // R-0464
   test("a tap on the thread keeps its place", async ({ page }, info) => {
     const { say, check, shot, visible, gates, quiet } = walker(page, info);
     const invite = need("coder");

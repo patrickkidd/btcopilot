@@ -30,7 +30,7 @@ describe("the date word", () => {
     expect(when("")).toBe("no date yet");
   });
 
-  // no ruling
+  // R-0438
   it("reads a year on its own as the year", () => {
     expect(when("1998")).toBe("1998");
   });
@@ -58,7 +58,7 @@ describe("what a row is named", () => {
 });
 
 describe("the events of a cut", () => {
-  // no ruling
+  // R-0316
   it("reads in the order they happened", () => {
     const events = eventsOf([
       item(1, { kind: "shift", dateTime: "2021-06-02" }),

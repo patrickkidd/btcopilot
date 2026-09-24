@@ -22,7 +22,7 @@ const box = (
 });
 
 describe("how wide the resting line is drawn", () => {
-  // no ruling
+  // R-0381
   it("fills the screen and no more when one cluster is all there is", () => {
     const dates = ["1981-05-01", "1994-02-14", "2003-09-10", "2021-11-02"];
     const width = restWidth(
@@ -33,7 +33,7 @@ describe("how wide the resting line is drawn", () => {
     expect(width).toBe(PHONE);
   });
 
-  // no ruling
+  // R-0381
   it("is the screen for a record with nothing to separate", () => {
     expect(restWidth([], ["2014-03-02"], PHONE)).toBe(PHONE);
     expect(restWidth([], [], PHONE)).toBe(PHONE);
@@ -61,7 +61,7 @@ describe("how wide the resting line is drawn", () => {
     expect(only.right - only.left).toBeGreaterThanOrEqual(39);
   });
 
-  // no ruling
+  // R-0381
   it("never reaches past two screens, however crowded the record", () => {
     const dates = Array.from({ length: 120 }, (_, i) =>
       new Date(Date.UTC(2019, 0, 5 + i * 15)).toISOString().slice(0, 10),
@@ -77,7 +77,7 @@ describe("how wide the resting line is drawn", () => {
     expect(width).toBe(2 * PHONE);
   });
 
-  // no ruling
+  // R-0381
   it("parks the present at the right edge, one screen of line behind it", () => {
     const dates = ["2019-01-05", "2020-08-01", "2020-09-01", "2023-12-01"];
     const width = restWidth(
@@ -95,7 +95,7 @@ describe("how wide the resting line is drawn", () => {
 });
 
 describe("the dots inside a cluster box", () => {
-  // no ruling
+  // R-0402
   it("stay where they fall when they already read apart", () => {
     const xs = [40, 60, 90];
     expect(dotXs(xs, 30, 70)).toEqual(xs);
@@ -175,7 +175,7 @@ describe("the two moments face to face", () => {
 });
 
 describe("the year a point on the line falls in", () => {
-  // no ruling
+  // R-0111
   it("is the calendar year, not the count since 1970", () => {
     expect(yearAt(years("2003-09-10"))).toBe(2003);
     expect(yearAt(years("1981-05-01"))).toBe(1981);

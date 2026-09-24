@@ -102,7 +102,7 @@ describe("two versions of a person", () => {
 });
 
 describe("a bond", () => {
-  // no ruling
+  // R-0318
   it("is named by both people", () => {
     expect(
       structureName(
@@ -113,7 +113,7 @@ describe("a bond", () => {
     ).toBe("Marcus & Delphine");
   });
 
-  // no ruling
+  // R-0318
   it("says whether they married rather than showing a true or a false", () => {
     expect(
       versionWords(record, { person_a: 1, person_b: 2, married: false }, [

@@ -79,13 +79,13 @@ describe("partnerLine", () => {
 });
 
 describe("findBond", () => {
-  // no ruling
+  // R-0326
   it("takes the couple those two already are, named either way round", () => {
     expect(findBond(family(), 1, 2)).toBe(bond);
     expect(findBond(family(), 2, 1)).toBe(bond);
   });
 
-  // no ruling
+  // R-0326
   it("finds none for two people who are not a couple", () => {
     expect(findBond(family(), 1, 3)).toBeUndefined();
   });

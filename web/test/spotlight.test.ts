@@ -16,17 +16,17 @@ import {
 } from "../src/spotlight";
 
 describe("the words a moment says about itself", () => {
-  // no ruling
+  // R-0009
   it("a date the record is sure of says its month", () => {
     expect(dateText("1996-06-15", Certainty.Certain)).toBe("Jun 1996");
   });
 
-  // no ruling
+  // R-0009
   it("a date it only guessed says its year and nothing more", () => {
     expect(dateText("1996-06-15", Certainty.Approximate)).toBe("1996");
   });
 
-  // no ruling
+  // R-0457
   it("the person is named only when the record is not about them", () => {
     expect(words("2001-03-01", Certainty.Certain, "Ada", "Ada", "Moved out")).toBe(
       "Moved out",
@@ -36,7 +36,7 @@ describe("the words a moment says about itself", () => {
     );
   });
 
-  // no ruling
+  // R-0457
   it("a pair keeps the other person and leaves out the one reading", () => {
     expect(whoText("Ada & Ben", "Ada")).toBe("& Ben");
     expect(whoText("Ben & Ada", "Ada")).toBe("Ben");
@@ -59,7 +59,7 @@ describe("the words a moment says about itself", () => {
     expect(first).toHaveLength(20);
   });
 
-  // no ruling
+  // R-0181
   it("clip leaves short text alone and marks what it cuts", () => {
     expect(clip("short", 10)).toBe("short");
     expect(clip("a much longer line", 10).endsWith("…")).toBe(true);
@@ -67,7 +67,7 @@ describe("the words a moment says about itself", () => {
 });
 
 describe("the spotlight: dense and sparse", () => {
-  // no ruling
+  // R-0402
   it("dots shrink as the record gets busier", () => {
     expect(dotRadius(6)).toBe(4.5);
     expect(dotRadius(20)).toBe(3.5);
@@ -82,7 +82,7 @@ describe("the spotlight: dense and sparse", () => {
     expect(baseOpacity(60, 0)).toBe(0.6);
   });
 
-  // no ruling
+  // R-0134
   it("with more named moments than rows, the first and last take one row each", () => {
     const laid = rows(
       [
@@ -105,7 +105,7 @@ describe("the spotlight: dense and sparse", () => {
     expect(row.left).toBeLessThan(366);
   });
 
-  // no ruling
+  // R-0461
   it("a moment with no room for words keeps its row so its leader is drawn", () => {
     // two dots almost on top of each other at the right edge: the second has
     // nothing to write into, but the picture must still point at it
@@ -143,12 +143,12 @@ describe("the spotlight: dense and sparse", () => {
     expect(zoned.reduce((n, z) => n + z.marks.length, 0)).toBe(60);
   });
 
-  // no ruling
+  // R-0402
   it("a single moment still gets a zone", () => {
     expect(zones([{ x: 200 }], 16, 374)).toHaveLength(1);
   });
 
-  // no ruling
+  // R-0402
   it("a tap steps through the moments under it, then comes back to the first", () => {
     const inZone = [7, 8, 9];
     expect(cycle(inZone, null)).toBe(7);

@@ -82,7 +82,7 @@ test.describe("dragging the thread", () => {
 test.describe("a label that runs onto a second line", () => {
   test.use({ storageState: stateFor("hostile") });
 
-  // no ruling
+  // R-0207
   test("answers on both of its lines, not just the first", async ({ page }) => {
     await settle(page);
     const box = page.locator('.ss-hit[data-target="cluster"]').first();

@@ -53,7 +53,7 @@ describe("searching the sessions sheet", () => {
     expect(matching(whitlock, "ballot")).toEqual({ rows: [], byName: false });
   });
 
-  // no ruling
+  // R-0097
   it("names an untitled session by the first words said in it", () => {
     const said = { ...session(1, ""), preview: "It has been tense since my mother moved in with us" };
     expect(sessionTitle(said)).toBe("It has been tense since my…");

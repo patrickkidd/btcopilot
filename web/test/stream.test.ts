@@ -131,7 +131,7 @@ describe("following a turn", () => {
     expect(shown.reloads).toBe(1);
   });
 
-  // no ruling
+  // R-0369
   it("drops words the coach said again", () => {
     const { shown, take } = watch();
     take({ type: TurnEventKind.Text, text: "A first go." });
