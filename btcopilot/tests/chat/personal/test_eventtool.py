@@ -155,6 +155,17 @@ def test_a_birth_naming_both_parents_makes_the_child_their_offspring(subscriber)
     assert data.people[2]["parents"] == data.pair_bonds[0]["id"]
 
 
+def test_a_birth_adds_the_parents_bond_without_marrying_them(subscriber):
+    # R-0445
+    diagram = _diagram(
+        subscriber.user,
+        {"people": FAMILY["people"] + [{"id": 3, "name": "Corinne"}], "lastItemId": 3},
+    )
+    _event(diagram, kind="birth", date="1990-05-05", person=1, spouse=2, child=3)
+    (bond,) = diagram.get_diagram_data().pair_bonds
+    assert bond.get("married") is not True
+
+
 def test_a_marriage_sets_married_on_the_couples_bond(subscriber):
     # R-0430
     diagram = _diagram(

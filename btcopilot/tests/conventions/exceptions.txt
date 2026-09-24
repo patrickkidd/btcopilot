@@ -1,2 +1,154 @@
 # Rulings with no citing test yet, and why (private/oracle SPEC, section 6).
 # One line per ruling: R-NNNN | TEST OWED or WAIVED | reason. Never quote the ruling.
+R-0001 | TEST OWED | one test covers the picture surface; the product-concept and coach tags each owe a test
+R-0003 | WAIVED | a register judgement across every surface; no assertion can observe tone
+R-0004 | WAIVED | a design principle of simplicity; judged by eye, not assertable
+R-0006 | TEST OWED | needs a fixture with tracked unknowns and a coach eval that asks about them
+R-0012 | TEST OWED | fading after last confirmation and the death stop are not drawn by the picture yet
+R-0014 | TEST OWED | the picture no longer draws lanes; needs a ruling on whether it still stands
+R-0015 | WAIVED | an architecture principle with no single observable behaviour
+R-0018 | WAIVED | a product idea marked for an A/B test; nothing built to observe
+R-0020 | WAIVED | the product vision; no surface to assert on
+R-0021 | WAIVED | the audience order; a business decision
+R-0023 | TEST OWED | needs a scan that every colour comes from the theme tokens
+R-0030 | WAIVED | a judgement about corpus quality, held outside the repo
+R-0031 | WAIVED | which cases form the corpus; the corpus is outside every repo
+R-0032 | WAIVED | a judgement about corpus quality, held outside the repo
+R-0033 | WAIVED | the anonymizing rebuild script lives outside every repo
+R-0034 | WAIVED | the corpus and its rebuild script live outside every repo
+R-0035 | WAIVED | a legal and vendor matter
+R-0039 | WAIVED | a corpus tiering judgement, held outside the repo
+R-0050 | WAIVED | a watch-and-decide product call
+R-0051 | WAIVED | a platform choice already made; no behaviour to assert
+R-0052 | TEST OWED | the migration tests assert other rulings; one citing this is owed
+R-0054 | WAIVED | a statement of the theory the data rests on; no single behaviour
+R-0055 | TEST OWED | chat tool calls cover record edits only; tool control of the rest of the app is not built
+R-0056 | TEST OWED | friction self-reports are not built
+R-0057 | TEST OWED | a coding example for the live model; needs an eval against the private prompts
+R-0059 | WAIVED | a design principle; judged by eye
+R-0065 | TEST OWED | the concrete taps are tested under R-0072 and R-0073; a test citing this principle is owed
+R-0066 | WAIVED | a design principle of simplicity; judged by eye
+R-0068 | TEST OWED | the chip is tested under R-0072 and R-0073; a test citing this is owed
+R-0069 | TEST OWED | the editor is built; a test for its place off the main journey and its hint is owed
+R-0080 | WAIVED | ownership and payment model; not built
+R-0082 | TEST OWED | needs a Pro API test that Pro reads the chat record and cannot write it
+R-0090 | TEST OWED | the sessions test for the input bar proves it; citing it and a sessions-tag test are owed
+R-0091 | TEST OWED | sizes are tested under R-0234 and R-0103; a test citing this is owed
+R-0093 | WAIVED | about the mockup phone frame; the built app draws no frame (assumption)
+R-0094 | WAIVED | about the mockup phone frame; the built app draws no frame (assumption)
+R-0096 | WAIVED | a look kept on file for another surface; nothing built
+R-0107 | WAIVED | a rejected design option; nothing built to observe
+R-0108 | WAIVED | a rejected design round; nothing built to observe
+R-0109 | WAIVED | a design-round convergence; the result is tested under later picture rulings
+R-0110 | WAIVED | a rejected design option; nothing built to observe
+R-0112 | TEST OWED | clusters are drawn; lanes chosen from the data are not built
+R-0113 | TEST OWED | needs a check that no legend or symbol table is drawn
+R-0114 | TEST OWED | needs a geometry assertion on the conflict drawing in the play-by-play
+R-0115 | TEST OWED | needs a geometry assertion on the toward move in the play-by-play
+R-0116 | TEST OWED | needs a geometry assertion on the cutoff wall in the play-by-play
+R-0117 | TEST OWED | needs a geometry assertion on the cutoff wall in the play-by-play
+R-0118 | TEST OWED | needs a geometry assertion on the distance drawing in the play-by-play
+R-0119 | TEST OWED | needs a geometry assertion on the functioning arrows in the play-by-play
+R-0120 | TEST OWED | needs a geometry assertion on the triangle moves in the play-by-play
+R-0121 | TEST OWED | needs a geometry assertion on the fusion drawing in the play-by-play
+R-0122 | TEST OWED | needs a colour and timing assertion on the defined-self move
+R-0123 | TEST OWED | needs an assertion on the projection drawing in the play-by-play
+R-0124 | TEST OWED | needs an assertion that the anxiety drawing is the projection's
+R-0125 | TEST OWED | needs a geometry assertion on the symptom mark
+R-0126 | TEST OWED | needs an assertion on the functioning circle's animation
+R-0127 | TEST OWED | needs an assertion that every move uses one green and one duration
+R-0128 | TEST OWED | the at-rest clusters and drill-down are built; a test citing this is owed
+R-0129 | TEST OWED | needs an assertion on the open-cluster indicator
+R-0130 | TEST OWED | needs an assertion on the zoom between the first two levels
+R-0131 | TEST OWED | the back and close controls are built; a test citing this is owed
+R-0132 | TEST OWED | the level heights are tested under other rulings; a test citing this is owed
+R-0135 | TEST OWED | needs an assertion that the play-by-play lays people on a circle
+R-0137 | TEST OWED | one test covers the play-by-play; the symbols tag owes a test
+R-0138 | WAIVED | a priority call about the order of work
+R-0139 | TEST OWED | needs a check that the picture shows no notice before it changes
+R-0148 | TEST OWED | needs a timing assertion on the cutoff field
+R-0149 | TEST OWED | needs a timing assertion on the defined-self delay
+R-0155 | WAIVED | a rejected design option; nothing built to observe
+R-0157 | TEST OWED | the Pro desktop app lives in the familydiagram repo; its suite owes this
+R-0158 | TEST OWED | the Pro desktop app lives in the familydiagram repo; its suite owes this
+R-0159 | TEST OWED | the Pro desktop app lives in the familydiagram repo; its suite owes this
+R-0161 | TEST OWED | needs a check that no symbol name reaches the screen
+R-0166 | TEST OWED | the layout test for the word explain proves it; citing it and a coach-tag test are owed
+R-0171 | TEST OWED | needs a timing assertion on the play-through
+R-0172 | TEST OWED | needs a streamed reply in the visual harness
+R-0173 | TEST OWED | the layout test for the board filling its room proves it; citing it and a layout-tag test are owed
+R-0175 | TEST OWED | needs a test that tapping a diagram row opens it and closes the last
+R-0177 | TEST OWED | needs a colour assertion on the play-by-play cursor
+R-0179 | TEST OWED | the name row shows the cluster's name on the play-by-play; needs a ruling on which stands
+R-0187 | TEST OWED | family structure on the play-by-play is not built
+R-0188 | WAIVED | a guiding design question, not a behaviour
+R-0189 | WAIVED | an observation about first-time users
+R-0190 | TEST OWED | needs a geometry assertion on the symptom arrow's height
+R-0196 | WAIVED | a statement of what clusters mean clinically
+R-0198 | TEST OWED | the list-button placement test proves it; citing it and tests per tag are owed
+R-0199 | TEST OWED | the two-lists test proves the tabs; citing it and a ui-standards test are owed
+R-0207 | TEST OWED | the jump from a cluster label to its editor needs a visual test
+R-0213 | TEST OWED | needs a test that an open cluster shows its name and reason, not a list
+R-0214 | TEST OWED | the picture draws dots under later rulings; needs a ruling on whether the tick stands
+R-0218 | TEST OWED | needs a geometry check of the list headings against the scrollbar
+R-0222 | TEST OWED | the account mark draws the ring R-0234 later ruled; needs a ruling on which stands
+R-0224 | TEST OWED | needs an assertion on the slide direction when drilling in and back
+R-0225 | TEST OWED | needs an assertion on the account view's covering transition
+R-0230 | TEST OWED | needs an assertion that a sliding card has its own background
+R-0235 | TEST OWED | one test covers the picture; the navigation tag owes a test
+R-0236 | WAIVED | a statement of what evidence exists; no behaviour
+R-0240 | WAIVED | an open question with the drawn family deferred
+R-0245 | TEST OWED | needs an import-boundary check that the review code cannot reach the core
+R-0246 | WAIVED | a strategy of review approaches to try
+R-0262 | WAIVED | a one-time migration of last year's meeting notes
+R-0265 | TEST OWED | one test covers the coder's screen; the shell and ui-standards tags owe tests
+R-0277 | TEST OWED | the meeting timeline is built; a visual test citing this is owed
+R-0278 | TEST OWED | the agreement dots are built; a visual test citing this is owed
+R-0283 | TEST OWED | needs a ring check on the picture and a coach eval of the nodal definition
+R-0286 | TEST OWED | needs a check that triangle views carry no conflict mark
+R-0291 | TEST OWED | one test covers the outside move; the triangle and ui-standards tags owe tests
+R-0292 | TEST OWED | three tests cover it; the defect tag owes a test
+R-0316 | TEST OWED | the meeting sort is built; a test citing this is owed
+R-0319 | TEST OWED | the split choice is built; a test citing this is owed
+R-0320 | TEST OWED | needs a test that every dot on the agreement wire answers a tap
+R-0328 | WAIVED | replaced by the move to Grafana under R-0370; the store should mark it superseded
+R-0329 | WAIVED | replaced by the move to Grafana under R-0370; the store should mark it superseded
+R-0330 | WAIVED | a one-time box creation, done
+R-0338 | TEST OWED | the meeting scroll behaviours are built; a test citing this is owed
+R-0340 | TEST OWED | needs a sticky-header assertion on the meeting screen
+R-0354 | WAIVED | a pricing decision, deferred
+R-0355 | WAIVED | a one-time beta start decision
+R-0358 | TEST OWED | one test covers the chat; the words tag owes a test
+R-0365 | WAIVED | a one-time rewrite, done
+R-0376 | TEST OWED | the cluster view from the sources is partly built; tests owed per part
+R-0378 | TEST OWED | needs a check that the picture spot never holds a words-only view
+R-0379 | WAIVED | a goal kept for later; not built
+R-0380 | WAIVED | a design principle about concepts; judged by eye
+R-0382 | WAIVED | a goal kept for later; not built
+R-0386 | WAIVED | a branch and release arrangement outside this app
+R-0387 | TEST OWED | the replay button under a coach reply is not built
+R-0394 | WAIVED | a repository housekeeping decision, done
+R-0396 | WAIVED | a rule about how galleries are reviewed
+R-0397 | WAIVED | a rule about how findings are reported
+R-0398 | WAIVED | a rule about how galleries are captioned
+R-0399 | WAIVED | a rule about how concepts are designed
+R-0400 | WAIVED | a decision to start the beta
+R-0414 | WAIVED | a one-time removal of dead code, done
+R-0418 | WAIVED | a one-time removal of dead code, done
+R-0419 | TEST OWED | the version is computed inline in the release workflow; it needs a script a test can run
+R-0420 | WAIVED | a one-time docs reorganisation, done
+R-0424 | TEST OWED | coding behaviour of the live model; needs an eval against the private prompts
+R-0425 | TEST OWED | coding behaviour of the live model; needs an eval against the private prompts
+R-0426 | WAIVED | deferred until there is enough data
+R-0427 | TEST OWED | coach behaviour of the live model; needs an eval against the private prompts
+R-0428 | TEST OWED | coding behaviour of the live model; needs an eval against the private prompts
+R-0433 | TEST OWED | coding behaviour of the live model; needs an eval against the private prompts
+R-0434 | TEST OWED | coding behaviour of the live model; needs an eval against the private prompts
+R-0435 | TEST OWED | coding behaviour of the live model; needs an eval against the private prompts
+R-0436 | TEST OWED | coach behaviour of the live model; needs an eval against the private prompts
+R-0440 | TEST OWED | needs a check that each open coding question carries its provisional fallback in the private prompts
+R-0441 | TEST OWED | coach behaviour of the live model; needs an eval against the private prompts
+R-0442 | TEST OWED | coach behaviour of the live model; needs an eval against the private prompts
+R-0443 | TEST OWED | the second look is not built
+R-0444 | WAIVED | an architecture principle; the review it calls for is R-0443
+R-0446 | TEST OWED | one test covers the record text; the coach and cost tags owe tests
