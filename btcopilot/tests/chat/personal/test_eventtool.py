@@ -1,5 +1,6 @@
 """What the coach's event tool writes onto the record."""
 
+import json
 import pickle
 
 import pytest
@@ -325,3 +326,13 @@ def test_a_correction_changes_the_record_at_once_with_nothing_held_pending(subsc
         ("t2", Author.Coach),
     ]
 
+
+
+def test_moved_is_not_an_event_kind_the_coach_can_write(subscriber):
+    # R-0364
+    diagram = _diagram(subscriber.user)
+    with pytest.raises(ValueError, match="moved"):
+        _event(diagram, kind="moved", date="2019-03-01", person=1, description="moved to Arizona")
+    assert diagram.get_diagram_data().events == []
+    kinds = next(s for s in schemas() if s["name"] == ToolName.EditEvent.value)
+    assert "moved" not in json.dumps(kinds["input_schema"]["properties"]["kind"])
