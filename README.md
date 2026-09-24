@@ -4,6 +4,11 @@ A coach, trained in Bowen theory, who never forgets your family. You talk to it 
 
 It began as a clinical NLP system for extracting structured data from therapy transcripts, using zero-shot LLM prompting to detect people, events, and relationship patterns from natural conversation—no fine-tuning required. That research, twelve phases of it, is kept below as the project's history. The Pro desktop app's backend and the training app live on branch [`master-legacy`](https://github.com/patrickkidd/btcopilot/tree/master-legacy) for long-term support.
 
+Built by Patrick Stinson, the technical expert on Bowen theory behind the clinical work.
+
+**For engineers:** [coach's agent loop](btcopilot/coachturn.py) · [the record and its tools](btcopilot/toolbox.py) · [oracle-derived tests and guards](doc/TEST_STRATEGY.md) · [refusal fallback chain](btcopilot/llmutil.py#L232) · [prompt caching](btcopilot/tests/test_caching.py) and [cost logging](btcopilot/pricing.py)
+**For clinicians:** [SARF literature review](doc/sarf-definitions/) · [SARF data model](doc/specs/DATA_MODEL.md) · [inter-rater reliability meeting findings](doc/irr/MEETING_FINDINGS.md) · [Bowen theory spec](doc/specs/BOWEN_THEORY.md)
+
 **📊 [F1 Dashboard](doc/archive/2026-09-F1_DASHBOARD.md)** | **📈 [F1 Timeseries](doc/archive/2026-09-f1_timeseries.html)** | **📋 [Decision Log](decisions/log.md)** | **📚 [Domain Context](CONTEXT.md)** | **📖 [Dev Journal](#development-journal)**
 
 [SARF Data Model White Paper](https://docs.google.com/document/d/1k6ZvYEG1644L4SKqXzXoOvBnepmus2-8WwUfMh4R_4Y/edit?usp=sharing)
@@ -133,7 +138,7 @@ ChromaDB vector store indexes the clinical literature. LLM queries return releva
 Source: [btcopilot/pro/copilot/](https://github.com/patrickkidd/btcopilot/tree/master-legacy/btcopilot/pro/copilot)
 
 ### Phase 2: SARF Data Model & Schema ✓
-*Production*
+*Production* · *→ now the schema of the record the coach edits.*
 
 The extraction target: a clinical coding scheme with Pydantic-validated JSON output.
 
@@ -170,7 +175,7 @@ Source: [btcopilot/pdp.py](https://github.com/patrickkidd/btcopilot/blob/master-
 
 
 ### Phase 4: Automated Audio Transcription ✓
-*Production*
+*Production* · *→ now the path for recording uploads.*
 
 The training app accepts audio recordings of real clinical interviews. AssemblyAI processes recordings with speaker diarization—automatically detecting and separating different speakers in the conversation.
 
@@ -185,7 +190,7 @@ Once transcribed, each statement runs through AI-based SARF extraction, generati
 Source: [btcopilot/training/routes/discussions.py](https://github.com/patrickkidd/btcopilot/blob/master-legacy/btcopilot/training/routes/discussions.py)
 
 ### Phase 5: Formalized Minimum Data for Family Evaluation ✓
-*Production*
+*Production* · *→ now the intake checklist that tells the coach what is still missing.*
 
 Comprehensive literature review produced a formalized definition of minimum necessary data for a family systems clinical evaluation. This is operationalized as a conversation protocol with explicit data collection checklist.
 
@@ -202,7 +207,7 @@ Red flags for incomplete interviews: pivoting to family data before understandin
 Source: [btcopilot/personal/prompts.py](https://github.com/patrickkidd/btcopilot/blob/master-legacy/btcopilot/personal/prompts.py)
 
 ### Phase 6: Simulated AI Personas & Synthetic Data Generation ✓
-*Complete*
+*Complete* · *→ now the synthetic clients the coach is tested against.*
 
 LLM-generated user personas with behavioral traits (evasive, tangential, defensive, terse) simulate clinical conversations. Each persona has a detailed three-generation family history and presenting problem.
 
@@ -242,7 +247,7 @@ Addresses the core bottleneck in clinical ML: domain expertise is scarce, so the
 Source: [btcopilot/training/](https://github.com/patrickkidd/btcopilot/tree/master-legacy/btcopilot/training)
 
 ### Phase 9: Hierarchical F1 Metrics ✓
-*Complete*
+*Complete* · *→ now the scoring of the coach's record.*
 
 Single-number accuracy metrics hide extraction failures. Multi-level evaluation:
 
@@ -269,7 +274,7 @@ Source: [bin/induction](https://github.com/patrickkidd/btcopilot/blob/master-leg
 ![Prompt Induction Report](doc/archive/2026-09-images/9--Prompt-Induction-Report.jpg)
 
 ### Phase 11: Inter-Rater Reliability Study
-*Occuring now*
+*Occuring now* · *→ now the three-stage ground-truth review.*
 
 Parallel expert coding (multiple auditors on same cases) to validate whether SARF model produces consistent results across practitioners. First formal IRR study for family systems constructs at scale.
 
