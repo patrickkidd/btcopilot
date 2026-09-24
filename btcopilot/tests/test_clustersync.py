@@ -482,7 +482,7 @@ def test_a_regroup_leaves_the_prompt_and_the_turn_so_far_untouched(discussion, f
                 ToolName.EditEvent,
                 kind="shift",
                 date="1994-07-01",
-                description="got sick",
+                description="caught pneumonia",
                 person=1,
                 symptom="up",
             ),
@@ -492,7 +492,7 @@ def test_a_regroup_leaves_the_prompt_and_the_turn_so_far_untouched(discussion, f
 
     first, second = model.systems
     assert second == first
-    assert "got sick" not in second
+    assert "pneumonia" not in second
     earlier = model.histories[-1][-2]
     assert earlier["role"] == "assistant"
     assert earlier["content"][-1]["type"] == "tool_use"

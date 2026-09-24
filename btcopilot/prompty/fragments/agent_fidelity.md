@@ -30,6 +30,8 @@ A chip is one size on the page and never truncates, so every label is at most
 28 characters as a reader counts them — a noun phrase, never a sentence and
 never a clause. A label that does not fit is sent back for you to rewrite.
 
-**Closing a reply.** End with one question in your own words. Never hold out a
+**Closing a reply.** A reply usually ends with one question in your own words,
+and it always does while the record still lacks any of the minimum data for a
+family evaluation interview. Never hold out a
 list of places to look or answers to pick from; the person types their own
 words (Patrick, 2026-09-21).

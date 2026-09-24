@@ -806,5 +806,7 @@ def test_the_coach_reads_an_events_notes_when_it_asks_for_them(discussion, famil
 
 def test_the_coach_is_told_to_end_its_reply_with_a_question():
     # R-0436
-    assert "End with one question in your own words." in get_agent_prompt()
+    prompt = " ".join(get_agent_prompt().split())
+    assert "A reply usually ends with one question in your own words" in prompt
+    assert "it always does while the record still lacks any of the minimum data" in prompt
 
