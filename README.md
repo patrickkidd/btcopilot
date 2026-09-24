@@ -6,19 +6,27 @@ The product built on it will live at [familydiagram.com](https://familydiagram.c
 
 Built by [Patrick Stinson](https://www.linkedin.com/in/patrickstinson/), who developed the clinical model.
 
-## Novel Contributions to the Field
+### For engineers and recruiters
 
-- [SARF Literature Review](doc/sarf-definitions/) - First exhaustive, 100% traceable literature review for Bowen Theory technical terms
-- [SARF Data Model White Paper](https://docs.google.com/document/d/1k6ZvYEG1644L4SKqXzXoOvBnepmus2-8WwUfMh4R_4Y/edit?usp=sharing) - Novel clinical data model operationalizing Bowen theory constructs
-- [Implicit Behavioral Model Synthesis](doc/archive/2026-09-plans/brainstorm-assessment/12_IMPLICIT_BEHAVIORAL_MODEL_SYNTHESIS.md) - Cross-validated theoretical framework synthesizing neuroscience, philosophy of mind, and clinical observation
-- [Family Diagram Visual Specification](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) - Platform-independent specification for rendering Bowen family diagrams
-- [Conversational Flow Evaluation](#phase-7-conversational-flow-evaluation-) - Objective metrics for measuring clinical interview quality
-- [Inter-Rater Reliability Study](#phase-11-inter-rater-reliability-study) - First formal IRR study for family systems constructs at scale
-- [Attachment and Big 5-Based Conversation Modeling & Measurement](#phase-12-attachment-and-big-5-based-conversation-modeling--measurement) - Synthetic client narratives structured by attachment style, with multi-dimensional clinical quality rubrics
+- [How the Coach Works](#how-the-coach-works)
+  - [The Human Oracle and Its Tests](#the-human-oracle-and-its-tests)
+- [Extraction Accuracy (F1)](#extraction-accuracy-f1)
 
-**For engineers and recruiters:** [how the coach works](#how-the-coach-works) · [coach's agent loop](btcopilot/coachturn.py) · [the record and its tools](btcopilot/toolbox.py) · [oracle-derived tests](#the-human-oracle-and-its-tests) · [F1 measurement](#extraction-accuracy-f1) · [refusal fallback chain](btcopilot/llmutil.py#L232)
+### For clinicians and researchers
 
-**For clinicians and researchers:** [SARF data model](doc/specs/DATA_MODEL.md) · [SARF literature review](#sarf-literature-review) · [inter-rater reliability findings](doc/irr/MEETING_FINDINGS.md) · [F1 results](#extraction-accuracy-f1) · [R&D roadmap: phases 1-13](#research-phases) · [research journal](#research-journal)
+- [Novel Contributions to the Field](#novel-contributions-to-the-field)
+  - [SARF Literature Review](doc/sarf-definitions/)
+  - [SARF Data Model White Paper](https://docs.google.com/document/d/1k6ZvYEG1644L4SKqXzXoOvBnepmus2-8WwUfMh4R_4Y/edit?usp=sharing)
+  - [Implicit Behavioral Model Synthesis](doc/archive/2026-09-plans/brainstorm-assessment/12_IMPLICIT_BEHAVIORAL_MODEL_SYNTHESIS.md)
+  - [Family Diagram Visual Specification](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md)
+  - [Conversational Flow Evaluation](#phase-7-conversational-flow-evaluation-)
+  - [Inter-Rater Reliability Study](#phase-11-inter-rater-reliability-study)
+  - [Attachment and Big 5-Based Conversation Modeling & Measurement](#phase-12-attachment-and-big-5-based-conversation-modeling--measurement)
+- [Extraction Accuracy (F1)](#extraction-accuracy-f1)
+- [R&D roadmap: phases 1-13](#research-phases)
+- [Clinical Research Compliance](#clinical-research-compliance)
+- [SARF Literature Review](#sarf-literature-review)
+- [Research Journal](#research-journal)
 
 ## How the Coach Works
 
@@ -31,6 +39,16 @@ The system is a Flask API with a Celery worker, Postgres, and a TypeScript page 
 Development answers to a human oracle: Patrick's rulings, each with an id (R-0001 and on), stored encrypted in `private/oracle/`. The open repo cites ruling ids and never restates them. No rubric or quality judgment is inferred without Patrick; he rules by example and by correcting proposed values.
 
 Every test cites the ruling it checks, and a guard test enforces that. Every ruling has a citing test or a stated exception: owed where the behaviour is not built, waived where nothing observable could check it. Known defects are strict expected failures in [doc/KNOWN_DEFECTS.md](doc/KNOWN_DEFECTS.md). The strategy is in [doc/TEST_STRATEGY.md](doc/TEST_STRATEGY.md); the current state is in [doc/STATE.md](doc/STATE.md) and its derivation in [doc/HISTORY.md](doc/HISTORY.md).
+
+## Novel Contributions to the Field
+
+- [SARF Literature Review](doc/sarf-definitions/) - First exhaustive, 100% traceable literature review for Bowen Theory technical terms
+- [SARF Data Model White Paper](https://docs.google.com/document/d/1k6ZvYEG1644L4SKqXzXoOvBnepmus2-8WwUfMh4R_4Y/edit?usp=sharing) - Novel clinical data model operationalizing Bowen theory constructs
+- [Implicit Behavioral Model Synthesis](doc/archive/2026-09-plans/brainstorm-assessment/12_IMPLICIT_BEHAVIORAL_MODEL_SYNTHESIS.md) - Cross-validated theoretical framework synthesizing neuroscience, philosophy of mind, and clinical observation
+- [Family Diagram Visual Specification](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) - Platform-independent specification for rendering Bowen family diagrams
+- [Conversational Flow Evaluation](#phase-7-conversational-flow-evaluation-) - Objective metrics for measuring clinical interview quality
+- [Inter-Rater Reliability Study](#phase-11-inter-rater-reliability-study) - First formal IRR study for family systems constructs at scale
+- [Attachment and Big 5-Based Conversation Modeling & Measurement](#phase-12-attachment-and-big-5-based-conversation-modeling--measurement) - Synthetic client narratives structured by attachment style, with multi-dimensional clinical quality rubrics
 
 ## Extraction Accuracy (F1)
 
