@@ -1,17 +1,19 @@
 ---
 name: two-clocks
-description: Flush this session's decisions, learnings, rationale and code state into the FD-362 corpus so any topic can be picked up later by name — idempotent; run at the end of every session and whenever Patrick says flush.
+description: Flush this session's decisions, learnings, rationale and code state into the project corpus (doc/) so any topic can be picked up later by name — idempotent; run at the end of every session and whenever Patrick says flush.
 ---
 
-# /two-clocks — the idempotent end-of-session flush (FD-362)
+# /two-clocks — the idempotent end-of-session flush
 
 Two clocks per topic. The **state clock** is `doc/TOPICS.md`: one block per topic,
 headed by the topic's plain name, rewritten in full. The **event clock** is
 `doc/HISTORY.md`: one entry per session, never rewritten by a later session.
 Rulings go to the private oracle store **in this repo** — `private/oracle/rulings.md` and
 `private/oracle/evidence.md`, encrypted with sops. Never fdserver; fdserver left this ticket on
-2026-09-16. Decrypt with `SOPS_AGE_KEY_FILE=/Users/patrick/worktrees/fd362-sandbox/keys/dev.agekey
-sops -d <path>`; re-encrypt with `sops -e --filename-override <path> <plainfile>`. After a flush nothing the
+2026-09-16. Edit with `SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt sops <path>` (append a
+ruling, then its evidence block: the id line, then "> " lines holding his own words). Every
+store change needs its fingerprint lines added to btcopilot/tests/conventions/fingerprints.txt;
+CI's id-stability guard prints them. After a flush nothing the
 owner said, decided, learned or built in the session is missing, and running the flush again
 changes nothing.
 
@@ -78,13 +80,15 @@ run from rewording what an earlier run already captured:
 6. Sync the rest: `decisions/log.md` for significant decisions; `doc/PROMPT_ENGINEERING_LOG.md`
    for prompt changes; `REVIEW_LOG.md` for what Patrick found testing; `MERGE_REVIEW.md` if
    merge risks changed; the Jira epic's description only with his one-line yes.
+   Every ruling added this session owes a citing test per tag, or a TEST OWED / WAIVED line in
+   btcopilot/tests/conventions/exceptions.txt; write the tests in the same flush (R-0449).
 7. Run `python bin/flushcheck.py` from the btcopilot worktree; fix what it reports.
-8. Commit and push **this worktree only** (btcopilot `FD-362`), one git mutation per command,
-   corpus commits titled `FD-362 flush: <date>`. There is no second worktree to flush.
+8. Commit and push this session's ticket worktree, one git mutation per command, corpus
+   commits titled `<ticket> flush: <date>`.
 9. Refresh Patrick's two pages, same links every time (URLs at the top of TOPICS.md, passed
    to the Artifact tool as `url`), in this order:
    a. `python bin/ledger.py` — rewrites events.json in `~/theapp/btcopilot-sources/fd-corpus/private/` from every dated source
-      (history, rulings, decision log, review log, commits in both worktrees, artifacts).
+      (history, rulings, decision log, review log, commits, artifacts).
    b. `python bin/trace.py` — mines Patrick's own statements out of the local transcripts
       into trace.json in the same private folder, one row per thing he typed, in order. It writes nothing
       but his words.
@@ -110,7 +114,7 @@ run from rewording what an earlier run already captured:
 ## Picking a topic up in a later session
 
 Patrick names topics in plain words — "let's continue designing the pro and training
-features in FD-362", "in FD-362 list the open issues, I forgot". The session reads STATE.md,
+features", "list the open issues, I forgot". The session reads STATE.md,
 then TOPICS.md, matches his words to a block by its name and contents, and continues from
 that block's Open and Next action. If two blocks could match, it asks which in one line.
 "List the open issues" means: every block's name, Status and Open, in his words, no ids.

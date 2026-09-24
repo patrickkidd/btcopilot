@@ -138,8 +138,8 @@ def session_rows(path: Path) -> tuple[str, str, list[dict]]:
 
 def statements() -> list[dict]:
     out = []
-    for name in DIRS:
-        folder = PROJECTS / name
+    folders = {PROJECTS / name for name in DIRS} | set(PROJECTS.glob("*btcopilot*"))
+    for folder in sorted(folders):
         if not folder.is_dir():
             continue
         for path in sorted(folder.glob("*.jsonl")):
