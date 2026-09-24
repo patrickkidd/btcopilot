@@ -5,7 +5,7 @@ behaviour nobody has ruled. For each, the owner either rules the behaviour (and 
 test cites the new id) or the test is deleted. One line each: the test, then what it
 proves, taken from its own docstring or name. Swept 2026-09-23.
 
-## btcopilot/tests/personal/test_agent.py
+## btcopilot/tests/test_agent.py
 
 - `test_a_turn_that_fails_before_the_coach_answers_stores_no_words` — a turn that fails before the coach answers stores no words.
 - `test_people_and_their_events_all_land_in_one_turn` — A turn that adds the people and stops has lost what was said about them: the coach keeps calling tools until every dated fact is in the record.
@@ -16,7 +16,7 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_a_model_with_no_price_raises` — a model with no price raises.
 - `test_tracing_provider` — tracing provider.
 
-## btcopilot/tests/personal/test_api.py
+## btcopilot/tests/test_api.py
 
 - `test_session_list_omits_a_transcript_import` — A discussion brought in from a recording has no chat speaker ids and is not a session the chat app can open.
 - `test_session_create` — session create.
@@ -35,7 +35,7 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_event_rejects_unknown_person` — event rejects unknown person.
 - `test_event_of_missing_id_is_404` — event of missing id is 404.
 
-## btcopilot/tests/personal/test_caching.py
+## btcopilot/tests/test_caching.py
 
 - `test_what_the_call_cost_and_what_it_read_back_is_logged` — what the call cost and what it read back is logged.
 - `test_the_coach_asks_for_its_effort_and_no_sampling` — the coach asks for its effort and no sampling.
@@ -44,7 +44,7 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_a_model_that_takes_no_fallbacks_is_sent_none` — a model that takes no fallbacks is sent none.
 - `test_a_model_cut_off_mid_answer_leaves_no_tool_call_to_run` — a model cut off mid answer leaves no tool call to run.
 
-## btcopilot/tests/personal/test_chatpage.py
+## btcopilot/tests/test_chatpage.py
 
 - `test_page_loads` — The page is the built web bundle: the picture, the composer, and the menu that holds the timeline.
 - `test_page_carries_what_only_the_server_knows` — The bundle is static; the CSRF token, the diagram and the session the user returns to are injected into it.
@@ -59,13 +59,13 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_pwa_files_are_served_from_the_app_root` — The service worker has to answer from /app/ or its scope cannot cover the app.
 - `test_a_tap_that_names_no_item_kind_is_refused_in_words` — a tap that names no item kind is refused in words.
 
-## btcopilot/tests/personal/test_chatspeakers.py
+## btcopilot/tests/test_chatspeakers.py
 
 - `test_the_coach_is_not_a_person_in_a_new_record` — the coach is not a person in a new record.
 - `test_the_id_the_coach_used_to_hold_is_never_handed_to_anyone` — the id the coach used to hold is never handed to anyone.
 - `test_a_new_session_points_the_coach_at_no_person` — a new session points the coach at no person.
 
-## btcopilot/tests/personal/test_claude_backend.py
+## btcopilot/tests/test_claude_backend.py
 
 - `test_is_claude_model_positive` — is claude model positive.
 - `test_is_claude_model_negative` — is claude model negative.
@@ -82,13 +82,13 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_chat_generate_response_uses_response_text_sync` — _generate_response in chat.py uses the unified response_text_sync.
 - `test_discussion_update_summary_uses_response_text_sync` — Discussion.update_summary uses the unified response_text_sync.
 
-## btcopilot/tests/personal/test_claude_structured.py
+## btcopilot/tests/test_claude_structured.py
 
 - `test_gemini_structured_dispatches_claude_models` — gemini structured dispatches claude models.
 - `test_claude_structured_parses_fenced_json_and_counts_usage` — claude structured parses fenced json and counts usage.
 - `test_claude_structured_raises_on_truncation` — claude structured raises on truncation.
 
-## btcopilot/tests/personal/test_clusters.py
+## btcopilot/tests/test_clusters.py
 
 - `test_a_shift_gathers_the_moves_around_it` — a shift gathers the moves around it.
 - `test_a_move_beyond_the_span_stays_out` — a move beyond the span stays out.
@@ -103,7 +103,7 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_a_rejected_grouping_is_asked_for_once_more` — a rejected grouping is asked for once more.
 - `test_an_id_the_record_does_not_have_is_rejected` — an id the record does not have is rejected.
 
-## btcopilot/tests/personal/test_clustersync.py
+## btcopilot/tests/test_clustersync.py
 
 - `test_a_grouping_stuck_under_the_floor_can_still_be_removed` — a grouping stuck under the floor can still be removed.
 - `test_a_grouping_of_unknown_provenance_is_left_alone` — A row written before provenance was recorded is treated as the user's: guessing that the model made it would lose a name the user chose.
@@ -111,7 +111,7 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_the_same_events_are_not_regrouped_twice` — the same events are not regrouped twice.
 - `test_a_grouping_made_by_the_older_rules_is_regrouped` — a grouping made by the older rules is regrouped.
 
-## btcopilot/tests/personal/test_coach_smoke.py
+## btcopilot/tests/test_coach_smoke.py
 
 - `test_smoke_opus_returning_user` — smoke opus returning user.
 - `test_smoke_gemini_returning_user` — smoke gemini returning user.
@@ -120,7 +120,7 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_pattern_c_long_session_opus` — pattern c long session opus.
 - `test_pattern_c_long_session_gemini` — pattern c long session gemini.
 
-## btcopilot/tests/personal/test_intake.py
+## btcopilot/tests/test_intake.py
 
 - `test_no_diagram_all_not_covered_except_presenting_problem` — no diagram all not covered except presenting problem.
 - `test_empty_diagram_outstanding_excludes_presenting_problem` — empty diagram outstanding excludes presenting problem.
@@ -134,7 +134,7 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_real_desktop_quirks_dont_crash` — real desktop quirks dont crash.
 - `test_committed_scene_format_contract` — Regression: pins the real committed-data contract for the Personal app.
 
-## btcopilot/tests/personal/test_lanes.py
+## btcopilot/tests/test_lanes.py
 
 - `test_people_and_bonds_from_structure` — people and bonds from structure.
 - `test_certainty_grades_map_to_schema` — certainty grades map to schema.
@@ -145,17 +145,17 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_relationship_events_stamp_household_lane` — relationship events stamp household lane.
 - `test_aliases_merge_spellings_without_code_changes` — aliases merge spellings without code changes.
 
-## btcopilot/tests/personal/test_migrate_json.py
+## btcopilot/tests/test_migrate_json.py
 
 - `test_converts_once_and_is_idempotent` — converts once and is idempotent.
 
-## btcopilot/tests/personal/test_pairbonds.py
+## btcopilot/tests/test_pairbonds.py
 
 - `test_adding_a_bond_writes_it` — adding a bond writes it.
 - `test_a_bond_of_one_person_with_themselves_is_refused` — a bond of one person with themselves is refused.
 - `test_ending_a_bond_leaves_its_children_without_parents` — ending a bond leaves its children without parents.
 
-## btcopilot/tests/personal/test_passwordless.py
+## btcopilot/tests/test_passwordless.py
 
 - `test_coming_back_to_the_site_root_lands_in_the_chat` — coming back to the site root lands in the chat.
 - `test_signing_in_stamps_the_session_the_training_app_ages` — signing in stamps the session the training app ages.
@@ -170,14 +170,14 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_registering_a_passkey_stores_it` — registering a passkey stores it.
 - `test_revoked_passkey_is_refused` — revoked passkey is refused.
 
-## btcopilot/tests/personal/test_people.py
+## btcopilot/tests/test_people.py
 
 - `test_changing_someone_keeps_their_id` — changing someone keeps their id.
 - `test_a_field_the_record_has_no_room_for_is_refused` — a field the record has no room for is refused.
 - `test_removing_someone_takes_them_off_the_record` — removing someone takes them off the record.
 - `test_a_record_behind_its_own_counter_never_renames_someone` — a record behind its own counter never renames someone.
 
-## btcopilot/tests/personal/test_preferences.py
+## btcopilot/tests/test_preferences.py
 
 - `test_prefs_returns_every_key` — prefs returns every key.
 - `test_set_prefs_round_trips` — set prefs round trips.
@@ -185,20 +185,20 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_set_prefs_rejects_bad_value` — set prefs rejects bad value.
 - `test_speak_must_be_bool` — speak must be bool.
 
-## btcopilot/tests/personal/test_pro.py
+## btcopilot/tests/test_pro.py
 
 - `test_a_chat_session_is_still_the_default` — a chat session is still the default.
 - `test_a_recording_cannot_be_started_without_its_transcript` — a recording cannot be started without its transcript.
 - `test_the_clinician_becomes_the_coachs_side_of_the_thread` — the clinician becomes the coachs side of the thread.
 - `test_a_recording_with_no_clinician_is_refused` — a recording with no clinician is refused.
 
-## btcopilot/tests/personal/test_productevents.py
+## btcopilot/tests/test_productevents.py
 
 - `test_events_are_stored_with_user_and_session` — events are stored with user and session.
 - `test_an_unknown_screen_or_name_is_refused` — an unknown screen or name is refused.
 - `test_web_and_server_name_the_same_screens_and_features` — web and server name the same screens and features.
 
-## btcopilot/tests/personal/test_promptfiles.py
+## btcopilot/tests/test_promptfiles.py
 
 - `test_the_open_source_prompts_say_what_their_constants_said` — the open source prompts say what their constants said.
 - `test_the_private_prompts_say_what_their_constants_said` — the private prompts say what their constants said.
@@ -207,11 +207,11 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_a_missing_fragment_raises_rather_than_rendering_empty` — a missing fragment raises rather than rendering empty.
 - `test_importing_the_app_decrypts_nothing` — A prompt is read when it is called for, never when a module loads, or a test run and the migration chain would need a key before they could start.
 
-## btcopilot/tests/personal/test_prorecord.py
+## btcopilot/tests/test_prorecord.py
 
 - `test_editing_an_event_by_hand_keeps_the_fields_only_the_desktop_knows` — The chat editor writes the fields it shows; relationshipIntensity and the desktop's drawing fields on the same event are not its to drop.
 
-## btcopilot/tests/personal/test_record.py
+## btcopilot/tests/test_record.py
 
 - `test_the_write_refuses_a_description_that_names_a_person_the_event_links` — Owner ruling 2026-09-09: the links say who, so the words may not say the same person again.
 - `test_the_write_refuses_a_birth_hung_on_the_person_instead_of_the_child` — the write refuses a birth hung on the person instead of the child.
@@ -222,12 +222,12 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_the_write_refuses_a_shift_that_says_nothing_moved` — the write refuses a shift that says nothing moved.
 - `test_the_write_refuses_a_moment_already_in_the_record` — the write refuses a moment already in the record.
 
-## btcopilot/tests/personal/test_ref_index_e2e.py
+## btcopilot/tests/test_ref_index_e2e.py
 
 - `test_the_state_handed_to_the_coach_carries_the_index` — the state handed to the coach carries the index.
 - `test_the_instruction_teaches_the_markup_the_parser_reads` — Guards the one thing that silently breaks chips: the instruction and the parser drifting apart on the markup.
 
-## btcopilot/tests/personal/test_refs.py
+## btcopilot/tests/test_refs.py
 
 - `test_a_reply_naming_nothing_has_no_references` — a reply naming nothing has no references.
 - `test_unparseable_target_keeps_its_words_and_makes_no_reference` — unparseable target keeps its words and makes no reference.
@@ -239,14 +239,14 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_clusters_are_listed_newest_first` — Ids sort as text, so double digits are where a by-id sort goes wrong.
 - `test_a_large_cast_cannot_crowd_out_the_events` — a large cast cannot crowd out the events.
 
-## btcopilot/tests/personal/test_structure.py
+## btcopilot/tests/test_structure.py
 
 - `test_a_bond_of_one_person_with_themselves_is_refused` — a bond of one person with themselves is refused.
 - `test_a_bond_with_one_side_is_refused` — a bond with one side is refused.
 - `test_nobody_is_born_to_a_bond_they_are_in` — nobody is born to a bond they are in.
 - `test_a_bond_between_two_different_people_commits` — a bond between two different people commits.
 
-## btcopilot/tests/personal/test_synthetic.py
+## btcopilot/tests/test_synthetic.py
 
 - `test_system_prompt_includes_anti_patterns` — system prompt includes anti patterns.
 - `test_system_prompt_includes_attachment_narrative` — system prompt includes attachment narrative.
@@ -274,7 +274,7 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_opus_vs_gemini_baseline` — Run matched conversations with Opus and Gemini, print metrics side by side.
 - `test_non_persist_cleans_up` — non persist cleans up.
 
-## btcopilot/tests/personal/test_timeline.py
+## btcopilot/tests/test_timeline.py
 
 - `test_per_person_isolation` — One person's line must never be influenced by another's events (the known QML mixed-sum bug).
 - `test_lane_picker_data_from_diagram` — lane picker data from diagram.
@@ -286,11 +286,11 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_an_event_carries_the_fields_whoever_stored_it_left_out` — an event carries the fields whoever stored it left out.
 - `test_a_moment_says_who_from_its_links_and_what_without_the_name` — Owner ruling 2026-09-09: who comes from the links, what never repeats a linked person's name.
 
-## btcopilot/tests/personal/test_toolmeanings.py
+## btcopilot/tests/test_toolmeanings.py
 
 - `test_every_tool_parameter_has_a_default_meaning` — every tool parameter has a default meaning.
 
-## btcopilot/tests/personal/test_turns.py
+## btcopilot/tests/test_turns.py
 
 - `test_a_second_message_while_the_coach_is_answering_is_refused` — a second message while the coach is answering is refused.
 - `test_a_hold_left_by_a_dead_worker_runs_out` — A worker that dies mid-turn says nothing.

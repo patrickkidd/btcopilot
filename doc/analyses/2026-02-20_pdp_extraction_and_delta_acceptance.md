@@ -94,7 +94,7 @@ vs per-statement: Aggregate 0.25, Events 0.10.
 ## Test Coverage
 
 ### Good Coverage
-- PDP commit/reject flows (`tests/personal/test_pdp.py`)
+- PDP commit/reject flows (`tests/test_pdp.py`)
 - ID collision detection, cross-reference validation (`tests/schema/test_validation.py`)
 - Transitive closure, cascade deletes, pair bond commit
 
@@ -113,7 +113,7 @@ vs per-statement: Aggregate 0.25, Events 0.10.
 | Validation | btcopilot/pdp.py | `validate_pdp_deltas()` |
 | commit_pdp_items() | btcopilot/schema.py | Acceptance/commit logic |
 | Birth inference | btcopilot/schema.py | `_create_inferred_birth_items()` |
-| Default prompts | btcopilot/personal/prompts.py | Overridden by fdserver |
-| Chat (chat-only) | btcopilot/personal/chat.py | `ask()` — no extraction |
-| Extract endpoint | btcopilot/personal/routes/discussions.py | `POST /extract` |
+| Default prompts | btcopilot/prompts.py | Overridden by fdserver |
+| Chat (chat-only) | btcopilot/chat.py | `ask()` — no extraction |
+| Extract endpoint | btcopilot/routes/discussions.py | `POST /extract` |
 | F1 metrics | btcopilot/training/f1_metrics.py | |

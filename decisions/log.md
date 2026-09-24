@@ -24,7 +24,7 @@ workstream skill. Oracle ratified by Patrick: C1–C11 + C13 (machine-proven), C
   editor. Spec: `familydiagram/doc/ui-specs/user-details.md`.
 - **Closure without a referee:** this project has no deterministic referee; every machine-checkable
   criterion is driven to a real measured result and its evidence recorded in the unit state file
-  (`doc/workstreams/fd-321.json`). Standing convention, same as in-flight units.
+  (`doc/archive/2026-09-workstreams/fd-321.json`). Standing convention, same as in-flight units.
 
 **Revisit trigger:** if extraction F1 moves outside the ±0.05 band after injecting speaker identity
 (C11), the prompt-context change is incomplete and must be re-tuned before merge.
@@ -1069,7 +1069,7 @@ Single-prompt extraction (full conversation → one LLM call → complete PDP) t
 
 ## 2026-08-25: MVP done condition = returning long-horizon chat that improves the diagram through chat (supersedes FD-264's clinician-in-Pro loop)
 
-**Context:** Return from a 5-week break. Record shows the Jun 24 ruling (rebuild ceiling → human-in-the-loop corrections, FD-339) was never acted on; the Jul 21 test of Patrick's own diagram left unticketed structural bugs (duplicate self, self-bonds); FD-264's done condition (warm clinician uses a Personal-generated diagram in a Pro session) depends on diagram correctness + arrangement that measured out at a ceiling. Brainstorm: `doc/brainstorming/2026-08-25--fall-2026-direction.md`.
+**Context:** Return from a 5-week break. Record shows the Jun 24 ruling (rebuild ceiling → human-in-the-loop corrections, FD-339) was never acted on; the Jul 21 test of Patrick's own diagram left unticketed structural bugs (duplicate self, self-bonds); FD-264's done condition (warm clinician uses a Personal-generated diagram in a Pro session) depends on diagram correctness + arrangement that measured out at a ceiling. Brainstorm: `doc/archive/2026-09-brainstorming/2026-08-25--fall-2026-direction.md`.
 
 **Options considered:** (1) FD-264 as written — clinician-in-Pro loop; pulls Pro interop, Personal auto-arrange, FD-336 forward. (2) Returning long-horizon chat — user returns over weeks, diagram/timeline stay coherent, diagram corrected through chat; clinician loop becomes the next epic. (3) Platform first (FD-340 port, FD-336).
 

@@ -10,13 +10,13 @@ story of family emotional process, found by judgement under Bowen theory, and no
 fixed time window bounds one [Oracle: R-0371, R-0373, R-0375]. Only the floor of
 three events is a wall.
 
-Computed from `DiagramData` alone, no model call, in `btcopilot/personal/clusters.py`:
+Computed from `DiagramData` alone, no model call, in `btcopilot/clusters.py`:
 
 - A cluster is seeded by a **nodal event or a shift**: one of the kinds the
   intake engine already counts as nodal (death, married, divorced, separated,
   moved), or any event carrying a symptom, anxiety, relationship, or functioning
   value. [Oracle: R-0054 — no absolute values exist, only relative shifts,
-  captured in clusters.] The nodal kinds are reused from `btcopilot/personal/intake.py`
+  captured in clusters.] The nodal kinds are reused from `btcopilot/intake.py`
   rather than redefined, and that set now compares against `EventKind` instead of
   raw strings.
 - A **candidate** is a seeding event plus every event within **18 months** either
@@ -100,7 +100,7 @@ theory spec and carries no cluster content.
 
 ## The prompt
 
-Every prompt is a file. The public default (`btcopilot/personal/prompty/cluster.prompty`)
+Every prompt is a file. The public default (`btcopilot/prompty/cluster.prompty`)
 asks for the grouping in plain words and nothing clinical. The terms live only in
 the encrypted private prompt (`private/prompts/cluster.prompty` and its fragments),
 quoted rather than referenced, with the closed-vocabulary instruction: use only
@@ -234,7 +234,7 @@ question about which code the server was running before treating it as a rules b
 
 ## How to re-run clustering on a record by hand
 
-The resync path is `btcopilot.personal.clusters.sync(diagram_id, turn_id=...,
+The resync path is `btcopilot.clusters.sync(diagram_id, turn_id=...,
 user_id=..., session_id=...)` — the same function a coach turn calls. It
 re-detects clusters for the whole record and writes the result through
 `record.apply` with `author=Coach`, so it needs a `turn_id` the way any other

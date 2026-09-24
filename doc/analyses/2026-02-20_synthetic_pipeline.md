@@ -31,7 +31,7 @@ All major components exist and connect. Works in controlled manual conditions. B
   pending → generating → failed → pending_extraction → extracting → ready_for_coding
 
 ### Quality/Coverage Evaluators Not Integrated
-- QualityEvaluator and CoverageEvaluator exist in `tests/personal/synthetic.py:1103+`
+- QualityEvaluator and CoverageEvaluator exist in `tests/synthetic.py:1103+`
 - NOT called in Celery task. `result.quality` always None.
 - Dashboard can't show quality scores for synthetics.
 
@@ -47,11 +47,11 @@ All major components exist and connect. Works in controlled manual conditions. B
 | Component | File |
 |-----------|------|
 | Celery task | `btcopilot/training/tasks.py:78-151` |
-| ConversationSimulator | `btcopilot/tests/personal/synthetic.py:680-848` |
+| ConversationSimulator | `btcopilot/tests/synthetic.py:680-848` |
 | Web routes | `btcopilot/training/routes/synthetic.py` |
-| Persona model | `btcopilot/personal/models/syntheticpersona.py` |
-| Chat orchestration | `btcopilot/personal/chat.py:24-80` |
-| Quality evaluator | `btcopilot/tests/personal/synthetic.py:1103+` |
+| Persona model | `btcopilot/models/syntheticpersona.py` |
+| Chat orchestration | `btcopilot/chat.py:24-80` |
+| Quality evaluator | `btcopilot/tests/synthetic.py:1103+` |
 
 ## Test Coverage
 ### Exists

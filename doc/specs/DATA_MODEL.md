@@ -269,7 +269,7 @@ serialization/deserialization. Version tracking and transport mechanics are in
 
 ### Statement Model
 
-`btcopilot/personal/models/statement.py`
+`btcopilot/models/statement.py`
 
 ```python
 class Statement(db.Model, ModelMixin):
@@ -295,5 +295,5 @@ class Statement(db.Model, ModelMixin):
 |------|----------|
 | `btcopilot/schema.py` | All dataclasses, enums, `asdict()`, `from_dict()`, `commit_pdp_items()` |
 | `btcopilot/pro/models/diagram.py` | Diagram SQLAlchemy model, `get/set_diagram_data()`, `update_with_version_check()` |
-| `btcopilot/personal/models/statement.py` | Statement model with `pdp_deltas` JSON column |
-| `btcopilot/personal/models/feedback.py` | Feedback model with `edited_extraction` JSON column |
+| `btcopilot/models/statement.py` | Statement model with `pdp_deltas` JSON column |
+| `btcopilot/models/feedback.py` | Feedback model with `edited_extraction` JSON column |

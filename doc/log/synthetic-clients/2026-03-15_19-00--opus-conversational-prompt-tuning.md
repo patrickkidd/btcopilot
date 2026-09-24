@@ -84,7 +84,7 @@ After reviewing transcripts, Patrick flagged that the synthetic client (Gemini p
 
 **Impact**: All baselines and experiments above have contaminated client behavior. Directional improvements in Exp 1 are still valid (the coach AI changes are real), but absolute metrics are unreliable.
 
-**Fix (2026-03-16)**: Three changes to `btcopilot/tests/personal/synthetic.py`:
+**Fix (2026-03-16)**: Three changes to `btcopilot/tests/synthetic.py`:
 1. Removed "Trail off on hard topics" from `_CONVERSATIONAL_REALISM`
 2. Changed "Correct yourself mid-thought" to "Correct yourself — finish your sentence, then walk it back"
 3. Added post-processing in `simulate_user_response`: appends "." if response lacks terminal punctuation (Gemini ignores all prompt-based constraints on this)

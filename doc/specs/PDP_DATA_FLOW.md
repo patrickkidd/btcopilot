@@ -121,7 +121,7 @@ The LLM is instructed to produce **sparse deltas** per statement:
    changed
 
 Real prompts are in fdserver (production overrides btcopilot defaults).
-`btcopilot/personal/prompts.py` has the default prompt constants.
+`btcopilot/prompts.py` has the default prompt constants.
 
 ## Post-Extraction Fixups
 
@@ -316,7 +316,7 @@ When combining people for dropdowns, later sources override earlier:
 Positive IDs from cumulative override diagram data (shows updated names).
 
 For complete GT technical details, see
-[SARF_GROUND_TRUTH_TECHNICAL.md](../SARF_GROUND_TRUTH_TECHNICAL.md).
+[SARF_GROUND_TRUTH_TECHNICAL.md](../archive/2026-09-SARF_GROUND_TRUTH_TECHNICAL.md).
 
 ## File Reference
 
@@ -324,10 +324,10 @@ For complete GT technical details, see
 |------|----------|
 | `btcopilot/schema.py` | `DiagramData.commit_pdp_items()`, `PDPDeltas`, `PDP` |
 | `btcopilot/pdp.py` | `extract_full()`, `update()`, `apply_deltas()`, `cumulative()`, `cleanup_pair_bonds()`, `validate_pdp_deltas()`, `fix_birth_event_self_references()` |
-| `btcopilot/personal/chat.py` | `ask()` — chat-only, no extraction |
-| `btcopilot/personal/routes/discussions.py` | `POST /extract` endpoint — single-prompt extraction |
-| `btcopilot/personal/prompts.py` | Default prompt constants (overridden by fdserver) |
-| `btcopilot/personal/routes/diagrams.py` | Server-side diagram endpoints |
-| `btcopilot/personal/models/statement.py` | `Statement.pdp_deltas` column (training app only) |
+| `btcopilot/chat.py` | `ask()` — chat-only, no extraction |
+| `btcopilot/routes/discussions.py` | `POST /extract` endpoint — single-prompt extraction |
+| `btcopilot/prompts.py` | Default prompt constants (overridden by fdserver) |
+| `btcopilot/routes/diagrams.py` | Server-side diagram endpoints |
+| `btcopilot/models/statement.py` | `Statement.pdp_deltas` column (training app only) |
 | `btcopilot/training/routes/admin.py` | GT approval with mutual exclusivity |
 | `familydiagram/personal/personalappcontroller.py` | Client-side accept/reject callers |

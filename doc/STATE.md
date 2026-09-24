@@ -643,7 +643,7 @@ deployment").
   the corpus analysis. Era-compression work exists reverted-but-recoverable at commit
   35dd13b — NOTE: that is one of the two contaminated commits, so a history purge
   deletes it (re-implement from HISTORY's description if purged).
-  Rebuild/reseed: `python -m btcopilot.personal.seed <username> --from-lanes
+  Rebuild/reseed: `python -m btcopilot.seed <username> --from-lanes
   <chat.json> <journal.json> --alias "WRITTEN=CANONICAL"...` (identities only ever in
   the ephemeral command); sandbox: from ~/theapp, `PYTHONPATH=<FD-360 worktree>
   FLASK_APP=btcopilot.app:create_app FLASK_CONFIG=development

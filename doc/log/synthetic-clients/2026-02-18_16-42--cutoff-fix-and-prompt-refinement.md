@@ -2,7 +2,7 @@
 
 **Date**: 2026-02-18 ~16:42 UTC
 **Session**: 9e478072-df36-4009-8b8e-45f6f502174d (continued)
-**Files modified**: `btcopilot/tests/personal/synthetic.py`
+**Files modified**: `btcopilot/tests/synthetic.py`
 
 ## Problem: Mid-Sentence Truncation
 

@@ -55,7 +55,7 @@ twelve rulings; each row there names what was ruled.
   spec says the triangle points *down* (spec §1); the code draws apex at top centre, base
   along the bottom, i.e. pointing **up**. **Ruled**: point at the top.
 - Nothing in the code distinguishes a miscarriage from an abortion visually; the
-  difference lives in the record's wording only. `doc/plans/REPRODUCTIVE_SCENARIOS.md`
+  difference lives in the record's wording only. `doc/archive/2026-09-plans/REPRODUCTIVE_SCENARIOS.md`
   asks for a number of weeks inside the triangle and for separate stillbirth and
   failed-fertility marks — none of that is built, so the fragment does not draw it.
 - **The person in the middle of the fragment is drawn twice**: the shape, plus a second

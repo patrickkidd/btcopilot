@@ -91,7 +91,7 @@ separation and move, so nothing in the record can show a shock travelling betwee
 (6) [build] the scribe now has to add a
 generically named parent or partner when the coder names a relation that is not on the record,
 which is a drawing ruling that reaches extraction [R-0325].
-**Lives in:** btcopilot/personal/{record.py,toolbox.py,timeline.py}, training/run_agent_f1.py;
+**Lives in:** btcopilot/{record.py,toolbox.py,timeline.py}, training/run_agent_f1.py;
 the prompts as encrypted `.prompty` files under private/prompts/ with shared fragments;
 doc/PROMPT_ENGINEERING_LOG.md; his sandbox record re-coded once by the loop.
 **Next action:** his prompt review after he walks the app; code his two conversations; run the
@@ -238,7 +238,7 @@ read as plain words, so the re-code should re-link matches on kind, date and peo
 session-menu item; (5) [verify] the importer dry run against a restored July dump stays
 Patrick's to run — restoring the dump here was refused as personal-data handling (review log
 row 137).
-**Lives in:** btcopilot/tests/personal/test_prorecord.py; doc/specs/DATA_MODEL.md;
+**Lives in:** btcopilot/tests/test_prorecord.py; doc/specs/DATA_MODEL.md;
 MERGE_REVIEW.md §4; run_agent_f1.replay.
 **Next action:** build "re-code with the coach" in the session menu (T-3 build); the per-diagram
 import waits until after the beta.
@@ -380,7 +380,7 @@ carries the trouble in it, which is what the picture has to show [R-0376]; (2) [
 he has marked no example clusters yet, and the examples are the input only he can give;
 (3) [waiting] cluster quality on anyone else's record stays unmeasured until the coding loop
 produces numbers.
-**Lives in:** btcopilot/personal/clusters.py; the grouping prompt in the private prompt files;
+**Lives in:** btcopilot/clusters.py; the grouping prompt in the private prompt files;
 doc/PICTURE_IDEAS.md; the drawings in ~/theapp/btcopilot-sources/fd-corpus/design/ and
 their pages https://claude.ai/artifact/FzfjSGH6EQVt61vC5R2DFi , https://claude.ai/artifact/G5gYDqzhvar5KXPJAhtbzm and https://claude.ai/artifact/WrGWM6m2cXJfQ3FLHnNMu3 .
 **Next action:** teach the model to name each grouping's key shift and who carries the trouble,

@@ -2,7 +2,7 @@
 
 **Date**: 2026-02-18 ~05:14 UTC
 **Session**: 9e478072-df36-4009-8b8e-45f6f502174d
-**Files modified**: `btcopilot/llmutil.py`, `btcopilot/tests/personal/synthetic.py`
+**Files modified**: `btcopilot/llmutil.py`, `btcopilot/tests/synthetic.py`
 
 ## Context
 

@@ -189,9 +189,9 @@ runs (zero false attaches preserved). Probe artifacts:
 3-run confirmation owed at end of loop per guardrail.
 
 **Scope**: New prompt surface, not an edit to extraction passes 1-3. `DOCK_PROMPT`
-added to `btcopilot/personal/prompts.py` as a btcopilot default (deliberate exception
+added to `btcopilot/prompts.py` as a btcopilot default (deliberate exception
 to the stub-only rule; in the FDSERVER_PROMPTS_PATH override tuple so fdserver may
-override). Consumed by `btcopilot/personal/dock.py`: one full-transcript call
+override). Consumed by `btcopilot/dock.py`: one full-transcript call
 (pass-3 model), no cursor rule, explicit cross-turn pronoun-resolution instruction,
 edges-only output with verbatim-quote requirement; deterministic gates (quote
 substring-match, member-floating, anchor-in-main-tree) + programmatic edge applier;
@@ -691,7 +691,7 @@ Both passes route through `_extract_and_validate()` for retry/validation. Pass 2
 
 **Context**: Commit `fb1b603d` (fdserver) added `all_condensed_definitions()` (~62,886 chars / ~15,700 tokens) to the Pass 3 SARF review prompt. This comprised 98% of the prompt. A/B testing (3 runs each) showed marginal benefit: Aggregate F1 +0.006, SARF macro F1 +0.016 mean. This echoes the Dec 2024 lesson where exhaustive definitions degraded F1.
 
-**Change**: Replaced the definitions-heavy prompt with a compact inline-rules version (~30 lines). Removed `all_condensed_definitions()` call from `pdp.py`, removed import of `sarfdefinitions` from `pdp.py`. Updated both `btcopilot/personal/prompts.py` and `fdserver/prompts/private_prompts.py`.
+**Change**: Replaced the definitions-heavy prompt with a compact inline-rules version (~30 lines). Removed `all_condensed_definitions()` call from `pdp.py`, removed import of `sarfdefinitions` from `pdp.py`. Updated both `btcopilot/prompts.py` and `fdserver/prompts/private_prompts.py`.
 
 **Results** (3-run A/B mean, gemini-3-flash-preview, 6 discussions):
 

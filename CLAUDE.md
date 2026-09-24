@@ -153,25 +153,27 @@ rulings and the oracle SPEC. The encrypted rulings store and prompts in this rep
 
 | Domain | Doc |
 |--------|-----|
-| Data model (schema, enums, validation) | [doc/specs/DATA_MODEL.md](doc/specs/DATA_MODEL.md) |
+| Where the build stands, what is unresolved | [doc/STATE.md](doc/STATE.md) |
+| Process rules (binding) | [doc/HOW_THIS_PROJECT_WORKS.md](doc/HOW_THIS_PROJECT_WORKS.md) |
+| Append-only history | [doc/HISTORY.md](doc/HISTORY.md) |
+| Topic map: where each subject lives | [doc/TOPICS.md](doc/TOPICS.md) |
+| Screens and approved UI | [doc/UI_SPEC.md](doc/UI_SPEC.md), [doc/SCREENS.md](doc/SCREENS.md), [doc/UI_STANDARDS.md](doc/UI_STANDARDS.md) |
+| The app's JSON API | [doc/API.md](doc/API.md) |
+| Data model (schema, enums, validation) | [doc/specs/DATA_MODEL.md](doc/specs/DATA_MODEL.md), [doc/specs/PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md), [doc/EVENT_MODEL.md](doc/EVENT_MODEL.md) |
+| Clusters | [doc/CLUSTERS.md](doc/CLUSTERS.md) |
+| Drawability — when the timeline picture may draw vs must ask | [doc/DRAWABILITY.md](doc/DRAWABILITY.md) |
+| Diagram rendering | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md), [doc/FRAGMENT_CONVENTIONS.md](doc/FRAGMENT_CONVENTIONS.md) |
+| Tests and known defects | [doc/TEST_STRATEGY.md](doc/TEST_STRATEGY.md), [doc/KNOWN_DEFECTS.md](doc/KNOWN_DEFECTS.md) |
+| Box and release | [doc/PLATFORM_BUILD.md](doc/PLATFORM_BUILD.md), [deploy/README.md](deploy/README.md) |
 | Prompt engineering decisions | [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) |
-| Bowen theory concepts | [CONTEXT.md](CONTEXT.md) |
-| Drawability — when the timeline picture may draw vs must ask (5 rules, ruled 2026-08-31) | [doc/DRAWABILITY.md](doc/DRAWABILITY.md) |
+| Bowen theory | [CONTEXT.md](CONTEXT.md), [doc/specs/BOWEN_THEORY.md](doc/specs/BOWEN_THEORY.md) |
+| SARF definitions, IRR calibration | [doc/sarf-definitions/](doc/sarf-definitions/), [doc/irr/](doc/irr/) |
+| Synthetic clients | [doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md](doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md), [doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md](doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md), [doc/log/synthetic-clients/](doc/log/synthetic-clients/) |
+| Decisions | [decisions/log.md](decisions/log.md) — log every significant decision immediately |
+| Architecture decisions | [doc/adrs/](doc/adrs/) — durable patterns only |
+| Subsystem analyses | [doc/analyses/](doc/analyses/) |
 
-| Diagram layout/rendering/SVG | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) |
-| Decisions (career, strategy) | [decisions/log.md](decisions/log.md) — log every significant decision immediately (architecture, strategy, trade-offs, rejected approaches) |
-| Architecture decisions (backend) | [adrs/](adrs/) — durable patterns only, not point-in-time choices (those go in decisions/log.md) |
-| IRR calibration, coding guidelines | [doc/irr/](doc/irr/) |
-| Calibration system (as-built) | [doc/adrs/calibration.md](doc/adrs/calibration.md) |
-| Synthetic client personas/evals | [doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md](doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md) |
-| Synthetic client dev log | [doc/log/synthetic-clients/](doc/log/synthetic-clients/) |
-| Psychological foundations | [doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md](doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md) |
-| Feature/behavior specs | [doc/specs/](doc/specs/) |
-| Bowen theory formal spec | [doc/specs/BOWEN_THEORY.md](doc/specs/BOWEN_THEORY.md) |
-| Diagram layout — language-agnostic spec | [doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md](doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md) |
-
-Other: [README.md](README.md), [doc/plans/](doc/plans/) (plans), [doc/analyses/](doc/analyses/)
-(subsystem analyses), [doc/HISTORY.md](doc/HISTORY.md) (append-only decision history).
+Old-app material lives in [doc/archive/](doc/archive/) and is not current knowledge.
 Jira is the single source of truth for task status. Domain knowledge goes into the one
 authoritative doc above; if none exists, create it in `doc/` and add it here.
 
@@ -200,7 +202,7 @@ btcopilot provides:
 | Component | Location | Purpose |
 |-----------|----------|---------|
 | App factory | `btcopilot/app.py:create_app()` | Flask init, extensions, error handlers |
-| Personal backend | `btcopilot/personal/` | The chat app's API (JSON): the coach's turns and the tools it edits the record with |
+| Personal backend | `btcopilot/` | The chat app's API (JSON): the coach's turns and the tools it edits the record with |
 | Review | `btcopilot/review/` | The coders' app |
 | Admin | `btcopilot/admin/` | Flask CLI commands for the box |
 | Schema | `btcopilot/schema.py` | Core data model |
@@ -223,7 +225,7 @@ btcopilot provides:
 
 | Component | Key Files | Purpose |
 |-----------|-----------|---------|
-| Synthetic Testing | `btcopilot.tests.personal.synthetic`, [tests README](btcopilot/tests/personal/README.md) | Persona generator, conversation simulator, quality evaluator. Run: `uv run pytest btcopilot/btcopilot/tests/personal/test_synthetic.py -v -m e2e` |
+| Synthetic Testing | `btcopilot.tests.synthetic`, [tests README](btcopilot/tests/README.md) | Persona generator, conversation simulator, quality evaluator. Run: `uv run pytest btcopilot/btcopilot/tests/test_synthetic.py -v -m e2e` |
 | Visual Spec | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) | Platform-independent layout spec: person symbols, PairBond geometry, ChildOf connections, MultipleBirth, generational layout, label positioning |
 
 ---
