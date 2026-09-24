@@ -211,3 +211,31 @@ def test_the_away_move_is_between_the_two_of_them(coach):
     coach.say("Rory and I split up in 2015 because he wanted kids and I didn't.")
     (away,) = [e for e in coach.events if e.get("relationship") == "away"]
     assert {away.get("person"), *(away.get("relationshipTargets") or [])} == {1, 7}
+
+
+INSOMNIA = {
+    "id": 21,
+    "kind": "shift",
+    "person": 1,
+    "dateTime": "2000-03-01",
+    "symptom": "up",
+    "description": "Stopped sleeping",
+}
+MOVED = "We moved to Arizona in early 2000."
+
+
+def test_a_move_is_written_down_as_a_noted_event_not_a_shift(coach):
+    # R-0366
+    coach.record(events=[INSOMNIA])
+    coach.say(MOVED)
+    moves = [e for e in coach.events if e["id"] not in (21, 30)]
+    assert [e.get("kind") for e in moves] == ["noted"]
+    assert all(e.get(v) in NOTHING for e in moves for v in ("symptom", "anxiety", "functioning"))
+
+
+def test_a_move_near_a_shift_leads_the_coach_to_wonder_whether_it_played_in(coach):
+    # R-0366
+    coach.record(events=[INSOMNIA])
+    reply = coach.say(MOVED)
+    assert re.search(r"sleep|move|Arizona", reply, re.I)
+    assert "?" in reply
