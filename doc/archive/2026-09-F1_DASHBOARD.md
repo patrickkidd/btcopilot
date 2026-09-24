@@ -29,7 +29,7 @@
 - Analysis page: `http://127.0.0.1:8888/training/analysis/` (micro view)
 - F1 eval: `GOOGLE_GEMINI_API_KEY=... uv run python -m btcopilot.training.test_prompts_live`
 - This dashboard: macro view, priorities, patterns
-- Timeseries plot: [f1_timeseries.html](2026-09-f1_timeseries.html) (open in browser)
+- Timeseries plot: [F1 timeseries](https://patrickkidd.github.io/btcopilot/) (open in browser)
 
 ## Ground Truth Sample Size Requirements
 

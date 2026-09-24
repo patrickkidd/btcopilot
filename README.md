@@ -23,6 +23,7 @@ Built by [Patrick Stinson](https://www.linkedin.com/in/patrickstinson/), who dev
   - [Inter-Rater Reliability Study](#phase-11-inter-rater-reliability-study)
   - [Attachment and Big 5-Based Conversation Modeling & Measurement](#phase-12-attachment-and-big-5-based-conversation-modeling--measurement)
 - [Extraction Accuracy (F1)](#extraction-accuracy-f1)
+  - [F1 timeseries](https://patrickkidd.github.io/btcopilot/)
 - [R&D roadmap: phases 1-13](#research-phases)
 - [Clinical Research Compliance](#clinical-research-compliance)
 - [SARF Literature Review](#sarf-literature-review)
@@ -65,7 +66,7 @@ Best F1 per construct against expert-coded ground truth (six coded discussions).
 
 Rows come from different model and matching versions, and the SARF-values row is a single run.
 
-Per-statement extraction scored about 0.24 aggregate in late 2025, so whole-conversation extraction roughly tripled accuracy. Full tables: [F1 dashboard](doc/archive/2026-09-F1_DASHBOARD.md), [model evaluations](doc/archive/2026-09-MODEL_EVALUATIONS.md), [F1 over time](doc/archive/2026-09-f1_timeseries.html).
+Per-statement extraction scored about 0.24 aggregate in late 2025, so whole-conversation extraction roughly tripled accuracy. Full tables: [F1 dashboard](doc/archive/2026-09-F1_DASHBOARD.md), [model evaluations](doc/archive/2026-09-MODEL_EVALUATIONS.md), [F1 timeseries](https://patrickkidd.github.io/btcopilot/).
 
 ## Research Phases
 

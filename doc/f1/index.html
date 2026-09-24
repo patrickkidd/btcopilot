@@ -82,7 +82,7 @@
             data = await response.json();
         } catch (e) {
             // Fallback for local file:// access (CORS blocks fetch)
-            document.body.innerHTML = '<p style="padding:20px">To view locally, run: <code>python -m http.server 8000</code> in btcopilot/doc/ then open http://localhost:8000/f1_timeseries.html</p>';
+            document.body.innerHTML = '<p style="padding:20px">To view locally, run: <code>python -m http.server 8000</code> in btcopilot/doc/f1/ then open http://localhost:8000/</p>';
             return;
         }
         render();

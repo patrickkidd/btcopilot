@@ -27,7 +27,7 @@ Patrick defines the goal: improve a metric, test a model, fix an error pattern, 
 Before any changes:
 - **Strategy doc**: [PROMPT_ENG_EXTRACTION_STRATEGY.md](2026-09-PROMPT_ENG_EXTRACTION_STRATEGY.md) — cumulative lessons, what worked/failed, known blockers
 - **Engineering log**: [PROMPT_ENGINEERING_LOG.md](../PROMPT_ENGINEERING_LOG.md) — decision history
-- **F1 timeseries**: [f1_timeseries.json](2026-09-f1_timeseries.json) — historical scores
+- **F1 timeseries**: [f1_timeseries.json](../f1/f1_timeseries.json) — historical scores
 - **Recent induction reports**: `fdserver/training/induction-reports/` — what was tried recently
 
 ### 3. Establish Baseline
@@ -100,7 +100,7 @@ Production prompts are loaded via `FDSERVER_PROMPTS_PATH` env var. The fdserver 
 3. **Engineering log update**: [PROMPT_ENGINEERING_LOG.md](../PROMPT_ENGINEERING_LOG.md)
    - Decision entry with rationale, alternatives considered, results
 
-4. **F1 timeseries update**: [f1_timeseries.json](2026-09-f1_timeseries.json)
+4. **F1 timeseries update**: [f1_timeseries.json](../f1/f1_timeseries.json)
    - Append data point(s) with final F1 scores
    - This feeds the admin/auditor dashboard chart
 
@@ -136,7 +136,7 @@ From [induction_agent.md](../btcopilot/training/prompts/induction_agent.md):
 | `btcopilot/training/prompts/induction_agent.md` | Authoritative protocol for documentation/logging |
 | `doc/archive/2026-09-PROMPT_ENG_EXTRACTION_STRATEGY.md` | Cumulative strategy — read first, update after |
 | `doc/PROMPT_ENGINEERING_LOG.md` | Decision log |
-| `doc/archive/2026-09-f1_timeseries.json` | Historical F1 data (feeds dashboard) |
+| `doc/f1/f1_timeseries.json` | Historical F1 data (feeds dashboard) |
 | `fdserver/training/induction-reports/` | Per-session reports and logs |
 | `doc/sarf-definitions/*.md` | Authoritative SARF variable definitions |
 | `doc/specs/DATA_MODEL.md` | Schema docs (PDPDeltas, Person, Event, etc.) |
