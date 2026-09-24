@@ -3,12 +3,14 @@
 import datetime
 
 import pytest
+from sqlalchemy import text
 
 import btcopilot
 from btcopilot import diagramjson
 from btcopilot.routes.settings import PLAN_PLACEHOLDER
 from btcopilot.extensions import db
-from btcopilot.models import Discussion, Statement
+from btcopilot.models import Author, Change, Discussion, Interaction, Statement
+from btcopilot.models.interaction import InteractionKind
 from btcopilot.models import Diagram, License, Policy
 from btcopilot.models.license import LicenseStatus
 from btcopilot.models.preferences import ChatMode, PrefKey, Proactive, Theme
@@ -17,6 +19,7 @@ from btcopilot.schema import (
     DateCertainty,
     DiagramData,
     EventKind,
+    ItemKind,
     Person,
     RelationshipKind,
     TraceKey,
@@ -29,6 +32,14 @@ from btcopilot.tests.conftest import csrf_token, replied
 @pytest.fixture(autouse=True)
 def no_auto_auth(monkeypatch):
     monkeypatch.delenv("FLASK_AUTO_AUTH_USER", raising=False)
+
+
+@pytest.fixture
+def foreign_keys(web):
+    """SQLite enforces foreign keys only when asked; Postgres always does."""
+    db.session.execute(text("PRAGMA foreign_keys=ON"))
+    yield
+    db.session.execute(text("PRAGMA foreign_keys=OFF"))
 
 
 @pytest.fixture
@@ -154,6 +165,37 @@ def test_session_delete_keeps_the_record(web, token, test_user):
     assert response.status_code == 204
     assert db.session.get(Discussion, created["discussion_id"]) is None
     assert len(test_user.free_diagram.get_diagram_data().events) == events
+
+
+@pytest.mark.chat_flow(response="a coach reply")
+def test_session_delete_keeps_the_edits_its_words_made(
+    web, token, test_user, foreign_keys
+):
+    # R-0019
+    created = post(web, token, "/app/chat", {"statement": "hello"}).get_json()
+    said = Statement.query.filter_by(discussion_id=created["discussion_id"]).first()
+    change = Change(
+        diagram_id=test_user.free_diagram_id,
+        statement_id=said.id,
+        turn_id="t1",
+        author=Author.Coach,
+        deltas=[],
+    )
+    look = Interaction(
+        diagram_id=test_user.free_diagram_id,
+        statement_id=said.id,
+        kind=InteractionKind.Look,
+        item_kind=ItemKind.Person,
+    )
+    db.session.add_all([change, look])
+    db.session.commit()
+
+    response = web.delete(
+        f"/app/sessions/{created['discussion_id']}", headers={"X-CSRFToken": token}
+    )
+    assert response.status_code == 204
+    db.session.expire_all()
+    assert (change.statement_id, look.statement_id) == (None, None)
 
 
 def test_session_delete_of_another_user_is_not_found(web, token, test_user_2):

@@ -24,7 +24,9 @@ class Change(db.Model, ModelMixin):
     __tablename__ = "diagram_changes"
 
     diagram_id = Column(Integer, ForeignKey("diagrams.id"), nullable=False, index=True)
-    statement_id = Column(Integer, ForeignKey("statements.id"), nullable=True)
+    statement_id = Column(
+        Integer, ForeignKey("statements.id", ondelete="SET NULL"), nullable=True
+    )
     turn_id = Column(String(64), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     session_id = Column(String(64), nullable=True)
