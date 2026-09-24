@@ -57,7 +57,7 @@ def scribe(client, coding, statement, model, said="what happened"):
 
 
 def test_adds_the_person_the_coder_names(coder, cut, turns):
-    # no ruling
+    # R-0270
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
     model = Scripted(
         [("edit_person", {"name": "James Cooper"})],

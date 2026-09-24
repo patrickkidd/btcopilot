@@ -76,7 +76,7 @@ def test_the_coach_is_not_counted_as_a_coder(
 def test_what_only_the_coach_read_differently_is_not_disputed(
     patrick, test_user, test_user_2, coach_user, cut
 ):
-    # no ruling
+    # R-0254
     """The two people wrote the second moment the same way; only the coach
     dated it otherwise, and that does not put it in front of the room."""
     three_readings(test_user, test_user_2, coach_user, cut)
@@ -176,7 +176,7 @@ def three_readings_users(test_user, test_user_2, cut):
 
 
 def test_a_coder_cannot_ask_for_the_names(coder, test_user, test_user_2, cut):
-    # no ruling
+    # R-0272
     coded(test_user, cut, {"people": [person(1, "Ann")]})
     refused = coder.get(f"/review/items?cut_id={cut.id}&named=true")
     assert refused.status_code == 302
@@ -185,7 +185,7 @@ def test_a_coder_cannot_ask_for_the_names(coder, test_user, test_user_2, cut):
 def test_the_tally_names_who_voted_which_way(
     patrick, coder, test_user, test_user_2, cut
 ):
-    # no ruling
+    # R-0252
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
@@ -268,7 +268,7 @@ def test_both_agreement_figures_are_kept(patrick, test_user, test_user_2, cut):
 def test_what_every_coder_read_the_same_way_is_ratified_too(
     patrick, flask_app, test_user, test_user_2, cut
 ):
-    # no ruling
+    # R-0250
     """An agreed item is never argued over, so ratifying is what confirms it
     onto the record."""
     same = {"people": [person(1, "Ann")], "events": [shift(10, 1, "a shift")]}
