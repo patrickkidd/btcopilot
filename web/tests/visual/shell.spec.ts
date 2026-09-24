@@ -105,7 +105,7 @@ test.describe("the app frame", () => {
     expect(chrome.ground).toBe(`rgb(${rgb.join(", ")})`);
   });
 
-  // R-0275
+  // R-0275, R-0278
   test("the info button in the title row opens the coding guidelines", async ({ page }) => {
     await settle(page);
     const info = page.locator(".titlerow #coding-info");

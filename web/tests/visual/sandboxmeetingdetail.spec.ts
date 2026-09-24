@@ -98,18 +98,26 @@ test.describe(() => {
     check(/still need/.test(ratify), "it says how many still need a choice");
 
     // ── 5. a dot on the wire answers a tap ────────────────────────────────
-    const before = await text("#meeting-view");
     const dots = page.locator("#meeting-view [data-item]");
     const ndots = await dots.count();
     say(`dots on the wire: ${ndots}`);
-    if (ndots > 1) {
-      await dots.nth(1).click();
+    // a dot whose event the room wrote; one only the coach wrote says so
+    const listed = await page
+      .locator("#meeting-body [data-item]")
+      .evaluateAll((all) => all.map((n) => (n as HTMLElement).dataset.item));
+    const ids = await dots.evaluateAll((all) => all.map((d) => (d as HTMLElement).dataset.item));
+    const id = ids.slice(1).find((one) => listed.includes(one));
+    if (ndots > 1 && id) {
+      await page.locator(`#meeting-view [data-item="${id}"]`).click({ force: true });
       await page.waitForTimeout(600);
       check(
-        (await page.locator(".drow.hasx, .drow").count()) > 0,
-        "tapping a dot brings a card up",
+        (await page.locator(`#meeting-view .d-on[data-item="${id}"]`).count()) === 1,
+        "the tapped dot is the one the room is on",
       );
-      check((await text("#meeting-view")) !== before || true, "the wire answered");
+      check(
+        (await page.locator(`#meeting-body [data-item="${id}"]`).count()) === 1,
+        "tapping a dot brings its card up",
+      );
     } else check(false, "the wire has dots to tap");
     await gates("a dot tapped");
     await shot("2-dot");
