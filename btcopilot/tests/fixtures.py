@@ -10,7 +10,7 @@ import sys
 # The private prompts are encrypted. Without a key that opens them the run uses
 # the open-source ones, rather than failing to start — and says which it used, so
 # a green run is never mistaken for a run against the real wording.
-from btcopilot.personal.promptdir import key_present
+from btcopilot.promptdir import key_present
 
 if not key_present():
     os.environ.setdefault("FD_PRIVATE_PROMPTS", "/nonexistent")
@@ -36,7 +36,7 @@ from btcopilot.params import truthy
 from btcopilot.models import License, Policy, User
 
 # Importing the chat's models registers them with SQLAlchemy.
-from btcopilot.personal.models import Discussion, Statement, Speaker  # noqa: F401
+from btcopilot.models import Discussion, Statement, Speaker  # noqa: F401
 
 
 class WebClient(FlaskClient):

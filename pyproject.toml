@@ -71,5 +71,5 @@ packages = {find = {exclude = ["build*", "dist*"]}}
 package-dir = {"" = "."}
 
 [tool.setuptools.package-data]
-"btcopilot.personal" = ["static/**/*", "prompty/**/*"]
+"btcopilot" = ["static/**/*", "prompty/**/*"]
 "btcopilot.auth" = ["templates/**/*"]

@@ -18,8 +18,8 @@ _log = logging.getLogger(__name__)
 
 
 CONFIG_DEFAULTS = {
-    "CHAT_HOME": "/app/",
-    "CHAT_SESSION_DAYS": 180,
+    "APP_HOME": "/app/",
+    "SESSION_DAYS": 180,
     "LOGIN_CODE_MINUTES": 10,
     "LOGIN_CODES_PER_HOUR": 5,
     "INVITATION_DAYS": 14,

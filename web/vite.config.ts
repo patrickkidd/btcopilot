@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { request as ask } from "node:http";
 import { defineConfig, type Plugin, type ProxyOptions } from "vite";
 
-// Flask serves the bundle through the personal blueprint's static folder, and
+// Flask serves the bundle through the app blueprint's static folder, and
 // names the entry files itself in the page template, so the output names are
 // fixed rather than hashed.
 const BASE = "/app/static/web/";
@@ -132,7 +132,7 @@ export default defineConfig({
     },
   ],
   build: {
-    outDir: "../btcopilot/personal/static/web",
+    outDir: "../btcopilot/static/web",
     emptyOutDir: true,
     rollupOptions: {
       output: {

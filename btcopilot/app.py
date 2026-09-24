@@ -4,15 +4,15 @@ from werkzeug.exceptions import Unauthorized, HTTPException
 
 import btcopilot
 
-from btcopilot.personal import tracing
-from btcopilot.personal.turnlog import TurnLogBackend
+from btcopilot import tracing
+from btcopilot.turnlog import TurnLogBackend
 
 
 _log = logging.getLogger(__name__)
 
 
 def create_app(config: dict = None, **kwargs):
-    from btcopilot import auth, extensions, personal
+    from btcopilot import auth, extensions, routes
     from btcopilot.review import routes as review_routes
     from btcopilot import admin
     from btcopilot.auth import signin
@@ -143,7 +143,7 @@ def create_app(config: dict = None, **kwargs):
     tracing.init_app()
     extensions.init_app(app)
     auth.init_app(app)
-    personal.init_app(app)
+    routes.init_app(app)
     review_routes.init_app(app)
     admin.init_app(app)
 
@@ -154,7 +154,7 @@ def create_app(config: dict = None, **kwargs):
     @app.route("/")
     def root():
         if signin.current_web_session():
-            return redirect(app.config["CHAT_HOME"])
+            return redirect(app.config["APP_HOME"])
         return redirect(url_for("auth.login"))
 
     _log.debug("btcopilot.create_app() complete")

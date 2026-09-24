@@ -10,7 +10,7 @@ import pytest
 from btcopilot import diagramjson, proimport
 from btcopilot.extensions import db
 from btcopilot.models import Diagram, User
-from btcopilot.personal.recordtext import render
+from btcopilot.recordtext import render
 from btcopilot.tests.olddump import WHITLOCK, build
 
 

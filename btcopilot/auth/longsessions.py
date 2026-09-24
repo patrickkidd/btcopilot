@@ -18,7 +18,7 @@ class LongSessions(SecureCookieSessionInterface):
 
     def _chat_max_age(self, app) -> int:
         return int(
-            datetime.timedelta(days=app.config["CHAT_SESSION_DAYS"]).total_seconds()
+            datetime.timedelta(days=app.config["SESSION_DAYS"]).total_seconds()
         )
 
     def open_session(self, app, request):
@@ -38,6 +38,6 @@ class LongSessions(SecureCookieSessionInterface):
     def get_expiration_time(self, app, session):
         if session.permanent and SESSION_TOKEN in session:
             return datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
-                days=app.config["CHAT_SESSION_DAYS"]
+                days=app.config["SESSION_DAYS"]
             )
         return super().get_expiration_time(app, session)

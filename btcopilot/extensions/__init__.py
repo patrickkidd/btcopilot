@@ -364,10 +364,10 @@ def init_celery(app):
     # Register tasks only once
     if not hasattr(celery, "_tasks_registered"):
 
-        from btcopilot import personal
+        from btcopilot import turns
         from btcopilot.review import tasks as review_tasks
 
-        personal.init_celery(celery)
+        celery.task(turns.run, name=turns.TASK)
         celery.task(review_tasks.replay_cut, name="review_replay_cut")
 
         # Mark tasks as registered to avoid duplicate registration

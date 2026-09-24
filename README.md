@@ -18,7 +18,7 @@ else in the package.
 | The page (TypeScript, built with Vite into the package) | `web/` |
 | Database: Postgres in production, SQLite in tests; one migration from empty | `btcopilot/migrations/`, `alembic.ini` |
 | Background work: Celery on Redis | `btcopilot/celery.py` |
-| Prompts, encrypted with sops (the open defaults run without the key) | `private/prompts/`, `btcopilot/personal/prompty/` |
+| Prompts, encrypted with sops (the open defaults run without the key) | `private/prompts/`, `btcopilot/prompty/` |
 | The box: one compose file, Caddy, Grafana Alloy | `deploy/` |
 
 A merge to master builds the image, tags it `3.YYYY.M.D.N+g<sha7>`, pushes it to

@@ -1,6 +1,6 @@
 """The one door between the review and the chat app it reads.
 
-Nothing else under btcopilot/review may import btcopilot.personal; the import
+Nothing else under btcopilot/review may import the app modules; the import
 test in the review tests enforces it. Keeping the whole surface in one file
 means the review can be read, moved or replaced without hunting for the places
 it reached into the app.
@@ -12,11 +12,11 @@ import re
 import btcopilot
 from btcopilot import diagramjson
 from btcopilot.extensions import db
-from btcopilot.personal import prompts, record
-from btcopilot.personal.record import Invalid
-from btcopilot.personal.coachmodel import COACH_EFFORT, CoachModel
-from btcopilot.personal.coachturn import CoachTurn
-from btcopilot.personal.models import (
+from btcopilot import prompts, record
+from btcopilot.record import Invalid
+from btcopilot.coachmodel import COACH_EFFORT, CoachModel
+from btcopilot.coachturn import CoachTurn
+from btcopilot.models import (
     Author,
     Change,
     Discussion,
@@ -25,8 +25,8 @@ from btcopilot.personal.models import (
     SpeakerType,
     Statement,
 )
-from btcopilot.personal.recordtext import date_text, render
-from btcopilot.personal.toolbox import EDITS, ToolError, Toolbox, schemas
+from btcopilot.recordtext import date_text, render
+from btcopilot.toolbox import EDITS, ToolError, Toolbox, schemas
 from btcopilot.models import Diagram, User
 from btcopilot.schema import PDP, Event, ItemKind, PairBond, Person, from_dict
 

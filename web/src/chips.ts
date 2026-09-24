@@ -2,7 +2,7 @@ import { ChipKind, ChipTone, ItemKind, type Chip, type Piece } from "./types";
 
 /** Reference markup as the coach writes it: `[[kind:target]]`, or
  * `[[kind:target|label]]` when it has words of its own. The label-bearing form
- * is what btcopilot/personal/refs.py already emits; the bare form is what a
+ * is what btcopilot/refs.py already emits; the bare form is what a
  * user's own message carries after they tap a chip.
  *
  * A chip names one of three things — an event, a cluster, a person. The markup

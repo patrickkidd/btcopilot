@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
 
-from btcopilot.personal.promptdir import key_present
+from btcopilot.promptdir import key_present
 
 ROOT = Path(__file__).parents[1]
 STORE = ROOT / "private" / "oracle"

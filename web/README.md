@@ -11,7 +11,7 @@ npm --prefix web install && npm --prefix web run build
 FLASK_APP=btcopilot.app:create_app uv run python -m flask run -p 8889 --no-reload
 ```
 
-The build writes to `btcopilot/personal/static/web/`, which is not in git: the
+The build writes to `btcopilot/static/web/`, which is not in git: the
 Docker image builds it. Nothing serves `/personal/` until you have built it once,
 and the page tests need it too.
 

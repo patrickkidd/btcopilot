@@ -6,9 +6,9 @@ import re
 
 from mock import patch
 
-from btcopilot.personal import prompts
-from btcopilot.personal.coachmodel import ModelTurn, ToolCall
-from btcopilot.personal.models import Change
+from btcopilot import prompts
+from btcopilot.coachmodel import ModelTurn, ToolCall
+from btcopilot.models import Change
 from btcopilot.review import adapter
 from btcopilot.review.scribe import written
 from btcopilot.tests.review.conftest import coded, person

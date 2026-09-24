@@ -5,7 +5,7 @@ change to the drawing fails these until someone looks at the new picture and
 accepts it.
 
 They are taken against the fixture records in
-`btcopilot/personal/fixtures.py` — the sparse and dense shapes the picture has
+`btcopilot/fixtures.py` — the sparse and dense shapes the picture has
 to survive, one record whose labels are long enough to break a chip out of its
 bubble, and one holding a moment per move the picture can draw. Nobody's real
 record is ever involved.
@@ -23,7 +23,7 @@ Environment, if your sandbox is elsewhere:
 | variable | default |
 |---|---|
 | `SANDBOX_URL` | `http://127.0.0.1:8889` |
-| `FIXTURE_CMD` | `uv run flask personal fixtures` |
+| `FIXTURE_CMD` | `uv run flask app fixtures` |
 | `FIXTURE_CWD` | `~/theapp` |
 
 The fixture command needs the same `FLASK_APP`, `FLASK_CONFIG`,

@@ -3,7 +3,7 @@ import importlib
 import pytest
 
 from btcopilot import llmutil
-from btcopilot.personal.pricing import price
+from btcopilot.pricing import price
 
 
 @pytest.fixture

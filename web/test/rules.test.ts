@@ -50,7 +50,7 @@ it("Patrick gets the tap, on and off", () => {
 
 // R-0310
 it("calls them coding guidelines on screen, never the codebook", () => {
-  const page = readFileSync("../btcopilot/personal/static/web/index.html", "utf8");
+  const page = readFileSync("../btcopilot/static/web/index.html", "utf8");
   expect(page).toContain('id="coding-info" type="button" aria-label="Coding guidelines"');
   const sources = readdirSync("src").map((f) => readFileSync(`src/${f}`, "utf8"));
   expect([page, ...sources].filter((text) => /codebook/i.test(text))).toEqual([]);

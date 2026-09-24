@@ -50,7 +50,7 @@ def test_models_map_to_the_renamed_and_review_tables(flask_app):
 
 def test_discussion_kind_defaults_to_chat(flask_app, test_user):
     # R-0281
-    from btcopilot.personal.models import Discussion, DiscussionKind
+    from btcopilot.models import Discussion, DiscussionKind
 
     discussion = Discussion(user_id=test_user.id)
     db.session.add(discussion)

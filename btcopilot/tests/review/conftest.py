@@ -6,7 +6,7 @@ from mock import patch
 import btcopilot
 from btcopilot import diagramjson
 from btcopilot.extensions import db
-from btcopilot.personal.models import Discussion, Speaker, SpeakerType, Statement
+from btcopilot.models import Discussion, Speaker, SpeakerType, Statement
 from btcopilot.models import Diagram
 from btcopilot.review import ruledraft
 from btcopilot.review.models import Coding, Cut

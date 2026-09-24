@@ -20,7 +20,7 @@ import { chromium } from "@playwright/test";
  * guesses at anyone's real record:
  *   SANDBOX_URL   the sandbox (default http://127.0.0.1:8889)
  *   FIXTURE_CMD     how to run the fixture installer, default
- *                   "uv run flask personal fixtures"
+ *                   "uv run flask app fixtures"
  *   FIXTURE_CWD     where to run it (default the clone root)
  *
  * The installer inherits this environment, so FLASK_SQLALCHEMY_DATABASE_URI must
@@ -147,7 +147,7 @@ export default async function setup() {
   await takeLock();
   const base = process.env.SANDBOX_URL ?? "http://127.0.0.1:8889";
   const command = (
-    process.env.FIXTURE_CMD ?? "uv run flask personal fixtures"
+    process.env.FIXTURE_CMD ?? "uv run flask app fixtures"
   ).split(" ");
   const cwd = process.env.FIXTURE_CWD ?? resolve("..");
 

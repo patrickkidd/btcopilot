@@ -14,7 +14,7 @@ _log = logging.getLogger(__name__)
 
 
 def chat_home() -> str:
-    return current_app.config["CHAT_HOME"]
+    return current_app.config["APP_HOME"]
 
 
 def ensure_user(email: str) -> User:
@@ -33,7 +33,7 @@ def ensure_user(email: str) -> User:
 def sign_in(user: User) -> WebSession:
     web_session = WebSession.start(
         user,
-        current_app.config["CHAT_SESSION_DAYS"],
+        current_app.config["SESSION_DAYS"],
         request.user_agent.string if request.user_agent else "",
     )
     session.clear()

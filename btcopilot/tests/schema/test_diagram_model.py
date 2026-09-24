@@ -38,7 +38,7 @@ def test_model_imports_without_the_qt_gui_module():
             sys.executable,
             "-c",
             "import sys; sys.modules['PyQt5.QtGui'] = None; "
-            "import btcopilot.app, btcopilot.personal.routes, btcopilot.models.diagram",
+            "import btcopilot.app, btcopilot.routes, btcopilot.models.diagram",
         ],
         cwd=root,
         env={**os.environ, "PYTHONPATH": str(root)},

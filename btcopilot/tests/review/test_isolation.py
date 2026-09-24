@@ -7,7 +7,20 @@ from btcopilot.tests.repo import PACKAGE as SOURCE
 
 PACKAGE = SOURCE / "review"
 DOOR = "adapter.py"
-FORBIDDEN = ("btcopilot.personal",)
+APP = (
+    "chat chips clusters coacheval coachmodel coachturn discussions intake "
+    "interactions lanes licence playturn pricing productevents profile promptdir "
+    "prompts record recordtext refs routes seed timeline toolbox tracing "
+    "transcription turnlog turns views"
+).split()
+APP_MODELS = (
+    "change discussion interaction modelcall productevent speaker statement "
+    "syntheticpersona tokenmeter"
+).split()
+FORBIDDEN = tuple(
+    [f"btcopilot.{name}" for name in APP]
+    + [f"btcopilot.models.{name}" for name in APP_MODELS]
+)
 
 
 def imported_modules(path: Path) -> list[str]:
@@ -18,6 +31,7 @@ def imported_modules(path: Path) -> list[str]:
             names += [alias.name for alias in node.names]
         elif isinstance(node, ast.ImportFrom) and node.module:
             names.append(node.module)
+            names += [f"{node.module}.{alias.name.lower()}" for alias in node.names]
     return names
 
 

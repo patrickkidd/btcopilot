@@ -3,7 +3,7 @@
 import importlib.util
 import re
 
-from btcopilot.personal.models import Discussion, DiscussionStatus, Statement
+from btcopilot.models import Discussion, DiscussionStatus, Statement
 from btcopilot.tests.repo import PACKAGE, REPO
 
 DOC = REPO / "doc"

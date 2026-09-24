@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 /** Visual goldens for the chat page. They run against a sandbox server the
  * developer starts (see web/tests/visual/README.md) and against the fixture
- * records `python -m btcopilot.personal.routes.fixtures` installs, so a golden only
+ * records `python -m btcopilot.routes.fixtures` installs, so a golden only
  * changes when the page changes.
  *
  * Headless Chromium at the two sizes the page is designed for: a phone at

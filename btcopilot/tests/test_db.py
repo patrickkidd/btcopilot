@@ -54,7 +54,7 @@ def test_chain_builds_the_chat_tables_and_no_others(chain):
     assert set(shape(chain)) == set(tables.TABLES)
 
 
-CHAT_PACKAGES = ("btcopilot.review", "btcopilot.personal", "btcopilot.auth", "btcopilot.admin")
+APP_PACKAGES = ("btcopilot.review", "btcopilot.models", "btcopilot.auth", "btcopilot.admin")
 
 
 def test_every_chat_model_is_in_the_chain():
@@ -65,7 +65,7 @@ def test_every_chat_model_is_in_the_chain():
     owned = {
         mapper.local_table.name
         for mapper in db.Model.registry.mappers
-        if mapper.class_.__module__.startswith(CHAT_PACKAGES)
+        if mapper.class_.__module__.startswith(APP_PACKAGES)
     }
     assert owned - set(tables.TABLES) == set()
 

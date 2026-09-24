@@ -75,7 +75,7 @@ jobs:
       FLASK_SQLALCHEMY_DATABASE_URI: sqlite:////tmp/personal-visual.db
       SANDBOX_URL: http://127.0.0.1:8889
       FIXTURE_CWD: ${{ github.workspace }}
-      FIXTURE_CMD: python -m flask personal fixtures
+      FIXTURE_CMD: python -m flask app fixtures
     steps:
       - uses: actions/checkout@v4
 
@@ -158,7 +158,7 @@ jobs:
       FLASK_SQLALCHEMY_DATABASE_URI: sqlite:////tmp/personal-visual.db
       SANDBOX_URL: http://127.0.0.1:8889
       FIXTURE_CWD: ${{ github.workspace }}
-      FIXTURE_CMD: python -m flask personal fixtures
+      FIXTURE_CMD: python -m flask app fixtures
     steps:
       - uses: actions/checkout@v4
         with:

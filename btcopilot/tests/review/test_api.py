@@ -3,7 +3,7 @@ import datetime
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
 from btcopilot.extensions import db
-from btcopilot.personal.models import Author, Change
+from btcopilot.models import Author, Change
 from mock import patch
 
 from btcopilot.review import export, ruledraft, snapshot

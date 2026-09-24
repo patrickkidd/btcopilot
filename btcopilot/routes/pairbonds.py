@@ -1,0 +1,158 @@
+"""Pair bonds on the user's own diagram: the bond between two people, which is
+also what a child is born into.
+
+There is one bond ever between any two people, and it carries whether they
+married; when it started and when it ended are events about the two of them.
+The record refuses a bond with one side, a bond of somebody with themselves, and
+a second bond between the same two (R-0326).
+"""
+
+import itertools
+import uuid
+
+from flask import abort, jsonify, request
+
+from btcopilot import auth
+from btcopilot import prompts, record
+from btcopilot.models import Author
+from btcopilot.routes import asked_diagram, bp, writable_diagram
+from btcopilot.schema import ItemKind, PersonKind
+
+WRITABLE = ("person_a", "person_b", "married")
+
+
+def _payload(bond: dict) -> dict:
+    return {field: bond.get(field) for field in ("id", *WRITABLE)}
+
+
+def _fields(body: dict) -> dict:
+    unknown = set(body) - set(WRITABLE)
+    if unknown:
+        raise ValueError(f"Unknown pair bond field(s): {', '.join(sorted(unknown))}")
+    values = {key: body[key] for key in WRITABLE if key in body}
+    if "married" in values:
+        values["married"] = bool(values["married"])
+    return values
+
+
+def _find(data, bond_id: int) -> dict:
+    for bond in data.pair_bonds:
+        if bond.get("id") == bond_id:
+            return bond
+    abort(404, description=f"No pair bond {bond_id} on this diagram")
+
+
+def _apply(deltas: list[dict]):
+    dia = writable_diagram()
+    if dia is None:
+        abort(404)
+    return record.apply(
+        dia.id,
+        deltas,
+        author=Author.User,
+        turn_id=uuid.uuid4().hex,
+        user_id=auth.current_user().id,
+    )
+
+
+def _delta(bond_id, field, after) -> dict:
+    return {
+        "item_kind": ItemKind.PairBond.value,
+        "item_id": bond_id,
+        "field": field,
+        "after": after,
+    }
+
+
+#: What a parent nobody named is called, one role per side of the bond.
+PARENT_ROLES = (prompts.Role.Father, prompts.Role.Mother)
+PARENT_GENDER = {
+    prompts.Role.Father: PersonKind.Male.value,
+    prompts.Role.Mother: PersonKind.Female.value,
+}
+
+
+def _person_delta(person_id, field, after) -> dict:
+    return {
+        "item_kind": ItemKind.Person.value,
+        "item_id": person_id,
+        "field": field,
+        "after": after,
+    }
+
+
+def _named_parent(person_id: int, child: dict, role) -> list[dict]:
+    """A parent nobody named, added so the bond has two sides. What they are
+    called comes from the overridable prompts (R-0325 rules 9 and 10)."""
+    name = prompts.generic_name(child.get("name") or "someone", role)
+    return [
+        _person_delta(person_id, "name", name),
+        _person_delta(person_id, "gender", PARENT_GENDER[role]),
+    ]
+
+
+def _find_person(data, person_id: int) -> dict:
+    for person in data.people:
+        if person.get("id") == person_id:
+            return person
+    abort(404, description=f"No person {person_id} on this diagram")
+
+
+@bp.route("/pair_bonds", methods=["POST"])
+def create_pair_bond():
+    """A bond between two people. `parent_of` names a person it is the parents
+    of, and a side nobody named is added as a generically named person, which is
+    how "add parents" makes a family out of one child."""
+    body = request.get_json() or {}
+    child_id = body.pop("parent_of", None)
+    values = _fields(body)
+    dia = asked_diagram()
+    if dia is None:
+        abort(404)
+    data = dia.get_diagram_data()
+    child = _find_person(data, child_id) if child_id is not None else None
+    if child is None and (
+        values.get("person_a") is None or values.get("person_b") is None
+    ):
+        raise ValueError("A pair bond is between two people")
+
+    ids = itertools.count(record.next_id(data))
+    deltas = []
+    for side, role in zip(("person_a", "person_b"), PARENT_ROLES):
+        if values.get(side) is not None:
+            continue
+        values[side] = next(ids)
+        deltas += _named_parent(values[side], child, role)
+    bond_id = next(ids)
+    deltas += [_delta(bond_id, field, value) for field, value in values.items()]
+    if child is not None:
+        deltas.append(_person_delta(child["id"], "parents", bond_id))
+    deltas.append(
+        {
+            "item_kind": ItemKind.Diagram.value,
+            "item_id": None,
+            "field": "lastItemId",
+            "after": bond_id,
+        }
+    )
+    _apply(deltas)
+    return jsonify(_payload(_find(asked_diagram().get_diagram_data(), bond_id))), 201
+
+
+@bp.route("/pair_bonds/<int:bond_id>", methods=["PATCH"])
+def update_pair_bond(bond_id: int):
+    values = _fields(request.get_json())
+    _find(asked_diagram().get_diagram_data(), bond_id)
+    if not values:
+        raise ValueError("Nothing to change on that pair bond")
+    _apply([_delta(bond_id, field, value) for field, value in values.items()])
+    return jsonify(_payload(_find(asked_diagram().get_diagram_data(), bond_id)))
+
+
+@bp.route("/pair_bonds/<int:bond_id>", methods=["DELETE"])
+def delete_pair_bond(bond_id: int):
+    """Removing a bond leaves the children of it without parents, the way the
+    app's own scene does."""
+    _find(asked_diagram().get_diagram_data(), bond_id)
+    _apply([_delta(bond_id, None, None)])
+    return "", 204

@@ -1,0 +1,100 @@
+import logging
+
+from dataclasses import dataclass, field
+from flask import g
+
+from btcopilot.extensions import db, ai_log
+from btcopilot.llmutil import response_text_sync
+from btcopilot.intake import (
+    coverage,
+    format_coverage_for_prompt,
+    roster_for_prompt,
+)
+from btcopilot.models import Discussion, Statement
+from btcopilot.prompts import get_conversation_flow_prompt
+from btcopilot.refs import Ref, index, parse
+from btcopilot.schema import DiagramData
+
+_log = logging.getLogger(__name__)
+
+
+def summarize_committed_state(diagram_data: DiagramData | None) -> str:
+    if diagram_data is None:
+        return ""
+    people = diagram_data.people or []
+    events = diagram_data.events or []
+    pair_bonds = diagram_data.pair_bonds or []
+    if not people and not events and not pair_bonds:
+        return ""
+    roster = roster_for_prompt(diagram_data)
+    cov = format_coverage_for_prompt(coverage(diagram_data))
+    return "\n".join(part for part in (roster, cov, index(diagram_data)) if part)
+
+
+@dataclass
+class Response:
+    statement: str
+    refs: list[Ref] = field(default_factory=list)
+
+
+def ask(
+    discussion: Discussion, user_statement: str, model: str | None = None
+) -> Response:
+
+    ai_log.info(f"User statement: {user_statement}")
+
+    committed_state = ""
+    if discussion.diagram is not None:
+        committed_state = summarize_committed_state(
+            discussion.diagram.get_diagram_data()
+        )
+
+    # Build structured conversation turns before adding new statement to session
+    system_instruction = get_conversation_flow_prompt(
+        model, committed_state=committed_state
+    )
+    if hasattr(g, "custom_prompts"):
+        system_instruction = g.custom_prompts.get(
+            "CONVERSATION_FLOW_PROMPT", system_instruction
+        )
+
+    turns = []
+    for s in discussion.statements:
+        role = "model" if s.speaker_id == discussion.chat_ai_speaker_id else "user"
+        turns.append((role, s.text))
+    turns.append(("user", user_statement))
+
+    statement = Statement(
+        discussion_id=discussion.id,
+        text=user_statement,
+        speaker=discussion.chat_user_speaker,
+        order=discussion.next_order(),
+    )
+    db.session.add(statement)
+
+    ai_response = _generate_response(system_instruction, turns, model=model)
+    ai_log.info(f"AI response: {ai_response}")
+    # The transcript stores the words the user saw; reference markup is chat
+    # metadata and must not reach the record or the extraction prompt.
+    ai_response, refs = parse(ai_response)
+
+    ai_statement = Statement(
+        discussion_id=discussion.id,
+        text=ai_response,
+        speaker=discussion.chat_ai_speaker,
+        order=discussion.next_order(),
+    )
+    db.session.add(ai_statement)
+    return Response(statement=ai_response, refs=refs)
+
+
+def _generate_response(
+    system_instruction: str, turns: list[tuple[str, str]], model: str | None = None
+) -> str:
+    ai_response = response_text_sync(
+        system_instruction=system_instruction,
+        turns=turns,
+        temperature=0.45,
+        model=model,
+    )
+    return ai_response.strip()

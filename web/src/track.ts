@@ -2,7 +2,7 @@ import * as api from "./api";
 import type { ItemKind } from "./types";
 
 /** Which features people use, read in Grafana from the product_events table.
- * These names are the only place they live; btcopilot/personal/productevents.py
+ * These names are the only place they live; btcopilot/productevents.py
  * mirrors them and a test keeps the two equal. */
 export enum Screen {
   Chat = "chat",

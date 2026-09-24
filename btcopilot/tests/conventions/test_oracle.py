@@ -17,7 +17,7 @@ import pytest
 
 from btcopilot import oracle
 from btcopilot.oracle import ROOT, Kind, Status, Tag
-from btcopilot.personal.promptdir import encrypted
+from btcopilot.promptdir import encrypted
 
 pytestmark = pytest.mark.conventions
 
