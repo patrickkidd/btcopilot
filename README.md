@@ -1,6 +1,6 @@
 # BT Copilot
 
-SARF (Symptom, Anxiety, Relationship, Functioning) is a novel clinical model, under test here, of instinctual reactivity in relationships, particularly family relationships, from an evolutionary-biology perspective. This repository is the research instrument: an AI coach that records a person's family as structured SARF data turn by turn, the expert coding and inter-rater reliability work that tests the model, and the F1 measurement of the machine's coding against expert ground truth.
+SARF (Symptom, Anxiety, Relationship, Functioning) is a novel clinical model, under test here, that treats the automatic, inherited reactions people have to each other, above all in families, as evolved biology. This repository is the research instrument: an AI coach that records a person's family as structured SARF data turn by turn, the expert coding and inter-rater reliability work that tests the model, and the F1 measurement of the machine's coding against expert ground truth.
 
 The product built on it will live at [familydiagram.com](https://familydiagram.com).
 
@@ -27,7 +27,7 @@ Built by [Patrick Stinson](https://www.linkedin.com/in/patrickstinson/), who dev
 - [R&D roadmap: phases 1-13](#research-phases)
 - [Clinical Research Compliance](#clinical-research-compliance)
 - [SARF Literature Review](#sarf-literature-review)
-- [Research Journal](#research-journal)
+- [Development Journal](#development-journal)
 
 ## How the Coach Works
 
@@ -231,44 +231,165 @@ Each definition includes operational definitions, observable markers for AI clas
 
 Methodology: [doc/sarf-definitions/METHODOLOGY.md](doc/sarf-definitions/METHODOLOGY.md)
 
-# Research Journal
+# Development Journal
 
-## 2026-08-28 - Structure is interactive, the timeline is not
+## 2026-08-28 - Family structure can be built live, the timeline cannot
 
-Building the family record turn by turn works for people, pair-bonds and parents, because a person looking at the drawing catches errors. Dated shifts and SARF values stayed better extracted in one batch. This split shaped the coach.
+Building the family record turn by turn works for people, pair-bonds and parents, because the person looking at the drawing catches the errors. Dated shifts and SARF values still came out better when coded from the whole conversation at once. That split is what the coach is built on now.
 
-## 2026-06-09 - Stronger models lift events and SARF values
+## 2026-06-09 - Stronger models close the gap on events and SARF
 
-A frontier model raised Events F1 from 0.43 to 0.62 and SARF values from 0.38 to 0.62 over the production baseline, at far higher cost. People and pair-bonds were already near their ceiling.
+A frontier model raised Events F1 from 0.43 to 0.62 and SARF values from 0.38 to 0.62 over production, at a much higher cost per conversation. People and pair-bonds were already near their ceiling.
 
 ## 2026-05-20 - Parents can be inferred from births
 
-Deriving parent-child links from birth events raised that F1 from 0.37 to 0.82 and connected 90% of each family into one diagram, up from 51%.
+Inferring parent-child links from birth events took that F1 from 0.37 to 0.82, and 90% of each family now connects into one diagram instead of 51%.
+## 2026-03-03 - 2-pass split extraction
 
-## 2026-03-03 - Splitting the task beat prompt wording
+*Break hard problems into smaller ones.* Single-prompt extraction plateaued because legacy training examples buried in the prompt were overriding new instructions. Split extraction into two focused passes — first people and family structure, then clinical variable shifts — each with a clean, purpose-built prompt. Aggregate accuracy up 12%, relationship extraction up 54%. Task decomposition beat prompt engineering. **Aggregate F1 crossed the 0.5 MVP milestone (0.669), with Events also clearing 0.5 for the first time.**
 
-Extracting family structure first and clinical shifts second, each with its own prompt, raised aggregate F1 from 0.60 to 0.67 and relationship extraction by 54%. Dropping free-text description matching for events showed that kind, date and people identify an event reliably.
+## 2026-02-24 - Single-prompt extraction
 
-## 2026-02-24 - Let the story finish before coding it
+*Let the conversation finish before analyzing it.* Instead of the AI extracting data from every single message (25+ LLM calls per conversation, massive duplication), the Personal app now waits until the user taps "Build my diagram" and sends the whole conversation in one shot. Accuracy nearly doubled (F1 0.25 → 0.45) with no prompt changes. Event detection crossed the viability threshold (F1 0.09 → 0.29), resolving whether events could ship in MVP.
 
-Coding a whole conversation at once nearly doubled accuracy (0.25 to 0.45) with no prompt changes. Facts in a family story span many statements; coding each statement alone misses them.
+## 2026-02-14 - Cumulative extraction pivot
 
-## 2026-02-14 - Score the result, not each statement
+*You can't improve what you can't measure.* Grading the AI's work one message at a time introduced so much noise that accuracy scores were stuck at ~0.22 regardless of what we changed. The AI and the human expert often noticed the same fact at different points in the conversation, which the scoring system counted as two errors instead of zero. Switched to grading the *complete result* after an entire conversation — the thing the user actually sees. Accuracy signal became meaningful immediately, GT coding time halved, and we discovered the AI was extracting zero relationship data (prompt had no examples).
 
-The model and the expert often noticed the same fact at different points, which statement-level scoring counted as two errors. Scoring the finished record made the signal meaningful, halved coding time, and revealed the model was extracting no relationship data at all.
+## 2025-12-14 - Modeling therapeutic conversation
 
-## 2025-12-14 - Modeling the therapeutic conversation
+*I am modeling therapeutic conversation*. I don't know if this has ever been done before. Measuring therapist performance at collecting enough data for clinical evaluation. Requires measuring coach performance statement by statement.
 
-The first exhaustive index of Bowen-theory technical terms in Bowen's and Kerr's books was completed ([methodology](doc/sarf-definitions/METHODOLOGY.md)). Synthetic clients were given deeper histories that force the coach to probe, and they began pushing back on their own when a session ran near 60 minutes. The coach was tuned to let the person tell the presenting problem for about eight statements before gathering family facts.
+- *The first comprehensive index of technical terms for Bowen theory* using Bowen and Kerr's books. *Every single* passage that might be related to a given term in the SARF model (Anxiety, Symptom, Functioning, conflict, projection, triangles, etc). It isn't the eight concepts but I could easily re-run this on those (and probabyl will) [btcopilot/doc/sarf-definitions/METHODOLOGY.md](doc/sarf-definitions/METHODOLOGY.md). In a nuthsell, this is many passes through the literature back and forth with human and AI. It required a combination of:
+  - Exhaustive knowledge of the source literature (from Stinson, 2020)
+  - Doctoral-level qualitative research methods
+  - AI Context Architect Expertise
+  - Software Architect Expertise
+  Progress tracked here: [btcopilot/doc/sarf-definitions/PROGRESS.md](doc/sarf-definitions/PROGRESS.md)
+- Switched to gemini flash API for cheaper and probably better data extraction. Seeking HIPAA BAA with Google.
+- Improved Synthetic AI client personalities with:
+  - larger hard-coded histories
+  - "levels of depth" to force AI coach to probe deeper or fail to get necessary information.
+  - Improvisation of case content beyond the provided history, so long as it is not contradictory
+  - They started sponateously pushing back when the conversation went on too long, about 60 minutes, wow.
+- Improved AI coach conversational flow with:
+  - Allow feeling content around the problem for ~8 statements before pivoting to filling out data model. Helps the person get some of the presenting problem out, get some emotional buy-in.
 
-## 2025-06-28 - The SARF model applied to live conversation
+*Dev notes*
+- Added mcp server for claude code to manage the web server proces.
 
-Data points span messages, so per-message extraction loses them. The relationship variable split into mechanisms and triangles (anxious) and defined self (mature). Nodal events such as births and deaths needed a place without a variable shift. The model was made to propose changes, never rewrite the record, so one error cannot corrupt the rest.
+## 2025-12-08 - Prompt induction framework
 
-## 2025-02-15 - Testing the model against the theory
+- Added prompt induction framework:
+  [btcopilot/doc/PROMPT_OPTIMIZATION.md](doc/archive/2026-09-PROMPT_OPTIMIZATION.md)
+  Using Claude Code's command line API to run it from a script. Get baseline F1,
+  tweak system prompts, run AI extraction, compare baseline. Run 10 iterations
+  or until F1 improvement plateaus. Super cool!
 
-A quiz of questions with known answers from the literature measured whether answers stayed within Bowen theory. Retrieval-grounded answers named the right concepts less often than expected, for example missing "inside and outside" as the triangle positions.
+## 2025-06-28 - Working data extraction from chat discussion. Using Havstad's SARF data model. Basically trying to build a clinical coach bot.
+- Started trying to extract data from each individual text message. Discovered data points exist across messages.
+- Clarifyed data model:
+  - People: siblings + offspring
+  - Events: variable shifts; Symptom, Anxiety, Relationship, Functioning
+    - Relationship sub-divides into Mechanism & Triangle (negative), Defined self (positive)
+    - Triangle; insides + outside
+    - Mechanism: movers + recipients
+  - Have to figure out what to do with special events w/o apparent variable shifts, e.g. birth, death, marriage, divorce
+- Moved to managing a rolling pool of data points from chat conversation. Much more sophisticated and complicated.
+  - Moved to pending data pool (PDP) model where user confirms inferred / extracted data points.
+  - llm only provides deltas for pending pool to avoid data loss from hallucinations when re-writing the entire pending pool every call.
+  - Division between persistent database and PDP. Deltas are the core atomic component to validate.
+- Plan to build personal mobile app with web-based auditing system to scale model training with human feedback.
+  - Potential to generate database for family research, complete with data model.
 
-## 2025-02-10 - Fine-tuning on Bowen's text fails
+## 2025-03-09 - Using Mistral's PDF OCR doc to read pdfs more accurately, and `spacy`'s semantic splitting to passages to start and end with sentances that make a single point.
 
-A small model fine-tuned on Bowen's book produced fluent-looking but incoherent claims about differentiation and marriage.
+## 2025-02-19 - Added support for timeline events, released in [Family Diagram v2 Beta](https://alaskafamilysystems.com/family-diagram/family-diagram-phase-2-beta/)!
+
+- You can now include timeseries events in the query! You can ask the model to
+  analyze the timeseries data and draw conclusions from the literature.
+- Added Kerr's Family Evaluation (1988) to sources.
+
+## 2025-02-15 - Automatically testing model's accuracy
+
+I defined a set of quiz questions with expected correct answers. The quiz will be improved as time goes on.
+
+Example Passing answer:
+
+```
+**** QUESTION:What are the two positions in a triangle called?
+
+**** EXPECTED ANSWER:Inside and outside
+
+**** RECEIVED ANSWER: Answer:  In the given context, the two positions in a triangle are not explicitly named. However, they can be inferred as the close twosome and the outsider. The close twosome is the pair that forms the base of the triangle, while the outsider is the third person who is not part of the close relationship but interacts with both members of the twosome.
+Sources: ['21 - On the Differentiation of Self.pdf', '16 - Theory in the Practice of Psychotherapy.pdf', '21 - On the Differentiation of Self.pdf', '21 - On the Differentiation of Self.pdf', '10 - Family Therapy and Family Group Therapy.pdf']
+Vector DB Time: 1.8134565340005793
+LLM Time: 36.359419119005906
+Total Time: 38.17371924100007
+
+INFO     test_model:test_model.py:56 Copilot vector db time: 1.8134565340005793
+INFO     test_model:test_model.py:57 Copilot llm time: 36.359419119005906
+INFO     test_model:test_model.py:58 Copilot total time: 38.17371924100007
+```
+
+## 2025-02-15 - First Copilot UI!
+
+The answers are slow, but they work! Still need to show expandable list of sources with passages.
+  ![BT Copilot Logo](doc/archive/2026-09-first_copilot_chat.jpg)
+  - LLM: `mistral`
+  - Embeddings: `sentence-transformers/all-MiniLM-L6-v2`
+
+## 2025-02-13 - Pre-processed Bowen's book into chapter pdfs
+
+Watching many youtube videos on RAG including better pdf
+  processing, different llm's, etc. Found better pdf copy of Bowens book w/o
+  page numbers, Pre-processed Bowen's book into chapters without titles.
+  epigraphs. Include book name and chapter title from file names in langchain
+  doc metadata. Per-chapter pdf ingestion took ~54 seconds.
+  - Returned in ~54 seconds for "What are the four anxiety binding mechanisms?"
+```
+Response:  The provided context does not explicitly mention the term "anxiety binding mechanisms" or list any specific four mechanisms. However, it suggests several patterns and dynamics that help maintain emotional equilibrium in a family system, which can be perceived as "anxiety binding." These include:
+
+1. Triangle patterns - interpersonal relationships involving three people where one person's actions affect the other two, creating a cycle of tension and reaction.
+2. Projection process - the tendency for individuals to transfer their own unacceptable impulses, feelings or traits onto others, allowing them to avoid acknowledging these aspects within themselves.
+3. Patterns of transfer anxiety - ways in which anxiety is passed between individuals, with variations such as a mother forcing anxiety or psychosis onto a resisting patient.
+4. The level of integration and differentiation of self - refers to the organism's ability to adapt and cope with anxiety, emphasizing the importance of maintaining emotional equilibrium within oneself.
+
+These patterns and dynamics help bind anxiety in a family system by addressing and managing stress and tension within relationships, promoting emotional stability.
+
+Sources: ['22 - Toward the Differentiation of Self in Ones Family of Origin.pdf', '18 - Society Crisis and Systems Theory.pdf', '18 - Society Crisis and Systems Theory.pdf', '16 - Theory in the Practice of Psychotherapy.pdf', '1 - Treatment of Family Groups with a Schizophrenic Member.pdf']
+```
+  - Returned in ~54 seconds for: "What is differentiation of self?"
+  ```
+  Response:  Differentiation of self, as described in the given context, refers to a concept that deals with an individual working on their own self, controlling their emotions, becoming more responsible, and permitting others to be themselves. It's analogous to the process of differentiation in biology, where cells separate from each other for specialized functions. In this theoretical system, higher levels of differentiation equate to emotional maturity. The level of differentiation may depend on factors like the level of differentiation of one's parents and the nature of the relationship between the child and their parents.
+
+Sources: ['9 - The Use of Family Theory in Clinical Practice.pdf', '12 - Alcoholism and the Family.pdf', '17 - An Interview with Murray Bowen.pdf', '16 - Theory in the Practice of Psychotherapy.pdf', '16 - Theory in the Practice of Psychotherapy.pdf']
+  ```
+
+## 2025-02-11 - Langchain and RAG
+
+Colleague suggested langchain with RAG. Used RAG with cloud-based `groq` llm
+  and chroma vector db produced better answers but sometimes couldn't find any
+  relevant data.
+
+## 2025-02-10 - Fine-tuned GPT2 model
+
+Trained gpt2 model on Bowen's book, with garbage from titles, page numbers,
+  etc. Took four hours on i9 macbook pro and responses had mediocre sentance
+  structure with too much focus on a few passages.
+```
+  It is essentially impossible to know the percentage who get married and who do not get divorced. At thi
+s level of differentiation, differentiation does not begin to take place until there is a certain percentage of people who are sufficien tly involved with their families of origin to begin differentiation without emotional participation in the family emotional system.
+do well on tests of differentiation have a reasonable chance of getting a social or professional degree,
+if they keep the effort on their families of origin. Results are less with this approach if the family effort is with a spouse in the 30 to 40 range.
+People in the 50 to 75 range get married within a few generations. There are those who get married within a few generations and continue for life and who terminate marriage within the next five to ten years. Those with very low levels of differentiation have an infinite n umber of satisfying marriages with intact families and those with a high level of fusion who terminate marriage within several generatio
+A typical marriage is one in which the basic level of differentiation is transmitted in marriage, but it is not manifested in children.
+There are marriages in which the basic level is transmitted in children who use various combinations of marriage mechanisms and 385 other outside relationships to raise the basic level of differentiation. There are marriages in which the basic level is transmitted in marriage and where it continues in subsequent marriages, but the transmission is less intense and symptoms are less intense.
+Marriages in which the basic level is transmitted in marriage are called stable marriages and in which there are no symptoms,
+the sympto
+ms are more episodic and it is not as serious and long-term as with less severe emotional illness and less severe emotional illness and less long-term transmission of the problem to a spouse with good levels of differentiation. There are marriages in which the basic level is transmitted in marriage where the basic level is sufficiently submerged in the marriage to be seen only with one or two children to
+be meaningful symptoms but symptoms are less intense and transmission is less serious and
+is much less intense than with severe illness
+and less long-term transmission of the problem to one or two children.
+People in the 65 to 70 range get married within a few generations. There are others who do well with a few children and maintain self in the 30 to 40 range until the problems subside and thereafter it is seen as the "fusion" phenomenon with a child who gets "programmed" t o the family projection process with the parents. The children grow up
+  ```
