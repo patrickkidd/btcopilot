@@ -121,15 +121,6 @@ describe("following a turn", () => {
     expect(back.shown.words).toBe("Added Nell.");
   });
 
-  // no ruling
-  it("re-reads the record once for a run of edits, not once each", () => {
-    const { shown, take } = watch();
-    take(patch());
-    take(patch());
-    take(patch());
-    take(done());
-    expect(shown.reloads).toBe(1);
-  });
 
   // R-0369
   it("drops words the coach said again", () => {

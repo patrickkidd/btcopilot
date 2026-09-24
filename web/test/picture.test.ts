@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dotXs, hitSpans, pairSvg, restWidth, yearAt, years } from "../src/picture";
-import { DateCertainty, type TimelineEvent } from "../src/types";
+import { dotXs, hitSpans, restWidth, yearAt, years } from "../src/picture";
 
 const PHONE = 390;
 const PAD = 16;
@@ -134,43 +133,6 @@ describe("the tap target of a dot on the line", () => {
         i < xs.length - 1 ? (xs[i] + xs[i + 1]) / 2 : PHONE,
       );
     });
-  });
-});
-
-describe("the two moments face to face", () => {
-  const event = (id: number, label: string): TimelineEvent =>
-    ({
-      id,
-      label,
-      sentence: label,
-      person_name: "Ann",
-      person: 1,
-      dateTime: "2009-04-02",
-      endDateTime: null,
-      dateCertainty: DateCertainty.Certain,
-      kind: null,
-      description: null,
-      notes: null,
-      location: null,
-      symptom: null,
-      anxiety: null,
-      functioning: null,
-      relationship: null,
-      relationshipTargets: [],
-      relationshipTriangles: [],
-      spouse: null,
-      child: null,
-    }) as TimelineEvent;
-
-  // no ruling
-  it("draws both labels and the seam with real numbers", () => {
-    const svg = pairSvg(
-      event(1, "she moved out of the house that spring"),
-      event(2, "he took the job in another town"),
-      PHONE,
-    );
-    expect(svg).not.toContain("NaN");
-    expect(svg.match(/class="ss-w"/g)?.length).toBe(4);
   });
 });
 

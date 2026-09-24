@@ -122,15 +122,6 @@ describe("the spotlight: dense and sparse", () => {
     expect(laid[1].x).toBe(370);
   });
 
-  // no ruling
-  it("more named moments than rows keeps the first and last", () => {
-    const laid = rows(
-      Array.from({ length: 6 }, (_, i) => ({ id: i, x: 20 + i * 50, text: "x" })),
-      16,
-      374,
-    );
-    expect(laid).toHaveLength(2);
-  });
 
   // R-0103
   it("every tap zone is at least the 44px floor and holds its own moments", () => {

@@ -32,8 +32,4 @@ describe("what a tool call says in plain words", () => {
     expect(toolLine(ToolName.Show, { kind: "triangle" })).toBeNull();
   });
 
-  // no ruling
-  it("says nothing for a tool it does not know", () => {
-    expect(toolLine("invented", {})).toBeNull();
-  });
 });

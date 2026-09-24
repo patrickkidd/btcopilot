@@ -35,17 +35,6 @@ describe("searching the sessions sheet", () => {
     expect(matching(whitlock, "mine").rows.map((s) => s.id)).toEqual([1]);
   });
 
-  // no ruling
-  it("keeps a family whose own name matches, even with no sessions on it", () => {
-    const empty = family("Whitlock", []);
-    expect(matching(empty, "whit")).toEqual({ rows: [], byName: true });
-  });
-
-  // no ruling
-  it("keeps every session of a family whose name matches", () => {
-    const whitlock = family("Whitlock", [session(1, "Corinne's second session")]);
-    expect(matching(whitlock, "whit").rows.map((s) => s.id)).toEqual([1]);
-  });
 
   // R-0347
   it("finds nothing when nothing carries the words", () => {

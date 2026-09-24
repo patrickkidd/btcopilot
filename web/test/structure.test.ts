@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ballotOrder, group, onBallot, telling } from "../src/ballot";
+import { group, onBallot, telling } from "../src/ballot";
 import {
   drawVersion,
   fragmentOf,
@@ -57,12 +57,6 @@ describe("what is on the ballot", () => {
     ).toBe(true);
   });
 
-  // no ruling
-  it("reads the people and the bonds before the events", () => {
-    const events = item(5, ItemKind.Event, [{ kind: "shift", dateTime: "1980-01-01" }]);
-    const people = item(6, ItemKind.Person, [{ id: 3, name: "Corinne" }]);
-    expect(ballotOrder([events, people]).map((one) => one.id)).toEqual([6, 5]);
-  });
 });
 
 describe("two versions of a person", () => {

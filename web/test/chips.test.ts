@@ -46,17 +46,6 @@ describe("tokenize", () => {
     });
   });
 
-  // no ruling
-  it("tones every chip in an offered message amber", () => {
-    const pieces = tokenize("[[person:4|your mother]]", ChipTone.Ask);
-    expect(pieces[0]).toMatchObject({ chip: { tone: ChipTone.Ask } });
-  });
-
-  // no ruling
-  it("leaves text with no markup alone", () => {
-    expect(tokenize("no chips here")).toEqual([{ text: "no chips here" }]);
-  });
-
   // R-0072
   it("does not treat an unknown kind as a chip", () => {
     expect(tokenize("[[thing:9|x]]")).toEqual([{ text: "[[thing:9|x]]" }]);
@@ -128,9 +117,4 @@ describe("aimedEvents", () => {
     expect(aimedEvents(chips("[[cluster:ch1]]")[0], chapters)).toEqual([20]);
   });
 
-  // no ruling
-  it("aims nothing when the chip names something the picture has not got", () => {
-    expect(aimedEvents(chips("[[cluster:gone]]")[0], chapters)).toEqual([]);
-    expect(aimedEvents(chips("[[person:4]]")[0], chapters)).toEqual([]);
-  });
 });

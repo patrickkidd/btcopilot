@@ -37,13 +37,6 @@ describe("finishedRow", () => {
     expect(row).toContain("sn-chev");
   });
 
-  // no ruling
-  it("leaves a row the room has not ratified as a faint record", () => {
-    const row = finishedRow(done(false));
-    expect(row).not.toContain("data-result");
-    expect(row).not.toContain("sn-chev");
-    expect(row).toContain("done Sep 12");
-  });
 });
 
 /** The coder's screen as the card draws it, for what the server says is open

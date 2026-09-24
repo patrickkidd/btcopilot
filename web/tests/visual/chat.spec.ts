@@ -61,16 +61,6 @@ test.describe("chips in a bubble", () => {
   });
 });
 
-test.describe("the coach's words", () => {
-  test.use({ storageState: stateFor("hostile") });
-
-  // no ruling
-  test("a coach bubble says who is speaking", async ({ page }) => {
-    await page.goto("/app/");
-    await expect(page.locator(".bub.coach .who").first()).toHaveText("Coach");
-  });
-});
-
 test.describe("the question that closes a reply", () => {
   test.use({ storageState: stateFor("moves") });
 

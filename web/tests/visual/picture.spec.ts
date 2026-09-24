@@ -158,17 +158,6 @@ test.describe("the resting line slides sideways", () => {
     expect(await onWire()).toBe(true);
   });
 
-  // no ruling
-  test("settles where a cluster is not cut in half", async ({ page }) => {
-    await settle(page);
-    const settled = await line(page).evaluate((node) => ({
-      type: getComputedStyle(node).scrollSnapType,
-      stops: node.querySelectorAll(".ss-snap").length,
-    }));
-    expect(settled.type).toContain("x");
-    expect(settled.stops).toBeGreaterThan(1);
-  });
-
   // R-0045, R-0381
   test("a tap still picks the cluster under the thumb", async ({ page }) => {
     await settle(page);

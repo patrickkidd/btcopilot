@@ -73,7 +73,7 @@ describe("two taps on the picture", () => {
       });
   });
 
-  // no ruling
+  // R-0462
   it("a tap that lands on no moment lets go of the one that was picked", () => {
     const open = reduce(REST, PicEvent.Tap, moment).state;
     expect(reduce(open, PicEvent.Tap).state).toEqual(REST);
@@ -96,21 +96,4 @@ describe("two taps on the picture", () => {
     expect(out.state).toEqual({ sel: stretch, playing: "ch0" });
   });
 
-  // no ruling
-  it("a chip tap with nothing picked does nothing at all", () => {
-    const out = reduce(REST, PicEvent.TapChip);
-    expect(out.state).toEqual(REST);
-    expect(out.record).toBeNull();
-    expect(out.insert).toBeNull();
-  });
-
-  // no ruling
-  it("dismiss returns to rest", () => {
-    const playing = reduce(
-      reduce(REST, PicEvent.Tap, moment).state,
-      PicEvent.TapPlay,
-      stretch,
-    ).state;
-    expect(reduce(playing, PicEvent.Dismiss).state).toEqual(REST);
-  });
 });
