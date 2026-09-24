@@ -1,9 +1,9 @@
-# The chat app's box — what runs it, and the order things happen in
+# Family Diagram's box — what runs it, and the order things happen in
 
-This folder is the whole deployment of the chat app: one compose file, one
+This folder is the whole deployment of Family Diagram version three: one compose file, one
 Caddyfile, one encrypted secrets file. It lives in this repo because everything
-the chat app needs lives here now: the prompts and the rulings are encrypted
-files in this repo, and fdserver has no part in the chat app. The box is separate
+the app needs lives here now: the prompts and the rulings are encrypted
+files in this repo, and fdserver has no part in it. The box is separate
 from the Pro box on purpose. Nothing in it has run yet; the droplet does not exist.
 
 ## What Patrick does, once, in this order
@@ -22,7 +22,7 @@ from the Pro box on purpose. Nothing in it has run yet; the droplet does not exi
    to `/var/www/btcopilot`, `cd deploy`, decrypt the secrets into
    `/etc/fd/secrets.env` (root, 600).
 4. **First start.** `docker compose --env-file /etc/fd/secrets.env pull && docker compose --env-file /etc/fd/secrets.env up -d`,
-   then `docker compose --env-file /etc/fd/secrets.env exec fd-app flask admin db upgrade` — the chat chain from
+   then `docker compose --env-file /etc/fd/secrets.env exec fd-app flask admin db upgrade` — the single revision from
    empty — then `docker compose --env-file /etc/fd/secrets.env exec fd-app flask admin users invite <email>`
    for your own account and open the link. Nobody's old Pro records are imported at
    cutover: every beta user starts on an empty record (R-0355). The `--env-file` flag makes compose
@@ -31,7 +31,7 @@ from the Pro box on purpose. Nothing in it has run yet; the droplet does not exi
 5. **DNS.** Lower the TTL on familydiagram.com a day ahead, then point the
    root A record at the box and www as a CNAME. Caddy gets its certificate on
    the first request. database.familydiagram.com stays on the Pro box.
-6. **Freeze the old box** for Pro: it takes no more chat-app deploys.
+6. **Freeze the old box** for Pro: it takes no more deploys of this app.
 
 ## Every deploy after that
 
@@ -46,6 +46,44 @@ once at /root/.docker/cli-plugins/docker-rollout (github.com/wowu/docker-rollout
 **One-time stamp (R-0417).** The seven old migrations became one revision, `1b00000000aa`.
 Before its upgrade the deploy moves a database at the old head `1a00000000af` to it (from
 `1a00000000ae` it adds the one missing column first); any other old revision stops the deploy.
+
+## One time: the names move from "chat" to "familydiagram" (R-0472)
+
+The compose project, the Postgres role and the Postgres database were all named
+`chat`. The compose file and `release.yml` now use `familydiagram`, and the deploy
+reads the host from the repository variable `FD_HOST` instead of `CHAT_HOST`. The
+merge that brings this in does not deploy, because `FD_HOST` does not exist yet. Run
+these on the box after that merge, as root, in this order:
+
+```bash
+cd /var/www/btcopilot && git pull origin master && cd deploy
+# 1. stop everything that holds a connection, under the old project name
+docker compose -p chat --env-file /etc/fd/secrets.env stop fd-app fd-worker fd-pdc
+# 2. rename the database and the role through a temporary superuser (a role cannot rename itself)
+docker exec fd-postgres psql -U chat -d postgres -c "CREATE ROLE fdtmp SUPERUSER LOGIN"
+docker exec fd-postgres psql -U fdtmp -d postgres -c "ALTER DATABASE chat RENAME TO familydiagram"
+docker exec fd-postgres psql -U fdtmp -d postgres -c "ALTER ROLE chat RENAME TO familydiagram"
+docker exec fd-postgres psql -U fdtmp -d postgres -c "ALTER ROLE familydiagram PASSWORD '$(grep ^POSTGRES_PASSWORD= /etc/fd/secrets.env | cut -d= -f2-)'"
+docker exec fd-postgres psql -U familydiagram -d postgres -c "DROP ROLE fdtmp"
+# 3. take the old project down; the database is a bind mount in instance/ and is untouched
+docker compose -p chat --env-file /etc/fd/secrets.env down
+# 4. carry Caddy's certificates over to the new project's volumes
+for v in caddy-data caddy-config; do
+  docker volume create familydiagram_$v
+  docker run --rm -v chat_$v:/from -v familydiagram_$v:/to alpine cp -a /from/. /to/
+done
+# 5. start under the new name and check
+docker compose --env-file /etc/fd/secrets.env up -d
+docker compose --env-file /etc/fd/secrets.env exec -T fd-app flask admin db upgrade
+docker compose --env-file /etc/fd/secrets.env ps
+```
+
+Then, off the box: rename the repository variable `CHAT_HOST` to `FD_HOST` on GitHub
+(`gh variable set FD_HOST --repo patrickkidd/btcopilot --body <host>`, then
+`gh variable delete CHAT_HOST --repo patrickkidd/btcopilot`), and change the database
+name in Grafana Cloud's Postgres data source from `chat` to `familydiagram`. Once the
+site answers, `docker volume rm chat_caddy-data chat_caddy-config`.
+The app is down from step 1 to step 5, about a minute.
 
 ## Grafana Cloud
 

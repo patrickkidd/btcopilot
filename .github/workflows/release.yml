@@ -88,12 +88,12 @@ jobs:
   deploy:
     runs-on: ubuntu-24.04
     needs: build
-    if: vars.CHAT_HOST != ''
+    if: vars.FD_HOST != ''
     steps:
       - name: Pull the image and run the chain
         uses: appleboy/ssh-action@v1.2.1
         with:
-          host: ${{ vars.CHAT_HOST }}
+          host: ${{ vars.FD_HOST }}
           port: 22
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
@@ -115,7 +115,7 @@ jobs:
             docker rollout --env-file /etc/fd/secrets.env fd-worker
             docker compose --env-file /etc/fd/secrets.env up -d --remove-orphans
             # one time (R-0417): a database on the retired chain is stamped to the single revision
-            psql() { docker compose --env-file /etc/fd/secrets.env exec -T fd-postgres psql -U chat -d chat -tAc "$1"; }
+            psql() { docker compose --env-file /etc/fd/secrets.env exec -T fd-postgres psql -U familydiagram -d familydiagram -tAc "$1"; }
             at=$(psql "SELECT CASE WHEN to_regclass('alembic_version') IS NULL THEN '' ELSE (SELECT string_agg(version_num, ',') FROM alembic_version) END")
             # the retired chain kept the extraction pipeline's columns and statuses (R-0414); the single revision has none
             unpipe="ALTER TABLE discussions DROP COLUMN extracting, DROP COLUMN extracted_through_order, DROP COLUMN pending_extracted_through_order; ALTER TABLE statements DROP COLUMN pdp_deltas; ALTER TYPE discussionstatus RENAME TO discussionstatus_retired; CREATE TYPE discussionstatus AS ENUM ('pending', 'generating', 'failed', 'ready'); ALTER TABLE discussions ALTER COLUMN status DROP DEFAULT, ALTER COLUMN status TYPE discussionstatus USING status::text::discussionstatus, ALTER COLUMN status SET DEFAULT 'pending'; DROP TYPE discussionstatus_retired"

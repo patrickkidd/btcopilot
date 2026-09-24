@@ -1,18 +1,17 @@
-# The chat app's own box (T-11, R-0330): one image, its own Postgres, Redis for
+# Family Diagram's box (T-11, R-0330): one image, its own Postgres, Redis for
 # the agent queue, and Caddy in front for TLS. Nothing here is shared with the
 # Pro box. Secrets live in secrets.env, encrypted with sops; decrypt it on the
 # box into /etc/fd/secrets.env (root-only) and nowhere else.
 
-# The project keeps the name it had under deploy/chat, so the Caddy volumes,
-# the network and the containers carry over.
-name: chat
+# Renamed from "chat" (R-0472); the box's one-time steps are in README.md.
+name: familydiagram
 
 # A service's own `environment` replaces an anchored one wholesale, so the
 # shared settings are their own anchor and each service merges them in.
 x-app-env: &app-env
   FLASK_CONFIG: production
   FLASK_APP: "btcopilot.app:create_app()"
-  FLASK_SQLALCHEMY_DATABASE_URI: postgresql://chat:${POSTGRES_PASSWORD}@fd-postgres:5432/chat
+  FLASK_SQLALCHEMY_DATABASE_URI: postgresql://familydiagram:${POSTGRES_PASSWORD}@fd-postgres:5432/familydiagram
   CELERY_BROKER_URL: redis://fd-redis:6379/0
   CELERY_RESULT_BACKEND: redis://fd-redis:6379/0
   BTCOPILOT_INSTANCE_PATH: /app/instance
@@ -79,11 +78,11 @@ services:
     volumes:
       - ./instance/postgres-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: chat
+      POSTGRES_USER: familydiagram
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: chat
+      POSTGRES_DB: familydiagram
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U chat -d chat"]
+      test: ["CMD-SHELL", "pg_isready -U familydiagram -d familydiagram"]
       interval: 10s
       timeout: 5s
       retries: 5
