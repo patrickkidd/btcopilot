@@ -1,13 +1,13 @@
 # BT Copilot
 
-Family Diagram version three: an AI coaching system that turns a person's conversation about their family into a structured Bowen-theory record, built as an agent loop over a clinical data model, and the research program that led to it.
+SARF (Symptom, Anxiety, Relationship, Functioning) is a novel clinical model, under test here, of instinctual reactivity in relationships, particularly family relationships, from an evolutionary-biology perspective. This repository is the research instrument: an AI coach that records a person's family as structured SARF data turn by turn, the expert coding and inter-rater reliability work that tests the model, and the F1 measurement of the machine's coding against expert ground truth.
 
-The coach asks what a trained Bowen-theory coach asks, and it keeps the family record (people, pair-bonds, events and the clusters they form) as a picture above the conversation. It edits the record turn by turn with tools, and the person can correct anything on the picture by hand. The record implements the SARF clinical data model (Symptom, Anxiety, Relationship, Functioning).
+The product built on it will live at [familydiagram.com](https://familydiagram.com).
 
-Built by [Patrick Stinson](https://www.linkedin.com/in/patrickstinson/), the technical expert on Bowen theory behind the clinical work.
+Built by [Patrick Stinson](https://www.linkedin.com/in/patrickstinson/), who developed the clinical model.
 
 **For engineers:** [coach's agent loop](btcopilot/coachturn.py) · [the record and its tools](btcopilot/toolbox.py) · [oracle-derived tests and guards](doc/TEST_STRATEGY.md) · [refusal fallback chain](btcopilot/llmutil.py#L232) · [prompt caching](btcopilot/tests/test_caching.py) and [cost logging](btcopilot/pricing.py)
-**For clinicians:** [SARF literature review](doc/sarf-definitions/) · [SARF data model](doc/specs/DATA_MODEL.md) · [SARF Data Model White Paper](https://docs.google.com/document/d/1k6ZvYEG1644L4SKqXzXoOvBnepmus2-8WwUfMh4R_4Y/edit?usp=sharing) · [inter-rater reliability meeting findings](doc/irr/MEETING_FINDINGS.md) · [Bowen theory spec](doc/specs/BOWEN_THEORY.md) · [Domain context](CONTEXT.md)
+**For clinicians:** [SARF literature review](doc/sarf-definitions/) · [SARF data model](doc/specs/DATA_MODEL.md) · [SARF Data Model White Paper](https://docs.google.com/document/d/1k6ZvYEG1644L4SKqXzXoOvBnepmus2-8WwUfMh4R_4Y/edit?usp=sharing) · [inter-rater reliability meeting findings](doc/irr/MEETING_FINDINGS.md) · [theory spec](doc/specs/BOWEN_THEORY.md) · [Domain context](CONTEXT.md)
 
 ## Contents
 
@@ -20,7 +20,7 @@ Built by [Patrick Stinson](https://www.linkedin.com/in/patrickstinson/), the tec
 
 ## How the Coach Works
 
-One agent reads the conversation and decides each turn whether to ask, answer or change the record. The family record is its memory: the conversation is never rewritten, while the record changes as the person corrects it. The success measure is clinical, not a dataset: one or two correlations per person that change how they see their family. The rules for when the timeline may be drawn and when the coach must ask are in [doc/DRAWABILITY.md](doc/DRAWABILITY.md).
+One agent reads the conversation and decides each turn whether to ask, answer or change the record. The family record is its memory: the conversation is never rewritten, while the record changes as the person corrects it. The success measure is clinical, not a dataset: one or two correlations per person that change how they see their family. SARF took its first inspiration from Bowen family systems theory. The rules for when the timeline may be drawn and when the coach must ask are in [doc/DRAWABILITY.md](doc/DRAWABILITY.md).
 
 The system is a Flask API with a Celery worker, Postgres, and a TypeScript page for phone and desktop. The diagram is a JSON document plus an append-only command log; one Python module mutates it, and the browser and the agent are clients of the same endpoint. `btcopilot.schema` is the one module other apps import, and it depends on nothing else in the package. Every model call is logged with its cost, and a refused turn falls back to an older model.
 
@@ -42,6 +42,8 @@ Best F1 per construct against expert-coded ground truth (six coded discussions).
 | Events | 0.617 | Claude Fable 5, extraction and SARF review | 2026-06-09 |
 | SARF values (macro) | 0.621 | Claude Fable 5, extraction and SARF review (one run) | 2026-06-09 |
 | Aggregate | 0.731 | Claude Fable 5, extraction and SARF review | 2026-06-09 |
+
+Rows come from different model and matching versions, and the SARF-values row is a single run.
 
 Per-statement extraction scored about 0.24 aggregate in late 2025, so whole-conversation extraction roughly tripled accuracy. Full tables: [F1 dashboard](doc/archive/2026-09-F1_DASHBOARD.md), [model evaluations](doc/archive/2026-09-MODEL_EVALUATIONS.md), [F1 over time](doc/archive/2026-09-f1_timeseries.html).
 
@@ -248,4 +250,4 @@ A quiz of questions with known answers from the literature measured whether answ
 
 ## 2025-02-10 - Fine-tuning on Bowen's text fails
 
-A small model fine-tuned on Bowen's book produced fluent-looking but incoherent claims about differentiation and marriage. Retrieval over the literature replaced fine-tuning.
+A small model fine-tuned on Bowen's book produced fluent-looking but incoherent claims about differentiation and marriage.
