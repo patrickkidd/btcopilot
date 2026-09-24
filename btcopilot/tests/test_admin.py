@@ -120,7 +120,7 @@ def test_db_upgrade_builds_the_chain_from_empty(flask_app, tmp_path):
     flask_app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{tmp_path / 'fresh.db'}"
     result = flask_app.test_cli_runner().invoke(admin, ["db", "upgrade"])
     assert result.exit_code == 0, result.output
-    assert result.output.strip().startswith("at 1b00000000aa")
+    assert result.output.strip().startswith("at 1b00000000ab")
 
 
 READS = {

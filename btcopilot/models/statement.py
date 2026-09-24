@@ -45,6 +45,9 @@ class Statement(db.Model, ModelMixin):
     cluster_id = Column(String(64))
     custom_prompts = Column(JSON)  # Store custom prompts used for this statement
     order = Column(Integer)  # Order within discussion for reliable sorting
+    # The coach turn this statement started or answered; its tool calls are the
+    # turn events with the same id.
+    turn_id = Column(String(64), index=True)
 
     # Approval fields for test case generation
     approved = Column(Boolean, default=False)

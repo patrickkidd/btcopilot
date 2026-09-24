@@ -617,15 +617,17 @@ def _commit(
     diagram, data, deltas, author, turn_id, user_id, session_id, statement_id
 ) -> Change:
     _validate(data, deltas)
-    db.session.execute(
+    version = db.session.execute(
         sql_update(Diagram)
         .where(Diagram.id == diagram.id)
         .values(
             data=diagramjson.encode(data, diagram.data), version=Diagram.version + 1
         )
-    )
+        .returning(Diagram.version)
+    ).scalar_one()
     change = Change(
         diagram_id=diagram.id,
+        version=version,
         statement_id=statement_id,
         turn_id=turn_id,
         user_id=user_id,

@@ -45,6 +45,8 @@ class ToolName(enum.StrEnum):
     Show = "show"
 
 
+READS = (ToolName.ReadPeople, ToolName.ReadEvents, ToolName.ReadNotes)
+
 EDITS = (
     ToolName.EditPerson,
     ToolName.EditPairBond,

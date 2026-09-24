@@ -32,6 +32,9 @@ class Change(db.Model, ModelMixin):
         Enum(Author, values_callable=lambda e: [x.value for x in e]), nullable=False
     )
     deltas = Column(JSONB().with_variant(JSON(), "sqlite"), nullable=False)
+    # The diagram's version once this command landed, so a turn can tell its own
+    # writes from anyone else's since it last read the record.
+    version = Column(Integer, nullable=True)
 
     diagram = relationship("Diagram")
     statement = relationship("Statement")

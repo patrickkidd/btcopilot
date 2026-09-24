@@ -1,5 +1,7 @@
 """What the release workflow builds, tags and runs on the box."""
 
+import hashlib
+
 import yaml
 
 from btcopilot.tests.repo import REPO
@@ -23,12 +25,22 @@ def test_the_version_is_a_dated_three_and_the_image_tag_swaps_the_plus():
 def test_one_migration_and_the_box_is_stamped_to_it_on_deploy():
     # R-0417
     migrations = sorted((REPO / "btcopilot" / "migrations" / "versions").glob("*.py"))
-    assert [m.name for m in migrations] == ["1b00000000aa_the_app_from_empty.py"]
+    assert migrations[0].name == "1b00000000aa_the_app_from_empty.py"
     assert "down_revision = None" in migrations[0].read_text()
     for retired in ("1a00000000ae", "1a00000000af"):
         stamp = next(line for line in DEPLOY.splitlines() if line.strip().startswith(f"{retired})"))
         assert "UPDATE alembic_version SET version_num = '1b00000000aa'" in stamp
     assert DEPLOY.index("1a00000000af)") < DEPLOY.index("flask admin db upgrade")
+
+
+def test_a_migration_that_ran_in_production_is_never_rewritten_and_later_ones_chain():
+    # R-0417
+    migrations = sorted((REPO / "btcopilot" / "migrations" / "versions").glob("*.py"))
+    released = hashlib.sha256(migrations[0].read_bytes()).hexdigest()
+    assert released == "8ddb245301f2b6450e5f1ae20d5196c05179883b5ad29ff9822db8a299daec04"
+    for before, after in zip(migrations, migrations[1:]):
+        revision = before.name.split("_")[0]
+        assert f'down_revision = "{revision}"' in after.read_text(), after.name
 
 
 def test_a_deploy_imports_no_old_records():

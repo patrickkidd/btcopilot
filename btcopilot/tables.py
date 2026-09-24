@@ -39,6 +39,7 @@ TABLES = frozenset(
         "licenses",
         "login_codes",
         "model_calls",
+        "observations",
         "passkeys",
         "policies",
         "product_events",
@@ -52,6 +53,7 @@ TABLES = frozenset(
         "statements",
         "synthetic_personas",
         "token_meters",
+        "turn_events",
         "users",
         "web_sessions",
     }
