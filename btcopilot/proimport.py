@@ -12,6 +12,11 @@ and prints every failure with its reason, and writes nothing.
     python -m btcopilot.proimport --source postgresql://.../familydiagram
     python -m btcopilot.proimport --source sqlite:///dump.db --apply
 
+The same module converts this database's own pickled diagram rows to the stored
+JSON form in place. Idempotent: rows already in JSON are counted and skipped.
+
+    python -m btcopilot.proimport --rows
+
 Never prints a name or an address: an account is named by its old id.
 
 Passwords do not come across. The chat app signs in by emailed code or passkey,
@@ -32,6 +37,8 @@ from btcopilot.extensions import db
 from btcopilot.models import Diagram, User
 
 _log = logging.getLogger(__name__)
+
+BATCH = 100
 
 USER_FIELDS = [
     "username",
@@ -161,6 +168,29 @@ def _point_at_diagrams(connection, users, new_user_id, new_diagram_id) -> None:
             setattr(db.session.get(User, user_id), name, new_diagram_id.get(pointed))
 
 
+def convert_rows() -> tuple[int, int, int]:
+    """Every pickled diagram row in this database, rewritten as JSON: the
+    counts converted, skipped and failed."""
+    ids = [row[0] for row in db.session.query(Diagram.id).order_by(Diagram.id).all()]
+    converted = skipped = failed = 0
+    for start in range(0, len(ids), BATCH):
+        for diagram_id in ids[start : start + BATCH]:
+            diagram = db.session.get(Diagram, diagram_id)
+            if not diagram.data or diagramjson.is_json(diagram.data):
+                skipped += 1
+                continue
+            try:
+                diagram.data = diagramjson.store(diagram.data)
+            except (TypeError, ValueError, KeyError, AttributeError):
+                failed += 1
+                _log.exception(f"Diagram {diagram_id} did not convert")
+                db.session.rollback()
+                continue
+            converted += 1
+        db.session.commit()
+    return converted, skipped, failed
+
+
 def report(result: Result, apply: bool) -> None:
     print(f"{'imported' if apply else 'dry run'}")
     for what, count in (("users", result.users), ("diagrams", result.diagrams)):
@@ -174,7 +204,11 @@ def report(result: Result, apply: bool) -> None:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source", required=True, help="the old database's url")
+    what = parser.add_mutually_exclusive_group(required=True)
+    what.add_argument("--source", help="the old database's url")
+    what.add_argument(
+        "--rows", action="store_true", help="convert this database's pickled rows"
+    )
     parser.add_argument(
         "--apply", action="store_true", help="write; without it nothing is written"
     )
@@ -182,6 +216,10 @@ def main(argv=None) -> int:
 
     logging.basicConfig(level=logging.INFO)
     with create_app().app_context():
+        if args.rows:
+            converted, skipped, failed = convert_rows()
+            print(f"converted={converted} skipped={skipped} failed={failed}")
+            return 1 if failed else 0
         result = run(args.source, args.apply)
     report(result, args.apply)
     return 1 if result.failures else 0

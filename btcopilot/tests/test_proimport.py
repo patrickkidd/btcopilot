@@ -1,11 +1,16 @@
-"""The one-shot import from the old Pro database, against a stand-in dump built
-to the old shape — no birthdate, no preferences, no current diagram."""
+"""The import module: the one-shot read of the old Pro database, against a
+stand-in dump built to the old shape — no birthdate, no preferences, no current
+diagram — and the in-place conversion of this database's pickled rows."""
+
+import importlib.util
+import pickle
 
 import pytest
 
 from btcopilot import diagramjson, proimport
 from btcopilot.extensions import db
 from btcopilot.models import Diagram, User
+from btcopilot.personal.recordtext import render
 from btcopilot.tests.olddump import WHITLOCK, build
 
 
@@ -49,3 +54,59 @@ def test_a_second_run_writes_nobody_twice(flask_app, dump):
     again = proimport.run(dump, apply=True)
     assert (again.users.skipped, again.users.written) == (1, 0)
     assert db.session.query(User).count() == 1
+
+
+OLD = {
+    "people": [
+        {"id": 1, "name": "Ada", "parents": 30},
+        {"id": 2, "name": "Ben"},
+        {"id": 3, "name": "Cass"},
+        {"id": 4, "name": "Dov"},
+    ],
+    "pair_bonds": [{"id": 30, "person_a": 2, "person_b": 3, "married": True}],
+    "events": [
+        {"id": 12, "kind": "shift", "person": 1, "dateTime": "2011-05-01",
+         "description": "moved away", "anxiety": "up", "functioning": "down",
+         "relationship": "distance", "relationshipTargets": [2, 3]},
+        {"id": 13, "kind": "shift", "person": 1, "dateTime": "2012-01-15",
+         "description": "took his side", "relationship": "inside",
+         "relationshipTargets": [2], "relationshipTriangles": [3, 4]},
+    ],
+    "lastItemId": 30,
+}
+
+
+def _migrated(user) -> Diagram:
+    diagram = Diagram(user_id=user.id, name="Old")
+    diagram.data = pickle.dumps(OLD)
+    db.session.add(diagram)
+    db.session.commit()
+    proimport.convert_rows()
+    return diagram
+
+
+def test_an_old_diagrams_timeline_moves_come_across_and_the_coach_reads_them(test_user):
+    # R-0052
+    diagram = _migrated(test_user)
+    assert diagramjson.is_json(diagram.data)
+    record = render(diagram.get_diagram_data())
+    assert (
+        '12 2011-05-01 [shift] person=1 "moved away" anxiety=up functioning=down '
+        "relationship=distance targets=[2, 3]"
+    ) in record
+    assert "relationship=inside targets=[2] triangles=[3, 4]" in record
+
+
+def test_an_old_diagrams_families_and_bonds_come_across(test_user):
+    # R-0052
+    diagram = _migrated(test_user)
+    record = render(diagram.get_diagram_data())
+    assert "1 Ada parents=30" in record
+    assert "30 2+3 married" in record
+
+
+def test_the_old_reader_and_the_row_converter_are_one_module():
+    # R-0422
+    assert importlib.util.find_spec("btcopilot.diagrams") is None
+    assert callable(proimport.run) and callable(proimport.convert_rows)
+
