@@ -11,6 +11,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from btcopilot import oracle
+
 HERE = Path(__file__).resolve().parent.parent
 DOC = HERE / "doc"
 YEAR = "2026"
@@ -65,29 +67,16 @@ def history() -> list[dict]:
 
 def rulings() -> list[dict]:
     out = []
-    path = HERE / "private" / "oracle" / "rulings.md"
-    if not path.exists():
-        return out
-    plain = subprocess.run(
-        ["sops", "-d", str(path)], capture_output=True, text=True, check=True
-    ).stdout
-    for row in plain.splitlines():
-        if not re.match(r"^R-\d{4} \|", row):
-            continue
-        cols = [c.strip() for c in row.split(" | ")]
-        rid, text = cols[0], cols[1]
-        kind = cols[2] if len(cols) > 2 else ""
-        tags = cols[3] if len(cols) > 3 else ""
-        status = cols[4] if len(cols) > 4 else ""
-        stamp = cols[-1]
+    for r in oracle.rulings().values():
+        text = r.statement
         succ = re.findall(r"superseded by (R-\d{4})|supersedes (R-\d{4})", text, re.I)
         out.append({
-            "id": rid,
-            "kind": "ruling" if kind != "defect" else "defect",
-            "status": status,
-            "date": date_of(stamp),
-            "session": stamp,
-            "topics": topics_for(text, tags),
+            "id": r.id,
+            "kind": "defect" if r.kind is oracle.Kind.Defect else "ruling",
+            "status": r.status.value,
+            "date": date_of(r.origin),
+            "session": r.origin,
+            "topics": topics_for(text, ",".join(t.value for t in r.tags)),
             "title": text[:110],
             "text": text,
             "supersedes": [s for pair in succ for s in pair if s],

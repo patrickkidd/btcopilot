@@ -50,10 +50,17 @@ jobs:
       - name: Run web unit tests
         run: npm --prefix web test
 
+      - name: Install sops
+        run: |
+          curl -fsSLo /usr/local/bin/sops https://github.com/getsops/sops/releases/download/v3.13.3/sops-v3.13.3.linux.amd64
+          chmod +x /usr/local/bin/sops
+
       - name: Run unit tests
         # from the checkout, not the installed copy: the suite reads files that
         # live beside the package (alembic.ini, deploy, private, the docs)
         run: pytest -svv --disable-warnings btcopilot/tests
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
 
   web-visual:
     runs-on: ubuntu-24.04

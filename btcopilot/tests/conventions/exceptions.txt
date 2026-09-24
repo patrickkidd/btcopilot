@@ -1,0 +1,2 @@
+# Rulings with no citing test yet, and why (private/oracle SPEC, section 6).
+# One line per ruling: R-NNNN | TEST OWED or WAIVED | reason. Never quote the ruling.
