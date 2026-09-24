@@ -365,3 +365,16 @@ test.describe("a desktop window", () => {
     await expect(page.locator("#caption .listglyph:visible, #menu-open:visible")).toHaveCount(0);
   });
 });
+
+test.describe("the two views of the record", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  // R-0109
+  test("one picture above the chat, and the timeline list a tap away", async ({ page }) => {
+    await settle(page);
+    await expect(page.locator("#chat-screen .pic #view > .ss")).toHaveCount(1);
+    await openList(page);
+    await expect(page.locator("#tab-events")).toHaveClass(/on/);
+    await expect(page.locator("#menu-body .row").first()).toBeVisible();
+  });
+});

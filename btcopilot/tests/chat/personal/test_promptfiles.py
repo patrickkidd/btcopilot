@@ -162,3 +162,12 @@ def test_importing_the_app_decrypts_nothing(tmp_path):
         env=env,
     )
     assert done.returncode == 0, done.stderr[-2000:]
+
+
+def test_one_coach_prompt_and_no_mode_variants():
+    # R-0015
+    for d in (prompts.PUBLIC, REAL_PRIVATE):
+        names = {p.stem for p in d.glob("*.prompty")}
+        assert "agent" in names
+        assert [n for n in names if n != "agent" and n.startswith("agent")] == []
+        assert [n for n in names if "mode" in n] == []
