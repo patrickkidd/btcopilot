@@ -70,3 +70,4 @@ R-0470 | TEST OWED | the naming test covers the one app; the other clauses have 
 R-0473 | WAIVED | who reads the README is a writing choice no test can observe
 R-0474 | WAIVED | how the history is told is a writing choice no test can observe
 R-0475 | WAIVED | how the README is written is a writing choice no test can observe
+R-0476 | WAIVED | how the project is presented is a writing choice no test can observe
