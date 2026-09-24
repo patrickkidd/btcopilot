@@ -218,7 +218,7 @@ Score penalties:
 ### Option B: Programmatic
 
 ```python
-from btcopilot.chat import ask
+from btcopilot.ask import ask
 from btcopilot.tests.synthetic import ConversationSimulator, PERSONAS
 
 simulator = ConversationSimulator(

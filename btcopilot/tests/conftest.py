@@ -149,7 +149,7 @@ def chat_flow(request):
 
             stack.enter_context(
                 patch(
-                    "btcopilot.chat._generate_response",
+                    "btcopilot.ask._generate_response",
                     return_value=response,
                 )
             )

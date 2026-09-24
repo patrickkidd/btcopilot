@@ -4,7 +4,7 @@ something the picture can actually show."""
 
 from btcopilot.seed import seed_diagram_data
 from btcopilot.timeline import aimable, build_timeline
-from btcopilot.chat import summarize_committed_state
+from btcopilot.ask import summarize_committed_state
 from btcopilot import prompts
 from btcopilot.refs import RefKind, index, parse, resolve
 

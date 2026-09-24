@@ -19,9 +19,9 @@
   },
   "referee": {
     "command": null,
-    "oracle_dir": "doc/workstreams/oracles",
-    "gate_definitions_dir": "doc/workstreams/gates",
-    "token_dir": "doc/workstreams/tokens",
+    "oracle_dir": "doc/archive/2026-09-workstreams/oracles",
+    "gate_definitions_dir": "doc/archive/2026-09-workstreams/gates",
+    "token_dir": "doc/archive/2026-09-workstreams/tokens",
     "notes": "SETUP GAP: no referee implementation exists in this project. FD-338 closed evidence-based without tokens. Pending Patrick's call (flagged at ground)."
   },
   "jira": {
@@ -37,7 +37,7 @@
     "btcopilot/prompts.py"
   ],
   "human_docs": {
-    "dir": "doc/workstreams",
+    "dir": "doc/archive/2026-09-workstreams",
     "convention": "*-human-*.md"
   }
 }
