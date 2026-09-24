@@ -67,3 +67,5 @@ R-0444 | WAIVED | an architecture principle; the review it calls for is R-0443
 R-0468 | WAIVED | the box was created by hand in the provider console; no file in the repo holds its region
 R-0469 | TEST OWED | the naming test covers no app-distinguishing names; features by license has no test yet
 R-0470 | TEST OWED | the naming test covers the one app; the other clauses have no test yet
+R-0473 | WAIVED | who reads the README is a writing choice no test can observe
+R-0474 | WAIVED | how the history is told is a writing choice no test can observe
