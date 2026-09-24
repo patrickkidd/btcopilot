@@ -496,3 +496,23 @@ test.describe("the family on the board", () => {
     }
   });
 });
+
+test.describe("a moment named in the coach's words", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  // R-0282
+  test("is an outlined pill with nothing filled in", async ({ page }) => {
+    await settle(page);
+    const chip = await page.locator(".bub.coach .chip.data").first().evaluate((n) => {
+      const s = getComputedStyle(n);
+      return {
+        edge: `${s.borderTopWidth} ${s.borderTopStyle}`,
+        fill: s.backgroundColor,
+        round: parseFloat(s.borderTopLeftRadius),
+      };
+    });
+    expect(chip.edge).toBe("1px solid");
+    expect(chip.fill).toBe("rgba(0, 0, 0, 0)");
+    expect(chip.round).toBeGreaterThanOrEqual(8);
+  });
+});
