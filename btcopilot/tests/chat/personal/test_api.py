@@ -121,7 +121,7 @@ def test_session_create(web, token, test_user):
 
 @pytest.mark.chat_flow
 def test_session_switch_by_last_activity(web, token):
-    # no ruling
+    # R-0347
     first = post(web, token, "/app/chat", {"statement": "one"}).get_json()
     second = post(web, token, "/app/sessions", {}).get_json()
     post(
@@ -160,7 +160,7 @@ def test_session_rename(web, token):
 
 @pytest.mark.chat_flow(response="a coach reply")
 def test_session_delete_keeps_the_record(web, token, test_user):
-    # no ruling
+    # R-0019
     created = post(web, token, "/app/chat", {"statement": "hello"}).get_json()
     events = len(test_user.free_diagram.get_diagram_data().events)
 
@@ -173,7 +173,7 @@ def test_session_delete_keeps_the_record(web, token, test_user):
 
 
 def test_session_delete_of_another_user_is_not_found(web, token, test_user_2):
-    # no ruling
+    # R-0080
     other = Discussion(user_id=test_user_2.id, summary="theirs")
     db.session.add(other)
     db.session.commit()
@@ -186,7 +186,7 @@ def test_session_delete_of_another_user_is_not_found(web, token, test_user_2):
 
 
 def test_session_rename_rejects_unknown_field(web, token):
-    # no ruling
+    # R-0453
     created = post(web, token, "/app/sessions", {}).get_json()
 
     response = patch(
@@ -196,13 +196,13 @@ def test_session_rename_rejects_unknown_field(web, token):
 
 
 def test_chat_requires_json(web, token):
-    # no ruling
+    # R-0453
     response = web.post("/app/chat", data="hello", headers={"X-CSRFToken": token})
     assert response.status_code == 415
 
 
 def test_session_of_another_user_is_not_found(web, token, test_user_2):
-    # no ruling
+    # R-0080
     other = Discussion(user_id=test_user_2.id, summary="theirs")
     db.session.add(other)
     db.session.commit()
@@ -244,7 +244,6 @@ def test_a_chip_pointing_at_nothing_becomes_its_own_words(web, token, family):
     # R-0085
     body = replied(post(web, token, "/app/chat", {"statement": "hi"}))
     assert body["statement"] == "I mean someone."
-
 
 
 @pytest.fixture
@@ -323,7 +322,6 @@ def test_a_chip_may_name_an_undated_event(web, token, dated):
     assert body["statement"] == "An undated one: [[event:12|that]]."
 
 
-
 # ── preferences ─────────────────────────────────────────────────────────────
 
 
@@ -364,7 +362,7 @@ def test_preferences_round_trip(web, token, test_user):
 
 
 def test_preferences_rejects_unknown_key(web, token):
-    # no ruling
+    # R-0453
     assert (
         patch(web, token, "/app/preferences", {"colour": "blue"}).status_code
         == 400
@@ -372,7 +370,7 @@ def test_preferences_rejects_unknown_key(web, token):
 
 
 def test_preferences_rejects_bad_value(web, token):
-    # no ruling
+    # R-0453
     response = patch(
         web, token, "/app/preferences", {PrefKey.Theme.value: "aubergine"}
     )
@@ -417,7 +415,7 @@ def test_account_license_status_follows_the_license(web, test_user):
 
 
 def test_read_only_grant_is_not_listed_or_writable(web, token, test_user, test_user_2):
-    # no ruling
+    # R-0080
     shared = Diagram(
         user_id=test_user_2.id, name="Shared Family", data=diagramjson.dumps({})
     )
@@ -492,7 +490,7 @@ def test_event_round_trip(web, token, family):
 def test_a_named_record_takes_the_write_and_a_stranger_s_does_not(
     web, token, family, test_user, test_user_2
 ):
-    # no ruling
+    # R-0080
     """The coding screen writes onto the record its coding is of, which it names
     on the request; a record the user may not write is refused."""
     mine = Diagram(user_id=test_user.id, name="Coding", data=diagramjson.dumps({}))
@@ -599,14 +597,14 @@ def test_event_triangles_kept_only_for_inside_and_outside(web, token, family):
 
 
 def test_event_rejects_unknown_field(web, token, family):
-    # no ruling
+    # R-0453
     response = post(web, token, "/app/events", dict(SHIFT, mood="blue"))
     assert response.status_code == 400
     assert b"mood" in response.get_data()
 
 
 def test_event_rejects_unknown_person(web, token, family):
-    # no ruling
+    # R-0453
     response = post(web, token, "/app/events", dict(SHIFT, person=99))
     assert response.status_code == 400
 
@@ -620,7 +618,7 @@ def test_event_rejects_bad_kind(web, token, family):
 
 
 def test_event_of_missing_id_is_404(web, token, family):
-    # no ruling
+    # R-0453
     assert (
         patch(web, token, "/app/events/404", {"description": "x"}).status_code
         == 404

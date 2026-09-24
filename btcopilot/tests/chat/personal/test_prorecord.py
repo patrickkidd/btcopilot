@@ -89,7 +89,7 @@ def test_the_chat_app_reads_the_relationship_sub_fields(web, test_user):
 
 
 def test_editing_an_event_by_hand_keeps_the_fields_only_the_desktop_knows(web, test_user):
-    # no ruling
+    # R-0355
     """The chat editor writes the fields it shows; relationshipIntensity and the
     desktop's drawing fields on the same event are not its to drop."""
     diagram = test_user.free_diagram

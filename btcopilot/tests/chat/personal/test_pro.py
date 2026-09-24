@@ -100,13 +100,13 @@ def test_only_a_professional_starts_a_note(web):
 
 
 def test_a_chat_session_is_still_the_default(web):
-    # no ruling
+    # R-0281
     made = web.post("/app/sessions", headers={"X-CSRFToken": csrf_token(web)})
     assert made.get_json()["kind"] == "chat"
 
 
 def test_a_recording_cannot_be_started_without_its_transcript(pro):
-    # no ruling
+    # R-0348
     refused = pro.post(
         "/app/sessions",
         json={"kind": "recording"},
@@ -148,7 +148,7 @@ def test_a_mapped_recording_reads_as_a_session(pro):
 
 
 def test_the_clinician_becomes_the_coachs_side_of_the_thread(pro):
-    # no ruling
+    # R-0243
     made = pro.post(
         "/app/recordings",
         json={"utterances": UTTERANCES, "voices": VOICES, "title": "Session 3"},
@@ -162,7 +162,7 @@ def test_the_clinician_becomes_the_coachs_side_of_the_thread(pro):
 
 
 def test_a_recording_with_no_clinician_is_refused(pro):
-    # no ruling
+    # R-0243
     refused = pro.post(
         "/app/recordings",
         json={

@@ -22,7 +22,7 @@ def imported_modules(path: Path) -> list[str]:
 
 
 def test_only_the_adapter_reaches_the_app():
-    # no ruling
+    # R-0233
     leaks = {
         str(path.relative_to(PACKAGE)): [
             name
@@ -36,7 +36,7 @@ def test_only_the_adapter_reaches_the_app():
 
 
 def test_the_adapter_is_where_it_is_reached():
-    # no ruling
+    # R-0245
     assert [
         name
         for name in imported_modules(PACKAGE / DOOR)

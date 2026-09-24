@@ -13,7 +13,7 @@ from btcopilot.extensions import db
 
 
 def test_update_with_version_check_atomicity(test_user):
-    # no ruling
+    # R-0084
     """Test that update_with_version_check atomically updates both data and version."""
     diagram = test_user.free_diagram
     initial_version = diagram.version
@@ -32,7 +32,7 @@ def test_update_with_version_check_atomicity(test_user):
 
 
 def test_update_with_version_check_conflict(test_user):
-    # no ruling
+    # R-0084
     """Test that update_with_version_check rejects when version mismatches."""
     diagram = test_user.free_diagram
     initial_version = diagram.version
@@ -47,7 +47,7 @@ def test_update_with_version_check_conflict(test_user):
 
 
 def test_update_with_version_check_using_diagram_data(test_user):
-    # no ruling
+    # R-0084
     """Test that update_with_version_check works with DiagramData objects."""
     diagram = test_user.free_diagram
     initial_version = diagram.version
@@ -97,7 +97,7 @@ def test_json_row_stays_json_and_reads_back_as_pickle(test_user):
 
 
 def test_model_imports_without_the_qt_gui_module():
-    # no ruling
+    # R-0051
     """The server must start where PyQt5.QtGui's system libraries are absent."""
     root = Path(__file__).parents[3]
     result = subprocess.run(

@@ -42,7 +42,7 @@ def test_adding_someone_writes_them_and_logs_it_as_the_user(web, family):
 
 
 def test_changing_someone_keeps_their_id(web, family):
-    # no ruling
+    # R-0087
     token = csrf_token(web)
     changed = web.patch(
         "/app/people/1",
@@ -60,7 +60,7 @@ def test_changing_someone_keeps_their_id(web, family):
 
 
 def test_a_field_the_record_has_no_room_for_is_refused(web, family):
-    # no ruling
+    # R-0453
     token = csrf_token(web)
     refused = web.patch(
         "/app/people/1",
@@ -72,7 +72,7 @@ def test_a_field_the_record_has_no_room_for_is_refused(web, family):
 
 
 def test_removing_someone_takes_them_off_the_record(web, family):
-    # no ruling
+    # R-0078
     token = csrf_token(web)
     gone = web.delete("/app/people/1", headers={"X-CSRFToken": token})
     assert gone.status_code == 204
@@ -80,7 +80,7 @@ def test_removing_someone_takes_them_off_the_record(web, family):
 
 
 def test_a_record_behind_its_own_counter_never_renames_someone(web, family):
-    # no ruling
+    # R-0455
     data = family.get_diagram_data()
     data.people.append(asdict(Person(id=2, name="Sol", gender=PersonKind.Male)))
     data.lastItemId = 0

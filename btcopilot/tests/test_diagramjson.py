@@ -39,7 +39,7 @@ def test_roundtrip_through_wire_json(path):
 
 
 def test_encode_rejects_unknown_type():
-    # no ruling
+    # R-0453
     with pytest.raises(TypeError):
         diagramjson.to_json({"x": object()})
 

@@ -24,7 +24,7 @@ PRIVATE_MODULES = [
 
 
 def test_schema_import_isolation():
-    # no ruling
+    # R-0051
     blocked = {mod: None for mod in PRIVATE_MODULES}
     with unittest.mock.patch.dict(sys.modules, blocked):
         if "btcopilot.schema" in sys.modules:

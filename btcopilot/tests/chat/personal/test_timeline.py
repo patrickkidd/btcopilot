@@ -363,7 +363,7 @@ def test_every_dated_event_says_itself_in_a_sentence():
 
 
 def test_the_axis_spans_every_dated_event_not_only_the_lane_marks():
-    # no ruling
+    # R-0111
     events = [
         asdict(
             Event(
@@ -397,7 +397,7 @@ def test_undated_events_belong_to_no_cluster_but_stay_in_the_list():
 
 
 def test_every_event_carries_the_words_the_list_shows():
-    # no ruling
+    # R-0318
     timeline = build_timeline(seed_diagram_data())
     assert len(timeline["events"]) == len(seed_diagram_data().events)
     for event in timeline["events"]:
@@ -406,7 +406,7 @@ def test_every_event_carries_the_words_the_list_shows():
 
 
 def test_an_event_carries_the_fields_whoever_stored_it_left_out():
-    # no ruling
+    # R-0318
     events = [{"id": 10, "kind": EventKind.Shift.value, "dateTime": "1990-01-01"}]
     event = build_timeline(_data([1], events))["events"][0]
     assert event["relationshipTargets"] == []
@@ -422,7 +422,7 @@ def _named(ids_and_names, events):
 
 
 def test_a_moment_says_who_from_its_links_and_what_without_the_name():
-    # no ruling
+    # R-0457
     """Owner ruling 2026-09-09: who comes from the links, what never repeats a
     linked person's name."""
     events = [

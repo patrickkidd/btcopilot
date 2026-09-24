@@ -146,7 +146,7 @@ def test_the_coach_can_write_a_noted_event(discussion, family):
 
 
 def test_a_turn_that_fails_before_the_coach_answers_stores_no_words(discussion, family):
-    # no ruling
+    # R-0182
     class Down:
         def turn(self, system, messages, tools, turn_id=""):
             raise RuntimeError("model unreachable")
@@ -316,7 +316,7 @@ def test_chat_returns_the_words_and_the_events_behind_them(web, family, monkeypa
 
 
 def test_people_and_their_events_all_land_in_one_turn(discussion, family):
-    # no ruling
+    # R-0078
     """A turn that adds the people and stops has lost what was said about them:
     the coach keeps calling tools until every dated fact is in the record."""
     reply = run(
@@ -416,7 +416,7 @@ def test_offered_chips_never_reach_the_transcript(test_user):
 def test_a_turn_that_never_stops_calling_tools_still_says_something(
     discussion, family
 ):
-    # no ruling
+    # R-0411
     """The page shows what the coach said, so a turn may not end on a tool
     call. When the steps run out the coach is asked for its reply with no tools
     at all, and that is what the person reads."""
@@ -773,13 +773,13 @@ def test_a_turn_writes_down_each_model_call_with_its_cost(discussion, family):
 
 
 def test_a_model_with_no_price_raises():
-    # no ruling
+    # R-0453
     with pytest.raises(KeyError):
         pricing.cost("gpt-5", Spent())
 
 
 def test_tracing_provider(monkeypatch):
-    # no ruling
+    # R-0370
     monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
     assert isinstance(tracing.provider(), trace.NoOpTracerProvider)
 

@@ -7,7 +7,7 @@ from btcopilot.schema import DiagramData
 
 
 def test_the_coach_is_not_a_person_in_a_new_record():
-    # no ruling
+    # R-0360
     data = DiagramData()
     user_person_id, changed = data.ensure_chat_defaults()
 
@@ -17,7 +17,7 @@ def test_the_coach_is_not_a_person_in_a_new_record():
 
 
 def test_the_id_the_coach_used_to_hold_is_never_handed_to_anyone():
-    # no ruling
+    # R-0455
     data = DiagramData()
     data.ensure_chat_defaults()
 
@@ -25,7 +25,7 @@ def test_the_id_the_coach_used_to_hold_is_never_handed_to_anyone():
 
 
 def test_a_new_session_points_the_coach_at_no_person(web):
-    # no ruling
+    # R-0360
     response = web.post(
         "/app/sessions", json={}, headers={"X-CSRFToken": csrf_token(web)}
     )

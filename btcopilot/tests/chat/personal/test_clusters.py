@@ -407,7 +407,7 @@ def test_a_contaminated_name_that_is_corrected_on_the_second_ask_is_stored():
 
 
 def test_a_rejected_grouping_is_asked_for_once_more():
-    # no ruling
+    # R-0076
     with replies(
         answers(named(1, 2, 99)), answers(named(1, 2, 3), named(4, 5, 6))
     ) as ask:
@@ -533,7 +533,7 @@ def test_changing_a_grouping_already_there_is_kept_when_it_says_what_changed():
 
 
 def test_an_id_the_record_does_not_have_is_rejected():
-    # no ruling
+    # R-0076
     invented = answers(named(1, 2, 3, cluster_id="c99", name=SPRING))
     with replies(invented, invented):
         with pytest.raises(ClusterError, match="c99"):

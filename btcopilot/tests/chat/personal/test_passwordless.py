@@ -64,7 +64,7 @@ def test_invite_creates_user_and_signs_in(flask_app, browser):
 
 
 def test_coming_back_to_the_site_root_lands_in_the_chat(flask_app, browser):
-    # no ruling
+    # R-0087
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
     browser.get(f"/app/invite/{invitation.token}")
 
@@ -139,7 +139,7 @@ def test_invite_is_single_use(flask_app, browser):
 
 
 def test_invite_is_reusable_where_the_sandbox_says_so(flask_app, browser):
-    # no ruling
+    # R-0452
     flask_app.config["INVITATION_REUSABLE"] = True
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
     browser.get(f"/app/invite/{invitation.token}")
@@ -207,7 +207,7 @@ def test_code_requests_are_rate_limited(flask_app, browser, test_user):
 
 
 def test_revoking_the_session_logs_out(flask_app, browser):
-    # no ruling
+    # R-0099
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
     browser.get(f"/app/invite/{invitation.token}")
     listed = browser.get("/app/signins").get_json()["sessions"]

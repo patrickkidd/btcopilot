@@ -140,7 +140,7 @@ def test_the_write_refuses_a_cluster_under_three_events(subscriber):
 def test_the_write_refuses_a_description_that_names_a_person_the_event_links(
     subscriber,
 ):
-    # no ruling
+    # R-0457
     """Owner ruling 2026-09-09: the links say who, so the words may not say the
     same person again."""
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Elizabeth"}]})
@@ -165,7 +165,7 @@ def test_the_write_refuses_a_description_that_names_a_person_the_event_links(
 
 
 def test_the_write_refuses_a_birth_hung_on_the_person_instead_of_the_child(subscriber):
-    # no ruling
+    # R-0456
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Elizabeth"}]})
 
     with pytest.raises(record.Invalid, match="set child, not person"):
@@ -182,7 +182,7 @@ def test_the_write_refuses_a_birth_hung_on_the_person_instead_of_the_child(subsc
 
 
 def test_a_birth_about_the_child_with_words_of_its_own_commits(subscriber):
-    # no ruling
+    # R-0457
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Elizabeth"}]})
 
     record.apply(
@@ -224,7 +224,7 @@ def test_a_write_that_only_renames_a_cluster_is_not_held_to_events_it_did_not_to
 
 
 def test_a_grouping_stored_under_the_older_floor_blocks_nothing_else(subscriber):
-    # no ruling
+    # R-0215
     """A record can hold a grouping made when two events were enough. The write
     answers for what it touches, so unrelated work still commits."""
     diagram = _diagram(
@@ -298,7 +298,7 @@ def _family(user) -> Diagram:
 
 
 def test_delete_person_cascades_like_the_scene(subscriber):
-    # no ruling
+    # R-0078
     diagram = _family(subscriber.user)
 
     record.apply(
@@ -341,7 +341,7 @@ def test_undo_of_delete_restores_the_family(subscriber):
 
 
 def test_delete_of_a_missing_item_raises(subscriber):
-    # no ruling
+    # R-0453
     diagram = _family(subscriber.user)
 
     with pytest.raises(ValueError):
@@ -361,7 +361,7 @@ def test_delete_of_a_missing_item_raises(subscriber):
 
 
 def test_the_write_refuses_a_shift_that_says_nothing_moved(subscriber):
-    # no ruling
+    # R-0363
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
 
     with pytest.raises(record.Invalid, match="shift with no variable"):
@@ -417,7 +417,7 @@ def test_the_write_refuses_an_early_birth_that_carries_a_variable(subscriber):
 
 
 def test_the_write_refuses_a_moment_already_in_the_record(subscriber):
-    # no ruling
+    # R-0442
     diagram = _diagram(
         subscriber.user,
         {

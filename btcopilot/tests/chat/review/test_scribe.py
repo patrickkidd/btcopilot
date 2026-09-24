@@ -290,7 +290,7 @@ class Endless:
 
 
 def test_says_so_when_it_runs_out_of_steps(coder, cut, turns):
-    # no ruling
+    # R-0411
     """What was written stays, and the coder is told, never shown it as done."""
     coding = coded(coder.user, cut, {"people": []}, done=False)
     response = scribe(coder, coding, turns[0], Endless(), "a sentence that never ends")
@@ -420,7 +420,7 @@ def test_a_child_reads_as_whose_child_they_are():
 
 
 def test_a_bond_with_no_event_says_it_has_no_date_yet():
-    # no ruling
+    # R-0013
     record = dict(STRUCTURE, events=[])
     assert written(record, [], [], ["10"]) == [
         "+ Marcus & Delphine · married · no date yet"
@@ -428,7 +428,7 @@ def test_a_bond_with_no_event_says_it_has_no_date_yet():
 
 
 def test_a_year_the_coder_only_said_as_a_year_reads_as_the_year():
-    # no ruling
+    # R-0438
     """A year alone is stored as the first of January, approximate; the month
     was never said, so it is not read back (R-0326)."""
     record = dict(
@@ -447,7 +447,7 @@ def test_a_year_the_coder_only_said_as_a_year_reads_as_the_year():
 
 
 def test_a_january_date_the_coder_stated_keeps_its_month():
-    # no ruling
+    # R-0438
     record = dict(
         STRUCTURE,
         events=[

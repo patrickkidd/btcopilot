@@ -15,7 +15,7 @@ def dump(tmp_path):
 
 
 def test_dry_run_counts_and_writes_nothing(flask_app, dump):
-    # no ruling
+    # R-0327
     result = proimport.run(dump, apply=False)
     assert (result.users.read, result.users.written) == (1, 1)
     assert (result.diagrams.read, result.diagrams.written) == (3, 1)
@@ -24,7 +24,7 @@ def test_dry_run_counts_and_writes_nothing(flask_app, dump):
 
 
 def test_every_failure_is_named_with_its_reason(flask_app, dump):
-    # no ruling
+    # R-0327
     result = proimport.run(dump, apply=False)
     assert len(result.failures) == 1
     assert result.failures[0].startswith("diagram 13:")

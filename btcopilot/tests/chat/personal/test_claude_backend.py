@@ -18,14 +18,14 @@ from btcopilot.llmutil import (
 
 
 def test_is_claude_model_positive():
-    # no ruling
+    # R-0405
     assert _is_claude_model("claude-opus-5-5")
     assert _is_claude_model("claude-sonnet-4-20250514")
     assert _is_claude_model("claude-3-opus-20240229")
 
 
 def test_is_claude_model_negative():
-    # no ruling
+    # R-0405
     assert not _is_claude_model("gemini-3-flash-preview")
     assert not _is_claude_model("gpt-4o")
     assert not _is_claude_model("mistral-large-latest")
@@ -35,7 +35,7 @@ def test_is_claude_model_negative():
 
 
 def test_prepare_messages_from_turns():
-    # no ruling
+    # R-0405
     messages = _prepare_claude_messages(turns=[("user", "Hi"), ("model", "Hello")])
     assert messages == [
         {"role": "user", "content": "Hi"},
@@ -44,13 +44,13 @@ def test_prepare_messages_from_turns():
 
 
 def test_prepare_messages_from_prompt():
-    # no ruling
+    # R-0405
     messages = _prepare_claude_messages(prompt="What is 2+2?")
     assert messages == [{"role": "user", "content": "What is 2+2?"}]
 
 
 def test_prepare_messages_prepends_user_if_starts_with_assistant():
-    # no ruling
+    # R-0405
     messages = _prepare_claude_messages(
         turns=[("model", "Welcome!"), ("user", "Thanks")]
     )
@@ -61,7 +61,7 @@ def test_prepare_messages_prepends_user_if_starts_with_assistant():
 
 
 def test_prepare_messages_merges_consecutive_same_role():
-    # no ruling
+    # R-0405
     messages = _prepare_claude_messages(
         turns=[("user", "First"), ("user", "Second"), ("model", "Reply")]
     )
@@ -130,7 +130,7 @@ async def test_claude_text_with_turns():
 
 @pytest.mark.asyncio
 async def test_claude_text_with_simple_prompt():
-    # no ruling
+    # R-0405
     mock_response = _make_mock_response("Simple response")
     mock_create = AsyncMock(return_value=mock_response)
 
@@ -168,7 +168,7 @@ def test_claude_text_sync():
 
 
 def test_response_text_sync_routes_to_claude():
-    # no ruling
+    # R-0405
     """response_text_sync routes to Claude when RESPONSE_MODEL starts with claude-."""
     with (
         patch("btcopilot.llmutil.RESPONSE_MODEL", "claude-opus-5-5"),

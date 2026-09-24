@@ -53,14 +53,14 @@ def _write(diagram, deltas):
 
 
 def test_a_bond_of_one_person_with_themselves_is_refused(subscriber):
-    # no ruling
+    # R-0326
     diagram = _diagram(subscriber.user)
     with pytest.raises(record.Invalid, match="one person with themselves"):
         _write(diagram, _bond(11, 1, 1))
 
 
 def test_a_bond_with_one_side_is_refused(subscriber):
-    # no ruling
+    # R-0326
     diagram = _diagram(subscriber.user)
     with pytest.raises(record.Invalid, match="needs two people"):
         _write(
@@ -84,7 +84,7 @@ def test_a_second_bond_between_the_same_two_is_refused(subscriber):
 
 
 def test_nobody_is_born_to_a_bond_they_are_in(subscriber):
-    # no ruling
+    # R-0326
     diagram = _diagram(subscriber.user)
     with pytest.raises(record.Invalid, match="their own parent"):
         _write(

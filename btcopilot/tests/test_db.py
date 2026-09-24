@@ -58,7 +58,7 @@ CHAT_PACKAGES = ("btcopilot.review", "btcopilot.personal", "btcopilot.auth", "bt
 
 
 def test_every_chat_model_is_in_the_chain():
-    # no ruling
+    # R-0417
     """A model in a chat-app package whose table the chain does not build is a
     table that exists on the sandbox by hand and on a fresh server not at all,
     which is how review_notes went missing."""
@@ -71,7 +71,7 @@ def test_every_chat_model_is_in_the_chain():
 
 
 def test_chain_matches_what_the_models_declare(chain, tmp_path):
-    # no ruling
+    # R-0417
     engine = create_engine(f"sqlite:///{tmp_path / 'models.db'}")
     tables.create_all(engine)
     assert shape(chain) == shape(str(engine.url))

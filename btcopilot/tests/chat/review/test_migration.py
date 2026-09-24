@@ -56,7 +56,7 @@ def test_author_enum_takes_review(flask_app):
 
 
 def test_discussion_kind_defaults_to_chat(flask_app, test_user):
-    # no ruling
+    # R-0281
     from btcopilot.personal.models import Discussion, DiscussionKind
 
     discussion = Discussion(user_id=test_user.id)

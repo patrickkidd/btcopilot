@@ -30,7 +30,7 @@ def _match(mine, theirs):
 
 
 def test_the_same_man_named_three_ways_is_one_person():
-    # no ruling
+    # R-0322
     """One coder wrote "father", another "Corinne's father", a third his name.
     The bond their daughter hangs on says they are the same man."""
     daughter = _person(3, "Corinne", "female", parents=10)
@@ -55,7 +55,7 @@ def test_the_same_man_named_three_ways_is_one_person():
 
 
 def test_two_people_with_the_same_first_name_are_not_matched():
-    # no ruling
+    # R-0322
     """Two men called Marcus standing in different places in the family: one is
     the father, one is a son-in-law, and they are not the same man."""
     theirs = _pdp(
@@ -77,7 +77,7 @@ def test_two_people_with_the_same_first_name_are_not_matched():
 
 
 def test_a_person_who_could_be_two_is_handed_to_the_room():
-    # no ruling
+    # R-0322
     """Two sisters both called Lee, with nothing in the family to tell them
     apart: the item carries both versions and the room decides who is who."""
     theirs = _pdp([_person(1, "Lee", "female"), _person(2, "Lee", "female")])
@@ -88,7 +88,7 @@ def test_a_person_who_could_be_two_is_handed_to_the_room():
 
 
 def test_an_ambiguous_person_is_never_agreed(coder, patrick, cut):
-    # no ruling
+    # R-0322
     """The row the snapshot writes for it is disputed and says it is unsure."""
     record = {"people": [_person(1, "Lee", "female"), _person(2, "Lee", "female")]}
     coded(coder.user, cut, record)

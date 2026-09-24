@@ -50,12 +50,12 @@ def test_page_carries_what_only_the_server_knows(web, test_user):
 
 
 def test_health_reports_the_version(flask_app):
-    # no ruling
+    # R-0419
     assert flask_app.test_client().get("/health").get_data(as_text=True) == btcopilot.__version__
 
 
 def test_page_requires_login(flask_app):
-    # no ruling
+    # R-0080
     flask_app.test_client_class = flask.testing.FlaskClient
     with flask_app.test_client(use_cookies=True) as client:
         response = client.get("/app/")
@@ -64,7 +64,7 @@ def test_page_requires_login(flask_app):
 
 
 def test_timeline_shows_own_data_only(web, test_user):
-    # no ruling
+    # R-0080
     diagram = test_user.free_diagram
     diagram.set_diagram_data(seed_diagram_data())
     db.session.commit()
@@ -75,7 +75,7 @@ def test_timeline_shows_own_data_only(web, test_user):
 
 
 def test_timeline_empty_for_user_without_diagram(flask_app, test_user_2):
-    # no ruling
+    # R-0080
     test_user_2.roles = btcopilot.ROLE_SUBSCRIBER
     db.session.merge(test_user_2)
     db.session.commit()
@@ -117,7 +117,7 @@ def test_chat_round_trip(web, test_user):
 
 @pytest.mark.chat_flow
 def test_chat_reuses_discussion(web, test_user):
-    # no ruling
+    # R-0466
     token = csrf_token(web)
     first = web.post(
         "/app/chat", json={"statement": "one"}, headers={"X-CSRFToken": token}
@@ -204,7 +204,7 @@ def test_a_tap_is_recorded_against_the_diagram(web, test_user):
 
 
 def test_a_tap_that_names_no_item_kind_is_refused_in_words(web, test_user):
-    # no ruling
+    # R-0453
     response = web.post(
         "/app/interactions",
         json={

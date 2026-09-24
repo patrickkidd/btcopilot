@@ -32,5 +32,5 @@ def on_the_box() -> set[str]:
 
 
 def test_every_setting_the_app_requires_has_a_home_on_the_box():
-    # no ruling
+    # R-0465
     assert hard_reads() - on_the_box() == set()

@@ -30,7 +30,7 @@ def _post(web, body):
 
 
 def test_adding_a_bond_writes_it(web, family):
-    # no ruling
+    # R-0078
     added = _post(web, {"person_a": 1, "person_b": 2, "married": True})
     assert added.status_code == 201
     assert added.get_json() == {
@@ -42,7 +42,7 @@ def test_adding_a_bond_writes_it(web, family):
 
 
 def test_a_bond_of_one_person_with_themselves_is_refused(web, family):
-    # no ruling
+    # R-0326
     refused = _post(web, {"person_a": 1, "person_b": 1})
     assert refused.status_code == 400
     assert "themselves" in refused.get_data(as_text=True)
@@ -92,7 +92,7 @@ def test_add_parents_makes_a_bond_of_two_generically_named_people(web, family):
 
 
 def test_ending_a_bond_leaves_its_children_without_parents(web, family):
-    # no ruling
+    # R-0326
     bond = _post(web, {"person_a": 1, "person_b": 2}).get_json()
     token = csrf_token(web)
     web.patch(

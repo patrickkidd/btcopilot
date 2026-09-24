@@ -39,19 +39,19 @@ def test_set_prefs_round_trips(test_user):
 
 
 def test_set_prefs_rejects_unknown_key(test_user):
-    # no ruling
+    # R-0453
     with pytest.raises(ValueError):
         test_user.set_prefs(colour="blue")
 
 
 def test_set_prefs_rejects_bad_value(test_user):
-    # no ruling
+    # R-0453
     with pytest.raises(ValueError):
         test_user.set_prefs(proactive="daily")
 
 
 def test_speak_must_be_bool(test_user):
-    # no ruling
+    # R-0453
     with pytest.raises(ValueError):
         test_user.set_prefs(speak="true")
 

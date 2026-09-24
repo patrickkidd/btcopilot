@@ -172,7 +172,7 @@ def test_a_second_message_while_the_coach_is_answering_is_refused(
 
 
 def test_a_hold_left_by_a_dead_worker_runs_out(web, token, family, monkeypatch):
-    # no ruling
+    # R-0182
     """A worker that dies mid-turn says nothing. The hold on the session has to
     run out on its own, or the reader can never send anything again."""
     coach(monkeypatch, said("Still going."), said("Back to you."))
@@ -247,7 +247,7 @@ def test_the_stream_numbers_every_event(web, token, family, monkeypatch):
 
 
 def test_another_users_turn_is_not_found(web, token, family, monkeypatch, test_user_2):
-    # no ruling
+    # R-0080
     coach(monkeypatch, said("Tell me about Nell."))
     body = post(web, token).get_json()
     discussion = db.session.get(Discussion, body["discussion_id"])
@@ -258,7 +258,7 @@ def test_another_users_turn_is_not_found(web, token, family, monkeypatch, test_u
 
 
 def test_a_turn_nobody_started_is_not_found(web, token):
-    # no ruling
+    # R-0453
     assert web.get("/app/turns/nosuchturn/events").status_code == 404
 
 

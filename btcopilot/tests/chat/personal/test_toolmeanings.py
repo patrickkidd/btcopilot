@@ -36,7 +36,7 @@ def private(tmp_path):
 
 
 def test_every_tool_parameter_has_a_default_meaning():
-    # no ruling
+    # R-0451
     means = prompts.tool_meanings()
     assert set(means) == set(prompts.ToolText)
 

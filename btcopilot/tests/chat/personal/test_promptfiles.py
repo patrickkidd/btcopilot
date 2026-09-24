@@ -91,14 +91,14 @@ def test_the_private_prompts_say_what_their_constants_said(monkeypatch):
 
 
 def test_the_app_runs_whole_with_no_private_prompts(public):
-    # no ruling
+    # R-0451
     assert public.get_agent_prompt(record="Marcus, 40")
     assert public.scribe_prompt(record="Marcus, 40")
     assert set(public.tool_meanings()) == set(public.ToolText)
 
 
 def test_a_prompt_renders_the_fragments_it_includes(tmp_path):
-    # no ruling
+    # R-0454
     (tmp_path / "fragments").mkdir()
     (tmp_path / "fragments" / "one.md").write_text("FIRST")
     (tmp_path / "fragments" / "two.md").write_text("SECOND")
@@ -110,7 +110,7 @@ def test_a_prompt_renders_the_fragments_it_includes(tmp_path):
 
 
 def test_a_missing_fragment_raises_rather_than_rendering_empty(tmp_path):
-    # no ruling
+    # R-0453
     (tmp_path / "lonely.prompty").write_text(
         '---\nname: lonely\ndescription: nothing to include\n---\n'
         '{% include "fragments/gone.md" %}'
@@ -145,7 +145,7 @@ def test_an_encrypted_prompt_reads_as_its_plain_text():
 
 
 def test_importing_the_app_decrypts_nothing(tmp_path):
-    # no ruling
+    # R-0451
     """A prompt is read when it is called for, never when a module loads, or a
     test run and the migration chain would need a key before they could start."""
     fake = tmp_path / "bin"

@@ -14,7 +14,6 @@ from btcopilot.tests import olddump
 from btcopilot.admin.setting import SettingKey
 
 
-
 @pytest.fixture
 def run(flask_app):
     runner = flask_app.test_cli_runner()
@@ -32,7 +31,7 @@ def rows(output: str) -> list[dict]:
 
 
 def test_users_list_and_show(run, test_user):
-    # no ruling
+    # R-0390
     listed = rows(run("users", "list", "--json"))
     assert [one["email"] for one in listed] == [test_user.username]
 
@@ -41,7 +40,7 @@ def test_users_list_and_show(run, test_user):
 
 
 def test_users_roles_set_then_read(run, test_user):
-    # no ruling
+    # R-0390
     run("users", "roles", test_user.username, btcopilot.ROLE_AUDITOR)
     assert rows(run("users", "roles", test_user.username, "--json"))[0]["roles"] == (
         btcopilot.ROLE_AUDITOR
@@ -55,13 +54,13 @@ def test_users_invite_prints_a_link(run, flask_app):
 
 
 def test_unknown_user_is_named(flask_app):
-    # no ruling
+    # R-0390
     result = flask_app.test_cli_runner().invoke(admin, ["users", "show", "nobody@x.com"])
     assert result.exit_code != 0 and "no account for nobody@x.com" in result.output
 
 
 def test_licence_granted_then_revoked(run, test_user, test_policy):
-    # no ruling
+    # R-0390
     granted = rows(run("licences", "grant", test_user.username, test_policy.code, "--json"))
     assert granted[0]["status"] == "active"
 
@@ -70,7 +69,7 @@ def test_licence_granted_then_revoked(run, test_user, test_policy):
 
 
 def test_diagram_counts_and_export(run, test_user):
-    # no ruling
+    # R-0390
     listed = rows(run("diagrams", "list", "--json"))
     assert listed[0]["id"] == test_user.free_diagram_id
 
@@ -79,7 +78,7 @@ def test_diagram_counts_and_export(run, test_user):
 
 
 def test_import_dry_run_counts_and_writes_nothing(run, tmp_path):
-    # no ruling
+    # R-0327
     dump = olddump.build(tmp_path / "old.db")
     counted = rows(run("imports", "dry-run", dump, "--json"))
     assert [one["what"] for one in counted[:2]] == ["users", "diagrams"]
@@ -100,7 +99,7 @@ def test_token_cap_default_and_one_person(run, test_user):
 
 
 def test_token_cap_refuses_a_negative(flask_app, test_user):
-    # no ruling
+    # R-0453
     result = flask_app.test_cli_runner().invoke(
         admin, ["token-cap", "set", test_user.username, "--", "-1"]
     )

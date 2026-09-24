@@ -169,7 +169,7 @@ def test_no_more_than_four_places_are_ever_marked(wire):
 
 
 def test_what_the_call_cost_and_what_it_read_back_is_logged(wire, caplog):
-    # no ruling
+    # R-0389
     with caplog.at_level(logging.INFO, logger="btcopilot.personal.coachmodel"):
         call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
     logged = caplog.text
@@ -192,21 +192,21 @@ def test_the_two_halves_of_the_coach_prompt_are_the_whole_prompt():
 
 
 def test_the_coach_asks_for_its_effort_and_no_sampling(wire):
-    # no ruling
+    # R-0405
     sent = call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
     assert sent["output_config"] == {"effort": COACH_EFFORT}
     assert "temperature" not in sent
 
 
 def test_a_model_without_effort_sends_none(wire):
-    # no ruling
+    # R-0405
     model = CoachModel(model="haiku-4.5", effort=None)
     run(model, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
     assert "output_config" not in wire.sent
 
 
 def test_thinking_goes_back_unchanged_before_the_tool_call(wire):
-    # no ruling
+    # R-0405
     wire.reply = Reply(
         [
             Block(type="thinking", thinking="", signature="sig", extra="sdk"),
@@ -242,7 +242,7 @@ def test_the_coach_asks_for_the_fallbacks(wire):
 
 
 def test_a_model_that_takes_no_fallbacks_is_sent_none(wire):
-    # no ruling
+    # R-0410
     run(
         CoachModel(model="haiku-4.5", effort=None),
         ["COACHING", "RECORD"],
@@ -309,7 +309,7 @@ def test_a_turn_served_by_an_earlier_fallback_is_marked_sticky(wire):
 
 
 def test_a_model_cut_off_mid_answer_leaves_no_tool_call_to_run(wire):
-    # no ruling
+    # R-0075
     wire.reply = Reply(
         [
             Block(type="text", text="Let me "),

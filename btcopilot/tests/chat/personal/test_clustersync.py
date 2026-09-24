@@ -304,7 +304,7 @@ def test_a_third_event_lifts_a_grouping_out_from_under_the_floor(family):
 
 
 def test_a_grouping_stuck_under_the_floor_can_still_be_removed(family):
-    # no ruling
+    # R-0215
     _grandfathered(family)
     tools = Toolbox(family.id, turn_id="t1")
 
@@ -329,7 +329,7 @@ def test_undoing_the_removal_of_such_a_grouping_reads_as_words_too(family):
 
 
 def test_a_grouping_of_unknown_provenance_is_left_alone(discussion, family):
-    # no ruling
+    # R-0371
     """A row written before provenance was recorded is treated as the user's:
     guessing that the model made it would lose a name the user chose."""
     data = family.get_diagram_data()
@@ -353,7 +353,7 @@ def test_a_grouping_of_unknown_provenance_is_left_alone(discussion, family):
 
 
 def test_the_coach_is_never_told_the_model_made_a_grouping_it_may_not_have(family):
-    # no ruling
+    # R-0205
     stale = asdict(Cluster(id="c1", title="When he left", summary="", eventIds=[10]))
     del stale["source"]
 
