@@ -543,3 +543,56 @@ test.describe("a moment's mark", () => {
     });
   }
 });
+
+/** Any control a reader could take for renaming, deleting or regrouping a
+ * cluster, in the picture region and its title row. */
+const clusterEdits = (page: import("@playwright/test").Page) =>
+  page
+    .locator(".titlerow, #chat-screen .pic")
+    .locator("button, [role=button], input, textarea, [contenteditable=true]")
+    .evaluateAll((controls) =>
+      controls
+        .filter((c) => !(c as HTMLElement).hidden && (c as HTMLElement).offsetParent !== null)
+        .map((c) => `${c.textContent ?? ""} ${c.getAttribute("aria-label") ?? ""}`)
+        .filter((words) => /rename|delete|remove|regroup|merge|split|edit|move/i.test(words)),
+    );
+
+test.describe("a cluster the reader has open", () => {
+  test.use({ storageState: stateFor("three40") });
+
+  // R-0282
+  test("offers no way to rename, delete or regroup it, nor does its i page", async ({
+    page,
+  }) => {
+    await settle(page);
+    await openCluster(page);
+    expect(await clusterEdits(page)).toEqual([]);
+    await page.locator("#info").click();
+    await expect(page.locator("#view")).toContainText("Ada lost her grandmother");
+    expect(await clusterEdits(page)).toEqual([]);
+  });
+});
+
+test.describe("a person on the board", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  // R-0187
+  test("cannot be dragged, and the board offers nothing to arrange", async ({ page }) => {
+    await settle(page);
+    await page.locator("#cap-play").click();
+    await expect(page.locator("#view .ss.board")).toBeVisible();
+    await page.waitForTimeout(600);
+    await expect(page.locator('#view [draggable="true"]')).toHaveCount(0);
+    await expect(page.locator("#view .pctl button")).toHaveCount(3);
+    const person = page.locator('#view .node[data-person="2"]');
+    const before = (await person.boundingBox())!;
+    await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(before.x + before.width / 2 + 60, before.y + before.height / 2 + 40, {
+      steps: 8,
+    });
+    await page.mouse.up();
+    await page.waitForTimeout(300);
+    expect(await person.boundingBox()).toEqual(before);
+  });
+});
