@@ -109,13 +109,23 @@ test.describe("the message box", () => {
 
   // R-0368
   test("Return starts a new line in the message", async ({ page }) => {
-    // Known defect: a newline inserted at the very end of the box does not
-    // render as a line in Chromium, so the next letters join the line above.
-    test.fail();
     await twoLines(page);
-    expect(await page.locator("#composer").evaluate((n) => n.textContent)).toBe(
-      "first\nsecond",
-    );
+    // the message is sent trimmed, so a newline held open at the end is not part of it
+    expect(
+      await page.locator("#composer").evaluate((n) => n.textContent!.trimEnd()),
+    ).toBe("first\nsecond");
+    const [top, bottom] = await page.locator("#composer").evaluate((n) => {
+      const texts = [...n.childNodes].filter((c): c is Text => c instanceof Text);
+      const top = (word: string) => {
+        const text = texts.find((t) => t.data.includes(word))!;
+        const range = document.createRange();
+        range.setStart(text, text.data.indexOf(word));
+        range.setEnd(text, text.data.indexOf(word) + word.length);
+        return range.getBoundingClientRect().top;
+      };
+      return [top("first"), top("second")];
+    });
+    expect(bottom).toBeGreaterThan(top);
   });
 });
 

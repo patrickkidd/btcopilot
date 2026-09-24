@@ -1101,6 +1101,12 @@ $("composer").addEventListener("keydown", (e) => {
   range.deleteContents();
   const br = document.createTextNode("\n");
   range.insertNode(br);
+  // A newline that ends the box draws no line of its own, so the next letters
+  // would join the line above; a second one holds the line open, and the
+  // draft trims it on send.
+  let next = br.nextSibling;
+  while (next instanceof Text && next.data === "") next = next.nextSibling;
+  if (!next) br.after(document.createTextNode("\n"));
   range.setStartAfter(br);
   range.collapse(true);
   selection.removeAllRanges();
