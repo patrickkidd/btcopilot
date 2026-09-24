@@ -21,7 +21,7 @@ EVIDENCE = STORE / "evidence.md"
 FIELDS = ("id", "statement", "kind", "tags", "status", "evidence_count", "origin")
 ROW = re.compile(r"^R-\d{4} \|")
 ID = re.compile(r"R-\d{4}")
-MARKER = re.compile(r"^[#*\-\s]*(R-\d{4})\b\**(.*)$")
+QUOTE = "> "
 
 
 class Kind(enum.Enum):
@@ -216,15 +216,20 @@ def rulings() -> dict[str, Ruling]:
 
 
 def quoted(text: str) -> dict[str, list[str]]:
-    """Each ruling's quotes: every line from an id's marker to the next id's, one
-    quote per line, whitespace collapsed. A merge adds lines; it never edits one."""
+    """Each ruling's quotes. After a free-text header, a block is a line that is
+    exactly the id, then its "> " quote lines, then a blank line."""
     out, current = {}, None
     for line in text.splitlines():
-        if m := MARKER.match(line):
-            current, line = m.group(1), m.group(2)
-        words = " ".join(line.strip(" |:-").split())
-        if current and words:
-            out.setdefault(current, []).append(words)
+        if re.fullmatch(r"R-\d{4}", line):
+            if line in out:
+                raise ValueError(f"evidence for {line} appears twice")
+            current = out[line] = []
+        elif not line.strip():
+            current = None
+        elif current is not None:
+            if not line.startswith(QUOTE):
+                raise ValueError(f"evidence line under an id does not start with {QUOTE!r}: {line[:40]!r}")
+            current.append(" ".join(line[len(QUOTE) :].split()))
     return out
 
 

@@ -19,7 +19,8 @@ from btcopilot import oracle
 from btcopilot.oracle import ROOT, Kind, Status, Tag
 from btcopilot.personal.promptdir import encrypted
 
-pytestmark = pytest.mark.xfail(strict=True, reason="grounding sweep in progress (R-0447)")
+pytestmark = pytest.mark.conventions
+SWEEP = pytest.mark.xfail(strict=True, reason="grounding sweep in progress (R-0447)")
 
 HERE = Path(__file__).parent
 FINGERPRINTS = HERE / "fingerprints.txt"
@@ -27,7 +28,7 @@ EXCEPTIONS = HERE / "exceptions.txt"
 WEB = ROOT / "web"
 CEILING = 150_000
 SHINGLE = 12
-QUOTE = 8
+LEAST = 8
 ORACLE = re.compile(r"\[Oracle:?([^\]]*)\]")
 IDS = re.compile(r"R-\d{4}(, R-\d{4})*")
 LINE = re.compile(r"^\s*(#|//)\s*(R-\d{4}(,\s*R-\d{4})*)\s*$")
@@ -177,6 +178,7 @@ def test_no_ruling_id_is_deleted_or_repointed():
     assert unpinned == [], "run bin/fingerprints.py to pin new ids"
 
 
+@SWEEP
 def test_every_test_cites_a_live_ruling():
     # R-0447, R-0331, R-0421
     found = oracle.rulings()
@@ -201,6 +203,7 @@ def exceptions() -> dict[str, tuple[Status, str]]:
     return out
 
 
+@SWEEP
 def test_every_ruling_is_tested_or_excepted():
     # R-0447, R-0331
     found = oracle.rulings()
@@ -245,9 +248,10 @@ def tracked() -> list[Path]:
     return [ROOT / p for p in done.stdout.split("\0") if p]
 
 
+@pytest.mark.xfail(strict=True, reason="ruling text still sits in tracked docs (R-0447)")
 def test_no_tracked_file_carries_oracle_outside_the_store():
     # R-0447, R-0331
-    quotes = [q for qs in oracle.quotes().values() for q in qs if len(q.split()) >= QUOTE]
+    quotes = [q for qs in oracle.quotes().values() for q in qs if len(q.split()) >= LEAST]
     texts = [r.statement for r in oracle.rulings().values()] + quotes
     marks = defaultdict(set)
     for text in texts:

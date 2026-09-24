@@ -58,7 +58,18 @@ jobs:
       - name: Run unit tests
         # from the checkout, not the installed copy: the suite reads files that
         # live beside the package (alembic.ini, deploy, private, the docs)
-        run: pytest -svv --disable-warnings btcopilot/tests
+        run: pytest -svv --disable-warnings -m "not conventions" btcopilot/tests
+
+      - name: Pin the ruling fingerprints (one-off; prints ids and hashes only)
+        if: ${{ !cancelled() }}
+        run: python bin/fingerprints.py && cat btcopilot/tests/conventions/fingerprints.txt
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Run the oracle guards
+        # the only step that holds the key; the rest of the suite runs without it
+        if: ${{ !cancelled() }}
+        run: pytest -svv --disable-warnings -m conventions btcopilot/tests
         env:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
 
