@@ -214,6 +214,19 @@ review at session end, shown as coaching, measured by replay against the IRR cod
 R-0444]. The plain mirror of the private prompts lives in the private btcopilot-sources repo for
 review links.
 
+**2026-09-24, merge in progress — what a new session needs to know.** PR #136 is being
+finished in the closure session; nothing is left for Patrick to decide. The oracle's own spec,
+"Human-Oracle Test System" (private/oracle/SPEC.md, encrypted), is now the binding test regime
+[R-0447, R-0449]: only tests that cite a ruling may exist, every ruling has a citing test or a
+stated exception (TEST OWED, WAIVED), and guards fail the merge otherwise. The guards run on CI
+only, with the store's key exposed to that one step [R-0451]. Being finished before merge: the
+guards themselves, a grounding sweep of the 337 uncited tests (cite, mine, delete after a real
+search, or flag to Patrick in a feature-grouped queue), and new tests for every ruling without
+one. Also landed: event notes are read by a tool call, not sent every turn [R-0446]; a birth
+does not assume marriage [R-0445]; R-0082 and R-0207 ratified, R-0211 replaced by R-0450; a
+duplicate ruling id split (the second R-0244 is R-0448); a public file that restated nearly every
+ruling is removed going forward. Fast-follow after merge: the session-end second look [R-0443].
+
 **What is not true yet on the box.** The dashboards and the cost rows are built but not deployed:
 that waits on Patrick putting the Grafana token there and refreshing the dependency lock. There is
 no automated database backup. Nine scratch accounts with chats, made while proving deploys, sit in

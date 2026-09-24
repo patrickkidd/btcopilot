@@ -1423,3 +1423,12 @@ best guesses [R-0440], and asked for his own opinion on whether the agentic loop
 pass redundant. The answer he took: the loop is a standing opportunity for a second pass, not one
 by nature; users correct what they can see, not the invisible codings; so a narrow independent
 review returns at session end, in a fast-follow PR [R-0443, R-0444].
+
+**2026-09-23 to 24, the oracle regime.** Patrick asked why tests without rulings existed at all,
+since the project already defined an end-to-end oracle-to-test pipeline. It did: the oracle's
+SPEC had never been read by the sessions building the tests, and a parallel "no ruling" marker had
+been invented that the SPEC forbids. He ruled the SPEC binding in this PR and that filling every
+coverage gap is part of every change; he adjudicates the process, never reads tests [R-0447,
+R-0449]. He ratified two proposed rulings and replaced a third [R-0450], chose CI-only guards with
+the key scoped to one step [R-0451], and asked that the session keep to merging efficiently so a
+new session can take his next ideas.
