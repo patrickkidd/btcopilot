@@ -8,7 +8,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 
@@ -21,7 +21,7 @@ import { chromium } from "@playwright/test";
  *   SANDBOX_URL   the sandbox (default http://127.0.0.1:8889)
  *   FIXTURE_CMD     how to run the fixture installer, default
  *                   "uv run flask personal fixtures"
- *   FIXTURE_CWD     where to run it (default ~/theapp)
+ *   FIXTURE_CWD     where to run it (default the clone root)
  *
  * The installer inherits this environment, so FLASK_SQLALCHEMY_DATABASE_URI must
  * name the same database SANDBOX_URL is serving. Point it anywhere else and the
@@ -149,7 +149,7 @@ export default async function setup() {
   const command = (
     process.env.FIXTURE_CMD ?? "uv run flask personal fixtures"
   ).split(" ");
-  const cwd = process.env.FIXTURE_CWD ?? join(process.env.HOME ?? "", "theapp");
+  const cwd = process.env.FIXTURE_CWD ?? resolve("..");
 
   const printed = execFileSync(command[0], [...command.slice(1), ...KEYS], {
     cwd,

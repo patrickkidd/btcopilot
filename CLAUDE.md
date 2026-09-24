@@ -4,6 +4,66 @@ Backend for the chat app (the personal app, the review and the admin commands). 
 backend and the training app live on branch `master-legacy`, not here.
 The extraction pipeline and the pending data pool were removed 2026-09-23 (R-0414); last commit holding them: a7eeb2c.
 
+## PRIME DIRECTIVE — re-read before composing every reply
+
+Patrick's #1 cost is wasted reading time. Every reply is judged against these:
+
+1. **Architect register.** Say only what changes his decision. No preamble, no restating his context, no narrating your process.
+2. **Final message stands alone.** He reads ONLY your last message — never todos, logs, or prior turns. State current state, the decision, the next action.
+3. **Plain words.** No jargon, acronyms, symbol names, file paths, or metric labels in prose. Write "no dupes in 10 runs", not "raw-dup 1.0→0.0".
+4. **Concise ≠ lossy.** Compress the wording, never drop substance he needs.
+5. **Facts, not opinions** — unless he explicitly asked for a recommendation.
+6. **Don't break a rule you already know.** Worktrees, never the main clone. Don't remind him of git mechanics — 25 years a developer.
+
+This block is a deliberate distillation of recurring corrections, not duplicate prose — do not "DRY it away".
+
+## Where the work starts
+
+Work on `master` through ticket worktrees (below). Every session reads
+[doc/STATE.md](doc/STATE.md) first, then [doc/TOPICS.md](doc/TOPICS.md), then
+[doc/HOW_THIS_PROJECT_WORKS.md](doc/HOW_THIS_PROJECT_WORKS.md) (binding process rules). The
+Jira epic is **FD-362**.
+
+## Worktrees, branches, PRs
+
+The main clone stays on `master` and is read-only to Claude: never edit, branch-switch or run
+anything in it. All work happens in a worktree at `.claude/worktrees/<ticket>` on a branch of
+the same name (`FD-NNN`; if taken, `FD-NNN-<slug>`; no ticket, a short slug), created with
+`git worktree add .claude/worktrees/FD-NNN -b FD-NNN` and entered with `EnterWorktree(path=...)`.
+
+- Commit and push the worktree's own branch without asking; one git mutation per command,
+  never chained. Open a **draft PR at the first push**, title starting with the Jira id, and
+  keep it current. Reports link the PR, not diffs.
+- Never merge, never push `master`, never rebase or force-push a pushed branch without a yes.
+  `master` is server-protected: PR required.
+- Remove a worktree only after its PR merges or Patrick says "discard".
+- **A change to the rulings store needs its fingerprints re-pinned**: CI prints the lines to
+  paste.
+
+## Jira
+
+Site `https://alaskafamilysystems.atlassian.net`, project **FD**, REST v3, HTTP basic as
+`patrick@alaskafamilysystems.com` with `ATLASSIAN_TOKEN` from `.env` at the clone root
+(gitignored; never echo it). Search is `POST /rest/api/3/search/jql`. Reads need no approval;
+every create, update, transition, comment or delete needs a one-line yes from Patrick for the
+operation (draft the content yourself).
+
+```bash
+TOKEN=$(grep '^ATLASSIAN_TOKEN=' .env | cut -d= -f2-)
+curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
+  "https://alaskafamilysystems.atlassian.net/rest/api/3/issue/FD-NNN?fields=summary,status,description"
+```
+
+## Sandbox and manual testing (MANDATORY)
+
+- **Port 8888 is Patrick's server** on `master`: never start, stop, restart or test worktree
+  changes against it. **Port 8889 is Claude's sandbox**, started from the worktree; Claude
+  owns its lifecycle. Never the production database.
+- Every web change is verified in a real browser against the sandbox before it is called
+  done: check it answers (`curl -s http://127.0.0.1:8889/ >/dev/null && echo OK`), open the
+  page, take a snapshot and a screenshot, exercise the interactions, report what was seen.
+  Say "appears correct in testing, please verify", never "done".
+
 ## Owner corrections that bind every reply (2026-09-09)
 
 - **His terms, verified 2026-09-22 on the round-6 mockups: "cluster" (never "stretch"), "event"
@@ -76,30 +136,14 @@ The extraction pipeline and the pending data pool were removed 2026-09-23 (R-041
 
 ---
 
-## Confidential Data Rules
+## Private corpus
 
-Induction reports, GT exports, and coach sessions contain clinical data, and
-extraction/conversational-AI experiment artifacts are proprietary IP — **NEVER store any
-of it in the btcopilot repo, and NEVER in btcopilot-sources**. All of it lives in the
-private **fdserver** repo (2026-07-22, Patrick's direction; supersedes the earlier
-btcopilot-sources scheme).
-
-**btcopilot-sources is ONLY for copyrighted academic literature** (Bowen theory book
-chapters etc.; rarely added to). It will be retired once the Pro app's Copilot feature is
-replaced by the embedded personal app. Never route generated data or experiment artifacts
-there.
-
-| Data Type | WRONG Location | Correct Location |
-|-----------|----------------|-----------------|
-| Induction reports | `btcopilot/doc/induction-reports/`, `btcopilot-sources/` | `fdserver/training/induction-reports/` |
-| GT exports | `btcopilot/instance/gt_export.json` (runtime copy only), `btcopilot-sources/` | `fdserver/training/gt-exports/` |
-| Coach feel-test sessions (`bin/coach_chat.py`) | `btcopilot/doc/log/coach-sessions/`, `btcopilot-sources/` | `fdserver/coach-sessions/` (freeform sessions contain real personal content). In-repo path is opt-in `--out shared` and only for synthetic-persona runs. |
-
-`btcopilot/instance/gt_export.json` remains the runtime file the test harness reads; the
-authoritative archived exports live in fdserver.
-
-New clinical/IP data outputs: store in `fdserver/`, add to btcopilot `.gitignore` if a
-runtime copy is needed, update this section.
+Clinical data, experiment output and anything store-shaped never enter this repo. They live
+outside every repo at `~/theapp/btcopilot-sources/fd-corpus/`: `design/` holds the approved
+mockups and galleries (read, never copy in); `private/` holds the prompt mirror, the prompt
+fidelity audit, the ledger of unclear points, the test method, and plain copies of the
+rulings and the oracle SPEC. The encrypted rulings store and prompts in this repo
+(`private/oracle/`, `private/prompts/`, sops with age) are the only private material here.
 
 ---
 
@@ -115,8 +159,7 @@ runtime copy is needed, update this section.
 | Drawability — when the timeline picture may draw vs must ask (5 rules, ruled 2026-08-31) | [doc/DRAWABILITY.md](doc/DRAWABILITY.md) |
 
 | Diagram layout/rendering/SVG | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) |
-| Client-server data sync | [familydiagram DATA_SYNC_FLOW.md](../familydiagram/doc/specs/DATA_SYNC_FLOW.md) |
-| Decisions (career, strategy) | [decisions/log.md](decisions/log.md) — see top-level CLAUDE.md "Documentation Routing > Decisions" for triggers and rules |
+| Decisions (career, strategy) | [decisions/log.md](decisions/log.md) — log every significant decision immediately (architecture, strategy, trade-offs, rejected approaches) |
 | Architecture decisions (backend) | [adrs/](adrs/) — durable patterns only, not point-in-time choices (those go in decisions/log.md) |
 | IRR calibration, coding guidelines | [doc/irr/](doc/irr/) |
 | Calibration system (as-built) | [doc/adrs/calibration.md](doc/adrs/calibration.md) |
@@ -127,28 +170,15 @@ runtime copy is needed, update this section.
 | Bowen theory formal spec | [doc/specs/BOWEN_THEORY.md](doc/specs/BOWEN_THEORY.md) |
 | Diagram layout — language-agnostic spec | [doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md](doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md) |
 
-## Chat-first rebuild (CANONICAL)
+Other: [README.md](README.md), [doc/plans/](doc/plans/) (plans), [doc/analyses/](doc/analyses/)
+(subsystem analyses), [doc/HISTORY.md](doc/HISTORY.md) (append-only decision history).
+Jira is the single source of truth for task status. Domain knowledge goes into the one
+authoritative doc above; if none exists, create it in `doc/` and add it here.
 
-The chat-first rebuild ("a coach who never forgets your family") is documented under
-the two-clocks regime in [doc/](doc/):
-- **Read [doc/STATE.md](doc/STATE.md) FIRST in every session touching this work** — it is the current system of record — **then [doc/TOPICS.md](doc/TOPICS.md)**, the register of open topics by plain name; the owner names a topic in his own words and the session continues from its block. **End every session with `/two-clocks`.**
-- [doc/HISTORY.md](doc/HISTORY.md) — the event clock: decision/brainstorm history; append, never rewrite.
-- [doc/DRAWABILITY.md](doc/DRAWABILITY.md) — ruled drawing/asking rules.
-- [doc/PICTURE_IDEAS.md](doc/PICTURE_IDEAS.md) — round 7 (2026-09-23):
-  fourteen picture-spot concepts, the passage each draws from, and the critic's verdict.
-- [doc/MOBILE_VIEWS.md](doc/MOBILE_VIEWS.md) — twenty-four small-screen
-  data views from shipped phone apps, each mapped onto the eight things the picture must say.
-- **The human oracle (MANDATORY regime; store lives in the PRIVATE fdserver repo)**: Patrick's direction is the binding input to all agentic development on this app and is maintained as a BKM store — fdserver `doc/oracle/` (SPEC + rulings index + evidence). Public docs cite rulings by id (`[Oracle: R-0001]`) and never restate quotes. Mining ops are append/merge/split/reword ONLY; withdrawal = status SUPERSEDED naming the successor (newest statement wins); never author a ruling the human did not say; capture his new statements into the store immediately. No raw transcripts anywhere — mine and maintain, never archive (R-0064). Nothing store-shaped may live in this public repo (the SPEC's oracle-outside-the-store guard will police this once built).
-These are living documents: every session refines them as part of its work (append to
-HISTORY, revise STATE).
-The clinical corpus itself lives OUTSIDE all repos at ~/fd-corpus (see STATE.md).
-
-Other: [README.md](README.md), [doc/plans/](doc/plans/)
-
-
-### MVP State Tracking
-
-Jira is the single source of truth (MVP epic **FD-264**). Site, id format, API auth, and the approval rule live in the top-level [CLAUDE.md "Jira (CANONICAL)"](../CLAUDE.md#jira-canonical) — not redefined here.
+**The human oracle**: Patrick's direction is the binding input, kept in the encrypted
+rulings store `private/oracle/`. Public docs cite rulings by id (`[Oracle: R-0001]`) and
+never restate quotes; capture his new statements into the store immediately; never author a
+ruling he did not say. `HOW_THIS_PROJECT_WORKS.md` carries the rest.
 
 ### Synthetic Client Dev Log (MANDATORY)
 
@@ -258,7 +288,7 @@ All web UI must work in **both light and dark modes**:
 - Tables: use `.table` without custom backgrounds
 - Test dark mode via chrome-devtools before completing UI work
 
-### Data Serialization (Pro App Compatibility)
+### Data Serialization
 
 `Diagram.data` MUST use pickle format. Only these types allowed in pickle data:
 - Built-in: `str`, `int`, `float`, `bool`, `list`, `dict`, `None`
@@ -270,48 +300,24 @@ All web UI must work in **both light and dark modes**:
 
 ## Flask Server
 
-**The dev server on port 8888 is managed by the user. NEVER start one yourself.**
-
-| Action | Command |
-|--------|---------|
-| Verify running | `curl -s http://127.0.0.1:8888/ > /dev/null && echo "OK" \|\| echo "ERROR"` |
-| Not running | **STOP and ask user** |
-| Not responding | Ask user to restart |
-| Bytecode issues | Ask user: `find . -name "*.pyc" -delete` |
-
-Auto-authenticates as `patrick@alaskafamilysystems.com`. Live reloading enabled.
-
-**Uses Flask 3.x native CLI** — the obsolete `flask-cli` package is incompatible and has been removed. If you see `create_app() takes 0 to 1 positional arguments but 2 were given`, check `uv pip show flask-cli` and remove if present.
-
-**Troubleshooting**: Import errors → check user is in project root. Server fails on first request → bytecode cache issue, clear and restart.
-
-### Web UI Testing (chrome-devtools MCP)
-
-**Mandatory for all HTML/CSS/JS/Flask route changes:**
-1. Verify Flask server running (port 8888)
-2. Navigate to page via `navigate_page` or `new_page`
-3. Take snapshot + screenshot to verify UI state
-4. Test interactions (click, fill, etc.)
-5. Verify before declaring completion
-
-### Dashboard Server
-Ask user to start/restart before using chrome-devtools MCP: `cd dashboard && uv run python app.py` (port 8765).
+See "Sandbox and manual testing" above. Flask 3.x native CLI; the obsolete `flask-cli`
+package is incompatible (symptom: `create_app() takes 0 to 1 positional arguments but 2 were given`).
 
 ---
 
 ## Development Commands
 
 ### Environment
-- **Venv**: uv workspace (`pyproject.toml`)
-- **Install**: `uv sync --extra app --extra test`
+- **Venv**: the clone's own uv environment (`pyproject.toml`)
+- **Install**: `uv sync --extra app --extra test` (Python 3.11, pinned in `.python-version`); web: `npm ci`, then `npm run build` before any test run (Python and web tests read the built page)
 - **PyTorch**: Pinned to `torch>=2.0.0,<2.1.0` (newer versions lack macOS x86_64 wheels). If wheel errors occur, remove `uv.lock` and re-sync.
 - **PostgreSQL**: `docker-compose up fd-server` (requires `docker volume create familydiagram_postgres` first)
 - **Production**: `docker-compose -d production.yml up fd-server`
 
 ### Testing
-- **All tests**: `uv run pytest -vv tests`
+- **Local run**: `uv run pytest -m "not conventions" btcopilot/tests -q`
 - **Oracle guards** (`btcopilot/tests/conventions/`, marker `conventions`) read the sops-encrypted rulings store and run on CI only, where the key is; locally run `uv run pytest -m "not conventions" ...`. Without a key they fail, never skip.
-- **E2e tests** (real LLM calls): `uv run pytest --e2e -m e2e` — requires `GOOGLE_GEMINI_API_KEY` from `theapp/.env`
+- **E2e tests** (real LLM calls): `uv run pytest --e2e -m e2e` — requires `GOOGLE_GEMINI_API_KEY` from `.env` at the clone root
 - **Async**: `--asyncio-mode=auto` (configured in `btcopilot/tests/pytest.ini`)
 - **Directories**: `btcopilot/tests/chat/` (the chat app's suite), `btcopilot/tests/schema/`, `btcopilot/tests/test_*.py`
 - **Every test cites the ruling it proves (R-0421)**: `# R-0NNN` as the first line under a Python test's def, `// R-0NNN` on the line above a TypeScript/Playwright test; several ids comma-separated; never a process ruling for product behaviour.

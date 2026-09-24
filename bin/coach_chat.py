@@ -34,8 +34,8 @@ import sys
 import tempfile
 import warnings
 
-# Load API keys from theapp/.env if not already in env.
-_ENV = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
+# Load API keys from the clone's .env if not already in env.
+_ENV = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".env"))
 if os.path.exists(_ENV):
     for line in open(_ENV):
         line = line.strip()

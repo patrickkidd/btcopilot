@@ -26,7 +26,7 @@
   },
   "jira": {
     "project": "FD",
-    "via": "REST v2/v3, basic auth patrick@alaskafamilysystems.com + ATLASSIAN_TOKEN from ~/theapp/.env (extract with grep|cut, not source), site https://alaskafamilysystems.atlassian.net",
+    "via": "REST v2/v3, basic auth patrick@alaskafamilysystems.com + ATLASSIAN_TOKEN from .env at the clone root (extract with grep|cut, not source), site https://alaskafamilysystems.atlassian.net",
     "gate_status_map": {
       "ground": "In Progress",
       "merge": "Done"
