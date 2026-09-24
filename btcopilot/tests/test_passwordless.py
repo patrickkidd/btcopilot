@@ -1,0 +1,245 @@
+import datetime
+import email.utils
+import re
+
+import flask
+import flask.testing
+import pytest
+import webauthn
+from flask_wtf.csrf import generate_csrf
+from itsdangerous import TimestampSigner
+from mock import patch
+from webauthn.helpers import bytes_to_base64url
+
+from btcopilot import extensions
+from btcopilot.auth.invitation import Invitation
+from btcopilot.auth.logincode import LoginCode
+from btcopilot.auth.passkey import Passkey
+from btcopilot.auth.signin import SESSION_TOKEN
+from btcopilot.auth.websession import WebSession
+from btcopilot.extensions import db
+from btcopilot.models import User
+
+INVITED = "invited+unittest@gmail.com"
+
+
+CSRF_SEED = "unittest-csrf-seed"
+
+
+@pytest.fixture
+def browser(flask_app):
+    flask_app.test_client_class = flask.testing.FlaskClient
+    with flask_app.test_client(use_cookies=True) as client:
+        with client.session_transaction() as cookie:
+            cookie["csrf_token"] = CSRF_SEED
+        client.app = flask_app
+        yield client
+
+
+def token(browser) -> str:
+    with browser.session_transaction() as cookie:
+        cookie["csrf_token"] = CSRF_SEED
+    with browser.app.test_request_context():
+        flask.session["csrf_token"] = CSRF_SEED
+        return generate_csrf()
+
+
+def request_code(browser, email: str):
+    with extensions.mail.record_messages() as outbox:
+        response = browser.post(
+            "/app/login", data={"csrf_token": token(browser), "email": email}
+        )
+    return response, outbox
+
+
+def test_invite_creates_user_and_signs_in(flask_app, browser):
+    # R-0087, R-0078
+    invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
+    response = browser.get(f"/app/invite/{invitation.token}")
+    assert response.status_code == 302
+    assert response.headers["Location"] == flask_app.config["APP_HOME"]
+
+    assert User.query.filter_by(username=INVITED).first() is not None
+    assert browser.get("/app/me").get_json()["user"]["email"] == INVITED
+
+
+def test_coming_back_to_the_site_root_lands_in_the_chat(flask_app, browser):
+    # R-0087
+    invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
+    browser.get(f"/app/invite/{invitation.token}")
+
+    response = browser.get("/")
+    assert response.headers["Location"] == flask_app.config["APP_HOME"]
+
+
+def test_fixture_token_signs_in(flask_app, browser):
+    # R-0306
+    """The visual suite mints its links through the fixture installer, so the
+    installer's own token has to open a session, not the sign-in page."""
+    printed = flask_app.test_cli_runner().invoke(args=["app", "fixtures", "empty"])
+    assert printed.exit_code == 0, printed.output
+    minted = printed.output.strip().split()[-1]
+
+    response = browser.get(f"/app/invite/{minted}")
+    assert response.status_code == 302
+    assert browser.get("/app/me").get_json()["user"] is not None
+
+
+def test_chat_cookie_outlives_the_training_timeout(flask_app, browser):
+    # R-0337
+    """The training app pins the cookie to eight hours; a chat sign-in must
+    still come back months later."""
+    invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
+    response = browser.get(f"/app/invite/{invitation.token}")
+    expires = email.utils.parsedate_to_datetime(
+        re.search(r"[Ee]xpires=([^;]+)", response.headers["Set-Cookie"]).group(1)
+    )
+    days = (expires - datetime.datetime.now(datetime.timezone.utc)).days
+    assert days > 30
+
+
+def test_chat_session_older_than_the_training_timeout_is_still_read(
+    flask_app, browser
+):
+    # R-0337
+    """The signature itself used to be refused past the training app's eight
+    hours, which signed a reader out overnight whatever the cookie said."""
+    invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
+    browser.get(f"/app/invite/{invitation.token}")
+    with browser.session_transaction() as cookie:
+        signed_in = dict(cookie)
+
+    nine_hours_ago = int(datetime.datetime.now().timestamp()) - 9 * 3600
+    with patch.object(TimestampSigner, "get_timestamp", return_value=nine_hours_ago):
+        stale = flask_app.session_interface.get_signing_serializer(flask_app).dumps(
+            signed_in
+        )
+    browser.set_cookie(
+        flask_app.session_interface.get_cookie_name(flask_app),
+        stale,
+        domain=flask_app.config["SERVER_NAME"],
+    )
+
+    assert browser.get("/app/me").get_json()["user"]["email"] == INVITED
+
+
+def test_invite_is_reusable_where_the_sandbox_says_so(flask_app, browser):
+    # R-0452
+    flask_app.config["INVITATION_REUSABLE"] = True
+    invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
+    browser.get(f"/app/invite/{invitation.token}")
+    assert browser.get(f"/app/invite/{invitation.token}").status_code == 302
+    flask_app.config["INVITATION_REUSABLE"] = False
+
+
+def test_code_signs_in_an_existing_user(flask_app, browser, test_user):
+    # R-0078
+    response, outbox = request_code(browser, test_user.username)
+    assert response.status_code == 200
+    code = re.search(r"\b(\d{6})\b", outbox[0].body).group(1)
+
+    response = browser.post(
+        "/app/login/verify",
+        data={"csrf_token": token(browser), "email": test_user.username, "code": code},
+    )
+    assert response.status_code == 302
+    assert browser.get("/app/me").get_json()["user"]["email"] == test_user.username
+
+
+def test_revoking_the_session_logs_out(flask_app, browser):
+    # R-0099
+    invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
+    browser.get(f"/app/invite/{invitation.token}")
+    listed = browser.get("/app/signins").get_json()["sessions"]
+    assert len(listed) == 1 and listed[0]["current"] is True
+
+    response = browser.post(
+        f"/app/signins/{listed[0]['id']}/revoke", data={"csrf_token": token(browser)}
+    )
+    assert response.get_json()["revoked"] is True
+    assert browser.get("/app/me").status_code == 401
+
+
+def test_logout_revokes_the_session_record(flask_app, browser):
+    # R-0099
+    invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
+    browser.get(f"/app/invite/{invitation.token}")
+    with browser.session_transaction() as cookie:
+        web_session_token = cookie[SESSION_TOKEN]
+
+    browser.post("/app/logout", data={"csrf_token": token(browser)})
+    assert WebSession.query.filter_by(token=web_session_token).one().live() is False
+    assert browser.get("/app/me").status_code == 401
+
+
+CREDENTIAL_ID = b"unittest-credential"
+PUBLIC_KEY = b"unittest-public-key"
+
+
+class Verified:
+    """What the webauthn library hands back once it has checked the signature.
+    The checking itself is the library's and is not re-tested here."""
+
+    credential_id = CREDENTIAL_ID
+    credential_public_key = PUBLIC_KEY
+    sign_count = 0
+    new_sign_count = 1
+
+
+def json_post(browser, path, body=None):
+    return browser.post(
+        path, json=body if body is not None else {}, headers={"X-CSRFToken": token(browser)}
+    )
+
+
+def signed_in(browser, flask_app):
+    invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
+    browser.get(f"/app/invite/{invitation.token}")
+    return User.query.filter_by(username=INVITED).one()
+
+
+def stored_passkey(user, revoked=False) -> Passkey:
+    passkey = Passkey(
+        user_id=user.id,
+        credential_id=bytes_to_base64url(CREDENTIAL_ID),
+        public_key=PUBLIC_KEY,
+        sign_count=0,
+        transports=["internal"],
+        name="unittest",
+        revoked_at=datetime.datetime.utcnow() if revoked else None,
+    )
+    db.session.add(passkey)
+    db.session.commit()
+    return passkey
+
+
+def test_registering_a_passkey_stores_it(flask_app, browser, monkeypatch):
+    # R-0078
+    user = signed_in(browser, flask_app)
+    assert json_post(browser, "/app/passkeys/register/options").status_code == 200
+
+    monkeypatch.setattr(webauthn, "verify_registration_response", lambda **kw: Verified())
+    response = json_post(browser, "/app/passkeys/register", {"id": "x", "response": {}})
+    assert response.status_code == 200
+
+    stored = Passkey.live_for(user)
+    assert len(stored) == 1
+    assert stored[0].credential_id == bytes_to_base64url(CREDENTIAL_ID)
+
+
+def test_passkey_signs_the_user_in(flask_app, browser, monkeypatch):
+    # R-0078
+    user = signed_in(browser, flask_app)
+    passkey = stored_passkey(user)
+    browser.post("/app/logout", data={"csrf_token": token(browser)})
+
+    assert json_post(browser, "/app/passkeys/login/options").status_code == 200
+    monkeypatch.setattr(webauthn, "verify_authentication_response", lambda **kw: Verified())
+    response = json_post(
+        browser, "/app/passkeys/login", {"id": bytes_to_base64url(CREDENTIAL_ID)}
+    )
+    assert response.get_json() == {"ok": True, "next": flask_app.config["APP_HOME"]}
+    assert browser.get("/app/me").get_json()["user"]["email"] == INVITED
+    assert db.session.get(Passkey, passkey.id).sign_count == 1
+
+

@@ -58,14 +58,6 @@ def validatedDateTimeText(dateText, timeText=None):
     return ret
 
 
-def pyDateTimeString(dateTime: datetime.datetime) -> str:
-    if isinstance(dateTime, str):
-        import dateutil.parser
-
-        dateTime = dateutil.parser.parse(dateTime)
-    return dateTime.strftime("%m/%d/%Y %I:%M %p")
-
-
 class PDPValidationError(ValueError):
     """Raised when PDP deltas fail validation."""
 
@@ -185,11 +177,11 @@ class EventKind(enum.Enum):
     Married = "married"
     Birth = "birth"
     Adopted = "adopted"
-    Moved = "moved"
     Separated = "separated"
     Divorced = "divorced"
 
     Shift = "shift"
+    Noted = "noted"
     Death = "death"
 
     def isPairBond(self) -> bool:
@@ -198,7 +190,6 @@ class EventKind(enum.Enum):
             self.Married,
             self.Birth,
             self.Adopted,
-            self.Moved,
             self.Separated,
             self.Divorced,
         )
@@ -212,13 +203,19 @@ class EventKind(enum.Enum):
             self.Separated,
             self.Divorced,
             self.Bonded,
-            self.Moved,
             self.Death,
         )
 
     def isStructural(self) -> bool:
-        """Non-shift events: birth, death, married, bonded, separated, divorced, adopted, moved."""
-        return self != self.Shift
+        """Birth, death, married, bonded, separated, divorced, adopted: the
+        events that say who the family is. A shift and a noted event do not."""
+        return self not in (self.Shift, self.Noted)
+
+    def isLead(self) -> bool:
+        """What a coach may wonder about when it sits near a shift: every
+        structural event, and a noted event — a move, a new job — which is a
+        lead rather than a change in the family (Patrick, 2026-09-22)."""
+        return self is not self.Shift
 
     def isOffspring(self) -> bool:
         return self in (self.Birth, self.Adopted)
@@ -229,11 +226,11 @@ class EventKind(enum.Enum):
             self.Married: "Married",
             self.Separated: "Separated",
             self.Divorced: "Divorced",
-            self.Moved: "Moved",
             self.Birth: "Birth",
             self.Adopted: "Adopted",
             self.Death: "Death",
             self.Shift: "Shift",
+            self.Noted: "Noted",
         }
         return labels[self]
 
@@ -297,6 +294,7 @@ class Person:
     name: str | None = None
     last_name: str | None = None
     gender: PersonKind | None = None
+    notes: str | None = None
     parents: int | None = None
     confidence: float | None = None  # PDP
 
@@ -384,13 +382,23 @@ def next_neg(existing_ids: set[int]) -> int:
     return n
 
 
-class ClusterPattern(enum.StrEnum):
-    AnxietyCascade = "anxiety_cascade"
-    TriangleActivation = "triangle_activation"
-    ConflictResolution = "conflict_resolution"
-    ReciprocalDisturbance = "reciprocal_disturbance"
-    FunctioningGain = "functioning_gain"
-    WorkFamilySpillover = "work_family_spillover"
+class TraceKey(enum.StrEnum):
+    """Keys stamped on a committed event dict recording where it was coded.
+    Stored as plain strings, never the enum itself."""
+
+    Discussion = "codedInDiscussion"
+    Statement = "codedInStatement"
+
+
+class ClusterSource(enum.StrEnum):
+    Model = "model"
+    User = "user"
+
+
+# Fewer moments than this is a dot or a pair on the line, never a cluster. It
+# lives here because record, clusters, and the coach's tools all write clusters
+# and all import schema.
+MIN_CLUSTER_EVENTS = 3
 
 
 @dataclass
@@ -401,14 +409,39 @@ class Cluster:
     eventIds: list[int] = field(default_factory=list)
     startDate: str | None = None
     endDate: str | None = None
-    pattern: ClusterPattern | None = None
-    dominantVariable: str | None = None
+    name: str | None = None
+    source: ClusterSource = ClusterSource.Model
+    # One sentence saying what the record shows these events have in common.
+    reason: str | None = None
+
+
+class ItemKind(enum.StrEnum):
+    """What a change or an interaction points at inside the record."""
+
+    Person = "person"
+    Event = "event"
+    PairBond = "pair_bond"
+    Emotion = "emotion"
+    Cluster = "cluster"
+    Diagram = "diagram"
+
+
+ITEM_COLLECTIONS = {
+    ItemKind.Person: "people",
+    ItemKind.Event: "events",
+    ItemKind.PairBond: "pair_bonds",
+    ItemKind.Emotion: "emotions",
+    ItemKind.Cluster: "clusters",
+}
 
 
 @dataclass
 class ClusterResult:
     clusters: list[Cluster] = field(default_factory=list)
     cacheKey: str | None = None
+    # One sentence per grouping the model reshaped, saying what in the record
+    # made the old shape wrong, for the coach to say in its own words.
+    changes: list[str] = field(default_factory=list)
 
 
 def hash_sarf_dicts(event_data: list[dict]) -> str:
@@ -419,6 +452,10 @@ def hash_sarf_dicts(event_data: list[dict]) -> str:
 # Neutral label for the first-person speaker when the user has not set a real
 # name on the primary person (e.g. intake wizard skipped).
 DEFAULT_SUBJECT_NAME = "Client"
+
+# 1 is the person the user speaks as; 2 was the chat assistant, which is no
+# longer a person in the record. Neither id is ever handed to a real person.
+RESERVED_ITEM_IDS = 2
 
 
 @dataclass
@@ -447,29 +484,6 @@ class DiagramData:
     clusterCacheKey: str | None = None
     pdp: PDP = field(default_factory=PDP)
     lastItemId: int = field(default=0)
-    # Scene UI/display properties (for canonical diagram mutation support)
-    readOnly: bool = False
-    contributeToResearch: bool = False
-    useRealNames: bool = False
-    password: str | None = None
-    requirePasswordForRealNames: bool = False
-    showAliases: bool = False
-    hideNames: bool = False
-    hideToolBars: bool = False
-    hideEmotionalProcess: bool = False
-    hideEmotionColors: bool = False
-    hideDateSlider: bool = False
-    hideVariablesOnDiagram: bool = False
-    hideVariableSteadyStates: bool = False
-    hideSARFGraphics: bool = True
-    exclusiveLayerSelection: bool = True
-    storePositionsInLayers: bool = False
-    currentDateTime: object = None  # Serialized QDateTime
-    scaleFactor: float | None = None
-    pencilColor: object = None  # Serialized color
-    eventProperties: list = field(default_factory=list)
-    legendData: dict | None = None
-
     SCENE_COLLECTION_FIELDS: ClassVar[list[str]] = [
         "people",
         "events",
@@ -481,73 +495,6 @@ class DiagramData:
         "items",
         "pruned",
     ]
-
-    @staticmethod
-    def apply_local_changes(
-        server: list[dict],
-        snapshot: list[dict],
-        local: list[dict],
-    ) -> list[dict]:
-        """
-        Merge for one Scene-collection field.
-
-        Apply only the user's actual changes (snapshot → local) on top of
-        the server's current state. Items the user didn't touch are taken
-        from the server, preserving concurrent edits.
-
-        Semantics per id:
-        - In snapshot, removed in local → DELETED. Drop from result.
-        - In snapshot AND in local, value differs → DIRTY. Take local (the
-          user's edit wins; item-level last-write-wins).
-        - In snapshot AND in local, value identical → CLEAN. Take server
-          (preserves concurrent edits made elsewhere).
-        - Not in snapshot, present in local → ADDED. Include in result.
-        - In server only (not in snapshot, not in local) → other side
-          added it. Include in result.
-
-        Comparison uses native Python `==`. PyQt5 types (QPointF, QDateTime,
-        QColor, QDate, QTime, QSize, QFont) all implement reliable __eq__
-        with semantic equality (e.g., QPointF uses fuzzy float compare).
-        Pickle-bytes was an earlier approach but was strictly worse: ~1000x
-        slower and produced false-positive dirty marks for floats with
-        identical semantic value but different IEEE 754 representation.
-
-        Plan: familydiagram/doc/plans/2026-05-01--mvp-merge-fix/README.md
-        """
-        snapshot_by_id = {
-            item["id"]: item for item in snapshot if item.get("id") is not None
-        }
-        local_by_id = {item["id"]: item for item in local if item.get("id") is not None}
-        server_by_id = {
-            item["id"]: item for item in server if item.get("id") is not None
-        }
-
-        deleted_ids = {id for id in snapshot_by_id if id not in local_by_id}
-
-        dirty_ids = set()
-        for id, local_item in local_by_id.items():
-            if id not in snapshot_by_id:
-                continue
-            if local_item != snapshot_by_id[id]:
-                dirty_ids.add(id)
-
-        added_ids = {id for id in local_by_id if id not in snapshot_by_id}
-
-        # Phase 1: take server's view of every non-deleted item.
-        result: dict = {}
-        for id, server_item in server_by_id.items():
-            if id not in deleted_ids:
-                result[id] = server_item
-        # Phase 2: local wins for everything the user touched. This includes
-        # the edge case where the user edited an item locally that another
-        # client deleted server-side: per item-level LWW, the local edit
-        # wins (the item is resurrected with the user's edit). Same logic
-        # applies to local additions.
-        for id, local_item in local_by_id.items():
-            if id in dirty_ids or id in added_ids:
-                result[id] = local_item
-
-        return list(result.values())
 
     def clear(self) -> None:
         self.people = []
@@ -610,6 +557,17 @@ class DiagramData:
         chunk = committed_bond_chunk(pair_bond)
         self.pair_bonds.append(chunk)
         _log.info(f"Added pair bond with new ID {pair_bond.id}")
+
+    def stamp_event_source(
+        self, event_ids: list[int], discussion_id: int, statement_id: int | None = None
+    ) -> None:
+        """Record the discussion (and statement, where the caller knows it)
+        that coded these events. Ids that are not events are ignored."""
+        wanted = set(event_ids)
+        for event in self.events:
+            if event.get("id") in wanted:
+                event[TraceKey.Discussion.value] = discussion_id
+                event[TraceKey.Statement.value] = statement_id
 
     def commit_pdp_items(self, item_ids: list[int]) -> dict[int, int]:
         """
@@ -1380,32 +1338,26 @@ class DiagramData:
         name = primary.get("name") if primary else None
         return name if name else DEFAULT_SUBJECT_NAME
 
-    def ensure_chat_defaults(self) -> tuple[int, int, bool]:
-        """Idempotently ensure chat speaker people exist.
+    def ensure_chat_defaults(self) -> tuple[int, bool]:
+        """Idempotently ensure the person the user speaks as exists.
 
         If a person with primary=True exists (pro app diagram), use them as the
         user speaker. Otherwise, ensure User (ID=1) exists.
 
-        Always ensure Assistant (ID=2) exists.
+        The other side of the chat is not a member of the family and is never a
+        person in the record; ID 2 stays reserved so records written before this
+        rule keep meaning the same thing.
 
-        Returns (user_person_id, assistant_person_id, changed).
+        Returns (user_person_id, changed).
         """
         changed = False
 
-        # Find primary person (pro app) or existing User person
         primary_person = self.primary_person()
         user_person_id = None
-        assistant_person_id = None
-
         for p in self.people:
-            if not isinstance(p, dict):
-                continue
-            if p.get("id") == 1:
+            if isinstance(p, dict) and p.get("id") == 1:
                 user_person_id = 1
-            if p.get("id") == 2:
-                assistant_person_id = 2
 
-        # Use primary person as user if present, otherwise ensure User (ID=1)
         if primary_person:
             user_person_id = primary_person.get("id")
         elif user_person_id is None:
@@ -1415,14 +1367,7 @@ class DiagramData:
             user_person_id = 1
             changed = True
 
-        # Ensure Assistant (ID=2) exists
-        if assistant_person_id is None:
-            assistant_person = Person(id=2, name="Assistant")
-            self.people.append(asdict(assistant_person))
-            assistant_person_id = 2
-            changed = True
-
         if changed:
-            self.lastItemId = max(self.lastItemId, 2)
+            self.lastItemId = max(self.lastItemId, RESERVED_ITEM_IDS)
 
-        return user_person_id, assistant_person_id, changed
+        return user_person_id, changed

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "btcopilot"
-version = "1.0.0"
+version = "3.0.0"
 description = "BT Copilot"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
@@ -20,50 +20,33 @@ app = [
     "redis",
     "click",
     "colorlog",
-    "ddtrace",
     "gunicorn",
     "flask",
+    "webauthn",
+    "cbor2<6",  # newer cbor2 needs a C build on macOS x86_64
     "flask-bcrypt",
-    "flask-graphql",
     "flask-mail",
     "flask-sqlalchemy",
     "flask-wtf",
-    # "graphene-sqlalchemy",
-    "openai",
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-otlp-proto-http",
     "psycopg2-binary",
-    "numpy<2",
-
-    # pro
-
+    "regex",
     "pygments",
     "python-dateutil",
+    "pyyaml",
     "stripe",
     "alembic",
-    "cachetools",
     "rich",
+    # schema.py, diagramjson.py, pdp.py and proimport.py read the Pro app's pickles
     "sip==6.8.6",
     "pyqt5==5.15.11",
     "pyqt5-sip==12.15.0",
     "pyqt5-qt5==5.15.2",
-    "mistralai",
-    "nltk",
-    "pymupdf4llm",
-
-    # personal
-    "anthropic",
+    "anthropic>=0.97,<1",
     "google-genai",
-
-    # training
-    "assemblyai",
-    "chromadb",
-    "langchain-chroma",
-    "langchain-core",
-    "langchain-openai",
-    "langchain-text-splitters",
-    "nest_asyncio",
-    "pypdf",
     "rapidfuzz>=3.0.0",
-    "scikit-learn>=1.3.0",
 ]
 
 test = [
@@ -84,12 +67,9 @@ test = [
 repository = "https://github.com/patrickkidd/btcopilot"
 
 [tool.setuptools]
-packages = {find = {}}
+packages = {find = {exclude = ["build*", "dist*"]}}
 package-dir = {"" = "."}
 
 [tool.setuptools.package-data]
-"btcopilot.training" = ["templates/**/*", "static/**/*"]
-"btcopilot.pro" = ["templates/**/*", "static/**/*"]
-
-[tool.uv]
-constraint-dependencies = ["onnxruntime<1.24.0"]
+"btcopilot" = ["static/**/*", "prompty/**/*"]
+"btcopilot.auth" = ["templates/**/*"]

@@ -1,0 +1,25 @@
+# familydiagram.com on the app box. /app is the app (R-0356); everything else
+# keeps redirecting to alaskafamilysystems.com as the old box did, until a
+# product homepage exists. The desktop update feeds live with master-legacy.
+familydiagram.com {
+    encode gzip
+    redir /app /app/ 302
+    handle /app* {
+        # The coach's turn arrives as it happens, so nothing here may hold it
+        # back waiting for a buffer to fill.
+        reverse_proxy fd-app:8888 {
+            flush_interval -1
+        }
+    }
+    handle /review* {
+        reverse_proxy fd-app:8888 {
+            flush_interval -1
+        }
+    }
+    handle {
+        redir https://alaskafamilysystems.com/family-diagram{uri} 301
+    }
+}
+www.familydiagram.com {
+    redir https://familydiagram.com{uri} 301
+}

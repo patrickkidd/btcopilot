@@ -1,0 +1,8 @@
+---
+name: extraction_pass2_context
+description: The context block for the second extraction pass.
+---
+
+{pass1_data}
+{committed_shift_events}
+{conversation_history}

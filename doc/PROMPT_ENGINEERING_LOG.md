@@ -1,10 +1,33 @@
 # Prompt Engineering Context
 
-**Purpose**: Authoritative record of prompt engineering decisions, experiments, and lessons learned for the SARF data extraction system. Prevents regressions by documenting what works, what doesn't, and why.
+**Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-06-10 (FD-338 GT learning loop round: consolidated scoreboard + 3-run F1 confirmation)
+**Last Updated**: 2026-09-23 (the extraction pipeline and the pending data pool are retired)
 
 ---
+
+## FD-362 review scribe — loop cap and three prompt rules (2026-09-11)
+
+**Scope**: `btcopilot/review/scribe.py`, the cheap-model scribe behind the coding screen
+(haiku-4.5, record-writing tools only). Not an induction run; an ad-hoc fix to a defect found by
+a browser walk, unmeasured beyond the walk and two stubbed-model tests.
+
+**Defect**: on an empty record, "Marcus's father moved from Michigan to Arizona in March 1969"
+produced people and no event, shown to the coder as written. Log: step 0 `edit_event`
+with a guessed `person: 1` → refused "No person 1 in the record"; steps 1–2 added two people;
+`MAX_STEPS = 3` ended the loop before the event. Reproduced twice (phone and desktop walks).
+
+**Changes**: `MAX_STEPS` 3 → 8; a loop that still ends on tool calls raises a 400 with what it
+wrote ("The scribe stopped before it finished after adding …. Say it again in one sentence").
+Three prompt rules: an id comes only from the record or a tool result in this exchange (the
+record starts with none); a person named only by relation ("Marcus's father") is added under
+that relation, never "someone" (one of two runs had written "Someone"); the coder's date is
+kept at the precision given — a year or month-year becomes the first day of that span, marked
+approximate — and kept when a refused call is rewritten (both runs dropped "March 1969" on the
+rewrite after the description guard refused a name in the description).
+
+**Result**: re-walk on a fresh coder: the move landed dated Mar 1969 under "Marcus's father";
+the cutoff landed dated Mar 1969. Two samples, not a measurement.
 
 ## Fable 5 extraction experiment — induction findings (2026-06-09)
 
@@ -166,9 +189,9 @@ runs (zero false attaches preserved). Probe artifacts:
 3-run confirmation owed at end of loop per guardrail.
 
 **Scope**: New prompt surface, not an edit to extraction passes 1-3. `DOCK_PROMPT`
-added to `btcopilot/personal/prompts.py` as a btcopilot default (deliberate exception
+added to `btcopilot/prompts.py` as a btcopilot default (deliberate exception
 to the stub-only rule; in the FDSERVER_PROMPTS_PATH override tuple so fdserver may
-override). Consumed by `btcopilot/personal/dock.py`: one full-transcript call
+override). Consumed by `btcopilot/dock.py`: one full-transcript call
 (pass-3 model), no cursor rule, explicit cross-turn pronoun-resolution instruction,
 edges-only output with verbatim-quote requirement; deterministic gates (quote
 substring-match, member-floating, anchor-in-main-tree) + programmatic edge applier;
@@ -454,259 +477,6 @@ Conversation flow prompts now use a callable override (`get_conversation_flow_pr
 
 ---
 
-## Model Selection
-
-### Current: Gemini 2.5 Flash (extraction) / Gemini 3 Flash Preview (responses)
-
-**Extraction**: gemini-2.5-flash (production), gemini-3-flash-preview (recommended upgrade)
-**Responses**: gemini-3-flash-preview (conversational chat responses)
-**Thinking**: `thinking_budget=1024` (CRITICAL — see T7-20 findings below)
-
-**Why Gemini 2.5 Flash for extraction:**
-- gemini-2.0-flash deprecated March 31, 2026 and showing server-side drift
-- Aggregate F1 within 3% of 2.0-flash, better SARF variable scores
-- 64K output token limit supports large imports
-
-**Recommended upgrade: gemini-3-flash-preview (validated 2026-03-04):**
-- +6.7% Aggregate F1, +9.1% Events F1 vs 2.5-flash (both with thinking=1024)
-- 23% faster (74s vs 96s for 6 discussions)
-- $0.016/extraction vs $0.012 — negligible cost increase
-- Confirmed best across 14 model configs spanning Google, OpenAI, and xAI
-- Needs multi-run validation (3+ runs) before production deployment
-- See full report: `fdserver/training/induction-reports/2026-03-04_15-36-39--model-evaluation-frontier/`
-
-**Non-Google alternatives evaluated (2026-03-04):**
-- gpt-5.2 (OpenAI): Events F1 tied (0.397) but Bonds -37%, 196s latency, $0.065/extraction. Best backup.
-- gpt-5-mini (OpenAI): Highest Events F1 (0.410) but 460s latency, 1/6 failures. Monitor only.
-- o4-mini, gpt-4.1, gpt-5-nano, grok-4-fast, grok-4-1-fast: All below baseline or disqualified on latency.
-- All non-Gemini models require compatibility shims (0→None, positive→negative ID remapping, API param differences).
-
-**Why Gemini 2.0 Flash over GPT-4o-mini:**
-- Larger context window (1M tokens vs 128K)
-- Lower cost per token
-- Native structured JSON output
-- Better performance on classification tasks in our testing
-
-**Model names configurable** via `LLM.extractionModel`, `LLM.extractionModelLarge`, `LLM.responseModel` class attributes. CLI override: `--model` on `run_prompts_live.py`.
-
----
-
-## Known Gemini 2.0 Flash Issues
-
-### 1. Value Repetition in Nested Arrays
-
-**Issue**: Gemini may repeat values indefinitely until token limit when processing nested arrays of objects.
-
-**Affected fields**:
-- `Event.relationshipTargets: list[int]`
-- `Event.relationshipTriangles: list[int]`
-
-**Mitigation**: Runtime instrumentation in `btcopilot/pdp.py` logs `GEMINI_ARRAY_ISSUE` warnings when duplicate values detected. Monitor logs - if frequent (>5% of extractions), consider schema flattening.
-
-### 2. Missing Expected Fields
-
-**Issue**: Gemini may omit expected fields from output, especially with complex nested structures.
-
-**Mitigation**: All required fields are non-Optional in dataclass schema. pydantic_ai handles this automatically.
-
-### 3. Prompt Order Sensitivity
-
-**Finding**: Gemini documentation suggests few-shot examples early in prompts improve quality.
-
-**Current assembly order** (`btcopilot/pdp.py`):
-
-Per-statement (training app only):
-```python
-data_extraction_prompt = (
-    DATA_EXTRACTION_PROMPT      # 1. Extraction intent + brief overview
-    + DATA_EXTRACTION_EXAMPLES  # 2. Few-shot examples EARLY
-    + DATA_EXTRACTION_RULES     # 3. Detailed schema/rules
-    + DATA_EXTRACTION_CONTEXT   # 4. Actual data to process
-)
-```
-
-Full extraction (production, 2-pass):
-```python
-# Pass 1: People + PairBonds + Structural Events
-prompt1 = DATA_EXTRACTION_PASS1_PROMPT + DATA_EXTRACTION_PASS1_CONTEXT
-# Pass 2: Shift Events + SARF (given Pass 1 output)
-prompt2 = DATA_EXTRACTION_PASS2_PROMPT + DATA_EXTRACTION_PASS2_CONTEXT
-```
-
----
-
-## Critical Lessons Learned
-
-### 1. Prompt Size Matters - Less is More
-
-**Experiment (Dec 2024)**: Added exhaustive SARF definitions from literature review to extraction prompt.
-
-**Result**: F1 scores degraded significantly.
-
-**Analysis**: Prompt doubled in size (37K → 74K chars). The model was overwhelmed with too much definitional context and lost focus on the extraction task.
-
-**Fix**: Removed verbose SARF definitions, restored concise operational definitions. Exhaustive definitions preserved in `btcopilot/doc/SARF_EXTRACTION_REFERENCE.md` for human reference only.
-
-**Lesson**:
-- Extraction prompts need concise, actionable guidance - not academic definitions
-- More context ≠ better extraction
-- Keep prompts focused on the task, not the theory
-
-### 2. Dataclass Constraint (Cannot Use Pydantic Models)
-
-**Constraint**: Schema must use Python `dataclasses`, not Pydantic models.
-
-**Reason**: Dataclasses are required for embedding in Pro and Personal desktop apps (PyQt). Pydantic models have dependencies that don't work in the embedded environment.
-
-**Implication**: Cannot use Pydantic's `Field(description="...")` to add descriptions to the JSON schema. All semantic guidance must be in prompt text instead.
-
-### 3. Few-Shot Examples Are Critical
-
-**Finding**: Gemini responds well to concrete examples of correct vs incorrect output.
-
-**Current approach**: `DATA_EXTRACTION_EXAMPLES` contains labeled error patterns:
-- `[OVER_EXTRACTION_GENERAL_CHARACTERIZATION]` - Don't create events for general feelings
-- `[UNDER_EXTRACTION_BIRTH_EVENT]` - Always create birth events when birth dates mentioned
-- `[UNDER_EXTRACTION_PEOPLE_INDIRECT_MENTION]` - Extract people mentioned indirectly
-- `[RELATIONSHIP_TARGETS_REQUIRED]` - Always populate relationshipTargets
-
-**Lesson**: Each common error pattern should have a labeled example in the prompt.
-
-### 4. Extraction Intent Must Be Explicit
-
-**Finding**: Starting with clear extraction task description improves quality.
-
-**Current approach**: `DATA_EXTRACTION_PROMPT` begins with:
-```
-**Extract the following information from the user statement:**
-1. **NEW people** mentioned for the first time
-2. **NEW events** - specific incidents at a point in time
-3. **UPDATES** to existing people
-4. **DELETIONS** when user corrects previous errors
-```
-
----
-
-## Prompt Architecture
-
-### File: `btcopilot/btcopilot/personal/prompts.py` (defaults) / `fdserver/prompts/private_prompts.py` (overrides)
-
-**Conversation flow** (multi-model, assembled at runtime):
-| Constant | Purpose | Location |
-|----------|---------|----------|
-| `_CONVERSATION_FLOW_CORE` | Domain knowledge, phases, data checklist | btcopilot (shared) |
-| `_CONVERSATION_FLOW_OPUS` | Response style for Claude Opus | fdserver (stub in btcopilot) |
-| `_CONVERSATION_FLOW_GEMINI` | Response style for Gemini Flash | btcopilot |
-
-**Per-statement extraction** (training app only):
-| Constant | Purpose | Template Variables |
-|----------|---------|-------------------|
-| `DATA_EXTRACTION_PROMPT` | Extraction intent + data model overview | `{current_date}` |
-| `DATA_EXTRACTION_EXAMPLES` | Few-shot error pattern examples | None (literal JSON) |
-| `DATA_EXTRACTION_RULES` | Operational extraction guidance | None |
-| `DATA_EXTRACTION_CONTEXT` | Runtime data to process | `{diagram_data}`, `{conversation_history}`, `{user_message}` |
-
-**Full-extraction constants** (production, 2-pass):
-| Constant | Purpose | Template Variables |
-|----------|---------|-------------------|
-| `DATA_EXTRACTION_PASS1_PROMPT` | Pass 1: People + PairBonds + structural events | `{current_date}` |
-| `DATA_EXTRACTION_PASS1_CONTEXT` | Pass 1 runtime data | `{diagram_data}`, `{conversation_history}` |
-| `DATA_EXTRACTION_PASS2_PROMPT` | Pass 2: Shift events + SARF coding | `{current_date}` |
-| `DATA_EXTRACTION_PASS2_CONTEXT` | Pass 2 runtime data | `{pass1_data}`, `{conversation_history}` |
-
-**Why split into multiple constants**:
-1. Examples contain literal JSON with curly braces - keeping them separate avoids escaping issues with `.format()`
-2. Makes it clear which parts have template variables
-3. Easier to maintain and test independently
-
-### Prompt Size Guidelines
-
-| Metric | Target | Current |
-|--------|--------|---------|
-| Per-statement prompt chars | <50K | ~41K |
-| Per-statement lines | <1000 | ~960 |
-| Per-statement examples | 5-10 | 9 |
-| Pass 1 prompt (full) | — | ~150 lines |
-| Pass 2 prompt (full) | — | ~225 lines |
-
----
-
-## What NOT to Include in Extraction Prompts
-
-Based on failed experiments:
-
-1. **Academic definitions** - The "What X IS" / "What X is NOT" discriminators from literature review. Too verbose, confused the model.
-
-2. **Observable marker tables** - Long tables of indicators. Model doesn't need this level of detail for extraction.
-
-3. **Theoretical background** - Why constructs exist, how they relate to each other. Irrelevant for extraction task.
-
-4. **All possible enum values** - Only document values that are commonly confused or have special rules.
-
-**Rule**: If it reads like a textbook, it doesn't belong in an extraction prompt.
-
----
-
-## What TO Include in Extraction Prompts
-
-1. **Concise field definitions** - One-liner descriptions of what each field means operationally.
-
-2. **Critical rules** - Things the model commonly gets wrong (e.g., "relationshipTargets is REQUIRED").
-
-3. **Labeled examples** - Concrete wrong/right output pairs for common error patterns.
-
-4. **Extraction intent** - What to extract, what not to extract.
-
-5. **ID assignment rules** - Negative IDs for new items, how to avoid collisions.
-
----
-
-## Monitoring & Metrics
-
-### F1 Score Tracking
-
-- **Full-extraction harness**: `uv run python -m btcopilot.training.run_extract_full_f1` (production 2-pass, 6 GT discussions)
-- **Per-statement harness**: `uv run python -m btcopilot.training.run_prompts_live` (training app, 45 GT cases)
-- **Ground truth**: `instance/gt_export.json` (runtime copy; authoritative exports in `fdserver/training/gt-exports/`)
-- **Metrics tracked**: Aggregate F1, People F1, Events F1, PairBonds F1, per-variable F1 (symptom, anxiety, relationship, functioning)
-
-### Gemini Issue Detection
-
-- **Log pattern**: `GEMINI_ARRAY_ISSUE` in application logs
-- **Threshold**: If >5% of extractions show array issues, consider schema changes
-
-### Prompt Induction Reports
-
-- **Location**: `fdserver/training/induction-reports/<timestamp>/`
-- **Contains**: Iteration logs, F1 deltas, final report
-
----
-
-## Future Improvements (Deferred)
-
-See `btcopilot/doc/TODO_GEMINI_SCHEMA.md` for:
-
-1. **Convert to Pydantic with Field descriptions** - Blocked by PyQt embedding constraint
-2. **Flatten triangle arrays** - Deferred pending evidence of issues
-3. **TypeAdapter for enhanced JSON schema** - Not implemented, relying on pydantic_ai defaults
-
----
-
-## Related Files
-
-| File | Purpose |
-|------|---------|
-| `btcopilot/btcopilot/personal/prompts.py` | Extraction prompt defaults (empty stubs for private prompts) |
-| `fdserver/prompts/private_prompts.py` | Real extraction prompts (PASS1/PASS2 + per-statement) |
-| `btcopilot/btcopilot/pdp.py` | Prompt assembly + extraction pipeline (2-pass + per-statement) |
-| `btcopilot/btcopilot/schema.py` | Dataclass definitions |
-| `btcopilot/doc/TODO_GEMINI_SCHEMA.md` | Deferred Gemini optimizations |
-| `btcopilot/doc/SARF_EXTRACTION_REFERENCE.md` | Exhaustive SARF definitions (reference only) |
-| `btcopilot/doc/sarf-definitions/` | Literature review source material |
-| `btcopilot/btcopilot/training/prompts/induction_agent.md` | Prompt induction meta-prompt |
-
----
-
 ## Decision Log
 
 ### Jul 2026: gemini-3.6-flash evaluation + E4 metric era
@@ -921,7 +691,7 @@ Both passes route through `_extract_and_validate()` for retry/validation. Pass 2
 
 **Context**: Commit `fb1b603d` (fdserver) added `all_condensed_definitions()` (~62,886 chars / ~15,700 tokens) to the Pass 3 SARF review prompt. This comprised 98% of the prompt. A/B testing (3 runs each) showed marginal benefit: Aggregate F1 +0.006, SARF macro F1 +0.016 mean. This echoes the Dec 2024 lesson where exhaustive definitions degraded F1.
 
-**Change**: Replaced the definitions-heavy prompt with a compact inline-rules version (~30 lines). Removed `all_condensed_definitions()` call from `pdp.py`, removed import of `sarfdefinitions` from `pdp.py`. Updated both `btcopilot/personal/prompts.py` and `fdserver/prompts/private_prompts.py`.
+**Change**: Replaced the definitions-heavy prompt with a compact inline-rules version (~30 lines). Removed `all_condensed_definitions()` call from `pdp.py`, removed import of `sarfdefinitions` from `pdp.py`. Updated both `btcopilot/prompts.py` and `fdserver/prompts/private_prompts.py`.
 
 **Results** (3-run A/B mean, gemini-3-flash-preview, 6 discussions):
 
@@ -1042,3 +812,104 @@ user text cannot forge the boundary. Concurrency defects found in adversarial
 review (concurrent extract / diagram-blob clobber) are deferred to a separate
 FD-264 child, not fixed here. Report:
 `fdserver/training/induction-reports/2026-05-16_19-50-22--fd319-cursor-windowing/`.
+
+### September 2026: Clinical definitions into the coach's agent loop (FD-362, R-0236)
+
+**Change**: the chat coach's per-turn system prompt gained a section, "What goes
+in the record", carrying the Pass 1 and Pass 2 clinical contract rewritten for a
+writer that edits a record it can see rather than a batch extractor reading a
+transcript. Every rule, distinction and definition is preserved: people and name
+fidelity, deduplication, pair bonds and the parents link, the eight
+self-describing event kinds and their required person/spouse/child links, ages
+as births, the never-null date and the certainty scale, the four-question test
+for a shift, the do-not-create and do-create lists, saturation and the
+one-event-per-pattern rule, the four variables with their coding direction, the
+twelve relationship moves, the required targets and triangles, and the four
+distinctions the old Pass 3 review existed to fix (projection over
+overfunctioning, triangle-inside over conflict, distance over anxiety or
+functioning, overfunctioning over functioning down). Section is ~9.5k
+characters; the assembled agent prompt is ~29k.
+
+**Dropped, and why**: the negative/positive ID assignment scheme, the
+committed-data reference rules and the re-extraction cursor, the JSON output
+format and array shapes, the per-pass "do not extract the other pass's items"
+fences, the 8–15 events per discussion calibration, and the Pass 3 "return the
+corrected version" framing. All of those exist only because a batch pass emits a
+delta against a state it cannot address. The agent addresses the record
+directly, so they were replaced with the loop's own mechanics: the record is in
+front of you, add what is new, change what is wrong, leave what is right, and
+read before adding when unsure. Four of the worked examples were kept, rewritten
+as "they say X, you call edit_event with these fields" so the tool call is the
+example.
+
+**Also**: every edit_event parameter now carries its meaning from the same
+passes — kind, the four variables with their coding rule, the relationship moves
+and what each aims at, targets and triangles and when they are required, date
+certainty, and who links where by kind. JSON schema shape unchanged; the
+edit_event definition is ~4.3k characters.
+
+**Measurement**: none. There is no F1 for the agent write path — the extraction
+harness scores the two batch passes, not tool calls made mid-conversation. An
+agent-path harness is being built separately; until it exists this change is
+unmeasured and the claim is confined to "the definitions are now present in the
+loop". The 26 agent tests pass, which proves assembly and schema validity only.
+
+
+### September 2026: Prompts move to files, encrypted in place (FD-362)
+
+**Change**: every prompt leaves the Python constants and becomes one `.prompty`
+file per prompt with shared Jinja2 fragments, encrypted in place with sops so
+the public repo holds only ciphertext. The stock renderer holds only the
+prompt itself, so a subclass with a file loader resolves fragments and a
+missing fragment raises rather than rendering empty. [R-0305, R-0314]
+
+### September 2026: A prompt is read when it is asked for
+
+**Change**: a prompt is read when it is asked for, not when a module is
+imported, so a checkout with no key can still run the tests that do not need
+one.
+
+### September 2026: The scribe reasons about who a sentence names
+
+**Change**: the scribe's prompt learned that a sentence naming two people is
+about both of them, and refuses a pair-bond that cannot exist rather than
+guessing; a missing parent is named.
+
+### September 2026: The scribe keeps a date at the precision it was given
+
+**Change**: the scribe keeps a date at the precision the coder gave it, so a
+year given as a year reads back as the year alone.
+
+### September 2026: The coach asks who you are before anything else
+
+**Change**: the coach's prompt carries which of first name, last name and birth
+date are still missing from the record, and asks for them before it goes on with
+anything else. Without a birth date it has no anchor for an age, so "twenty-five
+or twenty-six" became a year it invented. The account row mirrors the three
+values for the preferences page. [R-0360]
+
+### September 2026: The coach no longer offers answers to tap
+
+**Change**: the coach is no longer told to end a reply with bracketed answers the
+reader can tap, and any it still writes is stripped before the transcript is
+stored. Its closing question keeps its own amber line. The public prompt goldens
+were re-captured after the change. [R-0358, R-0361]
+
+### September 2026: The private tool meanings must cover every required parameter
+
+**Change**: the private text that gives each tool parameter its meaning was
+missing three entries the tools now require — parents, person_a and person_b —
+while the public default happened to carry them, so every test passed and only the
+box failed. The private text is now the one that must be complete; the public
+default is not a fallback for it.
+
+### September 2026: The extraction pipeline and the pending data pool are retired (R-0414)
+
+**Change**: on 2026-09-23 the extraction pipeline (the passes that read a whole
+conversation and proposed a pool of pending people, events and pair-bonds for the
+user to accept) and the pending data pool itself were removed. The coach now edits
+the record turn by turn with its tools, and every entry above that describes
+extraction prompts, passes or F1 on extraction is history. The undated sections
+that described that pipeline as the current design (model selection, Gemini issues,
+prompt architecture, what to include in extraction prompts, monitoring, related
+files) were removed with it. The pipeline's code was last present in a7eeb2c.

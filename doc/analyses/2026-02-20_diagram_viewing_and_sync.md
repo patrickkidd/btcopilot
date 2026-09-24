@@ -61,7 +61,7 @@ File: familydiagram/pkdiagram/scene/emotionalunit.py:34
 | Metadata | Both | lastItemId, version, name |
 
 ## Event Cluster Detection
-- File: `btcopilot/personal/clusters.py:98-140`
+- File: `btcopilot/clusters.py:98-140`
 - Method: LLM-based (Gemini 2.0 Flash) with SHA256 cache key
 - Patterns detected: anxiety_cascade, triangle_activation, conflict_resolution, reciprocal_disturbance, functioning_gain, work_family_spillover
 - Caches per diagram in `clusters_{diagramId}.json`
@@ -74,5 +74,5 @@ File: familydiagram/pkdiagram/scene/emotionalunit.py:34
 | Diagram save | `familydiagram/pkdiagram/server_types.py:205-292` |
 | Server diagram model | `btcopilot/pro/models/diagram.py` |
 | Data sync spec | `familydiagram/doc/specs/DATA_SYNC_FLOW.md` |
-| Cluster detection | `btcopilot/personal/clusters.py` |
+| Cluster detection | `btcopilot/clusters.py` |
 | Personal app controller | `familydiagram/pkdiagram/personal/personalappcontroller.py` |

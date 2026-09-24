@@ -2,7 +2,7 @@
 
 **Purpose**: Documents the empirical research basis for how synthetic client personas are constructed and evaluated in the Family Diagram conversation system. Written for clinicians and researchers familiar with personality psychology, attachment theory, and clinical assessment.
 
-**Related**: [SYNTHETIC_CLIENT_PROMPT_SPEC.md](SYNTHETIC_CLIENT_PROMPT_SPEC.md) (implementation spec) | [Implementation Plan](../plans/SYNTHETIC_CLIENT_PERSONALITIES.md)
+**Related**: [SYNTHETIC_CLIENT_PROMPT_SPEC.md](SYNTHETIC_CLIENT_PROMPT_SPEC.md) (implementation spec) | [Implementation Plan](../archive/2026-09-plans/SYNTHETIC_CLIENT_PERSONALITIES.md)
 
 ---
 

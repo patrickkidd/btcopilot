@@ -1,0 +1,100 @@
+prometheus.exporter.unix "host" {
+	rootfs_path = "/rootfs"
+	procfs_path = "/host/proc"
+	sysfs_path  = "/host/sys"
+}
+
+prometheus.exporter.cadvisor "containers" {
+	docker_host = "unix:///var/run/docker.sock"
+}
+
+prometheus.scrape "metrics" {
+	targets         = array.concat(prometheus.exporter.unix.host.targets, prometheus.exporter.cadvisor.containers.targets)
+	scrape_interval = "60s"
+	forward_to      = [prometheus.remote_write.cloud.receiver]
+}
+
+prometheus.remote_write "cloud" {
+	endpoint {
+		url = "https://prometheus-prod-67-prod-us-west-0.grafana.net/api/prom/push"
+
+		basic_auth {
+			username = "3604702"
+			password = sys.env("GRAFANA_CLOUD_TOKEN")
+		}
+	}
+}
+
+discovery.docker "containers" {
+	host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "logs" {
+	targets = discovery.docker.containers.targets
+
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/fd-alloy"
+		action        = "drop"
+	}
+
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/(.*)"
+		target_label  = "container"
+	}
+
+	rule {
+		source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+		target_label  = "service"
+	}
+}
+
+loki.source.docker "containers" {
+	host       = "unix:///var/run/docker.sock"
+	targets    = discovery.relabel.logs.output
+	forward_to = [loki.write.cloud.receiver]
+}
+
+loki.write "cloud" {
+	endpoint {
+		url = "https://logs-prod-021.grafana.net/loki/api/v1/push"
+
+		basic_auth {
+			username = "1798021"
+			password = sys.env("GRAFANA_CLOUD_TOKEN")
+		}
+	}
+}
+
+otelcol.receiver.otlp "app" {
+	grpc {
+		endpoint = "0.0.0.0:4317"
+	}
+
+	http {
+		endpoint = "0.0.0.0:4318"
+	}
+
+	output {
+		traces = [otelcol.processor.batch.app.input]
+	}
+}
+
+otelcol.processor.batch "app" {
+	output {
+		traces = [otelcol.exporter.otlphttp.cloud.input]
+	}
+}
+
+otelcol.auth.basic "cloud" {
+	username = "1840239"
+	password = sys.env("GRAFANA_CLOUD_TOKEN")
+}
+
+otelcol.exporter.otlphttp "cloud" {
+	client {
+		endpoint = "https://otlp-gateway-prod-us-west-0.grafana.net/otlp"
+		auth     = otelcol.auth.basic.cloud.handler
+	}
+}

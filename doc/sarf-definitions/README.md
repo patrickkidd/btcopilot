@@ -83,7 +83,7 @@ Each definition file contains:
 
 ## Application to AI System Prompts
 
-These definitions directly populate the SARF VARIABLE DEFINITIONS section in [btcopilot/personal/prompts.py](../../btcopilot/personal/prompts.py).
+These definitions directly populate the SARF VARIABLE DEFINITIONS section in [btcopilot/prompts.py](../../btcopilot/prompts.py).
 
 The AI data extraction system uses these definitions to:
 

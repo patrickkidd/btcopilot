@@ -4,7 +4,7 @@ import enum
 import json
 import time
 import logging
-from dataclasses import fields, MISSING
+from dataclasses import dataclass, field, fields, MISSING
 from typing import get_origin, get_args, Union
 
 from google.genai.errors import ClientError, ServerError
@@ -20,23 +20,30 @@ CALIBRATION_MODEL = "gemini-3-flash-preview"
 
 # Chat/response model: configurable via env var for A/B testing.
 # Set BTCOPILOT_RESPONSE_MODEL to override. Supported values:
-#   "claude-opus-4-6" (default) — Anthropic Claude Opus 4.6
+#   "claude-opus-5-5" (default) — Anthropic Claude Opus 5.5
+#   "claude-opus-4-6" — Anthropic Claude Opus 4.6
 #   "gemini-3-flash-preview" — Google Gemini Flash (legacy)
 #   Any valid Anthropic or Gemini model identifier.
 # The backend is auto-detected from the model name prefix.
-RESPONSE_MODEL = os.environ.get("BTCOPILOT_RESPONSE_MODEL", "claude-opus-4-6")
+RESPONSE_MODEL = os.environ.get("BTCOPILOT_RESPONSE_MODEL", "claude-opus-5-5")
 GEMINI_RESPONSE_MODEL = "gemini-3-flash-preview"
 
-CLAUDE_THINKING_ENABLED = True
+TEXT_EFFORT = "medium"
+STRUCTURED_EFFORT = "high"
 
 # Client-facing model aliases → actual API model IDs.
 # The Personal app sends these aliases; the backend resolves them here.
 MODEL_ALIASES = {
+    "opus-5.5": "claude-opus-5-5",
     "opus-4.6": "claude-opus-4-6",
     "gemini-2.5-flash": "gemini-2.5-flash",
+    "haiku-4.5": "claude-haiku-4-5-20251001",
+    "claude-opus-5-5": "claude-opus-5-5",
+    "claude-opus-5": "claude-opus-5",
+    "claude-opus-4-8": "claude-opus-4-8",
 }
 
-DEFAULT_RESPONSE_MODEL_ALIAS = "opus-4.6"
+DEFAULT_RESPONSE_MODEL_ALIAS = "opus-5.5"
 
 
 def resolve_model(alias: str | None) -> str:
@@ -222,6 +229,88 @@ ANTHROPIC_TIMEOUT = 120  # seconds
 ANTHROPIC_MAX_RETRIES = 3
 
 
+# Who answers when the requested model refuses on safety grounds: the API runs
+# the same request on the next model in the list [Oracle: R-0409]. Only the
+# models listed take the parameter; the API rejects it for the others.
+FALLBACK_BETA = "server-side-fallback-2026-06-01"
+FALLBACKS = {
+    "claude-opus-5-5": ["claude-opus-5", "claude-opus-4-8"],
+    "claude-opus-5": ["claude-opus-4-8"],
+}
+
+
+def fallback_args(model: str) -> dict:
+    """The request arguments that ask for the fallbacks, on the beta client."""
+    chain = FALLBACKS.get(model)
+    if not chain:
+        return {}
+    return {
+        "betas": [FALLBACK_BETA],
+        "extra_body": {"fallbacks": [{"model": name} for name in chain]},
+    }
+
+
+@dataclass
+class Hop:
+    source: str
+    target: str
+    category: str | None = None
+
+
+@dataclass
+class Served:
+    """Which model answered, every hop the fallbacks made on the way, and
+    whether a fallback model answered straight away because it answered this
+    conversation before (the API keeps that for about an hour)."""
+
+    model: str
+    hops: list[Hop] = field(default_factory=list)
+    sticky: bool = False
+
+    @property
+    def fallback(self) -> dict | None:
+        if not self.hops and not self.sticky:
+            return None
+        return {
+            "hops": [
+                {"from": hop.source, "to": hop.target, "category": hop.category}
+                for hop in self.hops
+            ],
+            "sticky": self.sticky,
+        }
+
+
+def served(message, label: str) -> Served:
+    """Read the fallbacks off a response and log one line per hop. The SDK this
+    app pins does not type the fallback block, so its ends arrive as dicts."""
+    iterations = message.usage.iterations or []
+    declined = {
+        entry.model: getattr(entry, "stop_details", None)
+        for entry in iterations
+        if entry.type == "message"
+    }
+    hops = []
+    for block in message.content:
+        if block.type != "fallback":
+            continue
+        source = getattr(block, "from")["model"]
+        details = declined.get(source)
+        hop = Hop(
+            source=source,
+            target=block.to["model"],
+            category=details.get("category") if details else None,
+        )
+        _log.warning(
+            f"{label}: {hop.source} refused ({hop.category}), {hop.target} took over"
+        )
+        hops.append(hop)
+    fell = any(entry.type == "fallback_message" for entry in iterations)
+    sticky = fell and not hops
+    if sticky:
+        _log.warning(f"{label}: served by {message.model}, which took over earlier")
+    return Served(model=message.model, hops=hops, sticky=sticky)
+
+
 def _anthropic_client():
     import anthropic
 
@@ -286,13 +375,11 @@ async def claude_text(prompt=None, **kwargs):
       - model: str — Claude model identifier (default: RESPONSE_MODEL)
       - system_instruction: str — system prompt
       - turns: list of (role, text) tuples — "user"/"model" mapped to "user"/"assistant"
-      - temperature: float (ignored when thinking is enabled — API forces 1.0)
       - max_output_tokens: int (default 8192, covers thinking + response)
       - prompt: str — simple single-turn prompt (alternative to turns)
 
-    When CLAUDE_THINKING_ENABLED, adaptive extended thinking is on (forces
-    temperature=1.0 per Anthropic API). Otherwise thinking is off and
-    temperature from kwargs is respected.
+    Thinking is always on and there is no sampling control; effort is the
+    only knob.
     """
     start_time = time.time()
     model = kwargs.get("model", RESPONSE_MODEL)
@@ -307,17 +394,17 @@ async def claude_text(prompt=None, **kwargs):
         "model": resolved_model,
         "max_tokens": max_output_tokens,
         "messages": messages,
+        "thinking": {"type": "adaptive"},
+        "output_config": {"effort": TEXT_EFFORT},
     }
-    if CLAUDE_THINKING_ENABLED:
-        api_kwargs["thinking"] = {"type": "adaptive"}
-    else:
-        temperature = kwargs.get("temperature", 0.45)
-        api_kwargs["temperature"] = temperature
     if system_instruction:
         api_kwargs["system"] = system_instruction
 
     try:
-        response = await client.messages.create(**api_kwargs)
+        response = await client.beta.messages.create(
+            **api_kwargs, **fallback_args(resolved_model)
+        )
+        served(response, f"claude_text {resolved_model}")
         content = "".join(
             block.text for block in response.content if block.type == "text"
         )
@@ -449,6 +536,7 @@ async def claude_structured(prompt, response_format, model):
         model=model,
         max_tokens=32000,
         thinking={"type": "adaptive"},
+        output_config={"effort": STRUCTURED_EFFORT},
         messages=[{"role": "user", "content": full_prompt}],
     ) as stream:
         response = await stream.get_final_message()

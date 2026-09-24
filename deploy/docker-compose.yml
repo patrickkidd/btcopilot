@@ -1,0 +1,135 @@
+# Family Diagram's box (T-11, R-0330): one image, its own Postgres, Redis for
+# the agent queue, and Caddy in front for TLS. Nothing here is shared with the
+# Pro box. Secrets live in secrets.env, encrypted with sops; decrypt it on the
+# box into /etc/fd/secrets.env (root-only) and nowhere else.
+
+# Renamed from "chat" (R-0472); the box's one-time steps are in README.md.
+name: familydiagram
+
+# A service's own `environment` replaces an anchored one wholesale, so the
+# shared settings are their own anchor and each service merges them in.
+x-app-env: &app-env
+  FLASK_CONFIG: production
+  FLASK_APP: "btcopilot.app:create_app()"
+  FLASK_SQLALCHEMY_DATABASE_URI: postgresql://familydiagram:${POSTGRES_PASSWORD}@fd-postgres:5432/familydiagram
+  CELERY_BROKER_URL: redis://fd-redis:6379/0
+  CELERY_RESULT_BACKEND: redis://fd-redis:6379/0
+  BTCOPILOT_INSTANCE_PATH: /app/instance
+  SOPS_AGE_KEY_FILE: /run/secrets/age.key
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://fd-alloy:4318
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=production
+
+# No container_name on the app and the worker: `docker rollout <service>` starts the
+# new container beside the old one and stops the old one only once the new one is
+# healthy, so a deploy drops no request (2026-09-22).
+x-app: &app
+  image: ghcr.io/patrickkidd/btcopilot:${BTCOPILOT_TAG:-latest}
+  restart: unless-stopped
+  env_file: /etc/fd/secrets.env
+  volumes:
+    - ./instance:/app/instance
+    - /etc/fd/age.key:/run/secrets/age.key:ro
+  depends_on:
+    fd-postgres:
+      condition: service_healthy
+    fd-redis:
+      condition: service_healthy
+
+services:
+  fd-caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ${CADDYFILE:-./Caddyfile}:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - fd-app
+
+  fd-app:
+    <<: *app
+    environment:
+      <<: *app-env
+      OTEL_SERVICE_NAME: fd-app
+    expose:
+      - "8888"
+
+  fd-worker:
+    <<: *app
+    environment:
+      <<: *app-env
+      FD_IS_CELERY: "1"
+      OTEL_SERVICE_NAME: fd-worker
+    command: ["python", "-m", "celery", "-A", "btcopilot.celery:celery", "worker", "--pool=solo", "--loglevel=info"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -m celery -A btcopilot.celery:celery inspect ping -d celery@$$HOSTNAME --timeout 10 || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+
+  fd-postgres:
+    image: postgres:16-alpine
+    container_name: fd-postgres
+    restart: unless-stopped
+    volumes:
+      - ./instance/postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: familydiagram
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: familydiagram
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U familydiagram -d familydiagram"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  fd-redis:
+    image: redis:7-alpine
+    container_name: fd-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Ships host and container metrics, every container's log lines and the app's
+  # traces to Grafana Cloud; nothing is stored on the box. Its UI on 12345 has no host port.
+  fd-alloy:
+    image: grafana/alloy:latest
+    container_name: fd-alloy
+    restart: unless-stopped
+    env_file: /etc/fd/secrets.env
+    # The host cgroup tree and Docker data dir, read-only, so cadvisor sees every
+    # container and not only its own (verified empty without, 2026-09-22).
+    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "--storage.path=/var/lib/alloy/data", "/etc/alloy/config.alloy"]
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /:/rootfs:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /run/containerd/containerd.sock:/run/containerd/containerd.sock:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    expose:
+      - "4317"
+      - "4318"
+
+  # Opens an outbound tunnel so Grafana Cloud's Postgres data source can query
+  # fd-postgres; nothing listens on the box.
+  fd-pdc:
+    image: grafana/pdc-agent:latest
+    container_name: fd-pdc
+    restart: unless-stopped
+    env_file: /etc/fd/secrets.env
+    command: ["-token", "${GRAFANA_PDC_TOKEN}", "-cluster", "prod-us-west-0", "-gcloud-hosted-grafana-id", "1840239"]
+
+volumes:
+  caddy-data:
+  caddy-config:

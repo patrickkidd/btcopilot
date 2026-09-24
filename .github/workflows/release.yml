@@ -1,109 +1,60 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-
+# Build the image on a push to master, tag it with the release version (R-0419),
+# and deploy it to the box. The host is a repository variable so no address is
+# committed before the droplet exists.
 name: Release
-
-permissions:
-  contents: write
-  packages: write
 
 on:
   push:
-    branches:
-      - master
+    branches: [master]
   workflow_dispatch:
-    inputs:
-      skip_release:
-        description: "Skip the release stage (only build)"
-        required: false
-        type: boolean
-        default: false
 
 jobs:
   build:
-
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      packages: write
     outputs:
-      version: ${{ steps.set_version.outputs.version }}
-    
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.11'
-    - run: |
-        python -m pip install --upgrade pip build setuptools wheel
-
-    - name: Generate unique version
-      id: set_version
-      run: |
-        version=$(date +%Y.%m.%d.%H%M%S)+$(git rev-parse --short HEAD)
-        echo "version=${version}" >> $GITHUB_ENV
-        echo "version=${version}" >> "$GITHUB_OUTPUT"
-  
-    - name: Increment version
-      run: |
-        sed -i "s/version = \"[^\"]*\"/version = \"${{ env.version }}\"/" pyproject.toml
-  
-    - name: Build
-      run: |
-        python -m build . --no-isolation
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: python-wheel
-        path: dist/*.whl
-
-  test:
-    
-    runs-on: ubuntu-24.04
-    needs: build
-    steps:
-
-    - name: Set up Python
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.11'
-        
-    - name: Download artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: python-wheel
-        path: dist
-
-    - name: Install wheels
-      run: |
-        pip install --upgrade pip
-        pip install --extra-index-url=$TWINE_REPOSITORY_URL `ls dist/*.whl`[app,test]
-        python -c "import btcopilot.tests; print(btcopilot.tests)"
-
-    - name: Test with pytest
-      run: |
-        pytest -svv --disable-warnings --pyargs btcopilot.tests
-
-  build-docker:
-    runs-on: ubuntu-latest
-    needs: build
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download wheel artifact
-        uses: actions/download-artifact@v4
         with:
-          name: python-wheel
-          path: dist
+          fetch-depth: 0
 
-      - name: Free up disk space
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build the web bundle
         run: |
-          docker system prune -af --volumes
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          df -h
+          npm --prefix web ci
+          npm --prefix web run build
+
+      # 3.YYYY.M.D.N+g<sha7>: the commit's UTC date, N = 1 + the release tags
+      # already carrying that date. The committed version stays 3.0.0.
+      - name: Version
+        id: version
+        run: |
+          day=$(TZ=UTC git show -s --format=%cd --date=format-local:%Y.%-m.%-d HEAD)
+          n=$(( $(git tag -l "3.${day}.*" | wc -l) + 1 ))
+          version="3.${day}.${n}+g$(git rev-parse --short=7 HEAD)"
+          pip install build packaging
+          python -c "from packaging.version import Version; Version('${version}')"
+          sed -i "s/^version = \"3.0.0\"$/version = \"${version}\"/" pyproject.toml
+          grep -q "^version = \"${version}\"$" pyproject.toml
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "tag=${version/+/-}" >> "$GITHUB_OUTPUT"
+
+      - name: Build the wheel
+        run: python -m build --wheel
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -115,99 +66,64 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push Docker image for testing
+      - name: Build and push the image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}:ci-${{ github.sha }}
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.tag }}
+            ghcr.io/${{ github.repository }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            BUILDKIT_INLINE_CACHE=1
             WHEEL_FILE=dist/*.whl
 
-  test-docker:
-    runs-on: ubuntu-latest
-    needs: build-docker
-    steps:
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Pull and test Docker image
+      - name: Tag the release
         run: |
-          docker pull ghcr.io/${{ github.repository }}:ci-${{ github.sha }}
-          docker run --rm ghcr.io/${{ github.repository }}:ci-${{ github.sha }} python -c "import btcopilot; print('✓ btcopilot imported successfully')"
-          docker run --rm ghcr.io/${{ github.repository }}:ci-${{ github.sha }} gunicorn --check-config "btcopilot.app:create_app()"
+          git tag "${{ steps.version.outputs.version }}"
+          git push origin "${{ steps.version.outputs.version }}"
 
-  release-wheel:
+  deploy:
     runs-on: ubuntu-24.04
-    if: ${{ github.ref == 'refs/heads/master' && (github.event.inputs.skip_release != 'true') }}
-    env:
-      TWINE_REPOSITORY_URL: "${{ secrets.TWINE_REPOSITORY_URL }}"
-      TWINE_USERNAME: "${{ secrets.TWINE_USERNAME }}"
-      TWINE_PASSWORD: "${{ secrets.TWINE_PASSWORD }}"
-    needs: [build, test, build-docker]
+    needs: build
+    if: vars.FD_HOST != ''
     steps:
-    - name: Download artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: python-wheel
-        path: dist
-
-    - run: |
-        ls -la ./dist
-        mv dist/*.whl .
-        echo "WHEEL_FILENAME=`ls *.whl`" >> $GITHUB_ENV
-
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: ${{needs.build.outputs.version}}
-        name: ${{needs.build.outputs.version}}
-        files: ${{ env.WHEEL_FILENAME }}
-
-    - name: Push to pypi repo
-      run: |
-        pip install -U twine packaging
-        twine upload --verbose --repository-url $TWINE_REPOSITORY_URL --username $TWINE_USERNAME --password $TWINE_PASSWORD *.whl
-
-  release-docker:
-    runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/master' && (github.event.inputs.skip_release != 'true') }}
-    needs: [test, test-docker]
-    steps:
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - name: Pull the image and run the chain
+        uses: appleboy/ssh-action@v1.2.1
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Pull and tag image for release
-        run: |
-          docker pull ghcr.io/${{ github.repository }}:ci-${{ github.sha }}
-          docker tag ghcr.io/${{ github.repository }}:ci-${{ github.sha }} ghcr.io/${{ github.repository }}:latest
-          docker tag ghcr.io/${{ github.repository }}:ci-${{ github.sha }} ghcr.io/${{ github.repository }}:${{ github.ref_name }}
-          docker tag ghcr.io/${{ github.repository }}:ci-${{ github.sha }} ghcr.io/${{ github.repository }}:${{ github.sha }}
-          docker push ghcr.io/${{ github.repository }}:latest
-          docker push ghcr.io/${{ github.repository }}:${{ github.ref_name }}
-          docker push ghcr.io/${{ github.repository }}:${{ github.sha }}
-
-  trigger-downstream-deploy:
-    runs-on: ubuntu-latest
-    needs: [release-wheel, release-docker]
-    if: ${{ github.ref == 'refs/heads/master' && (github.event.inputs.skip_release != 'true') && vars.DOWNSTREAM_REPO != '' }}
-    steps:
-      - name: Trigger downstream deployment
-        run: |
-          curl -X POST \
-            -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token ${{ secrets.DOWNSTREAM_DEPLOY_TOKEN }}" \
-            https://api.github.com/repos/${{ vars.DOWNSTREAM_REPO }}/actions/workflows/release.yml/dispatches \
-            -d '{"ref":"master"}'
+          host: ${{ vars.FD_HOST }}
+          port: 22
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            export BTCOPILOT_TAG=${{ needs.build.outputs.tag }}
+            cd /var/www/btcopilot
+            git pull origin master
+            # one time: the box's files move from deploy/chat to deploy; the database lives in instance/
+            if [ -d deploy/chat ]; then
+              [ -d deploy/chat/instance ] && mv deploy/chat/instance deploy/instance
+              rmdir deploy/chat
+            fi
+            cd deploy
+            docker compose --env-file /etc/fd/secrets.env pull
+            # the new app and worker start beside the old ones; the old stop once the new are healthy
+            docker rollout --env-file /etc/fd/secrets.env fd-app
+            docker rollout --env-file /etc/fd/secrets.env fd-worker
+            docker compose --env-file /etc/fd/secrets.env up -d --remove-orphans
+            # one time (R-0417): a database on the retired chain is stamped to the single revision
+            psql() { docker compose --env-file /etc/fd/secrets.env exec -T fd-postgres psql -U familydiagram -d familydiagram -tAc "$1"; }
+            at=$(psql "SELECT CASE WHEN to_regclass('alembic_version') IS NULL THEN '' ELSE (SELECT string_agg(version_num, ',') FROM alembic_version) END")
+            # the retired chain kept the extraction pipeline's columns and statuses (R-0414); the single revision has none
+            unpipe="ALTER TABLE discussions DROP COLUMN extracting, DROP COLUMN extracted_through_order, DROP COLUMN pending_extracted_through_order; ALTER TABLE statements DROP COLUMN pdp_deltas; ALTER TYPE discussionstatus RENAME TO discussionstatus_retired; CREATE TYPE discussionstatus AS ENUM ('pending', 'generating', 'failed', 'ready'); ALTER TABLE discussions ALTER COLUMN status DROP DEFAULT, ALTER COLUMN status TYPE discussionstatus USING status::text::discussionstatus, ALTER COLUMN status SET DEFAULT 'pending'; DROP TYPE discussionstatus_retired"
+            case "$at" in
+              ""|1b00000000aa) ;;
+              1a00000000ae) psql "ALTER TABLE model_calls ADD COLUMN fallback JSONB; $unpipe; UPDATE alembic_version SET version_num = '1b00000000aa'" ;;
+              1a00000000af) psql "$unpipe; UPDATE alembic_version SET version_num = '1b00000000aa'" ;;
+              *) echo "database is at retired revision $at; stamp it by hand before deploying" >&2; exit 1 ;;
+            esac
+            docker compose --env-file /etc/fd/secrets.env exec -T fd-app flask admin db upgrade
+            docker compose --env-file /etc/fd/secrets.env ps

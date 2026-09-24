@@ -1,0 +1,8 @@
+---
+name: cluster_rejected
+description: Tell the model its grouping answer was thrown out.
+---
+
+
+Your last answer was thrown out: {why}
+Answer again, fixing only that.

@@ -1,0 +1,73 @@
+# Rulings with no citing test yet, and why (private/oracle SPEC, section 6).
+# One line per ruling: R-NNNN | TEST OWED or WAIVED | reason. Never quote the ruling.
+R-0003 | WAIVED | a judgement about conversational register; no assertion can observe tone
+R-0004 | WAIVED | a design principle of simplicity; judged by eye
+R-0006 | TEST OWED | not built: the question marks that make unknowns visible and tappable are hidden for now (R-0359); nothing on the picture is an unknown to tap
+R-0010 | TEST OWED | not built: dotted empty stretches and solid no-change lines are lines, which are deferred until real data (R-0284)
+R-0012 | TEST OWED | not built: fading after last confirmation and the stop at death are deferred (R-0078)
+R-0014 | TEST OWED | not built: the picture draws no lanes
+R-0018 | WAIVED | an idea marked for a future experiment; nothing to observe
+R-0020 | WAIVED | the product vision; no surface to assert on
+R-0021 | WAIVED | the audience order; a business decision
+R-0030 | WAIVED | a judgement about corpus quality, made outside the app
+R-0031 | WAIVED | which cases form the corpus; the corpus is outside every repo
+R-0032 | WAIVED | a judgement about corpus quality, made outside the app
+R-0033 | WAIVED | the anonymizing rebuild script lives outside every repo
+R-0034 | WAIVED | the corpus and its rebuild script live outside every repo
+R-0035 | WAIVED | a legal and vendor matter
+R-0036 | WAIVED | a review journey over production diagrams run by hand outside the app
+R-0039 | WAIVED | a corpus tiering judgement, made outside the app
+R-0044 | WAIVED | a post-mortem of a discarded view; the lesson is carried by later picture rulings
+R-0046 | WAIVED | a rejected mockup control; nothing in the app to observe
+R-0050 | WAIVED | a watch-and-decide product call
+R-0054 | WAIVED | a statement of the theory the data rests on; no single behaviour
+R-0056 | TEST OWED | not built: nothing files friction reports and nothing answers from a reference manual
+R-0058 | WAIVED | a post-mortem of a discarded tab; the lesson is carried by R-0284
+R-0059 | WAIVED | a design principle; judged by eye
+R-0066 | WAIVED | a design principle of simplicity; judged by eye
+R-0069 | TEST OWED | not built: the editor has no banner saying editing by chat also works
+R-0107 | WAIVED | a rejected mockup option; nothing in the app to observe
+R-0108 | WAIVED | a rejected design round; nothing in the app to observe
+R-0110 | WAIVED | a rejected mockup option; nothing in the app to observe
+R-0138 | WAIVED | a priority call about the order of work
+R-0146 | WAIVED | a rejected mockup, judged on type size by eye
+R-0147 | WAIVED | a type-size judgement on a mockup view, by eye
+R-0150 | WAIVED | a defect in a design gallery page, which is not part of the app
+R-0151 | WAIVED | a defect in a design gallery page, which is not part of the app
+R-0155 | WAIVED | a rejected mockup option; nothing in the app to observe
+R-0157 | WAIVED | no Pro app in the rewrite (R-0082); the desktop Pro app lives in another repo
+R-0158 | WAIVED | no Pro app in the rewrite (R-0082); the desktop Pro app lives in another repo
+R-0159 | WAIVED | no Pro app in the rewrite (R-0082); the desktop Pro app lives in another repo
+R-0188 | WAIVED | a guiding design question, not a behaviour
+R-0189 | WAIVED | an observation about first-time users
+R-0194 | WAIVED | one test covers the deterministic candidates; the judgment rule it defers cannot be written until real examples exist
+R-0196 | WAIVED | a statement of what clusters mean clinically
+R-0236 | WAIVED | a statement of what evidence exists; no behaviour
+R-0240 | WAIVED | an open question with the drawn family deferred
+R-0246 | WAIVED | a strategy of review approaches to try
+R-0262 | WAIVED | one test covers the meeting records living in the database; last year's notes were migrated by a one-time run that left no code in the repo
+R-0283 | TEST OWED | not built: the record has no nodal flag and the picture draws no ring for one
+R-0330 | WAIVED | a one-time creation of the box, done
+R-0354 | WAIVED | a pricing decision, deferred
+R-0365 | TEST OWED | not built: the import path does not translate old desktop event kinds such as moved; the per-diagram import is deferred (R-0355)
+R-0379 | TEST OWED | not built: the family diagram with the trouble lit needs auto-arrangement, which the app does not have
+R-0380 | WAIVED | a design principle about concepts; judged by eye
+R-0382 | TEST OWED | not built yet: nothing draws the time from where a cluster starts to its symptom
+R-0386 | WAIVED | a branch and release arrangement outside this branch
+R-0387 | TEST OWED | not built: no play or replay button under a coach reply; only the global speak switch exists
+R-0394 | WAIVED | housekeeping in another repository, done
+R-0396 | WAIVED | a rule about how galleries are reviewed
+R-0397 | WAIVED | a rule about how findings are reported
+R-0398 | WAIVED | a rule about how galleries are captioned
+R-0399 | WAIVED | a rule about how concepts are designed
+R-0400 | WAIVED | a decision to start the beta
+R-0426 | WAIVED | deferred until there is enough data; nothing fixed to observe
+R-0443 | TEST OWED | not built: no session-end or on-return review call exists; it is the ruled fast-follow
+R-0444 | WAIVED | an architecture principle; the review it calls for is R-0443
+R-0468 | WAIVED | the box was created by hand in the provider console; no file in the repo holds its region
+R-0469 | TEST OWED | the naming test covers no app-distinguishing names; features by license has no test yet
+R-0470 | TEST OWED | the naming test covers the one app; the other clauses have no test yet
+R-0473 | WAIVED | who reads the README is a writing choice no test can observe
+R-0474 | WAIVED | how the history is told is a writing choice no test can observe
+R-0475 | WAIVED | how the README is written is a writing choice no test can observe
+R-0476 | WAIVED | how the project is presented is a writing choice no test can observe

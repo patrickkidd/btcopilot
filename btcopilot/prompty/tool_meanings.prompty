@@ -1,0 +1,41 @@
+---
+name: tool_meanings
+description: What each tool parameter means to the model.
+meanings:
+  kind: |-
+    Which kind of event this is. Use noted for anything worth writing down that is not a birth, adoption, marriage, bonding, separation, divorce, death or shift — a move, a new job, finishing a course. A noted event must say what happened in its description.
+  description: |-
+    What happened, with no names of the people this event links: the person, spouse, child and targets are said by their fields.
+  notes: |-
+    Free text kept on the event beside its description. Changing it replaces what is there, so write the whole text.
+  end_date: |-
+    YYYY-MM-DD. When the event ended, given only when an end date is known; date is when it began.
+  location: |-
+    Where it happened, when the conversation says where. On a noted event about a move it is the place they moved to.
+  person: |-
+    The person the event is about. On a marriage, bonding, separation or divorce it is one of the two partners and spouse is the other. On a birth or adoption it is a parent, and is left out when the parents are not known — never the same id as child.
+  spouse: |-
+    The other partner. Required with person on married, bonded, separated and divorced; on a birth it is the second parent.
+  child: |-
+    For a birth or adoption, who was born or taken in: set child, not person.
+  anxiety: |-
+    Which way this variable moved, if it moved.
+  symptom: |-
+    Which way this variable moved, if it moved.
+  functioning: |-
+    Which way this variable moved, if it moved.
+  relationship: |-
+    Which relationship value this event carries.
+  relationship_targets: |-
+    The other people this event's relationship links. Required whenever relationship is set, and never empty.
+  relationship_triangles: |-
+    A second list of people the relationship links. Required when relationship is inside or outside.
+  person_a: |-
+    One side of the bond. A bond is between two different people and there is one bond ever between any two of them.
+  person_b: |-
+    The other side. Leave it out only when nobody named them: the record then adds them as a generically named person, because a bond with one side is not a bond.
+  parents: |-
+    The id of the pair bond this person was born into. Children are the offspring of a bond, so the two parents must have one first.
+  read_notes: |-
+    The notes kept on events. The record only says which events have notes, so read them before changing an event's notes, since a change replaces the whole text, and whenever what was said there matters to the conversation.
+---

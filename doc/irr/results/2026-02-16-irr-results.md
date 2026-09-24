@@ -24,7 +24,7 @@ The most important unresolved design question. Current metrics assume per-statem
 | Approach | What it measures | Status |
 |----------|-----------------|--------|
 | **Per-statement deltas** | Agreement on each statement's SARF coding independently | Implemented in dashboard (`/training/irr/`). All kappas showing "-" due to insufficient matched events. |
-| **Cumulative/end-state** | Agreement on the resulting PDP after a full conversation | Proposed in [GT Strategy Realignment](../../plans/GT_STRATEGY_REALIGNMENT.md) Phase 2. Not implemented. |
+| **Cumulative/end-state** | Agreement on the resulting PDP after a full conversation | Proposed in [GT Strategy Realignment](../../archive/2026-09-plans/GT_STRATEGY_REALIGNMENT.md) Phase 2. Not implemented. |
 | **Hybrid** | Per-statement for IRR study subset, cumulative for scaling | Mentioned in GT Strategy Realignment Phase 5. Not implemented. |
 
 ### Arguments
@@ -46,7 +46,7 @@ The most important unresolved design question. Current metrics assume per-statem
 
 **Status:** Under evaluation. Needs discussion and possibly prototyping of cumulative F1 before deciding.
 
-**Sources:** [Deliberation record Theme 3](meetings/2026-02-16-sarah-round1-calibration-deliberation.md), [GT Strategy Realignment](../../plans/GT_STRATEGY_REALIGNMENT.md), [Meeting 1 notes](meetings/2026-02-16-sarah-round1-calibration-notes.md)
+**Sources:** [Deliberation record Theme 3](meetings/2026-02-16-sarah-round1-calibration-deliberation.md), [GT Strategy Realignment](../../archive/2026-09-plans/GT_STRATEGY_REALIGNMENT.md), [Meeting 1 notes](meetings/2026-02-16-sarah-round1-calibration-notes.md)
 
 ## Quantitative Metrics
 
@@ -169,10 +169,10 @@ How IRR outputs feed downstream systems.
 | Coding rules → AI system prompt | **Blocked** | Rules not mature enough; measurement approach unresolved |
 | Re-coding → kappa scores | **Blocked** | No re-coding round has occurred |
 | Kappa scores → publication | **Blocked** | No kappas exist |
-| GT coding → extraction model training data | **Blocked** | GT data quality issues ([GT Strategy Realignment](../../plans/GT_STRATEGY_REALIGNMENT.md) Phase 1) |
+| GT coding → extraction model training data | **Blocked** | GT data quality issues ([GT Strategy Realignment](../../archive/2026-09-plans/GT_STRATEGY_REALIGNMENT.md) Phase 1) |
 | Validated scheme → new coder onboarding | **Blocked** | Scheme not validated |
 
-**Cross-reference:** [GT Strategy Realignment](../../plans/GT_STRATEGY_REALIGNMENT.md) — addresses the GT data quality and metric-goal alignment issues that also affect IRR.
+**Cross-reference:** [GT Strategy Realignment](../../archive/2026-09-plans/GT_STRATEGY_REALIGNMENT.md) — addresses the GT data quality and metric-goal alignment issues that also affect IRR.
 
 ## Next Steps
 

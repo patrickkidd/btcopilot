@@ -87,7 +87,7 @@ Domain partitioning prevents merge conflicts — but Pro app violates this (FR-2
 | Validation + extraction | `btcopilot/pdp.py` |
 | Diagram model | `btcopilot/pro/models/diagram.py` |
 | Pro routes | `btcopilot/pro/routes.py` |
-| Personal diagram routes | `btcopilot/personal/routes/diagrams.py` |
-| Personal discussion routes | `btcopilot/personal/routes/discussions.py` |
+| Personal diagram routes | `btcopilot/routes/diagrams.py` |
+| Personal discussion routes | `btcopilot/routes/discussions.py` |
 | Data sync spec | `familydiagram/doc/specs/DATA_SYNC_FLOW.md` |
 | Data model spec | `btcopilot/doc/specs/DATA_MODEL.md` |

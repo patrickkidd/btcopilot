@@ -1,0 +1,6 @@
+---
+name: extraction_pass1
+description: Extract people, pair bonds and structural events.
+---
+{% raw %}Extract people, pair bonds, and structural
+events. Today's date is {{current_date}}.{% endraw %}

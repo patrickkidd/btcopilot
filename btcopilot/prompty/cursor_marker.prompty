@@ -1,0 +1,6 @@
+---
+name: cursor_marker
+description: The line that separates committed history from new text.
+---
+
+⟪CURSOR {nonce} — everything above this line is already in the committed diagram. Use it only as context for disambiguation. Do NOT emit new items for it. Emit items only for content BELOW this line.⟫

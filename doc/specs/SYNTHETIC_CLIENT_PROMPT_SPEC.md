@@ -2,7 +2,7 @@
 
 **Purpose**: Comprehensive specification for making synthetic client personas feel as natural as the improved AI chatbot. These rules address the gap between the `CONVERSATION_FLOW_PROMPT` (which uses specific, behavioral guidance) and the current synthetic client system prompt (which relies on abstract personality labels and meta-instructions).
 
-**Applies to**: `btcopilot/tests/personal/synthetic.py` — the `Persona.system_prompt()` method, `simulate_user_response()`, and persona definitions.
+**Applies to**: `btcopilot/tests/synthetic.py` — the `Persona.system_prompt()` method, `simulate_user_response()`, and persona definitions.
 
 **Last Updated**: February 2025
 

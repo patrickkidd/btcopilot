@@ -1,6 +1,7 @@
 import sys
 import os, logging
 import hashlib, hmac, base64
+import importlib.metadata
 
 IS_TEST = "pytest" in sys.modules
 
@@ -87,33 +88,12 @@ ANON_USER = "anonymous"
 
 ## https://www.redmadrobot.com/fyi/designing-mobile-app-architecture
 
-# if os.getenv("FLASK_CONFIG") == "production":
-#     import ddtrace
-
-#     ddtrace.patch_all(logging=True)
-
-
 _log = logging.getLogger(__name__)
 
 
 ## Version
 
-_version = None
-
-
-def version():
-    global _version
-
-    if not _version:
-        try:
-            from importlib.metadata import version as get_version
-
-            _version = get_version("btcopilot")
-        except Exception as e:
-            _log.debug(f"Could not get package version: {e}")
-            _version = "unknown"
-
-    return _version
+__version__ = importlib.metadata.version("btcopilot")
 
 
 ## Add Git SHA and Cache Headers

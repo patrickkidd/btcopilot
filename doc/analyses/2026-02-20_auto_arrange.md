@@ -2,6 +2,8 @@
 
 **Date:** 2026-02-20
 
+The code (`btcopilot/arrange`) left FD-362 in 6b3e1c6 on 2026-09-23 (R-0418); commit 8405a2b is the one to check out for it.
+
 ## Current State: Non-Functional (LLM-Based Prototype)
 
 The auto-arrange feature exists as a Gemini 2.5 Flash-powered layout suggestion system. It is not a deterministic algorithm and is unreliable for real diagrams.

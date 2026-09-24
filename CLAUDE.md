@@ -1,33 +1,153 @@
 # CLAUDE.md — btcopilot
 
-Backend for Pro/Personal apps, training app, AI extraction system.
+Backend for the chat app (the personal app, the review and the admin commands). The Pro
+backend and the training app live on branch `master-legacy`, not here.
+The extraction pipeline and the pending data pool were removed 2026-09-23 (R-0414); last commit holding them: a7eeb2c.
+
+## PRIME DIRECTIVE — re-read before composing every reply
+
+Patrick's #1 cost is wasted reading time. Every reply is judged against these:
+
+1. **Architect register.** Say only what changes his decision. No preamble, no restating his context, no narrating your process.
+2. **Final message stands alone.** He reads ONLY your last message — never todos, logs, or prior turns. State current state, the decision, the next action.
+3. **Plain words.** No jargon, acronyms, symbol names, file paths, or metric labels in prose. Write "no dupes in 10 runs", not "raw-dup 1.0→0.0".
+4. **Concise ≠ lossy.** Compress the wording, never drop substance he needs.
+5. **Facts, not opinions** — unless he explicitly asked for a recommendation.
+6. **Don't break a rule you already know.** Worktrees, never the main clone. Don't remind him of git mechanics — 25 years a developer.
+
+This block is a deliberate distillation of recurring corrections, not duplicate prose — do not "DRY it away".
+
+## Where the work starts
+
+Work on `master` through ticket worktrees (below). Every session reads
+[doc/STATE.md](doc/STATE.md) first, then [doc/TOPICS.md](doc/TOPICS.md), then
+[doc/HOW_THIS_PROJECT_WORKS.md](doc/HOW_THIS_PROJECT_WORKS.md) (binding process rules). The
+Jira epic is **FD-362**.
+
+## Worktrees, branches, PRs
+
+The main clone stays on `master` and is read-only to Claude: never edit, branch-switch or run
+anything in it. All work happens in a worktree at `.claude/worktrees/<ticket>` on a branch of
+the same name (`FD-NNN`; if taken, `FD-NNN-<slug>`; no ticket, a short slug), created with
+`git worktree add .claude/worktrees/FD-NNN -b FD-NNN` and entered with `EnterWorktree(path=...)`.
+
+- Commit and push the worktree's own branch without asking; one git mutation per command,
+  never chained. Open a **draft PR at the first push**, title starting with the Jira id, and
+  keep it current. Reports link the PR, not diffs.
+- Never merge, never push `master`, never rebase or force-push a pushed branch without a yes.
+  `master` is server-protected: PR required.
+- Remove a worktree only after its PR merges or Patrick says "discard".
+- **A change to the rulings store needs its fingerprints re-pinned**: CI prints the lines to
+  paste.
+
+## Production
+
+The box is reached as `ssh familydiagram` (Patrick's ssh config; never the raw IP). Deploys: the release workflow builds and tags the image; the rollout runs on the box from `/var/www/btcopilot/deploy` with `--env-file /etc/fd/secrets.env`. Grafana Cloud is administered through its API with `GRAFANA_SA_TOKEN` and `GRAFANA_URL` from the parent `.env`.
+
+## Jira
+
+Site `https://alaskafamilysystems.atlassian.net`, project **FD**, REST v3, HTTP basic as
+`patrick@alaskafamilysystems.com` with `ATLASSIAN_TOKEN` from `.env` at the clone root
+(gitignored; never echo it). Search is `POST /rest/api/3/search/jql`. Reads need no approval;
+every create, update, transition, comment or delete needs a one-line yes from Patrick for the
+operation (draft the content yourself).
+
+```bash
+TOKEN=$(grep '^ATLASSIAN_TOKEN=' .env | cut -d= -f2-)
+curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
+  "https://alaskafamilysystems.atlassian.net/rest/api/3/issue/FD-NNN?fields=summary,status,description"
+```
+
+## Sandbox and manual testing (MANDATORY)
+
+- **Port 8888 is Patrick's server** on `master`: never start, stop, restart or test worktree
+  changes against it. **Port 8889 is Claude's sandbox**, started from the worktree; Claude
+  owns its lifecycle. Never the production database.
+- Every web change is verified in a real browser against the sandbox before it is called
+  done: check it answers (`curl -s http://127.0.0.1:8889/ >/dev/null && echo OK`), open the
+  page, take a snapshot and a screenshot, exercise the interactions, report what was seen.
+  Say "appears correct in testing, please verify", never "done".
+
+## Owner corrections that bind every reply (2026-09-09)
+
+- **His terms, verified 2026-09-22 on the round-6 mockups: "cluster" (never "stretch"), "event"
+  (never "moment").** Captions, rulings and code comments use those two words.
+- **Never coin a term.** Say the thing in common words every time ("signing in with an email
+  code also creates the account", never "login-is-signup"). A phrase from a doc is not his term
+  unless he used it. That includes the corpus's own vocabulary: "topic block", "two clocks",
+  "state clock", "flush", "T-11" (verified failure 2026-09-13: "topic block?? again, with the
+  clever language!"). Say "the notes on the branch", "the list of open items", "the file".
+- **One test account, reused (2026-09-22, Patrick).** the claude-test account is the only
+  test account on production; never create another, and delete any scratch account the moment
+  it is no longer needed.
+- **Never verify on production (2026-09-22, Patrick objected to nine scratch accounts on the
+  dashboard).** A deploy is checked with a probe of public pages only; every walk that signs
+  in, chats or writes runs on a sandbox stack, never the box.
+- **Mockup method, corrected 2026-09-23 (Patrick: "nifty tech should only be used when it gives
+  flexibility that actually helps communicate"; "you click somewhere and a circle appears that
+  doesn't line up with anything"; "should it just be title and citation?").** (1) 3-D or motion only
+  when it communicates what flat cannot, and the frame must say what that is by itself. (2) A
+  mockup's tap does what the app's tap does — the ruled tap language (pick, words on the picture,
+  chip lights, second tap speaks) — built on the app's own picture code, never reinvented. (3)
+  Title and citation only under a concept. (4) If a stranger cannot read the frame unaided, the
+  concept fails; users never see prose.
+- **A picture that needs that much prose does not speak (2026-09-23, Patrick, R-0398: a
+  concept that needs a lot of text to explain it is not visual enough; a little text is fine).** What he sees: the frames, one sentence per concept, the
+  decisions. Gates, passages, costs and checks live in the verdict file, never on his page.
+- **Every gallery passes a visual critique before Patrick sees it (2026-09-22, his words: "there
+  are so many obvious, visual and aesthetic errors in these").** A separate agent, not the
+  designer, reviews every frame: what is the message, is every mark explained in the caption, is
+  it busier than the app today, did anything vanish without the caption saying why, any invented
+  word; it argues keep or kill per frame and only survivors are published. The message the picture
+  must carry is derived first, from the sources, and the drawing walks back from it.
+- **A gallery gives direction, not a menu (2026-09-22, Patrick: "keep the prose in these
+  artifacts more to the point and actually give clear and simple direction").** Say at the top
+  whether options exclude each other or combine, recommend one, and keep every caption to what
+  the reader must decide.
+- **Mockups are always published as artifacts (2026-09-22, Patrick: "mockups should always be in
+  artifacts. remember that").** A gallery on disk is not a deliverable; publish it (private by
+  default) and give the link. The source stays in ~/theapp/btcopilot-sources/fd-corpus/design/.
+- **He is Patrick (2026-09-11).** Never "the owner" in a document or a reply; it is ambiguous.
+- **Sandbox addresses use `turin`, never `turin.local` (2026-09-11).** The review app is
+  https://turin:8891/personal/.
+- **Every question mark is a question (2026-09-11).** Each "?" he types is covered somewhere,
+  explicitly or implicitly, never recited one by one and never repeated between the reply and
+  the drawing.
+- **Artifacts are UI drawings in the app's own style, never text documents (2026-09-11).** The
+  open decisions go on the drawing, one numbered list in one place, each self-contained with its
+  example, and are never repeated in the reply. The reply is a link and a few lines.
+- **No topic page, no dashboard, no audit page (2026-09-11).** Never generate or link a page
+  built from the register or the ledger; he will not read it.
+- **UI options with one-line descriptions, never a research project (2026-09-11).** Every turn
+  on a design topic shows him drawn options and says what each is. Captions are not forced
+  short: not verbose, but enough that every non-self-evident control is explained.
+- **Never repeat in the reply what an artifact already says (2026-09-16).** When a page is
+  published, the reply is the link and only what is not on the page: the decision he must
+  make, or what changed since. Duplicated content makes him read both.
+- **Sub-agents do the work; this context stays small (2026-09-16, repeated).** Mechanics run in
+  Sonnet or Haiku sub-agents under an auditor; the coordinator holds one-line summaries only,
+  relays nothing mid-run, and posts one final message when everything is done or when there is
+  something for Patrick to do.
+- **Verified failure 2026-09-22 (Patrick: "don't forget your instructions about sub-agents").**
+  The coordinator ran deploys, probes, log reads and file edits itself for hours, with an interim
+  reply after each. Every mechanical step — a deploy, a probe, a log read, a golden regeneration, a
+  box fix — goes to a Sonnet or Haiku sub-agent with a one-page brief; a build goes to Opus; an
+  Opus auditor is spawned before the workers on every multi-agent run. The coordinator's own tool
+  calls are limited to reading briefs and reports, spawning, and the final message.
+- **Cost estimates are for the work, not for validation.** Squashing seven migrations is a few
+  tool calls, not an hour. Verify only what changed, once, at the cheapest level that proves it;
+  never re-verify before a merge is even in sight.
 
 ---
 
-## Confidential Data Rules
+## Private corpus
 
-Induction reports, GT exports, and coach sessions contain clinical data, and
-extraction/conversational-AI experiment artifacts are proprietary IP — **NEVER store any
-of it in the btcopilot repo, and NEVER in btcopilot-sources**. All of it lives in the
-private **fdserver** repo (2026-07-22, Patrick's direction; supersedes the earlier
-btcopilot-sources scheme).
-
-**btcopilot-sources is ONLY for copyrighted academic literature** (Bowen theory book
-chapters etc.; rarely added to). It will be retired once the Pro app's Copilot feature is
-replaced by the embedded personal app. Never route generated data or experiment artifacts
-there.
-
-| Data Type | WRONG Location | Correct Location |
-|-----------|----------------|-----------------|
-| Induction reports | `btcopilot/doc/induction-reports/`, `btcopilot-sources/` | `fdserver/training/induction-reports/` |
-| GT exports | `btcopilot/instance/gt_export.json` (runtime copy only), `btcopilot-sources/` | `fdserver/training/gt-exports/` |
-| Coach feel-test sessions (`bin/coach_chat.py`) | `btcopilot/doc/log/coach-sessions/`, `btcopilot-sources/` | `fdserver/coach-sessions/` (freeform sessions contain real personal content). In-repo path is opt-in `--out shared` and only for synthetic-persona runs. |
-
-`btcopilot/instance/gt_export.json` remains the runtime file the test harness reads; the
-authoritative archived exports live in fdserver.
-
-New clinical/IP data outputs: store in `fdserver/`, add to btcopilot `.gitignore` if a
-runtime copy is needed, update this section.
+Clinical data, experiment output and anything store-shaped never enter this repo. They live
+outside every repo at `~/theapp/btcopilot-sources/fd-corpus/`: `design/` holds the approved
+mockups and galleries (read, never copy in); `private/` holds the prompt mirror, the prompt
+fidelity audit, the ledger of unclear points, the test method, and plain copies of the
+rulings and the oracle SPEC. The encrypted rulings store and prompts in this repo
+(`private/oracle/`, `private/prompts/`, sops with age) are the only private material here.
 
 ---
 
@@ -37,43 +157,34 @@ runtime copy is needed, update this section.
 
 | Domain | Doc |
 |--------|-----|
-| Data model (schema, enums, validation) | [doc/specs/DATA_MODEL.md](doc/specs/DATA_MODEL.md) |
-| PDP extraction, deltas, cumulative logic | [doc/specs/PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md) |
-| SARF coding, GT workflow, approval | [doc/SARF_GROUND_TRUTH_TECHNICAL.md](doc/SARF_GROUND_TRUTH_TECHNICAL.md) |
-| SARF visual language (badges, colors, dates) | [doc/specs/SARF_VISUAL_SPEC.md](doc/specs/SARF_VISUAL_SPEC.md) |
+| Where the build stands, what is unresolved | [doc/STATE.md](doc/STATE.md) |
+| Process rules (binding) | [doc/HOW_THIS_PROJECT_WORKS.md](doc/HOW_THIS_PROJECT_WORKS.md) |
+| Append-only history | [doc/HISTORY.md](doc/HISTORY.md) |
+| Topic map: where each subject lives | [doc/TOPICS.md](doc/TOPICS.md) |
+| Screens and approved UI | [doc/UI_SPEC.md](doc/UI_SPEC.md), [doc/SCREENS.md](doc/SCREENS.md), [doc/UI_STANDARDS.md](doc/UI_STANDARDS.md) |
+| The app's JSON API | [doc/API.md](doc/API.md) |
+| Data model (schema, enums, validation) | [doc/specs/DATA_MODEL.md](doc/specs/DATA_MODEL.md), [doc/specs/PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md), [doc/EVENT_MODEL.md](doc/EVENT_MODEL.md) |
+| Clusters | [doc/CLUSTERS.md](doc/CLUSTERS.md) |
+| Drawability — when the timeline picture may draw vs must ask | [doc/DRAWABILITY.md](doc/DRAWABILITY.md) |
+| Diagram rendering | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md), [doc/FRAGMENT_CONVENTIONS.md](doc/FRAGMENT_CONVENTIONS.md) |
+| Tests and known defects | [doc/TEST_STRATEGY.md](doc/TEST_STRATEGY.md), [doc/KNOWN_DEFECTS.md](doc/KNOWN_DEFECTS.md) |
+| Box and release | [doc/PLATFORM_BUILD.md](doc/PLATFORM_BUILD.md), [deploy/README.md](deploy/README.md) |
 | Prompt engineering decisions | [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) |
-| Prompt optimization process | [doc/PROMPT_OPTIMIZATION.md](doc/PROMPT_OPTIMIZATION.md) |
-| Bowen theory concepts | [CONTEXT.md](CONTEXT.md) |
-| Diagram layout/rendering/SVG | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) |
-| F1 metrics, evaluation | [doc/F1_METRICS.md](doc/F1_METRICS.md) |
-| Chat flow, personal app AI | [doc/CHAT_FLOW.md](doc/CHAT_FLOW.md) |
-| Client-server data sync | [familydiagram DATA_SYNC_FLOW.md](../familydiagram/doc/specs/DATA_SYNC_FLOW.md) |
-| Decisions (career, strategy) | [decisions/log.md](decisions/log.md) — see top-level CLAUDE.md "Documentation Routing > Decisions" for triggers and rules |
-| Architecture decisions (backend) | [adrs/](adrs/) — durable patterns only, not point-in-time choices (those go in decisions/log.md) |
-| IRR calibration, coding guidelines | [doc/irr/](doc/irr/) |
-| Calibration system (as-built) | [doc/adrs/calibration.md](doc/adrs/calibration.md) |
-| Synthetic client personas/evals | [doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md](doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md) |
-| Synthetic client dev log | [doc/log/synthetic-clients/](doc/log/synthetic-clients/) |
-| Psychological foundations | [doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md](doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md) |
-| Feature/behavior specs | [doc/specs/](doc/specs/) |
-| Prompt extraction strategy | [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md) (self-updating after each induction run) |
-| **Model evaluations catalog — START HERE to compare extraction models/configs** (F1, cost, latency per model; benchmark-era comparability rules) | [doc/MODEL_EVALUATIONS.md](doc/MODEL_EVALUATIONS.md) |
-| Bowen theory formal spec | [doc/specs/BOWEN_THEORY.md](doc/specs/BOWEN_THEORY.md) |
-| F1 dashboard (operational tracking) | [doc/F1_DASHBOARD.md](doc/F1_DASHBOARD.md) |
-| Diagram layout — language-agnostic spec | [doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md](doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md) |
-| **Auto-arrange algorithm implementation — READ FIRST before changing `btcopilot/arrange/`**. Lives at `btcopilot/btcopilot/arrange/{layout,refine}.py`. Workstream history, decision log D-1..D-26, MVP context, GT calibration, painter analogy, tried-and-rejected paths, watchdog protocol, dev workflow. | [familydiagram doc/plans/2026-05-02--auto-arrange-layout.md](../familydiagram/doc/plans/2026-05-02--auto-arrange-layout.md) |
-| Audio upload (AssemblyAI, Celery) | [doc/AUDIO_UPLOAD_FLOW.md](doc/AUDIO_UPLOAD_FLOW.md) |
-| Probabilistic extraction issues (watch list) | [doc/EXTRACTION_QUALITY.md](doc/EXTRACTION_QUALITY.md) |
+| Bowen theory | [CONTEXT.md](CONTEXT.md), [doc/specs/BOWEN_THEORY.md](doc/specs/BOWEN_THEORY.md) |
+| SARF definitions, IRR calibration | [doc/sarf-definitions/](doc/sarf-definitions/), [doc/irr/](doc/irr/) |
+| Synthetic clients | [doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md](doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md), [doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md](doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md), [doc/log/synthetic-clients/](doc/log/synthetic-clients/) |
+| Decisions | [decisions/log.md](decisions/log.md) — log every significant decision immediately |
+| Architecture decisions | [doc/adrs/](doc/adrs/) — durable patterns only |
+| Subsystem analyses | [doc/analyses/](doc/analyses/) |
 
-Other: [README.md](README.md), [doc/plans/](doc/plans/)
+Old-app material lives in [doc/archive/](doc/archive/) and is not current knowledge.
+Jira is the single source of truth for task status. Domain knowledge goes into the one
+authoritative doc above; if none exists, create it in `doc/` and add it here.
 
-**Key prompt engineering lessons** (details in PROMPT_ENGINEERING_LOG.md): production extraction model is gemini-3.6-flash for Pass 1+2 AND Pass 3 SARF self-review, thinking=1024 — see `llmutil.py` for current constants and doc/MODEL_EVALUATIONS.md for alternatives; verbose definitions killed F1 scores; see log for what NOT to include in prompts.
-
-### MVP State Tracking
-
-Jira is the single source of truth (MVP epic **FD-264**). Site, id format, API auth, and the approval rule live in the top-level [CLAUDE.md "Jira (CANONICAL)"](../CLAUDE.md#jira-canonical) — not redefined here.
-
-[MVP_DASHBOARD.md](MVP_DASHBOARD.md) is **DEPRECATED (2026-05-03)**, read-only archaeology. Never add rows or update statuses.
+**The human oracle**: Patrick's direction is the binding input, kept in the encrypted
+rulings store `private/oracle/`. Public docs cite rulings by id (`[Oracle: R-0001]`) and
+never restate quotes; capture his new statements into the store immediately; never author a
+ruling he did not say. `HOW_THIS_PROJECT_WORKS.md` carries the rest.
 
 ### Synthetic Client Dev Log (MANDATORY)
 
@@ -88,43 +199,27 @@ Process: make change → create `doc/log/synthetic-clients/YYYY-MM-DD_HH-MM--des
 ## Architecture
 
 btcopilot provides:
-- Backend for Pro/Personal apps
-- AI/ML interface for SARF research
-- PDP (Pending Data Pool) extraction — **one mode only**: `pdp.extract_full()`
-  - Full conversation → two-pass LLM call → complete PDP. Used by both apps.
-  - **Personal app**: `POST /personal/discussions/<id>/extract` → stores result in `diagram_data.pdp` via `set_diagram_data`.
-  - **Training app**: `POST /training/discussions/<id>/extract` → same. Result stored in `discussion.diagram.set_diagram_data(diagram_data)`. The discussion view then surfaces the full PDP as `cumulative_pdp` on the last subject statement for display in the SARF editor.
-  - `pdp.update()` (per-statement extraction) **no longer exists**. Do not reference it.
+- Backend for the chat app
 
 ### Core Structure
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
 | App factory | `btcopilot/app.py:create_app()` | Flask init, extensions, error handlers |
-| Pro backend | `btcopilot/pro/` | Desktop app API (pickle over HTTPS) |
-| Personal backend | `btcopilot/personal/` | Mobile app API (JSON), chat-only conversation + endpoint-driven extraction |
-| Training app | `btcopilot/training/` | Domain-expert feedback for AI fine-tuning |
-| Schema | `btcopilot/schema.py` | Core data model shared with Pro/Personal apps (PUBLIC — see boundary rule below) |
-| Personal DB | `btcopilot/personal/database.py` | JSON-based data schema |
-| Extensions | `btcopilot/extensions/` | Flask extensions (DB, LLM, ChromaDB) |
-| Auth | `btcopilot/auth.py` | User authentication with `current_user` |
-| CLI | `manage.py`, `btcopilot/commands.py` | Flask CLI commands |
-| Pro models | `btcopilot/pro/models/` | SQLAlchemy: User, Diagram, License, Session, Statement/Discussion |
-
-### Public API Boundary (MANDATORY)
-
-`btcopilot.schema` is the ONLY public submodule — it is imported by the Pro and Personal app builds where Flask, SQLAlchemy, and all other server dependencies are unavailable. **schema.py must NEVER import from any other btcopilot module** (pdp, extensions, personal, pro, training, app, auth, llmutil, celery, modelmixin). This includes deferred/lazy imports inside methods.
-
-If schema.py needs a utility function that currently lives in a private module, move that function INTO schema.py. Do not import it.
-
-The isolation test at `btcopilot/tests/schema/test_isolation.py` enforces this boundary — run it after any schema.py changes.
+| Personal backend | `btcopilot/` | The chat app's API (JSON): the coach's turns and the tools it edits the record with |
+| Review | `btcopilot/review/` | The coders' app |
+| Admin | `btcopilot/admin/` | Flask CLI commands for the box |
+| Schema | `btcopilot/schema.py` | Core data model |
+| Extensions | `btcopilot/extensions/` | Flask extensions (DB, mail, Celery, tracing) |
+| Auth | `btcopilot/auth/` | Passwordless sign-in, `current_user` |
+| Models | `btcopilot/models/` | SQLAlchemy: User, Diagram, License, Policy, AccessRight |
+| Matching | `btcopilot/matching.py` | Content matching of two PDPs (people, events, pair bonds) and the F1 built on it |
 
 ### External Services
 
-- **AI/ML**: OpenAI (GPT-4o-mini), HuggingFace embeddings, ChromaDB, LangChain
+- **AI/ML**: Anthropic and Gemini (see `llmutil.py`)
 - **Payments**: Stripe licensing
 - **Database**: PostgreSQL + SQLAlchemy (`postgresql://familydiagram:pks@localhost:5432/familydiagram`)
-- **Vector DB**: ChromaDB in `instance/vector_db/`
 - **Config**: Environment-based (`FLASK_CONFIG=development/production`)
 - **Docker**: Multi-service with Flask + PostgreSQL
 
@@ -134,11 +229,7 @@ The isolation test at `btcopilot/tests/schema/test_isolation.py` enforces this b
 
 | Component | Key Files | Purpose |
 |-----------|-----------|---------|
-| SARF Editor | `training/templates/components/sarf_editor.html` | Review/edit extracted clinical data (collapsed/expanded views, in-place editing, feedback, cumulative display) |
-| Diagram Renderer | `training/templates/components/family_diagram_svg.html`, `training/routes/diagrams.py` | SVG family diagram visualization. Standalone: `/training/diagrams/render/<statement_id>/<auditor_id>`, embed: `?embed=true`, modal via Discussion page "Diagram" buttons |
-| Chat Flow | [doc/CHAT_FLOW.md](doc/CHAT_FLOW.md) | Chat-only AI conversation (no extraction). Extraction is endpoint-driven via `pdp.extract_full()` — see [PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md) |
-| Synthetic Testing | `btcopilot.tests.personal.synthetic`, [tests README](btcopilot/tests/personal/README.md) | Persona generator, conversation simulator, quality evaluator. Run: `uv run pytest btcopilot/btcopilot/tests/personal/test_synthetic.py -v -m e2e` |
-| F1 Metrics | [doc/F1_METRICS.md](doc/F1_METRICS.md) | F1 score calculation, entity matching, GT workflow, matching criteria, cache strategy |
+| Synthetic Testing | `btcopilot.tests.synthetic`, [tests README](btcopilot/tests/README.md) | Persona generator, conversation simulator, quality evaluator. Run: `uv run pytest btcopilot/btcopilot/tests/test_synthetic.py -v -m e2e` |
 | Visual Spec | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) | Platform-independent layout spec: person symbols, PairBond geometry, ChildOf connections, MultipleBirth, generational layout, label positioning |
 
 ---
@@ -152,21 +243,21 @@ The isolation test at `btcopilot/tests/schema/test_isolation.py` enforces this b
 - All other events: `person` is the primary link.
 - When displaying person name for an event, always check `event.kind` first.
 
-**Description** — `EventKind.isSelfDescribing()` (Birth, Adopted, Married, Separated, Divorced, Bonded, Moved, Death):
+**Description** — `EventKind.isSelfDescribing()` (Birth, Adopted, Married, Separated, Divorced, Bonded, Death):
 - The kind name IS the description; `Event.description` is optional supplementary detail.
 - Display: use `kind.value.capitalize()` as the primary label. Append description only if it adds information beyond the kind name.
 - Placeholder descriptions ("New Event", "Unknown", "") should be treated as empty.
-- Only Shift events require and rely on `Event.description` as their primary label.
+- Only Shift and Noted events require and rely on `Event.description` as their primary label. A move is a Noted event [Oracle: R-0364].
 
 **F1 matching**: Structural events skip description matching — only Shift events use descriptions. Events match on kind + date + person links.
 
-**Duplicate people**: `match_people` produces a 1:1 `id_map`. Same-named people are disambiguated by parent name similarity (resolves `Person.parents` PairBond → parent names → fuzzy match, weight `PARENTS_BOOST=0.1`). When either side still has duplicate people after matching (e.g., two "Michael" entries), use `_augment_duplicate_person_id_map` for A-side duplicates. For symmetric comparisons (auditor vs auditor), B-side duplicates also need remapping — see `_dedup_b_people` in `compare.py`.
+**Duplicate people**: `match_people` produces a 1:1 `id_map`. Same-named people are disambiguated by parent name similarity (resolves `Person.parents` PairBond → parent names → fuzzy match, weight `PARENTS_BOOST=0.1`).
 
 ### IRR Deliberation Records
 
 - **Purpose:** Capture full diversity of opinions and their evolution per CI theory — both agreement AND unresolved ambiguity — for later retroactive rule extraction with confidence scores.
 - **Exhaustiveness rule:** Every substantive point must be captured. Common failure: summarizing away tangential points (heuristics, anecdotes, personal examples, side conversations, process observations, historical references). These MUST be included. Audit transcript line-by-line before declaring completion.
-- **Raw transcripts are always committed** — they are irreplaceable ground truth. Never delete them.
+- **Raw transcripts never enter this repo** (they name real people); they live in the private corpus. Their de-identified findings are published in `doc/irr/` [Oracle: R-0413].
 - **Always keep `btcopilot/doc/irr/README.md` in sync** when adding/modifying meetings or artifacts.
 
 ---
@@ -195,98 +286,35 @@ All web UI must work in **both light and dark modes**:
 - Tables: use `.table` without custom backgrounds
 - Test dark mode via chrome-devtools before completing UI work
 
-### Data Serialization (Pro App Compatibility)
-
-`Diagram.data` MUST use pickle format. Only these types allowed in pickle data:
-- Built-in: `str`, `int`, `float`, `bool`, `list`, `dict`, `None`
-- QtCore types from PyQt5 (e.g., `QDate`, `QDateTime`)
-
-**NEVER pickle**: classes from `btcopilot.*`, `fdserver.*`, dataclasses, Pydantic models, third-party classes (except QtCore). User will manually delete broken discussions with `ModuleNotFoundError`.
-
----
-
-## Prompt Optimization Workflow
-
-**MANDATORY for ALL changes to extraction prompts**, including:
-- `fdserver/prompts/private_prompts.py` (production prompt overrides)
-- `btcopilot/personal/prompts.py` (default prompts)
-- `btcopilot/extensions/llm.py` (`PDP_FIELD_DESCRIPTIONS`)
-
-**Process overview**: [doc/PROMPT_OPTIMIZATION.md](doc/PROMPT_OPTIMIZATION.md) — Interactive Claude Code sessions with comprehensive documentation. No CLI automation, no autonomous agents.
-
-**Documentation protocol**: [btcopilot/training/prompts/induction_agent.md](btcopilot/training/prompts/induction_agent.md) — Authoritative spec for logging format, report structure, iteration rules. Follow its documentation requirements even in interactive sessions.
-
-**Non-negotiable requirements**:
-1. Read strategy doc FIRST: [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md)
-2. Create timestamped run folder + report in `fdserver/training/induction-reports/`
-3. Establish baseline F1 before any changes
-4. Log EVERY experiment (kept AND reverted) with F1 scores
-5. Generate final report (`.md`) in the run folder
-6. Update strategy doc with what worked AND what failed
-7. Update [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md)
-8. Append entry to [doc/f1_timeseries.json](doc/f1_timeseries.json) (feeds admin/auditor dashboard chart)
-
-**Log negative results as thoroughly as positive ones** — prevents future thrashing.
-
-| Doc | Purpose |
-|-----|---------|
-| [doc/PROMPT_OPTIMIZATION.md](doc/PROMPT_OPTIMIZATION.md) | Process overview — how sessions work, where prompts live, what to document |
-| [btcopilot/training/prompts/induction_agent.md](btcopilot/training/prompts/induction_agent.md) | Documentation protocol — logging spec, report format, iteration rules |
-| [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md) | Cumulative strategy doc — read before, update after |
-| [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) | Decision log — update after every run |
-
-**Rules**: ADD nuance, don't replace sections. Never remove working examples without F1 validation. Track iterations in reports. Large refactors need approval. Test after EVERY edit.
-
 ---
 
 ## Flask Server
 
-**The dev server on port 8888 is managed by the user. NEVER start one yourself.**
-
-| Action | Command |
-|--------|---------|
-| Verify running | `curl -s http://127.0.0.1:8888/ > /dev/null && echo "OK" \|\| echo "ERROR"` |
-| Not running | **STOP and ask user** |
-| Not responding | Ask user to restart |
-| Bytecode issues | Ask user: `find . -name "*.pyc" -delete` |
-
-Auto-authenticates as `patrick@alaskafamilysystems.com`. Live reloading enabled.
-
-**Uses Flask 3.x native CLI** — the obsolete `flask-cli` package is incompatible and has been removed. If you see `create_app() takes 0 to 1 positional arguments but 2 were given`, check `uv pip show flask-cli` and remove if present.
-
-**Troubleshooting**: Import errors → check user is in project root. Server fails on first request → bytecode cache issue, clear and restart.
-
-### Web UI Testing (chrome-devtools MCP)
-
-**Mandatory for all HTML/CSS/JS/Flask route changes:**
-1. Verify Flask server running (port 8888)
-2. Navigate to page via `navigate_page` or `new_page`
-3. Take snapshot + screenshot to verify UI state
-4. Test interactions (click, fill, etc.)
-5. Verify before declaring completion
-
-### Dashboard Server
-Ask user to start/restart before using chrome-devtools MCP: `cd dashboard && uv run python app.py` (port 8765).
+See "Sandbox and manual testing" above. Flask 3.x native CLI; the obsolete `flask-cli`
+package is incompatible (symptom: `create_app() takes 0 to 1 positional arguments but 2 were given`).
 
 ---
 
 ## Development Commands
 
 ### Environment
-- **Venv**: uv workspace (`pyproject.toml`)
-- **Install**: `uv sync --extra app --extra test`
+- **Venv**: the clone's own uv environment (`pyproject.toml`)
+- **Install**: `uv sync --extra app --extra test` (Python 3.11, pinned in `.python-version`); web: `npm ci`, then `npm run build` before any test run (Python and web tests read the built page)
 - **PyTorch**: Pinned to `torch>=2.0.0,<2.1.0` (newer versions lack macOS x86_64 wheels). If wheel errors occur, remove `uv.lock` and re-sync.
 - **PostgreSQL**: `docker-compose up fd-server` (requires `docker volume create familydiagram_postgres` first)
 - **Production**: `docker-compose -d production.yml up fd-server`
 
 ### Testing
-- **All tests**: `uv run pytest -vv tests`
-- **E2e tests** (real LLM calls): `uv run pytest --e2e -m e2e` — requires `GOOGLE_GEMINI_API_KEY` from `theapp/.env`
+- **Local run**: `uv run pytest -m "not conventions" btcopilot/tests -q`
+- **Oracle guards** (`btcopilot/tests/conventions/`, marker `conventions`) read the sops-encrypted rulings store and run on CI only, where the key is; locally run `uv run pytest -m "not conventions" ...`. Without a key they fail, never skip.
+- **E2e tests** (real LLM calls): `uv run pytest --e2e -m e2e` — requires `GOOGLE_GEMINI_API_KEY` from `.env` at the clone root
 - **Async**: `--asyncio-mode=auto` (configured in `btcopilot/tests/pytest.ini`)
-- **Directories**: `tests/` (main), `tests/training/` (training module)
+- **Directories**: `btcopilot/tests/` (the chat app's suite), `btcopilot/tests/schema/`, `btcopilot/tests/test_*.py`
+- **Every test cites the ruling it proves (R-0421)**: `# R-0NNN` as the first line under a Python test's def, `// R-0NNN` on the line above a TypeScript/Playwright test; several ids comma-separated; never a process ruling for product behaviour.
+- **A new test without a citation fails** the trace guard in `btcopilot/tests/conventions/test_oracle.py`; `# no ruling` fails it too (oracle SPEC section 1).
 
 ### Database
-- **Migrations**: Alembic (`alembic.ini`, `alembic/versions/`)
+- **Migrations**: Alembic (`alembic.ini`, `btcopilot/migrations/versions/`)
 - **Query**: `docker exec fd-postgres psql -U familydiagram -d familydiagram -c "SQL"`
 - **Interactive**: `docker exec -it fd-postgres psql -U familydiagram -d familydiagram`
 - **Table structure**: append `-c "\d table_name"`
@@ -301,51 +329,3 @@ Ask user to start/restart before using chrome-devtools MCP: `cd dashboard && uv 
 - **Debug**: VSCode configs "Celery Worker (Debug)" and "Celery Beat"
 
 ---
-
-## Documentation Maintenance Triggers
-
-### SARF Ground Truth Technical Reference
-
-When changing SARF-related code, check and update [doc/SARF_GROUND_TRUTH_TECHNICAL.md](doc/SARF_GROUND_TRUTH_TECHNICAL.md).
-
-**Trigger files**: `training/routes/*.py`, `training/models.py`, `training/templates/discussion.html`, `training/templates/components/sarf_editor.html`, `training/export_tests.py`, `schema.py` (Event, PDPDeltas, SARF enums), `pdp.py` (cumulative/apply_deltas), `personal/models/statement.py`
-
-**Update**: code examples, function signatures, file paths, business logic, API routes/payloads, data schemas, Alpine.js state changes, line number references, testing scenarios. Use TodoWrite to add "Verify SARF_GROUND_TRUTH_TECHNICAL.md accuracy" task. Commit doc updates with code changes.
-
-**Skip**: typo fixes, non-SARF changes in same files, purely cosmetic UI changes.
-
-### Family Diagram Visual Spec
-
-When changing diagram rendering, update [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md).
-
-**Trigger files**: `training/templates/components/family_diagram_svg.html`, `training/routes/diagram_render.py`, any diagram layout code.
-
-**Process**: update spec FIRST with new rule → implement in code → test → confirm sync.
-
-### Auto-Arrange Algorithm (MANDATORY before any change to `btcopilot/arrange/`)
-
-**Trigger keywords (in user prompts)**: `auto-arrange`, `auto arrange`, `arrange selection`, `arrange algorithm`, `btcopilot.arrange`, `arrange/layout`, `arrange/refine`, `fd_layout`, `fd_refine`, `fd_fitness`, `fd_arrange_test`, `bin/arrange`, `Bowen layout`, `family diagram layout` (when in implementation context).
-
-**Trigger files**: `btcopilot/arrange/layout.py`, `btcopilot/arrange/refine.py`, `btcopilot/arrange/__init__.py`, `familydiagram/bin/arrange/*`, `familydiagram/pkdiagram/documentview/documentcontroller.py` (`onArrangeSelection`).
-
-**When triggered**: BEFORE writing any code or proposing changes, read the workstream plan in full: [familydiagram/doc/plans/2026-05-02--auto-arrange-layout.md](../familydiagram/doc/plans/2026-05-02--auto-arrange-layout.md). It contains:
-
-- Decision log (D-1 through D-26) — what was tried, kept, rejected, and why. Many "obvious" approaches have already failed.
-- MVP context and the "GT is loose, not strict ground truth" principle.
-- Painter analogy that shaped `refine.py`'s move set.
-- GT calibration data (label-overlap p75=60px, sibling-gap median 0.74×, etc.).
-- "What was tried and failed" table — do not re-attempt these without new evidence.
-- Watchdog protocol — spawn a sub-agent proactively if same root cause appears 3+ iterations or a proposed fix is in the rejected-paths table.
-- Dev workflow: `familydiagram/bin/arrange/README.md` covers the `~/Desktop/fd_algorithm/` + `~/Desktop/fd_corrections/` cycle and the `fd_fitness.py` regression oracle.
-
-**Process for any algorithm change**:
-1. Read the plan doc.
-2. Run baseline: `uv run python familydiagram/bin/arrange/fd_fitness.py` (record current fitness number).
-3. Make change.
-4. Re-run fitness; refuse to ship a change that regresses fitness AND visual review.
-5. Refresh `~/Desktop/fd_algorithm/` via `fd_arrange_test.py` and ask Patrick for visual review.
-6. Append a new decision-log entry (D-N) to the plan doc with what changed, why, and outcome.
-
-**Skip**: typo fixes, comment edits, dev-tool refactors that don't touch the algorithm.
-
-**PHI**: Clinic case names are PHI. Never include real case names in source, comments, commit messages, or docs — anonymize as Case A/B/etc. See plan doc D-26 area for the established anonymization scheme.

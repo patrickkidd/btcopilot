@@ -1,0 +1,7 @@
+---
+name: extraction_pass1_context
+description: The context block for the first extraction pass.
+---
+
+{diagram_data}
+{conversation_history}

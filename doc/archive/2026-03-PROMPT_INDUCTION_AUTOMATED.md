@@ -1,4 +1,4 @@
-> **Archived 2026-03.** Superseded by [doc/PROMPT_OPTIMIZATION.md](../PROMPT_OPTIMIZATION.md). API automation infrastructure was never built; interactive sessions proved sufficient. Kept for historical reference.
+> **Archived 2026-03.** Superseded by [doc/archive/2026-09-PROMPT_OPTIMIZATION.md](2026-09-PROMPT_OPTIMIZATION.md). API automation infrastructure was never built; interactive sessions proved sufficient. Kept for historical reference.
 
 # Automated Prompt Induction System - Future Roadmap
 

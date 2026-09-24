@@ -1,0 +1,184 @@
+"""Tests for the Claude/Anthropic chat backend and unified routing in llmutil.py."""
+
+import pytest
+from unittest.mock import AsyncMock, patch, MagicMock
+
+from btcopilot.llmutil import (
+    claude_text,
+    claude_text_sync,
+    response_text_sync,
+    _is_claude_model,
+    _prepare_claude_messages,
+    FALLBACK_BETA,
+    TEXT_EFFORT,
+)
+
+
+# --- Model detection ---
+
+
+def test_is_claude_model_positive():
+    # R-0405
+    assert _is_claude_model("claude-opus-5-5")
+    assert _is_claude_model("claude-sonnet-4-20250514")
+    assert _is_claude_model("claude-3-opus-20240229")
+
+
+def test_is_claude_model_negative():
+    # R-0405
+    assert not _is_claude_model("gemini-3-flash-preview")
+    assert not _is_claude_model("gpt-4o")
+    assert not _is_claude_model("mistral-large-latest")
+
+
+# --- Message preparation helper ---
+
+
+def test_prepare_messages_from_turns():
+    # R-0405
+    messages = _prepare_claude_messages(turns=[("user", "Hi"), ("model", "Hello")])
+    assert messages == [
+        {"role": "user", "content": "Hi"},
+        {"role": "assistant", "content": "Hello"},
+    ]
+
+
+def test_prepare_messages_from_prompt():
+    # R-0405
+    messages = _prepare_claude_messages(prompt="What is 2+2?")
+    assert messages == [{"role": "user", "content": "What is 2+2?"}]
+
+
+def test_prepare_messages_prepends_user_if_starts_with_assistant():
+    # R-0405
+    messages = _prepare_claude_messages(
+        turns=[("model", "Welcome!"), ("user", "Thanks")]
+    )
+    assert messages[0]["role"] == "user"
+    assert messages[0]["content"] == "Hello"
+    assert messages[1]["role"] == "assistant"
+    assert messages[2]["role"] == "user"
+
+
+def test_prepare_messages_merges_consecutive_same_role():
+    # R-0405
+    messages = _prepare_claude_messages(
+        turns=[("user", "First"), ("user", "Second"), ("model", "Reply")]
+    )
+    assert len(messages) == 2
+    assert messages[0]["role"] == "user"
+    assert "First" in messages[0]["content"]
+    assert "Second" in messages[0]["content"]
+    assert messages[1]["role"] == "assistant"
+
+
+# --- Claude text API ---
+
+
+def _make_mock_response(text="Hello there"):
+    """Create a mock Anthropic API response with thinking + text blocks."""
+    thinking_block = MagicMock()
+    thinking_block.type = "thinking"
+    thinking_block.thinking = "internal reasoning"
+    text_block = MagicMock()
+    text_block.type = "text"
+    text_block.text = text
+    response = MagicMock()
+    response.content = [thinking_block, text_block]
+    response.usage.iterations = None
+    return response
+
+
+@pytest.mark.asyncio
+async def test_claude_text_with_turns():
+    # R-0410
+    """Verify turns are mapped correctly and API is called."""
+    mock_response = _make_mock_response("AI response")
+    mock_create = AsyncMock(return_value=mock_response)
+
+    with patch("btcopilot.llmutil._anthropic_client") as mock_client_fn:
+        mock_client = MagicMock()
+        mock_client.beta.messages.create = mock_create
+        mock_client.close = AsyncMock()
+        mock_client_fn.return_value = mock_client
+
+        result = await claude_text(
+            system_instruction="You are a coach.",
+            turns=[("user", "Hi"), ("model", "Hello"), ("user", "How are you?")],
+        )
+
+    assert result == "AI response"
+    call_kwargs = mock_create.call_args[1]
+    assert call_kwargs["system"] == "You are a coach."
+    assert call_kwargs["output_config"] == {"effort": TEXT_EFFORT}
+    assert call_kwargs["betas"] == [FALLBACK_BETA]
+    assert call_kwargs["extra_body"] == {
+        "fallbacks": [{"model": "claude-opus-5"}, {"model": "claude-opus-4-8"}]
+    }
+    assert "temperature" not in call_kwargs
+    messages = call_kwargs["messages"]
+    assert messages[0]["role"] == "user"
+    assert messages[1]["role"] == "assistant"
+    assert messages[2]["role"] == "user"
+
+
+@pytest.mark.asyncio
+async def test_claude_text_with_simple_prompt():
+    # R-0405
+    mock_response = _make_mock_response("Simple response")
+    mock_create = AsyncMock(return_value=mock_response)
+
+    with patch("btcopilot.llmutil._anthropic_client") as mock_client_fn:
+        mock_client = MagicMock()
+        mock_client.beta.messages.create = mock_create
+        mock_client.close = AsyncMock()
+        mock_client_fn.return_value = mock_client
+
+        result = await claude_text(prompt="What is 2+2?")
+
+    assert result == "Simple response"
+    call_kwargs = mock_create.call_args[1]
+    assert call_kwargs["messages"] == [{"role": "user", "content": "What is 2+2?"}]
+    assert "system" not in call_kwargs
+
+
+# --- Unified routing ---
+
+
+def test_response_text_sync_routes_to_claude():
+    # R-0405
+    """response_text_sync routes to Claude when RESPONSE_MODEL starts with claude-."""
+    with (
+        patch("btcopilot.llmutil.RESPONSE_MODEL", "claude-opus-5-5"),
+        patch("btcopilot.llmutil._is_claude_model", return_value=True),
+        patch(
+            "btcopilot.llmutil.claude_text",
+            new_callable=AsyncMock,
+            return_value="Claude reply",
+        ) as mock_claude,
+        patch("btcopilot.llmutil.gemini_text", new_callable=AsyncMock) as mock_gemini,
+    ):
+        result = response_text_sync(prompt="Hello")
+        assert result == "Claude reply"
+        mock_claude.assert_called_once()
+        mock_gemini.assert_not_called()
+
+
+# --- Integration: chat.py and discussion.py use unified routing ---
+
+
+def test_discussion_update_summary_uses_response_text_sync():
+    # R-0097
+    """Discussion.update_summary uses the unified response_text_sync."""
+    with patch(
+        "btcopilot.models.discussion.response_text_sync",
+        return_value="  Summary text  ",
+    ) as mock:
+        from btcopilot.models.discussion import Discussion
+
+        d = MagicMock(spec=Discussion)
+        d.conversation_history.return_value = "User: Hello\nExpert: Hi"
+        # Call the unbound method with the mock instance
+        Discussion.update_summary(d)
+        mock.assert_called_once()
+        assert d.summary == "  Summary text  "

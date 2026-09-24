@@ -1,81 +1,88 @@
 # BT Copilot
 
-Clinical NLP system for extracting structured data from therapy transcripts. Uses zero-shot LLM prompting to detect people, events, and relationship patterns from natural conversation—no fine-tuning required. Implements the SARF clinical data model (Symptom, Anxiety, Relationship, Functioning) for family systems assessment. Powers the [Family Diagram](https://familydiagram.com) app.
+SARF (Symptom, Anxiety, Relationship, Functioning) is a novel clinical model, under test here, that treats the automatic, inherited reactions people have to each other, above all in families, as evolved biology. This repository is the research instrument: an AI coach that records a person's family as structured SARF data turn by turn, the expert coding and inter-rater reliability work that tests the model, and the F1 measurement of the machine's coding against expert ground truth.
 
-**📊 [F1 Dashboard](doc/F1_DASHBOARD.md)** | **📈 [F1 Timeseries](doc/f1_timeseries.html)** | **📋 [Decision Log](decisions/log.md)** | **📚 [Domain Context](CONTEXT.md)** | **📖 [Dev Journal](#development-journal)**
+The product built on it will live at [familydiagram.com](https://familydiagram.com).
 
-[SARF Data Model White Paper](https://docs.google.com/document/d/1k6ZvYEG1644L4SKqXzXoOvBnepmus2-8WwUfMh4R_4Y/edit?usp=sharing)
+Built by [Patrick Stinson](https://www.linkedin.com/in/patrickstinson/), who developed the clinical model.
+
+### For engineers and recruiters
+
+- [How the Coach Works](#how-the-coach-works)
+  - [The Human Oracle and Its Tests](#the-human-oracle-and-its-tests)
+- [Extraction Accuracy (F1)](#extraction-accuracy-f1)
+
+### For clinicians and researchers
+
+- [Novel Contributions to the Field](#novel-contributions-to-the-field)
+  - [SARF Literature Review](doc/sarf-definitions/)
+  - [SARF Data Model White Paper](https://docs.google.com/document/d/1k6ZvYEG1644L4SKqXzXoOvBnepmus2-8WwUfMh4R_4Y/edit?usp=sharing)
+  - [Implicit Behavioral Model Synthesis](doc/archive/2026-09-plans/brainstorm-assessment/12_IMPLICIT_BEHAVIORAL_MODEL_SYNTHESIS.md)
+  - [Family Diagram Visual Specification](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md)
+  - [Conversational Flow Evaluation](#phase-7-conversational-flow-evaluation-)
+  - [Inter-Rater Reliability Study](#phase-11-inter-rater-reliability-study)
+  - [Attachment and Big 5-Based Conversation Modeling & Measurement](#phase-12-attachment-and-big-5-based-conversation-modeling--measurement)
+- [Extraction Accuracy (F1)](#extraction-accuracy-f1)
+  - [F1 timeseries](https://patrickkidd.github.io/btcopilot/)
+- [R&D roadmap: phases 1-13](#research-phases)
+- [Clinical Research Compliance](#clinical-research-compliance)
+- [SARF Literature Review](#sarf-literature-review)
+- [Development Journal](#development-journal)
+
+## How the Coach Works
+
+One agent reads the conversation and decides each turn whether to ask, answer or change the record. The family record is its memory: the conversation is never rewritten, while the record changes as the person corrects it. The success measure is clinical, not a dataset: one or two correlations per person that change how they see their family. SARF took its first inspiration from Bowen family systems theory. The rules for when the timeline may be drawn and when the coach must ask are in [doc/DRAWABILITY.md](doc/DRAWABILITY.md).
+
+The system is a Flask API with a Celery worker, Postgres, and a TypeScript page for phone and desktop. The diagram is a JSON document plus an append-only command log; one Python module mutates it, and the browser and the agent are clients of the same endpoint. `btcopilot.schema` is the one module other apps import, and it depends on nothing else in the package. Every model call is logged with its cost, and a refused turn falls back to an older model.
+
+### The Human Oracle and Its Tests
+
+Development answers to a human oracle: Patrick's rulings, each with an id (R-0001 and on), stored encrypted in `private/oracle/`. The open repo cites ruling ids and never restates them. No rubric or quality judgment is inferred without Patrick; he rules by example and by correcting proposed values.
+
+Every test cites the ruling it checks, and a guard test enforces that. Every ruling has a citing test or a stated exception: owed where the behaviour is not built, waived where nothing observable could check it. Known defects are strict expected failures in [doc/KNOWN_DEFECTS.md](doc/KNOWN_DEFECTS.md). The strategy is in [doc/TEST_STRATEGY.md](doc/TEST_STRATEGY.md); the current state is in [doc/STATE.md](doc/STATE.md) and its derivation in [doc/HISTORY.md](doc/HISTORY.md).
 
 ## Novel Contributions to the Field
 
 - [SARF Literature Review](doc/sarf-definitions/) - First exhaustive, 100% traceable literature review for Bowen Theory technical terms
 - [SARF Data Model White Paper](https://docs.google.com/document/d/1k6ZvYEG1644L4SKqXzXoOvBnepmus2-8WwUfMh4R_4Y/edit?usp=sharing) - Novel clinical data model operationalizing Bowen theory constructs
-- [Implicit Behavioral Model Synthesis](doc/plans/brainstorm-assessment/12_IMPLICIT_BEHAVIORAL_MODEL_SYNTHESIS.md) - Cross-validated theoretical framework synthesizing neuroscience, philosophy of mind, and clinical observation
+- [Implicit Behavioral Model Synthesis](doc/archive/2026-09-plans/brainstorm-assessment/12_IMPLICIT_BEHAVIORAL_MODEL_SYNTHESIS.md) - Cross-validated theoretical framework synthesizing neuroscience, philosophy of mind, and clinical observation
 - [Family Diagram Visual Specification](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) - Platform-independent specification for rendering Bowen family diagrams
 - [Conversational Flow Evaluation](#phase-7-conversational-flow-evaluation-) - Objective metrics for measuring clinical interview quality
 - [Inter-Rater Reliability Study](#phase-11-inter-rater-reliability-study) - First formal IRR study for family systems constructs at scale
 - [Attachment and Big 5-Based Conversation Modeling & Measurement](#phase-12-attachment-and-big-5-based-conversation-modeling--measurement) - Synthetic client narratives structured by attachment style, with multi-dimensional clinical quality rubrics
 
+## Extraction Accuracy (F1)
 
----
+Best F1 per construct against expert-coded ground truth (six coded discussions). These were measured on the one-shot extraction of a whole conversation. The same measure continues on the new turn-by-turn coding once the inter-rater reliability group's ground truth exists.
 
-## Table of Contents
+| Construct | Best F1 | Configuration | Date |
+|-----------|---------|---------------|------|
+| People | 0.930 | Claude Fable 5 extraction, Gemini 3 Flash SARF review | 2026-06-09 |
+| Pair-bonds | 0.832 | Gemini two-pass extraction | 2026-03-03 |
+| Parent-child links | 0.815 | Gemini Flash plus parent inference from births | 2026-05-20 |
+| Events | 0.617 | Claude Fable 5, extraction and SARF review | 2026-06-09 |
+| SARF values (macro) | 0.621 | Claude Fable 5, extraction and SARF review (one run) | 2026-06-09 |
+| Aggregate | 0.731 | Claude Fable 5, extraction and SARF review | 2026-06-09 |
 
-- [Discovery and Development Roadmap](#discovery-and-development-roadmap)
-  - [Phase 1: RAG System](#phase-1-rag-system-for-questions-on-the-clinical-literature-)
-  - [Phase 2: SARF Data Model & Schema](#phase-2-sarf-data-model--schema-)
-  - [Phase 3: Delta-Based Extraction (PDP)](#phase-3-delta-based-extraction-pdp-)
-  - [Phase 4: Automated Audio Transcription](#phase-4-automated-audio-transcription-)
-  - [Phase 5: Formalized Minimum Data](#phase-5-formalized-minimum-data-for-family-evaluation-)
-  - [Phase 6: Synthetic Personas](#phase-6-simulated-ai-personas--synthetic-data-generation-)
-  - [Phase 7: Conversational Flow Evaluation](#phase-7-conversational-flow-evaluation-)
-  - [Phase 8: Ground Truth Collection](#phase-8-ground-truth-collection-via-expert-auditing-)
-  - [Phase 9: Hierarchical F1 Metrics](#phase-9-hierarchical-f1-metrics-)
-  - [Phase 10: Prompt Induction](#phase-10-prompt-induction)
-  - [Phase 11: Inter-Rater Reliability Study](#phase-11-inter-rater-reliability-study)
-  - [Phase 12: Attachment and Big 5-Based Conversation Modeling & Measurement](#phase-12-attachment-and-big-5-based-conversation-modeling--measurement)
-- [Future: Human Clinician Training](#phase-N-human-clinician-training-application)
-- [Clinical Research Compliance](#clinical-research-compliance)
-- [Components](#components)
-  - [Training System (Web app)](#bt-copilot-training-system-web-app)
-  - [Personal/Mobile App Server](#personalmobile-app-server)
-  - [Pro/Desktop App Server](#prodesktop-app-family-diagram-server)
-- [Architecture](#architecture)
-- [Practical Overview](#practical-overview)
-- [Literary Sources](#literary-sources)
-- [Development Journal](#development-journal)
+Rows come from different model and matching versions, and the SARF-values row is a single run.
 
----
+Per-statement extraction scored about 0.24 aggregate in late 2025, so whole-conversation extraction roughly tripled accuracy. Full tables: [F1 dashboard](doc/archive/2026-09-F1_DASHBOARD.md), [model evaluations](doc/archive/2026-09-MODEL_EVALUATIONS.md), [F1 timeseries](https://patrickkidd.github.io/btcopilot/).
 
-## R&D Roadmap
+## Research Phases
 
-This describes both the learning process and technical strategy to produce a
-mobile app that collects clinical data through a chatbot, then visualizes it for
-use by a professional. This is a real R&D effort, you have to finish one peice
-before you can experiment to figure out what the next peice is.
-
-Each phase enables the next. The end goal is automated prompt optimization against ground truth—then applying those evaluation methods to human clinician training.
+Each phase enabled the next. The goal was automated prompt optimization against expert ground truth, then the same evaluation applied to training human clinicians.
 
 ### Phase 1: RAG for Questions on the Clinical Literature ✓
-*Production*
 
 ChromaDB vector store indexes the clinical literature. LLM queries return relevant academic passages that constrain responses to established theory—prevents the model from inventing clinical concepts.
 
-- Clinical inferences: Can ask questions about the current case in the [Pro App](https://github.com/patrickkidd/familydiagram)
 - NLTK-based semantic chunking with sentence boundary detection
 - Metadata tracking (author, title, source file) for citation
-
-Source: [btcopilot/pro/copilot/](btcopilot/pro/copilot/)
-
 ### Phase 2: SARF Data Model & Schema ✓
-*Production*
 
 The extraction target: a clinical coding scheme with Pydantic-validated JSON output.
 
-This one took a lot of thinking for a clean, normalized data model. It centers
-around People and Events. People simply have parents, Events have a number of
-fields. How the `Events.relationship` field breaks down is where all the novelty
-in SARF is.
+The model centers on people and events. People have parents; events carry the variable shifts. How the relationship variable breaks down is where the novelty in SARF lies.
 
 | Variable | What it captures |
 |----------|------------------|
@@ -86,10 +93,7 @@ in SARF is.
 
 Events are timestamped incidents with associated variable shifts and involved persons. Enum-constrained relationship types ensure consistent classification.
 
-Source: [btcopilot/schema.py](btcopilot/schema.py)
-
 ### Phase 3: Delta-Based Extraction (PDP) ✓
-*Production*
 
 Solves a core LLM extraction problem: if the model regenerates the full dataset each turn, hallucinations corrupt previously-correct data. Instead, the model outputs only deltas—additions, updates, deletions—validated and applied incrementally. The smaller, isolated changes prevent the larger data set from breaking.
 
@@ -98,14 +102,8 @@ Solves a core LLM extraction problem: if the model regenerates the full dataset 
 - User accept/reject actions generate labeled training data automatically
 - Confidence scores (0.0-0.9) track extraction certainty
 
-Source: [btcopilot/pdp.py](btcopilot/pdp.py), [btcopilot/personal/prompts.py](btcopilot/personal/prompts.py)
-
-![SARF Editor](doc/images/4--Discussion-SARF-Editor.png)
-
-
 
 ### Phase 4: Automated Audio Transcription ✓
-*Production*
 
 The training app accepts audio recordings of real clinical interviews. AssemblyAI processes recordings with speaker diarization—automatically detecting and separating different speakers in the conversation.
 
@@ -115,12 +113,8 @@ The training app accepts audio recordings of real clinical interviews. AssemblyA
 - Multiple recordings contribute to a single case timeline
 - HIPAA-compliant processing via BAA with AssemblyAI
 
-Once transcribed, each statement runs through AI-based SARF extraction, generating deltas for expert review.
-
-Source: [btcopilot/training/routes/discussions.py](btcopilot/training/routes/discussions.py)
 
 ### Phase 5: Formalized Minimum Data for Family Evaluation ✓
-*Production*
 
 Comprehensive literature review produced a formalized definition of minimum necessary data for a family systems clinical evaluation. This is operationalized as a conversation protocol with explicit data collection checklist.
 
@@ -134,10 +128,7 @@ Required data checklist includes:
 
 Red flags for incomplete interviews: pivoting to family data before understanding presenting problem, collecting one side of family but not other, giving advice instead of gathering facts.
 
-Source: [btcopilot/personal/prompts.py](btcopilot/personal/prompts.py)
-
 ### Phase 6: Simulated AI Personas & Synthetic Data Generation ✓
-*Complete*
 
 LLM-generated user personas with behavioral traits (evasive, tangential, defensive, terse) simulate clinical conversations. Each persona has a detailed three-generation family history and presenting problem.
 
@@ -148,14 +139,8 @@ Five personas implemented with:
 
 This enables systematic testing of extraction prompts without real clinical data.
 
-Source: [btcopilot/tests/personal/synthetic.py](btcopilot/tests/personal/synthetic.py)
-
-![Synthetic Data Generator](doc/images/6--Synthetic-Data.png)
-![Synthetic Discussion](doc/images/7--Synthetic-Discussion.jpg)
-     
 
 ### Phase 7: Conversational Flow Evaluation ✓
-*Complete*
 
 Automated quality scoring measures clinical interview effectiveness:
 
@@ -165,19 +150,13 @@ Automated quality scoring measures clinical interview effectiveness:
 
 These metrics apply equally to AI prompts and human trainee clinicians—same rubric, objective comparison.
 
-Source: QualityEvaluator in [btcopilot/tests/personal/synthetic.py](btcopilot/tests/personal/synthetic.py)
-
 ### Phase 8: Ground Truth Collection via Expert Auditing ✓
-*In Progress*
 
 Web UI where domain expert clinicians review AI extractions from synthetic conversations (Phase 6). Corrections stored with provenance (who approved, when, original vs. edited). Approved feedback exports to test suites.
 
 Addresses the core bottleneck in clinical ML: domain expertise is scarce, so the training workflow must maximize signal from each expert interaction.
 
-Source: [btcopilot/training/](btcopilot/training/)
-
 ### Phase 9: Hierarchical F1 Metrics ✓
-*Complete*
 
 Single-number accuracy metrics hide extraction failures. Multi-level evaluation:
 
@@ -187,29 +166,18 @@ Single-number accuracy metrics hide extraction failures. Multi-level evaluation:
 
 Matching uses fuzzy name similarity (>0.8 threshold via rapidfuzz), date proximity (±7 days), and ID resolution across the positive/negative ID boundary. Depends on ground truth from Phase 8.
 
-Source: [btcopilot/training/f1_metrics.py](btcopilot/training/f1_metrics.py)
 
-![F1 Dashboard](doc/images/5--F1-Dashboard.jpg)
-![Per Statement F1](doc/images/8--Per-Statement-F1.jpg)
-
-
+![F1 Dashboard](doc/archive/2026-09-images/5--F1-Dashboard.jpg)
 
 ### Phase 10: Prompt Induction
-*Occuring now*
 
 With ground truth dataset (Phase 8) and F1 metrics (Phase 9), automate prompt optimization: iterate extraction prompts against test cases, measure accuracy deltas, converge toward optimal performance. The infrastructure exists; automation is the remaining step.
 
-Source: [bin/induction](bin/induction)
-
-![Prompt Induction Report](doc/images/9--Prompt-Induction-Report.jpg)
-
 ### Phase 11: Inter-Rater Reliability Study
-*Occuring now*
 
 Parallel expert coding (multiple auditors on same cases) to validate whether SARF model produces consistent results across practitioners. First formal IRR study for family systems constructs at scale.
 
 ### Phase 12: Attachment and Big 5-Based Conversation Modeling & Measurement
-*Planned*
 
 Synthetic client personas grounded in empirical personality and attachment research rather than surface behavioral labels. Three psychological frameworks drive persona construction:
 
@@ -225,167 +193,28 @@ Multi-dimensional clinical quality measurement replaces single-score evaluation:
 
 Versioned rubrics allow longitudinal tracking as scoring criteria evolve. Same framework applies to both AI-generated and human conversations.
 
-Spec: [doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md](doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md) | Research: [doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md](doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md) | Plan: [doc/plans/SYNTHETIC_CLIENT_PERSONALITIES.md](doc/plans/SYNTHETIC_CLIENT_PERSONALITIES.md)
+Spec: [doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md](doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md) | Research: [doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md](doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md)
 
-## Future: Human Clinician Training Application
-*Future*
+### Phase 13: The Coach
 
-Apply the same evaluation framework (Phase 7 conversational flow metrics, Phase 9 extraction accuracy) to human clinician training. Students practice with synthetic personas, receive objective scores on interview quality and data collection completeness. Direct comparison to AI baseline.
+The research then asked whether an interactive loop removes the extraction problem. It holds for family structure and fails for the timeline: people, pair-bonds and parents can be built turn by turn and caught by a person looking at the drawing, while dated shifts and SARF values were better extracted in one batch. Prompt tuning on batch extraction had reached zero marginal return.
 
----
+The result is the coach: it edits the record turn by turn, and a person's correction on the picture is the check. Development answers to the human oracle instead of a fixed ground-truth set. The inter-rater reliability study became a three-stage ground-truth process: blind coding, a blind vote, then a ratifying meeting.
+
+### Future: Human Clinician Training
+
+Apply the same evaluation (Phase 7 conversation metrics, Phase 9 extraction accuracy) to human clinician training. Students practice with synthetic clients and receive objective scores on interview quality and data completeness, compared directly to the AI.
 
 ## Clinical Research Compliance
 
 This project involves clinical research with confidential patient data. All data processing is HIPAA-compliant:
 
-- **Business Associate Agreements (BAA)** in place with OpenAI and AssemblyAI for encrypted patient data processing
-- **Informed consent** required for all research participants: [Informed Consent Template](doc/Informed%20Consent%20Recording%20Sessions%20for%20Research%20TEMPLATE.docx)
+- **Business Associate Agreements (BAA)** with the model and transcription vendors for encrypted patient data processing
+- **Informed consent** required for all research participants: [Informed Consent Template](doc/archive/2026-09-Informed%20Consent%20Recording%20Sessions%20for%20Research%20TEMPLATE.docx)
 
 Professionals interested in participating in the research should contact the project maintainer.
 
-## Components
-
-btcopilot consists of the machine learning / training system, the personal / mobile app, and the pro app.
-
-### BT Copilot Training System (Web app)
-
-The SARF model scans a text conversation between any number of people and
-compiles a database of people, and events containing shifts in four variables -
-SARF. SARF are  Symptom, Anxiety, Relationship, Functioning. These four
-variables represent the basic clinical hypothesis of Bowen theory.
-
-The web auditing system is for domain-experts to read through case examples and
-audit/correct the AI-extracted data. Those corrections will be used for a few
-different outcomes:
-- To train/fine-tune an AI model to do the extraction very well.
-  - If model alignment is achieved (if the model ends up working), it will be
-    integrated into the [Family Diagram app](https://familydiagram.com) to
-    automatically fill out a diagram for the user.
-- To conduct a formal, scalable inter-rater reliability study for the SARF data
-  model. Such a study would be the first formal study at scale for Bowen theory
-  in general.
-  - If IRR is achieved for the SARF data model then the auditing system can be
-    expanded to serve as a standardized "Bowen test" for certification.
-
-Each auditor gets their own dashboard:
-
-![Auditor Dashboard](doc/images/1--Auditor-Dashboard.jpg)
-
-Audio transcripts are automatically converted to text threads with speakers
-detected. Auditors can map detected speakers to people in the case file so that
-multiple transcripts and chat threads contribute to the case file.
-
-![Auditing a discussion](doc/images/2--Discussion-Audit.jpg)
-
-The core of the auditing system is the SARF editor. Every statement from the clinical subject(s) runs the AI extraction model, which spits out any deltas to the current database that it detects. Sometimes these are accurate, sometimes they are not. In any case, the auditor can input their own corrected version. These corrections are:
-- retained to improve the model
-- added to a growing test suite to ensure that an improvement in one area does
-  not break another area.
-
-This body of corrections becomes "ground truth" for coding the SARF model in Bowen theory, which is an essential task for any clinical evaluation.
-
-![The SARF editor](doc/images/3--Discussion-SARF-Editor.png)
-
-Source Code: [btcopilot/training](btcopilot/training)
-
-### Personal/Mobile App Server
-
-The personal mobile app contains the core logic and data extraction for the SARF
-training system. This app is currently in development here:
-[github.com/patrickkidd/familydiagram](github.com/patrickkidd/familydiagram)
-
-Source Code: [btcopilot/personal](btcopilot/personal)
-
-### Pro/Desktop App (Family Diagram) Server
-
-In a nuthsell, BT Copilot evaluates a family diagram based on the academic
-literature. It is currenly launched inthe [Family Diagram](https://familydiagram.com) app, which will become the "Pro" version while the personal/mobile version is coming soon.
-
-BT suggests that emotional problems in an individual are tightly linked to
-interpersonal transactions, driven by chronic anxiety, between people in that
-person's nuclear family. BT describes how this process occurs over time and how
-to document it.
-
-Unfortunately, BT has no formal scientific models that can be applied to a
-software tool. Bowen theory's models are only conceptual and scattered
-throughout the academic literature. Application still relies on a person trained
-in the theory, which makes application an art instead and not a science.
-
-Luckily, the BT literature is surprisingly consistent across many authors. The
-AI revolution is driven by one key innovatyion - computers both understanding
-and writing human language. BT Copilot uses AI to build a model from the
-literature so that it can analyze the family's role in an individual's symptom.
-
-Source Code: [btcopilot/pro](btcopilot/pro)
-
-## Architecture
-
-__Data model + flow__
-
-Schema: [doc/specs/DATA_MODEL.md](doc/specs/DATA_MODEL.md) | PDP flow: [doc/specs/PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md) | Sync: [familydiagram DATA_SYNC_FLOW.md](../familydiagram/doc/specs/DATA_SYNC_FLOW.md)
-
-```
-familydiagram (Pro App)
-    ↓
-    └─→ Server: POST/PATCH /diagrams/{id}
-        └─→ btcopilot.pro.routes.diagrams()
-            └─→ Diagram.set_diagram_data(diagram_data)
-                └─→ pickle.dumps() → LargeBinary column
-
-User Chat Flow (Personal App):
-    ↓
-    └─→ Personal API: POST /personal/discussions/{id}/ask
-        └─→ btcopilot.personal.chat.ask()
-            ├─→ Load: diagram.get_diagram_data()
-            ├─→ Extract: pdp.update() → LLM returns PDPDeltas
-            ├─→ Apply: pdp.apply_deltas() → new_pdp
-            ├─→ Store: diagram.set_diagram_data(updated)
-            └─→ Save: statement.pdp_deltas = asdict(PDPDeltas)
-
-PDP Workflow (Personal App):
-    ↓
-    User sees PDP items in UI
-    ├─→ Accept: POST /diagrams/{id}/pdp/{pdp_id}/accept
-    │   └─→ Move from PDP to main database (negative → positive ID)
-    │
-    └─→ Reject: POST /diagrams/{id}/pdp/{pdp_id}/reject
-        └─→ Remove from PDP
-```
-
-## Practical Overview
-
-Copilot knows "Bowen theory" from the literature. Therefore, it uses a
-conceptual model as opposed to a formal statistical model.
-
-When you ask it a question, the following happens:
-
-- Finds passages from the literature that match the question
-- Answers the question based only on those passages and not any infomation from
-  the internet.
-
-
-When you as it a question *with timeline data included*, the following happens:
-
-- Assumes the question is about the timeline, prompting with the following:
-```
-The following is 1) timeseries data from a family's emotional functioning, 2) a
-question about the timeseries, and C) literature containing the concepts used to
-evaluate the timeseries. Answer the question about the timeseries using only the
-provided academic literature.
-```
-- Finds passages from the literature that match the question.
-- Answers the question about the timeline, based only on those passages and not any infomation from
-  the internet.
-
-## Literary Sources
-
-- Seminal literature Bowen theory
-    - Terms: Differentiation of self, triangles, etc
-- Collective Behavior and Intelligence
-    - Center for Collective Behavior, Max Planck Institute of Animal Behavior (https://www.ab.mpg.de/couzin)
-- More to come: Sapolski, All the psychologists, etc.
-
-### SARF Literature Review
+## SARF Literature Review
 
 **[doc/sarf-definitions/](doc/sarf-definitions/)** - The first exhaustive, 100% traceable literature review for Bowen Theory technical terms.
 
@@ -402,44 +231,19 @@ Each definition includes operational definitions, observable markers for AI clas
 
 Methodology: [doc/sarf-definitions/METHODOLOGY.md](doc/sarf-definitions/METHODOLOGY.md)
 
-## Academic Projects / Questions
-
-The following are non-technical theoretical challenges for Bowen theory:
-
-- Define Bowen theory quiz
-  - Consists of a series of questions and answers stored here: [btcopilot/tests/data/quizzes.py]
-  - Used to automatically test the accuracy of model repsponse
-  - Should attach the theory from many different angles
-- ** Define necessary timeseries for shift
-- Define chat prompts for timeline data
-  - Biggest impact to how the data is evaluated
-
-## Wiki
-
-https://github.com/patrickkidd/btcopilot/wiki/Frankenstein-Phase-%E2%80%90-R&D
-
-## Token Limits for Popular Models
-
-- GPT-4 (8k and 32k token models):
-  - Default GPT-4 has a context window of 8,192 tokens.
-  - GPT-4-32k offers a larger 32,768 token window, but it's more expensive and slower.
-- Mistral and similar open-source LLMs:
-  - Typically have 4k–8k token limits (depending on the specific model and configuration).
-- Tokens include all text: your prompt + the model's response. So, a 4k-token model leaves room for ~3k tokens for input and ~1k for output.
-
-Practical Numbers:
-- A single token is roughly 4 characters in English.
-- For GPT-4 (8k): ~6,000 words total for the entire conversation (timeline + literature + user query + LLM response).
-
-Here’s a rough idea of token usage:
-- Timeline (10 years, summarized)	~500 tokens
-- Academic context (5 chunks)	~2,000 tokens
-- Prompt structure and query	~500 tokens
-- Total	~3,000 tokens
-This fits comfortably within an 8k-token model. For larger datasets, you'd need summarization, chunking, or a larger context model.
-
 # Development Journal
 
+## 2026-08-28 - Family structure can be built live, the timeline cannot
+
+Building the family record turn by turn works for people, pair-bonds and parents, because the person looking at the drawing catches the errors. Dated shifts and SARF values still came out better when coded from the whole conversation at once. That split is what the coach is built on now.
+
+## 2026-06-09 - Stronger models close the gap on events and SARF
+
+A frontier model raised Events F1 from 0.43 to 0.62 and SARF values from 0.38 to 0.62 over production, at a much higher cost per conversation. People and pair-bonds were already near their ceiling.
+
+## 2026-05-20 - Parents can be inferred from births
+
+Inferring parent-child links from birth events took that F1 from 0.37 to 0.82, and 90% of each family now connects into one diagram instead of 51%.
 ## 2026-03-03 - 2-pass split extraction
 
 *Break hard problems into smaller ones.* Single-prompt extraction plateaued because legacy training examples buried in the prompt were overriding new instructions. Split extraction into two focused passes — first people and family structure, then clinical variable shifts — each with a clean, purpose-built prompt. Aggregate accuracy up 12%, relationship extraction up 54%. Task decomposition beat prompt engineering. **Aggregate F1 crossed the 0.5 MVP milestone (0.669), with Events also clearing 0.5 for the first time.**
@@ -456,12 +260,12 @@ This fits comfortably within an 8k-token model. For larger datasets, you'd need 
 
 *I am modeling therapeutic conversation*. I don't know if this has ever been done before. Measuring therapist performance at collecting enough data for clinical evaluation. Requires measuring coach performance statement by statement.
 
-- *The first comprehensive index of technical terms for Bowen theory* using Bowen and Kerr's books. *Every single* passage that might be related to a given term in the SARF model (Anxiety, Symptom, Functioning, conflict, projection, triangles, etc). It isn't the eight concepts but I could easily re-run this on those (and probabyl will) [btcopilot/doc/sarf-definitions/METHODOLOGY.md](btcopilot/doc/sarf-definitions/METHODOLOGY.md). In a nuthsell, this is many passes through the literature back and forth with human and AI. It required a combination of:
+- *The first comprehensive index of technical terms for Bowen theory* using Bowen and Kerr's books. *Every single* passage that might be related to a given term in the SARF model (Anxiety, Symptom, Functioning, conflict, projection, triangles, etc). It isn't the eight concepts but I could easily re-run this on those (and probabyl will) [btcopilot/doc/sarf-definitions/METHODOLOGY.md](doc/sarf-definitions/METHODOLOGY.md). In a nuthsell, this is many passes through the literature back and forth with human and AI. It required a combination of:
   - Exhaustive knowledge of the source literature (from Stinson, 2020)
   - Doctoral-level qualitative research methods
   - AI Context Architect Expertise
   - Software Architect Expertise
-  Progress tracked here: [btcopilot/doc/sarf-definitions/PROGRESS.md](btcopilot/doc/sarf-definitions/PROGRESS.md)
+  Progress tracked here: [btcopilot/doc/sarf-definitions/PROGRESS.md](doc/sarf-definitions/PROGRESS.md)
 - Switched to gemini flash API for cheaper and probably better data extraction. Seeking HIPAA BAA with Google.
 - Improved Synthetic AI client personalities with:
   - larger hard-coded histories
@@ -477,7 +281,7 @@ This fits comfortably within an 8k-token model. For larger datasets, you'd need 
 ## 2025-12-08 - Prompt induction framework
 
 - Added prompt induction framework:
-  [btcopilot/doc/PROMPT_OPTIMIZATION.md](btcopilot/doc/PROMPT_OPTIMIZATION.md)
+  [btcopilot/doc/PROMPT_OPTIMIZATION.md](doc/archive/2026-09-PROMPT_OPTIMIZATION.md)
   Using Claude Code's command line API to run it from a script. Get baseline F1,
   tweak system prompts, run AI extraction, compare baseline. Run 10 iterations
   or until F1 improvement plateaus. Super cool!
@@ -508,7 +312,7 @@ This fits comfortably within an 8k-token model. For larger datasets, you'd need 
 
 ## 2025-02-15 - Automatically testing model's accuracy
 
-I defined a set of [quiz questions with expected correct answers](../btcopilot/tests/data/quizzes.py). The quiz will be improved as time goes on.
+I defined a set of quiz questions with expected correct answers. The quiz will be improved as time goes on.
 
 Example Passing answer:
 
@@ -531,7 +335,7 @@ INFO     test_model:test_model.py:58 Copilot total time: 38.17371924100007
 ## 2025-02-15 - First Copilot UI!
 
 The answers are slow, but they work! Still need to show expandable list of sources with passages.
-  ![BT Copilot Logo](./doc/first_copilot_chat.jpg)
+  ![BT Copilot Logo](doc/archive/2026-09-first_copilot_chat.jpg)
   - LLM: `mistral`
   - Embeddings: `sentence-transformers/all-MiniLM-L6-v2`
 

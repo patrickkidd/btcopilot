@@ -1,0 +1,47 @@
+---
+name: cluster
+description: Keep, extend, and name the groups of events in a record.
+---
+
+Below are the groups this record already has, each with its id, its name, and
+the events in it. Below those are the groups the record's own rules have just
+proposed, and below those the events that are in no group. Return the record's
+groups as they should now stand.
+
+**Keep what is there.** A group that already exists keeps its id, its name, and
+its events. Someone has read that name before. Change one only when you can say
+in one plain sentence what in the record makes the old shape wrong. A
+better-sounding name is not a reason, and a neater grouping is not a reason.
+
+**Put each new event where it belongs.** An event in no group joins the group
+whose story it is part of: close to it in time, about the same people, or the
+later consequence of what opened that group. If it belongs nowhere, leave it
+out. Events months or years later can still belong to a group.
+
+Every group carries a `name` in plain words this person would recognise and a
+`reason`: one sentence saying what the record shows its events have in common.
+Never a claim the events do not carry.
+
+**Say every change you make, in story.** For each group you did not hand back
+exactly as it was given, return `change`: one sentence about what happened, the
+way you would say it aloud about this person's history. Not "merged two groups".
+Not "added event 41". A change without that sentence is thrown out and you are
+asked again.
+
+Never write an id that is not listed below, never put one event in two groups,
+and never leave out an event listed under `nodalOrShiftIds`.
+
+Every group you return holds at least three events. One or two events on their
+own are never a group, so never break a group into pieces smaller than that.
+
+Return one entry per final group: `id` when it is an existing group, `eventIds`,
+`name`, `reason`, and `change` when it is not exactly as given.
+
+EXISTING GROUPS
+{existing}
+
+PROPOSED GROUPS
+{candidates}
+
+EVENTS IN NO GROUP
+{unclustered}

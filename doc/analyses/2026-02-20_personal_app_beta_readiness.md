@@ -26,8 +26,8 @@ Core AI chat works. Visualization and guidance layers are missing or incomplete.
 
 ### Key Files
 - Chat UI: `familydiagram/pkdiagram/resources/qml/Personal/DiscussView.qml`
-- Chat orchestration: `btcopilot/personal/chat.py`
-- HTTP routes: `btcopilot/personal/routes/discussions.py`
+- Chat orchestration: `btcopilot/chat.py`
+- HTTP routes: `btcopilot/routes/discussions.py`
 
 ## PDP Drawer: Built, UX Gaps
 

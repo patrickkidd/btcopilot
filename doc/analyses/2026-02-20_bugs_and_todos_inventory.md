@@ -87,17 +87,17 @@
 
 | Plan | File | Status |
 |------|------|--------|
-| GT Strategy Realignment | `btcopilot/doc/plans/GT_STRATEGY_REALIGNMENT.md` | Phase 1 not started |
-| Add Notes to PDP | `btcopilot/doc/plans/ADD_NOTES_TO_PDP.md` | Ready to implement |
-| Learn Tab Evaluation | `btcopilot/doc/plans/LEARN_TAB_EVALUATION.md` | Literature complete, needs domain expert |
-| Synthetic Client Personalities | `btcopilot/doc/plans/SYNTHETIC_CLIENT_PERSONALITIES.md` | In progress |
-| Pattern Intelligence Vision | `btcopilot/doc/plans/PATTERN_INTELLIGENCE_VISION.md` | Brainstorming |
-| SARF Graph Focused Mode | `btcopilot/doc/plans/SARF_GRAPH_FOCUSED_MODE.md` | Proposed |
+| GT Strategy Realignment | `btcopilot/doc/archive/2026-09-plans/GT_STRATEGY_REALIGNMENT.md` | Phase 1 not started |
+| Add Notes to PDP | `btcopilot/doc/archive/2026-09-plans/ADD_NOTES_TO_PDP.md` | Ready to implement |
+| Learn Tab Evaluation | `btcopilot/doc/archive/2026-09-plans/LEARN_TAB_EVALUATION.md` | Literature complete, needs domain expert |
+| Synthetic Client Personalities | `btcopilot/doc/archive/2026-09-plans/SYNTHETIC_CLIENT_PERSONALITIES.md` | In progress |
+| Pattern Intelligence Vision | `btcopilot/doc/archive/2026-09-plans/PATTERN_INTELLIGENCE_VISION.md` | Brainstorming |
+| SARF Graph Focused Mode | `btcopilot/doc/archive/2026-09-plans/SARF_GRAPH_FOCUSED_MODE.md` | Proposed |
 
 ## Skipped Tests
 
 Files with `skip`/`xfail` markers:
-- `tests/personal/synthetic.py`
+- `tests/synthetic.py`
 - `tests/conftest.py`
 - `tests/pro/test_licensing.py`
 - `tests/pro/copilot/test_model.py`
