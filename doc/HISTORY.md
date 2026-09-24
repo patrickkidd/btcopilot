@@ -1448,3 +1448,12 @@ each turn, the live eval cases and the gate. Writing that check found the record
 an added event matching another on kind, day, people and what moved, which R-0481 says should
 not exist; it was left in place for his ruling. The earlier note in STATE that the user's words
 are stored with the reply was wrong: they are stored before the turn runs.
+
+**2026-09-24, FD-363, later.** The map, the reads by id, words and notes, the recent-changes
+read, the check after each turn with its admin list, the page's stored tool lines with
+[try again], and the migration gate all landed on the branch, with STATE revised to match.
+Patrick ruled three more points, not yet numbered or in the store: open questions serve both
+the coach's memory and the user's view of the family; new screens are allowed when they are
+thought through, the earlier ruling against a new surface having been narrow; and brainstorm
+topics are taken one at a time. The gate has not yet run on a production dump, and the browser
+checks at phone and desktop have not run.
