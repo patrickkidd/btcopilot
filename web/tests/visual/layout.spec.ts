@@ -3,9 +3,7 @@ import { stateFor } from "./setup";
 
 /** The layout contract, asserted rather than eyeballed: the picture region owns
  * its level's height and the chat fills what is left, so a tap on a chip or on
- * the picture never moves a chat bubble. The owner's words: the visual and the
- * header cannot change size when you click on chips, and chat bubbles must
- * never change position on screen just from a click on a chip. */
+ * the picture never moves a chat bubble [Oracle: R-0460]. */
 
 const settle = async (page: Page) => {
   await page.goto("/app/");
@@ -233,7 +231,7 @@ test.describe("a scrollbar appearing never shifts the page", () => {
   // picked on a record that has some.
   test.use({ storageState: stateFor("three40") });
 
-  // no ruling
+  // R-0460
   test("picking a moment moves nothing sideways", async ({ page }) => {
     await settle(page);
     const before = await frame(page);
