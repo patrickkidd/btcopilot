@@ -6,7 +6,7 @@ import re
 import sys
 from pathlib import Path
 
-DOC = Path(__file__).resolve().parent.parent / "doc"
+DOC = Path(__file__).resolve().parent.parent.parent.parent.parent / "doc"
 FIELDS = ("Status", "Decided", "Open", "Lives in", "Next action", "Updated")
 TAGS = ("ruling", "build", "verify", "waiting")
 

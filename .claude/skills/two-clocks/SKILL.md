@@ -82,14 +82,14 @@ run from rewording what an earlier run already captured:
    merge risks changed; the Jira epic's description only with his one-line yes.
    Every ruling added this session owes a citing test per tag, or a TEST OWED / WAIVED line in
    btcopilot/tests/conventions/exceptions.txt; write the tests in the same flush (R-0449).
-7. Run `python bin/flushcheck.py` from the btcopilot worktree; fix what it reports.
+7. Run `python .claude/skills/two-clocks/bin/flushcheck.py` from the btcopilot worktree; fix what it reports.
 8. Commit and push this session's ticket worktree, one git mutation per command, corpus
    commits titled `<ticket> flush: <date>`.
 9. Refresh Patrick's two pages, same links every time (URLs at the top of TOPICS.md, passed
    to the Artifact tool as `url`), in this order:
-   a. `python bin/ledger.py` — rewrites events.json in `~/theapp/btcopilot-sources/fd-corpus/private/` from every dated source
+   a. `python .claude/skills/two-clocks/bin/ledger.py` — rewrites events.json in `~/theapp/btcopilot-sources/fd-corpus/private/` from every dated source
       (history, rulings, decision log, review log, commits, artifacts).
-   b. `python bin/trace.py` — mines Patrick's own statements out of the local transcripts
+   b. `python .claude/skills/two-clocks/bin/trace.py` — mines Patrick's own statements out of the local transcripts
       into trace.json in the same private folder, one row per thing he typed, in order. It writes nothing
       but his words.
    c. **The judgement step, and it is this session's job, not the script's.** trace.py gives
@@ -99,9 +99,9 @@ run from rewording what an earlier run already captured:
       piece of work corrected if the word match put it in the wrong one — and set `named_by`
       to "session" on each row you rewrite. Rows marked "session" are never recomputed, so a
       row left as "script" reads as a machine guess on his page.
-   d. `python bin/tracepage.py <tmp>/fd362-clocks.html` (the dashboard: his one line of thought,
+   d. `python .claude/skills/two-clocks/bin/tracepage.py <tmp>/fd362-clocks.html` (the dashboard: his one line of thought,
       each piece of work a horizontal line, and a second view of where every piece stands) and
-      `python bin/topicpage.py <tmp>/fd362-topics.html` (the topic register as a page).
+      `python .claude/skills/two-clocks/bin/topicpage.py <tmp>/fd362-topics.html` (the topic register as a page).
    events.json and trace.json stay outside every repo: they carry ruling text and his words
    (the oracle guard fails on any tracked file quoting a ruling). Records the ledger could not assign to a
    topic land in the audit lane; assign them by adding the missing words to the topic block or
@@ -127,6 +127,6 @@ clinical content or real names in the public repo.
 sentence per item tagged `[built]`, `[drawn]` or `[open]` with ruling ids in braces, written for
 the beta users. Every flush revises its items for the session's rulings (an `[open]` item whose
 choice landed becomes `[drawn]` or `[built]` with its id; a new ruled behaviour gets a new item),
-sets its `Updated:` line to today, renders the catalogue with `python bin/screenspage.py <tmp>/fd362-screens.html` — every section's `@frame <mockup>#<id> | caption` lines lift whole-screen frames LIVE from doc/mockups/*.html (built screens from mockups/built.html, drawn ones from their mockups); no images, one HTML file [R-0279] — and publishes it
+sets its `Updated:` line to today, renders the catalogue with `python .claude/skills/two-clocks/bin/screenspage.py <tmp>/fd362-screens.html` — every section's `@frame <mockup>#<id> | caption` lines lift whole-screen frames LIVE from doc/mockups/*.html (built screens from mockups/built.html, drawn ones from their mockups); no images, one HTML file [R-0279] — and publishes it
 and republishes it to the same link every time — **https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba**.
-`bin/flushcheck.py` fails if it is not updated today or an item lacks a tag.
+`.claude/skills/two-clocks/bin/flushcheck.py` fails if it is not updated today or an item lacks a tag.

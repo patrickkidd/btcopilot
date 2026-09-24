@@ -486,7 +486,7 @@ and every trace name and summary that no flush has rewritten is a machine guess;
 revision chains between rulings do not draw, because the store marks a superseded ruling in a
 column the ledger does not read; (3) [verify] whether the ledger and trace scripts still run
 against the encrypted store has not been checked since the move.
-**Lives in:** bin/{trace.py,tracepage.py,ledger.py,eventpage.py,topicpage.py,flushcheck.py};
+**Lives in:** .claude/skills/two-clocks/bin/{trace.py,tracepage.py,ledger.py,topicpage.py,flushcheck.py,topic.py,screenspage.py};
 doc/{TOPICS.md,HISTORY.md,trace.json,events.json}; private/oracle/ (encrypted);
 .claude/skills/two-clocks/SKILL.md.
 **Next action:** none until he asks for a page.

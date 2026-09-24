@@ -6,11 +6,11 @@ Zooming changes what a lane shows, not how far away it is: the whole project as 
 story arcs, then the sessions inside an arc, then his single statements, then a summary
 under each one.
 
-Statements come from trace.json in the private corpus (written by bin/trace.py); the arcs from
+Statements come from trace.json in the private corpus (written by .claude/skills/two-clocks/bin/trace.py); the arcs from
 doc/archive/2026-09-arcs.json; the sessions and what followed each statement from
 events.json in the private corpus; the second view is the topic register from TOPICS.md.
 
-  python bin/tracepage.py <out.html>
+  python .claude/skills/two-clocks/bin/tracepage.py <out.html>
 """
 import json
 import re
@@ -18,11 +18,38 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from eventpage import topic_blocks  # noqa: E402
 from ledger import EVENTS, TRACE  # noqa: E402
 
-HERE = Path(__file__).resolve().parent.parent
+HERE = Path(__file__).resolve().parent.parent.parent.parent.parent
 DOC = HERE / "doc"
+
+
+def topic_blocks() -> list[dict]:
+    text = (DOC / "TOPICS.md").read_text()
+    out = []
+    for block in re.split(r"^## ", text, flags=re.M)[1:]:
+        head, _, body = block.partition("\n")
+        tid, _, name = head.partition(" · ")
+        fields = {}
+        for f in ("Status", "Decided", "Open", "Lives in", "Next action", "Updated"):
+            m = re.search(rf"\*\*{re.escape(f)}:\*\*\s*(.*?)(?=\n\*\*|\Z)", body, re.S)
+            fields[f] = " ".join(m.group(1).split()) if m else ""
+        out.append({"id": tid.strip(), "name": name.strip(), **fields})
+    out.append(
+        {
+            "id": "untagged",
+            "name": "Not yet assigned to a goal",
+            "Status": "every record here needs a home",
+            "Decided": "",
+            "Open": "",
+            "Lives in": "",
+            "Next action": "assign in the next flush",
+            "Updated": "",
+        }
+    )
+    return out
+
+
 COLORS = {
     "T-1": "#0e7d78", "T-2": "#c98a1b", "T-3": "#7a5cc4", "T-4": "#b8555f",
     "T-5": "#2e9e57", "T-6": "#2f7fb5", "T-7": "#b4453b", "T-8": "#8a6d3b",

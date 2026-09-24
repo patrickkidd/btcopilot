@@ -4,7 +4,7 @@ rows, commits in both worktrees, artifacts. Written to events.json in the privat
 (outside every repo: it carries ruling text) by
 the flush; nothing is authored here, only gathered and tagged.
 
-  python bin/ledger.py            writes events.json and prints the counts
+  python .claude/skills/two-clocks/bin/ledger.py            writes events.json and prints the counts
 """
 import json
 import re
@@ -14,7 +14,7 @@ from pathlib import Path
 
 from btcopilot import oracle
 
-HERE = Path(__file__).resolve().parent.parent
+HERE = Path(__file__).resolve().parent.parent.parent.parent.parent
 DOC = HERE / "doc"
 CORPUS = Path.home() / "theapp" / "btcopilot-sources" / "fd-corpus" / "private"
 EVENTS = CORPUS / "events.json"

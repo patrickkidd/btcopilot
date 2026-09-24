@@ -2,7 +2,7 @@
 frame lifted out of a mockup file, drawn with the app's own stylesheet, with one caption under
 it and the list of behaviours folded away beneath.
 
-  python bin/screenspage.py <out.html>
+  python .claude/skills/two-clocks/bin/screenspage.py <out.html>
 
 No images anywhere. The app stylesheet is inlined once; each mockup's own page-only styles are
 inlined once and scoped so two mockups cannot fight over the same class.
@@ -12,7 +12,7 @@ import re
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent.parent
+HERE = Path(__file__).resolve().parent.parent.parent.parent.parent
 DOC = HERE / "doc"
 MOCKUPS = DOC / "mockups"
 THEME = HERE / "web" / "src" / "theme.css"

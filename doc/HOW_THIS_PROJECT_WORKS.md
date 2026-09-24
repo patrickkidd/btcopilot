@@ -21,16 +21,9 @@ This is not optional and not deferred to the end of a session:
   Patrick's one-line yes for the operation, not for the content.
 - **decisions/log.md** — every significant decision, immediately.
 
-## The flush: every session ends with `/two-clocks`, and topics are picked up by name
-The corpus keeps two clocks per topic — [TOPICS.md](TOPICS.md) is the state clock (one block
-per topic, headed by its plain name, rewritten in full), [HISTORY.md](HISTORY.md) the event
-clock (one entry per session, never rewritten by a later session). The skill
-`.claude/skills/two-clocks/SKILL.md` runs the flush idempotently; `bin/flushcheck.py` verifies it.
-No page is generated or shown to Patrick from the register or the ledger (retired 2026-09-11).
-A new session reads STATE.md, then TOPICS.md. Patrick names a topic in plain words — "let's
-continue designing the pro and training features", "list the open issues" — and the session
-matches the words to a block and continues from its Open and Next action; ids are for tags
-only and are never said to him.
+## The flush: every session ends with `/two-clocks`
+`.claude/skills/two-clocks/SKILL.md` holds the full procedure, including its scripts (now in
+`.claude/skills/two-clocks/bin/`) and how a topic is picked back up by name.
 
 ## The scout and the loop review
 

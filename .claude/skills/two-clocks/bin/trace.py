@@ -6,7 +6,7 @@ Names and summaries written here are deterministic placeholders (named_by "scrip
 a flush session rewrites this session's rows by judgement and sets named_by "session",
 and those rows are never recomputed.
 
-  python bin/trace.py
+  python .claude/skills/two-clocks/bin/trace.py
 """
 import json
 import re
@@ -16,7 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ledger import TOPIC_WORDS, TRACE  # noqa: E402
 
-HERE = Path(__file__).resolve().parent.parent
+HERE = Path(__file__).resolve().parent.parent.parent.parent.parent
 DOC = HERE / "doc"
 OUT = TRACE
 PROJECTS = Path.home() / ".claude" / "projects"

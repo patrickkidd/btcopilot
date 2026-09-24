@@ -2,14 +2,14 @@
 for the owner's audit artifact. The flush runs it, then republishes the page to the URL
 recorded at the top of TOPICS.md.
 
-  python bin/topicpage.py <out.html>
+  python .claude/skills/two-clocks/bin/topicpage.py <out.html>
 """
 import html
 import re
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent.parent
+HERE = Path(__file__).resolve().parent.parent.parent.parent.parent
 DOC = HERE / "doc"
 RULINGS = HERE.parent.parent.parent.parent / "fdserver" / ".claude" / "worktrees" / "FD-362" / "doc" / "oracle" / "rulings.md"
 

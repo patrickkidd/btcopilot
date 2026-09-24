@@ -1,7 +1,7 @@
 """Audit the flushed state by topic, in plain words.
 
-  python bin/topic.py                 every topic: name, status, how many open questions
-  python bin/topic.py pro training    one topic matched by words: its block, then every
+  python .claude/skills/two-clocks/bin/topic.py                 every topic: name, status, how many open questions
+  python .claude/skills/two-clocks/bin/topic.py pro training    one topic matched by words: its block, then every
                                       HISTORY entry tagged with it (the event clock, oldest
                                       first), then the rulings its block cites
 """
@@ -9,7 +9,7 @@ import re
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent.parent
+HERE = Path(__file__).resolve().parent.parent.parent.parent.parent
 DOC = HERE / "doc"
 RULINGS = HERE.parent.parent.parent.parent / "fdserver" / ".claude" / "worktrees" / "FD-362" / "doc" / "oracle" / "rulings.md"
 
