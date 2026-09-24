@@ -58,14 +58,6 @@ def validatedDateTimeText(dateText, timeText=None):
     return ret
 
 
-def pyDateTimeString(dateTime: datetime.datetime) -> str:
-    if isinstance(dateTime, str):
-        import dateutil.parser
-
-        dateTime = dateutil.parser.parse(dateTime)
-    return dateTime.strftime("%m/%d/%Y %I:%M %p")
-
-
 class PDPValidationError(ValueError):
     """Raised when PDP deltas fail validation."""
 
@@ -392,23 +384,10 @@ def next_neg(existing_ids: set[int]) -> int:
 
 class TraceKey(enum.StrEnum):
     """Keys stamped on a committed event dict recording where it was coded.
-    Stored as plain strings (never the enum itself) — event chunks are pickled
-    for the Pro app, which cannot import btcopilot."""
+    Stored as plain strings, never the enum itself."""
 
     Discussion = "codedInDiscussion"
     Statement = "codedInStatement"
-
-
-class ClusterPattern(enum.StrEnum):
-    """Deprecated 2026-09-09: nothing writes or reads it. Kept only so the
-    released desktop app's import of it keeps working."""
-
-    AnxietyCascade = "anxiety_cascade"
-    TriangleActivation = "triangle_activation"
-    ConflictResolution = "conflict_resolution"
-    ReciprocalDisturbance = "reciprocal_disturbance"
-    FunctioningGain = "functioning_gain"
-    WorkFamilySpillover = "work_family_spillover"
 
 
 class ClusterSource(enum.StrEnum):
@@ -505,29 +484,6 @@ class DiagramData:
     clusterCacheKey: str | None = None
     pdp: PDP = field(default_factory=PDP)
     lastItemId: int = field(default=0)
-    # Scene UI/display properties (for canonical diagram mutation support)
-    readOnly: bool = False
-    contributeToResearch: bool = False
-    useRealNames: bool = False
-    password: str | None = None
-    requirePasswordForRealNames: bool = False
-    showAliases: bool = False
-    hideNames: bool = False
-    hideToolBars: bool = False
-    hideEmotionalProcess: bool = False
-    hideEmotionColors: bool = False
-    hideDateSlider: bool = False
-    hideVariablesOnDiagram: bool = False
-    hideVariableSteadyStates: bool = False
-    hideSARFGraphics: bool = True
-    exclusiveLayerSelection: bool = True
-    storePositionsInLayers: bool = False
-    currentDateTime: object = None  # Serialized QDateTime
-    scaleFactor: float | None = None
-    pencilColor: object = None  # Serialized color
-    eventProperties: list = field(default_factory=list)
-    legendData: dict | None = None
-
     SCENE_COLLECTION_FIELDS: ClassVar[list[str]] = [
         "people",
         "events",
@@ -539,73 +495,6 @@ class DiagramData:
         "items",
         "pruned",
     ]
-
-    @staticmethod
-    def apply_local_changes(
-        server: list[dict],
-        snapshot: list[dict],
-        local: list[dict],
-    ) -> list[dict]:
-        """
-        Merge for one Scene-collection field.
-
-        Apply only the user's actual changes (snapshot → local) on top of
-        the server's current state. Items the user didn't touch are taken
-        from the server, preserving concurrent edits.
-
-        Semantics per id:
-        - In snapshot, removed in local → DELETED. Drop from result.
-        - In snapshot AND in local, value differs → DIRTY. Take local (the
-          user's edit wins; item-level last-write-wins).
-        - In snapshot AND in local, value identical → CLEAN. Take server
-          (preserves concurrent edits made elsewhere).
-        - Not in snapshot, present in local → ADDED. Include in result.
-        - In server only (not in snapshot, not in local) → other side
-          added it. Include in result.
-
-        Comparison uses native Python `==`. PyQt5 types (QPointF, QDateTime,
-        QColor, QDate, QTime, QSize, QFont) all implement reliable __eq__
-        with semantic equality (e.g., QPointF uses fuzzy float compare).
-        Pickle-bytes was an earlier approach but was strictly worse: ~1000x
-        slower and produced false-positive dirty marks for floats with
-        identical semantic value but different IEEE 754 representation.
-
-        Plan: familydiagram/doc/plans/2026-05-01--mvp-merge-fix/README.md
-        """
-        snapshot_by_id = {
-            item["id"]: item for item in snapshot if item.get("id") is not None
-        }
-        local_by_id = {item["id"]: item for item in local if item.get("id") is not None}
-        server_by_id = {
-            item["id"]: item for item in server if item.get("id") is not None
-        }
-
-        deleted_ids = {id for id in snapshot_by_id if id not in local_by_id}
-
-        dirty_ids = set()
-        for id, local_item in local_by_id.items():
-            if id not in snapshot_by_id:
-                continue
-            if local_item != snapshot_by_id[id]:
-                dirty_ids.add(id)
-
-        added_ids = {id for id in local_by_id if id not in snapshot_by_id}
-
-        # Phase 1: take server's view of every non-deleted item.
-        result: dict = {}
-        for id, server_item in server_by_id.items():
-            if id not in deleted_ids:
-                result[id] = server_item
-        # Phase 2: local wins for everything the user touched. This includes
-        # the edge case where the user edited an item locally that another
-        # client deleted server-side: per item-level LWW, the local edit
-        # wins (the item is resurrected with the user's edit). Same logic
-        # applies to local additions.
-        for id, local_item in local_by_id.items():
-            if id in dirty_ids or id in added_ids:
-                result[id] = local_item
-
-        return list(result.values())
 
     def clear(self) -> None:
         self.people = []

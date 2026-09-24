@@ -96,10 +96,8 @@ The chat chain is unreleased, so no user's data is at stake. It is still not fre
 - **Stored records.** One JSON blob per diagram row, so no SQL migration — but every blob
   needs a one-pass rewrite, and so does every stored edit delta, because a delta names the
   field it changed (`"field": "spouse"`). Undo history left unrewritten breaks silently.
-- **The Pro app — the largest cost, and the brief's "one converter" understates it.**
-  `DiagramData.events` holds scene-facing chunks: the same dicts the released desktop app
-  reads. Renaming `person`/`spouse`/`child` means a translation layer at the Pro boundary,
-  both directions, kept until the desktop app itself is rebuilt.
+- **The Pro app — no cost since R-0471.** This app has no connection to the desktop app; only the opt-in
+  import of an old Pro diagram (R-0422) reads its format, one way.
 - **The coach's tool text** (private, fdserver): `edit_event` loses four parameters and gains
   three. Fewer parameters and one rule per kind should raise the hit rate, not lower it.
 - **The refusals.** "A birth is about the child" disappears — the shape enforces it. "A shift

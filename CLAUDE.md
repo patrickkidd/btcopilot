@@ -203,19 +203,11 @@ btcopilot provides:
 | Personal backend | `btcopilot/personal/` | The chat app's API (JSON): the coach's turns and the tools it edits the record with |
 | Review | `btcopilot/review/` | The coders' app |
 | Admin | `btcopilot/admin/` | Flask CLI commands for the box |
-| Schema | `btcopilot/schema.py` | Core data model shared with the desktop app (PUBLIC — see boundary rule below) |
+| Schema | `btcopilot/schema.py` | Core data model |
 | Extensions | `btcopilot/extensions/` | Flask extensions (DB, mail, Celery, tracing) |
 | Auth | `btcopilot/auth/` | Passwordless sign-in, `current_user` |
 | Models | `btcopilot/models/` | SQLAlchemy: User, Diagram, License, Policy, AccessRight |
 | Matching | `btcopilot/matching.py` | Content matching of two PDPs (people, events, pair bonds) and the F1 built on it |
-
-### Public API Boundary (MANDATORY)
-
-`btcopilot.schema` is the ONLY public submodule — it is imported by the desktop app builds where Flask, SQLAlchemy, and all other server dependencies are unavailable. **schema.py must NEVER import from any other btcopilot module** (pdp, extensions, personal, app, auth, llmutil, celery, modelmixin). This includes deferred/lazy imports inside methods.
-
-If schema.py needs a utility function that currently lives in a private module, move that function INTO schema.py. Do not import it.
-
-The isolation test at `btcopilot/tests/schema/test_isolation.py` enforces this boundary — run it after any schema.py changes.
 
 ### External Services
 

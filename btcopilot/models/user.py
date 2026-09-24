@@ -1,13 +1,13 @@
 import datetime
 import random
 import string
-import pickle
 
 from sqlalchemy import Column, Boolean, Date, String, Integer, ForeignKey, inspect, JSON
 from sqlalchemy.orm import relationship
 import flask_bcrypt
 
 import btcopilot
+from btcopilot import diagramjson
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
 from btcopilot.models.preferences import PREF_DEFAULTS, PrefKey, coerce_pref
@@ -172,7 +172,7 @@ class User(db.Model, ModelMixin):
         from btcopilot.models import Diagram
 
         if bdata is None:
-            bdata = pickle.dumps({})
+            bdata = diagramjson.dumps({})
 
         if not self.free_diagram:
             diagram = Diagram(user_id=self.id, name="Free Diagram")
@@ -186,7 +186,7 @@ class User(db.Model, ModelMixin):
             _updated_at = updated_at
         else:
             _updated_at = datetime.datetime.utcnow()
-        self.free_diagram.pickled = bdata
+        self.free_diagram.data = bdata
         self.free_diagram.update(updated_at=_updated_at)
         if _commit:
             inspect(self).session.commit()

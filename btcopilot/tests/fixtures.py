@@ -16,7 +16,6 @@ if not key_present():
     os.environ.setdefault("FD_PRIVATE_PROMPTS", "/nonexistent")
     print("no sops key: running on the open-source prompts", file=sys.stderr)
 
-import pickle
 import contextlib
 import logging
 import datetime
@@ -227,7 +226,7 @@ def test_user(flask_app):
     user._plaintext_password = TEST_USER_ATTRS["password"]
     db.session.add(user)
     db.session.merge(user)
-    user.set_free_diagram(pickle.dumps({}))
+    user.set_free_diagram()
     db.session.commit()
     return user
 

@@ -89,9 +89,6 @@ the screen also wrote the check.
 over a thousand lines each, with the review's screens in the same folder as the chat's.
 The import boundary the back end enforces has no equivalent on the front end.
 
-**The fixtures cross the boundary the source may not**, importing the chat's and the
-desktop app's models directly. Defensible, but the isolation test cannot cover them.
-
 ## 6. Splitting the chat app's tests from Pro and training (R-0332)
 
 Today the chat app's tests inherit Pro's world by directory. The chat's conftest imports

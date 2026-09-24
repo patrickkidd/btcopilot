@@ -9,7 +9,6 @@ from PyQt5.QtCore import QDate, QDateTime, QPointF
 
 from btcopilot import diagramjson
 from btcopilot.extensions import db
-from btcopilot.personal.toolbox import ToolName, Toolbox
 from btcopilot.tests.personal.conftest import csrf_token
 
 PEOPLE = [
@@ -58,17 +57,15 @@ RECORD = {
 }
 
 
-def test_a_pro_record_survives_storage_and_comes_back_to_pro_equal(flask_app, test_user):
+def test_a_pro_record_survives_storage(flask_app, test_user):
     # R-0083, R-0422
-    """The importer's own step: the pickle the Pro app saved becomes the JSON
-    row the chat app keeps, and Pro gets an equal pickle back."""
+    """The importer's own step: the pickle the Pro app saved becomes an equal JSON row."""
     diagram = test_user.free_diagram
     diagram.data = diagramjson.store(pickle.dumps(RECORD))
     db.session.commit()
     db.session.refresh(diagram)
     assert diagramjson.is_json(diagram.data)
     assert diagramjson.loads(diagram.data) == RECORD
-    assert pickle.loads(diagram.pickled) == RECORD
 
 
 def test_the_chat_app_reads_the_relationship_sub_fields(web, test_user):
@@ -111,26 +108,6 @@ def test_editing_an_event_by_hand_keeps_the_fields_only_the_desktop_knows(web, t
 
 
 WRITES = {"POST", "PUT", "PATCH", "DELETE"}
-
-
-def test_pro_reads_a_record_the_chat_app_wrote(test_user):
-    # R-0082
-    diagram = test_user.free_diagram
-    diagram.data = diagramjson.store(pickle.dumps({"people": [], "events": []}))
-    db.session.commit()
-    tools = Toolbox(diagram.id, "t1")
-    _, added = tools.call(ToolName.EditPerson.value, {"name": "Wren"})
-    person = added["deltas"][0]["item_id"]
-    tools.call(
-        ToolName.EditEvent.value,
-        {"kind": "noted", "date": "2019-03-01", "person": person, "description": "Moved"},
-    )
-    assert diagramjson.is_json(diagram.data)
-    seen = pickle.loads(diagram.as_dict()["data"])
-    assert [p["name"] for p in seen["people"] if p["id"] == person] == ["Wren"]
-    assert [(e["kind"], e["person"]) for e in seen["events"] if e["description"] == "Moved"] == [
-        ("noted", person)
-    ]
 
 
 def test_nothing_outside_the_chat_app_can_write_a_record(flask_app):

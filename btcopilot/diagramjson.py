@@ -154,7 +154,3 @@ def encode(data: dict, stored: bytes | None) -> bytes:
     """Re-encode in the format the row already holds: JSON stays JSON, pickle stays pickle."""
     return dumps(data) if is_json(stored) else pickle.dumps(data)
 
-
-def wire(blob: bytes | None) -> bytes | None:
-    """The pickled form the Pro and Personal apps speak; a pickle row passes through."""
-    return pickle.dumps(loads(blob)) if is_json(blob) else blob
