@@ -244,7 +244,9 @@ def _remove(data: dict, kind: ItemKind, item_id) -> list[dict]:
     """
     deltas = []
     if kind is ItemKind.Person:
-        for event in [e for e in _collection(data, ItemKind.Event) if _names(e, item_id)]:
+        for event in [
+            e for e in _collection(data, ItemKind.Event) if involves(e, item_id)
+        ]:
             deltas += _remove(data, ItemKind.Event, event["id"])
         for emotion in [
             e
@@ -284,7 +286,7 @@ def _remove(data: dict, kind: ItemKind, item_id) -> list[dict]:
     return deltas
 
 
-def _names(event: dict, person_id) -> bool:
+def involves(event: dict, person_id) -> bool:
     """Scene's Event.people(): the person is one of the event's roles."""
     ids = [event.get("person"), event.get("spouse"), event.get("child")]
     ids += event.get("relationshipTargets") or []
@@ -474,6 +476,17 @@ def _moves_of(event: dict) -> tuple:
     return tuple(_val(event.get(field)) for field in (*VARIABLES, "relationship"))
 
 
+def twin_key(event: dict) -> tuple:
+    """Two events are the same event when kind, day, people and what moved
+    all match."""
+    return (
+        _val(event.get("kind")),
+        _day(event.get("dateTime")),
+        _links(event),
+        _moves_of(event),
+    )
+
+
 def _twins(data: dict, deltas: list[dict]):
     """The same event is not written down twice: an event this write adds that
     matches one already in the record on kind, day, people and what moved is
@@ -496,12 +509,7 @@ def _twins(data: dict, deltas: list[dict]):
         for other in events:
             if str(other.get("id")) == event_id:
                 continue
-            if (
-                _val(other.get("kind")) == _val(event.get("kind"))
-                and _day(other.get("dateTime")) == _day(event.get("dateTime"))
-                and _links(other) == _links(event)
-                and _moves_of(other) == _moves_of(event)
-            ):
+            if twin_key(other) == twin_key(event):
                 raise Invalid(
                     f"that event is already event {other.get('id')}: change it "
                     f"with edit_event(id={other.get('id')}) rather than adding it"

@@ -244,14 +244,15 @@ def test_show_stores_the_view_on_the_coach_statement(discussion, family):
     assert reply["views"] == [span]
 
 
-def test_the_coach_is_handed_the_record_and_what_the_user_pointed_at(
+def test_the_coach_is_handed_a_map_of_the_record_and_what_the_user_pointed_at(
     discussion, family
 ):
-    # R-0072
+    # R-0072, R-0479
     model = Model(said("Say more about that."))
     run(discussion, "[[event:10]]", model)
 
-    assert "10 1994-06-01 [noted] person=2 \"moved out\"" in model.systems[0]
+    assert "2 Bo events=1" in model.systems[0]
+    assert "moved out" not in model.systems[0]
     assert "tell me about this" in model.histories[0][-1]["content"]
 
 
@@ -788,9 +789,9 @@ def test_the_notes_stay_out_of_every_call_and_the_tool_to_read_them_is_offered(
     model = Model(called(ToolName.ReadEvents), said("What happened next?"))
     run(discussion, "Tell me about when he moved out.", model)
     assert len(model.systems) == 2
-    for system in model.systems:
-        assert "(has notes)" in system
-        assert QUOTE not in system
+    assert "(has notes)" in str(model.histories[1][-1])
+    for system, history in zip(model.systems, model.histories):
+        assert QUOTE not in system + str(history)
     assert all(ToolName.ReadNotes.value in offered for offered in model.offered)
 
 

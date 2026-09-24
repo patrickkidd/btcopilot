@@ -266,7 +266,9 @@ class CoachTurn:
         note = DiscussionKind(self.discussion.kind) is DiscussionKind.Note
         own = profile.own(data)
         fixed, tail = agent_prompt(
-            record=recordtext.render(data, None if note or not own else own["id"]),
+            record=recordtext.outline(
+                data, self.diagram.version, None if note or not own else own["id"]
+            ),
             interactions=recordtext.interactions(
                 recent(self.diagram.id, RECENT_INTERACTIONS)
             ),

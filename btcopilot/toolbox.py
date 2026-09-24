@@ -11,8 +11,14 @@ import enum
 import logging
 
 from btcopilot import clusters, prompts, record, views
-from btcopilot.models import Author, Change
-from btcopilot.recordtext import date_text, event_line, person_line
+from btcopilot.models import Author, Change, Discussion, Statement
+from btcopilot.recordtext import (
+    change_line,
+    date_text,
+    event_line,
+    person_line,
+    version_line,
+)
 from btcopilot.extensions import db
 from btcopilot.models import Diagram
 from btcopilot.schema import (
@@ -36,6 +42,7 @@ class ToolName(enum.StrEnum):
     ReadPeople = "read_people"
     ReadEvents = "read_events"
     ReadNotes = "read_notes"
+    ReadChanges = "read_changes"
     EditPerson = "edit_person"
     EditPairBond = "edit_pair_bond"
     EditEvent = "edit_event"
@@ -45,7 +52,14 @@ class ToolName(enum.StrEnum):
     Show = "show"
 
 
-READS = (ToolName.ReadPeople, ToolName.ReadEvents, ToolName.ReadNotes)
+READS = (
+    ToolName.ReadPeople,
+    ToolName.ReadEvents,
+    ToolName.ReadNotes,
+    ToolName.ReadChanges,
+)
+
+CHANGES_SHOWN = 10
 
 # The tools that can change something already in the record.
 CHANGES = (
@@ -102,16 +116,21 @@ def schemas() -> list[dict]:
         {
             "name": ToolName.ReadEvents.value,
             "description": (
-                "Events in the record, in date order. Narrow by a date span, one "
-                "person, or one cluster; with no filter it returns everything."
+                "Events in the record, in date order. Narrow by ids, a date span, "
+                "one person, or one cluster; with no filter it returns everything. "
+                "Ask for the words to see what the user said that each event came "
+                "from, and for the notes to see them in full."
             ),
             "input_schema": {
                 "type": "object",
                 "properties": {
+                    "ids": {"type": "array", "items": {"type": "integer"}},
                     "start": {"type": "string", "description": "YYYY-MM-DD"},
                     "end": {"type": "string", "description": "YYYY-MM-DD"},
                     "person": {"type": "integer"},
                     "cluster": {"type": "string"},
+                    "words": {"type": "boolean"},
+                    "notes": {"type": "boolean"},
                 },
             },
         },
@@ -124,6 +143,22 @@ def schemas() -> list[dict]:
                     "event": {
                         "type": "integer",
                         "description": "One event's id; leave it out for every event that has notes.",
+                    },
+                },
+            },
+        },
+        {
+            "name": ToolName.ReadChanges.value,
+            "description": (
+                "The latest changes to the record, newest first: the version each "
+                "made, who made it, and what it set."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": f"How many; {CHANGES_SHOWN} if left out.",
                     },
                 },
             },
@@ -365,7 +400,7 @@ class Toolbox:
             self._fresh(args.get("version"))
         text, event = getattr(self, f"_{tool.value}")(args)
         if tool in READS:
-            text = f"{text}\n\nRecord version {self.diagram.version}."
+            text = f"{text}\n\n{version_line(self.diagram.version)}"
         return text, event
 
     def _fresh(self, version) -> None:
@@ -399,20 +434,15 @@ class Toolbox:
     def _read_events(self, args: dict) -> tuple[str, None]:
         data = self.data
         events = [e for e in data.events if isinstance(e, dict) and e.get("id")]
+        if args.get("ids") is not None:
+            wanted = {self._event(data, e) for e in args["ids"]}
+            events = [e for e in events if e["id"] in wanted]
         if args.get("cluster"):
             cluster = self._cluster(data, args["cluster"])
             wanted = set(cluster.get("eventIds") or [])
             events = [e for e in events if e["id"] in wanted]
         if args.get("person") is not None:
-            person = int(args["person"])
-            events = [
-                e
-                for e in events
-                if person
-                in {e.get("person"), e.get("spouse"), e.get("child")}
-                | set(e.get("relationshipTargets") or [])
-                | set(e.get("relationshipTriangles") or [])
-            ]
+            events = [e for e in events if record.involves(e, args["person"])]
         if args.get("start"):
             events = [
                 e for e in events if (date_text(e.get("dateTime")) or "") >= args["start"]
@@ -422,7 +452,33 @@ class Toolbox:
                 e for e in events if (date_text(e.get("dateTime")) or "") <= args["end"]
             ]
         events.sort(key=lambda e: (date_text(e.get("dateTime")) or "", e["id"]))
-        return ("\n".join(event_line(e) for e in events) or "No events.", None)
+        words = self._words({e["id"] for e in events}) if args.get("words") else {}
+        lines = []
+        for e in events:
+            lines.append(event_line(e))
+            if e["id"] in words:
+                lines.append(f"  words: {words[e['id']]}")
+            if args.get("notes") and e.get("notes"):
+                lines.append(f"  notes: {e['notes']}")
+        return ("\n".join(lines) or "No events.", None)
+
+    def _words(self, event_ids: set[int]) -> dict[int, str]:
+        """What the user said in the turn that first wrote each event."""
+        turns = {}
+        rows = Change.query.filter_by(diagram_id=self.diagram_id).order_by(Change.id)
+        for row in rows:
+            for delta in row.deltas:
+                event = delta["item_id"]
+                if delta["item_kind"] == ItemKind.Event.value and int(event) in event_ids:
+                    turns.setdefault(int(event), row.turn_id)
+        said = {
+            s.turn_id: s.text
+            for s in Statement.query.join(Discussion).filter(
+                Statement.turn_id.in_(set(turns.values())),
+                Statement.speaker_id == Discussion.chat_user_speaker_id,
+            )
+        }
+        return {event: said[turn] for event, turn in turns.items() if turn in said}
 
     def _read_notes(self, args: dict) -> tuple[str, None]:
         data = self.data
@@ -432,6 +488,14 @@ class Toolbox:
             events = [e for e in data.events if e.get("id") == wanted]
         lines = [f"{e['id']}: {e.get('notes') or 'no notes'}" for e in events]
         return ("\n".join(lines) or "No event has notes.", None)
+
+    def _read_changes(self, args: dict) -> tuple[str, None]:
+        rows = (
+            Change.query.filter_by(diagram_id=self.diagram_id)
+            .order_by(Change.id.desc())
+            .limit(int(args.get("limit") or CHANGES_SHOWN))
+        )
+        return ("\n".join(change_line(r) for r in rows) or "No changes yet.", None)
 
     # ── EDIT ────────────────────────────────────────────────────────────────
 

@@ -6,10 +6,14 @@ picture draws lives in the record; who did what when lives beside it, which is
 why the interactions render separately.
 """
 
-from btcopilot import diagramjson
+import json
+from collections import Counter
+
+from btcopilot import diagramjson, record
 from btcopilot.intake import _enum_val, _parse_iso_date
-from btcopilot.models import Interaction
-from btcopilot.schema import DiagramData
+from btcopilot.models import Change, Interaction
+from btcopilot.schema import DiagramData, EventKind, ItemKind
+from btcopilot.timeline import _life_event
 
 SHIFTS = ("anxiety", "symptom", "functioning")
 
@@ -36,13 +40,14 @@ def _name(person: dict) -> str:
 SPEAKER = " — the person you are talking with"
 
 
-def person_line(person: dict, speaker: bool = False) -> str:
+def person_line(person: dict, speaker: bool = False, facts=()) -> str:
     line = f"{person['id']} {_name(person)}"
     gender = _enum_val(person.get("gender"))
     if gender:
         line += f" ({gender})"
     if person.get("parents") is not None:
         line += f" parents={person['parents']}"
+    line = " ".join([line, *facts])
     return line + SPEAKER if speaker else line
 
 
@@ -85,18 +90,43 @@ def event_line(event: dict) -> str:
     return " ".join(parts)
 
 
-def cluster_line(cluster: dict) -> str:
+def _cluster_head(cluster: dict) -> str:
     words = cluster.get("name") or cluster.get("title") or ""
 
     # Never guess "model" here: source is what says whether a cluster may be
     # regrouped or renamed, and telling the coach the model made a grouping the
     # user may have named costs the user their name.
     source = _enum_val(cluster.get("source")) or "unknown"
-    line = (
-        f"{cluster['id']} \"{words}\" ({source}) events={cluster.get('eventIds') or []}"
-    )
+    return f"{cluster['id']} \"{words}\" ({source})"
+
+
+def cluster_line(cluster: dict) -> str:
+    line = f"{_cluster_head(cluster)} events={cluster.get('eventIds') or []}"
     reason = cluster.get("reason")
     return f"{line} — {reason}" if reason else line
+
+
+def version_line(version: int) -> str:
+    return f"Record version {version}."
+
+
+def change_line(change: Change) -> str:
+    """One write to the record: the version it made, who made it, and what each
+    item it touched was set to."""
+    items: dict[tuple, list[str]] = {}
+    for delta in change.deltas:
+        if delta["item_kind"] == ItemKind.Diagram.value:
+            continue
+        said = items.setdefault((delta["item_kind"], delta["item_id"]), [])
+        after = delta.get("after")
+        if delta["field"] is None:
+            said.append("removed" if after is None else "put back")
+        else:
+            said.append(f"{delta['field']}={json.dumps(after, ensure_ascii=False)}")
+    head = "Unversioned" if change.version is None else f"Version {change.version}"
+    return f"{head}, {change.author}: " + "; ".join(
+        f"{kind} {item_id} {' '.join(said)}" for (kind, item_id), said in items.items()
+    )
 
 
 def _section(title: str, lines: list[str]) -> str:
@@ -125,6 +155,55 @@ def render(data: DiagramData | None, speaker: int | None = None) -> str:
         _section("CLUSTERS", [cluster_line(c) for c in _rows(data.clusters)]),
     ]
     return "\n\n".join(section for section in sections if section)
+
+
+def _year(event: dict | None) -> str | None:
+    date = date_text(event.get("dateTime")) if event else None
+    return date[:4] if date else None
+
+
+def _facts(person: dict, events: list[dict]) -> list[str]:
+    facts = [
+        f"{word}={year}"
+        for word, kind in (("born", EventKind.Birth), ("died", EventKind.Death))
+        for year in [_year(_life_event(person["id"], events, kind))]
+        if year
+    ]
+    return facts + [f"events={sum(record.involves(e, person['id']) for e in events)}"]
+
+
+def _span(cluster: dict, dates: dict) -> str:
+    years = sorted(dates[i][:4] for i in cluster.get("eventIds") or [] if dates.get(i))
+    span = f" {years[0]}-{years[-1]}" if years else ""
+    return f"{_cluster_head(cluster)}{span} events={len(cluster.get('eventIds') or [])}"
+
+
+def outline(data: DiagramData | None, version: int, speaker: int | None = None) -> str:
+    """A map of the record rather than the record (R-0479): who is in it, how
+    the events spread over time, and the version it was drawn at. The coach
+    reads the rest with its tools. Empty when nothing is stored yet."""
+    if data is None:
+        return ""
+    events = _rows(data.events)
+    dates = {e["id"]: date_text(e.get("dateTime")) for e in events}
+    decades = Counter(f"{d[:3]}0s" if d else "undated" for d in dates.values())
+    sections = [
+        _section(
+            "PEOPLE",
+            [
+                person_line(p, p["id"] == speaker, _facts(p, events))
+                for p in _rows(data.people)
+            ],
+        ),
+        _section("PAIR BONDS", [bond_line(b) for b in _rows(data.pair_bonds)]),
+        _section("CLUSTERS", [_span(c, dates) for c in _rows(data.clusters)]),
+        _section(
+            "EVENTS PER DECADE",
+            [", ".join(f"{d} {n}" for d, n in sorted(decades.items()))] if events else [],
+        ),
+    ]
+    body = "\n\n".join(section for section in sections if section)
+    return f"{body}\n\n{version_line(version)}" if body else ""
 
 
 def interactions(rows: list[Interaction]) -> str:
