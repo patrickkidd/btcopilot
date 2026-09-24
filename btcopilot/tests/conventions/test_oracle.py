@@ -250,12 +250,12 @@ def tracked() -> list[Path]:
 
 def test_no_tracked_file_carries_oracle_outside_the_store():
     # R-0447, R-0331
-    quotes = [q for qs in oracle.quotes().values() for q in qs if len(q.split()) >= LEAST]
-    texts = [r.statement for r in oracle.rulings().values()] + quotes
-    marks = defaultdict(set)
-    for text in texts:
-        for s in shingles(text):
-            marks[len(s)].add(s)
+    marks = {}
+    for r in oracle.rulings().values():
+        quotes = [q for q in oracle.quotes().get(r.id, []) if len(q.split()) >= LEAST]
+        for text in [r.statement, *quotes]:
+            marks.update(dict.fromkeys(shingles(text), r.id))
+    sizes = {len(m) for m in marks}
     leaks = {}
     for path in tracked():
         raw = path.read_bytes() if path.is_file() else b""
@@ -264,12 +264,14 @@ def test_no_tracked_file_carries_oracle_outside_the_store():
         text = raw.decode(errors="replace")
         if encrypted(text):
             continue
-        rows = [l[:6] for l in text.splitlines() if oracle.ROW.match(l)]
-        words = WORD.findall(text.lower())
-        hits = sum(
-            1 for n, grams in marks.items()
-            for i in range(len(words) - n + 1) if tuple(words[i : i + n]) in grams
-        )
-        if rows or hits:
-            leaks[str(path.relative_to(ROOT))] = {"index rows": rows[:5], "quoted runs": hits}
+        found = {f"line {n + 1}: index row" for n, l in enumerate(text.splitlines()) if oracle.ROW.match(l)}
+        words = list(WORD.finditer(text.lower()))
+        tokens = [w.group() for w in words]
+        for n in sizes:
+            for i in range(len(tokens) - n + 1):
+                rid = marks.get(tuple(tokens[i : i + n]))
+                if rid:
+                    found.add(f"line {text.count(chr(10), 0, words[i].start()) + 1}: {rid}")
+        if found:
+            leaks[str(path.relative_to(ROOT))] = sorted(found)
     assert leaks == {}
