@@ -66,8 +66,8 @@ in place, as specific answerable questions. There is no notion of "finished."
 The resting picture shows almost nothing: strip-small, always on, one or two lanes,
 cartoon-level detail. The product exists to produce one or two brain-rearranging
 correlations, not a comprehensive dataset — users must never feel they've taken on a
-data project. Conversation drives everything; the UI is a secondary way to fill gaps,
-and the coach aims the picture with an inline reference when it wants attention.
+data project. Chat leads and the picture only fills what chat left open; the coach
+points at it with an inline reference when it wants the person's eyes on it [R-0001].
 Questions are quiet marks in place — never cards, never a queue (survey feel killed
 the "question-first" mockup). The undated shelf lives behind a tap. Coverage is never the goal:
 it serves two things only — letting the coach ask better questions, and giving the
@@ -103,10 +103,10 @@ panel is a data project; killed).
 
 ### The clinical teaching under these rules (owner, 2026-08-31; oracle R-0054)
 
-No absolute values exist for S/A/R/F — only relative shifts, captured in episodic
-clusters; baseline vs episodic levels are emergent in the dataset; intake yields 3-5
-remembered periods and the conversation exists to enable remembering; sampling biases
-toward emotional-process periods, so quiet stretches are structurally under-sampled;
-slow multi-year ramps are visible only on a timeline — producing that sight is the
-point. The picture shows ONLY meaningful patterns; an unclear minimum-drawable
+S/A/R/F never carry a fixed number, only movement up or down within remembered
+periods; whether a period counts as baseline or episodic comes out of the data itself,
+not a preset rule; intake surfaces roughly three to five such periods, and chat is
+what draws them out; periods with strong emotion get remembered more than quiet ones,
+so quiet stretches are thin in the record; a slow shift over years can only be seen
+by looking at the whole timeline, which is why the timeline exists [R-0054]. The picture shows ONLY meaningful patterns; an unclear minimum-drawable
 standard is why the old timeline cards failed (oracle R-0058/R-0059).

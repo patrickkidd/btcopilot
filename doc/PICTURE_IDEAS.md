@@ -313,9 +313,9 @@ oval, with a row of event dots underneath doing the picture's real work — and 
 the ring never actually turns, since every symptom event is his alone.
 
 
-> Patrick, 2026-09-23 [R-0382]: a big idea, fundamental to an ideal family evaluation; kept and
-> tracked, to be drawn once a case holds enough data — a cluster with a dated opening event and a
-> dated symptom after it, in more than a couple of clusters.
+> Patrick, 2026-09-23 [R-0382]: this matters a great deal to doing a family evaluation right;
+> it stays on the list to build once enough cases carry both a dated start and a dated symptom
+> that follows it.
 
 ## Where this thread stands (2026-09-23)
 
@@ -330,8 +330,8 @@ rather than for replacing the line.
 **Ruled by Patrick:** words-only is out, the picture spot holds a picture [R-0378]; the family
 drawing needs the traditional diagram and automatic arrangement, a goal for later [R-0379]; the
 lanes of generations are kept but carry no message on a record where one person holds every
-recorded change [R-0380]; the gap between a cluster's opening event and its symptom is
-fundamental to a proper family evaluation and is kept and tracked [R-0382]; build the short
+recorded change [R-0380]; the same start-to-symptom gap matters a great deal and stays on the
+list [R-0382]; build the short
 sideways scroll rather than draw more [R-0381]; dots sit at one height [R-0377]; depth or motion
 only where it communicates what flat cannot, and a drawing's tap does what the app's tap does
 [R-0399]; a concept carries a title and a citation and nothing else [R-0398].

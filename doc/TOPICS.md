@@ -37,7 +37,7 @@ checks run against the development server on his Mac instead. On his word the ni
 with everything they owned, and one reusable test account stays; the live database now holds four
 accounts. The invite mail has now been sent
 and received, so sign-in by mail works.
-**Open:** (1) [build] the first beta users start now and generate data, because the basic chat
+**Open:** (1) [build] onboarding begins for the first beta users right away so usage data starts flowing, since the basic chat side
 is stable and the picture is not expected to block them [R-0400]; he asked for the two invite
 links for their email addresses and they have not been sent; (2) [ruling] his code review of the branch, and of the
 coach's prompt section, which is the first open item on the coach topic; (3) [build] the
@@ -61,7 +61,7 @@ repo.
 **Decided:** the agent loop is the only writer and must carry the data model and clinical
 definitions [R-0236]; placement rule — a rule the computer can test becomes a refusal in the
 record's commit function, a field's meaning goes on the tool parameter, judgement goes in the
-system prompt; Patrick's own prompt-improvement process does not change: Claude Code is the
+system prompt; the way he improves prompts stays the same — Claude Code is still the
 entry point and finds the instructions itself [R-0239]; IRR compares final records, not
 per-statement deltas [R-0242]; every variable definition, prompt and fragment that lived in
 fdserver before this branch is private and stays private — the tool schemas say the shape and
@@ -107,7 +107,7 @@ the last, R-0346, which was in flight when the session stopped. Sections seven, 
 of doc/archive/2026-09-TEST_2026-09-14.md were driven step by step in a browser and corrected to the
 screen, but he has not walked them.
 **Decided:** one Vite app, features by licence, role and view; coding is documenting a case,
-Pro on desktop; training is auditor/admin features on top [R-0237]; never a new view where an
+Pro on desktop; training is auditor/admin features on top [R-0237]; the rule stays: an
 existing surface can carry the addition [R-0243]; Pro adds cases, sessions with a recording
 upload and a speaker-mapping sheet, notes, and a wider desktop layout with the drawer pinned;
 coding protocol: no assignments, any coder any time, each Done joins the pool and recomputes
@@ -166,7 +166,7 @@ A walk document is now driven literally in a real browser by an independent agen
 handed to him [R-0343].
 **Ruled from his own use of the app, 2026-09-22:** the wider layout, with the events and
 people list standing beside the chat, is no longer held back for a professional licence — it
-comes up for anyone on a wide window, a phone turned on its side included, to see how it feels
+turns on for everybody once the window is wide enough, a phone sideways counts too, just to try it out
 [R-0367]. The first of his three complaints about the inherited event shape is answered: a move
 is no longer a kind of its own, ordinary notable events carry a "noted" kind, and the change
 was made before the beta rather than after [R-0363, R-0364, R-0365].
@@ -372,7 +372,7 @@ are what the chapter is about [R-0375]; nothing on the picture draws what change
 reading and the next — when it changes the coach says so in ordinary conversation [R-0372]; and
 the coach never says the word for these groupings, nor that an event was added to one, because
 that is technical: it talks about the story [R-0373]. What one should show, taken from the
-sources: the one key shift, where the trouble sits and that it moved between people, the opening
+sources: which single shift matters most, who has been carrying the trouble and that it passed between people, the start
 event and what followed, dates lining up with a symptom shown as nearness and never as proof,
 and never a count [R-0376].
 **Open:** (1) [build] the model does not yet name the one key shift of each grouping, nor who
@@ -390,7 +390,7 @@ so the picture can say it.
 ## T-7 · The drawn family and auto-arrange
 
 **Status:** off the path, on the list [R-0240].
-**Decided:** family-structure data from the agent loop comes first; the drawn family arrives
+**Decided:** the agent loop's family-structure data is built before this; the family picture follows
 later as one more picture level, auto-arranged first, hand layout after.
 **Open:** (1) [waiting] whether auto-arrange works well enough on agent-loop data is untested,
 and cannot be tested until the coding work produces structure data.
@@ -404,8 +404,8 @@ and cannot be tested until the coding work produces structure data.
 **Status:** largely overtaken by the platform reset and the separate database. The chat app no
 longer shares a database, a migration chain, a user table or a prompt file with Pro; what is
 left of the original ruling is the lint-held package boundary inside the repo.
-**Decided:** a package boundary inside btcopilot — one adapter module is the only importer of
-Pro code and the shared schema, held by a lint rule; a second service later; never a separate
+**Decided:** isolate the Personal app with a package boundary inside btcopilot; a single adapter module is the sole
+importer of Pro code and the shared schema, enforced by a lint rule; a second service can come later, but not a separate
 repository [R-0233]. Since then: the chat app takes its own database and its own accounts, and
 old Pro users are imported once rather than shared live [R-0327]; the review package is already
 isolated and a test asserts it [R-0245].
@@ -425,7 +425,7 @@ build only on an explicit go; mockups are drawn with the app's own stylesheet; t
 session end is `/two-clocks` and is idempotent; sub-agents do the work, one status line only
 [R-0248]; he is Patrick, never "Patrick" [R-0261]; artifacts are UI drawings, never text
 documents [R-0255]; every turn on a design topic shows drawn options [R-0256, R-0260]. Added
-this session: a reply to him is a quarter of what feels complete — the answer, the one thing he
+this session: he wants replies cut to about a quarter length — just the answer and the one thing he
 does next, nothing restated [R-0304]; the dev flow is build the batch, stand the sandbox up on
 fixtures with history kept, verify independently in real browsers, fix, then hand him one
 document of numbered walks in plain words with the sign-in links [R-0306]; fixture data is
@@ -433,8 +433,8 @@ realistic, because filler hides what a screen shows [R-0307]; the corpus's own v
 not his, so it is said in plain words; an Opus-level auditor watches wall-clock time, that no
 suite is run too early or unfiltered, and that tests are derived from rulings [R-0331]; the
 chat app's tests are their own suite, filtered to the changed component and run whole once at
-the end [R-0332]. Added 2026-09-15: a walk document is driven literally, step by step, in a real
-browser by an independent agent on the same fixture accounts before it is handed to him, and
+the end [R-0332]. Added 2026-09-15: someone other than the builder walks the document step by step, in a real
+browser, on the same fixture accounts, before it reaches him, and
 every step that does not match the screen is corrected first [R-0343]; the document carries its
 sign-in link in every section, puts one action in a step, and colours the action verb [R-0337];
 agents may keep editing the front end while he walks, because a page reload is acceptable
@@ -448,13 +448,13 @@ brainstorms continuously while he uses the app, and every one is written down as
 fixed only when he says to fix it [R-0383]; a status line never leaves a thing open ended — it
 says whether it is done and what happens next [R-0384]; nothing is called fixed on reasoning, only
 on evidence from the real call with the real prompt [R-0385]; before research begins, the list of
-sources to be read goes to him so he can confirm they are the right ones [R-0395]; findings are
-consolidated into the conversation rather than left for him to dig out of documents, while the
+sources to be read goes to him so he can confirm they are the right ones [R-0395]; what gets found is
+folded into the conversation instead of left for him to dig out of documents later, and those
 documents themselves stay in the project [R-0397]; the flush records where each research thread
 stands, so he can pick it up where he left off [R-0401]; the admin path and the dashboards belong
-to the other session, and the two sessions sync only on the code they touch in the shared
+to the other session, and the two keep to their own work, meeting only over code they both touch in the shared
 worktree and on the box [R-0391]; exactly one test account exists and is reused [R-0393]; and
-production stops being the place things are tried, with a development server on his Mac reachable
+trying things stops happening on the live server; a dev server on his Mac comes next, reachable
 from his phone over Tailscale as the next step, timing open, while testing continues on the box
 with the first beta users meanwhile [R-0403]. From the drawing rounds: a drawing is published as a page, never left as a file on disk; a separate agent reviews
 every frame before he sees it and only survivors are published; a page gives direction and a

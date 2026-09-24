@@ -177,8 +177,7 @@ def coding_scribe(coding_id: int):
         raise ValueError("coding happens between the last agreed line and the cut")
 
     written = scribe.write(coding, statement, said)
-    # The coder's own words stay in the thread under the line they coded, so
-    # they are kept rather than left to the screen that typed them (R-0270).
+    # Save what the coder typed too, attached to the line they coded (R-0270).
     db.session.add(
         Note(
             coding_id=coding.id,

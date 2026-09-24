@@ -73,7 +73,7 @@ test.describe(() => {
     );
     check(
       (await page.locator("#coding-chat .bub.said").count()) >= 2,
-      "the coder's own words stay in the thread under the line",
+      "what the coder typed is saved and attached to that line (R-0270)",
     );
     await shot("2-written");
 

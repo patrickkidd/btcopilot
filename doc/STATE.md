@@ -256,9 +256,10 @@ opening an editor with 44px fields; a person's birth and death jump to those eve
 A sessions sheet holds past sessions with rename and sort. The account page slides over the
 content. Sign-in is passwordless from an emailed invite link and lasts 180 days. A send that
 fails says which of three things happened and offers to go again. Three dots show while the
-coach is thinking, and the coach's words and tool steps arrive as they
-happen: the turn runs on the server independent of the request, so a reload or a switch away and
-back reattaches to it [R-0369]. Before anything else the coach asks for first name, last name and
+coach is thinking, and the coach's words and tool steps show up live as the coach
+produces them: this keeps going on the server on its own, so leaving the page and coming
+back, or switching apps and returning, just reconnects to wherever the reply currently
+stands [R-0369]. Before anything else the coach asks for first name, last name and
 birth date, because without a birth date it turns an age into a year it invented [R-0360]. It no
 longer holds out answers to tap; people type their own words [R-0361], and its closing question
 stays amber [R-0358]. Return starts a new line and only the send button sends [R-0368]. With the
@@ -323,10 +324,10 @@ alone again, and a year the coder gave only as a year reads back as the year.
 
 **Patrick walked sections one to six himself, 14 and 15 September.** The walk is
 doc/archive/2026-09-TEST_2026-09-14.md — the whole app by hand in dependency order, nine sections,
-four reusable sign-in links; the walk of 12 September is archived. Every step of sections six
-to nine was then driven literally in a real browser by an independent agent on the same fixture
-accounts and corrected to what the screen shows, which is now the rule before any walk is handed
-to him [R-0343]. **He walked seven, eight and nine on 15 September** and said it is all fine
+four reusable sign-in links; the walk of 12 September is archived. A separate agent then went
+through every step of sections six to nine itself in a real browser, using the same test
+accounts, and fixed any step that did not match the actual screen — now the standard before
+any walk reaches him [R-0343]. **He walked seven, eight and nine on 15 September** and said it is all fine
 for now; what he found is rows 114–132 of the review log and rulings R-0347..R-0352, all built
 except row 124 (deleting a session with content fails on the chat database, an isolation
 question) and row 132 (the plan codes are the Pro app's; pricing and plans are not decided).
@@ -762,15 +763,14 @@ cheaper models; mechanics on the cheapest.
 
 ## The UI principle (RULED 2026-09-03 — step-back item 1)
 
-**The coach never hands over the chalk.** Every tap on the picture loops back into the
-chat as communication to the coach, exactly like a spoken turn; visual input that does
-not return to the chat flow becomes a separate process and spawns UI and user-story
-complexity. One core engine — the agent loop — is everything; inline chips, what a tap
-sends back, and how the picture is aimed are harness. [Oracle: R-0065]
+**The picture never lets the user teach the coach directly.** Tapping anywhere on it is
+routed into the chat as if the user had said it out loud; any tap that skips the chat
+turns into its own separate feature with its own UI problems. The agent loop is the one
+engine behind everything; chips and what a tap sends back are just its plumbing. [Oracle: R-0065]
 
-- The picture is exceedingly simple: it shows as much as it can without crowding and
-  without requiring a tap for everything; a crowded visual (the wire timeline) means it
-  is doing too much. One tap to reveal a title is acceptable. [R-0066]
+- The picture stays plain: pack in as much as fits without feeling busy and without
+  needing a tap to see everything; the wire timeline felt busy, which was a sign it was
+  showing too much. Revealing a title with one tap is fine. [R-0066]
 - The tap-zoom cluster view (level 2 of the three-level shape) is CUT: tapping a cluster
   is point-and-ask, and the cluster's words live in the chat via the play-by-play, never
   in a navigable data view. The move step-through (level 3) survives, driven from chat.
@@ -782,37 +782,40 @@ approved UI element — 441 rows, each with the exact value and its owner source
 UI_GAP.md is the live approved-vs-built table. Every front-end build works row by row
 from UI_SPEC, and is verified against it — prose in this file never outranks UI_SPEC on
 a UI question. 36 rows in UI_SPEC are marked "Needs Patrick's ruling" and are open.
-- Manual editing is NOT under test. The MVP is feature-complete only with the agent loop
-  and real-time tool-call edits (R-0055 restored); an include/defer feature list is
-  confirmed by Patrick before build. [R-0067]
+- Manual editing isn't part of what's being tested. The first release only counts as done
+  once the chat loop can make tool-call edits in real time (bringing back R-0055); before
+  building, Patrick signs off on which features are in versus deferred. [R-0067]
 - The prototype's full timeline + event editor stays as designed, behind a menu, off the
   main journey, with a one-line banner that editing by chat also works. [R-0069]
-- Play-by-play via a button that jumps to a complete, digestible concept is fine
-  (digestibility is a user test); drilling one datum at a time is rejected. [R-0071]
-- Every designed feature carries the learning loop: it generates data and corrections we
-  learn from. Part of principle one, product-ownership-wise. [R-0070]
+- A button that jumps straight to one whole, easy-to-follow idea is fine — whether it's
+  actually easy to follow gets tested with users; stepping through single data points one
+  at a time was turned down. [R-0071]
+- Every feature has to produce data and corrections the team can learn from — folded into
+  the first UI principle above. [R-0070]
 
 Ruled 2026-09-07, closing every sub-ruling that was open here:
 
-- **Chips are the primitive.** A chip is a reference into the record — an event, a
-  cluster, a person — and it renders as a chip in coach messages and in the user's own
-  messages. Tapping one drops the reference into the user's message and they type their
-  own words; a reference sent bare means "tell me about this". A chip tap is the user
-  speaking as themselves, never steering the coach. [Oracle: R-0072]
-- **Two taps on the picture.** The first tap looks: a title or caption, free, nothing
-  enters the chat. The second tap is a chip and speaks. The chip IS the standard visual
-  for "this puts words in the chat", so nothing else ever costs a turn. [R-0073]
-- **The play-by-play is coach-authored.** The moves are data and animate deterministically;
-  the coach writes the words around them, picks which moves and in what order, makes each
-  move a chip, and cannot invent a move. It ends in offered chips. Chosen over
-  app-generated captions from a side-by-side mockup. The tap-zoom cluster view is
-  cut. [R-0074]
-- **The show tool.** Anything deterministic is a tool call with parameters. The show tool
-  takes record ids plus a closed set of view kinds — to start: a triangle over three
-  people, a span over a time range, two moments compared, a sequence of moves. Every
-  parameter must resolve to stored data or the call fails. Fidelity to what the user said
-  is enforced by the tool's design, never left to the model. Each view kind added must
-  show something meaningful; start simple and extend one view at a time. [R-0075]
+- **Chips are the primitive.** A chip points at something in the record — an event, a
+  cluster, a person — and shows up in both the coach's and the user's messages. Tapping
+  one puts that reference into the user's own message, which they then finish in their
+  own words; sending just the reference alone means "tell me about this." Tapping a chip
+  is the user talking as themselves, not directing the coach. [Oracle: R-0072]
+- **Two taps on the picture.** A first tap just looks — it shows a title or caption and
+  costs nothing. A second tap is a chip, and that one speaks. The chip is the one visual
+  that means "this sends words to the chat"; nothing else uses up a turn. [R-0073]
+- **The play-by-play is written by the coach, not the app.** The moves themselves are
+  fixed data that animate the same way every time; the coach supplies the narration,
+  choosing which moves to use and their order, turning each into a chip, but cannot make
+  up a move that did not happen. It always finishes by offering chips. This beat having
+  the app generate its own captions, compared side by side in a mockup. The tap-and-zoom
+  view into a cluster was dropped. [R-0074]
+- **The show tool.** Anything that needs no judgment becomes a tool call with fixed
+  parameters. This tool takes ids from the record plus one of a closed list of view
+  types — for now: a triangle across three people, a stretch of time, two moments side by
+  side, or a sequence of moves. Every id has to point at real stored data or the call
+  fails; accuracy to what the user actually said comes from how the tool is built, not
+  from trusting the model. Any view type added later has to earn its place by showing
+  something real; the list starts small and grows one view at a time. [R-0075]
 - **Every tap is learning data**, including the looks that send nothing, and the coach sees
   them as context. First entry on the A/B-test list below. [R-0077]
 
@@ -825,31 +828,34 @@ What the record holds today, field by field with line references, is in
   model may group and name; it may never invent a member; the user corrects it. Triangle
   moves already live on the event, in the relationship field and its target and triangle
   lists. [Oracle: R-0076]
-- **The client owns their record.** A clinician is granted access to it. The client pays
-  for their own chat and keeps the record outside and after their sessions with the
-  human. [R-0080]
+- **The record belongs to the client, not the clinician.** A clinician only gets access
+  granted to them. The client pays for their own chat subscription and keeps the record
+  both outside of and after any work with a human clinician. [R-0080]
 - **Nothing is ruled about the Pro app.** Its role and its stack are both open; everything
   said about Pro this session was brainstorm input, and no irreversible decision about Pro
   is to be made. The chat app must not corner it. [R-0081] Proposed and unratified, held as
-  an interim only: Pro reads a chat-app record and only the chat app writes it, until
-  multi-writer merge exists. [R-0082]
-- **The record becomes pure JSON.** The diagram data column stops holding a pickle; Qt
-  values are written as tagged plain types. The server converts back to pickle whenever the
-  released Pro app asks, so Pro is unchanged. Open formats, statically typed, reusing the
-  existing structure so the migration path is clear; better features outrank backward
-  compatibility and Patrick judges those himself. [R-0083] Proven: the round trip is exact
-  on three fixtures and on 1997 of 1998 real diagrams, and the single failure never
-  unpickled in the old code either; the result loads through Pro's own read path. Converter
-  at `btcopilot/diagramjson.py`, commit f32eb2c.
-- **A change log beside the record.** A new model, Change, sits next to Discussion and
-  Statement: one row per command, whether a tool call, a Pro save, or a manual edit,
-  carrying a list of deltas of item, kind, field, before and after. A turn id groups a
-  macro — one coach reply, or one save. Consecutive deltas on the same item and field
-  compress at write time, keeping the first before and the last after. Rows carry user and
-  session. The server applies commands in arrival order, one at a time per diagram. Undo is
-  per user per turn, by inverse deltas with compare-and-set on the before value. Multiple
-  readers and writers are required, and the log stays separate from the record so history
-  can be compacted later. [R-0084]
+  an interim only: the Pro app can read a record made by the chat app, but only the chat
+  app can write to it, until something exists to merge changes from more than one
+  writer. [R-0082]
+- **The record becomes pure JSON.** The stored diagram data column stops being a Python
+  pickle; the Qt-specific values are written out as tagged plain types instead. When the
+  currently released Pro app asks for the data, the server converts it back to a pickle on
+  the fly, so Pro itself does not change. The format is open and statically typed, built on
+  the existing structure to keep the migration path simple; Patrick decides himself when a
+  better feature is worth breaking backward compatibility. [R-0083] Tested: an exact round
+  trip on three test cases and on 1997 out of 1998 real diagrams — the one that failed never
+  loaded correctly even before this change — and the converted data loads fine through
+  Pro's own code. Converter at `btcopilot/diagramjson.py`, commit f32eb2c.
+- **A change log next to the record.** A new database table, Change, sits alongside
+  Discussion and Statement: one row for every command — a tool call, a save from Pro, or a
+  hand edit — holding a list of what changed (item, kind, field, old value, new value).
+  Rows group under a turn id, meaning one coach reply or one save. If the same item and
+  field changes more than once in a row, only the first old value and the last new value
+  are kept. Each row also carries who made it and in which session. The server processes
+  commands one at a time, in arrival order, per diagram. Undoing a turn applies the
+  opposite of each delta, checked against the old value still matching. The system has to
+  support several readers and writers at once, and this log is kept apart from the record
+  itself so old history can be trimmed later without touching the record. [R-0084]
 - **New shapes, all additive.** Chip reference tokens live inside the statement text and are
   validated against the record on write. Coach statements gain a views field: a view kind
   plus its parameters, where every id must resolve. A new Interaction model records who
@@ -857,25 +863,28 @@ What the record holds today, field by field with line references, is in
   and a source, model or user. Pins are a list of references on the discussion. The rule
   behind all of it: what the picture draws lives in the record, and who did what when lives
   in tables beside it. [R-0085]
-- **No PDP in the beta build.** Coach edits apply immediately as change rows and correction
-  happens through chat. Exploratory — Patrick's words were "let's play with no PDP". [R-0086]
+- **The beta build skips PDP entirely.** Whatever the coach edits gets applied right away
+  as a change row; fixes happen by saying so in chat. This is being tried, not settled —
+  Patrick's words were "let's play with no PDP". [R-0086]
 
 ## Beta build (RULED)
 
-**The next build is the beta build, not a throwaway** — passwordless login and the real
-database, everything beta users need today. [Oracle: R-0078]
+**This build is meant to go live, not get thrown away** — real sign-in without a password
+and the real database, everything a beta user needs right now. [Oracle: R-0078]
 
-In: chat by text, with phone dictation covering voice; the agent loop with tool calls that
-add, change and remove people, pair-bonds, events and variable shifts, live in both the
-picture and the list, reversible by telling the coach; one pinned picture showing clusters
-over time at rest, aimed by the coach's chips; a play-by-play per cluster behind a button;
-the look/say tap semantic; steering chips; the timeline and event editor behind a menu with
-the line saying you can also edit by chatting; every tap, chip, correction and coach edit
-recorded; Patrick's own record.
+Included: typing to chat, with the phone's own dictation standing in for voice; the chat
+loop making tool calls that add, change, or remove people, pair-bonds, events, and
+variable shifts, showing up live in both the picture and the list, and reversible just by
+telling the coach; one picture pinned on screen showing clusters over time at rest,
+pointed by the coach's chips; a play-by-play behind a button for each cluster; the
+tap-to-look versus tap-to-speak pattern; chips that steer the conversation; a timeline and
+event editor tucked behind a menu, with a note that chat can also make the same edits;
+every tap, chip, correction, and coach edit gets logged; this is Patrick's own record.
 
-Deferred: proactive messages; a "what you said" provenance view; lane pinning; Pro
-migration; notability import; sharing; a formal undo stack beyond per-turn; era
-compression; death and fade stops.
+Left out for later: messages the coach sends unprompted; a view showing which of the
+user's own words something came from; pinning things to a lane; moving data to the Pro
+app; importing what's notable; sharing with others; a full undo history beyond the current
+turn; compressing long stretches of time; stopping the timeline at a death or fade point.
 
 **First users** [R-0079]: the app working group, three clinicians, iterated with until the
 thing is extremely valuable. Then the app seminar, three more. Then the wider Bowen
@@ -884,8 +893,8 @@ network. Names live only in the private oracle evidence.
 **The journeys that check the build** [R-0087] — walked PASS 2026-09-08:
 
 1. A first conversation from an emailed link, no password, the picture growing from nothing.
-2. A correction through chat changes the event in place with a change row, and old chips
-   still resolve.
+2. Fixing something by chatting about it updates that event directly, tracked as a change
+   row, and chips made before the fix still work. [R-0087]
 3. Tap a cluster, see its title, tap the chip, type, and the coach answers with a
    play-by-play that animates.
 4. The coach draws a triangle with a chip and the user taps it to ask about it.
@@ -909,9 +918,10 @@ walked PASS on 2026-09-08.
 Every finding row by row, with its commit: [REVIEW_LOG.md](REVIEW_LOG.md). All of it is in
 the oracle store as R-0165..R-0228; what follows is only what constrains future work.
 
-- **One selection state.** A chip tap is a dot tap: spotlight, plus a caption row carrying
-  the ask chip, the board button and the "in chat" chip. That row reads the same whether a
-  cluster is open or an event inside it is selected.
+- **Only one thing can be selected at a time.** Tapping a chip and tapping a dot do the
+  same thing: the dot lights up, and a caption row appears below it holding the ask chip,
+  the board button, and the "in chat" chip. This row looks the same whether it is a whole
+  cluster open or a single event inside one selected. [R-0168, R-0211]
 - **Chips are one size, full text**, never truncated and never expandable. Labels are capped
   at the source at 28 grapheme clusters with one re-ask, never trimmed afterwards. Every chip
   has a pressed state.
@@ -919,9 +929,11 @@ the oracle store as R-0165..R-0228; what follows is only what constrains future 
   carrying RESOLVED #28 is superseded by it. Its control row is always back, explain, forward,
   with explain dead only while the coach is answering the last one. The way onto the board
   from the timeline is the play mark alone, no words.
-- **A play-through holds each move** until its narration line finishes typing plus about two
-  seconds. The eight-second animation loop is a separate clock and is never stretched to
-  match. Step chips move the board and never return to the timeline.
+- **Each move stays on screen until its narration finishes typing, plus about two more
+  seconds.** A separate eight-second animation timer runs alongside but is never adjusted
+  to match it [R-0171]. Tapping a step's chip moves the board forward and never jumps back
+  to the timeline; the kind of statement (a play turn) and which cluster it belongs to are
+  saved with it. [R-0170]
 - **The words under the board are a person and their own words** — no count, no clinical
   term — in a block keeping two lines of room; the date is written once, under the dot.
   Nothing is drawn behind the move being played; the dot itself is drawn last, in action green.
@@ -1063,8 +1075,9 @@ That build is done and reviewed; where it stands is at the head of this file.
   coordination chatter — one deliverable message when the work is ready for his action.
 - One worktree per builder. Shared-index sweeps and gap-file clobbers have cost hours.
 - Rulings are written to the store as they are made, not batched to the end of a session.
-- Every claim is labelled evidence or assumption. Plain sentences, his own terms, no coined
-  labels, no multiple-choice when he asked to brainstorm.
+- Every claim needs a tag saying whether it is a fact or a guess. Write in plain sentences
+  using Patrick's own words, never invent a new term, and do not offer multiple choices
+  when he asked to brainstorm freely. [R-0088]
 - Read this file first. Read HISTORY only for a specific fact.
 
 Pinned, not active: the corpus/subset sessions in [NEXT_SESSIONS.md](archive/2026-09-NEXT_SESSIONS.md).

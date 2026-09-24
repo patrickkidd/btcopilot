@@ -248,7 +248,6 @@ def tracked() -> list[Path]:
     return [ROOT / p for p in done.stdout.split("\0") if p]
 
 
-@pytest.mark.xfail(strict=True, reason="ruling text still sits in tracked docs (R-0447)")
 def test_no_tracked_file_carries_oracle_outside_the_store():
     # R-0447, R-0331
     quotes = [q for qs in oracle.quotes().values() for q in qs if len(q.split()) >= LEAST]

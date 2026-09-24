@@ -73,7 +73,8 @@ twice.
 
 ## Deploy checkpoint (flushed 2026-09-14; nothing below runs until Patrick says deploy may start)
 
-Ruled: the droplet is created only after Patrick has tested the new build (R-0330).
+Ruled: hold off creating the droplet until Patrick has tried the new build and gives the
+go-ahead (R-0330).
 
 **What is already in hand**
 - DigitalOcean API token in ~/theapp/.env as DIGITALOCEAN_ADMIN; every admin action is confirmed with Patrick here first, production boxes.

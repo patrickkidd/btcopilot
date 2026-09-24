@@ -1459,15 +1459,15 @@ ballot shows a fragment per version, and structure items stay off the meeting wi
 counted in the legend. The only costs weighed are technical complexity, inference cost and
 accuracy, never agent effort.
 
-## 2026-09-14: The chat app starts over with its own accounts
+## 2026-09-14: Chat app accounts are separate from Pro's
 
-Its own user table on its own database, not shared with Pro; old Pro users are imported once
-rather than shared live. [R-0327]
+New user table, new database; nothing shared with Pro. Existing Pro users get a one-time
+import, not continuous sync. [R-0327]
 
 ## 2026-09-14: Observability is Datadog on the recommended low-cost set, and the droplet waits for his word
 
-One host, logs ingest-only with exclusion filters and errors indexed, LLM observability
-inside the free tier with a span-count monitor, one uptime check, browser logs and error
+Monitoring runs on one server, with logs cut down by exclusion filters and only errors kept, AI-usage tracking
+sitting under its free allowance with an alert on span counts, one uptime check, and browser-side logging and crash
 tracking, plus session replay from day one; APM and product analytics later; the paid
 infrastructure host waits. [R-0328, R-0329, R-0330] The droplet is created only after he has
 tested the build and says deploy work may start; region sfo3 because sfo1 lacks volumes.
@@ -1493,7 +1493,7 @@ stay disabled.
 ## 2026-09-15: A walk is driven in a real browser before Patrick is handed it
 
 An independent agent walks the document literally, step by step, on the same fixture accounts,
-and every step that does not match what the screen shows is corrected first. The document carries
+with any step that doesn't match the screen fixed before it moves on. The document carries
 its sign-in link in every section, puts one action in a step, and colours the action verb.
 Sessions are never dropped fast, so he is not signed out mid-walk, and agents may keep editing
 the front end while he walks because a page reload is acceptable. [R-0337, R-0338, R-0343]
@@ -1517,9 +1517,9 @@ that was never coded is said in words. [R-0343, R-0344]
 ## 2026-09-15: The person editor says "born to", never "bond"
 
 The section is the person's biological parents, picked as a mother and a father by name or added,
-with the pair-bond staying a data-model fact behind it; the rows beneath read "Partners". The
-list button inside the picture opens the events and people list sliding in full screen over the
-chat and the picture. Adoptive and foster parents, possibly several, are a known open design
+while the pair-bond itself stays a fact in the data model; the rows below are labelled "Partners". A
+button inside the picture brings up the events and people list, sliding in full screen over the chat and
+the picture. Whether to add adoptive and foster parents, maybe more than one, is still an open
 question. [R-0345]
 
 ## 2026-09-15: Only an admin controls the meeting and the guideline flags
@@ -1643,7 +1643,7 @@ markdown file linked in its own instructions and kept current with the deployed 
 licences, costs, everything the admin command line does, with read-only commands running freely
 and anything destructive confirmed first [R-0390]. He then assigned that work, the dashboards and
 the per-call cost rows to a second Claude session and told this one to stay off them; the two
-sessions sync only on the code they touch in the shared worktree and on the production box
+sessions only align on shared code in the joint worktree and on the live server
 [R-0391].
 
 ## 2026-09-23: How the picture work is decided, and what the research produced
@@ -1661,7 +1661,7 @@ twenty-four phone-app views mapped onto the eight messages the picture must carr
 (doc/chat-first/MOBILE_VIEWS.md). Nothing beat the line already in the app, so the short sideways
 scroll was built [R-0381]; words-only is out [R-0378]; the family drawing waits on the
 traditional diagram and automatic arrangement [R-0379]; the lanes of generations wait on data
-[R-0380]; the gap between a cluster's opening event and its symptom is kept as fundamental
+[R-0380]; the space between a cluster's start and its symptom is treated as fundamental, kept on hold
 [R-0382]. Three decisions from the last round are on its page and unanswered.
 
 
@@ -1677,7 +1677,7 @@ familydiagram and is not in this PR. The coach's conversational calls move from 
 high for extraction) since the model's default is one level lower than before, temperature is
 removed because the model rejects it, and a refusal now raises with its category. Open on the
 merits: whether a refused coaching turn should fall back to another model, and whether a
-mid-turn regroup should write its sentences somewhere other than the system prompt so the model
+note written mid-turn to regroup should go in the reply itself, not the top-of-call prompt, so that the model
 keeps its reasoning for the rest of the turn.
 
 ## 2026-09-23: The review round on PR #136

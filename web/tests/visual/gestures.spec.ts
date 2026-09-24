@@ -4,7 +4,7 @@ import { stateFor } from "./setup";
 /** The two session gestures the sheet was missing: swiping a row left for
  * Rename and Delete, and the list holding its order while it is open. The taps
  * below pin two rulings: a first tap looks and costs nothing [Oracle: R-0073],
- * and tapping a datum shows where it was mentioned [Oracle: R-0140]. */
+ * and tapping a piece of data opens where in the record it came up [Oracle: R-0140]. */
 
 const settle = async (page: Page) => {
   await page.goto("/app/");

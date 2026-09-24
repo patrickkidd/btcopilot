@@ -310,10 +310,9 @@ compare how full one year looks against another, or to work out for themselves
 which events belong together. A crowded cluster means it was remembered, not that
 it was worse.
 
-Ruled 2026-09-23 [R-0376]: what one cluster shows is its one key shift — the
-moment the trouble moved — where the trouble sits and that it moved between
-people, the opening event and the aftershocks on a tap, and dates lining up with
-a symptom shown as nearness and never as proof. Never a count. Nothing is drawn
-to show what changed between one reading and the next: when a cluster changes the
-coach says so in ordinary conversation [R-0372]. Neither is built yet; the model
-does not name a key shift or say who carries the trouble.
+Ruled 2026-09-23 [R-0376]: a cluster's drawing carries a single turning point —
+when things changed hands — plus who is carrying it now, the event that started
+it, later events on tap, and closeness of dates read as a hint, not confirmed
+cause. No tallies of events. A change from one look to the next is spoken by the
+coach, never drawn [R-0372]. Neither is built yet; the model does not name a
+turning point or say who carries the trouble.

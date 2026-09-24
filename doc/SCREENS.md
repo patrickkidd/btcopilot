@@ -131,7 +131,7 @@ What it is for: one group of related events, opened from the line.
 - What a group is meant to show you: the one moment the trouble moved, where it sits, who it moved between, what opened it and what followed. That is not built yet. [open] {R-0376}
 - A line of words above the picture, the coach naming the nearest thing worth saying today, is drawn and waits on Patrick, because it needs a little more height. [drawn]
 - The word for these is clusters, in the app and in the code. [built] {R-0197}
-- The back arrow inside an open cluster always closes the cluster and returns you to the whole line, whether or not an event is picked. [built] {R-0362}
+- Backing out of an open cluster always closes it and puts you back on the full line, no matter whether you had picked an event first. [built] {R-0362}
 - Clusters are rebuilt from scratch after every turn that touches an event, so the same events can come back under different names; they are meant to stay put and change only when there is a reason. [open]
 - Whether tapping an event's words inside an open cluster should jump straight to its editor is unconfirmed, and Patrick will say after testing it. [open] {R-0207}
 
@@ -554,7 +554,7 @@ What it is for: what the meeting produced, with nothing left to choose.
 - One more count says how many people and bonds the room ratified and how many it left open; an unresolved person is the one that matters most, because every event about them stands on it. [built] {R-0326}
 - It shows how the coach's own pass scored against the agreed record. [built] {R-0242}
 - When the coach never coded that conversation, the screen says so in both places rather than leaving the score and the differences blank. [built]
-- The summary at the top scrolls away with the page rather than pinning, and reads as a title, one labelled figures line, then the sections, not a block of typewriter output. [built] {R-0344}
+- The top summary moves with the page instead of staying fixed, and is laid out as a heading, then one line of labelled numbers, then the sections below, not raw monospace text. [built] {R-0344}
 - The result can be opened again after you leave it: from a coder's finished tasks and from the agenda for a ratified conversation. [built] {R-0343}
 - A coder's finished tasks look tappable and open their meeting's result; they are never greyed like rows you cannot use. [built] {R-0344}
 - The word for the agreed record is ratified; what the coach proposes is a proposal and is never called gold. [drawn] {R-0249}

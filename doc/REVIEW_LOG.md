@@ -7,25 +7,21 @@ One row per finding, never deleted; status: OPEN / MOCKUP / FIXED @commit / RULE
 Source: STATE.md "Owner review round 1" ruling. STATE names no commit hashes for these
 items, so each is logged FIXED without a commit citation.
 
-1. One selection state: a chip tap is a dot tap — spotlight plus a caption row carrying
-   the ask chip, the board button, and the "coded in" chip. FIXED
-2. Chips are one size, full text, no truncation and no expand; labels are capped at the
-   source, at most 28 grapheme clusters, one re-ask, never trimmed after the fact; chips
-   carry pressed-state feedback. FIXED
-3. In a play-by-play, step chips move the board and never return to the timeline — the
-   statement kind Play/Turn plus its cluster_id is now persisted. FIXED
-4. A play-through holds each move until its narration line has finished typing plus
-   about two seconds; the owner tunes the feel directly, and the eight-second loop
-   stays a separate clock, never stretched to match. FIXED
-5. Chat stays pinned to the bottom while the coach types. FIXED
+1. [R-0168] (a chip tap and a dot tap select the same way). FIXED
+2. [R-0169] (chip size and label-length rules). FIXED
+3. [R-0170] (step chips advance the board, statement kind and cluster id persisted). FIXED
+4. [R-0171] (each move stays up until its narration finishes typing, plus about two
+   seconds; Patrick tuned the exact feel himself; the separate eight-second animation
+   timer is never stretched to match). FIXED
+5. [R-0172] (the chat view stays anchored to the latest message while the coach is
+   replying). FIXED
 6. The moves board fits its content — this supersedes the fixed 264px rows: every
    UI_SPEC.md row carrying RESOLVED #28 is marked SUPERSEDED by this ruling. FIXED
-7. Editor fields are 44px with the mockup's padding. FIXED
-8. Tapping a diagram row opens that diagram, one open at a time
-   (User.current_diagram_id). FIXED
-9. The old Personal app is superseded: its endpoints are archived and the chat app's
-   routes are the personal API — models, prompts and the agent loop stay; Pro routes
-   are untouched. FIXED
+7. [R-0174] (editor field height and padding match the mockup). FIXED
+8. [R-0175] (tapping a diagram row opens it, one open at a time, tracked via
+   User.current_diagram_id). FIXED
+9. [R-0176] (old Personal app endpoints archived; chat app routes now serve as the
+   personal API; models, prompts, and the agent loop carried over; Pro untouched). FIXED
 
 ## Round 2 (2026-09-08 morning)
 
@@ -38,20 +34,21 @@ items, so each is logged FIXED without a commit citation.
    the dot to the summary is the indicator; no tick.
 3. Up/down arrows (symptom/functioning up/down) must never disappear; the animation
    loop fades them; show movement another way. FIXED @60a39c3.
-4. Summary line above prev/next ("15/17 | April 2004 | Ada | symptom down"): no symbol
-   names, no move count; show what the user reported; date shown once (year under dots,
-   date in line — pick one); layout must survive hostile content. RULED: variant A
-   "Name · their own words", no symbol names, no move count, date only under the dots;
-   the summary block reserves a fixed two-line height and clips (the board never
-   changes height when text wraps).
+4. Summary line above prev/next ("15/17 | April 2004 | Ada | symptom down") named
+   clinical symbols and counted moves, and showed the date twice; the layout has to survive
+   odd or long content without breaking. RULED [R-0178]: picked the version that names the
+   person and quotes their own words, drops symbol names and move counts, and puts the date
+   only under the dots; the summary area always reserves the same two-line space and cuts
+   off overflow so the board's height never shifts when text wraps.
 5. Crumb line "FAMILY TIMELINE  Apr 1996 | defined self" duplicates the date/label above
    the selected dot on the wire. RULED: crumb shows only "FAMILY TIMELINE"; the dot's
    label stays above the dot.
 6. Caption row "[ask about this] (▶ watch the 17 moves) (coded in: Untitled | 11:09am |
    today →)" overflows on mobile; Play and coded-in buttons differ in height. RULED via
    #8: the wire caption's button is the bare ▶ icon.
-7. Convergence rule: no visual/layout-hierarchy change without a quick mockup confirmed
-   by the owner; changes surgical, not sweeping; clarify ambiguity before acting. RULED
+7. Before any change to how something looks or is laid out, a quick mockup gets confirmed
+   with Patrick first; changes stay small and targeted rather than sweeping, and anything
+   unclear gets asked about before acting on it. RULED [R-0164]
 8. Board controls must be identical whichever way it is entered (chip in a narration vs
    dot on the wire); today the chip path shows only prev/next and the dot path also
    shows "watch the moves", and the board shows it again. RULED: one control row always
@@ -59,13 +56,14 @@ items, so each is logged FIXED without a commit citation.
    coach is still responding.
 9. "▶ watch the 17 moves" → "▶ explain the moves" (it triggers a slow coach response,
    not an animation). RULED: label is "▶ explain" (not "explain the moves").
-10. Mockups must simulate wrapped/long text; non-happy-path rendering is a known blind
-    spot — every mockup carries a long-text state and every new region joins the
-    overflow gates. RULED
-11. Failed or unanswered sends show a static warning label with a retry control instead
-    of an empty coach bubble; cleared on success, shown again if it still fails; also
-    covers a dead server and timeouts. Root cause found: CSRF token expired after 1 hour
-    → 400; tokens now live as long as the session. FIXED @dc4ceed/@ca6153e/@8dfd9c8.
+10. Mockups have to show what happens with wrapped or unusually long text, since edge-case
+    rendering keeps getting missed; every mockup now includes a long-text example and every
+    new screen area gets added to the overflow checks. RULED [R-0181]
+11. When a send fails or gets no answer, a warning label with a retry button now appears
+    instead of leaving the coach's bubble empty; it disappears on success and comes back if
+    it fails again [R-0182]. This also covers a dead server and timeouts. Root cause found:
+    CSRF token expired after 1 hour → 400; tokens now live as long as the session.
+    FIXED @dc4ceed/@ca6153e/@8dfd9c8.
 12. All text in the app is selectable and copyable; only controls keep user-select none.
     FIXED @708d7dd.
 13. Activity indicator (three animating dots) in the coach bubble from send until the
@@ -147,9 +145,10 @@ items, so each is logged FIXED without a commit citation.
     check in an emulator before beta users). FIXED @9e47da8 (settled by #47 below); the
     Android-emulator check is unbuilt work, tracked separately in STATE.md under "The
     desktop app and Android are unverified".
-37. The button row under the picture is identical whether a cluster is open or an event
-    inside it is selected, items dimmed when not applicable (extends the board's
-    same-controls ruling); a mockup round for restyling that row is in progress; the
+37. The row of buttons under the picture now looks the same whether the whole cluster is
+    open or just one event in it is selected, with items dimmed when they don't apply
+    (extends the earlier ruling that the board's controls stay consistent) [R-0211]; a
+    mockup round for restyling that row is in progress; the
     coded-in button is not redundant with the title tap (title → editor; coded-in → the
     chat bubble where it was said) but its label must say what it does. FIXED @1adb168
     (settled by #60 below: round 3 landed).
@@ -305,7 +304,7 @@ These two are still genuinely open:
 | 95 | 2026-09-13 | meeting | Dots on the agreement wire did not respond to a tap | FIXED | c4c3732 |
 | 96 | 2026-09-14 | people list | A person's row carried a second faint line under the name, against the written spec; the name alone is right | FIXED | 32dc204 |
 | 97 | 2026-09-14 | scribe | A year the coder gave only as a year read back with a month ("married · Jun 1970") | FIXED | 261da63 |
-| 98 | 2026-09-15 | sign-in | He was being signed out while walking; a session older than the training app's eight hours was being thrown away. Sessions are never dropped fast — no gold is being protected yet and logins are not wanted | FIXED | b0513a2 — an older session is still read [R-0337] |
+| 98 | 2026-09-15 | sign-in | He was being signed out while walking; a session older than the training app's eight hours was being thrown away. Now sessions don't expire quickly, since there is nothing sensitive to protect yet and forcing repeat logins was not the goal [R-0337] | FIXED | b0513a2 — an older session is still read |
 | 99 | 2026-09-15 | ballot | A selected family fragment sat in a box; "open in transcript" did not outline the statement the way the coding screen does; "none" was not last in the relationship field; there was no way back once a dot had moved you on | FIXED | 2ac1842, dc2df02 — the box is gone, the statement is outlined, "none" is last, and a prev button sits beside next [R-0337] |
 | 100 | 2026-09-15 | walk document | The walk sent him back to earlier sections for links, put more than one action in a step, and annotated steps as known wrong | FIXED | b172be2, dbcffb1, 25f5ead, 9487b55 — every section carries its own sign-in link, one action per step, serial order, and the action verb is set in a different colour [R-0337] |
 | 101 | 2026-09-15 | meeting | Tapping a dot on the agreement wire jumped with no motion, and the title block held the top of the screen while the list scrolled under it | FIXED | dc2df02, a3a616a, 610140e — the list travels to the card with an animated scroll, the title and figures scroll away, and the wire with its legend and sort control stays at the top [R-0338, R-0340] |
@@ -454,8 +453,9 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    everyone on rotation, to see how it feels [R-0367]. FIXED.
 20. In an open cluster, tap a moment, tap the back arrow: it only put the moment down and
    stayed in the cluster. RULED: the arrow always closes the cluster [R-0362]. FIXED.
-21. Patrick: "moved" is still a first-class event kind; he said before that a move is one of
-   many notable events with no structural or functional shift of its own. Finding: the
+21. Patrick: "moved" should stay its own event kind; he had earlier called a move just one
+   among many notable events, carrying no special weight on the family's structure or how
+   it functions [R-0364]. Finding: the
    complaint is recorded in doc/EVENT_MODEL.md as complaint 1, a proposed shape
    exists, nothing is built, and six questions at the end of that page are unruled —
    including whether a move becomes an ordinary noted event or keeps a kind untied to the
@@ -495,10 +495,11 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
 29. A better voice than the phone built-in one. Options given: cloud neural voices at about
    a cent a reply, ElevenLabs at several times that, self-hosted models the box cannot run.
    OPEN — his pick.
-30. Patrick, on turning on a paid voice at about a cent a reply: the primary concern is not the
-   money but the feedback loops — beta users must see how much they use and what it costs, and
-   that has to sit inside the data-driven principle for the app: does anyone pay, do they like
-   it. The loops are not designed yet. TABLED, to be remembered; no paid voice until they exist.
+30. Patrick, on turning on a paid voice at about a cent a reply: money out of pocket is not
+   the main worry — what matters is having feedback loops so beta users can see their own
+   usage and cost, tied to the core question of whether people will pay for and actually like
+   this app [R-0388]. The loops are not designed yet. TABLED, to be remembered; no paid voice
+   until they exist.
 31. Patrick wants his local Qwen agent in openclaw to administer the backend from a markdown
    file linked in its own instructions, always matching the deployed code: invites, licences,
    costs, everything the admin CLI does; reads free, writes confirmed. Options given: link the
@@ -541,8 +542,9 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    events vanishing between frames, unexplained question marks, both expanded frames too busy.
    Part A settled by rulings R-0371 to R-0373, no option picked. Next: derive the message from
    the sources, redraw B from it, visual critique gate, then publish.
-36. What a cluster shows [R-0376]: its one key shift, where the trouble sits and that it moved
-   between people; the opening event and aftershocks on a tap; nearness of dates, never proof;
+36. A cluster's shown content, per the source material [R-0376]: the one moment things
+   turned, who is carrying it and that it shifted between people; the opening event and
+   aftershocks on a tap; nearness of dates, never proof;
    never a count. Patrick wants the app to show him the light from his own timeline. BUILDING
    through the round-6b redraw; the cluster model must then name the key shift and who carries
    the trouble for each cluster.

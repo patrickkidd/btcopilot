@@ -9,9 +9,9 @@ from btcopilot.modelmixin import ModelMixin
 class Cut(db.Model, ModelMixin):
     """A window of one session's turns, frozen and put on the agenda (R-0296).
 
-    The window is two cursors so any stretch of turns can be a cut later. The
-    app sets the start to the previous cut's end plus one and refuses overlap
-    in code, never in the schema.
+    Bounded by a start and end position, kept flexible for any future range.
+    A new one continues right after the last one ended by default; code, not
+    the table definition, blocks overlapping ranges.
     """
 
     __tablename__ = "review_cuts"

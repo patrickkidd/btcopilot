@@ -127,9 +127,10 @@ trade-off lines and option names use common words and name concrete things on sc
 you are looking at, what to tap, what happens, what you give up. Never a term coined during
 the work, never a reference to a rule the reader has not read.
 
-**A reply is a quarter of what feels complete (2026-09-11).** The answer, the one thing he
-does next, nothing restated, no evidence walk unless he asks [R-0304]. His words after a
-three-screen report on a scroll bug: "You could have given me that in 25% of the length."
+**A reply is a quarter of what feels complete (2026-09-11).** Give the answer and what he
+must do, skip anything he already knows, and only walk through the evidence if he asks for
+it [R-0304]. His words after a three-screen report on a scroll bug: "You could have given
+me that in 25% of the length."
 
 **Never repeat an artifact's content in the console (2026-09-12).** When the deliverable is
 an artifact, document or page, the console reply is the link plus the decisions he must make

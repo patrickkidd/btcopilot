@@ -39,7 +39,7 @@ interactive experience; ~$9K slowly-declining ARR explicitly NOT a present conce
 this is not his day job for a while (capacity constraint). Ruled same day:
 manual diagram tweaking stays — the chat has tool calls to control EVERYTHING in the
 app with full bidirectional reactivity between chat and UI; old diagrams migrate
-(the data model — SARF timeline + structural invariants — stays; the UI does not).
+(the underlying model, the SARF timeline and structural invariants, carries over; the interface gets rebuilt) [R-0052].
 Later that arc: anti-overfit ruling — it must NOT become a log app; no surfaces
 overfitted to individual examples; chat + the agentic loop stay the focus.
 
@@ -369,9 +369,9 @@ stress case (diagram 9) is 719 dated / 0 active. The corpus thereby self-sorted 
 his two planned subsets: cases WITH active events are the FUNCTION-subset candidates;
 zero-active-but-structure-rich cases are the STRUCTURE-subset candidates.
 
-Also ruled in this stretch: when the agentic loop is implemented, the app self-files
+Also ruled in this stretch: once the agentic loop exists, the app posts its own
 friction reports — "when the model detects user friction it automatically posts it,
-even in the background" — alongside users asking the chat how to use the app from the
+even in the background" [R-0056] — and separately, people ask the chat how the app works via the
 built-in reference manual. And the human-oracle canonicalization ruling that created
 the oracle store itself: his direction is among the most valuable inputs to the whole
 agentic development process and "must be canonicalized and continually maintained
@@ -911,7 +911,7 @@ check clean.
 agenda" everywhere, screens, code and the walk document [R-0308]; the meeting's choice on a
 disputed event is a "decision", never a "settle", and many unresolved events are expected
 because only resolved ones feed the guidelines [R-0309]; the screen says "coding guidelines",
-not codebook [R-0310]; one coder's version of an event is an "opinion", never a "take", and
+not codebook [R-0310]; a single coder's read of an event is labeled "opinion" and never "take", and
 the "left out by N coders" line is a plain sentence hidden when nobody left it out [R-0315];
 no placeholder titles — every event row names who and what [R-0318]. Behaviour he ruled as he
 walked: a professional licence holder is not a coder, only the auditor role sees the task card,
@@ -1009,8 +1009,8 @@ at first that no agent may edit the front end while he is walking, since every s
 page, and then withdrew it the same day — a reload is acceptable, so fixes land as they are
 made rather than queueing [R-0338].
 
-On the ballot he ruled there is no box around a selected family fragment, that "open in
-transcript" outlines the statement the way the coding screen does, that "none" is the last
+He ruled on the review ballot: nothing boxes a selected family fragment, and the "open in
+transcript" link draws an outline around the statement, the same way the coding screen marks it, that "none" is the last
 choice in the relationship field as it is for the three variables, and that a prev button sits
 beside next once a dot can take you back [R-0337]. On the walk document itself: every section
 carries the link it needs rather than sending him back, every click is written as its own step,
@@ -1030,24 +1030,24 @@ button reading exactly "run the meeting" [R-0341], and a ratified conversation o
 from the agenda, ratified rows told apart by their date.
 
 He then found he could not get back to a result once he had left it, which became a process rule
-as well as a screen one: a walk document is driven literally, step by step, in a real browser by
-an independent agent on the same fixture accounts before it is handed to him, and every step
+as well as a screen one: a walk document gets driven step by step in a live browser, run by
+someone other than the builder, using the same fixture accounts, before it reaches him, and any step
 that does not match the screen is corrected first [R-0343]. The result screen is reachable again
 from the task card's done list and from the agenda. Its summary scrolls with the page rather than
-pinning, and is a title, one labelled figures line and then the sections, not a block of
+pinning, and now leads with a title, one labelled line of figures, then the sections — instead of a wall of
 monospaced output; a coder's finished tasks look tappable and open their meeting result
 [R-0344]. A coach pass that was never coded is said in words rather than shown as a bare figure.
 
-On the record he ruled that the list button inside the picture opens the events and people list
-sliding in full screen over the chat and the picture, the way the sessions sheet slides in but
-full height, not an overlay that leaves the chat showing; and that the person editor never says
+On the record he ruled that the button on the picture for the list opens events and people, sliding
+in over the chat and picture at full screen, the same way the sessions panel slides in but at
+full height rather than as an overlay that covers the chat; and that the person editor doesn't use the word
 "bond" — the section is the person's biological parents, picked as a mother and a father by
 name or added, worded "born to", with the pair-bond staying a data-model fact behind it, and the
 rows beneath reading "Partners" [R-0345]. Adoptive and foster parents, possibly several, he
 named as a known open design question rather than deciding it.
 
-The last ruling of the session was about who controls the work [R-0346]: only an admin may flag
-a ratified guideline for the next meeting and tapping the flag again unflags it, a non-admin sees
+The last ruling of the session set who controls the work [R-0346]: an admin alone can flag
+a ratified guideline for the next meeting, and doing it again clears the flag; other roles see
 a flagged guideline as text rather than a link, and only an admin puts a cut on the agenda, moves
 it, opens the vote or runs the meeting — never a coder. The account button shows its icon. That
 one was still being built when the session stopped; nothing of it has landed on the branch.
@@ -1103,7 +1103,7 @@ July dump here was refused as personal-data handling (row 137).
 
 Then Patrick came back and the day went to getting a real box. He ruled four things. Claude
 creates the droplet and changes DNS, each time only on his explicit confirmation, rather than
-him doing those steps himself [R-0353]. Pricing and plans wait until the app is running in
+him doing those steps himself [R-0353]. Money and pricing wait until the app is live in
 production and the first $20–40 bill shows what the usage actually costs [R-0354]. The beta
 starts from scratch: people are invited by email onto empty records, with no import of the old
 Pro database at cutover and a per-diagram manual import later [R-0355]. And the app is served at
@@ -1357,8 +1357,8 @@ And when a permission refusal stopped a step he had explicitly asked for, he sai
 rather than route around it.
 
 Later the same rules reached the design work. Before reading the primary sources, the list of
-what would be read goes to him so he can confirm they are the right ones [R-0395]. Findings are
-consolidated into the conversation rather than left for him to dig out of documents, while the
+what would be read goes to him so he can confirm they are the right ones [R-0395]. What he learns is
+folded into the conversation instead of being left for him to find in documents, and those
 documents stay in the project [R-0397]. A gallery passes an aesthetic critique, an argument
 between agents if that is what it takes, before he sees it [R-0396]. A concept that needs a
 paragraph to explain does not speak for itself: title and citation only, because users never see
@@ -1371,7 +1371,7 @@ openclaw to administer the site from a markdown file linked in its instructions 
 with the deployed source: invites, licences, costs, everything the command line does, with
 read-only commands running freely and anything destructive confirmed first [R-0390]. He then gave
 that work, the dashboards and the cost rows to a second session and told this one to stay off
-them, the two syncing only on the code they touch in the shared worktree and on the box [R-0391].
+them, with the pair only lining up on shared code in the joint worktree and on the live server [R-0391].
 He also asked whether prompt caching was being used; on hearing it was not, his word was to do it
 because the cost was already going to be noticeable [R-0392]. He asked how the agent loop would
 scale with a worker per request, and was answered. The Pro backend got its own branch with the
@@ -1379,7 +1379,7 @@ same release flow, so a merged bug fix rebuilds the image and deploys the old bo
 corrected the session on the old secrets: that repository is private, nothing was exposed, and its
 branches for this work should be deleted [R-0394]. He deleted the scratch accounts and kept one
 test account to be reused [R-0393]. And he decided the first beta users start now and generate
-data, because the chat is stable and the picture is not expected to block them [R-0400] — he has
+data, since the basic chat already works and the picture piece should not hold up onboarding [R-0400] — he has
 asked for their two invite links and they have not been sent.
 
 **2026-09-23, the closure session.** Patrick asked what to do with the dead Pro and training
