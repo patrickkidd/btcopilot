@@ -204,3 +204,53 @@ test.describe("uploading a recording", () => {
     await expect(warning.last()).toContainText("patrick@alaskafamilysystems.com");
   });
 });
+
+test.describe("the rows of the sessions sheet", () => {
+  test.use({ storageState: stateFor("hostile") });
+
+  const rows = (page: Page) =>
+    page.locator("#sessions-sheet .fs-body .row").evaluateAll((all) =>
+      all.map((r) => {
+        const box = r.getBoundingClientRect();
+        const style = getComputedStyle(r);
+        const behind = [getComputedStyle(r, "::before"), getComputedStyle(r, "::after")];
+        return {
+          top: box.top,
+          bottom: box.bottom,
+          left: Math.round(box.left),
+          width: Math.round(box.width),
+          transform: style.transform,
+          cards: behind.filter((b) => b.content !== "none" && b.boxShadow !== "none").length,
+        };
+      }),
+    );
+
+  // R-0096
+  test("are a plain list: one column, none laid over another", async ({ page }) => {
+    // every fixture holds one session, so the list is given three of it
+    await page.route(/\/app\/sessions(\?.*)?$/, async (route) => {
+      if (route.request().method() !== "GET") return route.continue();
+      const real = await (await route.fetch()).json();
+      const more = real.flatMap((s: { id: number }) =>
+        [0, 1, 2].map((i) => ({ ...s, id: s.id + i * 100000 })),
+      );
+      await route.fulfill({ json: more });
+    });
+    await settle(page);
+    await openSheet(page);
+    await expect(page.locator("#sessions-sheet .fs-body .row")).toHaveCount(3);
+    const all = await rows(page);
+    expect(all.length).toBeGreaterThan(0);
+    expect(new Set(all.map((r) => `${r.left} ${r.width}`)).size).toBe(1);
+    all.slice(1).forEach((r, i) => expect(r.top).toBeGreaterThanOrEqual(all[i].bottom - 1));
+  });
+
+  // R-0096
+  test("are not dressed as stacked cards: no offset, tilt or card behind", async ({ page }) => {
+    await settle(page);
+    await openSheet(page);
+    const all = await rows(page);
+    expect(all.length).toBeGreaterThan(0);
+    expect(all.filter((r) => r.transform !== "none" || r.cards)).toEqual([]);
+  });
+});
