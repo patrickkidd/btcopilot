@@ -374,12 +374,20 @@ class CoachTurn:
             delta["item_kind"] == ItemKind.Event.value for delta in self.toolbox.deltas
         ):
             return []
-        regrouped = clusters.sync(
-            self.diagram.id,
-            turn_id=self.turn_id,
-            user_id=self.discussion.user_id,
-            session_id=self.session_id,
-        )
+        # A grouping that fails its checks twice keeps the groups already there
+        # rather than kill the turn [Oracle: R-0410, R-0371].
+        try:
+            regrouped = clusters.sync(
+                self.diagram.id,
+                turn_id=self.turn_id,
+                user_id=self.discussion.user_id,
+                session_id=self.session_id,
+            )
+        except clusters.ClusterError as rejected:
+            _log.warning(
+                f"Turn {self.turn_id} kept its clusters: regrouping rejected: {rejected}"
+            )
+            return []
         if not regrouped:
             return []
         self._note(

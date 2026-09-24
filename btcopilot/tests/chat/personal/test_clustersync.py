@@ -9,7 +9,12 @@ from btcopilot.personal.timeline import build_timeline
 from btcopilot.extensions import db
 from btcopilot.personal import chips, recordtext
 from btcopilot.personal.chips import ChipKind
-from btcopilot.personal.clusters import ClusterError, sync
+from btcopilot.personal.clusters import (
+    ClusterError,
+    ClusterListResponse,
+    ModelCluster,
+    sync,
+)
 from btcopilot.personal.coachturn import CoachTurn
 from btcopilot.personal.models import Author, Change
 from btcopilot.personal.prompts import get_agent_prompt
@@ -140,15 +145,23 @@ def test_the_grouping_is_written_by_the_coach_in_the_same_turn(discussion, famil
             discussion,
             "She got sick.",
             model=Model(
-                called(ToolName.EditEvent, kind="shift", date="1994-05-01",
-                       description="got sick", person=1, symptom="up"),
+                called(
+                    ToolName.EditEvent,
+                    kind="shift",
+                    date="1994-05-01",
+                    description="got sick",
+                    person=1,
+                    symptom="up",
+                ),
                 said("Noted."),
             ),
         ).run()
 
-    change = Change.query.filter_by(
-        diagram_id=family.id, turn_id=reply["turn_id"]
-    ).order_by(Change.id.desc()).first()
+    change = (
+        Change.query.filter_by(diagram_id=family.id, turn_id=reply["turn_id"])
+        .order_by(Change.id.desc())
+        .first()
+    )
     assert change.author is Author.Coach
     assert {d["item_kind"] for d in change.deltas} == {"cluster", "diagram"}
 
@@ -235,7 +248,9 @@ def test_the_coach_may_not_group_fewer_than_three_events(family):
     tools = Toolbox(family.id, turn_id="t1")
 
     with pytest.raises(ToolError, match="at least 3 events"):
-        tools.call(ToolName.EditCluster.value, {"name": "The pair", "event_ids": [10, 11]})
+        tools.call(
+            ToolName.EditCluster.value, {"name": "The pair", "event_ids": [10, 11]}
+        )
     assert clusters_of(family) == {}
 
 
@@ -286,7 +301,9 @@ def test_renaming_a_grouping_stuck_under_the_floor_says_what_to_do(family):
     _grandfathered(family)
     tools = Toolbox(family.id, turn_id="t1")
 
-    with pytest.raises(ToolError, match="add an event to the cluster, or remove the grouping"):
+    with pytest.raises(
+        ToolError, match="add an event to the cluster, or remove the grouping"
+    ):
         tools.call(ToolName.EditCluster.value, {"id": "c1", "name": "That autumn"})
     assert clusters_of(family)["c1"]["name"] == "When he left"
 
@@ -509,3 +526,54 @@ def test_the_coach_is_told_never_to_name_the_grouping_out_loud():
     system = get_agent_prompt()
     assert 'Never say "cluster"' in system
     assert "was regrouped, recalculated, or updated" in system
+
+
+def test_a_grouping_that_fails_its_checks_twice_keeps_the_groups_and_the_turn_replies(
+    discussion, family, caplog
+):
+    # R-0410, R-0371
+    with detects(("The hard spring", [10, 11, 12, 13, 14, 15])):
+        CoachTurn(
+            discussion,
+            "She was anxious all that spring.",
+            model=Model(
+                called(ToolName.EditEvent, id=15, description="moment five"),
+                said("Noted."),
+            ),
+        ).run()
+    kept = clusters_of(family)
+    assert len(kept) == 1
+
+    invents = ClusterListResponse(
+        clusters=[
+            ModelCluster(
+                id="c8", eventIds=[10, 11, 12, 13, 14, 15, 16], name="New", reason="r"
+            )
+        ]
+    )
+    drops = ClusterListResponse(
+        clusters=[ModelCluster(eventIds=[10, 11, 12], name="Part", reason="r")]
+    )
+    with patch(
+        "btcopilot.personal.clusters.gemini_structured_sync",
+        side_effect=[invents, drops],
+    ):
+        reply = CoachTurn(
+            discussion,
+            "That winter she got sick too.",
+            model=Model(
+                called(
+                    ToolName.EditEvent,
+                    kind="shift",
+                    date="1994-07-01",
+                    description="got sick",
+                    person=1,
+                    symptom="up",
+                ),
+                said("I put that down."),
+            ),
+        ).run()
+
+    assert reply["statement"] == "I put that down."
+    assert clusters_of(family) == kept
+    assert "kept its clusters" in caplog.text
