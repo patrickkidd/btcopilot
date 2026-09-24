@@ -176,8 +176,9 @@ def test_no_ruling_id_is_deleted_or_repointed():
     found = oracle.rulings()
     moved = sorted(rid for rid, ds in pinned.items() if rid not in found or not set(ds) <= now.get(rid, set()))
     assert moved == [], "these ids were deleted or lost a quote they were pinned to"
-    unpinned = [l for l in oracle.pin(FINGERPRINTS.read_text()).splitlines() if l.split()[0] not in pinned]
-    assert unpinned == [], "append these lines to fingerprints.txt (bin/fingerprints.py does it with a key)"
+    current = FINGERPRINTS.read_text().splitlines()
+    unpinned = [l for l in oracle.pin(FINGERPRINTS.read_text()).splitlines() if l not in current]
+    assert unpinned == [], "put these lines in fingerprints.txt, replacing the id's line (bin/fingerprints.py does it with a key)"
 
 
 @SWEEP
