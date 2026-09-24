@@ -152,3 +152,14 @@ he is asked to test.
   the dashboard. Rule: a test account is deleted the moment it is not needed, or one account is
   reused: `the claude-test account`. Never create a numbered series. Dashboards exclude
   the `claude-test` prefix, and the review walks run against a sandbox, not the box.
+
+**Spot-check evidence at two levels before any push to production (2026-09-24, Patrick).**
+A feature is not tested until the report shows evidence from both levels of the stack, for
+the specific feature, on the sandbox: (1) the data layer before rendering — the rows, the
+turn events, the record, the change log, printed as actual values from a query; (2) the
+rendered HTML in the sandbox — the words and elements on the page, from a real browser, with
+the deterministic gates. Each level names what was expected and what was seen. A pass with
+no printed values at both levels is not a pass. This exists because testing routinely got
+lazy: a feature was called done on one level, or on a builder's say-so, and Patrick found
+it broken. Only features validated this way go to production, where beta data is precious
+and cannot be reproduced.
