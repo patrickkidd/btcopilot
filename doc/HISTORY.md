@@ -32,8 +32,8 @@ his Micron pattern — users describe what they want, an agent with a tool surfa
 a built-in reference manual does the rest; the UI altitude rises to the user's
 subject-matter expertise. His user base is deeply non-technical.
 
-Motivations in his words: an "architectural singularity where all the feedback loops
-start pointing in the same direction" (usage → data → ground truth → product) instead
+Motivations [R-0061]: one design where every feedback loop reinforces the others
+(usage → data → ground truth → product) instead
 of years of coding-training and pulling teeth; "instantly get users addicted" as an
 interactive experience; ~$9K slowly-declining ARR explicitly NOT a present concern;
 this is not his day job for a while (capacity constraint). Ruled same day:
@@ -233,8 +233,8 @@ the conversation exists to enable that remembering; undated things go to a coach
 backlog — never guess a position. His counterexample that sets the bar: a subject
 who took on more and more responsibility over 5–10 years while anxiety climbed —
 visible ONLY once everything sat on a timeline, "a major insight for that person."
-Related post-mortem (his words): the Learn tab "concept was good but I could never
-get it to work — the data didn't give clear trends and inferring never worked"; his
+Related post-mortem [R-0058]: the Learn tab was a sound idea that never worked, because
+the data showed no clear trends and the inference failed; his
 diagnosis is that an unclear minimum-drawable standard is why the old timeline cards
 failed, hence "this thing needs to only show meaningful patterns." SARF
 coding-by-example on his own case: the split-over-having-kids codes as away moves for
@@ -246,13 +246,12 @@ ignored, the page was rebuilt entirely from his own record and republished at th
 same link — the ruled rules stand on HIS data; the case data was discarded.
 
 Counterweight on the coach (his felt sense, recorded so no session rebuilds a prompt
-he considers good): "I am already comfortable with the conversational flow and how it
-covers the required information (I worked a lot on that, I assume it transfers
-directly with zero loss here)" — the elicitation items are refinements, not a rebuild.
+he considers good) [R-0048]: he is satisfied with how the conversation flows and what
+it collects, having worked hard on it, and expects it to carry over unchanged — the elicitation items are refinements, not a rebuild.
 Triangles, with his cautions: the R variable and event attributes map onto triangle
 shifts with inside/outside positions by triangle direction (do not ignore); triangles
-are a core "molecule" but not the only thing, and "we don't have enough data to
-understand when to prioritize each"; extraction prompts describe triangles and F1s
+are a core "molecule" but not the only thing, and there is not yet the data to know
+when each should come first [R-0049]; extraction prompts describe triangles and F1s
 exist (his statement) — the identified gap is only that the COACH never asks
 triangle-shaped questions.
 
@@ -304,8 +303,8 @@ amber=asking).
 An era-compression bake-off and then an interactive prototype (proto.html: "Chapter
 Shelf" + "Quiet Threads", from a 19-agent creative-adversarial run over six visual
 metaphors) were built BEFORE analyzing the real data. Patrick rejected the prototype
-outright ("total garbage") and named the process error: "you are supposed to be
-analyzing the code base to derive the UI ideas" — mine the cases AND the existing
+outright and named the process error [R-0060]: the ideas should have come from studying
+the codebase — mine the cases AND the existing
 app's visual vocabulary/specs (he separately said the current diagram/timeline layout
 concept "is not bad"); mockups from real data before building; his rulings gate every
 phase. The creative run's cross-cutting findings survive as hypotheses (uncertainty
@@ -370,8 +369,8 @@ his two planned subsets: cases WITH active events are the FUNCTION-subset candid
 zero-active-but-structure-rich cases are the STRUCTURE-subset candidates.
 
 Also ruled in this stretch: once the agentic loop exists, the app posts its own
-friction reports — "when the model detects user friction it automatically posts it,
-even in the background" [R-0056] — and separately, people ask the chat how the app works via the
+friction reports — the model files one on its own, in the background, whenever it sees a
+user struggle [R-0056] — and separately, people ask the chat how the app works via the
 built-in reference manual. And the human-oracle canonicalization ruling that created
 the oracle store itself: his direction is among the most valuable inputs to the whole
 agentic development process and "must be canonicalized and continually maintained

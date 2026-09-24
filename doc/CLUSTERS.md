@@ -168,7 +168,7 @@ A change to the candidate rules or the grouping prompt bumps `DETECTION_VERSION`
 which changes the cache key, so the next event-changing turn re-clusters the
 whole record even though no event itself changed.
 
-Patrick ruled: "let's just play with it and see how it works in the Beta."
+Patrick ruled to try it as it is and judge it during the beta.
 [Oracle: R-0208] Selective invalidation is not being built now — revisit only
 if whole-record recompute shows a problem in use.
 

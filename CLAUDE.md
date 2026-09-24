@@ -27,9 +27,8 @@ The extraction pipeline and the pending data pool were removed 2026-09-23 (R-041
   chip lights, second tap speaks) — built on the app's own picture code, never reinvented. (3)
   Title and citation only under a concept. (4) If a stranger cannot read the frame unaided, the
   concept fails; users never see prose.
-- **A picture that needs that much prose does not speak (2026-09-23, Patrick: "if you have to
-  include that much prose/copy then your visual concepts don't speak for themselves enough. a
-  little is ok, but not this much").** What he sees: the frames, one sentence per concept, the
+- **A picture that needs that much prose does not speak (2026-09-23, Patrick, R-0398: a
+  concept that needs a lot of text to explain it is not visual enough; a little text is fine).** What he sees: the frames, one sentence per concept, the
   decisions. Gates, passages, costs and checks live in the verdict file, never on his page.
 - **Every gallery passes a visual critique before Patrick sees it (2026-09-22, his words: "there
   are so many obvious, visual and aesthetic errors in these").** A separate agent, not the

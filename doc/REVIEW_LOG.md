@@ -130,8 +130,8 @@ items, so each is logged FIXED without a commit citation.
 34. Cluster recompute behaviour: whole record, from scratch, on any event-changing turn;
     cache key over the SARF fields plus DETECTION_VERSION; a user-corrected cluster is never
     touched; a recomputed cluster keeps its old id on overlap so earlier chips keep
-    resolving; nothing selective exists. RULED (owner: "let's just play with it and see how
-    it works in the Beta").
+    resolving; nothing selective exists. RULED [R-0208] (owner: try it as it is and judge it
+    during the beta).
 35. Only stored clusters draw as clusters; the timeline's gap-grouped derived
     pseudo-clusters and the play fallback are removed; an unclaimed event is a bare dot
     with sentence + ask chip, no walk. FIXED @2db8faa.
@@ -224,8 +224,7 @@ items, so each is logged FIXED without a commit citation.
     (collapsed), list button in the chip row, avatar without outline, "edit by chatting"
     line removed, event→statement link so "in chat" and the title jump work on real
     records; dev server on 8891. FIXED.
-61. Owner: "this is ready for me to start using it like an app on the phone with the home
-    screen trick"; next phase = code organization / isolation of the Personal app from
+61. Owner [R-0226]: ready for him to use daily as a home-screen app on his phone; next phase = code organization / isolation of the Personal app from
     existing infra (ISOLATION_OPTIONS.md in progress). RULED.
 62. Isolation discussion parked until the prototype is done (owner); the three pre-merge
     blockers recorded in STATE.md.

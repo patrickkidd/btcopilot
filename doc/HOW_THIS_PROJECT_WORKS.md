@@ -129,8 +129,7 @@ the work, never a reference to a rule the reader has not read.
 
 **A reply is a quarter of what feels complete (2026-09-11).** Give the answer and what he
 must do, skip anything he already knows, and only walk through the evidence if he asks for
-it [R-0304]. His words after a three-screen report on a scroll bug: "You could have given
-me that in 25% of the length."
+it [R-0304]. He said a three-screen report on a scroll bug should have been a quarter as long.
 
 **Never repeat an artifact's content in the console (2026-09-12).** When the deliverable is
 an artifact, document or page, the console reply is the link plus the decisions he must make
@@ -142,8 +141,8 @@ reading where the main bottleneck to productivity is my own mental token budget.
 **Fixtures are Claude's to stand up; bugs are fixed before he looks (2026-09-11).** If a
 harness, a role or a permission blocks a test fixture, fix the harness — never hand the block
 to Patrick. Every known bug is fixed before he is asked to test, and the ask names one clear
-thing to test [R-0302]. His words: "You need total freedom to stand up test fixtures" and
-"why not fix all the bugs before asking me to test?"
+thing to test [R-0302]. He asked for full freedom to set up test fixtures, and for every bug to be fixed before
+he is asked to test.
 
 **Build, then hand over a walk (2026-09-12; his words: "this follows exactly my ideal vision for our dev flow").** When a batch of work is finished, stand up the sandbox with fixture people and records on the stand-in family, with history kept the way real use leaves it (sessions, codings, votes), each fixture with a way to put it back. Then write one testing document for Patrick: one numbered walk per screen, what to tap and what he should see, in plain words for someone who was not in the room, with the sign-in links at the top and the order dependencies stated. Independent browser verification runs before he sees it, and known bugs are fixed first. That is the whole handover; nothing else is reported. Keep this instruction light so it never treads on what the model already does well.
 
@@ -155,7 +154,7 @@ thing to test [R-0302]. His words: "You need total freedom to stand up test fixt
 
 **A walk is serial, step by step, and never cross-references (2026-09-14, Patrick).** Each step says what to tap and what he sees, in place; never "see Walk 5", never "this is the line the spec disagrees with", never a list of known differences to hold in mind. Anything known to be wrong is fixed before the walk is handed over, not annotated.
 
-**A walk is driven before it is handed over (2026-09-15, R-0343).** An independent agent, not the author, follows the walk document literally in a real browser on the fixture accounts, step by step, and corrects every step that does not match the screen. Only then does Patrick get it. His words: "There are big inconsistencies between the walk instructions and what I actually see, seemingly at every walk."
+**A walk is driven before it is handed over (2026-09-15, R-0343).** An independent agent, not the author, follows the walk document literally in a real browser on the fixture accounts, step by step, and corrects every step that does not match the screen. Only then does Patrick get it. He had found the walk instructions disagreeing with the screen on nearly every walk.
 
 - **2026-09-22 — one test account, never a spray of them (Patrick).** Deploy walks and sandbox
   checks on production made nine claude-test accounts that showed up as "people who chatted" on
