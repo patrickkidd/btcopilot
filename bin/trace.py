@@ -27,7 +27,7 @@ DIRS = [
     "-Users-patrick-theapp-2",
 ]
 SINCE = "2026-08-25"
-SUBJECTS = ("fd-362", "fd-360", "chat-first", "personal app", "coach")
+SUBJECTS = ("fd-362", "fd-360", "chat-first", "personal app", "coach", "btcopilot")
 MIN_CHARS = 12
 OPENERS = (
     "i think", "i guess", "i mean", "ok", "okay", "yes", "yeah", "yep", "no", "and",
