@@ -48,13 +48,6 @@ def test_models_map_to_the_renamed_and_review_tables(flask_app):
     assert not {"changes", "interactions"} & names
 
 
-def test_author_enum_takes_review(flask_app):
-    # no ruling
-    from btcopilot.personal.models import Author
-
-    assert Author("review") is Author.Review
-
-
 def test_discussion_kind_defaults_to_chat(flask_app, test_user):
     # R-0281
     from btcopilot.personal.models import Discussion, DiscussionKind

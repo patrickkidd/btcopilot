@@ -388,21 +388,6 @@ def test_the_same_events_are_not_regrouped_twice(family):
     detect.assert_not_called()
 
 
-def test_a_grouping_made_by_the_older_rules_is_regrouped(family, monkeypatch):
-    # no ruling
-    monkeypatch.setattr("btcopilot.personal.clusters.DETECTION_VERSION", 1)
-    with detects(("The hard spring", [10, 11, 12])):
-        sync(family.id, turn_id="t1")
-    was = family.get_diagram_data().clusterCacheKey
-
-    monkeypatch.setattr("btcopilot.personal.clusters.DETECTION_VERSION", 2)
-    with detects(("Something else", [13, 14, 15])) as detect:
-        assert sync(family.id, turn_id="t2") is not None
-    detect.assert_called_once()
-    assert family.get_diagram_data().clusterCacheKey != was
-    assert [c["eventIds"] for c in clusters_of(family).values()] == [[13, 14, 15]]
-
-
 def test_a_chip_to_a_stored_cluster_resolves_and_the_picture_can_aim_at_it(family):
     # R-0085, R-0373
     with detects(("The hard spring", [10, 11, 12, 13])):

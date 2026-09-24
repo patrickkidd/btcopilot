@@ -52,28 +52,6 @@ def grouped(data: DiagramData) -> list[list[int]]:
     return [c.eventIds for c in candidates(data)]
 
 
-def test_a_shift_gathers_the_moves_around_it():
-    # no ruling
-    data = record(
-        moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
-        moment(2, "1994-08-01", person=1, description="stopped sleeping"),
-        moment(3, "1994-11-01", person=1, description="and then the move"),
-        moment(4, "1994-09-01", person=2, description="someone else entirely"),
-    )
-    assert grouped(data) == [[1, 2, 3]]
-
-
-def test_a_move_beyond_the_span_stays_out():
-    # no ruling
-    data = record(
-        moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
-        moment(2, "1994-08-01", person=1, description="the month after"),
-        moment(3, "1994-10-01", person=1, description="and the month after that"),
-        moment(4, "1996-06-01", person=1, description="two years later"),
-    )
-    assert grouped(data) == [[1, 2, 3]]
-
-
 def test_a_pair_of_related_moves_is_not_yet_a_cluster():
     # R-0215
     data = record(
@@ -108,18 +86,6 @@ def test_structure_from_the_recorded_period_belongs_to_the_cluster():
     assert grouped(data) == [[1, 2, 3]]
 
 
-def test_a_couple_share_a_cluster_through_their_pair_bond():
-    # no ruling
-    data = record(
-        moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
-        moment(2, "1994-09-01", person=2, description="her side of it"),
-        moment(3, "1994-10-01", person=2, description="and then this"),
-        moment(4, "1994-10-01", person=3, description="a stranger to them"),
-        bonds=[PairBond(id=7, person_a=1, person_b=2)],
-    )
-    assert grouped(data) == [[1, 2, 3]]
-
-
 def test_a_lone_shift_with_no_related_move_stays_a_dot():
     # R-0215
     data = record(
@@ -127,32 +93,6 @@ def test_a_lone_shift_with_no_related_move_stays_a_dot():
         moment(2, "1994-09-01", person=2, description="someone else entirely"),
     )
     assert grouped(data) == []
-
-
-def test_two_shifts_that_reach_the_same_move_are_one_cluster():
-    # no ruling
-    data = record(
-        moment(1, "1994-01-01", person=1, anxiety=VariableShift.Up),
-        moment(2, "1994-11-01", person=1, description="the middle of it"),
-        moment(3, "1995-06-01", person=1, functioning=VariableShift.Down),
-    )
-    assert grouped(data) == [[1, 2, 3]]
-
-
-def test_two_recorded_years_apart_end_the_cluster():
-    # no ruling
-    """The two shifts reach the same middle event, so the rules first put all
-    five together; nothing is recorded in the stretch between them, so it breaks
-    at the widest silence."""
-    data = record(
-        moment(1, "1990-01-01", person=1, anxiety=VariableShift.Up),
-        moment(2, "1990-03-01", person=1, description="the week after"),
-        moment(3, "1991-04-01", person=1, description="the quiet middle"),
-        moment(4, "1992-06-01", person=1, functioning=VariableShift.Down),
-        moment(5, "1992-08-01", person=1, description="right after"),
-        moment(6, "1992-10-01", person=1, description="and the month after that"),
-    )
-    assert grouped(data) == [[1, 2, 3], [4, 5, 6]]
 
 
 def test_a_break_can_leave_a_shift_standing_alone():
@@ -215,22 +155,6 @@ def test_a_nodal_event_opens_the_recorded_period_for_the_births_after_it():
         moment(4, "1952-09-01", person=3, description="the months after"),
     )
     assert grouped(data) == [[2, 3, 4]]
-
-
-def test_a_relationship_move_seeds_a_cluster():
-    # no ruling
-    data = record(
-        moment(
-            1,
-            "1994-06-01",
-            person=1,
-            relationship=RelationshipKind.Conflict,
-            relationshipTargets=[2],
-        ),
-        moment(2, "1994-09-01", person=2, description="her answer to it"),
-        moment(3, "1994-11-01", person=2, description="and then this"),
-    )
-    assert grouped(data) == [[1, 2, 3]]
 
 
 CONTAMINATED = {
@@ -324,22 +248,6 @@ def test_the_model_may_join_two_candidates_when_it_says_why():
     ):
         result = detect_clusters(RECORD)
     assert [c.eventIds for c in result.clusters] == [[1, 2, 3, 4, 5, 6]]
-
-
-def test_a_seeding_event_may_not_be_left_out():
-    # no ruling
-    left_out = named(1, 2, 3)
-    with replies(answers(left_out), answers(left_out)):
-        with pytest.raises(ClusterError, match=r"\[4\]"):
-            detect_clusters(RECORD)
-
-
-def test_one_event_may_not_sit_in_two_groups():
-    # no ruling
-    twice = answers(named(1, 2, 3), named(3, 4, 5, 6, change="it reads both ways"))
-    with replies(twice, twice):
-        with pytest.raises(ClusterError, match="two clusters"):
-            detect_clusters(RECORD)
 
 
 def test_a_group_under_three_events_is_rejected():

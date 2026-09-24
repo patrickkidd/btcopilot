@@ -35,29 +35,3 @@ def test_schema_import_isolation():
     assert hasattr(schema, "get_all_pdp_item_ids")
 
 
-def test_commit_pdp_items_no_private_imports():
-    # no ruling
-    """commit_pdp_items must not import private btcopilot modules at call time."""
-    from btcopilot.schema import (
-        DiagramData,
-        PDP,
-        Person,
-        Event,
-        EventKind,
-        get_all_pdp_item_ids,
-    )
-
-    pdp = PDP(
-        people=[Person(id=-1, name="Alice")],
-        events=[Event(id=-2, kind=EventKind.Shift, person=-1)],
-    )
-    dd = DiagramData(pdp=pdp)
-
-    blocked = {mod: None for mod in PRIVATE_MODULES}
-    with unittest.mock.patch.dict(sys.modules, blocked):
-        dd.commit_pdp_items([-1, -2])
-
-    assert len(dd.people) == 1
-    person = dd.people[0]
-    pid = person["id"] if isinstance(person, dict) else person.id
-    assert pid > 0

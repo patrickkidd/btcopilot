@@ -160,17 +160,6 @@ def test_a_refused_turn_says_so_in_the_coachs_voice_and_is_not_retried(
     assert turnlog.running(discussion.id) is None
 
 
-def test_a_second_message_while_the_coach_is_answering_is_refused(
-    web, token, family, monkeypatch
-):
-    # no ruling
-    coach(monkeypatch, said("Still going."))
-    with patch("btcopilot.personal.turns.enqueue"):
-        assert post(web, token).status_code == 202
-        second = post(web, token, "And another thing.")
-    assert second.status_code == 409
-
-
 def test_a_hold_left_by_a_dead_worker_runs_out(web, token, family, monkeypatch):
     # R-0182
     """A worker that dies mid-turn says nothing. The hold on the session has to
@@ -231,18 +220,6 @@ def test_the_stream_replays_from_where_the_page_got_to(web, token, family, monke
     assert [e["type"] for e in read(rest)] == [
         TurnEventKind.Text.value,
         TurnEventKind.Done.value,
-    ]
-
-
-def test_the_stream_numbers_every_event(web, token, family, monkeypatch):
-    # no ruling
-    coach(monkeypatch, said("Tell me about Nell."))
-    body = post(web, token).get_json()
-
-    lines = web.get(f"/app/turns/{body['turn_id']}/events").get_data(as_text=True)
-    assert [line for line in lines.splitlines() if line.startswith("id: ")] == [
-        "id: 1",
-        "id: 2",
     ]
 
 

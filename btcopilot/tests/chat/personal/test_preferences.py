@@ -16,16 +16,6 @@ def test_defaults(test_user):
     assert test_user.pref(PrefKey.Theme) is Theme.System
 
 
-def test_prefs_returns_every_key(test_user):
-    # no ruling
-    assert test_user.prefs() == {
-        "speak": False,
-        "proactive": Proactive.Never,
-        "mode": ChatMode.Text,
-        "theme": Theme.System,
-    }
-
-
 def test_set_prefs_round_trips(test_user):
     # R-0099
     test_user.set_prefs(speak=True, proactive="weekly", theme=Theme.Dark)

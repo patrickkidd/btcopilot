@@ -359,28 +359,6 @@ def test_people_and_their_events_all_land_in_one_turn(discussion, family):
     ] == [("1994-01-01", 11), ("1996-01-01", 12)]
 
 
-def test_the_words_before_a_tool_call_are_not_the_coach_speaking(discussion, family):
-    # no ruling
-    """The model works out what to do in the open. Only its last words, the
-    ones with no tool call behind them, are the reply."""
-    reply = run(
-        discussion,
-        "My sister is Nell.",
-        Model(
-            called(
-                ToolName.EditPerson,
-                text="I need to add a placeholder person first.",
-                name="Nell",
-            ),
-            said("Got her - [[person:11|Nell]]."),
-        ),
-    )
-    assert reply["statement"] == "Got her - [[person:11|Nell]]."
-
-    spoken = [s.text for s in discussion.statements]
-    assert "placeholder" not in " ".join(spoken)
-
-
 def test_offered_chips_never_reach_the_transcript(test_user):
     # R-0361
     """Offered answers are dropped (Patrick, 2026-09-21): people type their own

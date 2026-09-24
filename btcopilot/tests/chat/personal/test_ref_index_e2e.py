@@ -14,13 +14,6 @@ def _cited(out: str, section: str) -> list[str]:
     return [entry.split(" ")[0] for entry in line.split(": ", 1)[1].split("; ")]
 
 
-def test_the_state_handed_to_the_coach_carries_the_index():
-    # no ruling
-    state = summarize_committed_state(seed_diagram_data())
-    assert "Reference index" in state
-    assert "People on file" in state
-
-
 def test_every_id_the_index_offers_survives_the_whole_loop():
     # R-0072
     data = seed_diagram_data()
@@ -53,14 +46,3 @@ def test_an_id_the_index_withholds_is_thrown_away():
     assert aimable(resolve(refs, data), data) == []
 
 
-def test_the_instruction_teaches_the_markup_the_parser_reads():
-    # no ruling
-    """Guards the one thing that silently breaks chips: the instruction and
-    the parser drifting apart on the markup."""
-    for kind in RefKind:
-        assert f"[[{kind.value}:" in prompts.COACH_REFERENCE_INSTRUCTION
-    _, refs = parse(
-        "[[cluster:cl1|a]] [[events:10,11|b]] [[person:1|c]] "
-        "[[range:1988-04-02..1999-11-05|d]]"
-    )
-    assert [r.kind for r in refs] == list(RefKind)

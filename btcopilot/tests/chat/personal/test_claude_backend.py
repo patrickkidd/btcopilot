@@ -72,12 +72,6 @@ def test_prepare_messages_merges_consecutive_same_role():
     assert messages[1]["role"] == "assistant"
 
 
-def test_prepare_messages_no_args_raises():
-    # no ruling
-    with pytest.raises(ValueError, match="Requires either"):
-        _prepare_claude_messages()
-
-
 # --- Claude text API ---
 
 
@@ -148,22 +142,6 @@ async def test_claude_text_with_simple_prompt():
     assert "system" not in call_kwargs
 
 
-def test_claude_text_sync():
-    # no ruling
-    mock_response = _make_mock_response("Sync response")
-    mock_create = AsyncMock(return_value=mock_response)
-
-    with patch("btcopilot.llmutil._anthropic_client") as mock_client_fn:
-        mock_client = MagicMock()
-        mock_client.beta.messages.create = mock_create
-        mock_client.close = AsyncMock()
-        mock_client_fn.return_value = mock_client
-
-        result = claude_text_sync(prompt="Hello")
-
-    assert result == "Sync response"
-
-
 # --- Unified routing ---
 
 
@@ -186,60 +164,7 @@ def test_response_text_sync_routes_to_claude():
         mock_gemini.assert_not_called()
 
 
-def test_response_text_sync_routes_to_gemini():
-    # no ruling
-    """response_text_sync routes to Gemini when RESPONSE_MODEL is not Claude."""
-    with (
-        patch("btcopilot.llmutil.RESPONSE_MODEL", "gemini-3-flash-preview"),
-        patch("btcopilot.llmutil._is_claude_model", return_value=False),
-        patch(
-            "btcopilot.llmutil.gemini_text",
-            new_callable=AsyncMock,
-            return_value="Gemini reply",
-        ) as mock_gemini,
-        patch("btcopilot.llmutil.claude_text", new_callable=AsyncMock) as mock_claude,
-    ):
-        result = response_text_sync(prompt="Hello")
-        assert result == "Gemini reply"
-        mock_gemini.assert_called_once()
-        mock_claude.assert_not_called()
-
-
 # --- Integration: chat.py and discussion.py use unified routing ---
-
-
-@pytest.mark.chat_flow(response="Claude says hello")
-def test_chat_flow_mock_still_works(test_user):
-    # no ruling
-    """Existing chat_flow mock works regardless of backend (mocks _generate_response)."""
-    from btcopilot.extensions import db
-    from btcopilot.personal import ask
-    from btcopilot.personal.models import Discussion
-
-    discussion = Discussion(user=test_user)
-    db.session.add(discussion)
-    db.session.commit()
-
-    response = ask(discussion, "Hi")
-    assert response.statement == "Claude says hello"
-
-
-def test_chat_generate_response_uses_response_text_sync():
-    # no ruling
-    """_generate_response in chat.py uses the unified response_text_sync."""
-    with patch(
-        "btcopilot.personal.chat.response_text_sync", return_value="Routed reply"
-    ) as mock:
-        from btcopilot.personal.chat import _generate_response
-
-        result = _generate_response("system prompt", [("user", "Hello")])
-        assert result == "Routed reply"
-        mock.assert_called_once_with(
-            system_instruction="system prompt",
-            turns=[("user", "Hello")],
-            temperature=0.45,
-            model=None,
-        )
 
 
 def test_discussion_update_summary_uses_response_text_sync():

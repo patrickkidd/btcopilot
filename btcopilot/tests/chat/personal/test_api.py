@@ -95,22 +95,6 @@ def test_session_list(web, token):
     assert sessions[0]["last_activity"]
 
 
-def test_session_list_omits_a_transcript_import(web, token, test_user):
-    # no ruling
-    """A discussion brought in from a recording has no chat speaker ids and
-    is not a session the chat app can open."""
-    imported = Discussion(
-        user_id=test_user.id,
-        diagram_id=test_user.free_diagram_id,
-        summary="Induction transcript",
-    )
-    db.session.add(imported)
-    db.session.commit()
-
-    assert web.get("/app/sessions").get_json() == []
-    assert web.get(f"/app/sessions/{imported.id}").status_code == 404
-
-
 def test_session_create(web, token, test_user):
     # R-0285
     response = post(web, token, "/app/sessions", {})

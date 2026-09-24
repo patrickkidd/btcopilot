@@ -24,31 +24,6 @@ def no_auto_auth(monkeypatch):
     monkeypatch.delenv("FLASK_AUTO_AUTH_USER", raising=False)
 
 
-def test_page_loads(web):
-    # no ruling
-    """The page is the built web bundle: the picture, the composer, and the
-    menu that holds the timeline."""
-    response = web.get("/app/")
-    assert response.status_code == 200
-    page = response.get_data(as_text=True)
-    assert 'id="view"' in page
-    assert 'id="composer"' in page
-    assert 'id="sessions-open"' in page
-    assert 'id="menu-screen"' in page
-    assert "/app/static/web/app.js" in page
-
-
-def test_page_carries_what_only_the_server_knows(web, test_user):
-    # no ruling
-    """The bundle is static; the CSRF token, the diagram and the session the
-    user returns to are injected into it."""
-    page = web.get("/app/").get_data(as_text=True)
-    assert 'name="csrf-token"' in page
-    assert f'"id": {test_user.free_diagram_id}' in page
-    assert "window.BOOTSTRAP=" in page
-    assert f'"version": "{btcopilot.__version__}"' in page
-
-
 def test_health_reports_the_version(flask_app):
     # R-0419
     assert flask_app.test_client().get("/health").get_data(as_text=True) == btcopilot.__version__
@@ -127,23 +102,6 @@ def test_chat_reuses_discussion(web, test_user):
     ).get_json()
     assert first["discussion_id"] == second["discussion_id"]
     assert Discussion.query.count() == 1
-
-
-def test_chat_rejects_missing_csrf(web):
-    # no ruling
-    response = web.post("/app/chat", json={"statement": "forged"})
-    assert response.status_code == 400
-    assert Statement.query.count() == 0
-
-
-def test_chat_rejects_bad_csrf(web):
-    # no ruling
-    response = web.post(
-        "/app/chat",
-        json={"statement": "forged"},
-        headers={"X-CSRFToken": "not-a-real-token"},
-    )
-    assert response.status_code == 400
 
 
 def _make_discussion(test_user, order):

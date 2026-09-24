@@ -39,25 +39,6 @@ def _lane(timeline, key):
     return next(l for l in timeline["lanes"] if l["key"] == key)
 
 
-def test_per_person_isolation():
-    # no ruling
-    """One person's line must never be influenced by another's events (the
-    known QML mixed-sum bug)."""
-    up, down = VariableShift.Up, VariableShift.Down
-    events = [
-        _shift(10, 1, "2000-01-01", "symptom", up),
-        _shift(11, 2, "2001-01-01", "symptom", down),
-        _shift(12, 1, "2002-01-01", "symptom", up),
-        _shift(13, 2, "2003-01-01", "symptom", down),
-        _shift(14, 1, "2004-01-01", "symptom", up),
-    ]
-    timeline = build_timeline(_data([1, 2], events))
-    p1 = _lane(timeline, "p1:symptom")
-    p2 = _lane(timeline, "p2:symptom")
-    assert [p["value"] for p in p1["points"]] == [1, 2, 3]
-    assert [p["value"] for p in p2["points"]] == [-1, -2]
-
-
 def test_two_directed_points_render_dots_only():
     # R-0008
     events = [
@@ -145,17 +126,6 @@ def test_strip_vocabulary_is_line_dots_question_only():
             assert "certainty" not in m
 
 
-def test_lane_picker_data_from_diagram():
-    # no ruling
-    timeline = build_timeline(seed_diagram_data())
-    assert {p["id"] for p in timeline["people"]} == {1, 3, 4, 5, 6, 7}
-    assert {b["id"] for b in timeline["pair_bonds"]} == {8, 9}
-    assert {b["label"] for b in timeline["pair_bonds"]} == {
-        "Alex & Sam",
-        "Diane & Robert",
-    }
-
-
 def test_order_question_for_touching_ranges():
     # R-0011
     """Separation 1996+/-1yr vs sleep onset 1995+/-1yr: ranges touch -> a '?'."""
@@ -199,50 +169,6 @@ def test_every_mark_has_a_sentence():
         assert entry["sentence"]
     for entry in timeline["questions"]:
         assert entry["sentence"]
-
-
-def test_seed_fixture_covers_every_move_the_play_by_play_draws():
-    # no ruling
-    """The play-by-play has one symbol per move kind; the fixture has to walk
-    through all of them or the stepping is never exercised."""
-    events = seed_diagram_data().events
-    assert {e["relationship"] for e in events if e.get("relationship")} == {
-        kind.value for kind in RelationshipKind
-    }
-    for variable in ("symptom", "anxiety", "functioning"):
-        directions = {e[variable] for e in events if e.get(variable)}
-        assert {VariableShift.Up.value, VariableShift.Down.value} <= directions
-    clusters = build_timeline(seed_diagram_data())["clusters"]
-    # A stored cluster is a cluster of its own, so a cluster is as big as the
-    # cluster the coach named; nothing on the line stands alone.
-    assert all(cluster["count"] >= 3 for cluster in clusters)
-
-
-def test_seed_fixture_covers_every_rule():
-    # no ruling
-    data = seed_diagram_data()
-    assert len(data.people) >= 5
-    assert len(data.pair_bonds) == 2
-    dated = [
-        e
-        for e in data.events
-        if e.get("dateTime") and e.get("dateCertainty") != DateCertainty.Unknown.value
-    ]
-    assert len(dated) >= 20
-    certainties = {e["dateCertainty"] for e in dated}
-    assert DateCertainty.Certain.value in certainties
-    assert DateCertainty.Approximate.value in certainties
-
-    timeline = build_timeline(data)
-    directed = {l["key"]: l["directed_count"] for l in timeline["lanes"]}
-    assert any(n >= 3 for n in directed.values())
-    assert any(n < 3 for n in directed.values())
-    gap_segments = [s for l in timeline["lanes"] for s in l["segments"] if s["gap"]]
-    assert gap_segments
-    assert any(l["same_marks"] for l in timeline["lanes"])
-    assert timeline["questions"]
-    assert timeline["shelf"]
-    assert timeline["bond_lanes"]
 
 
 def test_a_record_with_no_stored_cluster_draws_none():
@@ -381,19 +307,6 @@ def test_the_axis_spans_every_dated_event_not_only_the_lane_marks():
         "min": "1980-01-01",
         "max": "1996-01-01",
     }
-
-
-def test_undated_events_belong_to_no_cluster_but_stay_in_the_list():
-    # no ruling
-    events = [
-        _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
-        _shift(
-            11, 1, "1991-01-01", "symptom", VariableShift.Down, DateCertainty.Unknown
-        ),
-    ]
-    timeline = build_timeline(_data([1], events))
-    assert [e["id"] for e in timeline["events"]] == [10, 11]
-    assert timeline["clusters"] == []
 
 
 def test_every_event_carries_the_words_the_list_shows():

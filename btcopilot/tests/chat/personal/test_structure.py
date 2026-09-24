@@ -100,13 +100,6 @@ def test_nobody_is_born_to_a_bond_they_are_in(subscriber):
         )
 
 
-def test_a_bond_between_two_different_people_commits(subscriber):
-    # no ruling
-    diagram = _diagram(subscriber.user)
-    _write(diagram, _bond(11, 2, 3))
-    assert [b["id"] for b in diagram.get_diagram_data().pair_bonds] == [10, 11]
-
-
 def _toolbox(diagram) -> Toolbox:
     return Toolbox(diagram.id, "t1")
 

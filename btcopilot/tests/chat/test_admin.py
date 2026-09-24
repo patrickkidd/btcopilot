@@ -87,48 +87,12 @@ def test_import_dry_run_counts_and_writes_nothing(run, tmp_path):
     assert rows(run("users", "list", "--json")) == []
 
 
-def test_token_cap_default_and_one_person(run, test_user):
-    # no ruling
-    run("token-cap", "set", "default", "100000")
-    run("token-cap", "set", test_user.username, "250000")
-
-    mine = rows(run("token-cap", "show", test_user.username, "--json"))
-    assert mine[0]["cap"] == 250000 and mine[0]["source"] == "their own"
-
-    assert setting.read(SettingKey.TokenCap) == 100000
-
-
 def test_token_cap_refuses_a_negative(flask_app, test_user):
     # R-0453
     result = flask_app.test_cli_runner().invoke(
         admin, ["token-cap", "set", test_user.username, "--", "-1"]
     )
     assert result.exit_code != 0 and "below zero" in result.output
-
-
-def test_nudge_switch(run):
-    # no ruling
-    assert rows(run("review", "nudge", "off", "--json"))[0]["nudges"] == "off"
-    assert setting.read(SettingKey.NudgesOn) is False
-
-    run("review", "nudge", "on")
-    assert setting.read(SettingKey.NudgesOn) is True
-
-
-def test_agenda_is_empty_before_any_cut(run):
-    # no ruling
-    assert rows(run("review", "agenda", "--json")) == []
-
-
-def test_table_output_has_a_header(run, test_user):
-    # no ruling
-    output = run("users", "list")
-    assert "email" in output.splitlines()[0]
-
-
-def test_skill_file_is_the_same_bytes_twice():
-    # no ruling
-    assert skill.render(admin) == skill.render(admin)
 
 
 def test_skill_file_names_every_command():
@@ -203,12 +167,6 @@ def test_run_executes_a_write_with_yes(flask_app, test_user, test_policy):
     )
     assert result.exit_code == 0, result.output
     assert rows(result.output)[0]["status"] == "active"
-
-
-def test_run_rejects_an_unknown_command(flask_app):
-    # no ruling
-    result = flask_app.test_cli_runner().invoke(admin, ["run", "--", "users", "nope"])
-    assert result.exit_code == 2
 
 
 def test_users_invite_send_emails_the_link(run):

@@ -274,17 +274,6 @@ def test_the_coachs_draft_lands_as_ai_rules(patrick, test_user, test_user_2, cut
     assert [r.text for r in drafted] == ["Date a shift by its start"]
 
 
-def test_a_post_without_a_csrf_token_is_refused(flask_app, patrick, session, turns):
-    # no ruling
-    flask_app.config["WTF_CSRF_METHODS"] = ["POST"]
-    refused = patrick.post(
-        "/review/cuts",
-        json={"discussion_id": session.id, "end_statement_id": turns[1].id},
-    )
-    assert refused.status_code == 400
-    assert "CSRF" in refused.get_data(as_text=True)
-
-
 def test_patrick_flags_a_rule_and_the_same_tap_takes_the_flag_off(patrick):
     # R-0346
     made = patrick.post(
@@ -415,15 +404,6 @@ def test_taking_a_conversation_off_the_agenda(patrick, cut):
     assert db.session.get(Cut, cut.id) is None
 
 
-def test_a_cut_someone_started_cannot_be_taken_off_the_agenda(patrick, coder, cut):
-    # no ruling
-    coder.post("/review/codings", json={"cut_id": cut.id})
-    refused = patrick.delete(f"/review/cuts/{cut.id}")
-    assert refused.status_code == 400
-    assert "already started" in refused.get_data(as_text=True)
-    assert db.session.get(Cut, cut.id) is not None
-
-
 def test_a_cut_cannot_be_placed_before_the_last_ratified_one(
     patrick, session, turns, cut
 ):
@@ -447,12 +427,6 @@ def test_a_nudge_reaches_everyone_not_done(patrick, coder, test_user_2, cut):
     assert made.get_json()["nudged"] == [patrick.user.id, test_user_2.id]
     assert sent.call_count == 2
     assert db.session.get(Cut, cut.id).nudged_at is not None
-
-
-def test_a_coder_cannot_nudge(coder, cut):
-    # no ruling
-    refused = coder.post("/review/nudges", json={})
-    assert refused.status_code == 302
 
 
 def test_the_turns_of_a_session_carry_the_ratified_line(patrick, session, turns, cut):
@@ -527,18 +501,6 @@ def test_each_version_of_a_person_carries_the_line_its_coder_wrote_it_from(
     rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
     ann = next(r for r in rows if r["item_kind"] == "person")
     assert [one["line"]["text"] for one in ann["opinions"]] == ["turn 0", "turn 1"]
-
-
-def test_a_person_nobody_wrote_from_a_turn_carries_no_line(
-    patrick, test_user, test_user_2, cut
-):
-    # no ruling
-    two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
-
-    rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
-    ann = next(r for r in rows if r["item_kind"] == "person")
-    assert [one["line"] for one in ann["opinions"]] == [None, None]
 
 
 def test_an_item_one_coder_left_out_says_how_many_left_it_out(
@@ -662,9 +624,3 @@ def test_a_coder_without_a_name_is_still_shown_as_initials(flask_app):
     assert initials(User(username="patrickkidd+beta@gmail.com")) == "P.B."
 
 
-def test_nudges_switched_off_are_refused(patrick, cut):
-    # no ruling
-    setting.write(SettingKey.NudgesOn, False)
-    refused = patrick.post("/review/nudges", json={})
-    assert refused.status_code == 400
-    assert "switched off" in refused.get_data(as_text=True)

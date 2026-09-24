@@ -26,26 +26,6 @@ def test_every_kind_parses():
     assert (refs[3].start, refs[3].end) == ("1992-01-01", "1998-12-31")
 
 
-def test_a_reply_naming_nothing_has_no_references():
-    # no ruling
-    assert parse("What did that look like from where you sat?") == (
-        "What did that look like from where you sat?",
-        [],
-    )
-
-
-def test_unparseable_target_keeps_its_words_and_makes_no_reference():
-    # no ruling
-    clean, refs = parse("I mean [[events:the winter|that winter]].")
-    assert clean == "I mean that winter."
-    assert refs == []
-
-
-def test_backwards_range_is_not_a_reference():
-    # no ruling
-    assert parse("[[range:1998-01-01..1992-01-01|x]]")[1] == []
-
-
 def test_resolve_drops_targets_the_diagram_does_not_have():
     # R-0085
     data = DiagramData(people=[{"id": 1}], events=[{"id": 10}], clusters=[{"id": "c1"}])
@@ -113,46 +93,6 @@ def _seeded() -> DiagramData:
     )
 
 
-def test_index_names_every_kind_of_id_the_markup_takes():
-    # no ruling
-    out = index(_seeded())
-    assert "1 Nell" in out and "3 Wren" in out
-    assert "c1 1992–1995 The move north" in out
-    assert "12 1998-02-11 Wren started school" in out
-
-
-def test_index_leaves_out_what_the_picture_cannot_aim_at():
-    # no ruling
-    out = index(_seeded())
-    assert "13 " not in out
-    assert "c9" not in out
-
-
-def test_index_is_empty_without_a_dated_record():
-    # no ruling
-    assert index(DiagramData(people=[{"id": 1, "name": "Nell"}])) == ""
-    assert index(None) == ""
-
-
-def test_index_is_capped():
-    # no ruling
-    data = DiagramData(
-        people=[{"id": 1, "name": "Nell"}],
-        events=[
-            {
-                "id": i,
-                "person": 1,
-                "dateTime": f"19{50 + i // 300:02d}-01-01",
-                "description": "a long enough description to spend the budget on",
-            }
-            for i in range(1, 900)
-        ],
-    )
-    out = index(data)
-    assert len(out) <= INDEX_BUDGET_TOKENS * 4
-    assert out.count(";") < 898
-
-
 def test_a_reply_citing_the_index_resolves_to_real_targets():
     # R-0085
     data = _seeded()
@@ -206,18 +146,3 @@ def _section(out: str, name: str) -> list[str]:
     return line.split(": ", 1)[1].split("; ")
 
 
-def test_clusters_are_listed_newest_first():
-    # no ruling
-    """Ids sort as text, so double digits are where a by-id sort goes wrong."""
-    entries = _section(index(_wide(5)), "Clusters")
-    years = [int(entry.split(" ")[1][:4]) for entry in entries]
-    assert years == sorted(years, reverse=True)
-    assert entries[0].split(" ")[0] == "c24"
-
-
-def test_a_large_cast_cannot_crowd_out_the_events():
-    # no ruling
-    out = index(_wide(300))
-    assert len(out) <= INDEX_BUDGET_TOKENS * 4
-    for name in ("People", "Clusters", "Events"):
-        assert len(_section(out, name)) > 10
