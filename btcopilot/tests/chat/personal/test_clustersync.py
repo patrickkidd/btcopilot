@@ -472,6 +472,30 @@ def test_what_changed_is_in_the_tool_answer_before_the_coach_answers(
     assert "cluster" not in reply["statement"].lower()
 
 
+def test_a_regroup_leaves_the_prompt_and_the_turn_so_far_untouched(discussion, family):
+    # R-0412
+    with detects(("The hard spring", [10, 11, 12]), changes=(MOVED,)):
+        model = Model(
+            called(
+                ToolName.EditEvent,
+                kind="shift",
+                date="1994-07-01",
+                description="got sick",
+                person=1,
+                symptom="up",
+            ),
+            said("Those look like one story to me now, not two."),
+        )
+        CoachTurn(discussion, "She got sick that summer.", model=model).run()
+
+    first, second = model.systems
+    assert second == first
+    assert "got sick" not in second
+    earlier = model.histories[-1][-2]
+    assert earlier["role"] == "assistant"
+    assert earlier["content"][-1]["type"] == "tool_use"
+
+
 def test_what_changed_goes_out_on_the_turn_for_nobody_to_draw(discussion, family):
     # R-0372
     with detects(("The hard spring", [10, 11, 12]), changes=(MOVED,)):

@@ -20,6 +20,7 @@ from btcopilot.personal.coachturn import (
 from btcopilot.personal.turnlog import TurnEventKind as EventKind
 from btcopilot.personal.models import Author, Change, ModelCall, StatementKind
 from btcopilot.personal.playturn import PlayTurn
+from btcopilot.personal.prompts import get_agent_prompt
 from btcopilot.personal.toolbox import ToolName
 from btcopilot.schema import (
     Cluster,
@@ -789,3 +790,43 @@ def test_tracing_provider(monkeypatch):
     sdk.get_tracer(__name__).start_span("coach.turn").end()
     sdk.force_flush()
     assert [s.name for s in exported.get_finished_spans()] == ["coach.turn"]
+
+
+QUOTE = "He said he would never go back to that house"
+
+
+def _with_notes(diagram):
+    data = diagram.get_diagram_data()
+    data.events[0]["notes"] = QUOTE
+    diagram.set_diagram_data(data)
+    db.session.commit()
+
+
+def test_the_notes_stay_out_of_every_call_and_the_tool_to_read_them_is_offered(
+    discussion, family
+):
+    # R-0446
+    _with_notes(family)
+    model = Model(called(ToolName.ReadEvents), said("What happened next?"))
+    run(discussion, "Tell me about when he moved out.", model)
+    assert len(model.systems) == 2
+    for system in model.systems:
+        assert "(has notes)" in system
+        assert QUOTE not in system
+    assert all(ToolName.ReadNotes.value in offered for offered in model.offered)
+
+
+def test_the_coach_reads_an_events_notes_when_it_asks_for_them(discussion, family):
+    # R-0446
+    _with_notes(family)
+    model = Model(called(ToolName.ReadNotes, event=10), said("What happened next?"))
+    run(discussion, "What did he say about the house?", model)
+    answer = model.histories[-1][-1]["content"][-1]
+    assert answer["type"] == "tool_result"
+    assert answer["content"] == f"10: {QUOTE}"
+
+
+def test_the_coach_is_told_to_end_its_reply_with_a_question():
+    # R-0436
+    assert "End with one question in your own words." in get_agent_prompt()
+

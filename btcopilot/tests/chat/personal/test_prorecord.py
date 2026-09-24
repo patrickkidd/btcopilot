@@ -9,6 +9,7 @@ from PyQt5.QtCore import QDate, QDateTime, QPointF
 
 from btcopilot import diagramjson
 from btcopilot.extensions import db
+from btcopilot.personal.toolbox import ToolName, Toolbox
 from btcopilot.tests.chat.personal.conftest import csrf_token
 
 PEOPLE = [
@@ -107,3 +108,37 @@ def test_editing_an_event_by_hand_keeps_the_fields_only_the_desktop_knows(web, t
     assert event["relationshipIntensity"] == 2
     assert event["color"] == "#ff336699"
     assert event["relationshipTargets"] == [2, 3]
+
+
+WRITES = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+def test_pro_reads_a_record_the_chat_app_wrote(test_user):
+    # R-0082
+    diagram = test_user.free_diagram
+    diagram.data = diagramjson.store(pickle.dumps({"people": [], "events": []}))
+    db.session.commit()
+    tools = Toolbox(diagram.id, "t1")
+    _, added = tools.call(ToolName.EditPerson.value, {"name": "Wren"})
+    person = added["deltas"][0]["item_id"]
+    tools.call(
+        ToolName.EditEvent.value,
+        {"kind": "noted", "date": "2019-03-01", "person": person, "description": "Moved"},
+    )
+    assert diagramjson.is_json(diagram.data)
+    seen = pickle.loads(diagram.as_dict()["data"])
+    assert [p["name"] for p in seen["people"] if p["id"] == person] == ["Wren"]
+    assert [(e["kind"], e["person"]) for e in seen["events"] if e["description"] == "Moved"] == [
+        ("noted", person)
+    ]
+
+
+def test_nothing_outside_the_chat_app_can_write_a_record(flask_app):
+    # R-0082
+    written = {
+        rule.rule
+        for rule in flask_app.url_map.iter_rules()
+        if rule.methods & WRITES and not rule.rule.startswith(("/app/", "/review/"))
+    }
+    assert written == set()
+

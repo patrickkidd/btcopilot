@@ -7,7 +7,8 @@ import pytest
 from btcopilot.extensions import db
 from btcopilot.personal.recordtext import event_line, render
 from btcopilot.personal.timeline import build_timeline
-from btcopilot.personal.toolbox import ToolError, ToolName, Toolbox
+from btcopilot.personal.models import Author, Change
+from btcopilot.personal.toolbox import ToolError, ToolName, Toolbox, schemas
 from btcopilot.models import Diagram
 
 FAMILY = {
@@ -233,3 +234,94 @@ def test_an_end_before_the_start_is_refused(subscriber):
             anxiety="up",
             description="On edge",
         )
+
+
+def _edit_event_schema() -> dict:
+    tool = next(t for t in schemas() if t["name"] == ToolName.EditEvent.value)
+    return tool["input_schema"]["properties"]
+
+
+def test_the_event_tool_offers_the_two_triangle_moves_and_their_third_people():
+    # R-0049
+    fields = _edit_event_schema()
+    assert {"inside", "outside"} <= set(fields["relationship"]["enum"])
+    assert fields["relationship_triangles"]["type"] == "array"
+
+
+def test_a_triangle_move_keeps_its_third_people_on_the_record(subscriber):
+    # R-0049
+    data = dict(FAMILY, people=FAMILY["people"] + [{"id": 3, "name": "Ines"}], lastItemId=3)
+    diagram = _diagram(subscriber.user, data)
+    added = _event(
+        diagram,
+        kind="shift",
+        date="2012-01-15",
+        person=1,
+        relationship="inside",
+        relationship_targets=[2],
+        relationship_triangles=[3],
+        description="Sided with her against him",
+    )
+    assert added["relationship"] == "inside"
+    assert added["relationshipTriangles"] == [3]
+    assert "relationship=inside targets=[2] triangles=[3]" in event_line(added)
+
+
+def test_the_event_tool_has_a_notes_field_beside_the_description():
+    # R-0431
+    fields = _edit_event_schema()
+    assert fields["notes"]["type"] == "string"
+    assert fields["description"]["type"] == "string"
+
+
+def test_saying_a_recorded_shift_again_is_refused_and_points_at_the_event(subscriber):
+    # R-0442
+    diagram = _diagram(subscriber.user)
+    first = _event(
+        diagram, kind="shift", date="2019-03-01", person=1, anxiety="up",
+        description="Worried after the move",
+    )
+    with pytest.raises(ToolError, match=rf"edit_event\(id={first['id']}\)"):
+        _event(
+            diagram, kind="shift", date="2019-03-01", person=1, anxiety="up",
+            description="Anxious that spring",
+        )
+    assert len(diagram.get_diagram_data().events) == 1
+
+
+def test_a_re_mention_changes_the_recorded_shift_in_place(subscriber):
+    # R-0442
+    diagram = _diagram(subscriber.user)
+    first = _event(
+        diagram, kind="shift", date="2019-03-01", person=1, anxiety="up",
+        description="Worried after the move",
+    )
+    changed = _event(
+        diagram, id=first["id"], description="Worried after the move to Tulsa",
+        notes="Could not sleep for weeks",
+    )
+    events = diagram.get_diagram_data().events
+    assert [e["id"] for e in events] == [first["id"]]
+    assert changed["description"] == "Worried after the move to Tulsa"
+    assert changed["notes"] == "Could not sleep for weeks"
+
+
+def test_a_correction_changes_the_record_at_once_with_nothing_held_pending(subscriber):
+    # R-0086
+    diagram = _diagram(subscriber.user)
+    added = _event(
+        diagram, kind="shift", date="2019-03-01", person=1, anxiety="up",
+        description="Worried after the move",
+    )
+    Toolbox(diagram.id, "t2").call(
+        ToolName.EditEvent.value, {"id": added["id"], "date": "2018-03-01"}
+    )
+    data = diagram.get_diagram_data()
+    assert data.events[0]["dateTime"] == "2018-03-01"
+    assert (data.pdp.people, data.pdp.events, data.pdp.pair_bonds) == ([], [], [])
+    changes = Change.query.filter_by(diagram_id=diagram.id).order_by(Change.id).all()
+    assert [(c.turn_id, c.author) for c in changes] == [
+        ("t1", Author.Coach),
+        ("t2", Author.Coach),
+    ]
+
