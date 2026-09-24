@@ -578,6 +578,8 @@ test.describe("a person on the board", () => {
 
   // R-0187
   test("cannot be dragged, and the board offers nothing to arrange", async ({ page }) => {
+    // the rings around a person breathe; held still, a box measured twice is the same box
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await settle(page);
     await page.locator("#cap-play").click();
     await expect(page.locator("#view .ss.board")).toBeVisible();
@@ -593,6 +595,8 @@ test.describe("a person on the board", () => {
     });
     await page.mouse.up();
     await page.waitForTimeout(300);
-    expect(await person.boundingBox()).toEqual(before);
+    const after = (await person.boundingBox())!;
+    expect(Math.abs(after.x + after.width / 2 - (before.x + before.width / 2))).toBeLessThanOrEqual(1);
+    expect(Math.abs(after.y + after.height / 2 - (before.y + before.height / 2))).toBeLessThanOrEqual(1);
   });
 });
