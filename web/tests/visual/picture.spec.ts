@@ -505,3 +505,41 @@ test.describe("a moment named in the coach's words", () => {
     expect(chip.round).toBeGreaterThanOrEqual(8);
   });
 });
+
+test.describe("a moment's mark", () => {
+  /** Circles drawn on the centre of another circle: a ring or band around a mark. */
+  const ringed = (page: import("@playwright/test").Page) =>
+    page.locator("#view svg").evaluateAll((svgs) =>
+      svgs.flatMap((svg) => {
+        const circles = [...svg.querySelectorAll("circle")].map((c) => ({
+          x: c.getAttribute("cx"),
+          y: c.getAttribute("cy"),
+          html: c.outerHTML,
+        }));
+        return circles
+          .filter((c, i) => circles.some((o, j) => j !== i && o.x === c.x && o.y === c.y))
+          .map((c) => c.html);
+      }),
+    );
+
+  for (const key of ["one", "three40", "dense60"] as const) {
+    test.describe(() => {
+      test.use({ storageState: stateFor(key) });
+
+      // R-0467
+      test(`has nothing drawn around it, at rest or in an open cluster, on the ${key} record`, async ({
+        page,
+      }) => {
+        await settle(page);
+        expect(await ringed(page)).toEqual([]);
+        const cluster = page.locator('.ss-hit[data-target="cluster"]').first();
+        if (await cluster.count()) {
+          await cluster.click();
+          await page.waitForTimeout(500);
+          await expect(page.locator("#view circle.dot").first()).toBeVisible();
+          expect(await ringed(page)).toEqual([]);
+        }
+      });
+    });
+  }
+});
