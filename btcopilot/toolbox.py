@@ -47,6 +47,15 @@ class ToolName(enum.StrEnum):
 
 READS = (ToolName.ReadPeople, ToolName.ReadEvents, ToolName.ReadNotes)
 
+# The tools that can change something already in the record.
+CHANGES = (
+    ToolName.EditPerson,
+    ToolName.EditPairBond,
+    ToolName.EditEvent,
+    ToolName.EditCluster,
+    ToolName.Remove,
+)
+
 EDITS = (
     ToolName.EditPerson,
     ToolName.EditPairBond,
@@ -67,6 +76,16 @@ def _values(cls) -> list[str]:
 
 def _enum_param(cls, description: str) -> dict:
     return {"type": "string", "enum": _values(cls), "description": description}
+
+
+VERSION = {
+    "type": "integer",
+    "description": (
+        "The record version your last look at this item showed: the number at "
+        "the end of every read, or on the map. Needed to change or remove "
+        "something already in the record; not needed to add."
+    ),
+}
 
 
 def schemas() -> list[dict]:
@@ -119,6 +138,7 @@ def schemas() -> list[dict]:
                 "type": "object",
                 "properties": {
                     "id": {"type": "integer"},
+                    "version": VERSION,
                     "name": {"type": "string"},
                     "last_name": {"type": "string"},
                     "gender": _enum_param(PersonKind, "The person's gender."),
@@ -136,6 +156,7 @@ def schemas() -> list[dict]:
                 "type": "object",
                 "properties": {
                     "id": {"type": "integer"},
+                    "version": VERSION,
                     "person_a": {
                         "type": "integer",
                         "description": means[prompts.ToolText.PersonA],
@@ -158,6 +179,7 @@ def schemas() -> list[dict]:
                 "type": "object",
                 "properties": {
                     "id": {"type": "integer"},
+                    "version": VERSION,
                     "kind": _enum_param(EventKind, means[prompts.ToolText.EventKind]),
                     "date": {"type": "string", "description": "YYYY-MM-DD"},
                     "end_date": {
@@ -231,6 +253,7 @@ def schemas() -> list[dict]:
                 "type": "object",
                 "properties": {
                     "id": {"type": "string"},
+                    "version": VERSION,
                     "name": {"type": "string"},
                     "summary": {"type": "string"},
                     "event_ids": {"type": "array", "items": {"type": "integer"}},
@@ -245,8 +268,9 @@ def schemas() -> list[dict]:
                 "properties": {
                     "item_kind": _enum_param(ItemKind, "What kind of item to remove."),
                     "item_id": {"type": "string"},
+                    "version": VERSION,
                 },
-                "required": ["item_kind", "item_id"],
+                "required": ["item_kind", "item_id", "version"],
             },
         },
         {
@@ -314,19 +338,57 @@ class Toolbox:
         self.statement_id = statement_id
         self.deltas: list[dict] = []
         self.views: list[dict] = []
+        # The record versions this turn's own writes made, undo included.
+        self.versions: set[int] = set()
+
+    @property
+    def diagram(self) -> Diagram:
+        """Read again from the database every time: another writer may have
+        committed since this turn last looked."""
+        diagram = db.session.get(Diagram, self.diagram_id)
+        db.session.refresh(diagram)
+        return diagram
 
     @property
     def data(self) -> DiagramData:
-        return db.session.get(Diagram, self.diagram_id).get_diagram_data()
+        return self.diagram.get_diagram_data()
 
     def call(self, name: str, args: dict) -> tuple[str, dict | None]:
-        """Run one tool. Returns what the model reads and what the page sees."""
+        """Run one tool. Returns what the model reads and what the page sees.
+        A change to something already in the record names the version it was
+        based on, and is refused if anyone else has written since."""
         try:
             tool = ToolName(name)
         except ValueError:
             raise ToolError(f"There is no tool called {name}")
-        handler = getattr(self, f"_{tool.value}")
-        return handler(args)
+        if tool in CHANGES and (tool is ToolName.Remove or args.get("id") is not None):
+            self._fresh(args.get("version"))
+        text, event = getattr(self, f"_{tool.value}")(args)
+        if tool in READS:
+            text = f"{text}\n\nRecord version {self.diagram.version}."
+        return text, event
+
+    def _fresh(self, version) -> None:
+        if version is None:
+            raise ToolError(
+                "Say which record version you are changing: the number at the end "
+                "of your last read, or on the map"
+            )
+        now = self.diagram.version
+        own = self.versions | {
+            row.version
+            for row in Change.query.filter(
+                Change.diagram_id == self.diagram_id,
+                Change.turn_id == self.turn_id,
+                Change.version > int(version),
+            )
+        }
+        if set(range(int(version) + 1, now + 1)) - own:
+            raise ToolError(
+                f"The record has changed since version {version}; it is at {now} "
+                "now. Read what you are changing again, then change it with the "
+                "new version"
+            )
 
     # ── READ ────────────────────────────────────────────────────────────────
 
@@ -590,6 +652,7 @@ class Toolbox:
         except record.Invalid as e:
             raise ToolError(f"Putting that back would leave {e}")
         self.deltas.extend(change.deltas)
+        self.versions.add(change.version)
         return ("Put back what the last turn changed.", self._patch(change))
 
     def _previous_turn(self) -> str | None:
@@ -695,6 +758,7 @@ class Toolbox:
             # the record says what is wrong in the coach's own words already
             raise ToolError(str(e))
         self.deltas.extend(change.deltas)
+        self.versions.add(change.version)
         return change
 
     def _patch(self, change) -> dict:

@@ -11,7 +11,7 @@ import btcopilot
 from btcopilot.extensions import db
 from btcopilot.llmutil import Served
 from btcopilot.coachmodel import ModelTurn, ToolCall
-from btcopilot.models import Discussion, Statement, Speaker, SpeakerType
+from btcopilot.models import Diagram, Discussion, Statement, Speaker, SpeakerType
 from btcopilot.toolbox import ToolName
 from btcopilot import turnlog, turns
 from btcopilot.turnlog import TurnEventKind
@@ -61,6 +61,11 @@ def flask_app(request, tmp_path):
 
 
 SERVED = "claude-opus-5-5"
+
+
+def version(diagram) -> int:
+    """The record's version as it stands, for a change that has to name it."""
+    return db.session.query(Diagram.version).filter_by(id=diagram.id).scalar()
 
 
 def said(text: str) -> ModelTurn:

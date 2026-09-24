@@ -32,7 +32,7 @@ def delta(kind, item_id, field, after, before=None) -> dict:
 def seed(conn) -> None:
     rows = {
         "users": [
-            {"id": 1, "username": "wren@example.com", "roles": "subscriber",
+            {"id": 1, "username": "coach@example.com", "roles": "subscriber",
              "created_at": T0, "status": "confirmed", "active": True,
              "password": "", "first_name": "Wren", "last_name": "Ash",
              "preferences": "{}"},
@@ -74,7 +74,7 @@ def seed(conn) -> None:
             {"id": 3, "diagram_id": 1, "statement_id": None, "turn_id": "broke",
              "session_id": "1", "author": "coach", "created_at": at(6),
              "deltas": ([
-                 delta("event", 3, "kind", "moved"),
+                 delta("event", 3, "kind", "noted"),
                  delta("event", 3, "description", "Moved to Leeds"),
                  delta("event", 3, "dateTime", "1990-01-01"),
                  delta("diagram", None, "lastItemId", 3, before=2),
@@ -131,7 +131,7 @@ def test_old_turns_get_their_tool_calls_and_a_turn_that_broke_is_marked_unfinish
     assert kept[1][3]["args"] == {"id": 1}
     assert kept[1][3]["result"] == "Changed person 1."
     assert kept[2][3]["args"] == {
-        "kind": "moved",
+        "kind": "noted",
         "description": "Moved to Leeds",
         "date": "1990-01-01",
     }

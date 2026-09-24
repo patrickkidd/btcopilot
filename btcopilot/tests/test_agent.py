@@ -801,7 +801,7 @@ def test_the_coach_reads_an_events_notes_when_it_asks_for_them(discussion, famil
     run(discussion, "What did he say about the house?", model)
     answer = model.histories[-1][-1]["content"][-1]
     assert answer["type"] == "tool_result"
-    assert answer["content"] == f"10: {QUOTE}"
+    assert answer["content"].splitlines()[0] == f"10: {QUOTE}"
 
 
 def test_the_coach_is_told_to_end_its_reply_with_a_question():

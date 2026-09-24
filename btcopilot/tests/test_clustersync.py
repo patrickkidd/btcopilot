@@ -31,7 +31,7 @@ from btcopilot.schema import (
     Person,
     asdict,
 )
-from btcopilot.tests.conftest import Model, called, csrf_token, said
+from btcopilot.tests.conftest import Model, called, csrf_token, said, version
 
 
 @pytest.fixture(autouse=True)
@@ -304,7 +304,10 @@ def test_renaming_a_grouping_stuck_under_the_floor_says_what_to_do(family):
     with pytest.raises(
         ToolError, match="add an event to the cluster, or remove the grouping"
     ):
-        tools.call(ToolName.EditCluster.value, {"id": "c1", "name": "That autumn"})
+        tools.call(
+            ToolName.EditCluster.value,
+            {"id": "c1", "name": "That autumn", "version": version(family)},
+        )
     assert clusters_of(family)["c1"]["name"] == "When he left"
 
 
@@ -315,7 +318,12 @@ def test_a_third_event_lifts_a_grouping_out_from_under_the_floor(family):
 
     tools.call(
         ToolName.EditCluster.value,
-        {"id": "c1", "name": "That autumn", "event_ids": [10, 11, 12]},
+        {
+            "id": "c1",
+            "name": "That autumn",
+            "event_ids": [10, 11, 12],
+            "version": version(family),
+        },
     )
     assert clusters_of(family)["c1"]["eventIds"] == [10, 11, 12]
 
@@ -326,7 +334,8 @@ def test_a_grouping_stuck_under_the_floor_can_still_be_removed(family):
     tools = Toolbox(family.id, turn_id="t1")
 
     tools.call(
-        ToolName.Remove.value, {"item_kind": ItemKind.Cluster.value, "item_id": "c1"}
+        ToolName.Remove.value,
+        {"item_kind": ItemKind.Cluster.value, "item_id": "c1", "version": version(family)},
     )
     assert clusters_of(family) == {}
 
@@ -337,7 +346,8 @@ def test_undoing_the_removal_of_such_a_grouping_reads_as_words_too(family):
     translation: the coach is told why, not handed an exception."""
     _grandfathered(family)
     Toolbox(family.id, turn_id="t1").call(
-        ToolName.Remove.value, {"item_kind": ItemKind.Cluster.value, "item_id": "c1"}
+        ToolName.Remove.value,
+        {"item_kind": ItemKind.Cluster.value, "item_id": "c1", "version": version(family)},
     )
 
     with pytest.raises(ToolError, match="Putting that back would leave"):
@@ -537,7 +547,12 @@ def test_a_grouping_that_fails_its_checks_twice_keeps_the_groups_and_the_turn_re
             discussion,
             "She was anxious all that spring.",
             model=Model(
-                called(ToolName.EditEvent, id=15, description="moment five"),
+                called(
+                    ToolName.EditEvent,
+                    id=15,
+                    description="moment five",
+                    version=version(family),
+                ),
                 said("Noted."),
             ),
         ).run()

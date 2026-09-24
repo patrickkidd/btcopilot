@@ -11,6 +11,7 @@ from btcopilot.timeline import build_timeline
 from btcopilot.models import Author, Change
 from btcopilot.toolbox import ToolError, ToolName, Toolbox, schemas
 from btcopilot.models import Diagram
+from btcopilot.tests.conftest import version
 
 FAMILY = {
     "people": [
@@ -30,6 +31,8 @@ def _diagram(user, data: dict | None = None) -> Diagram:
 
 
 def _event(diagram, **args) -> dict:
+    if "id" in args:
+        args["version"] = version(diagram)
     Toolbox(diagram.id, "t1").call(ToolName.EditEvent.value, args)
     return diagram.get_diagram_data().events[-1]
 
@@ -68,9 +71,9 @@ def test_notes_are_read_by_tool_not_shown_in_the_record(subscriber):
     assert record.count("(has notes)") == 2
     tools = Toolbox(diagram.id, "t2")
     one, _ = tools.call(ToolName.ReadNotes.value, {"event": first["id"]})
-    assert one == f"{first['id']}: Took the job in Tulsa"
+    assert one.splitlines()[0] == f"{first['id']}: Took the job in Tulsa"
     every, _ = tools.call(ToolName.ReadNotes.value, {})
-    assert every.splitlines() == [
+    assert every.splitlines()[:2] == [
         f"{first['id']}: Took the job in Tulsa",
         f"{second['id']}: \"Finally some quiet\"",
     ]
@@ -315,7 +318,8 @@ def test_a_correction_changes_the_record_at_once_with_nothing_held_pending(subsc
         description="Worried after the move",
     )
     Toolbox(diagram.id, "t2").call(
-        ToolName.EditEvent.value, {"id": added["id"], "date": "2018-03-01"}
+        ToolName.EditEvent.value,
+        {"id": added["id"], "date": "2018-03-01", "version": version(diagram)},
     )
     data = diagram.get_diagram_data()
     assert data.events[0]["dateTime"] == "2018-03-01"
