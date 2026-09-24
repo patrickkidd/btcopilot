@@ -140,6 +140,20 @@ Changes something: needs `--yes`.
 | `key` | required |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin observations`
+
+What the watcher after each coach turn noticed.
+
+### `flask admin observations list`
+
+Every row, oldest first.
+
+| Argument | What it is |
+|---|---|
+| `--diagram` | Only one record's rows. |
+| `--kind` | Only one kind of row. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin review`
 
 The coding meeting.

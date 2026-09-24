@@ -69,7 +69,8 @@ supersedes the old hard-cutover plan.
 
 ## Where the build stands (live — revise, do not append)
 
-**Branch `FD-362` in btcopilot, draft PR #136. fdserver is out of this work (2026-09-16):**
+**PR #136 (branch `FD-362`) is merged to master; the fast-follow is branch `FD-363`, one batch
+PR [R-0484]. fdserver is out of this work (2026-09-16):**
 the prompts and the rulings are encrypted files in this repo, the new box's deployment is
 `deploy/` here, and Patrick closed fdserver PR #30 unmerged. Nothing the chat app runs
 reads from fdserver. The beta build is real code against the real database, not a throwaway.
@@ -222,6 +223,38 @@ were grounded from Patrick's own recorded words: 15 rulings mined with his quote
 dead or ungrounded tests deleted; the unclear points are kept in the private corpus ledger. Known
 defects the new tests found are strict expected failures listed in doc/KNOWN_DEFECTS.md, for the
 fast-follow PRs, as is the session-end second look [R-0443].
+
+**2026-09-24 — FD-363, the fast-follow.** Built on branch FD-363, not yet on the box:
+- **Every tool call stays on the thread.** A coach turn's tool calls are kept in the database
+  when it ends, whether it finished, failed or was refused, so every session shows them after a
+  reload [R-0478]. The coach is given its own earlier tool calls; an earlier read's answer is
+  replaced by a line telling it to read again. A migration fills this in for old turns from the
+  change log.
+- **A failed turn is picked up, not redone.** Its edits stay. Trying again resumes the same turn
+  with its own tool calls and stores no new words; only the last message can be tried again, and
+  only when its turn failed [R-0477].
+- **Record versions.** Every read ends with the record version, and every change to something
+  already in the record names the version it was based on. A change made after another writer's
+  write is refused, and the coach reads again [R-0480].
+- **A map instead of the whole record** (being built). The prompt carries people with ids, birth
+  and death years and event counts, pair bonds, clusters, events per decade and the version; the
+  coach reads the rest through tools, including event ids, words, notes and recent changes
+  [R-0479].
+- **A check after every turn writes down likely mistakes and changes nothing.** It writes a row
+  for a person with the same name and birth year as another, an event that matches another on
+  kind, day, people and what moved, and an add made before any read in that turn. It looks only
+  at what the turn touched. `flask admin observations list` shows the rows; they seed regression
+  evals [R-0481, R-0482]. Three live eval cases — a retry after a failure, an event said again,
+  a person the record already holds — are scored on zero repeats and run only with Patrick's key.
+- **The page** (being built) draws the kept tool lines, shows a failed turn with its lines and
+  try again, and makes try again resume the turn.
+- **The acceptance gate** (being built): a production dump restored into a throwaway Postgres and
+  migrated, counts and orphans checked, then browser checks at phone and desktop.
+
+Open from this work: the record already refuses an added event that matches another on kind,
+day, people and what moved, which is the kind of fixed guard R-0481 says there is none of — it
+stays until Patrick rules. Hand edits of events on the page skip the change log, which awaits his
+ruling.
 
 **What is not true yet on the box.** The dashboards and the cost rows are built but not deployed:
 that waits on Patrick putting the Grafana token there and refreshing the dependency lock. There is
@@ -441,9 +474,10 @@ state. The release workflow builds the browser app into the wheel, ships sops an
 prompts in the image, and starts the image on an empty database to fetch the chat page.
 
 **Found by Patrick testing alone, 2026-09-09 evening** (rows 67–69 of the review log): a
-failed coach turn used to leave the user's words stored, so a retry stored them again — fixed,
-the words now land only with the coach's answer, and a second send while one is in flight does
-nothing. One tap posted learning data with no item kind and is not yet identified. The coach in
+failed coach turn used to leave the user's words stored, so a retry stored them again. Since
+2026-09-24 the words are stored before the turn runs, not with the reply, and trying again
+resumes that same turn without storing them a second time [R-0477]; a second send while one is
+in flight does nothing. One tap posted learning data with no item kind and is not yet identified. The coach in
 the sandbox is down until the Anthropic API account behind the key has credit again.
 
 **Spec and gap.** UI_SPEC.md carries 444 value rows, 52 resolutions and 3 open items.

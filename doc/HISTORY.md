@@ -1431,3 +1431,20 @@ coverage gap is part of every change; he adjudicates the process, never reads te
 R-0449]. He ratified two proposed rulings and replaced a third [R-0450], chose CI-only guards with
 the key scoped to one step [R-0451], and asked that the session keep to merging efficiently so a
 new session can take his next ideas.
+
+**2026-09-24, FD-363.** In the session that opened the fast-follow after PR #136 merged,
+Patrick ruled that a failed turn keeps its edits and is resumed, not redone [R-0477]; that every tool call in every
+session stays visible [R-0478]; that the coach works over the record the way Claude Code works
+over code, with a map in the prompt, reading what it needs and changing only what is necessary
+[R-0479]; that reads carry the record version and a change based on an old version is refused
+[R-0480]; that nothing fixed guards against repeated people or events, because the coach has to
+see [R-0481]; that such mistakes are written down to seed evals, never blocked [R-0482]; that
+every push to production first shows evidence from the stored rows and from the page [R-0483];
+that the fast-follow is one batch PR pushed continuously, tested in his own thread with no data
+loss [R-0484]; and that how much of the family history is covered is the coach's call, with no
+number bar [R-0485]. The first session built kept tool calls, resume and record versions, then
+handed over. The second ran builders under an auditor for the map, the page, the check after
+each turn, the live eval cases and the gate. Writing that check found the record already refuses
+an added event matching another on kind, day, people and what moved, which R-0481 says should
+not exist; it was left in place for his ruling. The earlier note in STATE that the user's words
+are stored with the reply was wrong: they are stored before the turn runs.

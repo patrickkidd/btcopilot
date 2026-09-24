@@ -11,7 +11,7 @@ import uuid
 
 from btcopilot import extensions
 from btcopilot.extensions import db
-from btcopilot import chips, turnlog, turnstore
+from btcopilot import chips, observer, turnlog, turnstore
 from btcopilot.coachmodel import Refusal
 from btcopilot.coachturn import CoachTurn, record_of
 from btcopilot.discussions import session_payload
@@ -137,13 +137,9 @@ def run(
         turnlog.clear(discussion_id)
         turnlog.append(turn_id, failed)
         raise
-    turnstore.save(
-        turn_id,
-        discussion_id,
-        turn.kept
-        + [{"type": TurnEventKind.Done.value, "statement_id": reply["statement_id"]}],
+    _keep(
+        turn, {"type": TurnEventKind.Done.value, "statement_id": reply["statement_id"]}
     )
-    db.session.commit()
     reply["kind"] = StatementKind.Turn.value
     reply["discussion_id"] = discussion_id
     turnlog.clear(discussion_id)
@@ -159,5 +155,10 @@ def _unanswered(turn: CoachTurn, statement_id: int, ending: dict) -> None:
     Change.query.filter_by(diagram_id=turn.diagram.id, turn_id=turn.turn_id).update(
         {"statement_id": statement_id}
     )
+    _keep(turn, ending)
+
+
+def _keep(turn: CoachTurn, ending: dict) -> None:
     turnstore.save(turn.turn_id, turn.discussion.id, turn.kept + [ending])
+    observer.observe(turn.diagram.id, turn.turn_id, turn.data)
     db.session.commit()

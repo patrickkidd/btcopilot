@@ -12,6 +12,8 @@ from btcopilot.admin import admin
 from btcopilot.admin import guard, setting, skill
 from btcopilot.tests import olddump
 from btcopilot.admin.setting import SettingKey
+from btcopilot.extensions import db
+from btcopilot.models import Observation, ObservationKind
 
 
 @pytest.fixture
@@ -77,6 +79,24 @@ def test_diagram_counts_and_export(run, test_user):
     assert isinstance(exported, dict)
 
 
+def test_observations_list_by_kind(run, test_user):
+    # R-0482
+    for kind in (ObservationKind.DuplicatePerson, ObservationKind.AddWithoutRead):
+        db.session.add(
+            Observation(
+                diagram_id=test_user.free_diagram_id,
+                turn_id="t1",
+                kind=kind,
+                detail={"ids": [2, 4]},
+            )
+        )
+    db.session.commit()
+    listed = rows(run("observations", "list", "--kind", "duplicate_person", "--json"))
+    assert [(one["kind"], one["detail"]) for one in listed] == [
+        ("duplicate_person", {"ids": [2, 4]})
+    ]
+
+
 def test_import_dry_run_counts_and_writes_nothing(run, tmp_path):
     # R-0327
     dump = olddump.build(tmp_path / "old.db")
@@ -120,12 +140,13 @@ def test_db_upgrade_builds_the_chain_from_empty(flask_app, tmp_path):
     flask_app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{tmp_path / 'fresh.db'}"
     result = flask_app.test_cli_runner().invoke(admin, ["db", "upgrade"])
     assert result.exit_code == 0, result.output
-    assert result.output.strip().startswith("at 1b00000000ab")
+    assert result.output.strip().startswith("at 1b00000000ac")
 
 
 READS = {
     "users list", "users show", "licences list", "licences plans", "diagrams list",
-    "diagrams show", "diagrams export", "imports dry-run", "token-cap show",
+    "diagrams show", "diagrams export", "observations list", "imports dry-run",
+    "token-cap show",
     "review agenda", "review cuts", "review codings", "review nudge show",
     "db current", "skill", "run",
 }

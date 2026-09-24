@@ -163,3 +163,6 @@ no printed values at both levels is not a pass. This exists because testing rout
 lazy: a feature was called done on one level, or on a builder's say-so, and Patrick found
 it broken. Only features validated this way go to production, where beta data is precious
 and cannot be reproduced.
+
+**Brainstorm topics are taken one at a time (2026-09-24, Patrick).** One topic per round,
+never several topics presented together.
