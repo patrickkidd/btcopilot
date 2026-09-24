@@ -259,7 +259,7 @@ The isolation test at `btcopilot/tests/schema/test_isolation.py` enforces this b
 
 - **Purpose:** Capture full diversity of opinions and their evolution per CI theory — both agreement AND unresolved ambiguity — for later retroactive rule extraction with confidence scores.
 - **Exhaustiveness rule:** Every substantive point must be captured. Common failure: summarizing away tangential points (heuristics, anecdotes, personal examples, side conversations, process observations, historical references). These MUST be included. Audit transcript line-by-line before declaring completion.
-- **Raw transcripts are always committed** — they are irreplaceable ground truth. Never delete them.
+- **Raw transcripts never enter this repo** (they name real people); they live in the private corpus. Their de-identified findings are published in `doc/irr/` [Oracle: R-0413].
 - **Always keep `btcopilot/doc/irr/README.md` in sync** when adding/modifying meetings or artifacts.
 
 ---
@@ -288,14 +288,6 @@ All web UI must work in **both light and dark modes**:
 - Tables: use `.table` without custom backgrounds
 - Test dark mode via chrome-devtools before completing UI work
 
-### Data Serialization
-
-`Diagram.data` MUST use pickle format. Only these types allowed in pickle data:
-- Built-in: `str`, `int`, `float`, `bool`, `list`, `dict`, `None`
-- QtCore types from PyQt5 (e.g., `QDate`, `QDateTime`)
-
-**NEVER pickle**: classes from `btcopilot.*`, `fdserver.*`, dataclasses, Pydantic models, third-party classes (except QtCore). User will manually delete broken discussions with `ModuleNotFoundError`.
-
 ---
 
 ## Flask Server
@@ -321,7 +313,6 @@ package is incompatible (symptom: `create_app() takes 0 to 1 positional argument
 - **Async**: `--asyncio-mode=auto` (configured in `btcopilot/tests/pytest.ini`)
 - **Directories**: `btcopilot/tests/chat/` (the chat app's suite), `btcopilot/tests/schema/`, `btcopilot/tests/test_*.py`
 - **Every test cites the ruling it proves (R-0421)**: `# R-0NNN` as the first line under a Python test's def, `// R-0NNN` on the line above a TypeScript/Playwright test; several ids comma-separated; never a process ruling for product behaviour.
-- **A test that proves no ruling** says `# no ruling` / `// no ruling` and gets one line in `doc/TESTS_WITHOUT_RULING.md` saying what it proves; never guess an id.
 - **A new test without a citation fails** the trace guard in `btcopilot/tests/conventions/test_oracle.py`; `# no ruling` fails it too (oracle SPEC section 1).
 
 ### Database
