@@ -3,8 +3,6 @@
 import importlib.util
 import re
 
-import pytest
-
 from btcopilot.personal.models import Discussion, DiscussionStatus, Statement
 from btcopilot.tests.repo import PACKAGE, REPO
 
@@ -58,10 +56,6 @@ def test_nothing_in_the_app_asks_for_an_extraction_prompt():
     assert callers == []
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="the chat database still carries the extraction pipeline's columns and statuses",
-)
 def test_the_chat_database_keeps_nothing_of_the_pending_extraction():
     # R-0414
     left = [
@@ -76,3 +70,8 @@ def test_the_chat_database_keeps_nothing_of_the_pending_extraction():
     ]
     left += [s.value for s in DiscussionStatus if "extract" in s.value]
     assert left == []
+    schema = (PACKAGE / "migrations" / "versions" / "1b00000000aa_the_app_from_empty.py").read_text()
+    assert not re.search(r"extract|pdp_deltas", schema.replace("relative date extraction", ""))
+    deploy = (REPO / ".github" / "workflows" / "release.yml").read_text()
+    for column in ("extracting", "extracted_through_order", "pending_extracted_through_order", "pdp_deltas"):
+        assert f"DROP COLUMN {column}" in deploy

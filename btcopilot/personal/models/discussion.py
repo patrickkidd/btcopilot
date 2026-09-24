@@ -21,8 +21,6 @@ class DiscussionStatus(enum.StrEnum):
     Pending = "pending"
     Generating = "generating"
     Failed = "failed"
-    PendingExtraction = "pending_extraction"
-    Extracting = "extracting"
     Ready = "ready"
 
 
@@ -61,12 +59,6 @@ class Discussion(db.Model, ModelMixin):
         nullable=False,
         server_default=DiscussionStatus.Pending.value,
     )
-    extracting = Column(
-        Boolean,
-        default=False,
-        nullable=False,
-        comment="Whether background extraction job should run for this discussion's statements",
-    )
     synthetic = Column(
         Boolean,
         default=False,
@@ -87,20 +79,6 @@ class Discussion(db.Model, ModelMixin):
     calibration_report = Column(JSON, nullable=True)
     calibration_advice = Column(JSON, nullable=True)
     statement_reviews = Column(JSON, nullable=True)
-    extracted_through_order = Column(
-        Integer,
-        nullable=True,
-        comment="Re-extraction cursor: highest Statement.order whose extraction "
-        "has been accepted/committed. NULL = nothing accepted yet (extract from "
-        "the start, legacy behaviour). Advances only on full PDP accept.",
-    )
-    pending_extracted_through_order = Column(
-        Integer,
-        nullable=True,
-        comment="Max Statement.order included in the most recent extract, held "
-        "until that PDP is accepted; on full accept it is promoted to "
-        "extracted_through_order. NULL when no extract awaits acceptance.",
-    )
     user = relationship("User")
     diagram = relationship("Diagram", back_populates="discussions")
     statements = relationship(

@@ -112,10 +112,12 @@ jobs:
             # one time (R-0417): a database on the retired chain is stamped to the single revision
             psql() { docker compose --env-file /etc/fd/secrets.env exec -T fd-postgres psql -U chat -d chat -tAc "$1"; }
             at=$(psql "SELECT CASE WHEN to_regclass('alembic_version') IS NULL THEN '' ELSE (SELECT string_agg(version_num, ',') FROM alembic_version) END")
+            # the retired chain kept the extraction pipeline's columns and statuses (R-0414); the single revision has none
+            unpipe="ALTER TABLE discussions DROP COLUMN extracting, DROP COLUMN extracted_through_order, DROP COLUMN pending_extracted_through_order; ALTER TABLE statements DROP COLUMN pdp_deltas; ALTER TYPE discussionstatus RENAME TO discussionstatus_retired; CREATE TYPE discussionstatus AS ENUM ('pending', 'generating', 'failed', 'ready'); ALTER TABLE discussions ALTER COLUMN status DROP DEFAULT, ALTER COLUMN status TYPE discussionstatus USING status::text::discussionstatus, ALTER COLUMN status SET DEFAULT 'pending'; DROP TYPE discussionstatus_retired"
             case "$at" in
               ""|1b00000000aa) ;;
-              1a00000000ae) psql "ALTER TABLE model_calls ADD COLUMN fallback JSONB; UPDATE alembic_version SET version_num = '1b00000000aa'" ;;
-              1a00000000af) psql "UPDATE alembic_version SET version_num = '1b00000000aa'" ;;
+              1a00000000ae) psql "ALTER TABLE model_calls ADD COLUMN fallback JSONB; $unpipe; UPDATE alembic_version SET version_num = '1b00000000aa'" ;;
+              1a00000000af) psql "$unpipe; UPDATE alembic_version SET version_num = '1b00000000aa'" ;;
               *) echo "database is at retired revision $at; stamp it by hand before deploying" >&2; exit 1 ;;
             esac
             docker compose --env-file /etc/fd/secrets.env exec -T fd-app flask admin db upgrade

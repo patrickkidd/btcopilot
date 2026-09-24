@@ -33,7 +33,6 @@ class Statement(db.Model, ModelMixin):
     text = Column(Text)
     discussion_id = Column(Integer, ForeignKey("discussions.id"))
     speaker_id = Column(Integer, ForeignKey("speakers.id"))
-    pdp_deltas = Column(JSON)
     # What the coach aimed the picture at on this turn: a list of views, each a
     # view kind plus parameters whose every id resolves in the record (R-0085).
     views = Column(JSON)
@@ -60,11 +59,6 @@ class Statement(db.Model, ModelMixin):
     def is_approved(self):
         """Check if this statement's extraction is approved"""
         return bool(self.approved)
-
-    @property
-    def can_export(self):
-        """Check if this statement can be exported as a test case"""
-        return self.approved and not self.exported_at and self.pdp_deltas
 
     def __repr__(self):
         return f"<Statement {self.id}: {self.text[:50]}...>"
