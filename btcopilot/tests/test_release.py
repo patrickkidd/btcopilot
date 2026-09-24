@@ -29,3 +29,10 @@ def test_one_migration_and_the_box_is_stamped_to_it_on_deploy():
         stamp = next(line for line in DEPLOY.splitlines() if line.strip().startswith(f"{retired})"))
         assert "UPDATE alembic_version SET version_num = '1b00000000aa'" in stamp
     assert DEPLOY.index("1a00000000af)") < DEPLOY.index("flask admin db upgrade")
+
+
+def test_a_deploy_imports_no_old_records():
+    # R-0355
+    assert "flask admin db upgrade" in DEPLOY
+    assert "imports" not in DEPLOY and "proimport" not in DEPLOY
+

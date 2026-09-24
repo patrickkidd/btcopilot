@@ -84,6 +84,17 @@ def test_no_meeting_record_of_real_people_is_in_the_repo():
     )
 
 
+def test_every_irr_meeting_has_its_findings_in_public_without_names():
+    # R-0413
+    irr = REPO / "doc" / "irr"
+    findings = (irr / "MEETING_FINDINGS.md").read_text()
+    met = sorted(p.name[:10] for p in (irr / "results").glob("*-irr-results.md"))
+    assert met
+    assert re.findall(r"^## (\d{4}-\d{2}-\d{2}):", findings, re.M) == met
+    assert not EMAIL.search(findings)
+    assert not re.search(r"\b(Dr|Mrs?|Ms)\.? [A-Z]", findings)
+
+
 def test_no_database_dump_is_in_the_repo():
     # R-0053
     found = [name for name in tracked() if DUMP.search(name)]
