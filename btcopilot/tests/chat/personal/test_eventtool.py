@@ -5,7 +5,7 @@ import pickle
 import pytest
 
 from btcopilot.extensions import db
-from btcopilot.personal.recordtext import event_line
+from btcopilot.personal.recordtext import event_line, render
 from btcopilot.personal.timeline import build_timeline
 from btcopilot.personal.toolbox import ToolError, ToolName, Toolbox
 from btcopilot.models import Diagram
@@ -46,7 +46,32 @@ def test_notes_fold_into_the_existing_event(subscriber):
     changed = _event(diagram, id=added["id"], notes='"I never slept that spring"')
     assert changed["notes"] == '"I never slept that spring"'
     assert len(diagram.get_diagram_data().events) == 1
-    assert "I never slept that spring" in event_line(changed)
+    assert "(has notes)" in event_line(changed)
+
+
+def test_notes_are_read_by_tool_not_shown_in_the_record(subscriber):
+    # R-0446
+    diagram = _diagram(subscriber.user)
+    first = _event(
+        diagram, kind="noted", date="2019-03-01", person=1, description="Moved",
+        notes="Took the job in Tulsa",
+    )
+    second = _event(
+        diagram, kind="noted", date="2020-05-01", person=2, description="Retired",
+        notes='"Finally some quiet"',
+    )
+    _event(diagram, kind="noted", date="2021-01-01", person=1, description="Sold house")
+    record = render(diagram.get_diagram_data())
+    assert "Tulsa" not in record and "quiet" not in record
+    assert record.count("(has notes)") == 2
+    tools = Toolbox(diagram.id, "t2")
+    one, _ = tools.call(ToolName.ReadNotes.value, {"event": first["id"]})
+    assert one == f"{first['id']}: Took the job in Tulsa"
+    every, _ = tools.call(ToolName.ReadNotes.value, {})
+    assert every.splitlines() == [
+        f"{first['id']}: Took the job in Tulsa",
+        f"{second['id']}: \"Finally some quiet\"",
+    ]
 
 
 def test_two_same_day_shifts_on_one_person_land_when_the_variables_differ(subscriber):

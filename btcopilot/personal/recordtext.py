@@ -67,7 +67,7 @@ def event_line(event: dict) -> str:
     if event.get("description"):
         parts.append(f'"{event["description"]}"')
     if event.get("notes"):
-        parts.append(f'notes="{event["notes"]}"')
+        parts.append("(has notes)")
     for key in SHIFTS:
         value = _enum_val(event.get(key))
         if value:

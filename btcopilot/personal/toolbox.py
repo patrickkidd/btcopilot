@@ -35,6 +35,7 @@ SHIFTS = ("anxiety", "symptom", "functioning")
 class ToolName(enum.StrEnum):
     ReadPeople = "read_people"
     ReadEvents = "read_events"
+    ReadNotes = "read_notes"
     EditPerson = "edit_person"
     EditPairBond = "edit_pair_bond"
     EditEvent = "edit_event"
@@ -90,6 +91,19 @@ def schemas() -> list[dict]:
                     "end": {"type": "string", "description": "YYYY-MM-DD"},
                     "person": {"type": "integer"},
                     "cluster": {"type": "string"},
+                },
+            },
+        },
+        {
+            "name": ToolName.ReadNotes.value,
+            "description": means[prompts.ToolText.ReadNotes],
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "event": {
+                        "type": "integer",
+                        "description": "One event's id; leave it out for every event that has notes.",
+                    },
                 },
             },
         },
@@ -345,6 +359,15 @@ class Toolbox:
             ]
         events.sort(key=lambda e: (date_text(e.get("dateTime")) or "", e["id"]))
         return ("\n".join(event_line(e) for e in events) or "No events.", None)
+
+    def _read_notes(self, args: dict) -> tuple[str, None]:
+        data = self.data
+        events = [e for e in data.events if isinstance(e, dict) and e.get("notes")]
+        if args.get("event") is not None:
+            wanted = self._event(data, args["event"])
+            events = [e for e in data.events if e.get("id") == wanted]
+        lines = [f"{e['id']}: {e.get('notes') or 'no notes'}" for e in events]
+        return ("\n".join(lines) or "No event has notes.", None)
 
     # ── EDIT ────────────────────────────────────────────────────────────────
 

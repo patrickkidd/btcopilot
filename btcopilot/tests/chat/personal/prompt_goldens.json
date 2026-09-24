@@ -40,7 +40,8 @@
     "relationship_triangles": "A second list of people the relationship links. Required when relationship is inside or outside.",
     "person_a": "One side of the bond. A bond is between two different people and there is one bond ever between any two of them.",
     "person_b": "The other side. Leave it out only when nobody named them: the record then adds them as a generically named person, because a bond with one side is not a bond.",
-    "parents": "The id of the pair bond this person was born into. Children are the offspring of a bond, so the two parents must have one first."
+    "parents": "The id of the pair bond this person was born into. Children are the offspring of a bond, so the two parents must have one first.",
+    "read_notes": "The notes kept on events. The record only says which events have notes, so read them before changing an event's notes, since a change replaces the whole text, and whenever what was said there matters to the conversation."
   },
   "generic_name": "Marcus's father"
 }
