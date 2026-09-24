@@ -40,6 +40,10 @@ the same name (`FD-NNN`; if taken, `FD-NNN-<slug>`; no ticket, a short slug), cr
 - **A change to the rulings store needs its fingerprints re-pinned**: CI prints the lines to
   paste.
 
+## Production
+
+The box is reached as `ssh familydiagram` (Patrick's ssh config; never the raw IP). Deploys: the release workflow builds and tags the image; the rollout runs on the box from `/var/www/btcopilot/deploy` with `--env-file /etc/fd/secrets.env`. Grafana Cloud is administered through its API with `GRAFANA_SA_TOKEN` and `GRAFANA_URL` from the parent `.env`.
+
 ## Jira
 
 Site `https://alaskafamilysystems.atlassian.net`, project **FD**, REST v3, HTTP basic as
