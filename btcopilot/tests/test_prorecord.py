@@ -110,8 +110,8 @@ def test_editing_an_event_by_hand_keeps_the_fields_only_the_desktop_knows(web, t
 WRITES = {"POST", "PUT", "PATCH", "DELETE"}
 
 
-def test_nothing_outside_the_chat_app_can_write_a_record(flask_app):
-    # R-0082
+def test_nothing_outside_the_app_can_write_a_record(flask_app):
+    # R-0471
     written = {
         rule.rule
         for rule in flask_app.url_map.iter_rules()
@@ -119,3 +119,9 @@ def test_nothing_outside_the_chat_app_can_write_a_record(flask_app):
     }
     assert written == set()
 
+
+
+def test_a_new_record_is_json_with_no_desktop_wire(flask_app, test_user):
+    # R-0471
+    assert diagramjson.is_json(test_user.free_diagram.data)
+    assert not hasattr(test_user.free_diagram, "pickled")

@@ -20,7 +20,7 @@ def _diagram(user, data: dict) -> Diagram:
 
 
 def test_pickle_row_reads_and_stays_pickle(subscriber):
-    # R-0241
+    # R-0422
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
     assert not diagramjson.is_json(diagram.data)
 

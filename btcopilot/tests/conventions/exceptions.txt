@@ -67,4 +67,3 @@ R-0444 | WAIVED | an architecture principle; the review it calls for is R-0443
 R-0468 | WAIVED | the box was created by hand in the provider console; no file in the repo holds its region
 R-0469 | TEST OWED | the naming test covers no app-distinguishing names; features by license has no test yet
 R-0470 | TEST OWED | the naming test covers the one app; the other clauses have no test yet
-R-0471 | TEST OWED | the naming test covers the folders; the dropped desktop connection has no test yet
