@@ -52,7 +52,7 @@ R-0354 | WAIVED | a pricing decision, deferred
 R-0365 | TEST OWED | not built: the import path does not translate old desktop event kinds such as moved; the per-diagram import is deferred (R-0355)
 R-0379 | TEST OWED | not built: the family diagram with the trouble lit needs auto-arrangement, which the app does not have
 R-0380 | WAIVED | a design principle about concepts; judged by eye
-R-0382 | TEST OWED | not built: the gap between a cluster's opening event and its symptom is not drawn
+R-0382 | TEST OWED | not built yet: nothing draws the time from where a cluster starts to its symptom
 R-0386 | WAIVED | a branch and release arrangement outside this branch
 R-0387 | TEST OWED | not built: no play or replay button under a coach reply; only the global speak switch exists
 R-0394 | WAIVED | housekeeping in another repository, done

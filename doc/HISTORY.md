@@ -1405,8 +1405,8 @@ dead from useful [R-0415]; few screenshot goldens, geometry gates, his approval 
 changes [R-0416]; one migration and a stamp on deploy [R-0417]; delete-with-reference for the
 auto-arrange code and its kind [R-0418]; date versions with a leading three and the appcast out
 [R-0419]; the docs folder made top-level with archiving, never deletion, of history [R-0420];
-every test cites its ruling, swept now, "we need to set a standard for tests and then stick to
-it" [R-0421]; the old-diagram reader kept [R-0422]. The prompt review guide came back massive
+every test cites its ruling, swept now, as a standard kept from here on
+[R-0421]; the old-diagram reader kept [R-0422]. The prompt review guide came back massive
 against his instruction to keep it short; he asked instead for a page he can comment on, with
 links, and got one. Three times an agent was refused permission to decrypt private files, and he
 decrypted them himself into the corpus folder; that folder sat untracked but not ignored in a

@@ -194,7 +194,7 @@ describe("over- and underfunctioning", () => {
     Math.abs((arrow.top + arrow.bottom) / 2 - who.y) < 1;
 
   // R-0119
-  it("puts an up arrow beside the over-functioner and a down arrow beside the other", () => {
+  it("marks the over-functioner with an up arrow and the partner with a down arrow", () => {
     const [a, b] = pair;
     const marks = move(Move.Overfunctioning).marks;
     const up = flank(marks, "up");

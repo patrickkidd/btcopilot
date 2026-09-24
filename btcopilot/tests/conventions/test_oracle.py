@@ -20,7 +20,6 @@ from btcopilot.oracle import ROOT, Kind, Status, Tag
 from btcopilot.personal.promptdir import encrypted
 
 pytestmark = pytest.mark.conventions
-SWEEP = pytest.mark.xfail(strict=True, reason="grounding sweep in progress (R-0447)")
 
 HERE = Path(__file__).parent
 FINGERPRINTS = HERE / "fingerprints.txt"
@@ -181,7 +180,6 @@ def test_no_ruling_id_is_deleted_or_repointed():
     assert unpinned == [], "put these lines in fingerprints.txt, replacing the id's line (bin/fingerprints.py does it with a key)"
 
 
-@SWEEP
 def test_every_test_cites_a_live_ruling():
     # R-0447, R-0331, R-0421
     found = oracle.rulings()
@@ -206,7 +204,6 @@ def exceptions() -> dict[str, tuple[Status, str]]:
     return out
 
 
-@SWEEP
 def test_every_ruling_is_tested_or_excepted():
     # R-0447, R-0331
     found = oracle.rulings()
