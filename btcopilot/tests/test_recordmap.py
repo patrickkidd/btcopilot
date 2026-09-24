@@ -137,3 +137,8 @@ def test_the_latest_changes_come_newest_first_with_the_version_each_made(family)
     ]
     every, _ = tools.call(ToolName.ReadChanges.value, {})
     assert every.splitlines()[1] == f'Version {now - 1}, coach: person 1 name="Ada"'
+
+
+def test_an_empty_record_still_carries_its_version():
+    # R-0479
+    assert recordtext.outline(DiagramData(), 0) == "Record version 0."

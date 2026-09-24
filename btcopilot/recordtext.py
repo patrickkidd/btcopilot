@@ -181,9 +181,9 @@ def _span(cluster: dict, dates: dict) -> str:
 def outline(data: DiagramData | None, version: int, speaker: int | None = None) -> str:
     """A map of the record rather than the record (R-0479): who is in it, how
     the events spread over time, and the version it was drawn at. The coach
-    reads the rest with its tools. Empty when nothing is stored yet."""
+    reads the rest with its tools. Only the version when nothing is stored yet."""
     if data is None:
-        return ""
+        return version_line(version)
     events = _rows(data.events)
     dates = {e["id"]: date_text(e.get("dateTime")) for e in events}
     decades = Counter(f"{d[:3]}0s" if d else "undated" for d in dates.values())
@@ -202,8 +202,7 @@ def outline(data: DiagramData | None, version: int, speaker: int | None = None) 
             [", ".join(f"{d} {n}" for d, n in sorted(decades.items()))] if events else [],
         ),
     ]
-    body = "\n\n".join(section for section in sections if section)
-    return f"{body}\n\n{version_line(version)}" if body else ""
+    return "\n\n".join(s for s in [*sections, version_line(version)] if s)
 
 
 def interactions(rows: list[Interaction]) -> str:

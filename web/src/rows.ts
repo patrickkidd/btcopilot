@@ -23,9 +23,9 @@ const SHIFTS: [keyof TimelineEvent, string][] = [
   ["functioning", "F"],
 ];
 
-export function when(event: TimelineEvent): string {
-  if (!event.dateTime) return "no date yet";
-  const [year, month] = event.dateTime.split("-");
+export function when(dateTime: string | null): string {
+  if (!dateTime) return "no date yet";
+  const [year, month] = dateTime.split("-");
   return month ? `${MONTHS[Number(month) - 1]} ${year}` : year;
 }
 
@@ -60,7 +60,7 @@ export function eventRow(
   names: Map<number, string>,
   on = false,
 ): string {
-  const meta = [when(event), event.person_name, codes(event, names)]
+  const meta = [when(event.dateTime), event.person_name, codes(event, names)]
     .filter(Boolean)
     .join(" \u00b7 ");
   return (

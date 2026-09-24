@@ -1,3 +1,6 @@
+import { when } from "./rows";
+import { ViewKind } from "./types";
+
 /** What a tool call says in plain words, as the one line the chat shows for it,
  * live and after a reload (R-0478). A call with no id is making something; a
  * call with one is changing what is already there. */
@@ -23,8 +26,17 @@ const SUBJECT: Partial<Record<ToolName, string>> = {
   [ToolName.EditCluster]: "a cluster",
 };
 
+const SHOWN: Record<ViewKind, string> = {
+  [ViewKind.Triangle]: "a triangle",
+  [ViewKind.Span]: "a stretch of time",
+  [ViewKind.Compare]: "two events side by side",
+  [ViewKind.Sequence]: "events in order",
+  [ViewKind.Cluster]: "a cluster",
+};
+
 function words(args: Record<string, unknown>): string {
-  const said = [args.name, args.description, args.title, args.dateTime]
+  const date = typeof args.date === "string" && args.date ? when(args.date) : null;
+  const said = [args.name, args.description, args.title, date]
     .filter((v): v is string => typeof v === "string" && v.trim() !== "")
     .map((v) => v.trim());
   return said.slice(0, 2).join(", ");
@@ -48,7 +60,7 @@ export function toolLine(
     case ToolName.ReadChanges:
       return "Looked at recent changes";
     case ToolName.Show:
-      return null;
+      return `Showed ${SHOWN[args.kind as ViewKind] ?? "the picture"}`;
     case ToolName.Remove:
       return "Removed it";
     case ToolName.Undo:

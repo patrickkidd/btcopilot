@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { toolLine, ToolName } from "../src/tools";
+import { ViewKind } from "../src/types";
 
 describe("what a tool call says in plain words", () => {
   // R-0186
@@ -13,10 +14,13 @@ describe("what a tool call says in plain words", () => {
   });
 
   // R-0186
-  it("names an event by its words and its date", () => {
+  it("names an event by its words and its date, as the record list says it", () => {
     expect(
-      toolLine(ToolName.EditEvent, { description: "moved out", dateTime: "1994-06-01" }),
-    ).toBe("Added moved out, 1994-06-01");
+      toolLine(ToolName.EditEvent, { description: "moved out", date: "1994-06-01" }),
+    ).toBe("Added moved out, Jun 1994");
+    expect(toolLine(ToolName.EditEvent, { description: "born", date: "1994" })).toBe(
+      "Added born, 1994",
+    );
   });
 
   // R-0186
@@ -32,9 +36,12 @@ describe("what a tool call says in plain words", () => {
     expect(toolLine(ToolName.ReadChanges, {})).toBe("Looked at recent changes");
   });
 
-  // R-0186
-  it("says nothing for showing the picture", () => {
-    expect(toolLine(ToolName.Show, { kind: "triangle" })).toBeNull();
+  // R-0478
+  it("says what the coach showed", () => {
+    expect(toolLine(ToolName.Show, { kind: ViewKind.Triangle })).toBe("Showed a triangle");
+    expect(toolLine(ToolName.Show, { kind: ViewKind.Span })).toBe(
+      "Showed a stretch of time",
+    );
   });
 
 });
