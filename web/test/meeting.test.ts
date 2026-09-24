@@ -44,7 +44,7 @@ describe("seated", () => {
     expect(seated(order, after).indexOf(9)).toBe(order.indexOf(9));
   });
 
-  // no ruling
+  // R-0341
   it("seats what the list has newly gained at the end and drops what it lost", () => {
     const order = seated([7, 9], [item(9, ItemStatus.Disputed), item(11, ItemStatus.Disputed)]);
     expect(order).toEqual([9, 11]);

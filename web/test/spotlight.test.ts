@@ -45,7 +45,7 @@ describe("the words a moment says about itself", () => {
     expect(whoText("Ada", "Ada")).toBe("");
   });
 
-  // no ruling
+  // R-0235
   it("a long line wraps onto a second row at a space", () => {
     expect(wrap2("the winter everybody stopped speaking", 20)).toEqual([
       "the winter everybody",
@@ -53,7 +53,7 @@ describe("the words a moment says about itself", () => {
     ]);
   });
 
-  // no ruling
+  // R-0181
   it("a word too long to break is cut rather than left hanging", () => {
     const [first] = wrap2("x".repeat(40), 20);
     expect(first).toHaveLength(20);
@@ -75,7 +75,7 @@ describe("the spotlight: dense and sparse", () => {
     expect(dotRadius(200)).toBe(1.8);
   });
 
-  // no ruling
+  // R-0001
   it("what the coach did not name recedes only when it named something", () => {
     expect(baseOpacity(6, 0)).toBe(1);
     expect(baseOpacity(6, 2)).toBe(0.35);
@@ -98,7 +98,7 @@ describe("the spotlight: dense and sparse", () => {
     expect(laid.length).toBeLessThanOrEqual(ROWS.length);
   });
 
-  // no ruling
+  // R-0181
   it("a moment near the right edge writes its words to the left instead", () => {
     const [row] = rows([{ id: 1, x: 366, text: "at the very end" }], 16, 374);
     expect(row.align).toBe("right");

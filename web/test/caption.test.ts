@@ -65,14 +65,14 @@ describe("two taps on the picture", () => {
     expect(reduce(open, PicEvent.Tap).state).toEqual(REST);
   });
 
-  // no ruling
+  // R-0077
   it("the undated shelf is recorded against the diagram itself", () => {
     expect(reduce(REST, PicEvent.Tap, shelf).record?.item_kind).toBe(
       ItemKind.Diagram,
     );
   });
 
-  // no ruling
+  // R-0078, R-0085
   it("only a stretch can be played, and a moment plays the stretch it is in", () => {
     const open = reduce(REST, PicEvent.Tap, moment).state;
     expect(reduce(open, PicEvent.TapPlay).play).toBeNull();

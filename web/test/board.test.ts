@@ -37,7 +37,7 @@ const stretch = [
 ];
 
 describe("the moments a cluster puts on the board", () => {
-  // no ruling
+  // R-0292
   it("keeps every moment, not only the ones with a mark to draw", () => {
     expect(movesIn(stretch).map((s) => s.event.id)).toEqual([27, 24, 23]);
   });
@@ -47,7 +47,7 @@ describe("the moments a cluster puts on the board", () => {
     expect(castOfSteps(movesIn(stretch))).toEqual([20, 25]);
   });
 
-  // no ruling
+  // R-0292
   it("keeps a moment that names nobody, so the walk still steps past it", () => {
     expect(movesIn([event({ id: 9, person: null })]).map((s) => s.cast)).toEqual([
       [],

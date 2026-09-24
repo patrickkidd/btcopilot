@@ -79,7 +79,7 @@ for (const key of KEYS) {
   test.describe(`the picture on the ${key} record`, () => {
     test.use({ storageState: stateFor(key) });
 
-    // no ruling
+    // R-0181, R-0134
     test("holds what it draws, at rest and with a cluster open", async ({ page }) => {
       await settle(page);
       expect(collisions(await boxes(page))).toEqual([]);

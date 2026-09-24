@@ -128,7 +128,7 @@ test.describe("the move language", () => {
   const url = page();
 
   for (const spec of CASES) {
-    // no ruling
+    // R-0137
     test(`the ${spec.name} drawing`, async ({ page: browser }) => {
       // the drawings do not change with the window, so one size is the story
       test.skip(test.info().project.name !== "phone");

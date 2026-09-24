@@ -65,7 +65,7 @@ test.describe("the settings stack", () => {
     await expect(page.locator("#title")).toHaveText("Account");
   });
 
-  // no ruling
+  // R-0223, R-0281
   test("the back chevron on the root page closes the stack", async ({ page }) => {
     await settle(page);
     await openSettings(page);

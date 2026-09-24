@@ -26,7 +26,7 @@ describe("what a tool call says in plain words", () => {
     );
   });
 
-  // no ruling
+  // R-0186
   it("says nothing for reads and for showing the picture", () => {
     expect(toolLine(ToolName.ReadPeople, {})).toBeNull();
     expect(toolLine(ToolName.Show, { kind: "triangle" })).toBeNull();

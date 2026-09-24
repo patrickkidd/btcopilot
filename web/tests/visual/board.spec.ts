@@ -78,7 +78,7 @@ test.describe("the moves board", () => {
     await expect(picture(page)).toHaveScreenshot("board-first-move.png", steady(page));
   });
 
-  // no ruling
+  // R-0181
   test("earlier moves stay behind the one being drawn", async ({ page }) => {
     await settle(page);
     await enter(page);

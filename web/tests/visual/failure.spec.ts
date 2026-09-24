@@ -92,7 +92,7 @@ test.describe("a send that does not go through", () => {
 test.describe("an explain that does not go through", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // no ruling
+  // R-0182
   test("warns under the board and leaves the board up", async ({ page }) => {
     await settle(page);
     await page.route("**/app/play", (route) =>

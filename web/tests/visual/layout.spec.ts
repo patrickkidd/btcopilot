@@ -273,7 +273,7 @@ test.describe("the board is the only thing that resizes the picture", () => {
 test.describe("a long family name", () => {
   test.use({ storageState: stateFor("longname") });
 
-  // no ruling
+  // R-0181
   test("is cut with an ellipsis rather than spilling over the picture", async ({
     page,
   }) => {

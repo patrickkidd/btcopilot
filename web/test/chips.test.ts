@@ -57,7 +57,7 @@ describe("tokenize", () => {
     expect(tokenize("no chips here")).toEqual([{ text: "no chips here" }]);
   });
 
-  // no ruling
+  // R-0072
   it("does not treat an unknown kind as a chip", () => {
     expect(tokenize("[[thing:9|x]]")).toEqual([{ text: "[[thing:9|x]]" }]);
   });
@@ -69,7 +69,7 @@ describe("tokenize", () => {
     expect(chips("[[person:4|her]]")[0].kind).toBe(ChipKind.Person);
   });
 
-  // no ruling
+  // R-0072, R-0047
   it("keeps a span of time as plain words, not a chip that goes nowhere", () => {
     expect(tokenize("between [[range:1990-01-01..1999-12-31|the nineties]]")).toEqual([
       { text: "between " },
@@ -77,7 +77,7 @@ describe("tokenize", () => {
     ]);
   });
 
-  // no ruling
+  // R-0074
   it("finds every chip in a play-by-play", () => {
     const found = chips(
       "[[event:11|one]] then [[event:12|two]] and [[event:13|three]]",

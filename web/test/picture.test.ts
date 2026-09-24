@@ -39,7 +39,7 @@ describe("how wide the resting line is drawn", () => {
     expect(restWidth([], [], PHONE)).toBe(PHONE);
   });
 
-  // no ruling
+  // R-0134
   it("pulls two clusters apart until their boxes clear each other", () => {
     const dates = ["2001-01-01", "2001-08-01", "2004-02-01", "2006-06-01"];
     const clusters = [
@@ -51,7 +51,7 @@ describe("how wide the resting line is drawn", () => {
     expect(two.left - one.right).toBeGreaterThanOrEqual(6);
   });
 
-  // no ruling
+  // R-0134
   it("keeps a box wide enough for the two years written in it", () => {
     const dates = ["2001-01-01", "2002-04-01", "2030-01-01"];
     const cluster = { start: "2001-01-01", end: "2002-04-01" };
@@ -101,7 +101,7 @@ describe("the dots inside a cluster box", () => {
     expect(dotXs(xs, 30, 70)).toEqual(xs);
   });
 
-  // no ruling
+  // R-0402
   it("spreads seven moments held inside a few weeks across the box", () => {
     const xs = Array.from({ length: 7 }, (_, i) => 100 + i * 0.4);
     const drawn = dotXs(xs, 96, 88);
@@ -121,7 +121,7 @@ describe("the tap target of a dot on the line", () => {
     expect(only.size).toBe(44);
   });
 
-  // no ruling
+  // R-0402
   it("lets a tap on either of two dots 6px apart pick that dot", () => {
     const xs = [200, 206];
     const spans = hitSpans(xs, PHONE);
