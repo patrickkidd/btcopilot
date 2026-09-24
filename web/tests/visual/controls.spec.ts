@@ -52,6 +52,40 @@ test.describe("the board opened from a dot on the wire", () => {
   });
 });
 
+test.describe("explain", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  // R-0166
+  test("is the word on the button, and nothing offers to watch", async ({ page }) => {
+    await fromTheWire(page);
+    await expect(page.locator('#chat-screen .pctl [data-target="explain"]')).toHaveText(/explain/);
+    await expect(page.locator("#chat-screen .pic")).not.toContainText(/watch/i);
+  });
+
+  // R-0166
+  test("asks the coach to talk the cluster through", async ({ page }) => {
+    const asked: unknown[] = [];
+    await page.route(/\/app\/play$/, async (route) => {
+      asked.push(route.request().postDataJSON());
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          statement: "Ada moved toward Ben first.",
+          statement_id: 9301,
+          kind: "play",
+          cluster_id: (route.request().postDataJSON() as { cluster_id: string }).cluster_id,
+        }),
+      });
+    });
+    await fromTheWire(page);
+    await page.locator('#chat-screen .pctl [data-target="explain"]').click();
+    await expect(page.locator(".bub.coach").last()).toContainText("Ada moved toward Ben first.");
+    expect(asked).toHaveLength(1);
+    expect(asked[0]).toHaveProperty("cluster_id");
+  });
+});
+
 test.describe("the board opened from the coach's words", () => {
   test.use({ storageState: stateFor("play") });
 

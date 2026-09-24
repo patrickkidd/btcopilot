@@ -88,7 +88,7 @@ test.describe("the moves board", () => {
     await inside(page.locator("#view .ss.board"), picture(page));
   });
 
-  // no ruling
+  // R-0180
   test("the last move has nowhere further to go", async ({ page }) => {
     await settle(page);
     await enter(page);
@@ -116,5 +116,104 @@ test.describe("the moves board", () => {
     const after = await picture(page).boundingBox();
     // the resting picture is one fixed height whatever it has been showing
     expect(after?.height).toBe(before?.height);
+  });
+
+  // R-0113
+  test("the move is a drawing, with no legend and no table", async ({ page }) => {
+    await settle(page);
+    await enter(page);
+    await expect(picture(page).locator("table")).toHaveCount(0);
+    await expect(picture(page)).not.toContainText(/legend|key:/i);
+    // the first move is toward, drawn as an arrow between the two
+    await expect(page.locator("#view .ss.board .cast .tarrow")).toHaveCount(1);
+  });
+
+  // R-0130
+  test("the board arrives by zooming in from the level above", async ({ page }) => {
+    await settle(page);
+    await pickCluster(page);
+    await page.locator("#cap-play").click();
+    const zoom = await page.locator("#view .ss.board svg").evaluate((svg) =>
+      svg.getAnimations().map((a) =>
+        (a.effect as KeyframeEffect)
+          .getKeyframes()
+          .map((frame) => new DOMMatrix(String(frame.transform ?? "none")).a),
+      ),
+    );
+    expect(zoom).toHaveLength(1);
+    expect(zoom[0][0]).toBeGreaterThan(1);
+    expect(zoom[0].at(-1)).toBe(1);
+  });
+
+  // R-0130
+  test("the zoom is long enough to be seen and short enough not to wait on", async ({
+    page,
+  }) => {
+    await settle(page);
+    await pickCluster(page);
+    await page.locator("#cap-play").click();
+    const [ms] = await page.locator("#view .ss.board svg").evaluate((svg) =>
+      svg.getAnimations().map((a) => Number(a.effect!.getTiming().duration)),
+    );
+    expect(ms).toBeGreaterThanOrEqual(300);
+    expect(ms).toBeLessThanOrEqual(1000);
+  });
+
+  // R-0136
+  test("the one who moves is marked, and the arrow points at who they move toward", async ({
+    page,
+  }) => {
+    await settle(page);
+    await enter(page);
+    await expect(page.locator("#view .ss.board .nm.on")).toHaveText(["Ada"]);
+    const centre = async (sel: string) => {
+      const box = (await page.locator(sel).first().boundingBox())!;
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    };
+    const head = await centre("#view .ss.board .tarrow .tipfill");
+    const ada = await centre('#view .ss.board .node[data-person="1"] .disc');
+    const ben = await centre('#view .ss.board .node[data-person="2"] .disc');
+    const far = (p: { x: number; y: number }) => Math.hypot(p.x - head.x, p.y - head.y);
+    expect(far(ben)).toBeLessThan(far(ada));
+  });
+
+  // R-0173
+  test("the drawing is only as tall as what it holds", async ({ page }) => {
+    await settle(page);
+    await enter(page);
+    const [box, drawn] = await page.locator("#view .ss.board").evaluate((board) => [
+      board.getBoundingClientRect().height,
+      board.querySelector("svg")!.getBoundingClientRect().height,
+    ]);
+    expect(Math.round(box)).toBe(Math.round(drawn));
+    const viewBox = await page
+      .locator("#view .ss.board svg")
+      .evaluate((svg) => (svg as SVGSVGElement).viewBox.baseVal.height);
+    expect(Math.round(box)).toBe(Math.round(viewBox));
+  });
+
+  // R-0177
+  test("the move being played is its dot in the action green", async ({ page }) => {
+    await settle(page);
+    await enter(page);
+    const fill = (sel: string) =>
+      page.locator(sel).first().evaluate((el) => getComputedStyle(el).fill);
+    expect(await fill("#view .ss.board .ax-now")).toBe(await fill("#view .ss.board .tarrow .tipfill"));
+    expect(await fill("#view .ss.board .ax-now")).not.toBe(await fill("#view .ss.board .ax-dot"));
+  });
+
+  // R-0292
+  test("nothing on screen calls the view the moves board", async ({ page }) => {
+    await settle(page);
+    await enter(page);
+    const words = await page.evaluate(() =>
+      [
+        document.body.innerText,
+        ...[...document.querySelectorAll("[aria-label], [title]")].map(
+          (el) => `${el.getAttribute("aria-label") ?? ""} ${el.getAttribute("title") ?? ""}`,
+        ),
+      ].join(" "),
+    );
+    expect(words).not.toMatch(/moves board/i);
   });
 });

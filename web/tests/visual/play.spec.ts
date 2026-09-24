@@ -72,3 +72,75 @@ test.describe("a chip in a play-by-play", () => {
     expect(after?.height).toBe(before?.height);
   });
 });
+
+/** The coach talking a cluster through: two moves, each named in its own
+ * sentence, answered at once so the pacing is the page's own. */
+const walkThrough = async (page: Page) => {
+  await page.route(/\/app\/play$/, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        statement:
+          "In 1990 Ada [[event:20|moved toward Ben]], and it was the start of a long " +
+          "stretch of trying. A year later she [[event:21|pulled away from him]] again.",
+        statement_id: 9401,
+        kind: "play",
+        cluster_id: (route.request().postDataJSON() as { cluster_id: string }).cluster_id,
+      }),
+    }),
+  );
+  await settle(page);
+  const cluster = page.locator('.ss-hit[data-target="cluster"]');
+  if (await cluster.first().isVisible().catch(() => false)) await cluster.first().click();
+  await page.locator("#cap-play").click();
+  await expect(board(page)).toBeVisible();
+  await page.waitForTimeout(800);
+};
+
+test.describe("a play-through", () => {
+  test.use({ storageState: stateFor("play") });
+
+  // R-0171
+  test("holds a move until its sentence is typed, and about two seconds more", async ({
+    page,
+  }) => {
+    await walkThrough(page);
+    await page.evaluate(() => {
+      const log: { at: number; what: string; text: string }[] = [];
+      (window as unknown as { paced: typeof log }).paced = log;
+      new MutationObserver(() => {
+        const words = [...document.querySelectorAll(".bub.coach .words")].at(-1);
+        const caption = document.querySelector("#chat-screen .bcap");
+        log.push({ at: performance.now(), what: "words", text: words?.textContent ?? "" });
+        log.push({ at: performance.now(), what: "caption", text: caption?.textContent ?? "" });
+      }).observe(document.body, { subtree: true, childList: true, characterData: true });
+    });
+    await page.locator('#chat-screen .pctl [data-target="explain"]').click();
+    await expect(page.locator("#chat-screen .bcap")).toContainText("away", { timeout: 30_000 });
+    const log = await page.evaluate(
+      () => (window as unknown as { paced: { at: number; what: string; text: string }[] }).paced,
+    );
+    const stepped = log.find((e) => e.what === "caption" && e.text.includes("away"))!.at;
+    // the last words written before the board moved on: the sentence about
+    // the first move and the start of the next one, up to its chip
+    const typed = log
+      .filter((e) => e.what === "words" && e.at < stepped - 100)
+      .reduce((last, e, i, all) => (i && e.text !== all[i - 1].text ? e : last)).at;
+    expect(stepped - typed).toBeGreaterThanOrEqual(1500);
+    expect(stepped - typed).toBeLessThanOrEqual(2600);
+  });
+
+  // R-0171
+  test("keeps each move's own eight-second loop while it is held", async ({ page }) => {
+    await walkThrough(page);
+    await page.locator('#chat-screen .pctl [data-target="explain"]').click();
+    await expect(page.locator(".bub.coach .chip").first()).toBeVisible({ timeout: 30_000 });
+    const loop = await page.locator("#view .ss.board .tarrow").evaluate((arrow) => ({
+      css: arrow.getAnimations().map((a) => Number(a.effect!.getTiming().duration)),
+      svg: [...arrow.querySelectorAll("animate")].map((a) => a.getAttribute("dur")),
+    }));
+    expect(loop.css).toEqual([8000]);
+    expect(new Set(loop.svg)).toEqual(new Set(["8s"]));
+  });
+});
