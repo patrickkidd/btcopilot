@@ -34,6 +34,8 @@ IDS = re.compile(r"R-\d{4}(, R-\d{4})*")
 LINE = re.compile(r"^\s*(#|//)\s*(R-\d{4}(,\s*R-\d{4})*)\s*$")
 WORD = re.compile(r"[a-z0-9]+")
 EXCUSES = {Status.TestOwed, Status.Waived}
+# The one carve-out from the index-row shape: an exception line, and only in exceptions.txt.
+EXCEPTION = re.compile(r"R-\d{4} \| (TEST OWED|WAIVED) \| [^|]+")
 
 
 def cites(text: str | None) -> tuple[set[str], list[str]]:
@@ -264,7 +266,12 @@ def test_no_tracked_file_carries_oracle_outside_the_store():
         text = raw.decode(errors="replace")
         if encrypted(text):
             continue
-        found = {f"line {n + 1}: index row" for n, l in enumerate(text.splitlines()) if oracle.ROW.match(l)}
+        forgiven = EXCEPTION if path == EXCEPTIONS else None
+        found = {
+            f"line {n + 1}: index row"
+            for n, l in enumerate(text.splitlines())
+            if oracle.ROW.match(l) and not (forgiven and forgiven.fullmatch(l))
+        }
         words = list(WORD.finditer(text.lower()))
         tokens = [w.group() for w in words]
         for n in sizes:
