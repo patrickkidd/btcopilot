@@ -177,3 +177,81 @@ test.describe("the resting line slides sideways", () => {
     await expect(page.locator('.ss-hit[data-target="zone"]').first()).toBeVisible();
   });
 });
+
+test.describe("what the picture never draws", () => {
+  for (const key of ["one", "three40", "dense60", "moves"] as const) {
+    test.describe(() => {
+      test.use({ storageState: stateFor(key) });
+
+      // R-0284
+      test(`no trend line joins the moments on the ${key} record`, async ({ page }) => {
+        await settle(page);
+        const sloped = await page.locator("#view svg").evaluateAll((svgs) =>
+          svgs.flatMap((svg) => [
+            ...[...svg.querySelectorAll("polyline, polygon, path")]
+              .filter((n) => !n.closest("marker, defs"))
+              .map((n) => n.outerHTML),
+            ...[...svg.querySelectorAll("line")]
+              .filter((n) => {
+                const [x1, y1, x2, y2] = ["x1", "y1", "x2", "y2"].map((a) =>
+                  Number(n.getAttribute(a)),
+                );
+                return x1 !== x2 && y1 !== y2;
+              })
+              .map((n) => n.outerHTML),
+          ]),
+        );
+        expect(sloped).toEqual([]);
+      });
+
+      // R-0007
+      test(`no progress bar on the ${key} record`, async ({ page }) => {
+        await settle(page);
+        await expect(page.locator('progress, meter, [role="progressbar"]')).toHaveCount(0);
+      });
+
+      // R-0007
+      test(`nothing on the ${key} record says the family is finished`, async ({ page }) => {
+        await settle(page);
+        await expect(page.locator("#chat-screen .pic")).not.toContainText(
+          /\d+ ?%|complete|finished|all done/i,
+        );
+      });
+    });
+  }
+});
+
+test.describe("a person with three directed points", () => {
+  test.use({ storageState: stateFor("dense60") });
+
+  // R-0284
+  test("gets no step line: the only level lines are the wire and the seam", async ({
+    page,
+  }) => {
+    await settle(page);
+    const level = await page.locator("#view svg line").evaluateAll((lines) =>
+      lines
+        .filter((n) => n.getAttribute("y1") === n.getAttribute("y2"))
+        .map((n) => n.getAttribute("class") ?? ""),
+    );
+    expect(level.length).toBeGreaterThan(0);
+    expect(level.filter((c) => !/\b(wire|seam)\b/.test(c))).toEqual([]);
+  });
+});
+
+test.describe("where the picture sits", () => {
+  test.use({ storageState: stateFor("hostile") });
+
+  // R-0002, R-0106
+  test("above the chat, and it stays put while the chat scrolls", async ({ page }) => {
+    await settle(page);
+    const before = (await picture(page).boundingBox())!;
+    const chat = (await page.locator("#chat").boundingBox())!;
+    expect(before.y + before.height).toBeLessThanOrEqual(chat.y + 1);
+    await page.locator("#chat").evaluate((n) => (n.scrollTop = 0));
+    await page.waitForTimeout(300);
+    const after = (await picture(page).boundingBox())!;
+    expect(after).toEqual(before);
+    expect(after.y).toBeGreaterThanOrEqual(0);
+  });
+});

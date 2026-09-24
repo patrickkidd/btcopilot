@@ -31,6 +31,38 @@ test.describe("the sessions sheet", () => {
     expect(Math.round(box.height)).toBe(44);
   });
 
+  // R-0092
+  test("the button is a hairline circle with a fill and three lines at 80%", async ({
+    page,
+  }) => {
+    // the circle's size is R-0234's, which superseded the 34px here
+    await settle(page);
+    const look = await page.locator("#sessions-open").evaluate((b) => {
+      const ring = getComputedStyle(b, "::before");
+      const svg = b.querySelector("svg")!;
+      return {
+        round: ring.borderRadius,
+        border: ring.borderTopWidth,
+        fill: ring.backgroundColor,
+        lines: svg.querySelector("path")!.getAttribute("d")!.split("M").length - 1,
+        opacity: getComputedStyle(svg).opacity,
+      };
+    });
+    expect(look.round).toBe("50%");
+    expect(look.border).toBe("1px");
+    expect(look.fill).not.toBe("rgba(0, 0, 0, 0)");
+    expect(look.lines).toBe(3);
+    expect(look.opacity).toBe("0.8");
+  });
+
+  // R-0092
+  test("the button is never a bare text character", async ({ page }) => {
+    await settle(page);
+    const button = page.locator("#sessions-open");
+    expect(await button.evaluate((b) => b.textContent!.trim())).toBe("");
+    await expect(button.locator("svg")).toBeVisible();
+  });
+
   // R-0347, R-0095
   test("it opens to 92% of the frame with a grabber and a search field", async ({
     page,
@@ -121,5 +153,39 @@ test.describe("the sessions sheet", () => {
     expect(await sheet.innerText()).not.toMatch(/\bcases?\b/i);
     // the family is chosen on the account page, never here (R-0347)
     await expect(page.locator(".fs-fhead")).toHaveCount(0);
+  });
+});
+
+test.describe("uploading a recording", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  /** Tap the upload button; whether a file picker opened. */
+  const upload = async (page: Page) => {
+    await settle(page);
+    await openSheet(page);
+    // the button shows only for a professional licence, which no fixture holds
+    const button = page.locator("#sessions-sheet .fs-upload");
+    await button.evaluate((b) => ((b as HTMLElement).hidden = false));
+    let picked = false;
+    page.on("filechooser", () => (picked = true));
+    await button.click();
+    await expect(page.locator(".cf-p").first()).toBeVisible();
+    await page.waitForTimeout(300);
+    return picked;
+  };
+
+  // R-0349
+  test("warns before the file picker opens", async ({ page }) => {
+    expect(await upload(page)).toBe(false);
+  });
+
+  // R-0349
+  test("the warning says it costs Alaska Family Systems money and who to ask", async ({
+    page,
+  }) => {
+    await upload(page);
+    const warning = page.locator(".cf-p");
+    await expect(warning.first()).toContainText("costs Alaska Family Systems money");
+    await expect(warning.last()).toContainText("patrick@alaskafamilysystems.com");
   });
 });

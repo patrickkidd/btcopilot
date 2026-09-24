@@ -1,3 +1,4 @@
+import { readFileSync, readdirSync } from "node:fs";
 import { beforeEach, expect, it } from "vitest";
 import { flagLine } from "../src/rules";
 import { RuleSource, type Rule } from "../src/types";
@@ -45,4 +46,12 @@ it("Patrick gets the tap, on and off", () => {
   expect(flagLine(rule(false), "rl-flag")).toContain("<button");
   expect(flagLine(rule(true), "rl-flag")).toContain("flagged for the next meeting");
   expect(flagLine(rule(true), "rl-flag")).toContain("<button");
+});
+
+// R-0310
+it("calls them coding guidelines on screen, never the codebook", () => {
+  const page = readFileSync("../btcopilot/personal/static/web/index.html", "utf8");
+  expect(page).toContain('id="coding-info" type="button" aria-label="Coding guidelines"');
+  const sources = readdirSync("src").map((f) => readFileSync(`src/${f}`, "utf8"));
+  expect([page, ...sources].filter((text) => /codebook/i.test(text))).toEqual([]);
 });

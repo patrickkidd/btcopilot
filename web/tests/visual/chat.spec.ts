@@ -89,3 +89,41 @@ test.describe("the question that closes a reply", () => {
     expect(await bubble.locator("> .ask").evaluate((n) => getComputedStyle(n).fontWeight)).toBe("500");
   });
 });
+
+test.describe("the message box", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  /** Type two lines with Return between them; the bubbles there were before,
+   * and what was POSTed meanwhile. */
+  const twoLines = async (page: import("@playwright/test").Page) => {
+    await page.goto("/app/");
+    await expect(page.locator(".bub").first()).toBeVisible();
+    const bubbles = await page.locator(".bub").count();
+    const posts: string[] = [];
+    page.on("request", (r) => r.method() === "POST" && posts.push(r.url()));
+    await page.locator("#composer").click();
+    await page.keyboard.type("first");
+    await page.keyboard.press("Enter");
+    await page.keyboard.type("second");
+    await page.waitForTimeout(400);
+    return { bubbles, posts };
+  };
+
+  // R-0368
+  test("Return sends nothing; only the send button sends", async ({ page }) => {
+    const { bubbles, posts } = await twoLines(page);
+    expect(posts.filter((u) => !/telemetry|collect|events/.test(u))).toEqual([]);
+    await expect(page.locator(".bub")).toHaveCount(bubbles);
+  });
+
+  // R-0368
+  test("Return starts a new line in the message", async ({ page }) => {
+    // Known defect: a newline inserted at the very end of the box does not
+    // render as a line in Chromium, so the next letters join the line above.
+    test.fail();
+    await twoLines(page);
+    expect(await page.locator("#composer").evaluate((n) => n.textContent)).toBe(
+      "first\nsecond",
+    );
+  });
+});

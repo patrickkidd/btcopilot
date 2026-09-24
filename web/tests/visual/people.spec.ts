@@ -18,6 +18,14 @@ const openList = async (page: Page) => {
   await expect(page.locator("#menu-screen")).toBeVisible();
 };
 
+const personEditor = async (page: Page) => {
+  await settle(page);
+  await openList(page);
+  await page.locator("#tab-people").click();
+  await page.locator("#menu-body .row").first().click();
+  await expect(page.locator("#menu-body .editor")).toBeVisible();
+};
+
 test.describe("the button that opens the list", () => {
   test.use({ storageState: stateFor("moves") });
 
@@ -115,6 +123,65 @@ test.describe("the two lists behind it", () => {
   });
 });
 
+test.describe("the list views and their editors", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  // R-0219
+  test("the events list does not say it can also be edited by chatting", async ({
+    page,
+  }) => {
+    await settle(page);
+    await openList(page);
+    await expect(page.locator("#menu-body .row").first()).toBeVisible();
+    await expect(page.locator("#menu-screen")).not.toContainText(/chat/i);
+  });
+
+  // R-0219
+  test("the people list does not say it can also be edited by chatting", async ({
+    page,
+  }) => {
+    await settle(page);
+    await openList(page);
+    await page.locator("#tab-people").click();
+    await expect(page.locator("#menu-body .row").first()).toContainText("Ada");
+    await expect(page.locator("#menu-screen")).not.toContainText(/chat/i);
+  });
+
+  // R-0200
+  test("a person's symbol field is labelled Kind", async ({ page }) => {
+    await personEditor(page);
+    const labels = await page.locator("#menu-body .editor .lab").allTextContents();
+    expect(labels).toContain("Kind");
+  });
+
+  // R-0200
+  test("no label in the person editor says sex or gender", async ({ page }) => {
+    await personEditor(page);
+    const labels = await page.locator("#menu-body .editor .lab").allTextContents();
+    expect(labels.length).toBeGreaterThan(0);
+    expect(labels.filter((l) => /sex|gender/i.test(l))).toEqual([]);
+  });
+
+  // R-0145
+  test("a shift's four changes sit together under one Shifts heading", async ({
+    page,
+  }) => {
+    await settle(page);
+    await openList(page);
+    await page.locator("#menu-body .row").first().click();
+    const block = page.locator('#menu-body .editor [data-block="shift"]');
+    await expect(block).toBeVisible();
+    await expect(block.locator(".sec")).toHaveText(["Shifts"]);
+    const labels = await block.locator(":scope > .lab").allTextContents();
+    expect(labels).toEqual([
+      "Δ symptom",
+      "Δ anxiety",
+      "Δ functioning",
+      "Δ relationship",
+    ]);
+  });
+});
+
 test.describe("the picture", () => {
   test.use({ storageState: stateFor("moves") });
 
@@ -123,5 +190,43 @@ test.describe("the picture", () => {
     await settle(page);
     await expect(page.locator("#fresh")).toHaveCount(0);
     await expect(page.locator(".fresh")).toHaveCount(0);
+  });
+});
+
+/** Where the lists stand on a window of this size, for a fixture with no
+ * professional licence. */
+const listBesideChat = async (page: Page) => {
+  await settle(page);
+  expect(await page.evaluate(() => window.BOOTSTRAP.user?.pro)).not.toBe(true);
+  const drawer = page.locator("#chat-drawer");
+  await expect(drawer).toBeVisible();
+  await expect(drawer.locator("#menu-body .row").first()).toBeVisible();
+  await expect(page.locator("#menu-open")).toBeHidden();
+  return page.evaluate(() => {
+    const chat = document.getElementById("chat-screen")!.getBoundingClientRect();
+    const list = document.getElementById("chat-drawer")!.getBoundingClientRect();
+    return list.left >= chat.right - 1 || list.right <= chat.left + 1;
+  });
+};
+
+test.describe("a phone on its side", () => {
+  test.use({ storageState: stateFor("moves"), viewport: { width: 844, height: 390 } });
+
+  // R-0367
+  test("stands the lists beside the chat without a professional licence", async ({
+    page,
+  }) => {
+    expect(await listBesideChat(page)).toBe(true);
+  });
+});
+
+test.describe("a desktop window", () => {
+  test.use({ storageState: stateFor("moves"), viewport: { width: 1280, height: 800 } });
+
+  // R-0367
+  test("stands the lists beside the chat without a professional licence", async ({
+    page,
+  }) => {
+    expect(await listBesideChat(page)).toBe(true);
   });
 });
