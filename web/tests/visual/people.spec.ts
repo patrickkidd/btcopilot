@@ -29,7 +29,7 @@ const personEditor = async (page: Page) => {
 test.describe("the button that opens the list", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0221, R-0234
+  // R-0221, R-0234, R-0198
   test("sits at the end of the row of chips, dressed like the sessions button", async ({
     page,
   }) => {
@@ -61,10 +61,49 @@ test.describe("the button that opens the list", () => {
   });
 });
 
+test.describe("the list button's place", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  // R-0198
+  test("lies inside the picture's own frame, not in the message bar", async ({ page }) => {
+    await settle(page);
+    const where = await page.evaluate(() => {
+      const button = document.getElementById("menu-open")!;
+      const pic = document.querySelector("#chat-screen .pic")!;
+      const a = button.getBoundingClientRect();
+      const b = pic.getBoundingClientRect();
+      return {
+        inPicture: pic.contains(button),
+        inBar: !!button.closest(".inbar"),
+        within: a.left >= b.left - 1 && a.right <= b.right + 1 && a.top >= b.top - 1 && a.bottom <= b.bottom + 1,
+      };
+    });
+    expect(where).toEqual({ inPicture: true, inBar: false, within: true });
+  });
+
+  // R-0198
+  test("carries the same three-line mark as the sessions button", async ({ page }) => {
+    await settle(page);
+    const mark = (selector: string) =>
+      page.locator(selector).evaluate((b) => {
+        const svg = b.querySelector("svg")!;
+        return {
+          path: svg.querySelector("path")!.getAttribute("d"),
+          size: `${svg.getAttribute("width")}x${svg.getAttribute("height")}`,
+          opacity: getComputedStyle(svg).opacity,
+          text: (b.textContent ?? "").trim(),
+        };
+      });
+    const list = await mark("#menu-open");
+    expect(list).toEqual(await mark("#sessions-open"));
+    expect(list.text).toBe("");
+  });
+});
+
 test.describe("the two lists behind it", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0345
+  // R-0345, R-0199
   test("open on events, and people are a tap away", async ({ page }) => {
     await settle(page);
     await openList(page);
@@ -110,7 +149,94 @@ test.describe("the two lists behind it", () => {
     await expect(page.locator("#menu-body .row").first()).toContainText("Ellis");
   });
 
-  // no ruling
+  // R-0199
+  test("the two lists are tabs of one drawer, one selected at a time", async ({ page }) => {
+    await settle(page);
+    await openList(page);
+    const tabs = page.locator("#menu-tabs [role=tab]");
+    await expect(tabs).toHaveText(["Events", "People"]);
+    await expect(page.locator('#menu-tabs [aria-selected="true"]')).toHaveText("Events");
+    await expect(page.locator("#menu-body [data-event]").first()).toBeVisible();
+    const drawer = await page.locator("#menu-screen").elementHandle();
+
+    await page.locator("#tab-people").click();
+    await expect(page.locator('#menu-tabs [aria-selected="true"]')).toHaveText("People");
+    await expect(page.locator('#menu-tabs [aria-selected="true"]')).toHaveCount(1);
+    // the other list takes the drawer's place whole, rather than narrowing it
+    await expect(page.locator("#menu-body [data-event]")).toHaveCount(0);
+    await expect(page.locator("#menu-body [data-person]")).toHaveCount(3);
+    expect(await page.locator("#menu-screen").evaluate((n, d) => n === d, drawer)).toBe(true);
+    await expect(page.locator("#menu-screen")).toBeVisible();
+  });
+
+  // R-0218
+  test("the events list's cluster headings keep their words clear of the scroll bar", async ({
+    page,
+  }) => {
+    await settle(page);
+    await openList(page);
+    await expect(page.locator("#menu-body .div").first()).toBeVisible();
+    const crowded = await page.evaluate(() => {
+      const list = document.getElementById("menu-body")!;
+      const edge = list.getBoundingClientRect().right;
+      // the width an overlay scroll bar is drawn over at the list's right edge
+      const bar = 12;
+      return [...list.querySelectorAll(".div")].flatMap((head) =>
+        [...head.children]
+          .filter((words) => words.getBoundingClientRect().right > edge - bar)
+          .map((words) => words.textContent),
+      );
+    });
+    expect(crowded).toEqual([]);
+  });
+
+  // R-0218
+  test("the lists hold a gutter for a scroll bar that takes room", async ({ page }) => {
+    await settle(page);
+    await openList(page);
+    await page.locator("#tab-people").click();
+    await expect(page.locator("#menu-body .div").first()).toBeVisible();
+    const look = await page.evaluate(() => {
+      const list = document.getElementById("menu-body")!;
+      const head = list.querySelector(".div")!;
+      const edge = list.getBoundingClientRect().right;
+      return {
+        gutter: getComputedStyle(list).scrollbarGutter,
+        clear: [...head.children].every((w) => w.getBoundingClientRect().right <= edge - 12),
+      };
+    });
+    expect(look.gutter).toBe("stable");
+    expect(look.clear).toBe(true);
+  });
+
+  // R-0174
+  test("every one-line field in the person editor is 44px with room inside it", async ({
+    page,
+  }) => {
+    await personEditor(page);
+    const fields = await page
+      .locator("#menu-body .editor input.f")
+      .evaluateAll((all) =>
+        all
+          .filter((n) => (n as HTMLElement).offsetParent)
+          .map((n) => {
+            const style = getComputedStyle(n);
+            return {
+              height: Math.round(n.getBoundingClientRect().height),
+              left: style.paddingLeft,
+              right: style.paddingRight,
+            };
+          }),
+      );
+    expect(fields.length).toBeGreaterThan(0);
+    for (const field of fields) {
+      expect(field.height).toBe(44);
+      expect(parseFloat(field.left)).toBeGreaterThanOrEqual(12);
+      expect(field.right).toBe(field.left);
+    }
+  });
+
+  // R-0459
   test("the people list orders by birth until the reader asks for names", async ({
     page,
   }) => {
@@ -223,10 +349,19 @@ test.describe("a phone on its side", () => {
 test.describe("a desktop window", () => {
   test.use({ storageState: stateFor("moves"), viewport: { width: 1280, height: 800 } });
 
-  // R-0367
+  // R-0367, R-0352
   test("stands the lists beside the chat without a professional licence", async ({
     page,
   }) => {
     expect(await listBesideChat(page)).toBe(true);
+  });
+
+  // R-0352
+  test("draws no list button in the picture's row of chips", async ({ page }) => {
+    await settle(page);
+    await expect(page.locator("#chat-drawer")).toBeVisible();
+    await expect(page.locator("#caption")).toBeVisible();
+    await expect(page.locator("#caption > *").first()).toBeVisible();
+    await expect(page.locator("#caption .listglyph:visible, #menu-open:visible")).toHaveCount(0);
   });
 });

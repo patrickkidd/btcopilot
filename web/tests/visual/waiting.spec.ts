@@ -62,6 +62,32 @@ test.describe("waiting for the coach", () => {
     await expect(page.locator(".bub.typing")).toHaveCount(0);
   });
 
+  // R-0184
+  test("keeps showing it while the coach works and has said nothing yet", async ({ page }) => {
+    await settle(page);
+    await mockTurn(page, {
+      statement: "I put that down.",
+      statement_id: 9102,
+      did: [
+        {
+          type: "tool_call",
+          name: "edit_event",
+          args: { description: "moved out", dateTime: "1992-04-01" },
+        },
+      ],
+      pause: 1500,
+    });
+    await page.locator("#composer").fill("My dad moved out.");
+    await page.locator("#send").click();
+    // the work has arrived and no words have: something is still coming
+    await expect(page.locator(".bub.coach .did").last()).toBeVisible();
+    await expect(page.locator(".bub.coach").last()).not.toContainText("I put that down.");
+    await expect(waiting(page)).toHaveCount(1);
+    await expect(waiting(page)).toBeVisible();
+    await expect(page.locator(".bub.coach").last()).toContainText("I put that down.");
+    await expect(page.locator(".bub.typing")).toHaveCount(0);
+  });
+
   // R-0182
   test("gives way to the warning when nothing comes back", async ({ page }) => {
     await settle(page);

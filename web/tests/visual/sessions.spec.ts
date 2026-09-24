@@ -19,7 +19,7 @@ const openSheet = async (page: Page) => {
 test.describe("the sessions sheet", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0234
+  // R-0234, R-0090
   test("the button sits in the input bar, not the title row", async ({ page }) => {
     await settle(page);
     const button = page.locator("#sessions-open");
@@ -29,6 +29,21 @@ test.describe("the sessions sheet", () => {
     const box = (await button.boundingBox())!;
     expect(Math.round(box.width)).toBe(44);
     expect(Math.round(box.height)).toBe(44);
+  });
+
+  // R-0090
+  test("the button stands right beside the message box, and the title row has none", async ({
+    page,
+  }) => {
+    await settle(page);
+    await expect(page.locator(".titlerow #sessions-open, .titlerow [aria-label='sessions']")).toHaveCount(0);
+    const button = (await page.locator("#sessions-open").boundingBox())!;
+    const field = (await page.locator("#composer").boundingBox())!;
+    const middle = (b: { y: number; height: number }) => b.y + b.height / 2;
+    expect(Math.abs(middle(button) - middle(field))).toBeLessThanOrEqual(2);
+    const gap = field.x - (button.x + button.width);
+    expect(gap).toBeGreaterThanOrEqual(0);
+    expect(gap).toBeLessThanOrEqual(16);
   });
 
   // R-0092
@@ -111,7 +126,7 @@ test.describe("the sessions sheet", () => {
     await expect(page.locator(".fs-hint")).toHaveText("No sessions match");
   });
 
-  // no ruling
+  // R-0095
   test("tapping the scrim closes it", async ({ page }) => {
     await settle(page);
     await openSheet(page);

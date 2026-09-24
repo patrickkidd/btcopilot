@@ -91,6 +91,17 @@ describe("tokenize", () => {
   });
 });
 
+describe("the chips a reply keeps", () => {
+  // R-0361
+  it("still makes a chip of every person and event the coach names", () => {
+    const found = chips("Did [[person:3|Ada]] leave before [[event:22|that winter]]?");
+    expect(found.map((c) => [c.kind, c.target, c.label])).toEqual([
+      [ChipKind.Person, "3", "Ada"],
+      [ChipKind.Event, "22", "that winter"],
+    ]);
+  });
+});
+
 describe("aimedEvents", () => {
   // R-0168
   it("aims an event chip at that event", () => {
