@@ -9,7 +9,7 @@ from pathlib import Path
 import btcopilot
 
 REPO = Path(btcopilot.__file__).parents[1]
-DEPLOY = REPO / "deploy" / "chat"
+DEPLOY = REPO / "deploy"
 # Read by the extraction pipeline the chat app never runs.
 NOT_THE_CHAT_APP = {"ANTHROPIC_EXTRACTION_API_KEY"}
 

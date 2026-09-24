@@ -71,7 +71,7 @@ supersedes the old hard-cutover plan.
 
 **Branch `FD-362` in btcopilot, draft PR #136. fdserver is out of this work (2026-09-16):**
 the prompts and the rulings are encrypted files in this repo, the new box's deployment is
-`deploy/chat/` here, and Patrick closed fdserver PR #30 unmerged. Nothing the chat app runs
+`deploy/` here, and Patrick closed fdserver PR #30 unmerged. Nothing the chat app runs
 reads from fdserver. The beta build is real code against the real database, not a throwaway.
 
 **2026-09-16 — the overnight build, then the box.** Overnight, on his word to build whatever
@@ -306,7 +306,7 @@ encrypted too, files naming real people left every repo, the chat app took its o
 chain and its own database from empty with its own accounts [R-0327], the importer of the old
 Pro users and diagrams was written and dry-run, and the site is run from a command line whose
 skill file it generates from its own declarations. The chat app's tests are their own suite
-under `btcopilot/tests/chat`, run by `bin/t` filtered to what changed [R-0331, R-0332]; they
+under `btcopilot/tests`, run by `bin/t` filtered to what changed [R-0331, R-0332]; they
 measure at 89 back-end tests in 6.4 seconds and 113 front-end in 1.9
 (doc/TEST_STRATEGY.md), and are not worth optimising. The deterministic walks moved
 out of the sandbox into `web/tests/walks/` and fold into the goldens' harness.

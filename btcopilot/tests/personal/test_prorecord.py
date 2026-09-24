@@ -10,7 +10,7 @@ from PyQt5.QtCore import QDate, QDateTime, QPointF
 from btcopilot import diagramjson
 from btcopilot.extensions import db
 from btcopilot.personal.toolbox import ToolName, Toolbox
-from btcopilot.tests.chat.personal.conftest import csrf_token
+from btcopilot.tests.personal.conftest import csrf_token
 
 PEOPLE = [
     {"id": 1, "name": "Ada", "last_name": "Lund", "gender": "female", "parents": 30,

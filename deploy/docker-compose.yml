@@ -3,6 +3,10 @@
 # Pro box. Secrets live in secrets.env, encrypted with sops; decrypt it on the
 # box into /etc/fd/secrets.env (root-only) and nowhere else.
 
+# The project keeps the name it had under deploy/chat, so the Caddy volumes,
+# the network and the containers carry over.
+name: chat
+
 # A service's own `environment` replaces an anchored one wholesale, so the
 # shared settings are their own anchor and each service merges them in.
 x-app-env: &app-env

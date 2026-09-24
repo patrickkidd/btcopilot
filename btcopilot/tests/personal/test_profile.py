@@ -8,7 +8,7 @@ from btcopilot.personal import profile
 from btcopilot.personal.coachturn import CoachTurn
 from btcopilot.personal.toolbox import ToolName
 from btcopilot.schema import DateCertainty, EventKind
-from btcopilot.tests.chat.personal.conftest import Model, called, said
+from btcopilot.tests.personal.conftest import Model, called, said
 
 
 @pytest.fixture(autouse=True)

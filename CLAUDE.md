@@ -231,7 +231,7 @@ The isolation test at `btcopilot/tests/schema/test_isolation.py` enforces this b
 
 | Component | Key Files | Purpose |
 |-----------|-----------|---------|
-| Synthetic Testing | `btcopilot.tests.chat.personal.synthetic`, [tests README](btcopilot/tests/chat/personal/README.md) | Persona generator, conversation simulator, quality evaluator. Run: `uv run pytest btcopilot/btcopilot/tests/chat/personal/test_synthetic.py -v -m e2e` |
+| Synthetic Testing | `btcopilot.tests.personal.synthetic`, [tests README](btcopilot/tests/personal/README.md) | Persona generator, conversation simulator, quality evaluator. Run: `uv run pytest btcopilot/btcopilot/tests/personal/test_synthetic.py -v -m e2e` |
 | Visual Spec | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) | Platform-independent layout spec: person symbols, PairBond geometry, ChildOf connections, MultipleBirth, generational layout, label positioning |
 
 ---
@@ -311,7 +311,7 @@ package is incompatible (symptom: `create_app() takes 0 to 1 positional argument
 - **Oracle guards** (`btcopilot/tests/conventions/`, marker `conventions`) read the sops-encrypted rulings store and run on CI only, where the key is; locally run `uv run pytest -m "not conventions" ...`. Without a key they fail, never skip.
 - **E2e tests** (real LLM calls): `uv run pytest --e2e -m e2e` — requires `GOOGLE_GEMINI_API_KEY` from `.env` at the clone root
 - **Async**: `--asyncio-mode=auto` (configured in `btcopilot/tests/pytest.ini`)
-- **Directories**: `btcopilot/tests/chat/` (the chat app's suite), `btcopilot/tests/schema/`, `btcopilot/tests/test_*.py`
+- **Directories**: `btcopilot/tests/` (the chat app's suite), `btcopilot/tests/schema/`, `btcopilot/tests/test_*.py`
 - **Every test cites the ruling it proves (R-0421)**: `# R-0NNN` as the first line under a Python test's def, `// R-0NNN` on the line above a TypeScript/Playwright test; several ids comma-separated; never a process ruling for product behaviour.
 - **A new test without a citation fails** the trace guard in `btcopilot/tests/conventions/test_oracle.py`; `# no ruling` fails it too (oracle SPEC section 1).
 

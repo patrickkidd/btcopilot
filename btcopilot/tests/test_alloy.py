@@ -2,7 +2,7 @@
 
 import re
 
-from btcopilot.tests.chat.test_boxsecrets import DEPLOY
+from btcopilot.tests.test_boxsecrets import DEPLOY
 
 CONFIG = (DEPLOY / "alloy" / "config.alloy").read_text()
 

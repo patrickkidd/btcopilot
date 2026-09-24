@@ -2,7 +2,7 @@
 
 import re
 
-from btcopilot.tests.chat.test_boxsecrets import DEPLOY
+from btcopilot.tests.test_boxsecrets import DEPLOY
 
 SITE = re.search(
     r"^familydiagram\.com \{\n(.*?)^\}", (DEPLOY / "Caddyfile").read_text(), re.M | re.S

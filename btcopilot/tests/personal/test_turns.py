@@ -18,7 +18,7 @@ from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal.toolbox import ToolName
 from btcopilot.personal.turnlog import TurnEventKind
 from btcopilot.schema import Person, asdict
-from btcopilot.tests.chat.personal.conftest import Model, called, csrf_token, said
+from btcopilot.tests.personal.conftest import Model, called, csrf_token, said
 
 
 @pytest.fixture(autouse=True)

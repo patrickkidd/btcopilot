@@ -49,7 +49,7 @@ def invite(token):
         _log.warning(f"Dead invitation token used from {request.remote_addr}")
         return (
             render_template(
-                "chatauth/login.html",
+                "auth/login.html",
                 error="That link has been used or has expired. Sign in with your email instead.",
             ),
             400,
@@ -65,11 +65,11 @@ def login():
     if request.method == "GET":
         if _signed_in_user():
             return redirect(chat_home())
-        return render_template("chatauth/login.html")
+        return render_template("auth/login.html")
 
     email = request.form.get("email", "").strip().lower()
     if not email:
-        return render_template("chatauth/login.html", error="Enter your email."), 400
+        return render_template("auth/login.html", error="Enter your email."), 400
 
     minutes = current_app.config["LOGIN_CODE_MINUTES"]
     window = datetime.datetime.utcnow() - datetime.timedelta(hours=1)
@@ -77,7 +77,7 @@ def login():
         _log.warning(f"Login code rate limit hit for {email}")
         return (
             render_template(
-                "chatauth/login.html",
+                "auth/login.html",
                 email=email,
                 sent=True,
                 minutes=minutes,
@@ -92,7 +92,7 @@ def login():
     else:
         _log.warning(f"Login code requested for unknown address {email}")
     return render_template(
-        "chatauth/login.html", email=email, sent=True, minutes=minutes
+        "auth/login.html", email=email, sent=True, minutes=minutes
     )
 
 
@@ -105,7 +105,7 @@ def verify():
         _log.warning(f"Bad login code for {email} from {request.remote_addr}")
         return (
             render_template(
-                "chatauth/login.html",
+                "auth/login.html",
                 email=email,
                 sent=True,
                 minutes=current_app.config["LOGIN_CODE_MINUTES"],
@@ -121,7 +121,7 @@ def verify():
 @bp.route("/logout", methods=("POST",))
 def logout():
     sign_out()
-    return redirect(url_for("chatauth.login"))
+    return redirect(url_for("auth.login"))
 
 
 @bp.route("/me")

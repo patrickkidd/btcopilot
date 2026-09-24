@@ -103,7 +103,12 @@ jobs:
             export BTCOPILOT_TAG=${{ needs.build.outputs.tag }}
             cd /var/www/btcopilot
             git pull origin master
-            cd deploy/chat
+            # one time: the box's files move from deploy/chat to deploy; the database lives in instance/
+            if [ -d deploy/chat ]; then
+              [ -d deploy/chat/instance ] && mv deploy/chat/instance deploy/instance
+              rmdir deploy/chat
+            fi
+            cd deploy
             docker compose --env-file /etc/fd/secrets.env pull
             # the new app and worker start beside the old ones; the old stop once the new are healthy
             docker rollout --env-file /etc/fd/secrets.env fd-app

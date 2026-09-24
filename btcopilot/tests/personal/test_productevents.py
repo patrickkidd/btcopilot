@@ -5,9 +5,9 @@ import pytest
 
 from btcopilot.personal.models import ProductEvent
 from btcopilot.personal.productevents import Feature, Screen
-from btcopilot.tests.chat.personal.conftest import csrf_token
+from btcopilot.tests.personal.conftest import csrf_token
 
-TRACK = Path(__file__).parents[4] / "web" / "src" / "track.ts"
+TRACK = Path(__file__).parents[3] / "web" / "src" / "track.ts"
 
 
 @pytest.fixture(autouse=True)

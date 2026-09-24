@@ -2,7 +2,7 @@
 the transcript and never a person in the record."""
 
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
-from btcopilot.tests.chat.personal.conftest import csrf_token
+from btcopilot.tests.personal.conftest import csrf_token
 from btcopilot.schema import DiagramData
 
 

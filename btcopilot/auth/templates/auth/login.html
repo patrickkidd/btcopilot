@@ -100,18 +100,18 @@
       {% if error %}<p class="error">{{ error }}</p>{% endif %}
       {% if sent %}
         <p class="lead">We sent a code to {{ email }}. It lasts {{ minutes }} minutes.</p>
-        <form method="post" action="{{ url_for('chatauth.verify') }}">
+        <form method="post" action="{{ url_for('auth.verify') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           <input type="hidden" name="email" value="{{ email }}" />
           <input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" required autofocus />
           <button type="submit">Continue</button>
         </form>
-        <a class="again" href="{{ url_for('chatauth.login') }}">Use a different email</a>
+        <a class="again" href="{{ url_for('auth.login') }}">Use a different email</a>
       {% else %}
         <button id="device" type="button">Sign in with this device</button>
         <p class="or">or</p>
         <p class="lead">Sign in with your email. There is no password.</p>
-        <form method="post" action="{{ url_for('chatauth.login') }}">
+        <form method="post" action="{{ url_for('auth.login') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           <input name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required autofocus />
           <button type="submit">Email me a code</button>

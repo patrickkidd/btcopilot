@@ -19,7 +19,7 @@ from the Pro box on purpose. Nothing in it has run yet; the droplet does not exi
    does this as part of creating the box (R-0353).
 3. **The droplet.** sfo3, s-2vcpu-2gb, Ubuntu 24.04, backups on, monitoring on,
    ssh key turin, tag familydiagram-app. Install docker and sops. Clone this repo
-   to `/var/www/btcopilot`, `cd deploy/chat`, decrypt the secrets into
+   to `/var/www/btcopilot`, `cd deploy`, decrypt the secrets into
    `/etc/fd/secrets.env` (root, 600).
 4. **First start.** `docker compose --env-file /etc/fd/secrets.env pull && docker compose --env-file /etc/fd/secrets.env up -d`,
    then `docker compose --env-file /etc/fd/secrets.env exec fd-app flask admin db upgrade` — the chat chain from

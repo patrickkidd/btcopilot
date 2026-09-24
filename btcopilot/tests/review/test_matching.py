@@ -8,7 +8,7 @@ the room decides who is who (R-0326).
 
 from btcopilot.review import adapter, snapshot
 from btcopilot.schema import ItemKind
-from btcopilot.tests.chat.review.conftest import coded
+from btcopilot.tests.review.conftest import coded
 
 
 def _pdp(people, bonds=()):

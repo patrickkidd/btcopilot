@@ -44,7 +44,7 @@ def is_chat_app_request() -> bool:
 
 
 def login_url() -> str:
-    return url_for("chatauth.login", next=request.url)
+    return url_for("auth.login", next=request.url)
 
 
 def _set_tracing_tags(user):

@@ -7,7 +7,7 @@ from btcopilot.extensions import csrf
 
 _log = logging.getLogger(__name__)
 
-bp = Blueprint("chatauth", __name__, template_folder="templates")
+bp = Blueprint("auth", __name__, template_folder="templates")
 
 
 @bp.before_request

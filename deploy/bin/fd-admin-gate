@@ -14,7 +14,7 @@ sys.exit(
         [
             "docker", "compose",
             "--env-file", "/etc/fd/secrets.env",
-            "-f", "/var/www/btcopilot/deploy/chat/docker-compose.yml",
+            "-f", "/var/www/btcopilot/deploy/docker-compose.yml",
             "exec", "-T", "fd-app",
             "flask", "admin", "run", "--", *words,
         ]

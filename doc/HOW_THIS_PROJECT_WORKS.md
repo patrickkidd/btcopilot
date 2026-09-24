@@ -55,10 +55,8 @@ component and prints what it chose and why; given nothing, it reads the working 
 runs only the suites whose paths the diff touches, so a change to the review runs the
 review's ninety tests in five seconds instead of everything in fifty. It exits non-zero if
 any suite fails. Run one component per change while building; run the whole suite once at
-the end, never per item. The chat app's tests are their own suite under
-`btcopilot/tests/chat` with their own settings file and their own fixtures imported by
-name (R-0332) — they do not inherit Pro's stubs, Pro's failures, or the training app's
-markers, and the suites are meant to be run one invocation each.
+the end, never per item. The tests are one suite under `btcopilot/tests` with one settings file and fixtures
+imported by name (R-0332) — none of Pro's stubs or the training app's markers.
 
 ## Rules that came from things going wrong (dated; these bind every session)
 

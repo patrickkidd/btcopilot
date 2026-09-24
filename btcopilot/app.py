@@ -112,7 +112,7 @@ def create_app(config: dict = None, **kwargs):
 
         if is_chat_app_request():
             return "Forbidden", 403
-        return redirect(url_for("chatauth.login", next=request.url))
+        return redirect(url_for("auth.login", next=request.url))
 
     @app.errorhandler(404)
     def _(e):
@@ -155,7 +155,7 @@ def create_app(config: dict = None, **kwargs):
     def root():
         if signin.current_web_session():
             return redirect(app.config["CHAT_HOME"])
-        return redirect(url_for("chatauth.login"))
+        return redirect(url_for("auth.login"))
 
     _log.debug("btcopilot.create_app() complete")
     return app

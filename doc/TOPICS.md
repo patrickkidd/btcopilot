@@ -47,7 +47,7 @@ opened on Android; (5) [verify] passkeys have never been tried on a real https d
 quality on anyone else's record stays unmeasured until the coding loop produces numbers.
 **Lives in:** btcopilot PR #136 (fdserver PR #30 closed unmerged, 2026-09-16); merge-risk review
 doc/archive/2026-09-MERGE_REVIEW.md; review log doc/REVIEW_LOG.md, round 5 items 1–27;
-the box's deployment deploy/chat/; sandbox scripts /Users/patrick/worktrees/fd362-sandbox/.
+the box's deployment deploy/; sandbox scripts /Users/patrick/worktrees/fd362-sandbox/.
 **Next action:** he asked how to mint invite links for his first two users' email addresses —
 the command line on the box does it, and he wants the reminder before he sends them; then his
 code review of the branch and the coach's prompt.
@@ -198,7 +198,7 @@ review screens https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aa
 page https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a; Pro's surfaces
 https://claude.ai/code/artifact/fdb8a5b5-d043-46f4-afea-700a886210a3; the fragment conventions
 doc/FRAGMENT_CONVENTIONS.md and the gallery doc/mockups/fragment.html;
-btcopilot/review/, web/src/, the walks in web/tests/walks/, the chat suite btcopilot/tests/chat
+btcopilot/review/, web/src/, the walks in web/tests/walks/, the suite btcopilot/tests
 run by bin/t; VERIFY_2026-09-14.md; TEST_2026-09-14.md; doc/EVENT_MODEL.md and its
 page https://claude.ai/code/artifact/d4dbc090-fbde-464c-bcdc-0cc31e1a5c53; the names
 comparison https://claude.ai/code/artifact/2c391e04-6283-4590-b9ba-9e46910b5fab; the walk page
@@ -238,7 +238,7 @@ read as plain words, so the re-code should re-link matches on kind, date and peo
 session-menu item; (5) [verify] the importer dry run against a restored July dump stays
 Patrick's to run — restoring the dump here was refused as personal-data handling (review log
 row 137).
-**Lives in:** btcopilot/tests/chat/personal/test_prorecord.py; doc/specs/DATA_MODEL.md;
+**Lives in:** btcopilot/tests/personal/test_prorecord.py; doc/specs/DATA_MODEL.md;
 MERGE_REVIEW.md §4; run_agent_f1.replay.
 **Next action:** build "re-code with the coach" in the session menu (T-3 build); the per-diagram
 import waits until after the beta.
@@ -573,7 +573,7 @@ Patrick can run, and a release build.
 updatekeys`, because it writes the secret store, and `docker compose pull` and `up` on the box,
 because that is a production deploy. Production reads on the box are refused to sub-agents too.
 Those run at the top level on Patrick's direct grant.
-**Lives in:** deploy/chat/ (compose, Caddyfile, secrets template, README, the release workflow
+**Lives in:** deploy/ (compose, Caddyfile, secrets template, README, the release workflow
 and the four appcast feeds); doc/PLATFORM_BUILD.md; doc/archive/2026-09-DATADOG.md;
 private/prompts/ and private/oracle/, encrypted.
 **Next action:** he puts the Grafana token on the box and refreshes the dependency lock so the

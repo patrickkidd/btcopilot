@@ -3,7 +3,7 @@ leaves behind. It costs money and needs the prompts' key, so it never runs on CI
 (R-0451). Run it by hand:
 
     SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt uv run pytest \
-        btcopilot/btcopilot/tests/chat/personal/live --e2e
+        btcopilot/btcopilot/tests/personal/live --e2e
 
 Without --e2e every test here is skipped; with it and no key, every test fails.
 """
@@ -15,7 +15,7 @@ import pytest
 from btcopilot.extensions import db
 from btcopilot.personal.promptdir import key_present
 from btcopilot.schema import DiagramData
-from btcopilot.tests.chat.personal.conftest import csrf_token, replied
+from btcopilot.tests.personal.conftest import csrf_token, replied
 
 HERE = Path(__file__).parent
 

@@ -102,7 +102,7 @@ None of that is needed to prove a cut cannot overlap.
 
 Proposed layout, back end:
 
-    btcopilot/tests/chat/          the chat app, own pytest.ini and conftest
+    btcopilot/tests/          the chat app, own pytest.ini and conftest
         personal/                  moved as-is
         review/                    moved as-is
     btcopilot/tests/shared/        app factory, in-memory database, a signed-in user

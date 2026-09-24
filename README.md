@@ -19,11 +19,11 @@ else in the package.
 | Database: Postgres in production, SQLite in tests; one migration from empty | `btcopilot/migrations/`, `alembic.ini` |
 | Background work: Celery on Redis | `btcopilot/celery.py` |
 | Prompts, encrypted with sops (the open defaults run without the key) | `private/prompts/`, `btcopilot/personal/prompty/` |
-| The box: one compose file, Caddy, Grafana Alloy | `deploy/chat/` |
+| The box: one compose file, Caddy, Grafana Alloy | `deploy/` |
 
 A merge to master builds the image, tags it `3.YYYY.M.D.N+g<sha7>`, pushes it to
 GHCR and rolls it onto the box without dropping a request (`.github/workflows/release.yml`,
-runbook in `deploy/chat/README.md`). `/health` answers with the running version.
+runbook in `deploy/README.md`). `/health` answers with the running version.
 
 ## Working on it
 
