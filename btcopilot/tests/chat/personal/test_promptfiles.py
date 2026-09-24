@@ -69,14 +69,14 @@ def compare(want: dict, got: dict):
 
 
 def test_the_open_source_prompts_say_what_their_constants_said(public):
-    # no ruling
+    # R-0048
     with open(GOLDENS) as f:
         want = json.load(f)
     compare(want, rendered(public, want))
 
 
 def test_the_private_prompts_say_what_their_constants_said(monkeypatch):
-    # no ruling
+    # R-0048
     goldens = REAL_PRIVATE.parent / "goldens.json"
     if not goldens.exists() or not key_present():
         pytest.skip("the private prompts are not installed, or no key opens them")

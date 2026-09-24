@@ -32,7 +32,7 @@ def event(**over):
 
 
 def test_events_are_stored_with_user_and_session(web, test_user):
-    # no ruling
+    # R-0077
     response = post(
         web,
         event(),

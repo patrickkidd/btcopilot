@@ -81,7 +81,7 @@ def test_signing_in_stamps_the_session_the_training_app_ages(flask_app, browser)
 
 
 def test_fixture_token_signs_in(flask_app, browser):
-    # no ruling
+    # R-0306
     """The visual suite mints its links through the fixture installer, so the
     installer's own token has to open a session, not the sign-in page."""
     printed = flask_app.test_cli_runner().invoke(args=["personal", "fixtures", "empty"])
@@ -274,7 +274,7 @@ def stored_passkey(user, revoked=False) -> Passkey:
 
 
 def test_registering_a_passkey_stores_it(flask_app, browser, monkeypatch):
-    # no ruling
+    # R-0078
     user = signed_in(browser, flask_app)
     assert json_post(browser, "/app/passkeys/register/options").status_code == 200
 

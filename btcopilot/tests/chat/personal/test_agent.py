@@ -476,7 +476,7 @@ def test_the_edits_of_a_capped_turn_are_all_kept(discussion, family, caplog):
 def test_a_turn_with_no_words_at_all_fails_rather_than_showing_a_bare_bubble(
     discussion, family
 ):
-    # no ruling
+    # R-0182
     with pytest.raises(EmptyReply):
         run(discussion, "Hello?", Model(said("")))
 
@@ -632,7 +632,7 @@ TWO_HOURS = 2 * 3600
 
 
 def test_a_csrf_token_older_than_an_hour_still_posts(web, family, monkeypatch):
-    # no ruling
+    # R-0337
     """The token the page is stamped with lives as long as the session it
     belongs to. It expired after an hour, so a reader still signed in and still
     typing had every send refused and read an empty coach bubble."""

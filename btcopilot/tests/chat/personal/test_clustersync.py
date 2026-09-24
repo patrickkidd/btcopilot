@@ -380,7 +380,7 @@ def test_the_grouping_keeps_the_id_the_model_handed_back(family):
 
 
 def test_the_same_events_are_not_regrouped_twice(family):
-    # no ruling
+    # R-0208
     with detects(("The hard spring", [10, 11, 12])):
         sync(family.id, turn_id="t1")
     with detects(("Something else", [13, 14, 15])) as detect:

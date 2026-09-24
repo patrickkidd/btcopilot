@@ -27,7 +27,7 @@ def test_prefs_returns_every_key(test_user):
 
 
 def test_set_prefs_round_trips(test_user):
-    # no ruling
+    # R-0099
     test_user.set_prefs(speak=True, proactive="weekly", theme=Theme.Dark)
     db.session.commit()
 

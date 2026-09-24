@@ -263,7 +263,7 @@ def test_a_turn_nobody_started_is_not_found(web, token):
 
 
 def test_the_task_can_be_run_on_its_own(discussion, family, monkeypatch):
-    # no ruling
+    # R-0369
     """The worker calls the task with ids, and what it returns is the reply the
     page would have been handed before."""
     coach(monkeypatch, said("Go on."))

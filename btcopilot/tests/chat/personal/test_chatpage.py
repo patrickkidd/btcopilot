@@ -93,7 +93,7 @@ def test_timeline_empty_for_user_without_diagram(flask_app, test_user_2):
 
 @pytest.mark.chat_flow(response="a coach reply")
 def test_chat_round_trip(web, test_user):
-    # no ruling
+    # R-0019
     token = csrf_token(web)
     response = web.post(
         "/app/chat",
@@ -174,7 +174,7 @@ def test_the_timeline_says_nothing_about_extraction(web, test_user):
 
 
 def test_pwa_files_are_served_from_the_app_root(web):
-    # no ruling
+    # R-0226
     """The service worker has to answer from /app/ or its scope cannot
     cover the app."""
     assert web.get("/app/sw.js").status_code == 200

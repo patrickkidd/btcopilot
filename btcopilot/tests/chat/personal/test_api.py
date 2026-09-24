@@ -112,7 +112,7 @@ def test_session_list_omits_a_transcript_import(web, token, test_user):
 
 
 def test_session_create(web, token, test_user):
-    # no ruling
+    # R-0285
     response = post(web, token, "/app/sessions", {})
     assert response.status_code == 201
     assert response.get_json()["message_count"] == 0
@@ -137,7 +137,7 @@ def test_session_switch_by_last_activity(web, token):
 
 @pytest.mark.chat_flow(response="a coach reply")
 def test_session_statements(web, token):
-    # no ruling
+    # R-0016
     created = post(web, token, "/app/chat", {"statement": "hello"}).get_json()
 
     session = web.get(f"/app/sessions/{created['discussion_id']}").get_json()

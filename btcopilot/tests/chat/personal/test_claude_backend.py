@@ -243,7 +243,7 @@ def test_chat_generate_response_uses_response_text_sync():
 
 
 def test_discussion_update_summary_uses_response_text_sync():
-    # no ruling
+    # R-0097
     """Discussion.update_summary uses the unified response_text_sync."""
     with patch(
         "btcopilot.personal.models.discussion.response_text_sync",

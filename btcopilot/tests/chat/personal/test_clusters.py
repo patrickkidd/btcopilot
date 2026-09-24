@@ -156,7 +156,7 @@ def test_two_recorded_years_apart_end_the_cluster():
 
 
 def test_a_break_can_leave_a_shift_standing_alone():
-    # no ruling
+    # R-0215
     """When the break takes the only companion away, what is left is a shift
     with no related move, which is a dot and not a cluster."""
     data = record(
@@ -192,7 +192,7 @@ def test_a_nodal_event_seeds_a_cluster_with_no_variable_on_it():
 
 
 def test_a_birth_alone_seeds_nothing():
-    # no ruling
+    # R-0037
     data = record(
         asdict(Event(id=1, kind=EventKind.Birth, child=1, dateTime="1994-06-01")),
         moment(2, "1994-09-01", person=1, description="the months after"),
