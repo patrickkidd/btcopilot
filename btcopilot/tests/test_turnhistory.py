@@ -114,6 +114,7 @@ def test_a_failed_turn_keeps_its_edits_and_shows_them_on_the_words_that_asked(
     shown = statements(web, body["discussion_id"])
     assert len(shown) == 1
     assert shown[0]["unfinished"] is True
+    assert shown[0]["failure"] == turns.BROKE
     assert shown[0]["tools"] == [{"name": "edit_person", "args": {"name": "Nell"}}]
 
 

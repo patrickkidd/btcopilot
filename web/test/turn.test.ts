@@ -26,9 +26,14 @@ describe("what a tool call says in plain words", () => {
     );
   });
 
+  // R-0478
+  it("says what the coach looked at", () => {
+    expect(toolLine(ToolName.ReadPeople, {})).toBe("Looked at people");
+    expect(toolLine(ToolName.ReadChanges, {})).toBe("Looked at recent changes");
+  });
+
   // R-0186
-  it("says nothing for reads and for showing the picture", () => {
-    expect(toolLine(ToolName.ReadPeople, {})).toBeNull();
+  it("says nothing for showing the picture", () => {
     expect(toolLine(ToolName.Show, { kind: "triangle" })).toBeNull();
   });
 

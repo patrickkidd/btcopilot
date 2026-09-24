@@ -121,6 +121,11 @@ export const say = (statement: string, sessionId: number | null) =>
     ? call<Started>("POST", "/chat", { statement })
     : call<Started>("POST", `/sessions/${sessionId}/statements`, { statement });
 
+/** Pick a failed turn up where it stopped, on the same turn: nothing new is
+ * said (R-0477). */
+export const resume = (turnId: string) =>
+  call<Started>("POST", `/turns/${turnId}/resume`);
+
 /** Follow a running turn. A page attaching to one reads it from the start and
  * draws the bubble again; the browser's own reconnect says where it got to
  * with Last-Event-ID, so nothing already read is read twice. */

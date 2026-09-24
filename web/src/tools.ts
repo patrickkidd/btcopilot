@@ -1,10 +1,12 @@
-/** What a tool call says in plain words, for the one line the chat shows while
- * the coach is still writing. A call with no id is making something; a call
- * with one is changing what is already there. */
+/** What a tool call says in plain words, as the one line the chat shows for it,
+ * live and after a reload (R-0478). A call with no id is making something; a
+ * call with one is changing what is already there. */
 
 export enum ToolName {
   ReadPeople = "read_people",
   ReadEvents = "read_events",
+  ReadNotes = "read_notes",
+  ReadChanges = "read_changes",
   EditPerson = "edit_person",
   EditPairBond = "edit_pair_bond",
   EditEvent = "edit_event",
@@ -38,7 +40,13 @@ export function toolLine(
   if (tool === null) return null;
   switch (tool) {
     case ToolName.ReadPeople:
+      return "Looked at people";
     case ToolName.ReadEvents:
+      return "Looked at events";
+    case ToolName.ReadNotes:
+      return "Looked at notes";
+    case ToolName.ReadChanges:
+      return "Looked at recent changes";
     case ToolName.Show:
       return null;
     case ToolName.Remove:

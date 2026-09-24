@@ -86,6 +86,9 @@ function layout(pieces: Piece[]): Written {
  * of it arrives, so the reader never sees brackets. */
 const PART = /\[\[[^\]]*$/;
 
+/** One thing the coach did, as a plain line above its words. */
+const did = (line: string) => el("div", "did", esc(line));
+
 /** How long a traced bubble stays outlined after a moment jumps to it. */
 const TRACE_MS = 2200;
 
@@ -117,7 +120,8 @@ export class Chat {
     private handlers: ChatHandlers,
   ) {
     const tap = (host: HTMLElement) => (e: Event) => {
-      const button = (e.target as Element).closest<HTMLElement>("button.chip");
+      // [try again] looks like a chip but names nothing in the record.
+      const button = (e.target as Element).closest<HTMLElement>("button.chip[data-kind]");
       if (!button) {
         if (host === this.composer) return;
         const bubble = (e.target as Element).closest<HTMLElement>(".bub");
@@ -211,6 +215,7 @@ export class Chat {
     tone = ChipTone.Data,
     statementId: number | null = null,
     play: string | null = null,
+    lines: string[] = [],
   ): HTMLElement {
     if (role === Role.User) this.list.querySelector(".cta")?.remove();
     const bubble = el(
@@ -222,6 +227,7 @@ export class Chat {
           // in their own sentence.
           this.render(tokenize(text, tone)),
     );
+    bubble.querySelector(".who")?.after(...lines.map(did));
     // The bubble carries its statement so a moment on the picture can point
     // back at the words that coded it.
     if (statementId !== null) bubble.dataset.statement = String(statementId);
@@ -331,11 +337,12 @@ export class Chat {
       this.scroll();
     };
     return {
+      bubble,
       stamp: (statementId) => {
         bubble.dataset.statement = String(statementId);
       },
       note: (line) => {
-        bubble.insertBefore(el("div", "did", esc(line)), words);
+        bubble.insertBefore(did(line), words);
         this.scroll();
       },
       append: (text, onChip) => {
@@ -556,6 +563,7 @@ export class Chat {
 }
 
 export interface LiveBubble {
+  bubble: HTMLElement;
   /** The bubble carries its statement once the server has one, so a moment
    * coded in this very session can point back at it (review item 18). */
   stamp(statementId: number): void;

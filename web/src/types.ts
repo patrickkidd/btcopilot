@@ -184,6 +184,18 @@ export interface Statement {
   kind: StatementKind;
   /** The cluster a play-by-play narrates. Null on every other kind. */
   cluster_id: string | null;
+  turn_id: string | null;
+  /** What the coach did in this statement's turn: behind a reply, or before a
+   * turn failed with these words left unanswered. */
+  tools: ToolCall[];
+  unfinished: boolean;
+  /** Why an unfinished turn stopped, in the words the page showed live. */
+  failure: string | null;
+}
+
+export interface ToolCall {
+  name: string;
+  args: Record<string, unknown>;
 }
 
 /** The turn as it happens: words as they are written, the tool calls behind
@@ -220,11 +232,7 @@ export type View =
   | { kind: ViewKind.Cluster; cluster: string };
 
 export type TurnEvent =
-  | {
-      type: TurnEventKind.ToolCall;
-      name: string;
-      args: Record<string, unknown>;
-    }
+  | ({ type: TurnEventKind.ToolCall } & ToolCall)
   | { type: TurnEventKind.RecordPatch; deltas: Delta[]; turn_id: string }
   | { type: TurnEventKind.View; view: View }
   | { type: TurnEventKind.Text; text: string }

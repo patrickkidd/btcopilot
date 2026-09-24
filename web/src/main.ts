@@ -17,6 +17,7 @@ import { sessionTitle, summaryOf } from "./search";
 import { Settings } from "./settings";
 import { aimedEvents, chips, itemKind } from "./chips";
 import { feed } from "./turn";
+import { toolLine } from "./tools";
 import {
   CHIP_KIND,
   PicEvent,
@@ -52,6 +53,7 @@ import {
   type CodedIn,
   type Diagram,
   type Session,
+  type Started,
   type Statement,
   type Cluster,
   type Timeline,
@@ -497,16 +499,35 @@ speak.addEventListener("change", () => {
 // Every scroll area takes wheel, trackpad, touch AND mouse drag (UI_STANDARDS).
 for (const id of ["chat", "menu-body"]) dragScroll($(id));
 
-/** One stored message back on the thread. A play-by-play keeps the cluster it
- * walked, so its chips still step the board a week later. */
-function addStatement(statement: Statement): void {
-  chat.add(
-    statement.role,
-    statement.text,
-    ChipTone.Data,
-    statement.id,
-    statement.kind === StatementKind.Play ? statement.cluster_id : null,
-  );
+/** The bubble of a turn that failed, drawn live or from the store. Picking
+ * the turn up reads it again from its first event, so this one gives way. */
+let stopped: { turn: string; bubble: HTMLElement } | null = null;
+
+/** The stored messages back on the thread, each coach reply under the lines
+ * of what it did (R-0478). A play-by-play keeps the cluster it walked, so its
+ * chips still step the board a week later. A turn that failed shows what it
+ * did before it stopped, and as the last message it can be picked up again
+ * (R-0477). */
+function addStatements(statements: Statement[]): void {
+  for (const statement of statements) {
+    const coach = statement.role === Role.Coach;
+    const lines = statement.tools.flatMap((t) => toolLine(t.name, t.args) ?? []);
+    chat.add(
+      statement.role,
+      statement.text,
+      ChipTone.Data,
+      statement.id,
+      statement.kind === StatementKind.Play ? statement.cluster_id : null,
+      coach ? lines : [],
+    );
+    if (statement.unfinished && lines.length)
+      stopped = {
+        turn: statement.turn_id!,
+        bubble: chat.add(Role.Coach, "", ChipTone.Data, null, null, lines),
+      };
+  }
+  const last = statements.at(-1);
+  if (last?.unfinished) chat.warn(last.failure!, () => void resume(last.turn_id!));
 }
 
 /** Opening a session replaces the thread with its statements and puts the
@@ -542,7 +563,7 @@ async function openSession(id: number, kind?: SessionKind): Promise<void> {
   thread.style.opacity = "0";
   await wait(FADE_MS);
   chat.clear();
-  for (const statement of statements) addStatement(statement);
+  addStatements(statements);
   if (!statements.length) showPrompt(kind);
   picture.clear();
   pic = REST;
@@ -820,6 +841,20 @@ async function send(): Promise<void> {
 }
 
 async function deliver(statement: string): Promise<void> {
+  const started = await begin(() => api.say(statement, session), () => void deliver(statement));
+  if (started) follow(started.turn_id);
+}
+
+/** Try a failed turn again: the same turn goes on, and the words are not sent
+ * a second time (R-0477). */
+async function resume(turnId: string): Promise<void> {
+  if (await begin(() => api.resume(turnId), () => void resume(turnId))) follow(turnId);
+}
+
+async function begin(
+  ask: () => Promise<Started>,
+  again: () => void,
+): Promise<Started | null> {
   // One turn at a time: a second send while the coach is answering would store
   // the words again.
   inFlight = true;
@@ -828,16 +863,15 @@ async function deliver(statement: string): Promise<void> {
 
   let started;
   try {
-    started = await api.say(statement, session);
+    started = await ask();
   } catch (error) {
     inFlight = false;
     chat.busy(false);
-    chat.warn(whatFailed(error), () => void deliver(statement));
-    return;
+    chat.warn(whatFailed(error), again);
+    return null;
   }
   session = started.discussion_id;
-  chat.settled();
-  follow(started.turn_id, () => void deliver(statement));
+  return started;
 }
 
 /** The turn the coach is running, drawn as it happens. Everything the page
@@ -851,9 +885,10 @@ let onTurn: string | null = null;
  * back finds out it has already finished and reads the thread again. */
 let awaiting: string | null = null;
 
-function follow(turnId: string, again: () => void): void {
+function follow(turnId: string): void {
   if (onTurn === turnId) return;
   stopFollowing();
+  chat.settled();
   onTurn = turnId;
   awaiting = turnId;
   inFlight = true;
@@ -861,10 +896,11 @@ function follow(turnId: string, again: () => void): void {
 
   let bubble: LiveBubble | null = null;
   // The typing dots stay until the coach's first word or first step, and the
-  // bubble takes their place.
+  // bubble takes their place, and that of a failed try at the same turn.
   const opened = () => {
     if (!bubble) {
       chat.busy(false);
+      if (stopped?.turn === turnId) stopped.bubble.remove();
       bubble = chat.live();
     }
     return bubble;
@@ -905,7 +941,12 @@ function follow(turnId: string, again: () => void): void {
         awaiting = null;
         stopFollowing();
         chat.busy(false);
-        chat.warn(message, again);
+        // What it did stays; the words it had begun are not kept, so they go.
+        if (bubble) {
+          bubble.settle("", () => {});
+          stopped = { turn: turnId, bubble: bubble.bubble };
+        }
+        chat.warn(message, () => void resume(turnId));
       }),
     refused: (message) =>
       step(() => {
@@ -939,7 +980,7 @@ function stopFollowing(): void {
 async function reattach(): Promise<void> {
   if (session === null || watching) return;
   const { turn } = await api.session(session);
-  if (turn) follow(turn, () => {});
+  if (turn) follow(turn);
   else if (awaiting) {
     // It finished while the page was away: the thread is read again, which is
     // what a reload would have shown.
@@ -1163,7 +1204,7 @@ menu.onTab = onTab;
 
 pinDrawer();
 
-for (const statement of window.BOOTSTRAP.statements) addStatement(statement);
+addStatements(window.BOOTSTRAP.statements);
 chat.toEnd();
 
 void sessions.load(session);
@@ -1172,7 +1213,7 @@ void settings.load();
 // A turn the coach is still running when the page opens is drawn from its first
 // event, so a reload lands back in the middle of it rather than on nothing.
 const running = window.BOOTSTRAP.session?.turn ?? null;
-if (running) follow(running, () => {});
+if (running) follow(running);
 
 // Coming back to the app — a phone returning to it, a tab shown again, the page
 // restored from the back cache — attaches to whatever the coach is doing now.

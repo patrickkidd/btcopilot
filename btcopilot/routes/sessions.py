@@ -29,7 +29,7 @@ from btcopilot.turnlog import TurnEventKind
 def statements_payload(discussion: Discussion) -> list[dict]:
     """Each message with the tool calls of its turn: a coach reply carries the
     calls that led to it, and the words of a turn that never answered carry the
-    calls it made before it failed, marked unfinished."""
+    calls it made before it failed, marked unfinished with why it stopped."""
     kept = turnstore.kept({s.turn_id for s in discussion.statements if s.turn_id})
     out = []
     for s in discussion.statements:
@@ -54,6 +54,15 @@ def statements_payload(discussion: Discussion) -> list[dict]:
                     else []
                 ),
                 "unfinished": unfinished,
+                "failure": (
+                    next(
+                        e["message"]
+                        for e in reversed(events)
+                        if e["type"] == TurnEventKind.Failed.value
+                    )
+                    if unfinished
+                    else None
+                ),
             }
         )
     return out
