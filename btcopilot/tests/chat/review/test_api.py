@@ -199,7 +199,7 @@ def test_a_coder_reads_only_their_own_votes(patrick, coder, test_user, test_user
 def test_decision_writes_a_change_on_the_case_record(
     patrick, test_user, test_user_2, case, cut
 ):
-    # R-0275
+    # R-0275, R-0262
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
     item = next(
