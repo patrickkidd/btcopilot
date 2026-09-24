@@ -25,7 +25,7 @@ test.describe("the resting picture", () => {
   ] as const) {
     test.describe(() => {
       test.use({ storageState: stateFor(key) });
-      // no ruling
+      // R-0416
       test(`at rest: ${what}`, async ({ page }) => {
         await settle(page);
         await expect(picture(page)).toHaveScreenshot(`rest-${key}.png`, steady(page));
@@ -45,7 +45,7 @@ const openCluster = async (page: import("@playwright/test").Page) => {
 test.describe("a tap on a cluster", () => {
   test.use({ storageState: stateFor("three40") });
 
-  // no ruling
+  // R-0416
   test("opens it, and the wire underneath is tappable", async ({ page }) => {
     await settle(page);
     await expect(page.locator('.ss-hit[data-target="cluster"]').first()).toBeVisible();
@@ -169,7 +169,7 @@ test.describe("the resting line slides sideways", () => {
     expect(settled.stops).toBeGreaterThan(1);
   });
 
-  // no ruling
+  // R-0045, R-0381
   test("a tap still picks the cluster under the thumb", async ({ page }) => {
     await settle(page);
     await swipe(page, 300);

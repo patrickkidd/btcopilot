@@ -73,7 +73,7 @@ test.describe("the coach's words", () => {
 test.describe("the question that closes a reply", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // no ruling
+  // R-0358, R-0291
   test("it stands apart in amber", async ({ page }) => {
     await page.goto("/app/");
     await expect(page.locator(".bub").first()).toBeVisible();
