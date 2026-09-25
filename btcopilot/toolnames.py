@@ -3,6 +3,7 @@ record when the call is made and kept with it, so a line names what the coach
 touched as it was then, even once it is renamed or removed; the page never
 shows an id."""
 
+from btcopilot import record
 from btcopilot.clusters import _title
 from btcopilot.schema import ITEM_COLLECTIONS, DiagramData, EventKind, ItemKind, enum_val
 from btcopilot.timeline import _label, _person_label, _who
@@ -18,6 +19,9 @@ NOUNS = {
     EventKind.Bonded.value: "bond",
     EventKind.Death.value: "death",
 }
+
+# An event with no words and nothing that moved, by its kind.
+UNSAID = {EventKind.Noted.value: "a note", EventKind.Shift.value: "a shift"}
 
 GONE = {
     ItemKind.Person: "a person no longer in the record",
@@ -63,8 +67,12 @@ def _event(event: dict, people: dict) -> str:
     kind = enum_val(event.get("kind"))
     if kind in NOUNS:
         return f"{_who(event, people)}'s {NOUNS[kind]}"
-    person = _person_label(people.get(event.get("person")))
-    return (event.get("description") or "").strip() or f"{person}'s {_label(event, people)}"
+    words = (event.get("description") or "").strip()
+    if words:
+        return words
+    if record._moved(event):
+        return f"{_person_label(people.get(event.get('person')))}'s {_label(event, people)}"
+    return f"{UNSAID.get(kind, 'an event')} about {_who(event, people)}"
 
 
 LABELS = {
