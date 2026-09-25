@@ -108,6 +108,11 @@ def _enum_param(cls, description: str) -> dict:
     return {"type": "string", "enum": _values(cls), "description": description}
 
 
+CERTAINTY = (
+    "certain for an exact day, approximate for a month or a year only, unknown "
+    'for "sometime around" or any hedge'
+)
+
 VERSION = {
     "type": "integer",
     "description": (
@@ -239,10 +244,9 @@ def schemas() -> list[dict]:
                     },
                     "date_certainty": _enum_param(
                         DateCertainty,
-                        "Certain for a date they stated, approximate for within a "
-                        "year or so, unknown for a guess. Needed on a new event and "
-                        "on any change to its date; left out on another change it "
-                        "stays as it is. Never leave the date itself out: a vague "
+                        f"How sure the date is: {CERTAINTY}. Needed on a new event "
+                        "and on any change to its date; left out on another change "
+                        "it stays as it is. Never leave the date itself out: a vague "
                         "date beats none.",
                     ),
                     "description": {
@@ -675,9 +679,8 @@ class Toolbox:
             fields["dateCertainty"] = DateCertainty(args["date_certainty"]).value
         elif new or args.get("date"):
             raise ToolError(
-                "Say how sure the date is with date_certainty: certain, approximate "
-                "or unknown",
-                "Say how sure the date is: exact, approximate, or a guess.",
+                f"Say how sure the date is with date_certainty: {CERTAINTY}",
+                f"Say how sure the date is: {CERTAINTY}.",
             )
         if args.get("description"):
             fields["description"] = args["description"]

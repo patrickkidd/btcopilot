@@ -145,7 +145,10 @@ def test_a_date_with_no_certainty_is_refused_and_a_change_leaves_it(subscriber):
     ):
         with pytest.raises(ToolError) as refused:
             Toolbox(diagram.id, "t1").call(ToolName.EditEvent.value, args)
-        assert refused.value.plain == "Say how sure the date is: exact, approximate, or a guess."
+        assert refused.value.plain == (
+            "Say how sure the date is: certain for an exact day, approximate for a "
+            'month or a year only, unknown for "sometime around" or any hedge.'
+        )
     assert diagram.get_diagram_data().events[-1]["dateTime"] == "2019-03-01"
 
 def test_a_birth_naming_both_parents_makes_the_child_their_offspring(subscriber):
