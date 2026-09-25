@@ -4,6 +4,8 @@
  * concept-sentence-spotlight, ruled 2026-09-02): one mono line per row, cut at a
  * space, three rows at most. */
 
+import { DateCertainty } from "./certainty";
+
 /** IBM Plex Mono advance at the 13px floor. */
 export const CH = 7.8;
 /** The band the line is drawn in, and what sits where inside it (the picked
@@ -36,20 +38,12 @@ const MONTHS = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-/** A const object rather than an enum: the Playwright walks import this file,
- * and Node 24 loads it with its types stripped, which cannot carry an enum. */
-export const Certainty = {
-  Unknown: "unknown",
-  Approximate: "approximate",
-  Certain: "certain",
-} as const;
-export type Certainty = (typeof Certainty)[keyof typeof Certainty];
 
 /** A date the record is only approximately sure of says its year and no more;
  * a date it is sure of says the month too. */
 export function dateText(iso: string, certainty: string | null): string {
   const year = iso.slice(0, 4);
-  if (certainty === Certainty.Approximate) return year;
+  if (certainty === DateCertainty.Approximate) return year;
   const month = Number(iso.slice(5, 7));
   return `${MONTHS[Math.min(11, Math.max(0, month - 1))]} ${year}`;
 }

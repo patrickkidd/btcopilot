@@ -44,13 +44,7 @@ export enum InteractionKind {
   Partly = "partly",
 }
 
-/** How sure the record is of a date. Unknown means the date matches anything,
- * so the event has no place on the line and belongs on the undated shelf. */
-export enum DateCertainty {
-  Unknown = "unknown",
-  Approximate = "approximate",
-  Certain = "certain",
-}
+export { DateCertainty } from "./certainty";
 
 export enum Role {
   Coach = "coach",

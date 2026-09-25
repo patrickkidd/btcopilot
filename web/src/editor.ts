@@ -2,6 +2,7 @@ import { esc, el } from "./dom";
 import { Feature, tap } from "./track";
 import { fullName } from "./rows";
 import * as api from "./api";
+import { DateCertainty } from "./certainty";
 import type { PairBond, Person, TimelineEvent } from "./types";
 
 /** The event editor, markup unchanged from the page this replaces: it is behind
@@ -28,12 +29,6 @@ export enum Direction {
   Up = "up",
   Down = "down",
   Same = "same",
-}
-
-export enum Certainty {
-  Unknown = "unknown",
-  Approximate = "approximate",
-  Certain = "certain",
 }
 
 export enum Relationship {
@@ -223,8 +218,8 @@ export function openEditor(
       `<div class="lab">Certainty</div>` +
       chips(
         "dateCertainty",
-        plain(Object.values(Certainty)),
-        event?.dateCertainty ?? Certainty.Certain,
+        plain(Object.values(DateCertainty)),
+        event?.dateCertainty ?? DateCertainty.Certain,
       ) +
       `<div data-block="shift"${kind === EventKind.Shift ? "" : " hidden"}>` +
       `<div class="sec">Shifts</div>` +
@@ -382,7 +377,7 @@ export function values(editor: HTMLElement): Partial<TimelineEvent> {
     location: text("location"),
     dateTime: text("dateTime"),
     endDateTime: text("endDateTime"),
-    dateCertainty: one("dateCertainty") ?? Certainty.Certain,
+    dateCertainty: one("dateCertainty") ?? DateCertainty.Certain,
     symptom: one("symptom"),
     anxiety: one("anxiety"),
     functioning: one("functioning"),

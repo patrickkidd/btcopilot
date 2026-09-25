@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { DateCertainty } from "../src/certainty";
 import {
-  Certainty,
   PIC_H,
   ROWS,
   ROW_H,
@@ -26,18 +26,18 @@ const YEAR_H = 13;
 describe("the words a moment says about itself", () => {
   // R-0009
   it("a date the record is sure of says its month", () => {
-    expect(dateText("1996-06-15", Certainty.Certain)).toBe("Jun 1996");
+    expect(dateText("1996-06-15", DateCertainty.Certain)).toBe("Jun 1996");
   });
 
   // R-0009
   it("a date it only guessed says its year and nothing more", () => {
-    expect(dateText("1996-06-15", Certainty.Approximate)).toBe("1996");
+    expect(dateText("1996-06-15", DateCertainty.Approximate)).toBe("1996");
   });
 
   // R-0457
   it("a label names everyone it is about, the speaker included", () => {
     const say = (who: string) =>
-      words("2001-03-01", Certainty.Certain, who, "bonded \u00b7 together for a year");
+      words("2001-03-01", DateCertainty.Certain, who, "bonded \u00b7 together for a year");
     expect(say("Patrick & Emily")).toBe("Patrick & Emily \u00b7 bonded \u00b7 together for a year");
     expect(say("Emily & Patrick")).toBe("Emily & Patrick \u00b7 bonded \u00b7 together for a year");
     expect(say("Patrick")).toBe("Patrick \u00b7 bonded \u00b7 together for a year");
