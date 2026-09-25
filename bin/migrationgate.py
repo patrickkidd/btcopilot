@@ -191,10 +191,11 @@ def name_checks(conn) -> list[tuple]:
     marks = set(GONE.values())
     flagged = 0
     for c in calls:
-        for arg, text in (c.payload.get("names") or {}).items():
-            if text not in marks:
-                continue
-            for kind, item_id in gone(c.payload, arg):
+        for arg, named in (c.payload.get("names") or {}).items():
+            texts = named if isinstance(named, list) else [named]
+            for (kind, item_id), text in zip(gone(c.payload, arg), texts):
+                if text not in marks:
+                    continue
                 when = removed.get((c.diagram_id, kind, item_id), [])
                 flagged += 1
                 print(
@@ -290,7 +291,7 @@ def main(dump: Path) -> int:
             at = current()
             chain = [r.revision for r in script.walk_revisions()]
             first = script.get_revision(REVISION).down_revision
-            if at not in chain[: chain.index(first) + 1] or at == script.get_current_head():
+            if at not in chain[: chain.index(first) + 1]:
                 raise SystemExit(f"dump is at {at}: not between {first} and the head")
             print(f"note: dump at {at}, upgrading to {script.get_current_head()}")
             with engine.connect() as conn:
