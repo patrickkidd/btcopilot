@@ -90,8 +90,8 @@ const SHOWING = new Map([
   [ViewKind.Cluster, "a cluster"],
 ]);
 
-function shown({ args, names, refused }: ToolCall): string {
-  if (refused) return SHOWING.get(args.kind as ViewKind) ?? "the picture";
+function shown({ args, names, refusal }: ToolCall): string {
+  if (refusal) return SHOWING.get(args.kind as ViewKind) ?? "the picture";
   switch (args.kind as ViewKind) {
     case ViewKind.Triangle:
       return `the triangle of ${list(names.persons as string[])}`;
@@ -167,5 +167,7 @@ export function toolLine(call: ToolCall): string | null {
     : null;
   if (tool === null) return null;
   const [verb, what] = told(tool, call);
-  return call.refused ? `Tried to ${verb} ${what}; it was refused` : `${DID.get(verb)} ${what}`;
+  return call.refusal
+    ? `Tried to ${verb} ${what}. ${call.refusal}`
+    : `${DID.get(verb)} ${what}`;
 }

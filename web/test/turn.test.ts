@@ -6,7 +6,7 @@ const line = (
   name: ToolName,
   args: Record<string, unknown>,
   names: Record<string, string | string[]> = {},
-) => toolLine({ name, args, names, refused: false });
+) => toolLine({ name, args, names, refusal: null });
 
 describe("what a tool call says in plain words", () => {
   // R-0186
@@ -137,18 +137,25 @@ describe("what a tool call says in plain words", () => {
   });
 
   // R-0478
-  it("says a refused call was tried, not done, even when its ids name no one", () => {
+  it("says a refused call was tried, and why, even when its ids name no one", () => {
     const refused = (
       name: ToolName,
       args: Record<string, unknown>,
-      names: Record<string, string | string[]> = {},
-    ) => toolLine({ name, args, names, refused: true });
-    expect(refused(ToolName.Show, { kind: ViewKind.Triangle })).toBe(
-      "Tried to show a triangle; it was refused",
+      names: Record<string, string | string[]>,
+      refusal: string,
+    ) => toolLine({ name, args, names, refusal });
+    expect(refused(ToolName.Show, { kind: ViewKind.Triangle }, {}, "No people were named.")).toBe(
+      "Tried to show a triangle. No people were named.",
     );
     expect(
-      refused(ToolName.EditPerson, { id: 3, name: "Nel", version: 4 }, { it: "Nell" }),
-    ).toBe("Tried to change Nell: name Nel; it was refused");
-    expect(refused(ToolName.Undo, {})).toBe("Tried to put that back; it was refused");
+      refused(
+        ToolName.EditPerson,
+        { id: 3, name: "Nel", version: 4 },
+        { it: "Nell" },
+        "The record had changed since it was read; read it again.",
+      ),
+    ).toBe(
+      "Tried to change Nell: name Nel. The record had changed since it was read; read it again.",
+    );
   });
 });

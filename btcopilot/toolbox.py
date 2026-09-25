@@ -353,7 +353,16 @@ def schemas() -> list[dict]:
 
 
 class ToolError(Exception):
-    """A tool call the record refused. The model sees the words and retries."""
+    """A tool call the record refused. The model reads the reason and retries;
+    `plain` says why to the person reading the thread, with no ids."""
+
+    def __init__(self, reason: str, plain: str):
+        super().__init__(reason)
+        self.plain = plain
+
+
+SMALL_CLUSTER = f"A cluster needs at least {MIN_CLUSTER_EVENTS} events."
+GONE = "That is not in the record."
 
 
 class Toolbox:
@@ -399,7 +408,7 @@ class Toolbox:
         try:
             tool = ToolName(name)
         except ValueError:
-            raise ToolError(f"There is no tool called {name}")
+            raise ToolError(f"There is no tool called {name}", "There is no such tool.")
         if tool in CHANGES and (tool is ToolName.Remove or args.get("id") is not None):
             self._fresh(args.get("version"))
         text, event = getattr(self, f"_{tool.value}")(args)
@@ -411,7 +420,8 @@ class Toolbox:
         if version is None:
             raise ToolError(
                 "Say which record version you are changing: the number at the end "
-                "of your last read, or on the map"
+                "of your last read, or on the map",
+                "It did not say which version of the record it had read.",
             )
         now = self.diagram.version
         own = self.versions | {
@@ -426,7 +436,8 @@ class Toolbox:
             raise ToolError(
                 f"The record has changed since version {version}; it is at {now} "
                 "now. Read what you are changing again, then change it with the "
-                "new version"
+                "new version",
+                "The record had changed since it was read; read it again.",
             )
 
     # ── READ ────────────────────────────────────────────────────────────────
@@ -558,7 +569,7 @@ class Toolbox:
         for person in self.data.people:
             if str(person.get("id")) == str(person_id):
                 return person
-        raise ToolError(f"No person {person_id} in the record")
+        raise ToolError(f"No person {person_id} in the record", views.NO_PERSON)
 
     def _edit_event(self, args: dict) -> tuple[str, dict]:
         data = self.data
@@ -595,7 +606,9 @@ class Toolbox:
             if args.get(arg) is not None:
                 fields[key] = [self._person(data, p) for p in args[arg]]
         if new and not args.get("kind"):
-            raise ToolError("A new event needs a kind")
+            raise ToolError(
+                "A new event needs a kind", "A new event needs to say what kind it is."
+            )
         # An adoption invents no parent: adoptive parents are not yet designed
         # (R-0345), and a generic one would be named by biological role (R-0430).
         if (
@@ -657,7 +670,7 @@ class Toolbox:
     def _edit_cluster(self, args: dict) -> tuple[str, dict]:
         data = self.data
         if args.get("id") is None and args.get("event_ids") is None:
-            raise ToolError(f"A new cluster needs {MIN_CLUSTER_EVENTS} events")
+            raise ToolError(f"A new cluster needs {MIN_CLUSTER_EVENTS} events", SMALL_CLUSTER)
         # A cluster named in conversation is the user's own grouping: automatic
         # re-detection yields to it rather than regrouping it away.
         fields = {"source": ClusterSource.User.value}
@@ -671,7 +684,7 @@ class Toolbox:
             events = [self._event(data, e) for e in args["event_ids"]]
             if len(events) < MIN_CLUSTER_EVENTS:
                 raise ToolError(
-                    f"A cluster needs at least {MIN_CLUSTER_EVENTS} events"
+                    f"A cluster needs at least {MIN_CLUSTER_EVENTS} events", SMALL_CLUSTER
                 )
             fields["eventIds"] = events
             dates = sorted(
@@ -687,16 +700,19 @@ class Toolbox:
         if item_id is not None and str(item_id) not in {
             str(c.get("id")) for c in data.clusters
         }:
-            raise ToolError(f"No cluster {item_id} in the record")
+            raise ToolError(f"No cluster {item_id} in the record", GONE)
         return self._write(ItemKind.Cluster, item_id, fields)
 
     def _remove(self, args: dict) -> tuple[str, dict]:
         if args["item_kind"] not in REMOVABLE:
-            raise ToolError(f"There is no kind of thing called {args['item_kind']}")
+            raise ToolError(
+                f"There is no kind of thing called {args['item_kind']}",
+                "There is no such kind of thing to remove.",
+            )
         kind = REMOVABLE[args["item_kind"]]
         item_id = args["item_id"]
         if not self._exists(self.data, kind, item_id):
-            raise ToolError(f"No {kind.value} {item_id} in the record")
+            raise ToolError(f"No {kind.value} {item_id} in the record", GONE)
         change = self._apply(
             [{"item_kind": kind.value, "item_id": item_id, "field": None, "after": None}]
         )
@@ -705,7 +721,10 @@ class Toolbox:
     def _undo(self, args: dict) -> tuple[str, dict]:
         previous = self._previous_turn()
         if previous is None:
-            raise ToolError("There is nothing before this to put back")
+            raise ToolError(
+                "There is nothing before this to put back",
+                "There is nothing before this to put back.",
+            )
         try:
             change = record.undo(
                 self.diagram_id,
@@ -717,10 +736,11 @@ class Toolbox:
         except record.Conflict as e:
             raise ToolError(
                 "That has already been changed since, so it cannot be put back "
-                f"as it was: {e}"
+                f"as it was: {e}",
+                "That has been changed since, so it cannot be put back as it was.",
             )
         except record.Invalid as e:
-            raise ToolError(f"Putting that back would leave {e}")
+            raise ToolError(f"Putting that back would leave {e}", e.plain)
         self.deltas.extend(change.deltas)
         self.versions.add(change.version)
         return ("Put back what the last turn changed.", self._patch(change))
@@ -743,12 +763,10 @@ class Toolbox:
     def _show(self, args: dict) -> tuple[str, dict]:
         try:
             view = views.build(
-                views.ViewKind(args["kind"]),
-                {k: v for k, v in args.items() if k != "kind"},
-                self.data,
+                args["kind"], {k: v for k, v in args.items() if k != "kind"}, self.data
             )
-        except ValueError as e:
-            raise ToolError(str(e))
+        except views.Unshowable as e:
+            raise ToolError(str(e), e.plain)
         self.views.append(view)
         return (f"Showing the {view['kind']}.", {"view": view})
 
@@ -756,19 +774,19 @@ class Toolbox:
 
     def _person(self, data: DiagramData, person_id) -> int:
         if not self._exists(data, ItemKind.Person, person_id):
-            raise ToolError(f"No person {person_id} in the record")
+            raise ToolError(f"No person {person_id} in the record", views.NO_PERSON)
         return int(person_id)
 
     def _event(self, data: DiagramData, event_id) -> int:
         if not self._exists(data, ItemKind.Event, event_id):
-            raise ToolError(f"No event {event_id} in the record")
+            raise ToolError(f"No event {event_id} in the record", views.NO_EVENT)
         return int(event_id)
 
     def _cluster(self, data: DiagramData, cluster_id: str) -> dict:
         for cluster in data.clusters:
             if str(cluster.get("id")) == str(cluster_id):
                 return cluster
-        raise ToolError(f"No cluster {cluster_id} in the record")
+        raise ToolError(f"No cluster {cluster_id} in the record", views.NO_CLUSTER)
 
     def _exists(self, data: DiagramData, kind: ItemKind, item_id) -> bool:
         collection = {
@@ -785,7 +803,9 @@ class Toolbox:
 
     def _write(self, kind: ItemKind, item_id, fields: dict) -> tuple[str, dict]:
         if not fields:
-            raise ToolError(f"Nothing to change on that {kind.value}")
+            raise ToolError(
+                f"Nothing to change on that {kind.value}", "It gave nothing to change."
+            )
         data = self.data
         new = item_id is None
         if new:
@@ -794,7 +814,7 @@ class Toolbox:
             else:
                 item_id = record.next_id(data)
         elif not self._exists(data, kind, item_id):
-            raise ToolError(f"No {kind.value} {item_id} in the record")
+            raise ToolError(f"No {kind.value} {item_id} in the record", GONE)
 
         deltas = [
             {"item_kind": kind.value, "item_id": item_id, "field": field, "after": value}
@@ -826,7 +846,7 @@ class Toolbox:
             )
         except record.Invalid as e:
             # the record says what is wrong in the coach's own words already
-            raise ToolError(str(e))
+            raise ToolError(str(e), e.plain)
         self.deltas.extend(change.deltas)
         self.versions.add(change.version)
         return change

@@ -301,8 +301,8 @@ class CoachTurn:
             results = []
             for call in turn.calls:
                 asked = toolcall(self.toolbox.data, call.name, call.args)
-                text, event, refused = self._call(call)
-                asked["refused"] = refused
+                text, event, refusal = self._call(call)
+                asked["refusal"] = refusal
                 self._note(events, asked)
                 # Kept after the page was told, so only the database holds what
                 # it answered; a read's answer is too long to keep and goes stale.
@@ -313,7 +313,7 @@ class CoachTurn:
                         "type": "tool_result",
                         "tool_use_id": call.id,
                         "content": text,
-                        "is_error": refused,
+                        "is_error": refusal is not None,
                     }
                 )
                 if event:
@@ -478,13 +478,15 @@ class CoachTurn:
                     self._send({"type": TurnEventKind.TextReset.value})
                 return stop.value
 
-    def _call(self, call) -> tuple[str, dict | None, bool]:
+    def _call(self, call) -> tuple[str, dict | None, str | None]:
+        """What the model reads, what the page sees, and why the record refused
+        the call in plain words, or None."""
         try:
             text, event = self.toolbox.call(call.name, call.args)
         except ToolError as e:
             _log.warning(f"Tool {call.name} refused: {e}")
-            return f"That did not work: {e}", None, True
-        return text, event, False
+            return f"That did not work: {e}", None, e.plain
+        return text, event, None
 
     def _history(self) -> list[dict]:
         """The chat so far, with the new message and what its chips point at.
@@ -539,7 +541,7 @@ def _calls(turn_id: str, events: list[dict]) -> list[tuple[str, list[dict]]]:
                     "type": "tool_result",
                     "tool_use_id": id,
                     "content": e.get("result") or NOT_KEPT,
-                    "is_error": bool(e.get("refused")),
+                    "is_error": bool(e.get("refusal")),
                 }
                 for id, e in zip(ids, asked)
             ],

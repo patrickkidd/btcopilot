@@ -825,6 +825,6 @@ def test_a_remove_of_a_kind_the_record_does_not_hold_is_refused(discussion, fami
 
     asked = event(reply, EventKind.ToolCall)
     assert asked["names"] == {"it": "something the record has no kind for"}
-    assert asked["refused"] is True
+    assert asked["refusal"] == "There is no such kind of thing to remove."
     refused = model.histories[-1][-1]["content"][0]
     assert refused["is_error"] is True

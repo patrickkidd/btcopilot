@@ -199,8 +199,9 @@ export interface ToolCall {
   /** What each id in the args is called, keyed by the arg, and what the call
    * touches under `it`, as the record named them when the call was made. */
   names: Record<string, string | string[]>;
-  /** The record refused the call: it changed and showed nothing. */
-  refused: boolean;
+  /** Why the record refused the call, in plain words; a refused call changed
+   * and showed nothing. */
+  refusal: string | null;
 }
 
 /** The turn as it happens: words as they are written, the tool calls behind
