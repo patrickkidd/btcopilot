@@ -10,7 +10,7 @@ import json
 import pytest
 from mock import patch
 
-from btcopilot import chips, coachturn, record, turnlog
+from btcopilot import chips, coachturn, observer, record, turnlog
 from btcopilot.extensions import db
 from btcopilot.interactions import recent
 from btcopilot.models import Author, Change, InteractionKind, Observation, ObservationKind
@@ -400,6 +400,20 @@ def test_a_reply_that_hardly_holds_the_question_it_asked_is_observed_never_refus
     assert error.call_args_list == []
     assert statements(web, body["discussion_id"])[1]["text"] == reply
     assert unsaid(family) == observed
+
+
+@pytest.mark.parametrize(
+    "question,reply",
+    [
+        ("What's your last name?", "what's your last name"),
+        ("What\u2019s your LAST name?", "Tell me: what's your last name..."),
+    ],
+)
+def test_a_question_and_its_reply_are_compared_without_case_punctuation_or_apostrophe_kind(
+    question, reply
+):
+    # R-0482
+    assert observer.overlap(question, reply) == 1.0
 
 
 def test_the_page_gets_asked_questions_only_each_with_where_it_was_asked(web, family, monkeypatch):

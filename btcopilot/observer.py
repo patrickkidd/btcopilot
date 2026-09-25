@@ -87,10 +87,14 @@ def _person(data: DiagramData, person: dict) -> tuple | None:
 
 
 def overlap(question: str, reply: str) -> float:
-    """The share of the question's distinct words, ignoring case, that the
-    reply also uses."""
-    asked = set(WORDS.findall(question.lower()))
-    return len(asked & set(WORDS.findall(reply.lower()))) / len(asked)
+    """The share of the question's distinct words, ignoring case, punctuation
+    and which apostrophe was typed, that the reply also uses."""
+    asked = _words(question)
+    return len(asked & _words(reply)) / len(asked)
+
+
+def _words(text: str) -> set[str]:
+    return set(WORDS.findall(text.lower().replace("\u2019", "'")))
 
 
 def _unsaid(diagram_id: int, turn_id: str, data: DiagramData) -> list:
