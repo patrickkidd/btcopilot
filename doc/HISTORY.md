@@ -1432,98 +1432,91 @@ R-0449]. He ratified two proposed rulings and replaced a third [R-0450], chose C
 the key scoped to one step [R-0451], and asked that the session keep to merging efficiently so a
 new session can take his next ideas.
 
-**2026-09-24, FD-363.** In the session that opened the fast-follow after PR #136 merged,
-Patrick ruled that a failed turn keeps its edits and is resumed, not redone [R-0477]; that every tool call in every
-session stays visible [R-0478]; that the coach works over the record the way Claude Code works
-over code, with a map in the prompt, reading what it needs and changing only what is necessary
-[R-0479]; that reads carry the record version and a change based on an old version is refused
-[R-0480]; that nothing fixed guards against repeated people or events, because the coach has to
-see [R-0481]; that such mistakes are written down to seed evals, never blocked [R-0482]; that
-every push to production first shows evidence from the stored rows and from the page [R-0483];
-that the fast-follow is one batch PR pushed continuously, tested in his own thread with no data
-loss [R-0484]; and that how much of the family history is covered is the coach's call, with no
-number bar [R-0485]. The first session built kept tool calls, resume and record versions, then
-handed over. The second ran builders under an auditor for the map, the page, the check after
-each turn, the live eval cases and the gate. Writing that check found the record already refuses
-an added event matching another on kind, day, people and what moved, which R-0481 says should
-not exist; it was left in place for his ruling. The earlier note in STATE that the user's words
-are stored with the reply was wrong: they are stored before the turn runs.
 
-**2026-09-24, FD-363, later.** The map, the reads by id, words and notes, the recent-changes
-read, the check after each turn with its admin list, the page's stored tool lines with
-[try again], and the migration gate all landed on the branch, with STATE revised to match.
-Patrick ruled three more points, not yet numbered or in the store: open questions serve both
-the coach's memory and the user's view of the family; new screens are allowed when they are
-thought through, the earlier ruling against a new surface having been narrow; and brainstorm
-topics are taken one at a time. The gate has not yet run on a production dump, and the browser
-checks at phone and desktop have not run.
+## 2026-09-24 to 25 — FD-363: the fast-follow deployed twice, open questions and impressions, and the spend rules [T-1, T-2, T-5, T-9, T-10, T-11]
+<!-- session: dc02180f · flushed: 2026-09-25T23:26:00Z -->
 
-**2026-09-24, FD-363, evening.** Patrick ruled four more points, not yet numbered or in the
-store: the record's refusal of an added event that exactly matches an existing one stays beside
-R-0481, since a rule that is right every time is code; every tool call draws a line in the
-thread, show calls included, for a complete log of what the coach did and how the user
-responded; the old single-call chat path is deleted; and a sandbox must make real model calls,
-a missing key going to him rather than being tested around, which became a process rule. Built
-on the branch: show calls draw a line and tool lines read event dates as the record list does;
-hand edits of events write a change row through the coach's write path, marked as the user, so
-undo and the recent-changes read see them, and so they now pass the coach's record rules and a
-hand delete removes the emotions the event caused; the old conversation-flow prompt, the
-one-shot ask path and the fixed-category intake engine were removed. The sandbox made a real
-coach turn and a real [try again]. Left open: two private prompt fragments nothing reads any
-more, and the sandbox's SQLite now and then reporting the database locked under concurrent
-writes.
+**What the session inherited.** The session before it (9626e1be) opened FD-363 after PR #136
+merged, and Patrick ruled there that a failed turn keeps its edits and is resumed, not redone
+[R-0477]; that every tool call stays visible [R-0478]; that the coach works over the record the
+way Claude Code works over code, with a map in the prompt, reading what it needs and changing
+only what is necessary [R-0479]; that reads carry the record version and a change based on an
+old version is refused [R-0480]; that nothing fixed guards against repeats because the coach has
+to see [R-0481], and mistakes are written down to seed evals, never blocked [R-0482]; that every
+push to production first shows evidence from the stored rows and from the page [R-0483]; that the
+fast-follow is one batch PR pushed continuously, tested in his own thread with no data loss
+[R-0484]; and that coverage of the history is the coach's call with no number bar [R-0485]. That
+session built kept tool calls, resume and record versions and handed over. R-0477 to R-0485 are
+still not in the store: agents may not decrypt it, and Patrick appends them by hand.
 
-**2026-09-25, FD-363, open questions.** Built on the branch: the stored question with its
-states, kinds and full change log; the coach's three tools to add, close and read questions,
-each drawing its own thread line; the map's question section, open questions then declined
-ones, so the coach does not ask a declined one again; the Questions tab, third beside Events
-and People, with its two sections, the family's name as its title, a chip that puts the
-question into the message box and closes the drawer, and swipe-then-dismiss; and the rule that
-removing what a question is about closes every question linked to it as let go, with undo
-restoring both. The same-words refusal now also covers a question the user declined, not only
-an open one. A kept question names the person and the subject and speaks to the user as "you";
-anything with a factual answer is filed as a fact to find, never food for thought. The one-off
-backfill command reads a thread's past sessions with the coach's own read tools, runs once per
-session, and is safe to run again — a second run makes no calls and writes nothing. Run once
-against a copy of the production record, it added 7 questions across 3 families, for about
-$0.18. Live tests and the live browser walk now spend the testing key, never production's, and
-fail loudly if it is unset. An asked question whose reply barely holds its words is logged as
-an observation, never blocked. A turn that stops silently after a tool call, with no words and
-no further call, is asked once more for a reply instead of being failed. Patrick ruled three
-more points, not yet numbered: every test path must spend the testing key, with a loud failure
-on a missing one (2026-09-25); a held question's words must never reach the page; and a stored
-question addresses the user as "you." Left open: new tests for this build cite the nearest
-existing ruling in place of these candidates, since the oracle spec forbids a pending marker,
-and need re-citing once Patrick appends the ids; the new testing-key test has no citation yet.
+**The first batch (2026-09-24 evening, UTC).** This session ran builders under an auditor for
+the map and the reads by id, words and notes, the recent-changes read, the check after each turn
+with its admin list, the page's stored tool lines with [try again], the three live eval cases,
+and the migration gate that restores a production dump into a throwaway Postgres. Writing the
+check found that the record already refuses an added event matching another exactly; Patrick
+ruled that it stays, because a rule that is right every time is code, while anything needing
+judgement is only observed. He ruled that every tool call draws a line in the thread, show calls
+included, so there is a complete log of what the coach did and how the user answered; that hand
+edits of events go through the coach's writer in this PR; that the old single-call chat path is
+deleted; and that a sandbox must make real model calls, a missing key going to him rather than
+being tested around. He asked for brainstorm topics one at a time and for items to reach him one
+related chunk at a time, and for development to run in an agent team so the coordinator talks to
+him at product level.
 
-Before the deploy, the gates passed: the migration ran clean against a copy of the production
-database, the pages were checked at phone and desktop sizes, three full live coach runs gave
-zero empty replies across 75 turns, and the backfill ran against a copy of the production
-database with a second run against that copy making no calls and writing nothing. The build
-then went to production: commit ec757d5, image 3.2026.9.25.2-gec757d5, the database migrated to
-1b00000000ad before the rollout with a backup taken first; that migration cannot be undone, so a
-rollback from here means rolling forward. The backfill then ran for real on the box, over 3
-families, 3 model calls each; Patrick's own family got 4 questions, all facts to find, and he
-still has to judge whether that count is right. He also ruled that a deploy for him to test is
-the hand route — a box checkout and an image tag — separate from merging pull requests; that the
-same-words refusal is code because it is right every time, while near-duplicate questions are
-only logged; and that the pinned drawer stays 300 pixels wide with the diagram's name as its
-title. Also found: production's title bar itself still reads "Free Diagram" instead of the
-diagram's real name, and 4 live coach cases fail the same way on the master branch.
+**Deploying is not merging.** Asked for a merge yes, Patrick corrected the session: since FD-362
+a build for him to test goes to the box by a release run dispatched from the ticket branch, and
+the pull request stays open; what makes that safe is the session's own rigorous testing, which
+he called about half of the project's velocity. The rules behind it were collected into a
+14-point pre-deploy bar kept in the private corpus. The first deploy then hit a missing host
+setting from a rename already on master, was rehearsed on a copy of production, and went out
+with the rename: every thread kept its messages, every coach reply showed its tool lines, zero
+server errors. Creating a test sign-in link on the box was refused by the permission checks, so
+the first real production turn was left to Patrick's own thread.
 
-**2026-09-25, FD-363, after the deploy.** Work continued on the same branch: every tool line in
-the thread now names an event or person by the one shared label, kept calls included; touch
-targets were widened for a crowded dot on a phone; the list button moved to chip height with
-more room after tool lines; the picture's back and close glyphs line up with the ask button; a
-chip tap and a dot tap became one behaviour, with a per-user admin switch back to the old one;
-speaking a reply out loud now works on iPhone; an event add or date change is refused without a
-certainty; the events list says why an event has no cluster; a command installs a stand-in test
-record; the coach can raise, close and read impressions the same way it handles open questions,
-shown in the drawer with what each rests on and two ways to push back; the live suite counts its
-own spend, stops at hard caps, and writes a results row per run; and a local model can stand in
-for Anthropic and Gemini so the sandbox runs free by default. Patrick's new candidate rulings
-from this stretch, not yet given ids, are listed in STATE.md, along with the spend strategy
-written up in HOW_THIS_PROJECT_WORKS.md: real Anthropic calls only at the end of a batch and
-only when a prompt or tool changed, every dollar asked for first; the live suite's three-dollar
-cap and daily ledger; and the sandbox coach on a local model by default, with the testing key
-spent only when told. None of this has been deployed yet.
+**Open questions.** Patrick asked for a nuanced product brainstorm rather than a plain list, then
+ruled on drawn mockups published as artifacts (mockups always are): a third tab beside Events and
+People; the user sees only open questions the coach has asked, never declined ones, dead ends or
+the coach's own register; two sections, "Food for thought" and "Facts to find", with Kerr's
+statement belonging to food for thought; a fact to find goes up only when the coach judges it
+relevant to the evaluation or history, and when in doubt it is included; past threads are
+backfilled once; swipe left to dismiss; a tap puts the question in the message box. Built, gated
+and deployed on 2026-09-25 at commit ec757d5 with the database at 1b00000000ad, which cannot be
+undone. The backfill gave his own family 4 questions, all facts to find; whether that is too few
+is his to judge.
+
+**His own use on production.** Testing in his thread he found an event's kind said twice, a
+label missing the speaker, a list button out of line, tool lines too close to the reply, a close
+button out of line, and spoken replies silent on iPhone. He ruled that every label names all its
+people, the speaker included; asked for room between an event's two-line title and its dot, using
+the usual touch-size conventions without a rewrite (the band went from 66 to 72 pixels); and ruled
+that a chip tap behaves like a dot tap, with a switch back per user. All fixed on the branch, with
+a date's certainty now required on every add or date change.
+
+**The SARF story and the coach's impressions.** Asked how the SARF shifts should tell the story,
+a brainstorm put four ideas and one question to him; he answered that shifts as people report
+them are remembered, isolated episodes, not a series or a trend, so no line or step graph of those
+shifts, while other shifts may yet suggest a line. He noticed the coach reading patterns in his
+own record, and ruled that such impressions are kept the way questions are and can be pushed
+back on: the tab becomes "From the coach", with a third section "Impressions", "Doesn't fit" and
+"Partly" beside dismiss, and a backfill. Built on the branch, not yet deployed.
+
+**Spend.** A night's testing used $20 of credit. An audit traced about $17 of it, 60% to running
+the full live suite three times per code version. Patrick asked for testing to be close to free
+without losing coverage and ruled: every real-model spend is asked for first; real calls happen
+only at the end of a batch when a prompt or tool changed; the sandbox runs on a local model by
+default; the live suite has hard caps and a daily ledger; separate production and testing keys,
+the box now on the new production key. He ruled that prompt evals come only from a human
+oracle; that clinical-coding evals wait for ground truth ratified by the IRR review group, since
+he cannot certify coding rules case by case; he rescinded his over- and under-functioning coding
+rulings as evals, and left R-0428 and R-0057 undecided. The paid suite now holds behaviour evals
+only. He asked to be told when to switch between Opus and Fable.
+
+**Also.** A project-agnostic design principles document for agentic chat over a data model was
+written for his work project and reviewed by Fable; he added that everything the app does feeds a
+data-driven learning loop, which the document now carries. A plan to move this work to a fresh
+clone at ~/btcopilot was written; he ruled no copying of sessions, a list of the FD-362-onward
+sessions instead, and the memories that apply carried over. He merged PR #139, which forwards the
+Pro app's update feeds to the legacy server. The session ended with the final stubbed gate
+running, one real-model behaviour run approved at up to $0.50, then a deploy of the batch with
+migration 1b00000000ae, the impressions backfill (about $0.20) and the production check. Every
+ruling of this session, with his words, waits in the private corpus for him to append by hand.

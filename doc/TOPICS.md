@@ -20,83 +20,85 @@ record only.
 
 ## T-1 · Ship the personal app to the first beta users
 
-**Status:** the app is live at familydiagram.com/app and Patrick used it from his phone on 20,
-21 and 22 September; seven faults stopped the first turn answering at all and are fixed, and
-twenty more findings came out of his real chats. The beta now waits on his word to invite the
-three clinicians.
+**Status:** the app is live at familydiagram.com/app and Patrick tests every batch in his own
+thread. The fast-follow FD-363 went to production twice on 2026-09-25: kept tool calls with
+[try again], record versions, the map of the record, the check after each turn, hand edits
+through the coach's writer, and the Questions tab with its one-time backfill. A second batch —
+his fixes from his own use, required date certainty, and the coach's impressions — is built on
+the branch and was being deployed at the end of session dc02180f.
 **Decided:** one server for Pro, training and the chat app; old Pro diagrams stay pickle and
 new rows are JSON in the same column [Oracle: R-0241]; the beta users are the app working
 group of three clinicians [R-0079]; sign-in is passwordless with Face ID on a capable phone;
 the beta starts from empty records, invited by email, with no import of the old Pro database at
 cutover [R-0355]; the app is served at familydiagram.com/app [R-0356]; pricing and plans are
-deferred to the first $20–40 bill [R-0354]. Added this session: production is where the beta
-iterates — a change to the web pages is copied into the running container and the image is
-rebuilt behind it, and every deploy keeps the old container up until the new one answers. Proving a deploy is no
-longer done on the live site: nine scratch accounts made that way ended up on his dashboard, so
-checks run against the development server on his Mac instead. On his word the nine were deleted
-with everything they owned, and one reusable test account stays; the live database now holds four
-accounts. The invite mail has now been sent
-and received, so sign-in by mail works.
-**Open:** (1) [build] onboarding begins for the first beta users right away so usage data starts flowing, since the basic chat side
-is stable and the picture is not expected to block them [R-0400]; he asked for the two invite
-links for their email addresses and they have not been sent; (2) [ruling] his code review of the branch, and of the
-coach's prompt section, which is the first open item on the coach topic; (3) [build] the
-summary shown for a session in the sessions list answers the person's first message with
-generic advice instead of summarising the exchange (review item 13); (4) [verify] the app has still never been
-opened on Android; (5) [verify] passkeys have never been tried on a real https domain; (6) [waiting] cluster
-quality on anyone else's record stays unmeasured until the coding loop produces numbers.
-**Lives in:** btcopilot PR #136 (fdserver PR #30 closed unmerged, 2026-09-16); merge-risk review
-doc/archive/2026-09-MERGE_REVIEW.md; review log doc/REVIEW_LOG.md, round 5 items 1–27;
-the box's deployment deploy/; sandbox scripts /Users/patrick/worktrees/fd362-sandbox/.
-**Next action:** he asked how to mint invite links for his first two users' email addresses —
-the command line on the box does it, and he wants the reminder before he sends them; then his
-code review of the branch and the coach's prompt.
-**Updated:** 2026-09-22.
+deferred to the first $20–40 bill [R-0354]. Production is where the beta iterates, and every
+deploy keeps the old container up until the new one answers. Proving a deploy is never done on
+the live site with scratch accounts; one reusable test account stays. The fast-follow is one
+batch PR pushed to production continuously and tested in his own thread with no data loss
+[R-0484]; before any push, evidence is shown from the stored rows and from the page [R-0483].
+Added 2026-09-25, not yet numbered: a build for him to test goes to the box by a release run
+dispatched from the ticket branch, never by a merge, and only after the 14-point pre-deploy
+test bar passes; production and testing run on separate keys.
+**Open:** (1) [build] the second FD-363 batch deploy — the final stubbed gate, one approved
+real-model run of the behaviour evals capped at $0.50, the deploy with migration 1b00000000ae
+(which only rolls forward), the approved impressions backfill of about $0.20, and the
+production check; (2) [ruling] whether the 4 questions the backfill found in his whole history
+are too few; (3) [verify] no real coach turn had run on production before his own, because a
+test sign-in link on the box was refused by the permission checks; (4) [build] production's
+title bar reads "Free Diagram" instead of the diagram's real name; (5) [build] onboarding the
+first beta users [R-0400]; the two invite links for their email addresses have not been sent;
+(6) [build] the summary shown for a session in the sessions list answers the first message
+with generic advice instead of summarising the exchange; (7) [verify] the app has never been
+opened on Android; (8) [verify] passkeys have never been tried on a real https domain;
+(9) [waiting] cluster quality on anyone else's record stays unmeasured until the coding loop
+produces numbers.
+**Lives in:** btcopilot PR #138 (branch FD-363, open, not merged); doc/STATE.md; the private
+corpus's HANDOVER_2026-09-25-FD363.md, PREDEPLOY_TESTING_RULES.md and session-dc02180f/
+(deploy runbook, box commands, evidence); deploy/; the backup
+prod-2026-09-25-0457-pre-fd363.dump in btcopilot-sources.
+**Next action:** finish the second batch deploy and check it on production; then he tests in
+his own thread.
+**Updated:** 2026-09-25.
 
 ## T-2 · The coach knows the clinical definitions, and we can measure it
 
-**Status:** built on the sandbox, unreviewed by Patrick, unmeasured. The prompts moved:
-every prompt is now one encrypted file in this repo rather than a Python constant in a second
-repo.
+**Status:** the coach runs on a map of the record and reads the rest through tools; it keeps
+open questions and impressions through its own tools; a date it adds must say how sure it is.
+The paid live suite holds behaviour evals only; every clinical-coding eval waits for ground
+truth from the IRR review group. The prompts' clinical content is still unreviewed by Patrick
+and unmeasured.
 **Decided:** the agent loop is the only writer and must carry the data model and clinical
 definitions [R-0236]; placement rule — a rule the computer can test becomes a refusal in the
 record's commit function, a field's meaning goes on the tool parameter, judgement goes in the
-system prompt; the way he improves prompts stays the same — Claude Code is still the
-entry point and finds the instructions itself [R-0239]; IRR compares final records, not
-per-statement deltas [R-0242]; every variable definition, prompt and fragment that lived in
-fdserver before this branch is private and stays private — the tool schemas say the shape and
-the private text says the meaning, coach and scribe alike [R-0305]; the scribe's prompt is
-private too, because anything prompt induction will run on is valuable [R-0314]; the prompts
-and the rulings are encrypted in place with sops and live in this repo, so the public checkout
-holds only ciphertext and there is no second repo to reach for.
-Added this session: the coach onboards the person before anything else — first name, last name
-and birth date are required, because without a birth date it has nothing to turn an age into a
-year and it invents one [R-0360]; the offered answers under a reply are gone, so the coach ends
-with one question and any offer it still writes is stripped [R-0361].
-Added 2026-09-22 and 23: the coach owns which events belong together, keeps what is already
-there unless the story gives it a reason, and never says the technical word for a grouping
-[R-0371, R-0373, R-0374]. A gap in what it asks for surfaced while drawing: on his own record
-only he carries a recorded shift, and the two deaths have no recorded consequence in anybody
-else, so the picture cannot yet show trouble travelling between households. The coach is what
-would draw that out — the anxiety, functioning and relationship shifts in the older households
-after each death, separation and move.
-**Open:** (1) [ruling] his review of the "What goes in the record" section, which is his
-clinical content rewritten for the loop; the author's list of what was dropped is in the prompt
-engineering log; (2) [waiting] the first measurement cannot run: the replay harness has nothing
-to score against until his two conversations are coded as ground truth; (3) [build] the
-induction instructions have not yet been retargeted at the agent path; (4) [build] the coach
-codes the clinical variables in session, and the goal is that its coding matches the review's
-agreement — the F1 outcome of the project [R-0293]; (5) [build] the coach does not yet ask about the older households around each death,
-separation and move, so nothing in the record can show a shock travelling between generations;
-(6) [build] the scribe now has to add a
-generically named parent or partner when the coder names a relation that is not on the record,
-which is a drawing ruling that reaches extraction [R-0325].
-**Lives in:** btcopilot/{record.py,toolbox.py,timeline.py}, training/run_agent_f1.py;
-the prompts as encrypted `.prompty` files under private/prompts/ with shared fragments;
-doc/PROMPT_ENGINEERING_LOG.md; his sandbox record re-coded once by the loop.
-**Next action:** his prompt review after he walks the app; code his two conversations; run the
-harness once.
-**Updated:** 2026-09-22.
+system prompt; Claude Code stays the entry point for improving prompts [R-0239]; IRR compares
+final records, not per-statement deltas [R-0242]; every variable definition, prompt and
+fragment is private [R-0305, R-0314], encrypted with sops in this repo. The coach onboards the
+person first, birth date required [R-0360]; replies end with one question and no offered
+answers [R-0361]; the coach owns which events belong together and never says the technical
+word for a grouping [R-0371, R-0373, R-0374]. The coach works over the record like Claude Code
+over code, with a map, reads and only the necessary changes [R-0479]; reads carry the record
+version [R-0480]; repeats are observed, never blocked [R-0481, R-0482]; coverage of the history
+is its judgement, with no number bar [R-0485]. Added 2026-09-25, not yet numbered: a refusal
+that is right every time stays as code; every tool call draws a line; a fact to find is kept
+only when the coach judges it relevant, including it when in doubt; impressions are stored
+before they are said; prompt evals come only from a human oracle; clinical-coding evals wait
+for ratified ground truth; his over- and under-functioning coding rulings are rescinded as
+evals; R-0428 and R-0057 are undecided.
+**Open:** (1) [ruling] the date-certainty rule (exact day certain, month or year approximate,
+hedge unknown) was built without words of his and needs his yes; (2) [ruling] his review of the
+"What goes in the record" section of the prompt; (3) [waiting] every clinical-coding eval waits
+for the IRR review group to ratify the code it asserts; (4) [waiting] the first measurement
+cannot run until his two conversations are coded as ground truth; (5) [build] the induction
+instructions have not been retargeted at the agent path; (6) [build] the coach does not yet ask
+about the older households around each death, separation and move; (7) [build] the scribe adds
+a generically named parent or partner when the coder names a relation not on the record
+[R-0325]; (8) [build] an old kept tool call that changes an existing event still shows that
+event's old words.
+**Lives in:** btcopilot/{record.py,toolbox.py,recordtext.py,timeline.py}; the prompts under
+private/prompts/; btcopilot/tests/live (the paid suite and its waiting list in README.md);
+doc/PROMPT_ENGINEERING_LOG.md; doc/HOW_THIS_PROJECT_WORKS.md (spend and eval rules).
+**Next action:** the approved behaviour-eval run on the real model, then his prompt review.
+**Updated:** 2026-09-25.
 
 ## T-3 · One app: Pro and Training as thin layers on the chat
 
@@ -246,9 +248,10 @@ import waits until after the beta.
 
 ## T-5 · Picture and interface rulings still open
 
-**Status:** everything Patrick hit using the app on his phone is ruled and built; the line now
-scrolls sideways a little and is live; two threads of research finished and are written up; four
-pages of drawings are published and waiting on him.
+**Status:** everything Patrick hit using the app on his phone through 2026-09-25 is ruled and
+built on the branch; the drawer's third tab, now "From the coach", holds the coach's open
+questions (on production) and its impressions (built, deploying). The SARF story has a
+brainstorm with its one question answered. Four pages of earlier drawings still wait on him.
 **Decided:** the picked-moment words on the timeline (option A) [R-0235]; the about page behind
 an i, ✕ in the arrow's place; one icon-button size [R-0234]; the card slides the whole region;
 who·what words [T-2]. Ruled and built from his own use, 20–22 September: the amber question mark
@@ -269,6 +272,17 @@ another round of drawings [R-0381] — built and live, the recent years filling 
 one swipe away, never more than two screens, and an open cluster printing its real years; the
 main view still needs one word for its name, and as the dots multiply the picture must keep
 saying something at a glance rather than becoming a wall of dots nobody can tap [R-0402].
+Added 2026-09-24 and 25, not yet numbered: new screens are allowed when thought through; the
+coach's open questions are a third tab beside Events and People, showing only open questions it
+asked, in "Food for thought" and "Facts to find", a tap putting the question in the message box
+and a swipe left dismissing it; the tab is renamed "From the coach" with a third section,
+"Impressions", where the coach's inferences can be pushed back on with "Doesn't fit" or
+"Partly"; every label names all its people, the speaker included, superseding R-0457; the
+picture band is 72 pixels tall instead of 66 so an event's title sits clear of its dot, with
+touch targets sized to common conventions; the list button has no circle and sits at chip
+height; more room between a reply's tool lines and its words; the close button lines up with
+the ask button; a chip tap behaves like a dot tap, with a per-user switch back; SARF shifts as
+people report them are remembered, isolated episodes, so no line or step graph of those shifts.
 
 **The literature research (finished, written up, his verdicts in):** what was read — Family
 Evaluation (Kerr and Bowen) and the SARF sources, the passages listed one per concept in
@@ -345,16 +359,29 @@ lanes of generations wait for a record that carries shocks between households [R
 the Claude app has one [R-0387]; (14) [ruling] which voice reads the replies: the phone's own
 today, cloud neural voices at roughly a cent a reply, ElevenLabs at several times that, or
 self-hosted models the box cannot run. Anything paid also waits on the measurement question on
-the platform topic [R-0388].
+the platform topic [R-0388]; (15) [ruling] three choices the impressions build made under his
+general yes: "Partly" counts as push-back only once the reply is sent; "Doesn't fit" posts the
+impression into the chat as a chip rather than plain words; the empty tab reads "Nothing from
+the coach yet."; (16) [ruling] the SARF story: whether other kinds of shift may suggest a line;
+the brainstorm recommends the coach naming each cluster's key shift in one sentence with its
+caveat, and the coach noticing one person moving the same way three chapters running and asking
+about it — neither is ruled or built, and it is a topic for Fable; (17) [waiting] what his own
+record can show as it is, and a pass correcting events whose dates were guessed, both wait on a
+read of his record that the permission checks refused; (18) [ruling] the two picture goldens
+board-first-move and rest-dense60 wait on his approval; (19) [verify] a chip tap working like a
+dot tap is built with a switch back and he has not tried it.
 **Lives in:** doc/PICTURE_IDEAS.md (the fourteen concepts, the passage behind each,
 the critic's verdicts); doc/MOBILE_VIEWS.md (the twenty-four phone views, the mapping
 onto the eight messages, the five hybrids); doc/archive/2026-09-UI_GAP.md; REVIEW_LOG.md round 5;
 STATE.md; doc/FRAGMENT_CONVENTIONS.md; the drawings and their verdict files in
 ~/theapp/btcopilot-sources/fd-corpus/design/round6, round7 and round8; the published pages
-https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj , https://claude.ai/artifact/FzfjSGH6EQVt61vC5R2DFi , https://claude.ai/artifact/G5gYDqzhvar5KXPJAhtbzm and https://claude.ai/artifact/WrGWM6m2cXJfQ3FLHnNMu3 .
-**Next action:** his three decisions on the round 8 page, starting with whether one line of words
-is worth 22 pixels of the chat; then the two faults of the line.
-**Updated:** 2026-09-22.
+https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj , https://claude.ai/artifact/FzfjSGH6EQVt61vC5R2DFi , https://claude.ai/artifact/G5gYDqzhvar5KXPJAhtbzm and https://claude.ai/artifact/WrGWM6m2cXJfQ3FLHnNMu3 ; the open-questions mockups
+https://claude.ai/artifact/XSmWsbSEdyChP1SM6AHKMd and the impressions mockups
+https://claude.ai/artifact/AfUU6Pzq2vaLPm3QvY7BH7 ; the SARF brainstorm and the two build
+contracts in the private corpus's session-dc02180f/.
+**Next action:** he tries the second batch on production — the "From the coach" tab and the
+chip tap — and answers the three impressions choices; the SARF story resumes on Fable.
+**Updated:** 2026-09-25.
 
 ## T-6 · Clusters by example
 
@@ -419,7 +446,7 @@ btcopilot/review/.
 
 ## T-9 · How sessions run (process)
 
-**Status:** binding; extended 2026-09-12/13/14.
+**Status:** binding; extended 2026-09-12/13/14 and 2026-09-24/25.
 **Decided:** everything in doc/HOW_THIS_PROJECT_WORKS.md plus: never coin a term;
 build only on an explicit go; mockups are drawn with the app's own stylesheet; the flush at
 session end is `/two-clocks` and is idempotent; sub-agents do the work, one status line only
@@ -464,38 +491,58 @@ does, built on the app's own picture code; and a frame a stranger cannot read un
 because users never see the prose beside it [R-0398]; clever technology earns its place only
 where it communicates what flat space cannot, and rotation for its own sake communicates nothing
 [R-0399]; and a gallery passes an aesthetic critique, an argument between agents if that is what
-it takes, before he sees it [R-0396].
-**Open:** none.
-**Lives in:** doc/HOW_THIS_PROJECT_WORKS.md; doc/TEST_STRATEGY.md;
+it takes, before he sees it [R-0396]. Added 2026-09-24 and 25, not yet numbered: brainstorm topics are taken one at a time, and
+anything brought to him comes one related chunk at a time; development runs in an agent team so
+the coordinator talks to him at product level; mockups are always published as artifacts, and
+while he is on his phone everything reaches him through artifacts without permission dialogs;
+the session tells him when to switch between Opus and Fable; a build for him to test is
+deployed from the branch, never by merging, and the session's own testing against the 14-point
+pre-deploy bar is what makes that safe; every real-model spend is asked for first and happens
+only at the end of a batch when a prompt or tool changed, the sandbox running on a local model
+by default; agents must be able to run what the work needs on the production box.
+**Open:** (1) [build] the permission checks still refuse production reads, a test sign-in
+link on the box and reads of personal data; the answer so far is that he restarts in bypass
+mode, which his settings already default to; (2) [ruling] five rulings of this session were
+decided by an agent under his general yes and wait on his word (listed in the private corpus's
+RULINGS_TO_APPEND_2026-09-25.md).
+**Lives in:** doc/HOW_THIS_PROJECT_WORKS.md; the private corpus's PREDEPLOY_TESTING_RULES.md; doc/TEST_STRATEGY.md;
 btcopilot/CLAUDE.md; .claude/skills/two-clocks/SKILL.md; bin/flushcheck.py; bin/t.
-**Next action:** none.
-**Updated:** 2026-09-22.
+**Next action:** he restarts in bypass mode.
+**Updated:** 2026-09-25.
 
 ## T-10 · Project memory: the two clocks, the flush, the trace
 
 **Status:** the two clocks are the working system of record; the trace and dashboard pages are
-retired as things he reads, kept for the record only.
+retired as things he reads, kept for the record only. Agents cannot write the rulings store, so
+each flush leaves a plain list of the session's rulings with his words for him to append. A move
+of this work to a fresh clone at ~/btcopilot is planned and has not started.
 **Decided:** one thought-and-decision trace in the order of Patrick's own statements, mined
 from the transcripts; the flush is idempotent and topics are picked up by name; he never runs a
 command — he reads pages or files; the register and dashboard pages are retired, his word
-2026-09-11, too verbose to read. The oracle store itself moved into this repo encrypted with
-sops, with his own key added as a recipient, so the rulings are readable on his machine without
-a second repo.
-**Open:** (1) [build] the word lists still leave records the ledger cannot assign to a topic,
-and every trace name and summary that no flush has rewritten is a machine guess; (2) [build]
-revision chains between rulings do not draw, because the store marks a superseded ruling in a
-column the ledger does not read; (3) [verify] whether the ledger and trace scripts still run
-against the encrypted store has not been checked since the move.
-**Lives in:** .claude/skills/two-clocks/bin/{trace.py,tracepage.py,ledger.py,topicpage.py,flushcheck.py,topic.py,screenspage.py};
-doc/{TOPICS.md,HISTORY.md,trace.json,events.json}; private/oracle/ (encrypted);
-.claude/skills/two-clocks/SKILL.md.
-**Next action:** none until he asks for a page.
-**Updated:** 2026-09-14.
+2026-09-11, too verbose to read. The oracle store is in this repo encrypted with sops, with his
+own key as a recipient; agents may not decrypt it [R-0451]. Added 2026-09-25, not yet numbered:
+the move to ~/btcopilot copies no sessions — the FD-362-onward sessions are reopened by id, from
+a list with dates and topics kept in the private corpus — and carries over the memories that
+apply; ~/theapp becomes the legacy home for master-legacy and the familydiagram release branches.
+**Open:** (1) [waiting] R-0477 to R-0485 and this session's rulings wait for him to append them
+by hand from RULINGS_TO_APPEND_2026-09-25.md in the private corpus, then re-pin the fingerprints;
+tests written this session cite the nearest existing ruling until then and need re-citing;
+(2) [ruling] the move plan's 13 remaining choices, each with a recommendation; (3) [build] the
+move itself, after those choices; (4) [build] the word lists still leave records the ledger
+cannot assign to a topic, and every trace name no flush has rewritten is a machine guess;
+(5) [build] revision chains between rulings do not draw; (6) [verify] whether the ledger and
+trace scripts run against the encrypted store has not been checked since the move into this repo.
+**Lives in:** .claude/skills/two-clocks/; doc/{TOPICS.md,HISTORY.md}; private/oracle/
+(encrypted); the private corpus's HANDOVER_2026-09-25-FD363.md (with the session list),
+RULINGS_TO_APPEND_2026-09-25.md and session-dc02180f/MIGRATION_PLAN.md.
+**Next action:** he appends the rulings; then his word on the move plan.
+**Updated:** 2026-09-25.
 
 ## T-11 · Platform reset: repo, deployment, billing, identity, admin
 
 **Status:** the app is live at https://familydiagram.com/app with its certificate, its database
-and Patrick's account; he has chatted with the coach from his phone, and the invite mail has been
+and Patrick's account, at commit ec757d5 and migration 1b00000000ad since 2026-09-25, on its
+own production key; he has chatted with the coach from his phone, and the invite mail has been
 sent and received. Deploys roll without dropping a request. Datadog is gone and Grafana Cloud is
 live in its place. Every coach call now reads most of its words from the model's cache and writes
 what it cost to a table. fdserver is out of this ticket and the Pro backend has its own
@@ -517,6 +564,10 @@ logs, traces and browser sessions at no cost and is the stack Patrick already ru
 [R-0370]; self-hosting the stores on the 2 GB box and running them on his laptop were both set
 aside. No health information of any kind goes into a log, a metric, a trace or a session
 recording.
+Added 2026-09-25, not yet numbered: production and testing use separate Anthropic keys — the box
+runs on the new production key and the old key is off it, every test path spends the testing
+key and fails loudly without it; a deploy for him to test is a release run dispatched from the
+ticket branch, never a merge; agents must be able to run what the work needs on the box.
 **Live on the box:** droplet familydiagram-app at 209.38.135.250 in sfo3; five containers — the
 web app, the worker, Postgres, Redis and Caddy; secrets in a root-owned file every compose
 command passes; the migration chain rewritten in dependency order because Postgres refuses a
@@ -576,10 +627,10 @@ Those run at the top level on Patrick's direct grant.
 **Lives in:** deploy/ (compose, Caddyfile, secrets template, README, the release workflow
 and the four appcast feeds); doc/PLATFORM_BUILD.md; doc/archive/2026-09-DATADOG.md;
 private/prompts/ and private/oracle/, encrypted.
-**Next action:** he puts the Grafana token on the box and refreshes the dependency lock so the
-observability commit can deploy; his merge of btcopilot PR #137 and fdserver PR #31 finishes the
-Pro maintenance stream; the nine scratch accounts are deleted and one test account remains.
-**Updated:** 2026-09-22.
+**Next action:** he sets a spend limit on the testing workspace in the Anthropic console; he
+puts the Grafana token on the box and refreshes the dependency lock so the observability commit
+can deploy.
+**Updated:** 2026-09-25.
 
 ## T-12 · The learning loop: a scout that looks outward and a review of the scout
 

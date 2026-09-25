@@ -1738,3 +1738,47 @@ self-contained question rather than only copying words verbatim. The coach write
 the record before it sends the reply that asks it, so the two can never disagree about what was
 asked. A turn that stops with no words and no further tool call right after a silent tool step
 is asked once more for a reply, as a safety net, instead of being failed outright.
+
+## 2026-09-25: FD-363 — deploying is not merging; a refusal right every time stays as code
+
+Patrick (rulings not yet numbered; listed with his words in the private corpus). A build for him
+to test reaches the box by a release run dispatched from the ticket branch, and the pull request
+stays open; the gate is the session's own testing against the 14-point pre-deploy bar, not a
+merge. The record's refusal of an exactly repeated event, and of a question with the same words
+as an open or declined one, stays as code beside R-0481, because it is right every time; near
+duplicates are only logged. Every tool call draws a line in the thread, show and view calls
+included, for a complete log of what the coach did and how the user answered. Hand edits of
+events go through the coach's writer. The old single-call chat path is deleted. Rejected: asking
+him for a merge yes before each deploy.
+
+## 2026-09-25: FD-363 — the coach's impressions, and SARF shifts as episodes
+
+Patrick (not yet numbered). What the coach infers from the record — a pattern across chapters,
+or a stretch of years where a lot happened — is kept the way open questions are: stored with a
+tool before it is said, never removed, naming what it rests on, and open to push-back with
+"Doesn't fit" or "Partly". The drawer tab becomes "From the coach" with a third section,
+"Impressions"; a within-years reading becomes a cluster; past sessions are backfilled once. SARF
+shifts as people report them are remembered, isolated episodes, not a series or a trend, so no
+line or step graph of those shifts; whether other shifts suggest a line stays open. Three choices
+the build made under his general yes wait on his word: "Partly" counts only once the reply is
+sent, "Doesn't fit" posts the impression as a chip, and the empty tab's sentence.
+
+## 2026-09-25: FD-363 — testing is close to free; paid calls are asked for; evals need a human oracle
+
+Patrick (not yet numbered). A night's testing spent about $20, 60% of it on running the full live
+suite three times per code version. From now on every real-model spend is asked for first; real
+calls happen only at the end of a batch and only when a prompt or tool changed; the sandbox runs
+on a local model by default; the live suite stops at hard caps and keeps a daily ledger; testing
+and production run on separate keys. Prompt evals are built only from a human oracle, never an
+LLM's. Clinical-coding evals wait for ground truth ratified by the IRR review group, so the paid
+suite keeps behaviour evals only; his over- and under-functioning coding rulings are rescinded as
+evals and R-0428 and R-0057 are undecided. Rejected: measuring variance by repeated full runs;
+asking him to certify coding rules case by case.
+
+## 2026-09-25: The move to a standalone ~/btcopilot copies no sessions
+
+Patrick. The FD-362-onward sessions are reopened by id from the new home instead of copied,
+because a copied session breaks the lookup by id; a list of those sessions with dates and topics
+is kept in the private corpus; the memories that apply are carried over; ~/theapp becomes the
+legacy home for master-legacy and the familydiagram release branches. The plan's remaining
+choices wait on his word; nothing has moved.

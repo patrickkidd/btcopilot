@@ -266,6 +266,13 @@ and, after the gates below passed, deployed to production on 2026-09-25:
   old conversation-flow prompt, public and private, the one-shot ask path and the
   fixed-category intake engine are gone; the helpers other code used from them moved beside
   that code.
+- **Open questions.** The coach keeps a question with a tool before it writes the reply that
+  asks it; a question is never removed, only closed, and only the user dismisses it. The drawer's
+  third tab, beside Events and People, lists the open questions the coach has asked, in two
+  sections, "Food for thought" and "Facts to find"; declined ones, dead ends and questions held
+  back never reach the page. A tap puts the question into the message box; swipe left to
+  dismiss. The map lists open and declined questions so the coach does not ask a declined one
+  again. Removing what a question is about lets it go. Past sessions were backfilled once.
 - **The migration gate** is a script that restores a Postgres dump into a throwaway container,
   runs the migrations, and checks row counts, orphans and tool lines per coach reply. Deleting a
   session now keeps the edits its words made: the links from change rows and turn records to
@@ -297,6 +304,15 @@ review. The coach can raise, close and read impressions in the same way it handl
 questions, shown to the user in the drawer with what each rests on and two ways to push back.
 The live suite now counts its own spend, stops at its hard caps, and keeps a results row per
 run. A local model can stand in for Anthropic and Gemini, so the sandbox runs free by default.
+The paid suite holds behaviour evals only; the clinical-coding cases wait for ground truth from
+the IRR review group. Every test path spends the testing key; the box runs on the new
+production key, and the old key is off it.
+
+**In flight at the end of session dc02180f (2026-09-25).** The final gate with the model
+stubbed; one approved real-model run of the behaviour evals, capped at $0.50; the deploy of this
+batch by hand from the branch, with migration 1b00000000ae, which only rolls forward; the
+approved impressions backfill on production, about $0.20; the production check. Anything beyond
+those two spends is asked for first.
 
 Open:
 - The new tests cite the nearest already-numbered ruling instead of a real id, because the
@@ -309,7 +325,17 @@ Open:
 - An old kept tool call that changes an existing event still keeps that event's old words
   instead of writing the new ones.
 
-**Ruling candidates, for Patrick to confirm and give ids to (no ids yet):**
+**Ruling candidates, for Patrick to confirm and give ids to (no ids yet).** The complete list
+of this session's rulings, process ones included, with his words and five marked as needing his
+yes, is RULINGS_TO_APPEND_2026-09-25.md in the private corpus folder, beside R-0477 to R-0485.
+The product ones:
+- A build for Patrick to test is deployed by a release run dispatched from the ticket branch,
+  never by a merge, and only after the pre-deploy test bar passes.
+- A refusal that is right every time, like an exact-duplicate event or question, stays as code;
+  near duplicates are only logged.
+- Every tool call draws a line in the thread, show and view calls included.
+- The user sees only open questions the coach asked; a fact to find goes up only when the coach
+  judges it relevant, including it when in doubt.
 - SARF shifts are remembered as isolated episodes, not a series or a trend; there is no line or
   step graph of shifts.
 - Every label names all the people in it, the speaker included; this supersedes R-0457's rule
@@ -331,7 +357,8 @@ Open:
   ledger; the sandbox's coach on a local model by default. Written up in
   [HOW_THIS_PROJECT_WORKS.md](HOW_THIS_PROJECT_WORKS.md).
 - Clinical-coding evals wait for ratified ground truth from the IRR review group; Patrick is
-  never asked to certify a coding rule case by case.
+  never asked to certify a coding rule case by case. His over- and under-functioning coding
+  rulings are rescinded as evals, and R-0428 and R-0057 are undecided.
 
 Still true from the deploy on 2026-09-25: production's title bar reads "Free Diagram" instead
 of the diagram's real name, and four live coach cases fail the same way on the master branch.

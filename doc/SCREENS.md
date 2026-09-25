@@ -6,7 +6,7 @@ behaviour, tagged `[built]` if it is in the app today, `[drawn]` if it is approv
 but not built, and `[open]` if it is a choice Patrick has not made yet. It is rewritten as
 decisions land; the exact sizes and colours live in the internal interface spec, not here.
 
-Updated: 2026-09-22
+Updated: 2026-09-25
 
 ---
 
@@ -60,6 +60,11 @@ What it is for: talking to the coach, which is how everything else in the app ge
 - The Return key starts a new line, and only the send button sends, so a message can have paragraphs. [built] {R-0368}
 - The coach's words and the steps it takes arrive as they happen rather than all at the end, so a long turn is never a blank wait. [built] {R-0369}
 - The turn runs on the server on its own, so reloading the page, or leaving the app and coming back, picks the turn up where it is. [built] {R-0369}
+- Every step the coach takes, reads and changes to the picture included, is a line in its reply, and the lines stay after a reload. [built] {R-0478}
+- There is a little room between those lines and the coach's words. [built]
+- If a reply fails, the lines that landed stay and [try again] carries on the same turn without sending your words again. [built] {R-0477}
+- Each line names the event or person it touched by the same label used everywhere else. [built]
+- Speak replies reads the coach's replies out loud, on an iPhone too. [built]
 
 ## The picture at rest
 
@@ -74,6 +79,7 @@ What it is for: the one picture, always above the chat, that is the app's memory
 - At rest it shows your clusters over time on one line: a horizontal line with marks on it and nothing else. [built]
 - The line scrolls sideways a little: the most recent years fill the width and the rest is one swipe away, never more than two screens wide. [built] {R-0381}
 - Every event is a dot sitting on the line itself, always at the same height, never sometimes below it. [built] {R-0377}
+- An event's words sit far enough above its dot that a thumb can tap one without catching the other. [built]
 - An opened group of events prints the real years it covers. [built]
 - Only the line and the marks on it are drawn at this size. [built] {R-0005, R-0359}
 - The line is drawn a little wider than the screen and slides sideways, so a crowded record still reads at a size you can tap. The most recent years fill the width when it opens; the earlier ones are one swipe to the left, at most two. [built] {R-0381}
@@ -194,6 +200,7 @@ What it is for: the coach's references to real things in your record, and yours 
 - Tapping one drops that reference into your message and you type your own words around it. [built] {R-0072}
 - Sending a reference on its own means "tell me about this". [built] {R-0072}
 - Tapping a chip is you speaking, never you steering the coach. [built] {R-0072}
+- Tapping a chip for an event in a message picks it in the picture the same way tapping its dot does: the rest fades and its cluster's brackets show. An admin switch per person puts back the old behaviour. [built]
 - A chip is the one visual that means "this puts words in the chat", so nothing else ever costs you a turn. [built] {R-0073}
 - Chips are one size and show their whole label; they are never cut short and never expand. [built] {R-0169}
 - Labels are kept short where they are written rather than trimmed afterwards, and the coach is asked once to shorten an over-long one. [built] {R-0169}
@@ -212,6 +219,17 @@ What it is for: seeing and editing everything in the record by hand.
 
 - One button in the row under the picture opens a drawer holding everything in the record. [built] {R-0198}
 - The events list and the people list are two tabs in that one drawer, not a filter. [built] {R-0199}
+- A third tab, "From the coach", holds what the coach is keeping for you: questions under "Food for thought" and "Facts to find", and its impressions under "Impressions". [built]
+- You only see questions the coach has actually asked and that are still open; ones you turned down or that led nowhere never show. [built]
+- The coach only keeps a fact to find it thinks matters to your family's story, and keeps it when in doubt. [built]
+- Tapping a question or an impression puts it in the message box; nothing sends until you do. [built]
+- Swipe a question left to dismiss it, and the coach will not ask it again. [built]
+- Swipe an impression left for "Doesn't fit", which tells the coach in the chat, or "Partly", which starts a reply for you to finish. [built]
+- Each impression shows the things in your record it rests on. [built]
+- The list button has no circle round it and sits at the same height as the chips beside it. [built]
+- Every label names all the people in it, you included: "Sam & Alex", never "& Alex". [built]
+- An event's kind is said once, never "died · died". [built]
+- An event that sits in no cluster says why. [built]
 - The button sits inside the picture's own frame, matching the sessions button beside the chat input. [built] {R-0198}
 - On a phone the drawer slides up over the chat, the picture and the title row, full screen, and its own back arrow is the way out; the chat stays under it while it travels. [built] {R-0345}
 - The coding screen's drawer opens the same way from the same button, and still stands beside the thread on a wide window. [built] {R-0345}
@@ -240,6 +258,7 @@ What it is for: correcting or adding one event by hand.
 - A move is a noted event with the place kept; there is no longer a kind of its own for moving. [built] {R-0364}
 - A noted event changes nothing about the family, but it is a lead: sitting near a shift it raises the question of what came first, the way a structural event does. [built] {R-0366}
 - How sure you are is one of unknown, approximate or certain. [built]
+- Every date says how sure it is: an exact day is certain, a month or a year alone is approximate, and "around then" is unknown. [built]
 - Symptom, anxiety and functioning are each set to up, down, same or not said. [built]
 - A relationship change sits at the same level as those three, under one heading, never in its own section. [built]
 - A relationship change is a kind plus the people involved, from the person who moved to the people it was aimed at. [built]
