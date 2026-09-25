@@ -26,11 +26,9 @@ const sql = (q: string) =>
     .trim();
 const rows = (q: string) => JSON.parse(sql(q)) as any[];
 
-/** The fixture family seedturns.py signs in as. */
-function diagramId(): number {
-  const uid = rows("select id from users where username='editable@fd362-fixture.invalid'")[0].id;
-  return rows(`select id from diagrams where user_id=${uid} order by id limit 1`)[0].id;
-}
+/** The family the page is on, as the page was handed it. */
+const diagramId = (page: Page): Promise<number> =>
+  page.evaluate(() => (window as any).BOOTSTRAP.diagram.id);
 const changes = (d: number) =>
   rows(`select id, author, version, deltas from diagram_changes where diagram_id=${d} order by id`);
 const version = (d: number) => rows(`select version from diagrams where id=${d}`)[0].version;
@@ -53,7 +51,7 @@ test.describe(() => {
     const { bad } = watch(page);
     const log = (s: string) => console.log(`[${info.project.name}] ${s}`);
     await page.goto(need("turns"), { waitUntil: "load" });
-    const d = diagramId();
+    const d = await diagramId(page);
     await openList(page);
 
     // words changed on an event

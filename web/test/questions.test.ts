@@ -188,9 +188,18 @@ const line = (
 describe("what a question tool call says in plain words", () => {
   // R-0478
   it("keeps a question for later without saying its words", () => {
-    expect(line(ToolName.AddQuestion, { text: WORDS, kind: "fact", state: "held" })).toBe(
-      "Kept a question to ask later",
+    const held = { text: WORDS, kind: "fact", state: "held" };
+    expect(toolLine({ name: ToolName.AddQuestion, args: held, names: {}, refusal: null })).toBe(
+      "Kept a question for later",
     );
+    expect(
+      toolLine({
+        name: ToolName.AddQuestion,
+        args: { ...held, asked_in: 12 },
+        names: {},
+        refusal: "It said where a question was asked without asking it.",
+      }),
+    ).toBe("Tried to keep a question for later. It said where a question was asked without asking it.");
   });
 
   // R-0478

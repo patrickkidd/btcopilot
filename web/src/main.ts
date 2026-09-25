@@ -474,6 +474,7 @@ $("coding-back").addEventListener("click", () => {
 function onDiagram(diagram: Diagram, how = { switched: true }): void {
   track.diagram(diagram.id);
   familyTitle = diagram.name;
+  $("menu-title").textContent = familyTitle;
   // The settings stack owns the title while it is open, so only write it when
   // the chat is what the title row is naming.
   if ($("settings-back").hidden) $("title").textContent = familyTitle;
@@ -491,6 +492,8 @@ function onDiagram(diagram: Diagram, how = { switched: true }): void {
 let familyTitle =
   window.BOOTSTRAP.diagram?.name ?? $("title").textContent ?? "Your family";
 $("title").textContent = familyTitle;
+// the drawer is the family's too, so it carries the same name (frame 2)
+$("menu-title").textContent = familyTitle;
 
 /** Speak replies is the one ruled duplicate: this row and the Coach settings
  * page are two doors onto the same value. */

@@ -6,11 +6,12 @@ import uuid
 from btcopilot.app import create_app
 from btcopilot.extensions import db
 from btcopilot.models import Diagram, User
+from btcopilot.routes.fixtures import username
 from btcopilot.toolbox import Toolbox
 
 app = create_app()
 with app.app_context():
-    user = User.query.filter_by(username="editable@fd362-fixture.invalid").one()
+    user = User.query.filter_by(username=username("editable")).one()
     diagram = Diagram.query.filter_by(user_id=user.id).order_by(Diagram.id).first()
     box = Toolbox(diagram.id, uuid.uuid4().hex, user_id=user.id)
     text, _ = box.call("read_changes", {"limit": 3})

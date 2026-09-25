@@ -2041,13 +2041,14 @@ button { font-family: inherit; }
 .qrow .fs-acts { width: 96px; }
 .chip.q { font: 500 15px/22px var(--mono); padding: 5px 10px; margin: 0; }
 .chip.q::before { inset: -4px; }
-.qmeta { display: flex; justify-content: flex-end; min-height: 44px; }
+/* the words line up with the chip's edge while their target reaches past it,
+   into the row's own padding */
+.qmeta { display: flex; justify-content: flex-end; min-height: 44px; margin-right: -8px; }
 .qwhen {
   flex: none;
   display: flex;
   align-items: center;
   min-height: 44px;
-  margin-right: -8px;
   padding: 0 8px;
   border: 0;
   background: none;
