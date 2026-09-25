@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { NO_LIST, lists, openList, pinned, stateFor } from "./setup";
 
 /** The list behind the picture, and the button that opens it.
  *
@@ -11,11 +11,6 @@ const settle = async (page: Page) => {
   await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(500);
-};
-
-const openList = async (page: Page) => {
-  await page.locator("#menu-open").click();
-  await expect(page.locator("#menu-screen")).toBeVisible();
 };
 
 const personEditor = async (page: Page) => {
@@ -34,6 +29,7 @@ test.describe("the button that opens the list", () => {
     page,
   }) => {
     await settle(page);
+    test.skip(await pinned(page), NO_LIST);
     await page.locator('#view .ss-hit[data-target="cluster"]').first().click();
     await expect(page.locator("#cap-chip")).toBeVisible();
     const where = await page.evaluate(() => {
@@ -71,6 +67,7 @@ test.describe("the list button's place", () => {
   // R-0198
   test("lies inside the picture's own frame, not in the message bar", async ({ page }) => {
     await settle(page);
+    test.skip(await pinned(page), NO_LIST);
     const where = await page.evaluate(() => {
       const button = document.getElementById("menu-open")!;
       const pic = document.querySelector("#chat-screen .pic")!;
@@ -88,6 +85,7 @@ test.describe("the list button's place", () => {
   // R-0198
   test("carries the same three-line mark as the sessions button", async ({ page }) => {
     await settle(page);
+    test.skip(await pinned(page), NO_LIST);
     const mark = (selector: string) =>
       page.locator(selector).evaluate((b) => {
         const svg = b.querySelector("svg")!;
@@ -161,7 +159,7 @@ test.describe("the two lists behind it", () => {
     await expect(tabs).toHaveText(["Events", "People", "From the coach"]);
     await expect(page.locator('#menu-tabs [aria-selected="true"]')).toHaveText("Events");
     await expect(page.locator("#menu-body [data-event]").first()).toBeVisible();
-    const drawer = await page.locator("#menu-screen").elementHandle();
+    const drawer = await lists(page).elementHandle();
 
     await page.locator("#tab-people").click();
     await expect(page.locator('#menu-tabs [aria-selected="true"]')).toHaveText("People");
@@ -169,8 +167,8 @@ test.describe("the two lists behind it", () => {
     // the other list takes the drawer's place whole, rather than narrowing it
     await expect(page.locator("#menu-body [data-event]")).toHaveCount(0);
     await expect(page.locator("#menu-body [data-person]")).toHaveCount(3);
-    expect(await page.locator("#menu-screen").evaluate((n, d) => n === d, drawer)).toBe(true);
-    await expect(page.locator("#menu-screen")).toBeVisible();
+    expect(await lists(page).evaluate((n, d) => n === d, drawer)).toBe(true);
+    await expect(lists(page)).toBeVisible();
   });
 
   // R-0218
@@ -263,7 +261,7 @@ test.describe("the list views and their editors", () => {
     await settle(page);
     await openList(page);
     await expect(page.locator("#menu-body .row").first()).toBeVisible();
-    await expect(page.locator("#menu-screen")).not.toContainText(/chat/i);
+    await expect(lists(page)).not.toContainText(/chat/i);
   });
 
   // R-0219
@@ -274,7 +272,7 @@ test.describe("the list views and their editors", () => {
     await openList(page);
     await page.locator("#tab-people").click();
     await expect(page.locator("#menu-body .row").first()).toContainText("Ada");
-    await expect(page.locator("#menu-screen")).not.toContainText(/chat/i);
+    await expect(lists(page)).not.toContainText(/chat/i);
   });
 
   // R-0200

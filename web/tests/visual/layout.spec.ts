@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { PIC_H } from "../../src/spotlight";
-import { stateFor } from "./setup";
+import { NO_LIST, pinned, stateFor } from "./setup";
 
 /** The layout contract, asserted rather than eyeballed: the picture region owns
  * its level's height and the chat fills what is left, so a tap on a chip or on
@@ -155,10 +155,11 @@ test.describe("nothing moves when a chip is tapped", () => {
       ),
       fits: node.scrollWidth <= node.clientWidth,
     }));
-    expect(strip.children).toBe(4);
+    // ask, explain and in chat, and the list button where one is drawn
+    const chips = [26, 26, 26];
+    expect(strip.heights).toEqual((await pinned(page)) ? chips : [...chips, 44]);
     expect(strip.height).toBe(44);
     expect(strip.rows).toBe(1);
-    expect(strip.heights).toEqual([26, 26, 26, 44]);
     // and with one word each they fit across a phone, which the record's own
     // words in the asking chip never did
     expect(strip.fits).toBe(true);
@@ -302,8 +303,10 @@ test.describe("a long family name", () => {
     expect(Math.round(avatar.width)).toBe(44);
     expect(Math.round(avatar.height)).toBe(44);
     // the list button is at the end of the row of chips, at its ruled size
-    const list = (await page.locator("#menu-open").boundingBox())!;
-    expect([Math.round(list.width), Math.round(list.height)]).toEqual([44, 44]);
+    if (!(await pinned(page))) {
+      const list = (await page.locator("#menu-open").boundingBox())!;
+      expect([Math.round(list.width), Math.round(list.height)]).toEqual([44, 44]);
+    }
 
     // the picture starts where it always starts
     expect(await pictureHeight(page)).toBe(BAND);
@@ -512,6 +515,7 @@ test.describe("the button that opens the lists", () => {
   // R-0221
   test("sits in the row under the picture, at its right end", async ({ page }) => {
     await settle(page);
+    test.skip(await pinned(page), NO_LIST);
     const at = await place(page);
     expect(at.inRow).toBe(true);
     expect(at.last).toBe("menu-open");
@@ -522,6 +526,7 @@ test.describe("the button that opens the lists", () => {
   // R-0221
   test("stays at the right end after ask, explain and in chat", async ({ page }) => {
     await settle(page);
+    test.skip(await pinned(page), NO_LIST);
     await page.locator('#view .ss-hit[data-target="cluster"]').first().click();
     await page.locator('#view .ss-hit[data-target="zone"]').first().click();
     await expect(page.locator("#cap-chip")).toBeVisible();

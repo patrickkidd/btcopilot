@@ -120,6 +120,23 @@ export function flask(...args: string[]): string {
   });
 }
 
+/** A wide window pins the drawer open beside the thread and draws no list
+ * button (R-0352); on a phone the drawer waits behind the button. */
+export const pinned = (page: Page) => page.locator("#chat-drawer").isVisible();
+
+/** Where the lists are: the drawer pinned beside the thread on a wide window,
+ * the full-screen list on a phone. */
+export const lists = (page: Page) => page.locator("#chat-drawer:visible, #menu-screen:visible");
+
+export const NO_LIST = "a wide window pins the drawer open and draws no list button (R-0352)";
+
+/** The lists open: the list button on a phone, already open on a wide window. */
+export async function openList(page: Page): Promise<void> {
+  await expect(page.locator("#view .ss")).toBeVisible();
+  if (!(await pinned(page))) await page.locator("#menu-open").click();
+  await expect(lists(page)).toBeVisible();
+}
+
 /** A fixture's account, as the server's fixtures name it. */
 export const username = (key: Key) => `${key}@fd362-fixture.invalid`;
 

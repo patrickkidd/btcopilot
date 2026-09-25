@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { pinned, stateFor } from "./setup";
 
 /** The frame the app lives in: the title row at the top, the picture straight
  * under it, the phone's own furniture around it, and one size for every icon
@@ -40,7 +40,11 @@ test.describe("the app frame", () => {
     const shell = found.filter((b) =>
       ["account", "sessions-open", "menu-open", "send"].includes(b.id),
     );
-    expect(shell.map((b) => b.id).sort()).toEqual(["account", "menu-open", "send", "sessions-open"]);
+    // a wide window draws no list button (R-0352)
+    const drawn = (await pinned(page))
+      ? ["account", "send", "sessions-open"]
+      : ["account", "menu-open", "send", "sessions-open"];
+    expect(shell.map((b) => b.id).sort()).toEqual(drawn);
     expect(new Set(shell.map((b) => b.size))).toEqual(new Set(["44x44"]));
     // the list button is drawn the height of the chips it sits beside
     expect(
