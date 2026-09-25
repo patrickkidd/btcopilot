@@ -352,6 +352,22 @@ def test_a_reply_that_drops_the_words_it_asked_is_logged(web, family, monkeypatc
     assert "asked question q1" in error.call_args.args[0]
 
 
+def test_undoing_a_removal_does_not_count_as_asking_its_question_again(web, family, monkeypatch):
+    # R-0006
+    turn = box(family, "t1")
+    turn.call(ToolName.EditPerson, {"name": "Nell"})
+    add(turn, item_kind="person", item_id="2")
+    box(family, "t2").call(
+        ToolName.Remove, {"item_kind": "person", "item_id": "2", "version": version(family)}
+    )
+    coach(monkeypatch, Model(called(ToolName.Undo), said("Nell is back.")))
+
+    with patch.object(coachturn._log, "error") as error:
+        post(web, csrf_token(web), "Put her back.")
+    assert error.call_args_list == []
+    assert stored(family)["q1"]["state"] == "asked"
+
+
 def test_the_page_gets_asked_questions_only_each_with_where_it_was_asked(web, family, monkeypatch):
     # R-0006, R-0072
     body = asking_turn(web, monkeypatch)

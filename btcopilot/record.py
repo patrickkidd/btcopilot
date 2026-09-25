@@ -947,7 +947,12 @@ def coded_in(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[int, dict
 def asks(delta: dict) -> bool:
     if delta["field"] is None:
         return delta["after"].get("state") == QuestionState.Asked
-    return delta["field"] == "state" and delta["after"] == QuestionState.Asked
+    # From held only: an undo that reopens a question it let go asks nothing.
+    return (
+        delta["field"] == "state"
+        and delta["before"] == QuestionState.Held
+        and delta["after"] == QuestionState.Asked
+    )
 
 
 def asked_in(diagram_id: int) -> dict[str, dict]:
