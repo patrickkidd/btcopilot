@@ -315,6 +315,10 @@ export function openEditor(
       toast("A noted event needs a few words saying what happened");
       return;
     }
+    if (body.kind === EventKind.Shift && !moved(body)) {
+      toast("A shift needs to say what moved and which way: symptom, anxiety, functioning or a relationship");
+      return;
+    }
     tap(Feature.EventSave);
     if (onSave) onSave(body);
     else void save(event, body, done, diagramId);
@@ -386,13 +390,26 @@ export function values(editor: HTMLElement): Partial<TimelineEvent> {
   };
 }
 
-async function save(
+/** The record's own test for a shift that says something (`record._moved`): a
+ * variable went up, down or stayed the same, or a relationship took a direction. */
+export const moved = (body: Partial<TimelineEvent>): boolean =>
+  [body.symptom, body.anxiety, body.functioning].some((value) =>
+    Object.values<string | null | undefined>(Direction).includes(value),
+  ) || Object.values<string | null | undefined>(Relationship).includes(body.relationship);
+
+/** A write that does not go in leaves the editor open with the reason shown. */
+export async function save(
   event: TimelineEvent | null,
   body: Partial<TimelineEvent>,
   done: () => void,
   diagramId?: number,
 ): Promise<void> {
-  await api.saveEvent(event ? event.id : null, body, diagramId);
+  try {
+    await api.saveEvent(event ? event.id : null, body, diagramId);
+  } catch (error) {
+    toast(api.whatFailed(error));
+    return;
+  }
   done();
 }
 

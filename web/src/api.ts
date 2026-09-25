@@ -67,6 +67,17 @@ export class Failed extends Error {
   }
 }
 
+/** What went wrong, in the words the reader needs: when the record refused a
+ * write, the part of its reason that says what to do. */
+export function whatFailed(error: unknown): string {
+  const failed = error instanceof Failed ? error : null;
+  if (!failed) throw error;
+  console.warn(failed.message);
+  if (failed.silent) return "No answer from the server";
+  if (failed.status >= 500) return "The server broke on that one";
+  return failed.detail.split(": ").slice(2).join(": ") || "That did not go in";
+}
+
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
   return send(method, ROOT + path, body);
 }
@@ -103,7 +114,12 @@ async function send<T>(
   }
   if (!response.ok)
     throw new Failed(response.status, `${method} ${url}: ${await response.text()}`);
-  return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
+  // an empty answer left unread is logged by the browser as aborted
+  if (response.status === 204) {
+    await response.text();
+    return undefined as T;
+  }
+  return (await response.json()) as T;
 }
 
 /** The record the app is on, or another one the reader can open — which is how

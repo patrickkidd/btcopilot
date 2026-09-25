@@ -317,7 +317,7 @@ export class Coding {
     } catch (error) {
       this.after(
         turn,
-        el("div", `bub coach sub${side}`, `<div class="did q">${esc(whatFailed(error))}</div>`),
+        el("div", `bub coach sub${side}`, `<div class="did q">${esc(api.whatFailed(error))}</div>`),
         turn,
       );
       // A scribe that stopped part way has still written that part.
@@ -448,14 +448,4 @@ export class Coding {
     node.scrollIntoView({ block: "nearest" });
   }
 
-}
-
-/** What went wrong, in the words the coder needs. */
-function whatFailed(error: unknown): string {
-  const failed = error instanceof api.Failed ? error : null;
-  if (!failed) throw error;
-  console.warn(failed.message);
-  if (failed.silent) return "No answer from the server";
-  if (failed.status >= 500) return "The server broke on that one";
-  return failed.detail.split(": ").slice(2).join(": ") || "That did not go in";
 }
