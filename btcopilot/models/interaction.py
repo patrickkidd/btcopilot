@@ -13,6 +13,7 @@ class InteractionKind(enum.StrEnum):
     Say = "say"
     ChipTap = "chip_tap"
     Play = "play"
+    Dismiss = "dismiss"
 
 
 class Interaction(db.Model, ModelMixin):

@@ -461,10 +461,7 @@ STORED_FIELDS = (
 
 
 def next_id(taken: set[str]) -> str:
-    n = len(taken) + 1
-    while f"c{n}" in taken:
-        n += 1
-    return f"c{n}"
+    return record.next_key("c", taken)
 
 
 def _source(cluster: dict) -> ClusterSource | None:

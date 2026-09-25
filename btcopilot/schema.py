@@ -423,6 +423,7 @@ class ItemKind(enum.StrEnum):
     PairBond = "pair_bond"
     Emotion = "emotion"
     Cluster = "cluster"
+    Question = "question"
     Diagram = "diagram"
 
 
@@ -432,7 +433,31 @@ ITEM_COLLECTIONS = {
     ItemKind.PairBond: "pair_bonds",
     ItemKind.Emotion: "emotions",
     ItemKind.Cluster: "clusters",
+    ItemKind.Question: "questions",
 }
+
+
+class QuestionKind(enum.StrEnum):
+    Thought = "thought"
+    Fact = "fact"
+
+
+class QuestionState(enum.StrEnum):
+    Held = "held"
+    Asked = "asked"
+    Resolved = "resolved"
+
+
+class QuestionOutcome(enum.StrEnum):
+    Fact = "fact"
+    Answered = "answered"
+    Unknown = "unknown"
+    DeclinedByUser = "declined_by_user"
+    DeclinedInChat = "declined_in_chat"
+    LetGo = "let_go"
+
+
+DECLINED = (QuestionOutcome.DeclinedByUser, QuestionOutcome.DeclinedInChat)
 
 
 @dataclass
@@ -513,6 +538,9 @@ class DiagramData:
     # Personal-app-owned fields
     clusters: list[dict] = field(default_factory=list)
     clusterCacheKey: str | None = None
+    questions: list[dict] = field(default_factory=list)
+    # The sessions the question backfill has gone through, so it never goes twice.
+    questions_backfilled: list[int] = field(default_factory=list)
     pdp: PDP = field(default_factory=PDP)
     lastItemId: int = field(default=0)
     SCENE_COLLECTION_FIELDS: ClassVar[list[str]] = [

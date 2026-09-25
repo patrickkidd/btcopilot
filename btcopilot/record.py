@@ -13,7 +13,7 @@ from sqlalchemy import update as sql_update
 
 from btcopilot import diagramjson
 from btcopilot.extensions import db
-from btcopilot.models import Author, Change
+from btcopilot.models import Author, Change, Statement
 from btcopilot.prompts import Role
 from btcopilot.models import Diagram
 from btcopilot.schema import (
@@ -21,6 +21,9 @@ from btcopilot.schema import (
     MIN_CLUSTER_EVENTS,
     EventKind,
     ItemKind,
+    QuestionKind,
+    QuestionOutcome,
+    QuestionState,
     RelationshipKind,
     VariableShift,
 )
@@ -42,6 +45,14 @@ def next_id(data) -> int:
     return max(used + [data.lastItemId or 0]) + 1
 
 
+def next_key(prefix: str, taken: set[str]) -> str:
+    """The first free id of a kind keyed by a letter and a number: c3, q4."""
+    n = len(taken) + 1
+    while f"{prefix}{n}" in taken:
+        n += 1
+    return f"{prefix}{n}"
+
+
 class Invalid(Exception):
     """The record the deltas would leave behind breaks a rule of the data model.
     The reason is for the coach; `plain` says the same rule to a person editing
@@ -50,6 +61,12 @@ class Invalid(Exception):
     def __init__(self, reason: str, plain: str):
         super().__init__(reason)
         self.plain = plain
+
+
+# A question is closed, never removed (R-0006): what the user declined has to
+# stay where the coach can see it.
+NEVER_REMOVED = ("a question is never removed; close it", "A question is never removed.")
+GONE = "That is not in the record."
 
 
 class Conflict(Exception):
@@ -122,6 +139,8 @@ def undo(
     applied = []
     for change in changes:
         for delta in reversed(change.deltas):
+            if delta["item_kind"] == ItemKind.Question.value:
+                continue
             inverse = _inverse(delta)
             actual = _get(data, inverse)
             if actual != inverse["before"]:
@@ -255,6 +274,8 @@ def _apply(data: dict, delta: dict) -> list[dict]:
     if kind is ItemKind.Diagram:
         raise ValueError("the diagram itself cannot be removed by a delta")
     if delta["after"] is None:
+        if kind is ItemKind.Question:
+            raise Invalid(*NEVER_REMOVED)
         return _remove(data, kind, delta["item_id"])
     return [_restore(data, delta)]
 
@@ -347,7 +368,7 @@ def involves(event: dict, person_id) -> bool:
     return any(str(x) == str(person_id) for x in ids if x is not None)
 
 
-def _validate(data: dict, deltas: list[dict]):
+def _validate(data: dict, deltas: list[dict], author: Author):
     """Every cluster this write leaves behind holds at least MIN_CLUSTER_EVENTS
     events.
 
@@ -378,6 +399,7 @@ def _validate(data: dict, deltas: list[dict]):
     _twins(data, deltas)
     _people(data, deltas)
     _structure(data, deltas)
+    _questions(data, deltas, author)
 
 
 LINKS = (
@@ -701,10 +723,90 @@ def _structure(data: dict, deltas: list[dict]):
             )
 
 
+QUESTION_LINKS = (ItemKind.Person, ItemKind.PairBond, ItemKind.Event, ItemKind.Cluster)
+QUESTION_ORDER = list(QuestionState)
+
+
+def _normal(text: str) -> str:
+    return " ".join(text.lower().split())
+
+
+def _questions(data: dict, deltas: list[dict], author: Author):
+    """A question has words, moves only forward from held to asked to
+    resolved, says how it ended exactly when it is resolved, is kept once in
+    the same words, and is dismissed by the user alone, who writes nothing else
+    on it (R-0006, R-0077)."""
+    questions = _collection(data, ItemKind.Question)
+    user = Author(author) is Author.User
+    for question_id in _touched_kind(deltas, ItemKind.Question):
+        question = _find(data, ItemKind.Question, question_id)
+        mine = [
+            d
+            for d in deltas
+            if d["item_kind"] == ItemKind.Question.value and str(d["item_id"]) == question_id
+        ]
+        state = QuestionState(_val(question.get("state")))
+        outcome = question.get("outcome") and QuestionOutcome(_val(question["outcome"]))
+        QuestionKind(_val(question.get("kind")))
+        moved = [d for d in mine if d["field"] == "state"]
+        added = any(d["field"] is None for d in mine)
+        was = None if added else QuestionState(moved[0]["before"] if moved else state)
+        if was is QuestionState.Resolved:
+            raise Invalid(
+                f"question {question_id} is already closed", "That question is already closed."
+            )
+        if moved and not added and QUESTION_ORDER.index(state) <= QUESTION_ORDER.index(was):
+            if was is QuestionState.Asked:
+                raise Invalid(
+                    f"question {question_id} was already asked",
+                    "That question was already asked.",
+                )
+            raise Invalid(
+                f"question {question_id} is already held",
+                "That question is already kept for later.",
+            )
+        if not (question.get("text") or "").strip():
+            raise Invalid(f"question {question_id} has no words", "It gave the question no words.")
+        if (state is QuestionState.Resolved) != bool(outcome):
+            raise Invalid(
+                f"question {question_id}: give an outcome exactly when it is resolved",
+                "It did not say how the question ended.",
+            )
+        if (outcome is QuestionOutcome.DeclinedByUser) != user or (
+            user and any(d["field"] not in ("state", "outcome") for d in mine)
+        ):
+            raise Invalid(
+                f"only the user dismisses question {question_id}, and does nothing else to it",
+                "Only you can dismiss a question.",
+            )
+        link = (question.get("item_kind"), question.get("item_id"))
+        if (link[0] is None) != (link[1] is None):
+            raise Invalid(
+                f"question {question_id}: give item_kind and item_id together, or neither",
+                "It named what the question is about only halfway.",
+            )
+        if link[0] is not None and (
+            ItemKind(link[0]) not in QUESTION_LINKS
+            or _find(data, ItemKind(link[0]), link[1]) is None
+        ):
+            raise Invalid(
+                f"question {question_id} is about {link[0]} {link[1]}, which is not in the record",
+                GONE,
+            )
+        for other in questions:
+            if str(other.get("id")) != question_id and _normal(other.get("text") or "") == _normal(
+                question["text"]
+            ):
+                raise Invalid(
+                    f"that question is already {other.get('id')}",
+                    "That question is already there.",
+                )
+
+
 def _commit(
     diagram, data, deltas, author, turn_id, user_id, session_id, statement_id
 ) -> Change:
-    _validate(data, deltas)
+    _validate(data, deltas, author)
     version = db.session.execute(
         sql_update(Diagram)
         .where(Diagram.id == diagram.id)
@@ -765,6 +867,25 @@ def diff(old: dict, new: dict) -> list[dict]:
     return deltas
 
 
+def _stated(diagram_id: int) -> tuple[list[Change], dict[int, int]]:
+    """This diagram's change rows that carry a statement, oldest first, and
+    the session each of those statements belongs to."""
+    rows = (
+        Change.query.filter(
+            Change.diagram_id == diagram_id, Change.statement_id.isnot(None)
+        )
+        .order_by(Change.id)
+        .all()
+    )
+    said = {
+        statement.id: statement.discussion_id
+        for statement in Statement.query.filter(
+            Statement.id.in_({row.statement_id for row in rows})
+        ).all()
+    }
+    return rows, said
+
+
 def coded_in(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[int, dict]:
     """Where each moment on this diagram was written down: the message the coach
     was saying when it went in, and the session that message belongs to. People
@@ -776,24 +897,8 @@ def coded_in(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[int, dict
     newest such command wins: a moment changed twice belongs to the last thing
     said about it.
     """
-    from btcopilot.models import Statement
-
     found: dict[int, dict] = {}
-    rows = (
-        Change.query.filter(
-            Change.diagram_id == diagram_id, Change.statement_id.isnot(None)
-        )
-        .order_by(Change.id)
-        .all()
-    )
-    if not rows:
-        return found
-    said = {
-        statement.id: statement.discussion_id
-        for statement in Statement.query.filter(
-            Statement.id.in_({row.statement_id for row in rows})
-        ).all()
-    }
+    rows, said = _stated(diagram_id)
     for row in rows:
         for delta in row.deltas or []:
             if delta.get("item_kind") != kind.value:
@@ -807,4 +912,25 @@ def coded_in(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[int, dict
                 "statement_id": row.statement_id,
                 "turn_id": row.turn_id,
             }
+    return found
+
+
+def asks(delta: dict) -> bool:
+    if delta["field"] is None:
+        return delta["after"].get("state") == QuestionState.Asked
+    return delta["field"] == "state" and delta["after"] == QuestionState.Asked
+
+
+def asked_in(diagram_id: int) -> dict[str, dict]:
+    """The message each question was asked in, and its session: the newest
+    change row whose delta made the question asked."""
+    found = {}
+    rows, said = _stated(diagram_id)
+    for row in rows:
+        for delta in row.deltas:
+            if delta["item_kind"] == ItemKind.Question.value and asks(delta):
+                found[str(delta["item_id"])] = {
+                    "discussion_id": said[row.statement_id],
+                    "statement_id": row.statement_id,
+                }
     return found

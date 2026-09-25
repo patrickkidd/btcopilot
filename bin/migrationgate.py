@@ -29,7 +29,7 @@ COMPOSE = Path(__file__).parents[1] / "deploy" / "docker-compose.yml"
 REVISION = "1b00000000ab"
 USER = "familydiagram"
 PASSWORD = "gate"
-TOOLED = [ItemKind.Person, ItemKind.PairBond, ItemKind.Event, ItemKind.Cluster]
+TOOLED = [ItemKind.Person, ItemKind.PairBond, ItemKind.Event, ItemKind.Cluster, ItemKind.Question]
 
 TURNS = sa.text(
     """
