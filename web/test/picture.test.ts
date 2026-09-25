@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { dotXs, restWidth, yearAt, years } from "../src/picture";
+import { Target, dotLayers, dotXs, restLayers, restWidth, yearAt, years, type Layer } from "../src/picture";
+import { zones } from "../src/spotlight";
+import type { TimelineEvent } from "../src/types";
 
 const PHONE = 390;
 const PAD = 16;
@@ -118,5 +120,29 @@ describe("the year a point on the line falls in", () => {
   it("is the calendar year, not the count since 1970", () => {
     expect(yearAt(years("2003-09-10"))).toBe(2003);
     expect(yearAt(years("1981-05-01"))).toBe(1981);
+  });
+});
+
+describe("a tap on the resting line", () => {
+  /** The target a tap at x reaches: the last laid that covers it. */
+  const reached = (layers: Layer[], x: number) =>
+    [...layers].reverse().find((l) => x >= l.left && x <= l.left + l.width)?.target;
+
+  // R-0103
+  it("reaches a loose event's dot inside a cluster's years, and the box beside it", () => {
+    const dates = ["1994-01-01", "2015-01-01", "2021-01-01"];
+    const edges = box({ start: dates[0], end: dates[2] }, dates, PHONE);
+    const cluster: Layer = {
+      target: Target.Cluster,
+      index: 0,
+      left: edges.left,
+      width: edges.right - edges.left,
+      label: "1994\u20132021",
+    };
+    const x = at(dates[1], dates, PHONE);
+    const event = { label: "Moved to Denver" } as TimelineEvent;
+    const layers = restLayers([cluster], dotLayers(zones([{ x, event }], PHONE)));
+    expect(reached(layers, x)).toBe(Target.Zone);
+    expect(reached(layers, x - 30)).toBe(Target.Cluster);
   });
 });

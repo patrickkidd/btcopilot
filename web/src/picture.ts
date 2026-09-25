@@ -230,6 +230,38 @@ export enum Target {
 
 const OWN = new Set<string>([Target.Prev, Target.Next]);
 
+/** One invisible tap target along the line. */
+export interface Layer {
+  target: Target;
+  index: number;
+  left: number;
+  width: number;
+  label: string;
+}
+
+/** The resting line's tap targets in the order they are laid, the last on
+ * top: the cluster boxes, then the loose events' dots, so a loose event dated
+ * inside a cluster's years is reached by a tap on its dot and the box by a tap
+ * anywhere else on it. */
+export const restLayers = (boxes: Layer[], dots: Layer[]): Layer[] => [...boxes, ...dots];
+
+/** A target as the button the thumb lands on, ZONE tall on the wire. */
+const hitButton = (layer: Layer, wire: number): string =>
+  `<button class="ss-hit" data-target="${layer.target}" data-index="${layer.index}" ` +
+  `aria-label="${esc(layer.label)}" ` +
+  `style="left:${layer.left.toFixed(1)}px;top:${wire - ZONE / 2}px;` +
+  `width:${layer.width.toFixed(1)}px;height:${ZONE}px"></button>`;
+
+/** The loose events' targets: one per dot, or per dots drawn over one another. */
+export const dotLayers = (zoned: { left: number; width: number; marks: Mark[] }[]): Layer[] =>
+  zoned.map((zone, index) => ({
+    target: Target.Zone,
+    index,
+    left: zone.left,
+    width: zone.width,
+    label: zone.marks[0].event.label,
+  }));
+
 /** How long one level takes to slide over the one it came from. */
 const SLIDE_MS = 320;
 
@@ -997,7 +1029,7 @@ export class Picture {
           `<stop offset="1" class="epfade-out"/></linearGradient></defs>`
         : "") +
       `<line class="wire" x1="${x0}" y1="${wireY}" x2="${x1}" y2="${wireY}"/>`;
-    let clusterHits = "";
+    const boxes: Layer[] = [];
     // A box reaches a little past the moments it holds, and two clusters a
     // month apart would then draw over one another. Where that happens the two
     // boxes give way to each other and leave a gap between them.
@@ -1061,11 +1093,13 @@ export class Picture {
 
       // the box may be narrower than a thumb, so the target is grown to the floor
       const target = Math.max(ZONE, boxWidth);
-      clusterHits +=
-        `<button class="ss-hit" data-target="${Target.Cluster}" data-index="${i}" ` +
-        `aria-label="${esc(cluster.title || shortYears(cluster.start, cluster.end))}" ` +
-        `style="left:${this.hitLeft(middle, target, width)}px;top:${wireY - ZONE / 2}px;` +
-        `width:${target.toFixed(1)}px;height:${ZONE}px"></button>`;
+      boxes.push({
+        target: Target.Cluster,
+        index: i,
+        left: Number(this.hitLeft(middle, target, width)),
+        width: target,
+        label: cluster.title || shortYears(cluster.start, cluster.end),
+      });
     });
     // A moment no cluster claims is drawn as itself: a dot on the wire where it
     // happened, with no box around it and nothing else bundled into it.
@@ -1077,7 +1111,11 @@ export class Picture {
       const on = event.id === this.selected ? " on" : "";
       svg += `<circle class="dot${on}" cx="${x.toFixed(1)}" cy="${wireY}" r="${on ? 7 : DOT_R}"${faded(event.id)}/>`;
     }
-    const hits = this.zoneHits(marks, width, wireY);
+    const zoned = zones(marks, width);
+    this.laid.zones = zoned.map((zone) => zone.marks);
+    const hits = restLayers(boxes, dotLayers(zoned))
+      .map((layer) => hitButton(layer, wireY))
+      .join("");
 
     svg += `</svg>`;
 
@@ -1112,11 +1150,9 @@ export class Picture {
         ? `<div class="ss-yrs"><span></span><span></span></div>`
         : "";
 
-    // A cluster's target goes down last so it wins where a loose moment's
-    // thumb-sized target reaches over its box: a tap on a box opens the box.
     this.host.innerHTML =
       `<div class="ss"><div class="ss-scroll"><div class="ss-line" style="width:${width.toFixed(1)}px">` +
-      `${svg}${words}${hits}${clusterHits}${snaps}</div></div>${ends}${shelf}</div>`;
+      `${svg}${words}${hits}${snaps}</div></div>${ends}${shelf}</div>`;
     this.settle({ width, screen, first, span }, held, onX);
   }
 
@@ -1441,14 +1477,8 @@ export class Picture {
   private zoneHits(marks: Mark[], width: number, wire: number): string {
     const zoned = zones(marks, width);
     this.laid.zones = zoned.map((zone) => zone.marks);
-    return zoned
-      .map(
-        (zone, i) =>
-          `<button class="ss-hit" data-target="${Target.Zone}" data-index="${i}" ` +
-          `aria-label="${esc(zone.marks[0].event.label)}" ` +
-          `style="left:${zone.left.toFixed(1)}px;top:${wire - ZONE / 2}px;` +
-          `width:${zone.width.toFixed(1)}px;height:${ZONE}px"></button>`,
-      )
+    return dotLayers(zoned)
+      .map((layer) => hitButton(layer, wire))
       .join("");
   }
 
