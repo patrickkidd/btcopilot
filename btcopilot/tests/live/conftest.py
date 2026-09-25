@@ -8,26 +8,86 @@ leaves behind. It costs money and needs the prompts' key, so it never runs on CI
 
 Without --e2e every test here is skipped; with it and no key (either key), every
 test fails.
+
+A run checks the balance with one 1-token call first, charges every model call
+at the app's own prices, stops at its cap, prints what it spent and leaves one
+results file; `python -m btcopilot.tests.live.passrate` reads them back.
 """
 
 import os
+import subprocess
 from pathlib import Path
 
 import pytest
+from sqlalchemy import event
 
+from btcopilot.coachmodel import CoachModel
 from btcopilot.extensions import db
+from btcopilot.models import ModelCall
 from btcopilot.promptdir import key_present
 from btcopilot.schema import DiagramData
 from btcopilot.tests.conftest import csrf_token, replied
+from btcopilot.tests.live.run import Outcome, Run
 
 HERE = Path(__file__).parent
+RUN = pytest.StashKey[Run]()
 
 
 def pytest_collection_modifyitems(config, items):
-    for item in items:
-        if HERE in Path(item.path).parents:
-            item.add_marker(pytest.mark.live)
-            item.add_marker(pytest.mark.e2e)
+    live = [item for item in items if HERE in Path(item.path).parents]
+    undeclared = [item.name for item in live if not hasattr(item.function, "criterion")]
+    if undeclared:
+        raise pytest.UsageError(f"live cases without a pass criterion: {undeclared}")
+    for item in live:
+        item.add_marker(pytest.mark.live)
+        item.add_marker(pytest.mark.e2e)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def run(request):
+    """The run's meter: opened with a balance check before any spend, and
+    charged for every model call the app writes down."""
+    if not request.config.getoption("--e2e"):
+        pytest.skip("need --e2e option to run")
+    git = subprocess.run(
+        ["git", "-C", str(HERE), "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    opened = request.config.stash[RUN] = Run(CoachModel().model, git)
+    opened.open(require_testing_key())
+    charged = opened.recorded
+    event.listen(ModelCall, "after_insert", charged)
+    yield opened
+    event.remove(ModelCall, "after_insert", charged)
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_makereport(item, call):
+    report = yield
+    run = item.config.stash.get(RUN, None)
+    if run is None:
+        return report
+    if report.when == "setup":
+        run.begin(item.name, str(item.function.criterion))
+    if report.when == "call" or not report.passed:
+        run.end(item.name, Outcome(report.outcome))
+    if run.reason:
+        item.session.shouldstop = f"live run stopped: {run.reason}"
+    return report
+
+
+def pytest_sessionfinish(session, exitstatus):
+    run = session.config.stash.get(RUN, None)
+    if run is not None:
+        run.finish(exitstatus)
+
+
+def pytest_terminal_summary(terminalreporter, config):
+    run = config.stash.get(RUN, None)
+    if run is not None:
+        terminalreporter.write_line(run.summary())
 
 
 def require_testing_key() -> str:
@@ -50,7 +110,9 @@ def testing_key(request, monkeypatch):
 @pytest.fixture(autouse=True)
 def private_prompts(request):
     if request.config.getoption("--e2e"):
-        assert key_present(), "the live venue runs the private prompts; set SOPS_AGE_KEY_FILE"
+        assert (
+            key_present()
+        ), "the live venue runs the private prompts; set SOPS_AGE_KEY_FILE"
 
 
 @pytest.fixture(autouse=True)
@@ -69,11 +131,25 @@ def token(web):
 
 # The speaker's own place in the record is complete, so the coach's first turn
 # goes to what is said rather than to intake questions about the speaker.
-ME = {"id": 1, "name": "Wren", "last_name": "Hale", "gender": "female", "primary": True, "parents": 10}
+ME = {
+    "id": 1,
+    "name": "Wren",
+    "last_name": "Hale",
+    "gender": "female",
+    "primary": True,
+    "parents": 10,
+}
 MOTHER = {"id": 2, "name": "Ada", "last_name": "Hale", "gender": "female"}
 FATHER = {"id": 3, "name": "Hugh", "last_name": "Hale", "gender": "male"}
 PARENTS = {"id": 10, "person_a": 2, "person_b": 3, "married": True}
-BORN = {"id": 30, "kind": "birth", "person": 2, "spouse": 3, "child": 1, "dateTime": "1985-04-12"}
+BORN = {
+    "id": 30,
+    "kind": "birth",
+    "person": 2,
+    "spouse": 3,
+    "child": 1,
+    "dateTime": "1985-04-12",
+}
 
 
 class Coach:
@@ -83,7 +159,12 @@ class Coach:
         self.web, self.token, self.user = web, token, user
 
     def record(self, people=(), pair_bonds=(), events=()) -> None:
-        """The speaker, their parents and their birth, plus what the test adds."""
+        """The speaker, their parents and their birth, plus what the test adds,
+        in a new session, so a case run again starts from nothing said."""
+        response = self.web.post(
+            "/app/sessions", json={}, headers={"X-CSRFToken": self.token}
+        )
+        assert response.status_code == 201, response.get_data(as_text=True)
         people = [ME, MOTHER, FATHER, *people]
         pair_bonds = [PARENTS, *pair_bonds]
         events = [BORN, *events]

@@ -12,6 +12,7 @@ from btcopilot import turns
 from btcopilot.coachmodel import CoachModel
 from btcopilot.models import Observation, ObservationKind
 from btcopilot.tests.conftest import replied
+from btcopilot.tests.live.criterion import once
 
 
 class Breaks:
@@ -42,6 +43,7 @@ def named(people, name) -> list[dict]:
 SIBLINGS = "My sister Nell was born in 1990 and my brother Colm in 1993."
 
 
+@once
 def test_trying_a_failed_turn_again_repeats_nothing(coach):
     # R-0477, R-0481
     coach.record()
@@ -68,6 +70,7 @@ GRANDFATHER = {"id": 8, "name": "Joe", "last_name": "Hale", "gender": "male"}
 DIED = {"id": 31, "kind": "death", "person": 8, "dateTime": "2010-03-15"}
 
 
+@once
 def test_an_event_said_again_is_not_added_again(coach):
     # R-0442, R-0481
     coach.record([GRANDFATHER], events=[DIED])
@@ -94,6 +97,7 @@ BROTHER_LEFT = {
 }
 
 
+@once
 def test_a_brother_the_record_holds_is_not_added_again(coach):
     # R-0479, R-0481
     coach.record([BROTHER], events=[BROTHER_BORN, BROTHER_LEFT])

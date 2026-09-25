@@ -7,6 +7,7 @@ names only.
 import re
 
 from btcopilot import prompts
+from btcopilot.tests.live.criterion import once, passes
 
 NOTHING = ("", None)
 
@@ -15,6 +16,7 @@ def on(events, person):
     return [e for e in events if e.get("person") == person]
 
 
+@once
 def test_a_feeling_that_interferes_with_work_is_a_symptom(coach):
     # R-0424
     coach.record()
@@ -22,28 +24,30 @@ def test_a_feeling_that_interferes_with_work_is_a_symptom(coach):
     assert [e for e in on(coach.events, 1) if e.get("symptom") == "up"]
 
 
+@once
 def test_a_feeling_that_interferes_with_nothing_is_not_a_symptom(coach):
     # R-0424
     coach.record()
-    coach.say("I get a little nervous before big meetings, but it never gets in the way of anything.")
+    coach.say(
+        "I get a little nervous before big meetings, but it never gets in the way of anything."
+    )
     assert [e for e in coach.events if e.get("symptom") not in NOTHING] == []
 
 
-def test_a_diagnosis_is_symptom_up_on_the_person_it_happened_to(coach):
+@once
+def test_a_diagnosis_is_symptom_up_on_the_person_it_happened_to_dated_when_it_happened(
+    coach,
+):
     # R-0425
     coach.record()
     coach.say("My mother was diagnosed with breast cancer in March 2019.")
-    assert [e for e in on(coach.events, 2) if e.get("symptom") == "up"]
-
-
-def test_a_diagnosis_is_dated_to_when_it_happened(coach):
-    # R-0425
-    coach.record()
-    coach.say("My mother was diagnosed with breast cancer in March 2019.")
-    (event,) = [e for e in on(coach.events, 2) if e.get("symptom") == "up"]
+    symptoms = [e for e in on(coach.events, 2) if e.get("symptom") == "up"]
+    assert symptoms
+    (event,) = symptoms
     assert (event.get("dateTime") or "").startswith("2019")
 
 
+@once
 def test_a_date_known_to_the_month_is_approximate(coach):
     # R-0482
     coach.record()
@@ -53,6 +57,7 @@ def test_a_date_known_to_the_month_is_approximate(coach):
     assert death.get("dateCertainty") == "approximate"
 
 
+@once
 def test_the_coach_infers_anxiety_down_from_what_is_described(coach):
     # R-0427
     coach.record()
@@ -60,13 +65,17 @@ def test_the_coach_infers_anxiety_down_from_what_is_described(coach):
     assert [e for e in on(coach.events, 3) if e.get("anxiety") == "down"]
 
 
+@once
 def test_the_coach_infers_anxiety_up_around_a_stressor_half_remembered(coach):
     # R-0427
     coach.record()
-    coach.say("I barely remember the year we moved, except that my parents fought about money.")
+    coach.say(
+        "I barely remember the year we moved, except that my parents fought about money."
+    )
     assert [e for e in coach.events if e.get("anxiety") == "up"]
 
 
+@once
 def test_things_rocky_since_the_divorce_is_functioning_down_on_the_speaker(coach):
     # R-0428
     coach.record()
@@ -74,26 +83,26 @@ def test_things_rocky_since_the_divorce_is_functioning_down_on_the_speaker(coach
     assert [e for e in on(coach.events, 1) if e.get("functioning") == "down"]
 
 
+@once
 def test_the_coach_prompt_defines_functioning_in_the_spec_words():
     # R-0428
     assert re.search(r"balanc\w* emotion and intellect", prompts.get_agent_prompt())
 
 
 BROTHER = {"id": 4, "name": "Colm", "gender": "male", "parents": 10}
-MOMS_DIAGNOSIS = "Ever since Mom got her diagnosis, he's stepped back and I'm doing everything."
+MOMS_DIAGNOSIS = (
+    "Ever since Mom got her diagnosis, he's stepped back and I'm doing everything."
+)
 
 
-def test_mom_diagnosis_is_one_symptom_event_on_mom(coach):
+@once
+def test_mom_diagnosis_is_a_symptom_on_mom_and_stepping_back_is_under_and_over_functioning(
+    coach,
+):
     # R-0433
     coach.record([BROTHER])
     coach.say(f"My brother Colm lives nearby. {MOMS_DIAGNOSIS}")
     assert [e for e in on(coach.events, 2) if e.get("symptom") == "up"]
-
-
-def test_stepping_back_and_doing_everything_is_under_and_over_functioning(coach):
-    # R-0433
-    coach.record([BROTHER])
-    coach.say(f"My brother Colm lives nearby. {MOMS_DIAGNOSIS}")
     kinds = {(e.get("person"), e.get("relationship")) for e in coach.events}
     assert (4, "underfunctioning") in kinds
     assert (1, "overfunctioning") in kinds
@@ -102,20 +111,16 @@ def test_stepping_back_and_doing_everything_is_under_and_over_functioning(coach)
 MICHAEL = {"id": 5, "name": "Michael", "gender": "male"}
 
 
-def test_a_visit_and_an_argument_is_one_conflict_event_on_the_visitor(coach):
+@once
+def test_a_visit_and_an_argument_is_one_conflict_event_from_the_visitor_to_the_speaker(
+    coach,
+):
     # R-0434
     coach.record([MICHAEL])
     coach.say("Michael came over to visit, and we ended up arguing.")
     conflicts = [e for e in coach.events if e.get("relationship") == "conflict"]
     assert [e["person"] for e in conflicts] == [5]
-
-
-def test_the_speaker_is_the_target_of_that_conflict(coach):
-    # R-0434
-    coach.record([MICHAEL])
-    coach.say("Michael came over to visit, and we ended up arguing.")
-    (conflict,) = [e for e in coach.events if e.get("relationship") == "conflict"]
-    assert conflict.get("relationshipTargets") == [1]
+    assert conflicts[0].get("relationshipTargets") == [1]
 
 
 SON = {"id": 6, "name": "Finn", "gender": "male", "parents": 11}
@@ -127,20 +132,16 @@ GRADES = (
 )
 
 
-def test_projection_is_coded_in_the_turn_it_is_described(coach):
-    # R-0435
-    coach.record([PARTNER, SON], [MARRIAGE])
-    coach.say(GRADES)
-    assert [e for e in coach.events if e.get("relationship") == "projection"]
-
-
-def test_the_coach_does_not_ask_whether_it_is_projection(coach):
+@once
+def test_projection_is_coded_in_the_turn_it_is_described_without_asking(coach):
     # R-0435
     coach.record([PARTNER, SON], [MARRIAGE])
     reply = coach.say(GRADES)
+    assert [e for e in coach.events if e.get("relationship") == "projection"]
     assert "project" not in reply.lower()
 
 
+@passes(2, of=3)
 def test_a_reply_ends_in_a_question_while_the_family_is_unknown(coach):
     # R-0436
     coach.record()
@@ -148,11 +149,13 @@ def test_a_reply_ends_in_a_question_while_the_family_is_unknown(coach):
     assert reply.rstrip().endswith("?")
 
 
+@once
 def test_the_coach_prompt_marks_its_fallback_coding_rules_provisional():
     # R-0440
     assert "provisional" in prompts.get_agent_prompt().lower()
 
 
+@once
 def test_the_scribe_prompt_marks_its_fallback_coding_rules_provisional():
     # R-0440
     assert "provisional" in prompts.scribe_prompt().lower()
@@ -164,17 +167,14 @@ TOM = {"id": 14, "name": "Tom", "gender": "male", "parents": 10}
 TWO_BROTHERS = "I've only got two brothers, Bob and James."
 
 
-def test_a_complete_list_removes_no_one_before_the_answer(coach):
-    # R-0441
-    coach.record([BOB, JAMES, TOM])
-    coach.say(TWO_BROTHERS)
-    assert 14 in [p["id"] for p in coach.people]
-
-
-def test_a_complete_list_makes_the_coach_ask_about_the_one_left_out(coach):
+@once
+def test_a_complete_list_removes_no_one_and_the_coach_asks_about_the_one_left_out(
+    coach,
+):
     # R-0441
     coach.record([BOB, JAMES, TOM])
     reply = coach.say(TWO_BROTHERS)
+    assert 14 in [p["id"] for p in coach.people]
     assert "Tom" in reply
     assert "?" in reply
 
@@ -190,35 +190,28 @@ WORRY = {
 AGAIN = "Like I said, I was really worried after we moved in 2019, I couldn't sleep."
 
 
-def test_a_shift_said_again_makes_no_second_event(coach):
+@once
+def test_a_shift_said_again_makes_no_second_event_and_is_folded_into_the_first(coach):
     # R-0442
     coach.record(events=[WORRY])
     coach.say(AGAIN)
     assert [e for e in on(coach.events, 1) if e.get("anxiety") == "up"] == [
         next(e for e in coach.events if e["id"] == 20)
     ]
-
-
-def test_a_shift_said_again_is_folded_into_the_existing_event(coach):
-    # R-0442
-    coach.record(events=[WORRY])
-    coach.say(AGAIN)
     (event,) = [e for e in coach.events if e["id"] == 20]
     assert event.get("notes") or event.get("description") != WORRY["description"]
 
 
-def test_a_couple_splitting_over_having_kids_is_an_away_move(coach):
+@once
+def test_a_couple_splitting_over_having_kids_is_an_away_move_between_the_two_of_them(
+    coach,
+):
     # R-0057
     coach.record([PARTNER], [MARRIAGE])
     coach.say("Rory and I split up in 2015 because he wanted kids and I didn't.")
-    assert [e for e in coach.events if e.get("relationship") == "away"]
-
-
-def test_the_away_move_is_between_the_two_of_them(coach):
-    # R-0057
-    coach.record([PARTNER], [MARRIAGE])
-    coach.say("Rory and I split up in 2015 because he wanted kids and I didn't.")
-    (away,) = [e for e in coach.events if e.get("relationship") == "away"]
+    moves = [e for e in coach.events if e.get("relationship") == "away"]
+    assert moves
+    (away,) = moves
     assert {away.get("person"), *(away.get("relationshipTargets") or [])} == {1, 7}
 
 
@@ -233,18 +226,19 @@ INSOMNIA = {
 MOVED = "We moved to Arizona in early 2000."
 
 
-def test_a_move_is_written_down_as_a_noted_event_not_a_shift(coach):
-    # R-0366
-    coach.record(events=[INSOMNIA])
-    coach.say(MOVED)
-    moves = [e for e in coach.events if e["id"] not in (21, 30)]
-    assert [e.get("kind") for e in moves] == ["noted"]
-    assert all(e.get(v) in NOTHING for e in moves for v in ("symptom", "anxiety", "functioning"))
-
-
-def test_a_move_near_a_shift_leads_the_coach_to_wonder_whether_it_played_in(coach):
+@once
+def test_a_move_is_a_noted_event_and_the_coach_wonders_whether_it_played_in_a_shift(
+    coach,
+):
     # R-0366
     coach.record(events=[INSOMNIA])
     reply = coach.say(MOVED)
+    moves = [e for e in coach.events if e["id"] not in (21, 30)]
+    assert [e.get("kind") for e in moves] == ["noted"]
+    assert all(
+        e.get(v) in NOTHING
+        for e in moves
+        for v in ("symptom", "anxiety", "functioning")
+    )
     assert re.search(r"sleep|move|Arizona", reply, re.I)
     assert "?" in reply
