@@ -180,6 +180,17 @@ def test_the_same_words_are_one_open_question_and_may_be_asked_again_once_closed
     assert stored(family)["q2"]["state"] == "asked"
 
 
+def test_the_words_of_a_question_the_user_turned_down_are_never_added_again(family):
+    # R-0479, R-0482
+    add(box(family))
+    dismiss(family, "q1")
+
+    with pytest.raises(ToolError) as refused:
+        add(box(family), ASK.upper())
+    assert refused.value.plain == "The user already turned this question down."
+    assert list(stored(family)) == ["q1"]
+
+
 def test_removing_what_a_question_is_about_lets_it_go_and_undo_puts_both_back(family):
     # R-0006, R-0084
     turn = box(family, "t1")

@@ -875,6 +875,16 @@ class Toolbox:
                     "It said where a question was asked without asking it.",
                 )
             said = self._said(args["asked_in"], args["text"])
+            where = record.asked_in(self.diagram_id)
+            if any(
+                record.normal(q["text"]) == record.normal(args["text"])
+                and where.get(q["id"], {}).get("statement_id") == said.id
+                for q in self.data.questions
+            ):
+                raise ToolError(
+                    f"a question in those words was already added from message {said.id}",
+                    "That question is already there.",
+                )
         if state is QuestionState.Asked:
             fields.update(self._asked(said))
         return self._write(ItemKind.Question, None, fields, said and said.id)

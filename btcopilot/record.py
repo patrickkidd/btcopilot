@@ -749,7 +749,7 @@ QUESTION_LINKS = (ItemKind.Person, ItemKind.PairBond, ItemKind.Event, ItemKind.C
 QUESTION_ORDER = list(QuestionState)
 
 
-def _normal(text: str) -> str:
+def normal(text: str) -> str:
     return " ".join(text.lower().split())
 
 
@@ -816,13 +816,18 @@ def _questions(data: dict, deltas: list[dict], author: Author):
                 GONE,
             )
         for other in questions:
-            if (
-                str(other.get("id")) != question_id
-                and other["state"] != QuestionState.Resolved
-                and _normal(other["text"]) == _normal(question["text"])
+            if str(other.get("id")) == question_id or normal(other["text"]) != normal(
+                question["text"]
             ):
+                continue
+            if other.get("outcome") == QuestionOutcome.DeclinedByUser:
                 raise Invalid(
-                    f"that question is already {other.get('id')}",
+                    f"the user turned that question down as {other['id']}: never ask it again",
+                    "The user already turned this question down.",
+                )
+            if other["state"] != QuestionState.Resolved:
+                raise Invalid(
+                    f"that question is already {other['id']}",
                     "That question is already there.",
                 )
 

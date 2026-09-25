@@ -11,11 +11,11 @@ import json
 import pytest
 from mock import patch
 
-from btcopilot import record
+from btcopilot import questions, record
 from btcopilot.admin import admin
 from btcopilot.extensions import db
 from btcopilot.models import Change, ModelCall, Statement
-from btcopilot.tests.conftest import Model, calling, csrf_token, said, version
+from btcopilot.tests.conftest import Model, called, calling, csrf_token, said, version
 from btcopilot.tests.test_turnhistory import coach, family, post, statements, titles  # noqa: F401
 from btcopilot.toolbox import ToolName
 
@@ -112,3 +112,23 @@ def test_a_session_is_gone_through_once_and_the_preview_writes_nothing(
     assert model.systems == []
     assert (version(family), Change.query.count()) == (after, rows)
     assert backfill(flask_app, args=())[0][0]["sessions_done"] == 1
+
+
+def test_a_stopped_run_gone_through_again_does_not_add_a_question_twice(
+    flask_app, family, past
+):
+    # R-0006
+    stopped = Model(
+        asking(past),
+        called(ToolName.SetQuestion, id="q1", version=version(family) + 1, state="resolved", outcome="unknown"),
+    )
+    with pytest.raises(IndexError):
+        questions.run([family], model=stopped)
+
+    _, model = backfill(flask_app, asking(past), said(""))
+
+    assert model.histories[1][-1]["content"][0]["is_error"] is True
+    db.session.expire_all()
+    data = family.get_diagram_data()
+    assert [(q["text"], q["state"]) for q in data.questions] == [(RUTH, "resolved")]
+    assert data.questions_backfilled == [past["session"]]
