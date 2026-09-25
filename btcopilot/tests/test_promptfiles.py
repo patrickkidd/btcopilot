@@ -37,6 +37,9 @@ def rendered(module, names) -> dict:
     out["question_backfill"] = module.question_backfill(
         map=RECORD, transcript=TRANSCRIPT
     )
+    out["impression_backfill"] = module.impression_backfill(
+        map=RECORD, transcript=TRANSCRIPT
+    )
     out["note_register"] = module.note_register()
     out["scribe_prompt/empty"] = module.scribe_prompt()
     out["scribe_prompt/record"] = module.scribe_prompt(record=RECORD)
@@ -103,6 +106,15 @@ def test_the_backfill_prompt_carries_the_session_the_map_and_the_judgement(publi
     assert "write it so it reads alone, naming the person and the subject" in prompt
     assert 'it speaks to the person as "you"' in prompt
     assert "leave out any lead-in, hedge or reason" in prompt
+
+
+def test_the_impression_backfill_carries_the_session_the_map_and_the_judgement(public):
+    # R-0482
+    prompt = public.impression_backfill(map=RECORD, transcript=TRANSCRIPT)
+    assert TRANSCRIPT in prompt
+    assert RECORD in prompt
+    assert "`add_impression`" in prompt
+    assert "one that treats shifts as a series or a trend" in prompt
 
 
 def test_the_scribe_gives_every_date_its_certainty(public):

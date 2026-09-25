@@ -21,6 +21,8 @@ Below is a map of the record, not the record itself: who is in it, how many even
 
 {% include "fragments/open_questions.md" %}
 
+{% include "fragments/impressions.md" %}
+
 {% if committed_state %}THE MAP
 {{ committed_state }}{% else %}The record is empty.{% endif %}{% if interactions %}
 

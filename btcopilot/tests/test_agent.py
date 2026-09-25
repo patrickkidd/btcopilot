@@ -814,6 +814,17 @@ def test_the_coach_is_told_to_end_its_reply_with_a_question():
     assert "it always does while the record still lacks any of the minimum data" in prompt
 
 
+def test_the_coach_is_told_how_to_raise_an_impression():
+    # R-0482, R-0485
+    prompt = " ".join(get_agent_prompt().split())
+    assert "Raise it with `add_impression` before you say it" in prompt
+    assert "an impression you have not raised is one you do not say" in prompt
+    assert "make or extend the cluster with `edit_cluster`, giving that as its `reason`" in prompt
+    assert "a remembered episode, each reported on its own" in prompt
+    assert "Never treat shifts as a series or a trend" in prompt
+    assert "close it with `set_impression` as `revised`" in prompt
+
+
 def test_the_coach_is_told_to_give_every_date_its_certainty():
     # R-0482
     prompt = " ".join(get_agent_prompt().split())

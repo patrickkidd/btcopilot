@@ -149,6 +149,12 @@ def question_backfill(map: str, transcript: str) -> str:
     return files().text("question_backfill", map=map, transcript=transcript)
 
 
+def impression_backfill(map: str, transcript: str) -> str:
+    """The system prompt for going back once over a past session to fill in the
+    impressions given in it, numbered the same way as the question backfill's."""
+    return files().text("impression_backfill", map=map, transcript=transcript)
+
+
 def note_register() -> str:
     """What changes when the session is a clinician's note rather than a chat
     about their own family (R-0281)."""

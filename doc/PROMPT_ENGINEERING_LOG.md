@@ -1003,3 +1003,16 @@ certain for an exact day, approximate for a month or a year only, unknown for
 "sometime around" or any hedge, or for the coach's own guess. The private record
 contract's "March 2019 is certain" is reversed to approximate. A live case checks
 the June 1998 death is stored approximate. [R-0482]
+
+### September 2026: The coach raises impressions and keeps them (FD-363)
+
+**Change**: a new paragraph, shared by the agent prompt and a new impression
+backfill prompt, public and private. An impression is the coach's inference, a
+pattern across chapters or a reading of a stretch of years. It is raised with its
+tool, with the evidence it rests on, before the reply says it in the same words.
+A stretch of years where a lot was happening becomes a cluster made or extended
+with that reason, not only words. Anxiety, symptom and functioning shifts are
+remembered episodes each reported on its own, never a series or a trend. An
+impression the user said doesn't fit is not raised again in those words; one
+they said fits partly is revised or let go. Not yet measured live: model calls
+are unavailable. [R-0482, R-0485]
