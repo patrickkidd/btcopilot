@@ -2013,6 +2013,64 @@ button { font-family: inherit; }
   .sn-pane, .sw, .sw-thumb { transition: none !important; }
 }
 
+/* The Questions tab (approved open-questions mockup): a sticky heading per
+   kind, and each question the coach asked as an amber chip in its own words,
+   with the day it was asked under it. Swipe one left to put it away. */
+.qsec {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  font: 600 15px/1.2 var(--sans);
+  color: var(--ink);
+}
+.qrow {
+  position: relative;
+  padding: 12px 16px 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  transition: transform 0.18s ease;
+}
+.qrow:last-child { border-bottom: 0; }
+.qrow.swiped { transform: translateX(-96px); }
+.qrow .fs-acts { width: 96px; }
+.chip.q { font: 500 15px/22px var(--mono); padding: 5px 10px; margin: 0; }
+.chip.q::before { inset: -4px; }
+.qmeta { display: flex; justify-content: flex-end; min-height: 44px; }
+.qwhen {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin-right: -8px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--data);
+  font: 400 13px/1.2 var(--sans);
+  cursor: pointer;
+  white-space: nowrap;
+}
+span.qwhen { color: var(--faint); cursor: default; }
+button.qwhen:active { background: var(--tint); border-radius: 8px; }
+.scroller > .empty {
+  padding: 32px 24px;
+  font: 400 17px/1.45 var(--sans);
+  color: var(--faint);
+  text-align: center;
+}
+/* the question a trace from the Questions tab landed on */
+.bub > .ask.hl {
+  background: var(--ask-tint);
+  border-radius: 4px;
+  box-shadow: 0 0 0 3px var(--ask-tint);
+}
+
 /* two-way traceability: the moment says which session coded it, and the words
    it came from light when you go there */
 .chip.trace {

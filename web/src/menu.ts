@@ -1,6 +1,7 @@
 import { openEditor, openPersonEditor } from "./editor";
 import { Feature, tap } from "./track";
 import { eventDivider, eventRow, fullName, personRow } from "./rows";
+import type { Questions } from "./questions";
 import { emptyTimeline, ItemKind, type Cluster, type Person, type Timeline, type TimelineEvent } from "./types";
 
 /** The full timeline list behind the menu: full screen, searched, and divided
@@ -14,6 +15,7 @@ import { emptyTimeline, ItemKind, type Cluster, type Person, type Timeline, type
 export enum Tab {
   Events = "events",
   People = "people",
+  Questions = "questions",
 }
 
 /** Who is ordered by when they were born, and people the record has no birth
@@ -34,6 +36,8 @@ export class Menu {
   private tab = Tab.Events;
   /** The people list is ordered by birth until the reader asks for names. */
   private byName = false;
+  /** The questions the coach asked, on the one drawer that has that tab. */
+  questions: Questions | null = null;
 
   constructor(
     private body: HTMLElement,
@@ -120,6 +124,11 @@ export class Menu {
   private render(): void {
     if (this.tab === Tab.People) {
       this.renderPeople();
+      return;
+    }
+    if (this.tab === Tab.Questions) {
+      if (!this.questions) throw new Error("This drawer has no questions tab");
+      this.questions.show(this.data.asked_questions);
       return;
     }
     const names = this.names();

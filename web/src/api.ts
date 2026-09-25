@@ -239,6 +239,14 @@ export const savePairBond = (
 export const deletePairBond = (id: number, diagramId?: number) =>
   call<void>("DELETE", onDiagram(`/pair_bonds/${id}`, diagramId));
 
+/** The reader putting a question the coach asked away: the one change they
+ * make to a question. It stays in the record for the coach. */
+export const dismissQuestion = (id: string) =>
+  call<unknown>("PATCH", `/questions/${id}`, {
+    state: "resolved",
+    outcome: "declined_by_user",
+  });
+
 /** Sessions, newest activity first. The server has no current-session pointer:
  * posting into a session is what makes it the one you come back to. */
 export const sessionIndex = (diagramId?: number) =>

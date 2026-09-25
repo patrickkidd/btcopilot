@@ -8,6 +8,7 @@ import { matching, sessionTitle, type Family } from "./search";
 import { SessionKind, type Diagram, type Session } from "./types";
 import { PRO } from "./pro";
 import { Recording } from "./recording";
+import { Swipe } from "./swipe";
 
 /** The session door: the button beside the message box, and the searchable
  * bottom sheet it raises. The sessions of the family the app is on, newest
@@ -21,8 +22,6 @@ const DAY_HEADINGS = new Set(["Today", "Yesterday"]);
 const OPEN_DRAG = 40;
 const CLOSE_DRAG = 90;
 const PRESS_MS = 500;
-/** Swipe a row this far to the left to reveal Rename and Delete. */
-const SWIPE_PX = 72;
 
 export interface SessionsHandlers {
   /** Open a session: the chat swaps to its statements. */
@@ -47,10 +46,6 @@ export class Sessions {
   private current: number | null = null;
   private filter = "";
   private open = false;
-  /** The row whose Rename and Delete are showing, if any. */
-  private swiped: HTMLElement | null = null;
-  /** True between the swipe revealing the actions and the click it ends with. */
-  private opening = false;
   private drag: { kind: "open" | "close"; y0: number; dy: number } | null = null;
   /** Only Patrick puts a conversation on the agenda, so only he is offered it. */
   private admin = isAdmin();
@@ -73,6 +68,9 @@ export class Sessions {
   );
 
   private body: HTMLElement;
+  /** Swipe a row left to reveal Rename and Delete, the ratified gesture beside
+   * the long press. */
+  private swipe: Swipe;
   private search: HTMLInputElement;
   private newButton: HTMLButtonElement;
   private uploadButton: HTMLButtonElement;
@@ -95,6 +93,15 @@ export class Sessions {
     this.scrim.id = "sessions-scrim";
     this.overlay.append(this.scrim, this.sheet);
     this.body = this.sheet.querySelector<HTMLElement>(".fs-body")!;
+    this.swipe = new Swipe(this.body, ".row", () => ({
+      html:
+        (this.admin
+          ? `<button class="fs-act tbl" type="button">Put on the agenda</button>`
+          : "") +
+        `<button class="fs-act ren" type="button">Rename</button>` +
+        `<button class="fs-act del" type="button">Delete</button>`,
+      wide: this.admin,
+    }));
     this.search = this.sheet.querySelector<HTMLInputElement>(".fs-search input")!;
     this.newButton = this.sheet.querySelector<HTMLButtonElement>(".fs-new")!;
     this.uploadButton = this.sheet.querySelector<HTMLButtonElement>(".fs-upload")!;
@@ -217,7 +224,6 @@ export class Sessions {
     });
     this.body.addEventListener("click", (e) => this.onBodyClick(e));
     this.pressToRename();
-    this.swipeForActions();
     this.drags();
   }
 
@@ -229,11 +235,11 @@ export class Sessions {
       const row = action.closest<HTMLElement>(".row")!;
       if (action.classList.contains("tbl")) {
         tap(Feature.SessionToAgenda);
-        this.closeActions();
+        this.swipe.close();
         this.openAgenda(row);
       } else if (action.classList.contains("ren")) {
         tap(Feature.SessionRename);
-        this.closeActions();
+        this.swipe.close();
         this.rename(row);
       } else {
         tap(Feature.SessionDelete);
@@ -241,79 +247,16 @@ export class Sessions {
       }
       return;
     }
-    // The gesture that revealed the actions ends in a click of its own, which
-    // must not immediately put them away again.
-    if (this.opening) {
-      this.opening = false;
-      return;
-    }
     // a tap anywhere else puts an open row's actions away rather than firing
-    if (this.swiped) {
-      this.closeActions();
-      return;
-    }
+    if (this.swipe.claims()) return;
     const row = target.closest<HTMLElement>(".row");
     if (!row || row.querySelector("input.rename")) return;
     if (target.closest(".rmore")) {
-      this.openActions(row);
-      this.opening = false;
+      this.swipe.open(row, false);
       return;
     }
     tap(Feature.SessionOpen);
     this.pick(row);
-  }
-
-  /** Swipe a row left to reveal Rename and Delete, the ratified gesture beside
-   * the long press. The sheet scrolls vertically, so only a drag that is more
-   * across than down is a swipe. */
-  private swipeForActions(): void {
-    let from: { x: number; y: number; row: HTMLElement } | null = null;
-    this.body.addEventListener("pointerdown", (e) => {
-      const row = (e.target as Element).closest<HTMLElement>(".row");
-      if (!row || (e.target as Element).closest(".fs-act")) return;
-      from = { x: e.clientX, y: e.clientY, row };
-    });
-    this.body.addEventListener("pointermove", (e) => {
-      if (!from) return;
-      const dx = e.clientX - from.x;
-      if (Math.abs(dx) <= Math.abs(e.clientY - from.y)) return;
-      if (dx <= -SWIPE_PX) {
-        this.openActions(from.row);
-        from = null;
-      } else if (dx >= SWIPE_PX && this.swiped === from.row) {
-        this.closeActions();
-        from = null;
-      }
-    });
-    for (const kind of ["pointerup", "pointercancel"])
-      this.body.addEventListener(kind, () => {
-        from = null;
-      });
-  }
-
-  private openActions(row: HTMLElement): void {
-    if (this.swiped === row) return;
-    this.closeActions();
-    row.insertAdjacentHTML(
-      "beforeend",
-      `<div class="fs-acts${this.admin ? " wide" : ""}">` +
-        (this.admin
-          ? `<button class="fs-act tbl" type="button">Put on the agenda</button>`
-          : "") +
-        `<button class="fs-act ren" type="button">Rename</button>` +
-        `<button class="fs-act del" type="button">Delete</button></div>`,
-    );
-    row.classList.add("swiped");
-    if (this.admin) row.classList.add("wide");
-    this.swiped = row;
-    this.opening = true;
-  }
-
-  private closeActions(): void {
-    if (!this.swiped) return;
-    this.swiped.classList.remove("swiped", "wide");
-    this.swiped.querySelector(".fs-acts")?.remove();
-    this.swiped = null;
   }
 
   /** Patrick's swipe action: the conversation opens so he can place the cut
@@ -404,7 +347,7 @@ export class Sessions {
   private lower(): void {
     if (!this.open) return;
     this.open = false;
-    this.closeActions();
+    this.swipe.close();
     this.drag = null;
     this.sheet.style.transition = "";
     this.sheet.style.transform = "";
@@ -446,7 +389,7 @@ export class Sessions {
     else if (!searching && rows.length <= 1)
       html += `<div class="fs-hint">Past conversations collect here</div>`;
 
-    this.swiped = null;
+    this.swipe.forget();
     const top = this.body.scrollTop;
     this.body.innerHTML = html;
     this.body.scrollTop = top;

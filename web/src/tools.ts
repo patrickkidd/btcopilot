@@ -19,6 +19,9 @@ export enum ToolName {
   Remove = "remove",
   Undo = "undo",
   Show = "show",
+  AddQuestion = "add_question",
+  SetQuestion = "set_question",
+  ReadQuestions = "read_questions",
 }
 
 const FIELD = new Map([
@@ -127,6 +130,9 @@ enum Verb {
   Put = "put",
   Add = "add",
   Change = "change",
+  Keep = "keep",
+  Close = "close",
+  LetGo = "let go of",
 }
 const DID = new Map([
   [Verb.Look, "Looked at"],
@@ -135,7 +141,49 @@ const DID = new Map([
   [Verb.Put, "Put"],
   [Verb.Add, "Added"],
   [Verb.Change, "Changed"],
+  [Verb.Keep, "Kept"],
+  [Verb.Close, "Closed"],
+  [Verb.LetGo, "Let go of"],
 ]);
+
+/** How a question the coach closed ended, said after its words. Mirrors
+ * `QuestionOutcome` on the server; the reader's own dismissal is not a tool
+ * call and has no line. */
+enum QuestionOutcome {
+  Fact = "fact",
+  Answered = "answered",
+  Unknown = "unknown",
+  DeclinedInChat = "declined_in_chat",
+  LetGo = "let_go",
+}
+const ENDED = new Map([
+  [QuestionOutcome.Fact, "the answer is in the record"],
+  [QuestionOutcome.Answered, "you answered it"],
+  [QuestionOutcome.Unknown, "you don't know"],
+  [QuestionOutcome.DeclinedInChat, "you'd rather not say"],
+]);
+
+enum QuestionState {
+  Held = "held",
+  Asked = "asked",
+  Resolved = "resolved",
+}
+
+const quoted = (words: string) => `“${words}”`;
+
+/** A question the coach keeps for later stays the coach's: its words are not
+ * said. A refused close says only what it tried to close, then why. */
+function question(tool: ToolName, call: ToolCall): [Verb, string] {
+  const words = quoted(call.names.it as string);
+  const state = call.args.state as QuestionState;
+  if (tool === ToolName.AddQuestion && state === QuestionState.Held)
+    return [Verb.Keep, "a question to ask later"];
+  if (state !== QuestionState.Resolved) return [Verb.Add, `${words} to your questions`];
+  const outcome = call.args.outcome as QuestionOutcome;
+  if (outcome === QuestionOutcome.LetGo) return [Verb.LetGo, words];
+  const ended = ENDED.get(outcome);
+  return [Verb.Close, call.refusal || !ended ? words : `${words}: ${ended}`];
+}
 
 function told(tool: ToolName, call: ToolCall): [Verb, string] {
   const it = call.names.it as string;
@@ -154,6 +202,11 @@ function told(tool: ToolName, call: ToolCall): [Verb, string] {
       return [Verb.Remove, it];
     case ToolName.Undo:
       return [Verb.Put, "that back"];
+    case ToolName.ReadQuestions:
+      return [Verb.Look, "questions"];
+    case ToolName.AddQuestion:
+    case ToolName.SetQuestion:
+      return question(tool, call);
     default:
       return call.args.id === undefined
         ? [Verb.Add, [it, ...added(call)].join(", ")]

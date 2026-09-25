@@ -1,6 +1,6 @@
 import { esc, el } from "./dom";
 import { tokenize } from "./chips";
-import { ChipTone, Role, type Chip, type Piece } from "./types";
+import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
  * as pills, and a pill the user taps lands in the composer as something they
@@ -54,8 +54,15 @@ interface Written {
   tail: Piece[];
 }
 
+/** Something the coach offers to say next. A question the reader brought back
+ * is amber too, but it is their own words, not an offer. */
+const isOffer = (p: Piece) => "chip" in p && p.chip.kind === ChipKind.Ask;
+
+/** An offer wears square brackets around its words. */
+export const face = (kind: ChipKind, full: string) => (kind === ChipKind.Ask ? `[${full}]` : full);
+
 function layout(pieces: Piece[]): Written {
-  const offered = pieces.findIndex((p) => "chip" in p && p.chip.tone === ChipTone.Ask);
+  const offered = pieces.findIndex(isOffer);
   const first = offered < 0 ? pieces.length : offered;
   const words = pieces.slice(0, first);
   let ask = "";
@@ -69,16 +76,13 @@ function layout(pieces: Piece[]): Written {
   }
   const rest = pieces.slice(first);
   if (!rest.length) return { words, ask, offers: [], tail: [] };
-  const lastOffer =
-    rest.length -
-    1 -
-    [...rest].reverse().findIndex((p) => "chip" in p && p.chip.tone === ChipTone.Ask);
+  const lastOffer = rest.length - 1 - [...rest].reverse().findIndex(isOffer);
   return {
     words,
     ask,
     offers: rest
       .slice(0, lastOffer + 1)
-      .flatMap((p) => ("chip" in p && p.chip.tone === ChipTone.Ask ? [p.chip] : [])),
+      .flatMap((p) => ("chip" in p && isOffer(p) ? [p.chip] : [])),
     tail: rest.slice(lastOffer + 1),
   };
 }
@@ -161,13 +165,31 @@ export class Chat {
    * something for the reader to expand. */
   private pill(chip: Chip): string {
     const full = this.handlers.label(chip);
-    const offer = chip.tone === ChipTone.Ask;
     return (
       `<button type="button" class="chip ${chip.tone}" ` +
       `data-kind="${chip.kind}" data-target="${esc(chip.target)}" ` +
-      `data-full="${esc(full)}" title="${esc(full)}">` +
-      `${offer ? "[" : ""}${esc(full)}${offer ? "]" : ""}</button>`
+      `data-full="${esc(full)}" title="${esc(full)}"${chip.bare ? " data-bare" : ""}>` +
+      `${esc(face(chip.kind, full))}</button>`
     );
+  }
+
+  /** The thread is drawn before the record arrives, so a chip written with no
+   * words of its own first says a stand-in word. Once the record is here it
+   * says what the record calls the thing it names. */
+  relabel(): void {
+    for (const button of this.list.querySelectorAll<HTMLElement>("button.chip[data-bare]")) {
+      const kind = button.dataset.kind as ChipKind;
+      const full = this.handlers.label({
+        kind,
+        target: button.dataset.target ?? "",
+        label: button.dataset.full ?? "",
+        tone: button.classList.contains(ChipTone.Ask) ? ChipTone.Ask : ChipTone.Data,
+        bare: true,
+      });
+      button.dataset.full = full;
+      button.title = full;
+      button.textContent = face(kind, full);
+    }
   }
 
   private render(pieces: Piece[]): string {
@@ -282,8 +304,9 @@ export class Chat {
 
   /** Scroll one statement's bubble into the middle of the thread and mark it,
    * which is what a moment tracing back to where it was coded does. Never
-   * `scrollIntoView`: the outer page must not move (UI_STANDARDS). */
-  trace(statementId: number): boolean {
+   * `scrollIntoView`: the outer page must not move (UI_STANDARDS). A question
+   * tracing back to where it was asked also lights the question itself. */
+  trace(statementId: number, ask = false): boolean {
     const bubble = this.list.querySelector<HTMLElement>(
       `.bub[data-statement="${statementId}"]`,
     );
@@ -294,6 +317,8 @@ export class Chat {
       0,
       this.list.scrollTop + (at.top - box.top) - (box.height - at.height) / 2,
     );
+    for (const lit of this.list.querySelectorAll(".ask.hl")) lit.classList.remove("hl");
+    if (ask) bubble.querySelector(".ask")?.classList.add("hl");
     bubble.classList.remove("traced");
     void bubble.offsetWidth;
     bubble.classList.add("traced");

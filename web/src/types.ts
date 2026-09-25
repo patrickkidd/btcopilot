@@ -7,6 +7,8 @@ export enum ChipKind {
   /** Something the coach offers to talk about next. It names nothing in the
    * record: tapping it puts its words in the composer. */
   Ask = "ask",
+  /** A question the coach asked and the reader brought back to talk about. */
+  Question = "question",
 }
 
 /** Teal is a reference to something the record holds; amber is the coach or the
@@ -26,6 +28,7 @@ export enum ItemKind {
   Emotion = "emotion",
   Cluster = "cluster",
   Diagram = "diagram",
+  Question = "question",
 }
 
 export enum InteractionKind {
@@ -33,6 +36,7 @@ export enum InteractionKind {
   Say = "say",
   ChipTap = "chip_tap",
   Play = "play",
+  Dismiss = "dismiss",
 }
 
 /** How sure the record is of a date. Unknown means the date matches anything,
@@ -138,12 +142,30 @@ export interface Question {
   sentence: string;
 }
 
+export enum QuestionKind {
+  Thought = "thought",
+  Fact = "fact",
+}
+
+/** A question the coach has asked, with where it was asked. Only the open ones
+ * are listed; a closed one is here so a reference to it still reads as its
+ * words. */
+export interface AskedQuestion {
+  id: string;
+  text: string;
+  kind: QuestionKind;
+  open: boolean;
+  asked_at: string;
+  asked_in: CodedIn | null;
+}
+
 export interface Timeline {
   people: Person[];
   pair_bonds: PairBond[];
   events: TimelineEvent[];
   clusters: Cluster[];
   questions: Question[];
+  asked_questions: AskedQuestion[];
   axis: { min: string; max: string } | null;
   shelf: { event_id: number; label: string; sentence: string }[];
   /** Where each moment was coded, by event id: the session, and the statement
@@ -159,6 +181,7 @@ export const emptyTimeline = (): Timeline => ({
   events: [],
   clusters: [],
   questions: [],
+  asked_questions: [],
   axis: null,
   shelf: [],
   coded_in: {},

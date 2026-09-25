@@ -4,6 +4,7 @@ import * as api from "./api";
 import { Chat, wait, type LiveBubble, type PlayTap } from "./chat";
 import { Picture, Target, type Tap } from "./picture";
 import { Menu, Tab } from "./menu";
+import { Questions } from "./questions";
 import { Ballot } from "./ballot";
 import { Coding } from "./coding";
 import { Cut } from "./cut";
@@ -189,6 +190,10 @@ function chipLabel(chip: Chip): string {
     return (
       timeline.events.find((e) => String(e.id) === chip.target)?.label ?? chip.label
     );
+  if (chip.kind === ChipKind.Question)
+    return (
+      timeline.asked_questions.find((q) => q.id === chip.target)?.text ?? chip.label
+    );
   return (
     timeline.clusters.find(
       (c) => c.id === chip.target || c.cluster_ids.includes(chip.target),
@@ -228,6 +233,22 @@ const offered = (chip: Chip) =>
   chip.kind === ChipKind.Ask || chip.tone === ChipTone.Ask;
 
 const menu = new Menu($("menu-body"), load);
+
+/** A question tapped in the drawer goes into the message as a reference with
+ * the cursor after it, and nothing is sent (R-0072). On a phone the drawer
+ * gets out of the way; pinned beside the thread it stays. */
+menu.questions = new Questions($("menu-body"), {
+  onChip: (chip) => {
+    if (!pinned()) screen(Screen.Chat);
+    chat.insert(chip);
+  },
+  onAsked: (where) => {
+    if (!pinned()) screen(Screen.Chat);
+    void traceTo(where, true);
+  },
+  onDismissed: () => void load(),
+  record: tapped,
+});
 
 /** The session door beside the message box. The sheet lists every session and a
  * tap swaps the chat to it (family-sections, the owner's pick). */
@@ -665,13 +686,13 @@ function codedIn(eventId: number): { label: string; where: CodedIn } | null {
 
 /** Jump to the words that coded this moment: the session if it is not the one
  * on screen, then the bubble itself, outlined while it settles. */
-async function traceTo(where: CodedIn): Promise<void> {
+async function traceTo(where: CodedIn, ask = false): Promise<void> {
   if (where.statement_id === null) return;
   if (where.discussion_id !== session) {
     session = where.discussion_id;
     await openSession(where.discussion_id);
   }
-  if (!chat.trace(where.statement_id)) toast("Those words are no longer here");
+  if (!chat.trace(where.statement_id, ask)) toast("Those words are no longer here");
 }
 
 /** The row under the picture: what it is showing, and the things a tap can do
@@ -1007,6 +1028,7 @@ async function load(): Promise<Timeline> {
   timeline = await api.timeline();
   picture.setData(timeline);
   menu.show(timeline);
+  chat.relabel();
   actions();
   return timeline;
 }
@@ -1169,20 +1191,25 @@ $("menu-search").addEventListener("input", (e) =>
   menu.search((e.target as HTMLInputElement).value),
 );
 
-/** The two lists behind the one button: what happened, and who it happened to.
- * The search and the add button say which one they are for. */
-const TABS: [string, Tab, string, string, Feature][] = [
+/** The lists behind the one button: what happened, who it happened to, and
+ * what the coach asked that is still open. The search and the add button say
+ * which list they are for; the questions are the coach's, so that list has
+ * neither. */
+const TABS: [string, Tab, string | null, string | null, Feature][] = [
   ["tab-events", Tab.Events, "Search events", "+ Add event", Feature.TabEvents],
   ["tab-people", Tab.People, "Search people", "+ Add someone", Feature.TabPeople],
+  ["tab-questions", Tab.Questions, null, null, Feature.TabQuestions],
 ];
 
-/** Dress the drawer for one of its two lists. */
+/** Dress the drawer for one of its lists. */
 function onTab(tab: Tab): void {
   for (const [id, which, placeholder, add] of TABS) {
     const on = which === tab;
     $(id).classList.toggle("on", on);
     $(id).setAttribute("aria-selected", String(on));
     if (!on) continue;
+    $("menu-searchrow").hidden = $("menu-foot").hidden = placeholder === null;
+    if (placeholder === null) continue;
     const field = $("menu-search") as HTMLInputElement;
     field.value = "";
     field.placeholder = placeholder;
