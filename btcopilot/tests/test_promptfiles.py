@@ -98,6 +98,8 @@ def test_the_backfill_prompt_carries_the_session_the_map_and_the_judgement(publi
     assert RECORD in prompt
     assert "people usually require questions to stimulate their thinking" in prompt
     assert "`asked_in`" in prompt
+    assert "does the map or the rest of the session already answer it" in prompt
+    assert "does an open question or one you have just added ask nearly the same thing" in prompt
 
 
 def test_a_prompt_renders_the_fragments_it_includes(tmp_path):

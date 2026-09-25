@@ -928,3 +928,16 @@ declined. It is worded as judgement, not rules. The backfill prompt goes once ov
 a past session and adds the questions worth keeping with the message they were
 asked in. The private fragment sits after the record contract so it stays in the
 cached head. Public and private goldens were re-captured. [R-0482, R-0485]
+
+### September 2026: The question wording checks the record first and keeps one question per unknown (FD-363)
+
+**Change**: a backfill run on a copy of production kept 23 questions from about 33
+replies for one family. At least 7 were already answered in the record, 3 asked
+about one person's parents, and 3 of the 9 food-for-thought questions were facts.
+The shared paragraph now says: food for thought asks the person to think, and a
+question answered by a name, date, place or number is a fact; look first, and never
+keep a question the record already answers; keep one question per thing to find
+out, in the best-worded version; weigh every question for the person's time before
+keeping it, with inclusion still the default when in doubt. The backfill prompt
+says the map is drawn after every later session, so it often holds the answer.
+Not yet measured: the model account was out of credit. [R-0482, R-0485]

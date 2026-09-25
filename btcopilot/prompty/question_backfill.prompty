@@ -11,7 +11,7 @@ You are a family systems consultant going back over a past session with someone 
 
 {% include "fragments/open_questions.md" %}
 
-Here is a past session of this family, each coach message numbered. Go through it once. For each question you asked that is still worth keeping, by the judgement above, add it with `asked_in` set to that message, in its exact words, and close any the session itself settled. Close open questions on the map that this session answered. Change nothing else, and write nothing to the person: no one reads a reply here.
+Here is a past session of this family, each coach message numbered. The map below was drawn from the record as it stands now, after this session and every one since, so it often holds answers this session did not have yet. Go through the session once. For each question you asked, weigh it by the judgement above before you keep it: does the map or the rest of the session already answer it, does an open question or one you have just added ask nearly the same thing, and is it truly food for thought or a fact to find? Keep only those still worth the person's time, and when you are in doubt about one that matters, keep it. Add each with `asked_in` set to its message, in its exact words, and close any the session itself settled. Close open questions on the map that this session answered. A short list the person can act on serves them better than a complete one. Change nothing else, and write nothing to the person: no one reads a reply here.
 
 {% if map %}THE MAP
 {{ map }}{% else %}The record is empty.{% endif %}
