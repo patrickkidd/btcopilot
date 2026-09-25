@@ -2070,6 +2070,68 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   box-shadow: 0 0 0 3px var(--ask-tint);
 }
 
+/* An impression (approved impressions mockup, frames 1 and 4): what the coach
+   noticed in its words, what it rests on, and the day it was raised. The row
+   slides left over the two ways to push back. */
+.irow {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  touch-action: pan-y;
+}
+.irow:last-child { border-bottom: 0; }
+.islide {
+  position: relative;
+  z-index: 1;
+  padding: 12px 16px 0;
+  background: var(--panel);
+  transition: transform 0.18s ease;
+}
+.irow.swiped .islide { transform: translateX(-184px); }
+.itext { font: 400 17px/1.4 var(--sans); color: var(--ink); cursor: pointer; }
+.based {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px 8px;
+  margin-top: 10px;
+}
+.blabel { font: 400 13px/22px var(--sans); color: var(--faint); }
+.based .chip { margin: 0; }
+.imeta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-height: 44px;
+  margin: 4px -12px 0 0;
+}
+.rmore {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--faint);
+  font: 400 20px/1 var(--sans);
+  cursor: pointer;
+}
+.rmore:active { color: var(--ink); }
+.iacts { position: absolute; top: 0; right: 0; bottom: 0; width: 184px; display: flex; }
+.iact {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font: 600 15px/1.2 var(--sans);
+  cursor: pointer;
+}
+.iact.partly { color: var(--data); }
+.iact:active { background: var(--tint); }
+
 /* two-way traceability: the moment says which session coded it, and the words
    it came from light when you go there */
 .chip.trace {
