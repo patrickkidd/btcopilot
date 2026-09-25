@@ -105,6 +105,12 @@ def test_the_backfill_prompt_carries_the_session_the_map_and_the_judgement(publi
     assert "leave out any lead-in, hedge or reason" in prompt
 
 
+def test_the_scribe_gives_every_date_its_certainty(public):
+    # R-0482
+    prompt = " ".join(public.scribe_prompt().split())
+    assert "Whenever you add an event or change its date, always give its date_certainty" in prompt
+
+
 def test_a_prompt_renders_the_fragments_it_includes(tmp_path):
     # R-0454
     (tmp_path / "fragments").mkdir()

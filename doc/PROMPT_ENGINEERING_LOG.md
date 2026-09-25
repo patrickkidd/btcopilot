@@ -988,3 +988,9 @@ measured live. [R-0482]
 unknown for a guess) whenever it adds an event or changes its date, public and
 private wording alike; the toolbox now refuses a date without it. Not yet measured
 live. [R-0482]
+
+### September 2026: The review scribe gives every date its certainty too (FD-363)
+
+**Change**: the scribe calls the same event tool, which now refuses a date without
+certainty, so its prompt, public and private, says to give date_certainty whenever
+it adds an event or changes a date. Not yet measured live. [R-0482]
