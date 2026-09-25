@@ -1724,3 +1724,17 @@ Rejected: blocking or rewriting a turn on a likely repeat [R-0481, R-0482]; chec
 record after every turn, which would write every old repeat again on every turn; starting a
 failed turn over, which repeated its adds. Open: the record's existing refusal of an added event
 that matches another conflicts with R-0481 and awaits Patrick's ruling.
+
+## 2026-09-25: FD-363 — open questions: refusal scope, close-on-removal, backfill wording, and a reply safety net
+
+Patrick. The same-words refusal on an added question now covers only a question that is open or
+already declined by the user, not one that was answered or let go — so it blocks a duplicate
+only while the original still matters. Removing the person, event, pair bond or cluster a
+question is about closes every open question linked to it as let go, with the link cleared, in
+the same write; undo restores both. The check on an asked question whose reply barely holds its
+words was a live check and is now only an observation, logged and never blocking or rewriting
+anything. The one-off backfill may reword a bare fragment from an old session into a
+self-contained question rather than only copying words verbatim. The coach writes a question to
+the record before it sends the reply that asks it, so the two can never disagree about what was
+asked. A turn that stops with no words and no further tool call right after a silent tool step
+is asked once more for a reply, as a safety net, instead of being failed outright.

@@ -1495,3 +1495,18 @@ on a missing one (2026-09-25); a held question's words must never reach the page
 question addresses the user as "you." Left open: new tests for this build cite the nearest
 existing ruling in place of these candidates, since the oracle spec forbids a pending marker,
 and need re-citing once Patrick appends the ids; the new testing-key test has no citation yet.
+
+Before the deploy, the gates passed: the migration ran clean against a copy of the production
+database, the pages were checked at phone and desktop sizes, three full live coach runs gave
+zero empty replies across 75 turns, and the backfill ran against a copy of the production
+database with a second run against that copy making no calls and writing nothing. The build
+then went to production: commit ec757d5, image 3.2026.9.25.2-gec757d5, the database migrated to
+1b00000000ad before the rollout with a backup taken first; that migration cannot be undone, so a
+rollback from here means rolling forward. The backfill then ran for real on the box, over 3
+families, 3 model calls each; Patrick's own family got 4 questions, all facts to find, and he
+still has to judge whether that count is right. He also ruled that a deploy for him to test is
+the hand route — a box checkout and an image tag — separate from merging pull requests; that the
+same-words refusal is code because it is right every time, while near-duplicate questions are
+only logged; and that the pinned drawer stays 300 pixels wide with the diagram's name as its
+title. Also found: production's title bar itself still reads "Free Diagram" instead of the
+diagram's real name, and 4 live coach cases fail the same way on the master branch.

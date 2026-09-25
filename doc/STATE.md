@@ -224,8 +224,8 @@ dead or ungrounded tests deleted; the unclear points are kept in the private cor
 defects the new tests found are strict expected failures listed in doc/KNOWN_DEFECTS.md, for the
 fast-follow PRs, as is the session-end second look [R-0443].
 
-**2026-09-24 — FD-363, the fast-follow.** Landed on branch FD-363 (draft PR #138), not yet on
-the box:
+**2026-09-24/25 — FD-363, the fast-follow, deployed.** Landed on branch FD-363 (draft PR #138)
+and, after the gates below passed, deployed to production on 2026-09-25:
 - **Every tool call stays on the thread.** A coach turn's tool calls are kept in the database
   when it ends, whether it finished, failed or was refused, so every session shows them after a
   reload [R-0478]. The coach is given its own earlier tool calls; an earlier read's answer is
@@ -271,10 +271,18 @@ the box:
   session now keeps the edits its words made: the links from change rows and turn records to
   those words are emptied instead of the delete failing on Postgres.
 
-The sandbox now makes real model calls: a real coach turn and a real [try again] were run there.
-Not yet verified: the migration gate has not been run on a production dump, the browser gate at
-phone and desktop has not been run, and the live eval cases and the tests that need a key have
-not run. Open from this work:
+**Before the deploy, the gates passed:** the migration ran clean against a copy of the production
+database; the pages were checked at phone and desktop sizes; three full live coach runs gave zero
+empty replies across 75 turns; and the one-off backfill ran against a copy of the production
+database, with a second run against that same copy making no calls and writing nothing. The build
+is now live: commit ec757d5, image 3.2026.9.25.2-gec757d5, the database migrated to 1b00000000ad
+before the rollout, with a backup taken first. That migration cannot be undone, so a rollback
+from here means rolling forward, not reverting. The one-off backfill then ran for real on the box,
+over 3 families, 3 model calls each; Patrick's own family got 4 questions, all facts to find, and
+he still has to judge whether that is the right number.
+
+The sandbox also makes real model calls on its own: a real coach turn and a real [try again] were
+run there. The live eval cases and the tests that need a key have not run. Open from this work:
 - Events imported from the Pro app or added by hand carry no words, so reading events by words
   never finds them.
 - Two private prompt fragments are now unused and were not deleted: the Gemini flow fragment,
@@ -286,8 +294,10 @@ not run. Open from this work:
   the candidates below, because the oracle spec forbids a pending-ruling marker; every one of
   them needs re-citing to the right id once Patrick appends it. The new test proving the testing
   key guard fails loudly when the key is unset has no citation at all yet.
+- Production's title bar reads "Free Diagram" instead of the diagram's real name.
+- Four live coach cases fail the same way on the master branch.
 - Rulings not yet in the encrypted rulings store, which Patrick appends by hand: R-0477 to
-  R-0485, eight more from 2026-09-24, and three more from 2026-09-25, all with no ids yet:
+  R-0485, eight more from 2026-09-24, and five more from 2026-09-25, all with no ids yet:
   - Open questions are one stored object with a state: held by the coach, then asked, then
     resolved, and never deleted; every state change is kept as data. Resolved has five outcomes —
     a fact landed, answered in words, the client doesn't know, declined, or the coach let it go.
@@ -342,10 +352,15 @@ not run. Open from this work:
     beta data, and then you push a build to the production box for me to test." For the
     fast-follow (R-0484), once the gates pass, the coordinator merges and deploys without
     asking for a merge yes, then verifies on production.
-  - (2026-09-25) Every test path spends the separate testing key, never the production key; a
-    missing testing key fails loudly instead of falling back.
-  - Held questions' words never reach the page.
-  - A stored question addresses the user as "you", never by name.
+  - Every test path spends the separate testing key, never the production key; a missing
+    testing key fails loudly instead of falling back.
+  - A deploy for Patrick to test is the hand route — a box checkout plus an image tag — and has
+    nothing to do with merging pull requests.
+  - The exact-same-words refusal on a question is code, a rule accurate 100% of the time;
+    near-duplicate questions are only logged, never blocked.
+  - The pinned drawer stays 300 pixels wide, and its title shows the diagram's name.
+  - Held questions' words never reach the page. A stored question addresses the user as "you",
+    never by name, holds only the question itself, and is stored before the reply that asks it.
 
 **What is not true yet on the box.** The dashboards and the cost rows are built but not deployed:
 that waits on Patrick putting the Grafana token there and refreshing the dependency lock. There is
