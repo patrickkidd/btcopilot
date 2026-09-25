@@ -259,8 +259,9 @@ the box:
   pass the same record rules as the coach, so some edits the page used to accept are refused
   (for example a noted event with no words); deleting an event by hand also removes the
   emotions it caused, as the coach's delete does. The editor now stops a shift with nothing
-  moved before it can be saved. Any other refusal from the record shows its reason, and the
-  editor stays open.
+  moved before it can be saved. Any other refusal from the record reads in plain words, for
+  example "The end date is before the start date.", and stays on screen until the user
+  edits a field or closes the editor.
 - **The old single-call chat path is deleted.** The chat runs only on the coach's tool loop. The
   old conversation-flow prompt, public and private, the one-shot ask path and the
   fixed-category intake engine are gone; the helpers other code used from them moved beside
@@ -285,11 +286,14 @@ not run. Open from this work:
   R-0485, and eight more from the same day with no ids yet:
   - Open questions are one stored object with a state: held by the coach, then asked, then
     resolved. Resolved has five outcomes — a fact landed, answered in words, the client
-    doesn't know, declined, or the coach let it go — and all of them are kept as data. The
-    client sees a screen of only the questions the coach has actually asked; each is a chip
-    that goes into the chat, and no count is ever shown. The coach's not-yet-asked questions
-    stay hidden and live in the map. Mockups are being made; nothing is built yet. His words:
-    "sounds awesome."
+    doesn't know, declined, or the coach let it go. Open questions show in a third tab,
+    "Questions," beside Events and People, and the tab holds only the open questions the
+    user can easily answer himself, or that are food for thought; each is a chip that goes
+    into the chat, and no count is ever shown. A question he turned down, a dead end, an
+    answered question, and the coach's own full list of not-yet-asked questions never show
+    there — all of that stays in the record as data for the coach only. Mockups are being
+    made; nothing is built yet. His words: "They just need to see questions that they can
+    answer themselves easily or that are food for thought."
   - New screens are allowed when they are thought through; the earlier ruling against a new
     surface was narrow.
   - Brainstorm topics are taken one at a time.
