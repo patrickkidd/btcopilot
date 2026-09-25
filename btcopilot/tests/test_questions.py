@@ -288,6 +288,24 @@ def test_reading_questions_gives_open_and_declined_and_closed_on_asking(family):
     assert text.splitlines()[0] == 'q1 resolved fact "Where did they live?" outcome=answered'
 
 
+def test_a_coach_that_keeps_a_question_and_stops_silent_is_asked_once_to_reply(
+    web, family, monkeypatch
+):
+    # R-0182
+    model = coach(
+        monkeypatch,
+        Model(
+            calling((ToolName.AddQuestion, {"text": LATER, "kind": "fact", "state": "held"})),
+            said(""),
+            said("What was your grandmother like?"),
+        ),
+    )
+    body = post(web, csrf_token(web), "My grandmother raised me.").get_json()
+
+    assert statements(web, body["discussion_id"])[1]["text"] == "What was your grandmother like?"
+    assert model.histories[-1][-1]["content"][-1] == {"type": "text", "text": coachturn.SPEAK}
+
+
 def asking_turn(web, monkeypatch, reply=f"Tell me about them. {ASK}"):
     coach(
         monkeypatch,

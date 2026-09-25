@@ -51,6 +51,14 @@ FINISH = (
 )
 
 
+# What the coach is told when it stops after its tool calls without a word to
+# the person: it was working, not done, so it is asked once to reply.
+SPEAK = (
+    "You stopped without saying anything to the person. Reply to them now, in "
+    "your own voice."
+)
+
+
 SHORTEN = (
     "These chip labels are too long for the chip they go on: {labels}. Write "
     "your reply again with every label at most {limit} characters — a noun "
@@ -301,6 +309,7 @@ class CoachTurn:
             messages += self._picked_up()
         spoken = ""
         events = []
+        silent = False
 
         for step in range(MAX_STEPS):
             turn = self._say(system, messages, schemas(), stream=True)
@@ -309,7 +318,12 @@ class CoachTurn:
             # it, so only a step that calls nothing is the coach speaking.
             spoken = turn.text
             if not turn.calls:
-                break
+                if spoken.strip() or step == 0 or silent:
+                    break
+                _log.warning(f"Turn {self.turn_id} step {step} stopped with no words")
+                silent = True
+                _say(messages, ("user", SPEAK))
+                continue
             if turn.text:
                 _log.info(f"Turn {self.turn_id} step {step} thought aloud: {turn.text}")
 
