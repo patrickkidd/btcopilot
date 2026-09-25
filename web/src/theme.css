@@ -2099,25 +2099,17 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 }
 .blabel { font: 400 13px/22px var(--sans); color: var(--faint); }
 .based .chip { margin: 0; }
+/* The dots are the sessions sheet's own button. Its 44-point target reaches
+   into the row's padding, never past the row: the line runs to the padding's
+   edge, and the dots sit where they would with the target overhanging. */
 .imeta {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
   min-height: 44px;
-  margin: 4px -12px 0 0;
+  margin: 4px -16px 0 0;
 }
-.rmore {
-  flex: none;
-  width: 44px;
-  height: 44px;
-  border: 0;
-  background: none;
-  color: var(--faint);
-  font: 400 20px/1 var(--sans);
-  cursor: pointer;
-}
-.rmore:active { color: var(--ink); }
+.imeta .rmore { margin-right: 0; padding: 0 0 0 16px; }
 .iacts { position: absolute; top: 0; right: 0; bottom: 0; width: 184px; display: flex; }
 .iact {
   flex: 1;
