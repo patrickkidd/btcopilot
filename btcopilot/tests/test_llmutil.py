@@ -1,4 +1,5 @@
 import importlib
+from dataclasses import dataclass
 
 import pytest
 
@@ -66,3 +67,22 @@ def test_the_local_model_costs_nothing(anthropic_env):
     anthropic_env.setenv(llmutil.LOCAL_URL, "http://127.0.0.1:11434")
     anthropic_env.setenv(llmutil.LOCAL_MODEL, "qwen3:8b")
     assert cost("qwen3:8b", Spent(input=1000, output=1000)) == 0
+
+
+@dataclass
+class Named:
+    name: str = ""
+
+
+def test_a_local_url_sends_gemini_extraction_to_the_local_model(anthropic_env):
+    anthropic_env.setenv(llmutil.LOCAL_URL, "http://127.0.0.1:11434")
+    anthropic_env.setenv(llmutil.LOCAL_MODEL, "qwen3:8b")
+    anthropic_env.delenv("GOOGLE_GEMINI_API_KEY", raising=False)
+    asked = []
+
+    async def claude_structured(prompt, response_format, model):
+        asked.append(model)
+
+    anthropic_env.setattr(llmutil, "claude_structured", claude_structured)
+    llmutil.gemini_structured_sync("prompt", Named)
+    assert asked == [llmutil.EXTRACTION_MODEL]

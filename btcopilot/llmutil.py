@@ -312,7 +312,8 @@ def served(message, label: str) -> Served:
 
 
 # A local Anthropic-compatible server, such as Ollama, answers every Anthropic
-# call in place of Anthropic, on the one local model named. The sandbox sets
+# call and every structured or response-text Gemini call, on the one local
+# model named. The sandbox sets
 # both; production sets neither. With the URL set no Anthropic key is read.
 LOCAL_URL = "BTCOPILOT_LOCAL_URL"
 LOCAL_MODEL = "BTCOPILOT_LOCAL_MODEL"
@@ -460,7 +461,7 @@ async def response_text(prompt=None, model=None, **kwargs):
     model: optional client-facing alias (e.g. "opus-4.6") or raw API model ID.
     """
     resolved = resolve_model(model) if model else RESPONSE_MODEL
-    if _is_claude_model(resolved):
+    if _is_claude_model(resolved) or local_model():
         _log.info(f"response_text using Claude: {resolved}")
         return await claude_text(prompt, model=resolved, **kwargs)
     else:
@@ -480,7 +481,7 @@ async def gemini_structured(prompt, response_format, large=False, model=None):
     from google.genai import types
 
     model = model or (EXTRACTION_MODEL_LARGE if large else EXTRACTION_MODEL)
-    if _is_claude_model(model):
+    if _is_claude_model(model) or local_model():
         return await claude_structured(prompt, response_format, model)
 
     start_time = time.time()
