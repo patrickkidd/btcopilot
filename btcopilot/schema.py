@@ -449,6 +449,37 @@ def hash_sarf_dicts(event_data: list[dict]) -> str:
     return hashlib.sha256(content.encode()).hexdigest()[:16]
 
 
+def enum_val(x):
+    """Scene-stored fields may be Enum objects (e.g. RelationshipKind) or
+    their string values depending on the writer — same dual-type situation
+    as QDateTime dates. Normalize to the string value for compare/display."""
+    return x.value if isinstance(x, enum.Enum) else x
+
+
+def parse_date(s):
+    """Normalize a date value to datetime.date. Real committed diagrams store
+    dates as PyQt5 QDateTime/QDate (Scene format), not ISO strings. Handle
+    str, datetime/date, and Qt date objects."""
+    if not s:
+        return None
+    if isinstance(s, datetime.datetime):
+        return s.date()
+    if isinstance(s, datetime.date):
+        return s
+    # PyQt5 QDateTime / QDate expose .toString("yyyy-MM-dd") and .date()
+    to_string = getattr(s, "toString", None)
+    if callable(to_string):
+        try:
+            iso = to_string("yyyy-MM-dd")
+            return datetime.date.fromisoformat(iso[:10])
+        except (ValueError, TypeError):
+            return None
+    try:
+        return datetime.date.fromisoformat(str(s)[:10])
+    except (ValueError, TypeError):
+        return None
+
+
 # Neutral label for the first-person speaker when the user has not set a real
 # name on the primary person (e.g. intake wizard skipped).
 DEFAULT_SUBJECT_NAME = "Client"

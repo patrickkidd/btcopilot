@@ -137,8 +137,9 @@ persona = Persona(
 
 ## Programmatic Usage
 
+`coach` below is any function `(discussion, text)` that answers one turn.
+
 ```python
-from btcopilot import ask
 from btcopilot.tests.synthetic import (
     PERSONAS,
     ConversationSimulator,
@@ -149,7 +150,7 @@ from btcopilot.tests.synthetic import (
 
 # Run full suite
 results = run_synthetic_tests(
-    ask_fn=ask,
+    ask_fn=coach,
     personas=PERSONAS[:3],
     conversations_per_persona=2,
 )
@@ -218,7 +219,6 @@ Score penalties:
 ### Option B: Programmatic
 
 ```python
-from btcopilot.ask import ask
 from btcopilot.tests.synthetic import ConversationSimulator, PERSONAS
 
 simulator = ConversationSimulator(
@@ -228,7 +228,7 @@ simulator = ConversationSimulator(
     skip_extraction=False,  # Needed for ground truth
 )
 
-result = simulator.run(PERSONAS[0], ask)
+result = simulator.run(PERSONAS[0], coach)
 print(f"View at: http://127.0.0.1:5555/training/discussions/{result.discussionId}")
 ```
 

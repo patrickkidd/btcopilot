@@ -324,7 +324,6 @@ For complete GT technical details, see
 |------|----------|
 | `btcopilot/schema.py` | `DiagramData.commit_pdp_items()`, `PDPDeltas`, `PDP` |
 | `btcopilot/pdp.py` | `extract_full()`, `update()`, `apply_deltas()`, `cumulative()`, `cleanup_pair_bonds()`, `validate_pdp_deltas()`, `fix_birth_event_self_references()` |
-| `btcopilot/ask.py` | `ask()` — chat-only, no extraction |
 | `btcopilot/routes/discussions.py` | `POST /extract` endpoint — single-prompt extraction |
 | `btcopilot/prompts.py` | Default prompt constants (overridden by fdserver) |
 | `btcopilot/routes/diagrams.py` | Server-side diagram endpoints |

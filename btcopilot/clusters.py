@@ -16,7 +16,6 @@ from dataclasses import dataclass, field
 from btcopilot.extensions import db
 from btcopilot.llmutil import gemini_structured_sync
 from btcopilot import record
-from btcopilot.intake import NODAL_KINDS, SHIFT_FIELDS, _parse_iso_date
 from btcopilot.models import Author, Change
 from btcopilot import prompts
 from btcopilot.models import Diagram
@@ -27,11 +26,13 @@ from btcopilot.schema import (
     ClusterSource,
     DiagramData,
     Event,
+    EventKind,
     ItemKind,
     PairBond,
     asdict,
     from_dict,
     hash_sarf_dicts,
+    parse_date,
 )
 
 _log = logging.getLogger(__name__)
@@ -39,6 +40,11 @@ _log = logging.getLogger(__name__)
 # Bumped whenever the candidate rules or the naming prompt change, so a record
 # grouped by the older rules re-groups on its next event-changing turn.
 DETECTION_VERSION = 5
+
+NODAL_KINDS = frozenset(
+    {EventKind.Death, EventKind.Married, EventKind.Divorced, EventKind.Separated}
+)
+SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
 
 # How far either side of a nodal event or shift a related event is proposed as
 # part of the same cluster. A suggestion to the model, not a limit on what it
@@ -82,7 +88,7 @@ def _enum_value(val):
 
 
 def is_nodal_or_shift(event: Event) -> bool:
-    """The kinds the intake engine counts as nodal, or any recorded shift."""
+    """A nodal kind, or any recorded shift."""
     return event.kind in NODAL_KINDS or any(
         getattr(event, name) is not None for name in SHIFT_FIELDS
     )
@@ -95,7 +101,7 @@ def _scaffold(event: Event, opens: datetime.date) -> bool:
     return (
         event.kind.isStructural()
         and not is_nodal_or_shift(event)
-        and _parse_iso_date(event.dateTime) < opens
+        and parse_date(event.dateTime) < opens
     )
 
 
@@ -120,8 +126,8 @@ def _dated(data: DiagramData) -> list[Event]:
         for chunk in data.events
         if isinstance(chunk, dict) and chunk.get("id") is not None
     ]
-    dated = [e for e in events if _parse_iso_date(e.dateTime)]
-    return sorted(dated, key=lambda e: (_parse_iso_date(e.dateTime), e.id))
+    dated = [e for e in events if parse_date(e.dateTime)]
+    return sorted(dated, key=lambda e: (parse_date(e.dateTime), e.id))
 
 
 def joinable(data: DiagramData) -> list[Event]:
@@ -130,7 +136,7 @@ def joinable(data: DiagramData) -> list[Event]:
     marked = [e for e in events if is_nodal_or_shift(e)]
     if not marked:
         return []
-    opens = _parse_iso_date(marked[0].dateTime)
+    opens = parse_date(marked[0].dateTime)
     return [e for e in events if not _scaffold(e, opens)]
 
 
@@ -182,7 +188,7 @@ def candidates(data: DiagramData) -> list[Candidate]:
         if isinstance(chunk, dict) and chunk.get("id") is not None
     ]
     reach = {e.id: (_people(e), _bonds(_people(e), bonds)) for e in free}
-    when = {e.id: _parse_iso_date(e.dateTime) for e in free}
+    when = {e.id: parse_date(e.dateTime) for e in free}
 
     groups: list[set[int]] = []
     for seed in marked:

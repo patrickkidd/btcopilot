@@ -10,9 +10,8 @@ import json
 from collections import Counter
 
 from btcopilot import diagramjson, record
-from btcopilot.intake import _enum_val, _parse_iso_date
 from btcopilot.models import Change, Interaction
-from btcopilot.schema import DiagramData, EventKind, ItemKind
+from btcopilot.schema import DiagramData, EventKind, ItemKind, enum_val, parse_date
 from btcopilot.timeline import _life_event
 
 SHIFTS = ("anxiety", "symptom", "functioning")
@@ -27,7 +26,7 @@ def date_text(value) -> str | None:
     """
     if isinstance(value, dict) and diagramjson.TAG in value:
         value = value["v"]
-    parsed = _parse_iso_date(value)
+    parsed = parse_date(value)
     return parsed.isoformat() if parsed else None
 
 
@@ -42,7 +41,7 @@ SPEAKER = " — the person you are talking with"
 
 def person_line(person: dict, speaker: bool = False, facts=()) -> str:
     line = f"{person['id']} {_name(person)}"
-    gender = _enum_val(person.get("gender"))
+    gender = enum_val(person.get("gender"))
     if gender:
         line += f" ({gender})"
     if person.get("parents") is not None:
@@ -61,7 +60,7 @@ def event_line(event: dict) -> str:
     parts = [
         str(event["id"]),
         date_text(event.get("dateTime")) or "undated",
-        f"[{_enum_val(event.get('kind')) or 'shift'}]",
+        f"[{enum_val(event.get('kind')) or 'shift'}]",
     ]
     end = date_text(event.get("endDateTime"))
     if end:
@@ -74,17 +73,17 @@ def event_line(event: dict) -> str:
     if event.get("notes"):
         parts.append("(has notes)")
     for key in SHIFTS:
-        value = _enum_val(event.get(key))
+        value = enum_val(event.get(key))
         if value:
             parts.append(f"{key}={value}")
-    relationship = _enum_val(event.get("relationship"))
+    relationship = enum_val(event.get("relationship"))
     if relationship:
         parts.append(f"relationship={relationship}")
     if event.get("relationshipTargets"):
         parts.append(f"targets={event['relationshipTargets']}")
     if event.get("relationshipTriangles"):
         parts.append(f"triangles={event['relationshipTriangles']}")
-    certainty = _enum_val(event.get("dateCertainty"))
+    certainty = enum_val(event.get("dateCertainty"))
     if certainty and certainty != "certain":
         parts.append(f"date-{certainty}")
     return " ".join(parts)
@@ -96,7 +95,7 @@ def _cluster_head(cluster: dict) -> str:
     # Never guess "model" here: source is what says whether a cluster may be
     # regrouped or renamed, and telling the coach the model made a grouping the
     # user may have named costs the user their name.
-    source = _enum_val(cluster.get("source")) or "unknown"
+    source = enum_val(cluster.get("source")) or "unknown"
     return f"{cluster['id']} \"{words}\" ({source})"
 
 

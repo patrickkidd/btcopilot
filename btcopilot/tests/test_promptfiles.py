@@ -21,7 +21,6 @@ REAL_PRIVATE = REPO / "private" / "prompts"
 
 RECORD = "RECORD-SENTINEL\nsecond line"
 INTERACTIONS = "INTERACTIONS-SENTINEL"
-STATE = "STATE-SENTINEL"
 
 
 def rendered(module, names) -> dict:
@@ -37,15 +36,6 @@ def rendered(module, names) -> dict:
     out["note_register"] = module.note_register()
     out["scribe_prompt/empty"] = module.scribe_prompt()
     out["scribe_prompt/record"] = module.scribe_prompt(record=RECORD)
-    out["get_conversation_flow_prompt/claude"] = module.get_conversation_flow_prompt(
-        model="claude-opus-5-5", committed_state=STATE
-    )
-    out["get_conversation_flow_prompt/claude_empty"] = (
-        module.get_conversation_flow_prompt(model="claude-opus-5-5")
-    )
-    out["get_conversation_flow_prompt/gemini"] = module.get_conversation_flow_prompt(
-        model="gemini-2.5-flash", committed_state=STATE
-    )
     out["tool_meanings"] = {str(k): v for k, v in module.tool_meanings().items()}
     out["generic_name"] = module.generic_name("Marcus", module.Role.Father)
     return out

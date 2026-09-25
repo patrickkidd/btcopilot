@@ -11,7 +11,6 @@ import functools
 import os
 from pathlib import Path
 
-from btcopilot.llmutil import RESPONSE_MODEL, _is_claude_model
 from btcopilot.promptdir import PromptDir
 
 # Stands in for the record while the fixed head of the agent prompt is found.
@@ -98,19 +97,6 @@ def __getattr__(name: str) -> str:
         raise AttributeError(name)
     READ[name] = value
     return value
-
-
-def get_conversation_flow_prompt(
-    model: str | None = None, committed_state: str = ""
-) -> str:
-    """The coach's system prompt for a plain chat turn. Which model is answering
-    is a deployment setting, so it is resolved here and never named in a prompt
-    file."""
-    return files().text(
-        "conversation_flow",
-        committed_state=committed_state,
-        claude=_is_claude_model(model or RESPONSE_MODEL),
-    )
 
 
 def onboarding(missing: list[str], person_id: int) -> str:

@@ -152,12 +152,6 @@ def chat_flow(request):
 
             response = marker.kwargs.get("response", "some response")
 
-            stack.enter_context(
-                patch(
-                    "btcopilot.ask._generate_response",
-                    return_value=response,
-                )
-            )
             # The coach's turn is the agent loop; a test that scripts the
             # coach's words scripts them there too.
             stack.enter_context(

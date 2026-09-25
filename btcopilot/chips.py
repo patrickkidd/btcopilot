@@ -13,9 +13,8 @@ import re
 
 import regex
 
-from btcopilot.intake import _enum_val
 from btcopilot.recordtext import date_text
-from btcopilot.schema import DiagramData
+from btcopilot.schema import DiagramData, enum_val
 
 _log = logging.getLogger(__name__)
 
@@ -149,7 +148,7 @@ def _describe(kind: ChipKind, target: str, data: DiagramData) -> str:
         return f"person {target}: {person.get('name') or 'unnamed'}"
     if kind is ChipKind.Event:
         event = next(e for e in data.events if str(e.get("id")) == target)
-        words = event.get("description") or _enum_val(event.get("kind")) or ""
+        words = event.get("description") or enum_val(event.get("kind")) or ""
         when = date_text(event.get("dateTime")) or "undated"
         return f"event {target}: {when} {words}".strip()
     cluster = next(c for c in data.clusters if str(c.get("id")) == target)

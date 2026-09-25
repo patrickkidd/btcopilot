@@ -14,7 +14,6 @@ from flask import abort, jsonify, request
 from btcopilot import diagramjson, record
 from btcopilot.routes import bp, delta, edit, writable_diagram
 from btcopilot.timeline import DATE_FIELDS, event_payload
-from btcopilot.intake import _enum_val, _parse_iso_date
 from btcopilot.schema import (
     DateCertainty,
     Event,
@@ -23,6 +22,8 @@ from btcopilot.schema import (
     RelationshipKind,
     VariableShift,
     asdict,
+    enum_val,
+    parse_date,
     validatedDateTimeText,
 )
 
@@ -53,7 +54,7 @@ def _coerce(body: dict, people: set) -> dict:
             values[name] = enum_class(values[name])
     for name in DATE_FIELDS:
         if values.get(name):
-            date = _parse_iso_date(values[name])
+            date = parse_date(values[name])
             if date is None:
                 raise ValueError(f"{name} is not a date: {values[name]!r}")
             values[name] = date.isoformat()
@@ -132,10 +133,10 @@ def update(event_id: int):
     data = writable_diagram().get_diagram_data()
     existing = _find(data, event_id)
     merged = {
-        key: _enum_val(value) for key, value in existing.items() if key in WRITABLE
+        key: enum_val(value) for key, value in existing.items() if key in WRITABLE
     }
     for key in DATE_FIELDS:
-        date = _parse_iso_date(existing.get(key))
+        date = parse_date(existing.get(key))
         merged[key] = date.isoformat() if date else None
     merged.update(request.get_json())
     event = _qt_dates(
