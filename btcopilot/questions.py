@@ -9,11 +9,13 @@ from btcopilot.coachturn import MAX_STEPS, Metered, drain, run_call
 from btcopilot.models import Author, Diagram, Discussion, Statement
 from btcopilot.recordtext import outline
 from btcopilot.schema import DiagramData, ItemKind, QuestionState
-from btcopilot.toolbox import ToolName, Toolbox, schemas
+from btcopilot.toolbox import READS, ToolName, Toolbox, schemas
 
 _log = logging.getLogger(__name__)
 
-TOOLS = (ToolName.AddQuestion, ToolName.SetQuestion, ToolName.ReadQuestions)
+# The coach's reads, so it can see what the record already answers, and the
+# question writes; nothing else in the record can be changed from here.
+TOOLS = (*READS, ToolName.AddQuestion, ToolName.SetQuestion)
 START = "Go through the session."
 # About one call to read, one round of adds, and sometimes one more.
 CALLS_PER_SESSION = 3

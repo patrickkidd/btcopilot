@@ -132,3 +132,25 @@ def test_a_stopped_run_gone_through_again_does_not_add_a_question_twice(
     data = family.get_diagram_data()
     assert [(q["text"], q["state"]) for q in data.questions] == [(RUTH, "resolved")]
     assert data.questions_backfilled == [past["session"]]
+
+
+def test_the_backfill_can_read_the_whole_record_and_write_only_questions(
+    flask_app, family, past
+):
+    # R-0479
+    _, model = backfill(
+        flask_app, calling((ToolName.EditPerson, {"name": "Nell"})), said("")
+    )
+
+    assert sorted(model.offered[0]) == [
+        "add_question",
+        "read_changes",
+        "read_events",
+        "read_notes",
+        "read_people",
+        "read_questions",
+        "set_question",
+    ]
+    assert model.histories[1][-1]["content"][0]["is_error"] is True
+    db.session.expire_all()
+    assert [p["name"] for p in family.get_diagram_data().people] == ["Wren"]
