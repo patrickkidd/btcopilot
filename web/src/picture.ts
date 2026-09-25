@@ -88,8 +88,6 @@ const DOT_R = 4.5;
 /** The least space between two dot centres inside a box for the two to read as
  * two rather than as one solid bar. */
 const DOT_GAP = 11;
-/** A cluster of more than this many moments collapses to a ring and a count. */
-const DENSE = 8;
 /** A gap of this many years or more between clusters earns the amber question. */
 const GAP_YEARS = 4;
 
@@ -118,7 +116,7 @@ export function restWidth(
   if (span <= 0) return screen;
   let scale = (screen - 2 * X_PAD) / span;
   clusters.forEach((cluster, i) => {
-    const dots = cluster.count && cluster.count <= DENSE ? cluster.count : 0;
+    const dots = cluster.count ?? 0;
     const room =
       Math.max(
         shortYears(cluster.start, cluster.end).length * YEAR_CH + 8,
@@ -251,6 +249,13 @@ const hitButton = (layer: Layer, wire: number): string =>
   `aria-label="${esc(layer.label)}" ` +
   `style="left:${layer.left.toFixed(1)}px;top:${wire - ZONE / 2}px;` +
   `width:${layer.width.toFixed(1)}px;height:${ZONE}px"></button>`;
+
+/** The words over the line as one target, read by the row a tap lands on:
+ * the words of the event picked lead to where it was said (R-0192), and blank
+ * ground between them puts the picture down. */
+const bandHit = (left: number, width: number): string =>
+  `<button class="ss-hit" data-target="${Target.Band}" aria-label="what the coach named" ` +
+  `style="left:${left.toFixed(1)}px;top:${ROWS[0] + 1}px;width:${width.toFixed(1)}px;height:${ZONE}px"></button>`;
 
 /** The loose events' targets: one per dot, or per dots drawn over one another. */
 export const dotLayers = (zoned: { left: number; width: number; marks: Mark[] }[]): Layer[] =>
@@ -1062,22 +1067,17 @@ export class Picture {
         `width="${boxWidth.toFixed(1)}" height="40" rx="8"${fade}/>` +
         `<rect class="ep-edge" x="${left.toFixed(1)}" y="${boxY}" ` +
         `width="${boxWidth.toFixed(1)}" height="40" rx="8"${fadeEdge}/>`;
-      if (cluster.count > DENSE)
-        svg +=
-          `<circle class="ep-many" cx="${middle.toFixed(1)}" cy="${wireY}" r="11"/>` +
-          `<text class="ep-count" x="${middle.toFixed(1)}" y="${wireY + 4}" ` +
-          `text-anchor="middle">${cluster.count}</text>`;
-      else {
-        const inBox = dated.filter((e) => cluster.event_ids.includes(e.id));
-        const when =
-          inBox.length === cluster.count
-            ? inBox.map((e) => at(e.dateTime as string))
-            : Array.from({ length: cluster.count }, (_, j) =>
-                cluster.count > 1 ? a + ((b - a) * j) / (cluster.count - 1) : middle,
-              );
-        for (const cx of dotXs(when, left, boxWidth))
-          svg += `<circle class="dot" cx="${cx.toFixed(1)}" cy="${wireY}" r="${DOT_R}"${faded(null)}/>`;
-      }
+      // every event in the box is a dot, however many there are: a crowded
+      // box carries no count (R-0376)
+      const inBox = dated.filter((e) => cluster.event_ids.includes(e.id));
+      const when =
+        inBox.length === cluster.count
+          ? inBox.map((e) => at(e.dateTime as string))
+          : Array.from({ length: cluster.count }, (_, j) =>
+              cluster.count > 1 ? a + ((b - a) * j) / (cluster.count - 1) : middle,
+            );
+      for (const cx of dotXs(when, left, boxWidth))
+        svg += `<circle class="dot" cx="${cx.toFixed(1)}" cy="${wireY}" r="${DOT_R}"${faded(null)}/>`;
       if (!picked)
         svg +=
           `<text class="ep-yrs" x="${middle.toFixed(1)}" y="21" text-anchor="middle">` +
@@ -1126,10 +1126,13 @@ export class Picture {
       const laid = this.labels(marks, shows + X_PAD, shows + screen - X_PAD, wireY);
       this.laid.rows = laid.rowsLaid;
       const mark = marks.find((m) => m.event.id === this.selected) as Mark;
+      // the band lies over the words, as it does on the open wire, and under
+      // the dots' own targets
       words =
         laid.text +
         `<div class="ss-yr on" style="left:${yearLeft(mark.x, shows, shows + screen)}px;` +
-        `top:${YEAR_TOP}px;width:${YEAR_W}px;text-align:center">${esc(this.yearOf(mark.event))}</div>`;
+        `top:${YEAR_TOP}px;width:${YEAR_W}px;text-align:center">${esc(this.yearOf(mark.event))}</div>` +
+        bandHit(shows + X_PAD, screen - 2 * X_PAD);
     }
 
     // Where the line settles after a swipe: at a box's near edge, so a cluster
@@ -1217,9 +1220,9 @@ export class Picture {
       .sort((a, b) => years(a.start) - years(b.start));
   }
 
-  /** The moments in the cluster a resting tap landed on. */
-  inCluster(index: number): number[] {
-    return this.restClusters()[index]?.event_ids ?? [];
+  /** The cluster a resting tap landed on. */
+  clusterAt(index: number): Cluster | undefined {
+    return this.restClusters()[index];
   }
 
   private renderBoard(): void {
@@ -1458,9 +1461,7 @@ export class Picture {
         `${esc(this.yearOf(picked.event))}</div>`
       : "";
 
-    let hits =
-      `<button class="ss-hit" data-target="${Target.Band}" aria-label="what the coach named" ` +
-      `style="left:${x0}px;top:${ROWS[0] + 1}px;width:${x1 - x0}px;height:${ZONE}px"></button>`;
+    let hits = bandHit(x0, x1 - x0);
     hits += this.zoneHits(marks, width, wire);
     hits += this.shelfHit(x1, wire);
 

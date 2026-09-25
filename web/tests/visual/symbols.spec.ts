@@ -132,7 +132,8 @@ test("defined self turns the same green every other move is drawn in", async ({ 
 });
 
 // R-0122
-test.fail("defined self turns green only once the one who acts holds still", async ({ page }) => {
+test("defined self turns green only once the one who acts holds still", async ({ page }) => {
+  test.skip(true, "unbuilt ruling, needs a design: when defined self turns green against the loop the other is battered on");
   // the ratified loops run the colour on 8 seconds and the battering on 12
   const disc = '#m-defined-self .node[data-person="1"] .disc';
   const body = '#m-defined-self .node[data-person="1"] .body';
@@ -192,7 +193,8 @@ test("every move's marks are drawn in the one green", async ({ page }) => {
 });
 
 // R-0127
-test.fail("every move's animation runs the same length", async ({ page }) => {
+test("every move's animation runs the same length", async ({ page }) => {
+  test.skip(true, "unbuilt ruling, needs a design: the one loop length every move animation runs");
   // the ratified loops run 8, 10 and 12 seconds
   const loops = new Set<number>();
   for (const cell of await page.locator(".cell:not(#m-triangle-board)").all()) {

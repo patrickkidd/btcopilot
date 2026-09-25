@@ -82,7 +82,6 @@ test.describe("the three levels on the moves record", () => {
 
   // R-0376
   test("a crowded box at rest carries no number of events", async ({ page }) => {
-    test.fail(true, "a cluster of more than eight moments is drawn as a ring with its count");
     await settle(page);
     await toRest(page);
     const words = await page.locator("#view svg text").allTextContents();
@@ -230,7 +229,7 @@ test.describe("one cluster open on the sparse record", () => {
 
   // R-0213
   test("the i writes out no list of the cluster's moments", async ({ page }) => {
-    test.fail(true, "the page behind the i lists every moment with its year");
+    test.skip(true, "unbuilt ruling, needs a design: what the picture spot draws behind a cluster's i, with no list and no count");
     await settle(page);
     await openCluster(page);
     await page.locator("#info").click();
@@ -240,7 +239,7 @@ test.describe("one cluster open on the sparse record", () => {
 
   // R-0376
   test("the page behind the i gives no count of events", async ({ page }) => {
-    test.fail(true, "the page behind the i says how many events the cluster holds");
+    test.skip(true, "unbuilt ruling, needs a design: what the picture spot draws behind a cluster's i, with no list and no count");
     await settle(page);
     await openCluster(page);
     await page.locator("#info").click();
@@ -250,7 +249,7 @@ test.describe("one cluster open on the sparse record", () => {
 
   // R-0378
   test("the picture spot stays a drawing behind the i", async ({ page }) => {
-    test.fail(true, "the page behind the i is words alone in the picture spot");
+    test.skip(true, "unbuilt ruling, needs a design: what the picture spot draws behind a cluster's i, with no list and no count");
     await settle(page);
     await openCluster(page);
     await page.locator("#info").click();

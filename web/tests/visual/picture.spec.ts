@@ -303,7 +303,6 @@ test.describe("a tap on the picture reaches the coach", () => {
 
   // R-0065
   test("a tap that opens a cluster is sent, naming the cluster", async ({ page }) => {
-    test.fail(true, "opening a cluster from the picture records nothing");
     await settle(page);
     const posted = sent(page);
     await page.locator('.ss-hit[data-target="cluster"]').first().click();
@@ -455,7 +454,7 @@ test.describe("the family on the board", () => {
 
   // R-0187
   test("parents stand above their child", async ({ page }) => {
-    test.fail(true, "the board stands everyone on one ellipse, whoever they are to each other");
+    test.skip(true, "unbuilt ruling, needs a design: an automatic family arrangement on the board, parents above their child");
     await page.route("**/app/timeline*", async (route) => {
       const response = await route.fetch();
       const json = await response.json();

@@ -186,6 +186,7 @@ button { font-family: inherit; }
 /* the two small controls on the title line: the i after an open cluster's
    name, and the ✕ at the row's end while a moment is picked at rest */
 .pl-btn {
+  position: relative;
   flex: none;
   width: 28px;
   height: 28px;
@@ -262,8 +263,11 @@ button { font-family: inherit; }
 }
 /* The glyph itself starts on the picture's left edge, in line with the start
    of the line and the ask button under it; the tap target is the ruled 44
-   square around it, reaching past the edge rather than pushing the glyph in. */
-.pin-label .up::before {
+   square around it, reaching past the edge rather than pushing the glyph in.
+   The i beside a cluster's name reaches the same 44 around its 28, so the
+   row stays 28 tall (R-0091). */
+.pin-label .up::before,
+.pl-btn::before {
   content: "";
   position: absolute;
   top: 50%;
@@ -805,8 +809,6 @@ button { font-family: inherit; }
   touch-action: pan-x;
   overscroll-behavior: contain;
 }
-/* On the board the row is not there at all: no strip, no hairline. */
-.caption.gone { display: none; }
 .caption::-webkit-scrollbar { display: none; }
 .caption > * { flex: none; }
 /* The chat's own chip, in the row (picked plate F): one mark and one word, a
@@ -2168,9 +2170,7 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 @keyframes chapter {
   50% { opacity: 1; }
 }
-.ss .ep-many { fill: none; stroke: var(--data); stroke-width: 1.6; }
 /* a resting-wire data label keeps its ratified size, under the UI text floor */
-.ss .ep-count { font: 500 10px var(--mono); fill: var(--data); }
 .ss .ep-yrs { font: 400 10.5px var(--mono); fill: var(--faint); }
 .ss .ss-hint { font: 400 13px var(--mono); fill: var(--faint); }
 .ss-empty {

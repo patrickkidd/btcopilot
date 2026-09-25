@@ -12,17 +12,23 @@ const settle = async (page: Page) => {
 };
 
 /** Every icon button on screen: a button that carries a mark rather than
- * words, with its target and its drawn circle. */
+ * words, with its target and its drawn circle. The target is the button, or
+ * the larger square round it where a small control reaches out to 44. */
 const iconButtons = (page: Page) =>
   page.evaluate(() =>
     [...document.querySelectorAll<HTMLButtonElement>("button")]
-      .filter((b) => b.offsetParent && !/[a-z]{2}/i.test(b.textContent ?? ""))
+      // a mark is drawn or written: the picture's invisible tap targets carry
+      // none, and a word is not a mark
+      .filter((b) => (b.childElementCount || (b.textContent ?? "").trim()) && b.offsetParent)
+      .filter((b) => !/[a-z]{2}/i.test(b.textContent ?? ""))
       .map((b) => {
         const box = b.getBoundingClientRect();
         const mark = getComputedStyle(b, "::before");
+        const reach = (side: number, drawn: string) =>
+          Math.round(Math.max(side, parseFloat(drawn) || 0));
         return {
           id: b.id || b.className,
-          size: `${Math.round(box.width)}x${Math.round(box.height)}`,
+          size: `${reach(box.width, mark.width)}x${reach(box.height, mark.height)}`,
           mark: mark.content === "none" ? null : `${parseFloat(mark.width)}x${parseFloat(mark.height)}`,
         };
       }),
@@ -54,9 +60,6 @@ test.describe("the app frame", () => {
 
   // R-0091
   test("every icon button on the chat screen is a 44px target", async ({ page }) => {
-    // Known defect: the cluster's info and back buttons on the picture's name
-    // row are drawn smaller than the other icon buttons.
-    test.fail();
     await settle(page);
     const found = await iconButtons(page);
     expect(found.length).toBeGreaterThan(3);

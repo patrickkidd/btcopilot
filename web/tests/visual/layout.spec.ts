@@ -485,7 +485,6 @@ test.describe("the row under the picture from one view to the next", () => {
 
   // R-0450
   test("the row keeps its height with the board open", async ({ page }) => {
-    test.fail(true, "the row is taken away entirely while the board is open");
     await settle(page);
     const before = await frame(page);
     await page.locator("#cap-play").click();

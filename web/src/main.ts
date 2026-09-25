@@ -141,8 +141,12 @@ function onTap(tap: Tap): void {
   // At rest the picture shows the whole line; a tap opens one cluster, which
   // is the one level change the reader makes for themselves.
   if (tap.target === Target.Cluster) {
-    const ids = picture.inCluster(tap.index);
-    if (ids.length) picture.spotlight(ids);
+    const cluster = picture.clusterAt(tap.index);
+    if (cluster) {
+      picture.spotlight(cluster.event_ids);
+      // opening a cluster is a look at it, recorded like any other (R-0065)
+      tapped(InteractionKind.Look, ItemKind.Cluster, cluster.id);
+    }
     pic = REST;
     actions();
     return;
@@ -726,13 +730,12 @@ function actions(): void {
   const sel = pic.sel;
   const open = picture.openCluster();
   // The board has its own controls, and two rows saying explain is one too
-  // many. Entering the board is the one level change allowed to move what is
-  // under the picture, so the row goes outright rather than sitting there as
-  // an empty strip with a hairline under it (owner ruling 2026-09-08).
-  const onBoard = picture.onBoard();
-  host.classList.toggle("gone", onBoard);
-  if (onBoard) {
-    host.innerHTML = "";
+  // many, so while it is up the row holds only the list button. It keeps its
+  // height, so nothing under it moves (R-0450, replacing the 2026-09-08 ruling
+  // that took the row away).
+  if (picture.onBoard()) {
+    host.innerHTML = pinned() ? "" : listButton("menu-open");
+    wireList();
     return;
   }
   // Nothing open and nothing picked: there is nothing to act on, so the row
