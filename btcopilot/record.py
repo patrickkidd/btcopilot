@@ -43,7 +43,13 @@ def next_id(data) -> int:
 
 
 class Invalid(Exception):
-    """The record the deltas would leave behind breaks a rule of the data model."""
+    """The record the deltas would leave behind breaks a rule of the data model.
+    The reason is for the coach; `plain` says the same rule to a person editing
+    by hand, with no ids and no field names."""
+
+    def __init__(self, reason: str, plain: str):
+        super().__init__(reason)
+        self.plain = plain
 
 
 class Conflict(Exception):
@@ -317,7 +323,8 @@ def _validate(data: dict, deltas: list[dict]):
     if small:
         raise Invalid(
             f"that would leave clusters {small} with fewer than {MIN_CLUSTER_EVENTS} "
-            "events: add an event to the cluster, or remove the grouping"
+            "events: add an event to the cluster, or remove the grouping",
+            f"A cluster needs at least {MIN_CLUSTER_EVENTS} events.",
         )
     _words(data, deltas)
     _moves(data, deltas)
@@ -393,7 +400,8 @@ def _words(data: dict, deltas: list[dict]):
         ):
             raise Invalid(
                 f"event {event_id}: a birth is about the child: "
-                "set child, not person"
+                "set child, not person",
+                "A birth is about the child: choose who was born under Child.",
             )
         description = event.get("description") or ""
         if not description:
@@ -410,7 +418,9 @@ def _words(data: dict, deltas: list[dict]):
                 ):
                     raise Invalid(
                         f"event {event_id}'s description names {name}, who is "
-                        f"already its {role}; say what happened without the name"
+                        f"already its {role}; say what happened without the name",
+                        f"The summary names {name}, who is already on this event. "
+                        "Say what happened without the name.",
                     )
 
 
@@ -428,19 +438,23 @@ def _moves(data: dict, deltas: list[dict]):
         if kind == EventKind.Noted.value and not (event.get("description") or "").strip():
             raise Invalid(
                 f"event {event_id} is a noted event with no words: say what "
-                "happened"
+                "happened",
+                "A noted event needs a few words saying what happened.",
             )
         if kind == EventKind.Shift.value and not _moved(event):
             raise Invalid(
                 f"event {event_id} is a shift with no variable and no "
                 "relationship move: say which of symptom, anxiety, functioning "
-                "or relationship moved, and which way"
+                "or relationship moved, and which way",
+                "A shift needs to say what moved and which way: symptom, anxiety, "
+                "functioning or a relationship.",
             )
         end = _day(event.get("endDateTime"))
         if end and end < (_day(event.get("dateTime")) or end):
             raise Invalid(
                 f"event {event_id} ends before it begins: date is when it began, "
-                "end_date when it ended"
+                "end_date when it ended",
+                "The end date is before the start date.",
             )
         if kind not in (EventKind.Birth.value, EventKind.Adopted.value):
             continue
@@ -457,7 +471,9 @@ def _moves(data: dict, deltas: list[dict]):
         if day and (not days or day < min(days)) and _moved(event):
             raise Invalid(
                 f"event {event_id} is an early birth: it anchors age and "
-                "carries no symptom, anxiety, functioning or relationship"
+                "carries no symptom, anxiety, functioning or relationship",
+                "A birth before the first shift only says when someone was born: "
+                "it carries no symptom, anxiety, functioning or relationship.",
             )
 
 
@@ -512,7 +528,9 @@ def _twins(data: dict, deltas: list[dict]):
             if twin_key(other) == twin_key(event):
                 raise Invalid(
                     f"that event is already event {other.get('id')}: change it "
-                    f"with edit_event(id={other.get('id')}) rather than adding it"
+                    f"with edit_event(id={other.get('id')}) rather than adding it",
+                    "That event is already in the diagram. Change the one that is "
+                    "there rather than adding it again.",
                 )
 
 
@@ -571,7 +589,9 @@ def _people(data: dict, deltas: list[dict]):
             if str(other.get("id")) != person_id and generic_key(other) == key:
                 raise Invalid(
                     f"{person['name']} is already person {other['id']} "
-                    f"({other['name']}): use that person rather than adding another"
+                    f"({other['name']}): use that person rather than adding another",
+                    f"{person['name']} is already in the diagram as {other['name']}. "
+                    "Use that person rather than adding another.",
                 )
 
 
@@ -592,19 +612,28 @@ def _structure(data: dict, deltas: list[dict]):
         if any(side is None for side in sides):
             raise Invalid(
                 f"pair bond {bond_id} needs two people: add the missing one as a "
-                "person first, generically named where nobody named them"
+                "person first, generically named where nobody named them",
+                "A pair-bond needs two people.",
             )
         if str(sides[0]) == str(sides[1]):
-            raise Invalid(f"pair bond {bond_id} is one person with themselves")
+            raise Invalid(
+                f"pair bond {bond_id} is one person with themselves",
+                "A pair-bond needs two different people.",
+            )
         for side in sides:
             if _find(data, ItemKind.Person, side) is None:
-                raise Invalid(f"pair bond {bond_id} names person {side}, who is not in the record")
+                raise Invalid(
+                    f"pair bond {bond_id} names person {side}, who is not in the record",
+                    "One of those two is no longer in the diagram.",
+                )
         for other in bonds:
             if str(other.get("id")) != str(bond_id) and pair(other) == pair(bond):
                 raise Invalid(
                     f"those two already have pair bond {other.get('id')}: change "
                     f"it with edit_pair_bond(id={other.get('id')}) rather than "
-                    "adding a second one"
+                    "adding a second one",
+                    "Those two already have a pair-bond. Change that one rather "
+                    "than adding a second.",
                 )
 
     for person_id in _touched_kind(deltas, ItemKind.Person):
@@ -615,10 +644,14 @@ def _structure(data: dict, deltas: list[dict]):
         if bond is None:
             raise Invalid(
                 f"person {person_id} is born to pair bond {person['parents']}, "
-                "which is not in the record"
+                "which is not in the record",
+                "Those parents are no longer in the diagram.",
             )
         if str(person_id) in pair(bond):
-            raise Invalid(f"person {person_id} cannot be their own parent")
+            raise Invalid(
+                f"person {person_id} cannot be their own parent",
+                "Nobody can be their own parent.",
+            )
 
 
 def _commit(

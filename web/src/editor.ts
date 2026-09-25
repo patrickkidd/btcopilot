@@ -1,7 +1,6 @@
 import { esc, el } from "./dom";
 import { Feature, tap } from "./track";
 import { fullName } from "./rows";
-import { toast } from "./toast";
 import * as api from "./api";
 import type { PairBond, Person, TimelineEvent } from "./types";
 
@@ -312,16 +311,19 @@ export function openEditor(
     const body = values(editor);
     // A noted event is only its own words: with none it says nothing (R-0363).
     if (body.kind === EventKind.Noted && !body.description) {
-      toast("A noted event needs a few words saying what happened");
+      refuse(editor, "A noted event needs a few words saying what happened.");
       return;
     }
     if (body.kind === EventKind.Shift && !moved(body)) {
-      toast("A shift needs to say what moved and which way: symptom, anxiety, functioning or a relationship");
+      refuse(
+        editor,
+        "A shift needs to say what moved and which way: symptom, anxiety, functioning or a relationship.",
+      );
       return;
     }
     tap(Feature.EventSave);
     if (onSave) onSave(body);
-    else void save(event, body, done, diagramId);
+    else void save(event, body, done, (text) => refuse(editor, text), diagramId);
   });
   editor.querySelector(".del")?.addEventListener("click", () => {
     tap(Feature.EventDelete);
@@ -397,20 +399,40 @@ export const moved = (body: Partial<TimelineEvent>): boolean =>
     Object.values<string | null | undefined>(Direction).includes(value),
   ) || Object.values<string | null | undefined>(Relationship).includes(body.relationship);
 
-/** A write that does not go in leaves the editor open with the reason shown. */
+/** A write that does not go in leaves the editor open with the reason shown,
+ * in the plain words the record gives a hand edit. */
 export async function save(
   event: TimelineEvent | null,
   body: Partial<TimelineEvent>,
   done: () => void,
+  refused: (text: string) => void,
   diagramId?: number,
 ): Promise<void> {
   try {
     await api.saveEvent(event ? event.id : null, body, diagramId);
   } catch (error) {
-    toast(api.whatFailed(error));
+    refused(api.whatFailed(error, (said) => said));
     return;
   }
   done();
+}
+
+/** Why Save did nothing, over the Save button, until a field changes or the
+ * editor closes and takes it along. */
+function refuse(editor: HTMLElement, text: string): void {
+  editor.querySelector(".refused")?.remove();
+  const line = el("div", "refused");
+  line.setAttribute("role", "alert");
+  line.textContent = text;
+  editor.querySelector(".acts")?.before(line);
+  const edits = new AbortController();
+  const edited = (change: Event) => {
+    if (change.type === "click" && !(change.target as Element).closest(".seg")) return;
+    line.remove();
+    edits.abort();
+  };
+  editor.addEventListener("input", edited, { signal: edits.signal });
+  editor.addEventListener("click", edited, { signal: edits.signal });
 }
 
 /** What the record holds a person as: which symbol they are drawn with. Two of
@@ -788,7 +810,7 @@ export function openParentsPicker(
         opts.diagramId,
       );
       if (mother === null || father === null) {
-        toast("Name both of them");
+        refuse(editor, "Name both of them.");
         return;
       }
       // The father is the record's own first side of a couple, so a couple made
@@ -894,7 +916,7 @@ export function openBondEditor(
         person.gender === PersonKind.Female ? PersonKind.Male : PersonKind.Female;
       const who = await pickedPerson(editor, PARTNER, kind, opts.diagramId);
       if (who === null) {
-        toast("Name the other person");
+        refuse(editor, "Name the other person.");
         return;
       }
       // One couple ever between any two people: naming the same two again

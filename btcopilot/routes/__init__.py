@@ -51,9 +51,9 @@ def _value_error(e):
 @bp.errorhandler(record.Invalid)
 def _invalid_record(e):
     """A write the record itself refuses — a bond of one person with themselves,
-    say. The editor offered it, so it is told in the record's own words rather
-    than shown a server error."""
-    return str(e), 400
+    say. The editor offered it, so it is told in plain words rather than shown
+    a server error."""
+    return e.plain, 400
 
 
 @bp.context_processor

@@ -55,9 +55,11 @@ function csrf(): string {
 export class Failed extends Error {
   constructor(
     readonly status: number,
-    readonly detail: string,
+    readonly request: string,
+    /** The server's own words, or the network's when nothing came back. */
+    readonly said: string,
   ) {
-    super(`${status || "no answer"}: ${detail}`);
+    super(`${status || "no answer"}: ${request}: ${said}`);
     this.name = "Failed";
   }
 
@@ -67,15 +69,19 @@ export class Failed extends Error {
   }
 }
 
-/** What went wrong, in the words the reader needs: when the record refused a
- * write, the part of its reason that says what to do. */
-export function whatFailed(error: unknown): string {
+/** The part of a coach-facing reason that says what to do. */
+const instruction = (said: string) => said.split(": ").slice(1).join(": ");
+
+/** What went wrong, in the words the reader needs: when the server refused a
+ * write, the `words` it gave for that. A hand edit's refusal is already whole
+ * plain words; the default keeps what to do from a reason written for the coach. */
+export function whatFailed(error: unknown, words = instruction): string {
   const failed = error instanceof Failed ? error : null;
   if (!failed) throw error;
   console.warn(failed.message);
   if (failed.silent) return "No answer from the server";
   if (failed.status >= 500) return "The server broke on that one";
-  return failed.detail.split(": ").slice(2).join(": ") || "That did not go in";
+  return words(failed.said) || "That did not go in";
 }
 
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -110,10 +116,10 @@ async function send<T>(
     // running out. Anything else thrown here is a mistake in this code and has
     // to surface as itself rather than as the server being unreachable.
     if (!(error instanceof TypeError || error instanceof DOMException)) throw error;
-    throw new Failed(0, `${method} ${url}: ${error.message}`);
+    throw new Failed(0, `${method} ${url}`, error.message);
   }
   if (!response.ok)
-    throw new Failed(response.status, `${method} ${url}: ${await response.text()}`);
+    throw new Failed(response.status, `${method} ${url}`, await response.text());
   // an empty answer left unread is logged by the browser as aborted
   if (response.status === 204) {
     await response.text();

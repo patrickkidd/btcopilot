@@ -677,6 +677,13 @@ def test_event_rejects_unknown_person(web, token, family):
     assert response.status_code == 400
 
 
+def test_event_the_record_refuses_is_told_in_plain_words(web, token, family):
+    # R-0453
+    response = post(web, token, "/app/events", dict(SHIFT, endDateTime="2019-01-01"))
+    assert response.status_code == 400
+    assert response.get_data(as_text=True) == "The end date is before the start date."
+
+
 def test_event_rejects_bad_kind(web, token, family):
     # R-0363
     assert (

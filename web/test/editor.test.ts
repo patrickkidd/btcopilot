@@ -2,8 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import { Failed } from "../src/api";
 import type { TimelineEvent } from "../src/types";
 
-const said: string[] = [];
-vi.mock("../src/toast", () => ({ toast: (text: string) => said.push(text) }));
 const refusal: { error: Error | null } = { error: null };
 vi.mock("../src/api", async (original) => ({
   ...(await original<typeof import("../src/api")>()),
@@ -51,15 +49,13 @@ describe("moved", () => {
 });
 
 describe("save", () => {
-  it("keeps the editor open and says what the record wants when it refuses", async () => {
-    said.length = 0;
-    refusal.error = new Failed(
-      400,
-      "POST /app/events: event 7 is a shift with no variable and no relationship move: say which way",
-    );
+  // R-0453
+  it("keeps the editor open and hands it the record's plain words whole", async () => {
+    refusal.error = new Failed(400, "POST /app/events", "The end date is before the start date.");
     const done = vi.fn();
-    await save(null, shift(), done);
+    const refused = vi.fn();
+    await save(null, shift(), done, refused);
     expect(done).not.toHaveBeenCalled();
-    expect(said).toEqual(["say which way"]);
+    expect(refused).toHaveBeenCalledWith("The end date is before the start date.");
   });
 });
