@@ -109,6 +109,8 @@ def test_the_scribe_gives_every_date_its_certainty(public):
     # R-0482
     prompt = " ".join(public.scribe_prompt().split())
     assert "Whenever you add an event or change its date, always give its date_certainty" in prompt
+    assert "certain when the coder gave the exact day" in prompt
+    assert "approximate when they gave only the month" in prompt
 
 
 def test_a_prompt_renders_the_fragments_it_includes(tmp_path):

@@ -44,6 +44,15 @@ def test_a_diagnosis_is_dated_to_when_it_happened(coach):
     assert (event.get("dateTime") or "").startswith("2019")
 
 
+def test_a_date_known_to_the_month_is_approximate(coach):
+    # R-0482
+    coach.record()
+    coach.say("My dad died in June 1998.")
+    (death,) = [e for e in on(coach.events, 3) if e.get("kind") == "death"]
+    assert (death.get("dateTime") or "").startswith("1998-06")
+    assert death.get("dateCertainty") == "approximate"
+
+
 def test_the_coach_infers_anxiety_down_from_what_is_described(coach):
     # R-0427
     coach.record()

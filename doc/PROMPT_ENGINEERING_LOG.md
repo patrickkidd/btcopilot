@@ -994,3 +994,12 @@ live. [R-0482]
 **Change**: the scribe calls the same event tool, which now refuses a date without
 certainty, so its prompt, public and private, says to give date_certainty whenever
 it adds an event or changes a date. Not yet measured live. [R-0482]
+
+### September 2026: A date's certainty follows what was said about the day (FD-363)
+
+**Change**: "My dad died in June 1998" was stored as certain, but certain means
+within a week. The agent, scribe and onboarding wording now map it plainly:
+certain for an exact day, approximate for a month or a year only, unknown for
+"sometime around" or any hedge, or for the coach's own guess. The private record
+contract's "March 2019 is certain" is reversed to approximate. A live case checks
+the June 1998 death is stored approximate. [R-0482]

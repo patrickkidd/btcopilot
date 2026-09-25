@@ -819,7 +819,9 @@ def test_the_coach_is_told_to_give_every_date_its_certainty():
     prompt = " ".join(get_agent_prompt().split())
     assert "Whenever you add an event or change its date" in prompt
     assert "date_certainty" in prompt
-    assert "unknown for a guess" in prompt
+    assert "certain when they gave the exact day" in prompt
+    assert "approximate when they gave only the month" in prompt
+    assert 'unknown when they hedge, as "sometime around 1998"' in prompt
 
 
 def test_the_coach_is_told_how_to_keep_its_questions():
