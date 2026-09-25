@@ -30,18 +30,18 @@ REVISION = "1b00000000ab"
 USER = "familydiagram"
 PASSWORD = "gate"
 TOOLED = [ItemKind.Person, ItemKind.PairBond, ItemKind.Event, ItemKind.Cluster, ItemKind.Question]
+# The line check covers agent turns only; rows written outside a turn (backfill, hand edits) have no lines by design.
+AGENT_CHANGES = "c.statement_id = s.id AND c.author = :coach AND c.turn_id = s.turn_id"
 
 TURNS = sa.text(
-    """
+    f"""
     SELECT s.id,
            s.speaker_id = d.chat_ai_speaker_id AS reply,
            (SELECT count(*) FROM diagram_changes c
-             WHERE c.statement_id = s.id AND c.author = :coach
-               AND c.turn_id NOT LIKE 'undo:%') AS changes,
+             WHERE {AGENT_CHANGES}) AS changes,
            (SELECT count(DISTINCT (c.id, e->>'item_kind', e->>'item_id'))
               FROM diagram_changes c, jsonb_array_elements(c.deltas) e
-             WHERE c.statement_id = s.id AND c.author = :coach
-               AND c.turn_id NOT LIKE 'undo:%'
+             WHERE {AGENT_CHANGES}
                AND e->>'item_kind' = ANY(:tooled)) AS items,
            (SELECT count(*) FROM turn_events t
              WHERE t.turn_id = s.turn_id AND t.kind = 'tool_call') AS lines,
