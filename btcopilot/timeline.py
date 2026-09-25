@@ -67,7 +67,7 @@ KIND_FORMS = {
     EventKind.Death.value: {"died", "dies", "death", "dead", "passed"},
 }
 # Words a description may open with before it says the kind: "Got married in Reno".
-LEADS = {"he", "she", "they", "was", "were", "got", "is", "the", "a", "his", "her"}
+LEADS = {"he", "she", "they", "was", "were", "got", "is", "the", "a", "his", "her", "and"}
 PAIR_KINDS = (
     EventKind.Married.value,
     EventKind.Bonded.value,
@@ -115,6 +115,10 @@ def _born(person_id: int, events: list) -> str | None:
 def _life_id(person_id: int, events: list, kind: EventKind) -> int | None:
     event = _life_event(person_id, events, kind)
     return event.get("id") if event else None
+
+
+def _words(text: str) -> list[str]:
+    return re.findall(r"[a-z]+", text.lower())
 
 
 def _person_label(person: dict | None) -> str:
@@ -173,18 +177,23 @@ def _event_defaults():
             yield f.name, enum_val(None if f.default is MISSING else f.default)
 
 
-def _label(event: dict, people_by_id: dict) -> str:
-    """What happened, with no linked person's name in it: the who is said by
-    the event's links, not twice (owner ruling, 2026-09-09)."""
+def event_label(event: dict, people_by_id: dict) -> str:
+    """What happened, the one wording every view names an event by: the list,
+    the picture, the board, chips and tool lines. The who is said by the
+    event's links, not here (owner ruling, 2026-09-09)."""
     description = (event.get("description") or "").strip()
     kind = enum_val(event.get("kind"))
     if kind in KIND_WORDS:
         word = KIND_WORDS[kind]
         if not description:
             return word
-        opening = next(
-            (w for w in re.findall(r"[a-z]+", description.lower()) if w not in LEADS), ""
-        )
+        # "Robert and Ann married": the linked people's names come before the kind
+        skipped = LEADS | {
+            w
+            for key in ("person", "spouse", "child")
+            for w in _words((people_by_id.get(event.get(key)) or {}).get("name") or "")
+        }
+        opening = next((w for w in _words(description) if w not in skipped), "")
         if opening in KIND_FORMS[kind]:
             return description
         return f"{word} \u00b7 {description}"
@@ -230,7 +239,7 @@ def _events_payload(data: DiagramData, people_by_id: dict) -> list[dict]:
         if not isinstance(event, dict) or event.get("id") is None:
             continue
         chunk = event_payload(event)
-        chunk["label"] = _label(event, people_by_id)
+        chunk["label"] = event_label(event, people_by_id)
         chunk["person_name"] = _who(event, people_by_id)
         chunk["sentence"] = _sentence(
             chunk["label"],
@@ -384,7 +393,7 @@ def build_timeline(data: DiagramData) -> dict:
         date = parse_date(event.get("dateTime"))
         certainty = _certainty(event)
         if date is None or certainty == DateCertainty.Unknown.value:
-            base = _label(event, people_by_id)
+            base = event_label(event, people_by_id)
             shelf.append(
                 {
                     "event_id": event.get("id"),

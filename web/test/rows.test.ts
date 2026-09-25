@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { codes, eventRow, personRow } from "../src/rows";
-import type { Person, TimelineEvent } from "../src/types";
+import { Loose, codes, eventDivider, eventRow, groupOf, personRow } from "../src/rows";
+import { DateCertainty, type Cluster, type Person, type TimelineEvent } from "../src/types";
 
 const person = (over: Partial<Person> = {}): Person => ({
   id: 1,
@@ -64,5 +64,39 @@ describe("an event row's summary line", () => {
     expect(said).toBe("S\u2191  A\u2191  F=  R conflict\u2192Mom");
     const row = eventRow(coded, names);
     expect(row).not.toMatch(/symptom|anxiety|functioning|relationship/i);
+  });
+});
+
+describe("an event row's first line", () => {
+  // R-0457
+  it("is the label the server gives every view, as it is", () => {
+    const row = eventRow({ ...coded, label: "died, possibly around July 4" }, new Map());
+    expect(row).toContain('<div class="r1">died, possibly around July 4</div>');
+  });
+});
+
+describe("the header over events no cluster holds", () => {
+  const cluster = { id: "c1", label: "Leaving and losing", count: 3 } as Cluster;
+
+  // R-0289
+  it("says a dated event is in no cluster, and never calls it unplaced", () => {
+    expect(groupOf(coded, undefined)).toBe(Loose.Dated);
+    expect(eventDivider(Loose.Dated)).toContain("not in a cluster");
+    expect(eventDivider(Loose.Dated)).not.toContain("unplaced");
+  });
+
+  // R-0289
+  it("puts an event with no date, or only a guessed one, under no sure date yet", () => {
+    expect(groupOf({ ...coded, dateTime: null }, undefined)).toBe(Loose.Undated);
+    expect(
+      groupOf({ ...coded, dateCertainty: DateCertainty.Unknown }, undefined),
+    ).toBe(Loose.Undated);
+    expect(eventDivider(Loose.Undated)).toContain("no sure date yet");
+  });
+
+  // R-0289
+  it("gives way to the cluster that holds the event", () => {
+    expect(groupOf(coded, cluster)).toBe(cluster);
+    expect(eventDivider(cluster)).toContain("3 events");
   });
 });

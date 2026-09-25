@@ -13,7 +13,7 @@ from btcopilot.schema import (
     QuestionState,
     enum_val,
 )
-from btcopilot.timeline import _label, _person_label, _who
+from btcopilot.timeline import _person_label, _who, event_label
 from btcopilot.toolbox import REMOVABLE, ToolName
 from btcopilot.turnlog import TurnEventKind
 
@@ -77,11 +77,11 @@ def _event(event: dict, people: dict) -> str:
     kind = enum_val(event.get("kind"))
     if kind in NOUNS:
         return f"{_who(event, people)}'s {NOUNS[kind]}"
-    words = (event.get("description") or "").strip()
-    if words:
-        return words
+    said = event_label(event, people)
+    if (event.get("description") or "").strip():
+        return said
     if record._moved(event):
-        return f"{_person_label(people.get(event.get('person')))}'s {_label(event, people)}"
+        return f"{_person_label(people.get(event.get('person')))}'s {said}"
     return f"{UNSAID.get(kind, 'an event')} about {_who(event, people)}"
 
 

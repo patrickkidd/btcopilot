@@ -1,11 +1,10 @@
 import { esc } from "./dom";
-import type { Cluster, Person, TimelineEvent } from "./types";
+import { DateCertainty, type Cluster, type Person, type TimelineEvent } from "./types";
 
 /** The rows the record is read as, in the drawer and on the coding screen:
  * one line for what it is, one for when and who. One renderer, so the two
  * lists cannot drift apart. */
 
-const UNPLACED = "unplaced";
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
@@ -81,14 +80,27 @@ export function personRow(person: Person, on = false): string {
   );
 }
 
+/** What the rows under a header share when no cluster holds them: a place on
+ * the line and no cluster, or no date the record is sure of — none at all, or
+ * only a guess — and so no place on the line yet. */
+export enum Loose {
+  Dated = "not in a cluster",
+  Undated = "no sure date yet",
+}
+
+/** The stretch of rows an event is listed under. */
+export const groupOf = (event: TimelineEvent, cluster: Cluster | undefined) =>
+  cluster ??
+  (event.dateTime && event.dateCertainty !== DateCertainty.Unknown ? Loose.Dated : Loose.Undated);
+
 /** The header over a stretch of rows: the cluster they belong to and how many
- * events it holds. The word is "event" everywhere (R-0289). */
-export function eventDivider(cluster: Cluster | undefined): string {
-  const count = cluster
-    ? `${cluster.count} event${cluster.count === 1 ? "" : "s"}`
-    : "";
+ * events it holds, or why no cluster does. The word is "event" everywhere
+ * (R-0289). */
+export function eventDivider(group: Cluster | Loose): string {
+  const loose = typeof group === "string";
+  const count = loose ? "" : `${group.count} event${group.count === 1 ? "" : "s"}`;
   return (
-    `<div class="div"><span>${esc(cluster ? cluster.label : UNPLACED)}</span>` +
+    `<div class="div"><span>${esc(loose ? group : group.label)}</span>` +
     `<span class="dcount">${esc(count)}</span></div>`
   );
 }
