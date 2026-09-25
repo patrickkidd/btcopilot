@@ -197,9 +197,13 @@ function chipLabel(chip: Chip): string {
     return (
       timeline.events.find((e) => String(e.id) === chip.target)?.label ?? chip.label
     );
-  if (chip.kind === ChipKind.Question)
+  if (chip.kind === ChipKind.Question || chip.kind === ChipKind.Impression)
     return (
       timeline.asked_questions.find((q) => q.id === chip.target)?.text ?? chip.label
+    );
+  if (chip.kind === ChipKind.PairBond)
+    return (
+      timeline.pair_bonds.find((b) => String(b.id) === chip.target)?.label ?? chip.label
     );
   return (
     timeline.clusters.find(
@@ -241,21 +245,32 @@ const offered = (chip: Chip) =>
 
 const menu = new Menu($("menu-body"), load);
 
-/** A question tapped in the drawer goes into the message as a reference with
- * the cursor after it, and nothing is sent (R-0072). On a phone the drawer
- * gets out of the way; pinned beside the thread it stays. */
-menu.questions = new Questions($("menu-body"), {
-  onChip: (chip) => {
-    if (!pinned()) screen(Screen.Chat);
-    chat.insert(chip);
+/** On a phone the drawer gets out of the way of the thread; pinned beside it,
+ * it stays. */
+const toThread = () => {
+  if (!pinned()) screen(Screen.Chat);
+};
+
+/** A question or impression tapped in the drawer goes into the message as a
+ * reference with the cursor after it, and nothing is sent (R-0072). */
+const questions = new Questions($("menu-body"), {
+  onChip: (chip, after) => {
+    toThread();
+    chat.insert(chip, after);
   },
-  onAsked: (where) => {
-    if (!pinned()) screen(Screen.Chat);
-    void traceTo(where, true);
+  onAsked: (where, ask) => {
+    toThread();
+    void traceTo(where, ask);
   },
   onDismissed: () => void load(),
+  busy: () => inFlight,
+  say: (statement) => {
+    toThread();
+    post(statement);
+  },
   record: tapped,
 });
+menu.questions = questions;
 
 /** The session door beside the message box. The sheet lists every session and a
  * tap swaps the chat to it (family-sections, the owner's pick). */
@@ -860,13 +875,18 @@ function whatFailed(error: unknown): string {
  * left half-typed and nothing looks like it is still coming. */
 let inFlight = false;
 
-async function send(): Promise<void> {
-  const statement = chat.draft();
-  if (!statement || inFlight) return;
+function send(): void {
+  if (post(chat.draft())) chat.resetDraft();
+}
+
+/** The reader's words go into the thread as theirs and on to the coach. */
+function post(statement: string): boolean {
+  if (!statement || inFlight) return false;
   track.tap(Feature.SendMessage);
+  questions.sent(statement);
   chat.add(Role.User, statement);
-  chat.resetDraft();
-  await deliver(statement);
+  void deliver(statement);
+  return true;
 }
 
 async function deliver(statement: string): Promise<void> {
@@ -1183,7 +1203,7 @@ $("composer").addEventListener("keydown", (e) => {
   selection.removeAllRanges();
   selection.addRange(range);
 });
-$("send").addEventListener("click", () => void send());
+$("send").addEventListener("click", send);
 $("menu-close").addEventListener("click", () => {
   track.tap(Feature.CloseMenu);
   const field = $("menu-search") as HTMLInputElement;

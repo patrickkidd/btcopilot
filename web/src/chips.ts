@@ -24,6 +24,9 @@ enum Markup {
   /** A question the coach asked, brought back by the reader from the list of
    * open ones. */
   Question = "question",
+  /** What the coach noticed, brought back by the reader. */
+  Impression = "impression",
+  PairBond = "pair_bond",
 }
 
 const NARROWED: Record<Markup, ChipKind | null> = {
@@ -34,6 +37,8 @@ const NARROWED: Record<Markup, ChipKind | null> = {
   [Markup.Range]: null,
   [Markup.Ask]: ChipKind.Ask,
   [Markup.Question]: ChipKind.Question,
+  [Markup.Impression]: ChipKind.Impression,
+  [Markup.PairBond]: ChipKind.PairBond,
 };
 
 const TOKEN = new RegExp(
@@ -47,6 +52,8 @@ const KIND_WORD: Record<ChipKind, string> = {
   [ChipKind.Person]: "them",
   [ChipKind.Ask]: "this",
   [ChipKind.Question]: "this question",
+  [ChipKind.Impression]: "this",
+  [ChipKind.PairBond]: "them",
 };
 
 const ITEM_OF: Record<ChipKind, ItemKind> = {
@@ -55,6 +62,9 @@ const ITEM_OF: Record<ChipKind, ItemKind> = {
   [ChipKind.Person]: ItemKind.Person,
   [ChipKind.Ask]: ItemKind.Diagram,
   [ChipKind.Question]: ItemKind.Question,
+  // an impression is stored as a question of its own kind
+  [ChipKind.Impression]: ItemKind.Question,
+  [ChipKind.PairBond]: ItemKind.PairBond,
 };
 
 const ASKING = new Set([ChipKind.Ask, ChipKind.Question]);
@@ -118,6 +128,8 @@ export function aimedEvents(
     case ChipKind.Person:
     case ChipKind.Ask:
     case ChipKind.Question:
+    case ChipKind.Impression:
+    case ChipKind.PairBond:
       return [];
   }
 }

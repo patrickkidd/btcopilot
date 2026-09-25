@@ -1,5 +1,5 @@
 import { when } from "./rows";
-import { type ToolCall, ViewKind } from "./types";
+import { QuestionOutcome, QuestionState, type ToolCall, ViewKind } from "./types";
 
 /** What a tool call says in plain words, as the one line the chat shows for it,
  * live and after a reload (R-0478). The line names what the call touched, by
@@ -22,6 +22,9 @@ export enum ToolName {
   AddQuestion = "add_question",
   SetQuestion = "set_question",
   ReadQuestions = "read_questions",
+  AddImpression = "add_impression",
+  SetImpression = "set_impression",
+  ReadImpressions = "read_impressions",
 }
 
 const FIELD = new Map([
@@ -133,6 +136,8 @@ enum Verb {
   Keep = "keep",
   Close = "close",
   LetGo = "let go of",
+  Note = "note",
+  TakeBack = "take back",
 }
 const DID = new Map([
   [Verb.Look, "Looked at"],
@@ -144,18 +149,12 @@ const DID = new Map([
   [Verb.Keep, "Kept"],
   [Verb.Close, "Closed"],
   [Verb.LetGo, "Let go of"],
+  [Verb.Note, "Noted"],
+  [Verb.TakeBack, "Took back"],
 ]);
 
-/** How a question the coach closed ended, said after its words. Mirrors
- * `QuestionOutcome` on the server; the reader's own dismissal is not a tool
- * call and has no line. */
-enum QuestionOutcome {
-  Fact = "fact",
-  Answered = "answered",
-  Unknown = "unknown",
-  DeclinedInChat = "declined_in_chat",
-  LetGo = "let_go",
-}
+/** How a question the coach closed ended, said after its words; the
+ * reader's own dismissal is not a tool call and has no line. */
 const ENDED = new Map([
   [QuestionOutcome.Fact, "the answer is in the record"],
   [QuestionOutcome.Answered, "you answered it"],
@@ -163,26 +162,40 @@ const ENDED = new Map([
   [QuestionOutcome.DeclinedInChat, "you'd rather not say"],
 ]);
 
-enum QuestionState {
-  Held = "held",
-  Asked = "asked",
-  Resolved = "resolved",
-}
-
 const quoted = (words: string) => `“${words}”`;
 
-/** A question the coach keeps for later stays the coach's: the server keeps
- * its calls without its words, so the line says none. A refused close says
- * only what it tried to close, then why. */
-function question(tool: ToolName, call: ToolCall): [Verb, string] {
+/** How the lines speak of each of the two things the coach keeps. */
+interface Kept {
+  held: string;
+  unasked: string;
+  raise: Verb;
+  raised: (words: string) => string;
+}
+const QUESTION: Kept = {
+  held: "a question for later",
+  unasked: "a question kept for later",
+  raise: Verb.Add,
+  raised: (words) => `${words} to your questions`,
+};
+const IMPRESSION: Kept = {
+  held: "an impression for later",
+  unasked: "an impression kept for later",
+  raise: Verb.Note,
+  raised: (words) => words,
+};
+
+/** One kept for later stays the coach's: the server keeps its calls without
+ * its words, so the line says none. A refused close says only what it tried
+ * to close, then why. */
+function kept(say: Kept, call: ToolCall): [Verb, string] {
   const state = call.args.state as QuestionState;
-  if (tool === ToolName.AddQuestion && state === QuestionState.Held)
-    return [Verb.Keep, "a question for later"];
-  const words =
-    call.names.it === undefined ? "a question kept for later" : quoted(call.names.it as string);
-  if (state !== QuestionState.Resolved) return [Verb.Add, `${words} to your questions`];
+  if (call.args.id === undefined && state === QuestionState.Held) return [Verb.Keep, say.held];
+  const words = call.names.it === undefined ? say.unasked : quoted(call.names.it as string);
+  if (state !== QuestionState.Resolved) return [say.raise, say.raised(words)];
   const outcome = call.args.outcome as QuestionOutcome;
   if (outcome === QuestionOutcome.LetGo) return [Verb.LetGo, words];
+  if (outcome === QuestionOutcome.Revised)
+    return [Verb.TakeBack, call.refusal ? words : `${words} to reword it`];
   const ended = ENDED.get(outcome);
   return [Verb.Close, call.refusal || !ended ? words : `${words}: ${ended}`];
 }
@@ -208,7 +221,12 @@ function told(tool: ToolName, call: ToolCall): [Verb, string] {
       return [Verb.Look, "questions"];
     case ToolName.AddQuestion:
     case ToolName.SetQuestion:
-      return question(tool, call);
+      return kept(QUESTION, call);
+    case ToolName.ReadImpressions:
+      return [Verb.Look, "impressions"];
+    case ToolName.AddImpression:
+    case ToolName.SetImpression:
+      return kept(IMPRESSION, call);
     default:
       return call.args.id === undefined
         ? [Verb.Add, [it, ...added(call)].join(", ")]

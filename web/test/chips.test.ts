@@ -99,6 +99,22 @@ describe("a question the reader brings back", () => {
   });
 });
 
+describe("an impression or a pair bond in a message", () => {
+  // R-0072
+  it("reads as a teal chip naming it, stored against the item it is", () => {
+    const [impression, bond] = chips("[[impression:i3]] and [[pair_bond:4]]");
+    expect([impression.kind, impression.target, impression.tone]).toEqual([
+      ChipKind.Impression,
+      "i3",
+      ChipTone.Data,
+    ]);
+    expect(itemKind(impression.kind)).toBe(ItemKind.Question);
+    expect([bond.kind, bond.target]).toEqual([ChipKind.PairBond, "4"]);
+    expect(itemKind(bond.kind)).toBe(ItemKind.PairBond);
+    expect(aimedEvents(bond, chapters)).toEqual([]);
+  });
+});
+
 describe("the chips a reply keeps", () => {
   // R-0361
   it("still makes a chip of every person and event the coach names", () => {

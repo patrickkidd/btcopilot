@@ -486,13 +486,13 @@ export class Chat {
     }
   }
 
-  /** Drop a chip into the composer at the caret, as an inline pill. A chip the
-   * coach offered keeps its amber, so what the user is about to send still
-   * looks like the thing they tapped. */
-  insert(chip: Chip): void {
+  /** Drop a chip into the composer at the caret, as an inline pill, with the
+   * words that follow it. A chip the coach offered keeps its amber, so what the
+   * user is about to send still looks like the thing they tapped. */
+  insert(chip: Chip, after = " "): void {
     this.composer.focus({ preventScroll: true });
     const selection = window.getSelection();
-    const html = this.pill(chip) + " ";
+    const html = this.pill(chip) + esc(after);
     if (
       selection?.rangeCount &&
       this.composer.contains(selection.getRangeAt(0).commonAncestorContainer)

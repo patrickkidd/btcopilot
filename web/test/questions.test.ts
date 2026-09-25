@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+import { drawer, fetched, sentAt } from "./drawer";
 import { token } from "../src/chips";
 import { face } from "../src/chat";
-import { EMPTY, Questions, questionsHtml } from "../src/questions";
+import { EMPTY, questionsHtml } from "../src/questions";
 import { toolLine, ToolName } from "../src/tools";
 import {
   ChipKind,
@@ -27,6 +28,8 @@ const asked = (
   open,
   asked_at: day,
   asked_in: { discussion_id: 7, statement_id: 70 },
+  evidence: [],
+  pushback: null,
 });
 
 const FAMILY = [
@@ -89,47 +92,10 @@ describe("the questions tab", () => {
   });
 });
 
-/** Just enough of a list for the tab's own taps: the clicks it listens for, and
- * rows that know which question they hold. */
-function drawer() {
-  const heard: Record<string, (e: unknown) => void> = {};
-  const body = {
-    innerHTML: "",
-    scrollTop: 0,
-    addEventListener: (kind: string, fn: (e: unknown) => void) => {
-      heard[kind] = fn;
-    },
-  } as unknown as HTMLElement;
-  const handlers = {
-    onChip: vi.fn(),
-    onAsked: vi.fn(),
-    onDismissed: vi.fn(),
-    record: vi.fn(),
-  };
-  const list = new Questions(body, handlers);
-  list.show(FAMILY);
-  const click = async (id: string, on: string) => {
-    const row = { dataset: { q: id } };
-    const target = { closest: (sel: string) => (sel === ".qrow" || sel === on ? row : null) };
-    heard.click({ target });
-    // the tap's own requests settle before anything is looked at
-    await new Promise((settle) => setTimeout(settle, 0));
-  };
-  return { handlers, click };
-}
-
-const fetched = vi.fn(async () => ({ ok: true, status: 204, text: async () => "" }));
-
-beforeEach(() => {
-  fetched.mockClear();
-  vi.stubGlobal("fetch", fetched);
-  vi.stubGlobal("document", { querySelector: () => null });
-});
-
 describe("tapping a question", () => {
   // R-0072
   it("puts it in the message box as a reference in its own words and sends nothing", async () => {
-    const { handlers, click } = drawer();
+    const { handlers, click } = drawer(FAMILY);
     await click("q4", ".chip");
     const chip = handlers.onChip.mock.calls[0][0];
     expect(chip).toEqual({
@@ -146,16 +112,16 @@ describe("tapping a question", () => {
 
   // R-0077
   it("is recorded as a chip tap on that question", async () => {
-    const { handlers, click } = drawer();
+    const { handlers, click } = drawer(FAMILY);
     await click("q4", ".chip");
     expect(handlers.record).toHaveBeenCalledWith(InteractionKind.ChipTap, ItemKind.Question, "q4");
   });
 
   // R-0006
   it("on the day it was asked goes to where it was asked", async () => {
-    const { handlers, click } = drawer();
+    const { handlers, click } = drawer(FAMILY);
     await click("q3", "button.qwhen");
-    expect(handlers.onAsked).toHaveBeenCalledWith({ discussion_id: 7, statement_id: 70 });
+    expect(handlers.onAsked).toHaveBeenCalledWith({ discussion_id: 7, statement_id: 70 }, true);
     expect(handlers.onChip).not.toHaveBeenCalled();
   });
 });
@@ -163,15 +129,13 @@ describe("tapping a question", () => {
 describe("dismissing a question", () => {
   // R-0077
   it("stores it as put away by the reader, records the tap, and reads the record again", async () => {
-    const { handlers, click } = drawer();
+    const { handlers, click } = drawer(FAMILY);
     await click("q1", ".fs-act");
     expect(fetched).toHaveBeenCalledTimes(1);
-    const [url, init] = fetched.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe("/app/questions/q1");
-    expect(init.method).toBe("PATCH");
-    expect(JSON.parse(init.body as string)).toEqual({
-      state: "resolved",
-      outcome: "declined_by_user",
+    expect(sentAt()).toEqual({
+      url: "/app/questions/q1",
+      method: "PATCH",
+      body: { state: "resolved", outcome: "declined_by_user" },
     });
     expect(handlers.record).toHaveBeenCalledWith(InteractionKind.Dismiss, ItemKind.Question, "q1");
     expect(handlers.onDismissed).toHaveBeenCalled();

@@ -17,6 +17,9 @@ import type {
   InteractionKind,
   ItemKind,
   PlayReply,
+  Pushback,
+  QuestionOutcome,
+  QuestionState,
   PairBond,
   Person,
   Passkey,
@@ -239,13 +242,12 @@ export const savePairBond = (
 export const deletePairBond = (id: number, diagramId?: number) =>
   call<void>("DELETE", onDiagram(`/pair_bonds/${id}`, diagramId));
 
-/** The reader putting a question the coach asked away: the one change they
- * make to a question. It stays in the record for the coach. */
-export const dismissQuestion = (id: string) =>
-  call<unknown>("PATCH", `/questions/${id}`, {
-    state: "resolved",
-    outcome: "declined_by_user",
-  });
+/** The reader's own change to a question or an impression: putting it away,
+ * or pushing back on it. It stays in the record for the coach. */
+export const saveQuestion = (
+  id: string,
+  body: { state?: QuestionState; outcome?: QuestionOutcome; pushback?: Pushback },
+) => call<unknown>("PATCH", `/questions/${id}`, body);
 
 /** Sessions, newest activity first. The server has no current-session pointer:
  * posting into a session is what makes it the one you come back to. */

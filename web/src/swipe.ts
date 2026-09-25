@@ -16,8 +16,9 @@ export class Swipe {
     body: HTMLElement,
     private rows: string,
     /** The action buttons for one row, and a class the row wears while they
-     * show, for a row with more of them than fit the usual width. */
-    private actions: (row: HTMLElement) => { html: string; wide: boolean },
+     * show, for a row with more of them than fit the usual width. Null for a
+     * row that draws its own actions behind it. */
+    private actions: (row: HTMLElement) => { html: string; wide: boolean } | null,
   ) {
     let from: { x: number; y: number; row: HTMLElement } | null = null;
     body.addEventListener("pointerdown", (e) => {
@@ -48,12 +49,23 @@ export class Swipe {
   open(row: HTMLElement, bySwipe = true): void {
     if (this.swiped === row) return;
     this.close();
-    const { html, wide } = this.actions(row);
-    row.insertAdjacentHTML("beforeend", `<div class="fs-acts${wide ? " wide" : ""}">${html}</div>`);
+    const acts = this.actions(row);
+    if (acts)
+      row.insertAdjacentHTML(
+        "beforeend",
+        `<div class="fs-acts${acts.wide ? " wide" : ""}">${acts.html}</div>`,
+      );
     row.classList.add("swiped");
-    if (wide) row.classList.add("wide");
+    if (acts?.wide) row.classList.add("wide");
     this.swiped = row;
     this.opening = bySwipe;
+  }
+
+  /** The row's actions out if they are away, away if they are out: what a
+   * button beside the row does. */
+  toggle(row: HTMLElement): void {
+    if (this.swiped === row) this.close();
+    else this.open(row, false);
   }
 
   close(): void {

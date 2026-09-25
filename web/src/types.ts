@@ -9,6 +9,9 @@ export enum ChipKind {
   Ask = "ask",
   /** A question the coach asked and the reader brought back to talk about. */
   Question = "question",
+  /** What the coach noticed, brought back by the reader. */
+  Impression = "impression",
+  PairBond = "pair_bond",
 }
 
 /** Teal is a reference to something the record holds; amber is the coach or the
@@ -37,6 +40,8 @@ export enum InteractionKind {
   ChipTap = "chip_tap",
   Play = "play",
   Dismiss = "dismiss",
+  DoesntFit = "doesnt_fit",
+  Partly = "partly",
 }
 
 /** How sure the record is of a date. Unknown means the date matches anything,
@@ -142,9 +147,56 @@ export interface Question {
   sentence: string;
 }
 
+/** What the coach keeps for the reader: two kinds of question, and what it
+ * noticed. Mirrors `QuestionKind` on the server. */
 export enum QuestionKind {
   Thought = "thought",
   Fact = "fact",
+  Impression = "impression",
+}
+
+/** Mirrors `QuestionState` on the server. An impression is raised where a
+ * question is asked. */
+export enum QuestionState {
+  Held = "held",
+  Asked = "asked",
+  Raised = "raised",
+  Resolved = "resolved",
+}
+
+/** How a question or impression ended. Mirrors `QuestionOutcome`. */
+export enum QuestionOutcome {
+  Fact = "fact",
+  Answered = "answered",
+  Unknown = "unknown",
+  DeclinedByUser = "declined_by_user",
+  DeclinedInChat = "declined_in_chat",
+  LetGo = "let_go",
+  DoesntFit = "doesnt_fit",
+  Revised = "revised",
+}
+
+export enum Pushback {
+  Partly = "partly",
+}
+
+/** What an impression rests on. Mirrors `EvidenceKind` on the server. */
+export enum EvidenceKind {
+  Person = "person",
+  PairBond = "pair_bond",
+  Event = "event",
+  Cluster = "cluster",
+  Statement = "statement",
+}
+
+/** One thing an impression rests on, named as the record names it. A message
+ * also says which session it was said in and on what day. */
+export interface Evidence {
+  kind: EvidenceKind;
+  id: number | string;
+  label: string;
+  discussion_id?: number;
+  at?: string;
 }
 
 /** A question the coach has asked, with where it was asked. Only the open ones
@@ -157,6 +209,9 @@ export interface AskedQuestion {
   open: boolean;
   asked_at: string;
   asked_in: CodedIn | null;
+  /** What an impression rests on; a question rests on nothing. */
+  evidence: Evidence[];
+  pushback: Pushback | null;
 }
 
 export interface Timeline {
