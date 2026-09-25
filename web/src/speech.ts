@@ -22,6 +22,11 @@ export function say(text: string): void {
   synth.speak(new SpeechSynthesisUtterance(words));
 }
 
+/** The reader's tap cuts the reply being spoken, and opens the voice for the
+ * next one: iOS Safari drops every speak() until one is made inside a tap, and
+ * the reply arrives long after the tap, so an empty one is made here. */
 export function hush(): void {
-  window.speechSynthesis?.cancel();
+  const synth = window.speechSynthesis;
+  synth.cancel();
+  synth.speak(new SpeechSynthesisUtterance(""));
 }
