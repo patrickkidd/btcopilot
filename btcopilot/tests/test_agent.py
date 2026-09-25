@@ -823,7 +823,9 @@ def test_the_coach_is_told_how_to_keep_its_questions():
     assert "Never ask again a question the map marks declined" in prompt
     assert "never keep one the record already answers" in prompt
     assert "keep the one whose words ask it best" in prompt
-    assert "is a fact, however it is worded, and never food for thought" in prompt
+    assert "a thinking question about patterns or meaning" in prompt
+    assert "Facts to find (`fact`): anything with a factual answer" in prompt
+    assert "it names the person and the subject" in prompt
     for tool in (ToolName.AddQuestion, ToolName.SetQuestion, ToolName.ReadQuestions):
         assert f"`{tool.value}`" in prompt
 

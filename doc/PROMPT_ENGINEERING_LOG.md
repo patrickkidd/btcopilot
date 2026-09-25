@@ -941,3 +941,15 @@ out, in the best-worded version; weigh every question for the person's time befo
 keeping it, with inclusion still the default when in doubt. The backfill prompt
 says the map is drawn after every later session, so it often holds the answer.
 Not yet measured: the model account was out of credit. [R-0482, R-0485]
+
+### September 2026: A kept question reads on its own, and anything with a factual answer is a fact (FD-363)
+
+**Change**: stored questions read in the Questions tab away from the conversation,
+and real runs kept fragments such as "And how old are they now?". The coach now
+words a question it keeps so it names the person and the subject ("How old is
+Elizabeth's brother now?") and stores it in those words; the backfill may reword a
+question that leans on its context, changing nothing else about what it asks. A
+live turn filed an intake question as food for thought, so food for thought is now
+a thinking question about patterns or meaning, and anything with a factual answer,
+including the basics of who is in the family, is a fact to find. Not yet measured
+live. [R-0482, R-0485]
