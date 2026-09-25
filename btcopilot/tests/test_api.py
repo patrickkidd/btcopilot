@@ -12,7 +12,7 @@ from btcopilot.models import Author, Change, Discussion, Interaction, Statement
 from btcopilot.models.interaction import InteractionKind
 from btcopilot.models import Diagram, License, Policy
 from btcopilot.models.license import LicenseStatus
-from btcopilot.models.preferences import ChatMode, PrefKey, Proactive, Theme
+from btcopilot.models.preferences import ChatMode, PrefKey, Proactive, Spotlight, Theme
 from btcopilot.schema import (
     Cluster,
     DateCertainty,
@@ -351,6 +351,7 @@ def test_preferences_defaults(web, test_user):
         PrefKey.Proactive.value: Proactive.Never.value,
         PrefKey.Mode.value: ChatMode.Text.value,
         PrefKey.Theme.value: Theme.System.value,
+        PrefKey.Spotlight.value: Spotlight.Unified.value,
         "first_name": test_user.first_name,
         "last_name": test_user.last_name,
         "birthdate": None,

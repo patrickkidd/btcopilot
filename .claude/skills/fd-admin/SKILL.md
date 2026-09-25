@@ -304,6 +304,19 @@ Every account, one line each.
 | `--email` | Only addresses containing this text. |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin users prefs <email> [key] [value]`
+
+Show somebody's settings, or set the one named to the value given. `spotlight chip` gives them back the old way a chip lit the picture; `spotlight unified`, the default, has a chip and a dot do the same thing.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `email` | required |
+| `key` | optional |
+| `value` | optional |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin users roles <email> [roles]`
 
 Show somebody's roles, or set them to the roles named.

@@ -32,6 +32,7 @@ import {
 import {
   DateCertainty,
   ItemKind,
+  Spotlight,
   ViewKind,
   type Cluster,
   type Person,
@@ -183,7 +184,7 @@ export function pairSvg(
 
 /** The picture's levels. The middle "cluster drilldown" is CUT (R-0074): the
  * resting wire and the moves board are the two that survive. */
-enum Level {
+export enum Level {
   /** Nothing named yet: the whole line at a glance, one box per cluster. */
   Rest = "rest",
   Wire = "wire",
@@ -331,6 +332,51 @@ function loose(dated: TimelineEvent[], clusters: { event_ids: number[] }[]): Tim
   return dated.filter((event) => !claimed.has(event.id));
 }
 
+/** Which way in to an event the reader touched. */
+export enum Via {
+  Chip = "chip",
+  Dot = "dot",
+}
+
+/** What the picture shows, as far as picking an event changes it. */
+export interface Look {
+  level: Level;
+  focus: Cluster | null;
+  named: number[];
+  selected: number | null;
+}
+
+/** The picture after one event is picked. A chip naming it and its dot do one
+ * thing (R-0168): the event is picked and everything else recedes. Inside a
+ * cluster the cluster opens; outside every cluster it is picked on the resting
+ * line, the clusters kept as brackets under it (R-0235). The old chip
+ * spotlight, kept behind a per-person setting: a chip put the event on the
+ * wire with the whole record and no clusters, and a dot only picked it. */
+export function picked(
+  look: Look,
+  id: number,
+  named: number[],
+  clusters: Cluster[],
+  spot: Spotlight,
+  via: Via,
+): Look {
+  const focus = clusters.find((c) => c.event_ids.includes(id)) ?? null;
+  if (spot === Spotlight.Unified)
+    return { level: focus ? Level.Wire : Level.Rest, focus, named, selected: id };
+  if (via === Via.Dot) return { ...look, selected: id };
+  return { level: Level.Wire, focus, named, selected: id };
+}
+
+/** The whole resting line is drawn, clusters as boxes, or as brackets under
+ * the line while an event no cluster holds is picked. */
+export const resting = (look: Look): boolean =>
+  look.level === Level.Rest && (look.selected === null || !look.focus);
+
+/** Where the line runs: high on the resting line with nothing picked, and
+ * lower wherever an event is picked, to leave its words room above it. */
+export const wireOf = (look: Look): number =>
+  resting(look) && look.selected === null ? REST_WIRE : WIRE;
+
 export class Picture {
   private data: Timeline | null = null;
   /** The moments the coach's latest message named — the spotlight. */
@@ -375,6 +421,7 @@ export class Picture {
   constructor(
     private host: HTMLElement,
     private handlers: PictureHandlers,
+    private spot = Spotlight.Unified,
   ) {
     window.addEventListener("resize", () => this.render());
     this.host.addEventListener("click", (e) => {
@@ -475,6 +522,33 @@ export class Picture {
     this.focus = this.clusterOf(eventIds[0]);
     this.rescale();
     this.render();
+  }
+
+  /** One event picked, from its dot or from a chip naming it; a chip also
+   * takes the line to it, since it may be off screen. */
+  pick(id: number, named: number[], via: Via): void {
+    ({
+      level: this.level,
+      focus: this.focus,
+      named: this.named,
+      selected: this.selected,
+    } = picked(this.look(), id, named, this.data?.clusters ?? [], this.spot, via));
+    this.litPeople = [];
+    if (via === Via.Chip) {
+      this.aim(id);
+      this.cluster = null;
+    }
+    this.rescale();
+    this.render();
+  }
+
+  private look(): Look {
+    return {
+      level: this.level,
+      focus: this.focus,
+      named: this.named,
+      selected: this.selected,
+    };
   }
 
   select(eventId: number | null): void {
@@ -895,7 +969,12 @@ export class Picture {
     // brackets under the wire until the moment is put down (owner, option A,
     // 2026-09-09).
     const picked = this.selected !== null && loose(dated, clusters).some((e) => e.id === this.selected);
-    const wireY = picked ? WIRE : REST_WIRE;
+    // what an event picked leaves out recedes, as it does on the open wire
+    const faded = (id: number | null) =>
+      this.named.length && (id === null || !this.named.includes(id))
+        ? ` opacity="${baseOpacity(dated.length, this.named.length)}"`
+        : "";
+    const wireY = wireOf(this.look());
     const first = years(dated[0].dateTime as string);
     const last = years(dated[dated.length - 1].dateTime as string);
     const span = last - first || 1;
@@ -965,7 +1044,7 @@ export class Picture {
                 cluster.count > 1 ? a + ((b - a) * j) / (cluster.count - 1) : middle,
               );
         for (const cx of dotXs(when, left, boxWidth))
-          svg += `<circle class="dot" cx="${cx.toFixed(1)}" cy="${wireY}" r="${DOT_R}"/>`;
+          svg += `<circle class="dot" cx="${cx.toFixed(1)}" cy="${wireY}" r="${DOT_R}"${faded(null)}/>`;
       }
       if (!picked)
         svg +=
@@ -996,7 +1075,7 @@ export class Picture {
     }));
     for (const { event, x } of marks) {
       const on = event.id === this.selected ? " on" : "";
-      svg += `<circle class="dot${on}" cx="${x.toFixed(1)}" cy="${wireY}" r="${on ? 7 : DOT_R}"/>`;
+      svg += `<circle class="dot${on}" cx="${x.toFixed(1)}" cy="${wireY}" r="${on ? 7 : DOT_R}"${faded(event.id)}/>`;
     }
     const hits = this.zoneHits(marks, width, wireY);
 
@@ -1242,10 +1321,11 @@ export class Picture {
         return;
       }
     }
-    // A tap on a loose moment picks it where it is: the clusters stay, the
-    // dot reads as picked (owner, 2026-09-09). The spotlight below is for
-    // what the coach's words name, not for a tap.
-    if (this.level === Level.Rest && (this.selected === null || !this.focus)) {
+    // A loose event picked, by its dot or by a chip, is picked where it is:
+    // the clusters stay, the dot reads as picked (Patrick, 2026-09-09; R-0168).
+    // The spotlight below is for a cluster open, or what the coach's words
+    // name as a whole.
+    if (resting(this.look())) {
       this.renderRest();
       return;
     }
@@ -1256,7 +1336,7 @@ export class Picture {
     // the resting picture is one fixed height, whatever it is showing: people
     // on stage belong to the board, which is a level of its own (ruled)
     const height = PIC_H;
-    const wire = WIRE;
+    const wire = wireOf(this.look());
 
     if (!shown.length) {
       this.laid = { zones: [], rows: [] };

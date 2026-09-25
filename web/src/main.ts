@@ -2,7 +2,7 @@ import "./telemetry";
 import "./theme.css";
 import * as api from "./api";
 import { Chat, wait, type LiveBubble, type PlayTap } from "./chat";
-import { Picture, Target, type Tap } from "./picture";
+import { Picture, Target, Via, type Tap } from "./picture";
 import { Menu, Tab } from "./menu";
 import { Questions } from "./questions";
 import { Ballot } from "./ballot";
@@ -59,6 +59,8 @@ import {
   type Cluster,
   type Timeline,
   SessionKind,
+  Spotlight,
+  type Preferences,
 } from "./types";
 
 declare global {
@@ -71,6 +73,7 @@ declare global {
         pro: boolean;
         /** Only an auditor takes part in the coding work (R-0311). */
         coder: boolean;
+        prefs: Pick<Preferences, "spotlight">;
       } | null;
       diagram: { id: number; name: string } | null;
       session: { id: number; turn: string | null } | null;
@@ -110,7 +113,11 @@ function tapped(kind: InteractionKind, item: ItemKind, id: string | null = null)
  * same 150ms the stylesheet transitions it over. */
 const FADE_MS = 150;
 
-const picture = new Picture($("view"), { onTap: (tap: Tap) => onTap(tap) });
+const picture = new Picture(
+  $("view"),
+  { onTap: (tap: Tap) => onTap(tap) },
+  window.BOOTSTRAP.user?.prefs.spotlight ?? Spotlight.Unified,
+);
 
 /** A tap on the wire steps through the moments under the thumb; a tap on the
  * words picks the one whose row was tapped; a tap on the shelf asks about what
@@ -611,7 +618,6 @@ async function openSession(id: number, kind?: SessionKind): Promise<void> {
 function aim(chip: Chip): void {
   const ids = aimedEvents(chip, timeline.clusters);
   if (!ids.length) return;
-  picture.spotlight(ids);
   // A chip in the coach's words does exactly what a tap on the picture does:
   // there is one selection, wherever the reader touched it. A chip naming one
   // moment selects that moment; a chip naming a cluster selects the cluster,
@@ -620,15 +626,11 @@ function aim(chip: Chip): void {
     ids.length > 1
       ? timeline.clusters.find((c) => ids.every((id) => c.event_ids.includes(id)))
       : undefined;
-  apply(
-    reduce(
-      REST,
-      PicEvent.Tap,
-      cluster
-        ? { kind: SelKind.Cluster, id: cluster.id }
-        : { kind: SelKind.Event, id: String(ids[0]) },
-    ),
-  );
+  if (cluster) {
+    picture.spotlight(ids);
+    apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Cluster, id: cluster.id }));
+  } else
+    apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(ids[0]) }), ids);
 }
 
 /** The nth chip of a walk steps the board to the nth move. The caption row
@@ -640,11 +642,14 @@ function stepBoard(play: PlayTap, chip: Chip): void {
 }
 
 /** One place turns a picture tap into its consequences: what the picture shows,
- * what goes in the composer, what gets recorded, what plays. */
-function apply(outcome: Outcome): void {
+ * what goes in the composer, what gets recorded, what plays. `named` is what a
+ * chip named, when the tap was on a chip rather than the picture. */
+function apply(outcome: Outcome, named: number[] | null = null): void {
   pic = outcome.state;
   const sel = pic.sel;
-  picture.select(sel && sel.kind === SelKind.Event ? Number(sel.id) : null);
+  if (sel?.kind === SelKind.Event)
+    picture.pick(Number(sel.id), named ?? [Number(sel.id)], named ? Via.Chip : Via.Dot);
+  else picture.select(null);
   if (sel?.kind === SelKind.Cluster) {
     const cluster = timeline.clusters.find((c) => c.id === sel.id);
     if (cluster) picture.spotlight(cluster.event_ids);

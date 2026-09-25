@@ -395,11 +395,20 @@ export enum Theme {
   Dark = "dark",
 }
 
+/** How the picture answers a tap on an event: a chip naming it and its dot
+ * do one thing (R-0168), or, set per person by an admin, the old chip
+ * spotlight. */
+export enum Spotlight {
+  Unified = "unified",
+  Chip = "chip",
+}
+
 export interface Preferences {
   speak: boolean;
   proactive: Proactive;
   mode: Mode;
   theme: Theme;
+  spotlight: Spotlight;
   first_name: string | null;
   last_name: string | null;
   birthdate: string | null;

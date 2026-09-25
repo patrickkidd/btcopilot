@@ -14,6 +14,7 @@ from btcopilot.tests import olddump
 from btcopilot.admin.setting import SettingKey
 from btcopilot.extensions import db
 from btcopilot.models import Observation, ObservationKind
+from btcopilot.models.preferences import PrefKey, Spotlight
 
 
 @pytest.fixture
@@ -47,6 +48,24 @@ def test_users_roles_set_then_read(run, test_user):
     assert rows(run("users", "roles", test_user.username, "--json"))[0]["roles"] == (
         btcopilot.ROLE_AUDITOR
     )
+
+
+def test_users_prefs_flip_the_spotlight_and_back(run, test_user):
+    # R-0168
+    shown = rows(run("users", "prefs", test_user.username, "--json"))
+    assert shown[0]["spotlight"] == "unified"
+
+    run("users", "prefs", test_user.username, "spotlight", "chip")
+    assert test_user.pref(PrefKey.Spotlight) is Spotlight.Chip
+
+    run("users", "prefs", test_user.username, "spotlight", "unified")
+    assert test_user.pref(PrefKey.Spotlight) is Spotlight.Unified
+
+
+def test_users_prefs_takes_a_switch_as_on_or_off(run, test_user):
+    # R-0453
+    run("users", "prefs", test_user.username, "speak", "on")
+    assert test_user.pref(PrefKey.Speak) is True
 
 
 def test_users_invite_prints_a_link(run, flask_app):

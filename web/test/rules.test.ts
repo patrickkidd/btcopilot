@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { beforeEach, expect, it } from "vitest";
 import { flagLine } from "../src/rules";
-import { RuleSource, type Rule } from "../src/types";
+import { RuleSource, Spotlight, type Rule } from "../src/types";
 
 const rule = (flagged: boolean): Rule => ({
   id: 7,
@@ -17,7 +17,13 @@ const rule = (flagged: boolean): Rule => ({
 const signIn = (admin: boolean) => {
   (globalThis as { window?: unknown }).window = globalThis;
   window.BOOTSTRAP = {
-    user: { username: "someone", admin, pro: false, coder: true },
+    user: {
+      username: "someone",
+      admin,
+      pro: false,
+      coder: true,
+      prefs: { spotlight: Spotlight.Unified },
+    },
     diagram: null,
     session: null,
     statements: [],

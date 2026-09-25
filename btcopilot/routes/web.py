@@ -42,6 +42,7 @@ def _page() -> str:
             "coder": user.has_role(btcopilot.ROLE_AUDITOR)
             or user.has_role(btcopilot.ROLE_ADMIN),
             "pro": professional(user),
+            "prefs": user.prefs(),
         },
         "session": session_payload(discussion) if discussion else None,
         "statements": statements_payload(discussion) if discussion else [],
