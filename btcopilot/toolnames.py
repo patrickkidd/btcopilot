@@ -5,7 +5,14 @@ shows an id."""
 
 from btcopilot import record
 from btcopilot.clusters import _title
-from btcopilot.schema import ITEM_COLLECTIONS, DiagramData, EventKind, ItemKind, enum_val
+from btcopilot.schema import (
+    ITEM_COLLECTIONS,
+    DiagramData,
+    EventKind,
+    ItemKind,
+    QuestionState,
+    enum_val,
+)
 from btcopilot.timeline import _label, _person_label, _who
 from btcopilot.toolbox import REMOVABLE, ToolName
 from btcopilot.turnlog import TurnEventKind
@@ -129,11 +136,29 @@ def names(data: DiagramData, tool: str, args: dict) -> dict:
     return out
 
 
+def _unasked(data: DiagramData, tool: str, args: dict) -> bool:
+    """The call touches a question the person has never been asked, and does
+    not ask it."""
+    asks = args.get("state") == QuestionState.Asked
+    if tool == ToolName.AddQuestion:
+        return not asks
+    if tool == ToolName.SetQuestion:
+        question = next((q for q in data.questions if q["id"] == str(args.get("id"))), None)
+        return question is not None and question["asked_at"] is None and not asks
+    return False
+
+
 def toolcall(data: DiagramData, tool: str, args: dict) -> dict:
-    """A tool call as its turn keeps it, named from the record before it runs."""
+    """A tool call as its turn keeps it, named from the record before it runs.
+    The words of a question kept for later stay on the server: the call is kept
+    without them, so neither the live page nor the thread ever gets them."""
+    named = names(data, tool, args)
+    if _unasked(data, tool, args):
+        args = {key: value for key, value in args.items() if key != "text"}
+        named.pop("it")
     return {
         "type": TurnEventKind.ToolCall.value,
         "name": tool,
         "args": args,
-        "names": names(data, tool, args),
+        "names": named,
     }

@@ -138,8 +138,10 @@ def undo(
     data = diagramjson.loads(diagram.data)
     applied = []
     for change in changes:
+        # A question is put back only where a removal closed it.
+        removal = any(_removes(delta) for delta in change.deltas)
         for delta in reversed(change.deltas):
-            if delta["item_kind"] == ItemKind.Question.value:
+            if delta["item_kind"] == ItemKind.Question.value and not removal:
                 continue
             inverse = _inverse(delta)
             actual = _get(data, inverse)
@@ -160,6 +162,7 @@ def undo(
         user_id,
         session_id,
         None,
+        undoing=True,
     )
 
 
@@ -314,9 +317,22 @@ def _remove(data: dict, kind: ItemKind, item_id) -> list[dict]:
 
     Mirrors Scene._do_removeItem: a person takes their events, the emotions
     naming them, and their pair bonds; a pair bond orphans its children; an
-    event takes the emotions it caused.
+    event takes the emotions it caused. A question about the item is let go
+    and loses its link, since a question is never removed.
     """
     deltas = []
+    for question in _collection(data, ItemKind.Question):
+        if question.get("item_kind") == kind.value and str(question.get("item_id")) == str(item_id):
+            fields = {"item_kind": None, "item_id": None}
+            if question["state"] != QuestionState.Resolved:
+                fields.update(state=QuestionState.Resolved.value, outcome=QuestionOutcome.LetGo.value)
+            deltas += [
+                _set(
+                    data,
+                    {"item_kind": ItemKind.Question, "item_id": question["id"], "field": f, "after": v},
+                )
+                for f, v in fields.items()
+            ]
     if kind is ItemKind.Person:
         for event in [
             e for e in _collection(data, ItemKind.Event) if involves(e, item_id)
@@ -368,7 +384,11 @@ def involves(event: dict, person_id) -> bool:
     return any(str(x) == str(person_id) for x in ids if x is not None)
 
 
-def _validate(data: dict, deltas: list[dict], author: Author):
+def _removes(delta: dict) -> bool:
+    return delta["field"] is None and delta["after"] is None
+
+
+def _validate(data: dict, deltas: list[dict], author: Author, undoing: bool):
     """Every cluster this write leaves behind holds at least MIN_CLUSTER_EVENTS
     events.
 
@@ -399,7 +419,9 @@ def _validate(data: dict, deltas: list[dict], author: Author):
     _twins(data, deltas)
     _people(data, deltas)
     _structure(data, deltas)
-    _questions(data, deltas, author)
+    # What a removal or an undo does to a question is the record's own doing.
+    if not undoing and not any(_removes(delta) for delta in deltas):
+        _questions(data, deltas, author)
 
 
 LINKS = (
@@ -794,8 +816,10 @@ def _questions(data: dict, deltas: list[dict], author: Author):
                 GONE,
             )
         for other in questions:
-            if str(other.get("id")) != question_id and _normal(other.get("text") or "") == _normal(
-                question["text"]
+            if (
+                str(other.get("id")) != question_id
+                and other["state"] != QuestionState.Resolved
+                and _normal(other["text"]) == _normal(question["text"])
             ):
                 raise Invalid(
                     f"that question is already {other.get('id')}",
@@ -804,9 +828,9 @@ def _questions(data: dict, deltas: list[dict], author: Author):
 
 
 def _commit(
-    diagram, data, deltas, author, turn_id, user_id, session_id, statement_id
+    diagram, data, deltas, author, turn_id, user_id, session_id, statement_id, undoing=False
 ) -> Change:
-    _validate(data, deltas, author)
+    _validate(data, deltas, author, undoing)
     version = db.session.execute(
         sql_update(Diagram)
         .where(Diagram.id == diagram.id)

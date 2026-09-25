@@ -5,11 +5,12 @@ Invented names only.
 """
 
 import datetime
+import json
 
 import pytest
 from mock import patch
 
-from btcopilot import chips, coachturn, record
+from btcopilot import chips, coachturn, record, turnlog
 from btcopilot.extensions import db
 from btcopilot.interactions import recent
 from btcopilot.models import Author, Change, InteractionKind
@@ -165,16 +166,47 @@ def test_a_question_the_record_cannot_take_is_refused_in_plain_words(family, too
     assert refused.value.plain == plain
 
 
-def test_the_same_words_are_one_question_even_once_it_is_closed(family):
-    # R-0479
+def test_the_same_words_are_one_open_question_and_may_be_asked_again_once_closed(family):
+    # R-0479, R-0482
     toolbox = box(family)
     add(toolbox, LATER, state="held")
-    settle(toolbox, family, "q1", state="resolved", outcome="unknown")
 
     with pytest.raises(ToolError) as refused:
         add(toolbox, "  when did your GRANDMOTHER   die?")
     assert refused.value.plain == "That question is already there."
     assert "q1" in str(refused.value)
+    settle(toolbox, family, "q1", state="resolved", outcome="unknown")
+    add(toolbox, "  when did your GRANDMOTHER   die?")
+    assert stored(family)["q2"]["state"] == "asked"
+
+
+def test_removing_what_a_question_is_about_lets_it_go_and_undo_puts_both_back(family):
+    # R-0006, R-0084
+    turn = box(family, "t1")
+    turn.call(ToolName.EditPerson, {"name": "Nell"})
+    add(turn, item_kind="person", item_id="2")
+    add(turn, LATER, item_kind="person", item_id="2")
+    settle(turn, family, "q2", state="resolved", outcome="answered")
+
+    box(family, "t2").call(
+        ToolName.Remove, {"item_kind": "person", "item_id": "2", "version": version(family)}
+    )
+    row = Change.query.filter_by(turn_id="t2").one()
+    assert sorted((d["item_id"], d["field"], d["after"]) for d in row.deltas if d["item_kind"] == "question") == [
+        ("q1", "item_id", None),
+        ("q1", "item_kind", None),
+        ("q1", "outcome", "let_go"),
+        ("q1", "state", "resolved"),
+        ("q2", "item_id", None),
+        ("q2", "item_kind", None),
+    ]
+    box(family, "t3").call(ToolName.Undo, {})
+
+    assert [(q["state"], q["outcome"], q["item_kind"], q["item_id"]) for q in stored(family).values()] == [
+        ("asked", None, "person", "2"),
+        ("resolved", "answered", "person", "2"),
+    ]
+    assert [p["name"] for p in family.get_diagram_data().people] == ["Wren", "Nell"]
 
 
 def test_only_the_user_dismisses_and_the_user_does_nothing_else(family):
@@ -267,11 +299,39 @@ def test_a_reply_with_question_calls_names_each_and_logs_one_row_per_line(web, f
     reply = statements(web, body["discussion_id"])[1]
     assert [(t["name"], t["names"].get("it")) for t in reply["tools"]] == [
         ("add_question", ASK),
-        ("add_question", LATER),
+        ("add_question", None),
         ("read_questions", None),
     ]
     rows = Change.query.filter_by(statement_id=reply["id"]).all()
     assert len(rows) == len([t for t in reply["tools"] if t["name"] != "read_questions"])
+
+
+def test_the_words_of_a_question_kept_for_later_never_reach_the_page(web, family, monkeypatch):
+    # R-0006, R-0478
+    read = version(family)
+    coach(
+        monkeypatch,
+        Model(
+            calling(
+                (ToolName.AddQuestion, {"text": ASK, "kind": "fact", "state": "asked"}),
+                (ToolName.AddQuestion, {"text": LATER, "kind": "fact", "state": "held"}),
+            ),
+            called(ToolName.SetQuestion, id="q2", version=read, state="resolved", outcome="let_go"),
+            said(f"Tell me about them. {ASK}"),
+        ),
+    )
+    body = post(web, csrf_token(web), "My father had a big family.").get_json()
+
+    live = json.dumps([event for _, event in turnlog.read_from(body["turn_id"], 0)])
+    thread = web.get(f"/app/sessions/{body['discussion_id']}").get_data(as_text=True)
+    timeline = web.get("/app/timeline").get_data(as_text=True)
+    assert [LATER in text for text in (live, thread, timeline)] == [False, False, False]
+    assert [t["name"] for t in statements(web, body["discussion_id"])[1]["tools"]] == [
+        "add_question",
+        "add_question",
+        "set_question",
+    ]
+    assert ASK in thread
 
 
 def test_a_reply_that_drops_the_words_it_asked_is_logged(web, family, monkeypatch):
