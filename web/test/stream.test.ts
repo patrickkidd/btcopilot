@@ -49,10 +49,15 @@ function watch(): { shown: Shown; take: (event: TurnEvent) => void } {
   return { shown, take: feed(sink) };
 }
 
-const call = (name: string, args: Record<string, unknown> = {}): TurnEvent => ({
+const call = (
+  name: string,
+  args: Record<string, unknown> = {},
+  names: Record<string, string> = {},
+): TurnEvent => ({
   type: TurnEventKind.ToolCall,
   name,
   args,
+  names,
 });
 
 const patch = (): TurnEvent => ({
@@ -80,7 +85,7 @@ const done = (): TurnEvent => ({
 });
 
 const TURN: TurnEvent[] = [
-  call(ToolName.EditPerson, { name: "Nell" }),
+  call(ToolName.EditPerson, { name: "Nell" }, { it: "Nell" }),
   patch(),
   { type: TurnEventKind.Text, text: "Added " },
   { type: TurnEventKind.Text, text: "Nell." },

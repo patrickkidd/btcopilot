@@ -511,7 +511,7 @@ let stopped: { turn: string; bubble: HTMLElement } | null = null;
 function addStatements(statements: Statement[]): void {
   for (const statement of statements) {
     const coach = statement.role === Role.Coach;
-    const lines = statement.tools.flatMap((t) => toolLine(t.name, t.args) ?? []);
+    const lines = statement.tools.flatMap((t) => toolLine(t) ?? []);
     chat.add(
       statement.role,
       statement.text,
