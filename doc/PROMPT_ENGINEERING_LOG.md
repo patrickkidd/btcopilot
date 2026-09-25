@@ -981,3 +981,10 @@ ended with no words. The shared paragraph now says to call add_question on its
 own, then write the reply once the call comes back, so the reply is the last
 round's words, and that words beside a tool call never reach the person. Not yet
 measured live. [R-0482]
+
+### September 2026: Every date says how sure it is (FD-363)
+
+**Change**: the coach is told to give date_certainty (certain, approximate or
+unknown for a guess) whenever it adds an event or changes its date, public and
+private wording alike; the toolbox now refuses a date without it. Not yet measured
+live. [R-0482]

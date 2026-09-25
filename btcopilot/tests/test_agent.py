@@ -814,6 +814,14 @@ def test_the_coach_is_told_to_end_its_reply_with_a_question():
     assert "it always does while the record still lacks any of the minimum data" in prompt
 
 
+def test_the_coach_is_told_to_give_every_date_its_certainty():
+    # R-0482
+    prompt = " ".join(get_agent_prompt().split())
+    assert "Whenever you add an event or change its date" in prompt
+    assert "date_certainty" in prompt
+    assert "unknown for a guess" in prompt
+
+
 def test_the_coach_is_told_how_to_keep_its_questions():
     # R-0482, R-0485
     prompt = " ".join(get_agent_prompt().split())
