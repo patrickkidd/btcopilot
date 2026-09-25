@@ -26,7 +26,8 @@ from btcopilot.schema import (
     VariableShift,
     asdict,
 )
-from btcopilot.tests.conftest import csrf_token, replied
+from btcopilot.tests.conftest import csrf_token, replied, version
+from btcopilot.toolbox import ToolName, Toolbox
 
 
 @pytest.fixture(autouse=True)
@@ -564,6 +565,47 @@ def test_event_write_takes_the_diagram_lock(web, token, family):
     post(web, token, "/app/events", SHIFT)
     db.session.refresh(family)
     assert family.version == before + 1
+
+
+def test_a_hand_edit_of_an_event_is_logged_as_the_users_own_change(
+    web, token, family, test_user
+):
+    # R-0084
+    event = post(web, token, "/app/events", SHIFT).get_json()
+    last = Change.query.order_by(Change.id.desc()).first().id
+
+    patch(web, token, f"/app/events/{event['id']}", {"description": "Sleep improved"})
+    rows = Change.query.filter(Change.id > last).all()
+    assert [(r.author, r.user_id, r.version) for r in rows] == [
+        (Author.User, test_user.id, version(family))
+    ]
+    assert [(d["field"], d["before"], d["after"]) for d in rows[0].deltas] == [
+        ("description", "Sleep got worse", "Sleep improved")
+    ]
+
+
+def test_the_coach_reads_a_hand_edit_among_the_recent_changes(web, token, family):
+    # R-0084
+    event = post(web, token, "/app/events", SHIFT).get_json()
+    patch(web, token, f"/app/events/{event['id']}", {"description": "Sleep improved"})
+
+    text, _ = Toolbox(family.id, "coach-turn").call(ToolName.ReadChanges.value, {})
+    assert text.splitlines()[0] == (
+        f'Version {version(family)}, user: event {event["id"]} '
+        'description="Sleep improved"'
+    )
+
+
+def test_undo_puts_back_a_hand_edit_of_an_event(web, token, family):
+    # R-0084
+    event = post(web, token, "/app/events", SHIFT).get_json()
+    patch(web, token, f"/app/events/{event['id']}", {"description": "Sleep improved"})
+
+    Toolbox(family.id, "coach-turn").call(ToolName.Undo.value, {})
+    db.session.expire_all()
+    assert [e["description"] for e in family.get_diagram_data().events] == [
+        "Sleep got worse"
+    ]
 
 
 def test_event_variables_dropped_when_kind_is_not_shift(web, token, family):

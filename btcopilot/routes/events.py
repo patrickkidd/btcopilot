@@ -1,5 +1,6 @@
 """Event CRUD on the user's own diagram. Every field btcopilot.schema.Event
-carries is writable except its server-allocated id.
+carries is writable except its server-allocated id. Writes go through the
+record's command log authored by the user, the way the coach's do (R-0084).
 
 The spec's editing rules are enforced on save, not by refusing the write: a
 saved event drops the values that no longer apply to its kind (switching a
@@ -10,14 +11,15 @@ from dataclasses import fields
 
 from flask import abort, jsonify, request
 
-from btcopilot.routes import bp, writable_diagram
+from btcopilot import diagramjson, record
+from btcopilot.routes import bp, delta, edit, writable_diagram
 from btcopilot.timeline import DATE_FIELDS, event_payload
-from btcopilot.extensions import db
 from btcopilot.intake import _enum_val, _parse_iso_date
 from btcopilot.schema import (
     DateCertainty,
     Event,
     EventKind,
+    ItemKind,
     RelationshipKind,
     VariableShift,
     asdict,
@@ -99,61 +101,57 @@ def _find(data, event_id: int) -> dict:
     abort(404)
 
 
-def _write(mutate):
-    """Every write takes the diagram's optimistic lock: a background extraction
-    can commit to the same diagram while the user is editing an event, and
-    whichever writer loses the race must re-read rather than clobber."""
-    dia = writable_diagram()
-    if dia is None:
-        abort(404)
-    for _ in range(32):
-        db.session.refresh(dia)
-        expected_version = dia.version
-        data = dia.get_diagram_data()
-        result = mutate(data)
-        ok, _ = dia.update_with_version_check(expected_version, diagram_data=data)
-        if ok:
-            db.session.commit()
-            return result
-        db.session.rollback()
-    abort(409, description="Diagram write contention; retry")
+def _deltas(event_id: int, fields: dict) -> list[dict]:
+    return [
+        delta(ItemKind.Event, event_id, field, diagramjson.to_json(value))
+        for field, value in fields.items()
+    ]
 
 
 @bp.route("/events", methods=["POST"])
 def create():
-    def mutate(data):
-        values = _coerce(request.get_json(), _people(data))
-        if "kind" not in values:
-            raise ValueError("An event needs a kind")
-        data.add_event(_normalize(Event(id=0, **values)))
-        return event_payload(_qt_dates(data.events[-1]))
-
-    return jsonify(_write(mutate)), 201
+    data = writable_diagram().get_diagram_data()
+    values = _coerce(request.get_json(), _people(data))
+    if "kind" not in values:
+        raise ValueError("An event needs a kind")
+    event_id = record.next_id(data)
+    event = _qt_dates(asdict(_normalize(Event(id=event_id, **values))))
+    del event["id"]
+    edit(
+        _deltas(event_id, event)
+        + [delta(ItemKind.Diagram, None, "lastItemId", event_id)]
+    )
+    return (
+        jsonify(event_payload(_find(writable_diagram().get_diagram_data(), event_id))),
+        201,
+    )
 
 
 @bp.route("/events/<int:event_id>", methods=["PATCH"])
 def update(event_id: int):
-    def mutate(data):
-        existing = _find(data, event_id)
-        merged = {
-            key: _enum_val(value) for key, value in existing.items() if key in WRITABLE
-        }
-        for key in DATE_FIELDS:
-            date = _parse_iso_date(existing.get(key))
-            merged[key] = date.isoformat() if date else None
-        merged.update(request.get_json())
-        event = _normalize(Event(id=event_id, **_coerce(merged, _people(data))))
-        existing.update(_qt_dates(asdict(event)))
-        return event_payload(existing)
-
-    return jsonify(_write(mutate))
+    data = writable_diagram().get_diagram_data()
+    existing = _find(data, event_id)
+    merged = {
+        key: _enum_val(value) for key, value in existing.items() if key in WRITABLE
+    }
+    for key in DATE_FIELDS:
+        date = _parse_iso_date(existing.get(key))
+        merged[key] = date.isoformat() if date else None
+    merged.update(request.get_json())
+    event = _qt_dates(
+        asdict(_normalize(Event(id=event_id, **_coerce(merged, _people(data)))))
+    )
+    was, now = event_payload(existing), event_payload(event)
+    changed = {key: event[key] for key in WRITABLE if now[key] != was[key]}
+    if changed:
+        edit(_deltas(event_id, changed))
+    return jsonify(
+        event_payload(_find(writable_diagram().get_diagram_data(), event_id))
+    )
 
 
 @bp.route("/events/<int:event_id>", methods=["DELETE"])
 def delete(event_id: int):
-    def mutate(data):
-        _find(data, event_id)
-        data.events = [e for e in data.events if e.get("id") != event_id]
-
-    _write(mutate)
+    _find(writable_diagram().get_diagram_data(), event_id)
+    edit([delta(ItemKind.Event, event_id, None, None)])
     return "", 204
