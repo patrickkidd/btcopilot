@@ -32,7 +32,7 @@ test.describe("the app frame", () => {
   test.use({ storageState: stateFor("moves") });
 
   // R-0091
-  test("the account, sessions, list and send buttons share one target and one circle", async ({
+  test("the account, sessions, list and send buttons share one target, and all but the list one circle", async ({
     page,
   }) => {
     await settle(page);
@@ -42,7 +42,10 @@ test.describe("the app frame", () => {
     );
     expect(shell.map((b) => b.id).sort()).toEqual(["account", "menu-open", "send", "sessions-open"]);
     expect(new Set(shell.map((b) => b.size))).toEqual(new Set(["44x44"]));
-    expect(new Set(shell.map((b) => b.mark))).toEqual(new Set(["40x40"]));
+    // the list button is drawn the height of the chips it sits beside
+    expect(
+      new Set(shell.filter((b) => b.id !== "menu-open").map((b) => b.mark)),
+    ).toEqual(new Set(["40x40"]));
   });
 
   // R-0091

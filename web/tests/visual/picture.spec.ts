@@ -267,6 +267,9 @@ test.describe("an event added by hand", () => {
     await page.locator("#menu-open").click();
     await page.locator("#menu-add").click();
     const editor = page.locator("#menu-body .editor");
+    // a move is a noted event; a new event opens as a shift, which is refused
+    // until something in it moves
+    await editor.locator('.segs[data-name="kind"] .seg[data-value="noted"]').click();
     await editor.locator('.f[data-name="description"]').fill("Moved back home");
     await editor.locator('.f[data-name="dateTime"]').fill("2024-06-01");
     await editor.locator(".save").click();
@@ -545,11 +548,15 @@ test.describe("a moment's mark", () => {
 });
 
 /** Any control a reader could take for renaming, deleting or regrouping a
- * cluster, in the picture region and its title row. */
+ * cluster, in the picture region and its title row. An event's dot is named by
+ * the event's own words ("The move across the country"), which say nothing
+ * about the cluster, so the dots are left out. */
 const clusterEdits = (page: import("@playwright/test").Page) =>
   page
     .locator(".titlerow, #chat-screen .pic")
-    .locator("button, [role=button], input, textarea, [contenteditable=true]")
+    .locator(
+      `button:not([data-target="zone"]), [role=button], input, textarea, [contenteditable=true]`,
+    )
     .evaluateAll((controls) =>
       controls
         .filter((c) => !(c as HTMLElement).hidden && (c as HTMLElement).offsetParent !== null)

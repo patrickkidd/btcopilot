@@ -3,8 +3,8 @@ import { stateFor } from "./setup";
 
 /** The list behind the picture, and the button that opens it.
  *
- * The button sits inside the picture, in the same circle as the one beside the
- * message bar: the list button belongs to the thing it lists. The list itself
+ * The button sits inside the picture, at the end of the row of chips and drawn
+ * their height: the list button belongs to the thing it lists. The list itself
  * is two ways into one record — what happened, and who it happened to. */
 
 const settle = async (page: Page) => {
@@ -27,29 +27,31 @@ const personEditor = async (page: Page) => {
 };
 
 test.describe("the button that opens the list", () => {
-  test.use({ storageState: stateFor("moves") });
+  test.use({ storageState: stateFor("three40") });
 
   // R-0221, R-0234, R-0198
-  test("sits at the end of the row of chips, dressed like the sessions button", async ({
+  test("sits at the end of the row of chips, drawn their height on their line", async ({
     page,
   }) => {
     await settle(page);
+    await page.locator('#view .ss-hit[data-target="cluster"]').first().click();
+    await expect(page.locator("#cap-chip")).toBeVisible();
     const where = await page.evaluate(() => {
       const button = document.getElementById("menu-open")!;
       const row = document.querySelector(".caption")!;
-      const sessions = document.getElementById("sessions-open")!;
+      const chip = document.getElementById("cap-chip")!;
       const box = button.getBoundingClientRect();
-      const round = (n: HTMLElement) => {
-        const mark = getComputedStyle(n, "::before");
-        return `${mark.width} ${mark.height} ${mark.borderRadius} ${mark.borderTopWidth}`;
-      };
+      const drawn = getComputedStyle(button, "::before");
+      const beside = chip.getBoundingClientRect();
       return {
         inRow: row.contains(button),
         inTitleRow: !!document.querySelector(".titlerow #menu-open"),
         inNameRow: !!document.querySelector(".pin-label #menu-open"),
         size: [Math.round(box.width), Math.round(box.height)],
         last: row.lastElementChild === button,
-        same: round(button) === round(sessions),
+        height: [parseFloat(drawn.height), beside.height],
+        corner: [drawn.borderRadius, getComputedStyle(chip).borderRadius],
+        line: [box.top + box.height / 2, beside.top + beside.height / 2].map(Math.round),
       };
     });
     expect(where.inRow).toBe(true);
@@ -57,7 +59,9 @@ test.describe("the button that opens the list", () => {
     expect(where.inNameRow).toBe(false);
     expect(where.last).toBe(true);
     expect(where.size).toEqual([44, 44]);
-    expect(where.same).toBe(true);
+    expect(where.height[0]).toBe(where.height[1]);
+    expect(where.corner[0]).toBe(where.corner[1]);
+    expect(where.line[0]).toBe(where.line[1]);
   });
 });
 
@@ -154,7 +158,7 @@ test.describe("the two lists behind it", () => {
     await settle(page);
     await openList(page);
     const tabs = page.locator("#menu-tabs [role=tab]");
-    await expect(tabs).toHaveText(["Events", "People"]);
+    await expect(tabs).toHaveText(["Events", "People", "From the coach"]);
     await expect(page.locator('#menu-tabs [aria-selected="true"]')).toHaveText("Events");
     await expect(page.locator("#menu-body [data-event]").first()).toBeVisible();
     const drawer = await page.locator("#menu-screen").elementHandle();

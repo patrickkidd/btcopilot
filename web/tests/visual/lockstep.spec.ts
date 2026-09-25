@@ -21,7 +21,13 @@ const added = {
     {
       type: "tool_call",
       name: "edit_event",
-      args: { description: "she stopped calling", dateTime: "1992-04-01" },
+      args: {
+        description: "she stopped calling",
+        dateTime: "1992-04-01",
+        dateCertainty: "certain",
+      },
+      // the server names what a call touches before it runs
+      names: { it: "she stopped calling" },
     },
     {
       type: "record_patch",
@@ -71,7 +77,7 @@ const met = {
   statement: "I put that down.",
   statement_id: 9202,
   did: [
-    { type: "tool_call", name: "edit_person", args: { name: "Ada" } },
+    { type: "tool_call", name: "edit_person", args: { name: "Ada" }, names: { it: "Ada" } },
     {
       type: "record_patch",
       turn_id: "t2",
