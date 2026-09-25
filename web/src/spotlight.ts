@@ -36,11 +36,14 @@ const MONTHS = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-export enum Certainty {
-  Unknown = "unknown",
-  Approximate = "approximate",
-  Certain = "certain",
-}
+/** A const object rather than an enum: the Playwright walks import this file,
+ * and Node 24 loads it with its types stripped, which cannot carry an enum. */
+export const Certainty = {
+  Unknown: "unknown",
+  Approximate: "approximate",
+  Certain: "certain",
+} as const;
+export type Certainty = (typeof Certainty)[keyof typeof Certainty];
 
 /** A date the record is only approximately sure of says its year and no more;
  * a date it is sure of says the month too. */
