@@ -829,6 +829,8 @@ def test_the_coach_is_told_how_to_keep_its_questions():
     assert "Asking a question and keeping it are one act" in prompt
     assert "What you keep is the question alone" in prompt
     assert "a lead-in, a hedge or a reason stays out of what you keep" in prompt
+    assert "Keep it first, then ask it" in prompt
+    assert "so the reply is the words of your last round" in prompt
     for tool in (ToolName.AddQuestion, ToolName.SetQuestion, ToolName.ReadQuestions):
         assert f"`{tool.value}`" in prompt
 

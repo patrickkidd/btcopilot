@@ -972,3 +972,12 @@ what's your last name…") into the Questions tab. The shared paragraph and the
 backfill now say the reply may frame a question however it likes, but what is kept
 is the question alone, with no lead-in, hedge or reason, still in "you" wording and
 readable on its own. Not yet measured live. [R-0482, R-0485]
+
+### September 2026: Keep the question first, then write the reply that asks it (FD-363)
+
+**Change**: in 3 of 75 live turns the coach wrote its closing question as text
+beside an add_question call; that text was cleared as working notes and the turn
+ended with no words. The shared paragraph now says to call add_question on its
+own, then write the reply once the call comes back, so the reply is the last
+round's words, and that words beside a tool call never reach the person. Not yet
+measured live. [R-0482]
