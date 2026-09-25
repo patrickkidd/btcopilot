@@ -46,7 +46,9 @@ TURNS = sa.text(
            (SELECT count(*) FROM turn_events t
              WHERE t.turn_id = s.turn_id AND t.kind = 'tool_call') AS lines,
            (SELECT count(*) FROM turn_events t
-             WHERE t.turn_id = s.turn_id AND t.kind = 'failed') AS failed
+             WHERE t.turn_id = s.turn_id AND t.kind = 'failed') AS failed,
+           EXISTS (SELECT 1 FROM turn_events t
+             WHERE t.turn_id = s.turn_id AND t.kind IN ('done', 'step')) AS live
       FROM statements s JOIN discussions d ON d.id = s.discussion_id
     """
 )
@@ -92,6 +94,27 @@ REMOVALS = sa.text(
      WHERE e->'field' = 'null' AND e->'after' = 'null'
     """
 )
+WRITES = sa.text(
+    """
+    SELECT t.turn_id, t.payload->>'result' AS result FROM turn_events t
+     WHERE t.kind = 'tool_call' AND t.payload->>'result' ~ '^(Added|Changed|Removed) '
+       AND EXISTS (SELECT 1 FROM turn_events l
+                    WHERE l.turn_id = t.turn_id AND l.kind IN ('done', 'step'))
+    """
+)
+TOUCHED = sa.text(
+    """
+    SELECT DISTINCT c.turn_id, e->>'item_kind', e->>'item_id'
+      FROM diagram_changes c, jsonb_array_elements(c.deltas) e
+    """
+)
+LABELS = sa.text(
+    """
+    SELECT t.typname, e.enumlabel FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid
+     WHERE t.typname IN ('itemkind', 'interactionkind')
+    """
+)
+BLOBS = sa.text("SELECT id, md5(data) FROM diagrams")
 DELETABLE = sa.text(
     """
     SELECT d.id, d.user_id FROM discussions d
@@ -190,9 +213,10 @@ def turn_checks(conn) -> list[tuple]:
     turns = conn.execute(
         TURNS, {"coach": Author.Coach.value, "tooled": [k.value for k in TOOLED]}
     ).all()
-    replies = [t for t in turns if t.reply]
-    words = [t for t in turns if not t.reply and t.changes]
-    rest = [t for t in turns if not t.reply and not t.changes]
+    replies = [t for t in turns if t.reply and not t.live]
+    words = [t for t in turns if not t.reply and t.changes and not t.live]
+    rest = [t for t in turns if not t.reply and not t.changes and not t.live]
+    print(f"note: {sum(t.live for t in turns)} statements belong to live turns, checked by what their calls wrote")
     for t in replies + words:
         print(
             f"{'reply' if t.reply else 'words'} {t.id}: change rows {t.changes}, "
@@ -217,6 +241,31 @@ def turn_checks(conn) -> list[tuple]:
     ]
 
 
+def live_checks(conn) -> list[tuple]:
+    """A live turn's lines include reads and refusals, so its check runs the
+    other way: every call that says it wrote names an item its turn's change
+    rows touched."""
+    touched = {tuple(r) for r in conn.execute(TOUCHED).all()}
+    writes = conn.execute(WRITES).all()
+    missing = []
+    for w in writes:
+        verb, kind, item_id = w.result.rstrip(".").split()[:3]
+        if (w.turn_id, kind, item_id) not in touched:
+            missing.append(f"{w.turn_id} {w.result}")
+    for m in missing:
+        print(f"live call with no change row: {m}")
+    return [("live write calls whose item is in their turn's change rows", len(writes),
+             len(writes) - len(missing))]
+
+
+def question_checks(conn) -> list[tuple]:
+    labels = {tuple(r) for r in conn.execute(LABELS).all()}
+    return [
+        ("item kind 'question' exists", True, ("itemkind", "question") in labels),
+        ("interaction kind 'dismiss' exists", True, ("interactionkind", "dismiss") in labels),
+    ]
+
+
 def delete_check(app, conn) -> tuple:
     session_id, user_id = conn.execute(DELETABLE).one()
     client = app.test_client()
@@ -237,11 +286,16 @@ def main(dump: Path) -> int:
         app = create_app({"SQLALCHEMY_DATABASE_URI": uri})
         engine = sa.create_engine(uri)
         with app.app_context():
-            start = ScriptDirectory.from_config(config()).get_revision(REVISION).down_revision
-            if current() != start:
-                raise SystemExit(f"dump is at {current()}, not {start}")
+            script = ScriptDirectory.from_config(config())
+            at = current()
+            chain = [r.revision for r in script.walk_revisions()]
+            first = script.get_revision(REVISION).down_revision
+            if at not in chain[: chain.index(first) + 1] or at == script.get_current_head():
+                raise SystemExit(f"dump is at {at}: not between {first} and the head")
+            print(f"note: dump at {at}, upgrading to {script.get_current_head()}")
             with engine.connect() as conn:
                 before = counts(conn)
+                blobs = dict(conn.execute(BLOBS).all())
             command.upgrade(config(), "head")
             with engine.connect() as conn:
                 after = counts(conn)
@@ -249,7 +303,12 @@ def main(dump: Path) -> int:
                 checks += [(label, 0, conn.execute(sa.text(q)).scalar_one())
                            for label, q in ORPHANS.items()]
                 checks += turn_checks(conn)
+                checks += live_checks(conn)
                 checks += name_checks(conn)
+                checks += question_checks(conn)
+                now = dict(conn.execute(BLOBS).all())
+                checks.append(("family records whose stored blob changed", 0,
+                               sum(now[i] != blobs[i] for i in blobs)))
             with engine.connect() as conn:
                 checks.append(delete_check(app, conn))
     for label, expected, seen in checks:
