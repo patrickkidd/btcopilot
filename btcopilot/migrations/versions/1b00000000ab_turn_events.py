@@ -31,7 +31,7 @@ from sqlalchemy.dialects import postgresql
 
 from btcopilot import diagramjson, record
 from btcopilot.models.diagram import diagram_data
-from btcopilot.schema import DiagramData
+from btcopilot.schema import ITEM_COLLECTIONS, DiagramData, ItemKind
 from btcopilot.toolnames import names
 
 revision = "1b00000000ab"
@@ -239,11 +239,29 @@ def named(conn, rows) -> dict[int, list[dict]]:
         ).all():
             after = copy.deepcopy(data) if change_id in wanted else None
             record.rewind(data, deltas)
+            unmake(data, deltas)
             if after is not None:
                 out[change_id] = calls(
                     deltas, diagram_data(data), diagram_data(after)
                 )
     return out
+
+
+def unmake(data: dict, deltas: list[dict]):
+    """Take off the record each thing the change row made. The log writes a
+    thing's making as field changes on an id the record did not hold, so once
+    they are taken back it holds nothing but that id. Left there, it would be
+    in the way of an older row that removed a thing with the same id: a new
+    cluster takes the lowest free id."""
+    for kind, item_id in {
+        (ItemKind(d["item_kind"]), str(d["item_id"]))
+        for d in deltas
+        if d["field"] is not None and d["item_kind"] != ItemKind.Diagram.value
+    }:
+        collection = data[ITEM_COLLECTIONS[kind]]
+        item = next(i for i in collection if str(i["id"]) == item_id)
+        if all(value is None for field, value in item.items() if field != "id"):
+            collection.remove(item)
 
 
 def backfill(conn):
