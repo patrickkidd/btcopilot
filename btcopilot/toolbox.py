@@ -25,6 +25,7 @@ from btcopilot.schema import (
     MIN_CLUSTER_EVENTS,
     ClusterSource,
     DateCertainty,
+    ITEM_COLLECTIONS,
     DiagramData,
     EventKind,
     ItemKind,
@@ -60,6 +61,9 @@ READS = (
 )
 
 CHANGES_SHOWN = 10
+
+# The kinds of thing a remove call can name.
+REMOVABLE = {kind.value: kind for kind in ITEM_COLLECTIONS}
 
 # The tools that can change something already in the record.
 CHANGES = (
@@ -687,7 +691,9 @@ class Toolbox:
         return self._write(ItemKind.Cluster, item_id, fields)
 
     def _remove(self, args: dict) -> tuple[str, dict]:
-        kind = ItemKind(args["item_kind"])
+        if args["item_kind"] not in REMOVABLE:
+            raise ToolError(f"There is no kind of thing called {args['item_kind']}")
+        kind = REMOVABLE[args["item_kind"]]
         item_id = args["item_id"]
         if not self._exists(self.data, kind, item_id):
             raise ToolError(f"No {kind.value} {item_id} in the record")

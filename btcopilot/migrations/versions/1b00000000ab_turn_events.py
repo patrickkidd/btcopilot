@@ -31,7 +31,7 @@ from sqlalchemy.dialects import postgresql
 
 from btcopilot import diagramjson, record
 from btcopilot.models.diagram import diagram_data
-from btcopilot.schema import ITEM_COLLECTIONS, DiagramData, ItemKind
+from btcopilot.schema import DiagramData
 from btcopilot.toolnames import names
 
 revision = "1b00000000ab"
@@ -197,11 +197,19 @@ def calls(deltas: list[dict], before: DiagramData, after: DiagramData) -> list[d
             if kind == "cluster"
             else item_id in made
         )
-        args = {
-            arg: d["after"]
+        # A row logs a thing it made as one add holding it whole, or, before
+        # adds were logged whole, as field sets on its new id.
+        fields = {
+            field: value
             for d in group
+            for field, value in (
+                d["after"].items() if d["field"] is None else [(d["field"], d["after"])]
+            )
+        }
+        args = {
+            arg: fields[field]
             for field, arg in ARGS[kind].items()
-            if d["field"] == field and isinstance(d["after"], str)
+            if isinstance(fields.get(field), str)
         }
         if not new:
             args["id"] = group[0]["item_id"]
@@ -239,29 +247,11 @@ def named(conn, rows) -> dict[int, list[dict]]:
         ).all():
             after = copy.deepcopy(data) if change_id in wanted else None
             record.rewind(data, deltas)
-            unmake(data, deltas)
             if after is not None:
                 out[change_id] = calls(
                     deltas, diagram_data(data), diagram_data(after)
                 )
     return out
-
-
-def unmake(data: dict, deltas: list[dict]):
-    """Take off the record each thing the change row made. The log writes a
-    thing's making as field changes on an id the record did not hold, so once
-    they are taken back it holds nothing but that id. Left there, it would be
-    in the way of an older row that removed a thing with the same id: a new
-    cluster takes the lowest free id."""
-    for kind, item_id in {
-        (ItemKind(d["item_kind"]), str(d["item_id"]))
-        for d in deltas
-        if d["field"] is not None and d["item_kind"] != ItemKind.Diagram.value
-    }:
-        collection = data[ITEM_COLLECTIONS[kind]]
-        item = next(i for i in collection if str(i["id"]) == item_id)
-        if all(value is None for field, value in item.items() if field != "id"):
-            collection.remove(item)
 
 
 def backfill(conn):

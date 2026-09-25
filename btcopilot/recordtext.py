@@ -109,6 +109,10 @@ def version_line(version: int) -> str:
     return f"Record version {version}."
 
 
+def _field(field: str, value) -> str:
+    return f"{field}={json.dumps(value, ensure_ascii=False)}"
+
+
 def change_line(change: Change) -> str:
     """One write to the record: the version it made, who made it, and what each
     item it touched was set to."""
@@ -118,10 +122,14 @@ def change_line(change: Change) -> str:
             continue
         said = items.setdefault((delta["item_kind"], delta["item_id"]), [])
         after = delta.get("after")
-        if delta["field"] is None:
-            said.append("removed" if after is None else "put back")
+        if delta["field"] is None and after is None:
+            said.append("removed")
+        elif delta["field"] is None:
+            # A thing made or put back is logged whole.
+            said.append("put back" if change.turn_id.startswith("undo:") else "added")
+            said += [_field(field, value) for field, value in after.items() if field != "id"]
         else:
-            said.append(f"{delta['field']}={json.dumps(after, ensure_ascii=False)}")
+            said.append(_field(delta["field"], after))
     head = "Unversioned" if change.version is None else f"Version {change.version}"
     return f"{head}, {change.author}: " + "; ".join(
         f"{kind} {item_id} {' '.join(said)}" for (kind, item_id), said in items.items()

@@ -169,7 +169,9 @@ def test_a_cluster_id_used_again_after_a_removal_names_each_cluster_as_it_was(
     flask_app, tmp_path
 ):
     # R-0478: a new cluster takes the lowest free id, so a removed c7 comes back
-    # as a different c7, and each line still names the one it touched.
+    # as a different c7, and each line still names the one it touched. The first
+    # c7 is logged as one whole add, the way rows are written now; the second as
+    # field sets on its id, the way rows were written before.
     old = {"id": "c7", "title": "Old move", "eventIds": [1, 2, 3]}
     new = {"id": "c7", "title": "The wedding", "eventIds": [4, 5, 6]}
     said = [
@@ -180,7 +182,7 @@ def test_a_cluster_id_used_again_after_a_removal_names_each_cluster_as_it_was(
     changes = [
         {"id": 1, "diagram_id": 1, "statement_id": 2, "turn_id": "made",
          "session_id": "1", "author": "coach", "created_at": at(2),
-         "deltas": [delta("cluster", "c7", field, old[field]) for field in ("title", "eventIds")]},
+         "deltas": [delta("cluster", "c7", None, old)]},
         {"id": 2, "diagram_id": 1, "statement_id": 4, "turn_id": "unmade",
          "session_id": "1", "author": "coach", "created_at": at(4),
          "deltas": [delta("cluster", "c7", None, None, before=old)]},
@@ -191,8 +193,13 @@ def test_a_cluster_id_used_again_after_a_removal_names_each_cluster_as_it_was(
     engine = migrate(flask_app, tmp_path, rows({"clusters": [new]}, said, changes))
 
     events = kept(engine)
-    assert [(t, e["name"], e["names"], e["result"]) for t, _, _, e in events] == [
-        ("made", "edit_cluster", {"it": "the cluster Old move"}, "Added cluster c7."),
-        ("remade", "edit_cluster", {"it": "the cluster The wedding"}, "Added cluster c7."),
-        ("unmade", "remove", {"it": "the cluster Old move"}, "Removed cluster c7."),
+    assert [(t, e["args"], e["names"], e["result"]) for t, _, _, e in events] == [
+        ("made", {"title": "Old move"}, {"it": "the cluster Old move"}, "Added cluster c7."),
+        ("remade", {"title": "The wedding"}, {"it": "the cluster The wedding"}, "Added cluster c7."),
+        (
+            "unmade",
+            {"item_kind": "cluster", "item_id": "c7"},
+            {"it": "the cluster Old move"},
+            "Removed cluster c7.",
+        ),
     ]

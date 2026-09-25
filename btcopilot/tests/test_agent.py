@@ -111,7 +111,9 @@ def test_edit_writes_a_coach_change_and_the_record_moves(discussion, family):
 
     change = Change.query.filter_by(diagram_id=family.id).one()
     assert change.author is Author.Coach
-    assert {d["field"] for d in change.deltas} >= {"description", "symptom", "dateTime"}
+    made = next(d for d in change.deltas if d["item_kind"] == ItemKind.Event.value)
+    assert made["field"] is None
+    assert set(made["after"]) >= {"description", "symptom", "dateTime"}
 
     added = [e for e in family.get_diagram_data().events if e["id"] == 11]
     assert len(added) == 1
@@ -811,3 +813,18 @@ def test_the_coach_is_told_to_end_its_reply_with_a_question():
     assert "A reply usually ends with one question in your own words" in prompt
     assert "it always does while the record still lacks any of the minimum data" in prompt
 
+
+
+def test_a_remove_of_a_kind_the_record_does_not_hold_is_refused(discussion, family):
+    # R-0478
+    model = Model(
+        called(ToolName.Remove, item_kind="household", item_id="1", version=family.version),
+        said("There is no household to remove."),
+    )
+    reply = run(discussion, "Remove the household.", model)
+
+    asked = event(reply, EventKind.ToolCall)
+    assert asked["names"] == {"it": "something the record has no kind for"}
+    assert asked["refused"] is True
+    refused = model.histories[-1][-1]["content"][0]
+    assert refused["is_error"] is True

@@ -82,7 +82,8 @@ def apply(
 
     A delta with field None and after None removes the item, cascading the way
     the app's own scene does, and logs `before` as the whole item so undo puts
-    it back.
+    it back. A field set on an id the record does not hold makes the item, and
+    is logged as one add holding the whole item, so undo takes it off.
     """
     diagram = _lock(diagram_id)
     data = diagramjson.loads(diagram.data)
@@ -125,7 +126,12 @@ def undo(
             actual = _get(data, inverse)
             if actual != inverse["before"]:
                 raise Conflict(inverse, actual)
-            applied.extend(_apply(data, inverse))
+            done = _apply(data, inverse)
+            # Taking off what the turn made would also take what hangs on it
+            # since, which the turn did not make.
+            if inverse["field"] is None and inverse["after"] is None and len(done) > 1:
+                raise Conflict(inverse, [f"{d['item_kind']} {d['item_id']}" for d in done[:-1]])
+            applied.extend(done)
     return _commit(
         diagram,
         data,
@@ -139,8 +145,11 @@ def undo(
 
 
 def rewind(data: dict, deltas: list[dict]):
-    """Take logged deltas back off the record, newest first, one for one: a
-    removal's cascade is logged delta by delta, so nothing here cascades."""
+    """Take one change row's logged deltas back off the record, newest first,
+    one for one: a removal's cascade is logged delta by delta, so nothing here
+    cascades. A thing the row made comes off whole, whether it was logged as one
+    add or, as rows written before adds were logged whole did, as field sets on
+    a new id, which once taken back leave it holding nothing but that id."""
     for delta in reversed(deltas):
         if delta["field"] is not None:
             _set(data, _inverse(delta))
@@ -148,6 +157,14 @@ def rewind(data: dict, deltas: list[dict]):
             _restore(data, _inverse(delta))
         else:
             _drop(data, ItemKind(delta["item_kind"]), delta["item_id"])
+    for kind, item_id in {
+        (ItemKind(d["item_kind"]), str(d["item_id"]))
+        for d in deltas
+        if d["field"] is not None and d["item_kind"] != ItemKind.Diagram.value
+    }:
+        item = _find(data, kind, item_id)
+        if all(value is None for field, value in item.items() if field != "id"):
+            _collection(data, kind).remove(item)
 
 
 def _inverse(delta: dict) -> dict:
@@ -155,9 +172,18 @@ def _inverse(delta: dict) -> dict:
 
 
 def compress(deltas: list[dict]) -> list[dict]:
-    """Collapse consecutive deltas on the same item and field: first before, last after."""
+    """Collapse consecutive deltas on the same item and field, first before and
+    last after, and fold the field sets that follow an item's add into that
+    add, so a thing made is logged whole."""
     out = []
+    made = {}
     for delta in deltas:
+        key = (delta["item_kind"], str(delta["item_id"]))
+        if delta["field"] is None:
+            made.pop(key, None)
+        elif key in made:
+            made[key]["after"] = {**made[key]["after"], delta["field"]: delta["after"]}
+            continue
         if out and (out[-1]["item_id"], out[-1]["item_kind"], out[-1]["field"]) == (
             delta["item_id"],
             delta["item_kind"],
@@ -166,6 +192,8 @@ def compress(deltas: list[dict]) -> list[dict]:
             out[-1] = dict(out[-1], after=delta["after"])
         else:
             out.append(dict(delta))
+        if delta["field"] is None and out[-1]["before"] is None:
+            made[key] = out[-1]
     return out
 
 
@@ -218,9 +246,12 @@ def _get(data: dict, delta: dict):
 
 
 def _apply(data: dict, delta: dict) -> list[dict]:
-    if delta["field"] is not None:
-        return [_set(data, delta)]
     kind = ItemKind(delta["item_kind"])
+    if delta["field"] is not None:
+        if kind is ItemKind.Diagram or _find(data, kind, delta["item_id"]) is not None:
+            return [_set(data, delta)]
+        made = dict(delta, field=None, after={"id": delta["item_id"]})
+        return [_restore(data, made), _set(data, delta)]
     if kind is ItemKind.Diagram:
         raise ValueError("the diagram itself cannot be removed by a delta")
     if delta["after"] is None:

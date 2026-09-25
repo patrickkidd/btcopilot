@@ -139,6 +139,18 @@ def test_the_latest_changes_come_newest_first_with_the_version_each_made(family)
     assert every.splitlines()[1] == f'Version {now - 1}, coach: person 1 name="Ada"'
 
 
+def test_a_person_added_and_taken_off_again_reads_as_added_then_removed(family):
+    # R-0479, R-0084
+    Toolbox(family.id, "t1").call(ToolName.EditPerson.value, {"name": "Cy"})
+    Toolbox(family.id, "t2").call(ToolName.Undo.value, {})
+
+    text, _ = Toolbox(family.id, "t3").call(ToolName.ReadChanges.value, {})
+    assert [line.split(": ", 1)[1] for line in text.splitlines()[:2]] == [
+        "person 4 removed",
+        'person 4 added name="Cy"',
+    ]
+
+
 def test_an_empty_record_still_carries_its_version():
     # R-0479
     assert recordtext.outline(DiagramData(), 0) == "Record version 0."

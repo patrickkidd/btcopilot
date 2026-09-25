@@ -6,7 +6,7 @@ shows an id."""
 from btcopilot.clusters import _title
 from btcopilot.schema import ITEM_COLLECTIONS, DiagramData, EventKind, ItemKind, enum_val
 from btcopilot.timeline import _label, _person_label, _who
-from btcopilot.toolbox import ToolName
+from btcopilot.toolbox import REMOVABLE, ToolName
 from btcopilot.turnlog import TurnEventKind
 
 NOUNS = {
@@ -26,6 +26,9 @@ GONE = {
     ItemKind.Cluster: "a cluster no longer in the record",
     ItemKind.Emotion: "a relationship no longer in the record",
 }
+# What a remove call names when its kind is none the record holds; the toolbox
+# refuses the call.
+NO_KIND = "something the record has no kind for"
 
 ARGS = {
     **dict.fromkeys(
@@ -104,7 +107,8 @@ def names(data: DiagramData, tool: str, args: dict) -> dict:
         if (kind := ARGS.get(arg)) and value is not None
     }
     if tool == ToolName.Remove:
-        out["it"] = name(ItemKind(args["item_kind"]), args["item_id"])
+        kind = REMOVABLE.get(args.get("item_kind"))
+        out["it"] = NO_KIND if kind is None else name(kind, args.get("item_id"))
     elif tool in SUBJECT:
         kind = SUBJECT[tool]
         out["it"] = (
