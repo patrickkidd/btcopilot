@@ -10,7 +10,7 @@ from btcopilot.admin.guard import run
 from btcopilot.admin.imports import imports
 from btcopilot.admin.licences import licences
 from btcopilot.admin.observations import observations
-from btcopilot.admin.questions import questions_group
+from btcopilot.admin.questions import impressions_group, questions_group
 from btcopilot.admin.review import review
 from btcopilot.admin.skill import write_skill
 from btcopilot.admin.tokens import token_cap
@@ -29,6 +29,7 @@ for group in (
     diagrams,
     observations,
     questions_group,
+    impressions_group,
     imports,
     token_cap,
     review,

@@ -95,6 +95,21 @@ Changes something: needs `--yes`.
 | `dump` | required |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin impressions`
+
+The impressions the coach keeps in each record.
+
+### `flask admin impressions backfill`
+
+Go back once through every past session not yet gone through and fill in the impressions said in it. Makes model calls. Without --yes it prints what it would do and writes nothing.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--diagram` | Only this record. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin licences`
 
 What people have bought.
@@ -160,7 +175,7 @@ The questions the coach keeps in each record.
 
 ### `flask admin questions backfill`
 
-Go back once through every past session not yet gone through and fill in the questions asked in it. Makes model calls. Without --yes it prints what it would do and writes nothing.
+Go back once through every past session not yet gone through and fill in the questions said in it. Makes model calls. Without --yes it prints what it would do and writes nothing.
 
 Changes something: needs `--yes`.
 
