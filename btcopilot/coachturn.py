@@ -301,14 +301,13 @@ class CoachTurn:
             results = []
             for call in turn.calls:
                 asked = toolcall(self.toolbox.data, call.name, call.args)
-                self._note(events, asked)
                 text, event, refused = self._call(call)
+                asked["refused"] = refused
+                self._note(events, asked)
                 # Kept after the page was told, so only the database holds what
                 # it answered; a read's answer is too long to keep and goes stale.
                 if call.name not in READS:
                     asked["result"] = text
-                if refused:
-                    asked["refused"] = True
                 results.append(
                     {
                         "type": "tool_result",

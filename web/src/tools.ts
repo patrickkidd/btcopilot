@@ -81,7 +81,17 @@ function added({ args }: ToolCall): string[] {
   ].filter(Boolean);
 }
 
-function shown({ args, names }: ToolCall): string {
+/** What a refused show was asked to draw: its ids may not name anything. */
+const SHOWING = new Map([
+  [ViewKind.Triangle, "a triangle"],
+  [ViewKind.Span, "a stretch of time"],
+  [ViewKind.Compare, "two events side by side"],
+  [ViewKind.Sequence, "events in order"],
+  [ViewKind.Cluster, "a cluster"],
+]);
+
+function shown({ args, names, refused }: ToolCall): string {
+  if (refused) return SHOWING.get(args.kind as ViewKind) ?? "the picture";
   switch (args.kind as ViewKind) {
     case ViewKind.Triangle:
       return `the triangle of ${list(names.persons as string[])}`;
@@ -109,30 +119,53 @@ function events({ args, names }: ToolCall): string {
   return ["events", ...span].join(" ");
 }
 
+/** Each verb as a refused call tries it, and as a call that worked says it. */
+enum Verb {
+  Look = "look at",
+  Show = "show",
+  Remove = "remove",
+  Put = "put",
+  Add = "add",
+  Change = "change",
+}
+const DID = new Map([
+  [Verb.Look, "Looked at"],
+  [Verb.Show, "Showed"],
+  [Verb.Remove, "Removed"],
+  [Verb.Put, "Put"],
+  [Verb.Add, "Added"],
+  [Verb.Change, "Changed"],
+]);
+
+function told(tool: ToolName, call: ToolCall): [Verb, string] {
+  const it = call.names.it as string;
+  switch (tool) {
+    case ToolName.ReadPeople:
+      return [Verb.Look, "people"];
+    case ToolName.ReadEvents:
+      return [Verb.Look, events(call)];
+    case ToolName.ReadNotes:
+      return [Verb.Look, call.names.event ? `the notes on ${call.names.event}` : "notes"];
+    case ToolName.ReadChanges:
+      return [Verb.Look, "recent changes"];
+    case ToolName.Show:
+      return [Verb.Show, shown(call)];
+    case ToolName.Remove:
+      return [Verb.Remove, it];
+    case ToolName.Undo:
+      return [Verb.Put, "that back"];
+    default:
+      return call.args.id === undefined
+        ? [Verb.Add, [it, ...added(call)].join(", ")]
+        : [Verb.Change, `${it}: ${changes(call)}`];
+  }
+}
+
 export function toolLine(call: ToolCall): string | null {
   const tool = Object.values(ToolName).includes(call.name as ToolName)
     ? (call.name as ToolName)
     : null;
   if (tool === null) return null;
-  const it = call.names.it as string;
-  switch (tool) {
-    case ToolName.ReadPeople:
-      return "Looked at people";
-    case ToolName.ReadEvents:
-      return `Looked at ${events(call)}`;
-    case ToolName.ReadNotes:
-      return call.names.event ? `Looked at the notes on ${call.names.event}` : "Looked at notes";
-    case ToolName.ReadChanges:
-      return "Looked at recent changes";
-    case ToolName.Show:
-      return `Showed ${shown(call)}`;
-    case ToolName.Remove:
-      return `Removed ${it}`;
-    case ToolName.Undo:
-      return "Put that back";
-    default:
-      return call.args.id === undefined
-        ? [`Added ${it}`, ...added(call)].join(", ")
-        : `Changed ${it}: ${changes(call)}`;
-  }
+  const [verb, what] = told(tool, call);
+  return call.refused ? `Tried to ${verb} ${what}; it was refused` : `${DID.get(verb)} ${what}`;
 }

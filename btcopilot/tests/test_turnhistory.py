@@ -17,7 +17,14 @@ from btcopilot.turnlog import TurnEventKind
 from btcopilot.tests.conftest import Model, called, csrf_token, said
 
 
-NELL = [{"name": "edit_person", "args": {"name": "Nell"}, "names": {"it": "Nell"}}]
+NELL = [
+    {
+        "name": "edit_person",
+        "args": {"name": "Nell"},
+        "names": {"it": "Nell"},
+        "refused": False,
+    }
+]
 
 
 @pytest.fixture(autouse=True)
@@ -105,6 +112,22 @@ def test_a_replys_tool_calls_are_on_the_thread_after_the_live_log_is_gone(
     assert shown[0]["tools"] == []
 
 
+def test_a_refused_call_stays_on_the_thread_marked_refused(
+    web, token, family, monkeypatch
+):
+    # R-0478
+    coach(
+        monkeypatch,
+        Model(called(ToolName.Show, kind="triangle"), said("I cannot draw that.")),
+    )
+    body = post(web, token, "Show me the triangle.").get_json()
+    turnlog.forget(body["turn_id"])
+
+    assert statements(web, body["discussion_id"])[1]["tools"] == [
+        {"name": "show", "args": {"kind": "triangle"}, "names": {}, "refused": True}
+    ]
+
+
 def test_a_failed_turn_keeps_its_edits_and_shows_them_on_the_words_that_asked(
     web, token, family, monkeypatch
 ):
@@ -144,6 +167,7 @@ def test_trying_again_goes_on_from_where_it_stopped_and_stores_no_new_words(
         "name": "edit_person",
         "args": {"name": "Nell"},
         "names": {"it": "Nell"},
+        "refused": False,
         "result": "Added person 2.",
     }
     assert live[-1]["type"] == TurnEventKind.Done.value

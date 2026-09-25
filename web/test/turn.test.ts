@@ -6,7 +6,7 @@ const line = (
   name: ToolName,
   args: Record<string, unknown>,
   names: Record<string, string | string[]> = {},
-) => toolLine({ name, args, names });
+) => toolLine({ name, args, names, refused: false });
 
 describe("what a tool call says in plain words", () => {
   // R-0186
@@ -134,5 +134,21 @@ describe("what a tool call says in plain words", () => {
     expect(
       line(ToolName.Show, { kind: ViewKind.Cluster, cluster: "c1" }, { cluster: "the cluster Nell leaves" }),
     ).toBe("Showed the cluster Nell leaves");
+  });
+
+  // R-0478
+  it("says a refused call was tried, not done, even when its ids name no one", () => {
+    const refused = (
+      name: ToolName,
+      args: Record<string, unknown>,
+      names: Record<string, string | string[]> = {},
+    ) => toolLine({ name, args, names, refused: true });
+    expect(refused(ToolName.Show, { kind: ViewKind.Triangle })).toBe(
+      "Tried to show a triangle; it was refused",
+    );
+    expect(
+      refused(ToolName.EditPerson, { id: 3, name: "Nel", version: 4 }, { it: "Nell" }),
+    ).toBe("Tried to change Nell: name Nel; it was refused");
+    expect(refused(ToolName.Undo, {})).toBe("Tried to put that back; it was refused");
   });
 });

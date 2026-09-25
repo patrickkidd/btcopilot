@@ -46,7 +46,12 @@ def statements_payload(discussion: Discussion) -> list[dict]:
                 "turn_id": s.turn_id,
                 "tools": (
                     [
-                        {"name": e["name"], "args": e["args"], "names": e["names"]}
+                        {
+                            "name": e["name"],
+                            "args": e["args"],
+                            "names": e["names"],
+                            "refused": bool(e.get("refused")),
+                        }
                         for e in events
                         if e["type"] == TurnEventKind.ToolCall.value
                     ]

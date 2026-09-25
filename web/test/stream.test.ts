@@ -58,6 +58,7 @@ const call = (
   name,
   args,
   names,
+  refused: false,
 });
 
 const patch = (): TurnEvent => ({
