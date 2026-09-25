@@ -285,15 +285,27 @@ not run. Open from this work:
 - Rulings not yet in the encrypted rulings store, which Patrick appends by hand: R-0477 to
   R-0485, and eight more from the same day with no ids yet:
   - Open questions are one stored object with a state: held by the coach, then asked, then
-    resolved. Resolved has five outcomes — a fact landed, answered in words, the client
-    doesn't know, declined, or the coach let it go. Open questions show in a third tab,
-    "Questions," beside Events and People, and the tab holds only the open questions the
-    user can easily answer himself, or that are food for thought; each is a chip that goes
-    into the chat, and no count is ever shown. A question he turned down, a dead end, an
-    answered question, and the coach's own full list of not-yet-asked questions never show
-    there — all of that stays in the record as data for the coach only. Mockups are being
-    made; nothing is built yet. His words: "They just need to see questions that they can
-    answer themselves easily or that are food for thought."
+    resolved, and never deleted. Resolved has five outcomes — a fact landed, answered in
+    words, the client doesn't know, declined, or the coach let it go. The Questions tab,
+    third beside Events and People, shows only the open, already-asked questions, no count
+    ever shown, in two sections: "Food for thought" first, then "Facts to find." Food for
+    thought comes from Kerr's line that people usually require questions to stimulate their
+    thinking (Family Evaluation, chapter 10). For facts to find, the coach puts up only the
+    questions it judges relevant to the evaluation or to the historical context — prompt
+    judgement, not a rule. His words: "when in doubt it should default to inclusion instead
+    of exclusion," and "we don't want it to have the user waste their time and attention and
+    motivation on questions that don't matter at all." The coach backfills once per existing
+    thread, reading back through its past sessions and filling in the questions it finds
+    there, judging relevance the same way. Swiping a question left and tapping a button
+    dismisses it, stored as declined by the user and recorded as a tap [R-0077]; the coach
+    sees the dismissal in its map and does not ask again. Tapping a question chip puts the
+    question into the message box as a reference [R-0072], closes the drawer, and leaves the
+    cursor ready — nothing sends until the user sends, and sent on its own it means "let's
+    talk about this." A question he turned down, a dead end, an answered question, and the
+    coach's own full list of not-yet-asked questions never show in the tab — all of that
+    stays in the record as data for the coach only. The approved mockup is frame 2 of the
+    open-questions gallery in the design folder; the build is queued after the current
+    deploy is verified.
   - New screens are allowed when they are thought through; the earlier ruling against a new
     surface was narrow.
   - Brainstorm topics are taken one at a time.

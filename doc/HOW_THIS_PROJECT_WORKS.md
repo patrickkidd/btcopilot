@@ -172,5 +172,9 @@ escalated to Patrick, never worked around by testing without it.
 
 **Test well, then push for him to test (2026-09-24, Patrick).** His words: "the process is
 that you test extremely well to protect the invaluable beta data, and then you push a build
-to the production box for me to test." For the fast-follow (R-0484), once the gates pass, the
-coordinator merges and deploys without asking for a merge yes, then verifies on production.
+to the production box for me to test." Deploying a build for him to test is not a merge. His
+words: "it has nothing to do with merging PR's." Since FD-362, every production deploy has
+been the release workflow dispatched from the ticket branch (`gh workflow run release.yml
+--ref <branch>`); the pull request stays open and unmerged. For the fast-follow (R-0484), once
+the gates pass, the coordinator dispatches that deploy without asking for a yes, then verifies
+on production.
