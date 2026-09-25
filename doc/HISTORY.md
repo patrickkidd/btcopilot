@@ -1472,3 +1472,26 @@ one-shot ask path and the fixed-category intake engine were removed. The sandbox
 coach turn and a real [try again]. Left open: two private prompt fragments nothing reads any
 more, and the sandbox's SQLite now and then reporting the database locked under concurrent
 writes.
+
+**2026-09-25, FD-363, open questions.** Built on the branch: the stored question with its
+states, kinds and full change log; the coach's three tools to add, close and read questions,
+each drawing its own thread line; the map's question section, open questions then declined
+ones, so the coach does not ask a declined one again; the Questions tab, third beside Events
+and People, with its two sections, the family's name as its title, a chip that puts the
+question into the message box and closes the drawer, and swipe-then-dismiss; and the rule that
+removing what a question is about closes every question linked to it as let go, with undo
+restoring both. The same-words refusal now also covers a question the user declined, not only
+an open one. A kept question names the person and the subject and speaks to the user as "you";
+anything with a factual answer is filed as a fact to find, never food for thought. The one-off
+backfill command reads a thread's past sessions with the coach's own read tools, runs once per
+session, and is safe to run again — a second run makes no calls and writes nothing. Run once
+against a copy of the production record, it added 7 questions across 3 families, for about
+$0.18. Live tests and the live browser walk now spend the testing key, never production's, and
+fail loudly if it is unset. An asked question whose reply barely holds its words is logged as
+an observation, never blocked. A turn that stops silently after a tool call, with no words and
+no further call, is asked once more for a reply instead of being failed. Patrick ruled three
+more points, not yet numbered: every test path must spend the testing key, with a loud failure
+on a missing one (2026-09-25); a held question's words must never reach the page; and a stored
+question addresses the user as "you." Left open: new tests for this build cite the nearest
+existing ruling in place of these candidates, since the oracle spec forbids a pending marker,
+and need re-citing once Patrick appends the ids; the new testing-key test has no citation yet.

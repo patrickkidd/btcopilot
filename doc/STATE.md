@@ -282,30 +282,47 @@ not run. Open from this work:
 - The sandbox's SQLite database now and then answers "database is locked" to the page's
   product-events call when several writes land at once. Production runs Postgres, so this is
   taken as sandbox-only unless it is seen there.
+- New tests written for this build cite the nearest already-numbered ruling rather than one of
+  the candidates below, because the oracle spec forbids a pending-ruling marker; every one of
+  them needs re-citing to the right id once Patrick appends it. The new test proving the testing
+  key guard fails loudly when the key is unset has no citation at all yet.
 - Rulings not yet in the encrypted rulings store, which Patrick appends by hand: R-0477 to
-  R-0485, and eight more from the same day with no ids yet:
+  R-0485, eight more from 2026-09-24, and three more from 2026-09-25, all with no ids yet:
   - Open questions are one stored object with a state: held by the coach, then asked, then
-    resolved, and never deleted. Resolved has five outcomes — a fact landed, answered in
-    words, the client doesn't know, declined, or the coach let it go. The Questions tab,
-    third beside Events and People, shows only the open, already-asked questions, no count
-    ever shown, in two sections: "Food for thought" first, then "Facts to find." Food for
-    thought comes from Kerr's line that people usually require questions to stimulate their
-    thinking (Family Evaluation, chapter 10). For facts to find, the coach puts up only the
-    questions it judges relevant to the evaluation or to the historical context — prompt
-    judgement, not a rule. His words: "when in doubt it should default to inclusion instead
-    of exclusion," and "we don't want it to have the user waste their time and attention and
-    motivation on questions that don't matter at all." The coach backfills once per existing
-    thread, reading back through its past sessions and filling in the questions it finds
-    there, judging relevance the same way. Swiping a question left and tapping a button
-    dismisses it, stored as declined by the user and recorded as a tap [R-0077]; the coach
-    sees the dismissal in its map and does not ask again. Tapping a question chip puts the
-    question into the message box as a reference [R-0072], closes the drawer, and leaves the
-    cursor ready — nothing sends until the user sends, and sent on its own it means "let's
-    talk about this." A question he turned down, a dead end, an answered question, and the
-    coach's own full list of not-yet-asked questions never show in the tab — all of that
-    stays in the record as data for the coach only. The approved mockup is frame 2 of the
-    open-questions gallery in the design folder; the build is queued after the current
-    deploy is verified.
+    resolved, and never deleted; every state change is kept as data. Resolved has five outcomes —
+    a fact landed, answered in words, the client doesn't know, declined, or the coach let it go.
+    Kind is food for thought or fact to find. The Questions tab, third beside Events and People,
+    shows only the open, already-asked questions, no count ever shown, in two sections: "Food for
+    thought" first, then "Facts to find." Food for thought comes from Kerr's line that people
+    usually require questions to stimulate their thinking (Family Evaluation, chapter 10). For
+    facts to find, the coach puts up only the questions it judges relevant to the evaluation or
+    to the historical context — prompt judgement, not a rule. His words: "when in doubt it should
+    default to inclusion instead of exclusion," and "we don't want it to have the user waste
+    their time and attention and motivation on questions that don't matter at all." The coach
+    backfills once per existing thread, reading back through its past sessions and filling in the
+    questions it finds there, judging relevance the same way. Swiping a question left and tapping
+    a button dismisses it, stored as declined by the user and recorded as a tap [R-0077]; the
+    coach sees the dismissal in its map and does not ask again, and the same refusal now also
+    covers a question the user already declined, not only an open one, so the coach never adds
+    those words back either. Tapping a question chip puts the question into the message box as a
+    reference [R-0072], closes the drawer, and leaves the cursor ready — nothing sends until the
+    user sends, and sent on its own it means "let's talk about this." A question he turned down,
+    a dead end, an answered question, and the coach's own full list of not-yet-asked questions
+    never show in the tab — all of that stays in the record as data for the coach only. Removing
+    the person, event, pair bond or cluster a question is about closes every open question linked
+    to it as let go and clears the links, in the same logged write; undo restores both. The
+    approved mockup is frame 2 of the open-questions gallery in the design folder.
+    Built on the branch: the stored question with its states, kinds and full change log; the
+    three coach tools to add, close and read questions, each drawing its own thread line; the
+    map's question section listing open questions then declined ones so the coach does not ask a
+    declined one again; the Questions tab with its two sections, the family's name as its title,
+    the chip-to-message-box tap, and swipe-then-dismiss; and the close-on-removal rule. The
+    one-off backfill command reads a thread's past sessions with the coach's own read tools, runs
+    once per session, and is safe to run again — a second run makes no calls and writes nothing.
+    Run once against a copy of the production record it added 7 questions across 3 families, for
+    about $0.18. An asked question whose reply barely holds its words is logged as an
+    observation, never blocked or rewritten. A turn that stops silently after a tool call, with no
+    words and no further call, is asked once more for a reply instead of being failed.
   - New screens are allowed when they are thought through; the earlier ruling against a new
     surface was narrow.
   - Brainstorm topics are taken one at a time.
@@ -325,6 +342,10 @@ not run. Open from this work:
     beta data, and then you push a build to the production box for me to test." For the
     fast-follow (R-0484), once the gates pass, the coordinator merges and deploys without
     asking for a merge yes, then verifies on production.
+  - (2026-09-25) Every test path spends the separate testing key, never the production key; a
+    missing testing key fails loudly instead of falling back.
+  - Held questions' words never reach the page.
+  - A stored question addresses the user as "you", never by name.
 
 **What is not true yet on the box.** The dashboards and the cost rows are built but not deployed:
 that waits on Patrick putting the Grafana token there and refreshing the dependency lock. There is
