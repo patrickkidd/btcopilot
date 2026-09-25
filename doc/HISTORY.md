@@ -1510,3 +1510,20 @@ same-words refusal is code because it is right every time, while near-duplicate 
 only logged; and that the pinned drawer stays 300 pixels wide with the diagram's name as its
 title. Also found: production's title bar itself still reads "Free Diagram" instead of the
 diagram's real name, and 4 live coach cases fail the same way on the master branch.
+
+**2026-09-25, FD-363, after the deploy.** Work continued on the same branch: every tool line in
+the thread now names an event or person by the one shared label, kept calls included; touch
+targets were widened for a crowded dot on a phone; the list button moved to chip height with
+more room after tool lines; the picture's back and close glyphs line up with the ask button; a
+chip tap and a dot tap became one behaviour, with a per-user admin switch back to the old one;
+speaking a reply out loud now works on iPhone; an event add or date change is refused without a
+certainty; the events list says why an event has no cluster; a command installs a stand-in test
+record; the coach can raise, close and read impressions the same way it handles open questions,
+shown in the drawer with what each rests on and two ways to push back; the live suite counts its
+own spend, stops at hard caps, and writes a results row per run; and a local model can stand in
+for Anthropic and Gemini so the sandbox runs free by default. Patrick's new candidate rulings
+from this stretch, not yet given ids, are listed in STATE.md, along with the spend strategy
+written up in HOW_THIS_PROJECT_WORKS.md: real Anthropic calls only at the end of a batch and
+only when a prompt or tool changed, every dollar asked for first; the live suite's three-dollar
+cap and daily ledger; and the sandbox coach on a local model by default, with the testing key
+spent only when told. None of this has been deployed yet.

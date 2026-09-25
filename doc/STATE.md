@@ -281,87 +281,60 @@ from here means rolling forward, not reverting. The one-off backfill then ran fo
 over 3 families, 3 model calls each; Patrick's own family got 4 questions, all facts to find, and
 he still has to judge whether that is the right number.
 
-The sandbox also makes real model calls on its own: a real coach turn and a real [try again] were
-run there. The live eval cases and the tests that need a key have not run. Open from this work:
-- Events imported from the Pro app or added by hand carry no words, so reading events by words
-  never finds them.
-- Two private prompt fragments are now unused and were not deleted: the Gemini flow fragment,
-  and the coach reference fragment, which is still listed but read by no code.
-- The sandbox's SQLite database now and then answers "database is locked" to the page's
-  product-events call when several writes land at once. Production runs Postgres, so this is
-  taken as sandbox-only unless it is seen there.
-- New tests written for this build cite the nearest already-numbered ruling rather than one of
-  the candidates below, because the oracle spec forbids a pending-ruling marker; every one of
-  them needs re-citing to the right id once Patrick appends it. The new test proving the testing
-  key guard fails loudly when the key is unset has no citation at all yet.
-- Production's title bar reads "Free Diagram" instead of the diagram's real name.
-- Four live coach cases fail the same way on the master branch.
-- Rulings not yet in the encrypted rulings store, which Patrick appends by hand: R-0477 to
-  R-0485, eight more from 2026-09-24, and five more from 2026-09-25, all with no ids yet:
-  - Open questions are one stored object with a state: held by the coach, then asked, then
-    resolved, and never deleted; every state change is kept as data. Resolved has five outcomes —
-    a fact landed, answered in words, the client doesn't know, declined, or the coach let it go.
-    Kind is food for thought or fact to find. The Questions tab, third beside Events and People,
-    shows only the open, already-asked questions, no count ever shown, in two sections: "Food for
-    thought" first, then "Facts to find." Food for thought comes from Kerr's line that people
-    usually require questions to stimulate their thinking (Family Evaluation, chapter 10). For
-    facts to find, the coach puts up only the questions it judges relevant to the evaluation or
-    to the historical context — prompt judgement, not a rule. His words: "when in doubt it should
-    default to inclusion instead of exclusion," and "we don't want it to have the user waste
-    their time and attention and motivation on questions that don't matter at all." The coach
-    backfills once per existing thread, reading back through its past sessions and filling in the
-    questions it finds there, judging relevance the same way. Swiping a question left and tapping
-    a button dismisses it, stored as declined by the user and recorded as a tap [R-0077]; the
-    coach sees the dismissal in its map and does not ask again, and the same refusal now also
-    covers a question the user already declined, not only an open one, so the coach never adds
-    those words back either. Tapping a question chip puts the question into the message box as a
-    reference [R-0072], closes the drawer, and leaves the cursor ready — nothing sends until the
-    user sends, and sent on its own it means "let's talk about this." A question he turned down,
-    a dead end, an answered question, and the coach's own full list of not-yet-asked questions
-    never show in the tab — all of that stays in the record as data for the coach only. Removing
-    the person, event, pair bond or cluster a question is about closes every open question linked
-    to it as let go and clears the links, in the same logged write; undo restores both. The
-    approved mockup is frame 2 of the open-questions gallery in the design folder.
-    Built on the branch: the stored question with its states, kinds and full change log; the
-    three coach tools to add, close and read questions, each drawing its own thread line; the
-    map's question section listing open questions then declined ones so the coach does not ask a
-    declined one again; the Questions tab with its two sections, the family's name as its title,
-    the chip-to-message-box tap, and swipe-then-dismiss; and the close-on-removal rule. The
-    one-off backfill command reads a thread's past sessions with the coach's own read tools, runs
-    once per session, and is safe to run again — a second run makes no calls and writes nothing.
-    Run once against a copy of the production record it added 7 questions across 3 families, for
-    about $0.18. An asked question whose reply barely holds its words is logged as an
-    observation, never blocked or rewritten. A turn that stops silently after a tool call, with no
-    words and no further call, is asked once more for a reply instead of being failed.
-  - New screens are allowed when they are thought through; the earlier ruling against a new
-    surface was narrow.
-  - Brainstorm topics are taken one at a time.
-  - The record's refusal of an added event that exactly matches an existing one (same kind,
-    day, people and what moved) stays, alongside R-0481. His words: "a rule that is 100%
-    accurate every time is code by definition."
-  - Every tool call draws a line in the thread, show calls included ("Showed a triangle"). His
-    words: "This way we have a total event-sourced log of everything that has happened. We also
-    want total data capture for everything the coach is doing and how the user is or is not
-    responding to it so that we can make this product better in the future."
-  - The old single-call chat path is deleted: the old conversation-flow prompt, the one-shot
-    ask path, and the fixed-category intake engine, which R-0485 rules out.
-  - A sandbox must be able to make real model calls; a missing key is escalated to Patrick,
-    never worked around by testing without it.
-  - Test well to protect the beta data, then push a build to the production box for him to
-    test. His words: "the process is that you test extremely well to protect the invaluable
-    beta data, and then you push a build to the production box for me to test." For the
-    fast-follow (R-0484), once the gates pass, the coordinator merges and deploys without
-    asking for a merge yes, then verifies on production.
-  - Every test path spends the separate testing key, never the production key; a missing
-    testing key fails loudly instead of falling back.
-  - A deploy for Patrick to test is the hand route — a box checkout plus an image tag — and has
-    nothing to do with merging pull requests.
-  - The exact-same-words refusal on a question is code, a rule accurate 100% of the time;
-    near-duplicate questions are only logged, never blocked.
-  - The pinned drawer stays 300 pixels wide, and its title shows the diagram's name.
-  - Held questions' words never reach the page. A stored question addresses the user as "you",
-    never by name, holds only the question itself, and is stored before the reply that asks it.
+The sandbox also makes real model calls on its own: a real coach turn and a real [try again]
+were run there. The live eval cases and the tests that need a key have not run.
 
+**Landed on branch FD-363 since the first deploy, not yet deployed.** In plain words: every
+tool line in the thread now names an event or person by the one shared label everywhere, kept
+events included, and touch targets were widened so a crowded dot can be tapped on a phone. The
+list button sits at chip height, with more room after tool lines in the thread, and the
+picture's back and close glyphs now line up with the ask button. A tap on a chip and a tap on
+an event's dot are the same behaviour, with a per-user switch in admin back to the old,
+separate behaviour. Speaking a reply out loud now works on iPhone. Adding an event or changing
+a date is refused unless its certainty is given. The events list explains why an event has no
+cluster instead of grouping it wrong silently. A command installs a stand-in test record for
+review. The coach can raise, close and read impressions in the same way it handles open
+questions, shown to the user in the drawer with what each rests on and two ways to push back.
+The live suite now counts its own spend, stops at its hard caps, and keeps a results row per
+run. A local model can stand in for Anthropic and Gemini, so the sandbox runs free by default.
+
+Open:
+- The new tests cite the nearest already-numbered ruling instead of a real id, because the
+  oracle spec forbids a pending-ruling marker. Four spend tests, the case proving a question is
+  stored before the reply, and the tests behind R-0479 and R-0482 in Patrick's store all need
+  re-citing once he appends the ruling.
+- Three rulings were skipped as needing a design rather than built: R-0187; R-0213, R-0376 and
+  R-0378 together; R-0122 and R-0127 together.
+- The count of guess-dated events is blocked by the personal-data safety check and is not built.
+- An old kept tool call that changes an existing event still keeps that event's old words
+  instead of writing the new ones.
+
+**Ruling candidates, for Patrick to confirm and give ids to (no ids yet):**
+- SARF shifts are remembered as isolated episodes, not a series or a trend; there is no line or
+  step graph of shifts.
+- Every label names all the people in it, the speaker included; this supersedes R-0457's rule
+  to leave out the one doing the reading.
+- The picture band grows from 66 to 72 pixels tall and the region around it from 138 to 144.
+- The coach's impressions are stored the way open questions are and can be pushed back on; a
+  reading that repeats within the same years becomes a cluster.
+- A tap on a chip and a tap on a dot are the same behaviour, with a per-user switch in admin
+  back to the old, separate behaviour.
+- A date needs a certainty: certain for an exact day, approximate for a month or year only,
+  unknown for a hedge.
+- The tab is renamed "From the coach", with an Impressions section in it.
+- "Partly" is stored as a push-back only once the reply is actually sent; tapping it before
+  that only records that the user looked.
+- "Doesn't fit" posts the impression into the chat as a chip.
+- The empty tab reads "Nothing from the coach yet."
+- The spend strategy: real Anthropic calls only at the end of a batch and only when a prompt or
+  tool changed, every dollar asked for first, no free tier; the live suite's hard caps and daily
+  ledger; the sandbox's coach on a local model by default. Written up in
+  [HOW_THIS_PROJECT_WORKS.md](HOW_THIS_PROJECT_WORKS.md).
+- Clinical-coding evals wait for ratified ground truth from the IRR review group; Patrick is
+  never asked to certify a coding rule case by case.
+
+Still true from the deploy on 2026-09-25: production's title bar reads "Free Diagram" instead
+of the diagram's real name, and four live coach cases fail the same way on the master branch.
 **What is not true yet on the box.** The dashboards and the cost rows are built but not deployed:
 that waits on Patrick putting the Grafana token there and refreshing the dependency lock. There is
 no automated database backup. Nine scratch accounts with chats, made while proving deploys, sit in

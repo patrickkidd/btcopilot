@@ -184,3 +184,29 @@ The sandbox, live evals, and browser walks with real turns all spend `ANTHROPIC_
 none of them ever spends `ANTHROPIC_API_KEY`, which is production's key, and there is no
 fallback to it. A missing testing key fails loudly, the same as a missing model key above,
 and is escalated to Patrick rather than worked around.
+
+**Real spend is asked first, every time, and only at the end of a batch (2026-09-25, Patrick).**
+A real call to Anthropic happens only right before a deploy, and only when a prompt or a tool
+changed since the last one. There is no free tier — every dollar spent is asked for first.
+
+**The live suite has hard caps (2026-09-25, Patrick).** Three dollars per run, and a daily
+ledger across runs. A balance check runs before any call. Every run writes a row of results.
+A run that stopped partway is reported as stopped, never counted as a pass.
+
+**The sandbox's coach runs on a local model by default (2026-09-25, Patrick).** Local Ollama,
+not a paid key. The testing key is spent only when the lead says so, and the sandbox never
+spends on Gemini by default either.
+
+**A prompt change ships with an eval built from a human ruling (2026-09-25, Patrick).** A
+candidate ruling is confirmed first; the eval then cites the confirmed ruling, fails on the
+old prompt, and passes on the new one. Its inputs are fictionalised, drawn from the shape of
+logged real cases but not the cases themselves.
+
+**Clinical-coding evals wait on the review group, not on Patrick case by case (2026-09-25,
+Patrick).** Ground truth for coding rules has to be ratified by the IRR review group; Patrick
+is never asked to certify a coding rule one case at a time. A code with no ruling yet goes on
+the waiting list in btcopilot/tests/live/README.md, never into the paid suite. The paid suite
+holds only behaviour evals and wording tests.
+
+**A ready message says what it spent (2026-09-25, Patrick).** It ends "spent $X on Y" — the
+amount and what it bought.
