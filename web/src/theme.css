@@ -183,19 +183,6 @@ button { font-family: inherit; }
 /* One line, always: the state text on the right changes with the selection and
    must never push the label on the left onto a second line, which would move
    the picture and everything under it. */
-/* The back arrow's tap target is the ruled 44, not the glyph's 9px. */
-.up {
-  flex: none;
-  width: 44px;
-  height: 28px;
-  margin-left: -14px;
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--move);
-  font: inherit;
-  cursor: pointer;
-}
 /* the two small controls on the title line: the i after an open cluster's
    name, and the ✕ at the row's end while a moment is picked at rest */
 .pl-btn {
@@ -273,10 +260,17 @@ button { font-family: inherit; }
   color: var(--move);
   cursor: pointer;
 }
+/* The glyph itself starts on the picture's left edge, in line with the start
+   of the line and the ask button under it; the tap target is the ruled 44
+   square around it, reaching past the edge rather than pushing the glyph in. */
 .pin-label .up::before {
   content: "";
   position: absolute;
-  inset: -13px -14px;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
 }
 .pin-label .up:active { opacity: 0.55; }
 /* The list button sits inside the thing it lists, in the same circle as the

@@ -107,6 +107,9 @@ export type Key = (typeof KEYS)[number];
 
 export const stateFor = (key: Key) => join(AUTH, `${key}.json`);
 
+/** A fixture's account, as the server's fixtures name it. */
+export const username = (key: Key) => `${key}@fd362-fixture.invalid`;
+
 /** For the goldens of a drawing rather than a page. The suite's one percent
  * ratio is worth hundreds of pixels on a small cell, enough to hide a whole
  * stroke width: five move drawings once passed while carrying the wrong one.

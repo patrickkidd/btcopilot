@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
-import { stateFor } from "./setup";
+import { stateFor, username } from "./setup";
 
 /** A chip naming an event and the event's own dot pick it the same way
  * [Oracle: R-0168]: the others fade, an event outside every cluster keeps the
@@ -12,7 +12,7 @@ import { stateFor } from "./setup";
  * The hostile record: one cluster holds parts 1 to 3, parts 4 to 6 are loose,
  * and the coach's reply names each part in a chip. */
 
-const WHO = "hostile@fd362-fixture.invalid";
+const WHO = username("hostile");
 
 /** The admin command, run the way Patrick runs it. */
 const spotlight = (value: string) =>
