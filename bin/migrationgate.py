@@ -22,6 +22,8 @@ from btcopilot.admin.database import config, current
 from btcopilot.app import create_app
 from btcopilot.models.change import Author
 from btcopilot.schema import ItemKind
+from btcopilot.toolbox import ToolName
+from btcopilot.toolnames import ARGS, GONE, SUBJECT
 
 COMPOSE = Path(__file__).parents[1] / "deploy" / "docker-compose.yml"
 REVISION = "1b00000000ab"
@@ -76,6 +78,20 @@ ORPHANS = {
          WHERE c.statement_id IS NULL AND c.author = 'coach'
            AND c.turn_id NOT LIKE 'undo:%'""",
 }
+CALLS = sa.text(
+    """
+    SELECT t.id, t.created_at, t.payload, d.diagram_id FROM turn_events t
+      JOIN discussions d ON d.id = t.discussion_id
+     WHERE t.kind = 'tool_call' ORDER BY t.id
+    """
+)
+REMOVALS = sa.text(
+    """
+    SELECT c.diagram_id, e->>'item_kind' AS kind, e->>'item_id' AS item_id, c.created_at
+      FROM diagram_changes c, jsonb_array_elements(c.deltas) e
+     WHERE e->'field' = 'null' AND e->'after' = 'null'
+    """
+)
 DELETABLE = sa.text(
     """
     SELECT d.id, d.user_id FROM discussions d
@@ -131,6 +147,43 @@ def counts(conn) -> dict[str, int]:
         table: conn.execute(sa.text(f'SELECT count(*) FROM "{table}"')).scalar_one()
         for table in sa.inspect(conn).get_table_names()
     }
+
+
+def gone(call: dict, arg: str) -> list[tuple[str, str]]:
+    """The (kind, id) a name in a call stands for."""
+    args = call["args"]
+    if arg != "it":
+        ids = args[arg] if isinstance(args[arg], list) else [args[arg]]
+        return [(ARGS[arg].value, str(i)) for i in ids]
+    if call["name"] == ToolName.Remove.value:
+        return [(args["item_kind"], str(args["item_id"]))]
+    return [(SUBJECT[ToolName(call["name"])].value, str(args.get("id")))]
+
+
+def name_checks(conn) -> list[tuple]:
+    calls = conn.execute(CALLS).all()
+    removed = {}
+    for r in conn.execute(REMOVALS).all():
+        removed.setdefault((r.diagram_id, r.kind, r.item_id), []).append(r.created_at)
+    marks = set(GONE.values())
+    flagged = 0
+    for c in calls:
+        for arg, text in (c.payload.get("names") or {}).items():
+            if text not in marks:
+                continue
+            for kind, item_id in gone(c.payload, arg):
+                when = removed.get((c.diagram_id, kind, item_id), [])
+                flagged += 1
+                print(
+                    f"gone: call {c.id} {c.payload['name']} {arg}={text!r} ({kind} {item_id}, "
+                    f"diagram {c.diagram_id}): removal logged before the call "
+                    f"{any(w <= c.created_at for w in when)}, after it {any(w > c.created_at for w in when)}"
+                )
+    print(f"note: {flagged} names read as no longer in the record")
+    return [
+        ("backfilled tool calls that carry names", len(calls),
+         sum("names" in c.payload for c in calls)),
+    ]
 
 
 def turn_checks(conn) -> list[tuple]:
@@ -196,6 +249,7 @@ def main(dump: Path) -> int:
                 checks += [(label, 0, conn.execute(sa.text(q)).scalar_one())
                            for label, q in ORPHANS.items()]
                 checks += turn_checks(conn)
+                checks += name_checks(conn)
             with engine.connect() as conn:
                 checks.append(delete_check(app, conn))
     for label, expected, seen in checks:
