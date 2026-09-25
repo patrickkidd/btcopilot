@@ -435,6 +435,33 @@ def test_a_label_says_the_kind_once(kind, description, label):
     assert said["label"] == label
 
 
+def test_a_pair_bond_names_the_speaker_and_the_partner():
+    # R-0457
+    data = DiagramData(
+        people=[
+            {**asdict(Person(id=1, name="Patrick")), "primary": True},
+            asdict(Person(id=2, name="Emily")),
+        ],
+        events=[
+            asdict(
+                Event(
+                    id=10,
+                    kind=EventKind.Bonded,
+                    person=1,
+                    spouse=2,
+                    dateTime="2019-03-01",
+                    description="together for about a year and a half",
+                )
+            )
+        ],
+    )
+    event = build_timeline(data)["events"][0]
+    assert (event["person_name"], event["label"]) == (
+        "Patrick & Emily",
+        "bonded \u00b7 together for about a year and a half",
+    )
+
+
 def test_a_noted_event_near_a_shift_is_a_lead_and_raises_the_question():
     # R-0366
     """A move is not a change in the family, but a coach may wonder whether it

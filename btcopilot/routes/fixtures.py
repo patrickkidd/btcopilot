@@ -14,7 +14,15 @@ import traceback
 import click
 
 from btcopilot import diagramjson
-from btcopilot.models import StatementKind
+from btcopilot.models import (
+    AccessRight,
+    Change,
+    Interaction,
+    ModelCall,
+    Observation,
+    ProductEvent,
+    StatementKind,
+)
 from btcopilot.routes import bp
 from btcopilot.schema import (
     Cluster,
@@ -433,6 +441,9 @@ FIXTURES = {
 DIAGRAM_NAMES = {"longname": LONG_DIAGRAM_NAME}
 
 
+DIAGRAM_ROWS = (AccessRight, Change, Interaction, ModelCall, Observation, ProductEvent)
+
+
 def username(key: str) -> str:
     return f"{key}@{DOMAIN}"
 
@@ -458,6 +469,12 @@ def install(key: str):
             db.session.delete(discussion)
         if user.free_diagram_id == old.id:
             user.free_diagram_id = None
+        if user.current_diagram_id == old.id:
+            user.current_diagram_id = None
+        # what was done to the old record goes with it; the database will not
+        # delete a diagram while rows still point at it
+        for kept in DIAGRAM_ROWS:
+            kept.query.filter_by(diagram_id=old.id).delete()
         db.session.flush()
         db.session.delete(old)
     db.session.flush()

@@ -13,7 +13,6 @@ import {
   dateText,
   dotRadius,
   rows,
-  whoText,
   words,
   wrap2,
   zones,
@@ -36,22 +35,13 @@ describe("the words a moment says about itself", () => {
   });
 
   // R-0457
-  it("the person is named only when the record is not about them", () => {
-    expect(words("2001-03-01", Certainty.Certain, "Ada", "Ada", "Moved out")).toBe(
-      "Moved out",
-    );
-    expect(words("2001-03-01", Certainty.Certain, "Ben", "Ada", "Moved out")).toBe(
-      "Ben · Moved out",
-    );
-  });
-
-  // R-0457
-  it("a pair keeps the other person and leaves out the one reading", () => {
-    expect(whoText("Ada & Ben", "Ada")).toBe("& Ben");
-    expect(whoText("Ben & Ada", "Ada")).toBe("Ben");
-    expect(whoText("Ada \u2192 Ben", "Ada")).toBe("\u2192 Ben");
-    expect(whoText("Ben & Cal", "Ada")).toBe("Ben & Cal");
-    expect(whoText("Ada", "Ada")).toBe("");
+  it("a label names everyone it is about, the speaker included", () => {
+    const say = (who: string) =>
+      words("2001-03-01", Certainty.Certain, who, "bonded \u00b7 together for a year");
+    expect(say("Patrick & Emily")).toBe("Patrick & Emily \u00b7 bonded \u00b7 together for a year");
+    expect(say("Emily & Patrick")).toBe("Emily & Patrick \u00b7 bonded \u00b7 together for a year");
+    expect(say("Patrick")).toBe("Patrick \u00b7 bonded \u00b7 together for a year");
+    expect(say("")).toBe("bonded \u00b7 together for a year");
   });
 
   // R-0235

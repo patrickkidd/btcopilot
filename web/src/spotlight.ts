@@ -66,37 +66,19 @@ export function wrap2(text: string, wide: number): [string, string] {
   ];
 }
 
-/** What a moment's row says: when, who it is about when that is not the person
- * whose record this is, and its own words. */
-/** What one moment's line says: its own words, and who it is about when that
- * is not the person whose record this is. No date — the year is written once,
- * under the moment picked — unless two of the moments on screen fall in the
- * same year, when each of those says which month it was (picked mockup,
- * 2026-09-08: A with C).  */
-/** Who a moment is about, as the person whose record this is would read it:
- * themselves left out, and the other side of a pair kept with the "&" or the
- * arrow that says how they are joined. */
-export function whoText(who: string, protagonist: string): string {
-  if (!who || who === protagonist) return "";
-  for (const join of [" & ", " → "]) {
-    if (who.startsWith(protagonist + join)) {
-      return join.trim() + " " + who.slice((protagonist + join).length);
-    }
-    const tail = join + protagonist;
-    if (who.endsWith(tail)) return who.slice(0, who.length - tail.length);
-  }
-  return who;
-}
-
+/** What one moment's line says: everyone it is about, the person whose record
+ * this is included, then its own words (Patrick, 2026-09-24). No date — the
+ * year is written once, under the moment picked — unless two of the moments on
+ * screen fall in the same year, when each of those says which month it was
+ * (picked mockup, 2026-09-08: A with C). */
 export function words(
   date: string,
   certainty: string | null,
   who: string,
-  protagonist: string,
   label: string,
   month = false,
 ): string {
-  const person = whoText(who, protagonist) ? `${whoText(who, protagonist)} · ` : "";
+  const person = who ? `${who} · ` : "";
   const when = month ? `${monthText(date, certainty)} · ` : "";
   return `${when}${person}${label.trim()}`;
 }

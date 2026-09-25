@@ -283,9 +283,10 @@ button { font-family: inherit; }
    one beside the message bar. The picture's own box is what it sits in, so it
    is taken out of the flow and nothing below it moves. */
 .pic { position: relative; }
-/* The list button sits at the end of the row of chips, in the same circle as
-   the one beside the message bar, and nothing else is over there. */
-.caption .listglyph { margin-left: auto; margin-right: -13px; }
+/* The list button sits at the end of the row of chips, drawn the chips' height
+   and on their line; its 44 target reaches past the drawing, so the drawn edge
+   lines up with the row's 16 of padding. */
+.caption .listglyph { margin-left: auto; margin-right: -4px; }
 .view { position: relative; transition: height 0.25s ease; }
 /* One level in or one level out. The two views stand side by side for the
    length of the slide, each at the height the region already had, so nothing
@@ -946,6 +947,8 @@ button { font-family: inherit; }
   font: 400 13px/1.5 var(--mono);
   color: var(--faint);
 }
+/* a line of the reply's own 17/1.45 between what the coach did and what it says */
+.bub .did:not(:has(+ .did)):not(:last-child) { margin-bottom: 24px; }
 .bub .did::before {
   content: "";
   position: absolute;
@@ -1370,13 +1373,13 @@ button { font-family: inherit; }
 .listglyph::before {
   content: "";
   position: absolute;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  width: 36px;
+  height: 26px;
+  box-sizing: border-box;
+  border-radius: 8px;
   border: 1px solid var(--line);
-  background: var(--bg);
 }
-.listglyph svg { position: relative; display: block; opacity: 0.8; width: 20px; height: 15px; }
+.listglyph svg { position: relative; display: block; opacity: 0.8; width: 16px; height: 12px; }
 .listglyph:active::before { background: var(--tint); }
 /* The home-screen badge: a quiet phone outline beside the account button,
    only while the app runs inside a browser. */

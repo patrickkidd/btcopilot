@@ -183,7 +183,7 @@ test.describe("one cluster open on the sparse record", () => {
     await settle(page);
     await openCluster(page);
     await pickMoment(page);
-    await expect(page.locator("#view .ss-t.on").first()).toHaveText("Grandmother died");
+    await expect(page.locator("#view .ss-t.on").first()).toHaveText("Ada · Grandmother died");
     await tapWords(page);
     await expect(page.locator("#menu-screen")).toBeVisible();
     await expect(

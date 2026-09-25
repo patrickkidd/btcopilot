@@ -25,7 +25,6 @@ import {
   sharedYears,
   dotRadius,
   rows,
-  whoText,
   words,
   wrap2,
   zones,
@@ -1401,10 +1400,14 @@ export class Picture {
     const wide = Math.floor((x1 - x0) / CH);
     if (chosen) {
       const event = chosen.event;
-      const said = whoText(event.person_name, this.protagonist());
-      const who = said ? `${said} · ` : "";
+      const said = words(
+        event.dateTime as string,
+        event.dateCertainty,
+        event.person_name,
+        event.label,
+      );
       const lines = wrap2(
-        clip(who + event.label.trim(), Math.min(88, wide * ROWS.length)),
+        clip(said, Math.min(88, wide * ROWS.length)),
         wide,
       );
       const text = lines
@@ -1443,7 +1446,6 @@ export class Picture {
           m.event.dateTime as string,
           m.event.dateCertainty,
           m.event.person_name,
-          this.protagonist(),
           m.event.label,
           clash.has((m.event.dateTime as string).slice(0, 4)),
         ),
@@ -1471,10 +1473,6 @@ export class Picture {
         .filter((r) => r.text)
         .map((r) => ({ id: r.id, row: r.row, left: r.left, width: r.width })),
     };
-  }
-
-  private protagonist(): string {
-    return this.data?.people.find((p) => p.primary)?.name ?? "";
   }
 
   /** The bracket over the cluster the coach aimed at. It is only drawn when no

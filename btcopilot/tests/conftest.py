@@ -7,6 +7,7 @@ import re
 import flask.testing
 import pytest
 from mock import patch
+from sqlalchemy import text
 import btcopilot
 from btcopilot.extensions import db
 from btcopilot.llmutil import Served
@@ -58,6 +59,14 @@ def flask_app(request, tmp_path):
     path that reaches a Pro or Training table the database does not hold fails
     here, not on the beta server."""
     yield from make_app(request, tmp_path, tables=TABLES)
+
+
+@pytest.fixture
+def foreign_keys(flask_app):
+    """SQLite enforces foreign keys only when asked; Postgres always does."""
+    db.session.execute(text("PRAGMA foreign_keys=ON"))
+    yield
+    db.session.execute(text("PRAGMA foreign_keys=OFF"))
 
 
 SERVED = "claude-opus-5-5"

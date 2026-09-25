@@ -3,7 +3,6 @@
 import datetime
 
 import pytest
-from sqlalchemy import text
 
 import btcopilot
 from btcopilot import diagramjson
@@ -33,14 +32,6 @@ from btcopilot.toolbox import ToolName, Toolbox
 @pytest.fixture(autouse=True)
 def no_auto_auth(monkeypatch):
     monkeypatch.delenv("FLASK_AUTO_AUTH_USER", raising=False)
-
-
-@pytest.fixture
-def foreign_keys(web):
-    """SQLite enforces foreign keys only when asked; Postgres always does."""
-    db.session.execute(text("PRAGMA foreign_keys=ON"))
-    yield
-    db.session.execute(text("PRAGMA foreign_keys=OFF"))
 
 
 @pytest.fixture
