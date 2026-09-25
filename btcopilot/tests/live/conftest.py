@@ -22,6 +22,7 @@ import pytest
 from sqlalchemy import event
 
 from btcopilot.coachmodel import CoachModel
+from btcopilot import turnlog
 from btcopilot.extensions import db
 from btcopilot.models import ModelCall
 from btcopilot.promptdir import key_present
@@ -189,14 +190,19 @@ class Coach:
         db.session.expire_all()
         return self.user.free_diagram.get_diagram_data().people
 
-    def say(self, statement: str) -> str:
+    def turn(self, statement: str) -> list[dict]:
+        """Everything one real turn told the page, in order, ending in its reply."""
         response = self.web.post(
             "/app/chat",
             json={"statement": statement},
             headers={"X-CSRFToken": self.token},
         )
         assert response.status_code == 202, response.get_data(as_text=True)
-        return replied(response)["statement"]
+        replied(response)
+        return [e for _, e in turnlog.read_from(response.get_json()["turn_id"], 0)]
+
+    def say(self, statement: str) -> str:
+        return self.turn(statement)[-1]["statement"]
 
 
 @pytest.fixture

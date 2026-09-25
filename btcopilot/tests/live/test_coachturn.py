@@ -8,6 +8,8 @@ import re
 
 from btcopilot import prompts
 from btcopilot.tests.live.criterion import once, passes, waiting
+from btcopilot.toolbox import ToolName
+from btcopilot.turnlog import TurnEventKind
 
 NOTHING = ("", None)
 
@@ -89,7 +91,6 @@ def test_things_rocky_since_the_divorce_is_functioning_down_on_the_speaker(coach
     assert [e for e in on(coach.events, 1) if e.get("functioning") == "down"]
 
 
-@waiting
 @once
 def test_the_coach_prompt_defines_functioning_in_the_spec_words():
     # R-0428
@@ -238,6 +239,10 @@ INSOMNIA = {
 MOVED = "We moved to Arizona in early 2000."
 
 
+def moved(events):
+    return [e for e in events if e["id"] not in (21, 30)]
+
+
 @once
 def test_a_move_is_a_noted_event_and_the_coach_wonders_whether_it_played_in_a_shift(
     coach,
@@ -245,12 +250,44 @@ def test_a_move_is_a_noted_event_and_the_coach_wonders_whether_it_played_in_a_sh
     # R-0366
     coach.record(events=[INSOMNIA])
     reply = coach.say(MOVED)
-    moves = [e for e in coach.events if e["id"] not in (21, 30)]
-    assert [e.get("kind") for e in moves] == ["noted"]
-    assert all(
-        e.get(v) in NOTHING
-        for e in moves
-        for v in ("symptom", "anxiety", "functioning")
-    )
+    assert [e.get("kind") for e in moved(coach.events)] == ["noted"]
     assert re.search(r"sleep|move|Arizona", reply, re.I)
     assert "?" in reply
+
+
+@waiting
+@once
+def test_a_move_carries_no_symptom_anxiety_or_functioning_shift(coach):
+    # R-0366
+    coach.record(events=[INSOMNIA])
+    coach.say(MOVED)
+    assert all(
+        e.get(v) in NOTHING
+        for e in moved(coach.events)
+        for v in ("symptom", "anxiety", "functioning")
+    )
+
+
+OPEN = "My grandmother had a younger sister, but nobody ever told me her name."
+
+
+@once
+def test_a_question_is_stored_before_the_reply_that_asks_it(coach):
+    coach.record()
+    events = coach.turn(OPEN)
+    reset = max(
+        (i for i, e in enumerate(events) if e["type"] == TurnEventKind.TextReset),
+        default=-1,
+    )
+    words = [
+        i for i, e in enumerate(events) if e["type"] == TurnEventKind.Text and i > reset
+    ]
+    stored = [
+        i
+        for i, e in enumerate(events)
+        if e["type"] == TurnEventKind.ToolCall
+        and e["name"] == ToolName.AddQuestion
+        and e["refusal"] is None
+    ]
+    assert stored and words
+    assert stored[0] < words[0]
