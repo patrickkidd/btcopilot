@@ -18,9 +18,9 @@ describe("what a tool call says in plain words", () => {
       line(
         ToolName.EditEvent,
         { kind: "birth", child: 7, person: 3, date: "1931" },
-        { it: "Walter's birth", child: "Walter", person: "Ada" },
+        { it: "Walter \u00b7 born", child: "Walter", person: "Ada" },
       ),
-    ).toBe("Added Walter's birth, 1931");
+    ).toBe("Added Walter \u00b7 born, 1931");
     expect(
       line(
         ToolName.EditEvent,

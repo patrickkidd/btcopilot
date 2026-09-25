@@ -144,6 +144,22 @@ def names(data: DiagramData, tool: str, args: dict) -> dict:
     return out
 
 
+def drawn(call: dict) -> dict:
+    """A kept call's names as its line says them. An event the call added is
+    named again from its own args and the people's names kept with it, so a
+    call kept before the shared label changed reads as a new one does."""
+    names = call["names"]
+    args = call["args"]
+    if call["name"] != ToolName.EditEvent or args.get("id") is not None or "it" not in names:
+        return names
+    people = {
+        args[key]: {"name": names[key]}
+        for key in ("person", "spouse", "child")
+        if args.get(key) is not None and key in names
+    }
+    return {**names, "it": _event(args, people)}
+
+
 def _unasked(data: DiagramData, tool: str, args: dict) -> bool:
     """The call touches a question the person has never been asked, and does
     not ask it."""

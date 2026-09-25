@@ -101,3 +101,26 @@ for (const { key, words, at } of cases) {
     });
   });
 }
+
+test.describe("dense60, every dot", () => {
+  test.use({ storageState: stateFor("dense60") });
+
+  // R-0103, R-0402
+  test("a tap on each crowded dot's centre picks that dot, and every target is 44 tall", async ({
+    page,
+  }) => {
+    await openCluster(page);
+    const heights = await page
+      .locator('#view .ss-hit[data-target="zone"]')
+      .evaluateAll((all) => all.map((hit) => hit.getBoundingClientRect().height));
+    expect(Math.min(...heights)).toBeGreaterThanOrEqual(44);
+    const all = await centres(page);
+    expect(all).toHaveLength(20);
+    const missed: number[] = [];
+    for (const [i, dot] of all.entries()) {
+      await page.touchscreen.tap(dot.x, dot.y);
+      if (Math.abs((await picked(page)) - dot.x) >= 1) missed.push(i);
+    }
+    expect(missed).toEqual([]);
+  });
+});

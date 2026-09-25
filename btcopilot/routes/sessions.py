@@ -22,7 +22,7 @@ from btcopilot.discussions import (
     session_payload,
     sync_chat_speakers,
 )
-from btcopilot import turns, turnstore
+from btcopilot import toolnames, turns, turnstore
 from btcopilot.turnlog import TurnEventKind
 
 
@@ -49,7 +49,7 @@ def statements_payload(discussion: Discussion) -> list[dict]:
                         {
                             "name": e["name"],
                             "args": e["args"],
-                            "names": e["names"],
+                            "names": toolnames.drawn(e),
                             "refusal": e.get("refusal"),
                         }
                         for e in events

@@ -305,3 +305,33 @@ def test_a_line_names_what_the_call_touched_as_it_was_when_it_was_made(
         {"it": "Wrenna \u00b7 born", "child": "Wrenna"},
     ]
 
+
+
+def test_a_kept_event_call_is_named_by_the_shared_label_even_from_before_it(
+    web, token, family, monkeypatch
+):
+    # R-0478
+    coach(
+        monkeypatch,
+        Model(
+            called(
+                ToolName.EditEvent,
+                kind="death",
+                person=1,
+                date="1990-07-04",
+                date_certainty="approximate",
+                description="died, possibly around July 4",
+            ),
+            said("Wren died around 1990."),
+        ),
+    )
+    body = post(web, token).get_json()
+    line = "Wren · died, possibly around July 4"
+    assert statements(web, body["discussion_id"])[1]["tools"][0]["names"]["it"] == line
+
+    kept = TurnEvent.query.filter_by(
+        discussion_id=body["discussion_id"], kind=TurnEventKind.ToolCall.value
+    ).one()
+    kept.payload = {**kept.payload, "names": {**kept.payload["names"], "it": "Wren's death"}}
+    db.session.commit()
+    assert statements(web, body["discussion_id"])[1]["tools"][0]["names"]["it"] == line
