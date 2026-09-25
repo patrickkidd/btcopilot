@@ -266,6 +266,7 @@ def question_checks(conn) -> list[tuple]:
     return [
         ("item kind 'question' exists", True, ("itemkind", "question") in labels),
         ("interaction kind 'dismiss' exists", True, ("interactionkind", "dismiss") in labels),
+        ("interaction kind 'doesnt_fit' exists", True, ("interactionkind", "doesnt_fit") in labels),
     ]
 
 
