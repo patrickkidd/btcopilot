@@ -169,3 +169,8 @@ never several topics presented together.
 
 **A sandbox must be able to make real model calls (2026-09-24, Patrick).** A missing key is
 escalated to Patrick, never worked around by testing without it.
+
+**Test well, then push for him to test (2026-09-24, Patrick).** His words: "the process is
+that you test extremely well to protect the invaluable beta data, and then you push a build
+to the production box for me to test." For the fast-follow (R-0484), once the gates pass, the
+coordinator merges and deploys without asking for a merge yes, then verifies on production.

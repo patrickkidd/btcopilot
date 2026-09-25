@@ -258,7 +258,9 @@ the box:
   read see it; people and pair bonds already did. Known behaviour that follows: a hand edit must
   pass the same record rules as the coach, so some edits the page used to accept are refused
   (for example a noted event with no words); deleting an event by hand also removes the
-  emotions it caused, as the coach's delete does.
+  emotions it caused, as the coach's delete does. The editor now stops a shift with nothing
+  moved before it can be saved. Any other refusal from the record shows its reason, and the
+  editor stays open.
 - **The old single-call chat path is deleted.** The chat runs only on the coach's tool loop. The
   old conversation-flow prompt, public and private, the one-shot ask path and the
   fixed-category intake engine are gone; the helpers other code used from them moved beside
@@ -280,8 +282,14 @@ not run. Open from this work:
   product-events call when several writes land at once. Production runs Postgres, so this is
   taken as sandbox-only unless it is seen there.
 - Rulings not yet in the encrypted rulings store, which Patrick appends by hand: R-0477 to
-  R-0485, and seven more from the same day with no ids yet:
-  - Open questions serve both the coach's memory and the user's view of the family.
+  R-0485, and eight more from the same day with no ids yet:
+  - Open questions are one stored object with a state: held by the coach, then asked, then
+    resolved. Resolved has five outcomes — a fact landed, answered in words, the client
+    doesn't know, declined, or the coach let it go — and all of them are kept as data. The
+    client sees a screen of only the questions the coach has actually asked; each is a chip
+    that goes into the chat, and no count is ever shown. The coach's not-yet-asked questions
+    stay hidden and live in the map. Mockups are being made; nothing is built yet. His words:
+    "sounds awesome."
   - New screens are allowed when they are thought through; the earlier ruling against a new
     surface was narrow.
   - Brainstorm topics are taken one at a time.
@@ -296,6 +304,11 @@ not run. Open from this work:
     ask path, and the fixed-category intake engine, which R-0485 rules out.
   - A sandbox must be able to make real model calls; a missing key is escalated to Patrick,
     never worked around by testing without it.
+  - Test well to protect the beta data, then push a build to the production box for him to
+    test. His words: "the process is that you test extremely well to protect the invaluable
+    beta data, and then you push a build to the production box for me to test." For the
+    fast-follow (R-0484), once the gates pass, the coordinator merges and deploys without
+    asking for a merge yes, then verifies on production.
 
 **What is not true yet on the box.** The dashboards and the cost rows are built but not deployed:
 that waits on Patrick putting the Grafana token there and refreshing the dependency lock. There is
