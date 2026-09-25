@@ -1457,3 +1457,18 @@ the coach's memory and the user's view of the family; new screens are allowed wh
 thought through, the earlier ruling against a new surface having been narrow; and brainstorm
 topics are taken one at a time. The gate has not yet run on a production dump, and the browser
 checks at phone and desktop have not run.
+
+**2026-09-24, FD-363, evening.** Patrick ruled four more points, not yet numbered or in the
+store: the record's refusal of an added event that exactly matches an existing one stays beside
+R-0481, since a rule that is right every time is code; every tool call draws a line in the
+thread, show calls included, for a complete log of what the coach did and how the user
+responded; the old single-call chat path is deleted; and a sandbox must make real model calls,
+a missing key going to him rather than being tested around, which became a process rule. Built
+on the branch: show calls draw a line and tool lines read event dates as the record list does;
+hand edits of events write a change row through the coach's write path, marked as the user, so
+undo and the recent-changes read see them, and so they now pass the coach's record rules and a
+hand delete removes the emotions the event caused; the old conversation-flow prompt, the
+one-shot ask path and the fixed-category intake engine were removed. The sandbox made a real
+coach turn and a real [try again]. Left open: two private prompt fragments nothing reads any
+more, and the sandbox's SQLite now and then reporting the database locked under concurrent
+writes.

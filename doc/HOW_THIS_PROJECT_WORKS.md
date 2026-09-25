@@ -166,3 +166,6 @@ and cannot be reproduced.
 
 **Brainstorm topics are taken one at a time (2026-09-24, Patrick).** One topic per round,
 never several topics presented together.
+
+**A sandbox must be able to make real model calls (2026-09-24, Patrick).** A missing key is
+escalated to Patrick, never worked around by testing without it.

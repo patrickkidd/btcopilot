@@ -249,28 +249,53 @@ the box:
   turn touched. An admin command lists the rows; they seed regression evals [R-0481, R-0482].
   Three live eval cases — a retry after a failure, an event said again, a read before asking —
   are scored on zero repeats and run only with a key.
-- **The page** draws the stored tool lines on every coach reply, reads included as plain lines.
-  A failed last turn shows the lines that landed and [try again], which resumes that turn rather
-  than sending the words again.
+- **The page** draws the stored tool lines on every coach reply, reads included as plain lines,
+  and show calls too ("Showed a triangle"). An event's date on a tool line reads as the record
+  list says it ("Jun 1994"). A failed last turn shows the lines that landed and [try again],
+  which resumes that turn rather than sending the words again.
+- **Hand edits of events write a change row.** Adding, editing or deleting an event on the page
+  now goes through the coach's write path, marked as the user, so undo and the recent-changes
+  read see it; people and pair bonds already did. Known behaviour that follows: a hand edit must
+  pass the same record rules as the coach, so some edits the page used to accept are refused
+  (for example a noted event with no words); deleting an event by hand also removes the
+  emotions it caused, as the coach's delete does.
+- **The old single-call chat path is deleted.** The chat runs only on the coach's tool loop. The
+  old conversation-flow prompt, public and private, the one-shot ask path and the
+  fixed-category intake engine are gone; the helpers other code used from them moved beside
+  that code.
 - **The migration gate** is a script that restores a Postgres dump into a throwaway container,
   runs the migrations, and checks row counts, orphans and tool lines per coach reply. Deleting a
   session now keeps the edits its words made: the links from change rows and turn records to
   those words are emptied instead of the delete failing on Postgres.
 
-Not yet verified: the migration gate has not been run on a production dump, and the browser gate
-at phone and desktop has not been run. Open from this work:
-- The record already refuses an added event that matches another on kind, day, people and what
-  moved, which is the kind of fixed guard R-0481 says there is none of — it stays until Patrick
-  rules.
-- Hand edits of events on the page skip the change log, which awaits his ruling.
+The sandbox now makes real model calls: a real coach turn and a real [try again] were run there.
+Not yet verified: the migration gate has not been run on a production dump, the browser gate at
+phone and desktop has not been run, and the live eval cases and the tests that need a key have
+not run. Open from this work:
 - Events imported from the Pro app or added by hand carry no words, so reading events by words
   never finds them.
-- The shared prompt fragment changed for the map is also included by the old plain-chat prompt,
-  which has no tools and which nothing calls.
-- Rulings R-0477 to R-0485, and three from the same day, are not in the encrypted rulings store;
-  Patrick appends them by hand. The three: open questions serve both the coach's memory and the
-  user's view of the family; new screens are allowed when they are thought through, the earlier
-  ruling against a new surface having been narrow; brainstorm topics are taken one at a time.
+- Two private prompt fragments are now unused and were not deleted: the Gemini flow fragment,
+  and the coach reference fragment, which is still listed but read by no code.
+- The sandbox's SQLite database now and then answers "database is locked" to the page's
+  product-events call when several writes land at once. Production runs Postgres, so this is
+  taken as sandbox-only unless it is seen there.
+- Rulings not yet in the encrypted rulings store, which Patrick appends by hand: R-0477 to
+  R-0485, and seven more from the same day with no ids yet:
+  - Open questions serve both the coach's memory and the user's view of the family.
+  - New screens are allowed when they are thought through; the earlier ruling against a new
+    surface was narrow.
+  - Brainstorm topics are taken one at a time.
+  - The record's refusal of an added event that exactly matches an existing one (same kind,
+    day, people and what moved) stays, alongside R-0481. His words: "a rule that is 100%
+    accurate every time is code by definition."
+  - Every tool call draws a line in the thread, show calls included ("Showed a triangle"). His
+    words: "This way we have a total event-sourced log of everything that has happened. We also
+    want total data capture for everything the coach is doing and how the user is or is not
+    responding to it so that we can make this product better in the future."
+  - The old single-call chat path is deleted: the old conversation-flow prompt, the one-shot
+    ask path, and the fixed-category intake engine, which R-0485 rules out.
+  - A sandbox must be able to make real model calls; a missing key is escalated to Patrick,
+    never worked around by testing without it.
 
 **What is not true yet on the box.** The dashboards and the cost rows are built but not deployed:
 that waits on Patrick putting the Grafana token there and refreshing the dependency lock. There is
@@ -494,7 +519,7 @@ failed coach turn used to leave the user's words stored, so a retry stored them 
 2026-09-24 the words are stored before the turn runs, not with the reply, and trying again
 resumes that same turn without storing them a second time [R-0477]; a second send while one is
 in flight does nothing. One tap posted learning data with no item kind and is not yet identified. The coach in
-the sandbox is down until the Anthropic API account behind the key has credit again.
+the sandbox makes real model calls again as of 2026-09-24.
 
 **Spec and gap.** UI_SPEC.md carries 444 value rows, 52 resolutions and 3 open items.
 UI_GAP.md sets every one against the build: MET 318, PARTIAL 11, CHANGED 12, MISSING 5,
