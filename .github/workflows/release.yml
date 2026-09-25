@@ -102,6 +102,7 @@ jobs:
             set -e
             export BTCOPILOT_TAG=${{ needs.build.outputs.tag }}
             cd /var/www/btcopilot
+            was=$(git rev-parse HEAD)
             git pull origin master
             # one time: the box's files move from deploy/chat to deploy; the database lives in instance/
             if [ -d deploy/chat ]; then
@@ -114,6 +115,8 @@ jobs:
             docker rollout --env-file /etc/fd/secrets.env fd-app
             docker rollout --env-file /etc/fd/secrets.env fd-worker
             docker compose --env-file /etc/fd/secrets.env up -d --remove-orphans
+            # Caddy's file is a single-file mount, which keeps the replaced file until the container restarts
+            git diff --quiet "$was" HEAD -- Caddyfile || docker compose --env-file /etc/fd/secrets.env restart fd-caddy
             # one time (R-0417): a database on the retired chain is stamped to the single revision
             psql() { docker compose --env-file /etc/fd/secrets.env exec -T fd-postgres psql -U familydiagram -d familydiagram -tAc "$1"; }
             at=$(psql "SELECT CASE WHEN to_regclass('alembic_version') IS NULL THEN '' ELSE (SELECT string_agg(version_num, ',') FROM alembic_version) END")
