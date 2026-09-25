@@ -4,6 +4,7 @@ gap vs recorded no-change, undated shelf, deterministic order questions."""
 
 import datetime
 import logging
+import re
 from dataclasses import MISSING, fields as dc_fields
 
 from btcopilot.refs import Ref, RefKind
@@ -53,6 +54,20 @@ KIND_WORDS = {
     EventKind.Bonded.value: "bonded",
     EventKind.Death.value: "died",
 }
+# A description that opens by saying the kind already says what happened, so the
+# kind is not said again in front of it: "died, possibly around July 4", never
+# "died · died, possibly around July 4".
+KIND_FORMS = {
+    EventKind.Birth.value: {"born", "birth"},
+    EventKind.Adopted.value: {"adopted", "adoption", "adopts"},
+    EventKind.Married.value: {"married", "marriage", "marries", "marry", "wed", "wedding"},
+    EventKind.Separated.value: {"separated", "separation", "separate", "separates"},
+    EventKind.Divorced.value: {"divorced", "divorce", "divorces"},
+    EventKind.Bonded.value: {"bonded", "bond", "bonds"},
+    EventKind.Death.value: {"died", "dies", "death", "dead", "passed"},
+}
+# Words a description may open with before it says the kind: "Got married in Reno".
+LEADS = {"he", "she", "they", "was", "were", "got", "is", "the", "a", "his", "her"}
 PAIR_KINDS = (
     EventKind.Married.value,
     EventKind.Bonded.value,
@@ -165,7 +180,14 @@ def _label(event: dict, people_by_id: dict) -> str:
     kind = enum_val(event.get("kind"))
     if kind in KIND_WORDS:
         word = KIND_WORDS[kind]
-        return f"{word} \u00b7 {description}" if description else word
+        if not description:
+            return word
+        opening = next(
+            (w for w in re.findall(r"[a-z]+", description.lower()) if w not in LEADS), ""
+        )
+        if opening in KIND_FORMS[kind]:
+            return description
+        return f"{word} \u00b7 {description}"
     for variable, _ in VARIABLES:
         direction = enum_val(event.get(variable))
         if direction:
