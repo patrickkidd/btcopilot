@@ -964,3 +964,11 @@ and keeping are one act: a question put to the person is stored the same turn,
 asked, in the reply's words, unless it does not matter at all; one meant for later
 is stored held. The backfill keeps the "you" of the message. Not yet measured
 live. [R-0482, R-0485]
+
+### September 2026: A kept question is the question alone (FD-363)
+
+**Change**: a stored question carried the reply's lead-in ("Before we go further,
+what's your last name…") into the Questions tab. The shared paragraph and the
+backfill now say the reply may frame a question however it likes, but what is kept
+is the question alone, with no lead-in, hedge or reason, still in "you" wording and
+readable on its own. Not yet measured live. [R-0482, R-0485]
