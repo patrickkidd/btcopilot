@@ -94,7 +94,7 @@ is `alloy/config.alloy`. Its UI on port 12345 has no host port, so it is not exp
 `fd-pdc` (Grafana's Private Data source Connect agent) holds an outbound tunnel to Grafana Cloud with `GRAFANA_PDC_TOKEN`; no port is opened.
 Grafana's Postgres data source reaches `fd-postgres:5432` through it as the read-only role `grafana`, password `GRAFANA_PG_PASSWORD`.
 
-The desktop app's update feeds are not served here; they live with `master-legacy`.
+The desktop app's update feeds live on the legacy box and are forwarded because shipped apps have this address built in.
 
 ## What is not here yet
 

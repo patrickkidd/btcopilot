@@ -1700,3 +1700,9 @@ Patrick. The coach prompts now carry the old prompts' domain rules as he confirm
 IRR-derived changes need his confirmation [R-0423]. Rejected: relying on the agentic loop alone as
 the second pass. Chosen: a narrow independent review at session end, shown as coaching, measured
 by replay against IRR codes, in a fast-follow PR [R-0443, R-0444].
+
+## 2026-09-25: The Pro update feeds stay on the legacy box
+
+The Pro app's update feeds (`appcast_*.xml`) live on the legacy box; familydiagram.com only
+forwards `/appcast_*.xml` to it, so installed apps keep their feed address [R-0477]. The Pro
+release job uploads the feeds to database.familydiagram.com (familydiagram PR #153).
