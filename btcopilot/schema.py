@@ -440,11 +440,14 @@ ITEM_COLLECTIONS = {
 class QuestionKind(enum.StrEnum):
     Thought = "thought"
     Fact = "fact"
+    # The coach's inference, kept in the same list and by the same rules.
+    Impression = "impression"
 
 
 class QuestionState(enum.StrEnum):
     Held = "held"
     Asked = "asked"
+    Raised = "raised"
     Resolved = "resolved"
 
 
@@ -455,9 +458,23 @@ class QuestionOutcome(enum.StrEnum):
     DeclinedByUser = "declined_by_user"
     DeclinedInChat = "declined_in_chat"
     LetGo = "let_go"
+    DoesntFit = "doesnt_fit"
+    Revised = "revised"
 
 
 DECLINED = (QuestionOutcome.DeclinedByUser, QuestionOutcome.DeclinedInChat)
+
+
+class Pushback(enum.StrEnum):
+    Partly = "partly"
+
+
+class EvidenceKind(enum.StrEnum):
+    Person = "person"
+    PairBond = "pair_bond"
+    Event = "event"
+    Cluster = "cluster"
+    Statement = "statement"
 
 
 @dataclass
@@ -541,6 +558,7 @@ class DiagramData:
     questions: list[dict] = field(default_factory=list)
     # The sessions the question backfill has gone through, so it never goes twice.
     questions_backfilled: list[int] = field(default_factory=list)
+    impressions_backfilled: list[int] = field(default_factory=list)
     pdp: PDP = field(default_factory=PDP)
     lastItemId: int = field(default=0)
     SCENE_COLLECTION_FIELDS: ClassVar[list[str]] = [

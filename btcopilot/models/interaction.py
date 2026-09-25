@@ -14,6 +14,7 @@ class InteractionKind(enum.StrEnum):
     ChipTap = "chip_tap"
     Play = "play"
     Dismiss = "dismiss"
+    DoesntFit = "doesnt_fit"
 
 
 class Interaction(db.Model, ModelMixin):

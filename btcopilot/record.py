@@ -8,6 +8,7 @@ compare-and-set on each value.
 
 import logging
 import re
+from dataclasses import dataclass
 
 from sqlalchemy import update as sql_update
 
@@ -20,7 +21,9 @@ from btcopilot.schema import (
     ITEM_COLLECTIONS,
     MIN_CLUSTER_EVENTS,
     EventKind,
+    EvidenceKind,
     ItemKind,
+    Pushback,
     QuestionKind,
     QuestionOutcome,
     QuestionState,
@@ -322,17 +325,25 @@ def _remove(data: dict, kind: ItemKind, item_id) -> list[dict]:
     """
     deltas = []
     for question in _collection(data, ItemKind.Question):
+        fields = {}
         if question.get("item_kind") == kind.value and str(question.get("item_id")) == str(item_id):
             fields = {"item_kind": None, "item_id": None}
             if question["state"] != QuestionState.Resolved:
                 fields.update(state=QuestionState.Resolved.value, outcome=QuestionOutcome.LetGo.value)
-            deltas += [
-                _set(
-                    data,
-                    {"item_kind": ItemKind.Question, "item_id": question["id"], "field": f, "after": v},
-                )
-                for f, v in fields.items()
-            ]
+        kept = [
+            one
+            for one in question.get("evidence") or []
+            if (one["kind"], str(one["id"])) != (kind.value, str(item_id))
+        ]
+        if len(kept) != len(question.get("evidence") or []):
+            fields["evidence"] = kept
+        deltas += [
+            _set(
+                data,
+                {"item_kind": ItemKind.Question, "item_id": question["id"], "field": f, "after": v},
+            )
+            for f, v in fields.items()
+        ]
     if kind is ItemKind.Person:
         for event in [
             e for e in _collection(data, ItemKind.Event) if involves(e, item_id)
@@ -746,7 +757,57 @@ def _structure(data: dict, deltas: list[dict]):
 
 
 QUESTION_LINKS = (ItemKind.Person, ItemKind.PairBond, ItemKind.Event, ItemKind.Cluster)
-QUESTION_ORDER = list(QuestionState)
+
+
+@dataclass(frozen=True)
+class Note:
+    """What differs between a question and an impression; everything else
+    about the two is one set of rules."""
+
+    noun: str
+    # The state the person sees it in: a question is asked, an impression raised.
+    shown: QuestionState
+    # The outcomes only the user writes, and the one that bars the same words.
+    theirs: tuple
+    barred: QuestionOutcome
+    barred_plain: str
+    ours: tuple
+    # What the user may write on it at all.
+    fields: tuple
+
+    @property
+    def order(self) -> list:
+        return [QuestionState.Held, self.shown, QuestionState.Resolved]
+
+
+QUESTION = Note(
+    "question",
+    QuestionState.Asked,
+    (QuestionOutcome.DeclinedByUser,),
+    QuestionOutcome.DeclinedByUser,
+    "The user already turned this question down.",
+    (
+        QuestionOutcome.Fact,
+        QuestionOutcome.Answered,
+        QuestionOutcome.Unknown,
+        QuestionOutcome.DeclinedInChat,
+        QuestionOutcome.LetGo,
+    ),
+    ("state", "outcome"),
+)
+IMPRESSION = Note(
+    "impression",
+    QuestionState.Raised,
+    (QuestionOutcome.DoesntFit,),
+    QuestionOutcome.DoesntFit,
+    "You said that one doesn't fit.",
+    (QuestionOutcome.Revised, QuestionOutcome.LetGo),
+    ("state", "outcome", "pushback"),
+)
+
+
+def note(item: dict) -> Note:
+    return IMPRESSION if item.get("kind") == QuestionKind.Impression else QUESTION
 
 
 def normal(text: str) -> str:
@@ -754,14 +815,17 @@ def normal(text: str) -> str:
 
 
 def _questions(data: dict, deltas: list[dict], author: Author):
-    """A question has words, moves only forward from held to asked to
-    resolved, says how it ended exactly when it is resolved, is kept once in
-    the same words, and is dismissed by the user alone, who writes nothing else
+    """A question or an impression has words, moves only forward from held to
+    shown to resolved, says how it ended exactly when it is resolved, is kept
+    once in the same words and never in words the user turned down, and is
+    turned down or pushed back on by the user alone, who writes nothing else
     on it (R-0006, R-0077)."""
     questions = _collection(data, ItemKind.Question)
     user = Author(author) is Author.User
     for question_id in _touched_kind(deltas, ItemKind.Question):
         question = _find(data, ItemKind.Question, question_id)
+        rules = note(question)
+        noun = rules.noun
         mine = [
             d
             for d in deltas
@@ -773,63 +837,106 @@ def _questions(data: dict, deltas: list[dict], author: Author):
         moved = [d for d in mine if d["field"] == "state"]
         added = any(d["field"] is None for d in mine)
         was = None if added else QuestionState(moved[0]["before"] if moved else state)
-        if was is QuestionState.Resolved:
+        if state not in rules.order:
             raise Invalid(
-                f"question {question_id} is already closed", "That question is already closed."
+                f"{noun} {question_id} cannot be {state.value}: it is held, "
+                f"{rules.shown.value} or resolved",
+                f"A {noun} cannot be {state.value}.",
             )
-        if moved and not added and QUESTION_ORDER.index(state) <= QUESTION_ORDER.index(was):
-            if was is QuestionState.Asked:
+        if was is QuestionState.Resolved:
+            raise Invalid(f"{noun} {question_id} is already closed", f"That {noun} is already closed.")
+        if moved and not added and rules.order.index(state) <= rules.order.index(was):
+            if was is rules.shown:
                 raise Invalid(
-                    f"question {question_id} was already asked",
-                    "That question was already asked.",
+                    f"{noun} {question_id} was already {was.value}",
+                    f"That {noun} was already {was.value}.",
                 )
             raise Invalid(
-                f"question {question_id} is already held",
-                "That question is already kept for later.",
+                f"{noun} {question_id} is already held",
+                f"That {noun} is already kept for later.",
             )
         if not (question.get("text") or "").strip():
-            raise Invalid(f"question {question_id} has no words", "It gave the question no words.")
+            raise Invalid(f"{noun} {question_id} has no words", f"It gave the {noun} no words.")
         if (state is QuestionState.Resolved) != bool(outcome):
             raise Invalid(
-                f"question {question_id}: give an outcome exactly when it is resolved",
-                "It did not say how the question ended.",
+                f"{noun} {question_id}: give an outcome exactly when it is resolved",
+                f"It did not say how the {noun} ended.",
             )
-        if (outcome is QuestionOutcome.DeclinedByUser) != user or (
-            user and any(d["field"] not in ("state", "outcome") for d in mine)
-        ):
+        written = {d["field"] for d in mine}
+        theirs = outcome in rules.theirs or "pushback" in written
+        if user != theirs or (user and not written <= set(rules.fields)):
             raise Invalid(
-                f"only the user dismisses question {question_id}, and does nothing else to it",
-                "Only you can dismiss a question.",
+                f"only the user turns {noun} {question_id} down or pushes back on it, "
+                "and does nothing else to it",
+                "Only you can dismiss a question."
+                if rules is QUESTION
+                else f"Only you can push back on an {noun}.",
             )
-        link = (question.get("item_kind"), question.get("item_id"))
-        if (link[0] is None) != (link[1] is None):
+        if outcome and outcome not in (*rules.theirs, *rules.ours):
             raise Invalid(
-                f"question {question_id}: give item_kind and item_id together, or neither",
-                "It named what the question is about only halfway.",
+                f"{noun} {question_id} ends only as one of "
+                f"{', '.join(o.value for o in rules.ours)}",
+                f"That is not how an {noun} ends." if rules is IMPRESSION
+                else f"That is not how a {noun} ends.",
             )
-        if link[0] is not None and (
-            ItemKind(link[0]) not in QUESTION_LINKS
-            or _find(data, ItemKind(link[0]), link[1]) is None
-        ):
-            raise Invalid(
-                f"question {question_id} is about {link[0]} {link[1]}, which is not in the record",
-                GONE,
-            )
+        if question.get("pushback") is not None:
+            Pushback(question["pushback"])
+        if rules is IMPRESSION:
+            _rests(data, question, question_id, added)
+        else:
+            _linked(data, question, question_id)
         for other in questions:
-            if str(other.get("id")) == question_id or normal(other["text"]) != normal(
-                question["text"]
+            if (
+                str(other.get("id")) == question_id
+                or note(other) is not rules
+                or normal(other["text"]) != normal(question["text"])
             ):
                 continue
-            if other.get("outcome") == QuestionOutcome.DeclinedByUser:
+            if other.get("outcome") == rules.barred:
                 raise Invalid(
-                    f"the user turned that question down as {other['id']}: never ask it again",
-                    "The user already turned this question down.",
+                    f"the user turned that {noun} down as {other['id']}: never say it again",
+                    rules.barred_plain,
                 )
             if other["state"] != QuestionState.Resolved:
-                raise Invalid(
-                    f"that question is already {other['id']}",
-                    "That question is already there.",
-                )
+                raise Invalid(f"that {noun} is already {other['id']}", f"That {noun} is already there.")
+
+
+def _linked(data: dict, question: dict, question_id: str):
+    link = (question.get("item_kind"), question.get("item_id"))
+    if (link[0] is None) != (link[1] is None):
+        raise Invalid(
+            f"question {question_id}: give item_kind and item_id together, or neither",
+            "It named what the question is about only halfway.",
+        )
+    if link[0] is not None and (
+        ItemKind(link[0]) not in QUESTION_LINKS or _find(data, ItemKind(link[0]), link[1]) is None
+    ):
+        raise Invalid(
+            f"question {question_id} is about {link[0]} {link[1]}, which is not in the record",
+            GONE,
+        )
+
+
+def _rests(data: dict, impression: dict, impression_id: str, added: bool):
+    """An impression is raised on something in the record. Whether a
+    statement is this family's is the toolbox's to check; the record holds
+    no statements. Evidence taken off the record since leaves it on less, or
+    on nothing, for the coach to judge."""
+    evidence = impression.get("evidence") or []
+    if added and not evidence:
+        raise Invalid(
+            f"impression {impression_id} rests on nothing: give the events, people, "
+            "bonds, clusters or messages it comes from",
+            "It gave the impression nothing to rest on.",
+        )
+    for one in evidence:
+        kind = EvidenceKind(one["kind"])
+        if kind is not EvidenceKind.Statement and _find(data, ItemKind(kind.value), one["id"]) is None:
+            raise Invalid(
+                f"impression {impression_id} rests on {kind.value} {one['id']}, which is "
+                "not in the record",
+                GONE,
+            )
 
 
 def _commit(
@@ -944,10 +1051,13 @@ def coded_in(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[int, dict
     return found
 
 
+SHOWN = (QuestionState.Asked, QuestionState.Raised)
+
+
 def asks(delta: dict) -> bool:
     if delta["field"] is None:
-        return delta["after"].get("state") == QuestionState.Asked
-    return delta["field"] == "state" and delta["after"] == QuestionState.Asked
+        return delta["after"].get("state") in SHOWN
+    return delta["field"] == "state" and delta["after"] in SHOWN
 
 
 def asked_in(diagram_id: int) -> dict[str, dict]:

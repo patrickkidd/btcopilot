@@ -175,6 +175,8 @@ def counts(conn) -> dict[str, int]:
 def gone(call: dict, arg: str) -> list[tuple[str, str]]:
     """The (kind, id) a name in a call stands for."""
     args = call["args"]
+    if arg == "evidence":
+        return [(one["kind"], str(one["id"])) for one in args["evidence"]]
     if arg != "it":
         ids = args[arg] if isinstance(args[arg], list) else [args[arg]]
         return [(ARGS[arg].value, str(i)) for i in ids]
