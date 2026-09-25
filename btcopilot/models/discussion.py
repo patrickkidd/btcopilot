@@ -87,6 +87,7 @@ class Discussion(db.Model, ModelMixin):
         order_by="Statement.order",
         cascade="all, delete-orphan",
     )
+    turn_events = relationship("TurnEvent", cascade="all, delete-orphan")
     speakers = relationship(
         "Speaker",
         foreign_keys="Speaker.discussion_id",

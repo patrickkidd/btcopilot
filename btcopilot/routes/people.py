@@ -6,14 +6,10 @@ born into. When someone was born, and whether they have died, are events about
 them rather than fields on them, so they are edited on the timeline.
 """
 
-import uuid
-
 from flask import abort, jsonify, request
 
-from btcopilot import auth
 from btcopilot import record
-from btcopilot.models import Author
-from btcopilot.routes import asked_diagram, bp, writable_diagram
+from btcopilot.routes import asked_diagram, bp, delta, edit
 from btcopilot.schema import ItemKind, PersonKind
 
 WRITABLE = ("name", "last_name", "gender", "notes", "parents")
@@ -43,28 +39,6 @@ def _find(data, person_id: int) -> dict:
     abort(404, description=f"No person {person_id} on this diagram")
 
 
-def _apply(deltas: list[dict]):
-    dia = writable_diagram()
-    if dia is None:
-        abort(404)
-    return record.apply(
-        dia.id,
-        deltas,
-        author=Author.User,
-        turn_id=uuid.uuid4().hex,
-        user_id=auth.current_user().id,
-    )
-
-
-def _delta(person_id, field, after) -> dict:
-    return {
-        "item_kind": ItemKind.Person.value,
-        "item_id": person_id,
-        "field": field,
-        "after": after,
-    }
-
-
 @bp.route("/people", methods=["POST"])
 def create_person():
     values = _fields(request.get_json())
@@ -75,16 +49,12 @@ def create_person():
         abort(404)
     data = dia.get_diagram_data()
     person_id = record.next_id(data)
-    deltas = [_delta(person_id, field, value) for field, value in values.items()]
-    deltas.append(
-        {
-            "item_kind": ItemKind.Diagram.value,
-            "item_id": None,
-            "field": "lastItemId",
-            "after": person_id,
-        }
-    )
-    _apply(deltas)
+    deltas = [
+        delta(ItemKind.Person, person_id, field, value)
+        for field, value in values.items()
+    ]
+    deltas.append(delta(ItemKind.Diagram, None, "lastItemId", person_id))
+    edit(deltas)
     return jsonify(_payload(_find(asked_diagram().get_diagram_data(), person_id))), 201
 
 
@@ -94,7 +64,12 @@ def update_person(person_id: int):
     _find(asked_diagram().get_diagram_data(), person_id)
     if not values:
         raise ValueError("Nothing to change on that person")
-    _apply([_delta(person_id, field, value) for field, value in values.items()])
+    edit(
+        [
+            delta(ItemKind.Person, person_id, field, value)
+            for field, value in values.items()
+        ]
+    )
     return jsonify(_payload(_find(asked_diagram().get_diagram_data(), person_id)))
 
 
@@ -103,5 +78,5 @@ def delete_person(person_id: int):
     """Removing someone cascades the way the app's own scene does: the record
     takes their bonds and the events that name them with them."""
     _find(asked_diagram().get_diagram_data(), person_id)
-    _apply([_delta(person_id, None, None)])
+    edit([delta(ItemKind.Person, person_id, None, None)])
     return "", 204

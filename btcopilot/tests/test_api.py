@@ -8,22 +8,25 @@ import btcopilot
 from btcopilot import diagramjson
 from btcopilot.routes.settings import PLAN_PLACEHOLDER
 from btcopilot.extensions import db
-from btcopilot.models import Discussion, Statement
+from btcopilot.models import Author, Change, Discussion, Interaction, Statement
+from btcopilot.models.interaction import InteractionKind
 from btcopilot.models import Diagram, License, Policy
 from btcopilot.models.license import LicenseStatus
-from btcopilot.models.preferences import ChatMode, PrefKey, Proactive, Theme
+from btcopilot.models.preferences import ChatMode, PrefKey, Proactive, Spotlight, Theme
 from btcopilot.schema import (
     Cluster,
     DateCertainty,
     DiagramData,
     EventKind,
+    ItemKind,
     Person,
     RelationshipKind,
     TraceKey,
     VariableShift,
     asdict,
 )
-from btcopilot.tests.conftest import csrf_token, replied
+from btcopilot.tests.conftest import csrf_token, replied, version
+from btcopilot.toolbox import ToolName, Toolbox
 
 
 @pytest.fixture(autouse=True)
@@ -154,6 +157,37 @@ def test_session_delete_keeps_the_record(web, token, test_user):
     assert response.status_code == 204
     assert db.session.get(Discussion, created["discussion_id"]) is None
     assert len(test_user.free_diagram.get_diagram_data().events) == events
+
+
+@pytest.mark.chat_flow(response="a coach reply")
+def test_session_delete_keeps_the_edits_its_words_made(
+    web, token, test_user, foreign_keys
+):
+    # R-0019
+    created = post(web, token, "/app/chat", {"statement": "hello"}).get_json()
+    said = Statement.query.filter_by(discussion_id=created["discussion_id"]).first()
+    change = Change(
+        diagram_id=test_user.free_diagram_id,
+        statement_id=said.id,
+        turn_id="t1",
+        author=Author.Coach,
+        deltas=[],
+    )
+    look = Interaction(
+        diagram_id=test_user.free_diagram_id,
+        statement_id=said.id,
+        kind=InteractionKind.Look,
+        item_kind=ItemKind.Person,
+    )
+    db.session.add_all([change, look])
+    db.session.commit()
+
+    response = web.delete(
+        f"/app/sessions/{created['discussion_id']}", headers={"X-CSRFToken": token}
+    )
+    assert response.status_code == 204
+    db.session.expire_all()
+    assert (change.statement_id, look.statement_id) == (None, None)
 
 
 def test_session_delete_of_another_user_is_not_found(web, token, test_user_2):
@@ -317,6 +351,7 @@ def test_preferences_defaults(web, test_user):
         PrefKey.Proactive.value: Proactive.Never.value,
         PrefKey.Mode.value: ChatMode.Text.value,
         PrefKey.Theme.value: Theme.System.value,
+        PrefKey.Spotlight.value: Spotlight.Unified.value,
         "first_name": test_user.first_name,
         "last_name": test_user.last_name,
         "birthdate": None,
@@ -524,6 +559,47 @@ def test_event_write_takes_the_diagram_lock(web, token, family):
     assert family.version == before + 1
 
 
+def test_a_hand_edit_of_an_event_is_logged_as_the_users_own_change(
+    web, token, family, test_user
+):
+    # R-0084
+    event = post(web, token, "/app/events", SHIFT).get_json()
+    last = Change.query.order_by(Change.id.desc()).first().id
+
+    patch(web, token, f"/app/events/{event['id']}", {"description": "Sleep improved"})
+    rows = Change.query.filter(Change.id > last).all()
+    assert [(r.author, r.user_id, r.version) for r in rows] == [
+        (Author.User, test_user.id, version(family))
+    ]
+    assert [(d["field"], d["before"], d["after"]) for d in rows[0].deltas] == [
+        ("description", "Sleep got worse", "Sleep improved")
+    ]
+
+
+def test_the_coach_reads_a_hand_edit_among_the_recent_changes(web, token, family):
+    # R-0084
+    event = post(web, token, "/app/events", SHIFT).get_json()
+    patch(web, token, f"/app/events/{event['id']}", {"description": "Sleep improved"})
+
+    text, _ = Toolbox(family.id, "coach-turn").call(ToolName.ReadChanges.value, {})
+    assert text.splitlines()[0] == (
+        f'Version {version(family)}, user: event {event["id"]} '
+        'description="Sleep improved"'
+    )
+
+
+def test_undo_puts_back_a_hand_edit_of_an_event(web, token, family):
+    # R-0084
+    event = post(web, token, "/app/events", SHIFT).get_json()
+    patch(web, token, f"/app/events/{event['id']}", {"description": "Sleep improved"})
+
+    Toolbox(family.id, "coach-turn").call(ToolName.Undo.value, {})
+    db.session.expire_all()
+    assert [e["description"] for e in family.get_diagram_data().events] == [
+        "Sleep got worse"
+    ]
+
+
 def test_event_variables_dropped_when_kind_is_not_shift(web, token, family):
     # R-0144
     event = post(
@@ -591,6 +667,13 @@ def test_event_rejects_unknown_person(web, token, family):
     # R-0453
     response = post(web, token, "/app/events", dict(SHIFT, person=99))
     assert response.status_code == 400
+
+
+def test_event_the_record_refuses_is_told_in_plain_words(web, token, family):
+    # R-0453
+    response = post(web, token, "/app/events", dict(SHIFT, endDateTime="2019-01-01"))
+    assert response.status_code == 400
+    assert response.get_data(as_text=True) == "The end date is before the start date."
 
 
 def test_event_rejects_bad_kind(web, token, family):

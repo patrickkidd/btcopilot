@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { DateCertainty } from "../src/certainty";
 import {
-  Certainty,
+  PIC_H,
   ROWS,
+  ROW_H,
+  WIRE,
+  YEAR_TOP,
   ZONE,
   baseOpacity,
   clip,
@@ -9,40 +13,35 @@ import {
   dateText,
   dotRadius,
   rows,
-  whoText,
   words,
   wrap2,
   zones,
 } from "../src/spotlight";
 
+const PHONE = 390;
+/** The picked dot's radius, and the height of the year written under it. */
+const PICKED_R = 7;
+const YEAR_H = 13;
+
 describe("the words a moment says about itself", () => {
   // R-0009
   it("a date the record is sure of says its month", () => {
-    expect(dateText("1996-06-15", Certainty.Certain)).toBe("Jun 1996");
+    expect(dateText("1996-06-15", DateCertainty.Certain)).toBe("Jun 1996");
   });
 
   // R-0009
   it("a date it only guessed says its year and nothing more", () => {
-    expect(dateText("1996-06-15", Certainty.Approximate)).toBe("1996");
+    expect(dateText("1996-06-15", DateCertainty.Approximate)).toBe("1996");
   });
 
   // R-0457
-  it("the person is named only when the record is not about them", () => {
-    expect(words("2001-03-01", Certainty.Certain, "Ada", "Ada", "Moved out")).toBe(
-      "Moved out",
-    );
-    expect(words("2001-03-01", Certainty.Certain, "Ben", "Ada", "Moved out")).toBe(
-      "Ben · Moved out",
-    );
-  });
-
-  // R-0457
-  it("a pair keeps the other person and leaves out the one reading", () => {
-    expect(whoText("Ada & Ben", "Ada")).toBe("& Ben");
-    expect(whoText("Ben & Ada", "Ada")).toBe("Ben");
-    expect(whoText("Ada \u2192 Ben", "Ada")).toBe("\u2192 Ben");
-    expect(whoText("Ben & Cal", "Ada")).toBe("Ben & Cal");
-    expect(whoText("Ada", "Ada")).toBe("");
+  it("a label names everyone it is about, the speaker included", () => {
+    const say = (who: string) =>
+      words("2001-03-01", DateCertainty.Certain, who, "bonded \u00b7 together for a year");
+    expect(say("Patrick & Emily")).toBe("Patrick & Emily \u00b7 bonded \u00b7 together for a year");
+    expect(say("Emily & Patrick")).toBe("Emily & Patrick \u00b7 bonded \u00b7 together for a year");
+    expect(say("Patrick")).toBe("Patrick \u00b7 bonded \u00b7 together for a year");
+    expect(say("")).toBe("bonded \u00b7 together for a year");
   });
 
   // R-0235
@@ -124,19 +123,49 @@ describe("the spotlight: dense and sparse", () => {
 
 
   // R-0103
-  it("every tap zone is at least the 44px floor and holds its own moments", () => {
-    const marks = Array.from({ length: 60 }, (_, i) => ({
-      id: i,
-      x: 16 + (i * 358) / 59,
-    }));
-    const zoned = zones(marks, 16, 374);
-    expect(zoned.every((z) => z.width >= ZONE)).toBe(true);
-    expect(zoned.reduce((n, z) => n + z.marks.length, 0)).toBe(60);
+  it("a dot alone has a whole thumb centred on it", () => {
+    const [only] = zones([{ x: 200 }], PHONE);
+    expect(only).toMatchObject({ left: 200 - ZONE / 2, width: ZONE });
+  });
+
+  // R-0103
+  it("a dot at the edge of the picture keeps a whole thumb, reaching inward", () => {
+    const [edge] = zones([{ x: 16 }], PHONE);
+    expect(edge).toMatchObject({ left: 0, width: ZONE });
   });
 
   // R-0402
-  it("a single moment still gets a zone", () => {
-    expect(zones([{ x: 200 }], 16, 374)).toHaveLength(1);
+  it("two dots nearer than a thumb split the space between them at the midpoint", () => {
+    const [a, b] = zones([{ x: 200 }, { x: 220 }], PHONE);
+    expect(a.left + a.width).toBe(210);
+    expect(b.left).toBe(210);
+    expect([a.left, b.left + b.width]).toEqual([200 - ZONE / 2, 220 + ZONE / 2]);
+  });
+
+  // R-0402
+  it("dots drawn over one another share one target", () => {
+    const zoned = zones([{ x: 200 }, { x: 203 }], PHONE);
+    expect(zoned.map((z) => z.marks.length)).toEqual([2]);
+  });
+
+  // R-0402
+  it("on a crowded line every tap lands on the target of the nearest dot", () => {
+    const marks = Array.from({ length: 60 }, (_, i) => ({ x: 16 + (i * 358) / 59 }));
+    const zoned = zones(marks, PHONE);
+    expect(zoned.reduce((n, z) => n + z.marks.length, 0)).toBe(60);
+    zoned.forEach((zone, i) => {
+      const next = zoned[i + 1];
+      if (next) expect(zone.left + zone.width).toBeCloseTo(next.left, 6);
+      for (const mark of zone.marks)
+        expect(mark.x >= zone.left && mark.x <= zone.left + zone.width).toBe(true);
+    });
+  });
+
+  // R-0103
+  it("the picked dot stands clear of the words above it and the year clears the controls", () => {
+    const words = ROWS[1] + ROW_H;
+    expect(WIRE - PICKED_R - words).toBeGreaterThanOrEqual(10);
+    expect(PIC_H - (YEAR_TOP + YEAR_H)).toBeGreaterThanOrEqual(6);
   });
 
   // R-0402

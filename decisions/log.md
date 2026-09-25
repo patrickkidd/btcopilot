@@ -1700,3 +1700,41 @@ Patrick. The coach prompts now carry the old prompts' domain rules as he confirm
 IRR-derived changes need his confirmation [R-0423]. Rejected: relying on the agentic loop alone as
 the second pass. Chosen: a narrow independent review at session end, shown as coaching, measured
 by replay against IRR codes, in a fast-follow PR [R-0443, R-0444].
+
+## 2026-09-24: FD-363 — the coach sees its own work; mistakes are written down, not blocked
+
+Patrick [R-0477 to R-0485]. A failed turn is resumed with its own tool calls and keeps its
+edits; the user's words are stored once, before the turn runs. Every tool call is kept in the
+database and shown in every session. The prompt carries a map of the record and the coach reads
+the rest. Reads carry the record version; a change based on an older version than another
+writer's is refused, and that refusal is the one piece of app logic kept, because two writers
+would otherwise overwrite each other [R-0482]. Repeated people and events have no fixed guard;
+a check after every turn writes rows for them instead.
+
+Choices made in building the check: it looks only at what the turn touched, so an old repeat is
+written once against the turn that made it; a resumed turn is checked whole again and its rows
+replace those of the attempt that failed; an add counts as made without reading when it comes
+before the turn's first read; two events are the same on kind, day, people and what moved, the
+record's own rule, because two shifts for one person on one day that move different variables
+are two events [R-0432]; people are the same on full name and birth year, a missing year
+matching a missing year. The rows are listed by an admin command, not a page. The three live
+eval cases score zero repeats both in the record and in those rows.
+
+Rejected: blocking or rewriting a turn on a likely repeat [R-0481, R-0482]; checking the whole
+record after every turn, which would write every old repeat again on every turn; starting a
+failed turn over, which repeated its adds. Open: the record's existing refusal of an added event
+that matches another conflicts with R-0481 and awaits Patrick's ruling.
+
+## 2026-09-25: FD-363 — open questions: refusal scope, close-on-removal, backfill wording, and a reply safety net
+
+Patrick. The same-words refusal on an added question now covers only a question that is open or
+already declined by the user, not one that was answered or let go — so it blocks a duplicate
+only while the original still matters. Removing the person, event, pair bond or cluster a
+question is about closes every open question linked to it as let go, with the link cleared, in
+the same write; undo restores both. The check on an asked question whose reply barely holds its
+words was a live check and is now only an observation, logged and never blocking or rewriting
+anything. The one-off backfill may reword a bare fragment from an old session into a
+self-contained question rather than only copying words verbatim. The coach writes a question to
+the record before it sends the reply that asks it, so the two can never disagree about what was
+asked. A turn that stops with no words and no further tool call right after a silent tool step
+is asked once more for a reply, as a safety net, instead of being failed outright.

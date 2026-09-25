@@ -29,9 +29,9 @@ const board = (page: Page) => page.locator("#view .ss.board");
  * one caption before reading it. A move names the pair it is aimed at, which
  * is who the moment is about. */
 const expectCaption = async (page: Page, words: string) => {
-  const caption = page.locator("#chat-screen .bcap");
-  await expect(caption).toHaveCount(1);
-  await expect(caption).toHaveText(words);
+  // one caption holding these words, retried as a whole: a count read first
+  // can pass a moment before the arriving board adds its own
+  await expect(page.locator("#chat-screen .bcap")).toHaveText([words]);
 };
 
 test.describe("a chip in a play-by-play", () => {

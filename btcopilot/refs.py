@@ -17,8 +17,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 
-from btcopilot.intake import _enum_val, _parse_iso_date
-from btcopilot.schema import DateCertainty, DiagramData, EventKind
+from btcopilot.schema import DateCertainty, DiagramData, EventKind, enum_val, parse_date
 
 _log = logging.getLogger(__name__)
 
@@ -137,15 +136,15 @@ _INDEX_HEADER = "Reference index — the only ids you may cite in [[…]] markup
 
 
 def _dated(event: dict) -> datetime.date | None:
-    if _enum_val(event.get("dateCertainty")) == DateCertainty.Unknown.value:
+    if enum_val(event.get("dateCertainty")) == DateCertainty.Unknown.value:
         return None
-    return _parse_iso_date(event.get("dateTime"))
+    return parse_date(event.get("dateTime"))
 
 
 def _event_words(event: dict, people: dict) -> str:
     words = (event.get("description") or "").strip()
     if not words:
-        kind = _enum_val(event.get("kind"))
+        kind = enum_val(event.get("kind"))
         key = (
             "child"
             if kind in (EventKind.Birth.value, EventKind.Adopted.value)
@@ -183,10 +182,10 @@ def _cluster_entries(
     for cluster in clusters:
         if not isinstance(cluster, dict):
             continue
-        start = _parse_iso_date(cluster.get("startDate"))
+        start = parse_date(cluster.get("startDate"))
         if start is None or not first <= start <= last:
             continue
-        end = _parse_iso_date(cluster.get("endDate")) or start
+        end = parse_date(cluster.get("endDate")) or start
         span = str(start.year) if start.year == end.year else f"{start.year}–{end.year}"
         title = (cluster.get("title") or "").strip()[:_LABEL_CHARS]
         entries.append((start, f"{cluster['id']} {span} {title}".strip()))

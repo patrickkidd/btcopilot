@@ -7,6 +7,11 @@ export enum ChipKind {
   /** Something the coach offers to talk about next. It names nothing in the
    * record: tapping it puts its words in the composer. */
   Ask = "ask",
+  /** A question the coach asked and the reader brought back to talk about. */
+  Question = "question",
+  /** What the coach noticed, brought back by the reader. */
+  Impression = "impression",
+  PairBond = "pair_bond",
 }
 
 /** Teal is a reference to something the record holds; amber is the coach or the
@@ -26,6 +31,7 @@ export enum ItemKind {
   Emotion = "emotion",
   Cluster = "cluster",
   Diagram = "diagram",
+  Question = "question",
 }
 
 export enum InteractionKind {
@@ -33,15 +39,11 @@ export enum InteractionKind {
   Say = "say",
   ChipTap = "chip_tap",
   Play = "play",
+  Dismiss = "dismiss",
+  DoesntFit = "doesnt_fit",
 }
 
-/** How sure the record is of a date. Unknown means the date matches anything,
- * so the event has no place on the line and belongs on the undated shelf. */
-export enum DateCertainty {
-  Unknown = "unknown",
-  Approximate = "approximate",
-  Certain = "certain",
-}
+export { DateCertainty } from "./certainty";
 
 export enum Role {
   Coach = "coach",
@@ -138,12 +140,81 @@ export interface Question {
   sentence: string;
 }
 
+/** What the coach keeps for the reader: two kinds of question, and what it
+ * noticed. Mirrors `QuestionKind` on the server. */
+export enum QuestionKind {
+  Thought = "thought",
+  Fact = "fact",
+  Impression = "impression",
+}
+
+/** Mirrors `QuestionState` on the server. An impression is raised where a
+ * question is asked. */
+export enum QuestionState {
+  Held = "held",
+  Asked = "asked",
+  Raised = "raised",
+  Resolved = "resolved",
+}
+
+/** How a question or impression ended. Mirrors `QuestionOutcome`. */
+export enum QuestionOutcome {
+  Fact = "fact",
+  Answered = "answered",
+  Unknown = "unknown",
+  DeclinedByUser = "declined_by_user",
+  DeclinedInChat = "declined_in_chat",
+  LetGo = "let_go",
+  DoesntFit = "doesnt_fit",
+  Revised = "revised",
+}
+
+export enum Pushback {
+  Partly = "partly",
+}
+
+/** What an impression rests on. Mirrors `EvidenceKind` on the server. */
+export enum EvidenceKind {
+  Person = "person",
+  PairBond = "pair_bond",
+  Event = "event",
+  Cluster = "cluster",
+  Statement = "statement",
+}
+
+/** One thing an impression rests on, named as the record names it. A message
+ * also says which session it was said in and on what day, both null once that
+ * session is gone. */
+export interface Evidence {
+  kind: EvidenceKind;
+  id: number | string;
+  label: string;
+  discussion_id?: number | null;
+  at?: string | null;
+}
+
+/** A question the coach has asked, with where it was asked. Only the open ones
+ * are listed; a closed one is here so a reference to it still reads as its
+ * words. */
+export interface AskedQuestion {
+  id: string;
+  text: string;
+  kind: QuestionKind;
+  open: boolean;
+  asked_at: string;
+  asked_in: CodedIn | null;
+  /** What an impression rests on; a question rests on nothing. */
+  evidence: Evidence[];
+  pushback: Pushback | null;
+}
+
 export interface Timeline {
   people: Person[];
   pair_bonds: PairBond[];
   events: TimelineEvent[];
   clusters: Cluster[];
   questions: Question[];
+  asked_questions: AskedQuestion[];
   axis: { min: string; max: string } | null;
   shelf: { event_id: number; label: string; sentence: string }[];
   /** Where each moment was coded, by event id: the session, and the statement
@@ -159,6 +230,7 @@ export const emptyTimeline = (): Timeline => ({
   events: [],
   clusters: [],
   questions: [],
+  asked_questions: [],
   axis: null,
   shelf: [],
   coded_in: {},
@@ -184,6 +256,24 @@ export interface Statement {
   kind: StatementKind;
   /** The cluster a play-by-play narrates. Null on every other kind. */
   cluster_id: string | null;
+  turn_id: string | null;
+  /** What the coach did in this statement's turn: behind a reply, or before a
+   * turn failed with these words left unanswered. */
+  tools: ToolCall[];
+  unfinished: boolean;
+  /** Why an unfinished turn stopped, in the words the page showed live. */
+  failure: string | null;
+}
+
+export interface ToolCall {
+  name: string;
+  args: Record<string, unknown>;
+  /** What each id in the args is called, keyed by the arg, and what the call
+   * touches under `it`, as the record named them when the call was made. */
+  names: Record<string, string | string[]>;
+  /** Why the record refused the call, in plain words; a refused call changed
+   * and showed nothing. */
+  refusal: string | null;
 }
 
 /** The turn as it happens: words as they are written, the tool calls behind
@@ -220,11 +310,7 @@ export type View =
   | { kind: ViewKind.Cluster; cluster: string };
 
 export type TurnEvent =
-  | {
-      type: TurnEventKind.ToolCall;
-      name: string;
-      args: Record<string, unknown>;
-    }
+  | ({ type: TurnEventKind.ToolCall } & ToolCall)
   | { type: TurnEventKind.RecordPatch; deltas: Delta[]; turn_id: string }
   | { type: TurnEventKind.View; view: View }
   | { type: TurnEventKind.Text; text: string }
@@ -358,11 +444,20 @@ export enum Theme {
   Dark = "dark",
 }
 
+/** How the picture answers a tap on an event: a chip naming it and its dot
+ * do one thing (R-0168), or, set per person by an admin, the old chip
+ * spotlight. */
+export enum Spotlight {
+  Unified = "unified",
+  Chip = "chip",
+}
+
 export interface Preferences {
   speak: boolean;
   proactive: Proactive;
   mode: Mode;
   theme: Theme;
+  spotlight: Spotlight;
   first_name: string | null;
   last_name: string | null;
   birthdate: string | null;

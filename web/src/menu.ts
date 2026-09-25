@@ -1,6 +1,7 @@
 import { openEditor, openPersonEditor } from "./editor";
 import { Feature, tap } from "./track";
-import { eventDivider, eventRow, fullName, personRow } from "./rows";
+import { eventDivider, eventRow, fullName, personRow, sections } from "./rows";
+import type { Questions } from "./questions";
 import { emptyTimeline, ItemKind, type Cluster, type Person, type Timeline, type TimelineEvent } from "./types";
 
 /** The full timeline list behind the menu: full screen, searched, and divided
@@ -14,6 +15,7 @@ import { emptyTimeline, ItemKind, type Cluster, type Person, type Timeline, type
 export enum Tab {
   Events = "events",
   People = "people",
+  Questions = "questions",
 }
 
 /** Who is ordered by when they were born, and people the record has no birth
@@ -34,6 +36,8 @@ export class Menu {
   private tab = Tab.Events;
   /** The people list is ordered by birth until the reader asks for names. */
   private byName = false;
+  /** The questions the coach asked, on the one drawer that has that tab. */
+  questions: Questions | null = null;
 
   constructor(
     private body: HTMLElement,
@@ -122,18 +126,17 @@ export class Menu {
       this.renderPeople();
       return;
     }
+    if (this.tab === Tab.Questions) {
+      if (!this.questions) throw new Error("This drawer has no questions tab");
+      this.questions.show(this.data.asked_questions);
+      return;
+    }
     const names = this.names();
     const shown = this.data.events.filter((event) => this.matches(event, names));
     let html = "";
-    let last: string | null | undefined;
-    for (const event of shown) {
-      const cluster = this.clusterOf(event.id);
-      const key = cluster ? cluster.id : null;
-      if (key !== last) {
-        last = key;
-        html += eventDivider(cluster);
-      }
-      html += eventRow(event, names, this.editing === event.id);
+    for (const { group, events } of sections(shown, (id) => this.clusterOf(id))) {
+      html += eventDivider(group);
+      for (const event of events) html += eventRow(event, names, this.editing === event.id);
     }
     if (!shown.length)
       html = `<div class="none">${

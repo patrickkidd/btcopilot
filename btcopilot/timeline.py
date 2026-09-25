@@ -4,9 +4,9 @@ gap vs recorded no-change, undated shelf, deterministic order questions."""
 
 import datetime
 import logging
+import re
 from dataclasses import MISSING, fields as dc_fields
 
-from btcopilot.intake import _enum_val, _parse_iso_date
 from btcopilot.refs import Ref, RefKind
 from btcopilot.schema import (
     DateCertainty,
@@ -16,6 +16,8 @@ from btcopilot.schema import (
     RelationshipKind,
     TraceKey,
     VariableShift,
+    enum_val,
+    parse_date,
 )
 
 _log = logging.getLogger(__name__)
@@ -52,6 +54,20 @@ KIND_WORDS = {
     EventKind.Bonded.value: "bonded",
     EventKind.Death.value: "died",
 }
+# A description that opens by saying the kind already says what happened, so the
+# kind is not said again in front of it: "died, possibly around July 4", never
+# "died · died, possibly around July 4".
+KIND_FORMS = {
+    EventKind.Birth.value: {"born", "birth"},
+    EventKind.Adopted.value: {"adopted", "adoption", "adopts"},
+    EventKind.Married.value: {"married", "marriage", "marries", "marry", "wed", "wedding"},
+    EventKind.Separated.value: {"separated", "separation", "separate", "separates"},
+    EventKind.Divorced.value: {"divorced", "divorce", "divorces"},
+    EventKind.Bonded.value: {"bonded", "bond", "bonds"},
+    EventKind.Death.value: {"died", "dies", "death", "dead", "passed"},
+}
+# Words a description may open with before it says the kind: "Got married in Reno".
+LEADS = {"he", "she", "they", "was", "were", "got", "is", "the", "a", "his", "her", "and"}
 PAIR_KINDS = (
     EventKind.Married.value,
     EventKind.Bonded.value,
@@ -81,7 +97,7 @@ def _life_event(person_id: int, events: list, kind: EventKind) -> dict | None:
     for event in events:
         if not isinstance(event, dict):
             continue
-        if _enum_val(event.get("kind")) != kind.value:
+        if enum_val(event.get("kind")) != kind.value:
             continue
         if event.get(about) != person_id:
             continue
@@ -92,13 +108,17 @@ def _life_event(person_id: int, events: list, kind: EventKind) -> dict | None:
 def _born(person_id: int, events: list) -> str | None:
     """The date on this person's birth event, if the record holds one."""
     event = _life_event(person_id, events, EventKind.Birth)
-    date = _parse_iso_date(event.get("dateTime")) if event else None
+    date = parse_date(event.get("dateTime")) if event else None
     return date.isoformat() if date else None
 
 
 def _life_id(person_id: int, events: list, kind: EventKind) -> int | None:
     event = _life_event(person_id, events, kind)
     return event.get("id") if event else None
+
+
+def _words(text: str) -> list[str]:
+    return re.findall(r"[a-z]+", text.lower())
 
 
 def _person_label(person: dict | None) -> str:
@@ -134,7 +154,7 @@ def _structural_base(event: dict, kind: str, people_by_id: dict) -> str:
 
 
 def _certainty(event: dict) -> str:
-    return _enum_val(event.get("dateCertainty")) or DateCertainty.Certain.value
+    return enum_val(event.get("dateCertainty")) or DateCertainty.Certain.value
 
 
 def event_payload(event: dict) -> dict:
@@ -142,9 +162,9 @@ def event_payload(event: dict) -> dict:
     values out of enums, Qt dates out of dates. A stored event only carries the
     fields something set, and the page is entitled to the whole shape."""
     out = {name: value for name, value in _event_defaults()}
-    out.update({key: _enum_val(value) for key, value in event.items()})
+    out.update({key: enum_val(value) for key, value in event.items()})
     for key in DATE_FIELDS:
-        date = _parse_iso_date(event.get(key))
+        date = parse_date(event.get(key))
         out[key] = date.isoformat() if date else None
     return out
 
@@ -154,24 +174,36 @@ def _event_defaults():
         if f.default_factory is not MISSING:
             yield f.name, f.default_factory()
         else:
-            yield f.name, _enum_val(None if f.default is MISSING else f.default)
+            yield f.name, enum_val(None if f.default is MISSING else f.default)
 
 
-def _label(event: dict, people_by_id: dict) -> str:
-    """What happened, with no linked person's name in it: the who is said by
-    the event's links, not twice (owner ruling, 2026-09-09)."""
+def event_label(event: dict, people_by_id: dict) -> str:
+    """What happened, the one wording every view names an event by: the list,
+    the picture, the board, chips and tool lines. The who is said by the
+    event's links, not here (owner ruling, 2026-09-09)."""
     description = (event.get("description") or "").strip()
-    kind = _enum_val(event.get("kind"))
+    kind = enum_val(event.get("kind"))
     if kind in KIND_WORDS:
         word = KIND_WORDS[kind]
-        return f"{word} \u00b7 {description}" if description else word
+        if not description:
+            return word
+        # "Robert and Ann married": the linked people's names come before the kind
+        skipped = LEADS | {
+            w
+            for key in ("person", "spouse", "child")
+            for w in _words((people_by_id.get(event.get(key)) or {}).get("name") or "")
+        }
+        opening = next((w for w in _words(description) if w not in skipped), "")
+        if opening in KIND_FORMS[kind]:
+            return description
+        return f"{word} \u00b7 {description}"
     for variable, _ in VARIABLES:
-        direction = _enum_val(event.get(variable))
+        direction = enum_val(event.get(variable))
         if direction:
             return description or _shift_words(variable, direction)
     if description:
         return description
-    relationship = _enum_val(event.get("relationship"))
+    relationship = enum_val(event.get("relationship"))
     if relationship:
         return RelationshipKind(relationship).menuLabel().lower()
     return "Something happened"
@@ -181,7 +213,7 @@ def _who(event: dict, people_by_id: dict) -> str:
     """Who the moment is about, from the event's links alone. Birth and
     adoption are about the child; a pair-bond kind and a shift with a spouse
     are about both; a shift aimed at someone is about that pair."""
-    kind = _enum_val(event.get("kind"))
+    kind = enum_val(event.get("kind"))
     if kind in (EventKind.Birth.value, EventKind.Adopted.value):
         return _person_label(people_by_id.get(event.get("child")))
     person = _person_label(people_by_id.get(event.get("person")))
@@ -207,11 +239,11 @@ def _events_payload(data: DiagramData, people_by_id: dict) -> list[dict]:
         if not isinstance(event, dict) or event.get("id") is None:
             continue
         chunk = event_payload(event)
-        chunk["label"] = _label(event, people_by_id)
+        chunk["label"] = event_label(event, people_by_id)
         chunk["person_name"] = _who(event, people_by_id)
         chunk["sentence"] = _sentence(
             chunk["label"],
-            None if _undated(chunk) else _parse_iso_date(chunk["dateTime"]),
+            None if _undated(chunk) else parse_date(chunk["dateTime"]),
             _certainty(chunk),
         )
         events.append(chunk)
@@ -232,10 +264,10 @@ def _cluster_group(cluster: dict, by_id: dict, claimed: set) -> list:
     ]
     if ids:
         return sorted((by_id[event_id] for event_id in ids), key=lambda pair: pair[1])
-    start = _parse_iso_date(cluster.get("startDate"))
+    start = parse_date(cluster.get("startDate"))
     if start is None:
         return []
-    end = _parse_iso_date(cluster.get("endDate")) or start
+    end = parse_date(cluster.get("endDate")) or start
     return sorted(
         (
             pair
@@ -358,10 +390,10 @@ def build_timeline(data: DiagramData) -> dict:
     for event in data.events:
         if not isinstance(event, dict):
             continue
-        date = _parse_iso_date(event.get("dateTime"))
+        date = parse_date(event.get("dateTime"))
         certainty = _certainty(event)
         if date is None or certainty == DateCertainty.Unknown.value:
-            base = _label(event, people_by_id)
+            base = event_label(event, people_by_id)
             shelf.append(
                 {
                     "event_id": event.get("id"),
@@ -380,7 +412,7 @@ def build_timeline(data: DiagramData) -> dict:
             for event, date, certainty in dated:
                 if event.get("person") != person["id"]:
                     continue
-                direction = _enum_val(event.get(variable))
+                direction = enum_val(event.get(variable))
                 if direction is None:
                     continue
                 marks.append((date, event, certainty, direction))
@@ -464,8 +496,8 @@ def build_timeline(data: DiagramData) -> dict:
         )
         marks = []
         for event, date, certainty in dated:
-            kind = _enum_val(event.get("kind"))
-            relationship = _enum_val(event.get("relationship"))
+            kind = enum_val(event.get("kind"))
+            relationship = enum_val(event.get("relationship"))
             try:
                 is_bond_kind = EventKind(kind).isPairBond()
             except ValueError:
@@ -592,7 +624,7 @@ def build_timeline(data: DiagramData) -> dict:
                 "id": p["id"],
                 "name": _person_label(p),
                 "last_name": p.get("last_name"),
-                "gender": _enum_val(p.get("gender")),
+                "gender": enum_val(p.get("gender")),
                 "notes": p.get("notes"),
                 "primary": bool(p.get("primary")),
                 # the bond they were born into, which is how the record holds
@@ -625,7 +657,7 @@ def _order_questions(lanes: list, dated: list, people_by_id: dict) -> list:
     event, which is a lead (R-0366)."""
     structural = []
     for event, date, certainty in dated:
-        kind = _enum_val(event.get("kind"))
+        kind = enum_val(event.get("kind"))
         try:
             if not EventKind(kind).isLead():
                 continue

@@ -11,7 +11,6 @@ import functools
 import os
 from pathlib import Path
 
-from btcopilot.llmutil import RESPONSE_MODEL, _is_claude_model
 from btcopilot.promptdir import PromptDir
 
 # Stands in for the record while the fixed head of the agent prompt is found.
@@ -100,19 +99,6 @@ def __getattr__(name: str) -> str:
     return value
 
 
-def get_conversation_flow_prompt(
-    model: str | None = None, committed_state: str = ""
-) -> str:
-    """The coach's system prompt for a plain chat turn. Which model is answering
-    is a deployment setting, so it is resolved here and never named in a prompt
-    file."""
-    return files().text(
-        "conversation_flow",
-        committed_state=committed_state,
-        claude=_is_claude_model(model or RESPONSE_MODEL),
-    )
-
-
 def onboarding(missing: list[str], person_id: int) -> str:
     """What the coach must get first while the person's own name or birth date
     is not in the record."""
@@ -154,6 +140,19 @@ def agent_prompt(
     if not text.startswith(fixed):
         raise ValueError("The agent prompt no longer opens with its fixed part")
     return fixed, text[len(fixed) :]
+
+
+def question_backfill(map: str, transcript: str) -> str:
+    """The system prompt for going back once over a past session to fill in the
+    questions asked in it. `transcript` numbers each coach message by its
+    statement id."""
+    return files().text("question_backfill", map=map, transcript=transcript)
+
+
+def impression_backfill(map: str, transcript: str) -> str:
+    """The system prompt for going back once over a past session to fill in the
+    impressions given in it, numbered the same way as the question backfill's."""
+    return files().text("impression_backfill", map=map, transcript=transcript)
 
 
 def note_register() -> str:

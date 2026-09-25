@@ -603,7 +603,7 @@ export class Meeting {
       // says why in its own words, which is what the room needs to hear.
       toast(
         error instanceof api.Failed && error.status === 400
-          ? error.detail.replace(/^\w+ [^:]+: /, "")
+          ? error.said
           : "Nothing came back",
       );
       return false;

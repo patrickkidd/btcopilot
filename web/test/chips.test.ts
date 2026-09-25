@@ -80,6 +80,41 @@ describe("tokenize", () => {
   });
 });
 
+describe("a question the reader brings back", () => {
+  // R-0072
+  it("reads as an amber chip naming that question and aiming the picture at nothing", () => {
+    const [piece] = tokenize("[[question:q3]]");
+    expect(piece).toEqual({
+      chip: {
+        kind: ChipKind.Question,
+        target: "q3",
+        label: "this question",
+        tone: ChipTone.Ask,
+        bare: true,
+      },
+    });
+    const chip = chips("[[question:q3]]")[0];
+    expect(itemKind(chip.kind)).toBe(ItemKind.Question);
+    expect(aimedEvents(chip, chapters)).toEqual([]);
+  });
+});
+
+describe("an impression or a pair bond in a message", () => {
+  // R-0072
+  it("reads as a teal chip naming it, stored against the item it is", () => {
+    const [impression, bond] = chips("[[impression:i3]] and [[pair_bond:4]]");
+    expect([impression.kind, impression.target, impression.tone]).toEqual([
+      ChipKind.Impression,
+      "i3",
+      ChipTone.Data,
+    ]);
+    expect(itemKind(impression.kind)).toBe(ItemKind.Question);
+    expect([bond.kind, bond.target]).toEqual([ChipKind.PairBond, "4"]);
+    expect(itemKind(bond.kind)).toBe(ItemKind.PairBond);
+    expect(aimedEvents(bond, chapters)).toEqual([]);
+  });
+});
+
 describe("the chips a reply keeps", () => {
   // R-0361
   it("still makes a chip of every person and event the coach names", () => {

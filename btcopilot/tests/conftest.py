@@ -7,11 +7,12 @@ import re
 import flask.testing
 import pytest
 from mock import patch
+from sqlalchemy import text
 import btcopilot
 from btcopilot.extensions import db
 from btcopilot.llmutil import Served
 from btcopilot.coachmodel import ModelTurn, ToolCall
-from btcopilot.models import Discussion, Statement, Speaker, SpeakerType
+from btcopilot.models import Diagram, Discussion, Statement, Speaker, SpeakerType
 from btcopilot.toolbox import ToolName
 from btcopilot import turnlog, turns
 from btcopilot.turnlog import TurnEventKind
@@ -60,7 +61,20 @@ def flask_app(request, tmp_path):
     yield from make_app(request, tmp_path, tables=TABLES)
 
 
+@pytest.fixture
+def foreign_keys(flask_app):
+    """SQLite enforces foreign keys only when asked; Postgres always does."""
+    db.session.execute(text("PRAGMA foreign_keys=ON"))
+    yield
+    db.session.execute(text("PRAGMA foreign_keys=OFF"))
+
+
 SERVED = "claude-opus-5-5"
+
+
+def version(diagram) -> int:
+    """The record's version as it stands, for a change that has to name it."""
+    return db.session.query(Diagram.version).filter_by(id=diagram.id).scalar()
 
 
 def said(text: str) -> ModelTurn:
@@ -147,12 +161,6 @@ def chat_flow(request):
 
             response = marker.kwargs.get("response", "some response")
 
-            stack.enter_context(
-                patch(
-                    "btcopilot.ask._generate_response",
-                    return_value=response,
-                )
-            )
             # The coach's turn is the agent loop; a test that scripts the
             # coach's words scripts them there too.
             stack.enter_context(

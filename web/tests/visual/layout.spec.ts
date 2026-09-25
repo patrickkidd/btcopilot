@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { PIC_H } from "../../src/spotlight";
+import { NO_LIST, pinned, stateFor } from "./setup";
 
 /** The layout contract, asserted rather than eyeballed: the picture region owns
  * its level's height and the chat fills what is left, so a tap on a chip or on
@@ -154,10 +155,11 @@ test.describe("nothing moves when a chip is tapped", () => {
       ),
       fits: node.scrollWidth <= node.clientWidth,
     }));
-    expect(strip.children).toBe(4);
+    // ask, explain and in chat, and the list button where one is drawn
+    const chips = [26, 26, 26];
+    expect(strip.heights).toEqual((await pinned(page)) ? chips : [...chips, 44]);
     expect(strip.height).toBe(44);
     expect(strip.rows).toBe(1);
-    expect(strip.heights).toEqual([26, 26, 26, 44]);
     // and with one word each they fit across a phone, which the record's own
     // words in the asking chip never did
     expect(strip.fits).toBe(true);
@@ -301,8 +303,10 @@ test.describe("a long family name", () => {
     expect(Math.round(avatar.width)).toBe(44);
     expect(Math.round(avatar.height)).toBe(44);
     // the list button is at the end of the row of chips, at its ruled size
-    const list = (await page.locator("#menu-open").boundingBox())!;
-    expect([Math.round(list.width), Math.round(list.height)]).toEqual([44, 44]);
+    if (!(await pinned(page))) {
+      const list = (await page.locator("#menu-open").boundingBox())!;
+      expect([Math.round(list.width), Math.round(list.height)]).toEqual([44, 44]);
+    }
 
     // the picture starts where it always starts
     expect(await pictureHeight(page)).toBe(BAND);
@@ -367,16 +371,17 @@ test.describe("a moment traces back to the words that coded it", () => {
   });
 });
 
-/** The band the line is drawn in: 66 of the picture's ruled 138 (picked phone
- * mockup 2026-09-08, band grown by six on 2026-09-08 so the year under the
- * picked moment clears the row of controls), the other 72 being the name row
- * and the row of controls under it. */
-const BAND = 66;
+/** The band the line is drawn in: 72 of the picture's 144 (picked phone mockup
+ * 2026-09-08, band grown by six on 2026-09-08 so the year under the picked
+ * moment clears the row of controls, and by six more on 2026-09-24 so the
+ * picked dot stands clear of its words), the other 72 being the name row and
+ * the row of controls under it. */
+const BAND = PIC_H;
 
 const pictureHeight = (page: Page) =>
   page.locator("#view").evaluate((node) => Math.round(node.getBoundingClientRect().height));
 
-/** What each row of the picture region measures, which is what the 138 is made
+/** What each row of the picture region measures, which is what the 144 is made
  * of. Exact, because the whole point of the number is that nothing under it
  * moves. */
 const rowHeights = (page: Page) =>
@@ -396,7 +401,7 @@ test.describe("each level is one fixed height", () => {
       }) => {
         await settle(page);
         expect(await pictureHeight(page)).toBe(BAND);
-        // the name row, the band, and the row of controls: 28, 60 and 44
+        // the name row, the band, and the row of controls: 28, 72 and 44
         expect(await rowHeights(page)).toEqual([28, BAND, 44]);
       });
     });
@@ -480,7 +485,6 @@ test.describe("the row under the picture from one view to the next", () => {
 
   // R-0450
   test("the row keeps its height with the board open", async ({ page }) => {
-    test.fail(true, "the row is taken away entirely while the board is open");
     await settle(page);
     const before = await frame(page);
     await page.locator("#cap-play").click();
@@ -510,6 +514,7 @@ test.describe("the button that opens the lists", () => {
   // R-0221
   test("sits in the row under the picture, at its right end", async ({ page }) => {
     await settle(page);
+    test.skip(await pinned(page), NO_LIST);
     const at = await place(page);
     expect(at.inRow).toBe(true);
     expect(at.last).toBe("menu-open");
@@ -520,6 +525,7 @@ test.describe("the button that opens the lists", () => {
   // R-0221
   test("stays at the right end after ask, explain and in chat", async ({ page }) => {
     await settle(page);
+    test.skip(await pinned(page), NO_LIST);
     await page.locator('#view .ss-hit[data-target="cluster"]').first().click();
     await page.locator('#view .ss-hit[data-target="zone"]').first().click();
     await expect(page.locator("#cap-chip")).toBeVisible();

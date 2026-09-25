@@ -111,29 +111,6 @@ proves, taken from its own docstring or name. Swept 2026-09-23.
 - `test_the_same_events_are_not_regrouped_twice` — the same events are not regrouped twice.
 - `test_a_grouping_made_by_the_older_rules_is_regrouped` — a grouping made by the older rules is regrouped.
 
-## btcopilot/tests/test_coach_smoke.py
-
-- `test_smoke_opus_returning_user` — smoke opus returning user.
-- `test_smoke_gemini_returning_user` — smoke gemini returning user.
-- `test_pattern_b_shallow_cycling_opus` — pattern b shallow cycling opus.
-- `test_pattern_b_shallow_cycling_gemini` — pattern b shallow cycling gemini.
-- `test_pattern_c_long_session_opus` — pattern c long session opus.
-- `test_pattern_c_long_session_gemini` — pattern c long session gemini.
-
-## btcopilot/tests/test_intake.py
-
-- `test_no_diagram_all_not_covered_except_presenting_problem` — no diagram all not covered except presenting problem.
-- `test_empty_diagram_outstanding_excludes_presenting_problem` — empty diagram outstanding excludes presenting problem.
-- `test_full_picture` — full picture.
-- `test_partial_grandparents_when_parent_known_but_no_grandparent_bond` — partial grandparents when parent known but no grandparent bond.
-- `test_functioning_coverage_thin_when_no_shift_events` — functioning coverage thin when no shift events.
-- `test_functioning_coverage_rich_when_sarf_and_timeline_present` — functioning coverage rich when sarf and timeline present.
-- `test_format_coverage_renders_known_and_outstanding` — format coverage renders known and outstanding.
-- `test_format_coverage_empty_when_only_presenting_problem` — format coverage empty when only presenting problem.
-- `test_roster_lists_all_named_people_even_without_speaker_links` — roster lists all named people even without speaker links.
-- `test_real_desktop_quirks_dont_crash` — real desktop quirks dont crash.
-- `test_committed_scene_format_contract` — Regression: pins the real committed-data contract for the Personal app.
-
 ## btcopilot/tests/test_lanes.py
 
 - `test_people_and_bonds_from_structure` — people and bonds from structure.

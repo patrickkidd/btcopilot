@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from flask import Blueprint, abort, request
 from flask_wtf.csrf import CSRFError, generate_csrf
@@ -6,7 +7,7 @@ from flask_wtf.csrf import CSRFError, generate_csrf
 from btcopilot import auth
 from btcopilot.extensions import csrf, db
 from btcopilot import record
-from btcopilot.models import Discussion
+from btcopilot.models import Author, Discussion
 from btcopilot.models import Diagram
 from btcopilot.discussions import (  # noqa: F401  routes import them from here
     create_discussion,
@@ -14,6 +15,7 @@ from btcopilot.discussions import (  # noqa: F401  routes import them from here
     utc_iso,
 )
 from btcopilot.review.freeze import frozen
+from btcopilot.schema import ItemKind
 
 _log = logging.getLogger(__name__)
 
@@ -49,9 +51,9 @@ def _value_error(e):
 @bp.errorhandler(record.Invalid)
 def _invalid_record(e):
     """A write the record itself refuses — a bond of one person with themselves,
-    say. The editor offered it, so it is told in the record's own words rather
-    than shown a server error."""
-    return str(e), 400
+    say. The editor offered it, so it is told in plain words rather than shown
+    a server error."""
+    return e.plain, 400
 
 
 @bp.context_processor
@@ -141,6 +143,26 @@ def writable_diagram():
     return require_write_access(asked_diagram())
 
 
+def delta(kind: ItemKind, item_id, field, after) -> dict:
+    return {"item_kind": kind.value, "item_id": item_id, "field": field, "after": after}
+
+
+def edit(deltas: list[dict]):
+    """A hand edit on the page, logged as the user's own turn exactly as the
+    coach's writes are, so undo and the coach's read of recent changes see it
+    (R-0084)."""
+    dia = writable_diagram()
+    if dia is None:
+        abort(404)
+    return record.apply(
+        dia.id,
+        deltas,
+        author=Author.User,
+        turn_id=uuid.uuid4().hex,
+        user_id=auth.current_user().id,
+    )
+
+
 from btcopilot.routes import (  # noqa: E402  bp must exist first
     diagrams,
     events,
@@ -150,6 +172,7 @@ from btcopilot.routes import (  # noqa: E402  bp must exist first
     productevents,
     people,
     play,
+    questions,
     recordings,
     sessions,
     settings,

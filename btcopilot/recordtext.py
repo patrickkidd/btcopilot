@@ -6,10 +6,22 @@ picture draws lives in the record; who did what when lives beside it, which is
 why the interactions render separately.
 """
 
-from btcopilot import diagramjson
-from btcopilot.intake import _enum_val, _parse_iso_date
-from btcopilot.models import Interaction
-from btcopilot.schema import DiagramData
+import json
+from collections import Counter
+
+from btcopilot import diagramjson, record
+from btcopilot.models import Change, Interaction
+from btcopilot.schema import (
+    DECLINED,
+    DiagramData,
+    EventKind,
+    ItemKind,
+    QuestionOutcome,
+    QuestionState,
+    enum_val,
+    parse_date,
+)
+from btcopilot.timeline import _life_event
 
 SHIFTS = ("anxiety", "symptom", "functioning")
 
@@ -23,7 +35,7 @@ def date_text(value) -> str | None:
     """
     if isinstance(value, dict) and diagramjson.TAG in value:
         value = value["v"]
-    parsed = _parse_iso_date(value)
+    parsed = parse_date(value)
     return parsed.isoformat() if parsed else None
 
 
@@ -36,13 +48,14 @@ def _name(person: dict) -> str:
 SPEAKER = " — the person you are talking with"
 
 
-def person_line(person: dict, speaker: bool = False) -> str:
+def person_line(person: dict, speaker: bool = False, facts=()) -> str:
     line = f"{person['id']} {_name(person)}"
-    gender = _enum_val(person.get("gender"))
+    gender = enum_val(person.get("gender"))
     if gender:
         line += f" ({gender})"
     if person.get("parents") is not None:
         line += f" parents={person['parents']}"
+    line = " ".join([line, *facts])
     return line + SPEAKER if speaker else line
 
 
@@ -56,7 +69,7 @@ def event_line(event: dict) -> str:
     parts = [
         str(event["id"]),
         date_text(event.get("dateTime")) or "undated",
-        f"[{_enum_val(event.get('kind')) or 'shift'}]",
+        f"[{enum_val(event.get('kind')) or 'shift'}]",
     ]
     end = date_text(event.get("endDateTime"))
     if end:
@@ -69,34 +82,120 @@ def event_line(event: dict) -> str:
     if event.get("notes"):
         parts.append("(has notes)")
     for key in SHIFTS:
-        value = _enum_val(event.get(key))
+        value = enum_val(event.get(key))
         if value:
             parts.append(f"{key}={value}")
-    relationship = _enum_val(event.get("relationship"))
+    relationship = enum_val(event.get("relationship"))
     if relationship:
         parts.append(f"relationship={relationship}")
     if event.get("relationshipTargets"):
         parts.append(f"targets={event['relationshipTargets']}")
     if event.get("relationshipTriangles"):
         parts.append(f"triangles={event['relationshipTriangles']}")
-    certainty = _enum_val(event.get("dateCertainty"))
+    certainty = enum_val(event.get("dateCertainty"))
     if certainty and certainty != "certain":
         parts.append(f"date-{certainty}")
     return " ".join(parts)
 
 
-def cluster_line(cluster: dict) -> str:
+def _cluster_head(cluster: dict) -> str:
     words = cluster.get("name") or cluster.get("title") or ""
 
     # Never guess "model" here: source is what says whether a cluster may be
     # regrouped or renamed, and telling the coach the model made a grouping the
     # user may have named costs the user their name.
-    source = _enum_val(cluster.get("source")) or "unknown"
-    line = (
-        f"{cluster['id']} \"{words}\" ({source}) events={cluster.get('eventIds') or []}"
-    )
+    source = enum_val(cluster.get("source")) or "unknown"
+    return f"{cluster['id']} \"{words}\" ({source})"
+
+
+def cluster_line(cluster: dict) -> str:
+    line = f"{_cluster_head(cluster)} events={cluster.get('eventIds') or []}"
     reason = cluster.get("reason")
     return f"{line} — {reason}" if reason else line
+
+
+def _refused(question: dict) -> bool:
+    """Turned down by the user, or declined in chat: kept in view so it is
+    never said again in those words."""
+    return question.get("outcome") in (*DECLINED, QuestionOutcome.DoesntFit)
+
+
+def on_map(question: dict) -> bool:
+    """Open, or turned down: the ones the coach keeps in view."""
+    return question["state"] != QuestionState.Resolved or _refused(question)
+
+
+def question_order(question: dict) -> tuple:
+    return _refused(question), int(question["id"][1:])
+
+
+def _status(question: dict) -> str:
+    if question.get("outcome") == QuestionOutcome.DoesntFit:
+        return "doesn't fit"
+    if _refused(question):
+        return "declined"
+    return " ".join(part for part in (question["state"], question.get("pushback")) if part)
+
+
+def note_line(question: dict) -> str:
+    """One question or impression as the map and the reads give it."""
+    status = _status(question)
+    if record.note(question) is record.IMPRESSION:
+        line = f'{question["id"]} {status} "{question["text"]}" on '
+        line += ", ".join(f"{one['kind']} {one['id']}" for one in question["evidence"]) or "nothing"
+    else:
+        line = f'{question["id"]} {status} {question["kind"]} "{question["text"]}"'
+        if question.get("item_kind"):
+            line += f" about {question['item_kind']} {question['item_id']}"
+    if status == QuestionState.Resolved:
+        line += f" outcome={question['outcome']}"
+    return line
+
+
+QUESTIONS = "QUESTIONS (open, then declined: never ask a declined one again)"
+IMPRESSIONS = (
+    "IMPRESSIONS (raised and held; one the user said doesn't fit is never raised "
+    "again in those words)"
+)
+
+
+def _notes(data: DiagramData, rules) -> list[str]:
+    return [
+        note_line(q)
+        for q in sorted(data.questions, key=question_order)
+        if record.note(q) is rules and on_map(q)
+    ]
+
+
+def version_line(version: int) -> str:
+    return f"Record version {version}."
+
+
+def _field(field: str, value) -> str:
+    return f"{field}={json.dumps(value, ensure_ascii=False)}"
+
+
+def change_line(change: Change) -> str:
+    """One write to the record: the version it made, who made it, and what each
+    item it touched was set to."""
+    items: dict[tuple, list[str]] = {}
+    for delta in change.deltas:
+        if delta["item_kind"] == ItemKind.Diagram.value:
+            continue
+        said = items.setdefault((delta["item_kind"], delta["item_id"]), [])
+        after = delta.get("after")
+        if delta["field"] is None and after is None:
+            said.append("removed")
+        elif delta["field"] is None:
+            # A thing made or put back is logged whole.
+            said.append("put back" if change.turn_id.startswith("undo:") else "added")
+            said += [_field(field, value) for field, value in after.items() if field != "id"]
+        else:
+            said.append(_field(delta["field"], after))
+    head = "Unversioned" if change.version is None else f"Version {change.version}"
+    return f"{head}, {change.author}: " + "; ".join(
+        f"{kind} {item_id} {' '.join(said)}" for (kind, item_id), said in items.items()
+    )
 
 
 def _section(title: str, lines: list[str]) -> str:
@@ -125,6 +224,59 @@ def render(data: DiagramData | None, speaker: int | None = None) -> str:
         _section("CLUSTERS", [cluster_line(c) for c in _rows(data.clusters)]),
     ]
     return "\n\n".join(section for section in sections if section)
+
+
+def _year(event: dict | None) -> str | None:
+    date = date_text(event.get("dateTime")) if event else None
+    return date[:4] if date else None
+
+
+def _facts(person: dict, events: list[dict]) -> list[str]:
+    facts = [
+        f"{word}={year}"
+        for word, kind in (("born", EventKind.Birth), ("died", EventKind.Death))
+        for year in [_year(_life_event(person["id"], events, kind))]
+        if year
+    ]
+    return facts + [f"events={sum(record.involves(e, person['id']) for e in events)}"]
+
+
+def _span(cluster: dict, dates: dict) -> str:
+    years = sorted(dates[i][:4] for i in cluster.get("eventIds") or [] if dates.get(i))
+    span = f" {years[0]}-{years[-1]}" if years else ""
+    return f"{_cluster_head(cluster)}{span} events={len(cluster.get('eventIds') or [])}"
+
+
+def outline(data: DiagramData | None, version: int, speaker: int | None = None) -> str:
+    """A map of the record rather than the record (R-0479): who is in it, how
+    the events spread over time, and the version it was drawn at. The coach
+    reads the rest with its tools. Only the version when nothing is stored yet."""
+    if data is None:
+        return version_line(version)
+    events = _rows(data.events)
+    dates = {e["id"]: date_text(e.get("dateTime")) for e in events}
+    decades = Counter(f"{d[:3]}0s" if d else "undated" for d in dates.values())
+    sections = [
+        _section(
+            "PEOPLE",
+            [
+                person_line(p, p["id"] == speaker, _facts(p, events))
+                for p in _rows(data.people)
+            ],
+        ),
+        _section("PAIR BONDS", [bond_line(b) for b in _rows(data.pair_bonds)]),
+        _section("CLUSTERS", [_span(c, dates) for c in _rows(data.clusters)]),
+        _section(
+            QUESTIONS,
+            _notes(data, record.QUESTION),
+        ),
+        _section(IMPRESSIONS, _notes(data, record.IMPRESSION)),
+        _section(
+            "EVENTS PER DECADE",
+            [", ".join(f"{d} {n}" for d, n in sorted(decades.items()))] if events else [],
+        ),
+    ]
+    return "\n\n".join(s for s in [*sections, version_line(version)] if s)
 
 
 def interactions(rows: list[Interaction]) -> str:

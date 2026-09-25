@@ -25,7 +25,6 @@ import {
   sharedYears,
   dotRadius,
   rows,
-  whoText,
   words,
   wrap2,
   zones,
@@ -33,6 +32,7 @@ import {
 import {
   DateCertainty,
   ItemKind,
+  Spotlight,
   ViewKind,
   type Cluster,
   type Person,
@@ -82,17 +82,12 @@ const YEAR_CH = 6.3;
  * scale coarsens rather than the line reaching further (R-0381). */
 const REACH = 2;
 
-const REST_H = 60;
 const REST_WIRE = 30;
 /** A dot on the resting line. */
 const DOT_R = 4.5;
 /** The least space between two dot centres inside a box for the two to read as
  * two rather than as one solid bar. */
 const DOT_GAP = 11;
-/** The narrowest tap target a dot keeps when its neighbours crowd it. */
-const HIT_MIN = 6;
-/** A cluster of more than this many moments collapses to a ring and a count. */
-const DENSE = 8;
 /** A gap of this many years or more between clusters earns the amber question. */
 const GAP_YEARS = 4;
 
@@ -121,7 +116,7 @@ export function restWidth(
   if (span <= 0) return screen;
   let scale = (screen - 2 * X_PAD) / span;
   clusters.forEach((cluster, i) => {
-    const dots = cluster.count && cluster.count <= DENSE ? cluster.count : 0;
+    const dots = cluster.count ?? 0;
     const room =
       Math.max(
         shortYears(cluster.start, cluster.end).length * YEAR_CH + 8,
@@ -148,23 +143,6 @@ export function dotXs(xs: number[], left: number, boxWidth: number): number[] {
   const to = left + boxWidth - DOT_R;
   if (xs.length < 2) return [(from + to) / 2];
   return xs.map((_, i) => from + ((to - from) * i) / (xs.length - 1));
-}
-
-/** The tap target of each dot on the line: a thumb's full width where the dot
- * has room, and otherwise the space split with its neighbours, so a tap always
- * picks the nearest dot centre and no dot is covered by another's target. */
-export function hitSpans(
-  xs: number[],
-  width: number,
-): { left: number; size: number }[] {
-  return xs.map((x, i) => {
-    const near = Math.min(
-      i ? x - xs[i - 1] : Infinity,
-      i < xs.length - 1 ? xs[i + 1] - x : Infinity,
-    );
-    const size = Math.max(HIT_MIN, Math.min(ZONE, near));
-    return { left: Math.min(Math.max(x - size / 2, 0), width - size), size };
-  });
 }
 
 /** The second line of a label in the two-moments drawing: one row below the
@@ -204,7 +182,7 @@ export function pairSvg(
 
 /** The picture's levels. The middle "cluster drilldown" is CUT (R-0074): the
  * resting wire and the moves board are the two that survive. */
-enum Level {
+export enum Level {
   /** Nothing named yet: the whole line at a glance, one box per cluster. */
   Rest = "rest",
   Wire = "wire",
@@ -249,6 +227,45 @@ export enum Target {
 }
 
 const OWN = new Set<string>([Target.Prev, Target.Next]);
+
+/** One invisible tap target along the line. */
+export interface Layer {
+  target: Target;
+  index: number;
+  left: number;
+  width: number;
+  label: string;
+}
+
+/** The resting line's tap targets in the order they are laid, the last on
+ * top: the cluster boxes, then the loose events' dots, so a loose event dated
+ * inside a cluster's years is reached by a tap on its dot and the box by a tap
+ * anywhere else on it. */
+export const restLayers = (boxes: Layer[], dots: Layer[]): Layer[] => [...boxes, ...dots];
+
+/** A target as the button the thumb lands on, ZONE tall on the wire. */
+const hitButton = (layer: Layer, wire: number): string =>
+  `<button class="ss-hit" data-target="${layer.target}" data-index="${layer.index}" ` +
+  `aria-label="${esc(layer.label)}" ` +
+  `style="left:${layer.left.toFixed(1)}px;top:${wire - ZONE / 2}px;` +
+  `width:${layer.width.toFixed(1)}px;height:${ZONE}px"></button>`;
+
+/** The words over the line as one target, read by the row a tap lands on:
+ * the words of the event picked lead to where it was said (R-0192), and blank
+ * ground between them puts the picture down. */
+const bandHit = (left: number, width: number): string =>
+  `<button class="ss-hit" data-target="${Target.Band}" aria-label="what the coach named" ` +
+  `style="left:${left.toFixed(1)}px;top:${ROWS[0] + 1}px;width:${width.toFixed(1)}px;height:${ZONE}px"></button>`;
+
+/** The loose events' targets: one per dot, or per dots drawn over one another. */
+export const dotLayers = (zoned: { left: number; width: number; marks: Mark[] }[]): Layer[] =>
+  zoned.map((zone, index) => ({
+    target: Target.Zone,
+    index,
+    left: zone.left,
+    width: zone.width,
+    label: zone.marks[0].event.label,
+  }));
 
 /** How long one level takes to slide over the one it came from. */
 const SLIDE_MS = 320;
@@ -352,6 +369,51 @@ function loose(dated: TimelineEvent[], clusters: { event_ids: number[] }[]): Tim
   return dated.filter((event) => !claimed.has(event.id));
 }
 
+/** Which way in to an event the reader touched. */
+export enum Via {
+  Chip = "chip",
+  Dot = "dot",
+}
+
+/** What the picture shows, as far as picking an event changes it. */
+export interface Look {
+  level: Level;
+  focus: Cluster | null;
+  named: number[];
+  selected: number | null;
+}
+
+/** The picture after one event is picked. A chip naming it and its dot do one
+ * thing (R-0168): the event is picked and everything else recedes. Inside a
+ * cluster the cluster opens; outside every cluster it is picked on the resting
+ * line, the clusters kept as brackets under it (R-0235). The old chip
+ * spotlight, kept behind a per-person setting: a chip put the event on the
+ * wire with the whole record and no clusters, and a dot only picked it. */
+export function picked(
+  look: Look,
+  id: number,
+  named: number[],
+  clusters: Cluster[],
+  spot: Spotlight,
+  via: Via,
+): Look {
+  const focus = clusters.find((c) => c.event_ids.includes(id)) ?? null;
+  if (spot === Spotlight.Unified)
+    return { level: focus ? Level.Wire : Level.Rest, focus, named, selected: id };
+  if (via === Via.Dot) return { ...look, selected: id };
+  return { level: Level.Wire, focus, named, selected: id };
+}
+
+/** The whole resting line is drawn, clusters as boxes, or as brackets under
+ * the line while an event no cluster holds is picked. */
+export const resting = (look: Look): boolean =>
+  look.level === Level.Rest && (look.selected === null || !look.focus);
+
+/** Where the line runs: high on the resting line with nothing picked, and
+ * lower wherever an event is picked, to leave its words room above it. */
+export const wireOf = (look: Look): number =>
+  resting(look) && look.selected === null ? REST_WIRE : WIRE;
+
 export class Picture {
   private data: Timeline | null = null;
   /** The moments the coach's latest message named — the spotlight. */
@@ -396,6 +458,7 @@ export class Picture {
   constructor(
     private host: HTMLElement,
     private handlers: PictureHandlers,
+    private spot = Spotlight.Unified,
   ) {
     window.addEventListener("resize", () => this.render());
     this.host.addEventListener("click", (e) => {
@@ -496,6 +559,33 @@ export class Picture {
     this.focus = this.clusterOf(eventIds[0]);
     this.rescale();
     this.render();
+  }
+
+  /** One event picked, from its dot or from a chip naming it; a chip also
+   * takes the line to it, since it may be off screen. */
+  pick(id: number, named: number[], via: Via): void {
+    ({
+      level: this.level,
+      focus: this.focus,
+      named: this.named,
+      selected: this.selected,
+    } = picked(this.look(), id, named, this.data?.clusters ?? [], this.spot, via));
+    this.litPeople = [];
+    if (via === Via.Chip) {
+      this.aim(id);
+      this.cluster = null;
+    }
+    this.rescale();
+    this.render();
+  }
+
+  private look(): Look {
+    return {
+      level: this.level,
+      focus: this.focus,
+      named: this.named,
+      selected: this.selected,
+    };
   }
 
   select(eventId: number | null): void {
@@ -916,7 +1006,12 @@ export class Picture {
     // brackets under the wire until the moment is put down (owner, option A,
     // 2026-09-09).
     const picked = this.selected !== null && loose(dated, clusters).some((e) => e.id === this.selected);
-    const wireY = picked ? WIRE : REST_WIRE;
+    // what an event picked leaves out recedes, as it does on the open wire
+    const faded = (id: number | null) =>
+      this.named.length && (id === null || !this.named.includes(id))
+        ? ` opacity="${baseOpacity(dated.length, this.named.length)}"`
+        : "";
+    const wireY = wireOf(this.look());
     const first = years(dated[0].dateTime as string);
     const last = years(dated[dated.length - 1].dateTime as string);
     const span = last - first || 1;
@@ -931,7 +1026,7 @@ export class Picture {
     const shows = this.stands({ width, screen }, held, onX);
 
     let svg =
-      `<svg viewBox="0 0 ${width} ${REST_H}" height="${REST_H}" preserveAspectRatio="xMinYMin meet">` +
+      `<svg viewBox="0 0 ${width} ${PIC_H}" height="${PIC_H}" preserveAspectRatio="xMinYMin meet">` +
       (picked
         ? `<defs><linearGradient id="epfade" gradientUnits="userSpaceOnUse" ` +
           `x1="0" x2="0" y1="${wireY + 20}" y2="${wireY - 20}">` +
@@ -939,8 +1034,7 @@ export class Picture {
           `<stop offset="1" class="epfade-out"/></linearGradient></defs>`
         : "") +
       `<line class="wire" x1="${x0}" y1="${wireY}" x2="${x1}" y2="${wireY}"/>`;
-    let hits = "";
-    let clusterHits = "";
+    const boxes: Layer[] = [];
     // A box reaches a little past the moments it holds, and two clusters a
     // month apart would then draw over one another. Where that happens the two
     // boxes give way to each other and leave a gap between them.
@@ -973,22 +1067,17 @@ export class Picture {
         `width="${boxWidth.toFixed(1)}" height="40" rx="8"${fade}/>` +
         `<rect class="ep-edge" x="${left.toFixed(1)}" y="${boxY}" ` +
         `width="${boxWidth.toFixed(1)}" height="40" rx="8"${fadeEdge}/>`;
-      if (cluster.count > DENSE)
-        svg +=
-          `<circle class="ep-many" cx="${middle.toFixed(1)}" cy="${wireY}" r="11"/>` +
-          `<text class="ep-count" x="${middle.toFixed(1)}" y="${wireY + 4}" ` +
-          `text-anchor="middle">${cluster.count}</text>`;
-      else {
-        const inBox = dated.filter((e) => cluster.event_ids.includes(e.id));
-        const when =
-          inBox.length === cluster.count
-            ? inBox.map((e) => at(e.dateTime as string))
-            : Array.from({ length: cluster.count }, (_, j) =>
-                cluster.count > 1 ? a + ((b - a) * j) / (cluster.count - 1) : middle,
-              );
-        for (const cx of dotXs(when, left, boxWidth))
-          svg += `<circle class="dot" cx="${cx.toFixed(1)}" cy="${wireY}" r="${DOT_R}"/>`;
-      }
+      // every event in the box is a dot, however many there are: a crowded
+      // box carries no count (R-0376)
+      const inBox = dated.filter((e) => cluster.event_ids.includes(e.id));
+      const when =
+        inBox.length === cluster.count
+          ? inBox.map((e) => at(e.dateTime as string))
+          : Array.from({ length: cluster.count }, (_, j) =>
+              cluster.count > 1 ? a + ((b - a) * j) / (cluster.count - 1) : middle,
+            );
+      for (const cx of dotXs(when, left, boxWidth))
+        svg += `<circle class="dot" cx="${cx.toFixed(1)}" cy="${wireY}" r="${DOT_R}"${faded(null)}/>`;
       if (!picked)
         svg +=
           `<text class="ep-yrs" x="${middle.toFixed(1)}" y="21" text-anchor="middle">` +
@@ -1004,11 +1093,13 @@ export class Picture {
 
       // the box may be narrower than a thumb, so the target is grown to the floor
       const target = Math.max(ZONE, boxWidth);
-      clusterHits +=
-        `<button class="ss-hit" data-target="${Target.Cluster}" data-index="${i}" ` +
-        `aria-label="${esc(cluster.title || shortYears(cluster.start, cluster.end))}" ` +
-        `style="left:${this.hitLeft(middle, target, width)}px;top:${wireY - ZONE / 2}px;` +
-        `width:${target.toFixed(1)}px;height:${ZONE}px"></button>`;
+      boxes.push({
+        target: Target.Cluster,
+        index: i,
+        left: Number(this.hitLeft(middle, target, width)),
+        width: target,
+        label: cluster.title || shortYears(cluster.start, cluster.end),
+      });
     });
     // A moment no cluster claims is drawn as itself: a dot on the wire where it
     // happened, with no box around it and nothing else bundled into it.
@@ -1016,17 +1107,15 @@ export class Picture {
       event,
       x: at(event.dateTime as string),
     }));
-    this.laid.zones = marks.map((mark) => [mark]);
-    const spans = hitSpans(marks.map((mark) => mark.x), width);
-    marks.forEach(({ event, x }, i) => {
+    for (const { event, x } of marks) {
       const on = event.id === this.selected ? " on" : "";
-      svg += `<circle class="dot${on}" cx="${x.toFixed(1)}" cy="${wireY}" r="${on ? 7 : DOT_R}"/>`;
-      hits +=
-        `<button class="ss-hit" data-target="${Target.Zone}" data-index="${i}" ` +
-        `aria-label="${esc(event.label)}" ` +
-        `style="left:${spans[i].left.toFixed(1)}px;top:${wireY - ZONE / 2}px;` +
-        `width:${spans[i].size.toFixed(1)}px;height:${ZONE}px"></button>`;
-    });
+      svg += `<circle class="dot${on}" cx="${x.toFixed(1)}" cy="${wireY}" r="${on ? 7 : DOT_R}"${faded(event.id)}/>`;
+    }
+    const zoned = zones(marks, width);
+    this.laid.zones = zoned.map((zone) => zone.marks);
+    const hits = restLayers(boxes, dotLayers(zoned))
+      .map((layer) => hitButton(layer, wireY))
+      .join("");
 
     svg += `</svg>`;
 
@@ -1037,10 +1126,13 @@ export class Picture {
       const laid = this.labels(marks, shows + X_PAD, shows + screen - X_PAD, wireY);
       this.laid.rows = laid.rowsLaid;
       const mark = marks.find((m) => m.event.id === this.selected) as Mark;
+      // the band lies over the words, as it does on the open wire, and under
+      // the dots' own targets
       words =
         laid.text +
         `<div class="ss-yr on" style="left:${yearLeft(mark.x, shows, shows + screen)}px;` +
-        `top:${YEAR_TOP}px;width:${YEAR_W}px;text-align:center">${esc(this.yearOf(mark.event))}</div>`;
+        `top:${YEAR_TOP}px;width:${YEAR_W}px;text-align:center">${esc(this.yearOf(mark.event))}</div>` +
+        bandHit(shows + X_PAD, screen - 2 * X_PAD);
     }
 
     // Where the line settles after a swipe: at a box's near edge, so a cluster
@@ -1061,11 +1153,9 @@ export class Picture {
         ? `<div class="ss-yrs"><span></span><span></span></div>`
         : "";
 
-    // A cluster's target goes down last so it wins where a loose moment's
-    // thumb-sized target reaches over its box: a tap on a box opens the box.
     this.host.innerHTML =
       `<div class="ss"><div class="ss-scroll"><div class="ss-line" style="width:${width.toFixed(1)}px">` +
-      `${svg}${words}${hits}${clusterHits}${snaps}</div></div>${ends}${shelf}</div>`;
+      `${svg}${words}${hits}${snaps}</div></div>${ends}${shelf}</div>`;
     this.settle({ width, screen, first, span }, held, onX);
   }
 
@@ -1130,9 +1220,9 @@ export class Picture {
       .sort((a, b) => years(a.start) - years(b.start));
   }
 
-  /** The moments in the cluster a resting tap landed on. */
-  inCluster(index: number): number[] {
-    return this.restClusters()[index]?.event_ids ?? [];
+  /** The cluster a resting tap landed on. */
+  clusterAt(index: number): Cluster | undefined {
+    return this.restClusters()[index];
   }
 
   private renderBoard(): void {
@@ -1270,10 +1360,11 @@ export class Picture {
         return;
       }
     }
-    // A tap on a loose moment picks it where it is: the clusters stay, the
-    // dot reads as picked (owner, 2026-09-09). The spotlight below is for
-    // what the coach's words name, not for a tap.
-    if (this.level === Level.Rest && (this.selected === null || !this.focus)) {
+    // A loose event picked, by its dot or by a chip, is picked where it is:
+    // the clusters stay, the dot reads as picked (Patrick, 2026-09-09; R-0168).
+    // The spotlight below is for a cluster open, or what the coach's words
+    // name as a whole.
+    if (resting(this.look())) {
       this.renderRest();
       return;
     }
@@ -1284,7 +1375,7 @@ export class Picture {
     // the resting picture is one fixed height, whatever it is showing: people
     // on stage belong to the board, which is a level of its own (ruled)
     const height = PIC_H;
-    const wire = WIRE;
+    const wire = wireOf(this.look());
 
     if (!shown.length) {
       this.laid = { zones: [], rows: [] };
@@ -1313,8 +1404,6 @@ export class Picture {
     const named = new Set(this.named);
     const opacity = baseOpacity(marks.length, this.named.length);
     const radius = dotRadius(marks.length);
-    const zoned = zones(marks, x0, x1);
-    this.laid.zones = zoned.map((zone) => zone.marks);
     // the words are laid out first: where they land decides whether there is
     // room for the bracket over the cluster
     const { text, rowsLaid } = this.labels(marks, x0, x1, wire);
@@ -1372,16 +1461,8 @@ export class Picture {
         `${esc(this.yearOf(picked.event))}</div>`
       : "";
 
-    let hits =
-      `<button class="ss-hit" data-target="${Target.Band}" aria-label="what the coach named" ` +
-      `style="left:${x0}px;top:${ROWS[0] + 1}px;width:${x1 - x0}px;height:${ZONE}px"></button>`;
-    zoned.forEach((zone, i) => {
-      hits +=
-        `<button class="ss-hit" data-target="${Target.Zone}" data-index="${i}" ` +
-        `aria-label="events around ${this.yearOf(zone.marks[0].event)}" ` +
-        `style="left:${zone.left.toFixed(1)}px;top:${wire - ZONE / 2}px;` +
-        `width:${zone.width.toFixed(1)}px;height:${ZONE}px"></button>`;
-    });
+    let hits = bandHit(x0, x1 - x0);
+    hits += this.zoneHits(marks, width, wire);
     hits += this.shelfHit(x1, wire);
 
     this.pin(height);
@@ -1390,6 +1471,16 @@ export class Picture {
     // holds them on their first frame the same way it stops the rest
     if (still())
       this.host.querySelector("svg")?.pauseAnimations();
+  }
+
+  /** One invisible target per dot, or per dots drawn over one another, laid
+   * where the line's taps read them. */
+  private zoneHits(marks: Mark[], width: number, wire: number): string {
+    const zoned = zones(marks, width);
+    this.laid.zones = zoned.map((zone) => zone.marks);
+    return dotLayers(zoned)
+      .map((layer) => hitButton(layer, wire))
+      .join("");
   }
 
   private dot(
@@ -1420,10 +1511,14 @@ export class Picture {
     const wide = Math.floor((x1 - x0) / CH);
     if (chosen) {
       const event = chosen.event;
-      const said = whoText(event.person_name, this.protagonist());
-      const who = said ? `${said} · ` : "";
+      const said = words(
+        event.dateTime as string,
+        event.dateCertainty,
+        event.person_name,
+        event.label,
+      );
       const lines = wrap2(
-        clip(who + event.label.trim(), Math.min(88, wide * ROWS.length)),
+        clip(said, Math.min(88, wide * ROWS.length)),
         wide,
       );
       const text = lines
@@ -1462,7 +1557,6 @@ export class Picture {
           m.event.dateTime as string,
           m.event.dateCertainty,
           m.event.person_name,
-          this.protagonist(),
           m.event.label,
           clash.has((m.event.dateTime as string).slice(0, 4)),
         ),
@@ -1490,10 +1584,6 @@ export class Picture {
         .filter((r) => r.text)
         .map((r) => ({ id: r.id, row: r.row, left: r.left, width: r.width })),
     };
-  }
-
-  private protagonist(): string {
-    return this.data?.people.find((p) => p.primary)?.name ?? "";
   }
 
   /** The bracket over the cluster the coach aimed at. It is only drawn when no

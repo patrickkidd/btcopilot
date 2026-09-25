@@ -69,7 +69,8 @@ supersedes the old hard-cutover plan.
 
 ## Where the build stands (live — revise, do not append)
 
-**Branch `FD-362` in btcopilot, draft PR #136. fdserver is out of this work (2026-09-16):**
+**PR #136 (branch `FD-362`) is merged to master; the fast-follow is branch `FD-363`, one batch
+PR [R-0484]. fdserver is out of this work (2026-09-16):**
 the prompts and the rulings are encrypted files in this repo, the new box's deployment is
 `deploy/` here, and Patrick closed fdserver PR #30 unmerged. Nothing the chat app runs
 reads from fdserver. The beta build is real code against the real database, not a throwaway.
@@ -223,6 +224,117 @@ dead or ungrounded tests deleted; the unclear points are kept in the private cor
 defects the new tests found are strict expected failures listed in doc/KNOWN_DEFECTS.md, for the
 fast-follow PRs, as is the session-end second look [R-0443].
 
+**2026-09-24/25 — FD-363, the fast-follow, deployed.** Landed on branch FD-363 (draft PR #138)
+and, after the gates below passed, deployed to production on 2026-09-25:
+- **Every tool call stays on the thread.** A coach turn's tool calls are kept in the database
+  when it ends, whether it finished, failed or was refused, so every session shows them after a
+  reload [R-0478]. The coach is given its own earlier tool calls; an earlier read's answer is
+  replaced by a line telling it to read again. A migration fills this in for old turns from the
+  change log and marks turns that never answered as unfinished.
+- **A failed turn is picked up, not redone.** Its edits stay and are tied to the words that asked
+  for them. Trying again resumes the same turn with its own tool calls and stores no new words;
+  only the last message can be tried again, and only when its turn failed [R-0477]. The user's
+  words are stored before the turn runs, not with the reply.
+- **Record versions.** Every read ends with the record version, and every change to something
+  already in the record names the version it was based on. A change made after another writer's
+  write is refused, and the coach reads again [R-0480].
+- **A map instead of the whole record.** The prompt carries people with ids, birth and death
+  years and event counts, pair bonds, clusters, events per decade and the version. The coach
+  reads the rest through tools: events by id, by words or by notes, and a list of the newest
+  changes. The public and private prompt wording tells it to look before it adds, change only
+  what the story needs, name the version, and read again when refused [R-0479].
+- **A check after every turn writes down likely mistakes and changes nothing.** It writes a row
+  for a person with the same name and birth year as another, an event with the same kind, day
+  and people as another, and an add made before any read in that turn. It looks only at what the
+  turn touched. An admin command lists the rows; they seed regression evals [R-0481, R-0482].
+  Three live eval cases — a retry after a failure, an event said again, a read before asking —
+  are scored on zero repeats and run only with a key.
+- **The page** draws the stored tool lines on every coach reply, reads included as plain lines,
+  and show calls too ("Showed a triangle"). An event's date on a tool line reads as the record
+  list says it ("Jun 1994"). A failed last turn shows the lines that landed and [try again],
+  which resumes that turn rather than sending the words again.
+- **Hand edits of events write a change row.** Adding, editing or deleting an event on the page
+  now goes through the coach's write path, marked as the user, so undo and the recent-changes
+  read see it; people and pair bonds already did. Known behaviour that follows: a hand edit must
+  pass the same record rules as the coach, so some edits the page used to accept are refused
+  (for example a noted event with no words); deleting an event by hand also removes the
+  emotions it caused, as the coach's delete does. The editor now stops a shift with nothing
+  moved before it can be saved. Any other refusal from the record reads in plain words, for
+  example "The end date is before the start date.", and stays on screen until the user
+  edits a field or closes the editor.
+- **The old single-call chat path is deleted.** The chat runs only on the coach's tool loop. The
+  old conversation-flow prompt, public and private, the one-shot ask path and the
+  fixed-category intake engine are gone; the helpers other code used from them moved beside
+  that code.
+- **The migration gate** is a script that restores a Postgres dump into a throwaway container,
+  runs the migrations, and checks row counts, orphans and tool lines per coach reply. Deleting a
+  session now keeps the edits its words made: the links from change rows and turn records to
+  those words are emptied instead of the delete failing on Postgres.
+
+**Before the deploy, the gates passed:** the migration ran clean against a copy of the production
+database; the pages were checked at phone and desktop sizes; three full live coach runs gave zero
+empty replies across 75 turns; and the one-off backfill ran against a copy of the production
+database, with a second run against that same copy making no calls and writing nothing. The build
+is now live: commit ec757d5, image 3.2026.9.25.2-gec757d5, the database migrated to 1b00000000ad
+before the rollout, with a backup taken first. That migration cannot be undone, so a rollback
+from here means rolling forward, not reverting. The one-off backfill then ran for real on the box,
+over 3 families, 3 model calls each; Patrick's own family got 4 questions, all facts to find, and
+he still has to judge whether that is the right number.
+
+The sandbox also makes real model calls on its own: a real coach turn and a real [try again]
+were run there. The live eval cases and the tests that need a key have not run.
+
+**Landed on branch FD-363 since the first deploy, not yet deployed.** In plain words: every
+tool line in the thread now names an event or person by the one shared label everywhere, kept
+events included, and touch targets were widened so a crowded dot can be tapped on a phone. The
+list button sits at chip height, with more room after tool lines in the thread, and the
+picture's back and close glyphs now line up with the ask button. A tap on a chip and a tap on
+an event's dot are the same behaviour, with a per-user switch in admin back to the old,
+separate behaviour. Speaking a reply out loud now works on iPhone. Adding an event or changing
+a date is refused unless its certainty is given. The events list explains why an event has no
+cluster instead of grouping it wrong silently. A command installs a stand-in test record for
+review. The coach can raise, close and read impressions in the same way it handles open
+questions, shown to the user in the drawer with what each rests on and two ways to push back.
+The live suite now counts its own spend, stops at its hard caps, and keeps a results row per
+run. A local model can stand in for Anthropic and Gemini, so the sandbox runs free by default.
+
+Open:
+- The new tests cite the nearest already-numbered ruling instead of a real id, because the
+  oracle spec forbids a pending-ruling marker. Four spend tests, the case proving a question is
+  stored before the reply, and the tests behind R-0479 and R-0482 in Patrick's store all need
+  re-citing once he appends the ruling.
+- Three rulings were skipped as needing a design rather than built: R-0187; R-0213, R-0376 and
+  R-0378 together; R-0122 and R-0127 together.
+- The count of guess-dated events is blocked by the personal-data safety check and is not built.
+- An old kept tool call that changes an existing event still keeps that event's old words
+  instead of writing the new ones.
+
+**Ruling candidates, for Patrick to confirm and give ids to (no ids yet):**
+- SARF shifts are remembered as isolated episodes, not a series or a trend; there is no line or
+  step graph of shifts.
+- Every label names all the people in it, the speaker included; this supersedes R-0457's rule
+  to leave out the one doing the reading.
+- The picture band grows from 66 to 72 pixels tall and the region around it from 138 to 144.
+- The coach's impressions are stored the way open questions are and can be pushed back on; a
+  reading that repeats within the same years becomes a cluster.
+- A tap on a chip and a tap on a dot are the same behaviour, with a per-user switch in admin
+  back to the old, separate behaviour.
+- A date needs a certainty: certain for an exact day, approximate for a month or year only,
+  unknown for a hedge.
+- The tab is renamed "From the coach", with an Impressions section in it.
+- "Partly" is stored as a push-back only once the reply is actually sent; tapping it before
+  that only records that the user looked.
+- "Doesn't fit" posts the impression into the chat as a chip.
+- The empty tab reads "Nothing from the coach yet."
+- The spend strategy: real Anthropic calls only at the end of a batch and only when a prompt or
+  tool changed, every dollar asked for first, no free tier; the live suite's hard caps and daily
+  ledger; the sandbox's coach on a local model by default. Written up in
+  [HOW_THIS_PROJECT_WORKS.md](HOW_THIS_PROJECT_WORKS.md).
+- Clinical-coding evals wait for ratified ground truth from the IRR review group; Patrick is
+  never asked to certify a coding rule case by case.
+
+Still true from the deploy on 2026-09-25: production's title bar reads "Free Diagram" instead
+of the diagram's real name, and four live coach cases fail the same way on the master branch.
 **What is not true yet on the box.** The dashboards and the cost rows are built but not deployed:
 that waits on Patrick putting the Grafana token there and refreshing the dependency lock. There is
 no automated database backup. Nine scratch accounts with chats, made while proving deploys, sit in
@@ -441,10 +553,11 @@ state. The release workflow builds the browser app into the wheel, ships sops an
 prompts in the image, and starts the image on an empty database to fetch the chat page.
 
 **Found by Patrick testing alone, 2026-09-09 evening** (rows 67–69 of the review log): a
-failed coach turn used to leave the user's words stored, so a retry stored them again — fixed,
-the words now land only with the coach's answer, and a second send while one is in flight does
-nothing. One tap posted learning data with no item kind and is not yet identified. The coach in
-the sandbox is down until the Anthropic API account behind the key has credit again.
+failed coach turn used to leave the user's words stored, so a retry stored them again. Since
+2026-09-24 the words are stored before the turn runs, not with the reply, and trying again
+resumes that same turn without storing them a second time [R-0477]; a second send while one is
+in flight does nothing. One tap posted learning data with no item kind and is not yet identified. The coach in
+the sandbox makes real model calls again as of 2026-09-24.
 
 **Spec and gap.** UI_SPEC.md carries 444 value rows, 52 resolutions and 3 open items.
 UI_GAP.md sets every one against the build: MET 318, PARTIAL 11, CHANGED 12, MISSING 5,
@@ -1019,7 +1132,8 @@ Kept for when there are enough users to run one.
 - The branch is `FD-362`, the same name in both repos, in the built-in worktree location.
   It carries decision log entries, the brainstorm docs, DRAWABILITY.md, this package, the
   schema comparison and the converter in btcopilot, and the oracle store in fdserver.
-  **Draft PRs: btcopilot #136, fdserver #30** (#135 and #29 are closed predecessors).
+  btcopilot #136 is merged; fdserver #30 was closed unmerged (#135 and #29 are closed
+  predecessors). The fast-follow is FD-363, one batch branch in btcopilot, **draft PR #138**.
 
 ## Open security items (Patrick's calls, untouched)
 

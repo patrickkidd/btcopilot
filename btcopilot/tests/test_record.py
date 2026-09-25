@@ -503,3 +503,55 @@ def test_the_write_refuses_a_noted_event_with_no_words(subscriber):
             turn_id="t1",
             user_id=subscriber.user.id,
         )
+
+
+def test_a_thing_made_is_logged_whole_and_undo_takes_it_off(subscriber):
+    # R-0084
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}], "lastItemId": 1})
+    change = record.apply(
+        diagram.id,
+        [
+            {"item_kind": ItemKind.Person, "item_id": 2, "field": "name", "after": "Bea"},
+            {"item_kind": ItemKind.Diagram, "item_id": None, "field": "lastItemId", "after": 2},
+            {"item_kind": ItemKind.Cluster, "item_id": "c1", "field": "title", "after": "Cutoff"},
+            {"item_kind": ItemKind.Cluster, "item_id": "c1", "field": "eventIds", "after": [1, 2, 3]},
+        ],
+        author=Author.Coach,
+        turn_id="t1",
+    )
+    assert [(d["item_id"], d["field"], d["before"], d["after"]) for d in change.deltas] == [
+        (2, None, None, {"id": 2, "name": "Bea"}),
+        (None, "lastItemId", 1, 2),
+        ("c1", None, None, {"id": "c1", "title": "Cutoff", "eventIds": [1, 2, 3]}),
+    ]
+
+    record.undo(diagram.id, "t1", author=Author.User)
+    data = diagram.get_diagram_data()
+    assert data.people == [{"id": 1, "name": "Ada"}]
+    assert data.clusters == []
+
+
+def test_undo_will_not_take_off_a_thing_something_since_hangs_on(subscriber):
+    # R-0084
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
+    record.apply(
+        diagram.id,
+        [{"item_kind": ItemKind.Person, "item_id": 2, "field": "name", "after": "Bea"}],
+        author=Author.Coach,
+        turn_id="t1",
+    )
+    record.apply(
+        diagram.id,
+        [
+            {"item_kind": ItemKind.Event, "item_id": 3, "field": "kind", "after": "noted"},
+            {"item_kind": ItemKind.Event, "item_id": 3, "field": "person", "after": 2},
+            {"item_kind": ItemKind.Event, "item_id": 3, "field": "description", "after": "Moved"},
+        ],
+        author=Author.User,
+        turn_id="t2",
+    )
+
+    with pytest.raises(record.Conflict) as excinfo:
+        record.undo(diagram.id, "t1", author=Author.User)
+    assert excinfo.value.actual == ["event 3"]
+    assert [p["id"] for p in diagram.get_diagram_data().people] == [1, 2]

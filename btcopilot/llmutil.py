@@ -311,11 +311,36 @@ def served(message, label: str) -> Served:
     return Served(model=message.model, hops=hops, sticky=sticky)
 
 
+# A local Anthropic-compatible server, such as Ollama, answers every Anthropic
+# call and every structured or response-text Gemini call, on the one local
+# model named. The sandbox sets
+# both; production sets neither. With the URL set no Anthropic key is read.
+LOCAL_URL = "BTCOPILOT_LOCAL_URL"
+LOCAL_MODEL = "BTCOPILOT_LOCAL_MODEL"
+
+
+def anthropic_args(key: str = "ANTHROPIC_API_KEY") -> dict:
+    """The client's endpoint and key: the local server's, else Anthropic's."""
+    url = os.environ.get(LOCAL_URL)
+    if url:
+        return {"base_url": url, "api_key": "local"}
+    return {"api_key": os.environ[key]}
+
+
+def local_model() -> str | None:
+    return os.environ[LOCAL_MODEL] if os.environ.get(LOCAL_URL) else None
+
+
+def wire_model(model: str) -> str:
+    """The model a call names on the wire: the local one when it is set."""
+    return local_model() or model
+
+
 def _anthropic_client():
     import anthropic
 
     return anthropic.AsyncAnthropic(
-        api_key=os.environ["ANTHROPIC_API_KEY"],
+        **anthropic_args(),
         timeout=ANTHROPIC_TIMEOUT,
         max_retries=ANTHROPIC_MAX_RETRIES,
     )
@@ -328,7 +353,7 @@ def _extraction_anthropic_client():
     import anthropic
 
     return anthropic.AsyncAnthropic(
-        api_key=os.environ["ANTHROPIC_EXTRACTION_API_KEY"],
+        **anthropic_args("ANTHROPIC_EXTRACTION_API_KEY"),
         timeout=ANTHROPIC_EXTRACTION_TIMEOUT,
         max_retries=ANTHROPIC_MAX_RETRIES,
     )
@@ -388,7 +413,7 @@ async def claude_text(prompt=None, **kwargs):
 
     messages = _prepare_claude_messages(prompt=prompt, turns=kwargs.get("turns"))
 
-    resolved_model = kwargs.get("model", RESPONSE_MODEL)
+    resolved_model = wire_model(kwargs.get("model", RESPONSE_MODEL))
     client = _anthropic_client()
     api_kwargs = {
         "model": resolved_model,
@@ -436,7 +461,7 @@ async def response_text(prompt=None, model=None, **kwargs):
     model: optional client-facing alias (e.g. "opus-4.6") or raw API model ID.
     """
     resolved = resolve_model(model) if model else RESPONSE_MODEL
-    if _is_claude_model(resolved):
+    if _is_claude_model(resolved) or local_model():
         _log.info(f"response_text using Claude: {resolved}")
         return await claude_text(prompt, model=resolved, **kwargs)
     else:
@@ -456,7 +481,7 @@ async def gemini_structured(prompt, response_format, large=False, model=None):
     from google.genai import types
 
     model = model or (EXTRACTION_MODEL_LARGE if large else EXTRACTION_MODEL)
-    if _is_claude_model(model):
+    if _is_claude_model(model) or local_model():
         return await claude_structured(prompt, response_format, model)
 
     start_time = time.time()
@@ -533,7 +558,7 @@ async def claude_structured(prompt, response_format, model):
 
     client = _extraction_anthropic_client()
     async with client.messages.stream(
-        model=model,
+        model=wire_model(model),
         max_tokens=32000,
         thinking={"type": "adaptive"},
         output_config={"effort": STRUCTURED_EFFORT},

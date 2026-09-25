@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from btcopilot.coachmodel import Spent
+from btcopilot.llmutil import local_model
 
 MILLION = Decimal(1_000_000)
 
@@ -16,6 +17,7 @@ class Price:
     cache_read: Decimal
 
 
+FREE = Price(Decimal(0), Decimal(0), Decimal(0), Decimal(0))
 OPUS = Price(Decimal("5.00"), Decimal("25.00"), Decimal("6.25"), Decimal("0.50"))
 
 PRICES = {
@@ -35,6 +37,8 @@ PRICES = {
 
 
 def price(model: str) -> Price:
+    if model == local_model():
+        return FREE
     matches = [prefix for prefix in PRICES if model.startswith(prefix)]
     if not matches:
         raise KeyError(f"No price for model {model}")

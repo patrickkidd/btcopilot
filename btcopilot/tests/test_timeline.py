@@ -1,3 +1,5 @@
+import pytest
+
 from btcopilot.seed import seed_diagram_data
 from btcopilot.timeline import GAP_DAYS, build_timeline
 from btcopilot.schema import (
@@ -388,6 +390,84 @@ def test_a_moment_says_who_from_its_links_and_what_without_the_name():
     assert said[11] == ("Ray & Nora", "divorced")
     assert said[12] == ("Elizabeth & Nora", "anxiety went up")
     assert said[13] == ("Elizabeth → Ray", "conflict")
+
+
+@pytest.mark.parametrize(
+    "kind, description, label",
+    [
+        (
+            EventKind.Death,
+            "died, possibly around July 4",
+            "died, possibly around July 4",
+        ),
+        (EventKind.Death, "Death of a heart attack", "Death of a heart attack"),
+        (EventKind.Death, "Passed away at home", "Passed away at home"),
+        (EventKind.Birth, "Born at home", "Born at home"),
+        (EventKind.Birth, "was born in Anchorage", "was born in Anchorage"),
+        (EventKind.Married, "Got married in Reno", "Got married in Reno"),
+        (EventKind.Married, "marriage to Nora", "marriage to Nora"),
+        (EventKind.Married, "in Reno", "married \u00b7 in Reno"),
+        (EventKind.Divorced, "divorce final", "divorce final"),
+        (
+            EventKind.Death,
+            "Moved in with the man who died",
+            "died \u00b7 Moved in with the man who died",
+        ),
+        (EventKind.Birth, "reborn in faith", "born \u00b7 reborn in faith"),
+        (
+            EventKind.Death,
+            "Robert Belgard died, possibly around July 4",
+            "Robert Belgard died, possibly around July 4",
+        ),
+        (EventKind.Married, "Robert married Ann", "Robert married Ann"),
+        (EventKind.Birth, "Robert was born at home", "Robert was born at home"),
+        (EventKind.Death, "Ann died", "died \u00b7 Ann died"),
+        (EventKind.Death, "", "died"),
+        (EventKind.Shift, "Moved to Anchorage", "Moved to Anchorage"),
+    ],
+)
+def test_a_label_says_the_kind_once(kind, description, label):
+    # R-0457
+    events = [
+        asdict(
+            Event(
+                id=1,
+                kind=kind,
+                person=1,
+                dateTime="1990-07-04",
+                description=description,
+            )
+        )
+    ]
+    said = build_timeline(_named([(1, "Robert Belgard")], events))["events"][0]
+    assert said["label"] == label
+
+
+def test_a_pair_bond_names_the_speaker_and_the_partner():
+    # R-0457
+    data = DiagramData(
+        people=[
+            {**asdict(Person(id=1, name="Patrick")), "primary": True},
+            asdict(Person(id=2, name="Emily")),
+        ],
+        events=[
+            asdict(
+                Event(
+                    id=10,
+                    kind=EventKind.Bonded,
+                    person=1,
+                    spouse=2,
+                    dateTime="2019-03-01",
+                    description="together for about a year and a half",
+                )
+            )
+        ],
+    )
+    event = build_timeline(data)["events"][0]
+    assert (event["person_name"], event["label"]) == (
+        "Patrick & Emily",
+        "bonded \u00b7 together for about a year and a half",
+    )
 
 
 def test_a_noted_event_near_a_shift_is_a_lead_and_raises_the_question():

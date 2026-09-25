@@ -49,6 +49,9 @@ class TurnEventKind(enum.StrEnum):
     # the coach's voice and offers no retry, since the same words would be
     # declined again [Oracle: R-0410].
     Refused = "refused"
+    # One round of the model's tool calls with what they answered, kept in the
+    # database so a failed turn can pick up from it. Never sent to the page.
+    Step = "step"
 
 
 ENDS = (
@@ -126,6 +129,9 @@ class RedisLog:
     def clear(self, discussion_id: int) -> None:
         self.redis.delete(f"discussion:{discussion_id}:turn")
 
+    def forget(self, turn_id: str) -> None:
+        self.redis.delete(f"turn:{turn_id}")
+
 
 class MemoryLog:
     """The same log in one process, which is what the tests read and write."""
@@ -198,6 +204,10 @@ class MemoryLog:
     def clear(self, discussion_id: int) -> None:
         self.turns.pop(discussion_id, None)
 
+    def forget(self, turn_id: str) -> None:
+        with self.lock:
+            self.events.pop(turn_id, None)
+
 
 _store = None
 
@@ -249,3 +259,7 @@ def keep(discussion_id: int) -> None:
 
 def clear(discussion_id: int) -> None:
     store().clear(discussion_id)
+
+
+def forget(turn_id: str) -> None:
+    store().forget(turn_id)

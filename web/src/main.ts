@@ -2,8 +2,9 @@ import "./telemetry";
 import "./theme.css";
 import * as api from "./api";
 import { Chat, wait, type LiveBubble, type PlayTap } from "./chat";
-import { Picture, Target, type Tap } from "./picture";
+import { Picture, Target, Via, type Tap } from "./picture";
 import { Menu, Tab } from "./menu";
+import { Questions } from "./questions";
 import { Ballot } from "./ballot";
 import { Coding } from "./coding";
 import { Cut } from "./cut";
@@ -17,6 +18,7 @@ import { sessionTitle, summaryOf } from "./search";
 import { Settings } from "./settings";
 import { aimedEvents, chips, itemKind } from "./chips";
 import { feed } from "./turn";
+import { toolLine } from "./tools";
 import {
   CHIP_KIND,
   PicEvent,
@@ -52,10 +54,13 @@ import {
   type CodedIn,
   type Diagram,
   type Session,
+  type Started,
   type Statement,
   type Cluster,
   type Timeline,
   SessionKind,
+  Spotlight,
+  type Preferences,
 } from "./types";
 
 declare global {
@@ -68,6 +73,7 @@ declare global {
         pro: boolean;
         /** Only an auditor takes part in the coding work (R-0311). */
         coder: boolean;
+        prefs: Pick<Preferences, "spotlight">;
       } | null;
       diagram: { id: number; name: string } | null;
       session: { id: number; turn: string | null } | null;
@@ -107,7 +113,11 @@ function tapped(kind: InteractionKind, item: ItemKind, id: string | null = null)
  * same 150ms the stylesheet transitions it over. */
 const FADE_MS = 150;
 
-const picture = new Picture($("view"), { onTap: (tap: Tap) => onTap(tap) });
+const picture = new Picture(
+  $("view"),
+  { onTap: (tap: Tap) => onTap(tap) },
+  window.BOOTSTRAP.user?.prefs.spotlight ?? Spotlight.Unified,
+);
 
 /** A tap on the wire steps through the moments under the thumb; a tap on the
  * words picks the one whose row was tapped; a tap on the shelf asks about what
@@ -131,8 +141,12 @@ function onTap(tap: Tap): void {
   // At rest the picture shows the whole line; a tap opens one cluster, which
   // is the one level change the reader makes for themselves.
   if (tap.target === Target.Cluster) {
-    const ids = picture.inCluster(tap.index);
-    if (ids.length) picture.spotlight(ids);
+    const cluster = picture.clusterAt(tap.index);
+    if (cluster) {
+      picture.spotlight(cluster.event_ids);
+      // opening a cluster is a look at it, recorded like any other (R-0065)
+      tapped(InteractionKind.Look, ItemKind.Cluster, cluster.id);
+    }
     pic = REST;
     actions();
     return;
@@ -187,6 +201,14 @@ function chipLabel(chip: Chip): string {
     return (
       timeline.events.find((e) => String(e.id) === chip.target)?.label ?? chip.label
     );
+  if (chip.kind === ChipKind.Question || chip.kind === ChipKind.Impression)
+    return (
+      timeline.asked_questions.find((q) => q.id === chip.target)?.text ?? chip.label
+    );
+  if (chip.kind === ChipKind.PairBond)
+    return (
+      timeline.pair_bonds.find((b) => String(b.id) === chip.target)?.label ?? chip.label
+    );
   return (
     timeline.clusters.find(
       (c) => c.id === chip.target || c.cluster_ids.includes(chip.target),
@@ -226,6 +248,33 @@ const offered = (chip: Chip) =>
   chip.kind === ChipKind.Ask || chip.tone === ChipTone.Ask;
 
 const menu = new Menu($("menu-body"), load);
+
+/** On a phone the drawer gets out of the way of the thread; pinned beside it,
+ * it stays. */
+const toThread = () => {
+  if (!pinned()) screen(Screen.Chat);
+};
+
+/** A question or impression tapped in the drawer goes into the message as a
+ * reference with the cursor after it, and nothing is sent (R-0072). */
+const questions = new Questions($("menu-body"), {
+  onChip: (chip, after) => {
+    toThread();
+    chat.insert(chip, after);
+  },
+  onAsked: (where, ask) => {
+    toThread();
+    void traceTo(where, ask);
+  },
+  onDismissed: () => void load(),
+  busy: () => inFlight,
+  say: (statement) => {
+    toThread();
+    post(statement);
+  },
+  record: tapped,
+});
+menu.questions = questions;
 
 /** The session door beside the message box. The sheet lists every session and a
  * tap swaps the chat to it (family-sections, the owner's pick). */
@@ -451,6 +500,7 @@ $("coding-back").addEventListener("click", () => {
 function onDiagram(diagram: Diagram, how = { switched: true }): void {
   track.diagram(diagram.id);
   familyTitle = diagram.name;
+  $("menu-title").textContent = familyTitle;
   // The settings stack owns the title while it is open, so only write it when
   // the chat is what the title row is naming.
   if ($("settings-back").hidden) $("title").textContent = familyTitle;
@@ -468,6 +518,8 @@ function onDiagram(diagram: Diagram, how = { switched: true }): void {
 let familyTitle =
   window.BOOTSTRAP.diagram?.name ?? $("title").textContent ?? "Your family";
 $("title").textContent = familyTitle;
+// the drawer is the family's too, so it carries the same name (frame 2)
+$("menu-title").textContent = familyTitle;
 
 /** Speak replies is the one ruled duplicate: this row and the Coach settings
  * page are two doors onto the same value. */
@@ -497,16 +549,35 @@ speak.addEventListener("change", () => {
 // Every scroll area takes wheel, trackpad, touch AND mouse drag (UI_STANDARDS).
 for (const id of ["chat", "menu-body"]) dragScroll($(id));
 
-/** One stored message back on the thread. A play-by-play keeps the cluster it
- * walked, so its chips still step the board a week later. */
-function addStatement(statement: Statement): void {
-  chat.add(
-    statement.role,
-    statement.text,
-    ChipTone.Data,
-    statement.id,
-    statement.kind === StatementKind.Play ? statement.cluster_id : null,
-  );
+/** The bubble of a turn that failed, drawn live or from the store. Picking
+ * the turn up reads it again from its first event, so this one gives way. */
+let stopped: { turn: string; bubble: HTMLElement } | null = null;
+
+/** The stored messages back on the thread, each coach reply under the lines
+ * of what it did (R-0478). A play-by-play keeps the cluster it walked, so its
+ * chips still step the board a week later. A turn that failed shows what it
+ * did before it stopped, and as the last message it can be picked up again
+ * (R-0477). */
+function addStatements(statements: Statement[]): void {
+  for (const statement of statements) {
+    const coach = statement.role === Role.Coach;
+    const lines = statement.tools.flatMap((t) => toolLine(t) ?? []);
+    chat.add(
+      statement.role,
+      statement.text,
+      ChipTone.Data,
+      statement.id,
+      statement.kind === StatementKind.Play ? statement.cluster_id : null,
+      coach ? lines : [],
+    );
+    if (statement.unfinished && lines.length)
+      stopped = {
+        turn: statement.turn_id!,
+        bubble: chat.add(Role.Coach, "", ChipTone.Data, null, null, lines),
+      };
+  }
+  const last = statements.at(-1);
+  if (last?.unfinished) chat.warn(last.failure!, () => void resume(last.turn_id!));
 }
 
 /** Opening a session replaces the thread with its statements and puts the
@@ -542,7 +613,7 @@ async function openSession(id: number, kind?: SessionKind): Promise<void> {
   thread.style.opacity = "0";
   await wait(FADE_MS);
   chat.clear();
-  for (const statement of statements) addStatement(statement);
+  addStatements(statements);
   if (!statements.length) showPrompt(kind);
   picture.clear();
   pic = REST;
@@ -566,7 +637,6 @@ async function openSession(id: number, kind?: SessionKind): Promise<void> {
 function aim(chip: Chip): void {
   const ids = aimedEvents(chip, timeline.clusters);
   if (!ids.length) return;
-  picture.spotlight(ids);
   // A chip in the coach's words does exactly what a tap on the picture does:
   // there is one selection, wherever the reader touched it. A chip naming one
   // moment selects that moment; a chip naming a cluster selects the cluster,
@@ -575,15 +645,11 @@ function aim(chip: Chip): void {
     ids.length > 1
       ? timeline.clusters.find((c) => ids.every((id) => c.event_ids.includes(id)))
       : undefined;
-  apply(
-    reduce(
-      REST,
-      PicEvent.Tap,
-      cluster
-        ? { kind: SelKind.Cluster, id: cluster.id }
-        : { kind: SelKind.Event, id: String(ids[0]) },
-    ),
-  );
+  if (cluster) {
+    picture.spotlight(ids);
+    apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Cluster, id: cluster.id }));
+  } else
+    apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(ids[0]) }), ids);
 }
 
 /** The nth chip of a walk steps the board to the nth move. The caption row
@@ -595,11 +661,14 @@ function stepBoard(play: PlayTap, chip: Chip): void {
 }
 
 /** One place turns a picture tap into its consequences: what the picture shows,
- * what goes in the composer, what gets recorded, what plays. */
-function apply(outcome: Outcome): void {
+ * what goes in the composer, what gets recorded, what plays. `named` is what a
+ * chip named, when the tap was on a chip rather than the picture. */
+function apply(outcome: Outcome, named: number[] | null = null): void {
   pic = outcome.state;
   const sel = pic.sel;
-  picture.select(sel && sel.kind === SelKind.Event ? Number(sel.id) : null);
+  if (sel?.kind === SelKind.Event)
+    picture.pick(Number(sel.id), named ?? [Number(sel.id)], named ? Via.Chip : Via.Dot);
+  else picture.select(null);
   if (sel?.kind === SelKind.Cluster) {
     const cluster = timeline.clusters.find((c) => c.id === sel.id);
     if (cluster) picture.spotlight(cluster.event_ids);
@@ -644,13 +713,13 @@ function codedIn(eventId: number): { label: string; where: CodedIn } | null {
 
 /** Jump to the words that coded this moment: the session if it is not the one
  * on screen, then the bubble itself, outlined while it settles. */
-async function traceTo(where: CodedIn): Promise<void> {
+async function traceTo(where: CodedIn, ask = false): Promise<void> {
   if (where.statement_id === null) return;
   if (where.discussion_id !== session) {
     session = where.discussion_id;
     await openSession(where.discussion_id);
   }
-  if (!chat.trace(where.statement_id)) toast("Those words are no longer here");
+  if (!chat.trace(where.statement_id, ask)) toast("Those words are no longer here");
 }
 
 /** The row under the picture: what it is showing, and the things a tap can do
@@ -661,13 +730,12 @@ function actions(): void {
   const sel = pic.sel;
   const open = picture.openCluster();
   // The board has its own controls, and two rows saying explain is one too
-  // many. Entering the board is the one level change allowed to move what is
-  // under the picture, so the row goes outright rather than sitting there as
-  // an empty strip with a hairline under it (owner ruling 2026-09-08).
-  const onBoard = picture.onBoard();
-  host.classList.toggle("gone", onBoard);
-  if (onBoard) {
-    host.innerHTML = "";
+  // many, so while it is up the row holds only the list button. It keeps its
+  // height, so nothing under it moves (R-0450, replacing the 2026-09-08 ruling
+  // that took the row away).
+  if (picture.onBoard()) {
+    host.innerHTML = pinned() ? "" : listButton("menu-open");
+    wireList();
     return;
   }
   // Nothing open and nothing picked: there is nothing to act on, so the row
@@ -813,13 +881,34 @@ let inFlight = false;
 async function send(): Promise<void> {
   const statement = chat.draft();
   if (!statement || inFlight) return;
+  await questions.sending(statement);
+  chat.resetDraft();
+  post(statement);
+}
+
+/** The reader's words go into the thread as theirs and on to the coach. */
+function post(statement: string): void {
+  if (!statement || inFlight) return;
   track.tap(Feature.SendMessage);
   chat.add(Role.User, statement);
-  chat.resetDraft();
-  await deliver(statement);
+  void deliver(statement);
 }
 
 async function deliver(statement: string): Promise<void> {
+  const started = await begin(() => api.say(statement, session), () => void deliver(statement));
+  if (started) follow(started.turn_id);
+}
+
+/** Try a failed turn again: the same turn goes on, and the words are not sent
+ * a second time (R-0477). */
+async function resume(turnId: string): Promise<void> {
+  if (await begin(() => api.resume(turnId), () => void resume(turnId))) follow(turnId);
+}
+
+async function begin(
+  ask: () => Promise<Started>,
+  again: () => void,
+): Promise<Started | null> {
   // One turn at a time: a second send while the coach is answering would store
   // the words again.
   inFlight = true;
@@ -828,16 +917,15 @@ async function deliver(statement: string): Promise<void> {
 
   let started;
   try {
-    started = await api.say(statement, session);
+    started = await ask();
   } catch (error) {
     inFlight = false;
     chat.busy(false);
-    chat.warn(whatFailed(error), () => void deliver(statement));
-    return;
+    chat.warn(whatFailed(error), again);
+    return null;
   }
   session = started.discussion_id;
-  chat.settled();
-  follow(started.turn_id, () => void deliver(statement));
+  return started;
 }
 
 /** The turn the coach is running, drawn as it happens. Everything the page
@@ -851,9 +939,10 @@ let onTurn: string | null = null;
  * back finds out it has already finished and reads the thread again. */
 let awaiting: string | null = null;
 
-function follow(turnId: string, again: () => void): void {
+function follow(turnId: string): void {
   if (onTurn === turnId) return;
   stopFollowing();
+  chat.settled();
   onTurn = turnId;
   awaiting = turnId;
   inFlight = true;
@@ -861,10 +950,11 @@ function follow(turnId: string, again: () => void): void {
 
   let bubble: LiveBubble | null = null;
   // The typing dots stay until the coach's first word or first step, and the
-  // bubble takes their place.
+  // bubble takes their place, and that of a failed try at the same turn.
   const opened = () => {
     if (!bubble) {
       chat.busy(false);
+      if (stopped?.turn === turnId) stopped.bubble.remove();
       bubble = chat.live();
     }
     return bubble;
@@ -905,7 +995,12 @@ function follow(turnId: string, again: () => void): void {
         awaiting = null;
         stopFollowing();
         chat.busy(false);
-        chat.warn(message, again);
+        // What it did stays; the words it had begun are not kept, so they go.
+        if (bubble) {
+          bubble.settle("", () => {});
+          stopped = { turn: turnId, bubble: bubble.bubble };
+        }
+        chat.warn(message, () => void resume(turnId));
       }),
     refused: (message) =>
       step(() => {
@@ -939,7 +1034,7 @@ function stopFollowing(): void {
 async function reattach(): Promise<void> {
   if (session === null || watching) return;
   const { turn } = await api.session(session);
-  if (turn) follow(turn, () => {});
+  if (turn) follow(turn);
   else if (awaiting) {
     // It finished while the page was away: the thread is read again, which is
     // what a reload would have shown.
@@ -966,6 +1061,7 @@ async function load(): Promise<Timeline> {
   timeline = await api.timeline();
   picture.setData(timeline);
   menu.show(timeline);
+  chat.relabel();
   actions();
   return timeline;
 }
@@ -1128,20 +1224,25 @@ $("menu-search").addEventListener("input", (e) =>
   menu.search((e.target as HTMLInputElement).value),
 );
 
-/** The two lists behind the one button: what happened, and who it happened to.
- * The search and the add button say which one they are for. */
-const TABS: [string, Tab, string, string, Feature][] = [
+/** The lists behind the one button: what happened, who it happened to, and
+ * what the coach asked that is still open. The search and the add button say
+ * which list they are for; the questions are the coach's, so that list has
+ * neither. */
+const TABS: [string, Tab, string | null, string | null, Feature][] = [
   ["tab-events", Tab.Events, "Search events", "+ Add event", Feature.TabEvents],
   ["tab-people", Tab.People, "Search people", "+ Add someone", Feature.TabPeople],
+  ["tab-questions", Tab.Questions, null, null, Feature.TabQuestions],
 ];
 
-/** Dress the drawer for one of its two lists. */
+/** Dress the drawer for one of its lists. */
 function onTab(tab: Tab): void {
   for (const [id, which, placeholder, add] of TABS) {
     const on = which === tab;
     $(id).classList.toggle("on", on);
     $(id).setAttribute("aria-selected", String(on));
     if (!on) continue;
+    $("menu-searchrow").hidden = $("menu-foot").hidden = placeholder === null;
+    if (placeholder === null) continue;
     const field = $("menu-search") as HTMLInputElement;
     field.value = "";
     field.placeholder = placeholder;
@@ -1163,7 +1264,7 @@ menu.onTab = onTab;
 
 pinDrawer();
 
-for (const statement of window.BOOTSTRAP.statements) addStatement(statement);
+addStatements(window.BOOTSTRAP.statements);
 chat.toEnd();
 
 void sessions.load(session);
@@ -1172,7 +1273,7 @@ void settings.load();
 // A turn the coach is still running when the page opens is drawn from its first
 // event, so a reload lands back in the middle of it rather than on nothing.
 const running = window.BOOTSTRAP.session?.turn ?? null;
-if (running) follow(running, () => {});
+if (running) follow(running);
 
 // Coming back to the app — a phone returning to it, a tab shown again, the page
 // restored from the back cache — attaches to whatever the coach is doing now.

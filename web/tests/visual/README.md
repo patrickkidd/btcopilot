@@ -45,6 +45,23 @@ The scripts in `~/worktrees/fd362-sandbox` set those variables and reset the
 fixture between walks: `runspec.sh <spec> <width> <height> <tag>` runs one,
 `runall.sh` runs the table, the ballot and the meeting in order.
 
+## The thread walks
+
+`sandboxthreads`, `sandboxhandedit`, `sandboxhandundo` and `sandboxlive` check
+the chat thread and the lists drawer against stand-in families that
+`btcopilot/tests/frontend/` seeds. Run the seed scripts from the repo root with
+the sandbox's Flask settings, then name what they print:
+
+| variable | what |
+|---|---|
+| `INVITE_TURNS` | the link `seedturns.py` prints |
+| `THREAD_LINKS` | a file holding what `seedthreads.py` prints, plus `"std": {"link": <INVITE_TURNS>}` |
+| `SANDBOX_PG` | the sandbox's Postgres container, read only (`sandboxhandedit`) |
+| `SANDBOX_ENV` | a shell file with the sandbox's Flask settings (`sandboxhandundo`, which runs its script from `FIXTURE_CWD`) |
+| `SANDBOX_LIVE` | set to 1 to let `sandboxlive` make real coach turns, on local Ollama unless the sandbox was started with `SANDBOX_MODEL=anthropic` |
+| `SANDBOX_NO_MODEL` | set to 1 when the sandbox has no model key, for the try-again walk in `sandboxthreads` |
+| `SANDBOX_WALKS_ONLY` | set to 1 to skip installing the golden fixtures first |
+
 ## Accepting a change
 
 ```

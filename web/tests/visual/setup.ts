@@ -107,6 +107,39 @@ export type Key = (typeof KEYS)[number];
 
 export const stateFor = (key: Key) => join(AUTH, `${key}.json`);
 
+/** The server's own command line, run the way FIXTURE_CMD runs the fixture
+ * installer: `uv run flask` here, `python -m flask` on CI. */
+export function flask(...args: string[]): string {
+  const [bin, ...before] = (process.env.FIXTURE_CMD ?? "uv run flask app fixtures")
+    .split(" ")
+    .slice(0, -2);
+  return execFileSync(bin, [...before, ...args], {
+    cwd: process.env.FIXTURE_CWD ?? resolve(".."),
+    encoding: "utf8",
+    env: process.env,
+  });
+}
+
+/** A wide window pins the drawer open beside the thread and draws no list
+ * button (R-0352); on a phone the drawer waits behind the button. */
+export const pinned = (page: Page) => page.locator("#chat-drawer").isVisible();
+
+/** Where the lists are: the drawer pinned beside the thread on a wide window,
+ * the full-screen list on a phone. */
+export const lists = (page: Page) => page.locator("#chat-drawer:visible, #menu-screen:visible");
+
+export const NO_LIST = "a wide window pins the drawer open and draws no list button (R-0352)";
+
+/** The lists open: the list button on a phone, already open on a wide window. */
+export async function openList(page: Page): Promise<void> {
+  await expect(page.locator("#view .ss")).toBeVisible();
+  if (!(await pinned(page))) await page.locator("#menu-open").click();
+  await expect(lists(page)).toBeVisible();
+}
+
+/** A fixture's account, as the server's fixtures name it. */
+export const username = (key: Key) => `${key}@fd362-fixture.invalid`;
+
 /** For the goldens of a drawing rather than a page. The suite's one percent
  * ratio is worth hundreds of pixels on a small cell, enough to hide a whole
  * stroke width: five move drawings once passed while carrying the wrong one.
@@ -146,16 +179,7 @@ export default async function setup() {
   if (process.env.SANDBOX_WALKS_ONLY) return;
   await takeLock();
   const base = process.env.SANDBOX_URL ?? "http://127.0.0.1:8889";
-  const command = (
-    process.env.FIXTURE_CMD ?? "uv run flask app fixtures"
-  ).split(" ");
-  const cwd = process.env.FIXTURE_CWD ?? resolve("..");
-
-  const printed = execFileSync(command[0], [...command.slice(1), ...KEYS], {
-    cwd,
-    encoding: "utf8",
-    env: process.env,
-  });
+  const printed = flask("app", "fixtures", ...KEYS);
   const tokens = new Map<string, string>();
   for (const line of printed.split("\n")) {
     const [key, token] = line.trim().split(/\s+/);

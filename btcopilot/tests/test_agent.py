@@ -102,7 +102,7 @@ def test_edit_writes_a_coach_change_and_the_record_moves(discussion, family):
                 date="1994-12-01",
                 description="got sick",
                 person=1,
-                symptom="up",
+                symptom="up", date_certainty="certain",
             ),
             said("I put that down. [[event:11|that winter]]"),
         ),
@@ -111,7 +111,9 @@ def test_edit_writes_a_coach_change_and_the_record_moves(discussion, family):
 
     change = Change.query.filter_by(diagram_id=family.id).one()
     assert change.author is Author.Coach
-    assert {d["field"] for d in change.deltas} >= {"description", "symptom", "dateTime"}
+    made = next(d for d in change.deltas if d["item_kind"] == ItemKind.Event.value)
+    assert made["field"] is None
+    assert set(made["after"]) >= {"description", "symptom", "dateTime"}
 
     added = [e for e in family.get_diagram_data().events if e["id"] == 11]
     assert len(added) == 1
@@ -132,7 +134,7 @@ def test_the_coach_can_write_a_noted_event(discussion, family):
                 date="2019-03-01",
                 description="moved to Arizona",
                 location="Arizona",
-                person=1,
+                person=1, date_certainty="certain",
             ),
             said("I put that down."),
         ),
@@ -244,14 +246,15 @@ def test_show_stores_the_view_on_the_coach_statement(discussion, family):
     assert reply["views"] == [span]
 
 
-def test_the_coach_is_handed_the_record_and_what_the_user_pointed_at(
+def test_the_coach_is_handed_a_map_of_the_record_and_what_the_user_pointed_at(
     discussion, family
 ):
-    # R-0072
+    # R-0072, R-0479
     model = Model(said("Say more about that."))
     run(discussion, "[[event:10]]", model)
 
-    assert "10 1994-06-01 [noted] person=2 \"moved out\"" in model.systems[0]
+    assert "2 Bo events=1" in model.systems[0]
+    assert "moved out" not in model.systems[0]
     assert "tell me about this" in model.histories[0][-1]["content"]
 
 
@@ -330,7 +333,7 @@ def test_people_and_their_events_all_land_in_one_turn(discussion, family):
             calling(
                 (
                     ToolName.EditEvent,
-                    {
+                    {"date_certainty": "certain",
                         "kind": "noted",
                         "date": "1994-01-01",
                         "person": 11,
@@ -339,7 +342,7 @@ def test_people_and_their_events_all_land_in_one_turn(discussion, family):
                 ),
                 (
                     ToolName.EditEvent,
-                    {
+                    {"date_certainty": "certain",
                         "kind": "shift",
                         "date": "1996-01-01",
                         "person": 12,
@@ -654,7 +657,7 @@ def test_a_moment_the_coach_wrote_traces_to_the_message_that_wrote_it(
                 date="1994-12-01",
                 description="got sick",
                 person=1,
-                symptom="up",
+                symptom="up", date_certainty="certain",
             ),
             said("I put that down."),
         ),
@@ -788,9 +791,9 @@ def test_the_notes_stay_out_of_every_call_and_the_tool_to_read_them_is_offered(
     model = Model(called(ToolName.ReadEvents), said("What happened next?"))
     run(discussion, "Tell me about when he moved out.", model)
     assert len(model.systems) == 2
-    for system in model.systems:
-        assert "(has notes)" in system
-        assert QUOTE not in system
+    assert "(has notes)" in str(model.histories[1][-1])
+    for system, history in zip(model.systems, model.histories):
+        assert QUOTE not in system + str(history)
     assert all(ToolName.ReadNotes.value in offered for offered in model.offered)
 
 
@@ -801,7 +804,7 @@ def test_the_coach_reads_an_events_notes_when_it_asks_for_them(discussion, famil
     run(discussion, "What did he say about the house?", model)
     answer = model.histories[-1][-1]["content"][-1]
     assert answer["type"] == "tool_result"
-    assert answer["content"] == f"10: {QUOTE}"
+    assert answer["content"].splitlines()[0] == f"10: {QUOTE}"
 
 
 def test_the_coach_is_told_to_end_its_reply_with_a_question():
@@ -810,3 +813,60 @@ def test_the_coach_is_told_to_end_its_reply_with_a_question():
     assert "A reply usually ends with one question in your own words" in prompt
     assert "it always does while the record still lacks any of the minimum data" in prompt
 
+
+def test_the_coach_is_told_how_to_raise_an_impression():
+    # R-0482, R-0485
+    prompt = " ".join(get_agent_prompt().split())
+    assert "Raise it with `add_impression` before you say it" in prompt
+    assert "an impression you have not raised is one you do not say" in prompt
+    assert "make or extend the cluster with `edit_cluster`, giving that as its `reason`" in prompt
+    assert "a remembered episode, each reported on its own" in prompt
+    assert "Never treat shifts as a series or a trend" in prompt
+    assert "close it with `set_impression` as `revised`" in prompt
+
+
+def test_the_coach_is_told_to_give_every_date_its_certainty():
+    # R-0482
+    prompt = " ".join(get_agent_prompt().split())
+    assert "Whenever you add an event or change its date" in prompt
+    assert "date_certainty" in prompt
+    assert "certain when they gave the exact day" in prompt
+    assert "approximate when they gave only the month" in prompt
+    assert 'unknown when they hedge, as "sometime around 1998"' in prompt
+
+
+def test_the_coach_is_told_how_to_keep_its_questions():
+    # R-0482, R-0485
+    prompt = " ".join(get_agent_prompt().split())
+    assert "people usually require questions to stimulate their thinking" in prompt
+    assert "Family Evaluation, ch. 10" in prompt
+    assert "When in doubt, include it rather than leave it out" in prompt
+    assert "Never ask again a question the map marks declined" in prompt
+    assert "never keep one the record already answers" in prompt
+    assert "keep the one whose words ask it best" in prompt
+    assert "a thinking question about patterns or meaning" in prompt
+    assert "Facts to find (`fact`): anything with a factual answer" in prompt
+    assert 'It says "you" and "your" for them' in prompt
+    assert "Asking a question and keeping it are one act" in prompt
+    assert "What you keep is the question alone" in prompt
+    assert "a lead-in, a hedge or a reason stays out of what you keep" in prompt
+    assert "Keep it first, then ask it" in prompt
+    assert "so the reply is the words of your last round" in prompt
+    for tool in (ToolName.AddQuestion, ToolName.SetQuestion, ToolName.ReadQuestions):
+        assert f"`{tool.value}`" in prompt
+
+
+
+def test_a_remove_of_a_kind_the_record_does_not_hold_is_refused(discussion, family):
+    # R-0478
+    model = Model(
+        called(ToolName.Remove, item_kind="household", item_id="1", version=family.version),
+        said("There is no household to remove."),
+    )
+    reply = run(discussion, "Remove the household.", model)
+
+    asked = event(reply, EventKind.ToolCall)
+    assert asked["names"] == {"it": "something the record has no kind for"}
+    assert asked["refusal"] == "There is no such kind of thing to remove."
+    refused = model.histories[-1][-1]["content"][0]
+    assert refused["is_error"] is True

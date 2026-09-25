@@ -31,7 +31,7 @@ from btcopilot.schema import (
     Person,
     asdict,
 )
-from btcopilot.tests.conftest import Model, called, csrf_token, said
+from btcopilot.tests.conftest import Model, called, csrf_token, said, version
 
 
 @pytest.fixture(autouse=True)
@@ -112,7 +112,7 @@ def test_a_turn_that_adds_an_event_stores_the_grouping(discussion, family):
                     date="1994-07-01",
                     description="got sick",
                     person=1,
-                    symptom="up",
+                    symptom="up", date_certainty="certain",
                 ),
                 said("I put that down."),
             ),
@@ -151,7 +151,7 @@ def test_the_grouping_is_written_by_the_coach_in_the_same_turn(discussion, famil
                     date="1994-05-01",
                     description="got sick",
                     person=1,
-                    symptom="up",
+                    symptom="up", date_certainty="certain",
                 ),
                 said("Noted."),
             ),
@@ -304,7 +304,10 @@ def test_renaming_a_grouping_stuck_under_the_floor_says_what_to_do(family):
     with pytest.raises(
         ToolError, match="add an event to the cluster, or remove the grouping"
     ):
-        tools.call(ToolName.EditCluster.value, {"id": "c1", "name": "That autumn"})
+        tools.call(
+            ToolName.EditCluster.value,
+            {"id": "c1", "name": "That autumn", "version": version(family)},
+        )
     assert clusters_of(family)["c1"]["name"] == "When he left"
 
 
@@ -315,7 +318,12 @@ def test_a_third_event_lifts_a_grouping_out_from_under_the_floor(family):
 
     tools.call(
         ToolName.EditCluster.value,
-        {"id": "c1", "name": "That autumn", "event_ids": [10, 11, 12]},
+        {
+            "id": "c1",
+            "name": "That autumn",
+            "event_ids": [10, 11, 12],
+            "version": version(family),
+        },
     )
     assert clusters_of(family)["c1"]["eventIds"] == [10, 11, 12]
 
@@ -326,7 +334,8 @@ def test_a_grouping_stuck_under_the_floor_can_still_be_removed(family):
     tools = Toolbox(family.id, turn_id="t1")
 
     tools.call(
-        ToolName.Remove.value, {"item_kind": ItemKind.Cluster.value, "item_id": "c1"}
+        ToolName.Remove.value,
+        {"item_kind": ItemKind.Cluster.value, "item_id": "c1", "version": version(family)},
     )
     assert clusters_of(family) == {}
 
@@ -337,7 +346,8 @@ def test_undoing_the_removal_of_such_a_grouping_reads_as_words_too(family):
     translation: the coach is told why, not handed an exception."""
     _grandfathered(family)
     Toolbox(family.id, turn_id="t1").call(
-        ToolName.Remove.value, {"item_kind": ItemKind.Cluster.value, "item_id": "c1"}
+        ToolName.Remove.value,
+        {"item_kind": ItemKind.Cluster.value, "item_id": "c1", "version": version(family)},
     )
 
     with pytest.raises(ToolError, match="Putting that back would leave"):
@@ -459,7 +469,7 @@ def test_what_changed_is_in_the_tool_answer_before_the_coach_answers(
                 date="1994-07-01",
                 description="got sick",
                 person=1,
-                symptom="up",
+                symptom="up", date_certainty="certain",
             ),
             said("Those look like one story to me now, not two."),
         )
@@ -484,7 +494,7 @@ def test_a_regroup_leaves_the_prompt_and_the_turn_so_far_untouched(discussion, f
                 date="1994-07-01",
                 description="caught pneumonia",
                 person=1,
-                symptom="up",
+                symptom="up", date_certainty="certain",
             ),
             said("Those look like one story to me now, not two."),
         )
@@ -511,7 +521,7 @@ def test_what_changed_goes_out_on_the_turn_for_nobody_to_draw(discussion, family
                     date="1994-07-01",
                     description="got sick",
                     person=1,
-                    symptom="up",
+                    symptom="up", date_certainty="certain",
                 ),
                 said("Those look like one story to me now, not two."),
             ),
@@ -537,7 +547,12 @@ def test_a_grouping_that_fails_its_checks_twice_keeps_the_groups_and_the_turn_re
             discussion,
             "She was anxious all that spring.",
             model=Model(
-                called(ToolName.EditEvent, id=15, description="moment five"),
+                called(
+                    ToolName.EditEvent,
+                    id=15,
+                    description="moment five",
+                    version=version(family),
+                ),
                 said("Noted."),
             ),
         ).run()
@@ -568,7 +583,7 @@ def test_a_grouping_that_fails_its_checks_twice_keeps_the_groups_and_the_turn_re
                     date="1994-07-01",
                     description="got sick",
                     person=1,
-                    symptom="up",
+                    symptom="up", date_certainty="certain",
                 ),
                 said("I put that down."),
             ),

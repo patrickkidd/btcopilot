@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { pinned, stateFor } from "./setup";
 
 /** The frame the app lives in: the title row at the top, the picture straight
  * under it, the phone's own furniture around it, and one size for every icon
@@ -12,17 +12,23 @@ const settle = async (page: Page) => {
 };
 
 /** Every icon button on screen: a button that carries a mark rather than
- * words, with its target and its drawn circle. */
+ * words, with its target and its drawn circle. The target is the button, or
+ * the larger square round it where a small control reaches out to 44. */
 const iconButtons = (page: Page) =>
   page.evaluate(() =>
     [...document.querySelectorAll<HTMLButtonElement>("button")]
-      .filter((b) => b.offsetParent && !/[a-z]{2}/i.test(b.textContent ?? ""))
+      // a mark is drawn or written: the picture's invisible tap targets carry
+      // none, and a word is not a mark
+      .filter((b) => (b.childElementCount || (b.textContent ?? "").trim()) && b.offsetParent)
+      .filter((b) => !/[a-z]{2}/i.test(b.textContent ?? ""))
       .map((b) => {
         const box = b.getBoundingClientRect();
         const mark = getComputedStyle(b, "::before");
+        const reach = (side: number, drawn: string) =>
+          Math.round(Math.max(side, parseFloat(drawn) || 0));
         return {
           id: b.id || b.className,
-          size: `${Math.round(box.width)}x${Math.round(box.height)}`,
+          size: `${reach(box.width, mark.width)}x${reach(box.height, mark.height)}`,
           mark: mark.content === "none" ? null : `${parseFloat(mark.width)}x${parseFloat(mark.height)}`,
         };
       }),
@@ -32,7 +38,7 @@ test.describe("the app frame", () => {
   test.use({ storageState: stateFor("moves") });
 
   // R-0091
-  test("the account, sessions, list and send buttons share one target and one circle", async ({
+  test("the account, sessions, list and send buttons share one target, and all but the list one circle", async ({
     page,
   }) => {
     await settle(page);
@@ -40,16 +46,20 @@ test.describe("the app frame", () => {
     const shell = found.filter((b) =>
       ["account", "sessions-open", "menu-open", "send"].includes(b.id),
     );
-    expect(shell.map((b) => b.id).sort()).toEqual(["account", "menu-open", "send", "sessions-open"]);
+    // a wide window draws no list button (R-0352)
+    const drawn = (await pinned(page))
+      ? ["account", "send", "sessions-open"]
+      : ["account", "menu-open", "send", "sessions-open"];
+    expect(shell.map((b) => b.id).sort()).toEqual(drawn);
     expect(new Set(shell.map((b) => b.size))).toEqual(new Set(["44x44"]));
-    expect(new Set(shell.map((b) => b.mark))).toEqual(new Set(["40x40"]));
+    // the list button is drawn the height of the chips it sits beside
+    expect(
+      new Set(shell.filter((b) => b.id !== "menu-open").map((b) => b.mark)),
+    ).toEqual(new Set(["40x40"]));
   });
 
   // R-0091
   test("every icon button on the chat screen is a 44px target", async ({ page }) => {
-    // Known defect: the cluster's info and back buttons on the picture's name
-    // row are drawn smaller than the other icon buttons.
-    test.fail();
     await settle(page);
     const found = await iconButtons(page);
     expect(found.length).toBeGreaterThan(3);

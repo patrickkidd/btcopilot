@@ -913,3 +913,106 @@ extraction prompts, passes or F1 on extraction is history. The undated sections
 that described that pipeline as the current design (model selection, Gemini issues,
 prompt architecture, what to include in extraction prompts, monitoring, related
 files) were removed with it. The pipeline's code was last present in a7eeb2c.
+
+### September 2026: The coach keeps the family's open questions (FD-363)
+
+**Change**: the agent prompt gains one paragraph, a fragment shared with a new
+backfill prompt, on keeping open questions in the record. Two kinds: food for
+thought, sourced to Kerr's "people usually require questions to stimulate their
+thinking" (Family Evaluation, ch. 10), and facts to find, kept only when the
+coach judges them relevant to the evaluation or the family's historical context,
+with inclusion as the default when in doubt and nothing kept that would spend the
+person's time, attention and motivation for nothing. It names the three question
+tools, the map's QUESTIONS section, and never asking again a question the person
+declined. It is worded as judgement, not rules. The backfill prompt goes once over
+a past session and adds the questions worth keeping with the message they were
+asked in. The private fragment sits after the record contract so it stays in the
+cached head. Public and private goldens were re-captured. [R-0482, R-0485]
+
+### September 2026: The question wording checks the record first and keeps one question per unknown (FD-363)
+
+**Change**: a backfill run on a copy of production kept 23 questions from about 33
+replies for one family. At least 7 were already answered in the record, 3 asked
+about one person's parents, and 3 of the 9 food-for-thought questions were facts.
+The shared paragraph now says: food for thought asks the person to think, and a
+question answered by a name, date, place or number is a fact; look first, and never
+keep a question the record already answers; keep one question per thing to find
+out, in the best-worded version; weigh every question for the person's time before
+keeping it, with inclusion still the default when in doubt. The backfill prompt
+says the map is drawn after every later session, so it often holds the answer.
+Not yet measured: the model account was out of credit. [R-0482, R-0485]
+
+### September 2026: A kept question reads on its own, and anything with a factual answer is a fact (FD-363)
+
+**Change**: stored questions read in the Questions tab away from the conversation,
+and real runs kept fragments such as "And how old are they now?". The coach now
+words a question it keeps so it names the person and the subject ("How old is
+Elizabeth's brother now?") and stores it in those words; the backfill may reword a
+question that leans on its context, changing nothing else about what it asks. A
+live turn filed an intake question as food for thought, so food for thought is now
+a thinking question about patterns or meaning, and anything with a factual answer,
+including the basics of who is in the family, is a fact to find. Not yet measured
+live. [R-0482, R-0485]
+
+### September 2026: A kept question says "you", and asking a question is keeping it (FD-363)
+
+**Change**: real turns stored questions that named the user in the third person
+("When [user] and [husband] go quiet…") while the reply said "you", and 3 of 5
+turns that asked a question stored nothing. The shared paragraph now says a kept
+question speaks to the person as "you" and names everyone else, and that asking
+and keeping are one act: a question put to the person is stored the same turn,
+asked, in the reply's words, unless it does not matter at all; one meant for later
+is stored held. The backfill keeps the "you" of the message. Not yet measured
+live. [R-0482, R-0485]
+
+### September 2026: A kept question is the question alone (FD-363)
+
+**Change**: a stored question carried the reply's lead-in ("Before we go further,
+what's your last name…") into the Questions tab. The shared paragraph and the
+backfill now say the reply may frame a question however it likes, but what is kept
+is the question alone, with no lead-in, hedge or reason, still in "you" wording and
+readable on its own. Not yet measured live. [R-0482, R-0485]
+
+### September 2026: Keep the question first, then write the reply that asks it (FD-363)
+
+**Change**: in 3 of 75 live turns the coach wrote its closing question as text
+beside an add_question call; that text was cleared as working notes and the turn
+ended with no words. The shared paragraph now says to call add_question on its
+own, then write the reply once the call comes back, so the reply is the last
+round's words, and that words beside a tool call never reach the person. Not yet
+measured live. [R-0482]
+
+### September 2026: Every date says how sure it is (FD-363)
+
+**Change**: the coach is told to give date_certainty (certain, approximate or
+unknown for a guess) whenever it adds an event or changes its date, public and
+private wording alike; the toolbox now refuses a date without it. Not yet measured
+live. [R-0482]
+
+### September 2026: The review scribe gives every date its certainty too (FD-363)
+
+**Change**: the scribe calls the same event tool, which now refuses a date without
+certainty, so its prompt, public and private, says to give date_certainty whenever
+it adds an event or changes a date. Not yet measured live. [R-0482]
+
+### September 2026: A date's certainty follows what was said about the day (FD-363)
+
+**Change**: "My dad died in June 1998" was stored as certain, but certain means
+within a week. The agent, scribe and onboarding wording now map it plainly:
+certain for an exact day, approximate for a month or a year only, unknown for
+"sometime around" or any hedge, or for the coach's own guess. The private record
+contract's "March 2019 is certain" is reversed to approximate. A live case checks
+the June 1998 death is stored approximate. [R-0482]
+
+### September 2026: The coach raises impressions and keeps them (FD-363)
+
+**Change**: a new paragraph, shared by the agent prompt and a new impression
+backfill prompt, public and private. An impression is the coach's inference, a
+pattern across chapters or a reading of a stretch of years. It is raised with its
+tool, with the evidence it rests on, before the reply says it in the same words.
+A stretch of years where a lot was happening becomes a cluster made or extended
+with that reason, not only words. Anxiety, symptom and functioning shifts are
+remembered episodes each reported on its own, never a series or a trend. An
+impression the user said doesn't fit is not raised again in those words; one
+they said fits partly is revised or let go. Not yet measured live: model calls
+are unavailable. [R-0482, R-0485]

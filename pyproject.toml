@@ -27,6 +27,7 @@ app = [
     "flask-bcrypt",
     "flask-mail",
     "flask-sqlalchemy",
+    "sqlalchemy<2.1",  # 2.1 opens postgresql:// with psycopg 3, which is not installed
     "flask-wtf",
     "opentelemetry-api",
     "opentelemetry-sdk",

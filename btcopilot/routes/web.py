@@ -11,7 +11,7 @@ from btcopilot.routes import bp, current_session, diagram
 from btcopilot.routes.diagrams import readable
 from btcopilot.discussions import session_payload
 from btcopilot.routes.sessions import statements_payload
-from btcopilot import record
+from btcopilot import questions, record
 from btcopilot.licence import professional
 from btcopilot.timeline import build_timeline
 from btcopilot.schema import DiagramData
@@ -42,6 +42,7 @@ def _page() -> str:
             "coder": user.has_role(btcopilot.ROLE_AUDITOR)
             or user.has_role(btcopilot.ROLE_ADMIN),
             "pro": professional(user),
+            "prefs": user.prefs(),
         },
         "session": session_payload(discussion) if discussion else None,
         "statements": statements_payload(discussion) if discussion else [],
@@ -107,6 +108,7 @@ def timeline():
             **{str(k): v for k, v in record.coded_in(in_use.id).items()},
             **{str(k): v for k, v in payload["coded_in"].items()},
         }
+    payload["asked_questions"] = questions.asked(in_use.id, data) if in_use else []
     return jsonify(payload)
 
 

@@ -54,7 +54,7 @@ export function feed(sink: TurnSink): (event: TurnEvent) => void {
     if (event.type !== TurnEventKind.RecordPatch) settle();
     switch (event.type) {
       case TurnEventKind.ToolCall: {
-        const line = toolLine(event.name, event.args);
+        const line = toolLine(event);
         if (line) sink.note(line);
         break;
       }

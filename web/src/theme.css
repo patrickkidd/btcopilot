@@ -172,32 +172,21 @@ button { font-family: inherit; }
 .iconbtn:active { background: var(--tint); }
 
 /* ---- the picture: the sentence spotlight (converged, ruled 2026-09-02) ---- */
-/* 138 of the phone, and no more (picked mockup 2026-09-08, band grown by six
-   2026-09-08 so the year clears the controls): the name row 28, the band the
-   line is drawn in 66, and the row of controls under it 44. */
+/* 144 of the phone, and no more (picked mockup 2026-09-08, band grown by six
+   2026-09-08 so the year clears the controls, and by six more 2026-09-24 so a
+   thumb can tell the picked dot from its words): the name row 28, the band the
+   line is drawn in 72, and the row of controls under it 44. */
 .pic { flex: none; padding: 0; }
-/* the hairline under the picture is drawn inside its 138 rather than added to
+/* the hairline under the picture is drawn inside its 144 rather than added to
    it, so the region is the three rows and nothing more */
 .pic .caption { border-bottom: 1px solid var(--line); }
 /* One line, always: the state text on the right changes with the selection and
    must never push the label on the left onto a second line, which would move
    the picture and everything under it. */
-/* The back arrow's tap target is the ruled 44, not the glyph's 9px. */
-.up {
-  flex: none;
-  width: 44px;
-  height: 28px;
-  margin-left: -14px;
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--move);
-  font: inherit;
-  cursor: pointer;
-}
 /* the two small controls on the title line: the i after an open cluster's
    name, and the ✕ at the row's end while a moment is picked at rest */
 .pl-btn {
+  position: relative;
   flex: none;
   width: 28px;
   height: 28px;
@@ -272,19 +261,30 @@ button { font-family: inherit; }
   color: var(--move);
   cursor: pointer;
 }
-.pin-label .up::before {
+/* The glyph itself starts on the picture's left edge, in line with the start
+   of the line and the ask button under it; the tap target is the ruled 44
+   square around it, reaching past the edge rather than pushing the glyph in.
+   The i beside a cluster's name reaches the same 44 around its 28, so the
+   row stays 28 tall (R-0091). */
+.pin-label .up::before,
+.pl-btn::before {
   content: "";
   position: absolute;
-  inset: -13px -14px;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
 }
 .pin-label .up:active { opacity: 0.55; }
 /* The list button sits inside the thing it lists, in the same circle as the
    one beside the message bar. The picture's own box is what it sits in, so it
    is taken out of the flow and nothing below it moves. */
 .pic { position: relative; }
-/* The list button sits at the end of the row of chips, in the same circle as
-   the one beside the message bar, and nothing else is over there. */
-.caption .listglyph { margin-left: auto; margin-right: -13px; }
+/* The list button sits at the end of the row of chips, drawn the chips' height
+   and on their line; its 44 target reaches past the drawing, so the drawn edge
+   lines up with the row's 16 of padding. */
+.caption .listglyph { margin-left: auto; margin-right: -4px; }
 .view { position: relative; transition: height 0.25s ease; }
 /* One level in or one level out. The two views stand side by side for the
    length of the slide, each at the height the region already had, so nothing
@@ -809,8 +809,6 @@ button { font-family: inherit; }
   touch-action: pan-x;
   overscroll-behavior: contain;
 }
-/* On the board the row is not there at all: no strip, no hairline. */
-.caption.gone { display: none; }
 .caption::-webkit-scrollbar { display: none; }
 .caption > * { flex: none; }
 /* The chat's own chip, in the row (picked plate F): one mark and one word, a
@@ -836,7 +834,7 @@ button { font-family: inherit; }
 .caption .tok svg { flex: none; }
 /* while nothing is picked there is nothing to act on, so the row says what a
    tap will do instead (owner review round 3) */
-.caption .cta { font: 400 13px/1.35 var(--mono); color: var(--faint); }
+.caption .cta { margin: 0; font: 400 13px/1.35 var(--mono); color: var(--faint); }
 .caption .tok.g { color: var(--move-text); border-color: var(--move); border-radius: 10px; }
 .caption .tok.data { color: var(--data); border-color: var(--data); border-radius: 10px; }
 /* nothing to do with it here, so it is still shown and plainly not offered */
@@ -945,6 +943,8 @@ button { font-family: inherit; }
   font: 400 13px/1.5 var(--mono);
   color: var(--faint);
 }
+/* a line of the reply's own 17/1.45 between what the coach did and what it says */
+.bub .did:not(:has(+ .did)):not(:last-child) { margin-bottom: 24px; }
 .bub .did::before {
   content: "";
   position: absolute;
@@ -1249,6 +1249,8 @@ button { font-family: inherit; }
 .editor .sec { margin: 16px 0 4px; font: 600 15px/1.2 var(--sans); }
 /* what the record keeps somewhere else, said once rather than left missing */
 .editor .hint { font: 400 13px/1.4 var(--mono); color: var(--faint); }
+/* why Save did nothing, until a field changes */
+.editor .refused { font: 500 14px/1.4 var(--sans); color: var(--ask-text); }
 .editor .lab {
   font: 500 13px/1.4 var(--mono);
   color: var(--faint);
@@ -1367,13 +1369,13 @@ button { font-family: inherit; }
 .listglyph::before {
   content: "";
   position: absolute;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  width: 36px;
+  height: 26px;
+  box-sizing: border-box;
+  border-radius: 8px;
   border: 1px solid var(--line);
-  background: var(--bg);
 }
-.listglyph svg { position: relative; display: block; opacity: 0.8; width: 20px; height: 15px; }
+.listglyph svg { position: relative; display: block; opacity: 0.8; width: 16px; height: 12px; }
 .listglyph:active::before { background: var(--tint); }
 /* The home-screen badge: a quiet phone outline beside the account button,
    only while the app runs inside a browser. */
@@ -2011,6 +2013,119 @@ button { font-family: inherit; }
   .sn-pane, .sw, .sw-thumb { transition: none !important; }
 }
 
+/* The Questions tab (approved open-questions mockup): a sticky heading per
+   kind, and each question the coach asked as an amber chip in its own words,
+   with the day it was asked under it. Swipe one left to put it away. */
+.qsec {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  font: 600 15px/1.2 var(--sans);
+  color: var(--ink);
+}
+.qrow {
+  position: relative;
+  padding: 12px 16px 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  transition: transform 0.18s ease;
+}
+.qrow:last-child { border-bottom: 0; }
+.qrow.swiped { transform: translateX(-96px); }
+.qrow .fs-acts { width: 96px; }
+.chip.q { font: 500 15px/22px var(--mono); padding: 5px 10px; margin: 0; }
+.chip.q::before { inset: -4px; }
+/* the words line up with the chip's edge while their target reaches past it,
+   into the row's own padding */
+.qmeta { display: flex; justify-content: flex-end; min-height: 44px; margin-right: -8px; }
+.qwhen {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--data);
+  font: 400 13px/1.2 var(--sans);
+  cursor: pointer;
+  white-space: nowrap;
+}
+span.qwhen { color: var(--faint); cursor: default; }
+button.qwhen:active { background: var(--tint); border-radius: 8px; }
+.scroller > .empty {
+  padding: 32px 24px;
+  font: 400 17px/1.45 var(--sans);
+  color: var(--faint);
+  text-align: center;
+}
+/* the question a trace from the Questions tab landed on */
+.bub > .ask.hl {
+  background: var(--ask-tint);
+  border-radius: 4px;
+  box-shadow: 0 0 0 3px var(--ask-tint);
+}
+
+/* An impression (approved impressions mockup, frames 1 and 4): what the coach
+   noticed in its words, what it rests on, and the day it was raised. The row
+   slides left over the two ways to push back. */
+.irow {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  touch-action: pan-y;
+}
+.irow:last-child { border-bottom: 0; }
+.islide {
+  position: relative;
+  z-index: 1;
+  padding: 12px 16px 0;
+  background: var(--panel);
+  transition: transform 0.18s ease;
+}
+.irow.swiped .islide { transform: translateX(-184px); }
+.itext { font: 400 17px/1.4 var(--sans); color: var(--ink); cursor: pointer; }
+.based {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px 8px;
+  margin-top: 10px;
+}
+.blabel { font: 400 13px/22px var(--sans); color: var(--faint); }
+.based .chip { margin: 0; }
+/* The dots are the sessions sheet's own button. Its 44-point target reaches
+   into the row's padding, never past the row: the line runs to the padding's
+   edge, and the dots sit where they would with the target overhanging. */
+.imeta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 44px;
+  margin: 4px -16px 0 0;
+}
+.imeta .rmore { margin-right: 0; padding: 0 0 0 16px; }
+.iacts { position: absolute; top: 0; right: 0; bottom: 0; width: 184px; display: flex; }
+.iact {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font: 600 15px/1.2 var(--sans);
+  cursor: pointer;
+}
+.iact.partly { color: var(--data); }
+.iact:active { background: var(--tint); }
+
 /* two-way traceability: the moment says which session coded it, and the words
    it came from light when you go there */
 .chip.trace {
@@ -2055,9 +2170,7 @@ button { font-family: inherit; }
 @keyframes chapter {
   50% { opacity: 1; }
 }
-.ss .ep-many { fill: none; stroke: var(--data); stroke-width: 1.6; }
 /* a resting-wire data label keeps its ratified size, under the UI text floor */
-.ss .ep-count { font: 500 10px var(--mono); fill: var(--data); }
 .ss .ep-yrs { font: 400 10.5px var(--mono); fill: var(--faint); }
 .ss .ss-hint { font: 400 13px var(--mono); fill: var(--faint); }
 .ss-empty {

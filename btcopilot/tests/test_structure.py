@@ -131,7 +131,7 @@ def test_a_birth_naming_one_parent_gets_the_other_generically(subscriber):
     )
     _toolbox(diagram).call(
         ToolName.EditEvent.value,
-        {"kind": "birth", "date": "1975-04-02", "person": 1, "child": 2},
+        {"date_certainty": "certain", "kind": "birth", "date": "1975-04-02", "person": 1, "child": 2},
     )
 
     data = diagram.get_diagram_data()
@@ -173,7 +173,7 @@ def test_a_birth_reuses_the_unnamed_mother_already_there(subscriber):
     )
     _toolbox(diagram).call(
         ToolName.EditEvent.value,
-        {"kind": "birth", "date": "1975-04-02", "person": 1, "child": 2},
+        {"date_certainty": "certain", "kind": "birth", "date": "1975-04-02", "person": 1, "child": 2},
     )
     data = diagram.get_diagram_data()
     assert len(data.people) == 3

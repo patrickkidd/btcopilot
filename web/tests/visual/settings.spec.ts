@@ -379,9 +379,11 @@ test.describe("opening the account view", () => {
     expect(midway.offset).toBeGreaterThan(1);
     expect(midway.chat).not.toBe("none");
     await page.waitForTimeout(400);
+    // it lands on the content area: the chat, and on a wide window the lists
+    // pinned beside it (R-0352)
     const landed = (await pane.boundingBox())!;
-    const frame = (await page.locator(".app").boundingBox())!;
-    expect(Math.round(landed.x - frame.x)).toBe(0);
+    const content = (await page.locator("#chat-split").boundingBox())!;
+    expect(Math.round(landed.x - content.x)).toBe(0);
   });
 
   // R-0225
@@ -392,7 +394,8 @@ test.describe("opening the account view", () => {
     await openSettings(page);
     const cover = await page.evaluate(() => {
       const pane = document.querySelector(".sn-pane.in")!.getBoundingClientRect();
-      const chat = document.getElementById("chat-screen")!.getBoundingClientRect();
+      // the chat, and on a wide window the lists pinned beside it (R-0352)
+      const chat = document.getElementById("chat-split")!.getBoundingClientRect();
       return {
         left: pane.left - chat.left,
         right: chat.right - pane.right,

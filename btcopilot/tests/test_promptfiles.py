@@ -21,7 +21,7 @@ REAL_PRIVATE = REPO / "private" / "prompts"
 
 RECORD = "RECORD-SENTINEL\nsecond line"
 INTERACTIONS = "INTERACTIONS-SENTINEL"
-STATE = "STATE-SENTINEL"
+TRANSCRIPT = "TRANSCRIPT-SENTINEL\n41 coach: Who were your father's brothers and sisters?"
 
 
 def rendered(module, names) -> dict:
@@ -34,18 +34,15 @@ def rendered(module, names) -> dict:
     out["get_agent_prompt/both"] = module.get_agent_prompt(
         record=RECORD, interactions=INTERACTIONS
     )
+    out["question_backfill"] = module.question_backfill(
+        map=RECORD, transcript=TRANSCRIPT
+    )
+    out["impression_backfill"] = module.impression_backfill(
+        map=RECORD, transcript=TRANSCRIPT
+    )
     out["note_register"] = module.note_register()
     out["scribe_prompt/empty"] = module.scribe_prompt()
     out["scribe_prompt/record"] = module.scribe_prompt(record=RECORD)
-    out["get_conversation_flow_prompt/claude"] = module.get_conversation_flow_prompt(
-        model="claude-opus-5-5", committed_state=STATE
-    )
-    out["get_conversation_flow_prompt/claude_empty"] = (
-        module.get_conversation_flow_prompt(model="claude-opus-5-5")
-    )
-    out["get_conversation_flow_prompt/gemini"] = module.get_conversation_flow_prompt(
-        model="gemini-2.5-flash", committed_state=STATE
-    )
     out["tool_meanings"] = {str(k): v for k, v in module.tool_meanings().items()}
     out["generic_name"] = module.generic_name("Marcus", module.Role.Father)
     return out
@@ -95,6 +92,37 @@ def test_the_app_runs_whole_with_no_private_prompts(public):
     assert public.get_agent_prompt(record="Marcus, 40")
     assert public.scribe_prompt(record="Marcus, 40")
     assert set(public.tool_meanings()) == set(public.ToolText)
+
+
+def test_the_backfill_prompt_carries_the_session_the_map_and_the_judgement(public):
+    # R-0482
+    prompt = public.question_backfill(map=RECORD, transcript=TRANSCRIPT)
+    assert TRANSCRIPT in prompt
+    assert RECORD in prompt
+    assert "people usually require questions to stimulate their thinking" in prompt
+    assert "`asked_in`" in prompt
+    assert "does the map or the rest of the session already answer it" in prompt
+    assert "does an open question or one you have just added ask nearly the same thing" in prompt
+    assert "write it so it reads alone, naming the person and the subject" in prompt
+    assert 'it speaks to the person as "you"' in prompt
+    assert "leave out any lead-in, hedge or reason" in prompt
+
+
+def test_the_impression_backfill_carries_the_session_the_map_and_the_judgement(public):
+    # R-0482
+    prompt = public.impression_backfill(map=RECORD, transcript=TRANSCRIPT)
+    assert TRANSCRIPT in prompt
+    assert RECORD in prompt
+    assert "`add_impression`" in prompt
+    assert "one that treats shifts as a series or a trend" in prompt
+
+
+def test_the_scribe_gives_every_date_its_certainty(public):
+    # R-0482
+    prompt = " ".join(public.scribe_prompt().split())
+    assert "Whenever you add an event or change its date, always give its date_certainty" in prompt
+    assert "certain when the coder gave the exact day" in prompt
+    assert "approximate when they gave only the month" in prompt
 
 
 def test_a_prompt_renders_the_fragments_it_includes(tmp_path):

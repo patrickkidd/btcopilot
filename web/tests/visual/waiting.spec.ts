@@ -72,7 +72,8 @@ test.describe("waiting for the coach", () => {
         {
           type: "tool_call",
           name: "edit_event",
-          args: { description: "moved out", dateTime: "1992-04-01" },
+          args: { description: "moved out", dateTime: "1992-04-01", dateCertainty: "certain" },
+          names: { it: "moved out" },
         },
       ],
       pause: 1500,

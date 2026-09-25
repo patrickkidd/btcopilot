@@ -253,13 +253,12 @@ export class Coding {
    * one thing the row offers is the walk through an open cluster's moves, on
    * the record this coding is being written onto.
    *
-   * The board has its own controls, so the row goes outright while it is up
-   * rather than sitting there as an empty strip (owner ruling 2026-09-08). */
+   * The board has its own controls, so while it is up the row holds only
+   * the list button, and keeps its height (R-0450). */
   private marks(): void {
-    const onBoard = this.picture.onBoard();
-    this.caption.classList.toggle("gone", onBoard);
-    if (onBoard) {
-      this.caption.innerHTML = "";
+    if (this.picture.onBoard()) {
+      this.caption.innerHTML = listButton(LIST_ID);
+      this.wireList();
       return;
     }
     const open = this.picture.openCluster();
@@ -317,7 +316,7 @@ export class Coding {
     } catch (error) {
       this.after(
         turn,
-        el("div", `bub coach sub${side}`, `<div class="did q">${esc(whatFailed(error))}</div>`),
+        el("div", `bub coach sub${side}`, `<div class="did q">${esc(api.whatFailed(error))}</div>`),
         turn,
       );
       // A scribe that stopped part way has still written that part.
@@ -350,8 +349,8 @@ export class Coding {
   private onPicture(tap: Tap): void {
     if (tap.target === Target.Ground) this.picture.dismiss();
     else if (tap.target === Target.Cluster) {
-      const ids = this.picture.inCluster(tap.index);
-      if (ids.length) this.picture.spotlight(ids);
+      const cluster = this.picture.clusterAt(tap.index);
+      if (cluster) this.picture.spotlight(cluster.event_ids);
     }
     this.marks();
   }
@@ -448,14 +447,4 @@ export class Coding {
     node.scrollIntoView({ block: "nearest" });
   }
 
-}
-
-/** What went wrong, in the words the coder needs. */
-function whatFailed(error: unknown): string {
-  const failed = error instanceof api.Failed ? error : null;
-  if (!failed) throw error;
-  console.warn(failed.message);
-  if (failed.silent) return "No answer from the server";
-  if (failed.status >= 500) return "The server broke on that one";
-  return failed.detail.split(": ").slice(2).join(": ") || "That did not go in";
 }

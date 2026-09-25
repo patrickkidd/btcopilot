@@ -152,3 +152,61 @@ he is asked to test.
   the dashboard. Rule: a test account is deleted the moment it is not needed, or one account is
   reused: `the claude-test account`. Never create a numbered series. Dashboards exclude
   the `claude-test` prefix, and the review walks run against a sandbox, not the box.
+
+**Spot-check evidence at two levels before any push to production (2026-09-24, Patrick).**
+A feature is not tested until the report shows evidence from both levels of the stack, for
+the specific feature, on the sandbox: (1) the data layer before rendering — the rows, the
+turn events, the record, the change log, printed as actual values from a query; (2) the
+rendered HTML in the sandbox — the words and elements on the page, from a real browser, with
+the deterministic gates. Each level names what was expected and what was seen. A pass with
+no printed values at both levels is not a pass. This exists because testing routinely got
+lazy: a feature was called done on one level, or on a builder's say-so, and Patrick found
+it broken. Only features validated this way go to production, where beta data is precious
+and cannot be reproduced.
+
+**Brainstorm topics are taken one at a time (2026-09-24, Patrick).** One topic per round,
+never several topics presented together.
+
+**A sandbox must be able to make real model calls (2026-09-24, Patrick).** A missing key is
+escalated to Patrick, never worked around by testing without it.
+
+**Test well, then push for him to test (2026-09-24, Patrick).** His words: "the process is
+that you test extremely well to protect the invaluable beta data, and then you push a build
+to the production box for me to test." Deploying a build for him to test is not a merge. His
+words: "it has nothing to do with merging PR's." Since FD-362, every production deploy has
+been the release workflow dispatched from the ticket branch (`gh workflow run release.yml
+--ref <branch>`); the pull request stays open and unmerged. For the fast-follow (R-0484), once
+the gates pass, the coordinator dispatches that deploy without asking for a yes, then verifies
+on production.
+
+**Every test path spends the testing key, never the production key (2026-09-25, Patrick).**
+The sandbox, live evals, and browser walks with real turns all spend `ANTHROPIC_TESTING_KEY`;
+none of them ever spends `ANTHROPIC_API_KEY`, which is production's key, and there is no
+fallback to it. A missing testing key fails loudly, the same as a missing model key above,
+and is escalated to Patrick rather than worked around.
+
+**Real spend is asked first, every time, and only at the end of a batch (2026-09-25, Patrick).**
+A real call to Anthropic happens only right before a deploy, and only when a prompt or a tool
+changed since the last one. There is no free tier — every dollar spent is asked for first.
+
+**The live suite has hard caps (2026-09-25, Patrick).** Three dollars per run, and a daily
+ledger across runs. A balance check runs before any call. Every run writes a row of results.
+A run that stopped partway is reported as stopped, never counted as a pass.
+
+**The sandbox's coach runs on a local model by default (2026-09-25, Patrick).** Local Ollama,
+not a paid key. The testing key is spent only when the lead says so, and the sandbox never
+spends on Gemini by default either.
+
+**A prompt change ships with an eval built from a human ruling (2026-09-25, Patrick).** A
+candidate ruling is confirmed first; the eval then cites the confirmed ruling, fails on the
+old prompt, and passes on the new one. Its inputs are fictionalised, drawn from the shape of
+logged real cases but not the cases themselves.
+
+**Clinical-coding evals wait on the review group, not on Patrick case by case (2026-09-25,
+Patrick).** Ground truth for coding rules has to be ratified by the IRR review group; Patrick
+is never asked to certify a coding rule one case at a time. A code with no ruling yet goes on
+the waiting list in btcopilot/tests/live/README.md, never into the paid suite. The paid suite
+holds only behaviour evals and wording tests.
+
+**A ready message says what it spent (2026-09-25, Patrick).** It ends "spent $X on Y" — the
+amount and what it bought.

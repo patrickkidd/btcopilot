@@ -1431,3 +1431,99 @@ coverage gap is part of every change; he adjudicates the process, never reads te
 R-0449]. He ratified two proposed rulings and replaced a third [R-0450], chose CI-only guards with
 the key scoped to one step [R-0451], and asked that the session keep to merging efficiently so a
 new session can take his next ideas.
+
+**2026-09-24, FD-363.** In the session that opened the fast-follow after PR #136 merged,
+Patrick ruled that a failed turn keeps its edits and is resumed, not redone [R-0477]; that every tool call in every
+session stays visible [R-0478]; that the coach works over the record the way Claude Code works
+over code, with a map in the prompt, reading what it needs and changing only what is necessary
+[R-0479]; that reads carry the record version and a change based on an old version is refused
+[R-0480]; that nothing fixed guards against repeated people or events, because the coach has to
+see [R-0481]; that such mistakes are written down to seed evals, never blocked [R-0482]; that
+every push to production first shows evidence from the stored rows and from the page [R-0483];
+that the fast-follow is one batch PR pushed continuously, tested in his own thread with no data
+loss [R-0484]; and that how much of the family history is covered is the coach's call, with no
+number bar [R-0485]. The first session built kept tool calls, resume and record versions, then
+handed over. The second ran builders under an auditor for the map, the page, the check after
+each turn, the live eval cases and the gate. Writing that check found the record already refuses
+an added event matching another on kind, day, people and what moved, which R-0481 says should
+not exist; it was left in place for his ruling. The earlier note in STATE that the user's words
+are stored with the reply was wrong: they are stored before the turn runs.
+
+**2026-09-24, FD-363, later.** The map, the reads by id, words and notes, the recent-changes
+read, the check after each turn with its admin list, the page's stored tool lines with
+[try again], and the migration gate all landed on the branch, with STATE revised to match.
+Patrick ruled three more points, not yet numbered or in the store: open questions serve both
+the coach's memory and the user's view of the family; new screens are allowed when they are
+thought through, the earlier ruling against a new surface having been narrow; and brainstorm
+topics are taken one at a time. The gate has not yet run on a production dump, and the browser
+checks at phone and desktop have not run.
+
+**2026-09-24, FD-363, evening.** Patrick ruled four more points, not yet numbered or in the
+store: the record's refusal of an added event that exactly matches an existing one stays beside
+R-0481, since a rule that is right every time is code; every tool call draws a line in the
+thread, show calls included, for a complete log of what the coach did and how the user
+responded; the old single-call chat path is deleted; and a sandbox must make real model calls,
+a missing key going to him rather than being tested around, which became a process rule. Built
+on the branch: show calls draw a line and tool lines read event dates as the record list does;
+hand edits of events write a change row through the coach's write path, marked as the user, so
+undo and the recent-changes read see them, and so they now pass the coach's record rules and a
+hand delete removes the emotions the event caused; the old conversation-flow prompt, the
+one-shot ask path and the fixed-category intake engine were removed. The sandbox made a real
+coach turn and a real [try again]. Left open: two private prompt fragments nothing reads any
+more, and the sandbox's SQLite now and then reporting the database locked under concurrent
+writes.
+
+**2026-09-25, FD-363, open questions.** Built on the branch: the stored question with its
+states, kinds and full change log; the coach's three tools to add, close and read questions,
+each drawing its own thread line; the map's question section, open questions then declined
+ones, so the coach does not ask a declined one again; the Questions tab, third beside Events
+and People, with its two sections, the family's name as its title, a chip that puts the
+question into the message box and closes the drawer, and swipe-then-dismiss; and the rule that
+removing what a question is about closes every question linked to it as let go, with undo
+restoring both. The same-words refusal now also covers a question the user declined, not only
+an open one. A kept question names the person and the subject and speaks to the user as "you";
+anything with a factual answer is filed as a fact to find, never food for thought. The one-off
+backfill command reads a thread's past sessions with the coach's own read tools, runs once per
+session, and is safe to run again — a second run makes no calls and writes nothing. Run once
+against a copy of the production record, it added 7 questions across 3 families, for about
+$0.18. Live tests and the live browser walk now spend the testing key, never production's, and
+fail loudly if it is unset. An asked question whose reply barely holds its words is logged as
+an observation, never blocked. A turn that stops silently after a tool call, with no words and
+no further call, is asked once more for a reply instead of being failed. Patrick ruled three
+more points, not yet numbered: every test path must spend the testing key, with a loud failure
+on a missing one (2026-09-25); a held question's words must never reach the page; and a stored
+question addresses the user as "you." Left open: new tests for this build cite the nearest
+existing ruling in place of these candidates, since the oracle spec forbids a pending marker,
+and need re-citing once Patrick appends the ids; the new testing-key test has no citation yet.
+
+Before the deploy, the gates passed: the migration ran clean against a copy of the production
+database, the pages were checked at phone and desktop sizes, three full live coach runs gave
+zero empty replies across 75 turns, and the backfill ran against a copy of the production
+database with a second run against that copy making no calls and writing nothing. The build
+then went to production: commit ec757d5, image 3.2026.9.25.2-gec757d5, the database migrated to
+1b00000000ad before the rollout with a backup taken first; that migration cannot be undone, so a
+rollback from here means rolling forward. The backfill then ran for real on the box, over 3
+families, 3 model calls each; Patrick's own family got 4 questions, all facts to find, and he
+still has to judge whether that count is right. He also ruled that a deploy for him to test is
+the hand route — a box checkout and an image tag — separate from merging pull requests; that the
+same-words refusal is code because it is right every time, while near-duplicate questions are
+only logged; and that the pinned drawer stays 300 pixels wide with the diagram's name as its
+title. Also found: production's title bar itself still reads "Free Diagram" instead of the
+diagram's real name, and 4 live coach cases fail the same way on the master branch.
+
+**2026-09-25, FD-363, after the deploy.** Work continued on the same branch: every tool line in
+the thread now names an event or person by the one shared label, kept calls included; touch
+targets were widened for a crowded dot on a phone; the list button moved to chip height with
+more room after tool lines; the picture's back and close glyphs line up with the ask button; a
+chip tap and a dot tap became one behaviour, with a per-user admin switch back to the old one;
+speaking a reply out loud now works on iPhone; an event add or date change is refused without a
+certainty; the events list says why an event has no cluster; a command installs a stand-in test
+record; the coach can raise, close and read impressions the same way it handles open questions,
+shown in the drawer with what each rests on and two ways to push back; the live suite counts its
+own spend, stops at hard caps, and writes a results row per run; and a local model can stand in
+for Anthropic and Gemini so the sandbox runs free by default. Patrick's new candidate rulings
+from this stretch, not yet given ids, are listed in STATE.md, along with the spend strategy
+written up in HOW_THIS_PROJECT_WORKS.md: real Anthropic calls only at the end of a batch and
+only when a prompt or tool changed, every dollar asked for first; the live suite's three-dollar
+cap and daily ledger; and the sandbox coach on a local model by default, with the testing key
+spent only when told. None of this has been deployed yet.

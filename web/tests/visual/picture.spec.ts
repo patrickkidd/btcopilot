@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { inside, stateFor, steady } from "./setup";
+import { inside, openList, pinned, stateFor, steady } from "./setup";
 
 /** What the resting picture looks like on each shape of record, and what a tap
  * on it does. Goldens, so a change to the drawing has to be looked at.
@@ -261,17 +261,24 @@ test.describe("an event added by hand", () => {
   test.use({ storageState: stateFor("editable") });
 
   // R-0055
-  test("is on the picture as soon as it is saved", async ({ page }) => {
+  test("is on the picture as soon as it is saved", async ({ page }, info) => {
     await settle(page);
     const before = await page.locator("#view circle.dot").count();
-    await page.locator("#menu-open").click();
+    await openList(page);
     await page.locator("#menu-add").click();
     const editor = page.locator("#menu-body .editor");
-    await editor.locator('.f[data-name="description"]').fill("Moved back home");
-    await editor.locator('.f[data-name="dateTime"]').fill("2024-06-01");
+    // a move is a noted event; a new event opens as a shift, which is refused
+    // until something in it moves
+    await editor.locator('.segs[data-name="kind"] .seg[data-value="noted"]').click();
+    // each project adds its own, a month apart: the record keeps what an
+    // earlier project added, and refuses a second noted event on the same day
+    const words = `Moved back home (${info.project.name})`;
+    const month = 1 + info.config.projects.findIndex((p) => p.name === info.project.name);
+    await editor.locator('.f[data-name="description"]').fill(words);
+    await editor.locator('.f[data-name="dateTime"]').fill(`2024-${String(month).padStart(2, "0")}-01`);
     await editor.locator(".save").click();
-    await expect(page.locator("#menu-body")).toContainText("Moved back home");
-    await page.locator("#menu-close").click();
+    await expect(page.locator("#menu-body")).toContainText(words);
+    if (!(await pinned(page))) await page.locator("#menu-close").click();
     await expect(page.locator("#view circle.dot")).toHaveCount(before + 1);
   });
 });
@@ -296,7 +303,6 @@ test.describe("a tap on the picture reaches the coach", () => {
 
   // R-0065
   test("a tap that opens a cluster is sent, naming the cluster", async ({ page }) => {
-    test.fail(true, "opening a cluster from the picture records nothing");
     await settle(page);
     const posted = sent(page);
     await page.locator('.ss-hit[data-target="cluster"]').first().click();
@@ -448,7 +454,7 @@ test.describe("the family on the board", () => {
 
   // R-0187
   test("parents stand above their child", async ({ page }) => {
-    test.fail(true, "the board stands everyone on one ellipse, whoever they are to each other");
+    test.skip(true, "unbuilt ruling, needs a design: an automatic family arrangement on the board, parents above their child");
     await page.route("**/app/timeline*", async (route) => {
       const response = await route.fetch();
       const json = await response.json();
@@ -545,11 +551,15 @@ test.describe("a moment's mark", () => {
 });
 
 /** Any control a reader could take for renaming, deleting or regrouping a
- * cluster, in the picture region and its title row. */
+ * cluster, in the picture region and its title row. An event's dot is named by
+ * the event's own words ("The move across the country"), which say nothing
+ * about the cluster, so the dots are left out. */
 const clusterEdits = (page: import("@playwright/test").Page) =>
   page
     .locator(".titlerow, #chat-screen .pic")
-    .locator("button, [role=button], input, textarea, [contenteditable=true]")
+    .locator(
+      `button:not([data-target="zone"]), [role=button], input, textarea, [contenteditable=true]`,
+    )
     .evaluateAll((controls) =>
       controls
         .filter((c) => !(c as HTMLElement).hidden && (c as HTMLElement).offsetParent !== null)

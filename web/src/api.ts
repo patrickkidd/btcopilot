@@ -17,6 +17,9 @@ import type {
   InteractionKind,
   ItemKind,
   PlayReply,
+  Pushback,
+  QuestionOutcome,
+  QuestionState,
   PairBond,
   Person,
   Passkey,
@@ -55,9 +58,11 @@ function csrf(): string {
 export class Failed extends Error {
   constructor(
     readonly status: number,
-    readonly detail: string,
+    readonly request: string,
+    /** The server's own words, or the network's when nothing came back. */
+    readonly said: string,
   ) {
-    super(`${status || "no answer"}: ${detail}`);
+    super(`${status || "no answer"}: ${request}: ${said}`);
     this.name = "Failed";
   }
 
@@ -65,6 +70,21 @@ export class Failed extends Error {
   get silent(): boolean {
     return this.status === 0;
   }
+}
+
+/** The part of a coach-facing reason that says what to do. */
+const instruction = (said: string) => said.split(": ").slice(1).join(": ");
+
+/** What went wrong, in the words the reader needs: when the server refused a
+ * write, the `words` it gave for that. A hand edit's refusal is already whole
+ * plain words; the default keeps what to do from a reason written for the coach. */
+export function whatFailed(error: unknown, words = instruction): string {
+  const failed = error instanceof Failed ? error : null;
+  if (!failed) throw error;
+  console.warn(failed.message);
+  if (failed.silent) return "No answer from the server";
+  if (failed.status >= 500) return "The server broke on that one";
+  return words(failed.said) || "That did not go in";
 }
 
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -99,11 +119,16 @@ async function send<T>(
     // running out. Anything else thrown here is a mistake in this code and has
     // to surface as itself rather than as the server being unreachable.
     if (!(error instanceof TypeError || error instanceof DOMException)) throw error;
-    throw new Failed(0, `${method} ${url}: ${error.message}`);
+    throw new Failed(0, `${method} ${url}`, error.message);
   }
   if (!response.ok)
-    throw new Failed(response.status, `${method} ${url}: ${await response.text()}`);
-  return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
+    throw new Failed(response.status, `${method} ${url}`, await response.text());
+  // an empty answer left unread is logged by the browser as aborted
+  if (response.status === 204) {
+    await response.text();
+    return undefined as T;
+  }
+  return (await response.json()) as T;
 }
 
 /** The record the app is on, or another one the reader can open — which is how
@@ -120,6 +145,11 @@ export const say = (statement: string, sessionId: number | null) =>
   sessionId === null
     ? call<Started>("POST", "/chat", { statement })
     : call<Started>("POST", `/sessions/${sessionId}/statements`, { statement });
+
+/** Pick a failed turn up where it stopped, on the same turn: nothing new is
+ * said (R-0477). */
+export const resume = (turnId: string) =>
+  call<Started>("POST", `/turns/${turnId}/resume`);
 
 /** Follow a running turn. A page attaching to one reads it from the start and
  * draws the bubble again; the browser's own reconnect says where it got to
@@ -211,6 +241,13 @@ export const savePairBond = (
 
 export const deletePairBond = (id: number, diagramId?: number) =>
   call<void>("DELETE", onDiagram(`/pair_bonds/${id}`, diagramId));
+
+/** The reader's own change to a question or an impression: putting it away,
+ * or pushing back on it. It stays in the record for the coach. */
+export const saveQuestion = (
+  id: string,
+  body: { state?: QuestionState; outcome?: QuestionOutcome; pushback?: Pushback },
+) => call<unknown>("PATCH", `/questions/${id}`, body);
 
 /** Sessions, newest activity first. The server has no current-session pointer:
  * posting into a session is what makes it the one you come back to. */

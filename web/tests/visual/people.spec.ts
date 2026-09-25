@@ -1,21 +1,16 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { NO_LIST, lists, openList, pinned, stateFor } from "./setup";
 
 /** The list behind the picture, and the button that opens it.
  *
- * The button sits inside the picture, in the same circle as the one beside the
- * message bar: the list button belongs to the thing it lists. The list itself
+ * The button sits inside the picture, at the end of the row of chips and drawn
+ * their height: the list button belongs to the thing it lists. The list itself
  * is two ways into one record — what happened, and who it happened to. */
 
 const settle = async (page: Page) => {
   await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(500);
-};
-
-const openList = async (page: Page) => {
-  await page.locator("#menu-open").click();
-  await expect(page.locator("#menu-screen")).toBeVisible();
 };
 
 const personEditor = async (page: Page) => {
@@ -27,29 +22,32 @@ const personEditor = async (page: Page) => {
 };
 
 test.describe("the button that opens the list", () => {
-  test.use({ storageState: stateFor("moves") });
+  test.use({ storageState: stateFor("three40") });
 
   // R-0221, R-0234, R-0198
-  test("sits at the end of the row of chips, dressed like the sessions button", async ({
+  test("sits at the end of the row of chips, drawn their height on their line", async ({
     page,
   }) => {
     await settle(page);
+    test.skip(await pinned(page), NO_LIST);
+    await page.locator('#view .ss-hit[data-target="cluster"]').first().click();
+    await expect(page.locator("#cap-chip")).toBeVisible();
     const where = await page.evaluate(() => {
       const button = document.getElementById("menu-open")!;
       const row = document.querySelector(".caption")!;
-      const sessions = document.getElementById("sessions-open")!;
+      const chip = document.getElementById("cap-chip")!;
       const box = button.getBoundingClientRect();
-      const round = (n: HTMLElement) => {
-        const mark = getComputedStyle(n, "::before");
-        return `${mark.width} ${mark.height} ${mark.borderRadius} ${mark.borderTopWidth}`;
-      };
+      const drawn = getComputedStyle(button, "::before");
+      const beside = chip.getBoundingClientRect();
       return {
         inRow: row.contains(button),
         inTitleRow: !!document.querySelector(".titlerow #menu-open"),
         inNameRow: !!document.querySelector(".pin-label #menu-open"),
         size: [Math.round(box.width), Math.round(box.height)],
         last: row.lastElementChild === button,
-        same: round(button) === round(sessions),
+        height: [parseFloat(drawn.height), beside.height],
+        corner: [drawn.borderRadius, getComputedStyle(chip).borderRadius],
+        line: [box.top + box.height / 2, beside.top + beside.height / 2].map(Math.round),
       };
     });
     expect(where.inRow).toBe(true);
@@ -57,7 +55,9 @@ test.describe("the button that opens the list", () => {
     expect(where.inNameRow).toBe(false);
     expect(where.last).toBe(true);
     expect(where.size).toEqual([44, 44]);
-    expect(where.same).toBe(true);
+    expect(where.height[0]).toBe(where.height[1]);
+    expect(where.corner[0]).toBe(where.corner[1]);
+    expect(where.line[0]).toBe(where.line[1]);
   });
 });
 
@@ -67,6 +67,7 @@ test.describe("the list button's place", () => {
   // R-0198
   test("lies inside the picture's own frame, not in the message bar", async ({ page }) => {
     await settle(page);
+    test.skip(await pinned(page), NO_LIST);
     const where = await page.evaluate(() => {
       const button = document.getElementById("menu-open")!;
       const pic = document.querySelector("#chat-screen .pic")!;
@@ -84,6 +85,7 @@ test.describe("the list button's place", () => {
   // R-0198
   test("carries the same three-line mark as the sessions button", async ({ page }) => {
     await settle(page);
+    test.skip(await pinned(page), NO_LIST);
     const mark = (selector: string) =>
       page.locator(selector).evaluate((b) => {
         const svg = b.querySelector("svg")!;
@@ -154,10 +156,10 @@ test.describe("the two lists behind it", () => {
     await settle(page);
     await openList(page);
     const tabs = page.locator("#menu-tabs [role=tab]");
-    await expect(tabs).toHaveText(["Events", "People"]);
+    await expect(tabs).toHaveText(["Events", "People", "From the coach"]);
     await expect(page.locator('#menu-tabs [aria-selected="true"]')).toHaveText("Events");
     await expect(page.locator("#menu-body [data-event]").first()).toBeVisible();
-    const drawer = await page.locator("#menu-screen").elementHandle();
+    const drawer = await lists(page).elementHandle();
 
     await page.locator("#tab-people").click();
     await expect(page.locator('#menu-tabs [aria-selected="true"]')).toHaveText("People");
@@ -165,8 +167,8 @@ test.describe("the two lists behind it", () => {
     // the other list takes the drawer's place whole, rather than narrowing it
     await expect(page.locator("#menu-body [data-event]")).toHaveCount(0);
     await expect(page.locator("#menu-body [data-person]")).toHaveCount(3);
-    expect(await page.locator("#menu-screen").evaluate((n, d) => n === d, drawer)).toBe(true);
-    await expect(page.locator("#menu-screen")).toBeVisible();
+    expect(await lists(page).evaluate((n, d) => n === d, drawer)).toBe(true);
+    await expect(lists(page)).toBeVisible();
   });
 
   // R-0218
@@ -259,7 +261,7 @@ test.describe("the list views and their editors", () => {
     await settle(page);
     await openList(page);
     await expect(page.locator("#menu-body .row").first()).toBeVisible();
-    await expect(page.locator("#menu-screen")).not.toContainText(/chat/i);
+    await expect(lists(page)).not.toContainText(/chat/i);
   });
 
   // R-0219
@@ -270,7 +272,7 @@ test.describe("the list views and their editors", () => {
     await openList(page);
     await page.locator("#tab-people").click();
     await expect(page.locator("#menu-body .row").first()).toContainText("Ada");
-    await expect(page.locator("#menu-screen")).not.toContainText(/chat/i);
+    await expect(lists(page)).not.toContainText(/chat/i);
   });
 
   // R-0200

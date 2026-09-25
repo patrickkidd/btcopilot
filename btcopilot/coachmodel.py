@@ -5,7 +5,6 @@ asked for. The agent loop owns the looping; this owns the wire.
 """
 
 import logging
-import os
 from dataclasses import dataclass, field
 
 import anthropic
@@ -14,9 +13,11 @@ from opentelemetry import trace
 from btcopilot.llmutil import (
     RESPONSE_MODEL,
     Served,
+    anthropic_args,
     fallback_args,
     resolve_model,
     served,
+    wire_model,
 )
 
 _log = logging.getLogger(__name__)
@@ -107,7 +108,7 @@ class Refusal(Exception):
 class CoachModel:
     def __init__(self, model: str | None = None, effort: str | None = COACH_EFFORT):
         """No effort is for a model that rejects the setting (Haiku 4.5)."""
-        self.model = resolve_model(model) if model else RESPONSE_MODEL
+        self.model = wire_model(resolve_model(model) if model else RESPONSE_MODEL)
         self.effort = effort
 
     def turn(
@@ -128,7 +129,7 @@ class CoachModel:
             "coach.turn",
             attributes={"model": self.model, "turn_id": turn_id, "tools": len(tools)},
         ) as span:
-            client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+            client = anthropic.Anthropic(**anthropic_args())
             try:
                 with client.beta.messages.stream(
                     model=self.model,

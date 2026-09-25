@@ -12,6 +12,9 @@ from btcopilot.admin import admin
 from btcopilot.admin import guard, setting, skill
 from btcopilot.tests import olddump
 from btcopilot.admin.setting import SettingKey
+from btcopilot.extensions import db
+from btcopilot.models import Observation, ObservationKind
+from btcopilot.models.preferences import PrefKey, Spotlight
 
 
 @pytest.fixture
@@ -47,6 +50,24 @@ def test_users_roles_set_then_read(run, test_user):
     )
 
 
+def test_users_prefs_flip_the_spotlight_and_back(run, test_user):
+    # R-0168
+    shown = rows(run("users", "prefs", test_user.username, "--json"))
+    assert shown[0]["spotlight"] == "unified"
+
+    run("users", "prefs", test_user.username, "spotlight", "chip")
+    assert test_user.pref(PrefKey.Spotlight) is Spotlight.Chip
+
+    run("users", "prefs", test_user.username, "spotlight", "unified")
+    assert test_user.pref(PrefKey.Spotlight) is Spotlight.Unified
+
+
+def test_users_prefs_takes_a_switch_as_on_or_off(run, test_user):
+    # R-0453
+    run("users", "prefs", test_user.username, "speak", "on")
+    assert test_user.pref(PrefKey.Speak) is True
+
+
 def test_users_invite_prints_a_link(run, flask_app):
     # R-0390
     invited = rows(run("users", "invite", "new@fd362-fixture.invalid", "--json"))
@@ -75,6 +96,24 @@ def test_diagram_counts_and_export(run, test_user):
 
     exported = json.loads(run("diagrams", "export", str(test_user.free_diagram_id)))
     assert isinstance(exported, dict)
+
+
+def test_observations_list_by_kind(run, test_user):
+    # R-0482
+    for kind in (ObservationKind.DuplicatePerson, ObservationKind.AddWithoutRead):
+        db.session.add(
+            Observation(
+                diagram_id=test_user.free_diagram_id,
+                turn_id="t1",
+                kind=kind,
+                detail={"ids": [2, 4]},
+            )
+        )
+    db.session.commit()
+    listed = rows(run("observations", "list", "--kind", "duplicate_person", "--json"))
+    assert [(one["kind"], one["detail"]) for one in listed] == [
+        ("duplicate_person", {"ids": [2, 4]})
+    ]
 
 
 def test_import_dry_run_counts_and_writes_nothing(run, tmp_path):
@@ -120,12 +159,13 @@ def test_db_upgrade_builds_the_chain_from_empty(flask_app, tmp_path):
     flask_app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{tmp_path / 'fresh.db'}"
     result = flask_app.test_cli_runner().invoke(admin, ["db", "upgrade"])
     assert result.exit_code == 0, result.output
-    assert result.output.strip().startswith("at 1b00000000aa")
+    assert result.output.strip().startswith("at 1b00000000ae")
 
 
 READS = {
     "users list", "users show", "licences list", "licences plans", "diagrams list",
-    "diagrams show", "diagrams export", "imports dry-run", "token-cap show",
+    "diagrams show", "diagrams export", "observations list", "imports dry-run",
+    "token-cap show",
     "review agenda", "review cuts", "review codings", "review nudge show",
     "db current", "skill", "run",
 }

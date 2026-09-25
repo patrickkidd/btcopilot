@@ -423,6 +423,7 @@ class ItemKind(enum.StrEnum):
     PairBond = "pair_bond"
     Emotion = "emotion"
     Cluster = "cluster"
+    Question = "question"
     Diagram = "diagram"
 
 
@@ -432,7 +433,48 @@ ITEM_COLLECTIONS = {
     ItemKind.PairBond: "pair_bonds",
     ItemKind.Emotion: "emotions",
     ItemKind.Cluster: "clusters",
+    ItemKind.Question: "questions",
 }
+
+
+class QuestionKind(enum.StrEnum):
+    Thought = "thought"
+    Fact = "fact"
+    # The coach's inference, kept in the same list and by the same rules.
+    Impression = "impression"
+
+
+class QuestionState(enum.StrEnum):
+    Held = "held"
+    Asked = "asked"
+    Raised = "raised"
+    Resolved = "resolved"
+
+
+class QuestionOutcome(enum.StrEnum):
+    Fact = "fact"
+    Answered = "answered"
+    Unknown = "unknown"
+    DeclinedByUser = "declined_by_user"
+    DeclinedInChat = "declined_in_chat"
+    LetGo = "let_go"
+    DoesntFit = "doesnt_fit"
+    Revised = "revised"
+
+
+DECLINED = (QuestionOutcome.DeclinedByUser, QuestionOutcome.DeclinedInChat)
+
+
+class Pushback(enum.StrEnum):
+    Partly = "partly"
+
+
+class EvidenceKind(enum.StrEnum):
+    Person = "person"
+    PairBond = "pair_bond"
+    Event = "event"
+    Cluster = "cluster"
+    Statement = "statement"
 
 
 @dataclass
@@ -447,6 +489,37 @@ class ClusterResult:
 def hash_sarf_dicts(event_data: list[dict]) -> str:
     content = json.dumps(event_data, sort_keys=True)
     return hashlib.sha256(content.encode()).hexdigest()[:16]
+
+
+def enum_val(x):
+    """Scene-stored fields may be Enum objects (e.g. RelationshipKind) or
+    their string values depending on the writer — same dual-type situation
+    as QDateTime dates. Normalize to the string value for compare/display."""
+    return x.value if isinstance(x, enum.Enum) else x
+
+
+def parse_date(s):
+    """Normalize a date value to datetime.date. Real committed diagrams store
+    dates as PyQt5 QDateTime/QDate (Scene format), not ISO strings. Handle
+    str, datetime/date, and Qt date objects."""
+    if not s:
+        return None
+    if isinstance(s, datetime.datetime):
+        return s.date()
+    if isinstance(s, datetime.date):
+        return s
+    # PyQt5 QDateTime / QDate expose .toString("yyyy-MM-dd") and .date()
+    to_string = getattr(s, "toString", None)
+    if callable(to_string):
+        try:
+            iso = to_string("yyyy-MM-dd")
+            return datetime.date.fromisoformat(iso[:10])
+        except (ValueError, TypeError):
+            return None
+    try:
+        return datetime.date.fromisoformat(str(s)[:10])
+    except (ValueError, TypeError):
+        return None
 
 
 # Neutral label for the first-person speaker when the user has not set a real
@@ -482,6 +555,10 @@ class DiagramData:
     # Personal-app-owned fields
     clusters: list[dict] = field(default_factory=list)
     clusterCacheKey: str | None = None
+    questions: list[dict] = field(default_factory=list)
+    # The sessions the question backfill has gone through, so it never goes twice.
+    questions_backfilled: list[int] = field(default_factory=list)
+    impressions_backfilled: list[int] = field(default_factory=list)
     pdp: PDP = field(default_factory=PDP)
     lastItemId: int = field(default=0)
     SCENE_COLLECTION_FIELDS: ClassVar[list[str]] = [

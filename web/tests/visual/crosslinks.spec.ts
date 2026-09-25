@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { lists, openList, stateFor } from "./setup";
 
 /** One record, reached from either side. A person's editor offers the events
  * about them; an event's editor offers the people in it; and the words on the
@@ -10,11 +10,6 @@ const settle = async (page: Page) => {
   await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(500);
-};
-
-const openList = async (page: Page) => {
-  await page.locator("#menu-open").click();
-  await expect(page.locator("#menu-screen")).toBeVisible();
 };
 
 const editor = (page: Page) => page.locator("#menu-body .editor");
@@ -57,7 +52,7 @@ test.describe("an event and the people in it", () => {
     // the person already chosen: tapping them goes to them
     await editor(page).locator('.segs[data-name="person"] .seg.on').click();
     await expect(page.locator("#tab-people")).toHaveClass(/on/);
-    await expect(page.locator("#menu-screen")).toBeVisible();
+    await expect(lists(page)).toBeVisible();
     await expect(editor(page).locator('[data-name="name"]')).toHaveValue("Ada");
   });
 

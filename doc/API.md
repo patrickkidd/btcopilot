@@ -3,7 +3,9 @@
 Everything is under `/personal`, behind the training-app login, on the user's
 own free diagram. Writes need the CSRF token from the page's
 `<meta name="csrf-token">` in `X-CSRFToken`. A rejected value returns 400 with a
-plain-text reason; another user's resource returns 404.
+plain-text reason; a write the record refuses returns 400 with the rule in plain
+words for the person editing (no ids, no field names), while the coach gets the
+same rule in its own words. Another user's resource returns 404.
 
 ## Chat and sessions (a session is a `Discussion`)
 

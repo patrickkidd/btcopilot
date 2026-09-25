@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { CASES, drawings, freeze } from "./drawings";
-import { inside, stateFor } from "./setup";
+import { inside, lists, openList, stateFor } from "./setup";
 
 /** The move language, one drawing per move: each draws its people, named, inside
  * its cell. Pixels are not compared here (R-0416).
@@ -69,19 +69,19 @@ test.describe("the timeline behind the menu", () => {
   // R-0141
   test("the list of everything", async ({ page }) => {
     await page.goto("/app/");
-    await page.locator("#menu-open").click();
+    await openList(page);
     await expect(page.locator("#menu-body .row").first()).toBeVisible();
     await expect(page.locator("#menu-body .row").first()).not.toBeEmpty();
-    await inside(page.locator("#menu-body .row").first(), page.locator("#menu-screen"), true);
+    await inside(page.locator("#menu-body .row").first(), lists(page), true);
   });
 
   // R-0174
   test("the editor's fields, text centred in the box", async ({ page }) => {
     await page.goto("/app/");
-    await page.locator("#menu-open").click();
+    await openList(page);
     await page.locator("#menu-body .row").first().click();
     await expect(page.locator(".editor .segs").first()).toBeVisible();
-    await inside(page.locator(".editor").first(), page.locator("#menu-screen"), true);
+    await inside(page.locator(".editor").first(), lists(page), true);
   });
 });
 
@@ -92,7 +92,7 @@ test.describe("the editor's fields by kind", () => {
 
   const openEditor = async (page: import("@playwright/test").Page) => {
     await page.goto("/app/");
-    await page.locator("#menu-open").click();
+    await openList(page);
     await page.locator("#menu-body .row").first().click();
     await expect(page.locator(".editor .segs").first()).toBeVisible();
   };

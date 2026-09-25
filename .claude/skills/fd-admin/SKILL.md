@@ -95,6 +95,21 @@ Changes something: needs `--yes`.
 | `dump` | required |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin impressions`
+
+The impressions the coach keeps in each record.
+
+### `flask admin impressions backfill`
+
+Go back once through every past session not yet gone through and fill in the impressions said in it. Makes model calls. Without --yes it prints what it would do and writes nothing.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--diagram` | Only this record. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin licences`
 
 What people have bought.
@@ -138,6 +153,35 @@ Changes something: needs `--yes`.
 | Argument | What it is |
 |---|---|
 | `key` | required |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin observations`
+
+What the watcher after each coach turn noticed.
+
+### `flask admin observations list`
+
+Every row, oldest first.
+
+| Argument | What it is |
+|---|---|
+| `--diagram` | Only one record's rows. |
+| `--kind` | Only one kind of row. |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin questions`
+
+The questions the coach keeps in each record.
+
+### `flask admin questions backfill`
+
+Go back once through every past session not yet gone through and fill in the questions said in it. Makes model calls. Without --yes it prints what it would do and writes nothing.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--diagram` | Only this record. |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin review`
@@ -273,6 +317,19 @@ Every account, one line each.
 |---|---|
 | `--role` | Only people with this role. |
 | `--email` | Only addresses containing this text. |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin users prefs <email> [key] [value]`
+
+Show somebody's settings, or set the one named to the value given. `spotlight chip` gives them back the old way a chip lit the picture; `spotlight unified`, the default, has a chip and a dot do the same thing.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `email` | required |
+| `key` | optional |
+| `value` | optional |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin users roles <email> [roles]`
