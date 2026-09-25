@@ -4,13 +4,22 @@ repeats for itself, and each row is a candidate case for its regression evals
 [Oracle: R-0481, R-0482].
 """
 
+import re
+
 from btcopilot import profile, record, turnstore
 from btcopilot.extensions import db
-from btcopilot.models import Change, Observation, ObservationKind
+from btcopilot.models import Change, Discussion, Observation, ObservationKind, Statement
 from btcopilot.recordtext import date_text
 from btcopilot.schema import DiagramData, ItemKind
 from btcopilot.toolbox import READS, ToolName
 from btcopilot.turnlog import TurnEventKind
+
+# An asked question is stored self-contained, so its words may reword the
+# reply's ("How old are Ada's brothers now?" for "And how old are they now?").
+# Below this share of the question's words found in the reply, the two are
+# written down as possibly different questions.
+QUESTION_OVERLAP = 0.5
+WORDS = re.compile(r"[\w']+")
 
 ADDS = (
     ToolName.EditPerson,
@@ -45,6 +54,7 @@ def observe(diagram_id: int, turn_id: str, data: DiagramData) -> None:
         ),
         *_same(ObservationKind.DuplicateEvent, data.events, events, record.twin_key),
         *_unread(turn_id),
+        *_unsaid(diagram_id, turn_id, data),
     ]
     for kind, detail in found:
         db.session.add(
@@ -74,6 +84,41 @@ def _person(data: DiagramData, person: dict) -> tuple | None:
     born = profile.birth(data, person["id"])
     day = date_text(born["dateTime"]) if born else None
     return name.lower(), day and day[:4]
+
+
+def overlap(question: str, reply: str) -> float:
+    """The share of the question's distinct words, ignoring case, that the
+    reply also uses."""
+    asked = set(WORDS.findall(question.lower()))
+    return len(asked & set(WORDS.findall(reply.lower()))) / len(asked)
+
+
+def _unsaid(diagram_id: int, turn_id: str, data: DiagramData) -> list:
+    """Questions the turn asked whose words its reply hardly shares."""
+    reply = (
+        Statement.query.join(Discussion)
+        .filter(
+            Statement.turn_id == turn_id,
+            Statement.speaker_id == Discussion.chat_ai_speaker_id,
+        )
+        .one_or_none()
+    )
+    if reply is None:
+        return []
+    asked = {
+        str(delta["item_id"])
+        for change in Change.query.filter_by(diagram_id=diagram_id, turn_id=turn_id)
+        for delta in change.deltas
+        if delta["item_kind"] == ItemKind.Question.value and record.asks(delta)
+    }
+    return [
+        (
+            ObservationKind.QuestionUnsaid,
+            {"question": q["id"], "overlap": round(overlap(q["text"], reply.text), 2)},
+        )
+        for q in data.questions
+        if q["id"] in asked and overlap(q["text"], reply.text) < QUESTION_OVERLAP
+    ]
 
 
 def _unread(turn_id: str) -> list:

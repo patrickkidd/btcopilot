@@ -13,7 +13,7 @@ from mock import patch
 from btcopilot import chips, coachturn, record, turnlog
 from btcopilot.extensions import db
 from btcopilot.interactions import recent
-from btcopilot.models import Author, Change, InteractionKind
+from btcopilot.models import Author, Change, InteractionKind, Observation, ObservationKind
 from btcopilot.recordtext import outline
 from btcopilot.schema import DiagramData, ItemKind
 from btcopilot.tests.conftest import Model, called, calling, csrf_token, said, version
@@ -345,11 +345,43 @@ def test_the_words_of_a_question_kept_for_later_never_reach_the_page(web, family
     assert ASK in thread
 
 
-def test_a_reply_that_drops_the_words_it_asked_is_logged(web, family, monkeypatch):
-    # R-0006
+def unsaid(family) -> list[dict]:
+    return [
+        o.detail
+        for o in Observation.query.filter_by(
+            diagram_id=family.id, kind=ObservationKind.QuestionUnsaid
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    "question,reply,observed",
+    [
+        (
+            "How old are Ada's brothers now?",
+            "Ada has two brothers. And how old are they now?",
+            [],
+        ),
+        (ASK, "Tell me about your father's family.", [{"question": "q1", "overlap": 0.29}]),
+    ],
+)
+def test_a_reply_that_hardly_holds_the_question_it_asked_is_observed_never_refused(
+    web, family, monkeypatch, question, reply, observed
+):
+    # R-0482, R-0006
+    coach(
+        monkeypatch,
+        Model(
+            calling((ToolName.AddQuestion, {"text": question, "kind": "fact", "state": "asked"})),
+            said(reply),
+        ),
+    )
     with patch.object(coachturn._log, "error") as error:
-        asking_turn(web, monkeypatch, reply="Tell me about your father's family.")
-    assert "asked question q1" in error.call_args.args[0]
+        body = post(web, csrf_token(web), "My brothers are older than me.").get_json()
+
+    assert error.call_args_list == []
+    assert statements(web, body["discussion_id"])[1]["text"] == reply
+    assert unsaid(family) == observed
 
 
 def test_undoing_a_removal_does_not_count_as_asking_its_question_again(web, family, monkeypatch):
@@ -364,7 +396,7 @@ def test_undoing_a_removal_does_not_count_as_asking_its_question_again(web, fami
 
     with patch.object(coachturn._log, "error") as error:
         post(web, csrf_token(web), "Put her back.")
-    assert error.call_args_list == []
+    assert (error.call_args_list, unsaid(family)) == ([], [])
     assert stored(family)["q1"]["state"] == "asked"
 
 

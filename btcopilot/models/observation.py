@@ -14,6 +14,7 @@ class ObservationKind(enum.StrEnum):
     DuplicatePerson = "duplicate_person"
     DuplicateEvent = "duplicate_event"
     AddWithoutRead = "add_without_read"
+    QuestionUnsaid = "question_unsaid"
 
 
 class Observation(db.Model, ModelMixin):

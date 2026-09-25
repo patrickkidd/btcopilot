@@ -17,7 +17,7 @@ from typing import Callable
 from opentelemetry import trace
 
 from btcopilot.extensions import ai_log, db
-from btcopilot import chips, clusters, profile, record, recordtext, turnstore
+from btcopilot import chips, clusters, profile, recordtext, turnstore
 from btcopilot.pricing import cost
 from btcopilot.coachmodel import CoachModel, Spent
 from btcopilot.models import (
@@ -368,7 +368,6 @@ class CoachTurn:
         spoken = narrate(self.model, system, messages, spoken, self.turn_id)
 
         reply = chips.validate(spoken.strip(), self.data)
-        self._unsaid(reply)
         # What was typed out live is the words as the model first said them. A
         # retry for shorter labels or for sentences replaces them, so the page
         # is told to drop what it has and take these instead.
@@ -446,21 +445,6 @@ class CoachTurn:
                 },
             )
         return regrouped.sentences
-
-    def _unsaid(self, reply: str) -> None:
-        """A question this turn set to asked is kept in the words it was asked
-        in; the reply is only checked, because narrating can reword it."""
-        asked = {
-            str(d["item_id"])
-            for d in self.toolbox.deltas
-            if d["item_kind"] == ItemKind.Question.value and record.asks(d)
-        }
-        for question in self.data.questions:
-            if question["id"] in asked and question["text"] not in reply:
-                _log.error(
-                    f"Turn {self.turn_id} asked question {question['id']} but the reply "
-                    f"does not hold its words: {question['text']!r}"
-                )
 
     def _send(self, event: dict) -> None:
         """Tell whoever is watching, as it happens."""
