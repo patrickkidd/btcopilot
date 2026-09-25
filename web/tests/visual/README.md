@@ -58,7 +58,7 @@ the sandbox's Flask settings, then name what they print:
 | `THREAD_LINKS` | a file holding what `seedthreads.py` prints, plus `"std": {"link": <INVITE_TURNS>}` |
 | `SANDBOX_PG` | the sandbox's Postgres container, read only (`sandboxhandedit`) |
 | `SANDBOX_ENV` | a shell file with the sandbox's Flask settings (`sandboxhandundo`, which runs its script from `FIXTURE_CWD`) |
-| `SANDBOX_LIVE` | set to 1 to let `sandboxlive` spend money on real coach turns |
+| `SANDBOX_LIVE` | set to 1 to let `sandboxlive` make real coach turns, on local Ollama unless the sandbox was started with `SANDBOX_MODEL=anthropic` |
 | `SANDBOX_NO_MODEL` | set to 1 when the sandbox has no model key, for the try-again walk in `sandboxthreads` |
 | `SANDBOX_WALKS_ONLY` | set to 1 to skip installing the golden fixtures first |
 

@@ -2,14 +2,15 @@ import { expect, test, type Page } from "@playwright/test";
 import { badLines, deadTaps, settle, stored, tap, thread, trackRequests, watch, watchDom } from "./gate";
 import { need, sandboxOnly } from "./sandbox";
 
-// Real coach turns on the sandbox, which spend money: try again finishes the
-// failed turn with a genuine reply, and a new message gets one, each reading
-// the same after two reloads. INVITE_TURNS is the link seedturns.py prints; the
-// sandbox needs the model key, and SANDBOX_LIVE=1 says the spend is meant.
+// Real coach turns on the sandbox: try again finishes the failed turn with a
+// genuine reply, and a new message gets one, each reading the same after two
+// reloads. INVITE_TURNS is the link seedturns.py prints; SANDBOX_LIVE=1 says
+// the walk may make model calls.
 //
-// This walk passes no key itself — it spends whatever key the sandbox server
-// was started with. The sandbox must be started with ANTHROPIC_TESTING_KEY,
-// never ANTHROPIC_API_KEY (production's key); this walk does not check that.
+// This walk passes no key itself — it uses whatever model the sandbox server
+// was started with: local Ollama by default, which costs nothing, or with
+// SANDBOX_MODEL=anthropic the ANTHROPIC_TESTING_KEY, never production's key;
+// this walk does not check which.
 
 const FAILURE_TEXT = /did not finish that turn/i;
 
@@ -38,7 +39,7 @@ async function reloaded(page: Page) {
 
 test.describe(() => {
   sandboxOnly("turns");
-  test.skip(!process.env.SANDBOX_LIVE, "spends money on the model; set SANDBOX_LIVE=1");
+  test.skip(!process.env.SANDBOX_LIVE, "makes real model calls; set SANDBOX_LIVE=1");
   test.describe.configure({ timeout: 240_000 });
 
   // R-0477
