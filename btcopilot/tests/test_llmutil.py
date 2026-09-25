@@ -3,8 +3,8 @@ import importlib
 import pytest
 
 from btcopilot import llmutil
-from btcopilot.coachmodel import CoachModel
-from btcopilot.pricing import price
+from btcopilot.coachmodel import CoachModel, Spent
+from btcopilot.pricing import cost, price
 
 
 @pytest.fixture
@@ -60,3 +60,9 @@ def test_a_local_url_without_a_model_fails(anthropic_env):
     anthropic_env.setenv(llmutil.LOCAL_URL, "http://127.0.0.1:11434")
     with pytest.raises(KeyError):
         CoachModel()
+
+
+def test_the_local_model_costs_nothing(anthropic_env):
+    anthropic_env.setenv(llmutil.LOCAL_URL, "http://127.0.0.1:11434")
+    anthropic_env.setenv(llmutil.LOCAL_MODEL, "qwen3:8b")
+    assert cost("qwen3:8b", Spent(input=1000, output=1000)) == 0

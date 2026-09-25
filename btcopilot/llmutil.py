@@ -326,9 +326,13 @@ def anthropic_args(key: str = "ANTHROPIC_API_KEY") -> dict:
     return {"api_key": os.environ[key]}
 
 
+def local_model() -> str | None:
+    return os.environ[LOCAL_MODEL] if os.environ.get(LOCAL_URL) else None
+
+
 def wire_model(model: str) -> str:
     """The model a call names on the wire: the local one when it is set."""
-    return os.environ[LOCAL_MODEL] if os.environ.get(LOCAL_URL) else model
+    return local_model() or model
 
 
 def _anthropic_client():
