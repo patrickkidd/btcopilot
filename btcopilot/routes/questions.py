@@ -1,13 +1,14 @@
-"""The user dismisses a question the coach asked: it is closed as declined by
-them, never removed, and the coach sees it on the map (R-0077). The record
-refuses anything else a user writes on a question."""
+"""The user dismisses a question the coach asked, says an impression doesn't
+fit, or pushes back on one in part: stored on the item, never removed, and
+seen by the coach on the map (R-0077). The record decides what a user may
+write on each kind."""
 
 from flask import abort, jsonify, request
 
 from btcopilot.routes import asked_diagram, bp, delta, edit
 from btcopilot.schema import ItemKind
 
-WRITABLE = ("state", "outcome")
+WRITABLE = ("state", "outcome", "pushback")
 
 
 def _find(question_id: str) -> dict:
@@ -26,4 +27,4 @@ def update_question(question_id: str):
     _find(question_id)
     edit([delta(ItemKind.Question, question_id, field, value) for field, value in body.items()])
     question = _find(question_id)
-    return jsonify({field: question[field] for field in ("id", *WRITABLE)})
+    return jsonify({field: question.get(field) for field in ("id", *WRITABLE)})

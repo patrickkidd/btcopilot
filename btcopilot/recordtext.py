@@ -16,6 +16,7 @@ from btcopilot.schema import (
     DiagramData,
     EventKind,
     ItemKind,
+    QuestionOutcome,
     QuestionState,
     enum_val,
     parse_date,
@@ -113,30 +114,57 @@ def cluster_line(cluster: dict) -> str:
     return f"{line} — {reason}" if reason else line
 
 
-def _declined(question: dict) -> bool:
-    return question.get("outcome") in DECLINED
+def _refused(question: dict) -> bool:
+    """Turned down by the user, or declined in chat: kept in view so it is
+    never said again in those words."""
+    return question.get("outcome") in (*DECLINED, QuestionOutcome.DoesntFit)
 
 
 def on_map(question: dict) -> bool:
-    """Open, or declined: the ones the coach keeps in view."""
-    return question["state"] != QuestionState.Resolved or _declined(question)
+    """Open, or turned down: the ones the coach keeps in view."""
+    return question["state"] != QuestionState.Resolved or _refused(question)
 
 
 def question_order(question: dict) -> tuple:
-    return _declined(question), int(question["id"][1:])
+    return _refused(question), int(question["id"][1:])
 
 
-def question_line(question: dict) -> str:
-    status = "declined" if _declined(question) else question["state"]
-    line = f'{question["id"]} {status} {question["kind"]} "{question["text"]}"'
-    if question.get("item_kind"):
-        line += f" about {question['item_kind']} {question['item_id']}"
+def _status(question: dict) -> str:
+    if question.get("outcome") == QuestionOutcome.DoesntFit:
+        return "doesn't fit"
+    if _refused(question):
+        return "declined"
+    return " ".join(part for part in (question["state"], question.get("pushback")) if part)
+
+
+def note_line(question: dict) -> str:
+    """One question or impression as the map and the reads give it."""
+    status = _status(question)
+    if record.note(question) is record.IMPRESSION:
+        line = f'{question["id"]} {status} "{question["text"]}" on '
+        line += ", ".join(f"{one['kind']} {one['id']}" for one in question["evidence"]) or "nothing"
+    else:
+        line = f'{question["id"]} {status} {question["kind"]} "{question["text"]}"'
+        if question.get("item_kind"):
+            line += f" about {question['item_kind']} {question['item_id']}"
     if status == QuestionState.Resolved:
         line += f" outcome={question['outcome']}"
     return line
 
 
 QUESTIONS = "QUESTIONS (open, then declined: never ask a declined one again)"
+IMPRESSIONS = (
+    "IMPRESSIONS (raised and held; one the user said doesn't fit is never raised "
+    "again in those words)"
+)
+
+
+def _notes(data: DiagramData, rules) -> list[str]:
+    return [
+        note_line(q)
+        for q in sorted(data.questions, key=question_order)
+        if record.note(q) is rules and on_map(q)
+    ]
 
 
 def version_line(version: int) -> str:
@@ -240,11 +268,9 @@ def outline(data: DiagramData | None, version: int, speaker: int | None = None) 
         _section("CLUSTERS", [_span(c, dates) for c in _rows(data.clusters)]),
         _section(
             QUESTIONS,
-            [
-                question_line(q)
-                for q in sorted(filter(on_map, data.questions), key=question_order)
-            ],
+            _notes(data, record.QUESTION),
         ),
+        _section(IMPRESSIONS, _notes(data, record.IMPRESSION)),
         _section(
             "EVENTS PER DECADE",
             [", ".join(f"{d} {n}" for d, n in sorted(decades.items()))] if events else [],

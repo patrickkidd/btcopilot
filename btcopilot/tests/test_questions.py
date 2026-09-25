@@ -432,6 +432,8 @@ def test_the_page_gets_asked_questions_only_each_with_where_it_was_asked(web, fa
                 "discussion_id": body["discussion_id"],
                 "statement_id": statements(web, body["discussion_id"])[1]["id"],
             },
+            "evidence": [],
+            "pushback": None,
         }
     ]
 
@@ -448,7 +450,7 @@ def test_the_user_dismisses_a_question_and_the_coach_sees_it_declined(web, famil
     )
     assert (answer.status_code, answer.get_json()) == (
         200,
-        {"id": "q1", "state": "resolved", "outcome": "declined_by_user"},
+        {"id": "q1", "state": "resolved", "outcome": "declined_by_user", "pushback": None},
     )
     tap = web.post(
         "/app/interactions",

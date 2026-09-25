@@ -19,7 +19,7 @@ from btcopilot.recordtext import (
     event_line,
     on_map,
     person_line,
-    question_line,
+    note_line,
     question_order,
     version_line,
 )
@@ -32,6 +32,7 @@ from btcopilot.schema import (
     ITEM_COLLECTIONS,
     DiagramData,
     EventKind,
+    EvidenceKind,
     ItemKind,
     PersonKind,
     QuestionKind,
@@ -61,6 +62,9 @@ class ToolName(enum.StrEnum):
     AddQuestion = "add_question"
     SetQuestion = "set_question"
     ReadQuestions = "read_questions"
+    AddImpression = "add_impression"
+    SetImpression = "set_impression"
+    ReadImpressions = "read_impressions"
 
 
 READS = (
@@ -69,6 +73,7 @@ READS = (
     ToolName.ReadNotes,
     ToolName.ReadChanges,
     ToolName.ReadQuestions,
+    ToolName.ReadImpressions,
 )
 
 CHANGES_SHOWN = 10
@@ -84,6 +89,7 @@ CHANGES = (
     ToolName.EditCluster,
     ToolName.Remove,
     ToolName.SetQuestion,
+    ToolName.SetImpression,
 )
 
 EDITS = (
@@ -112,6 +118,14 @@ CERTAINTY = (
     "certain for an exact day, approximate for a month or a year only, unknown "
     'for "sometime around" or any hedge'
 )
+
+ASKED_IN = {
+    "type": "integer",
+    "description": (
+        "Only when told to: the number of the coach message in a past session "
+        "that said it."
+    ),
+}
 
 VERSION = {
     "type": "integer",
@@ -312,6 +326,10 @@ def schemas() -> list[dict]:
                     "version": VERSION,
                     "name": {"type": "string"},
                     "summary": {"type": "string"},
+                    "reason": {
+                        "type": "string",
+                        "description": "One sentence: why these events belong together.",
+                    },
                     "event_ids": {"type": "array", "items": {"type": "integer"}},
                 },
             },
@@ -350,7 +368,11 @@ def schemas() -> list[dict]:
                         "type": "string",
                         "description": "The question word for word, as the person reads it.",
                     },
-                    "kind": _enum_param(QuestionKind, "Food for thought, or a fact to find."),
+                    "kind": {
+                        "type": "string",
+                        "enum": [QuestionKind.Thought.value, QuestionKind.Fact.value],
+                        "description": "Food for thought, or a fact to find.",
+                    },
                     "state": {
                         "type": "string",
                         "enum": [QuestionState.Held.value, QuestionState.Asked.value],
@@ -361,13 +383,7 @@ def schemas() -> list[dict]:
                         "description": "What the question is about, with item_id; or neither.",
                     },
                     "item_id": {"type": "string"},
-                    "asked_in": {
-                        "type": "integer",
-                        "description": (
-                            "Only when told to: the number of the coach message in a "
-                            "past session that asked it."
-                        ),
-                    },
+                    "asked_in": ASKED_IN,
                 },
                 "required": ["text", "kind", "state"],
             },
@@ -386,11 +402,7 @@ def schemas() -> list[dict]:
                     },
                     "outcome": {
                         "type": "string",
-                        "enum": [
-                            outcome.value
-                            for outcome in QuestionOutcome
-                            if outcome is not QuestionOutcome.DeclinedByUser
-                        ],
+                        "enum": [o.value for o in record.QUESTION.ours],
                         "description": "How it ended; only with resolved.",
                     },
                 },
@@ -402,6 +414,75 @@ def schemas() -> list[dict]:
             "description": (
                 "The questions kept in the record: the open ones and the ones the "
                 "person declined; with closed, every closed one and how it ended."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {"closed": {"type": "boolean"}},
+            },
+        },
+        {
+            "name": ToolName.AddImpression.value,
+            "description": (
+                "Keep an impression in the record: raised when you say it in this "
+                "reply, held when you keep it for later. Raise it before you say it."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "description": "The words the reply will say.",
+                    },
+                    "evidence": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "kind": _enum_param(EvidenceKind, "What it rests on."),
+                                "id": {"type": "string"},
+                            },
+                            "required": ["kind", "id"],
+                        },
+                        "description": "What it rests on: at least one.",
+                    },
+                    "state": {
+                        "type": "string",
+                        "enum": [QuestionState.Held.value, QuestionState.Raised.value],
+                    },
+                    "asked_in": ASKED_IN,
+                },
+                "required": ["text", "evidence", "state"],
+            },
+        },
+        {
+            "name": ToolName.SetImpression.value,
+            "description": (
+                "Raise a kept impression, or close one: revised when you raise new "
+                "words for it, let go when you drop it."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "version": VERSION,
+                    "state": {
+                        "type": "string",
+                        "enum": [QuestionState.Raised.value, QuestionState.Resolved.value],
+                    },
+                    "outcome": {
+                        "type": "string",
+                        "enum": [o.value for o in record.IMPRESSION.ours],
+                        "description": "How it ended; only with resolved.",
+                    },
+                },
+                "required": ["id", "version", "state"],
+            },
+        },
+        {
+            "name": ToolName.ReadImpressions.value,
+            "description": (
+                "The impressions kept in the record: raised, held, and the ones the "
+                "person said don't fit; with closed, every closed one and how it ended."
             ),
             "input_schema": {
                 "type": "object",
@@ -438,6 +519,16 @@ def schemas() -> list[dict]:
             },
         },
     ]
+
+
+def said_label(statement: Statement) -> str:
+    """A message as an impression shows it rests on it: who said it and when."""
+    who = (
+        "You"
+        if statement.speaker_id == statement.discussion.chat_user_speaker_id
+        else "The coach"
+    )
+    return f"{who} said, {statement.created_at.day} {statement.created_at:%b}"
 
 
 class ToolError(Exception):
@@ -593,9 +684,19 @@ class Toolbox:
         return ("\n".join(lines) or "No event has notes.", None)
 
     def _read_questions(self, args: dict) -> tuple[str, None]:
-        shown = [q for q in self.data.questions if args.get("closed") or on_map(q)]
-        lines = [question_line(q) for q in sorted(shown, key=question_order)]
-        return ("\n".join(lines) or "No questions.", None)
+        return self._read_notes_of(record.QUESTION, args), None
+
+    def _read_impressions(self, args: dict) -> tuple[str, None]:
+        return self._read_notes_of(record.IMPRESSION, args), None
+
+    def _read_notes_of(self, rules, args: dict) -> str:
+        shown = [
+            q
+            for q in self.data.questions
+            if record.note(q) is rules and (args.get("closed") or on_map(q))
+        ]
+        lines = [note_line(q) for q in sorted(shown, key=question_order)]
+        return "\n".join(lines) or f"No {rules.noun}s."
 
     def _read_changes(self, args: dict) -> tuple[str, None]:
         rows = (
@@ -774,8 +875,9 @@ class Toolbox:
             fields["name"] = args["name"]
             fields["title"] = args["name"]
         fields["summary"] = args.get("summary") or ""
-        # The coach's sentence explained a grouping the user has now changed.
-        fields["reason"] = ""
+        # A sentence given now says why the events belong together; one written
+        # before explained a grouping this call has changed.
+        fields["reason"] = args.get("reason") or ""
         if args.get("event_ids") is not None:
             events = [self._event(data, e) for e in args["event_ids"]]
             if len(events) < MIN_CLUSTER_EVENTS:
@@ -851,6 +953,7 @@ class Toolbox:
             Change.diagram_id == self.diagram_id,
             Change.turn_id != self.turn_id,
             Change.turn_id.notlike("undo:%"),
+            Change.turn_id.notlike("%backfill:%"),
         ).order_by(Change.id.desc())
         return next(
             (
@@ -864,23 +967,44 @@ class Toolbox:
     # ── QUESTIONS ───────────────────────────────────────────────────────────
 
     def _add_question(self, args: dict) -> tuple[str, dict]:
+        return self._add_note(
+            args,
+            record.QUESTION,
+            {
+                "kind": QuestionKind(args["kind"]).value,
+                "item_kind": args.get("item_kind"),
+                "item_id": args.get("item_id"),
+            },
+        )
+
+    def _add_impression(self, args: dict) -> tuple[str, dict]:
+        return self._add_note(
+            args,
+            record.IMPRESSION,
+            {
+                "kind": QuestionKind.Impression.value,
+                "evidence": [self._evidence(one) for one in args.get("evidence") or []],
+                "pushback": None,
+            },
+        )
+
+    def _add_note(self, args: dict, rules, own: dict) -> tuple[str, dict]:
         state = QuestionState(args["state"])
         fields = {
             "text": args["text"],
-            "kind": QuestionKind(args["kind"]).value,
+            **own,
             "state": state.value,
             "outcome": None,
-            "item_kind": args.get("item_kind"),
-            "item_id": args.get("item_id"),
             "session_id": None,
             "asked_at": None,
         }
+        noun = rules.noun
         said = None
         if args.get("asked_in") is not None:
-            if state is not QuestionState.Asked:
+            if state is not rules.shown:
                 raise ToolError(
-                    "asked_in is for a question asked in that message: state asked",
-                    "It said where a question was asked without asking it.",
+                    f"asked_in is for a {noun} said in that message: state {rules.shown.value}",
+                    f"It said where the {noun} came from without saying it.",
                 )
             said = self._said(args["asked_in"])
             where = record.asked_in(self.diagram_id)
@@ -890,21 +1014,46 @@ class Toolbox:
                 for q in self.data.questions
             ):
                 raise ToolError(
-                    f"a question in those words was already added from message {said.id}",
-                    "That question is already there.",
+                    f"a {noun} in those words was already added from message {said.id}",
+                    f"That {noun} is already there.",
                 )
-        if state is QuestionState.Asked:
+        if state is rules.shown:
             fields.update(self._asked(said))
         return self._write(ItemKind.Question, None, fields, said and said.id)
 
     def _set_question(self, args: dict) -> tuple[str, dict]:
+        return self._set_note(args, record.QUESTION)
+
+    def _set_impression(self, args: dict) -> tuple[str, dict]:
+        return self._set_note(args, record.IMPRESSION)
+
+    def _set_note(self, args: dict, rules) -> tuple[str, dict]:
+        found = next((q for q in self.data.questions if q["id"] == str(args["id"])), None)
+        if found is None or record.note(found) is not rules:
+            raise ToolError(f"No {rules.noun} {args['id']} in the record", GONE)
         state = QuestionState(args["state"])
         fields = {"state": state.value}
         if args.get("outcome") is not None:
             fields["outcome"] = QuestionOutcome(args["outcome"]).value
-        if state is QuestionState.Asked:
+        if state is rules.shown:
             fields.update(self._asked(None))
         return self._write(ItemKind.Question, args["id"], fields)
+
+    def _evidence(self, one: dict) -> dict:
+        """What an impression rests on. A message must be one of this family's
+        sessions and keeps its label, since a session can be deleted; the
+        record checks the rest."""
+        kind = EvidenceKind(one["kind"])
+        if kind is not EvidenceKind.Statement:
+            return {"kind": kind.value, "id": one["id"]}
+        statement = (
+            Statement.query.join(Discussion)
+            .filter(Statement.id == int(one["id"]), Discussion.diagram_id == self.diagram_id)
+            .one_or_none()
+        )
+        if statement is None:
+            raise ToolError(f"No message {one['id']} in this family's sessions", GONE)
+        return {"kind": kind.value, "id": statement.id, "label": said_label(statement)}
 
     def _asked(self, said: Statement | None) -> dict:
         """The session a question is asked in and the day: this turn's, or the
@@ -984,7 +1133,8 @@ class Toolbox:
             if kind is ItemKind.Cluster:
                 item_id = clusters.next_id(taken)
             elif kind is ItemKind.Question:
-                item_id = record.next_key("q", taken)
+                prefix = "i" if fields["kind"] == QuestionKind.Impression else "q"
+                item_id = record.next_key(prefix, {t for t in taken if t.startswith(prefix)})
             else:
                 item_id = record.next_id(data)
         elif not self._exists(data, kind, item_id):
@@ -1005,7 +1155,10 @@ class Toolbox:
             )
         change = self._apply(deltas, statement_id)
         verb = "Added" if new else "Changed"
-        return (f"{verb} {kind.value} {item_id}.", self._patch(change))
+        noun = kind.value
+        if kind is ItemKind.Question:
+            noun = record.note(next(q for q in self.data.questions if q["id"] == str(item_id))).noun
+        return (f"{verb} {noun} {item_id}.", self._patch(change))
 
     def _apply(self, deltas: list[dict], statement_id: int | None = None):
         try:

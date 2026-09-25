@@ -13,6 +13,7 @@ import re
 
 import regex
 
+from btcopilot import record
 from btcopilot.recordtext import date_text
 from btcopilot.schema import DiagramData, enum_val
 
@@ -23,7 +24,9 @@ class ChipKind(enum.StrEnum):
     Event = "event"
     Cluster = "cluster"
     Person = "person"
+    PairBond = "pair_bond"
     Question = "question"
+    Impression = "impression"
     # What the coach offers to look at next. It carries the words themselves
     # rather than an id, so there is nothing to resolve and nothing to drop.
     Ask = "ask"
@@ -44,7 +47,9 @@ KIND_WORDS = {
     ChipKind.Event: "this",
     ChipKind.Cluster: "this cluster",
     ChipKind.Person: "them",
+    ChipKind.PairBond: "them",
     ChipKind.Question: "this question",
+    ChipKind.Impression: "this impression",
     ChipKind.Ask: "this",
 }
 
@@ -58,7 +63,9 @@ def _ids(data: DiagramData, kind: ChipKind) -> set[str]:
         ChipKind.Event: data.events,
         ChipKind.Cluster: data.clusters,
         ChipKind.Person: data.people,
-        ChipKind.Question: data.questions,
+        ChipKind.PairBond: data.pair_bonds,
+        ChipKind.Question: [q for q in data.questions if record.note(q) is record.QUESTION],
+        ChipKind.Impression: [q for q in data.questions if record.note(q) is record.IMPRESSION],
     }[kind]
     return {
         str(item["id"])
@@ -154,9 +161,16 @@ def _describe(kind: ChipKind, target: str, data: DiagramData) -> str:
         words = event.get("description") or enum_val(event.get("kind")) or ""
         when = date_text(event.get("dateTime")) or "undated"
         return f"event {target}: {when} {words}".strip()
-    if kind is ChipKind.Question:
+    if kind in (ChipKind.Question, ChipKind.Impression):
         question = next(q for q in data.questions if q["id"] == target)
-        return f'question {target}: "{question["text"]}"'
+        return f'{kind.value} {target}: "{question["text"]}"'
+    if kind is ChipKind.PairBond:
+        bond = next(b for b in data.pair_bonds if str(b.get("id")) == target)
+        names = {str(p.get("id")): p.get("name") or "unnamed" for p in data.people}
+        return (
+            f"pair bond {target}: {names[str(bond['person_a'])]} & "
+            f"{names[str(bond['person_b'])]}"
+        )
     cluster = next(c for c in data.clusters if str(c.get("id")) == target)
     return f"cluster {target}: {cluster.get('name') or cluster.get('title') or ''}".strip()
 
