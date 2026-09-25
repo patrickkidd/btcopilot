@@ -66,6 +66,11 @@ ORPHANS = {
         SELECT count(*) FROM diagram_changes c
          WHERE c.statement_id IS NOT NULL
            AND NOT EXISTS (SELECT 1 FROM statements s WHERE s.id = c.statement_id)""",
+    "statement links that still block a session delete": """
+        SELECT count(*) FROM pg_constraint
+         WHERE contype = 'f' AND confrelid = 'statements'::regclass
+           AND conrelid IN ('diagram_changes'::regclass, 'diagram_interactions'::regclass)
+           AND confdeltype != 'n'""",
     "coach change rows no statement claims": """
         SELECT count(*) FROM diagram_changes c
          WHERE c.statement_id IS NULL AND c.author = 'coach'
@@ -135,6 +140,12 @@ def turn_checks(conn) -> list[tuple]:
     replies = [t for t in turns if t.reply]
     words = [t for t in turns if not t.reply and t.changes]
     rest = [t for t in turns if not t.reply and not t.changes]
+    for t in replies + words:
+        print(
+            f"{'reply' if t.reply else 'words'} {t.id}: change rows {t.changes}, "
+            f"items touched {t.items} (expected lines), lines seen {t.lines}, "
+            f"unfinished marks {t.failed}"
+        )
     print(
         f"note: {len(replies)} coach replies hold {sum(t.changes for t in replies)} "
         f"change rows touching {sum(t.items for t in replies)} items; the revision "
