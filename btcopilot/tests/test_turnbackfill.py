@@ -1,7 +1,8 @@
 """The revision that adds kept turn events fills them in for the turns that ran
 before it, from the change log: a coach reply gets a tool call per item its turn
-touched, and the edits of a turn that never answered go onto the words that
-asked for it, marked unfinished. Invented names only."""
+touched, named from the record as it stood at that change, and the edits of a
+turn that never answered go onto the words that asked for it, marked
+unfinished. Invented names only."""
 
 import datetime
 import json
@@ -13,6 +14,13 @@ from btcopilot.admin.database import config
 
 T0 = datetime.datetime(2026, 9, 20, 12, 0, 0)
 STATUS = "ready"
+LEEDS = {"id": 3, "kind": "noted", "description": "Moved to Leeds", "dateTime": "1990-01-01"}
+# The record now: Nell renamed Nella by hand, and the move she was given removed.
+NOW = {
+    "people": [{"id": 1, "name": "Wren", "notes": "has a sister"}, {"id": 2, "name": "Nella"}],
+    "events": [],
+    "lastItemId": 3,
+}
 
 
 def at(minutes: int) -> datetime.datetime:
@@ -38,7 +46,7 @@ def seed(conn) -> None:
              "preferences": "{}"},
         ],
         "diagrams": [
-            {"id": 1, "user_id": 1, "name": "Wren", "data": b"{}", "version": 9,
+            {"id": 1, "user_id": 1, "name": "Wren", "data": json.dumps(NOW).encode(), "version": 9,
              "created_at": T0},
         ],
         "discussions": [
@@ -79,6 +87,9 @@ def seed(conn) -> None:
                  delta("event", 3, "dateTime", "1990-01-01"),
                  delta("diagram", None, "lastItemId", 3, before=2),
              ])},
+            {"id": 4, "diagram_id": 1, "statement_id": None, "turn_id": "unmoved",
+             "session_id": None, "author": "user", "created_at": at(7),
+             "deltas": ([delta("event", 3, None, None, before=LEEDS)])},
         ],
     }
     for table, values in rows.items():
@@ -105,7 +116,7 @@ def test_old_turns_get_their_tool_calls_and_a_turn_that_broke_is_marked_unfinish
         attached = dict(
             conn.execute(sa.text("SELECT id, statement_id FROM diagram_changes")).all()
         )
-        assert attached == {1: 2, 2: None, 3: 3}
+        assert attached == {1: 2, 2: None, 3: 3, 4: None}
 
         kept = [
             (turn_id, seq, kind, json.loads(payload))
@@ -126,13 +137,16 @@ def test_old_turns_get_their_tool_calls_and_a_turn_that_broke_is_marked_unfinish
         "type": "tool_call",
         "name": "edit_person",
         "args": {"name": "Nell"},
+        "names": {"it": "Nell"},
         "result": "Added person 2.",
     }
     assert kept[1][3]["args"] == {"id": 1}
+    assert kept[1][3]["names"] == {"it": "Wren"}
     assert kept[1][3]["result"] == "Changed person 1."
     assert kept[2][3]["args"] == {
         "kind": "noted",
         "description": "Moved to Leeds",
         "date": "1990-01-01",
     }
+    assert kept[2][3]["names"] == {"it": "Moved to Leeds"}
     assert kept[3][3] == {"type": "failed", "message": "The coach did not finish that turn."}

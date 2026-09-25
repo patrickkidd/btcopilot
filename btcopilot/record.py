@@ -121,7 +121,7 @@ def undo(
     applied = []
     for change in changes:
         for delta in reversed(change.deltas):
-            inverse = dict(delta, before=delta["after"], after=delta["before"])
+            inverse = _inverse(delta)
             actual = _get(data, inverse)
             if actual != inverse["before"]:
                 raise Conflict(inverse, actual)
@@ -136,6 +136,22 @@ def undo(
         session_id,
         None,
     )
+
+
+def rewind(data: dict, deltas: list[dict]):
+    """Take logged deltas back off the record, newest first, one for one: a
+    removal's cascade is logged delta by delta, so nothing here cascades."""
+    for delta in reversed(deltas):
+        if delta["field"] is not None:
+            _set(data, _inverse(delta))
+        elif delta["after"] is None:
+            _restore(data, _inverse(delta))
+        else:
+            _drop(data, ItemKind(delta["item_kind"]), delta["item_id"])
+
+
+def _inverse(delta: dict) -> dict:
+    return dict(delta, before=delta["after"], after=delta["before"])
 
 
 def compress(deltas: list[dict]) -> list[dict]:

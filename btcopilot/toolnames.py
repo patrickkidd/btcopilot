@@ -7,6 +7,7 @@ from btcopilot.clusters import _title
 from btcopilot.schema import ITEM_COLLECTIONS, DiagramData, EventKind, ItemKind, enum_val
 from btcopilot.timeline import _label, _person_label, _who
 from btcopilot.toolbox import ToolName
+from btcopilot.turnlog import TurnEventKind
 
 NOUNS = {
     EventKind.Birth.value: "birth",
@@ -110,3 +111,13 @@ def names(data: DiagramData, tool: str, args: dict) -> dict:
             LABELS[kind](args, people) if args.get("id") is None else name(kind, args["id"])
         )
     return out
+
+
+def toolcall(data: DiagramData, tool: str, args: dict) -> dict:
+    """A tool call as its turn keeps it, named from the record before it runs."""
+    return {
+        "type": TurnEventKind.ToolCall.value,
+        "name": tool,
+        "args": args,
+        "names": names(data, tool, args),
+    }

@@ -261,28 +261,3 @@ def test_a_line_names_what_the_call_touched_as_it_was_when_it_was_made(
         {"it": "Wrenna's birth", "child": "Wrenna"},
     ]
 
-
-def test_a_call_kept_without_names_is_named_from_the_record_as_it_is_now(
-    web, token, family, monkeypatch
-):
-    # R-0478
-    coach(monkeypatch, Model(said("Wren, then.")))
-    body = post(web, token).get_json()
-    for seq, args in enumerate(({"id": 1, "name": "Wrenna"}, {"id": 9, "name": "Ash"})):
-        event = {"type": TurnEventKind.ToolCall.value, "name": "edit_person", "args": args}
-        db.session.add(
-            TurnEvent(
-                turn_id=body["turn_id"],
-                discussion_id=body["discussion_id"],
-                seq=100 + seq,
-                kind=event["type"],
-                payload=event,
-            )
-        )
-    db.session.commit()
-
-    tools = statements(web, body["discussion_id"])[1]["tools"]
-    assert [t["names"] for t in tools] == [
-        {"it": "Wren"},
-        {"it": "a person no longer in the record"},
-    ]

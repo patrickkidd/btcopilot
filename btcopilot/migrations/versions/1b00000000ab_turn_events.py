@@ -6,7 +6,10 @@ the turn events for the turns that ran before this table existed, from the only
 record of them there is, the change log:
 
 - a coach statement gets its turn id and one tool call per item each of its
-  change rows touched, worded as the tool would have answered;
+  change rows touched, worded as the tool would have answered and named the
+  way a live call is: from the record as it stood at that change, which the
+  change log rewinds to from the record now, so a thing removed since keeps
+  the name it had;
 - change rows the coach wrote in a turn that never answered are attached to the
   user's words that started that turn, which get the turn id, those tool calls
   and a closing "did not finish".
@@ -18,12 +21,18 @@ Revision ID: 1b00000000ab
 Revises: 1b00000000aa
 """
 
+import copy
 import itertools
 
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import Text
 from sqlalchemy.dialects import postgresql
+
+from btcopilot import diagramjson, record
+from btcopilot.models.diagram import diagram_data
+from btcopilot.schema import DiagramData
+from btcopilot.toolnames import names
 
 revision = "1b00000000ab"
 down_revision = "1b00000000aa"
@@ -51,6 +60,7 @@ FAILED = "The coach did not finish that turn."
 changes = sa.table(
     "diagram_changes",
     sa.column("id", sa.Integer),
+    sa.column("diagram_id", sa.Integer),
     sa.column("statement_id", sa.Integer),
     sa.column("turn_id", sa.String),
     sa.column("session_id", sa.String),
@@ -65,6 +75,11 @@ statements = sa.table(
     sa.column("speaker_id", sa.Integer),
     sa.column("turn_id", sa.String),
     sa.column("created_at", sa.DateTime),
+)
+diagrams = sa.table(
+    "diagrams",
+    sa.column("id", sa.Integer),
+    sa.column("data", sa.LargeBinary),
 )
 discussions = sa.table(
     "discussions",
@@ -151,8 +166,9 @@ def downgrade():
     sa.Enum(name="observationkind").drop(op.get_bind(), checkfirst=True)
 
 
-def calls(deltas: list[dict]) -> list[dict]:
-    """One tool call per item a change row touched, in the order it touched them."""
+def calls(deltas: list[dict], before: DiagramData, after: DiagramData) -> list[dict]:
+    """One tool call per item a change row touched, in the order it touched them,
+    named from the record before the row, or after it for a thing the row added."""
     made = {
         str(d["after"])
         for d in deltas
@@ -165,11 +181,13 @@ def calls(deltas: list[dict]) -> list[dict]:
     ):
         group = list(group)
         if any(d["field"] is None and d["after"] is None for d in group):
+            args = {"item_kind": kind, "item_id": group[0]["item_id"]}
             out.append(
                 {
                     "type": "tool_call",
                     "name": "remove",
-                    "args": {"item_kind": kind, "item_id": group[0]["item_id"]},
+                    "args": args,
+                    "names": names(before, "remove", args),
                     "result": f"Removed {kind} {item_id}.",
                 }
             )
@@ -192,9 +210,39 @@ def calls(deltas: list[dict]) -> list[dict]:
                 "type": "tool_call",
                 "name": TOOLS[kind],
                 "args": args,
+                "names": names(
+                    after if new else before,
+                    TOOLS[kind],
+                    {"id": group[0]["item_id"]},
+                ),
                 "result": f"{'Added' if new else 'Changed'} {kind} {item_id}.",
             }
         )
+    return out
+
+
+def named(conn, rows) -> dict[int, list[dict]]:
+    """Each change row's tool calls, by rewinding each diagram's record from
+    now through its whole change log, newest first."""
+    wanted = {r.id for r in rows}
+    out = {}
+    for diagram_id, blob in conn.execute(
+        sa.select(diagrams.c.id, diagrams.c.data).where(
+            diagrams.c.id.in_({r.diagram_id for r in rows})
+        )
+    ).all():
+        data = diagramjson.loads(blob)
+        for change_id, deltas in conn.execute(
+            sa.select(changes.c.id, changes.c.deltas)
+            .where(changes.c.diagram_id == diagram_id)
+            .order_by(changes.c.id.desc())
+        ).all():
+            after = copy.deepcopy(data) if change_id in wanted else None
+            record.rewind(data, deltas)
+            if after is not None:
+                out[change_id] = calls(
+                    deltas, diagram_data(data), diagram_data(after)
+                )
     return out
 
 
@@ -204,6 +252,7 @@ def backfill(conn):
         .where(changes.c.author == "coach", ~changes.c.turn_id.like("undo:%"))
         .order_by(changes.c.id)
     ).all()
+    kept = named(conn, rows)
     answered = [r for r in rows if r.statement_id is not None]
     orphaned = [r for r in rows if r.statement_id is None]
 
@@ -269,7 +318,7 @@ def backfill(conn):
         written = [
             (row.created_at, call)
             for row in turn["rows"]
-            for call in calls(row.deltas)
+            for call in kept[row.id]
         ]
         if turn["failed"]:
             written.append(

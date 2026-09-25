@@ -32,7 +32,7 @@ from btcopilot.models import (
 from btcopilot.prompts import agent_prompt, note_register, onboarding
 from btcopilot.interactions import recent
 from btcopilot.toolbox import READS, ToolError, Toolbox, schemas
-from btcopilot.toolnames import names
+from btcopilot.toolnames import toolcall
 from btcopilot.turnlog import TurnEventKind
 from btcopilot.schema import DiagramData, ItemKind
 
@@ -300,12 +300,7 @@ class CoachTurn:
 
             results = []
             for call in turn.calls:
-                asked = {
-                    "type": TurnEventKind.ToolCall.value,
-                    "name": call.name,
-                    "args": call.args,
-                    "names": names(self.toolbox.data, call.name, call.args),
-                }
+                asked = toolcall(self.toolbox.data, call.name, call.args)
                 self._note(events, asked)
                 text, event, refused = self._call(call)
                 # Kept after the page was told, so only the database holds what

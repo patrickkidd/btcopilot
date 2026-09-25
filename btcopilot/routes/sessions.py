@@ -23,7 +23,6 @@ from btcopilot.discussions import (
     sync_chat_speakers,
 )
 from btcopilot import turns, turnstore
-from btcopilot.toolnames import names
 from btcopilot.turnlog import TurnEventKind
 
 
@@ -32,7 +31,6 @@ def statements_payload(discussion: Discussion) -> list[dict]:
     calls that led to it, and the words of a turn that never answered carry the
     calls it made before it failed, marked unfinished with why it stopped."""
     kept = turnstore.kept({s.turn_id for s in discussion.statements if s.turn_id})
-    data = discussion.diagram.get_diagram_data()
     out = []
     for s in discussion.statements:
         coach = s.speaker_id == discussion.chat_ai_speaker_id
@@ -48,13 +46,7 @@ def statements_payload(discussion: Discussion) -> list[dict]:
                 "turn_id": s.turn_id,
                 "tools": (
                     [
-                        {
-                            "name": e["name"],
-                            "args": e["args"],
-                            # a call kept before calls carried names is named from the record now
-                            "names": e.get("names")
-                            or names(data, e["name"], e["args"]),
-                        }
+                        {"name": e["name"], "args": e["args"], "names": e["names"]}
                         for e in events
                         if e["type"] == TurnEventKind.ToolCall.value
                     ]
