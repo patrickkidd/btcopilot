@@ -821,8 +821,8 @@ def test_the_coach_is_told_how_to_keep_its_questions():
     assert "Family Evaluation, ch. 10" in prompt
     assert "When in doubt, include it rather than leave it out" in prompt
     assert "Never ask again a question the map marks declined" in prompt
-    for tool in ("add_question", "set_question", "read_questions"):
-        assert f"`{tool}`" in prompt
+    for tool in (ToolName.AddQuestion, ToolName.SetQuestion, ToolName.ReadQuestions):
+        assert f"`{tool.value}`" in prompt
 
 
 
