@@ -29,6 +29,7 @@ GONE = {
     ItemKind.PairBond: "a pair bond no longer in the record",
     ItemKind.Cluster: "a cluster no longer in the record",
     ItemKind.Emotion: "a relationship no longer in the record",
+    ItemKind.Question: "a question no longer in the record",
 }
 # What a remove call names when its kind is none the record holds; the toolbox
 # refuses the call.
@@ -60,6 +61,8 @@ SUBJECT = {
     ToolName.EditPairBond: ItemKind.PairBond,
     ToolName.EditEvent: ItemKind.Event,
     ToolName.EditCluster: ItemKind.Cluster,
+    ToolName.AddQuestion: ItemKind.Question,
+    ToolName.SetQuestion: ItemKind.Question,
 }
 
 
@@ -89,6 +92,7 @@ LABELS = {
         f"the relationship between {_person_label(people.get(emotion.get('person')))}"
         f" and {_person_label(people.get(emotion.get('target')))}"
     ),
+    ItemKind.Question: lambda question, people: question["text"],
 }
 
 

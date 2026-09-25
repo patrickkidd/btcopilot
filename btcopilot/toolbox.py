@@ -7,6 +7,7 @@ talking. A SHOW names record ids and a view kind, and every id must resolve or
 the call fails with words the model can act on [Oracle: R-0075].
 """
 
+import datetime
 import enum
 import logging
 
@@ -16,7 +17,10 @@ from btcopilot.recordtext import (
     change_line,
     date_text,
     event_line,
+    on_map,
     person_line,
+    question_line,
+    question_order,
     version_line,
 )
 from btcopilot.extensions import db
@@ -30,6 +34,9 @@ from btcopilot.schema import (
     EventKind,
     ItemKind,
     PersonKind,
+    QuestionKind,
+    QuestionOutcome,
+    QuestionState,
     RelationshipKind,
     VariableShift,
 )
@@ -51,6 +58,9 @@ class ToolName(enum.StrEnum):
     Remove = "remove"
     Undo = "undo"
     Show = "show"
+    AddQuestion = "add_question"
+    SetQuestion = "set_question"
+    ReadQuestions = "read_questions"
 
 
 READS = (
@@ -58,12 +68,13 @@ READS = (
     ToolName.ReadEvents,
     ToolName.ReadNotes,
     ToolName.ReadChanges,
+    ToolName.ReadQuestions,
 )
 
 CHANGES_SHOWN = 10
 
-# The kinds of thing a remove call can name.
-REMOVABLE = {kind.value: kind for kind in ITEM_COLLECTIONS}
+# The kinds of thing a remove call can name. A question is closed instead.
+REMOVABLE = {kind.value: kind for kind in ITEM_COLLECTIONS if kind is not ItemKind.Question}
 
 # The tools that can change something already in the record.
 CHANGES = (
@@ -72,6 +83,7 @@ CHANGES = (
     ToolName.EditEvent,
     ToolName.EditCluster,
     ToolName.Remove,
+    ToolName.SetQuestion,
 )
 
 EDITS = (
@@ -321,6 +333,77 @@ def schemas() -> list[dict]:
             "input_schema": {"type": "object", "properties": {}},
         },
         {
+            "name": ToolName.AddQuestion.value,
+            "description": (
+                "Keep a question in the record: asked when you ask it in this "
+                "reply, held when you keep it to ask later."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "description": "The question word for word, as the person reads it.",
+                    },
+                    "kind": _enum_param(QuestionKind, "Food for thought, or a fact to find."),
+                    "state": {
+                        "type": "string",
+                        "enum": [QuestionState.Held.value, QuestionState.Asked.value],
+                    },
+                    "item_kind": {
+                        "type": "string",
+                        "enum": [kind.value for kind in record.QUESTION_LINKS],
+                        "description": "What the question is about, with item_id; or neither.",
+                    },
+                    "item_id": {"type": "string"},
+                    "asked_in": {
+                        "type": "integer",
+                        "description": (
+                            "Only when told to: the number of the coach message in a "
+                            "past session that asked it, word for word."
+                        ),
+                    },
+                },
+                "required": ["text", "kind", "state"],
+            },
+        },
+        {
+            "name": ToolName.SetQuestion.value,
+            "description": "Mark a kept question asked, or close it saying how it ended.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "version": VERSION,
+                    "state": {
+                        "type": "string",
+                        "enum": [QuestionState.Asked.value, QuestionState.Resolved.value],
+                    },
+                    "outcome": {
+                        "type": "string",
+                        "enum": [
+                            outcome.value
+                            for outcome in QuestionOutcome
+                            if outcome is not QuestionOutcome.DeclinedByUser
+                        ],
+                        "description": "How it ended; only with resolved.",
+                    },
+                },
+                "required": ["id", "version", "state"],
+            },
+        },
+        {
+            "name": ToolName.ReadQuestions.value,
+            "description": (
+                "The questions kept in the record: the open ones and the ones the "
+                "person declined; with closed, every closed one and how it ended."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {"closed": {"type": "boolean"}},
+            },
+        },
+        {
             "name": ToolName.Show.value,
             "description": (
                 "Aim the picture at something in the record. Every id must be one "
@@ -362,7 +445,7 @@ class ToolError(Exception):
 
 
 SMALL_CLUSTER = f"A cluster needs at least {MIN_CLUSTER_EVENTS} events."
-GONE = "That is not in the record."
+GONE = record.GONE
 
 
 class Toolbox:
@@ -503,6 +586,11 @@ class Toolbox:
             events = [e for e in data.events if e.get("id") == wanted]
         lines = [f"{e['id']}: {e.get('notes') or 'no notes'}" for e in events]
         return ("\n".join(lines) or "No event has notes.", None)
+
+    def _read_questions(self, args: dict) -> tuple[str, None]:
+        shown = [q for q in self.data.questions if args.get("closed") or on_map(q)]
+        lines = [question_line(q) for q in sorted(shown, key=question_order)]
+        return ("\n".join(lines) or "No questions.", None)
 
     def _read_changes(self, args: dict) -> tuple[str, None]:
         rows = (
@@ -704,6 +792,8 @@ class Toolbox:
         return self._write(ItemKind.Cluster, item_id, fields)
 
     def _remove(self, args: dict) -> tuple[str, dict]:
+        if args["item_kind"] == ItemKind.Question:
+            raise ToolError(*record.NEVER_REMOVED)
         if args["item_kind"] not in REMOVABLE:
             raise ToolError(
                 f"There is no kind of thing called {args['item_kind']}",
@@ -746,17 +836,88 @@ class Toolbox:
         return ("Put back what the last turn changed.", self._patch(change))
 
     def _previous_turn(self) -> str | None:
-        """The turn before this one on this diagram — what 'put that back' means."""
-        last = (
-            Change.query.filter(
-                Change.diagram_id == self.diagram_id,
-                Change.turn_id != self.turn_id,
-                Change.turn_id.notlike("undo:%"),
-            )
-            .order_by(Change.id.desc())
-            .first()
+        """The turn before this one on this diagram — what 'put that back' means.
+        Questions are never put back, so a turn that touched only questions, a
+        dismissal say, is not it."""
+        rows = Change.query.filter(
+            Change.diagram_id == self.diagram_id,
+            Change.turn_id != self.turn_id,
+            Change.turn_id.notlike("undo:%"),
+        ).order_by(Change.id.desc())
+        return next(
+            (
+                row.turn_id
+                for row in rows
+                if any(d["item_kind"] != ItemKind.Question.value for d in row.deltas)
+            ),
+            None,
         )
-        return last.turn_id if last else None
+
+    # ── QUESTIONS ───────────────────────────────────────────────────────────
+
+    def _add_question(self, args: dict) -> tuple[str, dict]:
+        state = QuestionState(args["state"])
+        fields = {
+            "text": args["text"],
+            "kind": QuestionKind(args["kind"]).value,
+            "state": state.value,
+            "outcome": None,
+            "item_kind": args.get("item_kind"),
+            "item_id": args.get("item_id"),
+            "session_id": None,
+            "asked_at": None,
+        }
+        said = None
+        if args.get("asked_in") is not None:
+            if state is not QuestionState.Asked:
+                raise ToolError(
+                    "asked_in is for a question asked in that message: state asked",
+                    "It said where a question was asked without asking it.",
+                )
+            said = self._said(args["asked_in"], args["text"])
+        if state is QuestionState.Asked:
+            fields.update(self._asked(said))
+        return self._write(ItemKind.Question, None, fields, said and said.id)
+
+    def _set_question(self, args: dict) -> tuple[str, dict]:
+        state = QuestionState(args["state"])
+        fields = {"state": state.value}
+        if args.get("outcome") is not None:
+            fields["outcome"] = QuestionOutcome(args["outcome"]).value
+        if state is QuestionState.Asked:
+            fields.update(self._asked(None))
+        return self._write(ItemKind.Question, args["id"], fields)
+
+    def _asked(self, said: Statement | None) -> dict:
+        """The session a question is asked in and the day: this turn's, or the
+        past coach message it was asked in."""
+        if said is None:
+            return {
+                "session_id": int(self.session_id),
+                "asked_at": datetime.date.today().isoformat(),
+            }
+        return {
+            "session_id": said.discussion_id,
+            "asked_at": said.created_at.date().isoformat(),
+        }
+
+    def _said(self, statement_id: int, text: str) -> Statement:
+        statement = (
+            Statement.query.join(Discussion)
+            .filter(
+                Statement.id == statement_id,
+                Discussion.diagram_id == self.diagram_id,
+                Statement.speaker_id == Discussion.chat_ai_speaker_id,
+            )
+            .one_or_none()
+        )
+        if statement is None or text not in (statement.text or ""):
+            raise ToolError(
+                f"Message {statement_id} is not a coach message of this family that "
+                "holds those words exactly",
+                "Those words are not in that message.",
+            )
+        return statement
 
     # ── SHOW ────────────────────────────────────────────────────────────────
 
@@ -789,28 +950,24 @@ class Toolbox:
         raise ToolError(f"No cluster {cluster_id} in the record", views.NO_CLUSTER)
 
     def _exists(self, data: DiagramData, kind: ItemKind, item_id) -> bool:
-        collection = {
-            ItemKind.Person: data.people,
-            ItemKind.Event: data.events,
-            ItemKind.PairBond: data.pair_bonds,
-            ItemKind.Cluster: data.clusters,
-            ItemKind.Emotion: data.emotions,
-        }[kind]
+        collection = getattr(data, ITEM_COLLECTIONS[kind])
         return any(str(i.get("id")) == str(item_id) for i in collection)
 
-    def _next_cluster_id(self, data: DiagramData) -> str:
-        return clusters.next_id({str(c.get("id")) for c in data.clusters})
-
-    def _write(self, kind: ItemKind, item_id, fields: dict) -> tuple[str, dict]:
+    def _write(
+        self, kind: ItemKind, item_id, fields: dict, statement_id: int | None = None
+    ) -> tuple[str, dict]:
         if not fields:
             raise ToolError(
                 f"Nothing to change on that {kind.value}", "It gave nothing to change."
             )
         data = self.data
         new = item_id is None
+        taken = {str(i.get("id")) for i in getattr(data, ITEM_COLLECTIONS[kind])}
         if new:
             if kind is ItemKind.Cluster:
-                item_id = self._next_cluster_id(data)
+                item_id = clusters.next_id(taken)
+            elif kind is ItemKind.Question:
+                item_id = record.next_key("q", taken)
             else:
                 item_id = record.next_id(data)
         elif not self._exists(data, kind, item_id):
@@ -820,7 +977,7 @@ class Toolbox:
             {"item_kind": kind.value, "item_id": item_id, "field": field, "after": value}
             for field, value in fields.items()
         ]
-        if new and kind is not ItemKind.Cluster:
+        if new and kind not in (ItemKind.Cluster, ItemKind.Question):
             deltas.append(
                 {
                     "item_kind": ItemKind.Diagram.value,
@@ -829,11 +986,11 @@ class Toolbox:
                     "after": item_id,
                 }
             )
-        change = self._apply(deltas)
+        change = self._apply(deltas, statement_id)
         verb = "Added" if new else "Changed"
         return (f"{verb} {kind.value} {item_id}.", self._patch(change))
 
-    def _apply(self, deltas: list[dict]):
+    def _apply(self, deltas: list[dict], statement_id: int | None = None):
         try:
             change = record.apply(
                 self.diagram_id,
@@ -842,7 +999,7 @@ class Toolbox:
                 turn_id=self.turn_id,
                 user_id=self.user_id,
                 session_id=self.session_id,
-                statement_id=self.statement_id,
+                statement_id=statement_id or self.statement_id,
             )
         except record.Invalid as e:
             # the record says what is wrong in the coach's own words already

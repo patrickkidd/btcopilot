@@ -11,7 +11,15 @@ from collections import Counter
 
 from btcopilot import diagramjson, record
 from btcopilot.models import Change, Interaction
-from btcopilot.schema import DiagramData, EventKind, ItemKind, enum_val, parse_date
+from btcopilot.schema import (
+    DECLINED,
+    DiagramData,
+    EventKind,
+    ItemKind,
+    QuestionState,
+    enum_val,
+    parse_date,
+)
 from btcopilot.timeline import _life_event
 
 SHIFTS = ("anxiety", "symptom", "functioning")
@@ -103,6 +111,32 @@ def cluster_line(cluster: dict) -> str:
     line = f"{_cluster_head(cluster)} events={cluster.get('eventIds') or []}"
     reason = cluster.get("reason")
     return f"{line} — {reason}" if reason else line
+
+
+def _declined(question: dict) -> bool:
+    return question.get("outcome") in DECLINED
+
+
+def on_map(question: dict) -> bool:
+    """Open, or declined: the ones the coach keeps in view."""
+    return question["state"] != QuestionState.Resolved or _declined(question)
+
+
+def question_order(question: dict) -> tuple:
+    return _declined(question), int(question["id"][1:])
+
+
+def question_line(question: dict) -> str:
+    status = "declined" if _declined(question) else question["state"]
+    line = f'{question["id"]} {status} {question["kind"]} "{question["text"]}"'
+    if question.get("item_kind"):
+        line += f" about {question['item_kind']} {question['item_id']}"
+    if status == QuestionState.Resolved:
+        line += f" outcome={question['outcome']}"
+    return line
+
+
+QUESTIONS = "QUESTIONS (open, then declined: never ask a declined one again)"
 
 
 def version_line(version: int) -> str:
@@ -204,6 +238,13 @@ def outline(data: DiagramData | None, version: int, speaker: int | None = None) 
         ),
         _section("PAIR BONDS", [bond_line(b) for b in _rows(data.pair_bonds)]),
         _section("CLUSTERS", [_span(c, dates) for c in _rows(data.clusters)]),
+        _section(
+            QUESTIONS,
+            [
+                question_line(q)
+                for q in sorted(filter(on_map, data.questions), key=question_order)
+            ],
+        ),
         _section(
             "EVENTS PER DECADE",
             [", ".join(f"{d} {n}" for d, n in sorted(decades.items()))] if events else [],

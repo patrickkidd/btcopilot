@@ -172,6 +172,7 @@ from btcopilot.routes import (  # noqa: E402  bp must exist first
     productevents,
     people,
     play,
+    questions,
     recordings,
     sessions,
     settings,

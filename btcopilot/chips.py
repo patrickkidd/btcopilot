@@ -23,6 +23,7 @@ class ChipKind(enum.StrEnum):
     Event = "event"
     Cluster = "cluster"
     Person = "person"
+    Question = "question"
     # What the coach offers to look at next. It carries the words themselves
     # rather than an id, so there is nothing to resolve and nothing to drop.
     Ask = "ask"
@@ -43,6 +44,7 @@ KIND_WORDS = {
     ChipKind.Event: "this",
     ChipKind.Cluster: "this cluster",
     ChipKind.Person: "them",
+    ChipKind.Question: "this question",
     ChipKind.Ask: "this",
 }
 
@@ -56,6 +58,7 @@ def _ids(data: DiagramData, kind: ChipKind) -> set[str]:
         ChipKind.Event: data.events,
         ChipKind.Cluster: data.clusters,
         ChipKind.Person: data.people,
+        ChipKind.Question: data.questions,
     }[kind]
     return {
         str(item["id"])
@@ -151,6 +154,9 @@ def _describe(kind: ChipKind, target: str, data: DiagramData) -> str:
         words = event.get("description") or enum_val(event.get("kind")) or ""
         when = date_text(event.get("dateTime")) or "undated"
         return f"event {target}: {when} {words}".strip()
+    if kind is ChipKind.Question:
+        question = next(q for q in data.questions if q["id"] == target)
+        return f'question {target}: "{question["text"]}"'
     cluster = next(c for c in data.clusters if str(c.get("id")) == target)
     return f"cluster {target}: {cluster.get('name') or cluster.get('title') or ''}".strip()
 

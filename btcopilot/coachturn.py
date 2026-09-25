@@ -17,7 +17,7 @@ from typing import Callable
 from opentelemetry import trace
 
 from btcopilot.extensions import ai_log, db
-from btcopilot import chips, clusters, profile, recordtext, turnstore
+from btcopilot import chips, clusters, profile, record, recordtext, turnstore
 from btcopilot.pricing import cost
 from btcopilot.coachmodel import CoachModel, Spent
 from btcopilot.models import (
@@ -96,6 +96,26 @@ class BareList(Exception):
     that can turn one into sentences."""
 
 
+def drain(words):
+    """The model's turn, once every piece of its words has gone by."""
+    while True:
+        try:
+            next(words)
+        except StopIteration as stop:
+            return stop.value
+
+
+def run_call(toolbox: Toolbox, call) -> tuple[str, dict | None, str | None]:
+    """What the model reads, what the page sees, and why the record refused
+    the call in plain words, or None."""
+    try:
+        text, event = toolbox.call(call.name, call.args)
+    except ToolError as e:
+        _log.warning(f"Tool {call.name} refused: {e}")
+        return f"That did not work: {e}", None, e.plain
+    return text, event, None
+
+
 def _again(model, system, messages: list[dict], spoken: str, ask: str, turn_id: str):
     """Ask once for the reply again. The words are the coach's own, so nothing
     here rewrites them — it asks the coach to."""
@@ -103,12 +123,7 @@ def _again(model, system, messages: list[dict], spoken: str, ask: str, turn_id: 
         {"role": "assistant", "content": spoken},
         {"role": "user", "content": ask},
     ]
-    words = model.turn(system, asked, [], turn_id)
-    while True:
-        try:
-            next(words)
-        except StopIteration as stop:
-            return stop.value.text
+    return drain(model.turn(system, asked, [], turn_id)).text
 
 
 def shorten_labels(
@@ -301,7 +316,7 @@ class CoachTurn:
             results = []
             for call in turn.calls:
                 asked = toolcall(self.toolbox.data, call.name, call.args)
-                text, event, refusal = self._call(call)
+                text, event, refusal = run_call(self.toolbox, call)
                 asked["refusal"] = refusal
                 self._note(events, asked)
                 # Kept after the page was told, so only the database holds what
@@ -353,6 +368,7 @@ class CoachTurn:
         spoken = narrate(self.model, system, messages, spoken, self.turn_id)
 
         reply = chips.validate(spoken.strip(), self.data)
+        self._unsaid(reply)
         # What was typed out live is the words as the model first said them. A
         # retry for shorter labels or for sentences replaces them, so the page
         # is told to drop what it has and take these instead.
@@ -431,6 +447,21 @@ class CoachTurn:
             )
         return regrouped.sentences
 
+    def _unsaid(self, reply: str) -> None:
+        """A question this turn set to asked is kept in the words it was asked
+        in; the reply is only checked, because narrating can reword it."""
+        asked = {
+            str(d["item_id"])
+            for d in self.toolbox.deltas
+            if d["item_kind"] == ItemKind.Question.value and record.asks(d)
+        }
+        for question in self.data.questions:
+            if question["id"] in asked and question["text"] not in reply:
+                _log.error(
+                    f"Turn {self.turn_id} asked question {question['id']} but the reply "
+                    f"does not hold its words: {question['text']!r}"
+                )
+
     def _send(self, event: dict) -> None:
         """Tell whoever is watching, as it happens."""
         if event["type"] == TurnEventKind.Text.value:
@@ -477,16 +508,6 @@ class CoachTurn:
                 if sent and stop.value.calls:
                     self._send({"type": TurnEventKind.TextReset.value})
                 return stop.value
-
-    def _call(self, call) -> tuple[str, dict | None, str | None]:
-        """What the model reads, what the page sees, and why the record refused
-        the call in plain words, or None."""
-        try:
-            text, event = self.toolbox.call(call.name, call.args)
-        except ToolError as e:
-            _log.warning(f"Tool {call.name} refused: {e}")
-            return f"That did not work: {e}", None, e.plain
-        return text, event, None
 
     def _history(self) -> list[dict]:
         """The chat so far, with the new message and what its chips point at.
