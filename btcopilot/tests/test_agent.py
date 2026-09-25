@@ -825,7 +825,8 @@ def test_the_coach_is_told_how_to_keep_its_questions():
     assert "keep the one whose words ask it best" in prompt
     assert "a thinking question about patterns or meaning" in prompt
     assert "Facts to find (`fact`): anything with a factual answer" in prompt
-    assert "it names the person and the subject" in prompt
+    assert 'It says "you" and "your" for them' in prompt
+    assert "Asking a question and keeping it are one act" in prompt
     for tool in (ToolName.AddQuestion, ToolName.SetQuestion, ToolName.ReadQuestions):
         assert f"`{tool.value}`" in prompt
 

@@ -953,3 +953,14 @@ live turn filed an intake question as food for thought, so food for thought is n
 a thinking question about patterns or meaning, and anything with a factual answer,
 including the basics of who is in the family, is a fact to find. Not yet measured
 live. [R-0482, R-0485]
+
+### September 2026: A kept question says "you", and asking a question is keeping it (FD-363)
+
+**Change**: real turns stored questions that named the user in the third person
+("When [user] and [husband] go quiet…") while the reply said "you", and 3 of 5
+turns that asked a question stored nothing. The shared paragraph now says a kept
+question speaks to the person as "you" and names everyone else, and that asking
+and keeping are one act: a question put to the person is stored the same turn,
+asked, in the reply's words, unless it does not matter at all; one meant for later
+is stored held. The backfill keeps the "you" of the message. Not yet measured
+live. [R-0482, R-0485]
