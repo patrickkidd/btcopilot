@@ -838,7 +838,7 @@ button { font-family: inherit; }
 .caption .tok svg { flex: none; }
 /* while nothing is picked there is nothing to act on, so the row says what a
    tap will do instead (owner review round 3) */
-.caption .cta { font: 400 13px/1.35 var(--mono); color: var(--faint); }
+.caption .cta { margin: 0; font: 400 13px/1.35 var(--mono); color: var(--faint); }
 .caption .tok.g { color: var(--move-text); border-color: var(--move); border-radius: 10px; }
 .caption .tok.data { color: var(--data); border-color: var(--data); border-radius: 10px; }
 /* nothing to do with it here, so it is still shown and plainly not offered */
