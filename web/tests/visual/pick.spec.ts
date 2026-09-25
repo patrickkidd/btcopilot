@@ -1,7 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { execFileSync } from "node:child_process";
-import { resolve } from "node:path";
-import { stateFor, username } from "./setup";
+import { flask, stateFor, username } from "./setup";
 
 /** A chip naming an event and the event's own dot pick it the same way
  * [Oracle: R-0168]: the others fade, an event outside every cluster keeps the
@@ -16,11 +14,7 @@ const WHO = username("hostile");
 
 /** The admin command, run the way Patrick runs it. */
 const spotlight = (value: string) =>
-  execFileSync(
-    "uv",
-    ["run", "flask", "admin", "run", "--", "users", "prefs", WHO, "spotlight", value, "--yes"],
-    { cwd: process.env.FIXTURE_CWD ?? resolve(".."), env: process.env, encoding: "utf8" },
-  );
+  flask("admin", "run", "--", "users", "prefs", WHO, "spotlight", value, "--yes");
 
 const open = async (page: Page) => {
   await page.goto("/app/");

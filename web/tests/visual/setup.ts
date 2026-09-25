@@ -107,6 +107,19 @@ export type Key = (typeof KEYS)[number];
 
 export const stateFor = (key: Key) => join(AUTH, `${key}.json`);
 
+/** The server's own command line, run the way FIXTURE_CMD runs the fixture
+ * installer: `uv run flask` here, `python -m flask` on CI. */
+export function flask(...args: string[]): string {
+  const [bin, ...before] = (process.env.FIXTURE_CMD ?? "uv run flask app fixtures")
+    .split(" ")
+    .slice(0, -2);
+  return execFileSync(bin, [...before, ...args], {
+    cwd: process.env.FIXTURE_CWD ?? resolve(".."),
+    encoding: "utf8",
+    env: process.env,
+  });
+}
+
 /** A fixture's account, as the server's fixtures name it. */
 export const username = (key: Key) => `${key}@fd362-fixture.invalid`;
 
@@ -149,16 +162,7 @@ export default async function setup() {
   if (process.env.SANDBOX_WALKS_ONLY) return;
   await takeLock();
   const base = process.env.SANDBOX_URL ?? "http://127.0.0.1:8889";
-  const command = (
-    process.env.FIXTURE_CMD ?? "uv run flask app fixtures"
-  ).split(" ");
-  const cwd = process.env.FIXTURE_CWD ?? resolve("..");
-
-  const printed = execFileSync(command[0], [...command.slice(1), ...KEYS], {
-    cwd,
-    encoding: "utf8",
-    env: process.env,
-  });
+  const printed = flask("app", "fixtures", ...KEYS);
   const tokens = new Map<string, string>();
   for (const line of printed.split("\n")) {
     const [key, token] = line.trim().split(/\s+/);
