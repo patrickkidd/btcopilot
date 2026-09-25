@@ -102,7 +102,7 @@ def test_edit_writes_a_coach_change_and_the_record_moves(discussion, family):
                 date="1994-12-01",
                 description="got sick",
                 person=1,
-                symptom="up",
+                symptom="up", date_certainty="certain",
             ),
             said("I put that down. [[event:11|that winter]]"),
         ),
@@ -134,7 +134,7 @@ def test_the_coach_can_write_a_noted_event(discussion, family):
                 date="2019-03-01",
                 description="moved to Arizona",
                 location="Arizona",
-                person=1,
+                person=1, date_certainty="certain",
             ),
             said("I put that down."),
         ),
@@ -333,7 +333,7 @@ def test_people_and_their_events_all_land_in_one_turn(discussion, family):
             calling(
                 (
                     ToolName.EditEvent,
-                    {
+                    {"date_certainty": "certain",
                         "kind": "noted",
                         "date": "1994-01-01",
                         "person": 11,
@@ -342,7 +342,7 @@ def test_people_and_their_events_all_land_in_one_turn(discussion, family):
                 ),
                 (
                     ToolName.EditEvent,
-                    {
+                    {"date_certainty": "certain",
                         "kind": "shift",
                         "date": "1996-01-01",
                         "person": 12,
@@ -657,7 +657,7 @@ def test_a_moment_the_coach_wrote_traces_to_the_message_that_wrote_it(
                 date="1994-12-01",
                 description="got sick",
                 person=1,
-                symptom="up",
+                symptom="up", date_certainty="certain",
             ),
             said("I put that down."),
         ),

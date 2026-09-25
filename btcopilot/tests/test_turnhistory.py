@@ -128,7 +128,7 @@ def test_a_refused_call_stays_on_the_thread_with_why_in_plain_words(
         Model(
             called(ToolName.Show, kind="triangle"),
             called(ToolName.EditPerson, id=1, version=read, name="Wrenna"),
-            called(ToolName.EditEvent, kind="noted", person=1),
+            called(ToolName.EditEvent, kind="noted", person=1, date_certainty="certain"),
             said("I cannot do any of that."),
         ),
     )
@@ -287,7 +287,7 @@ def test_a_line_names_what_the_call_touched_as_it_was_when_it_was_made(
         monkeypatch,
         Model(
             called(ToolName.EditPerson, id=1, version=family.version, name="Wrenna"),
-            called(ToolName.EditEvent, kind="birth", child=1, date="1931-01-01"),
+            called(ToolName.EditEvent, kind="birth", child=1, date="1931-01-01", date_certainty="certain"),
             said("Wrenna, born 1931."),
         ),
     )

@@ -61,7 +61,7 @@ def test_adds_the_person_the_coder_names(coder, cut, turns):
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
     model = Scripted(
         [("edit_person", {"name": "James Cooper"})],
-        [("edit_event", {"kind": "noted", "description": "moved to Ohio", "date": "1971-01-01", "person": "{person}"})],
+        [("edit_event", {"date_certainty": "certain", "kind": "noted", "description": "moved to Ohio", "date": "1971-01-01", "person": "{person}"})],
     )
     response = scribe(
         coder, coding, turns[0], model, "James Cooper moved to Ohio in 1971"
@@ -85,7 +85,7 @@ def test_the_coders_words_stay_in_the_thread(coder, cut, turns):
     line they coded, with the scribe's line after them (R-0270)."""
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
     model = Scripted(
-        [("edit_event", {"kind": "noted", "description": "moved to Ohio", "date": "1971-01-01", "person": "1"})]
+        [("edit_event", {"date_certainty": "certain", "kind": "noted", "description": "moved to Ohio", "date": "1971-01-01", "person": "1"})]
     )
     scribe(coder, coding, turns[0], model, "Marcus moved to Ohio in 1971")
 
@@ -105,14 +105,14 @@ def test_two_things_said_about_one_turn_keep_their_own_lines(coder, cut, turns):
         coder,
         coding,
         turns[0],
-        Scripted([("edit_event", {"kind": "noted", "description": "moved to Ohio", "date": "1971-01-01", "person": "1"})]),
+        Scripted([("edit_event", {"date_certainty": "certain", "kind": "noted", "description": "moved to Ohio", "date": "1971-01-01", "person": "1"})]),
         "Marcus moved to Ohio in 1971",
     )
     scribe(
         coder,
         coding,
         turns[0],
-        Scripted([("edit_event", {"kind": "noted", "description": "moved to Ohio", "date": "1972-01-01", "person": "1"})]),
+        Scripted([("edit_event", {"date_certainty": "certain", "kind": "noted", "description": "moved to Ohio", "date": "1972-01-01", "person": "1"})]),
         "Marcus moved again the year after",
     )
 
@@ -222,7 +222,7 @@ def test_a_marriage_and_a_child_are_written_and_said_back(coder, cut, turns):
         [
             (
                 "edit_event",
-                {
+                {"date_certainty": "certain",
                     "kind": "married",
                     "date": "1970-06-01",
                     "person": 1,

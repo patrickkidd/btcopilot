@@ -240,9 +240,10 @@ def schemas() -> list[dict]:
                     "date_certainty": _enum_param(
                         DateCertainty,
                         "Certain for a date they stated, approximate for within a "
-                        "year or so, unknown for a guess. Left out on a new event "
-                        "it is unknown; left out on a change it stays as it is. "
-                        "Never leave the date itself out: a vague date beats none.",
+                        "year or so, unknown for a guess. Needed on a new event and "
+                        "on any change to its date; left out on another change it "
+                        "stays as it is. Never leave the date itself out: a vague "
+                        "date beats none.",
                     ),
                     "description": {
                         "type": "string",
@@ -672,8 +673,12 @@ class Toolbox:
             fields["endDateTime"] = args["end_date"]
         if args.get("date_certainty"):
             fields["dateCertainty"] = DateCertainty(args["date_certainty"]).value
-        elif new:
-            fields["dateCertainty"] = DateCertainty.Unknown.value
+        elif new or args.get("date"):
+            raise ToolError(
+                "Say how sure the date is with date_certainty: certain, approximate "
+                "or unknown",
+                "Say how sure the date is: exact, approximate, or a guess.",
+            )
         if args.get("description"):
             fields["description"] = args["description"]
         for key in ("notes", "location"):

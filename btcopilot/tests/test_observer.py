@@ -69,7 +69,7 @@ def test_a_person_added_again_with_the_same_name_and_birth_year_is_written_down(
         Model(
             called(ToolName.ReadPeople),
             called(ToolName.EditPerson, name="Nell", last_name="Hale"),
-            called(ToolName.EditEvent, kind="birth", child=4, date="1990-07-30"),
+            called(ToolName.EditEvent, kind="birth", child=4, date="1990-07-30", date_certainty="certain"),
             said("Nell is in."),
         ),
     )
@@ -97,7 +97,7 @@ def test_an_event_changed_to_match_another_on_kind_date_and_people_is_written_do
         monkeypatch,
         Model(
             called(ToolName.ReadEvents),
-            called(ToolName.EditEvent, id=5, date="2000-03-01", version=version),
+            called(ToolName.EditEvent, id=5, date="2000-03-01", version=version, date_certainty="certain"),
             said("That move is in March, then."),
         ),
     )

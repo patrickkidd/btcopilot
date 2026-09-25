@@ -117,7 +117,7 @@ def test_an_edit_made_by_hand_on_the_page_makes_the_coachs_version_stale(
     coach = Toolbox(family.id, "coach-turn")
     coach.call(
         ToolName.EditEvent.value,
-        {"kind": "noted", "person": 2, "date": "1990-01-01", "description": "Moved"},
+        {"date_certainty": "certain", "kind": "noted", "person": 2, "date": "1990-01-01", "description": "Moved"},
     )
     seen = version(family)
     event_id = family.get_diagram_data().events[-1]["id"]

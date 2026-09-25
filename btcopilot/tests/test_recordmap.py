@@ -100,7 +100,7 @@ def test_the_coach_reads_chosen_events_with_the_words_they_came_from(
                 ToolName.EditEvent,
                 id=4,
                 date="1995-06-01",
-                version=version(family),
+                version=version(family), date_certainty="certain",
             ),
             said("Changed it."),
         ),

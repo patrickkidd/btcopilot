@@ -67,7 +67,7 @@ with app.app_context():
                         ("edit_person", {"name": "Nell", "gender": "female"})])
     nell = int(events[-1]["result"].split()[-1].rstrip("."))
     events += run(done, [
-        ("edit_event", {"kind": "noted", "description": "Moved to Denver", "date": "1994-06-01", "person": nell}),
+        ("edit_event", {"kind": "noted", "description": "Moved to Denver", "date": "1994-06-01", "date_certainty": "certain", "person": nell}),
         ("show", {"kind": "triangle", "persons": [ada, nell, ben]}),
     ])
     keep(discussion, "t-done", events + [{"type": "done", "statement_id": rows[1].id}])
@@ -75,7 +75,7 @@ with app.app_context():
                      statement_id=rows[2].id)
     events = run(failed, [
         ("read_notes", {}),
-        ("edit_event", {"kind": "noted", "description": "Drinking got worse", "date": "1996-01-01"}),
+        ("edit_event", {"kind": "noted", "description": "Drinking got worse", "date": "1996-01-01", "date_certainty": "certain"}),
     ])
     keep(discussion, "t-failed", events + [{"type": "failed", "message": "The coach did not finish that turn."}])
     db.session.commit()
