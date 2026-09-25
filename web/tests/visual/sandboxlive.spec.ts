@@ -6,6 +6,10 @@ import { need, sandboxOnly } from "./sandbox";
 // failed turn with a genuine reply, and a new message gets one, each reading
 // the same after two reloads. INVITE_TURNS is the link seedturns.py prints; the
 // sandbox needs the model key, and SANDBOX_LIVE=1 says the spend is meant.
+//
+// This walk passes no key itself — it spends whatever key the sandbox server
+// was started with. The sandbox must be started with ANTHROPIC_TESTING_KEY,
+// never ANTHROPIC_API_KEY (production's key); this walk does not check that.
 
 const FAILURE_TEXT = /did not finish that turn/i;
 

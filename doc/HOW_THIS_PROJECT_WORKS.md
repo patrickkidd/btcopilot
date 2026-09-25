@@ -178,3 +178,9 @@ been the release workflow dispatched from the ticket branch (`gh workflow run re
 --ref <branch>`); the pull request stays open and unmerged. For the fast-follow (R-0484), once
 the gates pass, the coordinator dispatches that deploy without asking for a yes, then verifies
 on production.
+
+**Every test path spends the testing key, never the production key (2026-09-25, Patrick).**
+The sandbox, live evals, and browser walks with real turns all spend `ANTHROPIC_TESTING_KEY`;
+none of them ever spends `ANTHROPIC_API_KEY`, which is production's key, and there is no
+fallback to it. A missing testing key fails loudly, the same as a missing model key above,
+and is escalated to Patrick rather than worked around.

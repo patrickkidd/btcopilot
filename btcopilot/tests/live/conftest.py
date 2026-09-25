@@ -1,13 +1,16 @@
 """The live venue: one real coach turn on the private prompts, and the record it
 leaves behind. It costs money and needs the prompts' key, so it never runs on CI
-(R-0451). Run it by hand:
+(R-0451). It always spends on ANTHROPIC_TESTING_KEY, never ANTHROPIC_API_KEY
+(production's key); there is no fallback to the production key. Run it by hand:
 
     SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt uv run pytest \
         btcopilot/btcopilot/tests/live --e2e
 
-Without --e2e every test here is skipped; with it and no key, every test fails.
+Without --e2e every test here is skipped; with it and no key (either key), every
+test fails.
 """
 
+import os
 from pathlib import Path
 
 import pytest
@@ -25,6 +28,23 @@ def pytest_collection_modifyitems(config, items):
         if HERE in Path(item.path).parents:
             item.add_marker(pytest.mark.live)
             item.add_marker(pytest.mark.e2e)
+
+
+def require_testing_key() -> str:
+    key = os.environ.get("ANTHROPIC_TESTING_KEY")
+    assert key, (
+        "the live venue makes real model calls; set ANTHROPIC_TESTING_KEY "
+        "(never ANTHROPIC_API_KEY, which is production's key; there is no fallback)"
+    )
+    return key
+
+
+@pytest.fixture(autouse=True)
+def testing_key(request, monkeypatch):
+    """The live venue's own key, never production's: set ANTHROPIC_API_KEY from
+    ANTHROPIC_TESTING_KEY for this test only, and fail loudly if it is unset."""
+    if request.config.getoption("--e2e"):
+        monkeypatch.setenv("ANTHROPIC_API_KEY", require_testing_key())
 
 
 @pytest.fixture(autouse=True)
