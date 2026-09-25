@@ -171,13 +171,15 @@ enum QuestionState {
 
 const quoted = (words: string) => `“${words}”`;
 
-/** A question the coach keeps for later stays the coach's: its words are not
- * said. A refused close says only what it tried to close, then why. */
+/** A question the coach keeps for later stays the coach's: the server keeps
+ * its calls without its words, so the line says none. A refused close says
+ * only what it tried to close, then why. */
 function question(tool: ToolName, call: ToolCall): [Verb, string] {
   const state = call.args.state as QuestionState;
   if (tool === ToolName.AddQuestion && state === QuestionState.Held)
     return [Verb.Keep, "a question for later"];
-  const words = quoted(call.names.it as string);
+  const words =
+    call.names.it === undefined ? "a question kept for later" : quoted(call.names.it as string);
   if (state !== QuestionState.Resolved) return [Verb.Add, `${words} to your questions`];
   const outcome = call.args.outcome as QuestionOutcome;
   if (outcome === QuestionOutcome.LetGo) return [Verb.LetGo, words];

@@ -224,6 +224,28 @@ describe("what a question tool call says in plain words", () => {
   });
 
   // R-0478
+  it("closes a question kept for later without saying its words", () => {
+    const kept = (outcome: string, refusal: string | null = null) =>
+      toolLine({
+        name: ToolName.SetQuestion,
+        args: { id: "q6", version: 4, state: "resolved", outcome },
+        names: {},
+        refusal,
+      });
+    expect(kept("let_go")).toBe("Let go of a question kept for later");
+    expect(kept("fact")).toBe("Closed a question kept for later: the answer is in the record");
+    expect(kept("answered")).toBe("Closed a question kept for later: you answered it");
+    expect(kept("unknown")).toBe("Closed a question kept for later: you don't know");
+    expect(kept("declined_in_chat")).toBe("Closed a question kept for later: you'd rather not say");
+    expect(kept("declined_by_user", "Only you can dismiss a question.")).toBe(
+      "Tried to close a question kept for later. Only you can dismiss a question.",
+    );
+    expect(toolLine({ name: ToolName.ReadQuestions, args: {}, names: {}, refusal: null })).toBe(
+      "Looked at questions",
+    );
+  });
+
+  // R-0478
   it("says it looked at the questions", () => {
     expect(line(ToolName.ReadQuestions, {})).toBe("Looked at questions");
   });
