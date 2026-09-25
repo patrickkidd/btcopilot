@@ -154,6 +154,21 @@ Every row, oldest first.
 | `--kind` | Only one kind of row. |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin questions`
+
+The questions the coach keeps in each record.
+
+### `flask admin questions backfill`
+
+Go back once through every past session not yet gone through and fill in the questions asked in it. Makes model calls. Without --yes it prints what it would do and writes nothing.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--diagram` | Only this record. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin review`
 
 The coding meeting.
