@@ -23,6 +23,7 @@ def test_everything_else_keeps_redirecting_to_alaska_family_systems():
 
 
 def test_the_update_feeds_are_forwarded_to_the_legacy_box():
+    # R-0477
     feeds = re.search(r"^    handle /appcast_\*\.xml \{\n(.*?)^    \}", SITE, re.M | re.S)
     assert feeds
     assert "reverse_proxy https://database.familydiagram.com" in feeds.group(1)
