@@ -302,6 +302,6 @@ def test_a_line_names_what_the_call_touched_as_it_was_when_it_was_made(
     tools = statements(web, body["discussion_id"])[1]["tools"]
     assert [t["names"] for t in tools] == [
         {"it": "Wren"},
-        {"it": "Wrenna's birth", "child": "Wrenna"},
+        {"it": "Wrenna \u00b7 born", "child": "Wrenna"},
     ]
 

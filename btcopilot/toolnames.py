@@ -15,19 +15,9 @@ from btcopilot.schema import (
     ItemKind,
     enum_val,
 )
-from btcopilot.timeline import _person_label, _who, event_label
+from btcopilot.timeline import KIND_WORDS, _person_label, _who, event_label
 from btcopilot.toolbox import REMOVABLE, ToolName, said_label
 from btcopilot.turnlog import TurnEventKind
-
-NOUNS = {
-    EventKind.Birth.value: "birth",
-    EventKind.Adopted.value: "adoption",
-    EventKind.Married.value: "marriage",
-    EventKind.Separated.value: "separation",
-    EventKind.Divorced.value: "divorce",
-    EventKind.Bonded.value: "bond",
-    EventKind.Death.value: "death",
-}
 
 # An event with no words and nothing that moved, by its kind.
 UNSAID = {EventKind.Noted.value: "a note", EventKind.Shift.value: "a shift"}
@@ -79,9 +69,9 @@ SUBJECT = {
 
 def _event(event: dict, people: dict) -> str:
     kind = enum_val(event.get("kind"))
-    if kind in NOUNS:
-        return f"{_who(event, people)}'s {NOUNS[kind]}"
     said = event_label(event, people)
+    if kind in KIND_WORDS:
+        return f"{_who(event, people)} \u00b7 {said}"
     if (event.get("description") or "").strip():
         return said
     if record._moved(event):

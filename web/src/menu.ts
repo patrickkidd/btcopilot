@@ -1,6 +1,6 @@
 import { openEditor, openPersonEditor } from "./editor";
 import { Feature, tap } from "./track";
-import { eventDivider, eventRow, fullName, groupOf, personRow } from "./rows";
+import { eventDivider, eventRow, fullName, personRow, sections } from "./rows";
 import type { Questions } from "./questions";
 import { emptyTimeline, ItemKind, type Cluster, type Person, type Timeline, type TimelineEvent } from "./types";
 
@@ -134,14 +134,9 @@ export class Menu {
     const names = this.names();
     const shown = this.data.events.filter((event) => this.matches(event, names));
     let html = "";
-    let last: unknown;
-    for (const event of shown) {
-      const group = groupOf(event, this.clusterOf(event.id));
-      if (group !== last) {
-        last = group;
-        html += eventDivider(group);
-      }
-      html += eventRow(event, names, this.editing === event.id);
+    for (const { group, events } of sections(shown, (id) => this.clusterOf(id))) {
+      html += eventDivider(group);
+      for (const event of events) html += eventRow(event, names, this.editing === event.id);
     }
     if (!shown.length)
       html = `<div class="none">${

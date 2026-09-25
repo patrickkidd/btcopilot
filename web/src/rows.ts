@@ -93,6 +93,27 @@ export const groupOf = (event: TimelineEvent, cluster: Cluster | undefined) =>
   cluster ??
   (event.dateTime && event.dateCertainty !== DateCertainty.Unknown ? Loose.Dated : Loose.Undated);
 
+/** The events list in its stretches, in time order: a cluster once, under one
+ * header where its first event falls, with every event it holds, even those
+ * dated after a loose event inside its years; the events no cluster holds in
+ * runs between them. */
+export function sections(
+  events: TimelineEvent[],
+  clusterOf: (id: number) => Cluster | undefined,
+): { group: Cluster | Loose; events: TimelineEvent[] }[] {
+  const out: { group: Cluster | Loose; events: TimelineEvent[] }[] = [];
+  for (const event of events) {
+    const group = groupOf(event, clusterOf(event.id));
+    const held =
+      typeof group === "string"
+        ? out.at(-1)?.group === group ? out.at(-1) : undefined
+        : out.find((section) => section.group === group);
+    if (held) held.events.push(event);
+    else out.push({ group, events: [event] });
+  }
+  return out;
+}
+
 /** The header over a stretch of rows: the cluster they belong to and how many
  * events it holds, or why no cluster does. The word is "event" everywhere
  * (R-0289). */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Loose, codes, eventDivider, eventRow, groupOf, personRow } from "../src/rows";
+import { Loose, codes, eventDivider, eventRow, groupOf, personRow, sections } from "../src/rows";
 import { DateCertainty, type Cluster, type Person, type TimelineEvent } from "../src/types";
 
 const person = (over: Partial<Person> = {}): Person => ({
@@ -98,5 +98,20 @@ describe("the header over events no cluster holds", () => {
   it("gives way to the cluster that holds the event", () => {
     expect(groupOf(coded, cluster)).toBe(cluster);
     expect(eventDivider(cluster)).toContain("3 events");
+  });
+});
+
+describe("the events list's stretches", () => {
+  // R-0289
+  it("lists a cluster once even when a loose event falls inside its years", () => {
+    const cluster = { id: "c1", label: "1994\u20132021", count: 3 } as Cluster;
+    const at = (id: number, dateTime: string) => ({ ...coded, id, dateTime });
+    const events = [at(1, "1994-01-01"), at(2, "2015-01-01"), at(3, "2018-01-01"), at(4, "2021-01-01")];
+    const held = new Set([1, 3, 4]);
+    const found = sections(events, (id) => (held.has(id) ? cluster : undefined));
+    expect(found.map((s) => [s.group === cluster ? "c1" : s.group, s.events.map((e) => e.id)])).toEqual([
+      ["c1", [1, 3, 4]],
+      [Loose.Dated, [2]],
+    ]);
   });
 });
