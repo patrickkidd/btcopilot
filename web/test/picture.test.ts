@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dotXs, hitSpans, restWidth, yearAt, years } from "../src/picture";
+import { dotXs, restWidth, yearAt, years } from "../src/picture";
 
 const PHONE = 390;
 const PAD = 16;
@@ -109,29 +109,6 @@ describe("the dots inside a cluster box", () => {
       if (i) expect(x - drawn[i - 1]).toBeGreaterThanOrEqual(11);
       expect(x).toBeGreaterThanOrEqual(96);
       expect(x).toBeLessThanOrEqual(96 + 88);
-    });
-  });
-});
-
-describe("the tap target of a dot on the line", () => {
-  // R-0103
-  it("is a whole thumb where the dot stands alone", () => {
-    const [only] = hitSpans([200], PHONE);
-    expect(only.size).toBe(44);
-  });
-
-  // R-0402
-  it("lets a tap on either of two dots 6px apart pick that dot", () => {
-    const xs = [200, 206];
-    const spans = hitSpans(xs, PHONE);
-    xs.forEach((x, i) => {
-      const covering = spans.filter(
-        (span) => x >= span.left && x <= span.left + span.size,
-      );
-      expect(covering).toContain(spans[i]);
-      expect(spans[i].left + spans[i].size).toBeLessThanOrEqual(
-        i < xs.length - 1 ? (xs[i] + xs[i + 1]) / 2 : PHONE,
-      );
     });
   });
 });

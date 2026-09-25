@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { PIC_H } from "../../src/spotlight";
 import { stateFor } from "./setup";
 
 /** The layout contract, asserted rather than eyeballed: the picture region owns
@@ -367,16 +368,17 @@ test.describe("a moment traces back to the words that coded it", () => {
   });
 });
 
-/** The band the line is drawn in: 66 of the picture's ruled 138 (picked phone
- * mockup 2026-09-08, band grown by six on 2026-09-08 so the year under the
- * picked moment clears the row of controls), the other 72 being the name row
- * and the row of controls under it. */
-const BAND = 66;
+/** The band the line is drawn in: 72 of the picture's 144 (picked phone mockup
+ * 2026-09-08, band grown by six on 2026-09-08 so the year under the picked
+ * moment clears the row of controls, and by six more on 2026-09-24 so the
+ * picked dot stands clear of its words), the other 72 being the name row and
+ * the row of controls under it. */
+const BAND = PIC_H;
 
 const pictureHeight = (page: Page) =>
   page.locator("#view").evaluate((node) => Math.round(node.getBoundingClientRect().height));
 
-/** What each row of the picture region measures, which is what the 138 is made
+/** What each row of the picture region measures, which is what the 144 is made
  * of. Exact, because the whole point of the number is that nothing under it
  * moves. */
 const rowHeights = (page: Page) =>
@@ -396,7 +398,7 @@ test.describe("each level is one fixed height", () => {
       }) => {
         await settle(page);
         expect(await pictureHeight(page)).toBe(BAND);
-        // the name row, the band, and the row of controls: 28, 60 and 44
+        // the name row, the band, and the row of controls: 28, 72 and 44
         expect(await rowHeights(page)).toEqual([28, BAND, 44]);
       });
     });

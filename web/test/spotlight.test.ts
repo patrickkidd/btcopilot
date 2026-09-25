@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   Certainty,
+  PIC_H,
   ROWS,
+  ROW_H,
+  WIRE,
+  YEAR_TOP,
   ZONE,
   baseOpacity,
   clip,
@@ -14,6 +18,11 @@ import {
   wrap2,
   zones,
 } from "../src/spotlight";
+
+const PHONE = 390;
+/** The picked dot's radius, and the height of the year written under it. */
+const PICKED_R = 7;
+const YEAR_H = 13;
 
 describe("the words a moment says about itself", () => {
   // R-0009
@@ -124,19 +133,49 @@ describe("the spotlight: dense and sparse", () => {
 
 
   // R-0103
-  it("every tap zone is at least the 44px floor and holds its own moments", () => {
-    const marks = Array.from({ length: 60 }, (_, i) => ({
-      id: i,
-      x: 16 + (i * 358) / 59,
-    }));
-    const zoned = zones(marks, 16, 374);
-    expect(zoned.every((z) => z.width >= ZONE)).toBe(true);
-    expect(zoned.reduce((n, z) => n + z.marks.length, 0)).toBe(60);
+  it("a dot alone has a whole thumb centred on it", () => {
+    const [only] = zones([{ x: 200 }], PHONE);
+    expect(only).toMatchObject({ left: 200 - ZONE / 2, width: ZONE });
+  });
+
+  // R-0103
+  it("a dot at the edge of the picture keeps a whole thumb, reaching inward", () => {
+    const [edge] = zones([{ x: 16 }], PHONE);
+    expect(edge).toMatchObject({ left: 0, width: ZONE });
   });
 
   // R-0402
-  it("a single moment still gets a zone", () => {
-    expect(zones([{ x: 200 }], 16, 374)).toHaveLength(1);
+  it("two dots nearer than a thumb split the space between them at the midpoint", () => {
+    const [a, b] = zones([{ x: 200 }, { x: 220 }], PHONE);
+    expect(a.left + a.width).toBe(210);
+    expect(b.left).toBe(210);
+    expect([a.left, b.left + b.width]).toEqual([200 - ZONE / 2, 220 + ZONE / 2]);
+  });
+
+  // R-0402
+  it("dots drawn over one another share one target", () => {
+    const zoned = zones([{ x: 200 }, { x: 203 }], PHONE);
+    expect(zoned.map((z) => z.marks.length)).toEqual([2]);
+  });
+
+  // R-0402
+  it("on a crowded line every tap lands on the target of the nearest dot", () => {
+    const marks = Array.from({ length: 60 }, (_, i) => ({ x: 16 + (i * 358) / 59 }));
+    const zoned = zones(marks, PHONE);
+    expect(zoned.reduce((n, z) => n + z.marks.length, 0)).toBe(60);
+    zoned.forEach((zone, i) => {
+      const next = zoned[i + 1];
+      if (next) expect(zone.left + zone.width).toBeCloseTo(next.left, 6);
+      for (const mark of zone.marks)
+        expect(mark.x >= zone.left && mark.x <= zone.left + zone.width).toBe(true);
+    });
+  });
+
+  // R-0103
+  it("the picked dot stands clear of the words above it and the year clears the controls", () => {
+    const words = ROWS[1] + ROW_H;
+    expect(WIRE - PICKED_R - words).toBeGreaterThanOrEqual(10);
+    expect(PIC_H - (YEAR_TOP + YEAR_H)).toBeGreaterThanOrEqual(6);
   });
 
   // R-0402

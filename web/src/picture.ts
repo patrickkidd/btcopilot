@@ -82,15 +82,12 @@ const YEAR_CH = 6.3;
  * scale coarsens rather than the line reaching further (R-0381). */
 const REACH = 2;
 
-const REST_H = 60;
 const REST_WIRE = 30;
 /** A dot on the resting line. */
 const DOT_R = 4.5;
 /** The least space between two dot centres inside a box for the two to read as
  * two rather than as one solid bar. */
 const DOT_GAP = 11;
-/** The narrowest tap target a dot keeps when its neighbours crowd it. */
-const HIT_MIN = 6;
 /** A cluster of more than this many moments collapses to a ring and a count. */
 const DENSE = 8;
 /** A gap of this many years or more between clusters earns the amber question. */
@@ -148,23 +145,6 @@ export function dotXs(xs: number[], left: number, boxWidth: number): number[] {
   const to = left + boxWidth - DOT_R;
   if (xs.length < 2) return [(from + to) / 2];
   return xs.map((_, i) => from + ((to - from) * i) / (xs.length - 1));
-}
-
-/** The tap target of each dot on the line: a thumb's full width where the dot
- * has room, and otherwise the space split with its neighbours, so a tap always
- * picks the nearest dot centre and no dot is covered by another's target. */
-export function hitSpans(
-  xs: number[],
-  width: number,
-): { left: number; size: number }[] {
-  return xs.map((x, i) => {
-    const near = Math.min(
-      i ? x - xs[i - 1] : Infinity,
-      i < xs.length - 1 ? xs[i + 1] - x : Infinity,
-    );
-    const size = Math.max(HIT_MIN, Math.min(ZONE, near));
-    return { left: Math.min(Math.max(x - size / 2, 0), width - size), size };
-  });
 }
 
 /** The second line of a label in the two-moments drawing: one row below the
@@ -931,7 +911,7 @@ export class Picture {
     const shows = this.stands({ width, screen }, held, onX);
 
     let svg =
-      `<svg viewBox="0 0 ${width} ${REST_H}" height="${REST_H}" preserveAspectRatio="xMinYMin meet">` +
+      `<svg viewBox="0 0 ${width} ${PIC_H}" height="${PIC_H}" preserveAspectRatio="xMinYMin meet">` +
       (picked
         ? `<defs><linearGradient id="epfade" gradientUnits="userSpaceOnUse" ` +
           `x1="0" x2="0" y1="${wireY + 20}" y2="${wireY - 20}">` +
@@ -939,7 +919,6 @@ export class Picture {
           `<stop offset="1" class="epfade-out"/></linearGradient></defs>`
         : "") +
       `<line class="wire" x1="${x0}" y1="${wireY}" x2="${x1}" y2="${wireY}"/>`;
-    let hits = "";
     let clusterHits = "";
     // A box reaches a little past the moments it holds, and two clusters a
     // month apart would then draw over one another. Where that happens the two
@@ -1016,17 +995,11 @@ export class Picture {
       event,
       x: at(event.dateTime as string),
     }));
-    this.laid.zones = marks.map((mark) => [mark]);
-    const spans = hitSpans(marks.map((mark) => mark.x), width);
-    marks.forEach(({ event, x }, i) => {
+    for (const { event, x } of marks) {
       const on = event.id === this.selected ? " on" : "";
       svg += `<circle class="dot${on}" cx="${x.toFixed(1)}" cy="${wireY}" r="${on ? 7 : DOT_R}"/>`;
-      hits +=
-        `<button class="ss-hit" data-target="${Target.Zone}" data-index="${i}" ` +
-        `aria-label="${esc(event.label)}" ` +
-        `style="left:${spans[i].left.toFixed(1)}px;top:${wireY - ZONE / 2}px;` +
-        `width:${spans[i].size.toFixed(1)}px;height:${ZONE}px"></button>`;
-    });
+    }
+    const hits = this.zoneHits(marks, width, wireY);
 
     svg += `</svg>`;
 
@@ -1313,8 +1286,6 @@ export class Picture {
     const named = new Set(this.named);
     const opacity = baseOpacity(marks.length, this.named.length);
     const radius = dotRadius(marks.length);
-    const zoned = zones(marks, x0, x1);
-    this.laid.zones = zoned.map((zone) => zone.marks);
     // the words are laid out first: where they land decides whether there is
     // room for the bracket over the cluster
     const { text, rowsLaid } = this.labels(marks, x0, x1, wire);
@@ -1375,13 +1346,7 @@ export class Picture {
     let hits =
       `<button class="ss-hit" data-target="${Target.Band}" aria-label="what the coach named" ` +
       `style="left:${x0}px;top:${ROWS[0] + 1}px;width:${x1 - x0}px;height:${ZONE}px"></button>`;
-    zoned.forEach((zone, i) => {
-      hits +=
-        `<button class="ss-hit" data-target="${Target.Zone}" data-index="${i}" ` +
-        `aria-label="events around ${this.yearOf(zone.marks[0].event)}" ` +
-        `style="left:${zone.left.toFixed(1)}px;top:${wire - ZONE / 2}px;` +
-        `width:${zone.width.toFixed(1)}px;height:${ZONE}px"></button>`;
-    });
+    hits += this.zoneHits(marks, width, wire);
     hits += this.shelfHit(x1, wire);
 
     this.pin(height);
@@ -1390,6 +1355,22 @@ export class Picture {
     // holds them on their first frame the same way it stops the rest
     if (still())
       this.host.querySelector("svg")?.pauseAnimations();
+  }
+
+  /** One invisible target per dot, or per dots drawn over one another, laid
+   * where the line's taps read them. */
+  private zoneHits(marks: Mark[], width: number, wire: number): string {
+    const zoned = zones(marks, width);
+    this.laid.zones = zoned.map((zone) => zone.marks);
+    return zoned
+      .map(
+        (zone, i) =>
+          `<button class="ss-hit" data-target="${Target.Zone}" data-index="${i}" ` +
+          `aria-label="${esc(zone.marks[0].event.label)}" ` +
+          `style="left:${zone.left.toFixed(1)}px;top:${wire - ZONE / 2}px;` +
+          `width:${zone.width.toFixed(1)}px;height:${ZONE}px"></button>`,
+      )
+      .join("");
   }
 
   private dot(

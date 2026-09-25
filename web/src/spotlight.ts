@@ -8,21 +8,25 @@
 export const CH = 7.8;
 /** The band the line is drawn in, and what sits where inside it (the picked
  * phone mockup, 2026-09-08): two rows of words, the wire under them, and the
- * year of the moment picked under that. 66 of the picture's 138.
+ * year of the moment picked under that. 72 of the picture's 144.
  *
  * The band was 60 and the year was written off the bottom of it, against the
  * row of controls. Nothing inside the band could give the six back: the words
  * end at 30, the picked dot reaches 48, and the year has to clear both. So the
- * band grew by six and the region with it (owner ruling 2026-09-08). */
+ * band grew by six and the region with it (owner ruling 2026-09-08).
+ *
+ * A thumb aimed at the picked dot landed on the words above it, four points
+ * away, and the other way round; the wire dropped six more for room between
+ * them, and the band and the year with it (owner, 2026-09-24). */
 export const ROWS = [0, 15];
 /** How tall one row of words is. theme.css sets the same number on .ss-t: the
  * words answer a tap only over their own line, so this has to be what is drawn. */
 export const ROW_H = 15;
-export const WIRE = 41;
+export const WIRE = 47;
 /** Where the year under the picked moment is written: clear of the picked
  * dot above it, and six clear of the row of controls below. */
-export const YEAR_TOP = 47;
-export const PIC_H = 66;
+export const YEAR_TOP = 53;
+export const PIC_H = 72;
 export const X_PAD = 16;
 /** UI_STANDARDS: no tap target below 44. */
 export const ZONE = 44;
@@ -193,25 +197,40 @@ export function rows(
   return out;
 }
 
-/** Tap zones across the wire, each at least the 44px floor. A zone holds the
- * moments under it and a tap cycles through them. */
+/** Dots whose centres are nearer than this are drawn over one another. */
+const OVER = 6;
+
+/** The tap targets along the wire, in time order. Each reaches half a thumb
+ * either side of its dot and is ZONE tall, whatever size the dot is drawn at.
+ * Where a neighbour is nearer than a thumb, the two split the space between
+ * them at the midpoint, so a tap always picks the nearest dot and no target
+ * covers another's dot. Dots drawn over one another share one target, and a tap
+ * on it steps through them. At the ends of the picture a target reaches
+ * further inward for what the edge cuts off. */
 export function zones<T extends { x: number }>(
   marks: T[],
-  x0: number,
-  x1: number,
+  width: number,
 ): { left: number; width: number; marks: T[] }[] {
-  const count = Math.max(1, Math.floor((x1 - x0) / ZONE));
-  const width = (x1 - x0) / count;
-  const out = Array.from({ length: count }, (_, i) => ({
-    left: x0 + i * width,
-    width,
-    marks: [] as T[],
-  }));
-  for (const mark of marks) {
-    const i = Math.min(count - 1, Math.max(0, Math.floor((mark.x - x0) / width)));
-    out[i].marks.push(mark);
+  const groups: T[][] = [];
+  for (const mark of [...marks].sort((a, b) => a.x - b.x)) {
+    const last = groups[groups.length - 1];
+    if (last && mark.x - last[last.length - 1].x < OVER) last.push(mark);
+    else groups.push([mark]);
   }
-  return out.filter((zone) => zone.marks.length > 0);
+  return groups.map((group, i) => {
+    const first = group[0].x;
+    const end = group[group.length - 1].x;
+    const prev = groups[i - 1];
+    const before = prev ? (prev[prev.length - 1].x + first) / 2 : 0;
+    const after = i < groups.length - 1 ? (end + groups[i + 1][0].x) / 2 : width;
+    let left = first - ZONE / 2;
+    let right = end + ZONE / 2;
+    if (left < 0) [left, right] = [0, right - left];
+    if (right > width) [left, right] = [left - (right - width), width];
+    left = Math.max(left, before);
+    right = Math.min(right, after);
+    return { left, width: right - left, marks: group };
+  });
 }
 
 /** The next moment a tap on a zone selects: the first, then each in turn, then
