@@ -35,10 +35,11 @@ class Refused:
 
 
 class Turns:
-    """A coach that counts its turns and leaves the record it is given."""
+    """A coach that counts its turns and leaves the record and reply it is given."""
 
-    def __init__(self, events):
-        self.events = events
+    def __init__(self, people, reply):
+        self.people = people
+        self.reply = reply
         self.turns = 0
 
     def record(self, *args, **kwargs):
@@ -46,11 +47,10 @@ class Turns:
 
     def say(self, statement):
         self.turns += 1
-        return "What happened after that?"
+        return self.reply
 
 
 def test_a_run_over_its_cap_stops_and_is_recorded_stopped(tmp_path, monkeypatch):
-    # R-0451
     run = Run(MODEL, GIT, tmp_path)
     run.begin("a case", "once")
     run.charge(Spent(input=1000), RUN_CAP + Decimal("0.01"))
@@ -65,7 +65,6 @@ def test_a_run_over_its_cap_stops_and_is_recorded_stopped(tmp_path, monkeypatch)
 
 
 def test_a_run_writes_one_results_row(tmp_path):
-    # R-0451
     run = Run(MODEL, GIT, tmp_path)
     run.begin("passes", "once")
     run.charge(Spent(input=100, output=10, cache_read=50), Decimal("0.25"))
@@ -121,26 +120,20 @@ def test_a_run_writes_one_results_row(tmp_path):
 
 
 def test_a_merged_case_runs_one_turn_for_both_assertions():
-    # R-0434
-    conflict = {
-        "id": 40,
-        "person": 5,
-        "relationship": "conflict",
-        "relationshipTargets": [1],
-    }
-    coach = Turns([conflict])
-    coachturn.test_a_visit_and_an_argument_is_one_conflict_event_from_the_visitor_to_the_speaker(
+    # R-0441
+    tom = [{"id": 14, "name": "Tom"}]
+    coach = Turns(tom, "And Tom, where is he now?")
+    coachturn.test_a_complete_list_removes_no_one_and_the_coach_asks_about_the_one_left_out(
         coach
     )
     assert coach.turns == 1
     with pytest.raises(AssertionError):
-        coachturn.test_a_visit_and_an_argument_is_one_conflict_event_from_the_visitor_to_the_speaker(
-            Turns([dict(conflict, relationshipTargets=[3])])
+        coachturn.test_a_complete_list_removes_no_one_and_the_coach_asks_about_the_one_left_out(
+            Turns(tom, "Who else is in the family?")
         )
 
 
 def test_k_of_n_passes_at_k_and_fails_below_it():
-    # R-0451
     runs = iter([False, True, True, True, False, False])
 
     @passes(2, of=3)
@@ -154,7 +147,6 @@ def test_k_of_n_passes_at_k_and_fails_below_it():
 
 
 def test_a_refused_balance_check_stops_the_run(tmp_path, monkeypatch):
-    # R-0451
     monkeypatch.setattr(anthropic, "Anthropic", Refused)
     run = Run(MODEL, GIT, tmp_path)
     with pytest.raises(

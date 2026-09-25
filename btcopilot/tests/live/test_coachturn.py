@@ -7,7 +7,7 @@ names only.
 import re
 
 from btcopilot import prompts
-from btcopilot.tests.live.criterion import once, passes
+from btcopilot.tests.live.criterion import once, passes, waiting
 
 NOTHING = ("", None)
 
@@ -16,6 +16,7 @@ def on(events, person):
     return [e for e in events if e.get("person") == person]
 
 
+@waiting
 @once
 def test_a_feeling_that_interferes_with_work_is_a_symptom(coach):
     # R-0424
@@ -24,6 +25,7 @@ def test_a_feeling_that_interferes_with_work_is_a_symptom(coach):
     assert [e for e in on(coach.events, 1) if e.get("symptom") == "up"]
 
 
+@waiting
 @once
 def test_a_feeling_that_interferes_with_nothing_is_not_a_symptom(coach):
     # R-0424
@@ -34,6 +36,7 @@ def test_a_feeling_that_interferes_with_nothing_is_not_a_symptom(coach):
     assert [e for e in coach.events if e.get("symptom") not in NOTHING] == []
 
 
+@waiting
 @once
 def test_a_diagnosis_is_symptom_up_on_the_person_it_happened_to_dated_when_it_happened(
     coach,
@@ -57,6 +60,7 @@ def test_a_date_known_to_the_month_is_approximate(coach):
     assert death.get("dateCertainty") == "approximate"
 
 
+@waiting
 @once
 def test_the_coach_infers_anxiety_down_from_what_is_described(coach):
     # R-0427
@@ -65,6 +69,7 @@ def test_the_coach_infers_anxiety_down_from_what_is_described(coach):
     assert [e for e in on(coach.events, 3) if e.get("anxiety") == "down"]
 
 
+@waiting
 @once
 def test_the_coach_infers_anxiety_up_around_a_stressor_half_remembered(coach):
     # R-0427
@@ -75,6 +80,7 @@ def test_the_coach_infers_anxiety_up_around_a_stressor_half_remembered(coach):
     assert [e for e in coach.events if e.get("anxiety") == "up"]
 
 
+@waiting
 @once
 def test_things_rocky_since_the_divorce_is_functioning_down_on_the_speaker(coach):
     # R-0428
@@ -83,6 +89,7 @@ def test_things_rocky_since_the_divorce_is_functioning_down_on_the_speaker(coach
     assert [e for e in on(coach.events, 1) if e.get("functioning") == "down"]
 
 
+@waiting
 @once
 def test_the_coach_prompt_defines_functioning_in_the_spec_words():
     # R-0428
@@ -95,6 +102,7 @@ MOMS_DIAGNOSIS = (
 )
 
 
+@waiting
 @once
 def test_mom_diagnosis_is_a_symptom_on_mom_and_stepping_back_is_under_and_over_functioning(
     coach,
@@ -111,6 +119,7 @@ def test_mom_diagnosis_is_a_symptom_on_mom_and_stepping_back_is_under_and_over_f
 MICHAEL = {"id": 5, "name": "Michael", "gender": "male"}
 
 
+@waiting
 @once
 def test_a_visit_and_an_argument_is_one_conflict_event_from_the_visitor_to_the_speaker(
     coach,
@@ -132,6 +141,7 @@ GRADES = (
 )
 
 
+@waiting
 @once
 def test_projection_is_coded_in_the_turn_it_is_described_without_asking(coach):
     # R-0435
@@ -190,6 +200,7 @@ WORRY = {
 AGAIN = "Like I said, I was really worried after we moved in 2019, I couldn't sleep."
 
 
+@waiting
 @once
 def test_a_shift_said_again_makes_no_second_event_and_is_folded_into_the_first(coach):
     # R-0442
@@ -202,6 +213,7 @@ def test_a_shift_said_again_makes_no_second_event_and_is_folded_into_the_first(c
     assert event.get("notes") or event.get("description") != WORRY["description"]
 
 
+@waiting
 @once
 def test_a_couple_splitting_over_having_kids_is_an_away_move_between_the_two_of_them(
     coach,

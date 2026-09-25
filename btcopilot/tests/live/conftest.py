@@ -27,6 +27,7 @@ from btcopilot.models import ModelCall
 from btcopilot.promptdir import key_present
 from btcopilot.schema import DiagramData
 from btcopilot.tests.conftest import csrf_token, replied
+from btcopilot.tests.live.criterion import WAITING
 from btcopilot.tests.live.run import Outcome, Run
 
 HERE = Path(__file__).parent
@@ -41,6 +42,8 @@ def pytest_collection_modifyitems(config, items):
     for item in live:
         item.add_marker(pytest.mark.live)
         item.add_marker(pytest.mark.e2e)
+        if item.get_closest_marker("waiting"):
+            item.add_marker(pytest.mark.skip(reason=WAITING))
 
 
 @pytest.fixture(scope="session", autouse=True)

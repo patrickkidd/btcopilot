@@ -5,6 +5,13 @@ least k of those runs do."""
 import functools
 from dataclasses import dataclass
 
+import pytest
+
+WAITING = (
+    "coding rule undecided; awaits ratified ground truth from the IRR review group"
+)
+waiting = pytest.mark.waiting
+
 
 @dataclass(frozen=True)
 class Criterion:
