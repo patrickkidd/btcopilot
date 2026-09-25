@@ -913,3 +913,18 @@ extraction prompts, passes or F1 on extraction is history. The undated sections
 that described that pipeline as the current design (model selection, Gemini issues,
 prompt architecture, what to include in extraction prompts, monitoring, related
 files) were removed with it. The pipeline's code was last present in a7eeb2c.
+
+### September 2026: The coach keeps the family's open questions (FD-363)
+
+**Change**: the agent prompt gains one paragraph, a fragment shared with a new
+backfill prompt, on keeping open questions in the record. Two kinds: food for
+thought, sourced to Kerr's "people usually require questions to stimulate their
+thinking" (Family Evaluation, ch. 10), and facts to find, kept only when the
+coach judges them relevant to the evaluation or the family's historical context,
+with inclusion as the default when in doubt and nothing kept that would spend the
+person's time, attention and motivation for nothing. It names the three question
+tools, the map's QUESTIONS section, and never asking again a question the person
+declined. It is worded as judgement, not rules. The backfill prompt goes once over
+a past session and adds the questions worth keeping with the message they were
+asked in. The private fragment sits after the record contract so it stays in the
+cached head. Public and private goldens were re-captured. [R-0482, R-0485]

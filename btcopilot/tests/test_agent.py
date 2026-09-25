@@ -814,6 +814,17 @@ def test_the_coach_is_told_to_end_its_reply_with_a_question():
     assert "it always does while the record still lacks any of the minimum data" in prompt
 
 
+def test_the_coach_is_told_how_to_keep_its_questions():
+    # R-0482, R-0485
+    prompt = " ".join(get_agent_prompt().split())
+    assert "people usually require questions to stimulate their thinking" in prompt
+    assert "Family Evaluation, ch. 10" in prompt
+    assert "When in doubt, include it rather than leave it out" in prompt
+    assert "Never ask again a question the map marks declined" in prompt
+    for tool in ("add_question", "set_question", "read_questions"):
+        assert f"`{tool}`" in prompt
+
+
 
 def test_a_remove_of_a_kind_the_record_does_not_hold_is_refused(discussion, family):
     # R-0478

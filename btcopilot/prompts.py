@@ -142,6 +142,13 @@ def agent_prompt(
     return fixed, text[len(fixed) :]
 
 
+def question_backfill(map: str, transcript: str) -> str:
+    """The system prompt for going back once over a past session to fill in the
+    questions asked in it. `transcript` numbers each coach message by its
+    statement id."""
+    return files().text("question_backfill", map=map, transcript=transcript)
+
+
 def note_register() -> str:
     """What changes when the session is a clinician's note rather than a chat
     about their own family (R-0281)."""

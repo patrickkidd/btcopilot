@@ -21,6 +21,7 @@ REAL_PRIVATE = REPO / "private" / "prompts"
 
 RECORD = "RECORD-SENTINEL\nsecond line"
 INTERACTIONS = "INTERACTIONS-SENTINEL"
+TRANSCRIPT = "TRANSCRIPT-SENTINEL\n41 coach: Who were your father's brothers and sisters?"
 
 
 def rendered(module, names) -> dict:
@@ -32,6 +33,9 @@ def rendered(module, names) -> dict:
     out["get_agent_prompt/record"] = module.get_agent_prompt(record=RECORD)
     out["get_agent_prompt/both"] = module.get_agent_prompt(
         record=RECORD, interactions=INTERACTIONS
+    )
+    out["question_backfill"] = module.question_backfill(
+        map=RECORD, transcript=TRANSCRIPT
     )
     out["note_register"] = module.note_register()
     out["scribe_prompt/empty"] = module.scribe_prompt()
@@ -85,6 +89,15 @@ def test_the_app_runs_whole_with_no_private_prompts(public):
     assert public.get_agent_prompt(record="Marcus, 40")
     assert public.scribe_prompt(record="Marcus, 40")
     assert set(public.tool_meanings()) == set(public.ToolText)
+
+
+def test_the_backfill_prompt_carries_the_session_the_map_and_the_judgement(public):
+    # R-0482
+    prompt = public.question_backfill(map=RECORD, transcript=TRANSCRIPT)
+    assert TRANSCRIPT in prompt
+    assert RECORD in prompt
+    assert "people usually require questions to stimulate their thinking" in prompt
+    assert "`asked_in`" in prompt
 
 
 def test_a_prompt_renders_the_fragments_it_includes(tmp_path):
