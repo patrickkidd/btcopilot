@@ -41,7 +41,6 @@ export enum InteractionKind {
   Play = "play",
   Dismiss = "dismiss",
   DoesntFit = "doesnt_fit",
-  Partly = "partly",
 }
 
 export { DateCertainty } from "./certainty";
@@ -184,13 +183,14 @@ export enum EvidenceKind {
 }
 
 /** One thing an impression rests on, named as the record names it. A message
- * also says which session it was said in and on what day. */
+ * also says which session it was said in and on what day, both null once that
+ * session is gone. */
 export interface Evidence {
   kind: EvidenceKind;
   id: number | string;
   label: string;
-  discussion_id?: number;
-  at?: string;
+  discussion_id?: number | null;
+  at?: string | null;
 }
 
 /** A question the coach has asked, with where it was asked. Only the open ones

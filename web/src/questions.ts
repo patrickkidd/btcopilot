@@ -69,8 +69,12 @@ export const evidenceChip = (e: Evidence): Chip => ({
   bare: false,
 });
 
-const evidenceLabel = (e: Evidence, now: Date) =>
-  e.kind === EvidenceKind.Statement ? `You said, ${day(e.at as string, now)}` : e.label;
+/** A chip for each thing an impression rests on, named by the record. A
+ * message whose session is gone keeps its name as plain words. */
+const evidence = (e: Evidence, n: number) =>
+  e.kind === EvidenceKind.Statement && !e.discussion_id
+    ? `<span class="blabel">${esc(e.label)}</span>`
+    : `<button type="button" class="chip ${ChipTone.Data}" data-ev="${n}">${esc(e.label)}</button>`;
 
 /** The day it was asked, which goes to where it was asked. One whose session
  * is gone keeps its day as plain words. */
@@ -93,12 +97,7 @@ function questionRow(q: AskedQuestion, now: Date): string {
 /** What the coach noticed, in its words, what it rests on, and the day it was
  * raised; behind it, the two ways to push back. */
 function impressionRow(q: AskedQuestion, now: Date): string {
-  const chips = q.evidence
-    .map(
-      (e, n) =>
-        `<button type="button" class="chip ${ChipTone.Data}" data-ev="${n}">${esc(evidenceLabel(e, now))}</button>`,
-    )
-    .join("");
+  const chips = q.evidence.map(evidence).join("");
   return (
     `<div class="irow" data-q="${esc(q.id)}"><div class="islide">` +
     `<div class="itext" role="button" tabindex="0">${esc(q.text)}</div>` +
@@ -163,15 +162,13 @@ export class Questions {
     this.body.scrollTop = top;
   }
 
-  /** A message is on its way: a "partly" is only a push-back once the reply
-   * that says why has been sent with the impression still in it (R-0073). */
-  sent(statement: string): void {
-    for (const id of this.partly)
-      if (statement.includes(token(ChipKind.Impression, id))) {
-        void api.saveQuestion(id, { pushback: Pushback.Partly });
-        this.handlers.record(InteractionKind.Partly, ItemKind.Question, id);
-      }
+  /** The reader is sending what they wrote: a "partly" is only a push-back
+   * once the reply that says why is sent with the impression still in it
+   * (R-0073), and it is stored before the coach reads the reply. */
+  async sending(draft: string): Promise<void> {
+    const ids = [...this.partly].filter((id) => draft.includes(token(ChipKind.Impression, id)));
     this.partly.clear();
+    await Promise.all(ids.map((id) => api.saveQuestion(id, { pushback: Pushback.Partly })));
   }
 
   private async onClick(e: Event): Promise<void> {

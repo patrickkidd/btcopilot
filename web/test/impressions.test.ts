@@ -34,7 +34,8 @@ const note = (
       ? [
           { kind: EvidenceKind.Event, id: 14, label: "Moved to Tacoma" },
           { kind: EvidenceKind.Cluster, id: "c2", label: "The winter the mill shut" },
-          { kind: EvidenceKind.Statement, id: 812, label: "", discussion_id: 5, at: "2026-09-02" },
+          { kind: EvidenceKind.Statement, id: 812, label: "You said, 2 Sep", discussion_id: 5, at: "2026-09-02" },
+          { kind: EvidenceKind.Statement, id: 90, label: "a message no longer in the record", discussion_id: null, at: null },
         ]
       : [],
   pushback: null,
@@ -71,13 +72,18 @@ describe("impressions on the coach's tab", () => {
       "Based on:",
       "Moved to Tacoma",
       "The winter the mill shut",
-      "You said, Sep 2",
+      "You said, 2 Sep",
+      "a message no longer in the record",
       "Raised Sunday ›",
       "⋯",
       "Doesn't fit",
       "Partly",
     ]);
     expect(said).not.toContain("You go quiet when the family fights.");
+    // a message whose session is gone goes nowhere
+    expect(questionsHtml(FAMILY, NOW)).toContain(
+      '<span class="blabel">a message no longer in the record</span>',
+    );
   });
 
   // R-0007
@@ -154,16 +160,16 @@ describe("pushing back on an impression", () => {
     expect(fetched).not.toHaveBeenCalled();
     expect(handlers.say).not.toHaveBeenCalled();
 
-    list.sent(`${token(ChipKind.Impression, "i2")}${PARTLY}it was only my uncle`);
+    await list.sending(`${token(ChipKind.Impression, "i2")}${PARTLY}it was only my uncle`);
     expect(sentAt()).toEqual({ url: "/app/questions/i2", method: "PATCH", body: { pushback: "partly" } });
-    expect(handlers.record).toHaveBeenCalledWith(InteractionKind.Partly, ItemKind.Question, "i2");
+    expect(handlers.record).toHaveBeenCalledTimes(1);
   });
 
   // R-0077, R-0073
   it("partly with the impression taken out of the reply stores nothing", async () => {
     const { list, click } = drawer(FAMILY);
     await click("i2", ".partly");
-    list.sent("never mind");
+    await list.sending("never mind");
     expect(fetched).not.toHaveBeenCalled();
   });
 });

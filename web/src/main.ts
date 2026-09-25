@@ -875,18 +875,20 @@ function whatFailed(error: unknown): string {
  * left half-typed and nothing looks like it is still coming. */
 let inFlight = false;
 
-function send(): void {
-  if (post(chat.draft())) chat.resetDraft();
+async function send(): Promise<void> {
+  const statement = chat.draft();
+  if (!statement || inFlight) return;
+  await questions.sending(statement);
+  chat.resetDraft();
+  post(statement);
 }
 
 /** The reader's words go into the thread as theirs and on to the coach. */
-function post(statement: string): boolean {
-  if (!statement || inFlight) return false;
+function post(statement: string): void {
+  if (!statement || inFlight) return;
   track.tap(Feature.SendMessage);
-  questions.sent(statement);
   chat.add(Role.User, statement);
   void deliver(statement);
-  return true;
 }
 
 async function deliver(statement: string): Promise<void> {
@@ -1203,7 +1205,7 @@ $("composer").addEventListener("keydown", (e) => {
   selection.removeAllRanges();
   selection.addRange(range);
 });
-$("send").addEventListener("click", send);
+$("send").addEventListener("click", () => void send());
 $("menu-close").addEventListener("click", () => {
   track.tap(Feature.CloseMenu);
   const field = $("menu-search") as HTMLInputElement;
