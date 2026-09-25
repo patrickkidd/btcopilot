@@ -360,7 +360,7 @@ def schemas() -> list[dict]:
                         "type": "integer",
                         "description": (
                             "Only when told to: the number of the coach message in a "
-                            "past session that asked it, word for word."
+                            "past session that asked it."
                         ),
                     },
                 },
@@ -874,7 +874,7 @@ class Toolbox:
                     "asked_in is for a question asked in that message: state asked",
                     "It said where a question was asked without asking it.",
                 )
-            said = self._said(args["asked_in"], args["text"])
+            said = self._said(args["asked_in"])
             where = record.asked_in(self.diagram_id)
             if any(
                 record.normal(q["text"]) == record.normal(args["text"])
@@ -911,7 +911,7 @@ class Toolbox:
             "asked_at": said.created_at.date().isoformat(),
         }
 
-    def _said(self, statement_id: int, text: str) -> Statement:
+    def _said(self, statement_id: int) -> Statement:
         statement = (
             Statement.query.join(Discussion)
             .filter(
@@ -921,11 +921,10 @@ class Toolbox:
             )
             .one_or_none()
         )
-        if statement is None or text not in (statement.text or ""):
+        if statement is None:
             raise ToolError(
-                f"Message {statement_id} is not a coach message of this family that "
-                "holds those words exactly",
-                "Those words are not in that message.",
+                f"Message {statement_id} is not a coach message of this family",
+                "That is not something the coach said in this family's sessions.",
             )
         return statement
 

@@ -30,10 +30,11 @@ def past(web, family, monkeypatch) -> dict:
     coach(monkeypatch, Model(said(f"That sounds hard. {RUTH}"), said("Tell me more.")))
     body = post(web, csrf_token(web), "My grandmother raised me.").get_json()
     post(web, csrf_token(web), "I am not sure.")
-    reply = statements(web, body["discussion_id"])[1]["id"]
+    said_ = statements(web, body["discussion_id"])
+    reply = said_[1]["id"]
     db.session.get(Statement, reply).created_at = ASKED_ON
     db.session.commit()
-    return {"session": body["discussion_id"], "reply": reply}
+    return {"session": body["discussion_id"], "reply": reply, "user": said_[0]["id"]}
 
 
 def backfill(flask_app, *turns, args=("--yes",)) -> tuple[list[dict], Model]:
@@ -46,11 +47,11 @@ def backfill(flask_app, *turns, args=("--yes",)) -> tuple[list[dict], Model]:
     return json.loads(result.output), model
 
 
-def asking(past, text=RUTH):
+def asking(past, text=RUTH, message="reply"):
     return calling(
         (
             ToolName.AddQuestion,
-            {"text": text, "kind": "fact", "state": "asked", "asked_in": past["reply"]},
+            {"text": text, "kind": "fact", "state": "asked", "asked_in": past[message]},
         )
     )
 
@@ -76,14 +77,22 @@ def test_a_backfilled_question_keeps_the_message_and_day_it_was_asked(
     )
 
 
-def test_words_the_message_does_not_hold_are_refused(flask_app, family, past):
+def test_a_backfilled_question_may_reword_its_message_but_must_come_from_the_coach(
+    flask_app, family, past
+):
     # R-0006
-    _, model = backfill(flask_app, asking(past, "When was Ruth born?"), said(""))
+    worded = "When did your grandmother Ruth die, and where?"
+    _, model = backfill(
+        flask_app,
+        asking(past, worded),
+        asking(past, "Who raised you?", message="user"),
+        said(""),
+    )
 
-    result = model.histories[1][-1]["content"][0]
-    assert result["is_error"] is True
+    assert [m["content"][0]["is_error"] for m in model.histories[-1][2::2]] == [False, True]
     db.session.expire_all()
-    assert family.get_diagram_data().questions == []
+    assert [q["text"] for q in family.get_diagram_data().questions] == [worded]
+    assert record.asked_in(family.id)["q1"]["statement_id"] == past["reply"]
 
 
 def test_a_session_is_gone_through_once_and_the_preview_writes_nothing(
