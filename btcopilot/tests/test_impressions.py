@@ -5,6 +5,8 @@ the page only once raised.
 Invented names only.
 """
 
+import datetime
+
 import pytest
 
 from btcopilot import chips, record, turnlog
@@ -273,9 +275,12 @@ def test_impression_calls_are_kept_with_their_names_and_one_change_row_each(
     assert len(rows) == len([t for t in reply["tools"] if t["name"] != "read_impressions"])
 
 
+def made(statement: dict) -> datetime.datetime:
+    return db.session.get(Statement, statement["id"]).created_at
+
+
 def first_day(statement: dict) -> str:
-    made = db.session.get(Statement, statement["id"]).created_at
-    return f"{made.day} {made:%b}"
+    return f"{made(statement).day} {made(statement):%b}"
 
 
 def test_the_page_gets_raised_impressions_with_labelled_evidence_and_never_a_held_one(
@@ -303,7 +308,7 @@ def test_the_page_gets_raised_impressions_with_labelled_evidence_and_never_a_hel
                     "id": first["id"],
                     "label": f"You said, {first_day(first)}",
                     "discussion_id": body["discussion_id"],
-                    "at": TODAY,
+                    "at": made(first).date().isoformat(),
                 },
             ],
             "pushback": None,

@@ -168,7 +168,8 @@ def test_old_turns_get_their_tool_calls_and_a_turn_that_broke_is_marked_unfinish
 def test_a_cluster_id_used_again_after_a_removal_names_each_cluster_as_it_was(
     flask_app, tmp_path
 ):
-    # R-0478: a new cluster takes the lowest free id, so a removed c7 comes back
+    # R-0478
+    # A new cluster takes the lowest free id, so a removed c7 comes back
     # as a different c7, and each line still names the one it touched. The first
     # c7 is logged as one whole add, the way rows are written now; the second as
     # field sets on its id, the way rows were written before.

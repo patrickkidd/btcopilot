@@ -61,12 +61,14 @@ def _reply(test_user) -> Statement:
 
 
 def test_agent_changes_excludes_a_backfill_row_on_the_same_statement(flask_app, test_user):
+    # R-0487
     statement = _reply(test_user)
     seen = _count(migrationgate.AGENT_CHANGES, statement.id)
     assert seen == 2
 
 
 def test_dropping_the_turn_id_match_also_counts_the_backfill_row(flask_app, test_user):
+    # R-0487
     statement = _reply(test_user)
     seen = _count(WITHOUT_TURN_ID, statement.id)
     assert seen == 3

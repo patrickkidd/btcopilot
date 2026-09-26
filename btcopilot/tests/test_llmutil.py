@@ -40,6 +40,7 @@ def anthropic_env(monkeypatch):
 
 
 def test_a_local_url_sends_every_call_to_the_local_model(anthropic_env):
+    # R-0507
     anthropic_env.setenv(llmutil.LOCAL_URL, "http://127.0.0.1:11434")
     anthropic_env.setenv(llmutil.LOCAL_MODEL, "qwen3:8b")
     client = llmutil._anthropic_client()
@@ -51,6 +52,7 @@ def test_a_local_url_sends_every_call_to_the_local_model(anthropic_env):
 
 
 def test_without_a_local_url_calls_go_to_anthropic(anthropic_env):
+    # R-0507
     client = llmutil._anthropic_client()
     assert str(client.base_url) == "https://api.anthropic.com"
     assert client.api_key == "anthropic-key"
@@ -58,12 +60,14 @@ def test_without_a_local_url_calls_go_to_anthropic(anthropic_env):
 
 
 def test_a_local_url_without_a_model_fails(anthropic_env):
+    # R-0507
     anthropic_env.setenv(llmutil.LOCAL_URL, "http://127.0.0.1:11434")
     with pytest.raises(KeyError):
         CoachModel()
 
 
 def test_the_local_model_costs_nothing(anthropic_env):
+    # R-0507
     anthropic_env.setenv(llmutil.LOCAL_URL, "http://127.0.0.1:11434")
     anthropic_env.setenv(llmutil.LOCAL_MODEL, "qwen3:8b")
     assert cost("qwen3:8b", Spent(input=1000, output=1000)) == 0
@@ -75,6 +79,7 @@ class Named:
 
 
 def test_a_local_url_sends_gemini_extraction_to_the_local_model(anthropic_env):
+    # R-0507
     anthropic_env.setenv(llmutil.LOCAL_URL, "http://127.0.0.1:11434")
     anthropic_env.setenv(llmutil.LOCAL_MODEL, "qwen3:8b")
     anthropic_env.delenv("GOOGLE_GEMINI_API_KEY", raising=False)

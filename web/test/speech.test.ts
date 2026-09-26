@@ -49,6 +49,7 @@ beforeEach(() => {
 
 afterEach(() => vi.unstubAllGlobals());
 
+// R-0099
 it("a reply that arrives after the send tap is spoken on iOS", () => {
   voice.tapping = true;
   hush();

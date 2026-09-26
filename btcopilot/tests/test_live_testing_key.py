@@ -6,6 +6,7 @@ from btcopilot.tests.live.conftest import require_testing_key
 
 
 def test_the_live_venue_refuses_to_run_without_a_testing_key(monkeypatch):
+    # R-0506
     monkeypatch.delenv("ANTHROPIC_TESTING_KEY", raising=False)
     with pytest.raises(AssertionError, match="ANTHROPIC_TESTING_KEY"):
         require_testing_key()

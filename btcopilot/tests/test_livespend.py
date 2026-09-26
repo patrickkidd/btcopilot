@@ -51,6 +51,7 @@ class Turns:
 
 
 def test_a_run_over_its_cap_stops_and_is_recorded_stopped(tmp_path, monkeypatch):
+    # R-0507
     run = Run(MODEL, GIT, tmp_path)
     run.begin("a case", "once")
     run.charge(Spent(input=1000), RUN_CAP + Decimal("0.01"))
@@ -65,6 +66,7 @@ def test_a_run_over_its_cap_stops_and_is_recorded_stopped(tmp_path, monkeypatch)
 
 
 def test_a_run_writes_one_results_row(tmp_path):
+    # R-0507
     run = Run(MODEL, GIT, tmp_path)
     run.begin("passes", "once")
     run.charge(Spent(input=100, output=10, cache_read=50), Decimal("0.25"))
@@ -147,6 +149,7 @@ def test_k_of_n_passes_at_k_and_fails_below_it():
 
 
 def test_a_refused_balance_check_stops_the_run(tmp_path, monkeypatch):
+    # R-0507
     monkeypatch.setattr(anthropic, "Anthropic", Refused)
     run = Run(MODEL, GIT, tmp_path)
     with pytest.raises(

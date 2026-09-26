@@ -22,6 +22,7 @@ R-0046 | WAIVED | a rejected mockup control; nothing in the app to observe
 R-0050 | WAIVED | a watch-and-decide product call
 R-0054 | WAIVED | a statement of the theory the data rests on; no single behaviour
 R-0056 | TEST OWED | not built: nothing files friction reports and nothing answers from a reference manual
+R-0057 | TEST OWED | undecided since R-0511; the second test waits until the IRR group ratifies new ground truth (R-0509)
 R-0058 | WAIVED | a post-mortem of a discarded tab; the lesson is carried by R-0284
 R-0059 | WAIVED | a design principle; judged by eye
 R-0066 | WAIVED | a design principle of simplicity; judged by eye
@@ -61,7 +62,11 @@ R-0397 | WAIVED | a rule about how findings are reported
 R-0398 | WAIVED | a rule about how galleries are captioned
 R-0399 | WAIVED | a rule about how concepts are designed
 R-0400 | WAIVED | a decision to start the beta
+R-0425 | TEST OWED | a second coding eval waits until the IRR group ratifies ground truth (R-0509); the public prompt carries no wording to pin
 R-0426 | WAIVED | deferred until there is enough data; nothing fixed to observe
+R-0433 | TEST OWED | partly rescinded by R-0510; the second test waits until the IRR group ratifies ground truth (R-0509)
+R-0434 | TEST OWED | a second coding eval waits until the IRR group ratifies ground truth (R-0509); the public prompt carries no wording to pin
+R-0435 | TEST OWED | a second coding eval waits until the IRR group ratifies ground truth (R-0509); the public prompt carries no wording to pin
 R-0443 | TEST OWED | not built: no session-end or on-return review call exists; it is the ruled fast-follow
 R-0444 | WAIVED | an architecture principle; the review it calls for is R-0443
 R-0468 | WAIVED | the box was created by hand in the provider console; no file in the repo holds its region
