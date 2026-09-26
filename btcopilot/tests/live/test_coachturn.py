@@ -160,18 +160,6 @@ def test_a_reply_ends_in_a_question_while_the_family_is_unknown(coach):
     assert reply.rstrip().endswith("?")
 
 
-@once
-def test_the_coach_prompt_marks_its_fallback_coding_rules_provisional():
-    # R-0440
-    assert "provisional" in prompts.get_agent_prompt().lower()
-
-
-@once
-def test_the_scribe_prompt_marks_its_fallback_coding_rules_provisional():
-    # R-0440
-    assert "provisional" in prompts.scribe_prompt().lower()
-
-
 BOB = {"id": 12, "name": "Bob", "gender": "male", "parents": 10}
 JAMES = {"id": 13, "name": "James", "gender": "male", "parents": 10}
 TOM = {"id": 14, "name": "Tom", "gender": "male", "parents": 10}

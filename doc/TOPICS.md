@@ -39,8 +39,9 @@ batch PR pushed to production continuously and tested in his own thread with no 
 Added 2026-09-25, not yet numbered: a build for him to test goes to the box by a release run
 dispatched from the ticket branch, never by a merge, and only after the 14-point pre-deploy
 test bar passes; production and testing run on separate keys.
-**Open:** (1) [build] the private scribe prompt lacks the word "provisional" on its fallback
-coding rules, the one failure of the paid behaviour run, also failing on master; (2) [ruling] whether the 4 questions the backfill found in his whole history
+**Open:** (1) [closed 2026-09-25] the paid behaviour run's one failure, the scribe prompt
+lacking the word "provisional", tested a marker Patrick never ruled; the marker and its checks
+are removed and the literature rules stay unlabelled, judged by F1 after coding [R-0519]; (2) [ruling] whether the 4 questions the backfill found in his whole history
 are too few; (3) [verify] no real coach turn had run on production before his own, because a
 test sign-in link on the box was refused by the permission checks; (4) [build] production's
 title bar reads "Free Diagram" instead of the diagram's real name; (5) [build] onboarding the

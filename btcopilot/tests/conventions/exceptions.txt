@@ -91,3 +91,4 @@ R-0506 | TEST OWED | built or specified this session; its tests cite an older ru
 R-0510 | WAIVED | a rescission; nothing to assert until the IRR group ratifies new ground truth
 R-0511 | WAIVED | marks a coding ruling undecided; nothing to assert until the IRR group ratifies new ground truth
 R-0517 | WAIVED | an architectural principle judged in design review; no single surface to assert on
+R-0519 | WAIVED | a rescission of a label; the literature rules are judged by F1 after coding, nothing to assert

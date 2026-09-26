@@ -205,8 +205,8 @@ on the diagnosed person, the coach infers and the user corrects, functioning in 
 wording, the worked examples as he coded them, projection coded without asking, replies end in a
 question while the family evaluation's minimum data has gaps, notes on events with detail folded
 in, a re-mention folded into the existing event, ask before removing someone left off a list.
-The coding-judgment questions stay open for the coders, with a best-guess rule worded from the
-literature and marked provisional [R-0439, R-0440]; any change resting on last year's IRR
+The coding-judgment questions stay open for the coders; each gap carries a best-guess rule worded
+from the literature, judged by F1 after coding [R-0439, R-0519]; any change resting on last year's IRR
 agreements comes to him first [R-0423]. Code: events carry notes; two same-day shifts with
 different variables both land; the coach is told the speaker and today's date; omitted certainty
 is unknown; a marriage sets the bond's flag; adoption invents no parent; end dates are carried;
@@ -312,7 +312,8 @@ production key, and the old key is off it.
 3.2026.9.25.4-g1faeeaa, the database at 1b00000000ae (which, like 1b00000000ad, only rolls
 forward), a backup taken first. The behaviour evals on the real model: 10 passed, 1 failed, the
 failure being the private scribe prompt missing the word "provisional" on its fallback coding
-rules, which fails on master too. The impressions backfill ran over three families. No real coach
+rules, which fails on master too; that marker was never Patrick's ruling, so the marker and its
+two checks were removed on 2026-09-25 [R-0519]. The impressions backfill ran over three families. No real coach
 turn has run on this build yet, because the permission checks block a sign-in link for the test
 account; Patrick's next message is the first. Real spend is asked for first.
 

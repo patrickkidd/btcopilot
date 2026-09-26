@@ -1782,3 +1782,10 @@ because a copied session breaks the lookup by id; a list of those sessions with 
 is kept in the private corpus; the memories that apply are carried over; ~/theapp becomes the
 legacy home for master-legacy and the familydiagram release branches. The plan's remaining
 choices wait on his word; nothing has moved.
+
+## 2026-09-25: Literature coding rules carry no provisional label
+
+Patrick [R-0519]. The 2026-09-23 entry's "provisional" wording for the open coding questions was
+an agent assumption; he never ruled it. Coding-judgment gaps are filled with best-guess rules
+worded from the literature and judged by F1 after coding. The label is removed from the private
+prompts and the two checks that grepped for it are deleted; R-0440 is superseded by R-0519.
