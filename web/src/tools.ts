@@ -1,3 +1,4 @@
+import { esc } from "./dom";
 import { when } from "./rows";
 import { QuestionOutcome, QuestionState, type ToolCall, ViewKind } from "./types";
 
@@ -57,34 +58,52 @@ const DATES = new Set(["date", "end_date"]);
 /** Free text too long for one line: the line says it changed, not to what. */
 const LONG = new Set(["notes", "summary"]);
 
-function list(items: string[]): string {
-  return items.length < 2
-    ? items.join("")
-    : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
+/** A line is words and the names of what they act on, which are set apart
+ * from the words around them. */
+type Part = string | { name: string };
+export type Line = Part[];
+
+const named = (name: string): Part => ({ name });
+
+function join(parts: Line[], sep: string, last = sep): Line {
+  return parts.flatMap((part, i) =>
+    i === 0 ? part : [i === parts.length - 1 ? last : sep, ...part],
+  );
 }
 
-function said({ args, names }: ToolCall, arg: string): string {
+const list = (names: string[]): Line => join(names.map((name) => [named(name)]), ", ", " and ");
+
+export const text = (line: Line): string =>
+  line.map((part) => (typeof part === "string" ? part : part.name)).join("");
+
+export const html = (line: Line): string =>
+  line.map((part) => (typeof part === "string" ? esc(part) : `<em>${esc(part.name)}</em>`)).join("");
+
+function said({ args, names }: ToolCall, arg: string): Line {
   const name = names[arg];
-  if (name !== undefined) return Array.isArray(name) ? list(name) : name;
-  return DATES.has(arg) ? when(args[arg] as string) : String(args[arg]);
+  if (name !== undefined) return Array.isArray(name) ? list(name) : [named(name)];
+  return [DATES.has(arg) ? when(args[arg] as string) : String(args[arg])];
 }
 
-function changes(call: ToolCall): string {
-  return Object.keys(call.args)
-    .flatMap((arg) => {
-      if (arg === "married") return call.args.married ? "married" : "not married";
+function changes(call: ToolCall): Line {
+  return join(
+    Object.keys(call.args).flatMap((arg): Line[] => {
+      if (arg === "married") return [[call.args.married ? "married" : "not married"]];
       const field = FIELD.get(arg);
       if (field === undefined) return [];
-      return LONG.has(arg) ? field : `${field} ${said(call, arg)}`;
-    })
-    .join(", ");
+      return [LONG.has(arg) ? [field] : [`${field} `, ...said(call, arg)]];
+    }),
+    ", ",
+  );
 }
 
-function added({ args }: ToolCall): string[] {
+function added({ args }: ToolCall): Line[] {
   return [
     args.date ? when(args.date as string) : "",
     args.married ? "married" : "",
-  ].filter(Boolean);
+  ]
+    .filter(Boolean)
+    .map((word) => [word]);
 }
 
 /** What a refused show was asked to draw: its ids may not name anything. */
@@ -96,33 +115,33 @@ const SHOWING = new Map([
   [ViewKind.Cluster, "a cluster"],
 ]);
 
-function shown({ args, names, refusal }: ToolCall): string {
-  if (refusal) return SHOWING.get(args.kind as ViewKind) ?? "the picture";
+function shown({ args, names, refusal }: ToolCall): Line {
+  if (refusal) return [SHOWING.get(args.kind as ViewKind) ?? "the picture"];
   switch (args.kind as ViewKind) {
     case ViewKind.Triangle:
-      return `the triangle of ${list(names.persons as string[])}`;
+      return ["the triangle of ", ...list(names.persons as string[])];
     case ViewKind.Span:
-      return `${when(args.start as string)} to ${when(args.end as string)}`;
+      return [`${when(args.start as string)} to ${when(args.end as string)}`];
     case ViewKind.Compare:
-      return `${names.event_a} beside ${names.event_b}`;
+      return [named(names.event_a as string), " beside ", named(names.event_b as string)];
     case ViewKind.Sequence:
-      return `${list(names.events as string[])} in order`;
+      return [...list(names.events as string[]), " in order"];
     case ViewKind.Cluster:
-      return names.cluster as string;
+      return [named(names.cluster as string)];
     default:
-      return "the picture";
+      return ["the picture"];
   }
 }
 
-function events({ args, names }: ToolCall): string {
+function events({ args, names }: ToolCall): Line {
   if (names.ids) return list(names.ids as string[]);
-  if (names.cluster) return `the events in ${names.cluster}`;
-  if (names.person) return `${names.person}'s events`;
+  if (names.cluster) return ["the events in ", named(names.cluster as string)];
+  if (names.person) return [named(names.person as string), "'s events"];
   const span = [
     args.start ? `from ${when(args.start as string)}` : "",
     args.end ? `to ${when(args.end as string)}` : "",
   ].filter(Boolean);
-  return ["events", ...span].join(" ");
+  return [["events", ...span].join(" ")];
 }
 
 /** Each verb as a refused call tries it, and as a call that worked says it. */
@@ -187,60 +206,63 @@ const IMPRESSION: Kept = {
 /** One kept for later stays the coach's: the server keeps its calls without
  * its words, so the line says none. A refused close says only what it tried
  * to close, then why. */
-function kept(say: Kept, call: ToolCall): [Verb, string] {
+function kept(say: Kept, call: ToolCall): [Verb, Line] {
   const state = call.args.state as QuestionState;
-  if (call.args.id === undefined && state === QuestionState.Held) return [Verb.Keep, say.held];
+  if (call.args.id === undefined && state === QuestionState.Held) return [Verb.Keep, [say.held]];
   const words = call.names.it === undefined ? say.unasked : quoted(call.names.it as string);
-  if (state !== QuestionState.Resolved) return [say.raise, say.raised(words)];
+  if (state !== QuestionState.Resolved) return [say.raise, [say.raised(words)]];
   const outcome = call.args.outcome as QuestionOutcome;
-  if (outcome === QuestionOutcome.LetGo) return [Verb.LetGo, words];
+  if (outcome === QuestionOutcome.LetGo) return [Verb.LetGo, [words]];
   if (outcome === QuestionOutcome.Revised)
-    return [Verb.TakeBack, call.refusal ? words : `${words} to reword it`];
+    return [Verb.TakeBack, [call.refusal ? words : `${words} to reword it`]];
   const ended = ENDED.get(outcome);
-  return [Verb.Close, call.refusal || !ended ? words : `${words}: ${ended}`];
+  return [Verb.Close, [call.refusal || !ended ? words : `${words}: ${ended}`]];
 }
 
-function told(tool: ToolName, call: ToolCall): [Verb, string] {
-  const it = call.names.it as string;
+function told(tool: ToolName, call: ToolCall): [Verb, Line] {
+  const it = named(call.names.it as string);
   switch (tool) {
     case ToolName.ReadPeople:
-      return [Verb.Look, "people"];
+      return [Verb.Look, ["people"]];
     case ToolName.ReadEvents:
       return [Verb.Look, events(call)];
     case ToolName.ReadNotes:
-      return [Verb.Look, call.names.event ? `the notes on ${call.names.event}` : "notes"];
+      return [
+        Verb.Look,
+        call.names.event ? ["the notes on ", named(call.names.event as string)] : ["notes"],
+      ];
     case ToolName.ReadChanges:
-      return [Verb.Look, "recent changes"];
+      return [Verb.Look, ["recent changes"]];
     case ToolName.Show:
       return [Verb.Show, shown(call)];
     case ToolName.Remove:
-      return [Verb.Remove, it];
+      return [Verb.Remove, [it]];
     case ToolName.Undo:
-      return [Verb.Put, "that back"];
+      return [Verb.Put, ["that back"]];
     case ToolName.ReadQuestions:
-      return [Verb.Look, "questions"];
+      return [Verb.Look, ["questions"]];
     case ToolName.AddQuestion:
     case ToolName.SetQuestion:
       return kept(QUESTION, call);
     case ToolName.ReadImpressions:
-      return [Verb.Look, "impressions"];
+      return [Verb.Look, ["impressions"]];
     case ToolName.AddImpression:
     case ToolName.SetImpression:
       return kept(IMPRESSION, call);
     default:
       return call.args.id === undefined
-        ? [Verb.Add, [it, ...added(call)].join(", ")]
-        : [Verb.Change, `${it}: ${changes(call)}`];
+        ? [Verb.Add, join([[it], ...added(call)], ", ")]
+        : [Verb.Change, [it, ": ", ...changes(call)]];
   }
 }
 
-export function toolLine(call: ToolCall): string | null {
+export function toolLine(call: ToolCall): Line | null {
   const tool = Object.values(ToolName).includes(call.name as ToolName)
     ? (call.name as ToolName)
     : null;
   if (tool === null) return null;
   const [verb, what] = told(tool, call);
   return call.refusal
-    ? `Tried to ${verb} ${what}. ${call.refusal}`
-    : `${DID.get(verb)} ${what}`;
+    ? [`Tried to ${verb} `, ...what, `. ${call.refusal}`]
+    : [`${DID.get(verb)} `, ...what];
 }

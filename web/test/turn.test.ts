@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { toolLine, ToolName } from "../src/tools";
+import { html, text, toolLine, ToolName } from "../src/tools";
 import { ViewKind } from "../src/types";
 
 const line = (
   name: ToolName,
   args: Record<string, unknown>,
   names: Record<string, string | string[]> = {},
-) => toolLine({ name, args, names, refusal: null });
+) => text(toolLine({ name, args, names, refusal: null })!);
 
 describe("what a tool call says in plain words", () => {
   // R-0186
@@ -143,7 +143,7 @@ describe("what a tool call says in plain words", () => {
       args: Record<string, unknown>,
       names: Record<string, string | string[]>,
       refusal: string,
-    ) => toolLine({ name, args, names, refusal });
+    ) => text(toolLine({ name, args, names, refusal })!);
     expect(refused(ToolName.Show, { kind: ViewKind.Triangle }, {}, "No people were named.")).toBe(
       "Tried to show a triangle. No people were named.",
     );
@@ -156,6 +156,19 @@ describe("what a tool call says in plain words", () => {
       ),
     ).toBe(
       "Tried to change Nell: name Nel. The record had changed since it was read; read it again.",
+    );
+  });
+});
+
+describe("what a tool call names, set apart from its verb", () => {
+  it("puts each name in italics, as text", () => {
+    const called = (name: ToolName, args: Record<string, unknown>, names: Record<string, string | string[]>) =>
+      html(toolLine({ name, args, names, refusal: null })!);
+    expect(called(ToolName.ReadEvents, {}, { ids: ["Sam", "Emily"] })).toBe(
+      "Looked at <em>Sam</em> and <em>Emily</em>",
+    );
+    expect(called(ToolName.EditEvent, { id: 4, date: "1990" }, { it: "Dad's move to <b>Denver</b>" })).toBe(
+      "Changed <em>Dad&#39;s move to &lt;b&gt;Denver&lt;/b&gt;</em>: date 1990",
     );
   });
 });

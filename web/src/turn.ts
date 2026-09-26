@@ -1,4 +1,4 @@
-import { toolLine } from "./tools";
+import { type Line, toolLine } from "./tools";
 import { ItemKind, TurnEventKind, type Reply, type TurnEvent, type View } from "./types";
 
 /** What the page does with one turn, in the order the coach does it. The events
@@ -15,7 +15,7 @@ export interface Made {
 
 /** Everything one turn can tell the page. */
 export interface TurnSink {
-  note(line: string): void;
+  note(line: Line): void;
   /** The record has changed; these are what changed it, to light. */
   made(items: Made[]): void;
   show(view: View): void;

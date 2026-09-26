@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { token } from "../src/chips";
 import { PARTLY, questionsHtml } from "../src/questions";
-import { toolLine, ToolName } from "../src/tools";
+import { text, toolLine, ToolName } from "../src/tools";
 import {
   ChipKind,
   ChipTone,
@@ -180,7 +180,7 @@ const line = (
   args: Record<string, unknown>,
   refusal: string | null = null,
   names: Record<string, string> = { it: WORDS },
-) => toolLine({ name, args, names, refusal });
+) => text(toolLine({ name, args, names, refusal })!);
 
 describe("what an impression tool call says in plain words", () => {
   // R-0478

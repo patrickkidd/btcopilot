@@ -3,7 +3,7 @@ import { drawer, fetched, sentAt } from "./drawer";
 import { token } from "../src/chips";
 import { face } from "../src/chat";
 import { EMPTY, questionsHtml } from "../src/questions";
-import { toolLine, ToolName } from "../src/tools";
+import { text, toolLine, ToolName } from "../src/tools";
 import {
   ChipKind,
   ChipTone,
@@ -142,22 +142,23 @@ describe("dismissing a question", () => {
   });
 });
 
+const spoken = (call: Parameters<typeof toolLine>[0]) => text(toolLine(call)!);
 const WORDS = "Who were your grandfather's brothers?";
 const line = (
   name: ToolName,
   args: Record<string, unknown>,
   refusal: string | null = null,
-) => toolLine({ name, args, names: { it: WORDS }, refusal });
+) => spoken({ name, args, names: { it: WORDS }, refusal });
 
 describe("what a question tool call says in plain words", () => {
   // R-0478
   it("keeps a question for later without saying its words", () => {
     const held = { text: WORDS, kind: "fact", state: "held" };
-    expect(toolLine({ name: ToolName.AddQuestion, args: held, names: {}, refusal: null })).toBe(
+    expect(spoken({ name: ToolName.AddQuestion, args: held, names: {}, refusal: null })).toBe(
       "Kept a question for later",
     );
     expect(
-      toolLine({
+      spoken({
         name: ToolName.AddQuestion,
         args: { ...held, asked_in: 12 },
         names: {},
@@ -190,7 +191,7 @@ describe("what a question tool call says in plain words", () => {
   // R-0478
   it("closes a question kept for later without saying its words", () => {
     const kept = (outcome: string, refusal: string | null = null) =>
-      toolLine({
+      spoken({
         name: ToolName.SetQuestion,
         args: { id: "q6", version: 4, state: "resolved", outcome },
         names: {},
@@ -204,7 +205,7 @@ describe("what a question tool call says in plain words", () => {
     expect(kept("declined_by_user", "Only you can dismiss a question.")).toBe(
       "Tried to close a question kept for later. Only you can dismiss a question.",
     );
-    expect(toolLine({ name: ToolName.ReadQuestions, args: {}, names: {}, refusal: null })).toBe(
+    expect(spoken({ name: ToolName.ReadQuestions, args: {}, names: {}, refusal: null })).toBe(
       "Looked at questions",
     );
   });

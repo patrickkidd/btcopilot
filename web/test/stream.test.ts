@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { feed, type Made, type TurnSink } from "../src/turn";
-import { ToolName } from "../src/tools";
+import { type Line, ToolName } from "../src/tools";
 import { ItemKind, TurnEventKind, type Reply, type TurnEvent } from "../src/types";
 
 /** What the page would be showing, written down instead of drawn. */
 interface Shown {
-  notes: string[];
+  notes: Line[];
   lit: Made[];
   reloads: number;
   words: string;
