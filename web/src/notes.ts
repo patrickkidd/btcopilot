@@ -38,39 +38,12 @@ export function notesHtml(notes: Notes): string {
   );
 }
 
-/** How long a press must last before it is a hold rather than a tap. */
-export const HOLD_MS = 500;
-/** How far a finger may drift before the press is a scroll instead. */
-const DRIFT_PX = 10;
-
-/** A press that fires once it has been held still for HOLD_MS. up() says
- * whether it fired, so the click that ends it can be swallowed. */
-export function hold(onHold: () => void, ms = HOLD_MS) {
-  let at: [number, number] | null = null;
-  let fired = false;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const cancel = () => {
-    clearTimeout(timer);
-    at = null;
-  };
-  return {
-    down(x: number, y: number) {
-      at = [x, y];
-      fired = false;
-      timer = setTimeout(() => {
-        fired = true;
-        onHold();
-      }, ms);
-    },
-    move(x: number, y: number) {
-      if (at && Math.hypot(x - at[0], y - at[1]) > DRIFT_PX) cancel();
-    },
-    up() {
-      cancel();
-      return fired;
-    },
-  };
-}
+/** Opens the coach's notes on its turn, for admins and auditors. It sits in
+ * the bubble's top-right corner out of the flow, so the bubble keeps its shape. */
+export const INFO =
+  `<button type="button" class="info" aria-label="Coach's notes">` +
+  `<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/>` +
+  `<path d="M8 7.25v4M8 4.75v.01"/></svg></button>`;
 
 /** The notes pop out of the bubble they belong to, over the thread, until a
  * tap outside them or on close. */

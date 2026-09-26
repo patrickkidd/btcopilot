@@ -1003,8 +1003,32 @@ button { font-family: inherit; }
 .chat > .play.on .halt { display: inline; }
 .chat > .play.on { color: var(--data); }
 .chat > .play:active { color: var(--data-press); }
-/* a held bubble with notes shows no callout or selection while it is pressed */
-.bub.pressed { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+/* opens the coach's notes; out of the flow in the top-right padding beside the
+   COACH label, its 44px target spilling past the corner */
+.bub > .info {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--faint);
+  cursor: pointer;
+}
+.bub > .info svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+.bub > .info:active { color: var(--data-press); }
 /* the coach's own notes on a turn, for admins and auditors, popped out of the
    bubble they belong to */
 .notes-veil {

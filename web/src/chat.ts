@@ -1,7 +1,7 @@
 import { esc, el } from "./dom";
 import { tokenize } from "./chips";
 import { hush, say } from "./speech";
-import { hold, notesView, type Notes } from "./notes";
+import { INFO, notesView, type Notes } from "./notes";
 import { html, type Line } from "./tools";
 import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
@@ -146,6 +146,8 @@ export class Chat {
     const tap = (host: HTMLElement) => (e: Event) => {
       const play = (e.target as Element).closest<HTMLElement>(".play");
       if (play) return this.read(play);
+      const info = (e.target as Element).closest<HTMLElement>(".info");
+      if (info) return this.open(info.parentElement as HTMLElement);
       // [try again] looks like a chip but names nothing in the record.
       const button = (e.target as Element).closest<HTMLElement>("button.chip[data-kind]");
       if (!button) {
@@ -178,7 +180,6 @@ export class Chat {
     // fallback, so pin it again then: otherwise a thread opened before the font
     // lands sits partway up its own scroll.
     void document.fonts?.ready.then(() => this.scroll());
-    this.watchHolding();
     this.list.addEventListener("click", tap(this.list));
     this.composer.addEventListener("click", tap(this.composer));
   }
@@ -241,45 +242,13 @@ export class Chat {
     button.classList.add("on");
   }
 
-  /** A press and hold on a coach bubble with notes pops them out of it; a tap
-   * or a scroll never does, and a bubble without notes does nothing. */
-  private watchHolding(): void {
-    let press: { bubble: HTMLElement; up: () => boolean; move: (x: number, y: number) => void } | null = null;
-    let swallow = false;
-    const end = () => {
-      if (!press) return;
-      swallow = press.up();
-      press.bubble.classList.remove("pressed");
-      press = null;
-    };
-    this.list.addEventListener("pointerdown", (e) => {
-      const bubble = (e.target as Element).closest<HTMLElement>(".bub");
-      const notes = bubble && this.noted.get(bubble);
-      if (!bubble || !notes) return;
-      swallow = false;
-      bubble.classList.add("pressed");
-      const h = hold(() => notesView(notes, bubble));
-      h.down(e.clientX, e.clientY);
-      press = { bubble, up: h.up, move: h.move };
-    });
-    this.list.addEventListener("pointermove", (e) => press?.move(e.clientX, e.clientY));
-    this.list.addEventListener("pointerup", end);
-    this.list.addEventListener("pointercancel", end);
-    this.list.addEventListener("scroll", end, { passive: true });
-    this.list.addEventListener("contextmenu", (e) => {
-      const bubble = (e.target as Element).closest<HTMLElement>(".bub");
-      if (bubble && this.noted.has(bubble)) e.preventDefault();
-    });
-    // The click that ends a hold is not also a tap on the bubble.
-    this.list.addEventListener(
-      "click",
-      (e) => {
-        if (!swallow) return;
-        swallow = false;
-        e.stopPropagation();
-      },
-      true,
-    );
+  private open(bubble: HTMLElement): void {
+    notesView(this.noted.get(bubble)!, bubble);
+  }
+
+  private annotate(bubble: HTMLElement, notes: Notes): void {
+    this.noted.set(bubble, notes);
+    if (!bubble.querySelector(":scope > .info")) bubble.insertAdjacentHTML("beforeend", INFO);
   }
 
   clear(): void {
@@ -322,7 +291,7 @@ export class Chat {
           this.render(tokenize(text, tone)),
     );
     bubble.querySelector(".who")?.after(...lines.map(did));
-    if (notes) this.noted.set(bubble, notes);
+    if (notes) this.annotate(bubble, notes);
     // The bubble carries its statement so a moment on the picture can point
     // back at the words that coded it.
     if (statementId !== null) bubble.dataset.statement = String(statementId);
@@ -444,7 +413,7 @@ export class Chat {
         bubble.insertBefore(did(line), words);
         this.scroll();
       },
-      notes: (notes) => void this.noted.set(bubble, notes),
+      notes: (notes) => this.annotate(bubble, notes),
       append: (text, onChip) => {
         sofar += text;
         paint(onChip);
