@@ -65,6 +65,22 @@ class ToolName(enum.StrEnum):
     AddImpression = "add_impression"
     SetImpression = "set_impression"
     ReadImpressions = "read_impressions"
+    CoachNotes = "coach_notes"
+
+
+class Register(enum.StrEnum):
+    Coaching = "coaching"
+    Correction = "record correction"
+    AppHelp = "app help"
+    Journaling = "journaling"
+
+
+class Variable(enum.StrEnum):
+    Symptom = "symptom"
+    Anxiety = "anxiety"
+    Functioning = "functioning"
+    Relationship = "relationship"
+    Nothing = "none"
 
 
 READS = (
@@ -518,6 +534,50 @@ def schemas() -> list[dict]:
                 "required": ["kind"],
             },
         },
+        {
+            "name": ToolName.CoachNotes.value,
+            "description": (
+                "Your own notes for this turn, a short phrase each. They change "
+                "nothing in the record and the person never sees them; next turn "
+                "you read them back."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "register": _enum_param(Register, "What kind of talk this turn is."),
+                    "lane": {"type": "string"},
+                    "why": {"type": "string", "description": "Why this question now."},
+                    "holding": {
+                        "type": "string",
+                        "description": "What you noticed and are holding for later.",
+                    },
+                    "plateau": {
+                        "type": "object",
+                        "properties": {
+                            "reached": {"type": "boolean"},
+                            "biggest_gap": {"type": "string"},
+                        },
+                        "required": ["reached", "biggest_gap"],
+                    },
+                    "hunch": {
+                        "type": "string",
+                        "description": 'A link you are testing but have not said, or "none yet".',
+                    },
+                    "person": {"type": "string", "description": "How the person seems."},
+                    "variable": _enum_param(Variable, "The variable this turn is on."),
+                },
+                "required": [
+                    "register",
+                    "lane",
+                    "why",
+                    "holding",
+                    "plateau",
+                    "hunch",
+                    "person",
+                    "variable",
+                ],
+            },
+        },
     ]
 
 
@@ -618,6 +678,9 @@ class Toolbox:
                 "new version",
                 "The record had changed since it was read; read it again.",
             )
+
+    def _coach_notes(self, args: dict) -> tuple[str, None]:
+        return "Kept.", None
 
     # ── READ ────────────────────────────────────────────────────────────────
 

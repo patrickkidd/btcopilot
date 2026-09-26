@@ -45,7 +45,7 @@ def _page() -> str:
             "prefs": user.prefs(),
         },
         "session": session_payload(discussion) if discussion else None,
-        "statements": statements_payload(discussion) if discussion else [],
+        "statements": statements_payload(discussion, user) if discussion else [],
         "diagram": (
             {"id": in_use.id, "name": in_use.name} if in_use else None
         ),

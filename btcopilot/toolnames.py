@@ -3,7 +3,7 @@ record when the call is made and kept with it, so a line names what the coach
 touched as it was then, even once it is renamed or removed; the page never
 shows an id."""
 
-from btcopilot import record
+from btcopilot import ROLE_AUDITOR, record
 from btcopilot.clusters import _title
 from btcopilot.extensions import db
 from btcopilot.models import Statement
@@ -124,6 +124,8 @@ def names(data: DiagramData, tool: str, args: dict) -> dict:
     """What each id in the call's args is called, keyed by the arg, and what
     the call itself touches under `it`: the thing it changes or removes as the
     record holds it, or the thing it adds as its args describe it."""
+    if tool == ToolName.CoachNotes:
+        return {}
     people = {p["id"]: p for p in data.people}
 
     out = {
@@ -186,3 +188,15 @@ def toolcall(data: DiagramData, tool: str, args: dict) -> dict:
         "args": args,
         "names": named,
     }
+
+
+def shown(event: dict, user) -> dict | None:
+    """A turn event as this viewer may have it: the coach's own notes reach
+    admins and auditors only, and never leave the server for anyone else."""
+    if user.has_role(ROLE_AUDITOR):
+        return event
+    if event.get("name") == ToolName.CoachNotes:
+        return None
+    if "events" in event:
+        return dict(event, events=[e for e in event["events"] if shown(e, user)])
+    return event

@@ -11,7 +11,7 @@ from flask import Response, abort, jsonify, request, stream_with_context
 
 from btcopilot import auth
 from btcopilot.extensions import db
-from btcopilot import turnlog, turns
+from btcopilot import toolnames, turnlog, turns
 from btcopilot.models import Discussion, TurnEvent
 from btcopilot.routes import bp, owned_session, require_write_access
 
@@ -37,6 +37,11 @@ def _frame(seq: int, event: dict) -> str:
 def turn_events(turn_id: str):
     _mine(turn_id)
     last = request.headers.get("Last-Event-ID", type=int) or 0
+    user = auth.current_user()
+
+    def frame(seq: int, event: dict) -> str:
+        event = toolnames.shown(event, user)
+        return "" if event is None else _frame(seq, event)
 
     def stream():
         # Listening starts before the replay so an event landing between the
@@ -45,7 +50,7 @@ def turn_events(turn_id: str):
         sent = last
         for seq, event in turnlog.read_from(turn_id, last):
             sent = seq
-            yield _frame(seq, event)
+            yield frame(seq, event)
             if turnlog.ended(event):
                 return
         quiet = 0
@@ -61,7 +66,7 @@ def turn_events(turn_id: str):
             if seq <= sent:
                 continue
             sent = seq
-            yield _frame(seq, event)
+            yield frame(seq, event)
             if turnlog.ended(event):
                 return
 

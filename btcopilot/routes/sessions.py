@@ -26,7 +26,7 @@ from btcopilot import toolnames, turns, turnstore
 from btcopilot.turnlog import TurnEventKind
 
 
-def statements_payload(discussion: Discussion) -> list[dict]:
+def statements_payload(discussion: Discussion, user) -> list[dict]:
     """Each message with the tool calls of its turn: a coach reply carries the
     calls that led to it, and the words of a turn that never answered carry the
     calls it made before it failed, marked unfinished with why it stopped."""
@@ -54,6 +54,7 @@ def statements_payload(discussion: Discussion) -> list[dict]:
                         }
                         for e in events
                         if e["type"] == TurnEventKind.ToolCall.value
+                        and toolnames.shown(e, user)
                     ]
                     if coach or unfinished
                     else []
@@ -135,7 +136,7 @@ def session_create():
 def session_get(session_id: int):
     discussion = owned_session(session_id)
     payload = session_payload(discussion)
-    payload["statements"] = statements_payload(discussion)
+    payload["statements"] = statements_payload(discussion, auth.current_user())
     return jsonify(payload)
 
 
