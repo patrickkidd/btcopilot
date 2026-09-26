@@ -261,6 +261,7 @@ OPEN = "My grandmother had a younger sister, but nobody ever told me her name."
 
 @once
 def test_a_question_is_stored_before_the_reply_that_asks_it(coach):
+    # R-0006, R-0493
     coach.record()
     events = coach.turn(OPEN)
     reset = max(

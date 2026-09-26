@@ -136,6 +136,7 @@ def test_a_merged_case_runs_one_turn_for_both_assertions():
 
 
 def test_k_of_n_passes_at_k_and_fails_below_it():
+    # R-0508
     runs = iter([False, True, True, True, False, False])
 
     @passes(2, of=3)
