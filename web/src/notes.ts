@@ -46,14 +46,19 @@ export const INFO =
   `<path d="M8 7.25v4M8 4.75v.01"/></svg></button>`;
 
 /** The notes pop out of the bubble they belong to, over the thread, until a
- * tap outside them or on close. */
+ * tap outside them or on close plays the pop-out backwards into the bubble. */
 export function notesView(notes: Notes, bubble: HTMLElement): void {
   const box = bubble.getBoundingClientRect();
   const veil = el("div", "notes-veil", notesHtml(notes));
   const card = veil.firstElementChild as HTMLElement;
+  let closing = false;
   veil.addEventListener("click", (e) => {
     const t = e.target as Element;
-    if (t === veil || t.closest(".notes-close")) veil.remove();
+    if (closing || (t !== veil && !t.closest(".notes-close"))) return;
+    closing = true;
+    const runs = veil.getAnimations({ subtree: true });
+    runs.forEach((a) => a.reverse());
+    Promise.all(runs.map((a) => a.finished)).then(() => veil.remove());
   });
   document.body.append(veil);
   const at = card.getBoundingClientRect();

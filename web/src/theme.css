@@ -1040,7 +1040,7 @@ button { font-family: inherit; }
   justify-content: center;
   padding: 16px;
   background: rgb(0 0 0 / 0.35);
-  animation: veilin 0.16s ease;
+  animation: veilin 0.16s ease both;
 }
 .notes-card {
   width: min(420px, 100%);
@@ -1052,7 +1052,7 @@ button { font-family: inherit; }
   border: 1px solid var(--line);
   font: 400 13px/1.5 var(--mono);
   color: var(--faint);
-  animation: notesin 0.2s ease;
+  animation: notesin 0.2s ease both;
 }
 .notes-head {
   display: flex;
@@ -1075,6 +1075,9 @@ button { font-family: inherit; }
 .notes-card dd { margin: 0 0 8px; overflow-wrap: anywhere; }
 @keyframes veilin { from { opacity: 0; } }
 @keyframes notesin { from { opacity: 0; transform: scale(0.2); } }
+@media (prefers-reduced-motion: reduce) {
+  .notes-veil, .notes-card { animation: none; }
+}
 
 /* A chip never leaves its bubble: it may be as wide as the bubble and no
    wider, and it wraps to more lines rather than being cut. Labels are capped
