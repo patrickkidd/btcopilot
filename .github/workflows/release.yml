@@ -111,6 +111,7 @@ jobs:
               rmdir deploy/chat
             fi
             cd deploy
+            install -m 755 bin/fd-admin-gate /usr/local/bin/fd-admin-gate
             # before anything goes live, so a stop leaves the running release untouched
             # one time (R-0417): a database on the retired chain is stamped to the single revision
             psql() { docker compose --env-file /etc/fd/secrets.env exec -T fd-postgres psql -U familydiagram -d familydiagram -tAc "$1"; }

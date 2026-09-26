@@ -104,6 +104,6 @@ The desktop app's update feeds are not served here; they live with `master-legac
 
 Patrick's local assistant runs the admin CLI over SSH with its own key. The key's
 line in `/root/.ssh/authorized_keys` is pinned to `bin/fd-admin-gate` (installed at
-`/usr/local/bin/fd-admin-gate`), which hands the words it was given to
+`/usr/local/bin/fd-admin-gate` by every release), which hands the words it was given to
 `flask admin run -- <words>` inside fd-app and nothing else. Reads run at once; a
 command that changes data prints a preview and stops until the words carry `--yes`.
