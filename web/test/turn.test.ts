@@ -165,8 +165,8 @@ describe("what a tool call names, set apart from its verb", () => {
   it("puts each name in italics, as text", () => {
     const called = (name: ToolName, args: Record<string, unknown>, names: Record<string, string | string[]>) =>
       html(toolLine({ name, args, names, refusal: null })!);
-    expect(called(ToolName.ReadEvents, {}, { ids: ["Sam", "Emily"] })).toBe(
-      "Looked at <em>Sam</em> and <em>Emily</em>",
+    expect(called(ToolName.ReadEvents, {}, { ids: ["Theo", "Corinne"] })).toBe(
+      "Looked at <em>Theo</em> and <em>Corinne</em>",
     );
     expect(called(ToolName.EditEvent, { id: 4, date: "1990" }, { it: "Dad's move to <b>Denver</b>" })).toBe(
       "Changed <em>Dad&#39;s move to &lt;b&gt;Denver&lt;/b&gt;</em>: date 1990",
