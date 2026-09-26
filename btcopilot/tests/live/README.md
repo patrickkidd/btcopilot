@@ -4,6 +4,24 @@ Real coach turns on the private prompts, paid on the testing key. How to run the
 caps and the results files are described at the top of `conftest.py`. Pass rates by
 model: `uv run python -m btcopilot.tests.live.passrate`.
 
+## Saved responses
+
+Every coach call a paid run makes is saved in `private/replays/`, sealed with sops, under a
+hash of the whole request: model, settings, system prompt, tools and messages. A later run
+replays the saved response when the hash matches and pays only for calls that changed, so a
+prompt or tool edit re-spends only on the calls it touches. A replayed call costs $0. The same
+request seen again in one case (the runs of a k of n case) is saved once per run. The prompt's
+date is fixed so a saved call matches from one day to the next. `LIVE_REPLAY` picks the mode:
+
+| Mode | What it does |
+|------|--------------|
+| `replay` (default) | replays what is saved, records what is not |
+| `record` | every call real, saved again |
+| `only` | replays, fails on a call not saved; no testing key, $0 |
+
+    LIVE_REPLAY=only SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt uv run pytest \
+        btcopilot/tests/live --e2e -m "not waiting"
+
 The paid suite, as it would run:
 
     uv run pytest btcopilot/tests/live -m "not waiting" --collect-only -q

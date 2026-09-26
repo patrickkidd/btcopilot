@@ -12,10 +12,17 @@ test fails.
 A run checks the balance with one 1-token call first, charges every model call
 at the app's own prices, stops at its cap, prints what it spent and leaves one
 results file; `python -m btcopilot.tests.live.passrate` reads them back.
+
+Every coach call is saved and replayed (replay.py). LIVE_REPLAY picks the mode:
+`replay` (the default) replays a saved response and records a missing one;
+`record` makes every call real and saves it again; `only` replays and fails on
+a missing one, needs no testing key and spends nothing.
 """
 
+import datetime
 import os
 import subprocess
+from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
@@ -29,10 +36,19 @@ from btcopilot.promptdir import key_present
 from btcopilot.schema import DiagramData
 from btcopilot.tests.conftest import csrf_token, replied
 from btcopilot.tests.live.criterion import WAITING
+from btcopilot.tests.live.replay import Mode, Replay
 from btcopilot.tests.live.run import Outcome, Run
 
 HERE = Path(__file__).parent
 RUN = pytest.StashKey[Run]()
+REPLAY = pytest.StashKey[Replay]()
+# The prompt carries today's date; a fixed one keeps a saved response's request
+# the same from one day to the next.
+TODAY = datetime.date(2026, 9, 25)
+
+
+def mode() -> Mode:
+    return Mode(os.environ.get("LIVE_REPLAY", Mode.Replay))
 
 
 def pytest_collection_modifyitems(config, items):
@@ -60,11 +76,24 @@ def run(request):
         check=True,
     ).stdout.strip()
     opened = request.config.stash[RUN] = Run(CoachModel().model, git)
-    opened.open(require_testing_key())
+    replay = request.config.stash[REPLAY] = Replay(mode())
+    if replay.mode is not Mode.Only:
+        opened.open(require_testing_key())
     charged = opened.recorded
     event.listen(ModelCall, "after_insert", charged)
-    yield opened
+    with pytest.MonkeyPatch.context() as patched:
+        patched.setattr(CoachModel, "turn", replay.wrap(CoachModel.turn))
+        patched.setattr(
+            "btcopilot.coachturn.datetime",
+            SimpleNamespace(date=SimpleNamespace(today=lambda: TODAY)),
+        )
+        yield opened
     event.remove(ModelCall, "after_insert", charged)
+
+
+@pytest.fixture(autouse=True)
+def replayed(request):
+    request.config.stash[REPLAY].begin()
 
 
 @pytest.hookimpl(wrapper=True)
@@ -92,6 +121,7 @@ def pytest_terminal_summary(terminalreporter, config):
     run = config.stash.get(RUN, None)
     if run is not None:
         terminalreporter.write_line(run.summary())
+        terminalreporter.write_line(config.stash[REPLAY].summary())
 
 
 def require_testing_key() -> str:
@@ -107,7 +137,7 @@ def require_testing_key() -> str:
 def testing_key(request, monkeypatch):
     """The live venue's own key, never production's: set ANTHROPIC_API_KEY from
     ANTHROPIC_TESTING_KEY for this test only, and fail loudly if it is unset."""
-    if request.config.getoption("--e2e"):
+    if request.config.getoption("--e2e") and mode() is not Mode.Only:
         monkeypatch.setenv("ANTHROPIC_API_KEY", require_testing_key())
 
 
