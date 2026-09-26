@@ -76,15 +76,16 @@ it("opens the notes from a circled i button drawn in outline, never a press and 
   expect(INFO).toContain("<circle");
 });
 
-// R-0535
-it("lists every kind of talk, the chosen one marked and the rest muted", () => {
+// R-0535, R-0536
+it("says the chosen kind of talk as plain words, with every possible kind muted beneath", () => {
   const out = notesHtml({ ...notes, register: Register.AppHelp });
-  const kinds = [...out.matchAll(/<span class="reg( on)?">([^<]*)<\/span>/g)];
-  expect(kinds.map((m) => m[2])).toEqual(["coaching", "record correction", "app help", "journaling"]);
-  expect(kinds.filter((m) => m[1]).map((m) => m[2])).toEqual(["app help"]);
+  expect(out).toContain(
+    '<dd>app help<div class="notes-possible">Possible: coaching, record correction, app help, journaling</div></dd>',
+  );
+  expect(out).not.toContain('class="reg');
 });
 
-// R-0535
+// R-0535, R-0536
 it("lists the kinds of talk the server's Register holds, no more and no fewer", () => {
   const source = readFileSync("../btcopilot/toolbox.py", "utf8");
   const block = /class Register\(enum\.StrEnum\):\n((?:    .*\n)+)/.exec(source)![1];

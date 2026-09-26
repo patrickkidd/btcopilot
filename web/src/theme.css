@@ -1073,19 +1073,7 @@ button { font-family: inherit; }
 .notes-card dl { margin: 0; }
 .notes-card dt { color: var(--ink); }
 .notes-card dd { margin: 0 0 8px; overflow-wrap: anywhere; }
-.notes-card .reg {
-  display: inline-block;
-  margin: 2px 6px 2px 0;
-  padding: 0 6px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-}
-.notes-card .reg.on {
-  border-color: var(--data);
-  color: var(--data);
-  background: var(--tint);
-  font-weight: 600;
-}
+.notes-possible { font-size: 11px; opacity: 0.75; }
 @keyframes veilin { from { opacity: 0; } }
 @keyframes notesin { from { opacity: 0; transform: scale(0.2); } }
 @media (prefers-reduced-motion: reduce) {

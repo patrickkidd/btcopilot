@@ -464,7 +464,12 @@ Open:
   session returns. Evidence: the first coach notes in his thread (his reply at 18:53 UTC
   2026-09-26) say his history has not levelled off, but the only gaps flagged for later are his
   half brother's name and age, his parents' ages, and the 2015 cutoff with his mother — nothing
-  about grandparents, aunts, uncles, or their stories.
+  about grandparents, aunts, uncles, or their stories. Beside this: Patrick questions the word
+  "coaching" for one of the four registers — coaching a person is offering inferences from data
+  already collected, distinct from first gathering the basic facts. None of the four register
+  names is defined anywhere, not in the tool schema and not in the private prompts, so the coach
+  picks among them by name alone. Renaming and defining them waits for the coverage brainstorm
+  after the frame session.
 - Found, next batch to fix: the play-by-play's own model calls never reach the model-call
   record, so their spend goes uncounted.
 - The move of this work to ~/btcopilot awaits Patrick's yes on the plan's recommendations.

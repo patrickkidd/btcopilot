@@ -26,11 +26,10 @@ export interface Notes {
 const history = ({ reached, biggest_gap }: Notes["plateau"]) =>
   `${reached ? "Levelled off" : "Still filling in"}; biggest gap: ${biggest_gap}`;
 
-/** Every kind of talk, the one this turn is marked and the rest muted. */
+/** The kind of talk this turn is, with every kind it could have been under it. */
 const kinds = (chosen: Register) =>
-  Object.values(Register)
-    .map((r) => `<span class="reg${r === chosen ? " on" : ""}">${esc(r)}</span>`)
-    .join("");
+  esc(chosen) +
+  `<div class="notes-possible">Possible: ${esc(Object.values(Register).join(", "))}</div>`;
 
 export function notesHtml(notes: Notes): string {
   const rows: [string, string][] = [
