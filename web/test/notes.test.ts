@@ -1,11 +1,12 @@
+import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
-import { INFO, NOTES_TOOL, notesHtml, type Notes } from "../src/notes";
+import { INFO, NOTES_TOOL, Register, notesHtml, type Notes } from "../src/notes";
 import { toolLine } from "../src/tools";
 import { feed, type TurnSink } from "../src/turn";
 import { TurnEventKind, type TurnEvent } from "../src/types";
 
 const notes: Notes = {
-  register: "coaching",
+  register: Register.Coaching,
   lane: "Mother's side",
   why: "The move <in> 1994 is unexplained",
   holding: "The father's drinking",
@@ -73,4 +74,20 @@ it("shows no notes when the turn carries none", () => {
 it("opens the notes from a circled i button drawn in outline, never a press and hold", () => {
   expect(INFO).toMatch(/^<button type="button" class="info" aria-label="Coach's notes">/);
   expect(INFO).toContain("<circle");
+});
+
+// R-0535
+it("lists every kind of talk, the chosen one marked and the rest muted", () => {
+  const out = notesHtml({ ...notes, register: Register.AppHelp });
+  const kinds = [...out.matchAll(/<span class="reg( on)?">([^<]*)<\/span>/g)];
+  expect(kinds.map((m) => m[2])).toEqual(["coaching", "record correction", "app help", "journaling"]);
+  expect(kinds.filter((m) => m[1]).map((m) => m[2])).toEqual(["app help"]);
+});
+
+// R-0535
+it("lists the kinds of talk the server's Register holds, no more and no fewer", () => {
+  const source = readFileSync("../btcopilot/toolbox.py", "utf8");
+  const block = /class Register\(enum\.StrEnum\):\n((?:    .*\n)+)/.exec(source)![1];
+  const server = [...block.matchAll(/= "([^"]*)"/g)].map((m) => m[1]);
+  expect(Object.values(Register)).toEqual(server);
 });

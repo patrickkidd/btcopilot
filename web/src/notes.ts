@@ -4,8 +4,16 @@ import { el, esc } from "./dom";
  * to admins and auditors only; it is never a line in the reply. */
 export const NOTES_TOOL = "coach_notes";
 
+/** The kinds of talk a turn can be, as the server's `Register` names them. */
+export enum Register {
+  Coaching = "coaching",
+  Correction = "record correction",
+  AppHelp = "app help",
+  Journaling = "journaling",
+}
+
 export interface Notes {
-  register: string;
+  register: Register;
   lane: string;
   why: string;
   holding: string;
@@ -18,22 +26,28 @@ export interface Notes {
 const history = ({ reached, biggest_gap }: Notes["plateau"]) =>
   `${reached ? "Levelled off" : "Still filling in"}; biggest gap: ${biggest_gap}`;
 
+/** Every kind of talk, the one this turn is marked and the rest muted. */
+const kinds = (chosen: Register) =>
+  Object.values(Register)
+    .map((r) => `<span class="reg${r === chosen ? " on" : ""}">${esc(r)}</span>`)
+    .join("");
+
 export function notesHtml(notes: Notes): string {
   const rows: [string, string][] = [
-    ["What it's doing", notes.register],
-    ["Aiming at", notes.lane],
-    ["Why this question", notes.why],
-    ["Holding for later", notes.holding],
-    ["History", history(notes.plateau)],
-    ["Hunch", notes.hunch],
-    ["How the person seems", notes.person],
-    ["Variable in play", notes.variable],
+    ["What it's doing", kinds(notes.register)],
+    ["Aiming at", esc(notes.lane)],
+    ["Why this question", esc(notes.why)],
+    ["Holding for later", esc(notes.holding)],
+    ["History", esc(history(notes.plateau))],
+    ["Hunch", esc(notes.hunch)],
+    ["How the person seems", esc(notes.person)],
+    ["Variable in play", esc(notes.variable)],
   ];
   return (
     `<div class="notes-card" role="dialog" aria-label="Coach's notes">` +
     `<div class="notes-head">Coach's notes` +
     `<button type="button" class="notes-close" aria-label="Close">&#x2715;</button></div><dl>` +
-    rows.map(([label, value]) => `<dt>${esc(label)}</dt><dd>${esc(value)}</dd>`).join("") +
+    rows.map(([label, value]) => `<dt>${esc(label)}</dt><dd>${value}</dd>`).join("") +
     `</dl></div>`
   );
 }

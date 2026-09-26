@@ -111,6 +111,13 @@ it. Never ask him to review before the agents have finished.
 he must steer. Work the coordinator owns (deploying, committing, data fixes he already ruled,
 known bugs) is simply done and mentioned in one short line, never listed as open.
 
+**Encrypted is never a reason not to know (2026-09-26).** The key is on this machine and on the
+box. Any question about what a prompt, ruling or fixture says is answered by decrypting it
+(`sops -d`, read-only, into context or the job's tmp folder, never into the repo) and reading it;
+"I didn't look at the decrypted prompt" is never an answer.
+
+**Never restate his message back to him (2026-09-26).** It burns tokens; answer or act directly.
+
 **There is a dev mode and it is used (2026-09-09).** Code changes on disk refresh the page
 instantly; working without one wastes his time [Oracle: R-0227]. The recipe is in STATE.md
 under the review sandbox.

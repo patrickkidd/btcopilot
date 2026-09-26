@@ -468,6 +468,10 @@ Open:
 - Found, next batch to fix: the play-by-play's own model calls never reach the model-call
   record, so their spend goes uncounted.
 - The move of this work to ~/btcopilot awaits Patrick's yes on the plan's recommendations.
+- Patrick's question about a decrypted prompt copy was really about agents always reading the
+  decrypted prompts instead of assuming their contents; resolved as a process rule in
+  HOW_THIS_PROJECT_WORKS.md ("Encrypted is never a reason not to know"). No mirror or extra
+  tooling was built.
 
 **Patrick's actions.**
 1. Test the 5b2a6bb batch in his own thread, including a long message on his iPhone and the (i)
@@ -1300,6 +1304,16 @@ Kept for when there are enough users to run one.
   run)**: merge his old diagram, new diagram, and journal into one timeline —
   sources exist in ~/theapp/btcopilot-sources/fd-corpus/design/ (his chat/journal corpus files) plus his
   live records; same synthesis machinery expected to apply.
+
+- **Sleep and alcohol over time (queued, a Fable brainstorm after the frame session returns)**:
+  Patrick wants the coach to see his own sleep and drinking over time; sleep is his S, and his
+  Garmin watch tracks it. Open question: can Apple Health, Android Health Connect or Garmin's
+  own data feed the timeline as S data, and do sleep and drinking matter across the wider market,
+  not just for him. Assumptions to check, not yet verified: a web app cannot read Apple Health
+  directly (would need a native app, an export file, or a paid aggregator); Garmin's own data
+  API needs partner approval; Apple Health has a count type for alcoholic drinks; the cheapest
+  path for one person is a periodic export, imported by hand. Whether sleep or drinking counts
+  as an S at all is a question for the frame.
 
 - **Event title, replacing description (queued 2026-09-26) [R-0534]**: what shows as an event's
   name would stay brief, only enough to pick it out from other events, with the longer account
