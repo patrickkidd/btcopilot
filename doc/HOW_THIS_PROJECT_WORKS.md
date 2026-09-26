@@ -107,6 +107,10 @@ no coordination chatter, and never a summary while a subagent is still running. 
 everything until the deliverable is ready for his action, then send one message with all of
 it. Never ask him to review before the agents have finished.
 
+**"Open" means his direction is needed, nothing else (2026-09-26).** An open item is a topic
+he must steer. Work the coordinator owns (deploying, committing, data fixes he already ruled,
+known bugs) is simply done and mentioned in one short line, never listed as open.
+
 **There is a dev mode and it is used (2026-09-09).** Code changes on disk refresh the page
 instantly; working without one wastes his time [Oracle: R-0227]. The recipe is in STATE.md
 under the review sandbox.
@@ -223,4 +227,6 @@ mechanical.
 **Spend is the exception, not the test method (2026-09-25, Patrick; R-0531).** Rule: plumbing is proven with mocks, the local model and recorded real responses replayed from
 fixtures; a real call is never used to prove wiring a unit test already proves. Every paid
 response is saved as a replay fixture so it is paid for once. Real calls happen only once per
-batch, before deploy, and only for a changed prompt or tool.
+batch, before deploy, and only for a changed prompt or tool. A new refusal in the record's
+checks is wiring a unit test proves, not a tool change; the coordinator applies these rules
+itself and never asks him for spend they already answer (2026-09-26).

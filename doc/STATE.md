@@ -335,7 +335,8 @@ account; Patrick's next message is the first. Real spend is asked for first.
   back the next turn. The server strips them for anyone who is not an admin or auditor; they
   see a circled (i) at the bubble's top right that opens the notes in a panel growing out of
   the bubble and shrinking back into it on close [R-0520, R-0522, R-0529]. Replies from before
-  this build have no notes.
+  this build have no notes. Confirmed in his 2026-09-26 afternoon message: his own thread showed
+  zero notes on any reply, because his last turn before that message came before this deploy.
 - A question asked this turn is dated in UTC, like the messages beside it.
 The notes were proven on the real model for one first turn ($0.141, testing key); the read-back
 is proven by a unit test, which Patrick accepted. The gate: 613 Python tests and 245 web tests
@@ -359,7 +360,7 @@ app):
   gave the same keys for each case's first call; later calls are unproven until one paid run is
   followed by a replay-only run.
 
-**The play-by-play and the chalkboard, blocked on the frame of reference.** Stepping through
+**The play-by-play and the chalkboard.** Stepping through
 one real cluster of eight events on a copy of production (named only in the private corpus's
 session-b147ab7f/INDEX.md)
 found bugs Patrick confirmed [R-0526]: a distance move with no one on the other end is drawn
@@ -373,8 +374,23 @@ idea proposed from this one cluster missed his clinical
 frame, and he ruled that the frame is built and checked first, in a separate Fable session, and
 that the design must fit every case [R-0524, R-0525]. His question stands unanswered: how the
 coach could draw a story arc the way a coach uses a chalkboard, drawing what the point needs
-rather than a fixed wireframe of everything in the record, in a way that fits every case. None
-of the bugs is fixed, and none is fixed before the frame exists.
+rather than a fixed wireframe of everything in the record, in a way that fits every case.
+
+**Ruled 2026-09-26 [R-0532]: the play-by-play work splits into two lists.** Underway now on
+branch FD-363, not yet live: nothing may point a move back at the very person making it, the
+same way two people cannot be bonded to themselves; a bond gets no line on the picture before
+its own start; when two changes land on one event, both get their own place in the steps
+instead of just the first; and an event missing a known date keeps its spot in the story at
+wherever the coach set it, rather than dropping out. Waiting on the frame of reference: telling
+an ended bond apart from an ongoing one, new picture words standing in for "bonded" and
+"separated", and how to draw a move that names nobody on the far side — for now, words only,
+nothing on the picture. A separate call the same day [R-0533]: when something in a person's
+saved family information turns out wrong, it gets corrected, and the correction itself becomes
+training material going forward — the original mistake is kept on file as a case an automated
+check can run against later, and the fix travels through the same log every other record change
+uses, never a direct database edit. The case behind it: on 2026-09-22 a move meant to record
+distance had named the very person making it as the other party; that link is cleared while the
+move stays. The chalkboard concept has not moved; the frame still comes first.
 
 **The frame session.** A Claude Code skill named "frame" now exists: Patrick's persistent expert
 on his clinical frame. The next session on this thread loads that skill first, then reads the
@@ -410,8 +426,8 @@ Open:
 - Whether saved responses replay beyond each case's first call waits on one paid run followed
   by a replay-only run.
 - The message-box fix is checked in desktop WebKit only; Patrick's iPhone is the real check.
-- Events still accept a move whose target is its own mover; the play-by-play bugs wait on the
-  frame of reference.
+- Four play-by-play fixes (the self-target refusal among them) are being built on FD-363, not
+  yet deployed; three items still wait on the frame of reference.
 - Three rulings were skipped as needing a design rather than built: R-0187; R-0213, R-0376 and
   R-0378 together; R-0122 and R-0127 together.
 - The count of guess-dated events is blocked by the personal-data safety check and is not built.
@@ -420,6 +436,19 @@ Open:
 - Still open from 2026-09-25: three impressions choices made under his general yes; the SARF
   story (a Fable topic); the guessed-dates pass and a reading of his record, both blocked on
   personal-data reads; whether four questions from his whole history are too few.
+- Patrick ruled 2026-09-26 that the three-generation coverage brainstorm waits until the frame
+  session returns. Evidence: the first coach notes in his thread (his reply at 18:53 UTC
+  2026-09-26) say his history has not levelled off, but the only gaps flagged for later are his
+  half brother's name and age, his parents' ages, and the 2015 cutoff with his mother — nothing
+  about grandparents, aunts, uncles, or their stories.
+- Found, next batch to fix: the play-by-play's own model calls never reach the model-call
+  record, so their spend goes uncounted.
+- Patrick's account is a subscriber, so the coach notes' (i) button never showed for him; he is
+  being made an admin.
+- Play-by-play follow-ups built and verified, not yet deployed: the event editor stops offering the mover as their own move's
+  target; dated events play in date order, with each undated event placed right after whichever
+  event is stored just before it; an undated step draws bonds as they stood at the nearest
+  dated step.
 
 **Patrick's actions.**
 1. Test the 5b2a6bb batch in his own thread, including a long message on his iPhone and the (i)
@@ -433,9 +462,11 @@ Open:
   so check it on the box. Another ticket branch needs the environment's branch rule widened.
 - After the next paid run, run the suite once with LIVE_REPLAY=only to prove saved responses
   replay beyond each case's first call; until then assume later calls still cost.
-- Fix the play-by-play bugs only after the frame exists, never by fitting the one cluster tried.
-- Add a refusal for an event whose move targets its own mover, as pair bonds refuse a bond with
-  oneself, and decide with Patrick what happens to the one such event already in his record.
+- The play-by-play fixes split 2026-09-26 [R-0532, R-0533]: four are fixed now on FD-363 (the
+  self-target refusal, the bond line's own dates, a shift drawn on its own step, an undated
+  event kept and placed), and the one self-targeting event already in Patrick's record is fixed
+  by removing its target and keeping the move; three items still wait on the frame of reference
+  (separation-vs-bond, the caption words, an unanswered move's drawing).
 - Read the rulings on a topic before proposing coach behaviour; judgement calls stay in the
   prompt and the coach's tools, not in code checks [R-0485].
 - Older tests carry real names from his thread: web/test/spotlight.test.ts lines 41 to 42 and
@@ -1256,6 +1287,13 @@ Kept for when there are enough users to run one.
   run)**: merge his old diagram, new diagram, and journal into one timeline —
   sources exist in ~/theapp/btcopilot-sources/fd-corpus/design/ (his chat/journal corpus files) plus his
   live records; same synthesis machinery expected to apply.
+
+- **Event title, replacing description (queued 2026-09-26) [R-0534]**: what shows as an event's
+  name would stay brief, only enough to pick it out from other events, with the longer account
+  living in that event's notes instead. The field now called description takes the name title,
+  with existing rows carried over. Watch for: the Pro app's diagram data reads that same field,
+  so the switch reaches across repositories into familydiagram's scene code and its
+  file-manager field lists.
 
 ## Jira / branches
 

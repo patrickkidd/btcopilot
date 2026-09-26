@@ -1618,6 +1618,7 @@ STATE and deleted.
 | 9626e1be-0ee6-4e03-86f9-d3781789ff49 | 09-24 | FD-363 opened: kept tool calls, resume, record versions |
 | dc02180f-9c7c-40e0-ad16-d56e7dfbb302 | 09-24 → 09-25 | FD-363 deployed twice, questions, impressions, spend rules |
 | b147ab7f-16e6-4fcf-ba58-42be2e2a2fcc | 09-26 | Coach's notes, play button, italic tool lines deployed; deploy environment; saved paid responses; the play-by-play review and the frame draft |
+| FD-363 Development(3) | 09-26 | The play-by-play fix split (four now, three held for the frame), the data-fault correction and feedback-loop rule, and the queued event-title rename; logged as R-0532 to R-0534 |
 
 Not the chat app: b8769210-d27b-4e72-865e-08a8f211cb70 (the Pro app's update feeds, PR #139) and
 2462071d-723f-44f1-89a1-25f63c537e86 (repairing an .fd file for the Pro app).
