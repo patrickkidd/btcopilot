@@ -38,6 +38,7 @@ import { offerPasskey } from "./passkey";
 import { PRO, WIDE } from "./pro";
 import { shortDate } from "./when";
 import * as speech from "./speech";
+import { NOTES_TOOL, type Notes } from "./notes";
 import * as track from "./track";
 import { Feature, Screen } from "./track";
 import {
@@ -562,6 +563,7 @@ function addStatements(statements: Statement[]): void {
   for (const statement of statements) {
     const coach = statement.role === Role.Coach;
     const lines = statement.tools.map(toolLine).filter((line) => line !== null);
+    const notes = statement.tools.find((tool) => tool.name === NOTES_TOOL);
     chat.add(
       statement.role,
       statement.text,
@@ -569,6 +571,7 @@ function addStatements(statements: Statement[]): void {
       statement.id,
       statement.kind === StatementKind.Play ? statement.cluster_id : null,
       coach ? lines : [],
+      coach && notes ? (notes.args as unknown as Notes) : null,
     );
     if (statement.unfinished && lines.length)
       stopped = {
@@ -968,6 +971,7 @@ function follow(turnId: string): void {
 
   const take = feed({
     note: (line) => step(() => void opened().note(line)),
+    notes: (notes) => step(() => opened().notes(notes)),
     made: (items) =>
       step(async () => {
         await load();

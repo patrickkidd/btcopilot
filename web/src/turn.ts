@@ -1,3 +1,4 @@
+import { NOTES_TOOL, type Notes } from "./notes";
 import { type Line, toolLine } from "./tools";
 import { ItemKind, TurnEventKind, type Reply, type TurnEvent, type View } from "./types";
 
@@ -16,6 +17,8 @@ export interface Made {
 /** Everything one turn can tell the page. */
 export interface TurnSink {
   note(line: Line): void;
+  /** The coach's own notes on the turn, for admins and auditors. */
+  notes(notes: Notes): void;
   /** The record has changed; these are what changed it, to light. */
   made(items: Made[]): void;
   show(view: View): void;
@@ -54,6 +57,10 @@ export function feed(sink: TurnSink): (event: TurnEvent) => void {
     if (event.type !== TurnEventKind.RecordPatch) settle();
     switch (event.type) {
       case TurnEventKind.ToolCall: {
+        if (event.name === NOTES_TOOL) {
+          sink.notes(event.args as unknown as Notes);
+          break;
+        }
         const line = toolLine(event);
         if (line) sink.note(line);
         break;

@@ -993,6 +993,23 @@ button { font-family: inherit; }
 .bub > .play.on .halt { display: inline; }
 .bub > .play.on { color: var(--data); }
 .bub > .play:active { color: var(--data-press); }
+/* the coach's own notes on the turn, for admins and auditors, folded shut */
+.bub > .notes { font: 400 12px/1.5 var(--mono); color: var(--faint); min-width: 0; }
+.bub > .notes > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.bub > .notes > summary::-webkit-details-marker { display: none; }
+.bub > .notes > summary::before { content: "\25B8"; margin-right: 6px; }
+.bub > .notes[open] > summary::before { content: "\25BE"; }
+.bub > .notes dl { margin: 0 0 6px; }
+.bub > .notes dt { color: var(--ink); }
+.bub > .notes dd { margin: 0 0 6px; overflow-wrap: anywhere; }
 
 /* A chip never leaves its bubble: it may be as wide as the bubble and no
    wider, and it wraps to more lines rather than being cut. Labels are capped

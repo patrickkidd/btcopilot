@@ -1,6 +1,7 @@
 import { esc, el } from "./dom";
 import { tokenize } from "./chips";
 import { hush, say } from "./speech";
+import { notesView, type Notes } from "./notes";
 import { html, type Line } from "./tools";
 import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
@@ -107,6 +108,15 @@ const PLAY =
 const playable = (bubble: HTMLElement, text: string) => {
   bubble.querySelector(":scope > .play")?.remove();
   if (text) bubble.insertAdjacentHTML("beforeend", PLAY);
+  // The coach's notes always sit last, under the play button's row.
+  const notes = bubble.querySelector(":scope > .notes");
+  if (notes) bubble.append(notes);
+};
+
+/** The coach's notes on its turn, folded shut under the reply. */
+const annotate = (bubble: HTMLElement, notes: Notes) => {
+  bubble.querySelector(":scope > .notes")?.remove();
+  bubble.append(notesView(notes));
 };
 
 /** How long a traced bubble stays outlined after a moment jumps to it. */
@@ -263,6 +273,7 @@ export class Chat {
     statementId: number | null = null,
     play: string | null = null,
     lines: Line[] = [],
+    notes: Notes | null = null,
   ): HTMLElement {
     if (role === Role.User) this.list.querySelector(".cta")?.remove();
     const bubble = el(
@@ -276,6 +287,7 @@ export class Chat {
     );
     bubble.querySelector(".who")?.after(...lines.map(did));
     if (role === Role.Coach) playable(bubble, text);
+    if (notes) annotate(bubble, notes);
     // The bubble carries its statement so a moment on the picture can point
     // back at the words that coded it.
     if (statementId !== null) bubble.dataset.statement = String(statementId);
@@ -396,6 +408,7 @@ export class Chat {
         bubble.insertBefore(did(line), words);
         this.scroll();
       },
+      notes: (notes) => annotate(bubble, notes),
       append: (text, onChip) => {
         sofar += text;
         paint(onChip);
@@ -621,6 +634,7 @@ export interface LiveBubble {
    * coded in this very session can point back at it (review item 18). */
   stamp(statementId: number): void;
   note(line: Line): void;
+  notes(notes: Notes): void;
   /** The next words off the wire, drawn as they land. */
   append(text: string, onChip: (chip: Chip) => void): void;
   /** The coach said those words again: what is on screen is dropped. */

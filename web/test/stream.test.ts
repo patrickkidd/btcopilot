@@ -24,6 +24,7 @@ function watch(): { shown: Shown; take: (event: TurnEvent) => void } {
   };
   const sink: TurnSink = {
     note: (line) => void shown.notes.push(line),
+    notes: () => {},
     made: (items) => {
       shown.reloads += 1;
       shown.lit = items;
