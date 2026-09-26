@@ -8,6 +8,10 @@ Read this first, every session. This is the current truth; the derivation lives 
 **append to HISTORY, revise STATE** as part of any work that changes either.
 Ten-minute read by design.
 
+**Handovers are retired (2026-09-26).** This file is where a session starts: "FD-363" alone
+starts one. The flush revises this file and appends to HISTORY, and that is the whole handover.
+The older handover files in the private corpus stay as they were, for the record only.
+
 ## The product (ruled)
 
 **"A coach who never forgets your family."** You talk to it (voice or text) the way
@@ -356,7 +360,8 @@ app):
   followed by a replay-only run.
 
 **The play-by-play and the chalkboard, blocked on the frame of reference.** Stepping through
-one real cluster of eight events on a copy of production (named in the private corpus only)
+one real cluster of eight events on a copy of production (named only in the private corpus's
+session-b147ab7f/INDEX.md)
 found bugs Patrick confirmed [R-0526]: a distance move with no one on the other end is drawn
 on the mover's own figure; a bond line is drawn outside the bond's own dates, because it is drawn from
 the whole record; a couple's bond and separation draw the same; a second shift on the same event
@@ -366,11 +371,39 @@ first bug starts in the record: the coach wrote that distance move with the pers
 target on 2026-09-22, and events, unlike pair bonds, do not refuse that [R-0527]. A chalkboard
 idea proposed from this one cluster missed his clinical
 frame, and he ruled that the frame is built and checked first, in a separate Fable session, and
-that the design must fit every case [R-0524, R-0525]. A first draft of that frame is on disk in
-this worktree, uncommitted and in no index, with a copy in the private corpus; whether the
-separate session starts from it or from nothing is his decision. A survey of 56 clusters (his 5
-and 51 proposed by the grouping rule over the clinic cases), roles only, sits beside it. None of
-the bugs is fixed.
+that the design must fit every case [R-0524, R-0525]. His question stands unanswered: how the
+coach could draw a story arc the way a coach uses a chalkboard, drawing what the point needs
+rather than a fixed wireframe of everything in the record, in a way that fits every case. None
+of the bugs is fixed, and none is fixed before the frame exists.
+
+**The frame session.** A Claude Code skill named "frame" now exists: Patrick's persistent expert
+on his clinical frame. The next session on this thread loads that skill first, then reads the
+draft. What the session produces: one document, his clinical theory written as requirements a
+coach reply or a drawing must meet — what the app is for, the unit and its variables, how a
+symptom happens, the four variables as the record holds them, the period and its key shift, what
+the evaluation collects and why, what the coach is, what a picture may claim, the off-frame
+ideas to catch, and how to read a cluster in the frame. The test: a fresh session reads only
+that document and one cluster and writes a short reading naming the key shift; Patrick grades it
+against his own; agreement across about ten clusters, his and clinic cases, is the pass; each
+disagreement becomes an example in the document. Inputs: the draft (on disk, uncommitted, at
+doc/FRAME_OF_REFERENCE.md in this worktree, with a copy in the private corpus's
+session-b147ab7f/); the survey and the play-by-play folder beside it; the primary sources in
+~/theapp/btcopilot-sources/bowentheory/ (Family Evaluation, Family Therapy in Clinical Practice,
+the Basic Series lectures, Havstad and Sheffield's shifts paper, Patrick's 2020 talk on the
+implicit model); the coders' rules in doc/irr/; the rulings store. Whether the session starts
+from the draft or from nothing is his decision.
+
+**The survey of 56 clusters** (his 5 stored and 51 proposed by the grouping rule over the clinic
+cases; roles only). By people: 16 have one person, 20 two, 20 three or more. 4 record a
+triangle. 3 have trouble in more than one person. 31 have no relationship move at all. 31 open
+on a noted event, 13 on a structural event, 12 on a shift. In 35, half or more of the events
+are noted events with no variable. Four shapes recur: one person alone with a variable rising
+and falling across noted events (the most common); a couple event with noted events around it
+and nothing moving between people; a couple comes apart and the symptom lands on one person;
+rarely, three people with inside or outside, toward or away, and symptoms trading places. Hard
+to draw as people and moves: one person alone; a cutoff with no recorded target (5 times); a
+56-event stretch; a family's reaction to one death split into three one-person clusters,
+because the grouping rule never links parent and child.
 
 Open:
 - The first deploy dispatched from FD-363 through the GitHub environment has not run.
@@ -384,6 +417,34 @@ Open:
 - The count of guess-dated events is blocked by the personal-data safety check and is not built.
 - An old kept tool call that changes an existing event still keeps that event's old words
   instead of writing the new ones.
+- Still open from 2026-09-25: three impressions choices made under his general yes; the SARF
+  story (a Fable topic); the guessed-dates pass and a reading of his record, both blocked on
+  personal-data reads; whether four questions from his whole history are too few.
+
+**Patrick's actions.**
+1. Test the 5b2a6bb batch in his own thread, including a long message on his iPhone and the (i)
+   on one new reply.
+2. Decide on the frame draft: the frame session starts from it, or it is discarded.
+3. Start the frame session on Fable when he wants the frame built.
+
+**For the next session's coordinator.**
+- Never deploy from master. The next deploy is dispatched from FD-363
+  (`gh workflow run release.yml --ref FD-363`); it is the first through the GitHub environment,
+  so check it on the box. Another ticket branch needs the environment's branch rule widened.
+- After the next paid run, run the suite once with LIVE_REPLAY=only to prove saved responses
+  replay beyond each case's first call; until then assume later calls still cost.
+- Fix the play-by-play bugs only after the frame exists, never by fitting the one cluster tried.
+- Add a refusal for an event whose move targets its own mover, as pair bonds refuse a bond with
+  oneself, and decide with Patrick what happens to the one such event already in his record.
+- Read the rulings on a topic before proposing coach behaviour; judgement calls stay in the
+  prompt and the coach's tools, not in code checks [R-0485].
+- Older tests carry real names from his thread: web/test/spotlight.test.ts lines 41 to 42 and
+  btcopilot/tests/test_timeline.py line 468. Swap them for stand-in names from
+  doc/mockups/family.md, as the italics test was (616c529).
+- Plaintext copies of private prompt fragments sit in the b147ab7f job's temporary frame/
+  folder; they go when the job is deleted.
+- Model use: Fable for the frame session and the chalkboard design; Opus for the deploy
+  dispatch, the replay proof, the self-target refusal and the play-by-play fixes.
 
 **Rulings appended 2026-09-26: R-0519 to R-0531**, each with his words in the evidence file:
 the provisional label (R-0519), the coach's notes and their buttons (R-0520 to R-0522, R-0529),

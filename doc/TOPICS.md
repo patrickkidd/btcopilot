@@ -60,7 +60,7 @@ proven to replay for each case's first call only; one paid run followed by a rep
 proves the rest; (12) [verify] the message-box fix is checked in desktop WebKit, not yet on his
 iPhone.
 **Lives in:** btcopilot PR #138 (branch FD-363, open, not merged); doc/STATE.md; the private
-corpus's HANDOVER_2026-09-26-FD363.md, PREDEPLOY_TESTING_RULES.md, session-dc02180f/ and
+corpus's PREDEPLOY_TESTING_RULES.md, session-dc02180f/ and
 session-b147ab7f/; deploy/; .github/workflows/release.yml; btcopilot/tests/live/replay.py; the
 backup prod-2026-09-26-0540-pre-fd363-5b2a6bb.dump in btcopilot-sources.
 **Next action:** he tests the 5b2a6bb batch in his own thread; the next deploy is dispatched from

@@ -22,6 +22,8 @@ This is not optional and not deferred to the end of a session:
 - **decisions/log.md** — every significant decision, immediately.
 
 ## The flush: every session ends with `/two-clocks`
+**No handover documents (2026-09-26, Patrick).** The flush revises STATE.md and appends to
+HISTORY.md, and that is the whole handover; the next session starts from STATE.
 `.claude/skills/two-clocks/SKILL.md` holds the full procedure, including its scripts (now in
 `.claude/skills/two-clocks/bin/`) and how a topic is picked back up by name.
 

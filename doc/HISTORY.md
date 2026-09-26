@@ -1532,7 +1532,7 @@ processes itself. Every ruling of this session, with his words, waits in the pri
 him to append by hand.
 
 ## 2026-09-26 — FD-363: the coach's notes, the play button and italic tool lines deployed; paid responses saved; the frame of reference sent to its own session [T-1, T-2, T-5, T-9, T-11]
-<!-- session: b147ab7f · flushed: 2026-09-26T15:50:00Z -->
+<!-- session: b147ab7f · flushed: 2026-09-26T16:10:00Z -->
 
 **The provisional label.** The session opened on the handover's one failing check, the private
 scribe prompt missing the word "provisional". Patrick did not recognise it: he had expected
@@ -1593,3 +1593,31 @@ clusters, and whether to start from it is his decision.
 
 **Spend.** $0.78 on the testing key: $0.141 for the notes' first turn and $0.64 for the paid
 behaviour suite. The session ended on his word that its context was spent.
+
+**Handovers retired.** Patrick ruled that handover files are not the design: STATE is where a
+session starts and the flush is the whole handover. This session's handover was folded into
+STATE and deleted.
+
+**Sessions on the chat app, oldest first** (reopen any with `claude --resume <id>`):
+
+| Session id | Dates | What it was about |
+|---|---|---|
+| 28e0dbdf-2159-4593-a6d9-838b9614e4fa | 09-02 → 09-03 | Resumed the chat-first direction from its handoff notes |
+| 3741f13c-3fe6-475e-a784-af6488db4d12 | 09-03 | Opened the architectural step back |
+| 8e002b21-eb23-4c6e-a5ab-5bc555188702 | 09-03 → 09-09 | The step back, starting with the UI principle (in the FD-362 worktree) |
+| 1674c7c2-ead0-4f26-b36c-72b502a9dbc7 | 09-03 → 09-11 | Same start, run from ~/theapp |
+| 33d688bb-e405-47d5-a08f-3733523203a0 | 09-09 → 09-11 | His testing, isolation and the beta deployment |
+| 16d9eee6-ff0e-44e0-9b09-bd5e01d37ca0 | 09-11 → 09-12 | Pro features and the IRR screen design in the new app |
+| 532a3cb1-370f-4a20-bfee-342b46e43e92 | 09-12 | An error on master about the invitations table |
+| c80c21c9-baac-4472-aab3-d6e57d5c9f2d | 09-12 → 09-16 | Testing the coding screen, the walks |
+| e2accdbb-3db3-422d-9551-65f7020022ea | 09-12 → 09-13 | Repo structure: everything in btcopilot, the platform reset |
+| 4919907a-6123-45e8-9fe3-cd4010254f74 | 09-16 | Walk 7, the deploy path, the box built |
+| 1a988ef4-2bcd-4a0b-90d3-f9585dde6598 | 09-16 → 09-23 | The deployment picked up; the app went live and he used it |
+| 94fe21b6-2190-47e6-96cb-9c26d6a64384 | 09-21 → 09-23 | Grafana against Datadog for the box |
+| fd4b64b9-9ac5-4ab8-bb03-338a47a683bc | 09-23 → 09-24 | First beta invites, his review of PR #136, the oracle regime |
+| 9626e1be-0ee6-4e03-86f9-d3781789ff49 | 09-24 | FD-363 opened: kept tool calls, resume, record versions |
+| dc02180f-9c7c-40e0-ad16-d56e7dfbb302 | 09-24 → 09-25 | FD-363 deployed twice, questions, impressions, spend rules |
+| b147ab7f-16e6-4fcf-ba58-42be2e2a2fcc | 09-26 | Coach's notes, play button, italic tool lines deployed; deploy environment; saved paid responses; the play-by-play review and the frame draft |
+
+Not the chat app: b8769210-d27b-4e72-865e-08a8f211cb70 (the Pro app's update feeds, PR #139) and
+2462071d-723f-44f1-89a1-25f63c537e86 (repairing an .fd file for the Pro app).
