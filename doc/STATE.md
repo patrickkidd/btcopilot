@@ -1266,6 +1266,13 @@ Kept for when there are enough users to run one.
 
 ## Pending threads (designed, not landed)
 
+- **Timeline navigation design pass (queued 2026-09-26) [R-0538]**: a Fable session draws the
+  timeline's views as one drawing rather than separate redraws, each emphasising what it needs
+  to without losing the whole; a visible path with a way back on every level; a cluster's name
+  shown once it is opened; the reply-focused look Patrick misses today made reachable again.
+  Shown to him as a mockup artifact, not built code. What the play-by-play draws stays with the
+  frame session, not this pass.
+
 - Coach elicitation upgrade: additive prompt edits (triangle/who-else questions,
   year-before probe, SARF-dimension rotation, done-rule criteria) await Patrick's
   clinical sign-off on the phrasings; the measurement instrument scores planted facts

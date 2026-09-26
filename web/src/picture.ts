@@ -238,10 +238,9 @@ export interface Layer {
 }
 
 /** The resting line's tap targets in the order they are laid, the last on
- * top: the cluster boxes, then the loose events' dots, so a loose event dated
- * inside a cluster's years is reached by a tap on its dot and the box by a tap
- * anywhere else on it. */
-export const restLayers = (boxes: Layer[], dots: Layer[]): Layer[] => [...boxes, ...dots];
+ * top: the loose events' dots, then the cluster boxes, so a tap anywhere in a
+ * box opens it, even on a loose event dated inside its years. */
+export const restLayers = (boxes: Layer[], dots: Layer[]): Layer[] => [...dots, ...boxes];
 
 /** A target as the button the thumb lands on, ZONE tall on the wire. */
 const hitButton = (layer: Layer, wire: number): string =>

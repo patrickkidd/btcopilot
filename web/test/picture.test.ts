@@ -128,9 +128,9 @@ describe("a tap on the resting line", () => {
   const reached = (layers: Layer[], x: number) =>
     [...layers].reverse().find((l) => x >= l.left && x <= l.left + l.width)?.target;
 
-  // R-0103
-  it("reaches a loose event's dot inside a cluster's years, and the box beside it", () => {
-    const dates = ["1994-01-01", "2015-01-01", "2021-01-01"];
+  // R-0537
+  it("opens the cluster from anywhere in its box, a loose dot inside it too", () => {
+    const dates = ["1994-01-01", "2015-01-01", "2021-01-01", "2024-01-01"];
     const edges = box({ start: dates[0], end: dates[2] }, dates, PHONE);
     const cluster: Layer = {
       target: Target.Cluster,
@@ -139,11 +139,12 @@ describe("a tap on the resting line", () => {
       width: edges.right - edges.left,
       label: "1994\u20132021",
     };
-    const x = at(dates[1], dates, PHONE);
-    const event = { label: "Moved to Denver" } as TimelineEvent;
-    const layers = restLayers([cluster], dotLayers(zones([{ x, event }], PHONE)));
-    expect(reached(layers, x)).toBe(Target.Zone);
-    expect(reached(layers, x - 30)).toBe(Target.Cluster);
+    const inside = at(dates[1], dates, PHONE);
+    const outside = at(dates[3], dates, PHONE);
+    const marks = [inside, outside].map((x) => ({ x, event: { label: "Died" } as TimelineEvent }));
+    const layers = restLayers([cluster], dotLayers(zones(marks, PHONE)));
+    expect(reached(layers, inside)).toBe(Target.Cluster);
+    expect(reached(layers, outside)).toBe(Target.Zone);
   });
 });
 

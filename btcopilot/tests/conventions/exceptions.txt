@@ -108,3 +108,5 @@ R-0533 | TEST OWED | not done: the data correction and its eval case have not be
 R-0534 | TEST OWED | queued, not built
 R-0535 | TEST OWED | no visual spec opens the notes panel yet; the two web tests cover the row
 R-0536 | TEST OWED | the two web tests cover the plain-text value and its list of possibilities; no test yet asserts a chip is never used here
+R-0537 | TEST OWED | one web test already covers the tap and the loose-event case together; it counts once against the two tags (picture, affordance), one short
+R-0538 | TEST OWED | a design ruling for a queued Fable navigation pass; not built
