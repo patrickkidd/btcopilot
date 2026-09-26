@@ -12,6 +12,15 @@ Ten-minute read by design.
 starts one. The flush revises this file and appends to HISTORY, and that is the whole handover.
 The older handover files in the private corpus stay as they were, for the record only.
 
+**FIRST ACTION OF THE NEXT NEW SESSION — remind Patrick before anything else (queued
+2026-09-26).** He queued the move to a standalone ~/btcopilot to run at the start of his next
+new session, not mid-session, so no session's progress is lost. Tell him in one line that it is
+queued and run it on his yes, on the recommendations in the private corpus's
+session-dc02180f/MIGRATION_PLAN.md. The three points that touch him: he rotates the Gemini key
+found in plain text in the old local permissions; the self-learning and correction-detection
+rules move to his global instructions; FD-336, FD-342 and FD-360 stay in ~/theapp. Sessions are
+not copied; old ones reopen by id. Remove this paragraph once the move is done.
+
 ## The product (ruled)
 
 **"A coach who never forgets your family."** You talk to it (voice or text) the way

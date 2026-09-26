@@ -1830,3 +1830,9 @@ than one, and that the frame's synthesis gets its own Fable session, serving eve
 session. A first draft written in this session is kept uncommitted and copied to
 the private corpus; whether the separate session starts from it or from nothing is his call.
 Deferred with it: fixing the play-by-play drawing bugs he confirmed [R-0526].
+
+## 2026-09-26: The move to ~/btcopilot runs at the start of the next new session
+
+Patrick. Queued, not run now: it happens when he next starts a new session, so the progress of
+the running session is not lost mid-move. It follows the recommendations of the 2026-09-25
+migration plan; the next session reminds him first (STATE's top paragraph).
