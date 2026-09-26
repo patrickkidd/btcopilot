@@ -88,7 +88,7 @@ jobs:
   deploy:
     runs-on: ubuntu-24.04
     needs: build
-    if: github.event_name == 'workflow_dispatch' && vars.FD_HOST != ''
+    if: github.event_name == 'workflow_dispatch'
     environment: production
     steps:
       - name: Pull the image and run the chain
