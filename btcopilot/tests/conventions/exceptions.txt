@@ -71,3 +71,23 @@ R-0473 | WAIVED | who reads the README is a writing choice no test can observe
 R-0474 | WAIVED | how the history is told is a writing choice no test can observe
 R-0475 | WAIVED | how the README is written is a writing choice no test can observe
 R-0476 | WAIVED | how the project is presented is a writing choice no test can observe
+R-0489 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0490 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0491 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0492 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0493 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0495 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0496 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0497 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0498 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0499 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0500 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0501 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0502 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0503 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0504 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0505 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0506 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0510 | WAIVED | a rescission; nothing to assert until the IRR group ratifies new ground truth
+R-0511 | WAIVED | marks a coding ruling undecided; nothing to assert until the IRR group ratifies new ground truth
+R-0517 | WAIVED | an architectural principle judged in design review; no single surface to assert on

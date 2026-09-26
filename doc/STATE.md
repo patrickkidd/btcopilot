@@ -327,40 +327,18 @@ Open:
 - An old kept tool call that changes an existing event still keeps that event's old words
   instead of writing the new ones.
 
-**Ruling candidates, for Patrick to confirm and give ids to (no ids yet).** The complete list
-of this session's rulings, process ones included, with his words and five marked as needing his
-yes, is RULINGS_TO_APPEND_2026-09-25.md in the private corpus folder, beside R-0477 to R-0485.
-The product ones:
-- A build for Patrick to test is deployed by a release run dispatched from the ticket branch,
-  never by a merge, and only after the pre-deploy test bar passes.
-- A refusal that is right every time, like an exact-duplicate event or question, stays as code;
-  near duplicates are only logged.
-- Every tool call draws a line in the thread, show and view calls included.
-- The user sees only open questions the coach asked; a fact to find goes up only when the coach
-  judges it relevant, including it when in doubt.
-- SARF shifts are remembered as isolated episodes, not a series or a trend; there is no line or
-  step graph of shifts.
-- Every label names all the people in it, the speaker included; this supersedes R-0457's rule
-  to leave out the one doing the reading.
-- The picture band grows from 66 to 72 pixels tall and the region around it from 138 to 144.
-- The coach's impressions are stored the way open questions are and can be pushed back on; a
-  reading that repeats within the same years becomes a cluster.
-- A tap on a chip and a tap on a dot are the same behaviour, with a per-user switch in admin
-  back to the old, separate behaviour.
-- A date needs a certainty: certain for an exact day, approximate for a month or year only,
-  unknown for a hedge.
-- The tab is renamed "From the coach", with an Impressions section in it.
-- "Partly" is stored as a push-back only once the reply is actually sent; tapping it before
-  that only records that the user looked.
-- "Doesn't fit" posts the impression into the chat as a chip.
-- The empty tab reads "Nothing from the coach yet."
-- The spend strategy: real Anthropic calls only at the end of a batch and only when a prompt or
-  tool changed, every dollar asked for first, no free tier; the live suite's hard caps and daily
-  ledger; the sandbox's coach on a local model by default. Written up in
-  [HOW_THIS_PROJECT_WORKS.md](HOW_THIS_PROJECT_WORKS.md).
-- Clinical-coding evals wait for ratified ground truth from the IRR review group; Patrick is
-  never asked to certify a coding rule case by case. His over- and under-functioning coding
-  rulings are rescinded as evals, and R-0428 and R-0057 are undecided.
+**Rulings appended to the store 2026-09-25: R-0477 to R-0518.** R-0477 to R-0485 are the
+previous session's; R-0486 to R-0518 are this session's, each with his words in the evidence
+file. Deploy and testing: R-0486, R-0487, R-0488, R-0506. The coach and the record: R-0489
+(narrows R-0481), R-0490, R-0491, R-0492. From the coach tab: R-0493, R-0495 to R-0497, R-0504,
+R-0505. The picture and the thread: R-0498 to R-0503. Spend and evals: R-0507 to R-0511 (R-0510
+rescinds the over- and under-functioning parts of R-0433; R-0511 marks R-0428 and R-0057
+undecided; neither status is changed in the store yet). How sessions run: R-0494, R-0512 to
+R-0516, R-0518. The learning loop: R-0517. R-0498 conflicts with R-0457 on naming people in
+event titles; R-0457 still stands in the store until Patrick says to supersede it.
+Five candidates still need his yes before they get ids, listed in RULINGS_TO_APPEND_2026-09-25.md
+in the private corpus folder: date certainty on added dates; held questions never shown and the
+drawer's width and title; when "Partly" counts; "Doesn't fit" as a chip; the empty tab's words.
 
 Still true after the deploys: production's title bar reads "Free Diagram" instead
 of the diagram's real name, and four live coach cases fail the same way on the master branch.
