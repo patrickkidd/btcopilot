@@ -555,3 +555,38 @@ def test_undo_will_not_take_off_a_thing_something_since_hangs_on(subscriber):
         record.undo(diagram.id, "t1", author=Author.User)
     assert excinfo.value.actual == ["event 3"]
     assert [p["id"] for p in diagram.get_diagram_data().people] == [1, 2]
+
+
+@pytest.mark.parametrize(
+    "field, value",
+    [("relationshipTargets", [1]), ("relationshipTriangles", [2, 1])],
+)
+def test_the_write_refuses_an_event_whose_mover_is_also_its_target(
+    subscriber, field, value
+):
+    # R-0526, R-0532
+    diagram = _diagram(
+        subscriber.user,
+        {"people": [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}]},
+    )
+
+    with pytest.raises(record.Invalid, match="event 34 has person 1 as both"):
+        record.apply(
+            diagram.id,
+            [
+                {"item_kind": ItemKind.Event, "item_id": 34, "field": "kind", "after": "shift"},
+                {"item_kind": ItemKind.Event, "item_id": 34, "field": "person", "after": 1},
+                {
+                    "item_kind": ItemKind.Event,
+                    "item_id": 34,
+                    "field": "relationship",
+                    "after": "distance",
+                },
+                {"item_kind": ItemKind.Event, "item_id": 34, "field": "relationshipTargets", "after": [2]},
+                {"item_kind": ItemKind.Event, "item_id": 34, "field": field, "after": value},
+                {"item_kind": ItemKind.Event, "item_id": 34, "field": "dateTime", "after": "1990-04-02"},
+            ],
+            author=Author.Coach,
+            turn_id="t1",
+        )
+    assert diagram.get_diagram_data().events == []

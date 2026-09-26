@@ -1,6 +1,7 @@
 import {
   board,
   castOfSteps,
+  dateOf,
   movesIn,
   triangle,
   type Step,
@@ -30,7 +31,6 @@ import {
   zones,
 } from "./spotlight";
 import {
-  DateCertainty,
   ItemKind,
   Spotlight,
   ViewKind,
@@ -340,6 +340,19 @@ export interface PictureHandlers {
 }
 
 const YEAR = 365.25 * 24 * 3600 * 1000;
+
+/** The events these ids name, as the play-by-play steps them: the dated ones
+ * in date order, which is the record's own, and each undated one right after
+ * the event stored before it, or first when it is stored first. */
+export function inOrder(events: TimelineEvent[], ids: number[]): TimelineEvent[] {
+  const named = events.filter((e) => ids.includes(e.id));
+  const stored = ids.flatMap((id) => named.filter((e) => e.id === id));
+  const out = named.filter((e) => dateOf(e) !== null);
+  stored.forEach((e, i) => {
+    if (dateOf(e) === null) out.splice(i ? out.indexOf(stored[i - 1]) + 1 : 0, 0, e);
+  });
+  return out;
+}
 
 export function years(iso: string): number {
   return new Date(iso + "T00:00:00Z").getTime() / YEAR;
@@ -658,10 +671,7 @@ export class Picture {
    * happened between. The level below it is CUT, so this comes straight from
    * the chat. */
   openBoard(eventIds: number[], cluster: string | null = null): number {
-    const events = (this.data?.events ?? []).filter((e) =>
-      eventIds.includes(e.id),
-    );
-    this.moves = movesIn(events);
+    this.moves = movesIn(inOrder(this.data?.events ?? [], eventIds));
     if (!this.moves.length) return 0;
     this.cluster = cluster;
     this.level = Level.Board;
@@ -684,7 +694,7 @@ export class Picture {
         this.data?.clusters.find(
           (c) => c.id === clusterId || c.cluster_ids.includes(clusterId),
         );
-      if (!cluster || !this.openBoard(cluster.event_ids, clusterId)) return;
+      if (!cluster || !this.openBoard(cluster.play_ids, clusterId)) return;
     }
     // the reader stepping the board themselves outranks a play-through still
     // running, which is what steering already means here
@@ -699,9 +709,7 @@ export class Picture {
 
   /** How many moves a cluster would put on the board, for the entry button. */
   countMoves(eventIds: number[]): number {
-    return movesIn(
-      (this.data?.events ?? []).filter((e) => eventIds.includes(e.id)),
-    ).length;
+    return movesIn(inOrder(this.data?.events ?? [], eventIds)).length;
   }
 
   onBoard(): boolean {
@@ -909,9 +917,7 @@ export class Picture {
   }
 
   private dated(): TimelineEvent[] {
-    return (this.data?.events ?? []).filter(
-      (e) => !!e.dateTime && e.dateCertainty !== DateCertainty.Unknown,
-    );
+    return (this.data?.events ?? []).filter((e) => !!dateOf(e));
   }
 
   private person(id: number | null): Person | undefined {

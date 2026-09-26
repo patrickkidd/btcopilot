@@ -269,13 +269,13 @@ export class Coding {
       this.wireList();
       return;
     }
-    const moves = this.picture.countMoves(open.event_ids);
+    const moves = this.picture.countMoves(open.play_ids);
     this.caption.innerHTML =
       tok("coding-play", "g", PLAY_MARK, "play-by-play", moves > 0) +
       listButton(LIST_ID);
     if (moves)
       this.caption.querySelector("#coding-play")?.addEventListener("click", () => {
-        this.picture.openBoard(open.event_ids, open.id);
+        this.picture.openBoard(open.play_ids, open.id);
         this.marks();
       });
     this.wireList();

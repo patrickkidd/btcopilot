@@ -288,6 +288,7 @@ def _drawn_clusters(events: list[dict], clusters: list[dict]) -> list[dict]:
         if not _undated(chunk)
     ]
     by_id = {chunk["id"]: (chunk, date) for chunk, date in dated}
+    undated = {chunk["id"] for chunk in events if _undated(chunk)}
     claimed: set = set()
     groups: list[tuple[list, dict | None]] = []
     for cluster in clusters:
@@ -309,6 +310,14 @@ def _drawn_clusters(events: list[dict], clusters: list[dict]) -> list[dict]:
     previous_end = None
     for group, cluster in groups:
         start, end = group[0][1], group[-1][1]
+        ids = [chunk["id"] for chunk, _ in group]
+        # The play-by-play keeps the coach's stored order and the undated
+        # events the wire has no place for.
+        play = [
+            event_id
+            for event_id in cluster.get("eventIds") or []
+            if event_id in ids or event_id in undated
+        ]
         drawn.append(
             {
                 # It carries the record's own id, so a chip written about it
@@ -325,7 +334,8 @@ def _drawn_clusters(events: list[dict], clusters: list[dict]) -> list[dict]:
                 "source": cluster.get("source"),
                 "start": start.isoformat(),
                 "end": end.isoformat(),
-                "event_ids": [chunk["id"] for chunk, _ in group],
+                "event_ids": ids,
+                "play_ids": play or ids,
                 "count": len(group),
                 "gap_days": (start - previous_end).days if previous_end else 0,
             }
@@ -337,8 +347,9 @@ def _drawn_clusters(events: list[dict], clusters: list[dict]) -> list[dict]:
 def aimable(refs: list[Ref], data: DiagramData) -> list[Ref]:
     """A chip the picture cannot go to is not a chip. `resolve` keeps only
     references the diagram holds; this keeps the ones the picture can aim at,
-    which is any dated moment on the wire and any cluster it draws. A moment
-    inside no cluster is still a dot, and a chip naming it lights that dot."""
+    which is any dated moment on the wire, any undated one a cluster's
+    play-by-play steps to, and any cluster it draws. A moment inside no cluster
+    is still a dot, and a chip naming it lights that dot."""
     people_by_id = {
         p["id"]: p
         for p in data.people
@@ -347,12 +358,13 @@ def aimable(refs: list[Ref], data: DiagramData) -> list[Ref]:
     events = _events_payload(data, people_by_id)
     clusters = _drawn_clusters(events, data.clusters)
     dated = {event["id"]: event for event in events if not _undated(event)}
+    played = {event_id for cluster in clusters for event_id in cluster["play_ids"]}
     named_clusters = {name for cluster in clusters for name in cluster["cluster_ids"]}
 
     kept = []
     for ref in refs:
         if ref.kind is RefKind.Events:
-            if not dated.keys() & set(ref.event_ids):
+            if not (dated.keys() | played) & set(ref.event_ids):
                 _log.warning(f"Reference {ref.label!r} names no event on the line")
                 continue
         elif ref.kind is RefKind.Person:

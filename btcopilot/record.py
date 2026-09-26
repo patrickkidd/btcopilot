@@ -435,13 +435,11 @@ def _validate(data: dict, deltas: list[dict], author: Author, undoing: bool):
         _questions(data, deltas, author)
 
 
-LINKS = (
-    ("person", "person"),
-    ("spouse", "spouse"),
-    ("child", "child"),
+MOVE_LINKS = (
     ("relationshipTargets", "target"),
     ("relationshipTriangles", "third person"),
 )
+LINKS = (("person", "person"), ("spouse", "spouse"), ("child", "child")) + MOVE_LINKS
 
 
 def _role(event: dict, person_id) -> str | None:
@@ -700,10 +698,10 @@ def _people(data: dict, deltas: list[dict]):
 def _structure(data: dict, deltas: list[dict]):
     """Who belongs to whom, checked on what this write leaves behind.
 
-    Nobody is their own parent or their own partner, a bond is between two
-    different people who are both in the record, and any two people have one
-    bond ever, because a child is the offspring of a bond rather than of a
-    pairing written twice.
+    Nobody is their own parent, their own partner, or the target or third
+    person of their own move, a bond is between two different people who are
+    both in the record, and any two people have one bond ever, because a child
+    is the offspring of a bond rather than of a pairing written twice.
     """
     bonds = _collection(data, ItemKind.PairBond)
     for bond_id in _touched_kind(deltas, ItemKind.PairBond):
@@ -754,6 +752,20 @@ def _structure(data: dict, deltas: list[dict]):
                 f"person {person_id} cannot be their own parent",
                 "Nobody can be their own parent.",
             )
+
+    for event_id in _touched(deltas):
+        event = _find(data, ItemKind.Event, event_id)
+        if event is None or event.get("person") is None:
+            continue
+        mover = str(event["person"])
+        for field, role in MOVE_LINKS:
+            if mover in {str(x) for x in event.get(field) or []}:
+                raise Invalid(
+                    f"event {event_id} has person {mover} as both the mover and "
+                    f"the {role}: a move is toward, away from or about someone "
+                    f"else, so name the other person as the {role}",
+                    f"Someone cannot be their own {role} in a move.",
+                )
 
 
 QUESTION_LINKS = (ItemKind.Person, ItemKind.PairBond, ItemKind.Event, ItemKind.Cluster)

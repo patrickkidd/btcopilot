@@ -414,8 +414,11 @@ HOSTILE_CHAT = [
 def editable() -> DiagramData:
     """A copy of the sparse record for the tests that write through the editor.
     They change what they open, so they need a record of their own or every
-    picture taken after them is of a record they altered."""
-    return three_over_forty()
+    picture taken after them is of a record they altered. A third person lets a
+    move name two people besides its mover."""
+    data = three_over_forty()
+    data.people.append(_person(3, "Cy"))
+    return data
 
 
 def long_name() -> DiagramData:

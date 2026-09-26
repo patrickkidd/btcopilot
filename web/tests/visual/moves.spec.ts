@@ -160,12 +160,30 @@ test.describe("the editor's fields by kind", () => {
     await expect(page.locator('.editor [data-label="person"]')).toHaveText("Overfunctioner");
   });
 
-  // R-0142
+  // R-0527
+  test("the mover is never offered as a target or a third person", async ({ page }) => {
+    await openEditor(page);
+    await pick(page, "kind", "shift");
+    await pick(page, "relationship", "inside");
+    const offered = (group: string) =>
+      page.locator(`.segs[data-name="${group}"] .seg:visible`).allTextContents();
+    const people = page.locator('.segs[data-name="person"] .seg:not([data-value=""])');
+    const mover = (await page.locator('.segs[data-name="person"] .seg.on').textContent())!;
+    expect(await offered("relationshipTargets")).not.toContain(mover);
+    expect(await offered("relationshipTriangles")).not.toContain(mover);
+    const other = people.filter({ hasNotText: mover }).first();
+    const next = (await other.textContent())!;
+    await other.click();
+    expect(await offered("relationshipTargets")).toContain(mover);
+    expect(await offered("relationshipTargets")).not.toContain(next);
+  });
+
+  // R-0142, R-0527
   test("a relationship saves with two targets", async ({ page }) => {
     await openEditor(page);
     await pick(page, "kind", "shift");
     await pick(page, "relationship", "conflict");
-    const targets = page.locator('.segs[data-name="relationshipTargets"] .seg');
+    const targets = page.locator('.segs[data-name="relationshipTargets"] .seg:visible');
     // whatever a previous run left on comes off first, so two is two
     for (const chip of await page
       .locator('.segs[data-name="relationshipTargets"] .seg.on')
@@ -192,7 +210,7 @@ test.describe("the editor's fields by kind", () => {
     await openEditor(page);
     await pick(page, "kind", "shift");
     await pick(page, "relationship", "conflict");
-    await page.locator('.segs[data-name="relationshipTargets"] .seg').nth(0).click();
+    await page.locator('.segs[data-name="relationshipTargets"] .seg:visible').nth(0).click();
     await pick(page, "anxiety", "up");
     await pick(page, "kind", "married");
     const saved = page.waitForResponse(

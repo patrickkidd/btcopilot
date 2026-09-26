@@ -127,6 +127,9 @@ export interface Cluster {
   start: string;
   end: string;
   event_ids: number[];
+  /** Every event of the cluster in the coach's stored order, the undated ones
+   * the wire draws no dot for included: what the play-by-play steps through. */
+  play_ids: number[];
   count: number;
 }
 

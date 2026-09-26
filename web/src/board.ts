@@ -1,4 +1,6 @@
+import { DateCertainty } from "./certainty";
 import { esc } from "./dom";
+import { EventKind } from "./editor";
 import {
   BOARD_R,
   draw,
@@ -106,17 +108,25 @@ export function ellipse(people: Person[], width: number): Layout {
   };
 }
 
-/** The pair bonds the record actually holds, drawn first and beneath
- * everything. */
+export const dateOf = (event: TimelineEvent) =>
+  event.dateCertainty === DateCertainty.Unknown ? null : event.dateTime;
+
+/** The pair bonds the record actually holds as of a date, drawn first and
+ * beneath everything. A bond of unknown date stands at every step; with no
+ * date to go by, no dated bond does. */
 export function bonds(
   figures: Figure[],
   events: TimelineEvent[],
+  asOf: string | null,
   steps: Record<number, Walk> = {},
 ): string {
   const drawn = new Set<string>();
   const lines: string[] = [];
   for (const event of events) {
     if (event.spouse === null || event.person === null) continue;
+    if (event.kind === EventKind.Shift) continue;
+    const since = dateOf(event);
+    if (since !== null && (asOf === null || since > asOf)) continue;
     const key = [event.person, event.spouse].sort((a, b) => a - b).join("-");
     if (drawn.has(key)) continue;
     drawn.add(key);
@@ -170,9 +180,10 @@ function gesture(step: Step, figures: Figure[]): Gesture {
     place: {},
   };
   if (!actor) return out;
-  const reached = event.relationshipTargets[0] ?? event.spouse ?? null;
-  const third =
-    event.relationshipTriangles[0] ?? event.relationshipTargets[1] ?? null;
+  // a move aimed at its own mover is aimed at no one (R-0527)
+  const targets = event.relationshipTargets.filter((id) => id !== actor.id);
+  const reached = targets[0] ?? event.spouse ?? null;
+  const third = event.relationshipTriangles[0] ?? targets[1] ?? null;
   const drawn = draw(
     event.relationship,
     actor,
@@ -324,6 +335,17 @@ function axis(steps: Step[], at: number, width: number, top: number): string {
   return `<g class="axis">${out}</g>`;
 }
 
+/** The date a step's bonds are drawn as of: its own, else the step before it
+ * that has one, else the first after it that has one. */
+function asOf(steps: Step[], at: number): string | null {
+  const dates = steps.map((step) => dateOf(step.event));
+  return (
+    dates.slice(0, at + 1).reverse().find((d) => d !== null) ??
+    dates.slice(at).find((d) => d !== null) ??
+    null
+  );
+}
+
 /** The whole board at one step. */
 export function board(
   steps: Step[],
@@ -355,7 +377,7 @@ export function board(
     `<svg viewBox="0 0 ${width} ${height}" aria-hidden="true">` +
     `<defs><filter id="glow" x="-30%" y="-30%" width="160%" height="160%">` +
     `<feGaussianBlur stdDeviation="1.1"/></filter></defs>` +
-    bonds(figures, events, g.steps) +
+    bonds(figures, events, asOf(steps, at), g.steps) +
     history(steps, at, laid) +
     `<g class="cast">${g.marks}` +
     figures

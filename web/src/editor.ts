@@ -262,6 +262,7 @@ export function openEditor(
   );
 
   autogrow(editor);
+  offerOthers(editor);
 
   editor.querySelectorAll<HTMLElement>(".segs").forEach((group) => {
     group.addEventListener("click", (clicked) => {
@@ -283,6 +284,7 @@ export function openEditor(
           .querySelectorAll(".seg")
           .forEach((other) => other.classList.toggle("on", other === button));
       const value = button.dataset.value ?? "";
+      if (group.dataset.name === "person") offerOthers(editor);
       if (group.dataset.name === "kind") {
         block(editor, "pair").hidden = !PAIR_KINDS.includes(value);
         block(editor, "child").hidden = !CHILD_KINDS.includes(value);
@@ -325,6 +327,20 @@ export function openEditor(
     if (event) void api.deleteEvent(event.id, diagramId).then(done);
   });
   return editor;
+}
+
+/** A move is between its mover and other people: the mover is never offered as
+ * whoever it reaches or as the third person (R-0527). */
+function offerOthers(editor: HTMLElement): void {
+  const mover = chosen(editor, "person");
+  editor
+    .querySelectorAll<HTMLElement>(
+      '.segs[data-name="relationshipTargets"] .seg, .segs[data-name="relationshipTriangles"] .seg',
+    )
+    .forEach((seg) => {
+      seg.hidden = seg.dataset.value === mover;
+      if (seg.hidden) seg.classList.remove("on");
+    });
 }
 
 const block = (editor: HTMLElement, name: string) =>

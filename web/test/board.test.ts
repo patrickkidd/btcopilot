@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BOARD_H, board, castOfSteps, ellipse, movesIn } from "../src/board";
+import { DateCertainty } from "../src/certainty";
+import { EventKind } from "../src/editor";
 import { Move } from "../src/moves";
 import type { Person, TimelineEvent } from "../src/types";
 
@@ -114,6 +116,14 @@ describe("what the board writes", () => {
     for (const name of Object.values(Move)) expect(words).not.toContain(name);
   });
 
+  // R-0527, R-0532
+  it("draws nothing for a move aimed at its own mover, and still says it", () => {
+    const self = event({ ...walled, relationship: Move.Distance, relationshipTargets: [20] });
+    const { svg, caption } = drawn([self]);
+    expect(svg).not.toContain('class="mv"');
+    expect(caption).toContain("she stopped calling");
+  });
+
   // R-0162
   it("writes the move's date once, under its dot, and not in the words", () => {
     const { svg, caption } = drawn([walled]);
@@ -136,5 +146,51 @@ describe("what the board writes", () => {
       const shapes = there.filter((m) => m[1] !== "text").map((m) => m[2]);
       expect(shapes.filter((c) => !c.startsWith("ax-dot") && c !== "ax-now")).toEqual([]);
     }
+  });
+});
+
+describe("the bonds under the board", () => {
+  const couple = [
+    { id: 20, name: "Ada", gender: "female" },
+    { id: 25, name: "Ben", gender: "male" },
+  ] as Person[];
+  const early = event({ id: 1, kind: EventKind.Shift, dateTime: "2001-01-01", anxiety: "up" });
+  const bonded = event({ id: 27, kind: EventKind.Bonded, dateTime: "2004-06-01", spouse: 25 });
+  const lines = (events: TimelineEvent[], at: number) =>
+    board(movesIn(events), at, couple, events, 390).svg.match(/class="bond"/g)?.length ?? 0;
+
+  // R-0526, R-0532
+  it("draws a bond only from its own date on", () => {
+    const events = [early, bonded];
+    expect(lines(events, 0)).toBe(0);
+    expect(lines(events, 1)).toBe(1);
+  });
+
+  // R-0526, R-0532
+  it("keeps drawing a bond of unknown date at every step", () => {
+    const events = [early, event({ ...bonded, dateCertainty: DateCertainty.Unknown })];
+    expect(lines(events, 0)).toBe(1);
+  });
+
+  // R-0526, R-0532
+  it("draws the bonds of the step before an undated step", () => {
+    const undated = event({ ...early, id: 2, dateTime: null });
+    expect(lines([bonded, undated], 1)).toBe(1);
+    expect(lines([early, undated, bonded], 1)).toBe(0);
+  });
+
+  // R-0526, R-0532
+  it("draws the bonds of the next dated step when the undated one comes first", () => {
+    const undated = event({ ...early, id: 2, dateTime: null });
+    expect(lines([undated, early, bonded], 0)).toBe(0);
+    expect(lines([undated, bonded], 0)).toBe(1);
+    const alone = board(movesIn([undated]), 0, couple, [undated, bonded], 390).svg;
+    expect(alone).not.toContain('class="bond"');
+  });
+
+  // R-0526, R-0532
+  it("draws no bond for a shift that names a spouse", () => {
+    const events = [event({ ...early, spouse: 25 })];
+    expect(lines(events, 0)).toBe(0);
   });
 });

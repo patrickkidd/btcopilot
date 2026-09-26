@@ -1,7 +1,8 @@
 import pytest
 
 from btcopilot.seed import seed_diagram_data
-from btcopilot.timeline import GAP_DAYS, build_timeline
+from btcopilot.refs import Ref, RefKind
+from btcopilot.timeline import GAP_DAYS, aimable, build_timeline
 from btcopilot.schema import (
     Cluster,
     DateCertainty,
@@ -490,3 +491,41 @@ def test_a_noted_event_near_a_shift_is_a_lead_and_raises_the_question():
     ]
     timeline = build_timeline(_data([1], events))
     assert {(q["event_id"], q["other_event_id"]) for q in timeline["questions"]} == {(10, 11)}
+
+
+def _undated_in_cluster() -> DiagramData:
+    events = [
+        _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
+        _shift(11, 1, "1990-06-01", "symptom", VariableShift.Down),
+        _shift(12, 1, None, "symptom", VariableShift.Up, DateCertainty.Unknown),
+        _shift(13, 1, "1991-01-01", "symptom", VariableShift.Up),
+    ]
+    data = _data([1], events)
+    data.clusters = [
+        asdict(
+            Cluster(
+                id="cl-a",
+                title="The hard year",
+                summary="",
+                eventIds=[10, 12, 11, 13],
+                startDate="1990-01-01",
+                endDate="1991-01-01",
+            )
+        )
+    ]
+    return data
+
+
+def test_an_undated_event_plays_where_the_coach_put_it_but_draws_no_dot():
+    # R-0527, R-0532
+    cluster = build_timeline(_undated_in_cluster())["clusters"][0]
+    assert cluster["play_ids"] == [10, 12, 11, 13]
+    assert cluster["event_ids"] == [10, 11, 13]
+    assert cluster["count"] == 3
+
+
+def test_a_chip_naming_an_undated_event_in_a_cluster_survives():
+    # R-0527, R-0532
+    data = _undated_in_cluster()
+    chip = Ref(kind=RefKind.Events, label="that week", event_ids=[12])
+    assert aimable([chip], data) == [chip]

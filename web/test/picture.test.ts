@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Target, dotLayers, dotXs, restLayers, restWidth, yearAt, years, type Layer } from "../src/picture";
+import { Target, dotLayers, dotXs, inOrder, restLayers, restWidth, yearAt, years, type Layer } from "../src/picture";
 import { zones } from "../src/spotlight";
 import type { TimelineEvent } from "../src/types";
 
@@ -144,5 +144,29 @@ describe("a tap on the resting line", () => {
     const layers = restLayers([cluster], dotLayers(zones([{ x, event }], PHONE)));
     expect(reached(layers, x)).toBe(Target.Zone);
     expect(reached(layers, x - 30)).toBe(Target.Cluster);
+  });
+});
+
+describe("the play-by-play of a cluster", () => {
+  /** The record's own order: dated by date, then the undated. */
+  const events = [
+    [10, "1990-01-01"],
+    [11, "1991-01-01"],
+    [13, "1992-01-01"],
+    [12, null],
+    [14, null],
+    [15, null],
+  ].map(([id, dateTime]) => ({ id, dateTime, dateCertainty: null }) as TimelineEvent);
+
+  // R-0532
+  it("steps the dated events in date order whatever order the coach stored", () => {
+    expect(inOrder(events, [13, 10, 11]).map((e) => e.id)).toEqual([10, 11, 13]);
+  });
+
+  // R-0527, R-0532
+  it("steps an undated event right after the one stored before it, or first", () => {
+    expect(inOrder(events, [15, 13, 12, 10, 11, 14]).map((e) => e.id)).toEqual([
+      15, 10, 11, 14, 13, 12,
+    ]);
   });
 });

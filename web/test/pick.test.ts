@@ -13,6 +13,7 @@ const CLUSTER: Cluster = {
   start: "1981-05-01",
   end: "2003-09-10",
   event_ids: [10, 11, 12],
+  play_ids: [10, 11, 12],
   count: 3,
 };
 const CLUSTERS = [CLUSTER];

@@ -408,3 +408,18 @@ describe("functioning", () => {
     expect(shift({ functioning: "down" }).marks).not.toContain("<circle");
   });
 });
+
+describe("a moment with more than one mark", () => {
+  // R-0526, R-0532
+  it("draws every shift on the moment, and its move", () => {
+    const { marks } = draw(Move.Toward, pair[0], pair[1], {
+      symptom: "up",
+      anxiety: "up",
+      functioning: "down",
+    });
+    expect(els(marks, "mv-spike").length).toBeGreaterThan(0);
+    expect(els(marks, "mv-sym")).toHaveLength(1);
+    expect(els(marks, "mv-func")).toHaveLength(1);
+    expect(els(marks, "mv-arrow")).toHaveLength(1);
+  });
+});

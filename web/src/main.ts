@@ -757,7 +757,7 @@ function actions(): void {
   // inside it: ask about that, or go to where it was said.
   const moment = sel?.kind === SelKind.Event ? Number(sel.id) : null;
   const trace = moment === null ? null : codedIn(moment);
-  const moves = !sel && open ? picture.countMoves(open.event_ids) : 0;
+  const moves = !sel && open ? picture.countMoves(open.play_ids) : 0;
 
   host.innerHTML =
     tok("cap-chip", "", ASK_MARK, "ask", true) +
@@ -828,7 +828,7 @@ wide.addEventListener("change", () => {
  * written, and stays up until the reader taps back off it. */
 function enterBoard(clusterId: string): void {
   const cluster = timeline.clusters.find((c) => c.id === clusterId);
-  if (cluster) picture.openBoard(cluster.event_ids, clusterId);
+  if (cluster) picture.openBoard(cluster.play_ids, clusterId);
   pic = REST;
   actions();
 }

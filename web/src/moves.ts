@@ -564,7 +564,20 @@ const NONE: Drawn = {
   steps: {},
 };
 
-/** One move, in the ratified language. `third` is the other point of a
+const words = (...all: string[]) => all.filter(Boolean).join(" ");
+
+const merge = (a: Drawn, b: Drawn): Drawn => ({
+  actor: words(a.actor, b.actor),
+  target: words(a.target, b.target),
+  third: words(a.third, b.third),
+  ghosts: { ...a.ghosts, ...b.ghosts },
+  marks: a.marks + b.marks,
+  place: { ...a.place, ...b.place },
+  steps: { ...a.steps, ...b.steps },
+});
+
+/** Everything one moment says, in the ratified language: every shift it
+ * carries and its move, together (R-0526). `third` is the other point of a
  * triangle, which inside and outside both need. */
 export function draw(
   kind: string | null,
@@ -573,24 +586,35 @@ export function draw(
   shifts: { symptom: string | null; anxiety: string | null; functioning: string | null },
   third: Figure | null = null,
 ): Drawn {
-  if (shifts.anxiety)
-    return {
-      ...NONE,
-      actor: "anx pshake",
-      ghosts: { actor: "solo" },
-      marks: spikes(actor, "solo"),
-    };
-  if (shifts.symptom)
-    return {
-      ...NONE,
-      actor: "sym",
-      marks: cross(actor, shifts.symptom as Shift),
-    };
-  if (shifts.functioning)
-    return {
-      ...NONE,
-      marks: functioning(actor, shifts.functioning as Shift),
-    };
+  return [
+    move(kind, actor, target, third),
+    shifts.anxiety
+      ? {
+          ...NONE,
+          actor: "anx pshake",
+          ghosts: { actor: "solo" as const },
+          marks: spikes(actor, "solo"),
+        }
+      : NONE,
+    shifts.symptom
+      ? {
+          ...NONE,
+          actor: "sym",
+          marks: cross(actor, shifts.symptom as Shift),
+        }
+      : NONE,
+    shifts.functioning
+      ? { ...NONE, marks: functioning(actor, shifts.functioning as Shift) }
+      : NONE,
+  ].reduce(merge);
+}
+
+function move(
+  kind: string | null,
+  actor: Figure,
+  target: Figure | null,
+  third: Figure | null,
+): Drawn {
   const pair = target ? frame(actor, target) : null;
   switch (kind) {
     case Move.Toward: {
