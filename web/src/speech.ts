@@ -30,7 +30,7 @@ export function say(text: string, done: (() => void) | null = null): void {
   synth.cancel();
   stopped();
   const words = spoken(text);
-  if (!words) return;
+  if (!words) return done?.();
   const reading = new SpeechSynthesisUtterance(words);
   ended = done;
   reading.onend = reading.onerror = () => {

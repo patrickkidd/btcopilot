@@ -103,6 +103,12 @@ const PLAY =
   `<path class="go" d="M4 2.5v11l9.5-5.5z"/>` +
   `<rect class="halt" x="3" y="3" width="10" height="10" rx="1.5"/></svg></button>`;
 
+/** A bubble of tool lines alone, or a turn that failed, has no words to read. */
+const playable = (bubble: HTMLElement, text: string) => {
+  bubble.querySelector(":scope > .play")?.remove();
+  if (text) bubble.insertAdjacentHTML("afterbegin", PLAY);
+};
+
 /** How long a traced bubble stays outlined after a moment jumps to it. */
 const TRACE_MS = 2200;
 
@@ -263,13 +269,13 @@ export class Chat {
       "div",
       `bub ${role}`,
       role === Role.Coach
-        ? // A bubble of tool lines alone has no words to read.
-          (text ? PLAY : "") + `<div class="who">Coach</div>` + this.written(tokenize(text, tone))
+        ? `<div class="who">Coach</div>` + this.written(tokenize(text, tone))
         : // Only the coach offers; the same chip sent back by the user is words
           // in their own sentence.
           this.render(tokenize(text, tone)),
     );
     bubble.querySelector(".who")?.after(...lines.map(did));
+    if (role === Role.Coach) playable(bubble, text);
     // The bubble carries its statement so a moment on the picture can point
     // back at the words that coded it.
     if (statementId !== null) bubble.dataset.statement = String(statementId);
@@ -353,7 +359,7 @@ export class Chat {
     const bubble = el(
       "div",
       `bub ${Role.Coach} typing`,
-      PLAY + `<div class="who">Coach</div><span class="words"></span>`,
+      `<div class="who">Coach</div><span class="words"></span>`,
     );
     if (play !== null) bubble.dataset.play = play;
     this.list.append(bubble);
@@ -419,6 +425,7 @@ export class Chat {
         }
         for (const chip of [...said, ...offers.map((c) => ({ chip: c })), ...tail])
           if ("chip" in chip) onChip(chip.chip);
+        playable(bubble, text);
         bubble.classList.remove("typing");
         this.typing = null;
         this.scroll();
@@ -483,6 +490,7 @@ export class Chat {
             } else await write(after, piece.text, TICK_MS);
           }
         }
+        playable(bubble, text);
         bubble.classList.remove("typing");
         this.typing = null;
       },

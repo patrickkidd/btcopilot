@@ -99,3 +99,11 @@ it("a stopped reading's late end does not stop the same reply read again", () =>
   for (const late of voice.cut) late.onend?.();
   expect(on).toBe(true);
 });
+
+// R-0099
+it("a reply with no words to read hands its play button straight back", () => {
+  let on = true;
+  voice.tapping = true;
+  say("", () => (on = false));
+  expect(on).toBe(false);
+});

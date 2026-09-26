@@ -995,7 +995,6 @@ button { font-family: inherit; }
 .bub > .play.on .halt { display: inline; }
 .bub > .play.on { color: var(--data); }
 .bub > .play:active { color: var(--data-press); }
-.bub.typing > .play { display: none; }
 
 /* A chip never leaves its bubble: it may be as wide as the bubble and no
    wider, and it wraps to more lines rather than being cut. Labels are capped
