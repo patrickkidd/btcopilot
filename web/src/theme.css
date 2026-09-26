@@ -972,12 +972,10 @@ button { font-family: inherit; }
 }
 .bub > .offer .chip { margin: 0; }
 /* Reads the reply aloud; a square while it reads, and a tap then stops it. It
-   stands just past the bubble's last line, in the room a coach bubble leaves
-   on its right, so the words inside never move for it. */
+   sits on its own quiet row under the last line, its icon lined up with the
+   words, as Claude Code's mobile app puts its actions under a reply. */
 .bub > .play {
-  position: absolute;
-  left: 100%;
-  bottom: 0;
+  margin: 2px 0 -9px -14px;
   width: 44px;
   height: 44px;
   display: flex;

@@ -106,7 +106,7 @@ const PLAY =
 /** A bubble of tool lines alone, or a turn that failed, has no words to read. */
 const playable = (bubble: HTMLElement, text: string) => {
   bubble.querySelector(":scope > .play")?.remove();
-  if (text) bubble.insertAdjacentHTML("afterbegin", PLAY);
+  if (text) bubble.insertAdjacentHTML("beforeend", PLAY);
 };
 
 /** How long a traced bubble stays outlined after a moment jumps to it. */
