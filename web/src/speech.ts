@@ -13,13 +13,30 @@ export function spoken(text: string): string {
     .trim();
 }
 
-export function say(text: string): void {
+/** Called once when the reading under way stops, however it stops: its end,
+ * another reading, or the reader's tap. A cancelled reading's own end event
+ * can arrive after the next one has begun, so the end is not trusted alone. */
+let ended: (() => void) | null = null;
+
+function stopped(): void {
+  const done = ended;
+  ended = null;
+  done?.();
+}
+
+export function say(text: string, done: (() => void) | null = null): void {
   const synth = window.speechSynthesis;
   if (!synth) return;
   synth.cancel();
+  stopped();
   const words = spoken(text);
   if (!words) return;
-  synth.speak(new SpeechSynthesisUtterance(words));
+  const reading = new SpeechSynthesisUtterance(words);
+  ended = done;
+  reading.onend = reading.onerror = () => {
+    if (ended === done) stopped();
+  };
+  synth.speak(reading);
 }
 
 /** The reader's tap cuts the reply being spoken, and opens the voice for the
@@ -28,5 +45,6 @@ export function say(text: string): void {
 export function hush(): void {
   const synth = window.speechSynthesis;
   synth.cancel();
+  stopped();
   synth.speak(new SpeechSynthesisUtterance(""));
 }

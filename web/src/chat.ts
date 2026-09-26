@@ -1,5 +1,6 @@
 import { esc, el } from "./dom";
 import { tokenize } from "./chips";
+import { hush, say } from "./speech";
 import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
@@ -93,6 +94,14 @@ const PART = /\[\[[^\]]*$/;
 /** One thing the coach did, as a plain line above its words. */
 const did = (line: string) => el("div", "did", esc(line));
 
+/** A coach reply's own button that reads it aloud, whether or not replies are
+ * spoken as they arrive. */
+const PLAY =
+  `<button type="button" class="play" aria-label="Read aloud">` +
+  `<svg viewBox="0 0 16 16" aria-hidden="true">` +
+  `<path class="go" d="M4 2.5v11l9.5-5.5z"/>` +
+  `<rect class="halt" x="3" y="3" width="10" height="10" rx="1.5"/></svg></button>`;
+
 /** How long a traced bubble stays outlined after a moment jumps to it. */
 const TRACE_MS = 2200;
 
@@ -124,6 +133,8 @@ export class Chat {
     private handlers: ChatHandlers,
   ) {
     const tap = (host: HTMLElement) => (e: Event) => {
+      const play = (e.target as Element).closest<HTMLElement>(".play");
+      if (play) return this.read(play);
       // [try again] looks like a chip but names nothing in the record.
       const button = (e.target as Element).closest<HTMLElement>("button.chip[data-kind]");
       if (!button) {
@@ -211,6 +222,13 @@ export class Chat {
     );
   }
 
+  /** The tap is itself the gesture iOS wants before it will speak. */
+  private read(button: HTMLElement): void {
+    if (button.classList.contains("on")) return hush();
+    say(this.said.get(button.parentElement as HTMLElement)!, () => button.classList.remove("on"));
+    button.classList.add("on");
+  }
+
   clear(): void {
     this.list.innerHTML = "";
     this.stuck = true;
@@ -244,7 +262,8 @@ export class Chat {
       "div",
       `bub ${role}`,
       role === Role.Coach
-        ? `<div class="who">Coach</div>` + this.written(tokenize(text, tone))
+        ? // A bubble of tool lines alone has no words to read.
+          (text ? PLAY : "") + `<div class="who">Coach</div>` + this.written(tokenize(text, tone))
         : // Only the coach offers; the same chip sent back by the user is words
           // in their own sentence.
           this.render(tokenize(text, tone)),
@@ -333,7 +352,7 @@ export class Chat {
     const bubble = el(
       "div",
       `bub ${Role.Coach} typing`,
-      `<div class="who">Coach</div><span class="words"></span>`,
+      PLAY + `<div class="who">Coach</div><span class="words"></span>`,
     );
     if (play !== null) bubble.dataset.play = play;
     this.list.append(bubble);
