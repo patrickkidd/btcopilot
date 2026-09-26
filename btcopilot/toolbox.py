@@ -1124,7 +1124,7 @@ class Toolbox:
         if said is None:
             return {
                 "session_id": int(self.session_id),
-                "asked_at": datetime.date.today().isoformat(),
+                "asked_at": datetime.datetime.utcnow().date().isoformat(),
             }
         return {
             "session_id": said.discussion_id,

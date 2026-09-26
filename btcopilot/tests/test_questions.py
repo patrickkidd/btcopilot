@@ -6,6 +6,7 @@ Invented names only.
 
 import datetime
 import json
+import time
 
 import pytest
 from mock import patch
@@ -22,7 +23,7 @@ from btcopilot.toolbox import ToolError, ToolName, Toolbox
 
 ASK = "Who were your father's brothers and sisters?"
 LATER = "When did your grandmother die?"
-TODAY = datetime.date.today().isoformat()
+TODAY = datetime.datetime.utcnow().date().isoformat()
 
 
 def box(diagram, turn="t1", author=Author.Coach) -> Toolbox:
@@ -75,6 +76,19 @@ def test_a_question_is_added_whole_in_one_change_row(family):
         "session_id": 7,
         "asked_at": TODAY,
     }
+
+
+def test_a_question_is_dated_on_the_clock_its_messages_are_dated_on(family, monkeypatch):
+    # R-0006, R-0084
+    ahead = datetime.datetime.utcnow().hour >= 12
+    monkeypatch.setenv("TZ", "Etc/GMT-14" if ahead else "Etc/GMT+12")
+    time.tzset()
+    assert datetime.date.today().isoformat() != TODAY
+    add(box(family))
+
+    assert stored(family)["q1"]["asked_at"] == TODAY
+    monkeypatch.undo()
+    time.tzset()
 
 
 def test_undo_puts_back_the_turn_but_never_a_question(family):
