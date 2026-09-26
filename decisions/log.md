@@ -1789,3 +1789,44 @@ Patrick [R-0519]. The 2026-09-23 entry's "provisional" wording for the open codi
 an agent assumption; he never ruled it. Coding-judgment gaps are filled with best-guess rules
 worded from the literature and judged by F1 after coding. The label is removed from the private
 prompts and the two checks that grepped for it are deleted; R-0440 is superseded by R-0519.
+
+## 2026-09-26: FD-363 — the coach's notes go through a tool, not a structured reply
+
+Patrick [R-0520]. The coach states its own read of each turn (register, lane, why this question
+now, what it holds for later, the history plateau and biggest gap, any hunch, its sense of the
+person, which variable is live) by calling a notes tool, and reads its last notes back
+through the replay of its earlier tool calls. Rejected: a metadata field in structured JSON
+output, because structured output and streaming do not mix and a streamed-JSON parse was judged
+hacky and brittle. The notes are stripped on the server for anyone who is not an admin or
+auditor. Whether the coach is on track stays a judgement read from these notes and the log, not
+a deterministic after-turn check [R-0485].
+
+## 2026-09-26: FD-363 — paid calls are paid for once
+
+Patrick [R-0531]. A good test does not need a fresh paid call each time. The paid behaviour suite now
+saves each real response, sops-encrypted under private/replays, keyed by a hash of the whole
+request, and replays it; only changed calls reach the model, and replayed calls go into the ledger
+at $0. The date the coach sees is pinned to 2026-09-25 in that suite so a saved response still
+matches the next day. Proven only for each case's first call; one paid run followed by a
+replay-only run proves the rest. Rejected: proving wiring with real calls a unit test already
+proves.
+
+## 2026-09-26: FD-363 — the deploy credentials live in a GitHub environment limited to FD-363
+
+Patrick said yes to adding the setting that lets the release workflow deploy by itself [R-0530];
+the shape of it is the agent's. The host, user and key sit in a GitHub environment named
+production that only branch FD-363 may use; the deploy job runs only on a manual dispatch and
+checks out the dispatched commit on the box. A repository-wide host setting, which would have
+deployed every push to master, was created and removed within the hour. Every deploy so far,
+including 5b2a6bb on 2026-09-26, ran by hand on the box; the first dispatch through the
+environment is untested. A later ticket branch needs the environment's branch rule widened.
+
+## 2026-09-26: The frame of reference is built in its own session
+
+Patrick [R-0524, R-0525]. A chalkboard design proposed for the play-by-play was fitted to one of
+his clusters and drew on mainstream attachment ideas rather than his clinical frame. He ruled that
+design of the chalkboard waits until an agent can reason from his frame, fits every case rather
+than one, and that the frame's synthesis gets its own Fable session, serving every later
+session. A first draft written in this session is kept uncommitted and copied to
+the private corpus; whether the separate session starts from it or from nothing is his call.
+Deferred with it: fixing the play-by-play drawing bugs he confirmed [R-0526].

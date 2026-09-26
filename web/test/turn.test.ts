@@ -161,7 +161,7 @@ describe("what a tool call says in plain words", () => {
 });
 
 describe("what a tool call names, set apart from its verb", () => {
-  // R-0186
+  // R-0186, R-0528
   it("puts each name in italics, as text", () => {
     const called = (name: ToolName, args: Record<string, unknown>, names: Record<string, string | string[]>) =>
       html(toolLine({ name, args, names, refusal: null })!);

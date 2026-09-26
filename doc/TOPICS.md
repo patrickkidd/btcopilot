@@ -25,7 +25,11 @@ thread. The fast-follow FD-363 went to production twice on 2026-09-25: kept tool
 [try again], record versions, the map of the record, the check after each turn, hand edits
 through the coach's writer, and the Questions tab with its one-time backfill. A second batch —
 his fixes from his own use, required date certainty, and the coach's impressions — went out on
-2026-09-26 at commit 1faeeaa with the database at 1b00000000ae.
+2026-09-26 at commit 1faeeaa with the database at 1b00000000ae. A third went out on 2026-09-26
+at commit 5b2a6bb, by hand on the box: the play button under each coach reply, italic names in
+tool lines, the iPhone message-box fix, the coach's notes behind a circled (i) for admins and
+auditors, and questions dated in UTC. Pushed since, not deployed: the GitHub environment for
+deploys and saved paid responses.
 **Decided:** one server for Pro, training and the chat app; old Pro diagrams stay pickle and
 new rows are JSON in the same column [Oracle: R-0241]; the beta users are the app working
 group of three clinicians [R-0079]; sign-in is passwordless with Face ID on a capable phone;
@@ -38,10 +42,10 @@ batch PR pushed to production continuously and tested in his own thread with no 
 [R-0484]; before any push, evidence is shown from the stored rows and from the page [R-0483].
 Added 2026-09-25, not yet numbered: a build for him to test goes to the box by a release run
 dispatched from the ticket branch, never by a merge, and only after the 14-point pre-deploy
-test bar passes; production and testing run on separate keys.
-**Open:** (1) [closed 2026-09-25] the paid behaviour run's one failure, the scribe prompt
-lacking the word "provisional", tested a marker Patrick never ruled; the marker and its checks
-are removed and the literature rules stay unlabelled, judged by F1 after coding [R-0519]; (2) [ruling] whether the 4 questions the backfill found in his whole history
+test bar passes; production and testing run on separate keys. The deploy credentials live in a
+GitHub environment only branch FD-363 may use, deploying only on a manual dispatch [R-0530]; a
+paid response is paid for once and replayed after [R-0531].
+**Open:** (1) [verify] the 5b2a6bb batch waits on his test in his own thread; (2) [ruling] whether the 4 questions the backfill found in his whole history
 are too few; (3) [verify] no real coach turn had run on production before his own, because a
 test sign-in link on the box was refused by the permission checks; (4) [build] production's
 title bar reads "Free Diagram" instead of the diagram's real name; (5) [build] onboarding the
@@ -50,13 +54,18 @@ first beta users [R-0400]; the two invite links for their email addresses have n
 with generic advice instead of summarising the exchange; (7) [verify] the app has never been
 opened on Android; (8) [verify] passkeys have never been tried on a real https domain;
 (9) [waiting] cluster quality on anyone else's record stays unmeasured until the coding loop
-produces numbers.
+produces numbers; (10) [verify] no deploy has yet been dispatched through the GitHub
+environment; the first dispatch from FD-363 proves it; (11) [verify] saved paid responses are
+proven to replay for each case's first call only; one paid run followed by a replay-only run
+proves the rest; (12) [verify] the message-box fix is checked in desktop WebKit, not yet on his
+iPhone.
 **Lives in:** btcopilot PR #138 (branch FD-363, open, not merged); doc/STATE.md; the private
-corpus's HANDOVER_2026-09-25-FD363.md, PREDEPLOY_TESTING_RULES.md and session-dc02180f/
-(deploy runbook, box commands, evidence); deploy/; the backup
-prod-2026-09-25-0457-pre-fd363.dump in btcopilot-sources.
-**Next action:** he sends one message in his own thread, the first real coach turn on this build.
-**Updated:** 2026-09-25.
+corpus's HANDOVER_2026-09-26-FD363.md, PREDEPLOY_TESTING_RULES.md, session-dc02180f/ and
+session-b147ab7f/; deploy/; .github/workflows/release.yml; btcopilot/tests/live/replay.py; the
+backup prod-2026-09-26-0540-pre-fd363-5b2a6bb.dump in btcopilot-sources.
+**Next action:** he tests the 5b2a6bb batch in his own thread; the next deploy is dispatched from
+FD-363 through the environment.
+**Updated:** 2026-09-26.
 
 ## T-2 · The coach knows the clinical definitions, and we can measure it
 
@@ -64,7 +73,10 @@ prod-2026-09-25-0457-pre-fd363.dump in btcopilot-sources.
 open questions and impressions through its own tools; a date it adds must say how sure it is.
 The paid live suite holds behaviour evals only; every clinical-coding eval waits for ground
 truth from the IRR review group. The prompts' clinical content is still unreviewed by Patrick
-and unmeasured.
+and unmeasured. Since 2026-09-26 the coach keeps its own notes each turn through a tool and reads
+them back the next; admins and auditors see them behind a circled (i). The frame of reference —
+the theory written as requirements for the coach and the picture — has a first draft, kept out
+of the repo and waiting for its own session.
 **Decided:** the agent loop is the only writer and must carry the data model and clinical
 definitions [R-0236]; placement rule — a rule the computer can test becomes a refusal in the
 record's commit function, a field's meaning goes on the tool parameter, judgement goes in the
@@ -81,7 +93,12 @@ that is right every time stays as code; every tool call draws a line; a fact to 
 only when the coach judges it relevant, including it when in doubt; impressions are stored
 before they are said; prompt evals come only from a human oracle; clinical-coding evals wait
 for ratified ground truth; his over- and under-functioning coding rulings are rescinded as
-evals; R-0428 and R-0057 are undecided.
+evals; R-0428 and R-0057 are undecided. Gaps in the coding rules are filled from the literature
+with no provisional label and judged by F1 after coding [R-0519]. The coach states its own read
+of each turn through a notes tool, not a field in a structured reply, and whether it is on track
+stays a judgement, never a code check [R-0520, R-0485]. Anything an agent proposes about the
+coach or the picture starts from his clinical frame, not the model's training, and the frame is
+built and checked in a separate Fable session [R-0524, R-0525].
 **Open:** (1) [ruling] the date-certainty rule (exact day certain, month or year approximate,
 hedge unknown) was built without words of his and needs his yes; (2) [ruling] his review of the
 "What goes in the record" section of the prompt; (3) [waiting] every clinical-coding eval waits
@@ -91,12 +108,18 @@ instructions have not been retargeted at the agent path; (6) [build] the coach d
 about the older households around each death, separation and move; (7) [build] the scribe adds
 a generically named parent or partner when the coder names a relation not on the record
 [R-0325]; (8) [build] an old kept tool call that changes an existing event still shows that
-event's old words.
+event's old words; (9) [ruling] whether the separate Fable session on the frame starts from
+this session's draft or from nothing; (10) [build] the frame itself: one document of the theory
+as requirements, passed when a fresh session reading only it and one cluster names the key shift
+the way he does, across about ten of his and clinic clusters; (11) [verify] the coach's notes
+were proven on the real model for one first turn; the read-back is proven by a unit test only.
 **Lives in:** btcopilot/{record.py,toolbox.py,recordtext.py,timeline.py}; the prompts under
 private/prompts/; btcopilot/tests/live (the paid suite and its waiting list in README.md);
-doc/PROMPT_ENGINEERING_LOG.md; doc/HOW_THIS_PROJECT_WORKS.md (spend and eval rules).
-**Next action:** the approved behaviour-eval run on the real model, then his prompt review.
-**Updated:** 2026-09-25.
+doc/PROMPT_ENGINEERING_LOG.md; doc/HOW_THIS_PROJECT_WORKS.md (spend and eval rules); the frame
+draft doc/FRAME_OF_REFERENCE.md in the FD-363 worktree (uncommitted) and its copy in the private
+corpus's session-b147ab7f/.
+**Next action:** his word on the frame draft, then the separate Fable session builds the frame.
+**Updated:** 2026-09-26.
 
 ## T-3 · One app: Pro and Training as thin layers on the chat
 
@@ -250,6 +273,9 @@ import waits until after the beta.
 built on the branch; the drawer's third tab, now "From the coach", holds the coach's open
 questions (on production) and its impressions (built, deploying). The SARF story has a
 brainstorm with its one question answered. Four pages of earlier drawings still wait on him.
+Deployed 2026-09-26: the play button under each coach reply and italic names in tool lines. The
+play-by-play has confirmed drawing bugs, and the chalkboard design is blocked on the frame of
+reference (T-2).
 **Decided:** the picked-moment words on the timeline (option A) [R-0235]; the about page behind
 an i, ✕ in the arrow's place; one icon-button size [R-0234]; the card slides the whole region;
 who·what words [T-2]. Ruled and built from his own use, 20–22 September: the amber question mark
@@ -367,7 +393,14 @@ about it — neither is ruled or built, and it is a topic for Fable; (17) [waiti
 record can show as it is, and a pass correcting events whose dates were guessed, both wait on a
 read of his record that the permission checks refused; (18) [ruling] the two picture goldens
 board-first-move and rest-dense60 wait on his approval; (19) [verify] a chip tap working like a
-dot tap is built with a switch back and he has not tried it.
+dot tap is built with a switch back and he has not tried it; (20) [build] the play-by-play
+bugs he confirmed [R-0526]: a distance move drawn on the mover's own figure; a bond line drawn
+outside the bond's dates; a bond and a separation drawn alike; a second shift on the same event
+not drawn; an undated-certainty event left out of the steps; app words in the captions —
+fixed after the frame, not before; (21) [build] events accept a move whose target is its own
+mover, which pair bonds already refuse [R-0527]; (22) [waiting] the chalkboard: how the coach
+draws a story arc that fits every case, not only the one cluster tried, waits on the frame of
+reference [R-0524, R-0525].
 **Lives in:** doc/PICTURE_IDEAS.md (the fourteen concepts, the passage behind each,
 the critic's verdicts); doc/MOBILE_VIEWS.md (the twenty-four phone views, the mapping
 onto the eight messages, the five hybrids); doc/archive/2026-09-UI_GAP.md; REVIEW_LOG.md round 5;
@@ -376,10 +409,11 @@ STATE.md; doc/FRAGMENT_CONVENTIONS.md; the drawings and their verdict files in
 https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj , https://claude.ai/artifact/FzfjSGH6EQVt61vC5R2DFi , https://claude.ai/artifact/G5gYDqzhvar5KXPJAhtbzm and https://claude.ai/artifact/WrGWM6m2cXJfQ3FLHnNMu3 ; the open-questions mockups
 https://claude.ai/artifact/XSmWsbSEdyChP1SM6AHKMd and the impressions mockups
 https://claude.ai/artifact/AfUU6Pzq2vaLPm3QvY7BH7 ; the SARF brainstorm and the two build
-contracts in the private corpus's session-dc02180f/.
-**Next action:** he tries the second batch on production — the "From the coach" tab and the
-chip tap — and answers the three impressions choices; the SARF story resumes on Fable.
-**Updated:** 2026-09-25.
+contracts in the private corpus's session-dc02180f/; the play-by-play step shots, the sheet and
+the survey of 56 clusters in the private corpus's session-b147ab7f/.
+**Next action:** he tries the 5b2a6bb batch on production and answers the three impressions
+choices; the chalkboard and the SARF story resume on Fable after the frame.
+**Updated:** 2026-09-26.
 
 ## T-6 · Clusters by example
 
@@ -497,7 +531,13 @@ the session tells him when to switch between Opus and Fable; a build for him to 
 deployed from the branch, never by merging, and the session's own testing against the 14-point
 pre-deploy bar is what makes that safe; every real-model spend is asked for first and happens
 only at the end of a batch when a prompt or tool changed, the sandbox running on a local model
-by default; agents must be able to run what the work needs on the production box.
+by default; agents must be able to run what the work needs on the production box. Added
+2026-09-26: replies to him are specific and carry only what changes his decision, never
+echoing his words or raising questions that are not open [R-0523]; agent chatter is never
+relayed and the final message stands alone [R-0025]; the rulings on a topic are read before
+any coach behaviour is proposed; testing does not spend on every run, and a paid response is
+saved and replayed [R-0531]; design starts from his clinical frame, not the model's training
+[R-0524].
 **Open:** (1) [build] the permission checks still refuse production reads, a test sign-in
 link on the box and reads of personal data; the answer so far is that he restarts in bypass
 mode, which his settings already default to; (2) [ruling] five rulings of this session were
@@ -506,7 +546,7 @@ RULINGS_TO_APPEND_2026-09-25.md).
 **Lives in:** doc/HOW_THIS_PROJECT_WORKS.md; the private corpus's PREDEPLOY_TESTING_RULES.md; doc/TEST_STRATEGY.md;
 btcopilot/CLAUDE.md; .claude/skills/two-clocks/SKILL.md; bin/flushcheck.py; bin/t.
 **Next action:** he restarts in bypass mode.
-**Updated:** 2026-09-25.
+**Updated:** 2026-09-26.
 
 ## T-10 · Project memory: the two clocks, the flush, the trace
 
@@ -625,10 +665,17 @@ Those run at the top level on Patrick's direct grant.
 **Lives in:** deploy/ (compose, Caddyfile, secrets template, README, the release workflow
 and the four appcast feeds); doc/PLATFORM_BUILD.md; doc/archive/2026-09-DATADOG.md;
 private/prompts/ and private/oracle/, encrypted.
+**Deploys, 2026-09-26:** the release workflow's deploy job reads the host, user and key from a
+GitHub environment named production that only branch FD-363 may use, runs only on a manual
+dispatch and checks out the dispatched commit on the box [R-0530]. Until then every deploy ran
+by hand on the box because the host setting was missing. A repository-wide host setting that
+would have deployed master was created and removed the same hour. Open: (9) [verify] the first
+dispatch through the environment has not run; (10) [build] a later ticket branch needs the
+environment's branch rule widened before it can deploy.
 **Next action:** he sets a spend limit on the testing workspace in the Anthropic console; he
 puts the Grafana token on the box and refreshes the dependency lock so the observability commit
-can deploy.
-**Updated:** 2026-09-25.
+can deploy; the next deploy is dispatched from FD-363.
+**Updated:** 2026-09-26.
 
 ## T-12 · The learning loop: a scout that looks outward and a review of the scout
 

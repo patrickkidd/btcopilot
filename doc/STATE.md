@@ -317,16 +317,80 @@ two checks were removed on 2026-09-25 [R-0519]. The impressions backfill ran ove
 turn has run on this build yet, because the permission checks block a sign-in link for the test
 account; Patrick's next message is the first. Real spend is asked for first.
 
+**Deployed 2026-09-26 05:40 UTC: commit 5b2a6bb, image 3.2026.9.26.1-g5b2a6bb.** In plain words:
+- A coach reply has a thin line-drawn play button on its own row under its last line, as in
+  the Claude Code mobile app; a tap reads that reply aloud, a second tap stops it, and a reply
+  with no words gets none [R-0521].
+- Each name a tool line acts on is set in italics, in the real italic of the tool lines' font
+  [R-0528].
+- On iPhone a long message no longer draws its lines over each other: the rounded outline sits
+  on a wrapper and the text scrolls in a square box inside it.
+- The coach keeps its own notes every turn through a tool: register, lane, why this question
+  now, what it holds for later, history plateau and biggest gap, any hunch, its sense of the
+  person, which variable is live. The record is untouched by them and reads its last notes
+  back the next turn. The server strips them for anyone who is not an admin or auditor; they
+  see a circled (i) at the bubble's top right that opens the notes in a panel growing out of
+  the bubble and shrinking back into it on close [R-0520, R-0522, R-0529]. Replies from before
+  this build have no notes.
+- A question asked this turn is dated in UTC, like the messages beside it.
+The notes were proven on the real model for one first turn ($0.141, testing key); the read-back
+is proven by a unit test, which Patrick accepted. The gate: 613 Python tests and 245 web tests
+passed, the paid behaviour suite passed 9 of 9 ($0.64, testing key), no migrations, and his
+thread had 78 statements before and after. It was deployed by hand on the box, because the
+setting naming the server was missing from GitHub. Backup:
+`/root/backups/prod-2026-09-26-0540-pre-fd363-5b2a6bb.dump`, copied to
+`~/theapp/btcopilot-sources/`.
+
+**Pushed after that deploy, not deployed** (the box is not running them; neither changes the
+app):
+- The release workflow's deploy job reads the host, user and key from a GitHub environment
+  named production that only branch FD-363 may use; it runs only on a manual dispatch and checks
+  out the dispatched commit on the box (ff9e4f0) [R-0530]. A repository-wide host setting that
+  would have deployed every push to master was created and removed the same hour. No deploy has
+  gone through the environment yet.
+- The paid behaviour suite saves each real response, sops-encrypted under private/replays and
+  keyed by a hash of the whole request, and replays it; LIVE_REPLAY picks replay (the default,
+  records what is missing), record or only; replayed calls go into the ledger at $0; the date
+  the coach sees is pinned to 2026-09-25 in that suite (78ff857) [R-0531]. Two replay-only runs
+  gave the same keys for each case's first call; later calls are unproven until one paid run is
+  followed by a replay-only run.
+
+**The play-by-play and the chalkboard, blocked on the frame of reference.** Stepping through
+one real cluster of eight events on a copy of production (named in the private corpus only)
+found bugs Patrick confirmed [R-0526]: a distance move with no one on the other end is drawn
+on the mover's own figure; a bond line is drawn outside the bond's own dates, because it is drawn from
+the whole record; a couple's bond and separation draw the same; a second shift on the same event
+is not drawn, because only the first is; an event with unknown date certainty is dropped, so
+eight events show as seven steps; captions show app words such as "bonded" and "separated". The
+first bug starts in the record: the coach wrote that distance move with the person as its own
+target on 2026-09-22, and events, unlike pair bonds, do not refuse that [R-0527]. A chalkboard
+idea proposed from this one cluster missed his clinical
+frame, and he ruled that the frame is built and checked first, in a separate Fable session, and
+that the design must fit every case [R-0524, R-0525]. A first draft of that frame is on disk in
+this worktree, uncommitted and in no index, with a copy in the private corpus; whether the
+separate session starts from it or from nothing is his decision. A survey of 56 clusters (his 5
+and 51 proposed by the grouping rule over the clinic cases), roles only, sits beside it. None of
+the bugs is fixed.
+
 Open:
-- The new tests cite the nearest already-numbered ruling instead of a real id, because the
-  oracle spec forbids a pending-ruling marker. Four spend tests, the case proving a question is
-  stored before the reply, and the tests behind R-0479 and R-0482 in Patrick's store all need
-  re-citing once he appends the ruling.
+- The first deploy dispatched from FD-363 through the GitHub environment has not run.
+- Whether saved responses replay beyond each case's first call waits on one paid run followed
+  by a replay-only run.
+- The message-box fix is checked in desktop WebKit only; Patrick's iPhone is the real check.
+- Events still accept a move whose target is its own mover; the play-by-play bugs wait on the
+  frame of reference.
 - Three rulings were skipped as needing a design rather than built: R-0187; R-0213, R-0376 and
   R-0378 together; R-0122 and R-0127 together.
 - The count of guess-dated events is blocked by the personal-data safety check and is not built.
 - An old kept tool call that changes an existing event still keeps that event's old words
   instead of writing the new ones.
+
+**Rulings appended 2026-09-26: R-0519 to R-0531**, each with his words in the evidence file:
+the provisional label (R-0519), the coach's notes and their buttons (R-0520 to R-0522, R-0529),
+how replies to him are written (R-0523), the frame first and in its own session (R-0524,
+R-0525), the play-by-play bugs and the self-targeted event (R-0526, R-0527), italic names in
+tool lines (R-0528), the deploy setting (R-0530), paying for a response once (R-0531).
+R-0025, R-0484, R-0485, R-0520 and R-0521 gained a restatement.
 
 **Rulings appended to the store 2026-09-25: R-0477 to R-0518.** R-0477 to R-0485 are the
 previous session's; R-0486 to R-0518 are this session's, each with his words in the evidence

@@ -40,7 +40,7 @@ def call(replay, wire, system="The coaching text."):
 
 
 def test_a_saved_response_replays_with_no_model_call(tmp_path):
-    # R-0508
+    # R-0508, R-0531
     wire = Wire()
     recorded = call(Replay(Mode.Replay, tmp_path, seal=False), wire)
     replayed = call(Replay(Mode.Only, tmp_path, seal=False), wire)
@@ -52,7 +52,7 @@ def test_a_saved_response_replays_with_no_model_call(tmp_path):
 
 
 def test_a_changed_system_prompt_misses_and_records(tmp_path):
-    # R-0508
+    # R-0508, R-0531
     wire = Wire()
     call(Replay(Mode.Replay, tmp_path, seal=False), wire)
     _, turn = call(Replay(Mode.Replay, tmp_path, seal=False), wire, "Changed text.")
@@ -61,13 +61,13 @@ def test_a_changed_system_prompt_misses_and_records(tmp_path):
 
 
 def test_replay_only_fails_on_a_miss(tmp_path):
-    # R-0508
+    # R-0508, R-0531
     with pytest.raises(Miss):
         call(Replay(Mode.Only, tmp_path, seal=False), Wire())
 
 
 def test_the_same_request_again_is_a_new_sample(tmp_path):
-    # R-0508
+    # R-0508, R-0531
     wire = Wire()
     first = Replay(Mode.Replay, tmp_path, seal=False)
     texts = [call(first, wire)[1].text for _ in range(3)]
@@ -77,7 +77,7 @@ def test_the_same_request_again_is_a_new_sample(tmp_path):
 
 
 def test_record_calls_the_model_even_when_saved(tmp_path):
-    # R-0508
+    # R-0508, R-0531
     wire = Wire()
     call(Replay(Mode.Replay, tmp_path, seal=False), wire)
     call(Replay(Mode.Record, tmp_path, seal=False), wire)

@@ -1530,3 +1530,66 @@ the first real turn on this build. Before the deploy, the final gate sat idle fo
 each agent thought the other was running it, so the next coordinator checks the running
 processes itself. Every ruling of this session, with his words, waits in the private corpus for
 him to append by hand.
+
+## 2026-09-26 — FD-363: the coach's notes, the play button and italic tool lines deployed; paid responses saved; the frame of reference sent to its own session [T-1, T-2, T-5, T-9, T-11]
+<!-- session: b147ab7f · flushed: 2026-09-26T15:50:00Z -->
+
+**The provisional label.** The session opened on the handover's one failing check, the private
+scribe prompt missing the word "provisional". Patrick did not recognise it: he had expected
+literature definitions to fill the gaps and F1 after coding to judge them, and said the label was
+an earlier agent's assumption. The label and its two checks were removed from the coach and
+scribe prompts, and R-0440's part about it was superseded [R-0519]. He also said the reply that
+raised it was too vague to follow.
+
+**What he asked for from his own thread.** A play button on each coach reply like the Claude
+Code mobile app's, a fix for lines drawing over each other in the message box on iPhone, and some
+way to set a tool line's object apart from its verb. Built by two builders under an auditor and
+checked by a separate verifier, who found a play button that stuck on after a failed turn; it
+was fixed. He then asked twice more for the button to sit under the bubble as a simple line icon,
+and got it [R-0521]. The object names became italics in the font's real italic [R-0528]. He
+dropped the idea of tracing each coach statement to its source.
+
+**The coach's notes.** He asked what could show the coach's state of mind, for example whether it
+is following the symptom on purpose and will come back to the missing information. The first
+answer proposed a code check after each turn of which facts are filled in; he pointed out that
+coverage was already ruled a judgement [R-0485] and that such calls belong to state-based
+prompting, not to code, and a process rule was added: read the rulings on a topic before
+proposing coach behaviour. A field in a structured reply was set aside because it breaks
+streaming and a streamed-JSON parse is fragile, and he chose a tool call carrying as much useful
+learning data as possible [R-0520]. The coach now writes its notes each turn and reads them
+back the next; only admins and auditors see them, first behind a press and hold, then, because
+that clashes with selecting text on iOS, behind a circled (i) at the bubble's top right [R-0522],
+closing with the opening animation reversed [R-0529]. One real first turn proved the notes are
+written ($0.141, testing key); he accepted a unit test for the read-back.
+
+**The deploy.** Five old failing tests were fixed at the root and every uncited test was pointed
+at the ruling it follows from; the session wrongly put two of those citations to him as
+questions, and he asked why. The batch went out as 5b2a6bb after the full gate (613 Python and
+245 web tests, the paid behaviour suite 9 of 9 for $0.64, no migrations, his thread at 78
+statements before and after), by hand on the box because GitHub had no setting naming the
+server. He also corrected the session for relaying agent chatter instead of one message that
+stands alone [R-0025], and for spending on every test run [R-0531].
+
+**After the deploy, on his yes.** The deploy credentials went into a GitHub environment that only
+branch FD-363 may use, with the deploy job running only on a manual dispatch at the dispatched
+commit [R-0530]; a repository-wide setting that would have deployed master was created and
+removed within the hour. The paid behaviour suite now saves each real response encrypted and
+replays it, so a response is paid for once; the keys are proven stable for first calls only.
+
+**The play-by-play and the chalkboard.** He found the explained play-by-play hard to follow and
+asked for one of his own clusters (named in the private corpus only) to be stepped through on a
+copy of production. The reading of its story arc and the bugs found were both right, he said
+[R-0526, R-0527]: a distance move drawn on the person's own figure (the record lets an event
+target its own mover), a bond line drawn outside the bond's dates, a bond and a separation drawn
+alike, a second shift on the same event not drawn, the event with unknown date certainty
+dropped, and app words in the captions. The session then proposed a chalkboard the
+coach draws on only what the point needs. He said it missed: fitted to one example, and grounded
+in the model's training rather than his clinical frame. He ruled that the design waits until the frame is understood, must fit every case,
+and that the synthesis of the frame is built in a separate Fable session for all later sessions
+[R-0524, R-0525]. The session had meanwhile read the primary sources and drafted the frame as
+requirements, with his cluster re-read in it; he pointed out this was meant for the separate
+session. The draft is uncommitted, copied to the private corpus with a roles-only survey of 56
+clusters, and whether to start from it is his decision.
+
+**Spend.** $0.78 on the testing key: $0.141 for the notes' first turn and $0.64 for the paid
+behaviour suite. The session ended on his word that its context was spent.

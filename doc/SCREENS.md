@@ -6,7 +6,7 @@ behaviour, tagged `[built]` if it is in the app today, `[drawn]` if it is approv
 but not built, and `[open]` if it is a choice Patrick has not made yet. It is rewritten as
 decisions land; the exact sizes and colours live in the internal interface spec, not here.
 
-Updated: 2026-09-25
+Updated: 2026-09-26
 
 ---
 
@@ -65,6 +65,10 @@ What it is for: talking to the coach, which is how everything else in the app ge
 - If a reply fails, the lines that landed stay and [try again] carries on the same turn without sending your words again. [built] {R-0477}
 - Each line names the event or person it touched by the same label used everywhere else. [built]
 - Speak replies reads the coach's replies out loud, on an iPhone too. [built]
+- In each of those lines, the name of the thing it touched is in italics, set apart from the verb, as in "Changed *Dad's move*: date 1990". [built] {R-0528}
+- Under each coach reply that has words there is a thin, line-drawn play button, as in the Claude Code mobile app; tap it to hear that reply, tap again to stop. [built] {R-0521}
+- On an iPhone, a long message in the message box scrolls without its lines drawing over each other. [built]
+- Admins and auditors see a small circled (i) at the top right of a coach reply; tapping it opens the coach's own notes for that turn in a panel that grows out of the bubble and shrinks back into it. Nobody else sees the notes. [built] {R-0520, R-0522, R-0529}
 
 ## The picture at rest
 
@@ -171,6 +175,8 @@ What it is for: a play-by-play of what people did, one move at a time.
 - Every move mark is drawn in one green, and green means action. [built]
 - Amber never marks a move or a symptom, because amber means the record is asking. [built]
 - Whether the whole thing reads without a legend, and whether the words and drawings tell the same story, is a judgement only Patrick can make by playing a stretch through. [open]
+- Played through on a real cluster, the board does not yet get its message across: a move aimed at nobody is drawn on the mover, a bond line shows outside the bond's dates, a bond and a separation look alike, a second shift on one event is missing, an event of unknown date is skipped, and captions use app words. [open] {R-0526}
+- How the coach should draw a story on the board, like a chalkboard, waits until the theory behind it is written down in its own session. [open] {R-0524, R-0525}
 
 ## The row of chips under the picture
 
@@ -333,7 +339,7 @@ What it is for: you, your families, your plan, and signing out.
 - There is a row for whether the coach speaks its replies out loud. [built]
 - The same speaking switch appears once in the chat as a named shortcut, writing the same setting. [built]
 - With it on, your phone's own voice reads each reply as it starts arriving, and sending the next message cuts it off. [built] {R-0099}
-- A button under each coach reply that plays it again, the way the Claude app has one, is not built yet. [open]
+- A button under each coach reply plays it again, the way the Claude Code mobile app has one. [built] {R-0521}
 - Which voice reads the replies is not settled: today it is your phone's own, which costs nothing, and a better-sounding paid one waits on Patrick. [open]
 - No other setting appears in two places. [built]
 - There is a row for how often the coach may message you first, and it says the coach never messages first unless you ask. [built]

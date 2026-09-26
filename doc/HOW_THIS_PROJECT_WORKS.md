@@ -212,17 +212,13 @@ amount and what it bought.
 
 **Read the rulings on a topic before proposing coach behaviour (2026-09-25, Patrick).** The
 coordinator proposed a deterministic after-turn coverage check one day after R-0485 ruled that
-coverage is the coach's judgement, never rules. Patrick: "we discussed coverage in a previous
-session. This is nuanced. Do you have that?" and "your intuition is always to go to rules based
-checks and gates even when they will make something robotic. if it was robotic then we'd use
-code, not inference." Rule: before any design proposal about what the coach does, decrypt the
+coverage is the coach's judgement, never rules; Patrick restated that ruling, adding that
+judgement calls belong to inference, not to code (R-0485). Rule: before any design proposal about what the coach does, decrypt the
 store and grep the topic; cite the ruling in the proposal. Judgement calls stay inference
 (state-based prompting, tools the coach calls); code only where the behaviour is meant to be
 mechanical.
 
-**Spend is the exception, not the test method (2026-09-25, Patrick).** "you shouldn't be
-needing to spend all this money all the time to test this stuff well. change your strategy."
-Rule: plumbing is proven with mocks, the local model and recorded real responses replayed from
+**Spend is the exception, not the test method (2026-09-25, Patrick; R-0531).** Rule: plumbing is proven with mocks, the local model and recorded real responses replayed from
 fixtures; a real call is never used to prove wiring a unit test already proves. Every paid
 response is saved as a replay fixture so it is paid for once. Real calls happen only once per
 batch, before deploy, and only for a changed prompt or tool.
