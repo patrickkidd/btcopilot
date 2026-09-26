@@ -346,13 +346,7 @@ setting naming the server was missing from GitHub. Backup:
 `/root/backups/prod-2026-09-26-0540-pre-fd363-5b2a6bb.dump`, copied to
 `~/theapp/btcopilot-sources/`.
 
-**Pushed after that deploy, not deployed** (the box is not running them; neither changes the
-app):
-- The release workflow's deploy job reads the host, user and key from a GitHub environment
-  named production that only branch FD-363 may use; it runs only on a manual dispatch and checks
-  out the dispatched commit on the box (ff9e4f0) [R-0530]. A repository-wide host setting that
-  would have deployed every push to master was created and removed the same hour. No deploy has
-  gone through the environment yet.
+**Pushed after the 05:40 deploy, not part of the app on the box**:
 - The paid behaviour suite saves each real response, sops-encrypted under private/replays and
   keyed by a hash of the whole request, and replays it; LIVE_REPLAY picks replay (the default,
   records what is missing), record or only; replayed calls go into the ledger at $0; the date
@@ -363,23 +357,23 @@ app):
 **The play-by-play and the chalkboard.** Stepping through
 one real cluster of eight events on a copy of production (named only in the private corpus's
 session-b147ab7f/INDEX.md)
-found bugs Patrick confirmed [R-0526]: a distance move with no one on the other end is drawn
+found bugs Patrick confirmed [R-0526]: a move with no one on the other end is drawn
 on the mover's own figure; a bond line is drawn outside the bond's own dates, because it is drawn from
 the whole record; a couple's bond and separation draw the same; a second shift on the same event
 is not drawn, because only the first is; an event with unknown date certainty is dropped, so
 eight events show as seven steps; captions show app words such as "bonded" and "separated". The
-first bug starts in the record: the coach wrote that distance move with the person as its own
-target on 2026-09-22, and events, unlike pair bonds, do not refuse that [R-0527]. A chalkboard
-idea proposed from this one cluster missed his clinical
+first bug starts in the record: two of his own events, dated 2015-09-01, are defined-self moves
+that name him as their own target, and events, unlike pair bonds, do not refuse that [R-0527].
+A chalkboard idea proposed from this one cluster missed his clinical
 frame, and he ruled that the frame is built and checked first, in a separate Fable session, and
 that the design must fit every case [R-0524, R-0525]. His question stands unanswered: how the
 coach could draw a story arc the way a coach uses a chalkboard, drawing what the point needs
 rather than a fixed wireframe of everything in the record, in a way that fits every case.
 
-**Ruled 2026-09-26 [R-0532]: the play-by-play work splits into two lists.** Underway now on
-branch FD-363, not yet live: nothing may point a move back at the very person making it, the
-same way two people cannot be bonded to themselves; a bond gets no line on the picture before
-its own start; when two changes land on one event, both get their own place in the steps
+**Ruled 2026-09-26 [R-0532]: the play-by-play work splits into two lists.** Fixed and deployed
+2026-09-26 (commit 2a797b0, see below): nothing may point a move back at the very person making
+it, the same way two people cannot be bonded to themselves; a bond gets no line on the picture
+before its own start; when two changes land on one event, both get their own place in the steps
 instead of just the first; and an event missing a known date keeps its spot in the story at
 wherever the coach set it, rather than dropping out. Waiting on the frame of reference: telling
 an ended bond apart from an ongoing one, new picture words standing in for "bonded" and
@@ -388,9 +382,32 @@ nothing on the picture. A separate call the same day [R-0533]: when something in
 saved family information turns out wrong, it gets corrected, and the correction itself becomes
 training material going forward — the original mistake is kept on file as a case an automated
 check can run against later, and the fix travels through the same log every other record change
-uses, never a direct database edit. The case behind it: on 2026-09-22 a move meant to record
-distance had named the very person making it as the other party; that link is cleared while the
-move stays. The chalkboard concept has not moved; the frame still comes first.
+uses, never a direct database edit. The case, corrected: his two events from 2015-09-01 were
+defined-self moves, not the distance move first suspected, each naming him as its own target;
+both targets were cleared, tagged review, through the record's write path (change rows 269 and
+270), and the second event is flagged in the case file as a suspected near-copy of the first.
+The write-up is in the private corpus at correction-cases/2026-09-26-self-target.md; its eval
+is still owed [R-0533]. The chalkboard concept has not moved; the frame still comes first.
+
+**Deployed 2026-09-26 ~20:20 UTC: commit 2a797b0.** The release workflow's deploy job, which
+reads the host, user and key from a GitHub environment named production that only branch
+FD-363 may use [R-0530], ran for the first time on a real dispatch from FD-363 (run
+36268785383). It carried onto the box: the play-by-play fixes above; the play-by-play
+follow-ups — the event editor no longer offers the mover as their own move's target, dated
+events play in date order with each undated event placed right after whichever event is stored
+just before it, and an undated step draws bonds as they stood at the nearest dated step; and
+Patrick's account becoming an admin, so the coach notes' (i) button now shows for him. (A
+repository-wide host setting that would have deployed every push to master was made and removed
+the same hour, before this dispatch.) Two bugs in the workflow itself turned up and were fixed
+on the way: the job's host check was written as a condition, which cannot read environment
+variables, so it skipped on every dispatch (df0dde9); and the check meant to stop an
+already-superseded database revision instead stopped the current one and ran after the new app
+had already gone live rather than before the image was pulled — it now runs first and lets the
+current chain through (2a797b0). Backup:
+`/root/backups/prod-2026-09-26-2013-pre-fd363-2a797b0.dump`, copied to
+`~/theapp/btcopilot-sources/`. His thread was unchanged by the deploy: 81 statements, 29 people,
+67 events, 12 pair-bonds, 5 clusters, 194 change rows, before and after. One real turn on the
+claude-test account proved the running stack, for $0.16.
 
 **The frame session.** A Claude Code skill named "frame" now exists: Patrick's persistent expert
 on his clinical frame. The next session on this thread loads that skill first, then reads the
@@ -422,12 +439,10 @@ to draw as people and moves: one person alone; a cutoff with no recorded target 
 because the grouping rule never links parent and child.
 
 Open:
-- The first deploy dispatched from FD-363 through the GitHub environment has not run.
 - Whether saved responses replay beyond each case's first call waits on one paid run followed
   by a replay-only run.
 - The message-box fix is checked in desktop WebKit only; Patrick's iPhone is the real check.
-- Four play-by-play fixes (the self-target refusal among them) are being built on FD-363, not
-  yet deployed; three items still wait on the frame of reference.
+- Three play-by-play items still wait on the frame of reference.
 - Three rulings were skipped as needing a design rather than built: R-0187; R-0213, R-0376 and
   R-0378 together; R-0122 and R-0127 together.
 - The count of guess-dated events is blocked by the personal-data safety check and is not built.
@@ -443,12 +458,7 @@ Open:
   about grandparents, aunts, uncles, or their stories.
 - Found, next batch to fix: the play-by-play's own model calls never reach the model-call
   record, so their spend goes uncounted.
-- Patrick's account is a subscriber, so the coach notes' (i) button never showed for him; he is
-  being made an admin.
-- Play-by-play follow-ups built and verified, not yet deployed: the event editor stops offering the mover as their own move's
-  target; dated events play in date order, with each undated event placed right after whichever
-  event is stored just before it; an undated step draws bonds as they stood at the nearest
-  dated step.
+- The move of this work to ~/btcopilot awaits Patrick's yes on the plan's recommendations.
 
 **Patrick's actions.**
 1. Test the 5b2a6bb batch in his own thread, including a long message on his iPhone and the (i)
@@ -457,16 +467,11 @@ Open:
 3. Start the frame session on Fable when he wants the frame built.
 
 **For the next session's coordinator.**
-- Never deploy from master. The next deploy is dispatched from FD-363
-  (`gh workflow run release.yml --ref FD-363`); it is the first through the GitHub environment,
-  so check it on the box. Another ticket branch needs the environment's branch rule widened.
+- Never deploy from master. The first deploy through the GitHub environment ran 2026-09-26 from
+  FD-363 (commit 2a797b0); another ticket branch will still need the environment's branch rule
+  widened before it can deploy the same way.
 - After the next paid run, run the suite once with LIVE_REPLAY=only to prove saved responses
   replay beyond each case's first call; until then assume later calls still cost.
-- The play-by-play fixes split 2026-09-26 [R-0532, R-0533]: four are fixed now on FD-363 (the
-  self-target refusal, the bond line's own dates, a shift drawn on its own step, an undated
-  event kept and placed), and the one self-targeting event already in Patrick's record is fixed
-  by removing its target and keeping the move; three items still wait on the frame of reference
-  (separation-vs-bond, the caption words, an unanswered move's drawing).
 - Read the rulings on a topic before proposing coach behaviour; judgement calls stay in the
   prompt and the coach's tools, not in code checks [R-0485].
 - Older tests carry real names from his thread: web/test/spotlight.test.ts lines 41 to 42 and
@@ -474,8 +479,7 @@ Open:
   doc/mockups/family.md, as the italics test was (616c529).
 - Plaintext copies of private prompt fragments sit in the b147ab7f job's temporary frame/
   folder; they go when the job is deleted.
-- Model use: Fable for the frame session and the chalkboard design; Opus for the deploy
-  dispatch, the replay proof, the self-target refusal and the play-by-play fixes.
+- Model use: Fable for the frame session and the chalkboard design; Opus for the replay proof.
 
 **Rulings appended 2026-09-26: R-0519 to R-0531**, each with his words in the evidence file:
 the provisional label (R-0519), the coach's notes and their buttons (R-0520 to R-0522, R-0529),
