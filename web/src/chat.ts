@@ -1,6 +1,7 @@
 import { esc, el } from "./dom";
 import { tokenize } from "./chips";
 import { hush, say } from "./speech";
+import { html, type Line } from "./tools";
 import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
@@ -92,7 +93,7 @@ function layout(pieces: Piece[]): Written {
 const PART = /\[\[[^\]]*$/;
 
 /** One thing the coach did, as a plain line above its words. */
-const did = (line: string) => el("div", "did", esc(line));
+const did = (line: Line) => el("div", "did", html(line));
 
 /** A coach reply's own button that reads it aloud, whether or not replies are
  * spoken as they arrive. */
@@ -255,7 +256,7 @@ export class Chat {
     tone = ChipTone.Data,
     statementId: number | null = null,
     play: string | null = null,
-    lines: string[] = [],
+    lines: Line[] = [],
   ): HTMLElement {
     if (role === Role.User) this.list.querySelector(".cta")?.remove();
     const bubble = el(
@@ -611,7 +612,7 @@ export interface LiveBubble {
   /** The bubble carries its statement once the server has one, so a moment
    * coded in this very session can point back at it (review item 18). */
   stamp(statementId: number): void;
-  note(line: string): void;
+  note(line: Line): void;
   /** The next words off the wire, drawn as they land. */
   append(text: string, onChip: (chip: Chip) => void): void;
   /** The coach said those words again: what is on screen is dropped. */
