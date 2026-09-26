@@ -209,3 +209,13 @@ holds only behaviour evals and wording tests.
 
 **A ready message says what it spent (2026-09-25, Patrick).** It ends "spent $X on Y" — the
 amount and what it bought.
+
+**Read the rulings on a topic before proposing coach behaviour (2026-09-25, Patrick).** The
+coordinator proposed a deterministic after-turn coverage check one day after R-0485 ruled that
+coverage is the coach's judgement, never rules. Patrick: "we discussed coverage in a previous
+session. This is nuanced. Do you have that?" and "your intuition is always to go to rules based
+checks and gates even when they will make something robotic. if it was robotic then we'd use
+code, not inference." Rule: before any design proposal about what the coach does, decrypt the
+store and grep the topic; cite the ruling in the proposal. Judgement calls stay inference
+(state-based prompting, tools the coach calls); code only where the behaviour is meant to be
+mechanical.
