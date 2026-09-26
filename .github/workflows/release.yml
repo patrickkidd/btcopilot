@@ -88,7 +88,8 @@ jobs:
   deploy:
     runs-on: ubuntu-24.04
     needs: build
-    if: vars.FD_HOST != ''
+    if: github.event_name == 'workflow_dispatch' && vars.FD_HOST != ''
+    environment: production
     steps:
       - name: Pull the image and run the chain
         uses: appleboy/ssh-action@v1.2.1
@@ -102,7 +103,8 @@ jobs:
             set -e
             export BTCOPILOT_TAG=${{ needs.build.outputs.tag }}
             cd /var/www/btcopilot
-            git pull origin master
+            git fetch origin ${{ github.sha }}
+            git checkout --detach ${{ github.sha }}
             # one time: the box's files move from deploy/chat to deploy; the database lives in instance/
             if [ -d deploy/chat ]; then
               [ -d deploy/chat/instance ] && mv deploy/chat/instance deploy/instance
