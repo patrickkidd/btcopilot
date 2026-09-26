@@ -1,7 +1,9 @@
 """What the release workflow builds, tags and runs on the box."""
 
 import hashlib
+import subprocess
 
+import pytest
 import yaml
 
 from btcopilot.tests.repo import REPO
@@ -31,6 +33,35 @@ def test_one_migration_and_the_box_is_stamped_to_it_on_deploy():
         stamp = next(line for line in DEPLOY.splitlines() if line.strip().startswith(f"{retired})"))
         assert "UPDATE alembic_version SET version_num = '1b00000000aa'" in stamp
     assert DEPLOY.index("1a00000000af)") < DEPLOY.index("flask admin db upgrade")
+
+
+@pytest.mark.parametrize(
+    "at, stops",
+    [
+        ("", False),
+        ("1a00000000ae", False),
+        ("1a00000000af", False),
+        ("1b00000000aa", False),
+        ("1b00000000ae", False),
+        ("1c00000000aa", True),
+    ],
+)
+def test_the_revision_check_passes_the_current_chain_and_stops_before_the_swap(
+    at, stops
+):
+    # R-0417
+    lines = DEPLOY.splitlines()
+    start = next(i for i, l in enumerate(lines) if l.strip() == 'case "$at" in')
+    end = next(i for i, l in enumerate(lines) if l.strip() == "esac")
+    check = "\n".join(lines[start : end + 1])
+    ran = subprocess.run(
+        ["bash", "-c", f'set -e; psql() {{ :; }}; at="{at}"\n{check}'],
+        cwd=REPO / "deploy",
+        capture_output=True,
+        text=True,
+    )
+    assert (ran.returncode != 0) is stops, ran.stderr
+    assert DEPLOY.index('case "$at" in') < DEPLOY.index("docker rollout")
 
 
 def test_a_migration_that_ran_in_production_is_never_rewritten_and_later_ones_chain():
