@@ -1,7 +1,7 @@
 import { esc, el } from "./dom";
 import { tokenize } from "./chips";
 import { hush, say } from "./speech";
-import { notesView, type Notes } from "./notes";
+import { hold, notesView, type Notes } from "./notes";
 import { html, type Line } from "./tools";
 import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
@@ -97,26 +97,18 @@ const PART = /\[\[[^\]]*$/;
 const did = (line: Line) => el("div", "did", html(line));
 
 /** A coach reply's own button that reads it aloud, whether or not replies are
- * spoken as they arrive. */
+ * spoken as they arrive. It sits under the bubble, never in it, so the bubble
+ * is the same shape with or without it. */
 const PLAY =
   `<button type="button" class="play" aria-label="Read aloud">` +
   `<svg viewBox="0 0 16 16" aria-hidden="true">` +
-  `<path class="go" d="M4 2.5v11l9.5-5.5z"/>` +
-  `<rect class="halt" x="3" y="3" width="10" height="10" rx="1.5"/></svg></button>`;
+  `<path class="go" d="M4.5 2.75v10.5l8.5-5.25z"/>` +
+  `<rect class="halt" x="3.5" y="3.5" width="9" height="9" rx="1"/></svg></button>`;
 
 /** A bubble of tool lines alone, or a turn that failed, has no words to read. */
 const playable = (bubble: HTMLElement, text: string) => {
-  bubble.querySelector(":scope > .play")?.remove();
-  if (text) bubble.insertAdjacentHTML("beforeend", PLAY);
-  // The coach's notes always sit last, under the play button's row.
-  const notes = bubble.querySelector(":scope > .notes");
-  if (notes) bubble.append(notes);
-};
-
-/** The coach's notes on its turn, folded shut under the reply. */
-const annotate = (bubble: HTMLElement, notes: Notes) => {
-  bubble.querySelector(":scope > .notes")?.remove();
-  bubble.append(notesView(notes));
+  if (bubble.nextElementSibling?.matches(".play")) bubble.nextElementSibling.remove();
+  if (text) bubble.insertAdjacentHTML("afterend", PLAY);
 };
 
 /** How long a traced bubble stays outlined after a moment jumps to it. */
@@ -138,6 +130,8 @@ export class Chat {
    * can light the same moments its chips name. */
   private said = new WeakMap<HTMLElement, string>();
   private typing: HTMLElement | null = null;
+  /** The coach's notes on each turn that carries them, for admins and auditors. */
+  private noted = new WeakMap<HTMLElement, Notes>();
   /** Whether the thread is following the newest words. */
   private stuck = true;
   /** True while this class is the one moving the scroll, so its own pinning is
@@ -184,6 +178,7 @@ export class Chat {
     // fallback, so pin it again then: otherwise a thread opened before the font
     // lands sits partway up its own scroll.
     void document.fonts?.ready.then(() => this.scroll());
+    this.watchHolding();
     this.list.addEventListener("click", tap(this.list));
     this.composer.addEventListener("click", tap(this.composer));
   }
@@ -242,8 +237,49 @@ export class Chat {
   /** The tap is itself the gesture iOS wants before it will speak. */
   private read(button: HTMLElement): void {
     if (button.classList.contains("on")) return hush();
-    say(this.said.get(button.parentElement as HTMLElement)!, () => button.classList.remove("on"));
+    say(this.said.get(button.previousElementSibling as HTMLElement)!, () => button.classList.remove("on"));
     button.classList.add("on");
+  }
+
+  /** A press and hold on a coach bubble with notes pops them out of it; a tap
+   * or a scroll never does, and a bubble without notes does nothing. */
+  private watchHolding(): void {
+    let press: { bubble: HTMLElement; up: () => boolean; move: (x: number, y: number) => void } | null = null;
+    let swallow = false;
+    const end = () => {
+      if (!press) return;
+      swallow = press.up();
+      press.bubble.classList.remove("pressed");
+      press = null;
+    };
+    this.list.addEventListener("pointerdown", (e) => {
+      const bubble = (e.target as Element).closest<HTMLElement>(".bub");
+      const notes = bubble && this.noted.get(bubble);
+      if (!bubble || !notes) return;
+      swallow = false;
+      bubble.classList.add("pressed");
+      const h = hold(() => notesView(notes, bubble));
+      h.down(e.clientX, e.clientY);
+      press = { bubble, up: h.up, move: h.move };
+    });
+    this.list.addEventListener("pointermove", (e) => press?.move(e.clientX, e.clientY));
+    this.list.addEventListener("pointerup", end);
+    this.list.addEventListener("pointercancel", end);
+    this.list.addEventListener("scroll", end, { passive: true });
+    this.list.addEventListener("contextmenu", (e) => {
+      const bubble = (e.target as Element).closest<HTMLElement>(".bub");
+      if (bubble && this.noted.has(bubble)) e.preventDefault();
+    });
+    // The click that ends a hold is not also a tap on the bubble.
+    this.list.addEventListener(
+      "click",
+      (e) => {
+        if (!swallow) return;
+        swallow = false;
+        e.stopPropagation();
+      },
+      true,
+    );
   }
 
   clear(): void {
@@ -286,8 +322,7 @@ export class Chat {
           this.render(tokenize(text, tone)),
     );
     bubble.querySelector(".who")?.after(...lines.map(did));
-    if (role === Role.Coach) playable(bubble, text);
-    if (notes) annotate(bubble, notes);
+    if (notes) this.noted.set(bubble, notes);
     // The bubble carries its statement so a moment on the picture can point
     // back at the words that coded it.
     if (statementId !== null) bubble.dataset.statement = String(statementId);
@@ -296,6 +331,7 @@ export class Chat {
     if (play !== null) bubble.dataset.play = play;
     this.said.set(bubble, text);
     this.list.append(bubble);
+    if (role === Role.Coach) playable(bubble, text);
     this.stuck = true;
     this.scroll();
     return bubble;
@@ -408,7 +444,7 @@ export class Chat {
         bubble.insertBefore(did(line), words);
         this.scroll();
       },
-      notes: (notes) => annotate(bubble, notes),
+      notes: (notes) => void this.noted.set(bubble, notes),
       append: (text, onChip) => {
         sofar += text;
         paint(onChip);

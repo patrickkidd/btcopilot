@@ -957,7 +957,11 @@ function follow(turnId: string): void {
   const opened = () => {
     if (!bubble) {
       chat.busy(false);
-      if (stopped?.turn === turnId) stopped.bubble.remove();
+      if (stopped?.turn === turnId) {
+        if (stopped.bubble.nextElementSibling?.matches(".play"))
+          stopped.bubble.nextElementSibling.remove();
+        stopped.bubble.remove();
+      }
       bubble = chat.live();
     }
     return bubble;

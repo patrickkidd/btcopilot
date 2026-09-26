@@ -972,44 +972,85 @@ button { font-family: inherit; }
 }
 .bub > .offer .chip { margin: 0; }
 /* Reads the reply aloud; a square while it reads, and a tap then stops it. It
-   sits on its own quiet row under the last line, its icon lined up with the
-   words, as Claude Code's mobile app puts its actions under a reply. */
-.bub > .play {
-  margin: 2px 0 -9px -14px;
+   sits under the bubble, never in it, a thin outline lined up with the
+   bubble's left edge, as Claude Code's mobile app puts its actions under a
+   reply. The 44px target reaches right and down from the icon. */
+.chat > .play {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: -10px;
   width: 44px;
   height: 44px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 0;
   border: none;
   background: none;
   color: var(--faint);
   cursor: pointer;
 }
-.bub > .play svg { width: 16px; height: 16px; fill: currentColor; }
-.bub > .play .halt,
-.bub > .play.on .go { display: none; }
-.bub > .play.on .halt { display: inline; }
-.bub > .play.on { color: var(--data); }
-.bub > .play:active { color: var(--data-press); }
-/* the coach's own notes on the turn, for admins and auditors, folded shut */
-.bub > .notes { font: 400 12px/1.5 var(--mono); color: var(--faint); min-width: 0; }
-.bub > .notes > summary {
-  min-height: 44px;
+.chat > .play svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+}
+.chat > .play .halt,
+.chat > .play.on .go { display: none; }
+.chat > .play.on .halt { display: inline; }
+.chat > .play.on { color: var(--data); }
+.chat > .play:active { color: var(--data-press); }
+/* a held bubble with notes shows no callout or selection while it is pressed */
+.bub.pressed { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+/* the coach's own notes on a turn, for admins and auditors, popped out of the
+   bubble they belong to */
+.notes-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
   display: flex;
   align-items: center;
-  cursor: pointer;
-  list-style: none;
-  user-select: none;
-  -webkit-user-select: none;
+  justify-content: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.35);
+  animation: veilin 0.16s ease;
 }
-.bub > .notes > summary::-webkit-details-marker { display: none; }
-.bub > .notes > summary::before { content: "\25B8"; margin-right: 6px; }
-.bub > .notes[open] > summary::before { content: "\25BE"; }
-.bub > .notes dl { margin: 0 0 6px; }
-.bub > .notes dt { color: var(--ink); }
-.bub > .notes dd { margin: 0 0 6px; overflow-wrap: anywhere; }
+.notes-card {
+  width: min(420px, 100%);
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  font: 400 13px/1.5 var(--mono);
+  color: var(--faint);
+  animation: notesin 0.2s ease;
+}
+.notes-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--ink);
+}
+.notes-close {
+  width: 44px;
+  height: 44px;
+  margin-right: -12px;
+  border: none;
+  background: none;
+  color: var(--faint);
+  font-size: 16px;
+  cursor: pointer;
+}
+.notes-card dl { margin: 0; }
+.notes-card dt { color: var(--ink); }
+.notes-card dd { margin: 0 0 8px; overflow-wrap: anywhere; }
+@keyframes veilin { from { opacity: 0; } }
+@keyframes notesin { from { opacity: 0; transform: scale(0.2); } }
 
 /* A chip never leaves its bubble: it may be as wide as the bubble and no
    wider, and it wraps to more lines rather than being cut. Labels are capped
