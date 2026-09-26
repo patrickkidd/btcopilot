@@ -33,6 +33,7 @@ function watch() {
   return { seen, take: feed(sink) };
 }
 
+// R-0520
 it("shows the eight notes under plain labels", () => {
   const out = notesHtml(notes);
   for (const label of [
@@ -50,7 +51,7 @@ it("shows the eight notes under plain labels", () => {
   expect(out).toContain("&lt;in&gt;");
 });
 
-// R-0478
+// R-0478, R-0520
 it("hands a live notes call to the notes, never as a tool line", () => {
   const { seen, take } = watch();
   take({ type: TurnEventKind.ToolCall, ...call } as TurnEvent);
@@ -59,6 +60,7 @@ it("hands a live notes call to the notes, never as a tool line", () => {
   expect(toolLine(call)).toBeNull();
 });
 
+// R-0520
 it("shows no notes when the turn carries none", () => {
   const { seen, take } = watch();
   take({ type: TurnEventKind.Text, text: "Hello" });
