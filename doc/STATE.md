@@ -224,7 +224,7 @@ dead or ungrounded tests deleted; the unclear points are kept in the private cor
 defects the new tests found are strict expected failures listed in doc/KNOWN_DEFECTS.md, for the
 fast-follow PRs, as is the session-end second look [R-0443].
 
-**2026-09-24/25 — FD-363, the fast-follow, deployed.** Landed on branch FD-363 (draft PR #138)
+**2026-09-24 to 26 — FD-363, the fast-follow, deployed.** Landed on branch FD-363 (draft PR #138)
 and, after the gates below passed, deployed to production on 2026-09-25:
 - **Every tool call stays on the thread.** A coach turn's tool calls are kept in the database
   when it ends, whether it finished, failed or was refused, so every session shows them after a
@@ -291,7 +291,7 @@ he still has to judge whether that is the right number.
 The sandbox also makes real model calls on its own: a real coach turn and a real [try again]
 were run there. The live eval cases and the tests that need a key have not run.
 
-**Landed on branch FD-363 since the first deploy, not yet deployed.** In plain words: every
+**Landed after the first deploy, deployed 2026-09-26.** In plain words: every
 tool line in the thread now names an event or person by the one shared label everywhere, kept
 events included, and touch targets were widened so a crowded dot can be tapped on a phone. The
 list button sits at chip height, with more room after tool lines in the thread, and the
@@ -308,11 +308,13 @@ The paid suite holds behaviour evals only; the clinical-coding cases wait for gr
 the IRR review group. Every test path spends the testing key; the box runs on the new
 production key, and the old key is off it.
 
-**In flight at the end of session dc02180f (2026-09-25).** The final gate with the model
-stubbed; one approved real-model run of the behaviour evals, capped at $0.50; the deploy of this
-batch by hand from the branch, with migration 1b00000000ae, which only rolls forward; the
-approved impressions backfill on production, about $0.20; the production check. Anything beyond
-those two spends is asked for first.
+**Deployed 2026-09-26 00:25 UTC.** Everything above is live: commit 1faeeaa, image
+3.2026.9.25.4-g1faeeaa, the database at 1b00000000ae (which, like 1b00000000ad, only rolls
+forward), a backup taken first. The behaviour evals on the real model: 10 passed, 1 failed, the
+failure being the private scribe prompt missing the word "provisional" on its fallback coding
+rules, which fails on master too. The impressions backfill ran over three families. No real coach
+turn has run on this build yet, because the permission checks block a sign-in link for the test
+account; Patrick's next message is the first. Real spend is asked for first.
 
 Open:
 - The new tests cite the nearest already-numbered ruling instead of a real id, because the
@@ -360,7 +362,7 @@ The product ones:
   never asked to certify a coding rule case by case. His over- and under-functioning coding
   rulings are rescinded as evals, and R-0428 and R-0057 are undecided.
 
-Still true from the deploy on 2026-09-25: production's title bar reads "Free Diagram" instead
+Still true after the deploys: production's title bar reads "Free Diagram" instead
 of the diagram's real name, and four live coach cases fail the same way on the master branch.
 **What is not true yet on the box.** The dashboards and the cost rows are built but not deployed:
 that waits on Patrick putting the Grafana token there and refreshing the dependency lock. There is

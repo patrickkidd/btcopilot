@@ -1434,7 +1434,7 @@ new session can take his next ideas.
 
 
 ## 2026-09-24 to 25 — FD-363: the fast-follow deployed twice, open questions and impressions, and the spend rules [T-1, T-2, T-5, T-9, T-10, T-11]
-<!-- session: dc02180f · flushed: 2026-09-25T23:26:00Z -->
+<!-- session: dc02180f · flushed: 2026-09-26T00:45:00Z -->
 
 **What the session inherited.** The session before it (9626e1be) opened FD-363 after PR #136
 merged, and Patrick ruled there that a failed turn keeps its edits and is resumed, not redone
@@ -1516,7 +1516,17 @@ written for his work project and reviewed by Fable; he added that everything the
 data-driven learning loop, which the document now carries. A plan to move this work to a fresh
 clone at ~/btcopilot was written; he ruled no copying of sessions, a list of the FD-362-onward
 sessions instead, and the memories that apply carried over. He merged PR #139, which forwards the
-Pro app's update feeds to the legacy server. The session ended with the final stubbed gate
-running, one real-model behaviour run approved at up to $0.50, then a deploy of the batch with
-migration 1b00000000ae, the impressions backfill (about $0.20) and the production check. Every
-ruling of this session, with his words, waits in the private corpus for him to append by hand.
+Pro app's update feeds to the legacy server.
+
+**The second deploy (2026-09-26 00:25 UTC).** The behaviour evals ran once on the real model with
+the testing key: 10 passed and 1 failed, for $0.555. The failure is a check that the private
+scribe prompt marks its fallback coding rules as provisional; it fails on master too and touches
+no coach behaviour. The batch then went to the box by hand from the branch, with a backup first
+and the database migrated to 1b00000000ae before the rollout; the app and worker came up healthy
+with no errors in the ten minutes after. The impressions backfill ran over three families for
+$0.261 on the production key, so the round cost $0.82. A real coach turn on the test account was
+not run, because the permission checks block creating its sign-in link; Patrick's next message is
+the first real turn on this build. Before the deploy, the final gate sat idle for two hours while
+each agent thought the other was running it, so the next coordinator checks the running
+processes itself. Every ruling of this session, with his words, waits in the private corpus for
+him to append by hand.

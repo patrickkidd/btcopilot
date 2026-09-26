@@ -24,8 +24,8 @@ record only.
 thread. The fast-follow FD-363 went to production twice on 2026-09-25: kept tool calls with
 [try again], record versions, the map of the record, the check after each turn, hand edits
 through the coach's writer, and the Questions tab with its one-time backfill. A second batch —
-his fixes from his own use, required date certainty, and the coach's impressions — is built on
-the branch and was being deployed at the end of session dc02180f.
+his fixes from his own use, required date certainty, and the coach's impressions — went out on
+2026-09-26 at commit 1faeeaa with the database at 1b00000000ae.
 **Decided:** one server for Pro, training and the chat app; old Pro diagrams stay pickle and
 new rows are JSON in the same column [Oracle: R-0241]; the beta users are the app working
 group of three clinicians [R-0079]; sign-in is passwordless with Face ID on a capable phone;
@@ -39,10 +39,8 @@ batch PR pushed to production continuously and tested in his own thread with no 
 Added 2026-09-25, not yet numbered: a build for him to test goes to the box by a release run
 dispatched from the ticket branch, never by a merge, and only after the 14-point pre-deploy
 test bar passes; production and testing run on separate keys.
-**Open:** (1) [build] the second FD-363 batch deploy — the final stubbed gate, one approved
-real-model run of the behaviour evals capped at $0.50, the deploy with migration 1b00000000ae
-(which only rolls forward), the approved impressions backfill of about $0.20, and the
-production check; (2) [ruling] whether the 4 questions the backfill found in his whole history
+**Open:** (1) [build] the private scribe prompt lacks the word "provisional" on its fallback
+coding rules, the one failure of the paid behaviour run, also failing on master; (2) [ruling] whether the 4 questions the backfill found in his whole history
 are too few; (3) [verify] no real coach turn had run on production before his own, because a
 test sign-in link on the box was refused by the permission checks; (4) [build] production's
 title bar reads "Free Diagram" instead of the diagram's real name; (5) [build] onboarding the
@@ -56,8 +54,7 @@ produces numbers.
 corpus's HANDOVER_2026-09-25-FD363.md, PREDEPLOY_TESTING_RULES.md and session-dc02180f/
 (deploy runbook, box commands, evidence); deploy/; the backup
 prod-2026-09-25-0457-pre-fd363.dump in btcopilot-sources.
-**Next action:** finish the second batch deploy and check it on production; then he tests in
-his own thread.
+**Next action:** he sends one message in his own thread, the first real coach turn on this build.
 **Updated:** 2026-09-25.
 
 ## T-2 · The coach knows the clinical definitions, and we can measure it
