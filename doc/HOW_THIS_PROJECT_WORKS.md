@@ -219,3 +219,10 @@ code, not inference." Rule: before any design proposal about what the coach does
 store and grep the topic; cite the ruling in the proposal. Judgement calls stay inference
 (state-based prompting, tools the coach calls); code only where the behaviour is meant to be
 mechanical.
+
+**Spend is the exception, not the test method (2026-09-25, Patrick).** "you shouldn't be
+needing to spend all this money all the time to test this stuff well. change your strategy."
+Rule: plumbing is proven with mocks, the local model and recorded real responses replayed from
+fixtures; a real call is never used to prove wiring a unit test already proves. Every paid
+response is saved as a replay fixture so it is paid for once. Real calls happen only once per
+batch, before deploy, and only for a changed prompt or tool.
