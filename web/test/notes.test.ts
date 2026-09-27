@@ -24,6 +24,7 @@ function watch() {
     note: () => void (seen.lines += 1),
     notes: (n: Notes) => void seen.notes.push(n),
     made: () => {},
+    read: () => {},
     show: () => {},
     text: () => {},
     reset: () => {},

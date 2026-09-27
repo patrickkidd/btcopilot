@@ -106,20 +106,20 @@ test.describe("the picture with one cluster open", () => {
     await page.waitForTimeout(400);
   };
 
-  // R-0202
+  // R-0202, R-0540
   test("shows the way back to all of them", async ({ page }) => {
     await settle(page);
-    // the name of the picture is the way back, and says so while one is open
-    await expect(page.locator("#crumb")).toHaveText("Family timeline");
+    // the path is the way back, and names where the reader is
+    await expect(page.locator("#path")).toHaveText("Timeline");
     await openCluster(page);
-    // the name row says the open cluster's own name, and the way back up is
-    // the green arrow beside it, which does the same thing (ruling 2026-09-08)
-    await expect(page.locator("#crumb")).toHaveText("Leaving and losing");
-    await expect(page.locator("#up")).toBeVisible();
+    // the path names the open cluster by its years and the row under the line
+    // by its own name; the first step of the path is the way back up
+    await expect(page.locator("#path")).toHaveText("Timeline \u203a 1981\u20132003");
+    await expect(page.locator("#view .ss-name")).toHaveText("Leaving and losing");
 
-    await page.locator("#crumb").click();
+    await page.locator('#path [data-step="0"]').click();
     await expect(page.locator('.ss-hit[data-target="cluster"]').first()).toBeVisible();
-    await expect(page.locator("#crumb")).toHaveText("Family timeline");
+    await expect(page.locator("#path")).toHaveText("Timeline");
   });
 
   // R-0207

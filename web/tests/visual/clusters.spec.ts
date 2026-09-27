@@ -1,9 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { stateFor } from "./setup";
 
-/** Opening a cluster and coming back out of it: the boxes at rest, the arrow
- * that goes up one level, the page behind the small i, the board, and the
- * card each of those slides in on. Words, structure and geometry only. */
+/** Opening a cluster and coming back out of it: the boxes at rest, the path
+ * that goes back up, the page behind the small i, the board, and the card
+ * each of those slides in on. Words, structure and geometry only. */
 
 const settle = async (page: Page) => {
   await page.goto("/app/");
@@ -12,6 +12,10 @@ const settle = async (page: Page) => {
 };
 
 const boxes = (page: Page) => page.locator('#view .ss-hit[data-target="cluster"]');
+/** One step of the path over the line: 0 is the whole timeline, 1 the cluster. */
+const step = (page: Page, i: number) => page.locator(`#path [data-step="${i}"]`);
+const path = (page: Page) => page.locator("#path");
+const name = (page: Page) => page.locator("#view .ss-name");
 const zones = (page: Page) => page.locator('#view .ss-hit[data-target="zone"]');
 
 const openCluster = async (page: Page, index = 0) => {
@@ -23,7 +27,7 @@ const openCluster = async (page: Page, index = 0) => {
 /** The moves record opens on the cluster its last coach message named, so the
  * whole line is one level up from where it starts. */
 const toRest = async (page: Page) => {
-  await page.locator("#up").click();
+  await step(page, 0).click();
   await expect(boxes(page).first()).toBeVisible();
   await page.waitForTimeout(400);
 };
@@ -48,23 +52,23 @@ test.describe("the three levels on the moves record", () => {
   test("the whole line, one cluster, then its board, each in turn", async ({ page }) => {
     await settle(page);
     await toRest(page);
-    await expect(page.locator("#crumb")).toHaveText("Family timeline");
+    await expect(path(page)).toHaveText("Timeline");
     await openCluster(page);
-    await expect(page.locator("#crumb")).toHaveText("The walk");
+    await expect(name(page)).toHaveText("The walk");
     await page.locator("#cap-play").click();
     await expect(page.locator("#view .ss.board")).toBeVisible();
     await expect(page.locator("#view .pctl button")).toHaveCount(3);
   });
 
-  // R-0131
-  test("the arrow on the board goes back to the cluster it came from", async ({ page }) => {
+  // R-0131, R-0540
+  test("the path on the board goes back to the cluster it came from", async ({ page }) => {
     await settle(page);
     await page.locator("#cap-play").click();
     await expect(page.locator("#view .ss.board")).toBeVisible();
-    await page.locator("#up").click();
+    await step(page, 1).click();
     await expect(page.locator("#view .ss.board")).toHaveCount(0);
     await expect(zones(page).first()).toBeVisible();
-    await expect(page.locator("#crumb")).toHaveText("The walk");
+    await expect(name(page)).toHaveText("The walk");
   });
 
   // R-0071
@@ -136,9 +140,9 @@ test.describe("the boxes at rest", () => {
       const box = (await page.locator("#view rect.ep-edge").boundingBox())!;
       for (const x of [box.x + 4, box.x + box.width - 4]) {
         await page.mouse.click(x, box.y + box.height / 2);
-        await expect(page.locator("#crumb")).toHaveText("Leaving and losing");
-        await page.locator("#up").click();
-        await expect(page.locator("#crumb")).toHaveText("Family timeline");
+        await expect(name(page)).toHaveText("Leaving and losing");
+        await step(page, 0).click();
+        await expect(path(page)).toHaveText("Timeline");
         await page.waitForTimeout(400);
       }
     });
@@ -148,33 +152,34 @@ test.describe("the boxes at rest", () => {
 test.describe("one cluster open on the sparse record", () => {
   test.use({ storageState: stateFor("three40") });
 
-  // R-0131
-  test("the arrow closes it and shows the whole line", async ({ page }) => {
+  // R-0131, R-0540
+  test("the path closes it and shows the whole line", async ({ page }) => {
     await settle(page);
     await openCluster(page);
-    await page.locator("#up").click();
+    await step(page, 0).click();
     await expect(boxes(page).first()).toBeVisible();
-    await expect(page.locator("#crumb")).toHaveText("Family timeline");
-    await expect(page.locator("#up")).toBeHidden();
+    await expect(path(page)).toHaveText("Timeline");
+    await expect(page.locator("#path button")).toHaveCount(0);
   });
 
-  // R-0362
-  test("the arrow closes it even with a moment picked inside", async ({ page }) => {
+  // R-0362, R-0540
+  test("the path closes it even with a moment picked inside", async ({ page }) => {
     await settle(page);
     await openCluster(page);
     await pickMoment(page);
-    await page.locator("#up").click();
+    await step(page, 0).click();
     await expect(page.locator("#view .ss-t.on")).toHaveCount(0);
     await expect(boxes(page).first()).toBeVisible();
-    await expect(page.locator("#crumb")).toHaveText("Family timeline");
+    await expect(path(page)).toHaveText("Timeline");
   });
 
-  // R-0202
-  test("the arrow stays up while a moment inside it is picked", async ({ page }) => {
+  // R-0202, R-0540
+  test("the way back stays up while a moment inside it is picked", async ({ page }) => {
     await settle(page);
     await openCluster(page);
     await pickMoment(page);
-    await expect(page.locator("#up")).toBeVisible();
+    await expect(step(page, 0)).toBeVisible();
+    await expect(step(page, 1)).toBeVisible();
   });
 
   // R-0207
@@ -182,7 +187,7 @@ test.describe("one cluster open on the sparse record", () => {
     await settle(page);
     await openCluster(page);
     await pickMoment(page);
-    await expect(page.locator("#view .ss-t.on").first()).toHaveText("Ada · Grandmother died");
+    await expect(page.locator("#view .ss-t.on").first()).toHaveText("1981");
     await tapWords(page);
     await expect(page.locator("#menu-screen")).toBeVisible();
     await expect(
@@ -201,7 +206,7 @@ test.describe("one cluster open on the sparse record", () => {
     await expect(page.locator("#menu-body .editor")).toBeVisible();
     await page.locator("#menu-close").click();
     await expect(page.locator("#menu-screen")).toBeHidden();
-    await expect(page.locator("#crumb")).toHaveText("Leaving and losing");
+    await expect(path(page)).toHaveText("Timeline \u203a 1981\u20132003 \u203a Ada Grandmother died");
     await expect(zones(page).first()).toBeVisible();
   });
 
@@ -216,12 +221,12 @@ test.describe("one cluster open on the sparse record", () => {
     await expect(page.locator("#menu-body .editor")).toBeVisible();
   });
 
-  // R-0213
+  // R-0213, R-0540
   test("the i says the cluster's reason under its name", async ({ page }) => {
     await settle(page);
     await openCluster(page);
     await page.locator("#info").click();
-    await expect(page.locator("#crumb")).toHaveText("Leaving and losing");
+    await expect(path(page)).toHaveText("Timeline \u203a 1981\u20132003 \u203a about");
     await expect(page.locator("#view")).toContainText(
       "Ada lost her grandmother, and then moved away from everyone she knew.",
     );
@@ -257,42 +262,36 @@ test.describe("one cluster open on the sparse record", () => {
     await expect(page.locator("#view svg")).not.toHaveCount(0);
   });
 
-  // R-0235
+  // R-0540, R-0538
   test("a picked loose moment is written the way one inside a cluster is", async ({
     page,
   }) => {
     await settle(page);
     const resting = await wireY(page);
-    await openCluster(page);
-    const opened = await wireY(page);
-    await page.locator("#up").click();
-    await expect(boxes(page).first()).toBeVisible();
-    await page.waitForTimeout(400);
 
     // at rest the one moment no cluster claims is the only dot with a target
     await zones(page).first().click();
-    await expect(page.locator("#view .ss-t.on").first()).toHaveText("Ben · Ben stopped calling");
+    await expect(page.locator("#view .ss-t.on").first()).toHaveText("Nov 2021");
     expect(await page.locator("#view .ss-t.on").count()).toBeLessThanOrEqual(2);
-    await expect(page.locator("#view .ss-yr.on")).toHaveText("2021");
     await expect(page.locator("#view circle.dot.on")).toHaveCount(1);
-    expect(opened).not.toBe(resting);
-    expect(await wireY(page)).toBe(opened);
-    // the box stays, faded to nothing going up, under the words
-    await expect(page.locator("#view rect.ep")).toHaveAttribute("style", /epfade/);
+    // the line stays where it runs at every level, and the box stays whole,
+    // dimmed, under the words (R-0540)
+    expect(await wireY(page)).toBe(resting);
+    await expect(page.locator("#view .ep-g.dim rect.ep-edge")).toHaveCount(1);
   });
 });
 
 test.describe("every cluster on the dense record", () => {
   test.use({ storageState: stateFor("dense60") });
 
-  // R-0202
-  test("shows the back arrow when tapped open", async ({ page }) => {
+  // R-0202, R-0540
+  test("shows the way back when tapped open", async ({ page }) => {
     await settle(page);
     for (const index of [0, 1]) {
-      await expect(page.locator("#up")).toBeHidden();
+      await expect(page.locator("#path button")).toHaveCount(0);
       await openCluster(page, index);
-      await expect(page.locator("#up")).toBeVisible();
-      await page.locator("#up").click();
+      await expect(step(page, 0)).toBeVisible();
+      await step(page, 0).click();
       await expect(boxes(page).first()).toBeVisible();
       await page.waitForTimeout(400);
     }
@@ -305,12 +304,12 @@ test.describe("a chip in the coach's words that names a cluster", () => {
   // R-0373
   test("opens that cluster on the picture", async ({ page }) => {
     await settle(page);
-    await expect(page.locator("#crumb")).toHaveText("Family timeline");
+    await expect(path(page)).toHaveText("Timeline");
     await page.locator(".bub.coach .chip.data").first().click();
-    await expect(page.locator("#crumb")).toHaveText(
+    await expect(name(page)).toHaveText(
       "the cluster when everybody stopped speaking about the house and the money",
     );
-    await expect(page.locator("#up")).toBeVisible();
+    await expect(step(page, 0)).toBeVisible();
   });
 });
 
@@ -357,7 +356,7 @@ test.describe("a level sliding in", () => {
   test("going back up slides the level away on ground of its own", async ({ page }) => {
     await settle(page);
     const seen = cards(page, 1);
-    await page.locator("#up").click();
+    await step(page, 0).click();
     const colours = await seen;
     expect(colours.every(solid)).toBe(true);
   });

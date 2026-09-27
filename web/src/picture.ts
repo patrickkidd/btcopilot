@@ -24,7 +24,6 @@ import {
   cycle,
   dateText,
   sharedYears,
-  dotRadius,
   rows,
   words,
   wrap2,
@@ -33,6 +32,7 @@ import {
 import {
   ItemKind,
   Spotlight,
+  Touch,
   ViewKind,
   type Cluster,
   type Person,
@@ -41,15 +41,10 @@ import {
   type TimelineEvent,
   type View,
 } from "./types";
+import { stronger, type Made } from "./turn";
 
-const YEAR_W = 60;
 /** Patrick, 2026-09-21: the undated shelf's "?" stays off until it explains itself. */
 const HIDE_SHELF_MARK = true;
-/** The year sits centred under its dot, but never past the edges of what is on
- * screen: a dot at either end keeps its year inside the picture. */
-const yearLeft = (x: number, from: number, to: number): string =>
-  Math.max(from, Math.min(to - YEAR_W, x - YEAR_W / 2)).toFixed(1);
-
 /** The ratified hold: 1000ms after each move before the prose continues. */
 const HOLD_MS = 1000;
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -61,17 +56,9 @@ const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * wire steps through the moments under the thumb and that moment writes itself
  * out in full. The people appear only while a play-by-play walks the moves. */
 
-/** The resting level: the whole line, one box per cluster (converged mockup,
- * crowded-cluster/timeline-converged.html renderRest).
- *
- * Its drawing is 78 tall, but the region it draws into is not. The picture
- * region is ONE height for both the resting wire and the open cluster, because
- * a tap on the picture must never move a bubble; only entering the moves board,
- * which is a screen of its own, may change the layout. So the resting drawing
- * is top-aligned inside the cluster's box and the rest of that box is empty. */
-/** The resting band is the same 60 as the open one: one box per cluster on a
- * wire through the middle, and the years each box covers written inside it
- * (picked phone mockup, 2026-09-08). */
+/** The picture region is ONE height for the whole line and a cluster open on
+ * it, because a tap on the picture must never move a bubble; only entering the
+ * moves board, which is a screen of its own, may change the layout. */
 /** The least space left between two cluster boxes that would otherwise touch. */
 const BOX_GAP = 6;
 /** How far a box reaches past the moments it holds, at each end. */
@@ -82,8 +69,11 @@ const YEAR_CH = 6.3;
  * scale coarsens rather than the line reaching further (R-0381). */
 const REACH = 2;
 
-const REST_WIRE = 30;
-/** A dot on the resting line. */
+/** A cluster's box reaches from under the two rows of words above the line to
+ * the year under a picked dot, so it never runs into either (R-0181). */
+const BOX_Y = ROWS[1] + ROW_H;
+const BOX_H = YEAR_TOP - BOX_Y;
+/** A dot on the line. */
 const DOT_R = 4.5;
 /** The least space between two dot centres inside a box for the two to read as
  * two rather than as one solid bar. */
@@ -97,6 +87,14 @@ function shortYears(start: string, end: string): string {
   const a = start.slice(2, 4);
   const b = end.slice(2, 4);
   return a === b ? a : `${a}\u2013${b}`;
+}
+
+/** A cluster's years as the path names it: "2009–10", in full where the
+ * century changes, one year when it starts and ends in the same one. */
+export function spanYears(start: string, end: string): string {
+  const [a, b] = [start, end].map((iso) => iso.slice(0, 4));
+  if (a === b) return a;
+  return `${a}\u2013${a.slice(0, 2) === b.slice(0, 2) ? b.slice(2) : b}`;
 }
 
 /** How wide the resting line is drawn, for a picture this many pixels wide.
@@ -180,11 +178,13 @@ export function pairSvg(
   );
 }
 
-/** The picture's levels. The middle "cluster drilldown" is CUT (R-0074): the
- * resting wire and the moves board are the two that survive. */
+/** The picture's levels. The whole line and a cluster open on it are one
+ * drawing (R-0538); the board, the about page and a comparison are modes of
+ * the cluster level. */
 export enum Level {
   /** Nothing named yet: the whole line at a glance, one box per cluster. */
   Rest = "rest",
+  /** The same line with a cluster open, or what the coach named, lit. */
   Wire = "wire",
   Board = "board",
   /** What the open cluster is: the coach's reason, its span, its moments. A
@@ -194,6 +194,45 @@ export enum Level {
    * a pair. No mockup fixes this drawing; it is built from the approved
    * "Pairs, face to face" concept and the at-rest vocabulary. */
   Compare = "compare",
+}
+
+/** How many characters of a moment the path gives its last step. */
+const TOLD_CH = 20;
+
+/** A moment picked, as the path names it: the first name and what happened,
+ * "Catherine died", and whatever of its words that leaves over, which the line
+ * writes instead (R-0540). The path's words end on a whole word, and never on
+ * a small one. */
+export function told(who: string, label: string): [string, string] {
+  const first = who.split(" ")[0];
+  const all = (!first || label.startsWith(first) ? label : `${first} ${label}`).split(" ");
+  let n = 1;
+  while (n < all.length && all.slice(0, n + 1).join(" ").length <= TOLD_CH) n += 1;
+  while (n > 1 && n < all.length && all[n - 1].length <= 2) n -= 1;
+  return [all.slice(0, n).join(" "), all.slice(n).join(" ")];
+}
+
+/** What each mode inside a cluster is called in the path. */
+const MODE: Partial<Record<Level, string>> = {
+  [Level.Board]: "explain",
+  [Level.About]: "about",
+  [Level.Compare]: "compare",
+};
+
+/** The path over the line, from the whole timeline down to where the reader
+ * is: the cluster open by its years, then the mode it is in or the moment
+ * picked (R-0540). */
+export function trail(
+  level: Level,
+  cluster: { start: string; end: string } | null,
+  picked: string | null,
+): string[] {
+  const last = MODE[level] ?? picked;
+  return [
+    "Timeline",
+    ...(cluster ? [spanYears(cluster.start, cluster.end)] : []),
+    ...(last ? [last] : []),
+  ];
 }
 
 /** A label the thumb can land on: which moment it names, which of the three
@@ -397,8 +436,8 @@ export interface Look {
 
 /** The picture after one event is picked. A chip naming it and its dot do one
  * thing (R-0168): the event is picked and everything else recedes. Inside a
- * cluster the cluster opens; outside every cluster it is picked on the resting
- * line, the clusters kept as brackets under it (R-0235). The old chip
+ * cluster the cluster opens; outside every cluster it is picked on the whole
+ * line, the clusters kept as they are drawn (R-0235, R-0538). The old chip
  * spotlight, kept behind a per-person setting: a chip put the event on the
  * wire with the whole record and no clusters, and a dot only picked it. */
 export function picked(
@@ -415,16 +454,6 @@ export function picked(
   if (via === Via.Dot) return { ...look, selected: id };
   return { level: Level.Wire, focus, named, selected: id };
 }
-
-/** The whole resting line is drawn, clusters as boxes, or as brackets under
- * the line while an event no cluster holds is picked. */
-export const resting = (look: Look): boolean =>
-  look.level === Level.Rest && (look.selected === null || !look.focus);
-
-/** Where the line runs: high on the resting line with nothing picked, and
- * lower wherever an event is picked, to leave its words room above it. */
-export const wireOf = (look: Look): number =>
-  resting(look) && look.selected === null ? REST_WIRE : WIRE;
 
 export class Picture {
   private data: Timeline | null = null;
@@ -448,13 +477,18 @@ export class Picture {
   /** Who the coach has just put in the record. They stay lit the way a
    * spotlit moment does: until the next thing is aimed at or picked. */
   private litPeople: number[] = [];
+  /** What the coach's tool calls did to each event this turn, kept until the
+   * next message (R-0539); the ones just touched flash as they land. */
+  private touched = new Map<number, Touch>();
+  private fresh = new Set<number>();
+  /** Events removed this turn, drawn where they were until the next message. */
+  private gone: TimelineEvent[] = [];
   private band: { start: string; end: string } | null = null;
   /** Where the resting line stands after the next draw, and the moment it goes
    * to when the coach's words name one. */
   private park = Park.Present;
   private aimed: number | null = null;
   private focus: Cluster | null = null;
-  private range = { min: 0, max: 1 };
   private laid: { zones: Mark[][]; rows: LabelRow[] } = {
     zones: [],
     rows: [],
@@ -517,21 +551,39 @@ export class Picture {
     };
   }
 
-  /** Light what one line of what the coach did has just put in the record, at
-   * the moment that line lands: a moment as a dot on the wire, a person
-   * wherever people are drawn, which today is the board. */
-  light(made: { kind: ItemKind; id: string }[]): void {
-    const moments = made
-      .filter((one) => one.kind === ItemKind.Event)
-      .map((one) => Number(one.id))
-      .filter((id) => (this.data?.events ?? []).some((e) => e.id === id));
-    const people = made
+  /** Colour what one line of what the coach did has just touched, at the
+   * moment that line lands, on the line as it stands: nothing opens and
+   * nothing moves but the line, to the first it wrote (R-0539). A person is
+   * lit wherever people are drawn, which today is the board. `gone` is what
+   * the line removed, as the record held it before. */
+  light(made: Made[], gone: TimelineEvent[] = []): void {
+    const moments = made.filter((one) => one.kind === ItemKind.Event);
+    this.fresh = new Set(moments.map((one) => Number(one.id)));
+    for (const one of moments) {
+      const id = Number(one.id);
+      const had = this.touched.get(id);
+      this.touched.set(id, had ? stronger(had, one.touch) : one.touch);
+    }
+    this.gone.push(...gone);
+    this.litPeople = made
       .filter((one) => one.kind === ItemKind.Person)
       .map((one) => Number(one.id));
-    // the spotlight clears the last lighting before this one takes its place,
-    // so who this line made is set after it, not before
-    if (moments.length) this.spotlight(moments);
-    this.litPeople = people;
+    const wrote = moments.find((one) => one.touch !== Touch.Read);
+    if (wrote) this.aim(Number(wrote.id));
+    this.render();
+    this.fresh.clear();
+  }
+
+  /** A read looked at these events. */
+  read(ids: number[]): void {
+    this.light(ids.map((id) => ({ kind: ItemKind.Event, id: String(id), touch: Touch.Read })));
+  }
+
+  /** The next message has arrived: what the last reply touched is drawn the
+   * way the line draws it again. */
+  untouch(): void {
+    this.touched.clear();
+    this.gone = [];
     this.render();
   }
 
@@ -545,7 +597,6 @@ export class Picture {
     this.focus = null;
     this.cluster = null;
     this.level = Level.Rest;
-    this.rescale();
     this.render();
   }
 
@@ -554,7 +605,6 @@ export class Picture {
     // the record has changed under the picture, which is what a reply leaves
     // behind: the line goes back to the present (R-0381)
     this.park = Park.Present;
-    this.rescale();
     this.render();
   }
 
@@ -569,7 +619,6 @@ export class Picture {
     this.level = eventIds.length ? Level.Wire : Level.Rest;
     this.cluster = null;
     this.focus = this.clusterOf(eventIds[0]);
-    this.rescale();
     this.render();
   }
 
@@ -587,7 +636,6 @@ export class Picture {
       this.aim(id);
       this.cluster = null;
     }
-    this.rescale();
     this.render();
   }
 
@@ -746,23 +794,38 @@ export class Picture {
     this.render();
   }
 
-  /** The name of the view the reader is in: the cluster the board is showing,
-   * or the cluster open on the wire. Null at rest, where the picture is the
-   * whole line and has no name but its own. */
-  title(): string | null {
-    const open =
-      this.focus ??
-      (this.cluster
-        ? this.data?.clusters.find(
-            (c) => c.id === this.cluster || c.cluster_ids.includes(this.cluster as string),
-          ) ?? null
-        : null);
-    return this.level === Level.Rest || !open ? null : open.title || open.label;
+  /** The cluster the reader is in: the one open on the line, or the one the
+   * board is showing. */
+  private within(): Cluster | null {
+    if (this.focus) return this.focus;
+    const id = this.cluster;
+    return id === null
+      ? null
+      : (this.data?.clusters.find((c) => c.id === id || c.cluster_ids.includes(id)) ?? null);
   }
 
-  /** A view below the whole line is open, so there is somewhere to go up to. */
-  deep(): boolean {
-    return this.level === Level.Board || this.level === Level.About || this.opened();
+  /** The path from the whole timeline to where the reader is (R-0540). */
+  path(): string[] {
+    const picked = this.level === Level.Rest || this.level === Level.Wire ? this.event(this.selected) : null;
+    return trail(
+      this.level,
+      this.level === Level.Rest ? null : this.within(),
+      picked && told(picked.person_name, picked.label)[0],
+    );
+  }
+
+  /** Back to one step of the path: the whole timeline, or the cluster with
+   * nothing picked and no mode open. */
+  back(step: number): void {
+    const open = this.within();
+    if (!step || !open) {
+      this.dismiss();
+      return;
+    }
+    this.moves = [];
+    this.cast = [];
+    this.at = 0;
+    this.spotlight(open.event_ids);
   }
 
   /** The open cluster's own page, a level in from the cluster. */
@@ -780,30 +843,6 @@ export class Picture {
    * row under it has nothing to point at. */
   empty(): boolean {
     return this.dated().length === 0;
-  }
-
-  /** Up exactly one level: the board to the cluster it is showing, an open
-   * cluster to the whole line. The title row is the only way up (owner ruling
-   * 2026-09-08), so the board carries no corner arrow of its own. */
-  up(): void {
-    if (this.level === Level.About) {
-      this.level = Level.Wire;
-      this.render();
-      return;
-    }
-    if (this.level !== Level.Board) {
-      // The arrow always closes the cluster, picked moment or not (Patrick,
-      // 2026-09-22: putting the moment down first was tap-for-tap logical and
-      // felt wrong). Putting a moment down is a tap on empty ground.
-      this.dismiss();
-      return;
-    }
-    this.level = Level.Wire;
-    this.moves = [];
-    this.cluster = null;
-    this.cast = [];
-    this.at = 0;
-    this.render();
   }
 
   async show(view: View): Promise<void> {
@@ -866,11 +905,12 @@ export class Picture {
     this.cast = [];
     this.band = null;
     this.focus = null;
-    this.level = Level.Wire;
+    this.level = Level.Rest;
     this.moves = [];
     this.at = 0;
     this.pair = null;
-    this.rescale();
+    this.touched.clear();
+    this.gone = [];
     this.render();
   }
 
@@ -885,34 +925,6 @@ export class Picture {
   private clusterOf(eventId: number | undefined): Cluster | null {
     if (eventId === undefined || !this.data) return null;
     return this.data.clusters.find((c) => c.event_ids.includes(eventId)) ?? null;
-  }
-
-  /** The coach drives the picture: when it names moments inside one cluster,
-   * the wire zooms to that cluster; otherwise the whole record is on it. */
-  private rescale(): void {
-    const shown = this.shown();
-    const dates = shown.map((e) => years(e.dateTime as string));
-    if (!dates.length) {
-      this.range = { min: 0, max: 1 };
-      return;
-    }
-    const min = Math.min(...dates);
-    const max = Math.max(...dates);
-    const pad = Math.max(0.3, (max - min) * 0.06);
-    this.range = { min: min - pad, max: max + pad };
-  }
-
-  /** The moments on the wire: the focused cluster when the coach aimed at one,
-   * otherwise every dated moment in the record. */
-  private shown(): TimelineEvent[] {
-    const dated = this.dated();
-    if (!this.focus) return dated;
-    const ids = new Set(this.focus.event_ids);
-    // whatever is picked is always on the wire, or its words would describe a
-    // moment the picture is not showing
-    if (this.selected !== null) ids.add(this.selected);
-    const inFocus = dated.filter((e) => ids.has(e.id));
-    return inFocus.length ? inFocus : dated;
   }
 
   private dated(): TimelineEvent[] {
@@ -934,10 +946,13 @@ export class Picture {
     return Math.min(Math.max(middle - size / 2, 0), width - size).toFixed(1);
   }
 
-  private x(iso: string): number {
-    const { min, max } = this.range;
-    const x1 = this.width - X_PAD;
-    return X_PAD + ((years(iso) - min) / (max - min)) * (x1 - X_PAD);
+  /** A mode of the cluster, as a card laid over the chat from the top of the
+   * picture: as tall as what it holds, while the picture and the header keep
+   * their height and the bubbles stay where they are under it (R-0460). */
+  private card(markup: string): void {
+    this.laid = { zones: [], rows: [] };
+    this.pin(PIC_H);
+    this.host.innerHTML = `<div class="card">${markup}</div>`;
   }
 
   /** The picture region owns its level's height, so the chat below it only ever
@@ -946,12 +961,6 @@ export class Picture {
     this.host.style.height = `${height}px`;
   }
 
-  /** The board is a level of its own: its own height, its own nav, its own
-   * step controls, and a caption saying which move of how many this is. */
-  /** The whole line at a glance: one box per cluster, its years above it, its
-   * moments as dots inside it, and the amber question where the record has a
-   * long gap it cannot account for. A tap opens a cluster. Converged mockup:
-   * crowded-cluster/timeline-converged.html renderRest. */
   /** Everything the record and the coach can say about one cluster, as words:
    * the reason it is one episode, its span, and each moment with its year. The
    * page takes the height its words need. */
@@ -968,16 +977,26 @@ export class Picture {
           `<span class="ab-what">${esc(e.label)}</span></li>`,
       )
       .join("");
-    this.host.innerHTML =
+    this.card(
       `<div class="ss about">` +
-      (why ? `<p class="ab-why">${esc(why)}</p>` : "") +
-      `<p class="ab-span">${esc(fullYears(cluster.start, cluster.end))} · ` +
-      `${moments.length} event${moments.length === 1 ? "" : "s"}</p>` +
-      `<ul class="ab-list">${rows}</ul></div>`;
-    this.pin(this.host.scrollHeight);
+        (why ? `<p class="ab-why">${esc(why)}</p>` : "") +
+        `<p class="ab-span">${esc(fullYears(cluster.start, cluster.end))} · ` +
+        `${moments.length} event${moments.length === 1 ? "" : "s"}</p>` +
+        `<ul class="ab-list">${rows}</ul></div>`,
+    );
   }
 
-  private renderRest(): void {
+  /** The line: one drawing for the whole timeline and a cluster open on it
+   * (R-0538). One box per cluster on a wire that never moves, its years in
+   * it and its moments as dots; the moments no cluster claims are dots of
+   * their own; the amber question where the record has a long gap it cannot
+   * account for. What the reader opened or the coach named is lit and the
+   * rest is dimmed, never taken away. A moment picked writes itself out above
+   * the line with its year under its dot, and what the coach touched this
+   * turn keeps its colour (R-0539). A tap on a box opens its cluster; the
+   * open cluster's dots and the loose ones pick. Converged mockup:
+   * crowded-cluster/timeline-converged.html renderRest. */
+  private renderLine(): void {
     const screen = this.width;
     const dated = this.dated();
     this.laid = { zones: [], rows: [] };
@@ -985,7 +1004,7 @@ export class Picture {
 
     // What has no date exists at every level: it is the one thing on the
     // picture the record is still asking about.
-    const shelf = this.shelfHit(screen - X_PAD, REST_WIRE);
+    const shelf = this.shelfHit(screen - X_PAD, WIRE);
 
     if (!dated.length) {
       this.host.innerHTML =
@@ -1005,18 +1024,6 @@ export class Picture {
     const held = this.host.querySelector<HTMLElement>(SCROLLER)?.scrollLeft ?? null;
     const x0 = X_PAD;
     const x1 = width - X_PAD;
-    // A picked loose moment gets the words, dot and year the open cluster gives
-    // one — the same two lines above the wire — so the wire drops to where the
-    // words leave room and the boxes, which live where the words go, become
-    // brackets under the wire until the moment is put down (owner, option A,
-    // 2026-09-09).
-    const picked = this.selected !== null && loose(dated, clusters).some((e) => e.id === this.selected);
-    // what an event picked leaves out recedes, as it does on the open wire
-    const faded = (id: number | null) =>
-      this.named.length && (id === null || !this.named.includes(id))
-        ? ` opacity="${baseOpacity(dated.length, this.named.length)}"`
-        : "";
-    const wireY = wireOf(this.look());
     const first = years(dated[0].dateTime as string);
     const last = years(dated[dated.length - 1].dateTime as string);
     const span = last - first || 1;
@@ -1024,22 +1031,39 @@ export class Picture {
       dated.length === 1
         ? (x0 + x1) / 2
         : x0 + ((years(iso) - first) / span) * (x1 - x0);
-    const aimed = dated.find((e) => e.id === this.aimed);
-    const onX = aimed ? at(aimed.dateTime as string) : null;
-    // where the line comes to rest, so the words of a picked moment are
-    // written across the stretch the reader will be looking at
-    const shows = this.stands({ width, screen }, held, onX);
+    const open = this.level === Level.Wire ? this.focus : null;
+    const lit = new Set(this.named);
+    if (this.selected !== null) lit.add(this.selected);
+    const dim = ` opacity="${baseOpacity(dated.length, lit.size)}"`;
 
     let svg =
       `<svg viewBox="0 0 ${width} ${PIC_H}" height="${PIC_H}" preserveAspectRatio="xMinYMin meet">` +
-      (picked
-        ? `<defs><linearGradient id="epfade" gradientUnits="userSpaceOnUse" ` +
-          `x1="0" x2="0" y1="${wireY + 20}" y2="${wireY - 20}">` +
-          `<stop offset="0" class="epfade-in"/><stop offset="0.45" class="epfade-in"/>` +
-          `<stop offset="1" class="epfade-out"/></linearGradient></defs>`
-        : "") +
-      `<line class="wire" x1="${x0}" y1="${wireY}" x2="${x1}" y2="${wireY}"/>`;
+      this.bandMark(at) +
+      `<line class="wire" x1="${x0}" y1="${WIRE}" x2="${x1}" y2="${WIRE}"/>`;
+    // The moment picked is drawn last, so it is on top of whatever crowds it
+    // (picked mockup Q1).
+    let onTop = "";
+    // A dot takes the colour of what the coach did to it this turn; a read is
+    // left to the box when the read took in the whole cluster.
+    const dot = (id: number | null, x: number, boxRead = false): void => {
+      const touch = id === null ? undefined : this.touched.get(id);
+      const shown = touch === Touch.Read && boxRead ? undefined : touch;
+      const on = id !== null && id === this.selected;
+      const named = !on && id !== null && this.named.includes(id);
+      const cls = ["dot", on && "on", named && "lit", shown, shown && this.fresh.has(id as number) && "flash"]
+        .filter(Boolean)
+        .join(" ");
+      const faded = lit.size && !shown && (id === null || !lit.has(id)) ? dim : "";
+      const drawn =
+        `<circle class="${cls}"${id === null ? "" : ` data-event="${id}"`} ` +
+        `cx="${x.toFixed(1)}" cy="${WIRE}" r="${on ? 7 : DOT_R}"${faded}/>`;
+      if (on) onTop += drawn;
+      else svg += drawn;
+    };
+    const marks: Mark[] = [];
+    const picks: Mark[] = [];
     const boxes: Layer[] = [];
+    let openX: number | null = null;
     // A box reaches a little past the moments it holds, and two clusters a
     // month apart would then draw over one another. Where that happens the two
     // boxes give way to each other and leave a gap between them.
@@ -1061,42 +1085,63 @@ export class Picture {
       const left = edges[i].left;
       const boxWidth = Math.max(6, edges[i].right - edges[i].left);
       const middle = (a + b) / 2;
-      // The box rides the wire wherever the wire is. While a moment is picked
-      // the box fades to nothing going up, so it never reaches the words above
-      // (owner, 2026-09-09).
-      const boxY = wireY - 20;
-      const fade = picked ? ` style="fill:url(#epfade)"` : "";
-      const fadeEdge = picked ? ` style="stroke:url(#epfade)"` : "";
+      const opened = cluster.id === open?.id;
+      if (opened) openX = left + boxWidth / 2;
+      // a read that took in every moment in the cluster greys the box rather
+      // than every dot in it (R-0539)
+      const read =
+        cluster.event_ids.every((id) => this.touched.has(id)) &&
+        cluster.event_ids.some((id) => this.touched.get(id) === Touch.Read);
+      const state = [
+        opened ? "open" : lit.size ? "dim" : "",
+        read ? "read" : "",
+        read && cluster.event_ids.some((id) => this.fresh.has(id)) ? "flash" : "",
+      ]
+        .filter(Boolean)
+        .map((one) => ` ${one}`)
+        .join("");
       svg +=
-        `<rect class="ep" x="${left.toFixed(1)}" y="${boxY}" ` +
-        `width="${boxWidth.toFixed(1)}" height="40" rx="8"${fade}/>` +
-        `<rect class="ep-edge" x="${left.toFixed(1)}" y="${boxY}" ` +
-        `width="${boxWidth.toFixed(1)}" height="40" rx="8"${fadeEdge}/>`;
+        `<g class="ep-g${state}">` +
+        `<rect class="ep" x="${left.toFixed(1)}" y="${BOX_Y}" ` +
+        `width="${boxWidth.toFixed(1)}" height="${BOX_H}" rx="8"/>` +
+        `<rect class="ep-edge" x="${left.toFixed(1)}" y="${BOX_Y}" ` +
+        `width="${boxWidth.toFixed(1)}" height="${BOX_H}" rx="8"/>` +
+        // the open cluster's years are the path's, and a figure is written
+        // once on a screen
+        (opened
+          ? ""
+          : `<text class="ep-yrs" x="${middle.toFixed(1)}" y="${WIRE - 7}" text-anchor="middle">` +
+            `${esc(shortYears(cluster.start, cluster.end))}</text>`) +
+        `</g>`;
       // every event in the box is a dot, however many there are: a crowded
       // box carries no count (R-0376)
       const inBox = dated.filter((e) => cluster.event_ids.includes(e.id));
-      const when =
-        inBox.length === cluster.count
-          ? inBox.map((e) => at(e.dateTime as string))
-          : Array.from({ length: cluster.count }, (_, j) =>
-              cluster.count > 1 ? a + ((b - a) * j) / (cluster.count - 1) : middle,
-            );
-      for (const cx of dotXs(when, left, boxWidth))
-        svg += `<circle class="dot" cx="${cx.toFixed(1)}" cy="${wireY}" r="${DOT_R}"${faded(null)}/>`;
-      if (!picked)
-        svg +=
-          `<text class="ep-yrs" x="${middle.toFixed(1)}" y="21" text-anchor="middle">` +
-          `${esc(shortYears(cluster.start, cluster.end))}</text>`;
+      const whole = inBox.length === cluster.count;
+      const when = whole
+        ? inBox.map((e) => at(e.dateTime as string))
+        : Array.from({ length: cluster.count }, (_, j) =>
+            cluster.count > 1 ? a + ((b - a) * j) / (cluster.count - 1) : middle,
+          );
+      dotXs(when, left, boxWidth).forEach((x, j) => {
+        const event = whole ? inBox[j] : null;
+        dot(event?.id ?? null, x, read);
+        if (!event) return;
+        marks.push({ event, x });
+        if (opened) picks.push({ event, x });
+      });
 
       const next = clusters[i + 1];
       if (next && years(next.start) - years(cluster.end) >= GAP_YEARS) {
         const gap = (at(next.start) + b) / 2;
         svg +=
-          `<text class="qm small" x="${gap.toFixed(1)}" y="${wireY + 4}" ` +
+          `<text class="qm small" x="${gap.toFixed(1)}" y="${WIRE + 4}" ` +
           `text-anchor="middle">?</text>`;
       }
 
-      // the box may be narrower than a thumb, so the target is grown to the floor
+      // the open cluster's own dots pick; every other box opens its cluster,
+      // and a box may be narrower than a thumb, so the target is grown to the
+      // floor
+      if (opened) return;
       const target = Math.max(ZONE, boxWidth);
       boxes.push({
         target: Target.Cluster,
@@ -1108,37 +1153,46 @@ export class Picture {
     });
     // A moment no cluster claims is drawn as itself: a dot on the wire where it
     // happened, with no box around it and nothing else bundled into it.
-    const marks: Mark[] = loose(dated, clusters).map((event) => ({
-      event,
-      x: at(event.dateTime as string),
-    }));
-    for (const { event, x } of marks) {
-      const on = event.id === this.selected ? " on" : "";
-      svg += `<circle class="dot${on}" cx="${x.toFixed(1)}" cy="${wireY}" r="${on ? 7 : DOT_R}"${faded(event.id)}/>`;
+    for (const event of loose(dated, clusters)) {
+      const x = at(event.dateTime as string);
+      dot(event.id, x);
+      marks.push({ event, x });
+      picks.push({ event, x });
     }
-    const zoned = zones(marks, width);
+    // what this turn removed stays where it was, in its colour, until the next
+    // message
+    const kept = new Set(dated.map((e) => e.id));
+    for (const event of this.gone)
+      if (!kept.has(event.id) && dateOf(event)) dot(event.id, at(event.dateTime as string));
+    svg += this.questions(at, kept) + onTop + `</svg>`;
+
+    const zoned = zones(picks, width);
     this.laid.zones = zoned.map((zone) => zone.marks);
     const hits = restLayers(boxes, dotLayers(zoned))
-      .map((layer) => hitButton(layer, wireY))
+      .map((layer) => hitButton(layer, WIRE))
       .join("");
 
-    svg += `</svg>`;
-
-    let words = "";
-    if (picked) {
-      // the words are written across the stretch on screen and travel with
-      // their own mark from there
-      const laid = this.labels(marks, shows + X_PAD, shows + screen - X_PAD, wireY);
-      this.laid.rows = laid.rowsLaid;
-      const mark = marks.find((m) => m.event.id === this.selected) as Mark;
-      // the band lies over the words, as it does on the open wire, and under
-      // the dots' own targets
-      words =
-        laid.text +
-        `<div class="ss-yr on" style="left:${yearLeft(mark.x, shows, shows + screen)}px;` +
-        `top:${YEAR_TOP}px;width:${YEAR_W}px;text-align:center">${esc(this.yearOf(mark.event))}</div>` +
-        bandHit(shows + X_PAD, screen - 2 * X_PAD);
-    }
+    const aimed = marks.find((m) => m.event.id === this.aimed);
+    // the line goes to what was named: the open cluster's box when the moment
+    // is in it, otherwise the moment itself
+    const onX = aimed ? (open?.event_ids.includes(aimed.event.id) ? openX : aimed.x) : null;
+    // where the line comes to rest, so the words of a picked moment are
+    // written across the stretch the reader will be looking at
+    const shows = this.stands({ width, screen }, held, onX);
+    const said = this.labels(marks, shows + X_PAD, shows + screen - X_PAD, WIRE);
+    this.laid.rows = said.rowsLaid;
+    const chosen = marks.find((m) => m.event.id === this.selected);
+    // With a cluster open and nothing picked, the words over the line are the
+    // cluster's own name, so the reader can find what is open (R-0538).
+    // It stands on the picture rather than the line that slides under it, so
+    // it is always inside the picture whichever cluster is open.
+    const title =
+      !said.text && open && !chosen
+        ? `<div class="ss-t ss-name" style="left:${X_PAD}px;top:${ROWS[0]}px;` +
+          `width:${screen - 2 * X_PAD}px">${esc(open.title || open.label)}</div>`
+        : "";
+    // The band lies over the words and under the dots' own targets.
+    const words = said.text ? said.text + bandHit(shows + X_PAD, screen - 2 * X_PAD) : "";
 
     // Where the line settles after a swipe: at a box's near edge, so a cluster
     // is never cut in half, and at the present.
@@ -1152,15 +1206,16 @@ export class Picture {
       .map((left) => `<i class="ss-snap" style="left:${left}px"></i>`)
       .join("");
     // The years say which stretch of the record is on screen, and are written
-    // again as it slides. They belong to a line long enough to slide.
+    // again as it slides. They belong to a line long enough to slide, and give
+    // way to the year of a moment picked.
     const ends =
-      width > screen && !picked
+      width > screen
         ? `<div class="ss-yrs"><span></span><span></span></div>`
         : "";
 
     this.host.innerHTML =
       `<div class="ss"><div class="ss-scroll"><div class="ss-line" style="width:${width.toFixed(1)}px">` +
-      `${svg}${words}${hits}${snaps}</div></div>${ends}${shelf}</div>`;
+      `${svg}${words}${hits}${snaps}</div></div>${ends}${title}${shelf}</div>`;
     this.settle({ width, screen, first, span }, held, onX);
   }
 
@@ -1243,7 +1298,7 @@ export class Picture {
     // cluster must not restage everyone on every move
     const zoom = this.entering ? " in" : "";
     this.entering = false;
-    this.host.innerHTML =
+    this.card(
       `<div class="ss board${zoom}" style="height:${height}px">${svg}</div>` +
       `<div class="bcap">${esc(caption)}</div>` +
       // a cast the coach put on the board has nothing to step through
@@ -1260,17 +1315,10 @@ export class Picture {
           `<button type="button" class="btn" data-target="${Target.Next}" ` +
           `${this.at >= last ? "disabled" : ""} aria-label="the move after">&#9654;</button>` +
           `</div>`
-        : "");
+        : ""),
+    );
     for (const id of this.litPeople)
       this.host.querySelector(`.node[data-person="${id}"]`)?.classList.add("lit");
-    // The board is as tall as what it holds — the drawing, its caption and its
-    // controls — rather than a fixed number with an empty band under it.
-    this.pin(
-      [...this.host.children].reduce(
-        (total, node) => total + node.getBoundingClientRect().height,
-        0,
-      ),
-    );
     if (still())
       this.host.querySelector("svg")?.pauseAnimations();
   }
@@ -1365,143 +1413,7 @@ export class Picture {
         return;
       }
     }
-    // A loose event picked, by its dot or by a chip, is picked where it is:
-    // the clusters stay, the dot reads as picked (Patrick, 2026-09-09; R-0168).
-    // The spotlight below is for a cluster open, or what the coach's words
-    // name as a whole.
-    if (resting(this.look())) {
-      this.renderRest();
-      return;
-    }
-    const width = this.width;
-    const x0 = X_PAD;
-    const x1 = width - X_PAD;
-    const shown = this.shown();
-    // the resting picture is one fixed height, whatever it is showing: people
-    // on stage belong to the board, which is a level of its own (ruled)
-    const height = PIC_H;
-    const wire = wireOf(this.look());
-
-    if (!shown.length) {
-      this.laid = { zones: [], rows: [] };
-      this.pin(PIC_H);
-      this.host.innerHTML =
-        `<div class="ss">` +
-        `<svg viewBox="0 0 ${width} ${PIC_H}" aria-hidden="true">` +
-        `<line class="wire empty" x1="${x0}" y1="${WIRE}" x2="${x1}" y2="${WIRE}"/>` +
-        // The "?" in the middle of an empty wire was the question language
-        // (DRAWABILITY): "the record is still asking". Hidden on Patrick's word,
-        // 2026-09-21: distracting before anyone knows what it means. The rule
-        // stands; the glyph waits for a first-time explanation. To restore:
-        // `<text class="qm" x="${width / 2}" y="${WIRE + 6}" text-anchor="middle">?</text>`
-        `</svg>` +
-        `<button class="ss-hit" data-target="${Target.Shelf}" ` +
-        `aria-label="Nothing has a date yet" ` +
-        `style="left:${x0}px;top:${WIRE - 22}px;width:${x1 - x0}px;height:${ZONE}px"></button>` +
-        `</div>`;
-      return;
-    }
-
-    const marks: Mark[] = shown.map((event) => ({
-      event,
-      x: this.x(event.dateTime as string),
-    }));
-    const named = new Set(this.named);
-    const opacity = baseOpacity(marks.length, this.named.length);
-    const radius = dotRadius(marks.length);
-    // the words are laid out first: where they land decides whether there is
-    // room for the bracket over the cluster
-    const { text, rowsLaid } = this.labels(marks, x0, x1, wire);
-    this.laid.rows = rowsLaid;
-
-    let svg =
-      `<svg viewBox="0 0 ${width} ${height}" aria-hidden="true">` +
-      `<defs><marker id="tip" viewBox="0 0 10 10" refX="8.5" refY="5" ` +
-      `markerWidth="5.5" markerHeight="5.5" orient="auto">` +
-      `<path d="M0 0 L10 5 L0 10 Z" class="tipfill"/></marker></defs>` +
-      this.bandMark(wire) +
-      `<line class="wire" x1="${x0}" y1="${wire}" x2="${x1}" y2="${wire}"/>`;
-
-    // one dot per moment; moments sharing a date stack instead of merging
-    const byDate = new Map<string, Mark[]>();
-    for (const mark of marks) {
-      const key = mark.event.dateTime as string;
-      byDate.set(key, [...(byDate.get(key) ?? []), mark]);
-    }
-    // The moment picked is drawn last, so it is on top of whatever crowds it
-    // (picked mockup Q1).
-    let onTop = "";
-    for (const group of byDate.values()) {
-      const x = group[0].x.toFixed(1);
-      const lit = group.filter((m) => named.has(m.event.id));
-      const keep = (mark: Mark, drawn: string) => {
-        if (mark.event.id === this.selected) onTop += drawn;
-        else svg += drawn;
-      };
-      if (lit.length) {
-        if (group.length > lit.length)
-          svg += `<circle class="halo" cx="${x}" cy="${wire}" r="7"/>`;
-        lit.forEach((mark, i) => {
-          const cy = i === 0 ? (lit.length > 1 ? wire + 5 : wire) : i === 1 ? wire - 5 : wire + 5 + 10 * (i - 1);
-          keep(mark, this.dot(mark, x, cy, 1, radius, true));
-        });
-      } else {
-        if (group.length > 1)
-          svg += `<circle class="halo" cx="${x}" cy="${wire}" r="7" opacity="${opacity}"/>`;
-        keep(group[0], this.dot(group[0], x, wire, opacity, radius, false));
-      }
-    }
-    svg += onTop;
-
-    svg += this.questions(wire);
-    svg += `</svg>`;
-
-    // The year is written once, under the moment picked, and nowhere else: the
-    // words carry no date and the ends of the line carry none either (picked
-    // mockup, A).
-    const picked = marks.find((m) => m.event.id === this.selected);
-    const html = picked
-      ? `<div class="ss-yr on" style="left:${yearLeft(picked.x, 0, width)}px;` +
-        `top:${YEAR_TOP}px;width:${YEAR_W}px;text-align:center">` +
-        `${esc(this.yearOf(picked.event))}</div>`
-      : "";
-
-    let hits = bandHit(x0, x1 - x0);
-    hits += this.zoneHits(marks, width, wire);
-    hits += this.shelfHit(x1, wire);
-
-    this.pin(height);
-    this.host.innerHTML = `<div class="ss">${svg}${text}${html}${hits}</div>`;
-    // CSS cannot reach the move language's SVG animations, so reduced motion
-    // holds them on their first frame the same way it stops the rest
-    if (still())
-      this.host.querySelector("svg")?.pauseAnimations();
-  }
-
-  /** One invisible target per dot, or per dots drawn over one another, laid
-   * where the line's taps read them. */
-  private zoneHits(marks: Mark[], width: number, wire: number): string {
-    const zoned = zones(marks, width);
-    this.laid.zones = zoned.map((zone) => zone.marks);
-    return dotLayers(zoned)
-      .map((layer) => hitButton(layer, wire))
-      .join("");
-  }
-
-  private dot(
-    mark: Mark,
-    x: string,
-    cy: number,
-    opacity: number,
-    radius: number,
-    lit: boolean,
-  ): string {
-    // Every moment on this line is a dot (ruled 2026-09-08). What kind of
-    // moment it is — a guess at a date, a no-change, a direction, a nodal
-    // moment — is drawn where there is room to read it, which is the board.
-    const chosen = mark.event.id === this.selected;
-    if (chosen) return `<circle class="dot on" cx="${x}" cy="${cy}" r="7"/>`;
-    return `<circle class="dot${lit ? " lit" : ""}" cx="${x}" cy="${cy}" r="${lit ? 5 : radius}" opacity="${opacity}"/>`;
+    this.renderLine();
   }
 
   /** The words. A chosen moment says itself in full over three rows; otherwise
@@ -1516,12 +1428,14 @@ export class Picture {
     const wide = Math.floor((x1 - x0) / CH);
     if (chosen) {
       const event = chosen.event;
-      const said = words(
-        event.dateTime as string,
-        event.dateCertainty,
-        event.person_name,
-        event.label,
-      );
+      // the path already says who and what happened: the line says only what
+      // it leaves out, the date first (no word twice)
+      const said = [
+        dateText(event.dateTime as string, event.dateCertainty),
+        told(event.person_name, event.label)[1],
+      ]
+        .filter(Boolean)
+        .join(" \u00b7 ");
       const lines = wrap2(
         clip(said, Math.min(88, wide * ROWS.length)),
         wide,
@@ -1593,12 +1507,12 @@ export class Picture {
 
   /** The bracket over the cluster the coach aimed at. It is only drawn when no
    * words are on the picture, because the words sit where it would go. */
-  private bandMark(wire: number): string {
+  private bandMark(at: (iso: string) => number): string {
     if (!this.band) return "";
-    const a = this.x(this.band.start);
-    const b = this.x(this.band.end);
+    const a = at(this.band.start);
+    const b = at(this.band.end);
     return (
-      `<rect class="span" x="${Math.min(a, b).toFixed(1)}" y="${wire - 14}" ` +
+      `<rect class="span" x="${Math.min(a, b).toFixed(1)}" y="${WIRE - 14}" ` +
       `width="${Math.max(4, Math.abs(b - a)).toFixed(1)}" height="28" rx="6"/>`
     );
   }
@@ -1608,16 +1522,15 @@ export class Picture {
    * It asks only where the two guess ranges touch. Where they do not, the
    * record knows the order and the dots' own places on the line say it, so
    * nothing is asked (DRAWABILITY rule 4). */
-  private questions(wire: number): string {
+  private questions(at: (iso: string) => number, shown: Set<number>): string {
     if (this.selected !== null || this.named.length) return "";
-    const shown = new Set(this.shown().map((e) => e.id));
     return (this.data?.questions ?? [])
       .filter((q: Question) => shown.has(q.event_id) && this.ordered(q))
       .map((q: Question, i, all) => {
-        const x = this.x(q.date);
-        if (all.slice(0, i).some((other) => Math.abs(this.x(other.date) - x) < 16))
+        const x = at(q.date);
+        if (all.slice(0, i).some((other) => Math.abs(at(other.date) - x) < 16))
           return "";
-        return `<text class="qm small" x="${x.toFixed(1)}" y="${wire - 16}" text-anchor="middle">?</text>`;
+        return `<text class="qm small" x="${x.toFixed(1)}" y="${WIRE - 16}" text-anchor="middle">?</text>`;
       })
       .join("");
   }

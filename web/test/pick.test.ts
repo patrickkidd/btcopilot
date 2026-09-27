@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { Level, Via, picked, resting, wireOf, type Look } from "../src/picture";
+import { Level, Via, picked, type Look } from "../src/picture";
 import { baseOpacity } from "../src/spotlight";
 import { Spotlight, type Cluster } from "../src/types";
 
@@ -41,27 +41,19 @@ it("a chip and a dot pick an event inside a cluster the same way, the rest faded
   expect(baseOpacity(EVENTS, chip.named.length)).toBeLessThan(1);
 });
 
-// R-0168, R-0235
-it("a chip and a dot pick an event outside every cluster the same way, clusters kept as brackets", () => {
+// R-0168, R-0540
+it("a chip and a dot pick an event outside every cluster the same way, on the whole line", () => {
   const chip = pick(REST, LOOSE, Via.Chip);
   const dot = pick(REST, LOOSE, Via.Dot);
   expect(dot).toEqual(chip);
-  expect(resting(chip)).toBe(true);
+  expect(chip.level).toBe(Level.Rest);
   expect(chip.named).toEqual([LOOSE]);
-});
-
-// R-0377, R-0460
-it("picking an event either way leaves the line where a picked event's line runs", () => {
-  const inside = pick(REST, 11, Via.Chip);
-  for (const look of [pick(REST, LOOSE, Via.Chip), pick(REST, LOOSE, Via.Dot)])
-    expect(wireOf(look)).toBe(wireOf(inside));
 });
 
 // R-0168
 it("with the old chip spotlight set, a chip puts a loose event on the wire and a dot only picks it", () => {
   const chip = pick(REST, LOOSE, Via.Chip, Spotlight.Chip);
   expect(chip).toEqual({ level: Level.Wire, focus: null, named: [LOOSE], selected: LOOSE });
-  expect(resting(chip)).toBe(false);
 
   const dot = pick(OPEN, 11, Via.Dot, Spotlight.Chip);
   expect(dot).toEqual({ ...OPEN, selected: 11 });

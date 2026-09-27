@@ -1,6 +1,14 @@
 import { NOTES_TOOL, type Notes } from "./notes";
 import { type Line, toolLine } from "./tools";
-import { ItemKind, TurnEventKind, type Reply, type TurnEvent, type View } from "./types";
+import {
+  ItemKind,
+  Touch,
+  TurnEventKind,
+  type Delta,
+  type Reply,
+  type TurnEvent,
+  type View,
+} from "./types";
 
 /** What the page does with one turn, in the order the coach does it. The events
  * arrive as they happen, so this decides what the chat says it did, when the
@@ -12,7 +20,14 @@ import { ItemKind, TurnEventKind, type Reply, type TurnEvent, type View } from "
 export interface Made {
   kind: ItemKind;
   id: string;
+  touch: Touch;
 }
+
+const RANK = Object.values(Touch);
+
+/** Of two things done to one event, the one its colour says. */
+export const stronger = (a: Touch, b: Touch): Touch =>
+  RANK.indexOf(a) >= RANK.indexOf(b) ? a : b;
 
 /** Everything one turn can tell the page. */
 export interface TurnSink {
@@ -21,6 +36,8 @@ export interface TurnSink {
   notes(notes: Notes): void;
   /** The record has changed; these are what changed it, to light. */
   made(items: Made[]): void;
+  /** A read looked at these events; the record is as it was. */
+  read(ids: number[]): void;
   show(view: View): void;
   /** The next words of the reply. */
   text(text: string): void;
@@ -31,12 +48,17 @@ export interface TurnSink {
   refused(message: string): void;
 }
 
-type Delta = { item_kind: ItemKind; item_id: string | number };
+/** A whole item with nothing before it was added, with nothing after it was
+ * removed; one field set is a change. */
+const touchOf = (delta: Delta): Touch =>
+  delta.field !== null ? Touch.Change : delta.before === null ? Touch.Add : Touch.Remove;
 
 function add(out: Made[], deltas: Delta[]): void {
   for (const delta of deltas) {
-    const one = { kind: delta.item_kind, id: String(delta.item_id) };
-    if (!out.some((m) => m.kind === one.kind && m.id === one.id)) out.push(one);
+    const one = { kind: delta.item_kind, id: String(delta.item_id), touch: touchOf(delta) };
+    const had = out.find((m) => m.kind === one.kind && m.id === one.id);
+    if (had) had.touch = stronger(had.touch, one.touch);
+    else out.push(one);
   }
 }
 
@@ -63,6 +85,7 @@ export function feed(sink: TurnSink): (event: TurnEvent) => void {
         }
         const line = toolLine(event);
         if (line) sink.note(line);
+        if (event.read) sink.read(event.read);
         break;
       }
       case TurnEventKind.RecordPatch:

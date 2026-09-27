@@ -1,12 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 import { stateFor } from "./setup";
 
-/** In every picture view that has one, the ✕ or ← at the top left starts
- * where the line starts and where the ask button starts: one left edge down
- * the picture, the page's 16 in from its side. Its tap target stays a 44
- * square around the glyph [Oracle: R-0234].
+/** In every picture view below the whole line, the first step of the path at
+ * the top left starts where the line starts and where the row under the line
+ * starts: one left edge down the picture, the page's 16 in from its side. Its
+ * tap target stays 44 tall around the word [Oracle: R-0234, R-0540].
  *
- * The glyph's edge is its ink, measured with the font it is drawn in, not the
+ * The word's edge is its ink, measured with the font it is drawn in, not the
  * box around it, because the box carries the glyph's own side bearing. */
 
 const GUTTER = 16;
@@ -25,9 +25,7 @@ const tap = async (page: Page, what: string) => {
 
 const edges = (page: Page) =>
   page.evaluate(() => {
-    const button = [...document.querySelectorAll<HTMLElement>(".pin-label .up")].find(
-      (b) => !b.hidden,
-    )!;
+    const button = document.querySelector<HTMLElement>("#path > :first-child")!;
     const range = document.createRange();
     range.selectNodeContents(button);
     const box = range.getBoundingClientRect();
@@ -43,7 +41,7 @@ const edges = (page: Page) =>
       picture: document.querySelector(".pic")!.getBoundingClientRect().left,
       glyph: box.left - ink.actualBoundingBoxLeft,
       line: left("#view line.wire"),
-      ask: left("#cap-chip"),
+      ask: left("#caption > :first-child"),
       target: [parseFloat(target.width), parseFloat(target.height)],
     };
   });
@@ -61,15 +59,15 @@ const lined = async (page: Page, view: string, has: { line: boolean; ask: boolea
 test.describe("the timeline's views", () => {
   test.use({ storageState: stateFor("three40") });
 
-  // R-0234
-  test("the ✕ over an event picked on the resting line", async ({ page }) => {
+  // R-0234, R-0540
+  test("the path over an event picked on the whole line", async ({ page }) => {
     await settle(page);
     await tap(page, `#view .ss-hit[data-target="zone"][aria-label="Ben stopped calling"]`);
     await lined(page, "picked at rest", { line: true, ask: true });
   });
 
-  // R-0234
-  test("the ← over an open cluster, an event picked in it, and its about page", async ({
+  // R-0234, R-0540
+  test("the path over an open cluster, an event picked in it, and its about page", async ({
     page,
   }, info) => {
     await settle(page);
@@ -88,8 +86,8 @@ test.describe("the timeline's views", () => {
 test.describe("the board", () => {
   test.use({ storageState: stateFor("play") });
 
-  // R-0234
-  test("the ← over the board", async ({ page }) => {
+  // R-0234, R-0540
+  test("the path over the board", async ({ page }) => {
     await settle(page);
     await tap(page, ".bub .chip.data");
     await expect(page.locator("#view .ss.board")).toBeVisible();

@@ -688,7 +688,7 @@ class Toolbox:
         rows = [p for p in self.data.people if isinstance(p, dict) and p.get("id")]
         return ("\n".join(person_line(p) for p in rows) or "No one yet.", None)
 
-    def _read_events(self, args: dict) -> tuple[str, None]:
+    def _read_events(self, args: dict) -> tuple[str, dict]:
         data = self.data
         events = [e for e in data.events if isinstance(e, dict) and e.get("id")]
         if args.get("ids") is not None:
@@ -717,7 +717,7 @@ class Toolbox:
                 lines.append(f"  words: {words[e['id']]}")
             if args.get("notes") and e.get("notes"):
                 lines.append(f"  notes: {e['notes']}")
-        return ("\n".join(lines) or "No events.", None)
+        return ("\n".join(lines) or "No events.", {"read": [e["id"] for e in events]})
 
     def _words(self, event_ids: set[int]) -> dict[int, str]:
         """What the user said in the turn that first wrote each event."""
@@ -737,14 +737,14 @@ class Toolbox:
         }
         return {event: said[turn] for event, turn in turns.items() if turn in said}
 
-    def _read_notes(self, args: dict) -> tuple[str, None]:
+    def _read_notes(self, args: dict) -> tuple[str, dict]:
         data = self.data
         events = [e for e in data.events if isinstance(e, dict) and e.get("notes")]
         if args.get("event") is not None:
             wanted = self._event(data, args["event"])
             events = [e for e in data.events if e.get("id") == wanted]
         lines = [f"{e['id']}: {e.get('notes') or 'no notes'}" for e in events]
-        return ("\n".join(lines) or "No event has notes.", None)
+        return ("\n".join(lines) or "No event has notes.", {"read": [e["id"] for e in events]})
 
     def _read_questions(self, args: dict) -> tuple[str, None]:
         return self._read_notes_of(record.QUESTION, args), None

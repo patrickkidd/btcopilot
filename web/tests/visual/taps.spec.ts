@@ -9,7 +9,9 @@ import { stateFor, type Key } from "./setup";
 
 test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
 
-const dots = (page: Page) => page.locator("#view svg circle.dot");
+/** The open cluster's own dots: lit, where the rest of the line is dimmed
+ * around them (R-0538). */
+const dots = (page: Page) => page.locator("#view svg circle.dot.lit");
 
 /** Where each dot's centre is on the page, left to right. */
 const centres = async (page: Page) =>
@@ -68,7 +70,7 @@ const cases: { key: Key; words: string[]; at: number[] }[] = [
     words: ["Grandmother died", "The winter she stopped calling home", "The move across the country"],
     at: [0, 1, 2],
   },
-  // twenty moments a month apart across the screen, about 18 points between dots
+  // twenty moments a month apart, packed into their box on the one line
   {
     key: "dense60",
     words: Array.from({ length: 20 }, (_, i) => `Week ${i + 1}: sleep note`),

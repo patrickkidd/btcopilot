@@ -2,10 +2,10 @@ import { expect, test, type Page } from "@playwright/test";
 import { flask, stateFor, username } from "./setup";
 
 /** A chip naming an event and the event's own dot pick it the same way
- * [Oracle: R-0168]: the others fade, an event outside every cluster keeps the
- * clusters as brackets under the line [Oracle: R-0235], and the picture keeps
- * its height [Oracle: R-0377, R-0460]. The old chip spotlight comes back for
- * one person when an admin sets it, and goes again when set back.
+ * [Oracle: R-0168]: the others fade, the clusters stay drawn as they are on the
+ * one drawing [Oracle: R-0538, R-0540], and the picture keeps its height
+ * [Oracle: R-0377, R-0460]. The old chip spotlight comes back for one person when an
+ * admin sets it, and goes again when set back; it draws on the same line.
  *
  * The hostile record: one cluster holds parts 1 to 3, parts 4 to 6 are loose,
  * and the coach's reply names each part in a chip. */
@@ -56,7 +56,7 @@ test.use({ storageState: stateFor("hostile"), hasTouch: true });
 test.beforeAll(() => spotlight("unified"));
 test.afterAll(() => spotlight("unified"));
 
-// R-0168, R-0235, R-0377, R-0460
+// R-0168, R-0538, R-0540, R-0377, R-0460
 test("a chip and a dot pick a loose event the same way", async ({ page }, info) => {
   await open(page);
   const height = (await shown(page)).height;
@@ -90,14 +90,17 @@ test("a chip and a dot pick an event inside a cluster the same way", async ({ pa
   expect(await shown(page)).toEqual(byChip);
 });
 
-// R-0168
-test("the old chip spotlight comes back when an admin sets it", async ({ page }) => {
+// R-0168, R-0538, R-0540
+test("the old chip spotlight comes back when an admin sets it, on the one drawing", async ({
+  page,
+}) => {
   spotlight("chip");
   await open(page);
   await tapped(page, chip(4));
   const byChip = await shown(page);
   expect(byChip.picked).toBe(1);
-  expect(byChip.brackets).toBe(0);
+  // no second way of drawing clusters: the boxes stay
+  expect(byChip.brackets).toBeGreaterThan(0);
 
   await open(page);
   await tapped(page, dot(4));

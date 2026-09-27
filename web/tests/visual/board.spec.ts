@@ -56,6 +56,8 @@ const freeze = (page: Page, ms = 2400) =>
   }, ms);
 
 const picture = (page: Page) => page.locator("#chat-screen .pic");
+/** The board opens as a card over the chat from the top of the picture (R-0460). */
+const card = (page: Page) => page.locator("#view .card");
 
 test.describe("the moves board", () => {
   test.use({ storageState: stateFor("moves") });
@@ -75,7 +77,7 @@ test.describe("the moves board", () => {
     // the words under the board name the move, and never count them
     await expect(page.locator("#chat-screen .bcap")).toHaveText("Ada \u2192 Ben · toward");
     await freeze(page);
-    await expect(picture(page)).toHaveScreenshot("board-first-move.png", steady(page));
+    await expect(card(page)).toHaveScreenshot("board-first-move.png", steady(page));
   });
 
   // R-0181
@@ -85,7 +87,7 @@ test.describe("the moves board", () => {
     for (let i = 0; i < 4; i += 1)
       await page.locator('.pctl [data-target="next"]').click();
     await expect(page.locator("#chat-screen .bcap")).toHaveText("Ada \u2192 Ben · conflict");
-    await inside(page.locator("#view .ss.board"), picture(page));
+    await inside(page.locator("#view .ss.board"), card(page));
   });
 
   // R-0180
@@ -96,12 +98,12 @@ test.describe("the moves board", () => {
     while (await next.isEnabled()) await next.click();
     await expect(page.locator('.pctl [data-target="prev"]')).toBeEnabled();
     await expect(next).toBeDisabled();
-    await inside(page.locator("#view .ss.board"), picture(page));
+    await inside(page.locator("#view .ss.board"), card(page));
   });
 
-  // the one way up is the arrow beside the view's name; the board carries no
-  // corner arrow of its own (owner ruling 2026-09-08)
-  // R-0223
+  // the way up is the path over the line; the board carries no corner arrow
+  // of its own (owner ruling 2026-09-08)
+  // R-0223, R-0540
   test("back goes up one level, to the cluster the board was showing", async ({
     page,
   }) => {
@@ -109,7 +111,7 @@ test.describe("the moves board", () => {
     const before = await picture(page).boundingBox();
     await enter(page);
     await expect(page.locator('[data-target="back"]')).toHaveCount(0);
-    await page.locator("#up").click();
+    await page.locator('#path [data-step="1"]').click();
     await expect(page.locator("#view .ss.board")).toHaveCount(0);
     // past the .25s height transition, or the box is read mid-flight
     await page.waitForTimeout(500);

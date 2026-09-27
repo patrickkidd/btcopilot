@@ -68,7 +68,7 @@ test("going back slides the cluster off to the right, the same way reversed", as
   await settle(page);
   const [into] = await fly(page, '.ss-hit[data-target="cluster"]');
   await page.waitForTimeout(600);
-  const [back] = await fly(page, "#up");
+  const [back] = await fly(page, '#path [data-step="0"]');
   expect(back.from).toBe(into.to);
   expect(back.to).toBe(into.from);
   expect(back.ms).toBe(into.ms);

@@ -29,7 +29,7 @@ import {
   type PicState,
   type Sel,
 } from "./caption";
-import { $, setTitle, slideOver } from "./dom";
+import { $, esc, setTitle, slideOver } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { ASK_MARK, IN_CHAT_MARK, listButton, PLAY_MARK, tok } from "./tokens";
@@ -48,6 +48,7 @@ import {
   type Task,
   InteractionKind,
   ItemKind,
+  Touch,
   emptyTimeline,
   Role,
   StatementKind,
@@ -946,6 +947,9 @@ function follow(turnId: string): void {
   if (onTurn === turnId) return;
   stopFollowing();
   chat.settled();
+  // the next message has arrived: what the last reply touched goes back to how
+  // the line draws it (R-0539)
+  picture.untouch();
   onTurn = turnId;
   awaiting = turnId;
   inFlight = true;
@@ -978,9 +982,18 @@ function follow(turnId: string): void {
     notes: (notes) => step(() => opened().notes(notes)),
     made: (items) =>
       step(async () => {
+        // a removed event is gone from the record read back, so it is taken
+        // from the one on screen, to stay where it was in its colour
+        const removed = new Set(
+          items
+            .filter((one) => one.kind === ItemKind.Event && one.touch === Touch.Remove)
+            .map((one) => Number(one.id)),
+        );
+        const gone = timeline.events.filter((e) => removed.has(e.id));
         await load();
-        if (items.length) picture.light(items);
+        if (items.length) picture.light(items, gone);
       }),
+    read: (ids) => step(() => picture.read(ids)),
     show: (view) => step(() => picture.show(view)),
     text: (text) => step(() => void opened().append(text, (chip) => aim(chip))),
     reset: () => step(() => void opened().reset()),
@@ -1074,39 +1087,18 @@ async function load(): Promise<Timeline> {
   return timeline;
 }
 
-/** The name of the picture is also the way back to it, so while one cluster is
- * open it says so with the arrow in front of it (picked phone mockup). */
-/** The name row says which view the reader is in: the whole line at rest, and
- * the cluster's own name once a cluster or its board is open. A green arrow
- * stands beside the name whenever there is a view above this one, and the
- * arrow and the name do the same thing (owner ruling 2026-09-08). */
+/** The path over the line: where the reader is, from the whole timeline
+ * down, each earlier step the way back to it (R-0540). */
 function crumb(): void {
-  const deep = picture.deep();
-  const name = $("crumb");
-  // a picked moment at rest takes the title line: the ✕ that puts it down
-  // stands where the back arrow stands one level in, and the label goes
-  const picked = !deep && picture.selection() !== null;
-  name.textContent = picked ? "" : (picture.title() ?? "Family timeline");
-  name.classList.toggle("deep", deep);
-  name.setAttribute("aria-hidden", "false");
-  if (deep) {
-    name.setAttribute("role", "button");
-    name.setAttribute("tabindex", "0");
-  } else {
-    name.removeAttribute("role");
-    name.removeAttribute("tabindex");
-  }
-  $("up").hidden = !deep;
+  const steps = picture.path();
+  $("path").innerHTML = steps
+    .map((step, i) =>
+      i < steps.length - 1
+        ? `<button type="button" class="step" data-step="${i}"><span>${esc(step)}</span></button>`
+        : `<span class="here">${esc(step)}</span>`,
+    )
+    .join(`<span class="sep" aria-hidden="true"> \u203a </span>`);
   $("info").hidden = !picture.opened();
-  $("clear").hidden = !picked;
-}
-
-/** Up exactly one level: the board to the cluster it is showing, an open
- * cluster to the whole line. */
-function upOne(): void {
-  picture.up();
-  pic = REST;
-  actions();
 }
 
 /** The list is full screen with its own back button, so it takes the title row
@@ -1160,17 +1152,20 @@ function screen(which: Screen): void {
 let here = Screen.Chat;
 track.start(here, window.BOOTSTRAP.diagram?.id ?? null);
 
-/** The name of the picture is also the way back to it: tapping it puts the
- * picture down, the same as tapping empty ground on it. */
+/** Empty ground on the picture puts it down: the whole line at a glance. */
 function putDown(): void {
   picture.dismiss();
   pic = REST;
   actions();
 }
 
-$("up").addEventListener("click", () => {
+$("path").addEventListener("click", (e) => {
+  const step = (e.target as Element).closest<HTMLElement>("[data-step]");
+  if (!step) return;
   track.tap(Feature.PictureUp);
-  upOne();
+  picture.back(Number(step.dataset.step));
+  pic = REST;
+  actions();
 });
 $("info").addEventListener("click", () => {
   track.tap(Feature.PictureInfo);
@@ -1178,21 +1173,6 @@ $("info").addEventListener("click", () => {
   pic = REST;
   actions();
 });
-$("clear").addEventListener("click", () => {
-  track.tap(Feature.PictureClear);
-  putDown();
-});
-$("crumb").addEventListener("click", () => {
-  if (picture.deep()) upOne();
-});
-$("crumb").addEventListener("keydown", (e) => {
-  const key = (e as KeyboardEvent).key;
-  if ((key === "Enter" || key === " ") && picture.deep()) {
-    e.preventDefault();
-    upOne();
-  }
-});
-
 // Return starts a new line; only the send button sends (R-0368), so a message
 // can have paragraphs. The break is a plain newline so the draft keeps it.
 $("composer").addEventListener("keydown", (e) => {

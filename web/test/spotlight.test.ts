@@ -44,7 +44,7 @@ describe("the words a moment says about itself", () => {
     expect(say("")).toBe("bonded \u00b7 together for a year");
   });
 
-  // R-0235
+  // R-0540
   it("a long line wraps onto a second row at a space", () => {
     expect(wrap2("the winter everybody stopped speaking", 20)).toEqual([
       "the winter everybody",

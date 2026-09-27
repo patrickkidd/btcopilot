@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { feed, type Made, type TurnSink } from "../src/turn";
 import { type Line, ToolName } from "../src/tools";
-import { ItemKind, TurnEventKind, type Reply, type TurnEvent } from "../src/types";
+import { ItemKind, Touch, TurnEventKind, type Reply, type TurnEvent } from "../src/types";
 
 /** What the page would be showing, written down instead of drawn. */
 interface Shown {
   notes: Line[];
   lit: Made[];
+  read: number[];
   reloads: number;
   words: string;
   statement: number | null;
@@ -17,6 +18,7 @@ function watch(): { shown: Shown; take: (event: TurnEvent) => void } {
   const shown: Shown = {
     notes: [],
     lit: [],
+    read: [],
     reloads: 0,
     words: "",
     statement: null,
@@ -28,6 +30,9 @@ function watch(): { shown: Shown; take: (event: TurnEvent) => void } {
     made: (items) => {
       shown.reloads += 1;
       shown.lit = items;
+    },
+    read: (ids) => {
+      shown.read = ids;
     },
     show: () => {},
     text: (text) => {
@@ -101,7 +106,7 @@ describe("following a turn", () => {
     for (const event of TURN) take(event);
     expect(shown.notes.length).toBe(1);
     expect(shown.reloads).toBe(1);
-    expect(shown.lit).toEqual([{ kind: ItemKind.Person, id: "11" }]);
+    expect(shown.lit).toEqual([{ kind: ItemKind.Person, id: "11", touch: Touch.Change }]);
     expect(shown.words).toBe("Added Nell.");
     expect(shown.statement).toBe(7);
   });
@@ -161,5 +166,50 @@ describe("following a turn", () => {
     expect(shown.words).toBe("I can't take that one up here.");
     expect(shown.warning).toBe(null);
     expect(shown.statement).toBe(null);
+  });
+
+  // R-0539
+  it("says whether each event was added, changed or removed, the strongest kept", () => {
+    const { shown, take } = watch();
+    const one = (id: string, field: string | null, before: unknown, after: unknown) => ({
+      item_kind: ItemKind.Event,
+      item_id: id,
+      field,
+      before,
+      after,
+    });
+    take({
+      type: TurnEventKind.RecordPatch,
+      deltas: [
+        one("12", null, null, { id: 12 }),
+        one("12", "description", null, "left home"),
+        one("13", "description", "left", "left home"),
+        one("14", "description", "left", "left home"),
+        one("14", null, { id: 14 }, null),
+      ],
+      turn_id: "t1",
+    });
+    take(done());
+    expect(shown.lit).toEqual([
+      { kind: ItemKind.Event, id: "12", touch: Touch.Add },
+      { kind: ItemKind.Event, id: "13", touch: Touch.Change },
+      { kind: ItemKind.Event, id: "14", touch: Touch.Remove },
+    ]);
+  });
+
+  // R-0539
+  it("hands on the events a read looked at as it lands, and reads nothing again", () => {
+    const { shown, take } = watch();
+    take({
+      type: TurnEventKind.ToolCall,
+      name: ToolName.ReadEvents,
+      args: { cluster: "c1" },
+      names: {},
+      refusal: null,
+      read: [10, 11],
+    });
+    expect(shown.read).toEqual([10, 11]);
+    expect(shown.reloads).toBe(0);
+    expect(shown.notes.length).toBe(1);
   });
 });

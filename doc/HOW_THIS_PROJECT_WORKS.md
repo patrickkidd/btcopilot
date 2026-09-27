@@ -14,7 +14,11 @@ This is not optional and not deferred to the end of a session:
 - **STATE.md** — revise it as the current truth changes.
 - **HISTORY.md** — append what happened; never rewrite it (two clocks).
 - **Rulings** — log every ruling Patrick makes to the oracle store in fdserver the moment
-  he makes it. Never author a ruling he did not say.
+  he makes it. Never author a ruling he did not say. A preference he floats, a question he
+  asks ("I don't know, what do you think?"), or an idea he wants tried is not a ruling: mark it
+  "trying (date), not ruled", try it, and record it as a rule only after he has seen the result
+  and said so (Patrick 2026-09-26: "don't mark things as rulings until you've tested them out
+  with me first. you just jumped ahead for example").
 - **FD-362's description** — keep it in line with STATE.md at *this* altitude only:
   inspiration, motivation, the bet, guardrails, what carries over, the product, and this
   maintenance rule. Detail belongs in the corpus, not the epic. Updating the epic needs
@@ -116,6 +120,8 @@ box. Any question about what a prompt, ruling or fixture says is answered by dec
 (`sops -d`, read-only, into context or the job's tmp folder, never into the repo) and reading it;
 "I didn't look at the decrypted prompt" is never an answer.
 
+**He rules on a visual concept shown working in a mockup, not on a description and not on a build (2026-09-26; his words: "I won't rule until we have a feature that works", then "I assumed we were talking about a new visual concept with mockups?").** The order for a visual feature: the design's footing in the theory and its assumptions in a few lines; a mockup published as an Artifact, shown on several cases; his ruling; then the build. A concept question is not put to him as a decision, and a build never starts before the ruling.
+
 **Never restate his message back to him (2026-09-26).** It burns tokens; answer or act directly.
 
 **There is a dev mode and it is used (2026-09-09).** Code changes on disk refresh the page
@@ -125,6 +131,18 @@ under the review sandbox.
 **Test to the audience, not the artifact (2026-09-02).** A mockup he will look at once gets
 one load and one screenshot. A gallery he must judge across records gets a deterministic
 gate. Only code gets the full loop.
+
+**Trying (2026-09-26), not ruled: a mockup page cut the way a user would see the feature.**
+Patrick asked whether a mockup should be self-explanatory the way the feature must be for a
+non-technical user, with the explaining paragraphs and text levels kept for afterwards — his
+words: "the goal here is to communicate something very simply and effectively to users who are
+non-technical … the mock ups basically need to be self-explanatory … and then we can look at
+all the detail with the paragraphs and multiple levels of hierarchy of text in the artifact. I
+don't know what do you think?" The play-by-play gallery is being re-cut that way to see: one
+line naming the decision, then the phone frames, everything else in one collapsed section at
+the bottom; the console reply the link and the decision. Claude's added reasoning, not his: a
+frame that needs a legend has already failed R-0398. This becomes a rule only when he has
+looked at a page cut this way and said so.
 
 **Captions are written for someone who was not in the room (2026-09-02).** Card captions,
 trade-off lines and option names use common words and name concrete things on screen: what
@@ -141,6 +159,12 @@ and nothing else: no summary of the artifact, no restated findings, no "TLDR" th
 its first section. His mental token budget is the bottleneck; anything he must read twice
 is a cost, and most output tokens are not necessary. His words: "It just makes for double
 reading where the main bottleneck to productivity is my own mental token budget."
+Broken again 2026-09-26: the play-by-play gallery handover repeated the page's two trade-off
+lines and its list of unruled inventions under "what you'll notice"; he asked "are you giving
+me the same information in your response as you are in the artifact?" The check, every time:
+extract the page's visible words before writing the reply, and cut every line the page
+already says; what stays is only what the page does not carry — the vetting findings, the
+assumptions, and the decision.
 
 **Fixtures are Claude's to stand up; bugs are fixed before he looks (2026-09-11).** If a
 harness, a role or a permission blocks a test fixture, fix the harness — never hand the block

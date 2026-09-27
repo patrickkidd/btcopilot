@@ -332,6 +332,10 @@ class CoachTurn:
                 asked = toolcall(self.toolbox.data, call.name, call.args)
                 text, event, refusal = run_call(self.toolbox, call)
                 asked["refusal"] = refusal
+                # a read changes nothing, so which events it read rides on the
+                # call itself, for the page to grey them (R-0540)
+                if call.name in READS and event:
+                    asked.update(event)
                 self._note(events, asked)
                 # Kept after the page was told, so only the database holds what
                 # it answered; a read's answer is too long to keep and goes stale.
@@ -345,7 +349,7 @@ class CoachTurn:
                         "is_error": refusal is not None,
                     }
                 )
-                if event:
+                if event and call.name not in READS:
                     kind = (
                         TurnEventKind.View
                         if "view" in event

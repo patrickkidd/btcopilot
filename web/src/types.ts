@@ -34,6 +34,15 @@ export enum ItemKind {
   Question = "question",
 }
 
+/** What a tool call did to an event, weakest first: the colour the event
+ * takes on the line until the next message (R-0539). */
+export enum Touch {
+  Read = "read",
+  Change = "change",
+  Add = "add",
+  Remove = "remove",
+}
+
 export enum InteractionKind {
   Look = "look",
   Say = "say",
@@ -277,6 +286,8 @@ export interface ToolCall {
   /** Why the record refused the call, in plain words; a refused call changed
    * and showed nothing. */
   refusal: string | null;
+  /** The events a read looked at. */
+  read?: number[];
 }
 
 /** The turn as it happens: words as they are written, the tool calls behind
@@ -333,7 +344,8 @@ export interface Started {
 export interface Delta {
   item_kind: ItemKind;
   item_id: string;
-  field: string;
+  /** Null for a whole item added or removed. */
+  field: string | null;
   before: unknown;
   after: unknown;
 }

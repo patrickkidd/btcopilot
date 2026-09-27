@@ -8,6 +8,8 @@ Read this first, every session. This is the current truth; the derivation lives 
 **append to HISTORY, revise STATE** as part of any work that changes either.
 Ten-minute read by design.
 
+**Play-by-play redesign — its own session (Fable, xhigh), started 2026-09-27.** The concept, reasoned from the theory corpus (~/theapp/btcopilot-sources/theory): a step is a snapshot of one date (who was around the person, how each was doing, what moved between them), not one event; the coach picks one point of three allowed kinds (the order of what happened around a change; trouble sat with one person, later another; a move after an event), never a cause or motive, and shows it in 3–6 snapshots with the gap between them; captions carry a fact line in the user's words and, if any, a line marked as the coach's guess; the last ends in the question the biggest gap makes; the user and the people around them are in every snapshot, nobody drawn alone. Patrick rules only on a working mockup (process doc). A gallery of two drawings (the moves board's figures; a small standard family diagram) on three case shapes is being built by the other session's predecessor at ~/theapp/btcopilot-sources/fd-corpus/design/playbyplay-snapshots/gallery.html, to be published as an Artifact. Background: the theory's notes/move-definition.md (his move definition against Bowen, Kerr and Havstad) and its new open question on whether a move needs a target; the coverage checklist (what a family evaluation collects) waits for this. Until the main session commits the timeline one-drawing build (web/ files uncommitted in this worktree), the play-by-play session commits no web/ files.
+
 **Handovers are retired (2026-09-26).** This file is where a session starts: "FD-363" alone
 starts one. The flush revises this file and appends to HISTORY, and that is the whole handover.
 The older handover files in the private corpus stay as they were, for the record only.
@@ -19,7 +21,7 @@ queued and run it on his yes, on the recommendations in the private corpus's
 session-dc02180f/MIGRATION_PLAN.md. The three points that touch him: he rotates the Gemini key
 found in plain text in the old local permissions; the self-learning and correction-detection
 rules move to his global instructions; FD-336, FD-342 and FD-360 stay in ~/theapp. Sessions are
-not copied; old ones reopen by id. Remove this paragraph once the move is done.
+not copied; old ones reopen by id. Remove this paragraph once the move is done. 2026-09-26: at the start of the play-by-play session he said "not yet"; remind again at the next new session.
 
 ## The product (ruled)
 

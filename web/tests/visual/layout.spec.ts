@@ -108,7 +108,7 @@ test.describe("nothing moves when a chip is tapped", () => {
     await settle(page);
     // this record opens on the cluster the coach's last message named, so the
     // picture is put down first to see the row with nothing picked
-    await page.locator("#crumb").click();
+    await page.locator('#path [data-step="0"]').click();
     await page.waitForTimeout(400);
     const empty = await frame(page);
     await expect(page.locator("#chat-screen .caption .cta")).toHaveText("tap a cluster");
@@ -316,15 +316,16 @@ test.describe("a long family name", () => {
 test.describe("the moves board fills the room it takes", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0210, R-0132
+  // R-0210, R-0132, R-0460
   test("no empty band under the drawing or the controls", async ({ page }) => {
     await settle(page);
     await page.locator("#cap-play").click();
     await expect(page.locator("#view .ss.board")).toBeVisible();
     await page.waitForTimeout(600);
 
+    // the board is a card over the chat, as tall as what it holds
     const fit = await page.evaluate(() => {
-      const view = document.querySelector("#view")!;
+      const view = document.querySelector("#view .card")!;
       const parts = [...view.children].map((n) => n.getBoundingClientRect().height);
       const last = view.lastElementChild!;
       return {
@@ -457,7 +458,7 @@ test.describe("the row under the picture from one view to the next", () => {
   // R-0450
   test("the picture stays put while the row's buttons change", async ({ page }) => {
     await settle(page);
-    await page.locator("#up").click();
+    await page.locator('#path [data-step="0"]').click();
     await expect(page.locator('#view .ss-hit[data-target="cluster"]').first()).toBeVisible();
     await page.waitForTimeout(400);
     const rest = { at: await frame(page), live: await live(page) };

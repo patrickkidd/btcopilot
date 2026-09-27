@@ -40,30 +40,30 @@ test.describe("putting the picture down", () => {
     await openCluster(page);
     await pickMoment(page);
 
-    // the far right of the picture, clear of every moment and every label
+    // the foot of the picture, under every moment's target and every label
     const box = (await page.locator("#view .ss").boundingBox())!;
-    await page.mouse.click(box.x + box.width - 4, box.y + box.height - 4);
+    await page.mouse.click(box.x + box.width - 4, box.y + box.height - 1);
 
     await expect(page.locator("#view .ss-t.on")).toHaveCount(0);
     await expect(resting(page).first()).toBeVisible();
   });
 
-  // R-0362, R-0223
-  test("the name of the picture closes the cluster, picked moment or not", async ({
+  // R-0362, R-0223, R-0540
+  test("the whole timeline in the path closes the cluster, picked moment or not", async ({
     page,
   }) => {
     await settle(page);
     await openCluster(page);
     await pickMoment(page);
 
-    // The name, and the arrow beside it, close the cluster outright: putting
-    // the moment down first was tap-for-tap logical and felt wrong (R-0362).
-    // A moment is put down by tapping empty ground instead.
-    await page.locator("#crumb").click();
-    await expect(page.locator("#view .ss-yr.on")).toHaveCount(0);
+    // The first step of the path closes the cluster outright: putting the
+    // moment down first was tap-for-tap logical and felt wrong (R-0362). The
+    // cluster's own step puts the moment down and keeps the cluster open.
+    await page.locator('#path [data-step="0"]').click();
+    await expect(page.locator("#view circle.dot.on")).toHaveCount(0);
     await expect(page.locator("#view .ss-t.on")).toHaveCount(0);
     await expect(resting(page).first()).toBeVisible();
-    await expect(page.locator("#crumb")).toHaveText("Family timeline");
+    await expect(page.locator("#path")).toHaveText("Timeline");
   });
 });
 
@@ -81,7 +81,7 @@ test.describe("a tap on the words of the moment picked", () => {
   /** Pick a moment, so the band carries its words rather than the cluster's. */
   const pickOne = async (page: Page) => {
     await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator("#view .ss-yr.on")).toHaveCount(1);
+    await expect(page.locator("#view circle.dot.on")).toHaveCount(1);
   };
 
   // R-0207
@@ -100,7 +100,7 @@ test.describe("a tap on the words of the moment picked", () => {
     await pickOne(page);
     // the same dot again: still picked, and the thread has not moved
     await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator("#view .ss-yr.on")).toHaveCount(1);
+    await expect(page.locator("#view circle.dot.on")).toHaveCount(1);
     await expect(page.locator(".bub.traced")).toHaveCount(0);
   });
 });

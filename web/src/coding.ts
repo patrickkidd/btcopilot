@@ -8,6 +8,7 @@ import { listButton, PLAY_MARK, tok } from "./tokens";
 import { WIDE } from "./pro";
 import {
   emptyTimeline,
+  Touch,
   type CodingThread,
   type CodingTurn,
   type Timeline,
@@ -309,6 +310,7 @@ export class Coding {
     this.composer.innerHTML = "";
     const side = this.side(turn);
     this.after(turn, el("div", `bub said${side}`, esc(said)), turn);
+    this.picture.untouch();
     this.sending = true;
     let written;
     try {
@@ -331,7 +333,8 @@ export class Coding {
     this.after(turn, el("div", `bub coach sub${side}`, lines), turn);
     if (written.made.length) {
       await this.refresh();
-      this.picture.light(written.made);
+      // what the scribe writes, it adds
+      this.picture.light(written.made.map((one) => ({ ...one, touch: Touch.Add })));
     }
   }
 

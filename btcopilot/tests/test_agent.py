@@ -871,3 +871,19 @@ def test_a_remove_of_a_kind_the_record_does_not_hold_is_refused(discussion, fami
     assert asked["refusal"] == "There is no such kind of thing to remove."
     refused = model.histories[-1][-1]["content"][0]
     assert refused["is_error"] is True
+
+
+def test_a_read_tells_the_page_which_events_it_read(discussion, family):
+    # R-0539
+    reply = run(
+        discussion,
+        "Tell me about when he moved out.",
+        Model(
+            called(ToolName.ReadEvents, cluster="c1"),
+            called(ToolName.ReadNotes, event=10),
+            called(ToolName.ReadPeople),
+            said("What happened next?"),
+        ),
+    )
+    reads = [e for e in reply["events"] if e["type"] == EventKind.ToolCall.value]
+    assert [e.get("read") for e in reads] == [[10], [10], None]

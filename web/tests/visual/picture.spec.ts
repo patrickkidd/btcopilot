@@ -251,8 +251,8 @@ test.describe("the coach's words drive the picture", () => {
   // R-0001, R-0055
   test("it opens on what the coach's last message named", async ({ page }) => {
     await settle(page);
-    await expect(page.locator("#crumb")).toHaveText("The walk");
-    await expect(page.locator("#up")).toBeVisible();
+    await expect(page.locator("#view .ss-name")).toHaveText("The walk");
+    await expect(page.locator('#path [data-step="0"]')).toBeVisible();
     await expect(page.locator("#view circle.dot.lit")).toHaveCount(2);
   });
 });

@@ -14,7 +14,7 @@ const tapItsWords = async (page: Page) => {
   await page.locator('.ss-hit[data-target="zone"]').last().click();
   const words = page.locator("#view .ss-t.on").first();
   await expect(words).toBeVisible();
-  const label = (await page.locator("#view .ss-t.on").allTextContents()).join(" ");
+  const label = (await page.locator("#path .here").textContent()) ?? "";
   const box = (await words.boundingBox())!;
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
   return label;

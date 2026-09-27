@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { Target, dotLayers, dotXs, inOrder, restLayers, restWidth, yearAt, years, type Layer } from "../src/picture";
+import {
+  Level,
+  Target,
+  dotLayers,
+  dotXs,
+  inOrder,
+  restLayers,
+  restWidth,
+  spanYears,
+  told,
+  trail,
+  yearAt,
+  years,
+  type Layer,
+} from "../src/picture";
 import { zones } from "../src/spotlight";
 import type { TimelineEvent } from "../src/types";
 
@@ -169,5 +183,48 @@ describe("the play-by-play of a cluster", () => {
     expect(inOrder(events, [15, 13, 12, 10, 11, 14]).map((e) => e.id)).toEqual([
       15, 10, 11, 14, 13, 12,
     ]);
+  });
+});
+
+describe("the path row over the line", () => {
+  const cluster = { start: "2009-03-01", end: "2010-11-20" };
+
+  // R-0540
+  it("names each level from the whole line down, the cluster by its years", () => {
+    expect(trail(Level.Rest, null, null)).toEqual(["Timeline"]);
+    expect(trail(Level.Rest, null, "Catherine died")).toEqual(["Timeline", "Catherine died"]);
+    expect(trail(Level.Wire, null, null)).toEqual(["Timeline"]);
+    expect(trail(Level.Wire, cluster, null)).toEqual(["Timeline", "2009–10"]);
+    expect(trail(Level.Wire, cluster, "Catherine died")).toEqual([
+      "Timeline",
+      "2009–10",
+      "Catherine died",
+    ]);
+  });
+
+  // R-0540
+  it("names the board, the about page and a comparison as modes of the cluster", () => {
+    expect(trail(Level.Board, cluster, null)).toEqual(["Timeline", "2009–10", "explain"]);
+    expect(trail(Level.About, cluster, null)).toEqual(["Timeline", "2009–10", "about"]);
+    expect(trail(Level.Compare, null, null)).toEqual(["Timeline", "compare"]);
+  });
+
+  // R-0540
+  it("names a moment picked by the first name and what happened, the rest left over", () => {
+    expect(told("Catherine Hale", "died")).toEqual(["Catherine died", ""]);
+    expect(told("Ben", "Ben stopped calling")).toEqual(["Ben stopped calling", ""]);
+    expect(told("", "Moved to Denver")).toEqual(["Moved to Denver", ""]);
+    // a long one keeps its first words, never ending on a small word
+    expect(told("Catherine Hale", "died of breast cancer")).toEqual([
+      "Catherine died",
+      "of breast cancer",
+    ]);
+  });
+
+  // R-0540
+  it("writes a cluster's years short, and in full across a century", () => {
+    expect(spanYears("2009-03-01", "2009-11-20")).toBe("2009");
+    expect(spanYears("1998-03-01", "2003-11-20")).toBe("1998–2003");
+    expect(spanYears("1981-05-01", "1989-11-20")).toBe("1981–89");
   });
 });

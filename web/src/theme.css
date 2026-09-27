@@ -17,6 +17,8 @@
      (resolution 52). In dark mode the mark hues already clear the floor. */
   --ask-text: #9e6d15;
   --move-text: #27874b;
+  /* what the coach removed this turn, the one red on the line (R-0539) */
+  --remove: #c4473a;
   /* one step darker again, for the moment a chip is under the thumb */
   --data-press: #0a5b57;
   --ask-press: #7c560f;
@@ -44,6 +46,7 @@
     --data: #3fc4bc;
     --ask: #e0a83f;
     --move: #5fce85;
+    --remove: #ec7a6c;
     --tint: rgba(63, 196, 188, 0.13);
     --ask-tint: rgba(224, 168, 63, 0.14);
     --band: rgba(216, 168, 83, 0.26);
@@ -65,6 +68,7 @@
   --data: #3fc4bc;
   --ask: #e0a83f;
   --move: #5fce85;
+  --remove: #ec7a6c;
   --tint: rgba(63, 196, 188, 0.13);
   --ask-tint: rgba(224, 168, 63, 0.14);
   --band: rgba(216, 168, 83, 0.26);
@@ -183,8 +187,8 @@ button { font-family: inherit; }
 /* One line, always: the state text on the right changes with the selection and
    must never push the label on the left onto a second line, which would move
    the picture and everything under it. */
-/* the two small controls on the title line: the i after an open cluster's
-   name, and the ✕ at the row's end while a moment is picked at rest */
+/* the one small control on the title line: the i after the path while a
+   cluster is open */
 .pl-btn {
   position: relative;
   flex: none;
@@ -202,12 +206,20 @@ button { font-family: inherit; }
 }
 .pl-btn:active { color: var(--data); }
 .pl-btn svg { display: block; }
-/* the box's fade while a moment is picked: the wire's colour at the wire,
-   nothing at the top edge, so the box stops short of the words */
-.ss .epfade-in { stop-color: var(--data); stop-opacity: 1; }
-.ss .epfade-out { stop-color: var(--data); stop-opacity: 0; }
 /* the about page: words, at the height they need */
 .ss.about { padding: 4px 16px 10px; box-sizing: border-box; }
+/* The board and the about page: a card over the chat, from the top of the
+   picture down, on ground of its own (R-0230), so opening one resizes nothing
+   and the bubbles stay where they are under it (R-0460). */
+.view .card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  background: var(--panel);
+  box-shadow: 0 8px 24px var(--shadow);
+}
 .ab-why { margin: 0 0 8px; font: 400 14px/1.4 var(--sans); color: var(--ink); }
 .ab-span { margin: 0 0 6px; font: 400 13px var(--mono); color: var(--faint); }
 .ab-list { list-style: none; margin: 0; padding: 0; }
@@ -226,47 +238,48 @@ button { font-family: inherit; }
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-/* One line, cut with an ellipsis: a cluster's own name can be longer than the
-   row and must never push it onto a second line. */
-.pin-label span {
+/* The path: where the reader is, from the whole timeline down (R-0540). One
+   line always: the earlier steps keep their width and the last is cut with an
+   ellipsis rather than wrapping or pushing past the row. */
+.path {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   text-transform: none;
   letter-spacing: 0;
-  min-width: 0;
 }
-/* The row names the view the reader is in, and once a lower view is open it is
-   also the way up out of it. At rest it is a label: no pointer, no press, and
-   nothing to answer a tap. The row is 28 tall, so the words keep their place
-   and the target is grown around them. */
-#crumb { position: relative; }
-#crumb.deep { cursor: pointer; }
-#crumb.deep::before {
-  content: "";
-  position: absolute;
-  inset: -13px -16px;
-}
-#crumb.deep:active { color: var(--ink); }
-/* One way up, beside the name it is leaving, in the colour of a thing that
-   acts. The board has none of its own. */
-.pin-label .up {
-  position: relative;
+.path .sep { flex: none; margin: 0 6px; }
+/* The last step keeps its words whole and the earlier steps give way first,
+   down to an ellipsis; it is cut only when it alone is wider than the row. */
+.path .here {
   flex: none;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.path .step > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* An earlier step is the way back to it, in the colour of a thing that acts.
+   The row is 28 tall, so the words keep their place and the target is grown
+   around them to the ruled 44 (R-0091). */
+.path .step {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
   background: none;
-  font: 400 15px/1 var(--mono);
-  color: var(--move);
+  font: inherit;
+  color: var(--data);
   cursor: pointer;
 }
-/* The glyph itself starts on the picture's left edge, in line with the start
-   of the line and the ask button under it; the tap target is the ruled 44
-   square around it, reaching past the edge rather than pushing the glyph in.
-   The i beside a cluster's name reaches the same 44 around its 28, so the
-   row stays 28 tall (R-0091). */
-.pin-label .up::before,
+.path .step::before,
 .pl-btn::before {
   content: "";
   position: absolute;
@@ -276,7 +289,8 @@ button { font-family: inherit; }
   height: 44px;
   transform: translate(-50%, -50%);
 }
-.pin-label .up:active { opacity: 0.55; }
+.path .step::before { width: calc(100% + 12px); }
+.path .step:active { color: var(--data-press); }
 /* The list button sits inside the thing it lists, in the same circle as the
    one beside the message bar. The picture's own box is what it sits in, so it
    is taken out of the flow and nothing below it moves. */
@@ -382,6 +396,8 @@ button { font-family: inherit; }
 }
 .ss-t.meta { color: var(--faint); }
 .ss-t.on { color: var(--data); font-weight: 500; }
+/* the open cluster's name, over the line while nothing in it is picked */
+.ss-t.ss-name { font-weight: 500; }
 /* why the moments in an open cluster are one episode, in the coach's sentence */
 .ss-t.why { color: var(--faint); }
 .ss-lead {
@@ -835,6 +851,7 @@ button { font-family: inherit; }
 /* while nothing is picked there is nothing to act on, so the row says what a
    tap will do instead (owner review round 3) */
 .caption .cta { margin: 0; font: 400 13px/1.35 var(--mono); color: var(--faint); }
+
 .caption .tok.g { color: var(--move-text); border-color: var(--move); border-radius: 10px; }
 .caption .tok.data { color: var(--data); border-color: var(--data); border-radius: 10px; }
 /* nothing to do with it here, so it is still shown and plainly not offered */
@@ -1543,7 +1560,9 @@ button { font-family: inherit; }
   left: 0;
   right: 0;
   bottom: 0;
-  height: 92%;
+  /* on a whole pixel: at a fraction the top row of the sheet is half the page
+     behind it, and the words under the sheet's edge show through */
+  height: round(down, 92%, 1px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2286,6 +2305,30 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 @keyframes chapter {
   50% { opacity: 1; }
 }
+/* One drawing at every level (R-0538): the open cluster's box is drawn solid
+   and still, every other box recedes, and nothing is taken away. */
+.ss .ep-g.open .ep { opacity: 0.12; }
+.ss .ep-g.open .ep-edge { opacity: 1; animation: none; }
+.ss .ep-g.dim { opacity: 0.4; }
+/* What the coach touched this turn keeps its colour until the next message
+   (R-0539): added green, read grey, changed amber, removed red. A read over a
+   whole cluster greys its box rather than every dot in it. */
+.ss .dot.add { fill: var(--move); }
+.ss .dot.read { fill: var(--faint); }
+.ss .dot.change { fill: var(--ask); }
+.ss .dot.remove { fill: var(--remove); }
+.ss .ep-g.read { opacity: 1; }
+.ss .ep-g.read .ep { fill: var(--faint); opacity: 0.16; }
+.ss .ep-g.read .ep-edge { stroke: var(--faint); opacity: 1; animation: none; }
+/* each lands with a flash as its line lands in the chat */
+.ss .dot.flash, .ss .ep-g.flash { animation: touched 0.9s ease-out; }
+@keyframes touched {
+  0%, 40% { opacity: 0.15; }
+  20%, 60% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ss .dot.flash, .ss .ep-g.flash { animation: none; }
+}
 /* a resting-wire data label keeps its ratified size, under the UI text floor */
 .ss .ep-yrs { font: 400 10.5px var(--mono); fill: var(--faint); }
 .ss .ss-hint { font: 400 13px var(--mono); fill: var(--faint); }
@@ -2805,7 +2848,7 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .tl .d-no { fill: var(--ask); }
 .tl .d-on { fill: var(--move); }
 .tl .d-n { font: 400 12px var(--mono); fill: var(--ask-text); }
-.bl-sheet { height: 88%; }
+.bl-sheet { height: round(down, 88%, 1px); }
 
 /* Tapping the meeting date row opens the phone's own date picker: the field
  * covers the whole row and is not drawn, so the row reads as any other. */
