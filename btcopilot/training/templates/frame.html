@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+.frame-page table {
+    display: block;
+    overflow-x: auto;
+}
+.frame-page {
+    overflow-wrap: anywhere;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content frame-page" id="frame-page"></div>
+<script>
+marked.use({
+    renderer: {
+        heading(text, level, raw) {
+            const id = raw.toLowerCase().replace(/[^\w\- ]/g, '').replace(/ /g, '-');
+            return `<h${level} id="${id}">${text}</h${level}>`;
+        }
+    }
+});
+document.getElementById('frame-page').innerHTML = marked.parse({{ text|tojson }});
+if (location.hash) {
+    document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView();
+}
+</script>
+{% endblock %}
