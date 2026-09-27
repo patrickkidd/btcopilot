@@ -18,7 +18,7 @@ import yaml
 from alembic import command
 from alembic.script import ScriptDirectory
 
-from btcopilot import quality
+from btcopilot import quality, record
 from btcopilot.admin.database import config, current
 from btcopilot.app import create_app
 from btcopilot.models import QualityRun
@@ -35,6 +35,8 @@ PASSWORD = "gate"
 TOOLED = [ItemKind.Person, ItemKind.PairBond, ItemKind.Event, ItemKind.Cluster, ItemKind.Question]
 # The line check covers agent turns only; rows written outside a turn (backfill, hand edits) have no lines by design.
 AGENT_CHANGES = "c.statement_id = s.id AND c.author = :coach AND c.turn_id = s.turn_id"
+# A tool's result names an impression, which the record keeps as a question item.
+STORED_AS = {record.IMPRESSION.noun: ItemKind.Question.value}
 
 TURNS = sa.text(
     f"""
@@ -255,8 +257,8 @@ def live_checks(conn) -> list[tuple]:
     writes = conn.execute(WRITES).all()
     missing = []
     for w in writes:
-        verb, kind, item_id = w.result.rstrip(".").split()[:3]
-        if (w.turn_id, kind, item_id) not in touched:
+        verb, noun, item_id = w.result.rstrip(".").split()[:3]
+        if (w.turn_id, STORED_AS.get(noun, noun), item_id) not in touched:
             missing.append(f"{w.turn_id} {w.result}")
     for m in missing:
         print(f"live call with no change row: {m}")

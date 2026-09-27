@@ -72,3 +72,38 @@ def test_dropping_the_turn_id_match_also_counts_the_backfill_row(flask_app, test
     statement = _reply(test_user)
     seen = _count(WITHOUT_TURN_ID, statement.id)
     assert seen == 3
+
+
+class _Rows:
+    def __init__(self, rows):
+        self.rows = rows
+
+    def all(self):
+        return self.rows
+
+
+class _Conn:
+    """What the live check reads: a turn's write calls, and what its change
+    rows touched."""
+
+    def __init__(self, writes, touched):
+        self.results = {migrationgate.WRITES: writes, migrationgate.TOUCHED: touched}
+
+    def execute(self, query):
+        return _Rows(self.results[query])
+
+
+def _call(turn_id, result):
+    return type("Call", (), {"turn_id": turn_id, "result": result})()
+
+
+def test_an_impression_write_is_found_in_its_turns_question_rows(flask_app):
+    # R-0487
+    """An impression is stored as a question item, so the call's noun is not
+    the change row's item kind."""
+    conn = _Conn(
+        [_call("t1", "Added impression i1."), _call("t1", "Changed question q2.")],
+        [("t1", "question", "i1"), ("t1", "question", "q2")],
+    )
+    [(_, expected, seen)] = migrationgate.live_checks(conn)
+    assert (expected, seen) == (2, 2)
