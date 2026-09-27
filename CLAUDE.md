@@ -8,9 +8,8 @@ Backend for Pro/Personal apps, training app, AI extraction system.
 
 Induction reports, GT exports, and coach sessions contain clinical data, and
 extraction/conversational-AI experiment artifacts are proprietary IP — **NEVER store any
-of it in the btcopilot repo, and NEVER in btcopilot-sources**. All of it lives in the
-private **fdserver** repo (2026-07-22, Patrick's direction; supersedes the earlier
-btcopilot-sources scheme).
+of it in the btcopilot repo**. Confidential material belongs in a private repo; the artifacts
+in the table below live in **fdserver** (2026-07-22, Patrick's direction).
 
 **btcopilot-sources is the private repo for confidential material** (Patrick's ruling): the
 Bowen literature and the theory expert (`theory/`), whose concept pages the training app fetches.
