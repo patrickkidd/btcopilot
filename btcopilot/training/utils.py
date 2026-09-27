@@ -101,9 +101,9 @@ def get_breadcrumbs(current_page=None):
         breadcrumbs.append({"title": "Prompt Lab", "url": None})
     elif current_page == "synthetic":
         breadcrumbs.append({"title": "Synthetic", "url": None})
-    elif current_page == "frame":
+    elif current_page == "theory":
         breadcrumbs.append(
-            {"title": "Concept pages", "url": url_for("training.frame.index")}
+            {"title": "Concept pages", "url": url_for("training.theory.index")}
         )
 
     return breadcrumbs

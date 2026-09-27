@@ -6,7 +6,7 @@ import flask.json
 import btcopilot
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
-from btcopilot.training.framepages import FramePages
+from btcopilot.training.theorypages import TheoryPages
 
 from btcopilot.tests.personal.conftest import discussion, discussions
 
@@ -172,7 +172,7 @@ def flask_json(data: dict) -> dict:
     return flask.json.loads(sdata)
 
 
-FRAME_PAGES = {
+THEORY_PAGES = {
     "README.md": """# Concept pages for coders
 
 ## Public copy
@@ -212,15 +212,15 @@ Total: 4 entries, 2 CONFIDENTIAL.
 
 
 @pytest.fixture
-def frame_dir(tmp_path):
+def theory_dir(tmp_path):
     path = tmp_path / "CONCEPTS"
     path.mkdir()
-    for name, text in FRAME_PAGES.items():
+    for name, text in THEORY_PAGES.items():
         (path / name).write_text(text)
     return path
 
 
 @pytest.fixture
-def frame(flask_app, frame_dir):
-    flask_app.extensions["frame"] = FramePages(dir=frame_dir)
-    return frame_dir
+def theory(flask_app, theory_dir):
+    flask_app.extensions["theory"] = TheoryPages(dir=theory_dir)
+    return theory_dir

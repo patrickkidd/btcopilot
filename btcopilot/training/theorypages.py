@@ -8,8 +8,8 @@ GITHUB_API = "https://api.github.com"
 EDITION_FILES = ("README.md", "INDEX.md")
 
 
-class FramePages:
-    """The frame expert's concept pages, read from a local directory (dev,
+class TheoryPages:
+    """The theory's concept pages, read from a local directory (dev,
     tests) or the GitHub contents API, cached for `ttl` seconds."""
 
     def __init__(
@@ -17,7 +17,7 @@ class FramePages:
         dir: str | None = None,
         repo: str = "patrickkidd/btcopilot-sources",
         ref: str = "master",
-        path: str = "frame/CONCEPTS",
+        path: str = "theory/CONCEPTS",
         token: str | None = None,
         ttl: float = 300,
         clock=time.monotonic,

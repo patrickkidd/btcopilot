@@ -1,5 +1,5 @@
 """The public edition of the concept pages, ported from the public mode of
-frame/CONCEPTS/verify.py in btcopilot-sources. Keep the two in step."""
+theory/CONCEPTS/verify.py in btcopilot-sources. Keep the two in step."""
 
 import re
 

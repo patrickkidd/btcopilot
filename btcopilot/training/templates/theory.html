@@ -2,18 +2,18 @@
 
 {% block head %}
 <style>
-.frame-page table {
+.theory-page table {
     display: block;
     overflow-x: auto;
 }
-.frame-page {
+.theory-page {
     overflow-wrap: anywhere;
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="content frame-page" id="frame-page"></div>
+<div class="content theory-page" id="theory-page"></div>
 <script>
 marked.use({
     renderer: {
@@ -23,7 +23,7 @@ marked.use({
         }
     }
 });
-document.getElementById('frame-page').innerHTML = marked.parse({{ text|tojson }});
+document.getElementById('theory-page').innerHTML = marked.parse({{ text|tojson }});
 if (location.hash) {
     document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView();
 }

@@ -21,7 +21,7 @@ from btcopilot.extensions import db
 from btcopilot.pro.models import User, Session
 from btcopilot.personal.chat import Response, ask
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
-from btcopilot.training.framepages import FramePages
+from btcopilot.training.theorypages import TheoryPages
 from btcopilot.training.security import add_security_headers
 
 from .audit import bp as audit_bp
@@ -37,7 +37,7 @@ from .synthetic import bp as synthetic_bp
 from .irr import bp as irr_bp
 from .calibration import bp as calibration_bp
 from .compare import bp as compare_bp
-from .frame import bp as frame_bp
+from .theory import bp as theory_bp
 
 
 _log = logging.getLogger(__name__)
@@ -81,7 +81,7 @@ bp.register_blueprint(synthetic_bp)
 bp.register_blueprint(irr_bp)
 bp.register_blueprint(calibration_bp)
 bp.register_blueprint(compare_bp)
-bp.register_blueprint(frame_bp)
+bp.register_blueprint(theory_bp)
 
 
 def is_session_expired():
@@ -170,12 +170,12 @@ def init_app(app):
     # Configure security
     init_app(app)
 
-    app.extensions["frame"] = FramePages(
-        dir=app.config.get("FRAME_DIR"),
-        repo=app.config.get("FRAME_REPO", "patrickkidd/btcopilot-sources"),
-        ref=app.config.get("FRAME_REF", "master"),
-        path=app.config.get("FRAME_PATH", "frame/CONCEPTS"),
-        token=app.config.get("FRAME_GITHUB_TOKEN"),
+    app.extensions["theory"] = TheoryPages(
+        dir=app.config.get("THEORY_DIR"),
+        repo=app.config.get("THEORY_REPO", "patrickkidd/btcopilot-sources"),
+        ref=app.config.get("THEORY_REF", "master"),
+        path=app.config.get("THEORY_PATH", "theory/CONCEPTS"),
+        token=app.config.get("THEORY_GITHUB_TOKEN"),
     )
 
     # Set session timeout
