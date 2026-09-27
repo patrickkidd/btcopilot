@@ -1,0 +1,125 @@
+{
+  "date": "2026-09-26T05:36:32+00:00",
+  "model": "claude-opus-5-5",
+  "git": "5b2a6bbf65600e2944c6a0728e36120accdded8f",
+  "status": "passed",
+  "reason": null,
+  "tokens": {
+    "input": 86,
+    "output": 8377,
+    "cache_creation": 73335,
+    "cache_read": 535910
+  },
+  "cost": 0.641741,
+  "cases": [
+    {
+      "case": "test_a_date_known_to_the_month_is_approximate",
+      "criterion": "once",
+      "outcome": "passed",
+      "tokens": {
+        "input": 8,
+        "output": 810,
+        "cache_creation": 22144,
+        "cache_read": 42746
+      },
+      "cost": 0.1355012
+    },
+    {
+      "case": "test_the_coach_prompt_defines_functioning_in_the_spec_words",
+      "criterion": "once",
+      "outcome": "passed",
+      "tokens": {
+        "input": 0,
+        "output": 0,
+        "cache_creation": 0,
+        "cache_read": 0
+      },
+      "cost": 0.0
+    },
+    {
+      "case": "test_a_reply_ends_in_a_question_while_the_family_is_unknown",
+      "criterion": "2 of 3",
+      "outcome": "passed",
+      "tokens": {
+        "input": 18,
+        "output": 1634,
+        "cache_creation": 11123,
+        "cache_read": 118383
+      },
+      "cost": 0.1120436
+    },
+    {
+      "case": "test_a_complete_list_removes_no_one_and_the_coach_asks_about_the_one_left_out",
+      "criterion": "once",
+      "outcome": "passed",
+      "tokens": {
+        "input": 6,
+        "output": 572,
+        "cache_creation": 5444,
+        "cache_read": 37861
+      },
+      "cost": 0.0462562
+    },
+    {
+      "case": "test_a_move_is_a_noted_event_and_the_coach_wonders_whether_it_played_in_a_shift",
+      "criterion": "once",
+      "outcome": "passed",
+      "tokens": {
+        "input": 8,
+        "output": 1179,
+        "cache_creation": 6010,
+        "cache_read": 59291
+      },
+      "cost": 0.0655202
+    },
+    {
+      "case": "test_a_question_is_stored_before_the_reply_that_asks_it",
+      "criterion": "once",
+      "outcome": "passed",
+      "tokens": {
+        "input": 6,
+        "output": 682,
+        "cache_creation": 5449,
+        "cache_read": 37820
+      },
+      "cost": 0.048473
+    },
+    {
+      "case": "test_trying_a_failed_turn_again_repeats_nothing",
+      "criterion": "once",
+      "outcome": "passed",
+      "tokens": {
+        "input": 14,
+        "output": 1268,
+        "cache_creation": 11157,
+        "cache_read": 120935
+      },
+      "cost": 0.105388
+    },
+    {
+      "case": "test_an_event_said_again_is_not_added_again",
+      "criterion": "once",
+      "outcome": "passed",
+      "tokens": {
+        "input": 8,
+        "output": 1302,
+        "cache_creation": 6183,
+        "cache_read": 59473
+      },
+      "cost": 0.0688816
+    },
+    {
+      "case": "test_a_brother_the_record_holds_is_not_added_again",
+      "criterion": "once",
+      "outcome": "passed",
+      "tokens": {
+        "input": 8,
+        "output": 929,
+        "cache_creation": 5825,
+        "cache_read": 59401
+      },
+      "cost": 0.0596172
+    }
+  ],
+  "note": "coach's notes batch kept; 9 of 9 on the testing key"
+}
