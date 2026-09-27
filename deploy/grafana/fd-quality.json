@@ -12,33 +12,6 @@
     "from": "now-1y",
     "to": "now"
   },
-  "templating": {
-    "list": [
-      {
-        "name": "model",
-        "label": "Model",
-        "type": "query",
-        "datasource": {
-          "type": "grafana-postgresql-datasource",
-          "uid": "ffz1wy7unkdfke"
-        },
-        "query": "select distinct model from quality_runs where kind = 'eval_pass_rate' order by 1",
-        "definition": "select distinct model from quality_runs where kind = 'eval_pass_rate' order by 1",
-        "refresh": 1,
-        "includeAll": true,
-        "multi": true,
-        "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
-        }
-      }
-    ]
-  },
   "annotations": {
     "list": [
       {
@@ -328,7 +301,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select q.ran_at as time, q.model as metric, q.value from quality_runs q where q.kind = 'eval_pass_rate' and q.model in (${model:sqlstring}) and $__timeFilter(q.ran_at) and q.metric = 'overall' order by 1",
+          "rawSql": "select q.ran_at as time, q.model as metric, q.value from quality_runs q where q.kind = 'eval_pass_rate' and $__timeFilter(q.ran_at) and q.metric = 'overall' order by 1",
           "refId": "A"
         }
       ],
@@ -394,7 +367,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select q.ran_at as time, q.model || ' ' || q.metric as metric, q.value from quality_runs q where q.kind = 'eval_pass_rate' and q.model in (${model:sqlstring}) and $__timeFilter(q.ran_at) and q.metric <> 'overall' order by 1",
+          "rawSql": "select q.ran_at as time, q.model || ' ' || q.metric as metric, q.value from quality_runs q where q.kind = 'eval_pass_rate' and $__timeFilter(q.ran_at) and q.metric <> 'overall' order by 1",
           "refId": "A"
         }
       ],
@@ -444,7 +417,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select q.metric as \"case\", q.model as model, count(*) as runs, avg(q.value) as passed, max(q.ran_at) as last_run from quality_runs q where q.kind = 'eval_pass_rate' and q.model in (${model:sqlstring}) and $__timeFilter(q.ran_at) and q.metric <> 'overall' group by 1, 2 order by passed, 1",
+          "rawSql": "select q.metric as \"case\", q.model as model, count(*) as runs, avg(q.value) as passed, max(q.ran_at) as last_run from quality_runs q where q.kind = 'eval_pass_rate' and $__timeFilter(q.ran_at) and q.metric <> 'overall' group by 1, 2 order by passed, 1",
           "refId": "A"
         }
       ],

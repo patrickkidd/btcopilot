@@ -133,3 +133,12 @@ jobs:
             # the quality dashboard's recorded runs, from this commit (R-0517)
             docker compose --env-file /etc/fd/secrets.env exec -T fd-app flask admin quality load
             docker compose --env-file /etc/fd/secrets.env ps
+
+      - uses: actions/checkout@v4
+
+      # dashboards as code: Grafana holds what deploy/grafana says
+      - name: Push the dashboards
+        env:
+          GRAFANA_URL: https://alaskafamilysystems.grafana.net
+          GRAFANA_SA_TOKEN: ${{ secrets.GRAFANA_SA_TOKEN }}
+        run: python bin/grafanapush.py
