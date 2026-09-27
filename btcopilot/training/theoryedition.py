@@ -1,6 +1,7 @@
 """The public edition of the concept pages, ported from the public mode of
 theory/CONCEPTS/verify.py in btcopilot-sources. Keep the two in step."""
 
+import ast
 import re
 
 LINK = re.compile(r"(?<!!)\[((?:[^\[\]\n]|\[[^\]\n]*\])*)\]\(([^)\s]+)\)")
@@ -11,20 +12,6 @@ PUBLIC_NOTE = (
 FORBIDDEN = re.compile(
     r"CONFIDENTIAL|private/|/Users/|seminar-20|App Seminar 20|patrick-journal|\.tsv\b|\.vtt\b"
 )
-INTRO = """# SARF concept pages
-
-One page per SARF code: what the original authors wrote, where to find it, and what has been decided. This is the public edition: excerpts from confidential sources and every path to a source file are left out. Ask Patrick Stinson for the full edition.
-
-| Page | Covers | Entries in this edition | Status of the code |
-|---|---|---|---|
-{rows}
-
-## Source keys
-
-| Key | Source |
-|---|---|
-{keys}
-"""
 
 
 def _check(name, text):
@@ -72,7 +59,15 @@ def public(name: str, text: str, names: list[str]) -> str:
     return out
 
 
-def index(table: str, readme: str, pages: dict[str, str]) -> str:
+def _intro(verify):
+    return next(
+        ast.literal_eval(n.value)
+        for n in ast.parse(verify).body
+        if isinstance(n, ast.Assign) and ast.unparse(n.targets[0]) == "INTRO"
+    )
+
+
+def index(table: str, readme: str, verify: str, pages: dict[str, str]) -> str:
     rows = []
     for line in table.split("\n"):
         m = re.match(r"\| \[`(\S+)\.md`\]\(\S+\) (\(\w+\)) \| (.+?) \| \d+ \| (.+?) \|$", line)
@@ -86,7 +81,7 @@ def index(table: str, readme: str, pages: dict[str, str]) -> str:
         cells = [c.strip() for c in line.strip("|").split("|")]
         if len(cells) == 4 and cells[3].startswith(("PUBLIC", "CONFIDENTIAL where")):
             keys.append(f"| {cells[0]} | {cells[1]} |")
-    out = INTRO.format(rows="\n".join(rows), keys="\n".join(keys))
+    out = _intro(verify).format(rows="\n".join(rows), keys="\n".join(keys))
     _check("index", out)
     return out
 

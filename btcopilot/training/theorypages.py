@@ -35,7 +35,10 @@ class TheoryPages:
         return self._get("", self._local_names if self.dir else self._github_names)
 
     def text(self, name: str) -> str:
-        return self._get(f"{name}.md", self._local_text if self.dir else self._github_text)
+        return self.file(f"{name}.md")
+
+    def file(self, filename: str) -> str:
+        return self._get(filename, self._local_text if self.dir else self._github_text)
 
     def _get(self, key, fetch):
         now = self.clock()

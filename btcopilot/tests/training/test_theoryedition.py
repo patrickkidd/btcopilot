@@ -23,7 +23,10 @@ def test_public_refuses_a_leak():
 def test_index_counts_public_entries_only():
     names = ["anxiety", "conflict"]
     pages = {n: theoryedition.public(n, THEORY_PAGES[f"{n}.md"], names) for n in names}
-    out = theoryedition.index(THEORY_PAGES["INDEX.md"], THEORY_PAGES["README.md"], pages)
+    out = theoryedition.index(
+        THEORY_PAGES["INDEX.md"], THEORY_PAGES["README.md"], THEORY_PAGES["verify.py"], pages
+    )
+    assert out.startswith("# Public index")
     assert "| [anxiety](anxiety.md) (A) | What anxiety is | 1 | Own evidence ruled |" in out
     assert "| FE*n* L*x* | Kerr and Bowen, *Family Evaluation* |" in out
     assert "App Seminar" not in out

@@ -44,6 +44,7 @@ def index():
         text = theoryedition.index(
             pages.text("INDEX"),
             pages.text("README"),
+            pages.file("verify.py"),
             {n: theoryedition.public(n, pages.text(n), names) for n in names},
         )
     return _render(text, None, full, names)

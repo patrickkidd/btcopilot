@@ -204,6 +204,13 @@ Total: 4 entries, 2 CONFIDENTIAL.
 - <a id="A3"></a>**A3** \u201cthe ferry captain stopped sleeping\u201d Member, SEM 2025 @00:02:00. A second reading.
 <!-- /CONFIDENTIAL -->
 """,
+    "verify.py": '''INTRO = """# Public index
+
+{rows}
+
+{keys}
+"""
+''',
     "conflict.md": """# Conflict (C)
 
 - <a id="C1"></a>**C1** \u201ctwo people fight over an issue\u201d Bowen, FE7 L2 \u00b7 PUBLIC. A move by two.
