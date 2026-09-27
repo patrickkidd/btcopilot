@@ -6,6 +6,7 @@ import flask.json
 import btcopilot
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
+from btcopilot.training.framepages import FramePages
 
 from btcopilot.tests.personal.conftest import discussion, discussions
 
@@ -169,3 +170,57 @@ def simple_diagram(test_user):
 def flask_json(data: dict) -> dict:
     sdata = flask.json.dumps(data)
     return flask.json.loads(sdata)
+
+
+FRAME_PAGES = {
+    "README.md": """# Concept pages for coders
+
+## Public copy
+
+| Key | Source | File | Visibility |
+|---|---|---|---|
+| FE*n* L*x* | Kerr and Bowen, *Family Evaluation* | [`BT:FE`](../../bowentheory/FE.md) | PUBLIC |
+| SEM *m* | App Seminar | [`FR:transcripts/seminar/`](../transcripts/seminar/) | CONFIDENTIAL |
+""",
+    "INDEX.md": """# Concept pages: index
+
+| Page | Covers | Entries | Status of the code |
+|---|---|---|---|
+| [`anxiety.md`](anxiety.md) (A) | What anxiety is | 3 | Own evidence ruled |
+| [`conflict.md`](conflict.md) (C) | Conflict as a move | 1 | Two rules |
+
+Total: 4 entries, 2 CONFIDENTIAL.
+""",
+    "anxiety.md": """# Anxiety (A)
+
+- Sources are in [`README.md`](README.md); see [`conflict.md`](conflict.md#C1) and [`../REFERENCE.md`](../REFERENCE.md).
+
+## 2. What the original authors wrote
+
+- <a id="A1"></a>**A1** \u201canxiety is the response to a threat\u201d Kerr, FE5 L9 \u00b7 PUBLIC. The standard definition. <!-- v BT:FE Chapters/5 - Chronic Anxiety.md L9 -->
+- <a id="A2"></a>**A2** \u201cthe lighthouse keeper worried all winter\u201d Member, SEM 2024 @00:01:00 \u00b7 CONFIDENTIAL. A seminar reading. <!-- v FR:transcripts/seminar/x.tsv @00:01:00 -->
+<!-- CONFIDENTIAL -->
+### App Seminar
+- <a id="A3"></a>**A3** \u201cthe ferry captain stopped sleeping\u201d Member, SEM 2025 @00:02:00. A second reading.
+<!-- /CONFIDENTIAL -->
+""",
+    "conflict.md": """# Conflict (C)
+
+- <a id="C1"></a>**C1** \u201ctwo people fight over an issue\u201d Bowen, FE7 L2 \u00b7 PUBLIC. A move by two.
+""",
+}
+
+
+@pytest.fixture
+def frame_dir(tmp_path):
+    path = tmp_path / "CONCEPTS"
+    path.mkdir()
+    for name, text in FRAME_PAGES.items():
+        (path / name).write_text(text)
+    return path
+
+
+@pytest.fixture
+def frame(flask_app, frame_dir):
+    flask_app.extensions["frame"] = FramePages(dir=frame_dir)
+    return frame_dir
