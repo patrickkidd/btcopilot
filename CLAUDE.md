@@ -12,10 +12,8 @@ of it in the btcopilot repo, and NEVER in btcopilot-sources**. All of it lives i
 private **fdserver** repo (2026-07-22, Patrick's direction; supersedes the earlier
 btcopilot-sources scheme).
 
-**btcopilot-sources is ONLY for copyrighted academic literature** (Bowen theory book
-chapters etc.; rarely added to). It will be retired once the Pro app's Copilot feature is
-replaced by the embedded personal app. Never route generated data or experiment artifacts
-there.
+**btcopilot-sources is the private repo for confidential material** (Patrick's ruling): the
+Bowen literature and the theory expert (`theory/`), whose concept pages the training app fetches.
 
 | Data Type | WRONG Location | Correct Location |
 |-----------|----------------|-----------------|
