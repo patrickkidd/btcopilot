@@ -1,1 +1,3 @@
 daily.json
+# Every run leaves one; a kept run is copied to quality/evals by record.py.
+????-??-??T*.json

@@ -93,6 +93,10 @@ It reads `GRAFANA_CLOUD_TOKEN` from the secrets file like everything else, and i
 is `alloy/config.alloy`. Its UI on port 12345 has no host port, so it is not exposed.
 `fd-pdc` (Grafana's Private Data source Connect agent) holds an outbound tunnel to Grafana Cloud with `GRAFANA_PDC_TOKEN`; no port is opened.
 Grafana's Postgres data source reaches `fd-postgres:5432` through it as the read-only role `grafana`, password `GRAFANA_PG_PASSWORD`.
+The quality dashboard, `fd-quality`, is kept in `grafana/fd-quality.json` and put to Grafana
+with `POST /api/dashboards/db` (`{"dashboard": ..., "overwrite": true}`) on the service account
+token `GRAFANA_SA_TOKEN`. Its recorded-run panels read `quality_runs`, which every release fills
+with `flask admin quality load` (see `quality/evals/README.md`).
 
 The desktop app's update feeds are not served here; they live with `master-legacy`.
 

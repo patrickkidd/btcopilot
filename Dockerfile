@@ -37,6 +37,9 @@ RUN pip install --no-deps "/tmp/$(ls /tmp/*.whl | xargs basename)" && rm /tmp/*.
 # (SOPS_AGE_KEY_FILE) on the box, never from the image.
 COPY private/prompts /app/private/prompts
 ENV FD_PRIVATE_PROMPTS=/app/private/prompts
+# The quality dashboard's recorded runs, loaded on every release (R-0517).
+COPY quality/evals /app/quality/evals
+COPY doc/f1/f1_timeseries.json /app/doc/f1/f1_timeseries.json
 EXPOSE 8888
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:8888/health || exit 1

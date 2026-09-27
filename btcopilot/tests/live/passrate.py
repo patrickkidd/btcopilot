@@ -7,9 +7,8 @@ import json
 from collections import defaultdict
 from pathlib import Path
 
-from btcopilot.tests.live.run import RESULTS, Outcome, Status
-
-SCORED = (Outcome.Passed, Outcome.Failed)
+from btcopilot.quality import SCORED, Outcome, Status
+from btcopilot.tests.live.run import RESULTS
 
 
 def rates(results: Path = RESULTS) -> dict[str, dict]:

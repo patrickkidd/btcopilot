@@ -14,3 +14,4 @@ from .modelcall import ModelCall
 from .productevent import ProductEvent
 from .turnevent import TurnEvent
 from .observation import Observation, ObservationKind
+from .qualityrun import QualityRun, QualityKind

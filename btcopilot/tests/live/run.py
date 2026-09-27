@@ -3,7 +3,6 @@ own prices as it is written down; a run stops at RUN_CAP, and every run on one
 day together stop at DAILY_CAP. Each run leaves one results file."""
 
 import datetime
-import enum
 import json
 from dataclasses import asdict, dataclass, field
 from decimal import Decimal
@@ -14,22 +13,11 @@ import pytest
 
 from btcopilot.coachmodel import Spent
 from btcopilot.pricing import cost
+from btcopilot.quality import Outcome, Status
 
 RUN_CAP = Decimal("3.00")
 DAILY_CAP = RUN_CAP
 RESULTS = Path(__file__).parent / "results"
-
-
-class Outcome(enum.StrEnum):
-    Passed = "passed"
-    Failed = "failed"
-    Skipped = "skipped"
-
-
-class Status(enum.StrEnum):
-    Passed = "passed"
-    Failed = "failed"
-    Stopped = "stopped"
 
 
 @dataclass

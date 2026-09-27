@@ -18,14 +18,17 @@ import yaml
 from alembic import command
 from alembic.script import ScriptDirectory
 
+from btcopilot import quality
 from btcopilot.admin.database import config, current
 from btcopilot.app import create_app
+from btcopilot.models import QualityRun
 from btcopilot.models.change import Author
 from btcopilot.schema import ItemKind
 from btcopilot.toolbox import ToolName
 from btcopilot.toolnames import ARGS, GONE, SUBJECT
 
-COMPOSE = Path(__file__).parents[1] / "deploy" / "docker-compose.yml"
+ROOT = Path(__file__).parents[1]
+COMPOSE = ROOT / "deploy" / "docker-compose.yml"
 REVISION = "1b00000000ab"
 USER = "familydiagram"
 PASSWORD = "gate"
@@ -270,6 +273,17 @@ def question_checks(conn) -> list[tuple]:
     ]
 
 
+def quality_checks() -> list[tuple]:
+    """The release's load of the recorded runs, twice: the second adds nothing."""
+    loaded = quality.load(ROOT)
+    once = QualityRun.query.count()
+    quality.load(ROOT)
+    return [
+        ("recorded quality values in the table after a release's load", loaded, once),
+        ("recorded quality values after a second load", once, QualityRun.query.count()),
+    ]
+
+
 def delete_check(app, conn) -> tuple:
     session_id, user_id = conn.execute(DELETABLE).one()
     client = app.test_client()
@@ -315,6 +329,7 @@ def main(dump: Path) -> int:
                                sum(now[i] != blobs[i] for i in blobs)))
             with engine.connect() as conn:
                 checks.append(delete_check(app, conn))
+            checks += quality_checks()
     for label, expected, seen in checks:
         print(f"{'PASS' if expected == seen else 'FAIL'}  {label}: expected {expected}, seen {seen}")
     return int(any(expected != seen for _, expected, seen in checks))

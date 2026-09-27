@@ -169,6 +169,20 @@ Every row, oldest first.
 | `--kind` | Only one kind of row. |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin quality`
+
+The recorded runs the quality dashboard reads.
+
+### `flask admin quality load [root]`
+
+Load every recorded run under a checkout or the image into the table, updating the ones already there.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `root` | optional |
+
 ### `flask admin questions`
 
 The questions the coach keeps in each record.

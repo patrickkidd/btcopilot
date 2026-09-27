@@ -130,4 +130,6 @@ jobs:
             docker rollout --env-file /etc/fd/secrets.env fd-worker
             docker compose --env-file /etc/fd/secrets.env up -d --remove-orphans
             docker compose --env-file /etc/fd/secrets.env exec -T fd-app flask admin db upgrade
+            # the quality dashboard's recorded runs, from this commit (R-0517)
+            docker compose --env-file /etc/fd/secrets.env exec -T fd-app flask admin quality load
             docker compose --env-file /etc/fd/secrets.env ps

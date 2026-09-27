@@ -10,6 +10,7 @@ from btcopilot.admin.guard import run
 from btcopilot.admin.imports import imports
 from btcopilot.admin.licences import licences
 from btcopilot.admin.observations import observations
+from btcopilot.admin.quality import quality
 from btcopilot.admin.questions import impressions_group, questions_group
 from btcopilot.admin.review import review
 from btcopilot.admin.skill import write_skill
@@ -28,6 +29,7 @@ for group in (
     licences,
     diagrams,
     observations,
+    quality,
     questions_group,
     impressions_group,
     imports,

@@ -3,6 +3,9 @@
 Real coach turns on the private prompts, paid on the testing key. How to run them, the
 caps and the results files are described at the top of `conftest.py`. Pass rates by
 model: `uv run python -m btcopilot.tests.live.passrate`.
+A run whose change is kept is recorded for the quality dashboard with
+`uv run python -m btcopilot.tests.live.record <results file> "<why it was kept>"`, which copies
+it into `quality/evals`; committing the copy is the one step by hand, and the next release loads it.
 
 ## Saved responses
 
