@@ -185,7 +185,7 @@ This process can take **months to years** depending on:
 
 The existing SARF definitions provide observable markers for detecting shifts:
 
-**F Shift UP Markers** (from [01-functioning.md](sarf-definitions/01-functioning.md)):
+**F Shift UP Markers** (from [01-functioning.md](../sarf-definitions/archive/01-functioning.md)):
 - I-position statements: "This is what I believe," "This is what I will do"
 - Principle language over feeling language
 - Staying on course despite pressure
@@ -197,7 +197,7 @@ The existing SARF definitions provide observable markers for detecting shifts:
 - Togetherness-seeking
 - Adaptation to preserve harmony
 
-**A Shift UP Markers** (from [02-anxiety.md](sarf-definitions/02-anxiety.md)):
+**A Shift UP Markers** (from [02-anxiety.md](../sarf-definitions/archive/02-anxiety.md)):
 - Focus on what others think, say, do
 - Overload language: "overwhelmed," "isolated"
 - Pursuit-distance cycles
@@ -209,7 +209,7 @@ The existing SARF definitions provide observable markers for detecting shifts:
 - Process awareness
 - Long-term thinking
 
-**S Markers** (from [03-symptom.md](sarf-definitions/03-symptom.md)):
+**S Markers** (from [03-symptom.md](../sarf-definitions/archive/03-symptom.md)):
 - Physical symptom reports
 - Emotional symptom reports
 - Social dysfunction reports
@@ -354,7 +354,7 @@ Requires iterative prompt development with Patrick:
 - **FTiCP Chapter 21** - On the Differentiation of Self
 
 ### Existing SARF Definitions
-- [btcopilot/doc/sarf-definitions/](sarf-definitions/)
+- [btcopilot/doc/sarf-definitions/archive/](../sarf-definitions/archive/)
 
 ---
 

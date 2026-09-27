@@ -44,7 +44,7 @@ Disagreements are grouped by SARF variable/concept (functioning, anxiety, sympto
 LLM analysis text references passage IDs from the SARF operational definitions (e.g., `FE4-1`, `H6`). These are post-processed into clickable markdown links pointing to the GitHub-hosted definition files.
 
 Pipeline:
-1. HTML anchors (`<a id="FE4-1"></a>`) added to passage index tables in `doc/sarf-definitions/*.md` (12 files, ~394 anchors)
+1. HTML anchors (`<a id="FE4-1"></a>`) added to passage index tables in `doc/sarf-definitions/archive/*.md` (12 files, ~394 anchors)
 2. `sarfdefinitions.py` extracts passage IDs at import time into `PASSAGE_URLS` dict mapping ID to GitHub blob URL with fragment
 3. `linkify_passages()` replaces bare passage IDs in LLM output with `[ID](url)` markdown links
 4. Applied to both Component A and B responses before caching
@@ -70,4 +70,4 @@ Gemini quota: 25 requests/min/model. Component B batches LLM calls in groups of 
 | `training/templates/training/irr_review.html` | Component B drawer (in IRR review page) |
 | `training/static/js/discussion.js` | Alpine stores for both components |
 | `personal/models/discussion.py` | `calibration_report`, `calibration_advice` columns |
-| `doc/sarf-definitions/*.md` | Operational definitions with passage ID anchors |
+| `doc/sarf-definitions/archive/*.md` | Operational definitions with passage ID anchors |

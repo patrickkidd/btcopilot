@@ -122,7 +122,7 @@ From [induction_agent.md](../btcopilot/training/prompts/induction_agent.md):
 - **Revert if worse** — If F1 drops, undo immediately
 - **15-example budget** in SECTION 3 — Replace least effective before adding new
 - **Confidentiality** — Never copy real names/quotes from GT into prompts. Invent generic examples.
-- **SARF definitions are source of truth** — Prompt wording must match `doc/sarf-definitions/*.md`
+- **SARF definitions are source of truth** — Prompt wording must match `doc/sarf-definitions/archive/*.md`
 
 ---
 
@@ -138,7 +138,7 @@ From [induction_agent.md](../btcopilot/training/prompts/induction_agent.md):
 | `doc/PROMPT_ENGINEERING_LOG.md` | Decision log |
 | `doc/f1/f1_timeseries.json` | Historical F1 data (feeds dashboard) |
 | `fdserver/training/induction-reports/` | Per-session reports and logs |
-| `doc/sarf-definitions/*.md` | Authoritative SARF variable definitions |
+| `doc/sarf-definitions/archive/*.md` | Authoritative SARF variable definitions |
 | `doc/specs/DATA_MODEL.md` | Schema docs (PDPDeltas, Person, Event, etc.) |
 
 ---

@@ -90,7 +90,7 @@ Each capture includes:
 |----------|------|
 | Implicit Behavioral Model Synthesis | [../plans/brainstorm-assessment/12_IMPLICIT_BEHAVIORAL_MODEL_SYNTHESIS.md](../plans/brainstorm-assessment/12_IMPLICIT_BEHAVIORAL_MODEL_SYNTHESIS.md) |
 | Brainstorm Assessment Index | [../plans/brainstorm-assessment/00_INDEX.md](../plans/brainstorm-assessment/00_INDEX.md) |
-| SARF Definitions | [../sarf-definitions/README.md](../sarf-definitions/README.md) |
+| SARF Definitions | [../../sarf-definitions/archive/README.md](../../sarf-definitions/archive/README.md) |
 | Bowen Theory Context | [../../CONTEXT.md](../../CONTEXT.md) |
 
 ---

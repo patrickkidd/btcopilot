@@ -229,7 +229,7 @@ Every passage in Bowen's *Family Therapy in Clinical Practice*, Kerr's *Family E
 
 Each definition includes operational definitions, observable markers for AI classification, key discriminators, and traceable citations. No external sources or AI training data—exclusively derived from authorized texts.
 
-Methodology: [doc/sarf-definitions/METHODOLOGY.md](doc/sarf-definitions/METHODOLOGY.md)
+Methodology: [doc/sarf-definitions/archive/METHODOLOGY.md](doc/sarf-definitions/archive/METHODOLOGY.md)
 
 # Development Journal
 
@@ -260,12 +260,12 @@ Inferring parent-child links from birth events took that F1 from 0.37 to 0.82, a
 
 *I am modeling therapeutic conversation*. I don't know if this has ever been done before. Measuring therapist performance at collecting enough data for clinical evaluation. Requires measuring coach performance statement by statement.
 
-- *The first comprehensive index of technical terms for Bowen theory* using Bowen and Kerr's books. *Every single* passage that might be related to a given term in the SARF model (Anxiety, Symptom, Functioning, conflict, projection, triangles, etc). It isn't the eight concepts but I could easily re-run this on those (and probabyl will) [btcopilot/doc/sarf-definitions/METHODOLOGY.md](doc/sarf-definitions/METHODOLOGY.md). In a nuthsell, this is many passes through the literature back and forth with human and AI. It required a combination of:
+- *The first comprehensive index of technical terms for Bowen theory* using Bowen and Kerr's books. *Every single* passage that might be related to a given term in the SARF model (Anxiety, Symptom, Functioning, conflict, projection, triangles, etc). It isn't the eight concepts but I could easily re-run this on those (and probabyl will) [btcopilot/doc/sarf-definitions/archive/METHODOLOGY.md](doc/sarf-definitions/archive/METHODOLOGY.md). In a nuthsell, this is many passes through the literature back and forth with human and AI. It required a combination of:
   - Exhaustive knowledge of the source literature (from Stinson, 2020)
   - Doctoral-level qualitative research methods
   - AI Context Architect Expertise
   - Software Architect Expertise
-  Progress tracked here: [btcopilot/doc/sarf-definitions/PROGRESS.md](doc/sarf-definitions/PROGRESS.md)
+  Progress tracked here: [btcopilot/doc/sarf-definitions/archive/PROGRESS.md](doc/sarf-definitions/archive/PROGRESS.md)
 - Switched to gemini flash API for cheaper and probably better data extraction. Seeking HIPAA BAA with Google.
 - Improved Synthetic AI client personalities with:
   - larger hard-coded histories
