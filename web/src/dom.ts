@@ -75,3 +75,7 @@ export function setTitle(title: string | Title): void {
 export function isAdmin(): boolean {
   return window.BOOTSTRAP.user?.admin === true;
 }
+
+export function isCoder(): boolean {
+  return window.BOOTSTRAP.user?.coder === true;
+}

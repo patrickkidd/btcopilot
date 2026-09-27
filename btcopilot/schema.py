@@ -111,13 +111,16 @@ def from_dict(cls, data):
 
         value = data[field_name]
 
-        # Handle None values
-        if value is None:
-            kwargs[field_name] = None
-            continue
-
         # Get origin type for generics like list[int]
         origin = get_origin(field_type)
+
+        if value is None:
+            if origin is list:
+                raise ValueError(
+                    f"{cls.__name__}.{field_name} is a list and cannot be null"
+                )
+            kwargs[field_name] = None
+            continue
 
         # Handle list types
         if origin is list:

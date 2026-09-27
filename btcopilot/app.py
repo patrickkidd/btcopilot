@@ -43,6 +43,10 @@ def create_app(config: dict = None, **kwargs):
         # belongs to. The default hour expires it under a reader who is still
         # signed in and still typing, and every post after that is refused.
         WTF_CSRF_TIME_LIMIT=None,
+        # The concept pages (FD-364); the token is FLASK_THEORY_GITHUB_TOKEN.
+        THEORY_REPO="patrickkidd/btcopilot-sources",
+        THEORY_REF="master",
+        THEORY_PATH="theory/CONCEPTS",
     )
 
     if config and config.get("CONFIG"):

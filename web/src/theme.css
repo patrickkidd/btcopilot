@@ -1265,6 +1265,9 @@ button { font-family: inherit; }
 .btn:active { background: var(--tint); }
 .btn.play { border-color: var(--data); color: var(--data); }
 .btn.link { border: none; color: var(--data); }
+/* the concept pages of the codes in view (FD-364) */
+.concepts { margin: 6px 0; font: 400 13px/1.5 var(--sans); color: var(--faint); overflow-wrap: anywhere; }
+.concepts a { color: var(--data); }
 .scroller {
   flex: 1;
   min-height: 0;

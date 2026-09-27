@@ -590,3 +590,33 @@ def test_the_write_refuses_an_event_whose_mover_is_also_its_target(
             turn_id="t1",
         )
     assert diagram.get_diagram_data().events == []
+
+
+@pytest.mark.parametrize(
+    "field, value",
+    [("relationshipTargets", None), ("relationshipTriangles", None), ("relationshipTargets", 2)],
+)
+def test_the_write_refuses_an_event_whose_people_of_a_move_are_not_a_list(
+    subscriber, field, value
+):
+    # R-0453
+    diagram = _diagram(
+        subscriber.user,
+        {"people": [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}]},
+    )
+
+    with pytest.raises(record.Invalid, match=f"event 35's {field} is not a list") as refused:
+        record.apply(
+            diagram.id,
+            [
+                {"item_kind": ItemKind.Event, "item_id": 35, "field": "kind", "after": "shift"},
+                {"item_kind": ItemKind.Event, "item_id": 35, "field": "person", "after": 1},
+                {"item_kind": ItemKind.Event, "item_id": 35, "field": "relationship", "after": "distance"},
+                {"item_kind": ItemKind.Event, "item_id": 35, "field": field, "after": value},
+                {"item_kind": ItemKind.Event, "item_id": 35, "field": "dateTime", "after": "1990-04-02"},
+            ],
+            author=Author.User,
+            turn_id="t1",
+        )
+    assert refused.value.plain
+    assert diagram.get_diagram_data().events == []

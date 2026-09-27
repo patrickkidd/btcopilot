@@ -324,3 +324,18 @@ def test_a_january_date_the_coder_stated_keeps_its_month():
     assert written(record, ["20"], [], ["10"]) == [
         "+ Marcus & Delphine · married · Jan 1970"
     ]
+
+
+def test_a_reopened_thread_says_which_events_each_line_wrote(coder, cut, turns):
+    # R-0541
+    """So the concept pages of their codes hang under the lines on every
+    load, not only right after the scribe wrote them."""
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted(
+        [("edit_event", {"date_certainty": "certain", "kind": "shift", "anxiety": "up", "date": "1971-01-01", "person": "1"})]
+    )
+    made = scribe(coder, coding, turns[0], model, "Marcus got anxious in 1971").json["made"]
+
+    thread = coder.get(f"/review/codings/{coding.id}/thread").json
+    said = {turn["id"]: turn["said"] for turn in thread["turns"]}
+    assert said[turns[0].id][0]["event_ids"] == [int(one["id"]) for one in made]

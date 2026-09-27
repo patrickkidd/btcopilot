@@ -1,4 +1,5 @@
 import * as api from "./api";
+import { conceptLinks, conceptsOf } from "./concepts";
 import { el, esc, slideOver, type Title } from "./dom";
 import { dragScroll } from "./drag";
 import { Picture, Target, type Tap } from "./picture";
@@ -8,10 +9,12 @@ import { listButton, PLAY_MARK, tok } from "./tokens";
 import { WIDE } from "./pro";
 import {
   emptyTimeline,
+  ItemKind,
   Touch,
   type CodingThread,
   type CodingTurn,
   type Timeline,
+  type TimelineEvent,
 } from "./types";
 
 /** The coding screen: one conversation, read-only, up to the cut Patrick put
@@ -39,6 +42,19 @@ const PLACEHOLDER = {
   none: "tap a line, then say what happened",
   picked: "say what this line tells you happened",
 };
+
+/** The concept page of each code the scribe wrote, under what it wrote, so
+ * the coder reads a code's page with one tap (R-0541). */
+export function writtenConcepts(ids: number[], events: TimelineEvent[]): string {
+  return conceptLinks(conceptsOf(events.filter((event) => ids.includes(event.id))));
+}
+
+/** Which record events a piece of the thread wrote, for the concept pages
+ * hung under it once the record is read. */
+function wrote(node: HTMLElement, ids: number[]): HTMLElement {
+  if (ids.length) node.dataset.events = ids.join(",");
+  return node;
+}
 
 export class Coding {
   private thread: CodingThread | null = null;
@@ -115,6 +131,17 @@ export class Coding {
   private async refresh(): Promise<void> {
     this.drawer?.show(await this.reread());
     this.marks();
+    this.paintConcepts();
+  }
+
+  /** The codes are read off the record as it stands, so a line written long
+   * ago shows its pages as well as one just written. */
+  private paintConcepts(): void {
+    for (const node of this.list.querySelectorAll<HTMLElement>("[data-events]")) {
+      node.querySelector(".concepts")?.remove();
+      const ids = node.dataset.events!.split(",").map(Number);
+      node.insertAdjacentHTML("beforeend", writtenConcepts(ids, this.timeline.events));
+    }
   }
 
   showing(): CodingThread | null {
@@ -330,7 +357,10 @@ export class Coding {
     const lines = written.asked
       ? `<div class="did q">${esc(written.asked)}</div>`
       : written.lines.map((line) => `<div class="did">${esc(line)}</div>`).join("");
-    this.after(turn, el("div", `bub coach sub${side}`, lines), turn);
+    const events = written.made
+      .filter((one) => one.kind === ItemKind.Event)
+      .map((one) => Number(one.id));
+    this.after(turn, wrote(el("div", `bub coach sub${side}`, lines), events), turn);
     if (written.made.length) {
       await this.refresh();
       // what the scribe writes, it adds
@@ -376,17 +406,22 @@ export class Coding {
             turn.id,
           ),
         );
-        for (const line of said.lines)
+        said.lines.forEach((line, at) =>
           this.list.append(
             this.tagged(
-              el(
-                "div",
-                `bub coach sub${this.side(turn.id)}`,
-                `<div class="did">${esc(line)}</div>`,
+              wrote(
+                el(
+                  "div",
+                  `bub coach sub${this.side(turn.id)}`,
+                  `<div class="did">${esc(line)}</div>`,
+                ),
+                // the pages hang under the last of the lines
+                at === said.lines.length - 1 ? said.event_ids : [],
               ),
               turn.id,
             ),
-          );
+          ),
+        );
       }
     }
     this.list.append(this.cutline(thread, true));

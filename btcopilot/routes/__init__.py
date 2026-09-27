@@ -16,6 +16,7 @@ from btcopilot.discussions import (  # noqa: F401  routes import them from here
 )
 from btcopilot.review.freeze import frozen
 from btcopilot.schema import ItemKind
+from btcopilot.theorypages import TheoryPages
 
 _log = logging.getLogger(__name__)
 
@@ -176,10 +177,17 @@ from btcopilot.routes import (  # noqa: E402  bp must exist first
     recordings,
     sessions,
     settings,
+    theory,
     turns,
     web,
 )
 
 
 def init_app(app):
+    app.extensions["theory"] = TheoryPages(
+        repo=app.config["THEORY_REPO"],
+        ref=app.config["THEORY_REF"],
+        path=app.config["THEORY_PATH"],
+        token=app.config.get("THEORY_GITHUB_TOKEN"),
+    )
     app.register_blueprint(bp)

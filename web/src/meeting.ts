@@ -11,6 +11,7 @@ import {
   when,
   words,
 } from "./ballot";
+import { conceptLinks, conceptsOf } from "./concepts";
 import { esc, el, type Title } from "./dom";
 import {
   openBondEditor,
@@ -401,6 +402,7 @@ export class Meeting {
       `<span class="pick">${esc(this.rowName(item))}</span></div>` +
       `<div class="tline">${versions}${missing}</div>` +
       line +
+      conceptLinks(conceptsOf(item.opinions.map((one) => one.item))) +
       `<div class="acts2">` +
       this.choice(Decision.Change, "change…", chosen) +
       this.choice(Decision.Unresolved, "mark unresolved", chosen) +

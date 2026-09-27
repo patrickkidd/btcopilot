@@ -308,16 +308,16 @@ export const dotLayers = (zoned: { left: number; width: number; marks: Mark[] }[
 /** How long one level takes to slide over the one it came from. */
 const SLIDE_MS = 320;
 
-/** How deep each level sits. Drilling in slides the arriving view over the one
- * it came from; coming back slides the current one off it. Two moments face to
- * face is a level of the same depth as an open cluster: the coach puts it up
- * in place of one. */
+/** How deep each level sits. Only something entirely new slides: the about
+ * page and the board arrive over the line and go back off it. Picking a
+ * cluster or a moment on the line, putting it down, and two moments face to
+ * face change the line in place and slide nothing (R-0542). */
 const DEPTH: Record<Level, number> = {
   [Level.Rest]: 0,
-  [Level.Wire]: 1,
-  [Level.Compare]: 1,
-  [Level.Board]: 2,
-  [Level.About]: 2,
+  [Level.Wire]: 0,
+  [Level.Compare]: 0,
+  [Level.Board]: 1,
+  [Level.About]: 1,
 };
 
 const still = (): boolean =>
@@ -339,13 +339,37 @@ const SCROLLER = ".ss-scroll";
  * are cloned without their ids so nothing on the page can find the copies.
  * How far the line was scrolled is carried across, because a clone starts at
  * the left end and the copy has to stand where the reader left it. */
+const CONTROLS = "button, input, select, textarea, a[href]";
+
+/** A control as a plain span that looks the same: its classes, its inline
+ * style and what it says, nothing it does. */
+function plain(control: Element): HTMLElement {
+  const span = document.createElement("span");
+  span.className = control.className;
+  span.setAttribute("style", control.getAttribute("style") ?? "");
+  span.innerHTML = control.innerHTML;
+  return span;
+}
+
 function snapshot(region: HTMLElement, ...skip: Element[]): HTMLElement {
   const lay = document.createElement("div");
   lay.className = "slide-lay";
+  // a picture of the level, not the level: nothing in it can be found, read
+  // out or pressed, so the live controls are the only ones on the page
+  lay.inert = true;
+  lay.setAttribute("aria-hidden", "true");
   for (const child of [...region.children]) {
     if (skip.includes(child) || child.classList.contains("slide-lay")) continue;
     const copy = child.cloneNode(true) as HTMLElement;
     for (const el of [copy, ...copy.querySelectorAll("[id]")]) el.removeAttribute("id");
+    for (const el of copy.querySelectorAll("[data-target]")) el.removeAttribute("data-target");
+    for (const el of copy.querySelectorAll("[tabindex], [role]")) {
+      el.removeAttribute("tabindex");
+      el.removeAttribute("role");
+    }
+    // every control becomes a plain element drawn the same way, so the copy
+    // holds nothing a reader, a screen reader or a test could take for one
+    for (const el of copy.querySelectorAll(CONTROLS)) el.replaceWith(plain(el));
     const live = [...child.querySelectorAll<HTMLElement>(SCROLLER)];
     copy.querySelectorAll<HTMLElement>(SCROLLER).forEach((el, i) => {
       el.dataset.left = String(live[i]?.scrollLeft ?? 0);

@@ -552,6 +552,8 @@ export interface Coding {
 export interface Said {
   text: string;
   lines: string[];
+  /** The record events those lines are. */
+  event_ids: number[];
 }
 
 export interface CodingTurn {

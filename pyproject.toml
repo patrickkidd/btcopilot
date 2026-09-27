@@ -48,6 +48,8 @@ app = [
     "anthropic>=0.97,<1",
     "google-genai",
     "rapidfuzz>=3.0.0",
+    "markdown-it-py",
+    "requests",
 ]
 
 test = [
@@ -72,5 +74,5 @@ packages = {find = {exclude = ["build*", "dist*"]}}
 package-dir = {"" = "."}
 
 [tool.setuptools.package-data]
-"btcopilot" = ["static/**/*", "prompty/**/*"]
+"btcopilot" = ["static/**/*", "prompty/**/*", "templates/**/*"]
 "btcopilot.auth" = ["templates/**/*"]

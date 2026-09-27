@@ -755,7 +755,16 @@ def _structure(data: dict, deltas: list[dict]):
 
     for event_id in _touched(deltas):
         event = _find(data, ItemKind.Event, event_id)
-        if event is None or event.get("person") is None:
+        if event is None:
+            continue
+        for field, role in MOVE_LINKS:
+            if field in event and not isinstance(event[field], list):
+                raise Invalid(
+                    f"event {event_id}'s {field} is not a list: give the "
+                    f"{role}s as a list of person ids, empty when there is none",
+                    f"The {role}s of a move could not be read.",
+                )
+        if event.get("person") is None:
             continue
         mover = str(event["person"])
         for field, role in MOVE_LINKS:

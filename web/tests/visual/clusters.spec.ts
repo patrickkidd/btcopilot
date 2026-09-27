@@ -333,12 +333,11 @@ const solid = (colour: string) =>
 test.describe("a level sliding in", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0230
-  test("a cluster slides in on ground of its own", async ({ page }) => {
+  // R-0230, R-0542
+  test("the about page slides in on ground of its own", async ({ page }) => {
     await settle(page);
-    await toRest(page);
     const seen = cards(page, 2);
-    await boxes(page).first().click();
+    await page.locator("#info").click();
     const colours = await seen;
     expect(colours.every(solid)).toBe(true);
   });
@@ -352,11 +351,14 @@ test.describe("a level sliding in", () => {
     expect(colours.every(solid)).toBe(true);
   });
 
-  // R-0230
+  // R-0230, R-0542
   test("going back up slides the level away on ground of its own", async ({ page }) => {
     await settle(page);
+    await page.locator("#cap-play").click();
+    await expect(page.locator("#view .ss.board")).toBeVisible();
+    await page.waitForTimeout(600);
     const seen = cards(page, 1);
-    await step(page, 0).click();
+    await step(page, 1).click();
     const colours = await seen;
     expect(colours.every(solid)).toBe(true);
   });
