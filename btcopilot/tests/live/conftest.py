@@ -205,12 +205,13 @@ class Coach:
 
     def record(self, people=(), pair_bonds=(), events=()) -> None:
         """The speaker, their parents and their birth, plus what the test adds,
-        in a new session, so a case run again starts from nothing said."""
+        in a new session, so a case run again starts from nothing said. A person
+        the test adds replaces the one the record already has with that id."""
         response = self.web.post(
             "/app/sessions", json={}, headers={"X-CSRFToken": self.token}
         )
         assert response.status_code == 201, response.get_data(as_text=True)
-        people = [ME, MOTHER, FATHER, *people]
+        people = list({p["id"]: p for p in (ME, MOTHER, FATHER, *people)}.values())
         pair_bonds = [PARENTS, *pair_bonds]
         events = [BORN, *events]
         ids = [item["id"] for item in (*people, *pair_bonds, *events)]

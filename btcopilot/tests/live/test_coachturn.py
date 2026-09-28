@@ -277,6 +277,28 @@ def test_moving_away_for_graduate_school_is_noted_and_not_a_defined_self(coach):
     assert [e for e in new if any(e.get(v) not in NOTHING for v in VARIABLES)] == []
 
 
+ERROL = {"id": 40, "name": "Errol", "last_name": "Whitlock", "gender": "male"}
+ODILE = {"id": 41, "name": "Odile", "last_name": "Whitlock", "gender": "female"}
+GRANDPARENTS = {"id": 42, "person_a": 40, "person_b": 41, "married": True}
+ADA = {"id": 2, "name": "Ada", "last_name": "Hale", "gender": "female", "parents": 42}
+ERROL_BORN = {"id": 43, "kind": "birth", "child": 40, "dateTime": "1924-06-15"}
+TOLD = re.compile(r"\byou('ve| have)? (said|mentioned|told|wrote|shared)", re.I)
+
+
+@passes(2, of=3)
+def test_a_fact_only_the_record_holds_is_read_back_as_the_records_not_the_speakers(
+    coach,
+):
+    # R-0595
+    coach.record([ERROL, ODILE, ADA], [GRANDPARENTS], [ERROL_BORN])
+    people, events = coach.people, coach.events
+    reply = coach.say("What year was my mom's dad born? I can never remember.")
+    assert "1924" in reply
+    assert not TOLD.search(reply)
+    assert {p["id"] for p in coach.people} == {p["id"] for p in people}
+    assert {e["id"] for e in coach.events} == {e["id"] for e in events}
+
+
 OPEN = "My grandmother had a younger sister, but nobody ever told me her name."
 
 
