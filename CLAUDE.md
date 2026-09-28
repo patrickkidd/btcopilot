@@ -19,16 +19,18 @@ This block is a deliberate distillation of recurring corrections, not duplicate 
 
 ## Where the work starts
 
-Work on `master` through ticket worktrees (below). Every session reads
+This is a standalone clone at `~/btcopilot` (moved off `~/theapp` 2026-09-28); it is the launch
+directory now. Work on `master` through ticket worktrees (below). Every session reads
 [doc/STATE.md](doc/STATE.md) first, then [doc/TOPICS.md](doc/TOPICS.md), then
 [doc/HOW_THIS_PROJECT_WORKS.md](doc/HOW_THIS_PROJECT_WORKS.md) (binding process rules). The
 Jira epic is **FD-362**.
 
 ## Worktrees, branches, PRs
 
-The main clone stays on `master` and is read-only to Claude: never edit, branch-switch or run
-anything in it. All work happens in a worktree at `.claude/worktrees/<ticket>` on a branch of
-the same name (`FD-NNN`; if taken, `FD-NNN-<slug>`; no ticket, a short slug), created with
+The main clone (`~/btcopilot`) stays on `master` and is read-only to Claude: never edit,
+branch-switch or run anything in it. All work happens in a worktree at
+`~/btcopilot/.claude/worktrees/<ticket>` on a branch of the same name (`FD-NNN`; if taken,
+`FD-NNN-<slug>`; no ticket, a short slug), created from `~/btcopilot` with
 `git worktree add .claude/worktrees/FD-NNN -b FD-NNN` and entered with `EnterWorktree(path=...)`.
 
 - Commit and push the worktree's own branch without asking; one git mutation per command,
@@ -42,7 +44,7 @@ the same name (`FD-NNN`; if taken, `FD-NNN-<slug>`; no ticket, a short slug), cr
 
 ## Production
 
-The box is reached as `ssh familydiagram` (Patrick's ssh config; never the raw IP). Deploys: the release workflow builds and tags the image; the rollout runs on the box from `/var/www/btcopilot/deploy` with `--env-file /etc/fd/secrets.env`. Grafana Cloud is administered through its API with `GRAFANA_SA_TOKEN` and `GRAFANA_URL` from the parent `.env`.
+The box is reached as `ssh familydiagram` (Patrick's ssh config; never the raw IP). Deploys: the release workflow builds and tags the image; the rollout runs on the box from `/var/www/btcopilot/deploy` with `--env-file /etc/fd/secrets.env`. Grafana Cloud is administered through its API with `GRAFANA_SA_TOKEN` and `GRAFANA_URL` from `.env` at the clone root.
 
 ## Jira
 
@@ -106,7 +108,7 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
   the reader must decide.
 - **Mockups are always published as artifacts (2026-09-22, Patrick: "mockups should always be in
   artifacts. remember that").** A gallery on disk is not a deliverable; publish it (private by
-  default) and give the link. The source stays in ~/theapp/btcopilot-sources/fd-corpus/design/.
+  default) and give the link. The source stays in ~/btcopilot/btcopilot-sources/fd-corpus/design/.
 - **He is Patrick (2026-09-11).** Never "the owner" in a document or a reply; it is ambiguous.
 - **Sandbox addresses use `turin`, never `turin.local` (2026-09-11).** The review app is
   https://turin:8891/personal/.
@@ -143,7 +145,7 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
 ## Private corpus
 
 Clinical data, experiment output and anything store-shaped never enter this repo. They live
-outside every repo at `~/theapp/btcopilot-sources/fd-corpus/`: `design/` holds the approved
+outside every repo at `~/btcopilot/btcopilot-sources/fd-corpus/`: `design/` holds the approved
 mockups and galleries (read, never copy in); `private/` holds the prompt mirror, the prompt
 fidelity audit, the ledger of unclear points, the test method, and plain copies of the
 rulings and the oracle SPEC. The encrypted rulings store and prompts in this repo
@@ -185,6 +187,25 @@ authoritative doc above; if none exists, create it in `doc/` and add it here.
 rulings store `private/oracle/`. Public docs cite rulings by id (`[Oracle: R-0001]`) and
 never restate quotes; capture his new statements into the store immediately; never author a
 ruling he did not say. `HOW_THIS_PROJECT_WORKS.md` carries the rest.
+
+**TODO.md files, if any exist in this repo**, are Patrick's personal scratchpads: never write
+to, sync, or promote items from one — read-only for context when he asks about something in it.
+
+### Correction Detection (MANDATORY)
+
+Recognize corrections: "No, that's wrong...", "I already told you...", "Stop doing X",
+frustrated tone about repeated mistakes, "The actual way is...", any explanation of something
+you got wrong.
+
+**Response protocol:** (1) Acknowledge briefly, no over-apologizing. (2) **Before continuing**,
+update the relevant doc file above. (3) State: "Documented in [file] to prevent recurrence."
+(4) Continue with the corrected approach.
+
+### Knowledge Capture
+
+**Triggers**: Patrick explains how a subsystem works, behavioral rules/constraints, workflows,
+or why a decision was made. **Process**: detect → find the authoritative doc above → integrate
+→ notify "Documented [X] in [file]".
 
 ### Synthetic Client Dev Log (MANDATORY)
 
