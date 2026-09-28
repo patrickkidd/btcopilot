@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Failed } from "../src/api";
 import { IDLE_POLL_MS, Release } from "../src/release";
 
 let busy: boolean;
@@ -46,5 +47,19 @@ describe("coming back to the front after a deploy", () => {
     busy = false;
     vi.advanceTimersByTime(IDLE_POLL_MS);
     expect(reload).toHaveBeenCalledOnce();
+  });
+
+  // R-0486
+  it("stays on the page, saying nothing, when the release cannot be read", async () => {
+    const error = vi.spyOn(console, "error");
+    for (const failed of [
+      new Failed(0, "GET /app/version", "Failed to fetch"),
+      new Failed(503, "GET /app/version", "Service Unavailable"),
+    ]) {
+      const page = new Release("3.2026.9.27.1", () => Promise.reject(failed), () => busy, reload);
+      await page.check();
+    }
+    expect(reload).not.toHaveBeenCalled();
+    expect(error).not.toHaveBeenCalled();
   });
 });

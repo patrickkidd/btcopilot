@@ -1,3 +1,5 @@
+import { Failed } from "./api";
+
 /** How often a page that is due to reload looks again for a moment when
  * nothing would be lost. */
 export const IDLE_POLL_MS = 1000;
@@ -17,7 +19,17 @@ export class Release {
   ) {}
 
   async check(): Promise<void> {
-    if (this.due || (await this.live()) === this.served) return;
+    if (this.due) return;
+    let live;
+    try {
+      live = await this.live();
+    } catch (error) {
+      // Offline or a server between releases is an ordinary state for an app
+      // on a phone: which release is live is unknown, so the page stays.
+      if (error instanceof Failed) return;
+      throw error;
+    }
+    if (live === this.served) return;
     this.due = true;
     this.settle();
   }

@@ -1,8 +1,12 @@
 /* Minimal offline shell: the built bundle is cached so the app opens without a
    network. Every API call goes to the network untouched. */
 // The bundle's files carry a hash in their names, so they are cached as the
-// page loads them rather than named here.
-const CACHE = "familydiagram-v2";
+// page loads them rather than named here. The page registers the worker with
+// the release it was served with, so each release has its own cache and the
+// worker for a new one deletes the last one's on activation.
+const RELEASE = new URL(self.location.href).searchParams.get("release");
+if (!RELEASE) throw new Error("the worker was registered without its release");
+const CACHE = `familydiagram-${RELEASE}`;
 const SHELL = ["/app/", "/app/manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
