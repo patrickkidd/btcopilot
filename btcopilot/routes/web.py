@@ -66,9 +66,14 @@ def _readable(diagram_id: int):
     return found
 
 
+# A home-screen app keeps the page it last loaded, so the page is asked for
+# again on every load.
+FRESH = {"Cache-Control": "no-cache"}
+
+
 @bp.route("/")
 def index():
-    return _page()
+    return _page(), FRESH
 
 
 @bp.route("/sw.js")

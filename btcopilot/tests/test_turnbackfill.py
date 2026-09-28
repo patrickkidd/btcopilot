@@ -65,15 +65,21 @@ def rows(data: dict, said: list[dict], changes: list[dict]) -> dict:
     }
 
 
-def migrate(flask_app, tmp_path, seeded: dict) -> sa.Engine:
+def seed(flask_app, tmp_path, seeded: dict, revision: str = "1b00000000aa") -> sa.Engine:
     flask_app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{tmp_path / 'old.db'}"
     engine = sa.create_engine(flask_app.config["SQLALCHEMY_DATABASE_URI"])
     with flask_app.app_context():
-        command.upgrade(config(), "1b00000000aa")
+        command.upgrade(config(), revision)
         with engine.begin() as conn:
             for table, values in seeded.items():
                 meta = sa.Table(table, sa.MetaData(), autoload_with=conn)
                 conn.execute(meta.insert(), values)
+    return engine
+
+
+def migrate(flask_app, tmp_path, seeded: dict) -> sa.Engine:
+    engine = seed(flask_app, tmp_path, seeded)
+    with flask_app.app_context():
         command.upgrade(config(), "head")
     return engine
 

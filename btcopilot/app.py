@@ -1,5 +1,5 @@
 import os, os.path, logging
-from flask import Flask, redirect, request, url_for
+from flask import Flask, jsonify, redirect, request, url_for
 from werkzeug.exceptions import Unauthorized, HTTPException
 
 import btcopilot
@@ -16,6 +16,7 @@ def create_app(config: dict = None, **kwargs):
     from btcopilot.review import routes as review_routes
     from btcopilot import admin
     from btcopilot.auth import signin
+    from btcopilot.routes.web import FRESH
 
     # Flask CLI may pass script_info as a kwarg, we ignore it
     kwargs.pop("script_info", None)
@@ -154,6 +155,13 @@ def create_app(config: dict = None, **kwargs):
     @app.route("/health")
     def health():
         return btcopilot.__version__
+
+    # A home-screen app signed out months ago still has to find the new
+    # release, and the version is already public on /health; only /app reaches
+    # the server through the box's proxy.
+    @app.route("/app/version")
+    def version():
+        return jsonify(version=btcopilot.__version__), FRESH
 
     @app.route("/")
     def root():

@@ -16,7 +16,7 @@ import uuid
 import anthropic
 
 from btcopilot.extensions import db
-from btcopilot import recordtext
+from btcopilot import recordtext, turnstore
 from btcopilot.case import Case, RecordFault, Tool, Untold, faults, tool
 from btcopilot.coachmodel import CoachModel
 from btcopilot.coachturn import Metered
@@ -176,5 +176,7 @@ class PlayTurn:
             turn_id=self.turn_id,
         )
         db.session.add(statement)
+        db.session.flush()
+        turnstore.save(self.turn_id, self.discussion.id, [turnstore.done(statement.id)])
         db.session.commit()
         return statement.id

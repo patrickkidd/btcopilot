@@ -18,6 +18,7 @@ import { sessionTitle, summaryOf } from "./search";
 import { Settings } from "./settings";
 import { aimedEvents, chips, itemKind } from "./chips";
 import { feed } from "./turn";
+import { Release } from "./release";
 import { toolLine } from "./tools";
 import {
   CHIP_KIND,
@@ -145,7 +146,7 @@ function onTap(tap: Tap): void {
   if (tap.target === Target.Cluster) {
     const cluster = picture.clusterAt(tap.index);
     if (cluster) {
-      picture.spotlight(cluster.event_ids);
+      picture.open(cluster.event_ids);
       // opening a cluster is a look at it, recorded like any other (R-0065)
       tapped(InteractionKind.Look, ItemKind.Cluster, cluster.id);
     }
@@ -227,7 +228,7 @@ const cases = new Map<number, Case>();
  * or not it was open when the drawer came up. */
 const pbp = new Drawer($("pbp"), (step, events) => {
   pbp.close();
-  if (step) picture.spotlight(events);
+  if (step) picture.open(events);
   else picture.back(0);
   pic = REST;
   actions();
@@ -666,8 +667,9 @@ function aim(chip: Chip): void {
   // mark of its own on the line (R-0543).
   const cluster = timeline.clusters.find((c) => ids.every((id) => c.event_ids.includes(id)));
   if (cluster) {
-    picture.spotlight(ids);
     apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Cluster, id: cluster.id }));
+    // a chip may name a cluster off screen, so the line goes to it
+    picture.spotlight(cluster.event_ids);
   } else
     apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(ids[0]) }), ids);
 }
@@ -683,7 +685,7 @@ function apply(outcome: Outcome, named: number[] | null = null): void {
   else picture.select(null);
   if (sel?.kind === SelKind.Cluster) {
     const cluster = timeline.clusters.find((c) => c.id === sel.id);
-    if (cluster) picture.spotlight(cluster.event_ids);
+    if (cluster) picture.open(cluster.event_ids);
   }
   actions();
   if (outcome.record)
@@ -1261,10 +1263,23 @@ if (running) follow(running);
 
 // Coming back to the app — a phone returning to it, a tab shown again, the page
 // restored from the back cache — attaches to whatever the coach is doing now.
+// It also loads the release the server runs now, if a deploy happened while
+// the page was away.
+const release = new Release(
+  window.BOOTSTRAP.version,
+  api.version,
+  () => inFlight || chat.draft() !== "" || !!$("coding-composer").textContent?.trim(),
+  () => location.reload(),
+);
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") void reattach();
+  if (document.visibilityState !== "visible") return;
+  void reattach();
+  void release.check();
 });
-window.addEventListener("pageshow", () => void reattach());
+window.addEventListener("pageshow", (e) => {
+  void reattach();
+  if (e.persisted) void release.check();
+});
 
 void load().then(async () => {
   const said = window.BOOTSTRAP.statements;
@@ -1281,7 +1296,10 @@ void load().then(async () => {
 // so a saved edit would never reach the page.
 if (import.meta.env.PROD && "serviceWorker" in navigator)
   window.addEventListener("load", () =>
-    navigator.serviceWorker.register("/app/sw.js", { scope: "/app/" }),
+    navigator.serviceWorker.register(
+      `/app/sw.js?release=${encodeURIComponent(window.BOOTSTRAP.version)}`,
+      { scope: "/app/" },
+    ),
   );
 
 // A coder opens on their one task rather than on the chat (R-0265, frame f1),

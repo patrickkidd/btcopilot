@@ -634,11 +634,23 @@ export class Picture {
     this.render();
   }
 
-  /** What the coach's latest message named. Everything else recedes. */
+  /** What the coach's latest message named. Everything else recedes, and the
+   * line travels to the first of it. */
   spotlight(eventIds: number[]): void {
+    this.aim(eventIds[0] ?? null);
+    this.name(eventIds);
+  }
+
+  /** A cluster the reader opened: the line changes where it stands and
+   * travels nowhere (R-0542). */
+  open(eventIds: number[]): void {
+    this.aim(null);
+    this.name(eventIds);
+  }
+
+  private name(eventIds: number[]): void {
     this.named = eventIds;
     this.selected = null;
-    this.aim(eventIds[0] ?? null);
     // naming something opens the cluster it belongs to; naming nothing leaves
     // the picture at rest, showing the whole line
     this.level = eventIds.length ? Level.Wire : Level.Rest;
@@ -757,7 +769,7 @@ export class Picture {
       this.dismiss();
       return;
     }
-    this.spotlight(open.event_ids);
+    this.open(open.event_ids);
   }
 
   /** The open cluster's own page, a level in from the cluster. */
@@ -1055,10 +1067,13 @@ export class Picture {
     this.park = Park.Held;
     this.aimed = null;
     // the line travelling to what was named is the picture answering the
-    // coach's words; every other draw puts it down where it belongs at once
-    if (named && held !== null && !still())
+    // coach's words; every other draw puts it down where it belongs at once.
+    // The line is drawn anew at its left end, so a travel sets out from where
+    // the reader left it.
+    if (named && held !== null && !still()) {
+      scroll.scrollLeft = held;
       scroll.scrollTo({ left: to, behavior: "smooth" });
-    else scroll.scrollLeft = to;
+    } else scroll.scrollLeft = to;
   }
 
   /** The clusters the resting level draws, in time order. They are the ones

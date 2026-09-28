@@ -3,9 +3,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { request as ask } from "node:http";
 import { defineConfig, type Plugin, type ProxyOptions } from "vite";
 
-// Flask serves the bundle through the app blueprint's static folder, and
-// names the entry files itself in the page template, so the output names are
-// fixed rather than hashed.
+// Flask serves the bundle through the app blueprint's static folder and the
+// built index.html as the page, so the files keep Vite's hashed names: a new
+// release is never answered from a cached file of the same name.
 const BASE = "/app/static/web/";
 
 /** The sandbox this dev server borrows its server from. */
@@ -134,13 +134,6 @@ export default defineConfig({
   build: {
     outDir: "../btcopilot/static/web",
     emptyOutDir: true,
-    rollupOptions: {
-      output: {
-        entryFileNames: "app.js",
-        chunkFileNames: "app-[name].js",
-        assetFileNames: "app.[ext]",
-      },
-    },
   },
   server: {
     host: "0.0.0.0",
