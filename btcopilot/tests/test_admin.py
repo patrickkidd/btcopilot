@@ -6,10 +6,12 @@ from unittest import mock
 import click
 
 import pytest
+from alembic.script import ScriptDirectory
 
 import btcopilot
 from btcopilot.admin import admin
 from btcopilot.admin import guard, setting, skill
+from btcopilot.admin.database import config
 from btcopilot.tests import olddump
 from btcopilot.admin.setting import SettingKey
 from btcopilot.extensions import db
@@ -159,7 +161,9 @@ def test_db_upgrade_builds_the_chain_from_empty(flask_app, tmp_path):
     flask_app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{tmp_path / 'fresh.db'}"
     result = flask_app.test_cli_runner().invoke(admin, ["db", "upgrade"])
     assert result.exit_code == 0, result.output
-    assert result.output.strip().startswith("at 1b00000000b1")
+    with flask_app.app_context():
+        head = ScriptDirectory.from_config(config()).get_current_head()
+    assert result.output.strip().startswith(f"at {head}")
 
 
 READS = {

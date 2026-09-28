@@ -57,6 +57,7 @@ test = [
     "build",
     "freezegun",
     "mock",
+    "pgserver>=0.1.4",
     "playwright",
     "pytest",
     "pytest-asyncio",
