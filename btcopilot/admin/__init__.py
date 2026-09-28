@@ -4,6 +4,7 @@ themselves (T-11)."""
 
 import click
 
+from btcopilot.admin.coachmodels import coach_model
 from btcopilot.admin.database import database
 from btcopilot.admin.diagrams import diagrams
 from btcopilot.admin.guard import run
@@ -34,6 +35,7 @@ for group in (
     impressions_group,
     imports,
     token_cap,
+    coach_model,
     review,
     database,
     write_skill,

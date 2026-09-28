@@ -364,10 +364,13 @@ def init_celery(app):
     # Register tasks only once
     if not hasattr(celery, "_tasks_registered"):
 
-        from btcopilot import turns
+        from btcopilot import shadow, turns
         from btcopilot.review import tasks as review_tasks
 
         celery.task(turns.run, name=turns.TASK)
+        celery.task(shadow.run, name=shadow.TASK)
+        # a shadow waits on its own worker, never ahead of a real turn
+        celery.conf.task_routes = {shadow.TASK: {"queue": shadow.QUEUE}}
         celery.task(review_tasks.replay_cut, name="review_replay_cut")
 
         # Mark tasks as registered to avoid duplicate registration

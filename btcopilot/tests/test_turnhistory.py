@@ -63,7 +63,7 @@ class Breaks(Model):
 
 
 def coach(monkeypatch, model):
-    monkeypatch.setattr("btcopilot.coachturn.CoachModel", lambda *a, **k: model)
+    monkeypatch.setattr("btcopilot.turns.model_for", lambda *a, **k: model)
     return model
 
 
