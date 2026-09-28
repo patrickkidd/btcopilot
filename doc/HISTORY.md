@@ -1651,8 +1651,8 @@ Not the chat app: b8769210-d27b-4e72-865e-08a8f211cb70 (the Pro app's update fee
 
 **Open.** The coach producing a snapshot's point, facts, guess and closing question live is proven only by Claude Code subscription replies and one real explain on production, not a full eval. Nothing yet holds a play-by-play to three to six snapshots; real cases have shown as many as eleven and seventeen. Several of the pbp-builder's new test files do not yet cite the rulings they prove, which the coverage guard will keep flagging until they do.
 
-## 2026-09-28 — FD-363: two batches deployed (the pill strip, then the restored timeline zoom, explain's caching and the tuning queue), five more rulings, the corpus caught up
-<!-- session: 0ae5e927 · flushed: 2026-09-28T15:51:23Z -->
+## 2026-09-28 — FD-363: two batches deployed (the pill strip, then the restored timeline zoom, explain's caching and the tuning queue), a third batch (the drawer's close button and margin, the cluster event count, chip pre-text, move-target validation, squashed migrations), eleven more rulings, the corpus caught up
+<!-- session: 0ae5e927 · flushed: 2026-09-28T18:06:57Z -->
 
 **What this thread was for.** Corpus maintenance alongside the main build: deploying the batch
 queued from the two prior sessions, logging the rulings that came out of it, and keeping
@@ -1801,3 +1801,48 @@ R-0402 note fixed in two places and its next action pointed at the new batch; T-
 a one-line deploy note; a new topic, T-13, was opened for the tuning queue and explain's caching,
 since neither belongs under T-5 (interface) and the existing T-12 (the outward-looking scout,
 retired) is a different mechanism entirely, not touched.
+
+**Rulings, R-0581 to R-0587, appended across several short rounds after the corpus was moved to
+its own worktree.** He ruled that a new database table or column, or reusing an old table for a
+new kind of row, is put to him first with its names and what each holds, built only after his
+yes [R-0581]; the `statements` table's `told_case`-style columns stay as they are while testing
+continues, with a note that a later split into their own table, once a feature strains the shape
+further, must carry every existing row across with nothing lost [R-0582]; a selected cluster's
+title ends with its event count, narrowing the earlier never-a-count rule to the open state only
+[R-0583, narrows R-0376]; migrations always ship squashed into one per PR [R-0584]; every
+relationship-move event, not toward alone, needs a target, refused with a warning and retried
+[R-0585, defect on event 66's miscoding]; the four ruled chip pre-text phrases in the chat box
+[R-0586]; both the drawer's own question and a coach reply's closing question now tap like any
+other amber chip [R-0587]. R-0585's first wording read narrower than what Patrick said and what was
+built — louann caught it — and was reworded to cover every move kind, not toward alone; the
+evidence already held his full words, so only the statement changed.
+
+**The size ceiling, fought on every round.** Adding new rulings pushed the index over its
+150,000-byte ceiling on nearly every one of these additions, sometimes by several hundred bytes
+at once for a batch of three. Brought back under it each time the same way as before, never by
+dropping a fact: new statements trimmed to their essentials, a couple of the store's own
+repeated internal annotations shortened further, and — for the first time this session — the
+store's own preamble (its format notes, not any of his rulings) condensed for space. This is now
+a recurring cost on every flush, not a one-off; noted in STATE as an open item for Patrick to
+decide whether the store splits into more than one file or the ceiling is raised.
+
+**Deployed 2026-09-28: commit a8b2245b, image 3.2026.9.28.9+ga8b2245, database still at
+1b00000000b4** (the migration chain unchanged; this PR's migrations are squashed into one).
+Carried: the play-by-play drawer's close button shared with the meeting card's own ×, and its
+order path row, point and snapshot line on open; an event's words in the drawer kept inside the
+family's side margin; the selected-cluster event count; the "message" chip kind and the
+clickable amber question chips with their ruled pre-text; every relationship move refused
+without a target at both the writer and the coach's tool; the Next meeting agenda fix so picking
+your own session places its cut correctly; fixture reinstalls clearing their agenda cuts; the
+app importing with no sops key present; fixture coach speakers typed as the coach; and CI's
+visual jobs running on the open-source prompts like the unit tests already did.
+
+**Production data.** Event 66 in diagram 1, the one R-0585 was written about, is now a shift,
+toward, targeting person 54 (review change 635). Still open: events 9 and 10 in diagram 1 (both
+defined-self, from 2015) and events 1 and 2 in diagram 14 have no target; R-0585's rule refuses
+any further edit to them until they get one, and Patrick still has to say whom 9 and 10 were
+aimed at.
+
+**Still open.** The coach rule linking the people an event's own words name is written into the
+prompt and needs a live eval, which needs his spend approval, about $0.15 to $0.40. The older
+copy of this worktree at ~/theapp still waits for his word to discard it.

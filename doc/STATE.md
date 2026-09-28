@@ -504,6 +504,35 @@ container comes back up; the ~/btcopilot move still waits for the next session.
 somewhere in the store just to stay under it, including the store's own preamble text. Patrick
 decides whether to split the store into more than one file or raise the ceiling.
 
+**Deployed 2026-09-28: commit a8b2245b, image 3.2026.9.28.9+ga8b2245, database still at
+1b00000000b4 (run 36462083019).** The database revision is unchanged: this PR's migrations are
+squashed into one [R-0584]. It carries:
+- The play-by-play drawer's close button is the app's own ×, the same one the meeting card uses,
+  and the drawer opens with its order path row, point and snapshot line in place.
+- An event's words in the drawer stay inside the family's side margin, none running to the
+  phone's edge.
+- A selected cluster's title ends with its event count [R-0583].
+- A "message" chip kind; the play-by-play's question and a coach bubble's closing question are
+  both clickable amber chips [R-0587], each carrying its ruled pre-text phrase in the chat box
+  before it — "To answer your question", "About your question" for Food for thought, "Here's
+  what I know about" for Facts to find, "I want to ask about" for the ask button, which stays
+  teal [R-0586].
+- Every relationship move (toward and the rest) is refused without a target, at the writer and
+  at the coach's tool [R-0585].
+- The Next meeting agenda fix: picking your own session places its cut where it belongs [R-0267].
+- Reinstalling the fixtures clears their agenda cuts; the app now imports with no sops key
+  present; the fixture families' coach speakers are typed as the coach, not a person.
+- CI's visual jobs run on the open-source prompts, same as the unit tests.
+
+**Production data fixed.** Event 66 in diagram 1 is now a shift, toward, targeting person 54, by
+review change 635 — the miscoding R-0585 caught. Open: events 9 and 10 in diagram 1 (both
+defined-self, 2015) and events 1 and 2 in diagram 14 still have no target; any further edit to
+them is refused until one is given; Patrick still needs to say whom 9 and 10 were aimed at.
+
+Also open: the coach rule that links the people an event's own words name, prompt written and
+waiting on a live eval, which needs his spend approval (about $0.15 to $0.40); the older
+~/theapp copy of this worktree still awaits his word to discard it.
+
 **Testing stays on the Claude Code subscription, not paid API calls [R-0568].** A model call a
 test needs goes to a Claude Code agent instead and is saved as a subscription-sourced replay;
 the local model answers wherever the model itself isn't under test; the API is kept for the one
