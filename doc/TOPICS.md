@@ -775,7 +775,7 @@ saved play-by-play still replays correctly across a session boundary (the commit
 play from another session is copied into this one") is proven only by the code, not by a walk.
 **Lives in:** btcopilot/observer.py, btcopilot/tuning.py, btcopilot/playturn.py,
 btcopilot/turns.py, btcopilot/models/observation.py, btcopilot/models/observationreject.py,
-btcopilot/admin/observations.py, btcopilot/migrations/versions/1b00000000b4_tuning_queue.py,
+btcopilot/admin/observations.py, btcopilot/migrations/versions/1b00000000b4_plays_and_observations.py,
 deploy/grafana/fd-quality.json (the "Tuning queue" panel), .claude/skills/fd-admin/SKILL.md.
 **Next action:** he opens the quality dashboard's Tuning queue panel and runs `flask admin
 observations queue` on the box, and rules on whether the six tracked kinds and the ten-group cap

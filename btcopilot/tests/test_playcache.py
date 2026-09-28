@@ -161,7 +161,7 @@ def test_the_revision_keeps_old_plays_with_no_digest_so_they_are_told_again(flas
     ]
     seeded = rows({}, said, [])
     seeded.pop("diagram_changes")
-    engine = seed(flask_app, tmp_path, seeded, revision="1b00000000b2")
+    engine = seed(flask_app, tmp_path, seeded, revision="1b00000000b1")
 
     with flask_app.app_context():
         command.upgrade(config(), "head")
