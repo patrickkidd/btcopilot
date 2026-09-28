@@ -162,12 +162,17 @@ test.describe("a new snapshot's marks", () => {
 test.describe("a chip in a walk told the old way", () => {
   test.use({ storageState: stateFor("play") });
 
-  // R-0501, R-0570
-  test("selects its moment on the timeline, in place, and opens nothing", async ({ page }) => {
+  // R-0501, R-0570, R-0543
+  test("opens its moment's cluster on the timeline, in place, and opens nothing", async ({
+    page,
+  }) => {
     await settle(page);
     const old = page.locator(".bub.coach[data-play]").first();
     await old.locator(".chip.data").first().click();
-    await expect(page.locator("#path .here")).toContainText("Ada");
+    // every event of this record is in the one cluster, and an event inside a
+    // cluster has no mark of its own, so the chip opens the cluster
+    await expect(page.locator("#path .here")).toHaveText(/^\d{4}/);
+    await expect(page.locator("#view rect.pill.on")).toHaveCount(1);
     await expect(drawer(page)).toBeHidden();
   });
 });

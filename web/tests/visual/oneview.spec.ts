@@ -22,7 +22,7 @@ const wireY = (page: Page) =>
 
 const openCluster = async (page: Page, index = 0) => {
   await boxes(page).nth(index).click();
-  await expect(zones(page).first()).toBeVisible();
+  await expect(step(page, 0)).toBeVisible();
   await page.waitForTimeout(400);
 };
 
@@ -50,31 +50,41 @@ test.describe("one drawing at every level", () => {
     await expect(page.locator('#view [style*="epfade"]')).toHaveCount(0);
   });
 
-  // R-0538
-  test("an open cluster keeps the box it is drawn in and every other dot", async ({ page }) => {
+  // R-0538, R-0543
+  test("an open cluster keeps its pill, with nothing inside it, and every other dot", async ({
+    page,
+  }) => {
     await settle(page);
     const dots = await page.locator("#view circle.dot").count();
     await openCluster(page);
-    await expect(page.locator("#view rect.ep-edge")).toHaveCount(1);
-    await expect(page.locator("#view .ep-g.open")).toHaveCount(1);
+    await expect(page.locator("#view rect.pill")).toHaveCount(1);
+    await expect(page.locator("#view rect.pill.on")).toHaveCount(1);
     await expect(page.locator("#view circle.dot")).toHaveCount(dots);
-    // the loose moment stays, dimmed, rather than going
+    // the loose event stays, dimmed, rather than going; the cluster's own
+    // events are never dots
     await expect(dot(page, 13)).toHaveAttribute("opacity", /0\.\d+/);
-    await expect(dot(page, 10)).not.toHaveAttribute("opacity", /.+/);
+    await expect(dot(page, 10)).toHaveCount(0);
   });
 });
 
 test.describe("a tap on a box", () => {
   test.use({ storageState: stateFor("three40") });
 
-  // R-0537
-  test("opens its cluster wherever it lands in the box, even on one of its dots", async ({
+  // R-0537, R-0544
+  test("opens its cluster wherever it lands on the pill, or above or below it", async ({
     page,
   }) => {
     await settle(page);
-    for (const id of [10, 11, 12]) {
-      const at = (await dot(page, id).boundingBox())!;
-      await page.mouse.click(at.x + at.width / 2, at.y + at.height / 2);
+    const pill = (await page.locator("#view rect.pill").boundingBox())!;
+    const mid = pill.y + pill.height / 2;
+    for (const [x, y] of [
+      [pill.x + 4, mid],
+      [pill.x + pill.width / 2, mid],
+      [pill.x + pill.width - 4, mid],
+      [pill.x + pill.width / 2, pill.y - 18],
+      [pill.x + pill.width / 2, pill.y + pill.height + 14],
+    ]) {
+      await page.mouse.click(x, y);
       await expect(page.locator("#view .ss-name")).toHaveText("Leaving and losing");
       await step(page, 0).click();
       await expect(path(page)).toHaveText("Timeline");
@@ -86,13 +96,13 @@ test.describe("a tap on a box", () => {
 test.describe("an open cluster among others", () => {
   test.use({ storageState: stateFor("dense60") });
 
-  // R-0538
+  // R-0538, R-0543
   test("every other box stays, dimmed, with the open one set apart", async ({ page }) => {
     await settle(page);
     await openCluster(page, 0);
-    await expect(page.locator("#view rect.ep-edge")).toHaveCount(2);
-    await expect(page.locator("#view .ep-g.open")).toHaveCount(1);
-    await expect(page.locator("#view .ep-g.dim")).toHaveCount(1);
+    await expect(page.locator("#view rect.pill")).toHaveCount(2);
+    await expect(page.locator("#view rect.pill.on")).toHaveCount(1);
+    await expect(page.locator("#view rect.pill.dim")).toHaveCount(1);
     // the other box still opens its own cluster
     await expect(boxes(page)).toHaveCount(1);
   });
@@ -101,7 +111,7 @@ test.describe("an open cluster among others", () => {
 test.describe("the path row", () => {
   test.use({ storageState: stateFor("three40") });
 
-  // R-0540, R-0538
+  // R-0540, R-0538, R-0543
   test("says where the reader is, and each earlier step goes back to it", async ({ page }) => {
     await settle(page);
     await expect(path(page)).toHaveText("Timeline");
@@ -109,20 +119,19 @@ test.describe("the path row", () => {
     await openCluster(page);
     await expect(path(page)).toHaveText("Timeline › 1981–2003");
     await expect(page.locator("#view .ss-name")).toHaveText("Leaving and losing");
+    await step(page, 0).click();
+    await expect(path(page)).toHaveText("Timeline");
+    await page.waitForTimeout(400);
+    // an event is picked only where no cluster claims it (R-0543)
     await zones(page).first().click();
-    await expect(path(page)).toHaveText("Timeline › 1981–2003 › Ada Grandmother died");
-    // a moment picked takes the words over the line; the chip row never
+    await expect(path(page)).toHaveText("Timeline › Ben stopped calling");
+    // an event picked takes the words over the line; the chip row never
     // carries the name
     await expect(page.locator("#view .ss-name")).toHaveCount(0);
-    // what the path says is not said again over the line: only the date
-    await expect(page.locator("#view .ss-t.on")).toHaveText(["1981"]);
+    // what the path says is not said again over the line: the date leads
+    await expect(page.locator("#view .ss-t.on").first()).toHaveText("Nov 2021");
     await expect(page.locator("#view .ss-yr")).toHaveCount(0);
     await expect(page.locator("#caption .name")).toHaveCount(0);
-
-    await step(page, 1).click();
-    await expect(page.locator("#view .ss-t.on")).toHaveCount(0);
-    await expect(zones(page).first()).toBeVisible();
-    await expect(path(page)).toHaveText("Timeline › 1981–2003");
 
     await step(page, 0).click();
     await expect(boxes(page).first()).toBeVisible();
@@ -161,14 +170,13 @@ test.describe("the path row", () => {
 test.describe("the path row at a phone's width", () => {
   test.use({ storageState: stateFor("three40") });
 
-  // R-0540
+  // R-0540, R-0543
   test("keeps a short last step whole, the earlier steps giving way first", async ({
     page,
   }) => {
     await settle(page);
-    await openCluster(page);
     await zones(page).first().click();
-    await expect(page.locator("#path .here")).toHaveText("Ada Grandmother died");
+    await expect(page.locator("#path .here")).toHaveText("Ben stopped calling");
     const cut = await page
       .locator("#path .here")
       .evaluate((here) => here.scrollWidth - here.clientWidth);
@@ -257,7 +265,7 @@ test.describe("the path row with long words", () => {
 test.describe("what the coach touches while it replies", () => {
   test.use({ storageState: stateFor("three40") });
 
-  // R-0539
+  // R-0539, R-0544
   test("colours each event as the call lands and keeps it until the next message", async ({
     page,
   }) => {
@@ -303,23 +311,25 @@ test.describe("what the coach touches while it replies", () => {
     await page.locator("#composer").fill("Look back over it.");
     await page.locator("#send").click();
 
-    // while the coach is still working: a read over the whole cluster greys
-    // its box, not every dot; a change is yellow and a removal red
-    await expect(page.locator("#view .ep-g.read")).toHaveCount(1);
+    // while the coach is still working: the pill takes one colour for what
+    // was done inside it, the strongest winning, here the removal's red over
+    // the read's grey; the loose event's change is yellow
+    const pill = page.locator("#view rect.pill");
+    await expect(pill).toHaveClass(/\bremove\b/);
     await expect(dot(page, 13)).toHaveClass(/\bchange\b/);
-    await expect(dot(page, 11)).toHaveClass(/\bremove\b/);
-    await expect(dot(page, 10)).not.toHaveClass(/\bread\b/);
+    await expect(dot(page, 11)).toHaveCount(0);
+    await expect(dot(page, 10)).toHaveCount(0);
 
     await expect(page.locator(".bub.coach").last()).toContainText("I looked back", {
       timeout: 10000,
     });
     await expect(dot(page, 13)).toHaveClass(/\bchange\b/);
-    await expect(page.locator("#view .ep-g.read")).toHaveCount(1);
+    await expect(pill).toHaveClass(/\bremove\b/);
 
     await mockTurn(page, { statement: "Noted.", statement_id: 9403 });
     await page.locator("#composer").fill("Thanks.");
     await page.locator("#send").click();
     await expect(dot(page, 13)).not.toHaveClass(/\bchange\b/);
-    await expect(page.locator("#view .ep-g.read")).toHaveCount(0);
+    await expect(pill).not.toHaveClass(/\b(read|remove)\b/);
   });
 });

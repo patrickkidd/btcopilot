@@ -57,19 +57,20 @@ const fly = (page: Page, selector: string) =>
 
 const open = async (page: Page) => {
   await page.locator('.ss-hit[data-target="cluster"]').first().click();
-  await expect(page.locator('.ss-hit[data-target="zone"]').first()).toBeVisible();
+  await expect(page.locator('#path [data-step="0"]')).toBeVisible();
 };
 
-// R-0542
+// R-0542, R-0543
 test("picking a cluster or a moment, and putting it down, slides nothing", async ({
   page,
 }) => {
   await settle(page);
   expect(await fly(page, '.ss-hit[data-target="cluster"]')).toEqual([]);
   await page.waitForTimeout(300);
-  expect(await fly(page, '.ss-hit[data-target="zone"]')).toEqual([]);
+  expect(await fly(page, '#path [data-step="0"]')).toEqual([]);
   await page.waitForTimeout(300);
-  expect(await fly(page, '#path [data-step="1"]')).toEqual([]);
+  // only an event no cluster claims is picked on the line
+  expect(await fly(page, '.ss-hit[data-target="zone"]')).toEqual([]);
   await page.waitForTimeout(300);
   expect(await fly(page, '#path [data-step="0"]')).toEqual([]);
 });
@@ -125,10 +126,12 @@ const travel = (page: Page, selector: string, nth = 0) =>
     [selector, nth] as const,
   );
 
-test.describe("on a line wider than the screen", () => {
+/** Whitlock's line was wider than the screen; the pill strip draws every record
+ * on one screen (R-0543), and the line must still never move. */
+test.describe("on the record with the longest line", () => {
   test.use({ storageState: stateFor("whitlock") });
 
-  // R-0542
+  // R-0542, R-0543
   test("opening a cluster, explaining it and going back leave the line where it stands", async ({
     page,
   }) => {
@@ -143,10 +146,10 @@ test.describe("on a line wider than the screen", () => {
         json: { statement: play.text, statement_id: play.id, kind: "play", cluster_id: play.cluster_id, case: play.case },
       }),
     );
-    const wide = await page
+    const fits = await page
       .locator(".ss-scroll")
-      .evaluate((s) => s.scrollWidth > s.clientWidth);
-    expect(wide).toBe(true);
+      .evaluate((s) => s.scrollWidth <= s.clientWidth);
+    expect(fits).toBe(true);
     expect(await travel(page, '.ss-hit[data-target="cluster"]')).toHaveLength(1);
     expect(await travel(page, "#cap-play")).toHaveLength(1);
     await expect(page.locator("#pbp")).toBeVisible();

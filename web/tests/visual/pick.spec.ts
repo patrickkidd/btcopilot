@@ -4,7 +4,8 @@ import { flask, stateFor, username } from "./setup";
 /** A chip naming an event and the event's own dot pick it the same way
  * [Oracle: R-0168]: the others fade, the clusters stay drawn as they are on the
  * one drawing [Oracle: R-0538, R-0540], and the picture keeps its height
- * [Oracle: R-0377, R-0460]. The old chip spotlight comes back for one person when an
+ * [Oracle: R-0377, R-0460]. An event inside a cluster has no dot of its own, so
+ * a chip naming one opens its cluster, as a tap on the pill does [Oracle: R-0543]. The old chip spotlight comes back for one person when an
  * admin sets it, and goes again when set back; it draws on the same line.
  *
  * The hostile record: one cluster holds parts 1 to 3, parts 4 to 6 are loose,
@@ -39,7 +40,9 @@ const shown = (page: Page) =>
     const view = document.getElementById("view")!;
     const others = [...view.querySelectorAll("circle.dot:not(.on)")];
     return {
-      brackets: view.querySelectorAll("rect.ep").length,
+      brackets: view.querySelectorAll("rect.pill").length,
+      open: view.querySelectorAll("rect.pill.on").length,
+      path: document.getElementById("path")!.textContent!.trim(),
       picked: view.querySelectorAll("circle.dot.on").length,
       faded: others.length > 0 && others.every((d) => Number(d.getAttribute("opacity")) < 1),
       words: [...view.querySelectorAll(".ss-t.on")].map((t) => t.textContent).join(" "),
@@ -76,17 +79,20 @@ test("a chip and a dot pick a loose event the same way", async ({ page }, info) 
   expect(await shown(page)).toEqual(byChip);
 });
 
-// R-0168, R-0377
-test("a chip and a dot pick an event inside a cluster the same way", async ({ page }) => {
+// R-0168, R-0377, R-0543
+test("a chip naming an event inside a cluster opens it as a tap on its pill does", async ({
+  page,
+}) => {
   await open(page);
   await tapped(page, chip(2));
   const byChip = await shown(page);
-  expect(byChip.picked).toBe(1);
+  expect(byChip.picked).toBe(0);
+  expect(byChip.open).toBe(1);
   expect(byChip.faded).toBe(true);
+  await expect(page.locator(dot(2))).toHaveCount(0);
 
   await open(page);
   await tapped(page, CLUSTER);
-  await tapped(page, dot(2));
   expect(await shown(page)).toEqual(byChip);
 });
 

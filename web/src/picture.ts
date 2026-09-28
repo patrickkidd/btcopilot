@@ -1,7 +1,6 @@
 import { DateCertainty } from "./certainty";
 import { esc } from "./dom";
-// this line draws dots, the wire and the record's own question
-import { rangesTouch } from "./marks";
+// this line draws pills, dots and the wire
 import {
   CH,
   PIC_H,
@@ -9,7 +8,6 @@ import {
   ROW_H,
   WIRE,
   X_PAD,
-  YEAR_TOP,
   ZONE,
   baseOpacity,
   clip,
@@ -27,7 +25,6 @@ import {
   Touch,
   ViewKind,
   type Cluster,
-  type Question,
   type Timeline,
   type TimelineEvent,
   type View,
@@ -47,34 +44,143 @@ const HIDE_SHELF_MARK = true;
 /** The picture region is ONE height for the whole line and a cluster open on
  * it, because a tap on the picture must never move a bubble; the play-by-play
  * is a drawer of its own over it (R-0570). */
-/** The least space left between two cluster boxes that would otherwise touch. */
+/** The least space left between two cluster pills that would otherwise touch. */
 const BOX_GAP = 6;
-/** How far a box reaches past the moments it holds, at each end. */
+/** How far a pill reaches past the events it holds, at each end. */
 const BOX_PAD = 10;
-/** IBM Plex Mono's advance at the 10.5px the years inside a box are written. */
+/** IBM Plex Mono's advance at the 10.5px the years under the line are written. */
 const YEAR_CH = 6.3;
-/** The resting line is never drawn wider than this many screens: past it the
- * scale coarsens rather than the line reaching further (R-0381). */
-const REACH = 2;
-
-/** A cluster's box reaches from under the two rows of words above the line to
- * the year under a picked dot, so it never runs into either (R-0181). */
-const BOX_Y = ROWS[1] + ROW_H;
-const BOX_H = YEAR_TOP - BOX_Y;
 /** A dot on the line. */
 const DOT_R = 4.5;
-/** The least space between two dot centres inside a box for the two to read as
- * two rather than as one solid bar. */
-const DOT_GAP = 11;
-/** A gap of this many years or more between clusters earns the amber question. */
-const GAP_YEARS = 4;
+/** How tall a cluster's pill is drawn on the line. */
+const PILL_H = 16;
+/** A tap target on the line reaches from under the words' first row to the
+ * bottom of the picture, so the thumb need not find the line itself (R-0544). */
+const HIT_TOP = ROWS[1];
+/** A tap target reaches no further than this either side of its mark's middle. */
+const HIT_REACH = 60;
+/** The baseline of the years under the line. */
+const RULER_Y = 68;
 
-/** A cluster's years at a glance, two digits each, as the converged mockup
- * writes them: "93–97". One year when it starts and ends in the same one. */
-function shortYears(start: string, end: string): string {
-  const a = start.slice(2, 4);
-  const b = end.slice(2, 4);
-  return a === b ? a : `${a}\u2013${b}`;
+/** One mark on the line: a cluster as one pill over its years with nothing
+ * drawn inside it, or an event no cluster claims as a dot (R-0543). */
+export interface Pill {
+  cluster: Cluster | null;
+  event: TimelineEvent | null;
+  left: number;
+  right: number;
+}
+
+type Span = { left: number; right: number };
+
+const middle = (mark: Span) => (mark.left + mark.right) / 2;
+
+/** The marks on the line in order across it: a pill per cluster and a dot per
+ * dated event no cluster claims. The clusters come in time order. A pill
+ * reaches a little past the years it holds, and gives way where that would
+ * touch the next pill or a dot beside it, leaving a gap, but never gives up
+ * its own years. */
+export function pills(
+  clusters: Cluster[],
+  dated: TimelineEvent[],
+  at: (iso: string) => number,
+): Pill[] {
+  const bars: Pill[] = clusters.map((cluster) => ({
+    cluster,
+    event: null,
+    left: at(cluster.start) - BOX_PAD,
+    right: at(cluster.end) + BOX_PAD,
+  }));
+  for (let i = 1; i < bars.length; i += 1) {
+    if (bars[i].left - bars[i - 1].right >= BOX_GAP) continue;
+    const seam = (bars[i - 1].right + bars[i].left) / 2;
+    bars[i - 1].right = seam - BOX_GAP / 2;
+    bars[i].left = seam + BOX_GAP / 2;
+  }
+  const dots: Pill[] = loose(dated, clusters).map((event) => {
+    const x = at(event.dateTime as string);
+    return { cluster: null, event, left: x - DOT_R, right: x + DOT_R };
+  });
+  for (const bar of bars) {
+    const [start, end] = [at(bar.cluster!.start), at(bar.cluster!.end)];
+    for (const dot of dots) {
+      const x = middle(dot);
+      if (x < start && dot.right + BOX_GAP > bar.left)
+        bar.left = Math.min(start, dot.right + BOX_GAP);
+      if (x > end && dot.left - BOX_GAP < bar.right)
+        bar.right = Math.max(end, dot.left - BOX_GAP);
+    }
+  }
+  return [...bars, ...dots].sort((a, b) => middle(a) - middle(b));
+}
+
+/** The one colour a pill takes for what the coach did to the events inside it
+ * this turn: the strongest touch wins (R-0544). */
+export function strongest(ids: number[], touched: Map<number, Touch>): Touch | null {
+  return ids
+    .map((id) => touched.get(id))
+    .filter((one): one is Touch => !!one)
+    .reduce<Touch | null>((a, b) => (a ? stronger(a, b) : b), null);
+}
+
+/** How far each mark's tap target reaches across the line: halfway to its
+ * neighbours and no further than HIT_REACH from its middle, but always over
+ * the whole mark, so a tap anywhere on a pill opens it (R-0537, R-0544). */
+export function reach(marks: Span[], width: number): Span[] {
+  return marks.map((mark, i) => {
+    const c = middle(mark);
+    const before = i ? (c + middle(marks[i - 1])) / 2 : 0;
+    const after = i < marks.length - 1 ? (c + middle(marks[i + 1])) / 2 : width;
+    return {
+      left: Math.max(0, Math.min(mark.left, Math.max(before, c - HIT_REACH))),
+      right: Math.min(width, Math.max(mark.right, Math.min(after, c + HIT_REACH))),
+    };
+  });
+}
+
+/** Where a year sits under its tick, as the SVG text-anchor takes it. */
+enum Anchor {
+  Start = "start",
+  Middle = "middle",
+  End = "end",
+}
+
+/** One year written under the line. */
+export interface Tick {
+  year: number;
+  x: number;
+  anchor: Anchor;
+}
+
+/** The years under the line: the first and last at its two ends, and the
+ * decades between them, or every second decade where ten years is too narrow
+ * to write, each left off where it would touch another (R-0543). */
+export function ruler(
+  y0: number,
+  y1: number,
+  at: (iso: string) => number,
+  x0: number,
+  x1: number,
+): Tick[] {
+  if (y0 === y1) return [{ year: y0, x: (x0 + x1) / 2, anchor: Anchor.Middle }];
+  const wide = 4 * YEAR_CH;
+  const ticks: Tick[] = [
+    { year: y0, x: x0, anchor: Anchor.Start },
+    { year: y1, x: x1, anchor: Anchor.End },
+  ];
+  const span = (t: Tick) => {
+    const left =
+      t.anchor === Anchor.Start ? t.x : t.anchor === Anchor.End ? t.x - wide : t.x - wide / 2;
+    return [left - 4, left + wide + 4];
+  };
+  const step = at(`${y0 + 10}-01-01`) - at(`${y0}-01-01`) >= 62 ? 10 : 20;
+  for (let year = Math.ceil((y0 + 1) / step) * step; year < y1; year += step) {
+    const tick: Tick = { year, x: at(`${year}-01-01`), anchor: Anchor.Middle };
+    const [l, r] = span(tick);
+    if (ticks.some((t) => l < span(t)[1] && r > span(t)[0])) continue;
+    ticks.push(tick);
+  }
+  return ticks.sort((a, b) => a.x - b.x);
 }
 
 /** A cluster's years as the path names it: "2009–10", in full where the
@@ -83,52 +189,6 @@ export function spanYears(start: string, end: string): string {
   const [a, b] = [start, end].map((iso) => iso.slice(0, 4));
   if (a === b) return a;
   return `${a}\u2013${a.slice(0, 2) === b.slice(0, 2) ? b.slice(2) : b}`;
-}
-
-/** How wide the resting line is drawn, for a picture this many pixels wide.
- *
- * Wide enough that no two cluster boxes run into each other and every box keeps
- * room for the years written in it, and never more than two screens: on a
- * record too crowded for that the scale coarsens rather than the line reaching
- * further, so the whole history is always one or two swipes (R-0381). The
- * clusters come in time order; the dates are every dated moment, in order. */
-export function restWidth(
-  clusters: { start: string; end: string; count?: number }[],
-  dates: string[],
-  screen: number,
-): number {
-  if (dates.length < 2) return screen;
-  const span = years(dates[dates.length - 1]) - years(dates[0]);
-  if (span <= 0) return screen;
-  let scale = (screen - 2 * X_PAD) / span;
-  clusters.forEach((cluster, i) => {
-    const dots = cluster.count ?? 0;
-    const room =
-      Math.max(
-        shortYears(cluster.start, cluster.end).length * YEAR_CH + 8,
-        dots ? (dots - 1) * DOT_GAP + 2 * DOT_R : 0,
-      ) -
-      2 * BOX_PAD;
-    const held = years(cluster.end) - years(cluster.start);
-    if (held > 0 && room > 0) scale = Math.max(scale, room / held);
-    // two clusters that already touch in time can never be pulled apart, and
-    // the boxes give way to each other instead
-    const apart = i ? years(cluster.start) - years(clusters[i - 1].end) : 0;
-    if (apart > 0) scale = Math.max(scale, (2 * BOX_PAD + BOX_GAP) / apart);
-  });
-  return Math.round(Math.min(REACH * screen, 2 * X_PAD + scale * span));
-}
-
-/** Where a cluster's dots are drawn inside its box: where they fall in time,
- * unless that draws them over each other — a cluster held inside a few weeks
- * would be one solid bar — in which case they are spread evenly across the box
- * in the same order, and never outside it. */
-export function dotXs(xs: number[], left: number, boxWidth: number): number[] {
-  if (xs.every((x, i) => !i || x - xs[i - 1] >= DOT_GAP)) return xs;
-  const from = left + DOT_R;
-  const to = left + boxWidth - DOT_R;
-  if (xs.length < 2) return [(from + to) / 2];
-  return xs.map((_, i) => from + ((to - from) * i) / (xs.length - 1));
 }
 
 /** The second line of a label in the two-moments drawing: one row below the
@@ -260,12 +320,13 @@ export interface Layer {
  * box opens it, even on a loose event dated inside its years. */
 export const restLayers = (boxes: Layer[], dots: Layer[]): Layer[] => [...dots, ...boxes];
 
-/** A target as the button the thumb lands on, ZONE tall on the wire. */
-const hitButton = (layer: Layer, wire: number): string =>
+/** A target as the button the thumb lands on, from under the path to the
+ * bottom of the picture (R-0544). */
+const hitButton = (layer: Layer): string =>
   `<button class="ss-hit" data-target="${layer.target}" data-index="${layer.index}" ` +
   `aria-label="${esc(layer.label)}" ` +
-  `style="left:${layer.left.toFixed(1)}px;top:${wire - ZONE / 2}px;` +
-  `width:${layer.width.toFixed(1)}px;height:${ZONE}px"></button>`;
+  `style="left:${layer.left.toFixed(1)}px;top:${HIT_TOP}px;` +
+  `width:${layer.width.toFixed(1)}px;height:${PIC_H - HIT_TOP - 1}px"></button>`;
 
 /** The words over the line as one target, read by the row a tap lands on:
  * the words of the event picked lead to where it was said (R-0192), and blank
@@ -496,12 +557,13 @@ export class Picture {
         e,
         Number(hit.dataset.index ?? -1),
       );
-      // The words are written over the wire, and the wire's own targets are 44
-      // tall so a thumb can find a dot — tall enough to cover the second line
-      // of a label. Where a tap lands on a line of words, the words answer it:
-      // the reader touched the label, not the dot underneath it.
+      // The words are written over the wire, and the wire's own targets reach
+      // up the strip so a thumb can find a dot or a pill — far enough to cover
+      // the second line of a label. Where a tap lands on a line of words, the
+      // words answer it: the reader touched the label, not the mark under it.
       const on =
-        tap.target === Target.Zone && this.rowAt(tap.x, tap.y) !== null
+        (tap.target === Target.Zone || tap.target === Target.Cluster) &&
+        this.rowAt(tap.x, tap.y) !== null
           ? { ...tap, target: Target.Band }
           : tap;
       this.handlers.onTap(on);
@@ -792,13 +854,6 @@ export class Picture {
     return this.host.clientWidth || 360;
   }
 
-  /** Where a tap target of this size sits when it is meant to be centred on a
-   * point: a target for a thumb is wider than the gap at the ends of the wire,
-   * so one near an end is slid inside rather than left hanging off the edge. */
-  private hitLeft(middle: number, size: number, width = this.width): string {
-    return Math.min(Math.max(middle - size / 2, 0), width - size).toFixed(1);
-  }
-
   /** A mode of the cluster, as a card laid over the chat from the top of the
    * picture: as tall as what it holds, while the picture and the header keep
    * their height and the bubbles stay where they are under it (R-0460). */
@@ -840,15 +895,14 @@ export class Picture {
   }
 
   /** The line: one drawing for the whole timeline and a cluster open on it
-   * (R-0538). One box per cluster on a wire that never moves, its years in
-   * it and its moments as dots; the moments no cluster claims are dots of
-   * their own; the amber question where the record has a long gap it cannot
-   * account for. What the reader opened or the coach named is lit and the
-   * rest is dimmed, never taken away. A moment picked writes itself out above
-   * the line with its year under its dot, and what the coach touched this
-   * turn keeps its colour (R-0539). A tap on a box opens its cluster; the
-   * open cluster's dots and the loose ones pick. Converged mockup:
-   * crowded-cluster/timeline-converged.html renderRest. */
+   * (R-0538), always one screen wide. One pill per cluster with nothing drawn
+   * inside it, and a dot for each event no cluster claims (R-0543); the years
+   * under it as a ruler. What the reader opened or the coach named is lit and
+   * the rest is dimmed, never taken away. A picked event writes itself out
+   * above the line, and a pill or dot the coach touched this turn takes that
+   * colour, the strongest touch winning (R-0539, R-0544). Only a pill and a
+   * loose dot answer a tap, each across the strip's height to halfway to its
+   * neighbours; a tap on the open pill is ground, which puts it down. */
   private renderLine(): void {
     const screen = this.width;
     const dated = this.dated();
@@ -867,13 +921,7 @@ export class Picture {
     }
 
     const clusters = this.restClusters();
-    // The line is drawn wider than the screen and slides sideways under it, so
-    // a crowded record reads at a scale a thumb can pick from (R-0381).
-    const width = restWidth(
-      clusters,
-      dated.map((e) => e.dateTime as string),
-      screen,
-    );
+    const width = screen;
     const held = this.host.querySelector<HTMLElement>(SCROLLER)?.scrollLeft ?? null;
     const x0 = X_PAD;
     const x1 = width - X_PAD;
@@ -893,143 +941,82 @@ export class Picture {
       `<svg viewBox="0 0 ${width} ${PIC_H}" height="${PIC_H}" preserveAspectRatio="xMinYMin meet">` +
       this.bandMark(at) +
       `<line class="wire" x1="${x0}" y1="${WIRE}" x2="${x1}" y2="${WIRE}"/>`;
-    // The moment picked is drawn last, so it is on top of whatever crowds it
+    // The event picked is drawn last, so it is on top of whatever crowds it
     // (picked mockup Q1).
     let onTop = "";
-    // A dot takes the colour of what the coach did to it this turn; a read is
-    // left to the box when the read took in the whole cluster.
-    const dot = (id: number | null, x: number, boxRead = false): void => {
-      const touch = id === null ? undefined : this.touched.get(id);
-      const shown = touch === Touch.Read && boxRead ? undefined : touch;
-      const on = id !== null && id === this.selected;
-      const named = !on && id !== null && this.named.includes(id);
-      const cls = ["dot", on && "on", named && "lit", shown, shown && this.fresh.has(id as number) && "flash"]
+    // A dot takes the colour of what the coach did to it this turn.
+    const dot = (id: number, x: number): void => {
+      const touch = this.touched.get(id);
+      const on = id === this.selected;
+      const named = !on && this.named.includes(id);
+      const cls = ["dot", on && "on", named && "lit", touch, touch && this.fresh.has(id) && "flash"]
         .filter(Boolean)
         .join(" ");
-      const faded = lit.size && !shown && (id === null || !lit.has(id)) ? dim : "";
+      const faded = lit.size && !touch && !lit.has(id) ? dim : "";
       const drawn =
-        `<circle class="${cls}"${id === null ? "" : ` data-event="${id}"`} ` +
+        `<circle class="${cls}" data-event="${id}" ` +
         `cx="${x.toFixed(1)}" cy="${WIRE}" r="${on ? 7 : DOT_R}"${faded}/>`;
       if (on) onTop += drawn;
       else svg += drawn;
     };
     const marks: Mark[] = [];
-    const picks: Mark[] = [];
     const boxes: Layer[] = [];
-    let openX: number | null = null;
-    // A box reaches a little past the moments it holds, and two clusters a
-    // month apart would then draw over one another. Where that happens the two
-    // boxes give way to each other and leave a gap between them.
-    const edges = clusters.map((cluster) => ({
-      left: at(cluster.start) - BOX_PAD,
-      right: at(cluster.end) + BOX_PAD,
-    }));
-    for (let i = 1; i < edges.length; i += 1) {
-      const gap = edges[i].left - edges[i - 1].right;
-      if (gap >= BOX_GAP) continue;
-      const middle = (edges[i - 1].right + edges[i].left) / 2;
-      edges[i - 1].right = middle - BOX_GAP / 2;
-      edges[i].left = middle + BOX_GAP / 2;
-    }
-
-    clusters.forEach((cluster, i) => {
-      const a = at(cluster.start);
-      const b = at(cluster.end);
-      const left = edges[i].left;
-      const boxWidth = Math.max(6, edges[i].right - edges[i].left);
-      const middle = (a + b) / 2;
+    const laid = pills(clusters, dated, at);
+    const hits = reach(laid, width);
+    laid.forEach((pill, i) => {
+      if (pill.event) {
+        const x = at(pill.event.dateTime as string);
+        dot(pill.event.id, x);
+        marks.push({ event: pill.event, x });
+        return;
+      }
+      const cluster = pill.cluster as Cluster;
+      const ids = cluster.event_ids;
       const opened = cluster.id === open?.id;
-      if (opened) openX = left + boxWidth / 2;
-      // a read that took in every moment in the cluster greys the box rather
-      // than every dot in it (R-0539)
-      const read =
-        cluster.event_ids.every((id) => this.touched.has(id)) &&
-        cluster.event_ids.some((id) => this.touched.get(id) === Touch.Read);
-      const state = [
-        opened ? "open" : lit.size ? "dim" : "",
-        read ? "read" : "",
-        read && cluster.event_ids.some((id) => this.fresh.has(id)) ? "flash" : "",
+      const touch = strongest(ids, this.touched);
+      const shown = opened || ids.some((id) => lit.has(id));
+      const cls = [
+        "pill",
+        shown ? "on" : lit.size && !touch ? "dim" : "",
+        touch,
+        touch && ids.some((id) => this.fresh.has(id)) ? "flash" : "",
       ]
         .filter(Boolean)
-        .map((one) => ` ${one}`)
-        .join("");
+        .join(" ");
+      const wide = Math.max(PILL_H, pill.right - pill.left);
       svg +=
-        `<g class="ep-g${state}">` +
-        `<rect class="ep" x="${left.toFixed(1)}" y="${BOX_Y}" ` +
-        `width="${boxWidth.toFixed(1)}" height="${BOX_H}" rx="8"/>` +
-        `<rect class="ep-edge" x="${left.toFixed(1)}" y="${BOX_Y}" ` +
-        `width="${boxWidth.toFixed(1)}" height="${BOX_H}" rx="8"/>` +
-        // the open cluster's years are the path's, and a figure is written
-        // once on a screen
-        (opened
-          ? ""
-          : `<text class="ep-yrs" x="${middle.toFixed(1)}" y="${WIRE - 7}" text-anchor="middle">` +
-            `${esc(shortYears(cluster.start, cluster.end))}</text>`) +
-        `</g>`;
-      // every event in the box is a dot, however many there are: a crowded
-      // box carries no count (R-0376)
-      const inBox = dated.filter((e) => cluster.event_ids.includes(e.id));
-      const whole = inBox.length === cluster.count;
-      const when = whole
-        ? inBox.map((e) => at(e.dateTime as string))
-        : Array.from({ length: cluster.count }, (_, j) =>
-            cluster.count > 1 ? a + ((b - a) * j) / (cluster.count - 1) : middle,
-          );
-      dotXs(when, left, boxWidth).forEach((x, j) => {
-        const event = whole ? inBox[j] : null;
-        dot(event?.id ?? null, x, read);
-        if (!event) return;
-        marks.push({ event, x });
-        if (opened) picks.push({ event, x });
-      });
-
-      const next = clusters[i + 1];
-      if (next && years(next.start) - years(cluster.end) >= GAP_YEARS) {
-        const gap = (at(next.start) + b) / 2;
-        svg +=
-          `<text class="qm small" x="${gap.toFixed(1)}" y="${WIRE + 4}" ` +
-          `text-anchor="middle">?</text>`;
-      }
-
-      // the open cluster's own dots pick; every other box opens its cluster,
-      // and a box may be narrower than a thumb, so the target is grown to the
-      // floor
+        `<rect class="${cls}" data-cluster="${cluster.id}" ` +
+        `x="${(middle(pill) - wide / 2).toFixed(1)}" y="${WIRE - PILL_H / 2}" ` +
+        `width="${wide.toFixed(1)}" height="${PILL_H}" rx="${PILL_H / 2}"/>`;
+      // a second tap on the open pill is ground, which puts it down
       if (opened) return;
-      const target = Math.max(ZONE, boxWidth);
       boxes.push({
         target: Target.Cluster,
-        index: i,
-        left: Number(this.hitLeft(middle, target, width)),
-        width: target,
-        label: cluster.title || shortYears(cluster.start, cluster.end),
+        index: clusters.indexOf(cluster),
+        left: hits[i].left,
+        width: hits[i].right - hits[i].left,
+        label: cluster.title || fullYears(cluster.start, cluster.end),
       });
     });
-    // A moment no cluster claims is drawn as itself: a dot on the wire where it
-    // happened, with no box around it and nothing else bundled into it.
-    for (const event of loose(dated, clusters)) {
-      const x = at(event.dateTime as string);
-      dot(event.id, x);
-      marks.push({ event, x });
-      picks.push({ event, x });
-    }
     // what this turn removed stays where it was, in its colour, until the next
-    // message
+    // message, unless a pill already carries its colour
     const kept = new Set(dated.map((e) => e.id));
+    const claimed = new Set(clusters.flatMap((c) => c.event_ids));
     for (const event of this.gone)
-      if (!kept.has(event.id) && dateOf(event)) dot(event.id, at(event.dateTime as string));
-    svg += this.questions(at, kept) + onTop + `</svg>`;
+      if (!kept.has(event.id) && !claimed.has(event.id) && dateOf(event))
+        dot(event.id, at(event.dateTime as string));
+    for (const tick of ruler(yearAt(first), yearAt(last), at, x0, x1))
+      svg +=
+        `<text class="ep-yrs" x="${tick.x.toFixed(1)}" y="${RULER_Y}" ` +
+        `text-anchor="${tick.anchor}">${tick.year}</text>`;
+    svg += onTop + `</svg>`;
 
-    const zoned = zones(picks, width);
+    const zoned = zones(marks, width);
     this.laid.zones = zoned.map((zone) => zone.marks);
-    const hits = restLayers(boxes, dotLayers(zoned))
-      .map((layer) => hitButton(layer, WIRE))
-      .join("");
 
     const aimed = marks.find((m) => m.event.id === this.aimed);
-    // the line goes to what was named: the open cluster's box when the moment
-    // is in it, otherwise the moment itself
-    const onX = aimed ? (open?.event_ids.includes(aimed.event.id) ? openX : aimed.x) : null;
-    // where the line comes to rest, so the words of a picked moment are
+    const onX = aimed?.x ?? null;
+    // where the line comes to rest, so the words of a picked event are
     // written across the stretch the reader will be looking at
     const shows = this.stands({ width, screen }, held, onX);
     const said = this.labels(marks, shows + X_PAD, shows + screen - X_PAD, WIRE);
@@ -1037,39 +1024,19 @@ export class Picture {
     const chosen = marks.find((m) => m.event.id === this.selected);
     // With a cluster open and nothing picked, the words over the line are the
     // cluster's own name, so the reader can find what is open (R-0538).
-    // It stands on the picture rather than the line that slides under it, so
-    // it is always inside the picture whichever cluster is open.
     const title =
       !said.text && open && !chosen
         ? `<div class="ss-t ss-name" style="left:${X_PAD}px;top:${ROWS[0]}px;` +
           `width:${screen - 2 * X_PAD}px">${esc(open.title || open.label)}</div>`
         : "";
-    // The band lies over the words and under the dots' own targets.
+    // The band lies over the words and under the marks' own targets.
     const words = said.text ? said.text + bandHit(shows + X_PAD, screen - 2 * X_PAD) : "";
-
-    // Where the line settles after a swipe: at a box's near edge, so a cluster
-    // is never cut in half, and at the present.
-    const stops = new Set<string>();
-    for (const edge of edges) {
-      stops.add(Math.max(0, edge.left - X_PAD).toFixed(1));
-      stops.add(Math.max(0, edge.right + X_PAD - screen).toFixed(1));
-    }
-    stops.add(Math.max(0, width - screen).toFixed(1));
-    const snaps = [...stops]
-      .map((left) => `<i class="ss-snap" style="left:${left}px"></i>`)
-      .join("");
-    // The years say which stretch of the record is on screen, and are written
-    // again as it slides. They belong to a line long enough to slide, and give
-    // way to the year of a moment picked.
-    const ends =
-      width > screen
-        ? `<div class="ss-yrs"><span></span><span></span></div>`
-        : "";
+    const targets = restLayers(boxes, dotLayers(zoned)).map(hitButton).join("");
 
     this.host.innerHTML =
       `<div class="ss"><div class="ss-scroll"><div class="ss-line" style="width:${width.toFixed(1)}px">` +
-      `${svg}${words}${hits}${snaps}</div></div>${ends}${title}${shelf}</div>`;
-    this.settle({ width, screen, first, span }, held, onX);
+      `${svg}${words}${targets}</div></div>${title}${shelf}</div>`;
+    this.settle({ width, screen }, held, onX);
   }
 
   /** Where the line comes to rest after this draw: on the moment just named,
@@ -1087,31 +1054,14 @@ export class Picture {
   }
 
   /** Where the line stands once it has been drawn: parked at the present, on
-   * the moment just named, or where the reader left it. The years under it are
-   * written from the stretch on screen, and again on every slide. */
+   * the moment just named, or where the reader left it. */
   private settle(
-    view: { width: number; screen: number; first: number; span: number },
+    view: { width: number; screen: number },
     held: number | null,
     onX: number | null,
   ): void {
     const scroll = this.host.querySelector<HTMLElement>(SCROLLER);
     if (!scroll) return;
-    const reach = view.width - 2 * X_PAD;
-    const ends = [...this.host.querySelectorAll<HTMLElement>(".ss-yrs span")];
-    const write = () => {
-      if (ends.length !== 2) return;
-      const year = (x: number) =>
-        String(
-          yearAt(
-            view.first +
-              ((Math.max(X_PAD, Math.min(view.width - X_PAD, x)) - X_PAD) / reach) *
-                view.span,
-          ),
-        );
-      ends[0].textContent = year(scroll.scrollLeft);
-      ends[1].textContent = year(scroll.scrollLeft + view.screen);
-    };
-    scroll.addEventListener("scroll", write);
     const named = this.park === Park.Named && onX !== null;
     const to = this.stands(view, held, onX);
     this.park = Park.Held;
@@ -1124,7 +1074,6 @@ export class Picture {
       scroll.scrollLeft = held;
       scroll.scrollTo({ left: to, behavior: "smooth" });
     } else scroll.scrollLeft = to;
-    write();
   }
 
   /** The clusters the resting level draws, in time order. They are the ones
@@ -1328,36 +1277,6 @@ export class Picture {
     return (
       `<rect class="span" x="${Math.min(a, b).toFixed(1)}" y="${WIRE - 14}" ` +
       `width="${Math.max(4, Math.abs(b - a)).toFixed(1)}" height="28" rx="6"/>`
-    );
-  }
-
-  /** The one amber treatment: the record asking which of two things came first.
-   *
-   * It asks only where the two guess ranges touch. Where they do not, the
-   * record knows the order and the dots' own places on the line say it, so
-   * nothing is asked (DRAWABILITY rule 4). */
-  private questions(at: (iso: string) => number, shown: Set<number>): string {
-    if (this.selected !== null || this.named.length) return "";
-    return (this.data?.questions ?? [])
-      .filter((q: Question) => shown.has(q.event_id) && this.ordered(q))
-      .map((q: Question, i, all) => {
-        const x = at(q.date);
-        if (all.slice(0, i).some((other) => Math.abs(at(other.date) - x) < 16))
-          return "";
-        return `<text class="qm small" x="${x.toFixed(1)}" y="${WIRE - 16}" text-anchor="middle">?</text>`;
-      })
-      .join("");
-  }
-
-  /** Whether the record still has to ask about this pair: it does only while
-   * the two guess ranges touch. */
-  private ordered(q: Question): boolean {
-    const one = this.event(q.event_id);
-    const other = this.event(q.other_event_id);
-    if (!one?.dateTime || !other?.dateTime) return true;
-    return rangesTouch(
-      { date: one.dateTime, certainty: one.dateCertainty },
-      { date: other.dateTime, certainty: other.dateCertainty },
     );
   }
 

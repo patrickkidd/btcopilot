@@ -76,7 +76,8 @@ const tapWords = async (page: Page, index = 0) => {
 };
 
 test.describe("a tap on the words of the moment picked", () => {
-  test.use({ storageState: stateFor("moves") });
+  // a loose event, the only kind a tap picks (R-0543)
+  test.use({ storageState: stateFor("three40") });
 
   /** Pick a moment, so the band carries its words rather than the cluster's. */
   const pickOne = async (page: Page) => {
@@ -86,6 +87,7 @@ test.describe("a tap on the words of the moment picked", () => {
 
   // R-0207
   test("opens its editor", async ({ page }) => {
+    test.skip(true, "superseded on the strip by R-0543: an event inside a cluster has no mark of its own to pick, and a loose event picked closes the cluster, so no words on the line open an editor; needs Patrick's call");
     await settle(page);
     await pickOne(page);
     await tapWords(page);
@@ -94,7 +96,7 @@ test.describe("a tap on the words of the moment picked", () => {
     await expect(page.locator("#menu-body .editor")).toBeVisible();
   });
 
-  // R-0460
+  // R-0460, R-0543
   test("a dot picks its moment and never travels", async ({ page }) => {
     await settle(page);
     await pickOne(page);
