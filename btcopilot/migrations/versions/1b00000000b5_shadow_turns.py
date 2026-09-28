@@ -1,5 +1,5 @@
 """A real turn can be run again on a second model over a copy of the record,
-and what that model said, called and spent is kept for comparison [R-0589].
+and what that model said, called and spent is kept for comparison [R-0595].
 
 Revision ID: 1b00000000b5
 Revises: 1b00000000b4

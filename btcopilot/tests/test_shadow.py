@@ -26,7 +26,7 @@ from btcopilot.tests.test_profile import own_person, titles  # noqa: F401
 
 
 def test_a_scratch_turn_charges_no_one_and_leaves_the_profile(discussion, test_user):
-    # R-0589
+    # R-0595
     named = called(
         ToolName.EditPerson,
         id=1,
@@ -64,7 +64,7 @@ def coach(monkeypatch, where, model):
 
 
 def test_each_person_gets_their_own_coach_model_or_the_default(web, token, test_user):
-    # R-0589
+    # R-0595
     asked = []
 
     def model_for(name=None):
@@ -81,7 +81,7 @@ def test_each_person_gets_their_own_coach_model_or_the_default(web, token, test_
 def test_a_shadow_turn_is_kept_apart_from_the_real_one(
     web, token, test_user, monkeypatch
 ):
-    # R-0589
+    # R-0595
     real = coach(
         monkeypatch,
         "btcopilot.turns.model_for",
@@ -157,7 +157,7 @@ def test_a_shadow_turn_is_kept_apart_from_the_real_one(
 def test_a_broken_shadow_keeps_its_error_and_leaves_no_scratch(
     web, token, test_user, monkeypatch
 ):
-    # R-0589
+    # R-0595
     coach(monkeypatch, "btcopilot.turns.model_for", Model(said("Tell me about Nell.")))
     coach(monkeypatch, "btcopilot.shadow.model_for", Model())
     setting.write(SettingKey.ShadowModel, "haiku-4.5", test_user.id)
@@ -174,7 +174,7 @@ def test_a_broken_shadow_keeps_its_error_and_leaves_no_scratch(
 
 
 def test_a_failed_real_turn_starts_no_shadow(web, token, test_user, monkeypatch):
-    # R-0589
+    # R-0595
     coach(monkeypatch, "btcopilot.turns.model_for", Model(said("")))
     setting.write(SettingKey.ShadowModel, "haiku-4.5", test_user.id)
     with patch("btcopilot.turns.enqueue"):
@@ -187,7 +187,7 @@ def test_a_failed_real_turn_starts_no_shadow(web, token, test_user, monkeypatch)
 
 
 def test_a_shadow_waits_on_its_own_queue(flask_app, monkeypatch):
-    # R-0589
+    # R-0595
     monkeypatch.setattr(extensions, "celery", None)
     ORIGINALS["init_celery"](flask_app)
     router = extensions.celery.amqp.router
@@ -214,7 +214,7 @@ class Looks(Model):
 
 
 def test_the_user_never_sees_the_scratch_record(web, token, test_user, monkeypatch):
-    # R-0589
+    # R-0595
     coach(monkeypatch, "btcopilot.turns.model_for", Model(said("Tell me about Nell.")))
     looks = coach(
         monkeypatch, "btcopilot.shadow.model_for", Looks(test_user, said("Go on."))

@@ -30,7 +30,7 @@ def row(**changes) -> dict:
 
 
 def test_each_append_is_one_line(tmp_path):
-    # R-0590
+    # R-0596
     path = tmp_path / "ledger.jsonl"
     ledger.append(row(), path)
     ledger.append(row(kind=ledger.LedgerKind.Live.value, case="t1"), path)
@@ -39,7 +39,7 @@ def test_each_append_is_one_line(tmp_path):
 
 
 def test_a_row_off_the_schema_is_refused(tmp_path):
-    # R-0590
+    # R-0596
     path = tmp_path / "ledger.jsonl"
     with pytest.raises(KeyError):
         ledger.append(row(score=1.0), path)

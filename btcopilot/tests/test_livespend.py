@@ -174,7 +174,7 @@ def test_a_refused_balance_check_stops_the_run(tmp_path, monkeypatch):
 
 
 def test_a_finished_run_appends_one_ledger_line_per_case(tmp_path):
-    # R-0592
+    # R-0598
     run = Run(MODEL, GIT, tmp_path)
     run.begin("passes", "once")
     run.charge(Spent(input=100, output=10), Decimal("0.25"))

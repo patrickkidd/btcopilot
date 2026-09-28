@@ -136,7 +136,7 @@ def test_the_coaching_text_goes_over_as_its_own_block_and_is_kept(wire):
 
 
 def test_the_tools_are_kept_by_the_mark_on_the_coaching_text_after_them(wire):
-    # R-0392, R-0588
+    # R-0392, R-0594
     sent = call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
     assert not any("cache_control" in tool for tool in sent["tools"])
 
@@ -360,7 +360,7 @@ def wire_order(sent: dict) -> tuple[list[str], list[int]]:
 def test_what_a_call_writes_to_the_wire_the_next_call_and_turn_read_back(
     discussion, monkeypatch
 ):
-    # R-0588
+    # R-0594
     speakers = {s.type: s for s in Speaker.query.filter_by(discussion_id=discussion.id)}
     discussion.chat_user_speaker = speakers[SpeakerType.Subject]
     discussion.chat_ai_speaker = speakers[SpeakerType.Expert]

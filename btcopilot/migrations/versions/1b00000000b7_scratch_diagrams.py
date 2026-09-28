@@ -1,5 +1,5 @@
 """A diagram a shadow turn writes on is marked scratch and never listed to the
-user whose turn it copies [R-0589].
+user whose turn it copies [R-0595].
 
 Revision ID: 1b00000000b7
 Revises: 1b00000000b6

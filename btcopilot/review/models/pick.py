@@ -25,7 +25,7 @@ def _enum(kind: type[enum.StrEnum]) -> Enum:
 
 
 class Pick(db.Model, ModelMixin):
-    """Patrick's blind pick between two replies to the same words (R-0592).
+    """Patrick's blind pick between two replies to the same words (R-0598).
 
     The row is made when the pair is first served, which fixes its random side
     order; `choice` stays null until he picks. `pair` names the two replies so

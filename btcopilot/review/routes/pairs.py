@@ -1,5 +1,5 @@
 """Blind pairs: two replies to the same words, shown in a random order with no
-model named until Patrick has picked (R-0592). His pick is the only judgement;
+model named until Patrick has picked (R-0598). His pick is the only judgement;
 no model judges another.
 
 A pair is a shadow turn against the real reply it shadowed, or the same reply

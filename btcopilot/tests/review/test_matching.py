@@ -144,7 +144,7 @@ def _cluster(cluster_id, events):
 
 
 def test_clusters_sharing_half_their_events_match_and_disjoint_ones_do_not():
-    # R-0590
+    # R-0596
     mine = [_cluster("a", [11, 12, 13, 14]), _cluster("b", [15, 16, 17])]
     agreed = [_cluster("x", [1, 2, 9]), _cluster("y", [5, 6, 7])]
     found = match_clusters(mine, agreed, {11: 1, 12: 2, 13: 3, 15: 8})
@@ -154,7 +154,7 @@ def test_clusters_sharing_half_their_events_match_and_disjoint_ones_do_not():
 
 
 def test_a_comparison_scores_pair_bonds_and_clusters():
-    # R-0590
+    # R-0596
     events = [
         {
             "id": i,

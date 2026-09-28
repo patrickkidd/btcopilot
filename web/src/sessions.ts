@@ -38,7 +38,7 @@ export interface SessionsHandlers {
   onAgenda(session: Session): void;
   /** The agenda itself, which is Patrick's whole administration (R-0259). */
   onAgendaScreen(): void;
-  /** Two replies to the same words, picked blind (R-0592). Admins only. */
+  /** Two replies to the same words, picked blind (R-0598). Admins only. */
   onPairs(): void;
 }
 

@@ -1,7 +1,7 @@
 """A discussion replayed on one model onto a scratch record, scored against a
 record Patrick ratified or corrected, never against another model's record,
 with the mistakes the watcher looks for counted. Each replay is one line in the
-eval ledger [Oracle: R-0590]."""
+eval ledger [Oracle: R-0596]."""
 
 import datetime
 import subprocess

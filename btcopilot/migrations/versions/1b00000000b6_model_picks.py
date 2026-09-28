@@ -1,5 +1,5 @@
 """Patrick picks the better of two replies to the same words without knowing
-which model wrote either, and each pick is kept per pair [R-0592].
+which model wrote either, and each pick is kept per pair [R-0598].
 
 Revision ID: 1b00000000b6
 Revises: 1b00000000b5

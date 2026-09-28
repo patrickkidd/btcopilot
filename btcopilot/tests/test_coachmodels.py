@@ -9,14 +9,14 @@ def invoke(flask_app, *args):
 
 
 def test_set_rejects_an_unknown_model(flask_app, test_user):
-    # R-0589
+    # R-0595
     result = invoke(flask_app, "set", test_user.username, "opus-typo")
     assert result.exit_code != 0 and "unknown model opus-typo" in result.output
     assert setting.read(SettingKey.CoachModel, test_user.id) is None
 
 
 def test_set_and_shadow_write_and_clear_a_persons_models(flask_app, test_user):
-    # R-0589
+    # R-0595
     invoke(flask_app, "set", test_user.username, "sonnet-5")
     invoke(flask_app, "shadow", test_user.username, "haiku-4.5")
     shown = json.loads(invoke(flask_app, "show").output)

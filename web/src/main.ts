@@ -504,7 +504,7 @@ async function openAgenda(): Promise<void> {
   screen(Screen.Agenda);
 }
 
-/** Two replies to the same words, picked blind (R-0592). Patrick's. */
+/** Two replies to the same words, picked blind (R-0598). Patrick's. */
 const pairs = new Pairs($("pairs-body"), { onTitle: (title) => setTitle(title) });
 
 async function openPairs(): Promise<void> {

@@ -1,5 +1,5 @@
 """Which model coaches one person, and which model runs each of their turns
-again for comparison only [R-0589]. With none set a person gets the default
+again for comparison only [R-0595]. With none set a person gets the default
 model and no second run."""
 
 import enum

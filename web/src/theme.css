@@ -3053,7 +3053,7 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   .slideover { transition: none !important; }
 }
 
-/* Blind pairs (R-0592): the conversation once, then the two replies, side by
+/* Blind pairs (R-0598): the conversation once, then the two replies, side by
    side where the app widens and stacked on a phone. */
 .pr-ctx {
   max-height: 40vh;

@@ -829,7 +829,7 @@ export enum PickChoice {
   Tie = "tie",
 }
 
-/** Two replies to the same words, with no model named (R-0592). */
+/** Two replies to the same words, with no model named (R-0598). */
 export interface Pair {
   id: number;
   source: string;

@@ -54,7 +54,7 @@ def coach(monkeypatch):
 def test_a_refused_call_and_a_person_added_twice_are_counted(
     discussion, reference, coach
 ):
-    # R-0590
+    # R-0596
     row = replayscore.replay(discussion, "sonnet-5", reference)
     assert row["faults"]["tool_refused"] == 1
     assert row["faults"]["duplicate_person"] == 1
@@ -63,13 +63,13 @@ def test_a_refused_call_and_a_person_added_twice_are_counted(
 
 
 def test_a_replay_charges_no_one(discussion, reference, coach):
-    # R-0590
+    # R-0596
     replayscore.replay(discussion, "sonnet-5", reference)
     assert TokenMeter.query.count() == 0
 
 
 def test_an_event_on_january_first_with_unknown_certainty_is_counted(test_user):
-    # R-0590
+    # R-0596
     data = {
         "people": [NELL],
         "events": [
@@ -98,7 +98,7 @@ def test_an_event_on_january_first_with_unknown_certainty_is_counted(test_user):
 def test_the_command_appends_one_line_on_the_schema(
     flask_app, discussion, reference, coach, path
 ):
-    # R-0590
+    # R-0596
     result = flask_app.test_cli_runner().invoke(
         admin, ["quality", "replay", str(discussion.id), "sonnet-5", str(reference.id)]
     )
@@ -113,7 +113,7 @@ def test_the_command_appends_one_line_on_the_schema(
 
 
 def test_the_command_refuses_production(flask_app, discussion, reference, coach):
-    # R-0590
+    # R-0596
     flask_app.config["CONFIG"] = "production"
     result = flask_app.test_cli_runner().invoke(
         admin, ["quality", "replay", str(discussion.id), "sonnet-5", str(reference.id)]

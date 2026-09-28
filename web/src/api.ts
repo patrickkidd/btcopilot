@@ -471,7 +471,7 @@ export const rules = () => ask<Rule[]>("GET", "/rules");
 export const flagRule = (id: number, on: boolean) =>
   ask<Rule>("PATCH", `/rules/${id}`, { flag: on });
 
-/** The blind pairs not yet picked, and each model's picks so far (R-0592). */
+/** The blind pairs not yet picked, and each model's picks so far (R-0598). */
 export const pairs = () => ask<Pair[]>("GET", "/pairs");
 export const modelPicks = () => ask<ModelPicks[]>("GET", "/picks");
 

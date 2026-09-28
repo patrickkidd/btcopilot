@@ -2,7 +2,7 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 import { flask, stateFor, username } from "./setup";
 import { deadTaps, tap, watchDom } from "./gate";
 
-/** Blind pairs (R-0592): the conversation once, two replies with no model
+/** Blind pairs (R-0598): the conversation once, two replies with no model
  * named, and a pick of left, right or tie with a one-line note. The pairs are
  * served by a stand-in for the review's endpoints, so the page is checked on
  * hostile words: a reply of 60 characters with no space to break on, a unicode
@@ -75,7 +75,7 @@ test.use({ storageState: stateFor("empty") });
 test.beforeAll(() => roles("admin", "subscriber"));
 test.afterAll(() => roles("subscriber"));
 
-// R-0592
+// R-0598
 test("two replies are picked blind and the page moves on", async ({ page }, info) => {
   const errors: string[] = [];
   const failed: string[] = [];

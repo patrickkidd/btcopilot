@@ -59,7 +59,7 @@ services:
       - "8888"
 
   # Real turns only: the solo pool runs one task at a time, so a shadow turn on
-  # this queue would hold up the next real one (R-0589).
+  # this queue would hold up the next real one (R-0595).
   fd-worker: &worker
     <<: *app
     environment:

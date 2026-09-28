@@ -99,7 +99,7 @@ def gemini(monkeypatch):
 
 
 def test_a_whole_tool_using_turn_runs_on_gemini(discussion, gemini):
-    # R-0591
+    # R-0597
     reply = CoachTurn(
         discussion, "My sister is Nell.", model=GeminiModel(FLASH, "medium")
     ).run()
@@ -121,7 +121,7 @@ def test_a_whole_tool_using_turn_runs_on_gemini(discussion, gemini):
 def test_the_second_call_sends_back_the_call_its_signature_and_its_answer(
     discussion, gemini
 ):
-    # R-0591
+    # R-0597
     CoachTurn(discussion, "My sister is Nell.", model=GeminiModel(FLASH)).run()
 
     asked, answered = gemini.sent[1]["contents"][-2:]
@@ -135,7 +135,7 @@ def test_the_second_call_sends_back_the_call_its_signature_and_its_answer(
 
 
 def test_a_call_gemini_did_not_make_carries_the_stand_in_signature():
-    # R-0591
+    # R-0597
     sent = contents(
         [
             {"role": "user", "content": "Hello"},
@@ -167,7 +167,7 @@ def test_a_call_gemini_did_not_make_carries_the_stand_in_signature():
 
 
 def test_a_signature_survives_the_record_as_text():
-    # R-0591
+    # R-0597
     encoded = base64.b64encode(SIGNATURE).decode()
     sent = contents(
         [
@@ -189,14 +189,14 @@ def test_a_signature_survives_the_record_as_text():
 
 
 def test_the_price_computes_from_gemini_usage():
-    # R-0591
+    # R-0597
     used = spent(usage(prompt=1000, cached=400, out=100, thought=50))
     assert used == Spent(input=600, output=150, cache_creation=0, cache_read=400)
     assert cost(FLASH, used) == Decimal("0.0010425")
 
 
 def test_a_safety_finish_raises_refusal(monkeypatch):
-    # R-0591
+    # R-0597
     client = Client([chunk(finish=types.FinishReason.SAFETY, used=usage())])
     monkeypatch.setattr("btcopilot.geminimodel.gemini_client", lambda timeout: client)
     with pytest.raises(Refusal) as refused:
@@ -207,7 +207,7 @@ def test_a_safety_finish_raises_refusal(monkeypatch):
 
 
 def test_a_gemini_alias_gets_the_gemini_model(anthropic_env):  # noqa: F811
-    # R-0591
+    # R-0597
     model = model_for("gemini-flash")
     assert isinstance(model, GeminiModel)
     assert model.model == FLASH
@@ -216,7 +216,7 @@ def test_a_gemini_alias_gets_the_gemini_model(anthropic_env):  # noqa: F811
 
 
 def test_a_local_url_runs_a_gemini_name_on_the_local_model(anthropic_env):  # noqa: F811
-    # R-0591
+    # R-0597
     anthropic_env.setenv(llmutil.LOCAL_URL, "http://127.0.0.1:11434")
     anthropic_env.setenv(llmutil.LOCAL_MODEL, "qwen3:8b")
     model = model_for("gemini-flash")
@@ -236,7 +236,7 @@ def made(monkeypatch):
 
 
 def test_gemini_goes_to_vertex_unless_told_otherwise(made):
-    # R-0591
+    # R-0597
     llmutil.gemini_client()
     assert made["vertexai"] is True
     assert made["project"] == "fd-project"
@@ -244,7 +244,7 @@ def test_gemini_goes_to_vertex_unless_told_otherwise(made):
 
 
 def test_the_developer_endpoint_uses_the_api_key(made, monkeypatch):
-    # R-0591
+    # R-0597
     monkeypatch.setenv(llmutil.GEMINI_ENDPOINT, llmutil.GeminiEndpoint.Developer.value)
     llmutil.gemini_client(30)
     assert made["api_key"] == "gemini-key"

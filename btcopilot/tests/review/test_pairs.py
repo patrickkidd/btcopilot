@@ -88,7 +88,7 @@ def shadowed(user, diagram, text=REPLY) -> ShadowTurn:
 
 
 def test_a_pair_names_no_model_and_its_sides_vary(patrick, test_user, case):
-    # R-0592
+    # R-0598
     for _ in range(8):
         shadowed(test_user, case)
     random.seed(3)
@@ -101,7 +101,7 @@ def test_a_pair_names_no_model_and_its_sides_vary(patrick, test_user, case):
 
 
 def test_a_pair_keeps_its_sides_once_served(patrick, test_user, case):
-    # R-0592
+    # R-0598
     shadowed(test_user, case)
     first = patrick.get("/review/pairs").json
     for seed in range(6):
@@ -112,7 +112,7 @@ def test_a_pair_keeps_its_sides_once_served(patrick, test_user, case):
 def test_a_pick_reveals_the_models_and_counts_in_the_summary(
     patrick, test_user, case
 ):
-    # R-0592
+    # R-0598
     shadowed(test_user, case)
     pair = patrick.get("/review/pairs").json[0]
     shadow_side = "left" if pair["left"] == REPLY else "right"
@@ -129,7 +129,7 @@ def test_a_pick_reveals_the_models_and_counts_in_the_summary(
 
 
 def test_a_long_note_is_refused(patrick, test_user, case):
-    # R-0592
+    # R-0598
     shadowed(test_user, case)
     pair = patrick.get("/review/pairs").json[0]
     response = patrick.put(
@@ -139,7 +139,7 @@ def test_a_long_note_is_refused(patrick, test_user, case):
 
 
 def test_replays_of_one_discussion_pair_turn_by_turn(patrick, test_user, case):
-    # R-0592
+    # R-0598
     real = chat(test_user, case, ["one", "real a", "two", "real b"])
     first = chat(test_user, case, ["one", "opus a", "two", "opus b"])
     second = chat(test_user, case, ["one", "flash a", "two", "flash b"])
@@ -161,7 +161,7 @@ def test_replays_of_one_discussion_pair_turn_by_turn(patrick, test_user, case):
 
 
 def test_only_patrick_sees_the_pairs(coder, test_user, case):
-    # R-0592
+    # R-0598
     shadowed(test_user, case)
     assert coder.get("/review/pairs").status_code in (302, 403)
     assert coder.get("/review/picks").status_code in (302, 403)

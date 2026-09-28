@@ -6,7 +6,7 @@ import { PickChoice, Who, type ModelPicks, type Pair } from "./types";
 
 /** Blind pairs: two replies to the same words, the conversation before them
  * once, and no model named until Patrick has picked left, right or a tie with
- * a one-line note (R-0592). Under it, each model's picks so far. */
+ * a one-line note (R-0598). Under it, each model's picks so far. */
 
 export interface PairsHandlers {
   onTitle(title: string): void;

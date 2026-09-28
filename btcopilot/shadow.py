@@ -1,4 +1,4 @@
-"""A real turn run again on a second model, for comparison only [R-0589].
+"""A real turn run again on a second model, for comparison only [R-0595].
 
 The shadow gets the same words, the chat as it stood and a copy of the record
 as the real turn found it. It writes onto a scratch record that is thrown away
