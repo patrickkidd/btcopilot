@@ -525,9 +525,10 @@ squashed into one [R-0584]. It carries:
 - CI's visual jobs run on the open-source prompts, same as the unit tests.
 
 **Production data fixed.** Event 66 in diagram 1 is now a shift, toward, targeting person 54, by
-review change 635 — the miscoding R-0585 caught. Open: events 9 and 10 in diagram 1 (both
-defined-self, 2015) and events 1 and 2 in diagram 14 still have no target; any further edit to
-them is refused until one is given; Patrick still needs to say whom 9 and 10 were aimed at.
+review change 635 — the miscoding R-0585 caught. Events 9 and 10 in diagram 1, from 2015, were
+never defined-self: Patrick ruled their words hold no defining-a-self behaviour, so their move is
+cleared and they are noted events, not given targets. Still open: events 1 and 2 in diagram 14
+have no target; any further edit to them is refused until one is given.
 
 Also open: the coach rule that links the people an event's own words name, prompt written and
 waiting on a live eval, which needs his spend approval (about $0.15 to $0.40); the older
