@@ -676,6 +676,15 @@ def test_event_the_record_refuses_is_told_in_plain_words(web, token, family):
     assert response.get_data(as_text=True) == "The end date is before the start date."
 
 
+def test_a_hand_edited_move_with_no_target_is_told_in_plain_words(web, token, family):
+    # R-0585
+    response = post(
+        web, token, "/app/events", dict(SHIFT, relationship="toward", relationshipTargets=[])
+    )
+    assert response.status_code == 400
+    assert response.get_data(as_text=True) == "Toward needs the person it was aimed at."
+
+
 def test_event_rejects_bad_kind(web, token, family):
     # R-0363
     assert (

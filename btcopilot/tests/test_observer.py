@@ -214,6 +214,40 @@ def test_a_refused_tool_call_is_written_down_with_whether_its_retry_worked(
     ]
 
 
+def test_a_move_refused_for_no_target_is_retried_with_one(
+    web, token, test_user, monkeypatch
+):
+    # R-0585
+    record(test_user, people=[NELL])
+    told = dict(
+        kind="shift",
+        person=1,
+        relationship="toward",
+        description="Told her about nursing school",
+        date="2013-06-01",
+        date_certainty="approximate",
+    )
+    coach(
+        monkeypatch,
+        Model(
+            called(ToolName.EditEvent, **told),
+            called(ToolName.EditEvent, relationship_targets=[2], **told),
+            said("That is in."),
+        ),
+    )
+    post(web, token, "In June 2013 I told my grandmother Nell I was going to nursing school.")
+    assert [d for k, d in seen() if k == ObservationKind.ToolRefused] == [
+        {
+            "tool": "edit_event",
+            "refusal": "Toward needs the person it was aimed at.",
+            "retried": True,
+            "reason": "edit_event: Toward needs the person it was aimed at.",
+        }
+    ]
+    events = test_user.free_diagram.get_diagram_data().events
+    assert [(e["relationship"], e["relationshipTargets"]) for e in events] == [("toward", [2])]
+
+
 def test_a_turn_that_used_every_step_is_written_down(
     web, token, test_user, monkeypatch
 ):

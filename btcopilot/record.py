@@ -766,6 +766,16 @@ def _structure(data: dict, deltas: list[dict]):
                     f"{role}s as a list of person ids, empty when there is none",
                     f"The {role}s of a move could not be read.",
                 )
+        move = _val(event.get("relationship"))
+        if move and not event.get("relationshipTargets"):
+            raise Invalid(
+                f"event {event_id} is a {move} move with no target: every "
+                "relationship move names who it was aimed at, so put them in "
+                "relationship_targets, adding them as a person first, "
+                "generically named where nobody named them",
+                f"{RelationshipKind(move).menuLabel()} needs the person it was "
+                "aimed at.",
+            )
         kind = _val(event.get("kind"))
         if kind in COUPLE_KINDS and event.get("spouse") is None:
             raise Invalid(

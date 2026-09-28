@@ -8,7 +8,7 @@ from btcopilot.extensions import db
 from btcopilot import record
 from btcopilot.models import Author, Change
 from btcopilot.models import Diagram
-from btcopilot.schema import EventKind, ItemKind
+from btcopilot.schema import EventKind, ItemKind, RelationshipKind
 
 
 def _diagram(user, data: dict) -> Diagram:
@@ -590,6 +590,59 @@ def test_the_write_refuses_an_event_whose_mover_is_also_its_target(
             turn_id="t1",
         )
     assert diagram.get_diagram_data().events == []
+
+
+@pytest.mark.parametrize("move", [kind.value for kind in RelationshipKind])
+def test_the_write_refuses_a_move_with_no_target(subscriber, move):
+    # R-0585
+    diagram = _diagram(
+        subscriber.user,
+        {"people": [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}]},
+    )
+
+    with pytest.raises(record.Invalid, match=f"event 36 is a {move} move with no target") as refused:
+        record.apply(
+            diagram.id,
+            [
+                {"item_kind": ItemKind.Event, "item_id": 36, "field": "kind", "after": "shift"},
+                {"item_kind": ItemKind.Event, "item_id": 36, "field": "person", "after": 1},
+                {"item_kind": ItemKind.Event, "item_id": 36, "field": "relationship", "after": move},
+                {"item_kind": ItemKind.Event, "item_id": 36, "field": "dateTime", "after": "1990-04-02"},
+            ],
+            author=Author.User,
+            turn_id="t1",
+        )
+    assert refused.value.plain == f"{RelationshipKind(move).menuLabel()} needs the person it was aimed at."
+    assert diagram.get_diagram_data().events == []
+
+
+def test_a_move_already_missing_its_target_does_not_block_other_writes(subscriber):
+    # R-0585
+    diagram = _diagram(
+        subscriber.user,
+        {
+            "people": [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}],
+            "events": [
+                {
+                    "id": 3,
+                    "kind": "shift",
+                    "person": 1,
+                    "relationship": "defined-self",
+                    "relationshipTargets": [],
+                    "dateTime": "2015-09-01",
+                    "description": "Left for school",
+                }
+            ],
+        },
+    )
+
+    record.apply(
+        diagram.id,
+        [{"item_kind": ItemKind.Person, "item_id": 2, "field": "name", "after": "Bee"}],
+        author=Author.User,
+        turn_id="t1",
+    )
+    assert diagram.get_diagram_data().people[1]["name"] == "Bee"
 
 
 @pytest.mark.parametrize("kind", ["married", "bonded", "separated", "divorced"])

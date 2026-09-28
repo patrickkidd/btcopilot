@@ -112,6 +112,24 @@ def test_a_couple_event_with_no_spouse_is_refused_to_the_coach(subscriber):
     assert diagram.get_diagram_data().events == []
 
 
+def test_a_move_with_no_target_is_refused_to_the_coach_naming_the_rule(subscriber):
+    # R-0585
+    diagram = _diagram(subscriber.user)
+    with pytest.raises(
+        ToolError, match="every relationship move names who it was aimed at"
+    ) as refused:
+        _event(
+            diagram,
+            kind="shift",
+            date="2013-06-01",
+            person=1,
+            relationship="toward",
+            description="Told her about the new plan",
+        )
+    assert refused.value.plain == "Toward needs the person it was aimed at."
+    assert diagram.get_diagram_data().events == []
+
+
 def test_a_same_day_shift_moving_the_same_variable_is_refused(subscriber):
     # R-0432
     diagram = _diagram(subscriber.user)
