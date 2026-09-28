@@ -20,7 +20,7 @@ const zones = (page: Page) => page.locator('#view .ss-hit[data-target="zone"]');
 
 const openCluster = async (page: Page, index = 0) => {
   await boxes(page).nth(index).click();
-  await expect(zones(page).first()).toBeVisible();
+  await expect(step(page, 0)).toBeVisible();
   await page.waitForTimeout(400);
 };
 
@@ -76,7 +76,7 @@ test.describe("the boxes at rest", () => {
     // R-0112
     test("one box for each cluster the record holds", async ({ page }) => {
       await settle(page);
-      await expect(page.locator("#view rect.ep-edge")).toHaveCount(2);
+      await expect(page.locator("#view rect.pill")).toHaveCount(2);
       await expect(boxes(page)).toHaveCount(2);
     });
   });
@@ -84,23 +84,31 @@ test.describe("the boxes at rest", () => {
   test.describe(() => {
     test.use({ storageState: stateFor("three40") });
 
-    // R-0112
-    test("a box reaches only as far as the moments it holds", async ({ page }) => {
+    // R-0112, R-0543
+    test("a pill reaches only as far as the events it holds, with none drawn inside", async ({
+      page,
+    }) => {
       await settle(page);
       const reach = await page.locator("#view svg").first().evaluate((svg) => {
-        const box = svg.querySelector("rect.ep-edge") as SVGRectElement;
-        const left = Number(box.getAttribute("x"));
-        const right = left + Number(box.getAttribute("width"));
+        const pill = svg.querySelector("rect.pill") as SVGRectElement;
+        const wire = svg.querySelector("line.wire") as SVGLineElement;
+        const [x1, x2] = ["x1", "x2"].map((a) => Number(wire.getAttribute(a)));
+        const t = (iso: string) => new Date(iso).getTime();
+        // the record runs from its first event to its one loose one
+        const at = (iso: string) =>
+          x1 + ((t(iso) - t("1981-05-01")) / (t("2021-11-02") - t("1981-05-01"))) * (x2 - x1);
+        const left = Number(pill.getAttribute("x"));
+        const right = left + Number(pill.getAttribute("width"));
         const inside = [...svg.querySelectorAll("circle.dot")]
           .map((dot) => Number(dot.getAttribute("cx")))
           .filter((x) => x >= left && x <= right);
         return {
-          count: inside.length,
-          before: Math.min(...inside) - left,
-          after: right - Math.max(...inside),
+          dots: inside.length,
+          before: at("1981-05-01") - left,
+          after: right - at("2003-09-10"),
         };
       });
-      expect(reach.count).toBe(3);
+      expect(reach.dots).toBe(0);
       expect(reach.before).toBeLessThanOrEqual(12);
       expect(reach.after).toBeLessThanOrEqual(12);
     });
@@ -114,7 +122,7 @@ test.describe("the boxes at rest", () => {
     // R-0129
     test("a tap near either end of a box opens it", async ({ page }) => {
       await settle(page);
-      const box = (await page.locator("#view rect.ep-edge").boundingBox())!;
+      const box = (await page.locator("#view rect.pill").boundingBox())!;
       for (const x of [box.x + 4, box.x + box.width - 4]) {
         await page.mouse.click(x, box.y + box.height / 2);
         await expect(name(page)).toHaveText("Leaving and losing");
@@ -150,17 +158,24 @@ test.describe("one cluster open on the sparse record", () => {
     await expect(path(page)).toHaveText("Timeline");
   });
 
-  // R-0202, R-0540
-  test("the way back stays up while a moment inside it is picked", async ({ page }) => {
+  // R-0202, R-0540, R-0543
+  test("the way back stays up, and the open pill's own events take no tap", async ({
+    page,
+  }) => {
     await settle(page);
     await openCluster(page);
-    await pickMoment(page);
+    // the one target on the line is the loose event's; none sits on the pill
+    await expect(zones(page)).toHaveCount(1);
+    const pill = (await page.locator("#view rect.pill").boundingBox())!;
+    const zone = (await zones(page).first().boundingBox())!;
+    expect(zone.x).toBeGreaterThanOrEqual(pill.x + pill.width - 1);
     await expect(step(page, 0)).toBeVisible();
-    await expect(step(page, 1)).toBeVisible();
+    await expect(path(page)).toHaveText("Timeline \u203a 1981\u20132003");
   });
 
   // R-0207
   test("the editor the words open is the picked moment's own", async ({ page }) => {
+    test.skip(true, "superseded on the strip by R-0543: an event inside a cluster has no mark of its own to pick, and a loose event picked closes the cluster, so no words on the line open an editor; needs Patrick's call");
     await settle(page);
     await openCluster(page);
     await pickMoment(page);
@@ -176,6 +191,7 @@ test.describe("one cluster open on the sparse record", () => {
   test("from that editor the back arrow returns to the same open cluster", async ({
     page,
   }) => {
+    test.skip(true, "superseded on the strip by R-0543: an event inside a cluster has no mark of its own to pick, and a loose event picked closes the cluster, so no words on the line open an editor; needs Patrick's call");
     await settle(page);
     await openCluster(page);
     await pickMoment(page);
@@ -189,6 +205,7 @@ test.describe("one cluster open on the sparse record", () => {
 
   // R-0207
   test("the jump lands on the list of events, not people", async ({ page }) => {
+    test.skip(true, "superseded on the strip by R-0543: an event inside a cluster has no mark of its own to pick, and a loose event picked closes the cluster, so no words on the line open an editor; needs Patrick's call");
     await settle(page);
     await openCluster(page);
     await pickMoment(page);
@@ -254,7 +271,7 @@ test.describe("one cluster open on the sparse record", () => {
     // the line stays where it runs at every level, and the box stays whole,
     // dimmed, under the words (R-0540)
     expect(await wireY(page)).toBe(resting);
-    await expect(page.locator("#view .ep-g.dim rect.ep-edge")).toHaveCount(1);
+    await expect(page.locator("#view rect.pill.dim")).toHaveCount(1);
   });
 });
 

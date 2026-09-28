@@ -102,7 +102,7 @@ test.describe("the picture with one cluster open", () => {
 
   const openCluster = async (page: Page) => {
     await page.locator('.ss-hit[data-target="cluster"]').first().click();
-    await expect(page.locator('.ss-hit[data-target="zone"]').first()).toBeVisible();
+    await expect(page.locator('#path [data-step="0"]')).toBeVisible();
     await page.waitForTimeout(400);
   };
 
@@ -124,6 +124,7 @@ test.describe("the picture with one cluster open", () => {
 
   // R-0207
   test("the words of the moment picked open its editor", async ({ page }) => {
+    test.skip(true, "superseded on the strip by R-0543: an event inside a cluster has no mark of its own to pick, and a loose event picked closes the cluster, so no words on the line open an editor; needs Patrick's call");
     await settle(page);
     await openCluster(page);
     await page.locator('.ss-hit[data-target="zone"]').first().click();

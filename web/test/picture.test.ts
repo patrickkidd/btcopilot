@@ -80,6 +80,31 @@ describe("the marks on the line", () => {
     expect(b.left - a.right).toBeGreaterThanOrEqual(6);
   });
 
+  // R-0543
+  it("gives way to a loose event dated just before or after it, keeping its own years", () => {
+    const held = [event(1, "1980-09-15"), event(2, "1982-11-15")];
+    const laid = (before: string, after: string) => {
+      const dated = [event(5, "1924-06-01"), event(3, before), ...held, event(4, after)];
+      const dates = dated.map((e) => e.dateTime as string).sort();
+      const where = (iso: string) => at(iso, dates, PHONE);
+      const marks = pills([cluster(10, held)], dated, where);
+      const pill = marks.find((m) => m.cluster)!;
+      const [one, two] = [3, 4].map((id) => marks.find((m) => m.event?.id === id)!);
+      // the pill keeps the years it holds
+      expect(pill.left).toBeLessThanOrEqual(where("1980-09-15"));
+      expect(pill.right).toBeGreaterThanOrEqual(where("1982-11-15"));
+      return { before: pill.left - one.right, after: two.left - pill.right };
+    };
+    // with room, a gap
+    const roomy = laid("1978-01-01", "1985-06-01");
+    expect(roomy.before).toBeGreaterThanOrEqual(6);
+    expect(roomy.after).toBeGreaterThanOrEqual(6);
+    // without room for a gap, the pill still never reaches over the dot
+    const tight = laid("1979-06-01", "1983-09-01");
+    expect(tight.before).toBeGreaterThan(0);
+    expect(tight.after).toBeGreaterThan(0);
+  });
+
   // R-0134, R-0543
   it("keeps a cluster held inside one day wider than a dot", () => {
     const same = [event(1, "2001-01-01"), event(2, "2001-01-01")];

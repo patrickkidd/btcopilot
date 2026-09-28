@@ -57,19 +57,20 @@ const fly = (page: Page, selector: string) =>
 
 const open = async (page: Page) => {
   await page.locator('.ss-hit[data-target="cluster"]').first().click();
-  await expect(page.locator('.ss-hit[data-target="zone"]').first()).toBeVisible();
+  await expect(page.locator('#path [data-step="0"]')).toBeVisible();
 };
 
-// R-0542
+// R-0542, R-0543
 test("picking a cluster or a moment, and putting it down, slides nothing", async ({
   page,
 }) => {
   await settle(page);
   expect(await fly(page, '.ss-hit[data-target="cluster"]')).toEqual([]);
   await page.waitForTimeout(300);
-  expect(await fly(page, '.ss-hit[data-target="zone"]')).toEqual([]);
+  expect(await fly(page, '#path [data-step="0"]')).toEqual([]);
   await page.waitForTimeout(300);
-  expect(await fly(page, '#path [data-step="1"]')).toEqual([]);
+  // only an event no cluster claims is picked on the line
+  expect(await fly(page, '.ss-hit[data-target="zone"]')).toEqual([]);
   await page.waitForTimeout(300);
   expect(await fly(page, '#path [data-step="0"]')).toEqual([]);
 });

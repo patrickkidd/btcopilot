@@ -48,7 +48,7 @@ const added = {
 test.describe("what the coach did, one line at a time", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0185
+  // R-0185, R-0544
   test("lights the moment its line names, before the words are typed", async ({
     page,
   }) => {
@@ -56,6 +56,7 @@ test.describe("what the coach did, one line at a time", () => {
     // the work shows for a beat before the words land, which is the moment
     // this test is about
     await mockTurn(page, { ...added, pause: 800 });
+    await expect(page.locator("#view rect.pill.add, #view rect.pill.change")).toHaveCount(0);
 
     await page.locator("#composer").fill("She stopped calling in 1992.");
     await page.locator("#send").click();
@@ -64,8 +65,9 @@ test.describe("what the coach did, one line at a time", () => {
     await expect(page.locator(".bub.coach .did").last()).toHaveText(/Added/);
     // and the moment it made is lit on the wire, before a word has been said.
     // The words on the picture belong to a moment the reader has picked; a
-    // moment the coach has just made is its dot, lit.
-    await expect(page.locator("#view circle.dot.lit")).toHaveCount(1);
+    // moment the coach has just written inside a cluster takes its colour on
+    // that cluster's pill.
+    await expect(page.locator("#view rect.pill.add, #view rect.pill.change")).toHaveCount(1);
     // and when the words land they name that same moment
     await expect(page.locator(".bub.coach .chip").last()).toHaveText("that winter");
   });

@@ -54,8 +54,8 @@ const YEAR_CH = 6.3;
 const DOT_R = 4.5;
 /** How tall a cluster's pill is drawn on the line. */
 const PILL_H = 16;
-/** A tap target on the line reaches from under the words to the bottom of the
- * picture, so the thumb need not find the line itself (R-0544). */
+/** A tap target on the line reaches from under the words' first row to the
+ * bottom of the picture, so the thumb need not find the line itself (R-0544). */
 const HIT_TOP = ROWS[1];
 /** A tap target reaches no further than this either side of its mark's middle. */
 const HIT_REACH = 60;
@@ -74,8 +74,10 @@ export interface Pill {
 const middle = (mark: { left: number; right: number }) => (mark.left + mark.right) / 2;
 
 /** The marks on the line in order across it: a pill per cluster and a dot per
- * dated event no cluster claims. The clusters come in time order; two pills
- * that would touch give way to each other and leave a gap. */
+ * dated event no cluster claims. The clusters come in time order. A pill
+ * reaches a little past the years it holds, and gives way where that would
+ * touch the next pill or a dot beside it, leaving a gap, but never gives up
+ * its own years. */
 export function pills(
   clusters: Cluster[],
   dated: TimelineEvent[],
@@ -97,6 +99,16 @@ export function pills(
     const x = at(event.dateTime as string);
     return { cluster: null, event, left: x - DOT_R, right: x + DOT_R };
   });
+  for (const bar of bars) {
+    const [start, end] = [at(bar.cluster!.start), at(bar.cluster!.end)];
+    for (const dot of dots) {
+      const x = middle(dot);
+      if (x < start && dot.right + BOX_GAP > bar.left)
+        bar.left = Math.min(start, dot.right + BOX_GAP);
+      if (x > end && dot.left - BOX_GAP < bar.right)
+        bar.right = Math.max(end, dot.left - BOX_GAP);
+    }
+  }
   return [...bars, ...dots].sort((a, b) => middle(a) - middle(b));
 }
 
@@ -301,7 +313,7 @@ export interface Layer {
  * box opens it, even on a loose event dated inside its years. */
 export const restLayers = (boxes: Layer[], dots: Layer[]): Layer[] => [...dots, ...boxes];
 
-/** A target as the button the thumb lands on, from under the words to the
+/** A target as the button the thumb lands on, from under the path to the
  * bottom of the picture (R-0544). */
 const hitButton = (layer: Layer): string =>
   `<button class="ss-hit" data-target="${layer.target}" data-index="${layer.index}" ` +
@@ -538,12 +550,13 @@ export class Picture {
         e,
         Number(hit.dataset.index ?? -1),
       );
-      // The words are written over the wire, and the wire's own targets are 44
-      // tall so a thumb can find a dot — tall enough to cover the second line
-      // of a label. Where a tap lands on a line of words, the words answer it:
-      // the reader touched the label, not the dot underneath it.
+      // The words are written over the wire, and the wire's own targets reach
+      // up the strip so a thumb can find a dot or a pill — far enough to cover
+      // the second line of a label. Where a tap lands on a line of words, the
+      // words answer it: the reader touched the label, not the mark under it.
       const on =
-        tap.target === Target.Zone && this.rowAt(tap.x, tap.y) !== null
+        (tap.target === Target.Zone || tap.target === Target.Cluster) &&
+        this.rowAt(tap.x, tap.y) !== null
           ? { ...tap, target: Target.Band }
           : tap;
       this.handlers.onTap(on);
@@ -981,7 +994,6 @@ export class Picture {
 
     const zoned = zones(marks, width);
     this.laid.zones = zoned.map((zone) => zone.marks);
-    const targets = restLayers(boxes, dotLayers(zoned)).map(hitButton).join("");
 
     const aimed = marks.find((m) => m.event.id === this.aimed);
     const onX = aimed?.x ?? null;
@@ -1000,6 +1012,7 @@ export class Picture {
         : "";
     // The band lies over the words and under the marks' own targets.
     const words = said.text ? said.text + bandHit(shows + X_PAD, screen - 2 * X_PAD) : "";
+    const targets = restLayers(boxes, dotLayers(zoned)).map(hitButton).join("");
 
     this.host.innerHTML =
       `<div class="ss"><div class="ss-scroll"><div class="ss-line" style="width:${width.toFixed(1)}px">` +

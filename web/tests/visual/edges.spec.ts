@@ -66,17 +66,12 @@ test.describe("the timeline's views", () => {
     await lined(page, "picked at rest", { line: true, ask: true });
   });
 
-  // R-0234, R-0540
-  test("the path over an open cluster, an event picked in it, and its about page", async ({
-    page,
-  }, info) => {
+  // R-0234, R-0540, R-0543
+  test("the path over an open cluster and its about page", async ({ page }, info) => {
     await settle(page);
     await tap(page, `#view .ss-hit[data-target="cluster"]`);
     await lined(page, "open cluster", { line: true, ask: true });
     await page.screenshot({ path: info.outputPath(`edges-${info.project.name}.png`) });
-
-    await tap(page, `#view .ss-hit[data-target="zone"]`);
-    await lined(page, "picked in a cluster", { line: true, ask: true });
 
     await tap(page, "#info");
     await lined(page, "about", { line: false, ask: false });

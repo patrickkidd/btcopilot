@@ -38,7 +38,7 @@ test.describe("the resting picture", () => {
  * has to open a cluster first, which is what a reader does. */
 const openCluster = async (page: import("@playwright/test").Page) => {
   await page.locator('.ss-hit[data-target="cluster"]').first().click();
-  await expect(page.locator('.ss-hit[data-target="zone"]').first()).toBeVisible();
+  await expect(page.locator('#path [data-step="0"]')).toBeVisible();
   await page.waitForTimeout(400);
 };
 
@@ -93,10 +93,10 @@ test.describe("the undated shelf", () => {
   });
 });
 
-/** The line is drawn a little wider than the screen and slides sideways under
- * it, so a crowded record reads at a scale a thumb can pick from (R-0381).
- * The dense record is the one wide enough to slide. */
-test.describe("the resting line slides sideways", () => {
+/** The whole record is drawn across one screen, first year to last, and the
+ * years under it are a ruler that never moves (R-0543, replacing the line that
+ * slid sideways, R-0381). The dense record is the one that used to slide. */
+test.describe("the resting line is one screen", () => {
   test.use({ storageState: stateFor("dense60") });
 
   const line = (page: import("@playwright/test").Page) =>
@@ -106,11 +106,9 @@ test.describe("the resting line slides sideways", () => {
     line(page).evaluate((node) => ({
       left: node.scrollLeft,
       end: node.scrollWidth - node.clientWidth,
-      screen: node.clientWidth,
     }));
 
-  /** A swipe across the picture, which takes the line back into the earlier
-   * years. */
+  /** A swipe across the picture. */
   const swipe = async (page: import("@playwright/test").Page, by: number) => {
     await line(page).hover();
     await page.mouse.wheel(-by, 0);
@@ -118,44 +116,41 @@ test.describe("the resting line slides sideways", () => {
   };
 
   const yearsUnder = (page: import("@playwright/test").Page) =>
-    page.locator("#view .ss-yrs span").allTextContents();
+    page.locator("#view .ep-yrs").allTextContents();
 
-  // R-0381, R-0111
-  test("opens with the most recent stretch filling the width", async ({ page }) => {
+  // R-0381, R-0111, R-0543
+  test("holds the whole record, its first year at one end and its last at the other", async ({
+    page,
+  }) => {
     await settle(page);
-    const { left, end, screen } = await at(page);
-    expect(end).toBeGreaterThan(0);
-    expect(left).toBe(end);
-    // one or two swipes, never a data project: two screens is the whole line
-    expect(end + screen).toBeLessThanOrEqual(2 * screen);
+    expect((await at(page)).end).toBe(0);
+    const years = await yearsUnder(page);
+    expect(years[0]).toBe("2019");
+    expect(years[years.length - 1]).toBe("2023");
   });
 
-  // R-0381, R-0111
-  test("a swipe takes it back to the earlier years", async ({ page }) => {
+  // R-0381, R-0111, R-0543
+  test("a swipe moves neither the line nor the years under it", async ({ page }) => {
     await settle(page);
     const before = await yearsUnder(page);
-    expect(before).toHaveLength(2);
     await swipe(page, 300);
-    const now = await at(page);
-    expect(now.left).toBeLessThan(now.end);
-    const after = await yearsUnder(page);
-    expect(Number(after[0])).toBeLessThan(Number(before[0]));
+    expect((await at(page)).left).toBe(0);
+    expect(await yearsUnder(page)).toEqual(before);
   });
 
-  // R-0377
-  test("every dot stays on the wire, wherever the line stands", async ({ page }) => {
+  // R-0377, R-0543
+  test("every dot and every pill sits on the wire", async ({ page }) => {
     await settle(page);
-    const onWire = async () =>
-      page.locator("#view .ss svg").evaluate((svg) => {
-        const wire = svg.querySelector("line.wire") as SVGLineElement;
-        const y = Number(wire.getAttribute("y1"));
-        return [...svg.querySelectorAll("circle")].every(
-          (dot) => Number(dot.getAttribute("cy")) === y,
-        );
-      });
-    expect(await onWire()).toBe(true);
-    await swipe(page, 300);
-    expect(await onWire()).toBe(true);
+    const onWire = await page.locator("#view .ss svg").evaluate((svg) => {
+      const wire = svg.querySelector("line.wire") as SVGLineElement;
+      const y = Number(wire.getAttribute("y1"));
+      const pills = [...svg.querySelectorAll("rect.pill")].map(
+        (p) => Number(p.getAttribute("y")) + Number(p.getAttribute("height")) / 2,
+      );
+      const dots = [...svg.querySelectorAll("circle")].map((d) => Number(d.getAttribute("cy")));
+      return pills.length > 0 && [...pills, ...dots].every((at) => at === y);
+    });
+    expect(onWire).toBe(true);
   });
 
   // R-0045, R-0381
@@ -163,7 +158,7 @@ test.describe("the resting line slides sideways", () => {
     await settle(page);
     await swipe(page, 300);
     await page.locator('.ss-hit[data-target="cluster"]').first().click();
-    await expect(page.locator('.ss-hit[data-target="zone"]').first()).toBeVisible();
+    await expect(page.locator('#path [data-step="0"]')).toBeVisible();
   });
 });
 
@@ -248,12 +243,13 @@ test.describe("where the picture sits", () => {
 test.describe("the coach's words drive the picture", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0001, R-0055
+  // R-0001, R-0055, R-0543
   test("it opens on what the coach's last message named", async ({ page }) => {
     await settle(page);
     await expect(page.locator("#view .ss-name")).toHaveText("The walk");
     await expect(page.locator('#path [data-step="0"]')).toBeVisible();
-    await expect(page.locator("#view circle.dot.lit")).toHaveCount(2);
+    // the two events it named are inside one cluster, so its pill is lit
+    await expect(page.locator("#view rect.pill.on")).toHaveCount(1);
   });
 });
 
@@ -292,13 +288,13 @@ test.describe("a tap on the picture reaches the coach", () => {
       { timeout: 5000 },
     );
 
-  // R-0065
+  // R-0065, R-0543
   test("a tap on a dot is sent, naming the event touched", async ({ page }) => {
     await settle(page);
-    await openCluster(page);
     const posted = sent(page);
+    // the one event no cluster claims is the one with a dot
     await page.locator('.ss-hit[data-target="zone"]').first().click();
-    expect((await posted).postDataJSON()).toMatchObject({ item_kind: "event", item_id: "10" });
+    expect((await posted).postDataJSON()).toMatchObject({ item_kind: "event", item_id: "13" });
   });
 
   // R-0065
@@ -326,7 +322,8 @@ test.describe("the mark that says a tap goes into the message", () => {
     page,
   }) => {
     await settle(page);
-    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    // the record opens on a cluster, and the row offers ask for it
+    await expect(page.locator("#cap-chip")).toBeVisible();
     const ask = await outline(page.locator("#cap-chip"));
     expect(await outline(page.locator(".bub .chip.ask").first())).toEqual(ask);
     // a reference aims the picture and sends nothing, so it looks different
@@ -496,7 +493,7 @@ test.describe("a moment's mark", () => {
         if (await cluster.count()) {
           await cluster.click();
           await page.waitForTimeout(500);
-          await expect(page.locator("#view circle.dot").first()).toBeVisible();
+          await expect(page.locator('#path [data-step="0"]')).toBeVisible();
           expect(await ringed(page)).toEqual([]);
         }
       });
