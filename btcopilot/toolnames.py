@@ -30,8 +30,8 @@ GONE = {
     ItemKind.Emotion: "a relationship no longer in the record",
     ItemKind.Question: "a question no longer in the record",
 }
-# What a remove call names when its kind is none the record holds; the toolbox
-# refuses the call.
+# What a remove call or an impression's evidence names when its kind is none
+# the record holds; the toolbox refuses the call.
 NO_KIND = "something the record has no kind for"
 
 ARGS = {
@@ -112,6 +112,8 @@ MESSAGE_GONE = "a message no longer in the record"
 def evidence_label(data: DiagramData, one: dict) -> str:
     """What an impression rests on, as a chip names it. A stored message keeps
     the label it was given, since its session can be deleted."""
+    if one["kind"] not in {kind.value for kind in EvidenceKind}:
+        return NO_KIND
     if one["kind"] != EvidenceKind.Statement:
         return label(data, ItemKind(one["kind"]), one["id"])
     if "label" in one:
