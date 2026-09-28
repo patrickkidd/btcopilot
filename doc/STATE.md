@@ -422,12 +422,23 @@ current chain through (2a797b0). Backup:
 67 events, 12 pair-bonds, 5 clusters, 194 change rows, before and after. One real turn on the
 claude-test account proved the running stack, for $0.16.
 
-**Play-by-play rebuilt and the old moves board retired, deploying now: commit f66d603.** The
+**Play-by-play rebuilt and the old moves board retired (first deployed as commit f66d603).** The
 snapshot-based drawer Patrick approved 2026-09-27 ("This all looks good. let's do it.")
 [R-0545 to R-0570] replaces the old moves board entirely [R-0570]. Old board-only rulings were
 marked superseded once their own tests were confirmed gone (R-0130, R-0131, R-0135, R-0162,
 R-0173, R-0177, R-0178, R-0180, R-0292); two triangle-drawing rulings (R-0286, R-0288) were kept
 and narrowed to the new drawer instead, since their tests still pass there.
+
+**Live on production now: commit cf62be6.** The play-by-play works end to end on the test
+account — the coach told a two-snapshot case, the drawer opened, and the question showed.
+Today's fixes on top of f66d603: a strict-schema 400 error, same-date events landing in one
+snapshot, a small cluster getting one snapshot per date [R-0571], play calls now metered, and a
+sparse family drawing correctly. Patrick is testing the play-by-play in his own thread now.
+
+Open for the next session: the migration gate flags play statements, which carry a turn id but
+no turn events — decide whether play turns should write events or the gate should exempt them;
+the first tap right after a rollout can hit a 502 while the container comes back up; the pill
+strip build is next (see below); the ~/btcopilot move still waits for the next session.
 
 **Next up: the pill strip.** A scratch prototype for the redrawn timeline strip (one pill per
 cluster, no dots, only clusters and events outside a cluster tappable, colour changes as the
