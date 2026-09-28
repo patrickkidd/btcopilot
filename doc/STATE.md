@@ -25,6 +25,8 @@ found in plain text in the old local permissions; the self-learning and correcti
 rules move to his global instructions; FD-336, FD-342 and FD-360 stay in ~/theapp. Sessions are
 not copied; old ones reopen by id. Remove this paragraph once the move is done. 2026-09-26: at the start of the play-by-play session he said "not yet"; remind again at the next new session.
 
+**PATRICK'S INSTRUCTION FOR THE NEXT SESSION (2026-09-28):** finish every pending build and put them all on production together, so he evaluates everything at once: the select-slide regression, the stale home-screen app fix, the pill strip, and the play-turn events the deploy gate flags. One verification pass and one deploy for the batch, then one message saying what to test.
+
 **ALSO FIRST (2026-09-28):** Patrick reported at session end that selecting a cluster still slides over a second timeline view on production (cf62be6), though R-0542's no-slide fix passed verification on 2026-09-27. Reproduce it on production and at HEAD first; suspect the play-by-play build's changes to the picture's back path. The pill strip (R-0543/R-0544) is not built yet; its scratch prototype (the app's web/ with the pill strip, diff it against web/) is at ~/theapp/btcopilot-sources/fd-corpus/design/strip-labels/proto-web.
 
 **FIRST BUILD ITEM FOR THE NEXT SESSION (queued 2026-09-28).** An iPhone home-screen app keeps
