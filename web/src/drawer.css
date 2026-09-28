@@ -30,7 +30,7 @@
 .pbp .draw { padding: 4px 0 0; border-top: 1px solid var(--line); }
 .pbp .draw svg { display: block; width: 100%; height: 100%; }
 
-.pbp .step { display: flex; align-items: center; gap: 4px; padding: 4px 10px 8px; }
+.pbp .scroll .step { display: flex; align-items: center; gap: 4px; padding: 4px 10px 8px; }
 .pbp .nav { flex: none; height: 40px; min-width: 70px; padding: 0 12px; border: 1px solid var(--line); border-radius: 20px; background: var(--panel); color: var(--data); font: 500 13px var(--mono); cursor: pointer; }
 .pbp .nav:disabled { opacity: 0.35; cursor: default; }
 .pbp .nav:not(:disabled):active { background: var(--tint); }
