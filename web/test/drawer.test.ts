@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
-import { pathRow } from "../src/dom";
-import { below, leastScale, pictureHeight, pointLine, yearsLine } from "../src/drawer";
+import { closeX, pathRow } from "../src/dom";
+import { below, head, leastScale, pictureHeight, pointLine, yearsLine } from "../src/drawer";
 import { Told, untold } from "../src/snapshots";
 import { alone, apart, CORINNE, DELPHINE, sparse, timeline } from "./whitlock";
 
@@ -33,6 +33,15 @@ it("keeps the guess apart from the fact, and asks the question only on the last 
 // R-0542, R-0540
 it("leads the path row back to the timeline and to the years", () => {
   expect(pathRow(["Timeline", "1980–82", "explain"])).toMatch(/data-step="0"><span>Timeline<.*data-step="1"><span>1980–82<.*<span class="here">explain</);
+});
+
+// R-0542, R-0540, R-0545
+it("opens with the path row, then the coach's point, and closes with the app's close button by the years step's route", () => {
+  const top = head(told, "1980–82");
+  expect(top.indexOf('class="path"')).toBeGreaterThanOrEqual(0);
+  expect(top.indexOf('class="path"')).toBeLessThan(top.indexOf('class="point"'));
+  expect(top).toContain(closeX(' data-step="1"'));
+  expect(top).toMatch(/data-step="1"><span>1980–82</);
 });
 
 // R-0545

@@ -49,6 +49,47 @@ test.describe("the play-by-play drawer", () => {
     await expect(page.locator("#path .here")).toHaveText(years);
   });
 
+  /** What the page shows once the drawer has gone: where the picture is, what
+   * is selected in it, its caption and where the timeline's line sits. */
+  const shown = async (page: Page) => {
+    await expect(drawer(page)).toBeHidden();
+    await page.waitForTimeout(400);
+    return page.evaluate(() => ({
+      path: document.querySelector("#path")!.textContent,
+      on: [...document.querySelectorAll("#view .on")].map((e) => e.getAttribute("class")),
+      caption: document.querySelector("#caption")!.textContent,
+      line: document.querySelector("#view svg")!.getBoundingClientRect().toJSON(),
+    }));
+  };
+
+  // R-0542, R-0540
+  test("the close button sits in the top-right corner and goes back to the case's cluster, as the path's years step does", async ({ page }) => {
+    await settle(page);
+    await stored(page).click();
+    await drawer(page).locator('.path [data-step="1"]').click();
+    const byYears = await shown(page);
+    await stored(page).click();
+    const x = drawer(page).locator(".cardx");
+    await expect(x).toHaveCount(1);
+    await expect(x).toHaveText("×");
+    const [b, p] = [(await x.boundingBox())!, (await drawer(page).boundingBox())!];
+    expect(p.x + p.width - (b.x + b.width)).toBeLessThanOrEqual(8);
+    expect(b.y - p.y).toBeLessThanOrEqual(8);
+    await x.click();
+    expect(await shown(page)).toEqual(byYears);
+  });
+
+  // R-0545, R-0540
+  test("opens with the path row, then the coach's point, then the snapshot line", async ({ page }) => {
+    await settle(page);
+    await stored(page).click();
+    const tops = await drawer(page).evaluate((p) =>
+      [".path", ".point", ".wire"].map((sel) => p.querySelector(sel)!.getBoundingClientRect().top),
+    );
+    expect(tops).toEqual([...tops].sort((a, b) => a - b));
+    expect(new Set(tops).size).toBe(3);
+  });
+
   // R-0113, R-0161
   test("is a drawing, with no legend, no table and no name for a symbol", async ({ page }) => {
     await settle(page);

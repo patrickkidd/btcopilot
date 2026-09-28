@@ -17,8 +17,10 @@
 .pbp.in { transform: none; transition-timing-function: cubic-bezier(0.3, 1.25, 0.5, 1); }
 .pbp[hidden] { display: none; }
 
-.pbp .point { flex: none; padding: 8px 16px 0; font: 400 13px/20px var(--sans); color: var(--ink); }
-.pbp .path { flex: none; height: 28px; padding: 0 16px; font: 400 13px/1.2 var(--mono); color: var(--faint); }
+/* the path row is as tall as the close button beside it, and keeps clear of it */
+.pbp .path { flex: none; height: 44px; padding: 0 52px 0 16px; font: 400 13px/1.2 var(--mono); color: var(--faint); }
+.pbp > .cardx { top: 0; }
+.pbp .point { flex: none; padding: 0 16px; font: 400 13px/20px var(--sans); color: var(--ink); }
 .pbp .path .step:focus-visible, .pbp .nav:focus-visible, .pbp .dot:focus-visible { outline: 2px solid var(--data); outline-offset: 2px; }
 
 /* Q6: the picture shrinks so the caption fits; when even that does not fit, the whole drawer scrolls */

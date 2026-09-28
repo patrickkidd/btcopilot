@@ -28,6 +28,11 @@ export const pathRow = (steps: string[]): string =>
     )
     .join(`<span class="sep" aria-hidden="true"> \u203a </span>`);
 
+/** The app's close button: a cross in the top-right corner of the box it sits
+ * in (R-0317). */
+export const closeX = (attrs = "") =>
+  `<button class="cardx" type="button" aria-label="close"${attrs}>×</button>`;
+
 export function $(id: string): HTMLElement {
   const node = document.getElementById(id);
   if (!node) throw new Error(`No element #${id}`);

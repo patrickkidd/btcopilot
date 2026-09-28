@@ -12,7 +12,7 @@ import {
   words,
 } from "./ballot";
 import { conceptLinks, conceptsOf } from "./concepts";
-import { esc, el, type Title } from "./dom";
+import { closeX, esc, el, type Title } from "./dom";
 import {
   openBondEditor,
   openEditor,
@@ -394,9 +394,7 @@ export class Meeting {
           `&ldquo;${esc(item.line.text)}&rdquo;</div>`;
     return (
       `<div class="drow${closable ? " hasx" : ""}" data-item="${item.id}">` +
-      (closable
-        ? `<button class="mt-close cardx" type="button" aria-label="close">×</button>`
-        : "") +
+      (closable ? closeX() : "") +
       `<div class="top"><span class="tally">` +
       `${dots(biggest, item.coders - biggest)}</span>` +
       `<span class="pick">${esc(this.rowName(item))}</span></div>` +
@@ -510,7 +508,7 @@ export class Meeting {
     if (!row) return;
     const item = this.items.find((one) => one.id === Number(row.dataset.item));
     if (!item) return;
-    if (target.closest(".mt-close")) {
+    if (target.closest(".cardx")) {
       this.at = null;
       this.render();
       return;

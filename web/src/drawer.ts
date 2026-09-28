@@ -1,12 +1,12 @@
 import "./drawer.css";
-import { esc, pathRow, slideOver } from "./dom";
+import { closeX, esc, pathRow, slideOver } from "./dom";
 import { NAME, type Layout } from "./diagram";
 import { when, Told } from "./snapshots";
 import type { Case, Timeline } from "./types";
 
 /** The play-by-play drawer: a real drill-down that slides over the timeline and
- * the chat (R-0542). The path row, the coach's point, the years line, the
- * picture, then the caption and the controls. Tapped through by hand with Back,
+ * the chat (R-0542). The path row with the close button at its right, the
+ * coach's point, the years line, the picture, then the caption and the controls. Tapped through by hand with Back,
  * the dots and Next; it never plays itself. The message box is covered. */
 
 enum Act {
@@ -87,6 +87,16 @@ const spanOf = (told: Told) => {
   return a === b ? String(a) : `${a}–${b}`;
 };
 
+/** The path row's step that goes back to the case's cluster. */
+const CLUSTER = 1;
+
+/** The drawer's top: the path row, the close button, which goes where the
+ * path's cluster step goes, then the coach's point. */
+export const head = (told: Told, years: string) =>
+  `<div class="path">${pathRow(["Timeline", years, "explain"])}</div>` +
+  closeX(` data-step="${CLUSTER}"`) +
+  pointLine(told);
+
 export const pictureHeight = (natural: number, room: number, captions: number[], floor: number) =>
   Math.max(Math.min(natural, floor), Math.min(natural, room - Math.max(...captions)));
 
@@ -121,8 +131,7 @@ export class Drawer {
     this.height = null;
     const years = tl.clusters.find((c) => c.id === told.cluster_id)?.label ?? spanOf(this.told);
     this.panel.innerHTML =
-      pointLine(this.told) +
-      `<div class="path">${pathRow(["Timeline", years, "explain"])}</div>` +
+      head(this.told, years) +
       `<div class="lv"><div class="wire"></div><div class="draw"></div><div class="scroll"></div></div>`;
     slideOver(this.panel, true);
     this.render();

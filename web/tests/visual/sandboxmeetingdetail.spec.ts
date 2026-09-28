@@ -132,7 +132,7 @@ test.describe(() => {
       const card = page.locator(".drow.hasx").first();
       check(await card.isVisible(), "an agreed row opens the same card");
       check(
-        (await card.locator(".mt-close").count()) === 1,
+        (await card.locator(".cardx").count()) === 1,
         "the card has a close button at its top right",
       );
       check(
@@ -145,7 +145,7 @@ test.describe(() => {
       await shot("3-agreed");
 
       // The close button puts the row back exactly as it was.
-      await card.locator(".mt-close").click();
+      await card.locator(".cardx").click();
       await page.waitForTimeout(400);
       check(
         (await page.locator(".drow.hasx").count()) === 0,
