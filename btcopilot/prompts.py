@@ -29,11 +29,14 @@ def files() -> PromptDir:
     """Where the prompts are read from. Resolved on first use, not at import,
     so a caller that points FD_PRIVATE_PROMPTS somewhere else is heard however
     early this module was imported."""
+    chosen = os.environ.get("FD_PRIVATE_PROMPTS")
+    if chosen:
+        return PromptDir([Path(chosen), PUBLIC])
     line = missing()
     if line and os.environ.get(OPEN):
         print(line, file=sys.stderr)
         return PromptDir([PUBLIC])
-    return PromptDir([Path(os.environ.get("FD_PRIVATE_PROMPTS", PRIVATE)), PUBLIC])
+    return PromptDir([PRIVATE, PUBLIC])
 
 
 class ToolText(enum.StrEnum):

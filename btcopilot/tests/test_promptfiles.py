@@ -239,6 +239,7 @@ def test_the_sandbox_will_not_start_on_the_open_prompts_unasked(tmp_path):
         os.environ,
         SANDBOX_HOME=str(tmp_path),
         SOPS_AGE_KEY_FILE=str(tmp_path / "keys.txt"),
+        SANDBOX_PYTHON=sys.executable,
     )
     env.pop("SOPS_AGE_KEY", None)
     done = subprocess.run(
