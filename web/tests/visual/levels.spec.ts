@@ -106,3 +106,67 @@ test("the arriving level covers the one it came from", async ({ page }) => {
   expect(flight.ground).not.toMatch(/rgba\(0, 0, 0, 0\)|transparent/);
 });
 
+/** Tap something and read where the line stands on every frame for a while. */
+const travel = (page: Page, selector: string, nth = 0) =>
+  page.evaluate(
+    ([sel, n]) =>
+      new Promise<number[]>((done) => {
+        const at = () => document.querySelector(".ss-scroll")!.scrollLeft;
+        const seen = [at()];
+        (document.querySelectorAll(sel)[n] as HTMLElement).click();
+        const end = performance.now() + 700;
+        const frame = () => {
+          seen.push(at());
+          if (performance.now() < end) requestAnimationFrame(frame);
+          else done([...new Set(seen)]);
+        };
+        requestAnimationFrame(frame);
+      }),
+    [selector, nth] as const,
+  );
+
+test.describe("on a line wider than the screen", () => {
+  test.use({ storageState: stateFor("whitlock") });
+
+  // R-0542
+  test("opening a cluster, explaining it and going back leave the line where it stands", async ({
+    page,
+  }) => {
+    await settle(page);
+    const statements = await page.evaluate(async () => {
+      const sessions = await (await fetch("/app/sessions")).json();
+      return (await (await fetch(`/app/sessions/${sessions[0].id}`)).json()).statements;
+    });
+    const play = statements.find((s: { case: unknown }) => s.case);
+    await page.route(/\/app\/play$/, (route) =>
+      route.fulfill({
+        json: { statement: play.text, statement_id: play.id, kind: "play", cluster_id: play.cluster_id, case: play.case },
+      }),
+    );
+    const wide = await page
+      .locator(".ss-scroll")
+      .evaluate((s) => s.scrollWidth > s.clientWidth);
+    expect(wide).toBe(true);
+    expect(await travel(page, '.ss-hit[data-target="cluster"]')).toHaveLength(1);
+    expect(await travel(page, "#cap-play")).toHaveLength(1);
+    await expect(page.locator("#pbp")).toBeVisible();
+    expect(await travel(page, '#pbp .path [data-step="1"]')).toHaveLength(1);
+    await expect(page.locator("#pbp")).toBeHidden();
+  });
+});
+
+test.describe("on a wide line with many clusters", () => {
+  test.use({ storageState: stateFor("dense60") });
+
+  // R-0542
+  test("opening one cluster after another leaves the line where it stands", async ({ page }) => {
+    await settle(page);
+    const cluster = '.ss-hit[data-target="cluster"]';
+    // the later cluster is on screen at the present; the earlier one is
+    // reached by sliding the line to its start first, as a thumb would
+    expect(await travel(page, cluster, 1)).toHaveLength(1);
+    await page.locator('#path [data-step="0"]').click();
+    await page.locator(".ss-scroll").evaluate((s) => (s.scrollLeft = 0));
+    expect(await travel(page, cluster, 0)).toHaveLength(1);
+  });
+});
