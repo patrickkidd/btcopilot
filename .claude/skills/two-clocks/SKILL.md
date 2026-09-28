@@ -10,7 +10,7 @@ headed by the topic's plain name, rewritten in full. The **event clock** is
 `doc/HISTORY.md`: one entry per session, never rewritten by a later session.
 Rulings go to the private oracle store **in this repo** — `private/oracle/rulings.md` and
 `private/oracle/evidence.md`, encrypted with sops. Never fdserver; fdserver left this ticket on
-2026-09-16. Edit with `SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt sops <path>` (append a
+2026-09-16. Edit with `sops <path>`, `SOPS_AGE_KEY_FILE` set as in doc/SETUP.md (append a
 ruling, then its evidence block: the id line, then "> " lines holding his own words). Every
 store change needs its fingerprint lines added to btcopilot/tests/conventions/fingerprints.txt;
 CI's id-stability guard prints them. After a flush nothing the
@@ -87,7 +87,7 @@ run from rewording what an earlier run already captured:
    commits titled `<ticket> flush: <date>`.
 9. Refresh Patrick's two pages, same links every time (URLs at the top of TOPICS.md, passed
    to the Artifact tool as `url`), in this order:
-   a. `python .claude/skills/two-clocks/bin/ledger.py` — rewrites events.json in `~/theapp/btcopilot-sources/fd-corpus/private/` from every dated source
+   a. `python .claude/skills/two-clocks/bin/ledger.py` — rewrites events.json in `fd-corpus/private/` of the private corpus (`BTCOPILOT_SOURCES`, default `btcopilot-sources/` at the main clone's root) from every dated source
       (history, rulings, decision log, review log, commits, artifacts).
    b. `python .claude/skills/two-clocks/bin/trace.py` — mines Patrick's own statements out of the local transcripts
       into trace.json in the same private folder, one row per thing he typed, in order. It writes nothing

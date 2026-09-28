@@ -8,6 +8,7 @@ Built by [Patrick Stinson](https://www.linkedin.com/in/patrickstinson/), who dev
 
 ### For engineers and recruiters
 
+- [Setting up a checkout](doc/SETUP.md): tools, keys and the one-command sandbox
 - [How the Coach Works](#how-the-coach-works)
   - [The Human Oracle and Its Tests](#the-human-oracle-and-its-tests)
 - [Extraction Accuracy (F1)](#extraction-accuracy-f1)

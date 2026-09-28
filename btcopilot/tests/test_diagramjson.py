@@ -1,16 +1,18 @@
 import json
 import os
 import pickle
+from pathlib import Path
 
 import pytest
 
 from btcopilot import diagramjson
 from btcopilot.schema import DiagramData
 
+DESKTOP = Path(os.environ.get("FAMILYDIAGRAM_REPO", Path.home() / "theapp" / "familydiagram"))
 FIXTURES = [
-    "/Users/patrick/theapp/familydiagram/pkdiagram/tests/scene/data/UP_TO_2.0.12b1.fd/diagram.pickle",
-    "/Users/patrick/theapp/familydiagram/pkdiagram/resources/Legend-Scene.fd/diagram.pickle",
-    "/Users/patrick/theapp/familydiagram/pkdiagram/tests/data/stale-refs.fd/diagram.pickle",
+    str(DESKTOP / "pkdiagram/tests/scene/data/UP_TO_2.0.12b1.fd/diagram.pickle"),
+    str(DESKTOP / "pkdiagram/resources/Legend-Scene.fd/diagram.pickle"),
+    str(DESKTOP / "pkdiagram/tests/data/stale-refs.fd/diagram.pickle"),
 ]
 
 
@@ -22,7 +24,7 @@ def _load(path):
 @pytest.mark.parametrize("path", FIXTURES, ids=lambda p: p.split("/")[-2])
 def test_roundtrip_through_wire_json(path):
     # R-0083
-    # the fixtures are the desktop app's own files, in a checkout beside this one
+    # the fixtures are the desktop app's own files, in its checkout (FAMILYDIAGRAM_REPO)
     if not os.path.exists(path):
         pytest.skip(f"no desktop checkout at {path}")
     data = _load(path)

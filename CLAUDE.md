@@ -19,18 +19,20 @@ This block is a deliberate distillation of recurring corrections, not duplicate 
 
 ## Where the work starts
 
-This is a standalone clone at `~/btcopilot` (moved off `~/theapp` 2026-09-28); it is the launch
-directory now. Work on `master` through ticket worktrees (below). Every session reads
+This repo is a standalone clone; the private corpus is an optional second clone inside it at
+`btcopilot-sources/` (gitignored; elsewhere, set `BTCOPILOT_SOURCES`). A new machine or a Claude
+Code cloud session follows [doc/SETUP.md](doc/SETUP.md): tools, keys, `.env`, the sandbox, the
+tests. Work on `master` through ticket worktrees (below). Every session reads
 [doc/STATE.md](doc/STATE.md) first, then [doc/TOPICS.md](doc/TOPICS.md), then
 [doc/HOW_THIS_PROJECT_WORKS.md](doc/HOW_THIS_PROJECT_WORKS.md) (binding process rules). The
 Jira epic is **FD-362**.
 
 ## Worktrees, branches, PRs
 
-The main clone (`~/btcopilot`) stays on `master` and is read-only to Claude: never edit,
-branch-switch or run anything in it. All work happens in a worktree at
-`~/btcopilot/.claude/worktrees/<ticket>` on a branch of the same name (`FD-NNN`; if taken,
-`FD-NNN-<slug>`; no ticket, a short slug), created from `~/btcopilot` with
+The main clone stays on `master` and is read-only to Claude: never edit, branch-switch or run
+anything in it. All work happens in a worktree at `.claude/worktrees/<ticket>` under the main
+clone, on a branch of the same name (`FD-NNN`; if taken, `FD-NNN-<slug>`; no ticket, a short
+slug), created from the main clone with
 `git worktree add .claude/worktrees/FD-NNN -b FD-NNN` and entered with `EnterWorktree(path=...)`.
 
 - Commit and push the worktree's own branch without asking; one git mutation per command,
@@ -67,9 +69,10 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
 - **Every sandbox is started with the kit, `bin/sandbox/sandbox`, from the worktree whose code it
   serves.** One command brings up Postgres with the fixture records (the stand-in family of
   `doc/mockups/family.md` among them), Redis, the Celery worker, and the built page on Flask,
-  with the coach on the local Ollama model and the private prompts read with
-  `~/.config/sops/age/keys.txt`. Each instance keeps its data, logs and settings in
-  `~/btcopilot-sandbox/<name>/`, outside every repo and job folder, so several agents run side
+  with the coach on the local Ollama model and the private prompts read with the age key in
+  `SOPS_AGE_KEY_FILE` (default `~/.config/sops/age/keys.txt`). Each instance keeps its data, logs
+  and settings in `~/btcopilot-sandbox/<name>/` (`SANDBOX_HOME`), outside every repo, so several
+  agents run side
   by side: pick a free port and a name of your own. Postgres takes the port plus 10000, Redis
   the port plus 11000.
 
@@ -84,7 +87,7 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
   . $(bin/sandbox/sandbox env <name>)             # the settings, for Playwright and flask commands
   ```
 
-  `--real` puts the coach on Anthropic with the testing key from `~/btcopilot/.env`; ask Patrick
+  `--real` puts the coach on Anthropic with the testing key from `.env` at the main clone's root; ask Patrick
   before spending. `--build` rebuilds the page first; without it the page already built in the
   worktree is served, so rebuilding under another agent's running sandbox is a choice, not a
   side effect. A turn on the local model takes one to several minutes.
@@ -133,7 +136,7 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
   the reader must decide.
 - **Mockups are always published as artifacts (2026-09-22, Patrick: "mockups should always be in
   artifacts. remember that").** A gallery on disk is not a deliverable; publish it (private by
-  default) and give the link. The source stays in ~/btcopilot/btcopilot-sources/fd-corpus/design/.
+  default) and give the link. The source stays in btcopilot-sources/fd-corpus/design/.
 - **He is Patrick (2026-09-11).** Never "the owner" in a document or a reply; it is ambiguous.
 - **Sandbox addresses use `turin`, never `turin.local` (2026-09-11).** The review app is
   https://turin:8891/app/ (`bin/sandbox/sandbox up <name> <port> --dev`).
@@ -170,7 +173,8 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
 ## Private corpus
 
 Clinical data, experiment output and anything store-shaped never enter this repo. They live
-outside every repo at `~/btcopilot/btcopilot-sources/fd-corpus/`: `design/` holds the approved
+in the private repo btcopilot-sources, cloned at `btcopilot-sources/` in the main clone
+(`BTCOPILOT_SOURCES`), under `fd-corpus/`: `design/` holds the approved
 mockups and galleries (read, never copy in); `private/` holds the prompt mirror, the prompt
 fidelity audit, the ledger of unclear points, the test method, and plain copies of the
 rulings and the oracle SPEC. The encrypted rulings store and prompts in this repo
@@ -348,9 +352,8 @@ package is incompatible (symptom: `create_app() takes 0 to 1 positional argument
 ### Environment
 - **Venv**: the clone's own uv environment (`pyproject.toml`)
 - **Install**: `uv sync --extra app --extra test` (Python 3.11, pinned in `.python-version`); web: `npm ci`, then `npm run build` before any test run (Python and web tests read the built page)
-- **PyTorch**: Pinned to `torch>=2.0.0,<2.1.0` (newer versions lack macOS x86_64 wheels). If wheel errors occur, remove `uv.lock` and re-sync.
-- **PostgreSQL**: `docker-compose up fd-server` (requires `docker volume create familydiagram_postgres` first)
-- **Production**: `docker-compose -d production.yml up fd-server`
+- **Postgres, Redis, Celery**: the sandbox kit starts its own per instance (above); the unit suite needs none of them.
+- **Everything a fresh machine needs**: [doc/SETUP.md](doc/SETUP.md).
 
 ### Testing
 - **Local run**: `uv run pytest -m "not conventions" btcopilot/tests -q`

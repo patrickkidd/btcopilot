@@ -4,8 +4,8 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
  * screens, driven against a running review sandbox rather than the fixture
  * records the goldens use.
  *
- * They need a sandbox that already holds the review fixture state (the scripts
- * in `~/worktrees/fd362-sandbox` put it there) and one sign-in link per fixture
+ * They need a sandbox that already holds the review fixture state (`sandbox up`
+ * installs it; see bin/sandbox/sandbox) and one sign-in link per fixture
  * person, named in the environment:
  *
  *   SANDBOX_URL     the sandbox, e.g. https://turin:8891

@@ -15,14 +15,18 @@
 #
 # Postgres listens on <port>+10000 and Redis on <port>+11000. --dev adds the
 # Vite dev server (default 8891) at https://turin:<dev port>/app/ for Patrick's
-# phone. --real puts the coach on Anthropic with the testing key from
-# ~/btcopilot/.env; ask Patrick before spending. Readiness gives up after
-# SANDBOX_WAIT seconds (default 120) and prints the log tails.
+# phone. --real puts the coach on Anthropic with the testing key from .env at
+# the main clone's root; ask Patrick before spending. Readiness gives up after
+# SANDBOX_WAIT seconds (default 120) and prints the log tails. doc/SETUP.md
+# lists what the machine needs.
 set -euo pipefail
 
 REPO=$(cd "$(dirname "$0")/../.." && pwd -P)
+# A worktree shares the main clone's .env and private corpus, both gitignored.
+MAIN=$(dirname "$(git -C "$REPO" rev-parse --path-format=absolute --git-common-dir)")
 HOME_DIR=${SANDBOX_HOME:-$HOME/btcopilot-sandbox}
-DOTENV=${SANDBOX_DOTENV:-$HOME/btcopilot/.env}
+DOTENV=${SANDBOX_DOTENV:-$MAIN/.env}
+SOURCES=${BTCOPILOT_SOURCES:-$MAIN/btcopilot-sources}
 AGE_KEY=${SOPS_AGE_KEY_FILE:-$HOME/.config/sops/age/keys.txt}
 OLLAMA=http://127.0.0.1:11434
 WAIT=${SANDBOX_WAIT:-120}
@@ -98,6 +102,7 @@ export FLASK_TURN_LOG=redis
 export FLASK_SITE_URL=$site FLASK_RP_ORIGIN=$site
 export FLASK_ADMIN_EMAIL= FLASK_INVITATION_REUSABLE=1
 export SOPS_AGE_KEY_FILE=$AGE_KEY
+export BTCOPILOT_SOURCES=$SOURCES
 export SANDBOX_URL=http://127.0.0.1:$PORT
 export FIXTURE_CMD="$REPO/.venv/bin/python -m flask app fixtures" FIXTURE_CWD=$REPO
 SETTINGS
