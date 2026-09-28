@@ -25,6 +25,13 @@ found in plain text in the old local permissions; the self-learning and correcti
 rules move to his global instructions; FD-336, FD-342 and FD-360 stay in ~/theapp. Sessions are
 not copied; old ones reopen by id. Remove this paragraph once the move is done. 2026-09-26: at the start of the play-by-play session he said "not yet"; remind again at the next new session.
 
+**ALSO FIRST (2026-09-28):** Patrick reported at session end that selecting a cluster still slides over a second timeline view on production (cf62be6), though R-0542's no-slide fix passed verification on 2026-09-27. Reproduce it on production and at HEAD first; suspect the play-by-play build's changes to the picture's back path. The pill strip (R-0543/R-0544) is not built yet; its scratch prototype (the app's web/ with the pill strip, diff it against web/) is at ~/theapp/btcopilot-sources/fd-corpus/design/strip-labels/proto-web.
+
+**FIRST BUILD ITEM FOR THE NEXT SESSION (queued 2026-09-28).** An iPhone home-screen app keeps
+running the page it last loaded, so after a deploy Patrick sees old code until he kills the
+app. Fix: on returning to the foreground, fetch the release version and reload if it changed;
+send `Cache-Control: no-cache` on the HTML; give the bundle hashed file names.
+
 ## The product (ruled)
 
 **"A coach who never forgets your family."** You talk to it (voice or text) the way
