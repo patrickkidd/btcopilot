@@ -186,12 +186,19 @@ def test_a_refused_tool_call_is_written_down_with_whether_its_retry_worked(
         Model(
             called(ToolName.ReadPeople),
             called(ToolName.Show, kind="triangle"),
-            called(ToolName.EditEvent, kind="noted", person=1, date_certainty="certain"),
+            called(
+                ToolName.EditEvent,
+                kind="noted",
+                person=1,
+                date="2019-03-01",
+                date_certainty="certain",
+            ),
             called(
                 ToolName.EditEvent,
                 kind="noted",
                 person=1,
                 description="Moved to Arizona",
+                date="2019-03-01",
                 date_certainty="certain",
             ),
             said("The move is in."),

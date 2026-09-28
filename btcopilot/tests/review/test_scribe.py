@@ -332,7 +332,7 @@ def test_a_reopened_thread_says_which_events_each_line_wrote(coder, cut, turns):
     load, not only right after the scribe wrote them."""
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
     model = Scripted(
-        [("edit_event", {"date_certainty": "certain", "kind": "shift", "anxiety": "up", "date": "1971-01-01", "person": "1"})]
+        [("edit_event", {"date_certainty": "certain", "kind": "shift", "anxiety": "up", "date": "1971-01-01", "person": "1", "description": "got anxious"})]
     )
     made = scribe(coder, coding, turns[0], model, "Marcus got anxious in 1971").json["made"]
 

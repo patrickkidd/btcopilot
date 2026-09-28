@@ -128,7 +128,13 @@ def test_a_refused_call_stays_on_the_thread_with_why_in_plain_words(
         Model(
             called(ToolName.Show, kind="triangle"),
             called(ToolName.EditPerson, id=1, version=read, name="Wrenna"),
-            called(ToolName.EditEvent, kind="noted", person=1, date_certainty="certain"),
+            called(
+                ToolName.EditEvent,
+                kind="noted",
+                person=1,
+                date="2019-03-01",
+                date_certainty="certain",
+            ),
             said("I cannot do any of that."),
         ),
     )
