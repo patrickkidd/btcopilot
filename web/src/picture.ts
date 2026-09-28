@@ -71,7 +71,9 @@ export interface Pill {
   right: number;
 }
 
-const middle = (mark: { left: number; right: number }) => (mark.left + mark.right) / 2;
+type Span = { left: number; right: number };
+
+const middle = (mark: Span) => (mark.left + mark.right) / 2;
 
 /** The marks on the line in order across it: a pill per cluster and a dot per
  * dated event no cluster claims. The clusters come in time order. A pill
@@ -124,10 +126,7 @@ export function strongest(ids: number[], touched: Map<number, Touch>): Touch | n
 /** How far each mark's tap target reaches across the line: halfway to its
  * neighbours and no further than HIT_REACH from its middle, but always over
  * the whole mark, so a tap anywhere on a pill opens it (R-0537, R-0544). */
-export function reach(
-  marks: { left: number; right: number }[],
-  width: number,
-): { left: number; right: number }[] {
+export function reach(marks: Span[], width: number): Span[] {
   return marks.map((mark, i) => {
     const c = middle(mark);
     const before = i ? (c + middle(marks[i - 1])) / 2 : 0;
@@ -139,11 +138,18 @@ export function reach(
   });
 }
 
+/** Where a year sits under its tick, as the SVG text-anchor takes it. */
+enum Anchor {
+  Start = "start",
+  Middle = "middle",
+  End = "end",
+}
+
 /** One year written under the line. */
 export interface Tick {
   year: number;
   x: number;
-  anchor: "start" | "middle" | "end";
+  anchor: Anchor;
 }
 
 /** The years under the line: the first and last at its two ends, and the
@@ -156,19 +162,20 @@ export function ruler(
   x0: number,
   x1: number,
 ): Tick[] {
-  if (y0 === y1) return [{ year: y0, x: (x0 + x1) / 2, anchor: "middle" }];
+  if (y0 === y1) return [{ year: y0, x: (x0 + x1) / 2, anchor: Anchor.Middle }];
   const wide = 4 * YEAR_CH;
   const ticks: Tick[] = [
-    { year: y0, x: x0, anchor: "start" },
-    { year: y1, x: x1, anchor: "end" },
+    { year: y0, x: x0, anchor: Anchor.Start },
+    { year: y1, x: x1, anchor: Anchor.End },
   ];
   const span = (t: Tick) => {
-    const left = t.anchor === "start" ? t.x : t.anchor === "end" ? t.x - wide : t.x - wide / 2;
+    const left =
+      t.anchor === Anchor.Start ? t.x : t.anchor === Anchor.End ? t.x - wide : t.x - wide / 2;
     return [left - 4, left + wide + 4];
   };
   const step = at(`${y0 + 10}-01-01`) - at(`${y0}-01-01`) >= 62 ? 10 : 20;
   for (let year = Math.ceil((y0 + 1) / step) * step; year < y1; year += step) {
-    const tick: Tick = { year, x: at(`${year}-01-01`), anchor: "middle" };
+    const tick: Tick = { year, x: at(`${year}-01-01`), anchor: Anchor.Middle };
     const [l, r] = span(tick);
     if (ticks.some((t) => l < span(t)[1] && r > span(t)[0])) continue;
     ticks.push(tick);

@@ -43,14 +43,15 @@ test.describe("the move language", () => {
 test.describe("what a chip does", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0168
+  // R-0168, R-0543
   test("what the coach named stays lit on the picture", async ({ page }) => {
     await page.goto("/app/");
     await expect(page.locator("#view .ss")).toBeVisible();
     await page.waitForTimeout(500);
     // the record rests on one open cluster, which writes no words on the
-    // drawing (owner, 2026-09-09): what the coach named is lit on its dots
-    await expect(page.locator("#view .dot.lit").first()).toBeVisible();
+    // drawing (owner, 2026-09-09): what the coach named is inside it, so its
+    // pill is lit
+    await expect(page.locator("#view rect.pill.on")).toHaveCount(1);
   });
 });
 
