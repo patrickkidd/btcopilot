@@ -50,7 +50,9 @@ def replay(
     started = time.monotonic()
     model = model_for(requested)
     diagram = adapter.coding_diagram(
-        discussion.user, f"Replay of session {discussion.id} on {requested}"
+        discussion.user,
+        f"Replay of session {discussion.id} on {requested}",
+        scratch=True,
     )
     db.session.commit()
     statements = sorted(discussion.statements, key=lambda s: (s.order or 0, s.id))

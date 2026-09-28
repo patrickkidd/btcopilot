@@ -12,6 +12,7 @@ from btcopilot.admin.quality import PRODUCTION
 from btcopilot.coachmodel import Spent
 from btcopilot.extensions import db
 from btcopilot.models import Diagram, TokenMeter
+from btcopilot.routes.diagrams import readable
 from btcopilot.toolbox import ToolName
 from btcopilot.tests.conftest import Model, called, said
 
@@ -67,6 +68,15 @@ def test_a_replay_charges_no_one(discussion, reference, coach):
     # R-0596
     replayscore.replay(discussion, "sonnet-5", reference)
     assert TokenMeter.query.count() == 0
+
+
+def test_the_replay_record_is_scratch_and_never_listed(
+    discussion, reference, coach, test_user
+):
+    # R-0596
+    row = replayscore.replay(discussion, "sonnet-5", reference)
+    assert db.session.get(Diagram, row["scratch_diagram_id"]).scratch
+    assert row["scratch_diagram_id"] not in {d.id for d in readable(test_user)}
 
 
 def test_an_event_on_january_first_with_unknown_certainty_is_counted(test_user):

@@ -1,5 +1,5 @@
 #!/bin/bash
-# A sandbox of this checkout: its own Postgres, Redis and Celery worker, the
+# A sandbox of this checkout: its own Postgres, Redis and Celery workers, the
 # stand-in family and the other fixture records installed, the coach on the
 # local Ollama model, and the built page served by Flask. Each instance keeps
 # everything it writes in ~/btcopilot-sandbox/<name>/, outside every repo and
@@ -170,9 +170,13 @@ start_app() {
     nohup "$REPO/.venv/bin/celery" -A btcopilot.celery:celery worker -P solo \
       -n "$NAME@%h" --loglevel=info >> "$D/worker.log" 2>&1 &
     echo $! > "$D/worker.pid"
+    nohup "$REPO/.venv/bin/celery" -A btcopilot.celery:celery worker -P solo -Q shadow \
+      -n "$NAME-shadow@%h" --loglevel=info >> "$D/shadow.log" 2>&1 &
+    echo $! > "$D/shadow.pid"
   )
   ready "Flask on $PORT" curl -sf "http://127.0.0.1:$PORT/health"
   ready "the Celery worker" grep -q "ready\." "$D/worker.log"
+  ready "the shadow worker" grep -q "ready\." "$D/shadow.log"
 }
 
 start_dev() {
@@ -198,7 +202,7 @@ stop_pid() {
   rm -f "$D/$1.pid"
 }
 
-stop_app() { stop_pid vite; stop_pid flask; stop_pid worker; }
+stop_app() { stop_pid vite; stop_pid flask; stop_pid worker; stop_pid shadow; }
 
 stop_all() {
   stop_app
@@ -331,7 +335,7 @@ cmd_status() {
   for n in $names; do
     loaded "$n"
     local state=""
-    for p in flask worker vite; do alive "$p" && state="$state $p"; done
+    for p in flask worker shadow vite; do alive "$p" && state="$state $p"; done
     redis-cli -p "$REDIS_PORT" ping >/dev/null 2>&1 && state="$state redis"
     docker ps --format '{{.Names}}' | grep -qx "$PG" && state="$state postgres"
     echo "$NAME port $PORT${DEV:+ dev $DEV}:${state:- stopped}"

@@ -12,7 +12,8 @@ from the Pro box on purpose. Nothing in it has run yet; the droplet does not exi
    (Gemini is the model that groups events into clusters on the picture)
    with a new credential (none of the old compose file's values are reused),
    encrypt it: `sops -e secrets.env > secrets.env.enc`, delete the plain file,
-   commit `secrets.env.enc`.
+   commit `secrets.env.enc`. The Vertex service account file for Gemini goes on
+   the box at `GCP_SA_FILE` (default `/etc/fd/gcp-sa.json`, root, 600).
 2. **Keys.** On the new box: `age-keygen -o /etc/fd/age.key`, `chmod 600`. Its
    public key goes into `.sops.yaml` here beside the Mac's; the prompts, the
    rulings and the secrets file are re-encrypted with `sops updatekeys`. Claude

@@ -197,13 +197,16 @@ def _dated(event: dict) -> dict:
     )
 
 
-def coding_diagram(user, name: str, source: Diagram | None = None) -> Diagram:
+def coding_diagram(
+    user, name: str, source: Diagram | None = None, scratch: bool = False
+) -> Diagram:
     """A coder's own record for a case: the one they built last time carried
     forward, or a fresh empty one."""
     diagram = Diagram(
         user_id=user.id,
         name=name,
         data=diagramjson.dumps(record_of(source) if source is not None else {}),
+        scratch=scratch,
     )
     db.session.add(diagram)
     db.session.flush()
