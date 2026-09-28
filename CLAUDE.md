@@ -320,6 +320,7 @@ btcopilot provides:
 - When a stack trace is pasted, add a test to reproduce the error if one doesn't exist
 - DB is in production — new schema changes need Alembic migrations
 - **Schema is vetted by Patrick before it is built (2026-09-28) [R-0581].** A new table, a new column, or reusing an existing table for a new kind of row is put to him first, with the table and column names and one line on what each holds, and built only after his yes. Every table and column name says plainly what it holds, so a reader knows its contents from the name alone (never a name like `told_case`). No kind column that turns one table into several kinds of row without his yes.
+- Each PR ships its schema changes as one squashed migration [R-0584].
 - Keep Flask endpoints oriented around updating entries in database tables, not
   just adding a new endpoint for every application verb
 - Assume that exceptions are already handled in the blueprint and jsonify() is
