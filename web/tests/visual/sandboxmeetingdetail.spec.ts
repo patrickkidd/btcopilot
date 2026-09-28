@@ -1,4 +1,5 @@
 import { test } from "@playwright/test";
+import { colours } from "./gate";
 import { need, sandboxOnly, walker } from "./sandbox";
 
 // The meeting screen read line by line: the header's shape, the two sorts, an
@@ -8,7 +9,7 @@ test.describe(() => {
   sandboxOnly("table");
   test.describe.configure({ timeout: 600_000 });
 
-  // R-0321, R-0339, R-0341, R-0316, R-0319
+  // R-0321, R-0339, R-0341, R-0316, R-0319, R-0588, R-0023, R-0589
   test("the meeting read line by line: header, sorts, keeps and dots", async ({ page }, info) => {
     const { say, check, shot, text, visible, gates, changed, quiet } = walker(
       page,
@@ -134,6 +135,11 @@ test.describe(() => {
       check(
         (await card.locator(".cardx").count()) === 1,
         "the card has a close button at its top right",
+      );
+      const { light, dark } = await colours(page, card.locator(".cardx"));
+      check(
+        light.drawn === light.token && dark.drawn === dark.token,
+        `the close button is the teal of the data token (light ${light.drawn}, dark ${dark.drawn})`,
       );
       check(
         (await card.locator(".mt-choice").count()) === 2,

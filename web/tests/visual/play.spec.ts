@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { stateFor } from "./setup";
+import { colours } from "./gate";
 import { mockTurn } from "./turn";
 
 /** The play-by-play drawer (R-0542, R-0562, R-0563). The `play` record holds
@@ -79,8 +80,8 @@ test.describe("the play-by-play drawer", () => {
     }));
   };
 
-  // R-0542, R-0540
-  test("the close button sits in the top-right corner and goes back to the case's cluster, as the path's years step does", async ({ page }) => {
+  // R-0542, R-0540, R-0588, R-0023, R-0589
+  test("the close button is teal in light and dark, sits in the top-right corner and goes back to the case's cluster, as the path's years step does", async ({ page }) => {
     await settle(page);
     await stored(page).click();
     await drawer(page).locator('.path [data-step="1"]').click();
@@ -89,6 +90,10 @@ test.describe("the play-by-play drawer", () => {
     const x = drawer(page).locator(".cardx");
     await expect(x).toHaveCount(1);
     await expect(x).toHaveText("×");
+    const { light, dark } = await colours(page, x);
+    expect(light.drawn).toBe(light.token);
+    expect(dark.drawn).toBe(dark.token);
+    expect(dark.token).not.toBe(light.token);
     const [b, p] = [(await x.boundingBox())!, (await drawer(page).boundingBox())!];
     expect(p.x + p.width - (b.x + b.width)).toBeLessThanOrEqual(8);
     expect(b.y - p.y).toBeLessThanOrEqual(8);

@@ -161,3 +161,25 @@ export async function stored(page: Page, sessionId: number): Promise<any[] | nul
     return j.statements ?? j.session?.statements ?? [];
   }, sessionId);
 }
+
+interface Drawn {
+  drawn: string;
+  token: string;
+}
+
+/** The colour a control is drawn in beside the colour the app's data token
+ * resolves to, under a light and then a dark system theme. */
+export async function colours(page: Page, target: Locator): Promise<Record<"light" | "dark", Drawn>> {
+  const read = () =>
+    target.evaluate((node) => {
+      const probe = document.body.appendChild(document.createElement("i"));
+      probe.style.color = "var(--data)";
+      const token = getComputedStyle(probe).color;
+      probe.remove();
+      return { drawn: getComputedStyle(node).color, token };
+    });
+  await page.emulateMedia({ colorScheme: "dark" });
+  const dark = await read();
+  await page.emulateMedia({ colorScheme: "light" });
+  return { light: await read(), dark };
+}

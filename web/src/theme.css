@@ -989,16 +989,8 @@ button { font-family: inherit; }
   justify-content: space-between;
   color: var(--ink);
 }
-.notes-close {
-  width: 44px;
-  height: 44px;
-  margin-right: -12px;
-  border: none;
-  background: none;
-  color: var(--faint);
-  font-size: 16px;
-  cursor: pointer;
-}
+/* the app's close button, kept in the heading row where the notes' own sat */
+.notes-head > .cardx { position: static; margin-right: -12px; }
 .notes-card dl { margin: 0; }
 .notes-card dt { color: var(--ink); }
 .notes-card dd { margin: 0 0 8px; overflow-wrap: anywhere; }
@@ -2888,10 +2880,11 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   height: 44px;
   border: none;
   background: none;
-  color: var(--faint);
+  color: var(--data);
   font: 400 21px/1 var(--sans);
   cursor: pointer;
 }
+.cardx:active { color: var(--data-press); }
 .drow .top { display: flex; align-items: center; gap: 12px; }
 .drow .tally { flex: none; width: 80px; }
 .drow .pick { font: 400 17px/1.3 var(--sans); color: var(--ink); flex: 1; }
