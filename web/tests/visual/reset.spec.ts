@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { NO_EDITOR, stateFor } from "./setup";
 
 /** Putting the picture down, and what a label does.
  *
@@ -87,7 +87,7 @@ test.describe("a tap on the words of the moment picked", () => {
 
   // R-0207
   test("opens its editor", async ({ page }) => {
-    test.skip(true, "superseded on the strip by R-0543: an event inside a cluster has no mark of its own to pick, and a loose event picked closes the cluster, so no words on the line open an editor; needs Patrick's call");
+    test.skip(true, NO_EDITOR);
     await settle(page);
     await pickOne(page);
     await tapWords(page);

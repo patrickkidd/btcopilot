@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor, tellWithoutModel } from "./setup";
+import { NO_EDITOR, stateFor, tellWithoutModel } from "./setup";
 
 /** Opening a cluster and coming back out of it: the boxes at rest, the path
  * that goes back up, the page behind the small i, the board, and the card
@@ -175,7 +175,7 @@ test.describe("one cluster open on the sparse record", () => {
 
   // R-0207
   test("the editor the words open is the picked moment's own", async ({ page }) => {
-    test.skip(true, "superseded on the strip by R-0543: an event inside a cluster has no mark of its own to pick, and a loose event picked closes the cluster, so no words on the line open an editor; needs Patrick's call");
+    test.skip(true, NO_EDITOR);
     await settle(page);
     await openCluster(page);
     await pickMoment(page);
@@ -191,7 +191,7 @@ test.describe("one cluster open on the sparse record", () => {
   test("from that editor the back arrow returns to the same open cluster", async ({
     page,
   }) => {
-    test.skip(true, "superseded on the strip by R-0543: an event inside a cluster has no mark of its own to pick, and a loose event picked closes the cluster, so no words on the line open an editor; needs Patrick's call");
+    test.skip(true, NO_EDITOR);
     await settle(page);
     await openCluster(page);
     await pickMoment(page);
@@ -205,7 +205,7 @@ test.describe("one cluster open on the sparse record", () => {
 
   // R-0207
   test("the jump lands on the list of events, not people", async ({ page }) => {
-    test.skip(true, "superseded on the strip by R-0543: an event inside a cluster has no mark of its own to pick, and a loose event picked closes the cluster, so no words on the line open an editor; needs Patrick's call");
+    test.skip(true, NO_EDITOR);
     await settle(page);
     await openCluster(page);
     await pickMoment(page);

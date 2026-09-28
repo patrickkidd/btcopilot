@@ -158,6 +158,11 @@ export const lists = (page: Page) => page.locator("#chat-drawer:visible, #menu-s
 
 export const NO_LIST = "a wide window pins the drawer open and draws no list button (R-0352)";
 
+export const NO_EDITOR =
+  "superseded on the strip by R-0543: an event inside a cluster has no mark of its own to pick, " +
+  "and a loose event picked closes the cluster, so no words on the line open an editor; " +
+  "needs Patrick's call";
+
 /** The lists open: the list button on a phone, already open on a wide window. */
 export async function openList(page: Page): Promise<void> {
   await expect(page.locator("#view .ss")).toBeVisible();

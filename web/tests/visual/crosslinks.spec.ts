@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { lists, openList, stateFor } from "./setup";
+import { NO_EDITOR, lists, openList, stateFor } from "./setup";
 
 /** One record, reached from either side. A person's editor offers the events
  * about them; an event's editor offers the people in it; and the words on the
@@ -124,7 +124,7 @@ test.describe("the picture with one cluster open", () => {
 
   // R-0207
   test("the words of the moment picked open its editor", async ({ page }) => {
-    test.skip(true, "superseded on the strip by R-0543: an event inside a cluster has no mark of its own to pick, and a loose event picked closes the cluster, so no words on the line open an editor; needs Patrick's call");
+    test.skip(true, NO_EDITOR);
     await settle(page);
     await openCluster(page);
     await page.locator('.ss-hit[data-target="zone"]').first().click();

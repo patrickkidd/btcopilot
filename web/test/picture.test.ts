@@ -28,11 +28,9 @@ const at = (iso: string, dates: string[], width: number): number =>
   ((years(iso) - years(dates[0])) / (years(dates[dates.length - 1]) - years(dates[0]))) *
     (width - 2 * PAD);
 
-/** A dated event on the line. */
 const event = (id: number, iso: string): TimelineEvent =>
   ({ id, dateTime: iso, label: `event ${id}` }) as TimelineEvent;
 
-/** A cluster over these events. */
 const cluster = (id: number, events: TimelineEvent[]): Cluster =>
   ({
     id: String(id),
