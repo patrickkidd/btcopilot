@@ -1,6 +1,6 @@
 import * as api from "./api";
 import { Feature, tap } from "./track";
-import { $, el, esc, isAdmin } from "./dom";
+import { $, closeX, el, esc, isAdmin } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { meetingTitle, periodLabel, rowDate } from "./when";
@@ -57,7 +57,7 @@ export class Sessions {
   private sheet = el(
     "div",
     "fs-sheet",
-    `<div class="fs-handle"><div class="fs-grab"></div></div>
+    `<div class="fs-handle"><div class="fs-grab"></div></div>${closeX()}
      <div class="fs-search">
        <input type="search" placeholder="Search sessions"
               aria-label="Search sessions">
@@ -196,6 +196,7 @@ export class Sessions {
       void this.raise(false);
     });
     this.scrim.addEventListener("click", () => this.lower());
+    this.sheet.querySelector(".cardx")!.addEventListener("click", () => this.lower());
     this.search.addEventListener("input", () => {
       this.filter = this.search.value;
       this.render();

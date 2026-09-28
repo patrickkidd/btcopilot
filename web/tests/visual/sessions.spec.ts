@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { colours } from "./gate";
 import { EXACT, stateFor } from "./setup";
 
 /** The session door: the button beside the message box and the family-sections
@@ -8,6 +9,44 @@ const settle = async (page: Page) => {
   await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(600);
+};
+
+/** Which of the sheets and scrims are on the page, and whether the chat under
+ * them is still shrunk back. */
+const shown = async (page: Page) => {
+  await page.waitForTimeout(400);
+  return page.evaluate(() => ({
+    up: ["sessions-sheet", "sessions-scrim", "recording-sheet", "recording-scrim"].filter(
+      (id) => !(document.getElementById(id) as HTMLElement).hidden,
+    ),
+    chat: (document.querySelector("#chat-screen") as HTMLElement).style.transform,
+  }));
+};
+
+/** The app's close button in the sheet: teal, in the sheet's top-right corner
+ * beside the search field, and a tap on it leaves the page as a tap on the
+ * scrim does. */
+const closes = async (page: Page, sheet: string, scrim: string, open: () => Promise<void>) => {
+  await open();
+  await page.locator(scrim).click({ position: { x: 195, y: 20 } });
+  const byScrim = await shown(page);
+  await open();
+  const x = page.locator(`${sheet} > .cardx`);
+  await expect(x).toHaveCount(1);
+  await expect(x).toHaveText("\u00d7");
+  const { light, dark } = await colours(page, x);
+  expect(light.drawn).toBe(light.token);
+  expect(dark.drawn).toBe(dark.token);
+  const [b, p, f] = [
+    (await x.boundingBox())!,
+    (await page.locator(sheet).boundingBox())!,
+    (await page.locator(`${sheet} .fs-search input`).boundingBox())!,
+  ];
+  expect(p.x + p.width - (b.x + b.width)).toBeLessThanOrEqual(8);
+  expect(Math.abs(b.y + b.height / 2 - (f.y + f.height / 2))).toBeLessThanOrEqual(4);
+  expect(f.x + f.width).toBeLessThanOrEqual(b.x);
+  await x.click();
+  expect(await shown(page)).toEqual(byScrim);
 };
 
 const openSheet = async (page: Page) => {
@@ -135,6 +174,12 @@ test.describe("the sessions sheet", () => {
     await expect(page.locator("#sessions-sheet")).toBeHidden();
   });
 
+  // R-0588, R-0589
+  test("the app's close button sits in its top-right corner and closes it as a tap on the scrim does", async ({ page }) => {
+    await settle(page);
+    await closes(page, "#sessions-sheet", "#sessions-scrim", () => openSheet(page));
+  });
+
   // R-0103
   test("every row and control in the sheet meets the 44px floor", async ({
     page,
@@ -188,6 +233,19 @@ test.describe("uploading a recording", () => {
     await page.waitForTimeout(300);
     return picked;
   };
+
+  // R-0588, R-0589
+  test("the warning has the app's close button in its top-right corner, which closes it as a tap on the scrim does", async ({ page }) => {
+    await settle(page);
+    await closes(page, "#recording-sheet", "#recording-scrim", async () => {
+      await openSheet(page);
+      const button = page.locator("#sessions-sheet .fs-upload");
+      await button.evaluate((b) => ((b as HTMLElement).hidden = false));
+      await button.click();
+      await expect(page.locator("#recording-sheet")).toBeVisible();
+      await page.waitForTimeout(400);
+    });
+  });
 
   // R-0349
   test("warns before the file picker opens", async ({ page }) => {
