@@ -1307,7 +1307,11 @@ button { font-family: inherit; }
   letter-spacing: 0.04em;
   padding-top: 6px;
 }
+/* No native look: Safari on iPhone draws a native date field content-box
+   whatever the page says, so its padding and border went past the editor's
+   right edge and the list scrolled sideways. */
 .editor .f, .editor textarea {
+  appearance: none;
   width: 100%;
   height: 44px;
   padding: 0 12px;
