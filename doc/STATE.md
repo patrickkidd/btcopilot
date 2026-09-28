@@ -8,7 +8,9 @@ Read this first, every session. This is the current truth; the derivation lives 
 **append to HISTORY, revise STATE** as part of any work that changes either.
 Ten-minute read by design.
 
-**Play-by-play redesign — its own session (Fable, xhigh), started 2026-09-27.** The concept, reasoned from the theory corpus (~/theapp/btcopilot-sources/theory): a step is a snapshot of one date (who was around the person, how each was doing, what moved between them), not one event; the coach picks one point of three allowed kinds (the order of what happened around a change; trouble sat with one person, later another; a move after an event), never a cause or motive, and shows it in 3–6 snapshots with the gap between them; captions carry a fact line in the user's words and, if any, a line marked as the coach's guess; the last ends in the question the biggest gap makes; the user and the people around them are in every snapshot, nobody drawn alone. Patrick rules only on a working mockup (process doc). A gallery of two drawings (the moves board's figures; a small standard family diagram) on three case shapes is being built by the other session's predecessor at ~/theapp/btcopilot-sources/fd-corpus/design/playbyplay-snapshots/gallery.html, to be published as an Artifact. Background: the theory's notes/move-definition.md (his move definition against Bowen, Kerr and Havstad) and its new open question on whether a move needs a target; the coverage checklist (what a family evaluation collects) waits for this. Until the main session commits the timeline one-drawing build (web/ files uncommitted in this worktree), the play-by-play session commits no web/ files.
+**Play-by-play redesign — approved and built.** The snapshot-based drawer, designed on Fable
+from the theory corpus and approved by Patrick 2026-09-27, replaced the old moves board; see
+"Where the build stands" below for what shipped and where it stands.
 
 **Handovers are retired (2026-09-26).** This file is where a session starts: "FD-363" alone
 starts one. The flush revises this file and appends to HISTORY, and that is the whole handover.
@@ -420,6 +422,23 @@ current chain through (2a797b0). Backup:
 67 events, 12 pair-bonds, 5 clusters, 194 change rows, before and after. One real turn on the
 claude-test account proved the running stack, for $0.16.
 
+**Play-by-play rebuilt and the old moves board retired, deploying now: commit f66d603.** The
+snapshot-based drawer Patrick approved 2026-09-27 ("This all looks good. let's do it.")
+[R-0545 to R-0570] replaces the old moves board entirely [R-0570]. Old board-only rulings were
+marked superseded once their own tests were confirmed gone (R-0130, R-0131, R-0135, R-0162,
+R-0173, R-0177, R-0178, R-0180, R-0292); two triangle-drawing rulings (R-0286, R-0288) were kept
+and narrowed to the new drawer instead, since their tests still pass there.
+
+**Next up: the pill strip.** A scratch prototype for the redrawn timeline strip (one pill per
+cluster, no dots, only clusters and events outside a cluster tappable, colour changes as the
+coach replies) sits at `~/.claude/jobs/0b7dc61d/tmp/strip-proto/web`, built against R-0543 and
+R-0544; nav-builder starts its own work from that diff next.
+
+**Testing stays on the Claude Code subscription, not paid API calls [R-0568].** A model call a
+test needs goes to a Claude Code agent instead and is saved as a subscription-sourced replay;
+the local model answers wherever the model itself isn't under test; the API is kept for the one
+real turn on production after a deploy.
+
 **The frame session.** A Claude Code skill named "frame" now exists: Patrick's persistent expert
 on his clinical frame. The next session on this thread loads that skill first, then reads the
 draft. What the session produces: one document, his clinical theory written as requirements a
@@ -474,11 +493,18 @@ Open:
   after the frame session.
 - Found, next batch to fix: the play-by-play's own model calls never reach the model-call
   record, so their spend goes uncounted.
-- The move of this work to ~/btcopilot awaits Patrick's yes on the plan's recommendations.
+- The move of this work to ~/btcopilot is queued for the next new session (see the reminder at
+  the top of this file); he said "not yet" once, on 2026-09-26.
 - Patrick's question about a decrypted prompt copy was really about agents always reading the
   decrypted prompts instead of assuming their contents; resolved as a process rule in
   HOW_THIS_PROJECT_WORKS.md ("Encrypted is never a reason not to know"). No mirror or extra
   tooling was built.
+- The coach producing a snapshot's point, facts, guess and question live is proven only by
+  Claude Code subscription replies and one real turn on production; no full eval has run yet.
+- Nothing yet holds a play-by-play to three to six snapshots; real cases have shown as many as
+  eleven and seventeen steps.
+- A real first name from Patrick's own record sat in committed code before today's fix; swapped
+  for a stand-in name.
 
 **Patrick's actions.**
 1. Test the 5b2a6bb batch in his own thread, including a long message on his iPhone and the (i)

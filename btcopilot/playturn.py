@@ -27,6 +27,8 @@ _log = logging.getLogger(__name__)
 
 # How many times a case the cluster does not bear out is handed back.
 TRIES = 3
+# What an answer in words gets back: the coach's model refuses a forced call.
+ASK = "Answer only by calling play_by_play once, with the pictures."
 # The longest the server takes to answer, every try timing out at the model's
 # own limit, and the page's wait for it (web/src/api.ts PLAY_WAIT_S) with a
 # little over, so a slow model fails with the server's error, not the page's.
@@ -107,11 +109,24 @@ class PlayTurn:
         }
 
     def _tell(self, system: str, messages: list[dict], events: list[dict]) -> Case:
+        try:
+            return self._tries(system, messages, events)
+        finally:
+            # every call is charged, the ones that told nothing too
+            db.session.commit()
+
+    def _tries(self, system: str, messages: list[dict], events: list[dict]) -> Case:
         for _ in range(TRIES):
             turn = self._call(system, messages)
             call = next((c for c in turn.calls if c.name == Tool.PlayByPlay), None)
             if call is None:
-                raise Untellable("no play_by_play call")
+                # an answer in words: asked again for the one call it must make
+                _log.info("Play answered in words; asked for the call")
+                messages = messages + [
+                    {"role": "assistant", "content": turn.blocks},
+                    {"role": "user", "content": ASK},
+                ]
+                continue
             try:
                 return Case.told(call.args, self.cluster, events)
             except Untold as untold:
@@ -130,7 +145,7 @@ class PlayTurn:
                         ],
                     },
                 ]
-        raise Untellable(f"refused {TRIES} times")
+        raise Untellable(f"not told in {TRIES} tries")
 
     def _call(self, system: str, messages: list[dict]):
         words = self.model.turn(system, messages, [tool()])

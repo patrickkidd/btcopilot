@@ -51,15 +51,25 @@ CASE_2 = [
 CAUSE = re.compile(r"\b(because|caused|made you|why)\b", re.I)
 
 
-def play(coach) -> Statement:
+# Three moments, two of them on one day: those two are one picture.
+SAME_DAY = [
+    event(107, "birth", "1975-06-01", person=3, spouse=4, child=5),
+    event(301, "death", "1998-03-15", person=2),
+    event(302, "shift", "1998-03-15", person=4, relationship="toward", relationshipTargets=[5], description="Called Corinne the night Odile died"),
+    event(303, "shift", "1998-07-15", person=5, relationship="away", relationshipTargets=[3], description="Stopped opening Marcus's letters"),
+]
+ODILE = {"id": 2, "name": "Odile", "last_name": "Whitlock", "gender": "female"}
+
+
+def play(coach, people=PEOPLE, events=CASE_2, told=None) -> Statement:
     response = coach.web.post("/app/sessions", json={}, headers={"X-CSRFToken": coach.token})
     assert response.status_code == 201, response.get_data(as_text=True)
     coach.user.free_diagram.set_diagram_data(
         DiagramData(
-            people=PEOPLE,
+            people=people,
             pair_bonds=[PARENTS],
-            events=CASE_2,
-            clusters=[{"id": "apart", "title": "The years apart", "eventIds": [e["id"] for e in CASE_2[2:]]}],
+            events=events,
+            clusters=[{"id": "apart", "title": "The years apart", "eventIds": [e["id"] for e in (told or events[2:])]}],
             lastItemId=300,
         )
     )
@@ -102,5 +112,14 @@ OLD_WALK = (
 def test_the_old_prompts_walk_fails_the_case_checks(coach, monkeypatch):
     # R-0563, R-0569
     monkeypatch.setattr("btcopilot.playturn.CoachModel", lambda *a, **k: Model(said(OLD_WALK)))
-    with pytest.raises(AssertionError, match="500"):
+    with pytest.raises(AssertionError, match="422"):
         shaped(play(coach))
+
+
+@passes(3, of=3)
+def test_the_coach_tells_two_moments_on_one_day_as_one_picture(coach):
+    # R-0563
+    told = play(coach, people=PEOPLE + [ODILE], events=SAME_DAY, told=SAME_DAY[1:])
+    shaped(told)
+    together = [s["event_ids"] for s in told.told_case["snapshots"] if 301 in s["event_ids"]]
+    assert together and sorted(together[0]) == [301, 302], told.told_case["snapshots"]

@@ -90,7 +90,7 @@ def test_a_case_is_one_point_in_three_to_six_dated_snapshots():
         ("1982-11-15", [208]),
     ]
     assert case.snapshots[2].guess.startswith(GUESS)
-    assert "3 to 6" in refused(told(snapshots=SHOTS[:2]))
+    assert "Tell it in 3 to 6 snapshots, not 2" in refused(told(snapshots=SHOTS[:2]))
 
 
 def test_a_case_names_only_the_clusters_events_on_their_own_dates_in_order():
@@ -163,14 +163,15 @@ def test_a_case_the_cluster_does_not_bear_out_is_handed_back_with_why():
 
 def test_a_coach_that_never_tells_the_case_fails_the_turn():
     # R-0563
+    prose = [said("Here is what happened.") for _ in range(3)]
     with pytest.raises(Untellable, match="couldn't tell this one"):
-        PlayTurn.stored(record(), "apart", model=Model(said("Here is what happened."))).run()
+        PlayTurn.stored(record(), "apart", model=Model(*prose)).run()
 
 
 def test_the_tool_asks_for_dated_pictures_of_the_clusters_events():
     # R-0563
     shot = tool()["input_schema"]["properties"]["snapshots"]
-    assert (shot["minItems"], shot["maxItems"]) == (3, 6)
+    assert (shot["minItems"], shot["maxItems"]) == (1, 6)
     assert shot["items"]["required"] == ["date", "event_ids", "fact"]
 
 
@@ -225,3 +226,70 @@ def test_a_coach_that_cannot_tell_the_case_in_three_tries_is_a_clear_refusal(web
     response = web.post("/app/play", json={"cluster_id": "apart"}, headers={"X-CSRFToken": csrf_token(web)})
     assert response.status_code == 422
     assert response.get_data(as_text=True) == "untold: The coach couldn't tell this one; try again."
+
+
+
+def test_events_that_share_a_date_are_handed_back_to_go_in_one_snapshot():
+    # R-0563
+    split = [
+        {"date": "1980-09-15", "event_ids": [201], "fact": "Marcus and Delphine separated."},
+        {"date": "1980-09-15", "event_ids": [202], "fact": "Marcus took a room."},
+        SHOTS[1],
+    ]
+    assert refused(told(snapshots=split)) == (
+        "Events 201 and 202 share 1980-09-15: put them in one snapshot, with one fact line covering them"
+    )
+
+
+def test_an_answer_in_prose_is_handed_back_asking_for_the_tool():
+    # R-0563
+    model = Model(said("Marcus and Delphine separated in 1980."), called(Tool.PlayByPlay, **told()))
+    reply = PlayTurn.stored(record(), "apart", model=model).run()
+    assert reply["case"]["point"] == told()["point"]
+    asked = model.histories[1][-1]
+    assert asked["role"] == "user" and "play_by_play" in asked["content"]
+
+
+def test_the_tool_holds_the_coach_to_its_schema():
+    # R-0563
+    schema = tool()
+    assert schema["strict"] is True
+    assert schema["input_schema"]["additionalProperties"] is False
+    assert schema["input_schema"]["properties"]["snapshots"]["items"]["additionalProperties"] is False
+
+
+def test_every_play_call_is_metered_even_when_the_case_is_never_told(discussion):
+    # R-0563
+    short = told(snapshots=SHOTS[:2])
+    model = Model(*[called(Tool.PlayByPlay, **short) for _ in range(3)])
+    with pytest.raises(Untellable):
+        PlayTurn.stored(record(), "apart", discussion=discussion, model=model).run()
+    db.session.rollback()
+    assert ModelCall.query.count() == 3
+
+
+def test_the_prompt_puts_events_that_share_a_date_in_one_snapshot():
+    # R-0563
+    wanted = re.sub(r"\s+", " ", prompts.PLAY_BY_PLAY_PROMPT)
+    assert "events that share a date always go in one picture, with one fact line covering them" in wanted
+
+
+
+def test_a_cluster_with_fewer_than_three_dates_is_told_in_one_snapshot_per_date():
+    # R-0563, R-0571
+    data = record()
+    data.clusters[0]["eventIds"] = [201, 202, 203]
+    events = PlayTurn.stored(data, "apart").events
+    two = told(snapshots=SHOTS[:2])
+    assert [s.event_ids for s in Case.told(two, data.clusters[0], events).snapshots] == [[201, 202], [203]]
+    with pytest.raises(Untold, match="Tell it in 2 to 6 snapshots, not 1"):
+        Case.told(told(snapshots=SHOTS[:1]), data.clusters[0], events)
+    data.clusters[0]["eventIds"] = [201, 202]
+    events = PlayTurn.stored(data, "apart").events
+    assert len(Case.told(told(snapshots=SHOTS[:1]), data.clusters[0], events).snapshots) == 1
+
+
+def test_the_prompt_tells_a_cluster_with_few_dates_in_one_picture_per_date():
+    # R-0563, R-0571
+    wanted = re.sub(r"\s+", " ", prompts.PLAY_BY_PLAY_PROMPT)
+    assert "fewer when the cluster has fewer than three dates" in wanted

@@ -1,6 +1,7 @@
 """A case told as snapshots: the play-by-play for one cluster [R-0563].
 
-The coach tells a cluster in 3 to 6 snapshots through one tool call. A snapshot
+The coach tells a cluster in 3 to 6 snapshots through one tool call, or one per
+date when the cluster has fewer than three dates. A snapshot
 is one date: the events on it, a fact line in the person's own words, and an
 optional line starting "My guess:" that holds the coach's hypothesis apart from
 the facts. The case makes one point and ends on the coach's question.
@@ -107,9 +108,13 @@ def broken(value, schema: dict, where: str = "") -> str | None:
 
 def tool() -> dict:
     return {
+        # strict holds every call to the schema; forcing the call with
+        # tool_choice is refused by the coach's model, so the prompt asks for it
+        "strict": True,
         "name": Tool.PlayByPlay.value,
         "description": (
-            "Tell the cluster as 3 to 6 pictures, one per date, in date order. "
+            "Tell the cluster as 3 to 6 pictures, or one per date when it has fewer than "
+            "three dates; one per date, in date order. "
             "Call it exactly once; nothing reaches the person until it is called."
         ),
         "input_schema": {
@@ -122,7 +127,7 @@ def tool() -> dict:
                 },
                 "snapshots": {
                     "type": "array",
-                    "minItems": FEWEST,
+                    "minItems": 1,
                     "maxItems": MOST,
                     "items": {
                         "type": "object",
@@ -139,11 +144,13 @@ def tool() -> dict:
                             },
                         },
                         "required": ["date", "event_ids", "fact"],
+                        "additionalProperties": False,
                     },
                 },
                 "question": {"type": "string", "description": 'One sentence ending in "?".'},
             },
             "required": ["cluster_id", "point", "snapshots", "question"],
+            "additionalProperties": False,
         },
     }
 
@@ -166,8 +173,11 @@ class Case:
             raise Untold(f"Tell cluster {cluster['id']}, not {args.get('cluster_id')}")
         by_id = {e["id"]: e for e in events}
         raw = args.get("snapshots") or []
-        if not FEWEST <= len(raw) <= MOST:
-            raise Untold(f"Tell it in {FEWEST} to {MOST} snapshots, not {len(raw)}")
+        # three pictures at least, unless the cluster has fewer dates than that
+        dates = {recordtext.date_text(e.get("dateTime")) for e in events if e.get("dateTime")}
+        least = min(FEWEST, len(dates))
+        if not least <= len(raw) <= MOST:
+            raise Untold(f"Tell it in {least} to {MOST} snapshots, not {len(raw)}")
         snapshots = []
         for n, shot in enumerate(raw, 1):
             ids = shot.get("event_ids") or []
@@ -187,9 +197,20 @@ class Case:
         named = [i for s in snapshots for i in s.event_ids]
         if len(named) != len(set(named)):
             raise Untold("Name each event in one snapshot only")
+        # one snapshot per date: events that share one are told together
+        by_date: dict[str, list[Snapshot]] = {}
+        for s in snapshots:
+            by_date.setdefault(s.date, []).append(s)
+        for date, same in by_date.items():
+            if len(same) > 1:
+                ids = [i for s in same for i in s.event_ids]
+                raise Untold(
+                    f"Events {', '.join(map(str, ids[:-1]))} and {ids[-1]} share {date}: "
+                    "put them in one snapshot, with one fact line covering them"
+                )
         order = [s.date for s in snapshots]
-        if order != sorted(order) or len(set(order)) != len(order):
-            raise Untold("One snapshot per date, in date order")
+        if order != sorted(order):
+            raise Untold("Put the snapshots in date order")
         return cls(
             cluster_id=str(cluster["id"]),
             point=args["point"].strip(),

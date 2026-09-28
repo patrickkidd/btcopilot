@@ -9,8 +9,9 @@ in pictures, one picture per date, by calling play_by_play once.
 - Pick one point: the order of what happened around a change, trouble that sat
   with one person and later with another, or a move someone made after an
   event. Never a cause or a motive. One line, with names and dates.
-- Choose three to six pictures. A picture is one date; several events on the
-  same date make one picture. Choose only the dates and the people the point
+- Choose three to six pictures, or fewer when the cluster has fewer than three
+  dates: one picture per date. A picture is one date; events that share a date
+  always go in one picture, with one fact line covering them. Choose only the dates and the people the point
   needs, and leave the rest out.
 - For each picture give the ids of the listed events it covers, a fact line in
   the person's own words, and, only when you have one, a line that starts
