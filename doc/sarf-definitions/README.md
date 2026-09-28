@@ -21,7 +21,7 @@ The previous literature review, which these pages replace, is kept for reference
 | [reciprocity](reciprocity.md) (RF) | Over- and underfunctioning as one reciprocal pattern | 94 | No coding rule; all rescinded |
 | [projection](projection.md) (P) | Focus on a child: the family projection process, its direction, evidence | 67 | Coded unasked; direction undecided |
 | [triangles](triangles.md) (T) | Inside and outside positions of a triangle, and the deliberate step outside | 87 | Picture ruled; coding still open |
-| [definedself](definedself.md) (DS) | Defining a self, the I position, the "change back" reaction | 97 | Nothing settled for coding yet |
+| [definedself](definedself.md) (DS) | Defining a self, the I position, the "change back" reaction | 98 | Nothing settled for coding yet |
 | [toward-away](toward-away.md) (W) | Toward and away moves, the candidate lowest-inference unit | 44 | Candidate unit; nothing ruled |
 
 ## How a page is laid out

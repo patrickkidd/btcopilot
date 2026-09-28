@@ -10,7 +10,7 @@ For coders: what the original authors wrote about defining a self (the "I positi
 
 ## Coder summary
 
-Nothing about this code is settled for coding. What kind of thing a defined self is (a relationship move, a functioning shift, or a third kind) is open for the IRR group (status item 5). Whether the others' "change back" reaction must be seen before it is coded is open too (status item 8). The only rulings are two picture rules and the rule that a reading from theory stays apart from the facts (status items 3, 4, 9). Patrick added on 2026-09-28 that a defined self has targets, the people the self was defined to, whom the person may not name; what counts is the behaviour of the move, and its definition is the IRR group's (status item 11).
+Nothing about this code is settled for coding. What kind of thing a defined self is (a relationship move, a functioning shift, or a third kind) is open for the IRR group (status item 5). Whether the others' "change back" reaction must be seen before it is coded is open too (status item 8). The only rulings are two picture rules and the rule that a reading from theory stays apart from the facts (status items 3, 4, 9). Patrick added on 2026-09-28 that a defined self has targets, the people the self was defined to, whom the person may not name (status item 11), and defined the move as "the actual action that a person takes to define themselves in relation to others" (status item 12). Who the targets are when nobody is named, and which actions count, stay open for the IRR group.
 
 The passages that matter most:
 - DS13: Bowen, "A self is never defined in words. It's defined only when you can take an action stand."
@@ -46,6 +46,8 @@ The main off-theory trap: coding a defined self from the words of a statement ("
 11. **A defined self has targets; the report need not name them.** Patrick's words, not in the rulings store; the definition is OPEN for the IRR group (OPEN_QUESTIONS 35).
    - <a id="DS124"></a>**DS124** “defined self does require targets who you defined yourself to” Patrick, correction case 2026-09-28 L15. Said of two events he ruled are noted events, not defined-self moves (4l).
    - <a id="DS125"></a>**DS125** “they may not say it. it is the behavior of the move to define a self.” Patrick, correction case 2026-09-28 L19. His answer to a rule, written by a session from one case, that a defined self is coded only when the person says whom; he sent the definition to the theory and the IRR group.
+12. **Patrick's definition of the move.** Patrick's words, 2026-09-28, not in the rulings store; a working definition, authority for design, not evidence (REFERENCE tag legend). Who the targets are when nobody is named, and which actions count, stay OPEN for the IRR group (OPEN_QUESTIONS 35).
+   - <a id="DS126"></a>**DS126** “define self as a move is the actual action that a person takes to define themselves in relation to others.” Patrick, OPEN_QUESTIONS 35 L133. An action, not words or an intention (compare DS13), and in relation to others (compare DS6).
 
 ## 2. What the original authors wrote
 
