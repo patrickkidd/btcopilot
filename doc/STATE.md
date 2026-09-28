@@ -491,9 +491,10 @@ release when it comes back to the front" — its tests cite R-0486 until then.
 Open for the next session: the first tap right after a rollout can hit a 502 while the
 container comes back up.
 
-**The rulings index sits at its size ceiling.** Every ruling added now forces a wording trim
-somewhere in the store just to stay under it, including the store's own preamble text. Patrick
-decides whether to split the store into more than one file or raise the ceiling.
+**The rulings index sits at its size ceiling**, 702 bytes over its 150,000-byte limit as of
+2026-09-28. Every ruling added now forces a wording trim somewhere in the store just to stay
+under it, including the store's own preamble text. Patrick decides whether to split the store
+into more than one file or raise the ceiling.
 
 **Deployed 2026-09-28: commit a8b2245b, image 3.2026.9.28.9+ga8b2245, database still at
 1b00000000b4 (run 36462083019).** The database revision is unchanged: this PR's migrations are
@@ -524,6 +525,50 @@ have no target; any further edit to them is refused until one is given.
 Also open: the coach rule that links the people an event's own words name, prompt written and
 waiting on a live eval, which needs his spend approval (about $0.15 to $0.40); the older
 ~/theapp copy of this worktree still awaits his word to discard it.
+
+**2026-09-28, branch FD-363-cost off FD-363 (draft PR #141) — a prompt-cache cost fix.** A
+heavy production day put 78% of that day's model cost in prompt-cache writes ($12.91 of $16.60
+over 38 turns), because the record, the date and the "looked at" block sat in the system prompt
+ahead of the chat and changed every turn, rewriting the whole cached chat each time. Fixed
+[R-0594]: the system prompt now holds only the coaching text; the record block moved into the
+new user message after the chat; the chat is marked at the previous two turn boundaries; tool
+marks are capped at four; cache life stays 5 minutes. Measured on the sandbox with a
+12,000-token chat: turns 2 and 3 cost 42% less, $0.2472 down to $0.1428. Estimated saving on
+that production day is about $4.50, and near zero for a user whose gaps between replies mostly
+exceed 5 minutes — 30 of 37 gaps were under 5 minutes for the heavy user, only 2 of 18 for
+Patrick. A 1-hour cache life was weighed and left off, since it lands within measurement error
+either way. Unproven: the saving on real production sessions, and whether moving about 14,000
+characters of prompt out of the system prompt and into the user turn changes the coach's
+behaviour — that needs the live eval suite run against it, which awaits his spend approval. Real
+model calls spent proving this: $1.96.
+
+**Same batch — model comparison plumbing, Patrick as the only oracle on which model is better.**
+A per-user coach model and shadow model live in the per-user settings table, set by `flask admin
+coach-model show/set/shadow`. A shadow turn runs a candidate model on the real turn's input on a
+separate Celery queue, with a new fd-shadow worker service, stored in a new shadow_turns table
+on a scratch diagram flagged scratch, never shown to the user and excluded from the user's
+diagram list [R-0595]. `flask admin quality replay <discussion> <model> <reference_diagram>
+[--cap 5]` replays a conversation's user statements on a model onto a scratch record and scores
+people, pair-bonds, events, clusters and variables plus fault counts, appending a Replay line to
+the ledger; the reference record is one Patrick corrected himself, never a model-built one
+[R-0596]. A Gemini Flash coach model is wired in (google-genai, Vertex by default, aliases
+gemini-flash, gemini-3.8-flash, gemini-3.6-flash, gemini-2.5-flash), because Patrick holds a
+business associate agreement with Google [R-0597]; a real call on it awaits Vertex credentials
+on the box and his confirmation of what the agreement covers. The review app's Compare replies
+page serves blind pairs from shadow rows and replays and records Patrick's picks in a new
+model_picks table [R-0598]. Live eval runs append one Live line per case to the ledger
+(`btcopilot/ledger.py`, `ledger.jsonl`, gitignored). One migration, 1b00000000b5, squashed for
+the whole pull request. Beta users stay on Opus 5.5, with no A/B test on them. Candidate pricing
+at Anthropic's rates for that same production day: Sonnet 5 would have cost $9.16, Haiku 4.5
+$4.58; Opus 5.5 and Sonnet 5 charge the same for cache reads.
+
+**Usage on production to date, counts only, five accounts.** Guillermo sent 44 messages over 3
+days for $17.31, no failed turns, never opened the picture, 78 of 111 events have certainty
+unknown, and two people are duplicated; Patrick sent 43 messages, with 4 turns where the coach
+saved edits but wrote no reply and 7 messages sent twice; Laura sent 6 messages, twice
+challenging an assumption the coach made; Kathy signed in and sent no messages. Total spend
+since the model_calls table began on 2026-09-23 is $22.99. Patrick's decision: no automated
+fault digest for now.
 
 **Testing stays on the Claude Code subscription, not paid API calls [R-0568].** A model call a
 test needs goes to a Claude Code agent instead and is saved as a subscription-sourced replay;
@@ -594,6 +639,10 @@ Open:
   eleven and seventeen steps.
 - A real first name from Patrick's own record sat in committed code before today's fix; swapped
   for a stand-in name.
+- The live eval run against the moved prompt (branch FD-363-cost) awaits Patrick's spend
+  approval.
+- A real Gemini call for the new coach model awaits Vertex credentials on the box and Patrick's
+  confirmation of what his Google business associate agreement covers.
 
 **Patrick's actions.**
 1. Test the 5b2a6bb batch in his own thread, including a long message on his iPhone and the (i)

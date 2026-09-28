@@ -1894,3 +1894,50 @@ to about ten items [R-0578]. He approved the first concrete case: a bad tool cal
 to the coach with a logged warning and a retry, rather than failing the turn [R-0579]. And he
 ruled, for good: replies to him name the actual table, column, file or screen rather than vague,
 abstract language [R-0580].
+
+## 2026-09-28: FD-363-cost — the system prompt holds only the coaching text; the record moves into the user turn
+
+Patrick [R-0594]. A heavy production day put 78% of that day's model cost in prompt-cache writes
+($12.91 of $16.60 over 38 turns), because the record, the date and the "looked at" block sat in
+the system prompt ahead of the chat and changed every turn, rewriting the whole cached chat each
+time. The system prompt now holds only the coaching text; the record block moves into the new
+user message after the chat; the chat is marked at the previous two turn boundaries; tool marks
+are capped at four; cache life stays 5 minutes. Measured on the sandbox with a 12,000-token chat,
+turns 2 and 3 cost 42% less. Estimated saving on that production day: about $4.50, near zero for
+a user whose gaps between replies mostly exceed 5 minutes. A 1-hour cache life was weighed and
+left off, within measurement error either way. Unproven: the saving on real production sessions,
+and whether moving about 14,000 characters of prompt into the user turn changes the coach's
+behaviour, which needs the live eval suite run against it.
+
+## 2026-09-28: FD-363-cost — a shadow model runs the real turn's input on a separate queue, never shown to the user
+
+Patrick [R-0595]. Comparing a candidate coach model against the model in use needed a way to run
+it without the user seeing or waiting on it. A per-user coach model and shadow model now live in
+the per-user settings table, set by `flask admin coach-model show/set/shadow`. A shadow turn runs
+the candidate model on the real turn's input on a separate Celery queue, with a new fd-shadow
+worker service, and is stored in a new shadow_turns table on a scratch diagram flagged scratch,
+excluded from the user's diagram list. Beta users stay on Opus 5.5; there is no A/B test on them.
+
+## 2026-09-28: FD-363-cost — a replay command scores a candidate model against a record Patrick corrected himself
+
+Patrick [R-0596]. `flask admin quality replay <discussion> <model> <reference_diagram> [--cap
+5]` replays a conversation's user statements on a model onto a scratch record and scores people,
+pair-bonds, events, clusters and variables plus fault counts against the reference record,
+appending a Replay line to the ledger. The reference record must be one Patrick corrected
+himself, never a model-built one — the same standing rule as ground truth elsewhere in the
+project.
+
+## 2026-09-28: FD-363-cost — a Gemini Flash coach model, because Patrick holds a business associate agreement with Google
+
+Patrick [R-0597]. A Gemini Flash coach model is wired in through google-genai, Vertex by
+default, with aliases gemini-flash, gemini-3.8-flash, gemini-3.6-flash and gemini-2.5-flash. The
+reason is that Patrick holds a business associate agreement with Google, not with every model
+vendor. A real call on this model awaits Vertex credentials on the box and his confirmation of
+what the agreement covers.
+
+## 2026-09-28: FD-363-cost — the review app's Compare replies page records Patrick's blind picks between models
+
+Patrick [R-0598]. The review app gained a Compare replies page that serves blind pairs drawn
+from shadow turns and replays and records which one Patrick picks in a new model_picks table.
+Patrick is the only oracle on these picks, the same standing rule as everywhere else model
+quality is judged in this project.

@@ -1004,6 +1004,28 @@ certain for an exact day, approximate for a month or a year only, unknown for
 contract's "March 2019 is certain" is reversed to approximate. A live case checks
 the June 1998 death is stored approximate. [R-0482]
 
+### September 2026: The record moves out of the system prompt and into the user turn, to cut prompt-cache cost (FD-363-cost)
+
+**Scope**: coach prompt assembly on branch FD-363-cost (draft PR #141), off FD-363 — the record
+block, the date and the "looked at" block. Not a wording change; a structural change to where
+these three pieces sit in a turn.
+
+**Change**: a heavy production day put 78% of that day's model cost in prompt-cache writes,
+because these three pieces sat in the system prompt ahead of the chat and changed every turn, so
+the whole cached chat was rewritten each turn. The system prompt now holds only the coaching
+text; the record block moves into the new user message after the chat; the chat is marked at the
+previous two turn boundaries; tool marks are capped at four; cache life stays 5 minutes [R-0594].
+
+**Measured**: on the sandbox, with a 12,000-token chat, turns 2 and 3 cost 42% less ($0.2472 to
+$0.1428). Real model calls spent proving this: $1.96.
+
+**Not yet measured**: whether moving about 14,000 characters of prompt out of the system prompt
+and into the user turn changes the coach's behaviour. The coaching text now sits further from
+the record it reasons about, in the prompt's own order, than before; whether that changes what
+the coach asks or notices needs the live eval suite run against it, which awaits Patrick's spend
+approval. Until that runs, this change is deployed on cost grounds alone, not proven neutral on
+behaviour.
+
 ### September 2026: The coach raises impressions and keeps them (FD-363)
 
 **Change**: a new paragraph, shared by the agent prompt and a new impression
