@@ -12,8 +12,12 @@ Ten-minute read by design.
 from the theory corpus and approved by Patrick 2026-09-27, replaced the old moves board; see
 "Where the build stands" below for what shipped and where it stands.
 
-**Handovers are retired (2026-09-26).** This file is where a session starts: "FD-363" alone
-starts one. The flush revises this file and appends to HISTORY, and that is the whole handover.
+**Handovers are retired (2026-09-26).** This file is where a session starts: "FD-365" alone
+starts one. FD-365 is the second fast-follow batch (Jira FD-365, branch `FD-365`, one batch PR,
+child of epic FD-362); its scope is the "Next PR, queued 2026-09-28" list below. FD-363 is
+merged. The production deploy lock stays on FD-363 until Patrick tells the FD-365 session it
+holds it; that session then runs `uv run bin/deploy-lock set FD-365`, and never before
+[R-0530]. The flush revises this file and appends to HISTORY, and that is the whole handover.
 The older handover files in the private corpus stay as they were, for the record only.
 
 ## The product (ruled)
