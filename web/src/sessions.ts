@@ -49,6 +49,9 @@ export class Sessions {
   private drag: { kind: "open" | "close"; y0: number; dy: number } | null = null;
   /** Only Patrick puts a conversation on the agenda, so only he is offered it. */
   private admin = isAdmin();
+  /** Raised from the agenda, a tapped row goes on the agenda instead of
+   * opening in the chat (R-0267). */
+  private adding = false;
 
   private scrim = el("div", "fs-scrim");
   private sheet = el(
@@ -120,9 +123,9 @@ export class Sessions {
     dragScroll(this.body);
   }
 
-  /** Raise the sheet from somewhere other than its own button — which is how
-   * the agenda puts another conversation on. */
+  /** Raise the sheet from the agenda to put another conversation on it. */
   show(): void {
+    this.adding = true;
     void this.raise(false);
   }
 
@@ -255,6 +258,11 @@ export class Sessions {
       this.swipe.open(row, false);
       return;
     }
+    if (this.adding) {
+      tap(Feature.SessionToAgenda);
+      this.openAgenda(row);
+      return;
+    }
     tap(Feature.SessionOpen);
     this.pick(row);
   }
@@ -347,6 +355,7 @@ export class Sessions {
   private lower(): void {
     if (!this.open) return;
     this.open = false;
+    this.adding = false;
     this.swipe.close();
     this.drag = null;
     this.sheet.style.transition = "";
