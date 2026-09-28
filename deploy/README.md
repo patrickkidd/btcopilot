@@ -36,7 +36,13 @@ from the Pro box on purpose. Nothing in it has run yet; the droplet does not exi
 
 ## Every deploy after that
 
-On a merge to master `release.yml` builds the image, tags it with the release
+**The deploy lock (R-0530).** Only one branch may deploy: the production environment's
+single allowed deployment branch. A session holds the lock only when Patrick tells it so, then
+runs `uv run bin/deploy-lock set <its branch>`. Every deploy runs `uv run bin/deploy-lock show`
+first and does not dispatch unless the lock names its own branch. A merge to master never
+deploys; the lock never names master or a second branch.
+
+A dispatch of `release.yml` from the lock's branch builds the image, tags it with the release
 version `3.YYYY.M.D.N+g<sha7>` (UTC commit date, N counts that day's releases; the
 image tag has `-` for `+`; R-0419), pushes it to GHCR, then pulls it on the box, rolls the app and the worker with
 `docker rollout` (the new container comes up beside the old one and the old one

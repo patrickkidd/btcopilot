@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+"""The production deploy lock: the one branch the production environment lets deploy.
+
+  uv run bin/deploy-lock show
+  uv run bin/deploy-lock set <branch>
+"""
+import json
+import subprocess
+import sys
+
+REPO = "patrickkidd/btcopilot"
+ENV = "production"
+BASE = f"repos/{REPO}/environments/{ENV}"
+POLICIES = f"{BASE}/deployment-branch-policies"
+
+
+def gh(*args, body=None):
+    cmd = ["gh", "api", *args]
+    if body is not None:
+        cmd += ["--input", "-"]
+    out = subprocess.run(
+        cmd, input=json.dumps(body) if body is not None else None,
+        capture_output=True, text=True, check=True,
+    ).stdout
+    return json.loads(out) if out.strip() else None
+
+
+def check(branch):
+    if not branch or branch == "master" or any(c in branch for c in "*?[] ,"):
+        raise SystemExit(f"refused: the lock names exactly one non-master branch, got {branch!r}")
+
+
+def policies():
+    return gh(POLICIES)["branch_policies"]
+
+
+def names():
+    return [p["name"] for p in policies()]
+
+
+def current():
+    return subprocess.run(
+        ["git", "branch", "--show-current"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+
+
+def show():
+    env = gh(BASE)["deployment_branch_policy"]
+    allowed = names()
+    here = current()
+    print(f"environment {ENV}: custom branch policies {env['custom_branch_policies']}")
+    print(f"allowed to deploy: {', '.join(allowed) or 'nothing'}")
+    print(f"this branch {here}: {'holds the lock' if allowed == [here] else 'does NOT hold the lock'}")
+
+
+def set_(branch):
+    check(branch)
+    print(f"before: {', '.join(names()) or 'nothing'}")
+    gh("-X", "PUT", BASE, body={
+        "deployment_branch_policy": {"protected_branches": False, "custom_branch_policies": True}
+    })
+    existing = policies()
+    if not any(p["name"] == branch for p in existing):
+        gh("-X", "POST", POLICIES, body={"name": branch, "type": "branch"})
+    for p in existing:
+        if p["name"] != branch:
+            gh("-X", "DELETE", f"{POLICIES}/{p['id']}")
+    after = names()
+    print(f"after: {', '.join(after)}")
+    if after != [branch]:
+        raise SystemExit(f"lock is {after}, expected [{branch}]")
+
+
+def main(argv):
+    if argv[:1] == ["show"] and len(argv) == 1:
+        show()
+    elif argv[:1] == ["set"] and len(argv) == 2:
+        set_(argv[1])
+    else:
+        raise SystemExit(__doc__)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
