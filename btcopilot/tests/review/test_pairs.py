@@ -15,6 +15,7 @@ from btcopilot.models import (
     Statement,
 )
 from btcopilot.review.models import Pick, PickChoice
+from btcopilot.review.models.pick import NOTE_CAP
 
 REAL = "claude-opus-5-5"
 SHADOW = "gemini-3-flash"
@@ -109,18 +110,16 @@ def test_a_pair_keeps_its_sides_once_served(patrick, test_user, case):
         assert patrick.get("/review/pairs").json == first
 
 
-def test_a_pick_reveals_the_models_and_counts_in_the_summary(
-    patrick, test_user, case
-):
+def test_a_pick_reveals_the_models_and_counts_in_the_summary(patrick, test_user, case):
     # R-0598
     shadowed(test_user, case)
     pair = patrick.get("/review/pairs").json[0]
-    shadow_side = "left" if pair["left"] == REPLY else "right"
+    shadow_side = PickChoice.Left if pair["left"] == REPLY else PickChoice.Right
     seen = patrick.put(
         f"/review/picks/{pair['id']}", json={"choice": shadow_side, "note": "warmer"}
     ).json
     assert seen[shadow_side] == SHADOW
-    assert Pick.query.one().choice is PickChoice(shadow_side)
+    assert Pick.query.one().choice is shadow_side
     assert patrick.get("/review/pairs").json == []
     assert patrick.get("/review/picks").json == [
         {"model": REAL, "won": 0, "lost": 1, "tied": 0},
@@ -133,7 +132,8 @@ def test_a_long_note_is_refused(patrick, test_user, case):
     shadowed(test_user, case)
     pair = patrick.get("/review/pairs").json[0]
     response = patrick.put(
-        f"/review/picks/{pair['id']}", json={"choice": "tie", "note": "x" * 201}
+        f"/review/picks/{pair['id']}",
+        json={"choice": PickChoice.Tie, "note": "x" * (NOTE_CAP + 1)},
     )
     assert response.status_code == 400
 

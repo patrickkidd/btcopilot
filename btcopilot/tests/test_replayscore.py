@@ -8,6 +8,7 @@ import pytest
 
 from btcopilot import diagramjson, ledger, replayscore
 from btcopilot.admin import admin
+from btcopilot.admin.quality import PRODUCTION
 from btcopilot.coachmodel import Spent
 from btcopilot.extensions import db
 from btcopilot.models import Diagram, TokenMeter
@@ -114,7 +115,7 @@ def test_the_command_appends_one_line_on_the_schema(
 
 def test_the_command_refuses_production(flask_app, discussion, reference, coach):
     # R-0596
-    flask_app.config["CONFIG"] = "production"
+    flask_app.config["CONFIG"] = PRODUCTION
     result = flask_app.test_cli_runner().invoke(
         admin, ["quality", "replay", str(discussion.id), "sonnet-5", str(reference.id)]
     )
