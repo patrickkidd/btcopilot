@@ -21,6 +21,7 @@ STORE = ROOT / "private" / "oracle"
 INDEX = STORE / "rulings.md"
 TOPICS = STORE / "topics"
 EVIDENCE = STORE / "evidence.md"
+README = STORE / "README.md"
 FIELDS = ("id", "statement", "kind", "tags", "status", "evidence_count", "origin")
 LISTED = ("id", "status", "statement", "topic", "cited")
 ROW = re.compile(r"^R-\d{4} \|")
