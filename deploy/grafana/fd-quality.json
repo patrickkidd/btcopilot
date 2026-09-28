@@ -104,7 +104,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), mc.model as metric, sum(mc.cost_usd)/count(distinct mc.turn_id) as value from model_calls mc join users u on u.id=mc.user_id where u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1, mc.model order by 1",
+          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), mc.model as metric, sum(mc.cost_usd)/count(distinct mc.turn_id) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1, mc.model order by 1",
           "refId": "A"
         }
       ],
@@ -161,7 +161,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), mc.model || ' model calls' as metric, count(*)::float/count(distinct mc.turn_id) as value from model_calls mc join users u on u.id=mc.user_id where u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1, mc.model order by 1",
+          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), mc.model || ' model calls' as metric, count(*)::float/count(distinct mc.turn_id) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1, mc.model order by 1",
           "refId": "A"
         },
         {
@@ -172,7 +172,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), mc.model || ' tool calls' as metric, sum(mc.tool_calls)::float/count(distinct mc.turn_id) as value from model_calls mc join users u on u.id=mc.user_id where u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1, mc.model order by 1",
+          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), mc.model || ' tool calls' as metric, sum(mc.tool_calls)::float/count(distinct mc.turn_id) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1, mc.model order by 1",
           "refId": "B"
         }
       ],
@@ -229,7 +229,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "with t as (select mc.turn_id, min(mc.created_at) as at from model_calls mc join users u on u.id=mc.user_id where u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by mc.turn_id) select $__timeGroupAlias(t.at,'1d'), k.kind as metric, count(o.id)::float/count(distinct t.turn_id) as value from t cross join (select unnest(enum_range(null::observationkind))::text as kind) k left join observations o on o.turn_id = t.turn_id and o.kind::text = k.kind where k.kind not in ('tool_refused','step_cap','turn_failed','turn_declined','play_refused','play_failed') group by 1, k.kind order by 1",
+          "rawSql": "with t as (select mc.turn_id, min(mc.created_at) as at from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by mc.turn_id) select $__timeGroupAlias(t.at,'1d'), k.kind as metric, count(o.id)::float/count(distinct t.turn_id) as value from t cross join (select unnest(enum_range(null::observationkind))::text as kind) k left join observations o on o.turn_id = t.turn_id and o.kind::text = k.kind and not exists (select 1 from diagrams dg where dg.id=o.diagram_id and dg.scratch) where k.kind not in ('tool_refused','step_cap','turn_failed','turn_declined','play_refused','play_failed') group by 1, k.kind order by 1",
           "refId": "A"
         }
       ],
@@ -286,7 +286,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select $__timeGroupAlias(o.created_at,'1d'), o.kind::text as metric, count(*) as value from observations o join diagrams d on d.id = o.diagram_id join users u on u.id = d.user_id where u.username not like 'claude-test%' and $__timeFilter(o.created_at) and o.kind::text in ('tool_refused','step_cap','turn_failed','turn_declined','play_refused','play_failed') group by 1, 2 order by 1",
+          "rawSql": "select $__timeGroupAlias(o.created_at,'1d'), o.kind::text as metric, count(*) as value from observations o join diagrams d on d.id = o.diagram_id join users u on u.id = d.user_id where not d.scratch and u.username not like 'claude-test%' and $__timeFilter(o.created_at) and o.kind::text in ('tool_refused','step_cap','turn_failed','turn_declined','play_refused','play_failed') group by 1, 2 order by 1",
           "refId": "A"
         }
       ],
@@ -323,7 +323,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "with g as (select o.kind::text as kind, coalesce(o.detail->>'reason','') as reason, o.turn_id, o.created_at from observations o join diagrams d on d.id = o.diagram_id join users u on u.id = d.user_id where u.username not like 'claude-test%') select left(md5(kind || ':' || reason), 8) as key, kind, reason, count(*) as count, min(created_at) as first_seen, max(created_at) as last_seen, (array_agg(turn_id order by created_at desc))[1] as example_turn from g where left(md5(kind || ':' || reason), 8) not in (select key from observation_rejects) group by kind, reason order by count desc limit 10",
+          "rawSql": "with g as (select o.kind::text as kind, coalesce(o.detail->>'reason','') as reason, o.turn_id, o.created_at from observations o join diagrams d on d.id = o.diagram_id join users u on u.id = d.user_id where not d.scratch and u.username not like 'claude-test%') select left(md5(kind || ':' || reason), 8) as key, kind, reason, count(*) as count, min(created_at) as first_seen, max(created_at) as last_seen, (array_agg(turn_id order by created_at desc))[1] as example_turn from g where left(md5(kind || ':' || reason), 8) not in (select key from observation_rejects) group by kind, reason order by count desc limit 10",
           "refId": "A"
         }
       ],
