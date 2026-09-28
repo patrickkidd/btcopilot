@@ -500,6 +500,10 @@ release when it comes back to the front" — its tests cite R-0486 until then.
 Open for the next session: the first tap right after a rollout can hit a 502 while the
 container comes back up; the ~/btcopilot move still waits for the next session.
 
+**The rulings index sits at its size ceiling.** Every ruling added now forces a wording trim
+somewhere in the store just to stay under it, including the store's own preamble text. Patrick
+decides whether to split the store into more than one file or raise the ceiling.
+
 **Testing stays on the Claude Code subscription, not paid API calls [R-0568].** A model call a
 test needs goes to a Claude Code agent instead and is saved as a subscription-sourced replay;
 the local model answers wherever the model itself isn't under test; the API is kept for the one
