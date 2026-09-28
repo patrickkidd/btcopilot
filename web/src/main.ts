@@ -31,7 +31,7 @@ import {
   type PicState,
   type Sel,
 } from "./caption";
-import { $, pathRow, setTitle, slideOver } from "./dom";
+import { $, CLUSTER, pathRow, setTitle, slideOver } from "./dom";
 import { Drawer } from "./drawer";
 import { among, untold } from "./snapshots";
 import { reopen, type Kept } from "./plays";
@@ -139,6 +139,10 @@ function onTap(tap: Tap): void {
     putDown();
     return;
   }
+  if (tap.target === Target.Close) {
+    climb(CLUSTER);
+    return;
+  }
   if (tap.target === Target.Shelf) {
     apply(reduce(pic, PicEvent.Tap, { kind: SelKind.Shelf, id: "shelf" }));
     return;
@@ -240,15 +244,27 @@ const pbp = new Drawer(
   (chip) => chipTap(chip),
 );
 
+/** A play-by-play message opened again, from its words or its cluster chip:
+ * the stored telling while its cluster is unchanged, told through explain
+ * once it has changed. False when the message holds no told case. */
+function replay(statement: number): boolean {
+  const kept = cases.get(statement);
+  if (!kept) return false;
+  reopen(kept, timeline.clusters, (told) => pbp.open(timeline, told, statement), (id) => void explain(id));
+  return true;
+}
+
 /** A chip tapped in the thread or the drawer. Two kinds of chip, and the
  * colour says which. An amber chip is the coach asking: an old offer goes into
  * the message as words, and a question it asked goes in as the reference that
  * answers it (R-0587). A teal chip is a reference into the record, so it aims
- * the picture. A chip in an old prose walk is a chip like any other (R-0501,
- * R-0570). */
+ * the picture, except the cluster chip a play-by-play leads with, which opens
+ * that play again as a tap on its words does. A chip in an
+ * old prose walk is a chip like any other (R-0501, R-0570). */
 function chipTap(chip: Chip): void {
   tapped(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
   track.tap(Feature.ChipTap, { kind: itemKind(chip.kind), id: chip.target });
+  if (chip.play !== undefined && replay(chip.play)) return;
   if (offered(chip)) chat.insert(chip, chip.kind === ChipKind.Message ? Lead.Answer : Lead.None);
   else aim(chip);
 }
@@ -267,12 +283,7 @@ const chat = new Chat($("chat"), $("composer"), {
     pic = REST;
     actions();
   },
-  onPlay: (statement) => {
-    const kept = cases.get(statement);
-    if (!kept) return false;
-    reopen(kept, timeline.clusters, (told) => pbp.open(timeline, told, statement), (id) => void explain(id));
-    return true;
-  },
+  onPlay: replay,
 });
 
 /** An offer: the coach holding out something to say next, drawn amber. */
@@ -667,9 +678,7 @@ async function openSession(id: number, kind?: SessionKind): Promise<void> {
   const picked = known.find((s) => s.id === id);
   if (picked && statements.length)
     chat.system(`Resumed · ${sessionTitle(picked)} — ${summaryOf(picked)}`);
-  const last = [...statements].reverse().find((s) => s.role === Role.Coach);
-  if (last) spotlightFrom(last.text);
-  else actions();
+  leftAt(statements);
   thread.style.opacity = "";
   chat.toEnd();
 }
@@ -1093,6 +1102,13 @@ async function reattach(): Promise<void> {
   }
 }
 
+/** The picture where the last coach message left it. A play-by-play's
+ * cluster chip is there to play it again, so it aims nothing on the way back. */
+function leftAt(statements: Statement[]): void {
+  const last = [...statements].reverse().find((s) => s.role === Role.Coach);
+  spotlightFrom(last && !last.case ? last.text : "");
+}
+
 function spotlightFrom(text: string): void {
   const named = aimedFrom(text);
   if (named.length) picture.spotlight(named);
@@ -1184,13 +1200,18 @@ function putDown(): void {
   actions();
 }
 
-$("path").addEventListener("click", (e) => {
-  const step = (e.target as Element).closest<HTMLElement>("[data-step]");
-  if (!step) return;
+/** Back up to one step of the path: the path's own steps, and the about
+ * page's close button, which goes where the cluster's step goes. */
+function climb(step: number): void {
   track.tap(Feature.PictureUp);
-  picture.back(Number(step.dataset.step));
+  picture.back(step);
   pic = REST;
   actions();
+}
+
+$("path").addEventListener("click", (e) => {
+  const step = (e.target as Element).closest<HTMLElement>("[data-step]");
+  if (step) climb(Number(step.dataset.step));
 });
 $("info").addEventListener("click", () => {
   track.tap(Feature.PictureInfo);
@@ -1315,8 +1336,7 @@ void load().then(async () => {
     return;
   }
   // Coming back a week later, the picture is where the last message left it.
-  const last = [...said].reverse().find((s) => s.role === Role.Coach);
-  if (last) spotlightFrom(last.text);
+  leftAt(said);
 });
 
 // Never while developing: the worker answers a reload out of its own cache,

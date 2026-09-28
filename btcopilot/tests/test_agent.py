@@ -323,6 +323,7 @@ def test_people_and_their_events_all_land_in_one_turn(discussion, family):
                         "date": "1996-01-01",
                         "person": 12,
                         "symptom": "up",
+                        "description": "got ill",
                     },
                 ),
             ),

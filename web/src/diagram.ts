@@ -13,6 +13,9 @@ export enum Sex {
   Unknown = "?",
 }
 
+export const sexOf = (gender: string | null): Sex =>
+  gender === "female" ? Sex.Female : gender === "male" ? Sex.Male : Sex.Unknown;
+
 export interface Shape {
   name: string;
   g: Sex;
@@ -926,13 +929,41 @@ function cross(L: Layout, id: string, dir: Shift, cls: Tone): string {
   );
 }
 
-function outline(p: Shape, x: number, y: number, e: number, cls: string): string {
+export function outline(p: Shape, x: number, y: number, e: number, cls: string): string {
   if (p.g === Sex.Female) return `<circle class="${cls}" cx="${f(x)}" cy="${f(y)}" r="${f(e)}"/>`;
   return (
     `<rect class="${cls}" x="${f(x - e)}" y="${f(y - e)}" width="${f(2 * e)}" height="${f(2 * e)}"` +
     (p.g === Sex.Male ? "" : ` rx="${f(e * 0.45)}"`) +
     `/>`
   );
+}
+
+/** A couple's line down from each of the two and across: solid only for a
+ * marriage (ruled 2026-09-26). */
+export const tie = (x0: number, y0: number, x1: number, y1: number, y: number, married: boolean, cls = "", attrs = "") =>
+  `<path class="tie${married ? "" : " dash"}${cls}"${attrs} d="M${f(x0)} ${f(y0)}V${f(y)}H${f(x1)}V${f(y1)}"/>`;
+
+/** One slash for a separation, two for a divorce, upright because custody is
+ * not recorded, centred on x across the couple's line at y. */
+export function slashes(n: number, x: number, y: number, W: number, fresh = false): string {
+  let out = "";
+  for (let i = 0; i < n; i++) {
+    const sx = x - (n - 1) * 0.05 * W + i * 0.1 * W;
+    const pop = fresh && i === n - 1 ? " now pop" : "";
+    out += `<line class="slash${pop}" x1="${f(sx)}" y1="${f(y + 0.15 * W)}" x2="${f(sx)}" y2="${f(y - 0.25 * W)}"/>`;
+  }
+  return out;
+}
+
+/** The death X: corner to corner, or only its corners when an age sits inside. */
+export function crossOut(x: number, y: number, e: number, age: boolean, cls: string): string {
+  const w = 0.6 * e;
+  const corner = (sx: number, sy: number) => seg([x + sx * e, y + sy * e], [x + sx * (e - w), y + sy * (e - w)]);
+  return `<path class="${cls}" d="${
+    age
+      ? corner(-1, -1) + corner(1, -1) + corner(-1, 1) + corner(1, 1)
+      : seg([x - e, y - e], [x + e, y + e]) + seg([x + e, y - e], [x - e, y + e])
+  }"/>`;
 }
 
 /** Anxiety: eight spikes of static around the person. */
@@ -1051,21 +1082,22 @@ export function draw(L: Layout, s: Frame): string {
     // ruled 2026-09-26: only a marriage makes the line solid, and only a marriage can be divorced
     if (b.st === Tie.Divorced && !b.married)
       throw new Error(`a divorce for a couple that never married: ${b.a} and ${b.b}`);
-    out +=
-      `<path class="tie${b.married ? "" : " dash"}${b.hot ? " now" : ""}" data-bond="${esc(`${b.a}|${b.b}`)}" ` +
-      `d="M${f(k.x0)} ${f(L.y[k.a] + d.half(P[k.a]))}V${f(k.y)}H${f(k.x1)}V${f(L.y[k.b] + d.half(P[k.b]))}"/>`;
-    // slashes upright: custody is not recorded
+    out += tie(
+      k.x0,
+      L.y[k.a] + d.half(P[k.a]),
+      k.x1,
+      L.y[k.b] + d.half(P[k.b]),
+      k.y,
+      b.married,
+      b.hot ? " now" : "",
+      ` data-bond="${esc(`${b.a}|${b.b}`)}"`,
+    );
     const n = b.st === Tie.Separated ? 1 : b.st === Tie.Divorced ? 2 : 0;
     // the slashes sit in the widest open stretch of the line, never on a child's line
     const kids = L.kids.find((c) => c.of.includes(b.a) && c.of.includes(b.b));
     const stops = [k.x0, ...(kids?.kids ?? []).map((id) => L.x[id]).filter((x) => x > k.x0 && x < k.x1), k.x1].sort((p, q) => p - q);
     const open = stops.slice(1).map((x, i) => [stops[i], x]).sort((p, q) => q[1] - q[0] - (p[1] - p[0]))[0];
-    const mx = (open[0] + open[1]) / 2 - (n - 1) * 0.05 * W;
-    for (let i = 0; i < n; i++) {
-      const sx = mx + i * 0.1 * W;
-      const fresh = b.fresh && i === n - 1;
-      out += `<line class="slash${fresh ? " now pop" : ""}" x1="${f(sx)}" y1="${f(k.y + 0.15 * W)}" x2="${f(sx)}" y2="${f(k.y - 0.25 * W)}"/>`;
-    }
+    out += slashes(n, (open[0] + open[1]) / 2, k.y, W, b.fresh);
   });
 
   Object.keys(P).forEach((id) => {
@@ -1082,16 +1114,7 @@ export function draw(L: Layout, s: Frame): string {
     else if (p.g === Sex.Unknown) g += `<text class="age" x="${f(x)}" y="${f(y + 4.5)}">?</text>`;
     if (dead) {
       // a death X is in the emphasis colour on its date, plain ink after
-      const c = s.died.has(id) ? "xd now" : "xd";
-      const w = 0.6 * e;
-      const corner = (sx: number, sy: number) =>
-        seg([x + sx * e, y + sy * e], [x + sx * (e - w), y + sy * (e - w)]);
-      g +=
-        `<path class="${c}" d="${
-          age == null
-            ? seg([x - e, y - e], [x + e, y + e]) + seg([x + e, y - e], [x - e, y + e])
-            : corner(-1, -1) + corner(1, -1) + corner(-1, 1) + corner(1, 1)
-        }"/>`;
+      g += crossOut(x, y, e, age != null, s.died.has(id) ? "xd now" : "xd");
     }
     const l = lines(p, s.t);
     const sd = L.side[id];

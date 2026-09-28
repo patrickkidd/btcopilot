@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
+import { closeX } from "../src/dom";
 import { INFO, NOTES_TOOL, Register, notesHtml, type Notes } from "../src/notes";
 import { toolLine } from "../src/tools";
 import { feed, type TurnSink } from "../src/turn";
@@ -35,7 +36,7 @@ function watch() {
   return { seen, take: feed(sink) };
 }
 
-// R-0520, R-0521, R-0522
+// R-0520, R-0521, R-0522, R-0589
 it("shows the eight notes under plain labels", () => {
   const out = notesHtml(notes);
   for (const label of [
@@ -51,7 +52,8 @@ it("shows the eight notes under plain labels", () => {
     expect(out).toContain(`<dt>${label}</dt>`);
   expect(out).toContain("<dd>Still filling in; biggest gap: grandparents&#39; dates</dd>");
   expect(out).toContain("&lt;in&gt;");
-  expect(out).toContain('class="notes-close"');
+  expect(out).toContain(closeX());
+  expect(out).not.toContain("\u2715");
   expect(out).not.toContain("<summary>");
 });
 

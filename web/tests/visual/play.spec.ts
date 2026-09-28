@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { stateFor } from "./setup";
+import { colours } from "./gate";
 import { mockTurn } from "./turn";
 
 /** The play-by-play drawer (R-0542, R-0562, R-0563). The `play` record holds
@@ -38,6 +39,49 @@ test.describe("the play-by-play drawer", () => {
     await expect(drawer(page).locator(".path .here")).toHaveText("explain");
   });
 
+  // R-0590, R-0545, R-0563
+  test("the teal cluster chip in the play message replays its stored telling, with no call to the coach", async ({ page }) => {
+    await settle(page);
+    const plays: string[] = [];
+    page.on("request", (r) => {
+      if (/\/app\/play$/.test(r.url())) plays.push(r.url());
+    });
+    const chip = stored(page).locator('button.chip[data-kind="cluster"]');
+    await expect(chip).toHaveClass(/\bdata\b/);
+    await expect(chip).toHaveText("The walk");
+    await chip.click();
+    await expect(drawer(page)).toBeVisible();
+    await expect(count(page)).toHaveText("1 of 4");
+    await expect(drawer(page).locator(".point")).toContainText("Ada moved toward Ben");
+    expect(plays).toEqual([]);
+  });
+
+  // R-0590, R-0576, R-0563
+  test("the teal cluster chip of a play whose cluster has changed since tells it again through explain", async ({ page }) => {
+    await page.route(/\/app\/timeline$/, async (route) => {
+      const json = await (await route.fetch()).json();
+      for (const cluster of json.clusters) cluster.digest = "changed since";
+      await route.fulfill({ json });
+    });
+    await settle(page);
+    const play = await page.evaluate(async () => {
+      const sessions = await (await fetch("/app/sessions")).json();
+      const { statements } = await (await fetch(`/app/sessions/${sessions[0].id}`)).json();
+      return statements.find((s: { case: unknown }) => s.case);
+    });
+    const plays: string[] = [];
+    await page.route(/\/app\/play$/, (route) => {
+      plays.push(route.request().postData() ?? "");
+      return route.fulfill({
+        json: { statement: play.text, statement_id: play.id, kind: "play", cluster_id: play.cluster_id, case: play.case, digest: "changed since" },
+      });
+    });
+    await stored(page).locator('button.chip[data-kind="cluster"]').click();
+    await expect(drawer(page)).toBeVisible();
+    await expect(count(page)).toHaveText("1 of 4");
+    expect(plays).toEqual([JSON.stringify({ cluster_id: play.cluster_id })]);
+  });
+
   // R-0542, R-0540, R-0223
   test("reopened from its message, the path's years step opens that cluster", async ({ page }) => {
     await settle(page);
@@ -62,8 +106,8 @@ test.describe("the play-by-play drawer", () => {
     }));
   };
 
-  // R-0542, R-0540
-  test("the close button sits in the top-right corner and goes back to the case's cluster, as the path's years step does", async ({ page }) => {
+  // R-0542, R-0540, R-0588, R-0023, R-0589
+  test("the close button is teal in light and dark, sits in the top-right corner and goes back to the case's cluster, as the path's years step does", async ({ page }) => {
     await settle(page);
     await stored(page).click();
     await drawer(page).locator('.path [data-step="1"]').click();
@@ -72,6 +116,10 @@ test.describe("the play-by-play drawer", () => {
     const x = drawer(page).locator(".cardx");
     await expect(x).toHaveCount(1);
     await expect(x).toHaveText("×");
+    const { light, dark } = await colours(page, x);
+    expect(light.drawn).toBe(light.token);
+    expect(dark.drawn).toBe(dark.token);
+    expect(dark.token).not.toBe(light.token);
     const [b, p] = [(await x.boundingBox())!, (await drawer(page).boundingBox())!];
     expect(p.x + p.width - (b.x + b.width)).toBeLessThanOrEqual(8);
     expect(b.y - p.y).toBeLessThanOrEqual(8);

@@ -9,9 +9,10 @@ import re
 import sys
 from pathlib import Path
 
+from btcopilot import oracle
+
 HERE = Path(__file__).resolve().parent.parent.parent.parent.parent
 DOC = HERE / "doc"
-RULINGS = HERE.parent.parent.parent.parent / "fdserver" / ".claude" / "worktrees" / "FD-362" / "doc" / "oracle" / "rulings.md"
 
 
 def blocks() -> list[tuple[str, str, str]]:
@@ -53,13 +54,12 @@ def main(words: list[str]) -> int:
         if re.search(rf"\[[^\]]*\b{tid}\b[^\]]*\]", head):
             print(f"\n## {entry.strip()}")
     ids = sorted(set(re.findall(r"R-\d{4}", body)))
-    if ids and RULINGS.exists():
-        rows = RULINGS.read_text().splitlines()
-        print(f"\n# Rulings the block cites")
+    if ids:
+        rules = oracle.rulings()
+        print("\n# Rulings the block cites")
         for rid in ids:
-            for row in rows:
-                if row.startswith(rid + " |"):
-                    print(row.split(" | ")[1])
+            if rid in rules:
+                print(rules[rid].statement)
     return 0
 
 

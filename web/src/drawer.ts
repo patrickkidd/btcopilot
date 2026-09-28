@@ -1,6 +1,6 @@
 import "./drawer.css";
 import { askedChip, chipOf } from "./chips";
-import { closeX, esc, pathRow, slideOver } from "./dom";
+import { CLUSTER, closeX, esc, pathRow, slideOver } from "./dom";
 import { NAME, type Layout } from "./diagram";
 import { when, Told } from "./snapshots";
 import type { Case, Chip, Timeline } from "./types";
@@ -91,9 +91,6 @@ const spanOf = (told: Told) => {
   const [a, b] = [told.steps[0], told.steps[told.steps.length - 1]].map((s) => Math.floor(s.t));
   return a === b ? String(a) : `${a}–${b}`;
 };
-
-/** The path row's step that goes back to the case's cluster. */
-const CLUSTER = 1;
 
 /** The drawer's top: the path row, the close button, which goes where the
  * path's cluster step goes, then the coach's point. */

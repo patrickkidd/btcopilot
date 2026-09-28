@@ -1,5 +1,5 @@
 import { DateCertainty } from "./certainty";
-import { esc } from "./dom";
+import { closeX, esc } from "./dom";
 // this line draws pills, dots and the wire
 import {
   CH,
@@ -360,6 +360,9 @@ export enum Target {
   Band = "band",
   Question = "question",
   Shelf = "shelf",
+  /** The about page's close button, which goes where the path's cluster step
+   * goes. */
+  Close = "close",
   /** Anywhere on the picture that is not a moment or a label. */
   Ground = "ground",
 }
@@ -948,7 +951,8 @@ export class Picture {
         (why ? `<p class="ab-why">${esc(why)}</p>` : "") +
         `<p class="ab-span">${esc(fullYears(cluster.start, cluster.end))} · ` +
         `${moments.length} event${moments.length === 1 ? "" : "s"}</p>` +
-        `<ul class="ab-list">${rows}</ul></div>`,
+        `<ul class="ab-list">${rows}</ul></div>` +
+        closeX(` data-target="${Target.Close}"`),
     );
   }
 

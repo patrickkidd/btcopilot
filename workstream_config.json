@@ -1,11 +1,11 @@
 {
   "base_branch": "master",
-  "worktree_root": "/Users/patrick/worktrees",
-  "worktree_layout": "<root>/<ticket>/<repo> (project convention, overrides skill canonical <root>/<repo>-<ticket>)",
+  "worktree_root": ".claude/worktrees",
+  "worktree_layout": "<clone root>/.claude/worktrees/<ticket> on branch <ticket> (project convention, overrides skill canonical <root>/<repo>-<ticket>)",
   "test_commands": {
     "unit": "uv run pytest btcopilot/tests -x -q",
     "integration": "uv run pytest btcopilot/tests -q",
-    "familydiagram_unit": "cd /Users/patrick/worktrees/FD-321/familydiagram && uv run pytest familydiagram/tests -x -q"
+    "familydiagram_unit": "cd \"$FAMILYDIAGRAM_REPO\" && uv run pytest familydiagram/tests -x -q"
   },
   "e2e_harness": {
     "what": "drive a sandboxed instance end-to-end as a human would (isolated ports/state)",

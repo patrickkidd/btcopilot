@@ -1,4 +1,4 @@
-import { el, esc } from "./dom";
+import { closeX, el, esc } from "./dom";
 
 /** The tool the coach writes its own notes on a turn with. The server sends it
  * to admins and auditors only; it is never a line in the reply. */
@@ -45,7 +45,7 @@ export function notesHtml(notes: Notes): string {
   return (
     `<div class="notes-card" role="dialog" aria-label="Coach's notes">` +
     `<div class="notes-head">Coach's notes` +
-    `<button type="button" class="notes-close" aria-label="Close">&#x2715;</button></div><dl>` +
+    `${closeX()}</div><dl>` +
     rows.map(([label, value]) => `<dt>${esc(label)}</dt><dd>${value}</dd>`).join("") +
     `</dl></div>`
   );
@@ -67,7 +67,7 @@ export function notesView(notes: Notes, bubble: HTMLElement): void {
   let closing = false;
   veil.addEventListener("click", (e) => {
     const t = e.target as Element;
-    if (closing || (t !== veil && !t.closest(".notes-close"))) return;
+    if (closing || (t !== veil && !t.closest(".cardx"))) return;
     closing = true;
     const runs = veil.getAnimations({ subtree: true });
     runs.forEach((a) => a.reverse());

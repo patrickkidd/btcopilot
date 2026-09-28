@@ -22,6 +22,7 @@ import anthropic
 
 from btcopilot.extensions import db
 from btcopilot import recordtext, turnstore, tuning
+from btcopilot.chips import ChipKind, token
 from btcopilot.case import Case, RecordFault, Tool, Untold, faults, tool
 from btcopilot.coachmodel import CoachModel
 from btcopilot.coachturn import Metered
@@ -191,6 +192,13 @@ def digests(data: DiagramData, tl: dict) -> dict[str, str]:
     }
 
 
+def worded(cluster: dict, point: str) -> str:
+    """The play's words, led by the teal chip of its cluster: a tap on it plays
+    the telling again."""
+    title = cluster.get("name") or cluster.get("title")
+    return f"{token(ChipKind.Cluster, cluster['id'], title)} {point}"
+
+
 class Untellable(Exception):
     """The coach did not tell the case: no call at all, or none the cluster bore
     out in every try. The page is told so in plain words (R-0182)."""
@@ -251,7 +259,7 @@ class PlayTurn:
         told = self._tell(system, messages, events)
         return reply(
             self._persist(
-                text=told.point,
+                text=worded(self.cluster, told.point),
                 cluster_id=told.cluster_id,
                 told_case=told.asdict(),
                 turn_id=self.turn_id,

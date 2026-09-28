@@ -136,7 +136,7 @@ export class Menu {
     let html = "";
     for (const { group, events } of sections(shown, (id) => this.clusterOf(id))) {
       html += eventDivider(group);
-      for (const event of events) html += eventRow(event, names, this.editing === event.id);
+      for (const event of events) html += eventRow(event, names, this.data, this.editing === event.id);
     }
     if (!shown.length)
       html = `<div class="none">${

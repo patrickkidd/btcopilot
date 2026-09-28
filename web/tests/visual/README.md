@@ -29,11 +29,11 @@ Environment, if your sandbox is elsewhere:
 |---|---|
 | `SANDBOX_URL` | `http://127.0.0.1:8889` |
 | `FIXTURE_CMD` | `uv run flask app fixtures` |
-| `FIXTURE_CWD` | `~/theapp` |
+| `FIXTURE_CWD` | the clone root |
 
 The fixture command needs the same `FLASK_APP`, `FLASK_CONFIG`,
 `FLASK_SQLALCHEMY_DATABASE_URI` and `PYTHONPATH` the sandbox runs with, so run
-the tests from a shell that has them.
+the tests from a shell that has them: `. $(bin/sandbox/sandbox env <name>)` sets all of them.
 
 ## The review walks
 

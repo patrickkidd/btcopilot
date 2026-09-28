@@ -130,3 +130,141 @@ test.describe("the ask under the timeline", () => {
     expect(got.tone).toBe("teal");
   });
 });
+
+/** What Patrick saw on his iPhone after tapping the play-by-play's question:
+ * the keyboard came up over the chat box, the chip filled the box, and a tap
+ * meant for just after it took it out again (R-0591, R-0592). */
+test.describe("the chat box once a chip is in it", () => {
+  test.use({ storageState: stateFor("whitlock") });
+
+  /** iOS brings the keyboard up without shrinking the page: only the part of
+   * the screen the reader can see shrinks, and iOS may pan it. This stands in
+   * for that, so a spec can put the keyboard up and move it. */
+  const phone = (page: Page) =>
+    page.addInitScript(() => {
+      const seen = Object.assign(new EventTarget(), {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        offsetTop: 0,
+        offsetLeft: 0,
+        pageTop: 0,
+        pageLeft: 0,
+        scale: 1,
+      });
+      Object.defineProperty(window, "visualViewport", { value: seen });
+    });
+
+  /** The keyboard over the lower part of the screen, the visible part panned
+   * down by `pan`, and where the chat box and the question's words then sit. */
+  const keyboard = (page: Page, height: number, pan = 0) =>
+    page.evaluate(
+      ([height, pan]) => {
+        const seen = window.visualViewport as unknown as Record<string, number> & EventTarget;
+        seen.height = height;
+        seen.offsetTop = pan;
+        seen.pageTop = pan;
+        seen.dispatchEvent(new Event("resize"));
+        seen.dispatchEvent(new Event("scroll"));
+        return new Promise<{ top: number; bottom: number; box: DOMRect }>((done) =>
+          requestAnimationFrame(() =>
+            done({
+              top: pan,
+              bottom: pan + height,
+              box: document.querySelector(".field")!.getBoundingClientRect().toJSON(),
+            }),
+          ),
+        );
+      },
+      [height, pan],
+    );
+
+  const question = "Theo started day care that autumn. Who was looking after the two of you?";
+
+  const tapQuestion = async (page: Page) => {
+    await settle(page);
+    const play = page.locator(".bub.coach[data-play]").last();
+    await play.click();
+    await page.locator("#pbp").locator('[data-act="dot"]').last().click();
+    await page.locator("#pbp .ask .chip").click();
+    await expect(page.locator("#pbp")).toBeHidden();
+    return composer(page).locator(".chip");
+  };
+
+  // R-0591, R-0587, R-0586
+  test("stays in view above the keyboard after the question goes in, even when iOS pans the screen", async ({ page }) => {
+    await phone(page);
+    await tapQuestion(page);
+    for (const pan of [0, 180]) {
+      const at = await keyboard(page, 464, pan);
+      expect(at.box.bottom).toBeLessThanOrEqual(at.bottom);
+      expect(at.box.top).toBeGreaterThanOrEqual(at.top);
+    }
+    // the thread shrinks with it and stays on the newest words
+    const last = await page.locator(".chat > .bub").last().boundingBox();
+    const thread = await page.locator("#chat").boundingBox();
+    expect(last!.y + last!.height).toBeLessThanOrEqual(thread!.y + thread!.height + 1);
+  });
+
+  // R-0591, R-0368
+  test("stays in view above the keyboard when it opens from a tap in the chat box", async ({ page }) => {
+    await phone(page);
+    await settle(page);
+    await composer(page).click();
+    const at = await keyboard(page, 464);
+    expect(at.box.bottom).toBeLessThanOrEqual(at.bottom);
+    expect(at.box.top).toBeGreaterThanOrEqual(at.top);
+  });
+
+  // R-0592, R-0587, R-0586
+  test("keeps the question's chip compact, cut with an ellipsis, and sends its whole words", async ({ page }) => {
+    const chip = await tapQuestion(page);
+    const [width, field] = await Promise.all([
+      chip.evaluate((c) => c.getBoundingClientRect().width),
+      composer(page).evaluate((c) => c.clientWidth),
+    ]);
+    expect(width).toBeLessThanOrEqual(field * 0.6 + 0.5);
+    expect(await chip.evaluate((c) => getComputedStyle(c).textOverflow)).toBe("ellipsis");
+    expect(await chip.evaluate((c) => c.scrollWidth > c.clientWidth)).toBe(true);
+    expect(await sent(page)).toContain(`|${question}]]`);
+  });
+
+  // R-0592, R-0587, R-0586
+  test("a tap on the chip leaves it in place with the caret just after it", async ({ page }) => {
+    const chip = await tapQuestion(page);
+    await composer(page).evaluate((box) => {
+      const range = document.createRange();
+      range.setStart(box, 0);
+      range.collapse(true);
+      getSelection()!.removeAllRanges();
+      getSelection()!.addRange(range);
+    });
+    await chip.click();
+    await expect(chip).toHaveCount(1);
+    expect(await drafted(page)).toMatchObject({ before: "To answer your question ", kind: "message" });
+    const caret = await composer(page).evaluate((box) => {
+      const range = getSelection()!.getRangeAt(0);
+      const chip = box.querySelector(".chip")!;
+      const probe = document.createRange();
+      probe.setStartAfter(chip);
+      return range.collapsed && range.compareBoundaryPoints(Range.START_TO_START, probe) === 0;
+    });
+    expect(caret).toBe(true);
+    await page.keyboard.type("my aunt");
+    const id = await chip.getAttribute("data-target");
+    expect(await sent(page)).toBe(`To answer your question [[message:${id}|${question}]]my aunt`);
+  });
+
+  // R-0592, R-0586
+  test("backspace still takes the chip out", async ({ page }) => {
+    const chip = await tapQuestion(page);
+    await composer(page).evaluate((box) => {
+      const range = document.createRange();
+      range.setStartAfter(box.querySelector(".chip")!);
+      range.collapse(true);
+      getSelection()!.removeAllRanges();
+      getSelection()!.addRange(range);
+    });
+    await page.keyboard.press("Backspace");
+    await expect(chip).toHaveCount(0);
+  });
+});

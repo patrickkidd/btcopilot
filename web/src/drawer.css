@@ -58,19 +58,19 @@
 .pbp .wring { fill: none; stroke: var(--move); stroke-width: 1.4; opacity: 0.5; }
 .pbp .wlab { font-size: 12px; fill: var(--data); font-weight: 500; }
 .pbp .wyr { font-size: 12px; fill: var(--faint); }
-.pbp .shape { fill: var(--panel); stroke: var(--ink); stroke-width: 1.6; }
+.pbp .shape, .kmark .shape { fill: var(--panel); stroke: var(--ink); stroke-width: 1.6; }
 .pbp .you { fill: none; stroke: var(--ink); stroke-width: 1.1; }
 .pbp .age { font-size: 13px; fill: var(--faint); text-anchor: middle; }
-.pbp .tie { stroke: var(--faint); stroke-width: 1.4; fill: none; }
-.pbp .tie.dash { stroke-dasharray: 5 4; }
+.pbp .tie, .kmark .tie { stroke: var(--faint); stroke-width: 1.4; fill: none; }
+.pbp .tie.dash, .kmark .tie.dash { stroke-dasharray: 5 4; }
 .pbp .tie.now { stroke: var(--move); stroke-width: 2.2; }
 .pbp .kin { stroke: var(--faint); stroke-width: 1.3; fill: none; }
-.pbp .slash { stroke: var(--faint); stroke-width: 1.8; stroke-linecap: round; }
+.pbp .slash, .kmark .slash { stroke: var(--faint); stroke-width: 1.8; stroke-linecap: round; }
 .pbp .slash.now { stroke: var(--move); stroke-width: 2.4; }
 .pbp .lbn { font-size: 13px; fill: var(--ink); }
 .pbp .lbd { font-size: 13px; fill: var(--faint); }
 .pbp .nh { paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; }
-.pbp .xd { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
+.pbp .xd, .kmark .xd { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
 .pbp .xd.now { stroke: var(--move); stroke-width: 2.2; }
 .pbp .fn { fill: none; stroke: var(--move); stroke-width: 2.6; }
 .pbp .fn.down { stroke-dasharray: 5 6; }

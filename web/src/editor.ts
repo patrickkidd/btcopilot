@@ -3,7 +3,7 @@ import { Feature, tap } from "./track";
 import { fullName } from "./rows";
 import * as api from "./api";
 import { DateCertainty } from "./certainty";
-import type { PairBond, Person, TimelineEvent } from "./types";
+import { EventKind, type PairBond, type Person, type TimelineEvent } from "./types";
 
 /** The event editor, markup unchanged from the page this replaces: it is behind
  * the menu, off the main journey, and is not being redesigned (R-0069). */
@@ -12,18 +12,6 @@ import type { PairBond, Person, TimelineEvent } from "./types";
  * record, so the coach leaves them alone unless it is asked (R-0281). */
 const NOTES_HINT =
   "Notes stay with this and are not read back to you in the thread unless you ask for them.";
-
-export enum EventKind {
-  Shift = "shift",
-  Birth = "birth",
-  Adopted = "adopted",
-  Bonded = "bonded",
-  Married = "married",
-  Separated = "separated",
-  Divorced = "divorced",
-  Noted = "noted",
-  Death = "death",
-}
 
 export enum Direction {
   Up = "up",

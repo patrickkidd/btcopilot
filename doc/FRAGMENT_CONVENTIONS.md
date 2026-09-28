@@ -4,8 +4,8 @@ How the chat app draws a **family fragment**: one person in the middle, the bond
 their parents above them, their own bond or bonds beside them, the children under each
 bond. Never a whole diagram, never a third generation out to the sides.
 
-Ground truth is the desktop app's drawing code under
-`/Users/patrick/theapp/familydiagram/pkdiagram/`. The written specification
+Ground truth is the desktop app's drawing code under `pkdiagram/` in the familydiagram repo
+(`FAMILYDIAGRAM_REPO`; on Patrick's Mac, `~/theapp/familydiagram`). The written specification
 `btcopilot/doc/FAMILY_DIAGRAM_VISUAL_SPEC.md` is second. **Where they disagree the code
 wins**, and the line says so. One line per convention, each with its source.
 

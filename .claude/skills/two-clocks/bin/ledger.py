@@ -1,12 +1,13 @@
 """The event ledger: every dated item the corpus holds, one record each, from the
 sources that already exist — history entries, rulings, decision-log entries, review-log
 rows, commits in both worktrees, artifacts. Written to events.json in the private corpus
-(outside every repo: it carries ruling text) by
+(BTCOPILOT_SOURCES, outside this repo: it carries ruling text) by
 the flush; nothing is authored here, only gathered and tagged.
 
   python .claude/skills/two-clocks/bin/ledger.py            writes events.json and prints the counts
 """
 import json
+import os
 import re
 import subprocess
 import sys
@@ -16,7 +17,17 @@ from btcopilot import oracle
 
 HERE = Path(__file__).resolve().parent.parent.parent.parent.parent
 DOC = HERE / "doc"
-CORPUS = Path.home() / "theapp" / "btcopilot-sources" / "fd-corpus" / "private"
+# A worktree shares the main clone's private corpus, which is gitignored.
+MAIN = Path(
+    subprocess.run(
+        ["git", "-C", str(HERE), "rev-parse", "--path-format=absolute", "--git-common-dir"],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+).parent
+SOURCES = Path(os.environ.get("BTCOPILOT_SOURCES", MAIN / "btcopilot-sources"))
+if not SOURCES.is_dir():
+    sys.exit(f"no private corpus at {SOURCES}: clone btcopilot-sources there or set BTCOPILOT_SOURCES")
+CORPUS = SOURCES / "fd-corpus" / "private"
 EVENTS = CORPUS / "events.json"
 TRACE = CORPUS / "trace.json"
 YEAR = "2026"

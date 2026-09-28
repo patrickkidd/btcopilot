@@ -77,7 +77,7 @@ Ruled: hold off creating the droplet until Patrick has tried the new build and g
 go-ahead (R-0330).
 
 **What is already in hand**
-- DigitalOcean API token in ~/theapp/.env as DIGITALOCEAN_ADMIN; every admin action is confirmed with Patrick here first, production boxes.
+- DigitalOcean API token in `.env` at the clone root as DIGITALOCEAN_ADMIN; every admin action is confirmed with Patrick here first, production boxes.
 - Patrick's age public key on this Mac: age105g6wq3zc6xszu75ejeqryqjq69xrfm4hp8hktq89u3jpyafvq7sf23nqu (saved in the sandbox keys folder as patrick-mac.pub; not yet added to the encryption rules).
 - Read-only listing done: old boxes in sfo1 (database.familydiagram.com = Pro API, 107.170.236.117; alaskafamilysystems.com = 107.170.200.120), one sfo3 droplet discussions.familydiagram.com (137.184.42.58, purpose unconfirmed), one SSH key on the account (turin).
 - familydiagram.com records: root and database → Pro box; www → 198.199.116.86 (stale, nothing of ours); pypi → alaskafamilysystems box; discussions → sfo3 box. No mail on familydiagram.com. alaskafamilysystems.com carries mail (Google MX, Brevo SPF/DKIM/DMARC) and is never touched.

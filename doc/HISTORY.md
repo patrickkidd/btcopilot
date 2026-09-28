@@ -1838,10 +1838,11 @@ app importing with no sops key present; fixture coach speakers typed as the coac
 visual jobs running on the open-source prompts like the unit tests already did.
 
 **Production data.** Event 66 in diagram 1, the one R-0585 was written about, is now a shift,
-toward, targeting person 54 (review change 635). Still open: events 9 and 10 in diagram 1 (both
-defined-self, from 2015) and events 1 and 2 in diagram 14 have no target; R-0585's rule refuses
-any further edit to them until they get one, and Patrick still has to say whom 9 and 10 were
-aimed at.
+toward, targeting person 54 (review change 635). Events 9 and 10 in diagram 1, from 2015, turned
+out not to be defined-self at all: Patrick ruled their words hold no defining-a-self behaviour,
+so their move is cleared and they stand as noted events, no target needed. Still open: events 1
+and 2 in diagram 14 have no target; R-0585's rule refuses any further edit to them until they get
+one.
 
 **Still open.** The coach rule linking the people an event's own words name is written into the
 prompt and needs a live eval, which needs his spend approval, about $0.15 to $0.40. The older

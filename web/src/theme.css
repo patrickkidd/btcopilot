@@ -107,7 +107,9 @@ button { font-family: inherit; }
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  /* the part of the screen above the keyboard, kept by viewport.ts */
+  height: var(--seen-h, 100dvh);
+  top: var(--seen-top, 0px);
   /* never wider than the window: a child that overflows must be clipped, not
      allowed to stretch the frame and step it sideways under the centring */
   width: 100%;
@@ -206,8 +208,8 @@ button { font-family: inherit; }
 }
 .pl-btn:active { color: var(--data); }
 .pl-btn svg { display: block; }
-/* the about page: words, at the height they need */
-.ss.about { padding: 4px 16px 10px; box-sizing: border-box; }
+/* the about page: words, at the height they need, clear of its close button */
+.ss.about { padding: 4px 52px 10px 16px; box-sizing: border-box; }
 /* The about page: a card over the chat, from the top of the
    picture down, on ground of its own (R-0230), so opening one resizes nothing
    and the bubbles stay where they are under it (R-0460). */
@@ -296,9 +298,10 @@ button { font-family: inherit; }
    is taken out of the flow and nothing below it moves. */
 .pic { position: relative; }
 /* The list button sits at the end of the row of chips, drawn the chips' height
-   and on their line; its 44 target reaches past the drawing, so the drawn edge
-   lines up with the row's 16 of padding. */
-.caption .listglyph { margin-left: auto; margin-right: -4px; }
+   and on their line. Its 44 target ends at the row's 16 of padding and the
+   drawing sits at the target's end: a target pulled out into the padding made
+   Safari count the padding again past it, and the strip scrolled sideways. */
+.caption .listglyph { margin-left: auto; padding-left: 8px; }
 .view { position: relative; transition: height 0.25s ease; }
 /* One level in or one level out. The two views stand side by side for the
    length of the slide, each at the height the region already had, so nothing
@@ -987,16 +990,8 @@ button { font-family: inherit; }
   justify-content: space-between;
   color: var(--ink);
 }
-.notes-close {
-  width: 44px;
-  height: 44px;
-  margin-right: -12px;
-  border: none;
-  background: none;
-  color: var(--faint);
-  font-size: 16px;
-  cursor: pointer;
-}
+/* the app's close button, kept in the heading row where the notes' own sat */
+.notes-head > .cardx { position: static; margin-right: -12px; }
 .notes-card dl { margin: 0; }
 .notes-card dt { color: var(--ink); }
 .notes-card dd { margin: 0 0 8px; overflow-wrap: anywhere; }
@@ -1092,16 +1087,25 @@ button { font-family: inherit; }
 .field > :empty::before { content: attr(data-ph); color: var(--faint); }
 /* A token in the composer sits ON the line of words, not above it: the chip's
    own 26px box would make the field taller than its 44px resting height, and
-   the message bar growing pushes every bubble up the screen. */
+   the message bar growing pushes every bubble up the screen.
+   It is never wider than 60% of the box, the share the one cut chip in the
+   thread takes of the screen (.chip.trace), so there is always room beside it
+   to tap. Its label ends in an ellipsis; its whole words stay in data-full and
+   are what is sent. */
 .field .chip {
   font: 500 13px/18px var(--mono);
   border-radius: 6px;
   padding: 1px 6px;
   margin: 0 3px 0 0;
-  vertical-align: baseline;
+  max-width: 60%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: text-bottom;
 }
-/* the target still meets the floor, grown around the smaller pill */
-.field .chip::before { inset: -12px -6px; }
+/* a tap on it only puts the caret beside it, so its target is its own box: a
+   grown one caught taps meant for just after it */
+.field .chip::before { content: none; }
 .send {
   flex: none;
   position: relative;
@@ -1304,7 +1308,11 @@ button { font-family: inherit; }
   letter-spacing: 0.04em;
   padding-top: 6px;
 }
+/* No native look: Safari on iPhone draws a native date field content-box
+   whatever the page says, so its padding and border went past the editor's
+   right edge and the list scrolled sideways. */
 .editor .f, .editor textarea {
+  appearance: none;
   width: 100%;
   height: 44px;
   padding: 0 12px;
@@ -1581,6 +1589,11 @@ button { font-family: inherit; }
 /* a session row is the app's list row with a date beside it */
 .row.side { flex-direction: row; align-items: center; gap: 10px; }
 .row.side .rmain { flex: 1; min-width: 0; }
+/* an event row leads with the family diagram's own mark for its kind, and the
+   kind that opens its words is in the data colour (R-0113) */
+.kmark { flex: none; width: 28px; height: 28px; }
+.kmark + .rmain { display: flex; flex-direction: column; gap: 3px; }
+.kw { color: var(--data); }
 .row.side .rwhen {
   flex: none;
   max-width: 44%;
@@ -2877,10 +2890,11 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   height: 44px;
   border: none;
   background: none;
-  color: var(--faint);
+  color: var(--data);
   font: 400 21px/1 var(--sans);
   cursor: pointer;
 }
+.cardx:active { color: var(--data-press); }
 .drow .top { display: flex; align-items: center; gap: 12px; }
 .drow .tally { flex: none; width: 80px; }
 .drow .pick { font: 400 17px/1.3 var(--sans); color: var(--ink); flex: 1; }

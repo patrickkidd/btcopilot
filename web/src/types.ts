@@ -70,6 +70,9 @@ export interface Chip {
   /** True when the coach wrote the reference with no words of its own, so the
    * label is a stand-in the record can better. */
   bare: boolean;
+  /** The play-by-play message a cluster chip was tapped in, when the chip
+   * names that play's own cluster: the tap plays its telling again. */
+  play?: number;
 }
 
 export type Piece = { text: string } | { chip: Chip };
@@ -101,6 +104,18 @@ export interface PairBond {
   person_b: number | null;
   married: boolean;
   label?: string;
+}
+
+export enum EventKind {
+  Shift = "shift",
+  Birth = "birth",
+  Adopted = "adopted",
+  Bonded = "bonded",
+  Married = "married",
+  Separated = "separated",
+  Divorced = "divorced",
+  Noted = "noted",
+  Death = "death",
 }
 
 export interface TimelineEvent {

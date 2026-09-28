@@ -102,6 +102,20 @@ def _find(data, event_id: int) -> dict:
     abort(404)
 
 
+def _couple(data, event: dict, free: int) -> list[dict]:
+    """The couple's bond a couple event stands on, added under the free id or
+    marked married in the same write, as the coach's tool does (R-0593)."""
+    needed = record.couple_bond(data.pair_bonds, event)
+    if needed is None:
+        return []
+    bond_id, fields = needed
+    deltas = []
+    if bond_id is None:
+        bond_id = free
+        deltas.append(delta(ItemKind.Diagram, None, "lastItemId", bond_id))
+    return [delta(ItemKind.PairBond, bond_id, f, v) for f, v in fields.items()] + deltas
+
+
 def _deltas(event_id: int, fields: dict) -> list[dict]:
     return [
         delta(ItemKind.Event, event_id, field, diagramjson.to_json(value))
@@ -121,6 +135,7 @@ def create():
     edit(
         _deltas(event_id, event)
         + [delta(ItemKind.Diagram, None, "lastItemId", event_id)]
+        + _couple(data, event, event_id + 1)
     )
     return (
         jsonify(event_payload(_find(writable_diagram().get_diagram_data(), event_id))),
@@ -145,7 +160,7 @@ def update(event_id: int):
     was, now = event_payload(existing), event_payload(event)
     changed = {key: event[key] for key in WRITABLE if now[key] != was[key]}
     if changed:
-        edit(_deltas(event_id, changed))
+        edit(_deltas(event_id, changed) + _couple(data, event, record.next_id(data)))
     return jsonify(
         event_payload(_find(writable_diagram().get_diagram_data(), event_id))
     )

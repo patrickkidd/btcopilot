@@ -28,6 +28,9 @@ export const pathRow = (steps: string[]): string =>
     )
     .join(`<span class="sep" aria-hidden="true"> \u203a </span>`);
 
+/** The path's step that goes back to the open cluster. */
+export const CLUSTER = 1;
+
 /** The app's close button: a cross in the top-right corner of the box it sits
  * in (R-0317). */
 export const closeX = (attrs = "") =>

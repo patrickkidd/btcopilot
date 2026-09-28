@@ -3,6 +3,7 @@ import {
   draw,
   Mark,
   Sex,
+  sexOf,
   Tie,
   Tone,
   type Arrow,
@@ -14,11 +15,10 @@ import {
   type Placed,
   type Shape,
 } from "./diagram";
-import { EventKind } from "./editor";
 import { Move, Shift } from "./moves";
 import { DateCertainty } from "./certainty";
 import { dateText } from "./spotlight";
-import type { Case, PairBond, Person, Timeline, TimelineEvent } from "./types";
+import { EventKind, type Case, type PairBond, type Person, type Timeline, type TimelineEvent } from "./types";
 
 /** The coach tells one cluster in 3–6 snapshots (R-0563). A snapshot is one date: who was around the person,
  * how each was doing, what moved between them. This turns the coach's case and
@@ -46,12 +46,16 @@ interface Pair {
   b: string;
 }
 
-const COUPLE_KINDS = new Set<string>([EventKind.Married, EventKind.Bonded]);
-const ENDS: Record<string, Pair["k"]> = {
+export const COUPLE_KINDS = new Set<string>([EventKind.Married, EventKind.Bonded]);
+export const ENDS: Record<string, Pair["k"]> = {
   [EventKind.Separated]: Mark.Separated,
   [EventKind.Divorced]: Mark.Divorced,
 };
-const BIRTHS = new Set<string>([EventKind.Birth, EventKind.Adopted]);
+export const BIRTHS = new Set<string>([EventKind.Birth, EventKind.Adopted]);
+
+/** The one bond there ever is between two people (R-0326). */
+export const bondOf = (bonds: PairBond[], a: number | null, b: number | null) =>
+  bonds.find((pb) => (pb.person_a === a && pb.person_b === b) || (pb.person_a === b && pb.person_b === a));
 
 const key = (id: number) => String(id);
 
@@ -80,9 +84,6 @@ export function gapText(a: number, b: number): string {
  * "m." is kept for a marriage. */
 const bowen = (w: string) => w.replace(/^to /i, "moved to ");
 
-const sexOf = (p: Person) =>
-  p.gender === "female" ? Sex.Female : p.gender === "male" ? Sex.Male : Sex.Unknown;
-
 export class Family {
   readonly people = new Map<string, Person>();
   readonly events = new Map<number, TimelineEvent>();
@@ -104,9 +105,7 @@ export class Family {
   }
 
   bondOf(a: number | null, b: number | null): PairBond | undefined {
-    return this.tl.pair_bonds.find(
-      (pb) => (pb.person_a === a && pb.person_b === b) || (pb.person_a === b && pb.person_b === a),
-    );
+    return bondOf(this.tl.pair_bonds, a, b);
   }
 
   died(p: Person): number | null {
@@ -119,7 +118,7 @@ export class Family {
     if (!p) throw new Error(`no person ${id} in the record`);
     return {
       name: p.last_name ? `${p.name} ${p.last_name}` : p.name,
-      g: sexOf(p),
+      g: sexOf(p.gender),
       born: p.birth ? when(p.birth) : null,
       died: this.died(p),
       you: key(p.id) === this.you,

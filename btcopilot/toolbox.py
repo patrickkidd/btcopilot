@@ -843,6 +843,13 @@ class Toolbox:
         data = self.data
         start = len(self.deltas)
         new = args.get("id") is None
+        was = {} if new else self._find_event(args["id"])
+        if new and not args.get("date"):
+            raise ToolError(
+                "Every event needs a date: estimate one from what was said, with "
+                "date_certainty unknown when it is your own guess",
+                "Every event needs a date.",
+            )
         fields = {}
         if args.get("kind"):
             fields["kind"] = choice(EventKind, args["kind"], "event kinds").value
@@ -892,35 +899,49 @@ class Toolbox:
             and fields.get("spouse") is None
             and fields.get("child") is not None
         ):
-            known = self._find_person(fields["person"])
+            spouse = self._other_parent(fields["child"], fields["person"])
+            if spouse is not None:
+                fields["spouse"] = spouse
+        self._couple({**was, **fields})
+        text, patch = self._write(ItemKind.Event, args.get("id"), fields)
+        event_id = patch["deltas"][0]["item_id"]
+        self._born_to(self._find_event(event_id))
+        return text, {"deltas": self.deltas[start:], "turn_id": self.turn_id}
+
+    def _find_event(self, event_id) -> dict:
+        for event in self.data.events:
+            if str(event.get("id")) == str(event_id):
+                return event
+        raise ToolError(f"No event {event_id} in the record", GONE)
+
+    def _other_parent(self, child_id: int, parent_id: int) -> int | None:
+        """The second parent of a birth that names one: the other side of the
+        bond the child is born to, or a generically named one when the child has
+        no parents yet. A parent who is not a side of the child's bond gets
+        none, and the record refuses the birth naming its rule."""
+        parents = self._find_person(child_id).get("parents")
+        born_to = next(
+            (b for b in self.data.pair_bonds if str(b["id"]) == str(parents)), None
+        )
+        if born_to is None:
+            known = self._find_person(parent_id)
             role = self.OTHER_PARENT.get(
                 _enum_value(known.get("gender")), prompts.Role.Partner
             )
-            fields["spouse"] = self._generic(fields["child"], role)
-        text, patch = self._write(ItemKind.Event, args.get("id"), fields)
-        event_id = patch["deltas"][0]["item_id"]
-        event = next(e for e in self.data.events if str(e.get("id")) == str(event_id))
-        self._married(event)
-        self._born_to(event)
-        return text, {"deltas": self.deltas[start:], "turn_id": self.turn_id}
+            return self._generic(child_id, role)
+        sides = [born_to["person_a"], born_to["person_b"]]
+        if str(parent_id) not in {str(side) for side in sides}:
+            return None
+        return next(side for side in sides if str(side) != str(parent_id))
 
     def _bond(self, a: int, b: int) -> dict | None:
         pair = record.pair({"person_a": a, "person_b": b})
         return next((x for x in self.data.pair_bonds if record.pair(x) == pair), None)
 
-    def _married(self, event: dict):
-        """A marriage sets married on the couple's bond, adding the bond when
-        they have none yet, so the picture draws them married (R-0430)."""
-        a, b = event.get("person"), event.get("spouse")
-        if _enum_value(event.get("kind")) != EventKind.Married.value or None in (a, b):
-            return
-        bond = self._bond(a, b)
-        if bond is None:
-            self._write(
-                ItemKind.PairBond, None, {"person_a": a, "person_b": b, "married": True}
-            )
-        elif bond.get("married") is not True:
-            self._write(ItemKind.PairBond, bond["id"], {"married": True})
+    def _couple(self, event: dict):
+        needed = record.couple_bond(self.data.pair_bonds, event)
+        if needed is not None:
+            self._write(ItemKind.PairBond, *needed)
 
     def _born_to(self, event: dict):
         """A birth naming both parents makes the child the offspring of their
