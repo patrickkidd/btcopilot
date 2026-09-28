@@ -1,12 +1,9 @@
 /* Minimal offline shell: the built bundle is cached so the app opens without a
    network. Every API call goes to the network untouched. */
-const CACHE = "familydiagram-v1";
-const SHELL = [
-  "/app/",
-  "/app/static/web/app.js",
-  "/app/static/web/app.css",
-  "/app/manifest.webmanifest",
-];
+// The bundle's files carry a hash in their names, so they are cached as the
+// page loads them rather than named here.
+const CACHE = "familydiagram-v2";
+const SHELL = ["/app/", "/app/manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(

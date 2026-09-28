@@ -161,6 +161,10 @@ export const resume = (turnId: string) =>
 export const turnEvents = (turnId: string) =>
   new EventSource(`${ROOT}/turns/${turnId}/events`);
 
+/** The release the server is running now. */
+export const version = () =>
+  call<{ version: string }>("GET", "/version").then((answer) => answer.version);
+
 export const play = (clusterId: string) =>
   call<PlayReply>("POST", "/play", { cluster_id: clusterId }, PLAY_WAIT_S * 1000);
 

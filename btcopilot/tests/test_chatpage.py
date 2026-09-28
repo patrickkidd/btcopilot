@@ -31,6 +31,19 @@ def test_health_reports_the_version(flask_app):
     assert flask_app.test_client().get("/health").get_data(as_text=True) == btcopilot.__version__
 
 
+def test_page_is_asked_for_again_on_every_load(web):
+    # R-0486
+    response = web.get("/app/")
+    assert response.headers["Cache-Control"] == "no-cache"
+
+
+def test_version_is_the_release_the_server_runs(web):
+    # R-0486
+    response = web.get("/app/version")
+    assert response.get_json() == {"version": btcopilot.__version__}
+    assert response.headers["Cache-Control"] == "no-cache"
+
+
 def test_page_requires_login(flask_app):
     # R-0080
     flask_app.test_client_class = flask.testing.FlaskClient
