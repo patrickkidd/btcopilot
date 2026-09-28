@@ -1,3 +1,6 @@
 daily.json
 # Every run leaves one; a kept run is copied to quality/evals by record.py.
 ????-??-??T*.json
+
+# One line per replay or live case, written by btcopilot/ledger.py.
+ledger.jsonl
