@@ -298,9 +298,10 @@ button { font-family: inherit; }
    is taken out of the flow and nothing below it moves. */
 .pic { position: relative; }
 /* The list button sits at the end of the row of chips, drawn the chips' height
-   and on their line; its 44 target reaches past the drawing, so the drawn edge
-   lines up with the row's 16 of padding. */
-.caption .listglyph { margin-left: auto; margin-right: -4px; }
+   and on their line. Its 44 target ends at the row's 16 of padding and the
+   drawing sits at the target's end: a target pulled out into the padding made
+   Safari count the padding again past it, and the strip scrolled sideways. */
+.caption .listglyph { margin-left: auto; padding-left: 8px; }
 .view { position: relative; transition: height 0.25s ease; }
 /* One level in or one level out. The two views stand side by side for the
    length of the slide, each at the height the region already had, so nothing

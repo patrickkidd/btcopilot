@@ -5,7 +5,7 @@ import { openList, stateFor } from "./setup";
 const LONG = "Fitzgerald-Winterbottom".repeat(10);
 
 /** Every box in the editor that reaches past its parent's left or right edge,
- * and how far the list and the page can be scrolled sideways. */
+ * and how far the list, the caption and the page can be scrolled sideways. */
 const spill = (page: Page) =>
   page.evaluate(() => {
     const editor = document.querySelector(".editor")!;
@@ -17,10 +17,18 @@ const spill = (page: Page) =>
         : [];
     });
     const list = document.getElementById("menu-body")!;
+    // the row of chips over the picture, and how far its list button reaches
+    // into the row's end padding, which Safari counts again past the button
+    const caption = document.getElementById("caption")!;
+    const end =
+      caption.getBoundingClientRect().right - parseFloat(getComputedStyle(caption).paddingRight);
+    const button = caption.querySelector(".listglyph")!.getBoundingClientRect();
     return {
       outside,
       page: document.scrollingElement!.scrollWidth - innerWidth,
       list: list.scrollWidth - list.clientWidth,
+      caption: caption.scrollWidth - caption.clientWidth,
+      reach: Math.max(0, Math.round(button.right - end)),
     };
   });
 
@@ -39,7 +47,7 @@ for (const width of [320, 390])
       await editor.locator('[data-name="description"]').fill(LONG);
       await editor.locator('[data-name="location"]').fill(LONG);
       await editor.locator('[data-name="endDateTime"]').fill("2003-04-05");
-      expect(await spill(page)).toEqual({ outside: [], page: 0, list: 0 });
+      expect(await spill(page)).toEqual({ outside: [], page: 0, list: 0, caption: 0, reach: 0 });
       // Safari on iPhone sizes a date field with its native look content-box,
       // padding and border outside the width, whatever the page asks for.
       const looks = await editor
