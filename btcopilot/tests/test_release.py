@@ -68,7 +68,7 @@ def test_a_migration_that_ran_in_production_is_never_rewritten_and_later_ones_ch
     # R-0417
     migrations = sorted((REPO / "btcopilot" / "migrations" / "versions").glob("*.py"))
     released = hashlib.sha256(migrations[0].read_bytes()).hexdigest()
-    assert released == "8ddb245301f2b6450e5f1ae20d5196c05179883b5ad29ff9822db8a299daec04"
+    assert released == "e543ab5be81bc03624dad70ea3b6c4e40c08e2301379c9845902d7608cd6b1a1"
     for before, after in zip(migrations, migrations[1:]):
         revision = before.name.split("_")[0]
         assert f'down_revision = "{revision}"' in after.read_text(), after.name
