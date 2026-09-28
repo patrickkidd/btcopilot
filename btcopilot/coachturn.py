@@ -225,13 +225,17 @@ class CoachTurn:
         sink: Callable[[dict], None] | None = None,
         turn_id: str | None = None,
         resume: bool = False,
+        scratch: bool = False,
     ):
+        """A scratch turn runs on a copy: it charges no one's monthly cap and
+        leaves the user's profile alone."""
         self.discussion = discussion
         self.statement = statement
         # The route stores the user's words before the turn is handed to the
         # worker, so the turn is told which statement it is answering.
         self.statement_id = statement_id
         self.resume = resume
+        self.scratch = scratch
         self.sink = sink
         # Everything the database keeps of this turn once it ends: what the page
         # was told, less the words, plus each round of tool calls as sent.
@@ -410,8 +414,9 @@ class CoachTurn:
         if self.discussion.title is None:
             self.discussion.update_title()
             self.discussion.update_summary()
-        profile.mirror(self.discussion.user, self.data)
-        TokenMeter.charge(self.discussion.user_id, self.model.spent)
+        if not self.scratch:
+            profile.mirror(self.discussion.user, self.data)
+            TokenMeter.charge(self.discussion.user_id, self.model.spent)
         db.session.commit()
 
         return {

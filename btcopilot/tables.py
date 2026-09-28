@@ -51,6 +51,7 @@ TABLES = frozenset(
         "review_notes",
         "review_rules",
         "review_votes",
+        "shadow_turns",
         "speakers",
         "statements",
         "synthetic_personas",
