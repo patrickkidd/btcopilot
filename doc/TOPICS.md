@@ -28,8 +28,15 @@ his fixes from his own use, required date certainty, and the coach's impressions
 2026-09-26 at commit 1faeeaa with the database at 1b00000000ae. A third went out on 2026-09-26
 at commit 5b2a6bb, by hand on the box: the play button under each coach reply, italic names in
 tool lines, the iPhone message-box fix, the coach's notes behind a circled (i) for admins and
-auditors, and questions dated in UTC. Pushed since, not deployed: the GitHub environment for
-deploys and saved paid responses.
+auditors, and questions dated in UTC. Two more deploys through the GitHub environment followed:
+2a797b0 on 2026-09-26 and f66d603/cf62be6 on 2026-09-27, carrying the rebuilt play-by-play. On
+2026-09-28, commit 07b9d8b (database 1b00000000b2) carried the cluster-select slide fix, the
+stale home-screen app fix, the pill strip (R-0543, R-0544), play turns writing a done turn
+event, refusals for an invalid event kind and an unknown evidence kind, a couple event with no
+spouse refused at the writer, the first migration's table order fixed so an empty Postgres
+builds (a one-time exception to R-0417, R-0574), the dashboard's Person filter, and the sandbox
+kit moved into the repo. The first release attempt that day failed on a full disk (unpruned
+docker images); pruned by hand, not yet automatic.
 **Decided:** one server for Pro, training and the chat app; old Pro diagrams stay pickle and
 new rows are JSON in the same column [Oracle: R-0241]; the beta users are the app working
 group of three clinicians [R-0079]; sign-in is passwordless with Face ID on a capable phone;
@@ -45,27 +52,30 @@ dispatched from the ticket branch, never by a merge, and only after the 14-point
 test bar passes; production and testing run on separate keys. The deploy credentials live in a
 GitHub environment only branch FD-363 may use, deploying only on a manual dispatch [R-0530]; a
 paid response is paid for once and replayed after [R-0531].
-**Open:** (1) [verify] the 5b2a6bb batch waits on his test in his own thread; (2) [ruling] whether the 4 questions the backfill found in his whole history
-are too few; (3) [verify] no real coach turn had run on production before his own, because a
-test sign-in link on the box was refused by the permission checks; (4) [build] production's
-title bar reads "Free Diagram" instead of the diagram's real name; (5) [build] onboarding the
+**Open:** (1) [ruling] whether the 4 questions the backfill found in his whole history
+are too few; (2) [build] production's
+title bar reads "Free Diagram" instead of the diagram's real name; (3) [build] onboarding the
 first beta users [R-0400]; the two invite links for their email addresses have not been sent;
-(6) [build] the summary shown for a session in the sessions list answers the first message
-with generic advice instead of summarising the exchange; (7) [verify] the app has never been
-opened on Android; (8) [verify] passkeys have never been tried on a real https domain;
-(9) [waiting] cluster quality on anyone else's record stays unmeasured until the coding loop
-produces numbers; (10) [verify] no deploy has yet been dispatched through the GitHub
-environment; the first dispatch from FD-363 proves it; (11) [verify] saved paid responses are
+(4) [build] the summary shown for a session in the sessions list answers the first message
+with generic advice instead of summarising the exchange; (5) [verify] the app has never been
+opened on Android; (6) [verify] passkeys have never been tried on a real https domain;
+(7) [waiting] cluster quality on anyone else's record stays unmeasured until the coding loop
+produces numbers; (8) [verify] saved paid responses are
 proven to replay for each case's first call only; one paid run followed by a replay-only run
-proves the rest; (12) [verify] the message-box fix is checked in desktop WebKit, not yet on his
-iPhone.
+proves the rest; (9) [verify] the message-box fix is checked in desktop WebKit, not yet on his
+iPhone; (10) [build] the release workflow does not prune old docker images, so the box's disk
+filled and stopped the 2026-09-28 deploy until it was pruned by hand; (11) [ruling] the pill
+strip's one-screen line (R-0543) contradicts the earlier sliding-line ruling [R-0381] and the
+crowded-line ruling [R-0402]; neither is superseded until he says so; (12) [ruling] a candidate
+with no id yet needs his yes: "after a deploy, the home-screen app loads the new release when
+it comes back to the front"; its tests cite R-0486 until then.
 **Lives in:** btcopilot PR #138 (branch FD-363, open, not merged); doc/STATE.md; the private
 corpus's PREDEPLOY_TESTING_RULES.md, session-dc02180f/ and
 session-b147ab7f/; deploy/; .github/workflows/release.yml; btcopilot/tests/live/replay.py; the
 backup prod-2026-09-26-0540-pre-fd363-5b2a6bb.dump in btcopilot-sources.
-**Next action:** he tests the 5b2a6bb batch in his own thread; the next deploy is dispatched from
-FD-363 through the environment.
-**Updated:** 2026-09-26.
+**Next action:** he tests the 07b9d8b batch in his own thread, including the pill strip and the
+cluster-select slide fix.
+**Updated:** 2026-09-28.
 
 ## T-2 · The coach knows the clinical definitions, and we can measure it
 
@@ -307,6 +317,15 @@ touch targets sized to common conventions; the list button has no circle and sit
 height; more room between a reply's tool lines and its words; the close button lines up with
 the ask button; a chip tap behaves like a dot tap, with a per-user switch back; SARF shifts as
 people report them are remembered, isolated episodes, so no line or step graph of those shifts.
+Ruled 2026-09-26/27, built and deployed: the timeline's views are one drawing rather than
+separate redraws, selecting a cluster or event redraws the same view in place instead of
+sliding a new one over it [R-0538, R-0540, R-0542]; the strip draws each cluster as one pill,
+one screen wide, nothing merges [R-0543, R-0544]; the play-by-play is rebuilt on a code-drawn
+family diagram, snapshot by snapshot, tap-through only [R-0545 to R-0570]. Ruled 2026-09-28: no
+editor ever opens from tapping an event's words inside a cluster, since chat was always the real
+way to edit an event, with the event list as the fallback [R-0572, supersedes R-0207]; the
+timeline is not meant for selecting individual events, only clusters, because selecting a
+cluster is how the play-by-play is reached [R-0573].
 
 **The literature research (finished, written up, his verdicts in):** what was read — Family
 Evaluation (Kerr and Bowen) and the SARF sources, the passages listed one per concept in
@@ -374,8 +393,9 @@ exist, so its second label and seam come out as nothing — nothing on his own p
 yet; (8) [build] grouping is the coach's judgement with a one-line scope and the floor binds only
 the automatic draft [R-0287]; the nodal ring stays and its flag follows the clinical definition
 [R-0283]; no trend lines until real data [R-0284]; (9) [build] the event editor's relationship
-fields; (10) [ruling] whether tapping an event's words inside an open cluster jumps to its
-editor, which he will say after testing [R-0207]; (11) [waiting] the gap between a cluster's
+fields; (10) [ruling] the pill strip's one-screen line (R-0543) contradicts the earlier
+sliding-line ruling [R-0381] and the crowded-line ruling [R-0402]; neither is superseded until
+he says so; (11) [waiting] the gap between a cluster's
 opening event and its symptom waits for a record with enough data [R-0382]; (12) [waiting] the
 family drawing waits for the traditional diagram and automatic arrangement [R-0379], and the
 lanes of generations wait for a record that carries shocks between households [R-0380];
@@ -393,12 +413,11 @@ about it — neither is ruled or built, and it is a topic for Fable; (17) [waiti
 record can show as it is, and a pass correcting events whose dates were guessed, both wait on a
 read of his record that the permission checks refused; (18) [ruling] the two picture goldens
 board-first-move and rest-dense60 wait on his approval; (19) [verify] a chip tap working like a
-dot tap is built with a switch back and he has not tried it; (20) [build] the play-by-play
-bugs he confirmed [R-0526]: a distance move drawn on the mover's own figure; a bond line drawn
-outside the bond's dates; a bond and a separation drawn alike; a second shift on the same event
-not drawn; an undated-certainty event left out of the steps; app words in the captions —
-fixed after the frame, not before; (21) [build] events accept a move whose target is its own
-mover, which pair bonds already refuse [R-0527]; (22) [waiting] the chalkboard: how the coach
+dot tap is built with a switch back and he has not tried it; four of the five play-by-play bugs
+he confirmed [R-0526] were fixed and deployed 2026-09-26 [R-0532], as was events accepting a
+move that targets its own mover [R-0527, R-0532]; (20) [waiting] the fifth, telling a separation
+apart from an ongoing bond, and the caption words replacing "bonded"/"separated", both stay in
+app words until the frame of reference lands [R-0532]; (21) [waiting] the chalkboard: how the coach
 draws a story arc that fits every case, not only the one cluster tried, waits on the frame of
 reference [R-0524, R-0525].
 **Lives in:** doc/PICTURE_IDEAS.md (the fourteen concepts, the passage behind each,
@@ -410,10 +429,12 @@ https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj , https://claude.ai/artifact/F
 https://claude.ai/artifact/XSmWsbSEdyChP1SM6AHKMd and the impressions mockups
 https://claude.ai/artifact/AfUU6Pzq2vaLPm3QvY7BH7 ; the SARF brainstorm and the two build
 contracts in the private corpus's session-dc02180f/; the play-by-play step shots, the sheet and
-the survey of 56 clusters in the private corpus's session-b147ab7f/.
-**Next action:** he tries the 5b2a6bb batch on production and answers the three impressions
-choices; the chalkboard and the SARF story resume on Fable after the frame.
-**Updated:** 2026-09-26.
+the survey of 56 clusters in the private corpus's session-b147ab7f/; the play-by-play build
+brief at ~/theapp/btcopilot-sources/fd-corpus/design/playbyplay-snapshots/BUILD_BRIEF.md.
+**Next action:** he tests the 07b9d8b batch on production, including the pill strip, and rules
+on whether R-0381 and R-0402 are superseded by it; the chalkboard and the SARF story resume on
+Fable after the frame.
+**Updated:** 2026-09-28.
 
 ## T-6 · Clusters by example
 
@@ -537,7 +558,9 @@ echoing his words or raising questions that are not open [R-0523]; agent chatter
 relayed and the final message stands alone [R-0025]; the rulings on a topic are read before
 any coach behaviour is proposed; testing does not spend on every run, and a paid response is
 saved and replayed [R-0531]; design starts from his clinical frame, not the model's training
-[R-0524].
+[R-0524]. Added 2026-09-28: development stays in a single worktree per ticket rather than
+spinning up many branches; parallel builds are fine, but the merge rules exist only to guard
+master, not to justify multiplying branches [R-0575].
 **Open:** (1) [build] the permission checks still refuse production reads, a test sign-in
 link on the box and reads of personal data; the answer so far is that he restarts in bypass
 mode, which his settings already default to; (2) [ruling] five rulings of this session were
@@ -546,7 +569,7 @@ RULINGS_TO_APPEND_2026-09-25.md).
 **Lives in:** doc/HOW_THIS_PROJECT_WORKS.md; the private corpus's PREDEPLOY_TESTING_RULES.md; doc/TEST_STRATEGY.md;
 btcopilot/CLAUDE.md; .claude/skills/two-clocks/SKILL.md; bin/flushcheck.py; bin/t.
 **Next action:** he restarts in bypass mode.
-**Updated:** 2026-09-26.
+**Updated:** 2026-09-28.
 
 ## T-10 · Project memory: the two clocks, the flush, the trace
 
@@ -669,13 +692,18 @@ private/prompts/ and private/oracle/, encrypted.
 GitHub environment named production that only branch FD-363 may use, runs only on a manual
 dispatch and checks out the dispatched commit on the box [R-0530]. Until then every deploy ran
 by hand on the box because the host setting was missing. A repository-wide host setting that
-would have deployed master was created and removed the same hour. Open: (9) [verify] the first
-dispatch through the environment has not run; (10) [build] a later ticket branch needs the
-environment's branch rule widened before it can deploy.
+would have deployed master was created and removed the same hour. The first dispatch through
+the environment ran 2026-09-26 (commit 2a797b0); three more followed through 2026-09-28
+(f66d603, cf62be6, 07b9d8b).
+**Deploy, 2026-09-28: commit 07b9d8b.** The first release attempt of the day failed: the box's
+disk was full, about 48 GB of unpruned untagged docker images left by earlier deploys; pruned
+by hand. Open: (9) [build] the release workflow should prune old docker images itself so a full
+disk does not stop a deploy again; (10) [build] a later ticket branch needs the environment's
+branch rule widened before it can deploy.
 **Next action:** he sets a spend limit on the testing workspace in the Anthropic console; he
 puts the Grafana token on the box and refreshes the dependency lock so the observability commit
-can deploy; the next deploy is dispatched from FD-363.
-**Updated:** 2026-09-26.
+can deploy; the release workflow gets automatic image pruning.
+**Updated:** 2026-09-28.
 
 ## T-12 · The learning loop: a scout that looks outward and a review of the scout
 

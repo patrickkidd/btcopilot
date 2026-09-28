@@ -84,7 +84,7 @@ test.describe("dragging the thread", () => {
 test.describe("a label that runs onto a second line", () => {
   test.use({ storageState: stateFor("hostile") });
 
-  // R-0207, R-0544
+  // R-0544
   test("answers on both of its lines, not just the first", async ({ page }) => {
     const rows = page.locator("#view .ss-t");
     /** Pick the first loose event afresh: one inside a cluster takes no pick

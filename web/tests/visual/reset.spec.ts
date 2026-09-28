@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { NO_EDITOR, stateFor } from "./setup";
+import { stateFor } from "./setup";
 
 /** Putting the picture down, and what a label does.
  *
@@ -67,14 +67,6 @@ test.describe("putting the picture down", () => {
   });
 });
 
-/** The labels sit under the band's tap target, so a tap on one is a press at
- * its own place on the picture. */
-const tapWords = async (page: Page, index = 0) => {
-  const label = page.locator("#view .ss-t.on").nth(index);
-  const box = (await label.boundingBox())!;
-  await page.mouse.click(box.x + Math.min(40, box.width / 2), box.y + box.height / 2);
-};
-
 test.describe("a tap on the words of the moment picked", () => {
   // a loose event, the only kind a tap picks (R-0543)
   test.use({ storageState: stateFor("three40") });
@@ -84,17 +76,6 @@ test.describe("a tap on the words of the moment picked", () => {
     await page.locator('.ss-hit[data-target="zone"]').first().click();
     await expect(page.locator("#view circle.dot.on")).toHaveCount(1);
   };
-
-  // R-0207
-  test("opens its editor", async ({ page }) => {
-    test.skip(true, NO_EDITOR);
-    await settle(page);
-    await pickOne(page);
-    await tapWords(page);
-    await expect(page.locator("#menu-screen")).toBeVisible();
-    await expect(page.locator("#tab-events")).toHaveClass(/on/);
-    await expect(page.locator("#menu-body .editor")).toBeVisible();
-  });
 
   // R-0460, R-0543
   test("a dot picks its moment and never travels", async ({ page }) => {

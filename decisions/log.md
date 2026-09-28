@@ -1852,3 +1852,24 @@ metered like a turn's; they never were. Rejected: a structured prose reply parse
 schema, and a parse failure has nothing to hand back); forcing the tool with tool_choice (not
 allowed with the coach's thinking). The drawing is a TypeScript port of the approved reference,
 checked to draw byte-for-byte the same on the stand-in cases and on Patrick's four cases.
+
+## 2026-09-28: The queued batch deployed; chat stays the primary way to edit an event; the timeline is not for selecting events
+
+Deployed at commit 07b9d8b: the cluster-select slide fix, the stale home-screen app fix, the
+pill strip, play turns writing their own done event, refusals for an invalid event kind and an
+unknown evidence kind, a couple event with no spouse refused at the writer, the first
+migration's table order fixed so an empty Postgres builds, the dashboard's Person filter, and
+the sandbox kit moved into the repo. The first release attempt failed on a full disk from
+unpruned docker images, pruned by hand; automatic pruning is still owed.
+
+Patrick ruled the editor that would have opened from tapping an event's words inside a cluster
+is not being built — chat was always the real way to edit an event, with the event list as the
+fallback [R-0572, supersedes R-0207]. He also ruled the timeline was never meant for picking out
+one event at a time; a cluster is what matters, since that is the door to the play-by-play
+[R-0573]. The first migration's table order was cleared for a one-time rewrite, an exception to
+R-0417, since that revision had never reached production [R-0574]. And on how the build had
+branched during the play-by-play work, he ruled that development stays in one worktree per
+ticket, since the merge rules exist only to guard master [R-0575].
+
+R-0381 and R-0402 are contradicted by the pill strip's one-screen line but were left standing,
+pending his yes to supersede them.

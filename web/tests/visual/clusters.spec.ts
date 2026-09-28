@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { NO_EDITOR, stateFor, tellWithoutModel } from "./setup";
+import { stateFor, tellWithoutModel } from "./setup";
 
 /** Opening a cluster and coming back out of it: the boxes at rest, the path
  * that goes back up, the page behind the small i, the board, and the card
@@ -35,11 +35,6 @@ const toRest = async (page: Page) => {
 const pickMoment = async (page: Page) => {
   await zones(page).first().click();
   await expect(page.locator("#view .ss-t.on").first()).toBeVisible();
-};
-
-const tapWords = async (page: Page) => {
-  const box = (await page.locator("#view .ss-t.on").first().boundingBox())!;
-  await page.mouse.click(box.x + Math.min(30, box.width / 2), box.y + box.height / 2);
 };
 
 const wireY = (page: Page) =>
@@ -173,47 +168,6 @@ test.describe("one cluster open on the sparse record", () => {
     await expect(path(page)).toHaveText("Timeline \u203a 1981\u20132003");
   });
 
-  // R-0207
-  test("the editor the words open is the picked moment's own", async ({ page }) => {
-    test.skip(true, NO_EDITOR);
-    await settle(page);
-    await openCluster(page);
-    await pickMoment(page);
-    await expect(page.locator("#view .ss-t.on").first()).toHaveText("1981");
-    await tapWords(page);
-    await expect(page.locator("#menu-screen")).toBeVisible();
-    await expect(
-      page.locator('#menu-body .editor .f[data-name="description"]'),
-    ).toHaveValue("Grandmother died");
-  });
-
-  // R-0207
-  test("from that editor the back arrow returns to the same open cluster", async ({
-    page,
-  }) => {
-    test.skip(true, NO_EDITOR);
-    await settle(page);
-    await openCluster(page);
-    await pickMoment(page);
-    await tapWords(page);
-    await expect(page.locator("#menu-body .editor")).toBeVisible();
-    await page.locator("#menu-close").click();
-    await expect(page.locator("#menu-screen")).toBeHidden();
-    await expect(path(page)).toHaveText("Timeline \u203a 1981\u20132003 \u203a Ada Grandmother died");
-    await expect(zones(page).first()).toBeVisible();
-  });
-
-  // R-0207
-  test("the jump lands on the list of events, not people", async ({ page }) => {
-    test.skip(true, NO_EDITOR);
-    await settle(page);
-    await openCluster(page);
-    await pickMoment(page);
-    await tapWords(page);
-    await expect(page.locator("#tab-events")).toHaveClass(/on/);
-    await expect(page.locator("#tab-people")).not.toHaveClass(/on/);
-    await expect(page.locator("#menu-body .editor")).toBeVisible();
-  });
 
   // R-0213, R-0540
   test("the i says the cluster's reason under its name", async ({ page }) => {

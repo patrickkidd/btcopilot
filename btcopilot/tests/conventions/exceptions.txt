@@ -108,10 +108,10 @@ R-0533 | TEST OWED | not done: the data correction and its eval case have not be
 R-0534 | TEST OWED | queued, not built
 R-0535 | TEST OWED | no visual spec opens the notes panel yet; the two web tests cover the row
 R-0536 | TEST OWED | the two web tests cover the plain-text value and its list of possibilities; no test yet asserts a chip is never used here
-R-0543 | TEST OWED | not built yet
-R-0544 | TEST OWED | not built yet
 R-0564 | TEST OWED | the play-by-play rebuild is not built yet
 R-0565 | TEST OWED | the play-by-play rebuild is not built yet
 R-0171 | WAIVED | the typed play-through it paced is replaced by the drawer tapped through by hand (R-0562); to be marked superseded in the store
 R-0286 | TEST OWED | the triangle-vs-conflict clinical distinction covers two of its three tags; the third awaits a citing test
 R-0288 | TEST OWED | the triangle position rules cover two of three tags; the third awaits a citing test
+R-0572 | WAIVED | a negative behaviour with no editor code path to assert against; editing now runs through chat and the event list, covered by their own rulings
+R-0573 | WAIVED | a design rationale for clusters over individual events as the tap target; the tap behaviour itself is proven by R-0543's and R-0537's citing tests

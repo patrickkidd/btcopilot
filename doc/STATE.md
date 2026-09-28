@@ -25,15 +25,6 @@ found in plain text in the old local permissions; the self-learning and correcti
 rules move to his global instructions; FD-336, FD-342 and FD-360 stay in ~/theapp. Sessions are
 not copied; old ones reopen by id. Remove this paragraph once the move is done. 2026-09-26: at the start of the play-by-play session he said "not yet"; remind again at the next new session.
 
-**PATRICK'S INSTRUCTION FOR THE NEXT SESSION (2026-09-28):** finish every pending build and put them all on production together, so he evaluates everything at once: the select-slide regression, the stale home-screen app fix, the pill strip, and the play-turn events the deploy gate flags. One verification pass and one deploy for the batch, then one message saying what to test.
-
-**ALSO FIRST (2026-09-28):** Patrick reported at session end that selecting a cluster still slides over a second timeline view on production (cf62be6), though R-0542's no-slide fix passed verification on 2026-09-27. Reproduce it on production and at HEAD first; suspect the play-by-play build's changes to the picture's back path. The pill strip (R-0543/R-0544) is not built yet; its scratch prototype (the app's web/ with the pill strip, diff it against web/) is at ~/theapp/btcopilot-sources/fd-corpus/design/strip-labels/proto-web.
-
-**FIRST BUILD ITEM FOR THE NEXT SESSION (queued 2026-09-28).** An iPhone home-screen app keeps
-running the page it last loaded, so after a deploy Patrick sees old code until he kills the
-app. Fix: on returning to the foreground, fetch the release version and reload if it changed;
-send `Cache-Control: no-cache` on the HTML; give the bundle hashed file names.
-
 ## The product (ruled)
 
 **"A coach who never forgets your family."** You talk to it (voice or text) the way
@@ -438,21 +429,44 @@ marked superseded once their own tests were confirmed gone (R-0130, R-0131, R-01
 R-0173, R-0177, R-0178, R-0180, R-0292); two triangle-drawing rulings (R-0286, R-0288) were kept
 and narrowed to the new drawer instead, since their tests still pass there.
 
-**Live on production now: commit cf62be6.** The play-by-play works end to end on the test
-account — the coach told a two-snapshot case, the drawer opened, and the question showed.
-Today's fixes on top of f66d603: a strict-schema 400 error, same-date events landing in one
-snapshot, a small cluster getting one snapshot per date [R-0571], play calls now metered, and a
-sparse family drawing correctly. Patrick is testing the play-by-play in his own thread now.
+**Deployed 2026-09-28: commit 07b9d8b, image 3.2026.9.28.7+g07b9d8b, database at
+1b00000000b2 (run 36428718588).** Everything queued the previous session went out together, as
+he asked, so he can evaluate all of it at once:
+- The cluster-select slide fix: opening a cluster from the timeline now redraws the same
+  timeline with the cluster selected in place, never sliding a second view over the first
+  [R-0542].
+- The stale home-screen app fix: on returning to the foreground the page checks the release
+  version and reloads if it changed; the HTML at `/app/` is served no-cache; the bundle's
+  files carry hashed names; the service worker's cache is named per release.
+- The pill strip [R-0543, R-0544]: one pill per cluster, no inner dots, the strip one screen
+  wide, nothing merges.
+- Play turns now write a done turn event, closing the gap the migration gate was flagging.
+- An invalid event kind and an unknown evidence kind are refused back to the coach rather than
+  failing the turn [R-0075]. A couple event with no spouse is refused at the writer [R-0453].
+- The first migration's table order is fixed so an empty Postgres database builds [R-0417],
+  a one-time exception logged as R-0574 because that revision had never run in production.
+- The people and cost dashboard's Person filter, now in `deploy/grafana/fd-chat.json`.
+- The sandbox kit lives in the repo at `bin/sandbox/sandbox`.
 
-Open for the next session: the migration gate flags play statements, which carry a turn id but
-no turn events — decide whether play turns should write events or the gate should exempt them;
-the first tap right after a rollout can hit a 502 while the container comes back up; the pill
-strip build is next (see below); the ~/btcopilot move still waits for the next session.
+The first release attempt failed: the box's disk was full, about 48 GB of unpruned untagged
+docker images. They were pruned by hand. Open: the release workflow should prune old images
+itself so this does not recur.
 
-**Next up: the pill strip.** A scratch prototype for the redrawn timeline strip (one pill per
-cluster, no dots, only clusters and events outside a cluster tappable, colour changes as the
-coach replies) sits at `~/.claude/jobs/0b7dc61d/tmp/strip-proto/web`, built against R-0543 and
-R-0544; nav-builder starts its own work from that diff next.
+**Ruled 2026-09-28.** The editor that would have opened from tapping an event's words inside a
+cluster is not being built; chat is the real way to edit an event, with the event list as the
+fallback [R-0572, supersedes R-0207]. And the timeline was never meant for picking out one
+event at a time — clusters are what matter, since a cluster leads to the play-by-play [R-0573].
+Process: work stays in a single worktree per ticket rather than spinning up many branches; the
+merge rules only guard master [R-0575].
+
+**Open, waiting on his yes:** the pill strip's one-screen line (R-0543) contradicts the earlier
+sliding-line ruling [R-0381] and the earlier crowded-line ruling [R-0402]; neither is
+superseded until he says so. A ruling candidate with no id yet, needing his yes: "after a
+deploy, the home-screen app loads the new release when it comes back to the front" — its tests
+cite R-0486 until then.
+
+Open for the next session: the first tap right after a rollout can hit a 502 while the
+container comes back up; the ~/btcopilot move still waits for the next session.
 
 **Testing stays on the Claude Code subscription, not paid API calls [R-0568].** A model call a
 test needs goes to a Claude Code agent instead and is saved as a subscription-sourced replay;
@@ -546,6 +560,13 @@ Open:
 - Plaintext copies of private prompt fragments sit in the b147ab7f job's temporary frame/
   folder; they go when the job is deleted.
 - Model use: Fable for the frame session and the chalkboard design; Opus for the replay proof.
+
+**Rulings appended 2026-09-28: R-0572 to R-0575**, each with his words in the evidence file: no
+editor opens from an event's words inside a cluster, ship without it, chat is the primary way
+to edit (R-0572, supersedes R-0207); the timeline is not meant for selecting individual events,
+only clusters (R-0573); a one-time exception to R-0417 for the first migration's table-order
+rewrite, since that revision never ran in production (R-0574); development stays in one
+worktree per ticket, not many branches, and the merge rules only guard master (R-0575).
 
 **Rulings appended 2026-09-26: R-0519 to R-0531**, each with his words in the evidence file:
 the provisional label (R-0519), the coach's notes and their buttons (R-0520 to R-0522, R-0529),

@@ -1650,3 +1650,72 @@ Not the chat app: b8769210-d27b-4e72-865e-08a8f211cb70 (the Pro app's update fee
 **Corrections caught and fixed.** A real first name from Patrick's own record had been used as an example inside a ruling's own text and inside this file's history; both were reworded to a stand-in name and to plain description, with a repo-wide sweep finding no further instances. The oracle store's size ceiling was hit twice from the volume of new rulings and brought back under it by shortening wording, never by dropping facts.
 
 **Open.** The coach producing a snapshot's point, facts, guess and closing question live is proven only by Claude Code subscription replies and one real explain on production, not a full eval. Nothing yet holds a play-by-play to three to six snapshots; real cases have shown as many as eleven and seventeen. Several of the pbp-builder's new test files do not yet cite the rulings they prove, which the coverage guard will keep flagging until they do.
+
+## 2026-09-28 — FD-363: the queued batch deployed, the pill strip's editor question ruled, the corpus caught up
+<!-- session: 0ae5e927 · flushed: 2026-09-28 -->
+
+**What this thread was for.** Corpus maintenance alongside the main build: deploying the batch
+queued from the two prior sessions, logging the rulings that came out of it, and keeping
+doc/STATE.md, doc/TOPICS.md and the oracle store current.
+
+**Deployed.** Commit 07b9d8b (image 3.2026.9.28.7+g07b9d8b, database 1b00000000b2, run
+36428718588), dispatched from the ticket branch through the GitHub production environment. It
+carried, together, as Patrick asked so he could evaluate all of it at once: the cluster-select
+slide fix (a cluster opened from the timeline redraws in place rather than sliding a second view
+over the first); the stale home-screen app fix (a foreground check for the release version,
+no-cache HTML, hashed bundle names, a per-release service-worker cache); the pill strip (one
+pill per cluster, no inner dots, one screen wide, nothing merges); play turns now writing a done
+turn event, closing the gap the migration gate was flagging; refusals back to the coach for an
+invalid event kind and an unknown evidence kind; a couple event with no spouse refused at the
+writer; the first migration's table order fixed so an empty Postgres database builds; the people
+and cost dashboard's Person filter; and the sandbox kit moved into the repo at
+`bin/sandbox/sandbox`.
+
+**The disk.** The first release attempt that day failed: the box's disk was full, about 48 GB of
+unpruned untagged docker images left by earlier deploys. Pruned by hand. Open: the release
+workflow should prune old images itself so this does not happen again.
+
+**Rulings, R-0572 to R-0575.** Patrick chose to leave out the editor that would have opened from
+tapping an event's words inside a cluster, saying chat was always the real way in, with the
+event list as the fallback [R-0572, supersedes R-0207]. He also said the timeline was never
+meant for picking out one event at a time — clusters are what matter, since a cluster is the
+door to the play-by-play [R-0573]. The first migration's table order was cleared to be rewritten
+this once, an exception to R-0417's no-rewrite rule, since that revision had never reached
+production [R-0574]. And on how this thread's build had branched: he said the work belongs in
+one worktree, not many branches, since the merge rules exist to guard master alone [R-0575].
+
+R-0381 (the sliding line built into the timeline) and R-0402 (the crowded-line ruling) are both
+contradicted by the pill strip's one-screen line, but neither is marked superseded — that waits
+on his yes. The home-screen fix has no ruling of its own; its tests cite R-0486 for now. A
+candidate is recorded in STATE.md for his yes: "after a deploy, the home-screen app loads the
+new release when it comes back to the front."
+
+**The store's size.** Adding the four new rulings pushed the index over its 150,000-byte
+ceiling a third time. Brought back under it the same way as before — never by dropping a fact —
+by shortening the four new statements themselves and by shortening a 53-character origin
+annotation ("(paraphrased by the coordinator; not directly quoted)") repeated 35 times across
+the previous two sessions' rulings down to "(paraphrased)".
+
+**Dead tests removed.** R-0207 becoming superseded left five Playwright tests asserting the
+tap-to-editor behaviour that will now never be built; each was already skipped, and each skip
+reason read, verbatim, "needs Patrick's call". His call arrived, so the five tests, the
+`NO_EDITOR` constant they shared, and one helper function left unused after their removal were
+deleted from `web/tests/visual/{reset,crosslinks,clusters}.spec.ts` and `setup.ts`. One passing
+test's citation of R-0207 in `select.spec.ts` was dropped in favour of the ruling it actually
+needed, R-0544, since the guard that checks every citation points at a live ruling would
+otherwise have failed on a citation to a now-superseded one.
+
+**Guards and suites, all green.** The oracle guards (6 of 6); the oracle/fingerprint/release
+subset of the Python suite (15 of 15); the full non-conventions Python suite (687 passed, 26
+skipped, 1 xfailed); the web unit suite (338 passed); the TypeScript type check. The visual
+(Playwright) suite was not re-run against a live sandbox for this cleanup, since it removed
+dead, already-skipped tests rather than changing any built behaviour; the oracle guards' own
+Playwright collection step, which succeeded, confirms the edited spec files still parse and
+their citations are all live.
+
+**doc/STATE.md and doc/TOPICS.md.** STATE's top-of-file queue (Patrick's instruction for the
+batch, the select-slide note, the home-screen queue item) was removed now that all three are
+done; "Live on production now" was rewritten for 07b9d8b; the stale "migration gate flags play
+statements" and "pill strip is next" open items were dropped as done. TOPICS.md's T-1 (shipping
+the beta), T-5 (picture and interface rulings), T-9 (process) and T-11 (platform) were each
+revised for today's deploy, rulings and open items.
