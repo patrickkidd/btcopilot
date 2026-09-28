@@ -133,7 +133,7 @@ test.describe("the ask under the timeline", () => {
 
 /** What Patrick saw on his iPhone after tapping the play-by-play's question:
  * the keyboard came up over the chat box, the chip filled the box, and a tap
- * meant for just after it took it out again (R-0586, R-0587). */
+ * meant for just after it took it out again (R-0591, R-0592). */
 test.describe("the chat box once a chip is in it", () => {
   test.use({ storageState: stateFor("whitlock") });
 
@@ -190,7 +190,7 @@ test.describe("the chat box once a chip is in it", () => {
     return composer(page).locator(".chip");
   };
 
-  // R-0587, R-0586
+  // R-0591, R-0587, R-0586
   test("stays in view above the keyboard after the question goes in, even when iOS pans the screen", async ({ page }) => {
     await phone(page);
     await tapQuestion(page);
@@ -205,7 +205,7 @@ test.describe("the chat box once a chip is in it", () => {
     expect(last!.y + last!.height).toBeLessThanOrEqual(thread!.y + thread!.height + 1);
   });
 
-  // R-0368
+  // R-0591, R-0368
   test("stays in view above the keyboard when it opens from a tap in the chat box", async ({ page }) => {
     await phone(page);
     await settle(page);
@@ -215,7 +215,7 @@ test.describe("the chat box once a chip is in it", () => {
     expect(at.box.top).toBeGreaterThanOrEqual(at.top);
   });
 
-  // R-0587, R-0586
+  // R-0592, R-0587, R-0586
   test("keeps the question's chip compact, cut with an ellipsis, and sends its whole words", async ({ page }) => {
     const chip = await tapQuestion(page);
     const [width, field] = await Promise.all([
@@ -228,7 +228,7 @@ test.describe("the chat box once a chip is in it", () => {
     expect(await sent(page)).toContain(`|${question}]]`);
   });
 
-  // R-0587, R-0586
+  // R-0592, R-0587, R-0586
   test("a tap on the chip leaves it in place with the caret just after it", async ({ page }) => {
     const chip = await tapQuestion(page);
     await composer(page).evaluate((box) => {
@@ -254,7 +254,7 @@ test.describe("the chat box once a chip is in it", () => {
     expect(await sent(page)).toBe(`To answer your question [[message:${id}|${question}]]my aunt`);
   });
 
-  // R-0586
+  // R-0592, R-0586
   test("backspace still takes the chip out", async ({ page }) => {
     const chip = await tapQuestion(page);
     await composer(page).evaluate((box) => {
