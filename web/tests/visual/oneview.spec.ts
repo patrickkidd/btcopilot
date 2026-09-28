@@ -85,7 +85,7 @@ test.describe("a tap on a box", () => {
       [pill.x + pill.width / 2, pill.y + pill.height + 14],
     ]) {
       await page.mouse.click(x, y);
-      await expect(page.locator("#view .ss-name")).toHaveText("Leaving and losing");
+      await expect(page.locator("#view .ss-name")).toHaveText("Leaving and losing (3)");
       await step(page, 0).click();
       await expect(path(page)).toHaveText("Timeline");
       await page.waitForTimeout(400);
@@ -118,7 +118,7 @@ test.describe("the path row", () => {
     await expect(page.locator("#path button")).toHaveCount(0);
     await openCluster(page);
     await expect(path(page)).toHaveText("Timeline › 1981–2003");
-    await expect(page.locator("#view .ss-name")).toHaveText("Leaving and losing");
+    await expect(page.locator("#view .ss-name")).toHaveText("Leaving and losing (3)");
     await step(page, 0).click();
     await expect(path(page)).toHaveText("Timeline");
     await page.waitForTimeout(400);

@@ -50,10 +50,21 @@ test.describe("the three levels on the moves record", () => {
     await toRest(page);
     await expect(path(page)).toHaveText("Timeline");
     await openCluster(page);
-    await expect(name(page)).toHaveText("The walk");
+    await expect(name(page)).toHaveText("The walk (17)");
     await page.locator("#cap-play").click();
     await expect(page.locator("#pbp")).toBeVisible();
     await expect(page.locator("#view .ss.board")).toHaveCount(0);
+  });
+
+  // R-0213, R-0538
+  test("an open cluster's title ends with how many events it holds", async ({ page }) => {
+    await tellWithoutModel(page);
+    await settle(page);
+    await toRest(page);
+    const { clusters } = await (await page.request.get("/app/timeline")).json();
+    const walk = clusters.find((c: { title: string; label: string }) => (c.title || c.label) === "The walk");
+    await openCluster(page);
+    await expect(name(page)).toHaveText(`The walk (${walk.count})`);
   });
 
   // R-0376
@@ -120,7 +131,7 @@ test.describe("the boxes at rest", () => {
       const box = (await page.locator("#view rect.pill").boundingBox())!;
       for (const x of [box.x + 4, box.x + box.width - 4]) {
         await page.mouse.click(x, box.y + box.height / 2);
-        await expect(name(page)).toHaveText("Leaving and losing");
+        await expect(name(page)).toHaveText("Leaving and losing (3)");
         await step(page, 0).click();
         await expect(path(page)).toHaveText("Timeline");
         await page.waitForTimeout(400);
@@ -255,7 +266,7 @@ test.describe("a chip in the coach's words that names a cluster", () => {
     await expect(path(page)).toHaveText("Timeline");
     await page.locator(".bub.coach .chip.data").first().click();
     await expect(name(page)).toHaveText(
-      "the cluster when everybody stopped speaking about the house and the money",
+      "the cluster when everybody stopped speaking about the house and the money (3)",
     );
     await expect(step(page, 0)).toBeVisible();
   });

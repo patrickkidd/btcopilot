@@ -1088,11 +1088,12 @@ export class Picture {
     this.laid.rows = said.rowsLaid;
     const chosen = marks.find((m) => m.event.id === this.selected);
     // With a cluster open and nothing picked, the words over the line are the
-    // cluster's own name, so the reader can find what is open (R-0538).
+    // cluster's own name and how many events it holds, so the reader can find
+    // what is open (R-0538).
     const title =
       !said.text && open && !chosen
         ? `<div class="ss-t ss-name" style="left:${X_PAD}px;top:${ROWS[0]}px;` +
-          `width:${screen - 2 * X_PAD}px">${esc(open.title || open.label)}</div>`
+          `width:${screen - 2 * X_PAD}px">${esc(open.title || open.label)} (${open.count})</div>`
         : "";
     // The band lies over the words and under the marks' own targets.
     const words = said.text ? said.text + bandHit(shows + X_PAD, screen - 2 * X_PAD) : "";
