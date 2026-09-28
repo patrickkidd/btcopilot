@@ -157,7 +157,7 @@ Changes something: needs `--yes`.
 
 ### `flask admin observations`
 
-What the watcher after each coach turn noticed.
+What shows the coach or the app needing tuning.
 
 ### `flask admin observations list`
 
@@ -167,6 +167,25 @@ Every row, oldest first.
 |---|---|
 | `--diagram` | Only one record's rows. |
 | `--kind` | Only one kind of row. |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin observations queue`
+
+The ten biggest groups of rows not yet rejected, test accounts left out: a kind and its reason with ids taken out, most often first.
+
+| Argument | What it is |
+|---|---|
+| `--json` | Print JSON, not a table. |
+
+### `flask admin observations reject <key>`
+
+Take the group with this key off the queue for good.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `key` | required |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin quality`

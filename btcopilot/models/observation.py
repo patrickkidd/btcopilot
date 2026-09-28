@@ -8,13 +8,20 @@ from btcopilot.modelmixin import ModelMixin
 
 
 class ObservationKind(enum.StrEnum):
-    """What the watcher after a turn noticed. It changes nothing; each row is a
-    candidate case for the coach's regression evals."""
+    """What shows the coach or the app needing tuning. It changes nothing; each
+    row is a candidate case for the coach's regression evals, and the rows are
+    grouped into the queue Patrick accepts or rejects [Oracle: R-0517]."""
 
     DuplicatePerson = "duplicate_person"
     DuplicateEvent = "duplicate_event"
     AddWithoutRead = "add_without_read"
     QuestionUnsaid = "question_unsaid"
+    ToolRefused = "tool_refused"
+    StepCap = "step_cap"
+    TurnFailed = "turn_failed"
+    TurnDeclined = "turn_declined"
+    PlayRefused = "play_refused"
+    PlayFailed = "play_failed"
 
 
 class Observation(db.Model, ModelMixin):

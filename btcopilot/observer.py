@@ -6,7 +6,8 @@ repeats for itself, and each row is a candidate case for its regression evals
 
 import re
 
-from btcopilot import profile, record, turnstore
+from btcopilot import profile, record, turnstore, tuning
+from btcopilot.coachturn import MAX_STEPS
 from btcopilot.extensions import db
 from btcopilot.models import Change, Discussion, Observation, ObservationKind, Statement
 from btcopilot.recordtext import date_text
@@ -21,6 +22,17 @@ from btcopilot.turnlog import TurnEventKind
 QUESTION_OVERLAP = 0.5
 WORDS = re.compile(r"[\w']+")
 
+# What this watcher writes, so a resumed turn replaces only these. How the turn
+# ended is written where it ended, and stays.
+WATCHED = (
+    ObservationKind.DuplicatePerson,
+    ObservationKind.DuplicateEvent,
+    ObservationKind.AddWithoutRead,
+    ObservationKind.QuestionUnsaid,
+    ObservationKind.ToolRefused,
+    ObservationKind.StepCap,
+)
+
 ADDS = (
     ToolName.EditPerson,
     ToolName.EditPairBond,
@@ -33,7 +45,9 @@ def observe(diagram_id: int, turn_id: str, data: DiagramData) -> None:
     """Only what the turn touched is looked at, so an old repeat is written
     down once, against the turn that made it. A resumed turn is looked at
     whole again, so its rows replace those of the attempt that failed."""
-    Observation.query.filter_by(turn_id=turn_id).delete()
+    Observation.query.filter(
+        Observation.turn_id == turn_id, Observation.kind.in_(WATCHED)
+    ).delete()
     changed = {
         (delta["item_kind"], delta["item_id"])
         for change in Change.query.filter_by(diagram_id=diagram_id, turn_id=turn_id)
@@ -45,6 +59,7 @@ def observe(diagram_id: int, turn_id: str, data: DiagramData) -> None:
     people = {item_id for kind, item_id in changed if kind == ItemKind.Person.value} | {
         e.get("child") for e in data.events if e["id"] in events
     }
+    kept = turnstore.kept({turn_id}).get(turn_id, [])
     found = [
         *_same(
             ObservationKind.DuplicatePerson,
@@ -53,8 +68,10 @@ def observe(diagram_id: int, turn_id: str, data: DiagramData) -> None:
             lambda p: _person(data, p),
         ),
         *_same(ObservationKind.DuplicateEvent, data.events, events, record.twin_key),
-        *_unread(turn_id),
+        *_unread(kept),
         *_unsaid(diagram_id, turn_id, data),
+        *_refused(kept),
+        *_capped(kept),
     ]
     for kind, detail in found:
         db.session.add(
@@ -125,11 +142,11 @@ def _unsaid(diagram_id: int, turn_id: str, data: DiagramData) -> list:
     ]
 
 
-def _unread(turn_id: str) -> list:
+def _unread(kept: list[dict]) -> list:
     """Adds made before the turn's first read: the coach added without
     looking at what the record already holds."""
     adds = []
-    for event in turnstore.kept({turn_id}).get(turn_id, []):
+    for event in kept:
         if event["type"] != TurnEventKind.ToolCall.value:
             continue
         if event["name"] in READS:
@@ -137,7 +154,43 @@ def _unread(turn_id: str) -> list:
         if (
             event["name"] in ADDS
             and event["args"].get("id") is None
-            and not event.get("refused")
+            and not event.get("refusal")
         ):
             adds.append({"name": event["name"], "args": event["args"]})
     return [(ObservationKind.AddWithoutRead, {"calls": adds})] if adds else []
+
+
+def _refused(kept: list[dict]) -> list:
+    """Each call the record refused, and whether the coach made the same tool
+    work later in the turn."""
+    # calls kept before 2026-09-24 carry no refusal field
+    calls = [
+        dict(e, refusal=e.get("refusal"))
+        for e in kept
+        if e["type"] == TurnEventKind.ToolCall.value
+    ]
+    return [
+        (
+            ObservationKind.ToolRefused,
+            {
+                "tool": call["name"],
+                "refusal": call["refusal"],
+                "retried": any(
+                    later["name"] == call["name"] and later["refusal"] is None
+                    for later in calls[i + 1 :]
+                ),
+                "reason": f"{call['name']}: {tuning.reason(call['refusal'])}",
+            },
+        )
+        for i, call in enumerate(calls)
+        if call["refusal"] is not None
+    ]
+
+
+def _capped(kept: list[dict]) -> list:
+    """The coach used every tool step it had since the turn last failed, so it
+    was made to stop and answer."""
+    since = [TurnEventKind.Failed.value] + [e["type"] for e in kept]
+    last = len(since) - since[::-1].index(TurnEventKind.Failed.value)
+    steps = since[last:].count(TurnEventKind.Step.value)
+    return [(ObservationKind.StepCap, {"steps": steps})] if steps >= MAX_STEPS else []

@@ -229,11 +229,105 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "with t as (select mc.turn_id, min(mc.created_at) as at from model_calls mc join users u on u.id=mc.user_id where u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by mc.turn_id) select $__timeGroupAlias(t.at,'1d'), k.kind as metric, count(o.id)::float/count(distinct t.turn_id) as value from t cross join (select unnest(enum_range(null::observationkind))::text as kind) k left join observations o on o.turn_id = t.turn_id and o.kind::text = k.kind group by 1, k.kind order by 1",
+          "rawSql": "with t as (select mc.turn_id, min(mc.created_at) as at from model_calls mc join users u on u.id=mc.user_id where u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by mc.turn_id) select $__timeGroupAlias(t.at,'1d'), k.kind as metric, count(o.id)::float/count(distinct t.turn_id) as value from t cross join (select unnest(enum_range(null::observationkind))::text as kind) k left join observations o on o.turn_id = t.turn_id and o.kind::text = k.kind where k.kind not in ('tool_refused','step_cap','turn_failed','turn_declined','play_refused','play_failed') group by 1, k.kind order by 1",
           "refId": "A"
         }
       ],
       "id": 4
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "timeseries",
+      "title": "Refused tool calls, used-up turns and failures per day, by kind",
+      "description": "Counts per day: a tool call the record refused, a turn that used every tool step, a coach reply that failed or that every model declined, a play-by-play telling the checks handed back, and a play-by-play that was never told. Each is grouped into the queue below.",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "showPoints": "always",
+            "spanNulls": true,
+            "fillOpacity": 0
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(o.created_at,'1d'), o.kind::text as metric, count(*) as value from observations o join diagrams d on d.id = o.diagram_id join users u on u.id = d.user_id where u.username not like 'claude-test%' and $__timeFilter(o.created_at) and o.kind::text in ('tool_refused','step_cap','turn_failed','turn_declined','play_refused','play_failed') group by 1, 2 order by 1",
+          "refId": "A"
+        }
+      ],
+      "id": 11
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "table",
+      "title": "Tuning queue: the ten biggest groups not yet rejected",
+      "description": "Every observation grouped by its kind and its reason with ids, dates and quoted values taken out, most often first, over all time. Reject a group with: flask admin observations reject <key>.",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 33
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with g as (select o.kind::text as kind, coalesce(o.detail->>'reason','') as reason, o.turn_id, o.created_at from observations o join diagrams d on d.id = o.diagram_id join users u on u.id = d.user_id where u.username not like 'claude-test%') select left(md5(kind || ':' || reason), 8) as key, kind, reason, count(*) as count, min(created_at) as first_seen, max(created_at) as last_seen, (array_agg(turn_id order by created_at desc))[1] as example_turn from g where left(md5(kind || ':' || reason), 8) not in (select key from observation_rejects) group by kind, reason order by count desc limit 10",
+          "refId": "A"
+        }
+      ],
+      "id": 12
     },
     {
       "type": "row",
@@ -243,7 +337,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 41
       },
       "panels": [],
       "id": 5
@@ -260,7 +354,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 42
       },
       "fieldConfig": {
         "defaults": {
@@ -319,7 +413,7 @@
         "h": 14,
         "w": 24,
         "x": 0,
-        "y": 34
+        "y": 50
       },
       "fieldConfig": {
         "defaults": {
@@ -385,7 +479,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 48
+        "y": 64
       },
       "fieldConfig": {
         "defaults": {},
@@ -435,7 +529,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 56
+        "y": 72
       },
       "fieldConfig": {
         "defaults": {
@@ -494,7 +588,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 66
+        "y": 82
       },
       "fieldConfig": {
         "defaults": {

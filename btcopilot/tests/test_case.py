@@ -10,7 +10,7 @@ from btcopilot.case import GUESS, Case, RecordFault, Tool, Untold, tool
 from btcopilot.playturn import Untellable
 from btcopilot import prompts, toolbox, turnstore
 from btcopilot.extensions import db
-from btcopilot.models import ModelCall, Statement, StatementKind
+from btcopilot.models import ModelCall, Observation, ObservationKind, Statement, StatementKind
 from btcopilot import playturn
 from btcopilot.playturn import PlayTurn
 from btcopilot.tests.repo import REPO
@@ -358,3 +358,45 @@ def test_the_prompt_tells_a_cluster_with_few_dates_in_one_picture_per_date():
     # R-0563, R-0571
     wanted = re.sub(r"\s+", " ", prompts.PLAY_BY_PLAY_PROMPT)
     assert "fewer when the cluster has fewer than three dates" in wanted
+
+
+def observed() -> list[tuple]:
+    return [(o.kind, o.detail) for o in Observation.query.order_by(Observation.id)]
+
+
+def test_a_telling_the_checks_hand_back_is_written_down_with_its_try(discussion):
+    # R-0517
+    model = Model(
+        said("Marcus and Delphine separated in 1980."),
+        called(Tool.PlayByPlay, **told(snapshots=SHOTS[:2])),
+        called(Tool.PlayByPlay, **told()),
+    )
+    PlayTurn.stored(record(), "apart", discussion=discussion, model=model).run()
+    assert observed() == [
+        (
+            ObservationKind.PlayRefused,
+            {"attempt": 1, "reason": "answered in words, not the tool"},
+        ),
+        (
+            ObservationKind.PlayRefused,
+            {
+                "attempt": 2,
+                "untold": "Tell it in 3 to 6 snapshots, not 2",
+                "reason": "Tell it in # to # snapshots, not #",
+            },
+        ),
+    ]
+
+
+def test_a_play_that_fails_every_try_is_written_down(discussion):
+    # R-0517
+    short = told(snapshots=SHOTS[:2])
+    model = Model(*[called(Tool.PlayByPlay, **short) for _ in range(3)])
+    with pytest.raises(Untellable):
+        PlayTurn.stored(record(), "apart", discussion=discussion, model=model).run()
+    db.session.rollback()
+    assert [d["attempt"] for k, d in observed() if k == ObservationKind.PlayRefused] == [1, 2, 3]
+    assert observed()[-1] == (
+        ObservationKind.PlayFailed,
+        {"why": "not told in 3 tries", "reason": "not told in # tries"},
+    )

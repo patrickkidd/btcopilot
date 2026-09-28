@@ -1,16 +1,19 @@
-"""What the watcher after each coach turn wrote down: people or events that
-look repeated, and adds made before any read. Each row is a candidate case for
-the coach's regression evals."""
+"""What shows the coach or the app needing tuning: people or events that look
+repeated, adds made before any read, refused tool calls, turns and
+play-by-plays that failed. Each row is a candidate case for the coach's
+regression evals; the queue groups them for Patrick to reject or take up."""
 
 import click
 
+from btcopilot import tuning
+from btcopilot.admin.guard import writes
 from btcopilot.admin.output import rows_option
 from btcopilot.models import Observation, ObservationKind
 
 
 @click.group()
 def observations():
-    """What the watcher after each coach turn noticed."""
+    """What shows the coach or the app needing tuning."""
 
 
 @observations.command("list")
@@ -39,3 +42,24 @@ def observation_list(diagram_id, kind):
         }
         for row in query.all()
     ]
+
+
+@observations.command("queue")
+@rows_option
+def observation_queue():
+    """The ten biggest groups of rows not yet rejected, test accounts left out:
+    a kind and its reason with ids taken out, most often first."""
+    return tuning.queue()
+
+
+@writes
+@observations.command("reject")
+@click.argument("key")
+@rows_option
+def observation_reject(key):
+    """Take the group with this key off the queue for good."""
+    try:
+        row = tuning.reject(key)
+    except KeyError as error:
+        raise click.ClickException(error.args[0])
+    return [{"key": row.key, "kind": row.kind, "reason": row.reason}]

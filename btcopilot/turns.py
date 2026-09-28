@@ -15,7 +15,14 @@ from btcopilot import chips, observer, turnlog, turnstore
 from btcopilot.coachmodel import Refusal
 from btcopilot.coachturn import CoachTurn, record_of
 from btcopilot.discussions import session_payload
-from btcopilot.models import Change, Discussion, Statement, StatementKind
+from btcopilot.models import (
+    Change,
+    Discussion,
+    Observation,
+    ObservationKind,
+    Statement,
+    StatementKind,
+)
 from btcopilot.turnlog import TurnEventKind
 
 _log = logging.getLogger(__name__)
@@ -122,6 +129,11 @@ def run(
     # again. The page gets the coach's sentence and the category stays here.
     except Refusal as refused:
         db.session.rollback()
+        _ended(
+            turn,
+            ObservationKind.TurnDeclined,
+            {"category": refused.category, "reason": str(refused.category)},
+        )
         _unanswered(turn, statement_id, {"type": TurnEventKind.Refused.value})
         turnlog.clear(discussion_id)
         _log.warning(f"coach_turn {turn_id} refused: {refused.category}")
@@ -130,8 +142,14 @@ def run(
         return event
     # The one router in this file: whatever went wrong, the page is told the
     # turn ended, and the error goes on to be logged and retried as usual.
-    except Exception:
+    except Exception as error:
         db.session.rollback()
+        # the message can quote the record, so only the error's kind groups it
+        _ended(
+            turn,
+            ObservationKind.TurnFailed,
+            {"error": f"{type(error).__name__}: {error}", "reason": type(error).__name__},
+        )
         failed = {"type": TurnEventKind.Failed.value, "message": BROKE}
         _unanswered(turn, statement_id, failed)
         turnlog.clear(discussion_id)
@@ -154,6 +172,16 @@ def _unanswered(turn: CoachTurn, statement_id: int, ending: dict) -> None:
         {"statement_id": statement_id}
     )
     _keep(turn, ending)
+
+
+def _ended(turn: CoachTurn, kind: ObservationKind, detail: dict) -> None:
+    """How a turn that gave no reply ended, kept for the tuning queue; written
+    before the turn's events and kept with them."""
+    db.session.add(
+        Observation(
+            diagram_id=turn.diagram.id, turn_id=turn.turn_id, kind=kind, detail=detail
+        )
+    )
 
 
 def _keep(turn: CoachTurn, ending: dict) -> None:

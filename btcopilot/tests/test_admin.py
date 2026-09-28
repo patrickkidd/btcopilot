@@ -9,6 +9,7 @@ import pytest
 from alembic.script import ScriptDirectory
 
 import btcopilot
+from btcopilot import tuning
 from btcopilot.admin import admin
 from btcopilot.admin import guard, setting, skill
 from btcopilot.admin.database import config
@@ -118,6 +119,45 @@ def test_observations_list_by_kind(run, test_user):
     ]
 
 
+def refusal(test_user, turn_id: str, said: str):
+    db.session.add(
+        Observation(
+            diagram_id=test_user.free_diagram_id,
+            turn_id=turn_id,
+            kind=ObservationKind.ToolRefused,
+            detail={"reason": tuning.reason(said)},
+        )
+    )
+
+
+def test_the_queue_groups_rows_whose_reasons_differ_only_in_ids(run, test_user):
+    # R-0517
+    refusal(test_user, "t1", "edit_event: No person 12 in the record")
+    refusal(test_user, "t2", "edit_event: No person 40 in the record")
+    refusal(test_user, "3f2a9c01d4", "show: It asked for 'tri', which is not one of the kinds.")
+    db.session.commit()
+    queued = rows(run("observations", "queue", "--json"))
+    assert [(q["reason"], q["count"], q["example_turn"]) for q in queued] == [
+        ("edit_event: No person # in the record", 2, "t2"),
+        ("show: It asked for '…', which is not one of the kinds.", 1, "3f2a9c01d4"),
+    ]
+
+
+def test_a_rejected_group_leaves_the_queue_and_stays_off(run, test_user):
+    # R-0517
+    refusal(test_user, "t1", "edit_event: No person 12 in the record")
+    refusal(test_user, "t2", "show: No people were named.")
+    db.session.commit()
+    queued = rows(run("observations", "queue", "--json"))
+    key = next(q["key"] for q in queued if q["reason"].startswith("edit_event"))
+    run("observations", "reject", key)
+    refusal(test_user, "t3", "edit_event: No person 99 in the record")
+    db.session.commit()
+    assert [q["reason"] for q in rows(run("observations", "queue", "--json"))] == [
+        "show: No people were named."
+    ]
+
+
 def test_import_dry_run_counts_and_writes_nothing(run, tmp_path):
     # R-0327
     dump = olddump.build(tmp_path / "old.db")
@@ -168,7 +208,8 @@ def test_db_upgrade_builds_the_chain_from_empty(flask_app, tmp_path):
 
 READS = {
     "users list", "users show", "licences list", "licences plans", "diagrams list",
-    "diagrams show", "diagrams export", "observations list", "imports dry-run",
+    "diagrams show", "diagrams export", "observations list", "observations queue",
+    "imports dry-run",
     "token-cap show",
     "review agenda", "review cuts", "review codings", "review nudge show",
     "db current", "skill", "run",

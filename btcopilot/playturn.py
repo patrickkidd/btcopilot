@@ -21,12 +21,18 @@ import uuid
 import anthropic
 
 from btcopilot.extensions import db
-from btcopilot import recordtext, turnstore
+from btcopilot import recordtext, turnstore, tuning
 from btcopilot.case import Case, RecordFault, Tool, Untold, faults, tool
 from btcopilot.coachmodel import CoachModel
 from btcopilot.coachturn import Metered
 from btcopilot.llmutil import ANTHROPIC_TIMEOUT
-from btcopilot.models import Discussion, Statement, StatementKind
+from btcopilot.models import (
+    Discussion,
+    Observation,
+    ObservationKind,
+    Statement,
+    StatementKind,
+)
 from btcopilot import prompts
 from btcopilot.schema import DiagramData
 
@@ -165,17 +171,27 @@ class PlayTurn:
     def _tell(self, system: str, messages: list[dict], events: list[dict]) -> Case:
         try:
             return self._tries(system, messages, events)
+        except Untellable as untellable:
+            self._observe(
+                ObservationKind.PlayFailed,
+                {"why": untellable.why, "reason": tuning.reason(untellable.why)},
+            )
+            raise
         finally:
             # every call is charged, the ones that told nothing too
             db.session.commit()
 
     def _tries(self, system: str, messages: list[dict], events: list[dict]) -> Case:
-        for _ in range(TRIES):
+        for attempt in range(1, TRIES + 1):
             turn = self._call(system, messages)
             call = next((c for c in turn.calls if c.name == Tool.PlayByPlay), None)
             if call is None:
                 # an answer in words: asked again for the one call it must make
                 _log.info("Play answered in words; asked for the call")
+                self._observe(
+                    ObservationKind.PlayRefused,
+                    {"attempt": attempt, "reason": "answered in words, not the tool"},
+                )
                 messages = messages + [
                     {"role": "assistant", "content": turn.blocks},
                     {"role": "user", "content": ASK},
@@ -185,6 +201,14 @@ class PlayTurn:
                 return Case.told(call.args, self.cluster, events)
             except Untold as untold:
                 _log.info(f"Case handed back: {untold}")
+                self._observe(
+                    ObservationKind.PlayRefused,
+                    {
+                        "attempt": attempt,
+                        "untold": str(untold),
+                        "reason": tuning.reason(str(untold)),
+                    },
+                )
                 messages = messages + [
                     {"role": "assistant", "content": turn.blocks},
                     {
@@ -200,6 +224,19 @@ class PlayTurn:
                     },
                 ]
         raise Untellable(f"not told in {TRIES} tries")
+
+    def _observe(self, kind: ObservationKind, detail: dict) -> None:
+        """Kept for the tuning queue; a play asked for outside a session belongs
+        to no record, so it keeps nothing."""
+        if self.discussion is not None:
+            db.session.add(
+                Observation(
+                    diagram_id=self.discussion.diagram_id,
+                    turn_id=self.turn_id,
+                    kind=kind,
+                    detail=detail,
+                )
+            )
 
     def _call(self, system: str, messages: list[dict]):
         words = self.model.turn(system, messages, [tool()])

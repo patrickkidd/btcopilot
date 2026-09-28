@@ -8,6 +8,7 @@ Invented names only.
 import pytest
 from mock import patch
 
+from btcopilot.coachmodel import Refusal
 from btcopilot.extensions import db
 from btcopilot import turns
 from btcopilot.models import Observation, ObservationKind
@@ -156,8 +157,97 @@ def test_a_failed_turn_is_written_down_and_trying_again_does_not_write_it_twice(
         body = post(web, token).get_json()
     with pytest.raises(RuntimeError):
         turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
-    assert [kind for kind, _ in seen()] == [ObservationKind.AddWithoutRead]
+    assert seen() == [
+        (
+            ObservationKind.TurnFailed,
+            {"error": "RuntimeError: the model went away", "reason": "RuntimeError"},
+        ),
+        (
+            ObservationKind.AddWithoutRead,
+            {"calls": [{"name": "edit_person", "args": {"name": "Nell"}}]},
+        ),
+    ]
 
     coach(monkeypatch, Model(said("Nell is your sister, then.")))
     resume(web, token, body["turn_id"])
-    assert [kind for kind, _ in seen()] == [ObservationKind.AddWithoutRead]
+    assert sorted(kind for kind, _ in seen()) == [
+        ObservationKind.AddWithoutRead,
+        ObservationKind.TurnFailed,
+    ]
+
+
+def test_a_refused_tool_call_is_written_down_with_whether_its_retry_worked(
+    web, token, test_user, monkeypatch
+):
+    # R-0517
+    record(test_user)
+    coach(
+        monkeypatch,
+        Model(
+            called(ToolName.ReadPeople),
+            called(ToolName.Show, kind="triangle"),
+            called(ToolName.EditEvent, kind="noted", person=1, date_certainty="certain"),
+            called(
+                ToolName.EditEvent,
+                kind="noted",
+                person=1,
+                description="Moved to Arizona",
+                date_certainty="certain",
+            ),
+            said("The move is in."),
+        ),
+    )
+    post(web, token, "Show me the triangle; we moved to Arizona.")
+    assert [d for k, d in seen() if k == ObservationKind.ToolRefused] == [
+        {
+            "tool": "show",
+            "refusal": "No people were named.",
+            "retried": False,
+            "reason": "show: No people were named.",
+        },
+        {
+            "tool": "edit_event",
+            "refusal": "A noted event needs a few words saying what happened.",
+            "retried": True,
+            "reason": "edit_event: A noted event needs a few words saying what happened.",
+        },
+    ]
+
+
+def test_a_turn_that_used_every_step_is_written_down(
+    web, token, test_user, monkeypatch
+):
+    # R-0517
+    record(test_user)
+    monkeypatch.setattr("btcopilot.coachturn.MAX_STEPS", 2)
+    monkeypatch.setattr("btcopilot.observer.MAX_STEPS", 2)
+    coach(
+        monkeypatch,
+        Model(
+            called(ToolName.ReadPeople),
+            called(ToolName.ReadPeople),
+            said("Wren is in the record."),
+        ),
+    )
+    post(web, token, "Who is in there?")
+    assert seen() == [(ObservationKind.StepCap, {"steps": 2})]
+
+
+class Declines(Model):
+    def turn(self, system, messages, tools, turn_id=""):
+        raise Refusal("declined", "cyber")
+        yield
+
+
+def test_a_turn_every_model_declined_is_written_down(
+    web, token, test_user, monkeypatch
+):
+    # R-0517
+    record(test_user)
+    coach(monkeypatch, Declines())
+    with patch("btcopilot.turns.enqueue"):
+        body = post(web, token).get_json()
+    turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
+    assert seen() == [
+        (ObservationKind.TurnDeclined, {"category": "cyber", "reason": "cyber"})
+    ]
