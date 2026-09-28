@@ -365,7 +365,7 @@ def observed() -> list[tuple]:
 
 
 def test_a_telling_the_checks_hand_back_is_written_down_with_its_try(discussion):
-    # R-0517
+    # R-0517, R-0579
     model = Model(
         said("Marcus and Delphine separated in 1980."),
         called(Tool.PlayByPlay, **told(snapshots=SHOTS[:2])),

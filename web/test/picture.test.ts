@@ -185,7 +185,7 @@ describe("how wide the resting line is drawn", () => {
     expect(only.right - only.left).toBeGreaterThanOrEqual(39);
   });
 
-  // R-0381
+  // R-0381, R-0577
   it("never reaches past two screens, however crowded the record", () => {
     const dates = Array.from({ length: 120 }, (_, i) =>
       new Date(Date.UTC(2019, 0, 5 + i * 15)).toISOString().slice(0, 10),
@@ -201,7 +201,7 @@ describe("how wide the resting line is drawn", () => {
     expect(width).toBe(2 * PHONE);
   });
 
-  // R-0381
+  // R-0381, R-0577
   it("parks the present at the right edge, one screen of line behind it", () => {
     const dates = ["2019-01-05", "2020-08-01", "2020-09-01", "2023-12-01"];
     const width = restWidth(

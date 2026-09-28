@@ -1651,8 +1651,8 @@ Not the chat app: b8769210-d27b-4e72-865e-08a8f211cb70 (the Pro app's update fee
 
 **Open.** The coach producing a snapshot's point, facts, guess and closing question live is proven only by Claude Code subscription replies and one real explain on production, not a full eval. Nothing yet holds a play-by-play to three to six snapshots; real cases have shown as many as eleven and seventeen. Several of the pbp-builder's new test files do not yet cite the rulings they prove, which the coverage guard will keep flagging until they do.
 
-## 2026-09-28 — FD-363: the queued batch deployed, the pill strip's editor question ruled, the corpus caught up
-<!-- session: 0ae5e927 · flushed: 2026-09-28 -->
+## 2026-09-28 — FD-363: two batches deployed (the pill strip, then the restored timeline zoom, explain's caching and the tuning queue), five more rulings, the corpus caught up
+<!-- session: 0ae5e927 · flushed: 2026-09-28T15:51:23Z -->
 
 **What this thread was for.** Corpus maintenance alongside the main build: deploying the batch
 queued from the two prior sessions, logging the rulings that came out of it, and keeping
@@ -1719,3 +1719,85 @@ done; "Live on production now" was rewritten for 07b9d8b; the stale "migration g
 statements" and "pill strip is next" open items were dropped as done. TOPICS.md's T-1 (shipping
 the beta), T-5 (picture and interface rulings), T-9 (process) and T-11 (platform) were each
 revised for today's deploy, rulings and open items.
+
+**Second deploy of the day.** Commit 8ad08dc (image 3.2026.9.28.8+g8ad08dc, database
+1b00000000b4, run 36443507214), dispatched from the ticket branch. It carried three things: the
+timeline's zoom, width, scroll and open position restored to exactly what they were before the
+pill strip, with snap points now rounded to whole pixels so a pill tap never moves the line;
+explain reusing a cluster's last play-by-play telling until its events, the people and bonds it
+draws, or the play prompt itself change, so a repeat explain of an unchanged cluster makes no
+model call (verified on production: a second explain on the claude-test account made no call);
+and six new kinds of failure — a refused tool call, a refused or failed play, a failed turn, a
+turn that used every step, and a turn every model declined — written down as observations,
+grouped into a queue of at most ten, and shown on the quality dashboard's new "Tuning queue"
+panel, readable and dismissible from the command line.
+
+**Rulings, R-0576 to R-0580.** He said to cache one play-by-play telling per cluster until its
+events change, since retelling an unchanged one is a model call for no gain [R-0576]. On the
+timeline's zoom, he was specific: it had to go back to exactly what it was before the pill strip,
+not some new zoom amount or behaviour someone made up; R-0381 (the sliding line) was never
+actually superseded by the pill strip, so it comes off STATE's list of rulings waiting on his
+yes, and only R-0402 (the crowded-line ruling) stays there [R-0577]. He then widened the standing
+architectural rule that everything the app does should feed a loop that improves it [R-0517]: any
+signal anywhere that a part of the app needs tuning — his example was a refusal warning with a
+retry — should be caught automatically, put on a dashboard, and turned into a short list of fixes
+he can accept or reject; be aggressive about what gets caught, short of turning it into a research
+project for him, and keep the list he actually reads to about ten items, always [R-0578]. He
+approved the concrete first case behind that: sending a bad tool call back to the coach with a
+logged warning and a retry, rather than failing the turn [R-0579]. And he said, generally and for
+good: replies to him should name the actual table, column, file or screen rather than reach for
+vague, abstract language — narrows R-0523 [R-0580].
+
+**Keeping the store readable.** Adding five rulings pushed the index a few hundred bytes over its
+150,000-byte ceiling again. Brought back under it the same way as before, never by dropping a
+fact: a 94-byte origin annotation repeated on nine older rulings ("rule wording agent-derived from
+STATE.md \"Owner review round 1\"; not directly quoted") was shortened to "agent-derived wording,
+round 1", and the five new statements themselves were tightened. Two of the five new rulings'
+tags (R-0577, R-0578, R-0579) had to be swapped for ones in the code's closed `Tag` enum — the
+first drafts used tags ("timeline", "zoom", "tools", "reliability", "learning-loop") that do not
+exist there, caught by the conventions guard, replaced with valid ones (picture/scrolling;
+architecture/evaluation/observability; coach/architecture) with no change in meaning.
+
+**Citing tests, not new ones.** Every ruling this session's code already had tests for, written
+before the ruling had an id (their commits say "Pending ruling"); the work was adding each
+ruling's id to the citation comment on the tests that already proved it, not writing new tests.
+R-0576 (3 citations owed) went on three tests in `test_playcache.py` proving no call on an
+unchanged cluster, a call again once it changes, and a kept play joining another session with no
+call; its module docstring's quoted "pending ruling" text was replaced with the id, since a
+literal quote of a ruling's own words is not allowed outside the store. R-0577 (2) went on the two
+`picture.test.ts` tests proving the width never passes two screens and the present sits parked at
+the right edge. R-0578 (3) went on the two `test_admin.py` tests proving the queue groups and a
+rejected group stays off, plus the `test_observer.py` test proving a failed turn is written down
+automatically. R-0579 (2) went on the `test_observer.py` test proving a refused tool call is
+written down with whether its retry worked, and the `test_case.py` test proving a play-by-play
+telling the checks hand back is written down with its own tries. R-0580 carries the `process` tag,
+which excuses a comms/process ruling from needing a citing test at all.
+
+**A leak the guard caught, twice.** The conventions guard that looks for oracle wording leaking
+into tracked files outside the store flagged this session's own new writing: first, a docstring
+in `test_playcache.py` quoting his exact words (fixed above); then, this file's own T-13 topic
+block in doc/TOPICS.md, whose first draft of the "Decided" paragraph ran twelve or more words
+verbatim from the new rulings' own statements. Both were reworded to say the same things in
+different words, since the guard exists so nothing in the private store's own phrasing sits in a
+public, unencrypted file.
+
+**Guards and suites.** The oracle guards, 6 of 6. Fingerprints re-pinned twice — once after adding
+the five rulings, again after the wording was tightened for size — with `bin/fingerprints.py`.
+The full non-conventions Python suite: 704 passed, 26 skipped, 1 xfailed, and one failure,
+`test_promptfiles.py::test_the_open_source_prompts_say_what_their_constants_said`, which passes
+alone but fails when run after `test_playcache.py`; not something this session's edits caused —
+the diff to that file this session made is comments and a docstring only, confirmed against the
+diff — but a real test-isolation bug worth a builder's look: something in the play-prompt-tuning
+test's `monkeypatch.setattr` on `prompts.PLAY_BY_PLAY_PROMPT` is not fully undone before the next
+test reloads the module. The web unit suite: 347 passed, 33 files. The `picture.test.ts` file,
+edited for its new citation, re-run alone: 23 passed.
+
+**doc/STATE.md and doc/TOPICS.md.** STATE's "Open, waiting on his yes" note was cut down to only
+R-0402, with R-0381 marked resolved; a new deploy paragraph for 8ad08dc was added describing all
+three changes; a second "Rulings appended" summary paragraph lists R-0576 to R-0580 the same way
+the first batch's summary does. TOPICS.md: T-1 (shipping the beta) got the second deploy folded
+into its status and open items; T-5 (picture and interface rulings) had its duplicated R-0381/
+R-0402 note fixed in two places and its next action pointed at the new batch; T-11 (platform) got
+a one-line deploy note; a new topic, T-13, was opened for the tuning queue and explain's caching,
+since neither belongs under T-5 (interface) and the existing T-12 (the outward-looking scout,
+retired) is a different mechanism entirely, not touched.

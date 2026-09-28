@@ -459,11 +459,34 @@ event at a time — clusters are what matter, since a cluster leads to the play-
 Process: work stays in a single worktree per ticket rather than spinning up many branches; the
 merge rules only guard master [R-0575].
 
+**Deployed 2026-09-28: commit 8ad08dc, image 3.2026.9.28.8+g8ad08dc, database at
+1b00000000b4 (run 36443507214).** Three changes:
+- The timeline's width, its start at the present, its swipe and snap, and its return to the
+  present are carried over exactly from before the pill strip (commit 8974698), on his word that
+  he wanted the zoom to stay exactly as it was [R-0381, R-0577]. The only change: snap points
+  are rounded to whole pixels, so tapping a pill never moves the line [R-0542].
+- Explain reuses a cluster's newest play-by-play telling, held in the `statements` table, while
+  its `digest` column still matches. The digest covers everything the drawer draws for that
+  cluster — the cluster, its events, the people it draws and their parents, its pair-bonds
+  including married state — plus the play prompt's own text, so a change to the prompt also
+  retells it [R-0576]. Migration 1b00000000b3 adds the column. Verified on production: a second
+  explain on the claude-test account made no model call.
+- New `observations` kinds: tool_refused, play_refused, play_failed, turn_failed, step_cap and
+  turn_declined feed the tuning queue, at most ten groups, read with `flask admin observations
+  queue` and dismissed with `flask admin observations reject <key>`, which stores the key in the
+  new table `observation_rejects` (migration 1b00000000b4). The quality dashboard gained per-day
+  counts and a "Tuning queue" panel. Refusing bad tool input back to the coach with a warning log
+  and a retry is the approved pattern behind this [R-0579]; being aggressive about what gets
+  tracked, dashboarded and queued for his later yes/no, on every signal that shows the coach or
+  the app needs tuning, is now the binding rule everywhere, not just here [R-0578, refines
+  R-0517].
+
 **Open, waiting on his yes:** the pill strip's one-screen line (R-0543) contradicts the earlier
-sliding-line ruling [R-0381] and the earlier crowded-line ruling [R-0402]; neither is
-superseded until he says so. A ruling candidate with no id yet, needing his yes: "after a
-deploy, the home-screen app loads the new release when it comes back to the front" — its tests
-cite R-0486 until then.
+crowded-line ruling [R-0402]; not superseded until he says so. R-0381 stands: he confirmed the
+timeline's zoom, width, scroll and open position return exactly to what they were before the
+pill strip, with no new zoom behaviour invented [R-0577], so it comes off this list. A ruling
+candidate with no id yet, needing his yes: "after a deploy, the home-screen app loads the new
+release when it comes back to the front" — its tests cite R-0486 until then.
 
 Open for the next session: the first tap right after a rollout can hit a 502 while the
 container comes back up; the ~/btcopilot move still waits for the next session.
@@ -567,6 +590,15 @@ to edit (R-0572, supersedes R-0207); the timeline is not meant for selecting ind
 only clusters (R-0573); a one-time exception to R-0417 for the first migration's table-order
 rewrite, since that revision never ran in production (R-0574); development stays in one
 worktree per ticket, not many branches, and the merge rules only guard master (R-0575).
+
+**Rulings appended 2026-09-28, second batch: R-0576 to R-0580**, each with his words in the
+evidence file: explain caches a cluster's play-by-play telling until its events change (R-0576);
+the timeline's zoom stays exactly as it was before the pill strip, no new behaviour invented,
+which leaves R-0381 standing (R-0577); every signal a learning loop is needed anywhere in the
+app is tracked, dashboarded and queued for his later yes/no, kept to about ten items, refining
+R-0517 (R-0578); a bad tool call from the coach is refused back to it with a warning log and a
+retry (R-0579); replies to him name the actual table, column, file or screen, narrowing R-0523
+(R-0580).
 
 **Rulings appended 2026-09-26: R-0519 to R-0531**, each with his words in the evidence file:
 the provisional label (R-0519), the coach's notes and their buttons (R-0520 to R-0522, R-0529),

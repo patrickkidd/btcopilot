@@ -1873,3 +1873,24 @@ ticket, since the merge rules exist only to guard master [R-0575].
 
 R-0381 and R-0402 are contradicted by the pill strip's one-screen line but were left standing,
 pending his yes to supersede them.
+
+## 2026-09-28: A second batch deployed; explain caches a telling until it goes stale; the tuning queue widens the learning-loop rule
+
+Deployed at commit 8ad08dc: the timeline's zoom, width, scroll and open position restored to
+exactly what they were before the pill strip, with snap points rounded to whole pixels; explain
+reusing a cluster's last play-by-play telling until its events, the people and bonds it draws, or
+the play prompt change; and six new kinds of failure written down as observations, grouped into a
+queue of at most ten, and shown on the quality dashboard's new "Tuning queue" panel.
+
+Patrick ruled explain should cache one play-by-play telling per cluster until its events change,
+since retelling an unchanged one is a model call for no gain [R-0576]. He confirmed the
+timeline's zoom had to return to exactly what it was before the pill strip, not some new zoom
+behaviour invented for it; R-0381 was never actually superseded, so only R-0402 stays on STATE's
+list of rulings waiting on his yes [R-0577]. He widened the standing rule that everything the app
+does should feed a loop that improves it [R-0517]: any signal anywhere that a part of the app
+needs tuning should be caught automatically, dashboarded and queued as a short list he can accept
+or reject, aggressively, short of turning it into a research project, with the list he reads held
+to about ten items [R-0578]. He approved the first concrete case: a bad tool call is refused back
+to the coach with a logged warning and a retry, rather than failing the turn [R-0579]. And he
+ruled, for good: replies to him name the actual table, column, file or screen rather than vague,
+abstract language [R-0580].

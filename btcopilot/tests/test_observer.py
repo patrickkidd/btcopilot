@@ -150,7 +150,7 @@ def test_an_add_before_any_read_is_written_down(web, token, test_user, monkeypat
 def test_a_failed_turn_is_written_down_and_trying_again_does_not_write_it_twice(
     web, token, test_user, monkeypatch
 ):
-    # R-0477, R-0482
+    # R-0477, R-0482, R-0578
     record(test_user)
     coach(monkeypatch, Breaks(called(ToolName.EditPerson, name="Nell")))
     with patch("btcopilot.turns.enqueue"):
@@ -179,7 +179,7 @@ def test_a_failed_turn_is_written_down_and_trying_again_does_not_write_it_twice(
 def test_a_refused_tool_call_is_written_down_with_whether_its_retry_worked(
     web, token, test_user, monkeypatch
 ):
-    # R-0517
+    # R-0517, R-0579
     record(test_user)
     coach(
         monkeypatch,

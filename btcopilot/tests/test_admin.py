@@ -131,7 +131,7 @@ def refusal(test_user, turn_id: str, said: str):
 
 
 def test_the_queue_groups_rows_whose_reasons_differ_only_in_ids(run, test_user):
-    # R-0517
+    # R-0517, R-0578
     refusal(test_user, "t1", "edit_event: No person 12 in the record")
     refusal(test_user, "t2", "edit_event: No person 40 in the record")
     refusal(test_user, "3f2a9c01d4", "show: It asked for 'tri', which is not one of the kinds.")
@@ -144,7 +144,7 @@ def test_the_queue_groups_rows_whose_reasons_differ_only_in_ids(run, test_user):
 
 
 def test_a_rejected_group_leaves_the_queue_and_stays_off(run, test_user):
-    # R-0517
+    # R-0517, R-0578
     refusal(test_user, "t1", "edit_event: No person 12 in the record")
     refusal(test_user, "t2", "show: No people were named.")
     db.session.commit()

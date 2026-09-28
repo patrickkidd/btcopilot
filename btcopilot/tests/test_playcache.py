@@ -1,7 +1,6 @@
 """A cluster's play-by-play is told once and kept until what the coach is
-shown of the cluster changes. Pending ruling (Patrick, 2026-09-28): "we should
-cache one PBP's per cluster until the events have changed". Invented names
-only: the Whitlock stand-in family."""
+shown of the cluster changes [R-0576]. Invented names only: the Whitlock
+stand-in family."""
 
 import pytest
 import sqlalchemy as sa
@@ -25,7 +24,7 @@ def explain(data, discussion, model) -> dict:
 
 
 def test_a_second_explain_of_an_unchanged_cluster_makes_no_call(discussion):
-    # R-0563, R-0542
+    # R-0563, R-0542, R-0576
     data = record()
     model = Model(called(Tool.PlayByPlay, **told()))
     first = explain(data, discussion, model)
@@ -38,7 +37,7 @@ def test_a_second_explain_of_an_unchanged_cluster_makes_no_call(discussion):
 
 
 def test_a_play_kept_in_another_session_joins_this_one_with_no_call(discussion):
-    # R-0563, R-0542
+    # R-0563, R-0542, R-0576
     data = record()
     model = Model(called(Tool.PlayByPlay, **told()))
     first = explain(data, discussion, model)
@@ -77,7 +76,7 @@ def renamed(data):
 
 @pytest.mark.parametrize("change", [edited, added, removed, renamed])
 def test_a_changed_cluster_is_told_again(discussion, change):
-    # R-0563, R-0542
+    # R-0563, R-0542, R-0576
     data = record()
     model = Model(called(Tool.PlayByPlay, **told()))
     first = explain(data, discussion, model)

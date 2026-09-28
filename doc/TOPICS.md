@@ -36,7 +36,13 @@ event, refusals for an invalid event kind and an unknown evidence kind, a couple
 spouse refused at the writer, the first migration's table order fixed so an empty Postgres
 builds (a one-time exception to R-0417, R-0574), the dashboard's Person filter, and the sandbox
 kit moved into the repo. The first release attempt that day failed on a full disk (unpruned
-docker images); pruned by hand, not yet automatic.
+docker images); pruned by hand, not yet automatic. Later on 2026-09-28, commit 8ad08dc (database
+1b00000000b4) carried the timeline's zoom, width and scroll restored to exactly what they were
+before the pill strip with snap points rounded to whole pixels (R-0381, R-0577, R-0542); explain
+reusing a cluster's last play-by-play telling until its events or the play prompt change
+(R-0576); and the observations queue feeding the quality dashboard's new "Tuning queue" panel
+from refused tool calls, refused or failed plays, failed turns, step caps and declined turns
+(R-0578, R-0579).
 **Decided:** one server for Pro, training and the chat app; old Pro diagrams stay pickle and
 new rows are JSON in the same column [Oracle: R-0241]; the beta users are the app working
 group of three clinicians [R-0079]; sign-in is passwordless with Face ID on a capable phone;
@@ -65,16 +71,18 @@ proven to replay for each case's first call only; one paid run followed by a rep
 proves the rest; (9) [verify] the message-box fix is checked in desktop WebKit, not yet on his
 iPhone; (10) [build] the release workflow does not prune old docker images, so the box's disk
 filled and stopped the 2026-09-28 deploy until it was pruned by hand; (11) [ruling] the pill
-strip's one-screen line (R-0543) contradicts the earlier sliding-line ruling [R-0381] and the
-crowded-line ruling [R-0402]; neither is superseded until he says so; (12) [ruling] a candidate
-with no id yet needs his yes: "after a deploy, the home-screen app loads the new release when
-it comes back to the front"; its tests cite R-0486 until then.
+strip's one-screen line (R-0543) contradicts the earlier crowded-line ruling [R-0402]; not
+superseded until he says so (R-0381 is resolved: it stands, unchanged by the pill strip
+[R-0577]); (12) [ruling] a candidate with no id yet needs his yes: "after a deploy, the
+home-screen app loads the new release when it comes back to the front"; its tests cite R-0486
+until then; (13) [verify] the 8ad08dc batch — the restored timeline zoom, explain's caching,
+and the tuning queue — is deployed but untested by him.
 **Lives in:** btcopilot PR #138 (branch FD-363, open, not merged); doc/STATE.md; the private
 corpus's PREDEPLOY_TESTING_RULES.md, session-dc02180f/ and
 session-b147ab7f/; deploy/; .github/workflows/release.yml; btcopilot/tests/live/replay.py; the
 backup prod-2026-09-26-0540-pre-fd363-5b2a6bb.dump in btcopilot-sources.
-**Next action:** he tests the 07b9d8b batch in his own thread, including the pill strip and the
-cluster-select slide fix.
+**Next action:** he tests the 8ad08dc batch in his own thread, including the pill strip, the
+restored timeline zoom, and the tuning queue on the quality dashboard.
 **Updated:** 2026-09-28.
 
 ## T-2 · The coach knows the clinical definitions, and we can measure it
@@ -394,8 +402,9 @@ yet; (8) [build] grouping is the coach's judgement with a one-line scope and the
 the automatic draft [R-0287]; the nodal ring stays and its flag follows the clinical definition
 [R-0283]; no trend lines until real data [R-0284]; (9) [build] the event editor's relationship
 fields; (10) [ruling] the pill strip's one-screen line (R-0543) contradicts the earlier
-sliding-line ruling [R-0381] and the crowded-line ruling [R-0402]; neither is superseded until
-he says so; (11) [waiting] the gap between a cluster's
+crowded-line ruling [R-0402]; not superseded until he says so. R-0381 no longer waits: he
+confirmed the timeline's zoom, width, scroll and open position stay exactly what they were
+before the pill strip, deployed 2026-09-28 [R-0577]; (11) [waiting] the gap between a cluster's
 opening event and its symptom waits for a record with enough data [R-0382]; (12) [waiting] the
 family drawing waits for the traditional diagram and automatic arrangement [R-0379], and the
 lanes of generations wait for a record that carries shocks between households [R-0380];
@@ -431,9 +440,9 @@ https://claude.ai/artifact/AfUU6Pzq2vaLPm3QvY7BH7 ; the SARF brainstorm and the 
 contracts in the private corpus's session-dc02180f/; the play-by-play step shots, the sheet and
 the survey of 56 clusters in the private corpus's session-b147ab7f/; the play-by-play build
 brief at ~/theapp/btcopilot-sources/fd-corpus/design/playbyplay-snapshots/BUILD_BRIEF.md.
-**Next action:** he tests the 07b9d8b batch on production, including the pill strip, and rules
-on whether R-0381 and R-0402 are superseded by it; the chalkboard and the SARF story resume on
-Fable after the frame.
+**Next action:** he tests the 8ad08dc batch on production, including the pill strip and the
+restored timeline zoom, and rules on whether R-0402 is superseded by it (R-0381 is resolved,
+standing); the chalkboard and the SARF story resume on Fable after the frame.
 **Updated:** 2026-09-28.
 
 ## T-6 · Clusters by example
@@ -693,13 +702,16 @@ GitHub environment named production that only branch FD-363 may use, runs only o
 dispatch and checks out the dispatched commit on the box [R-0530]. Until then every deploy ran
 by hand on the box because the host setting was missing. A repository-wide host setting that
 would have deployed master was created and removed the same hour. The first dispatch through
-the environment ran 2026-09-26 (commit 2a797b0); three more followed through 2026-09-28
-(f66d603, cf62be6, 07b9d8b).
+the environment ran 2026-09-26 (commit 2a797b0); four more followed through 2026-09-28
+(f66d603, cf62be6, 07b9d8b, 8ad08dc).
 **Deploy, 2026-09-28: commit 07b9d8b.** The first release attempt of the day failed: the box's
 disk was full, about 48 GB of unpruned untagged docker images left by earlier deploys; pruned
 by hand. Open: (9) [build] the release workflow should prune old docker images itself so a full
 disk does not stop a deploy again; (10) [build] a later ticket branch needs the environment's
 branch rule widened before it can deploy.
+**Deploy, 2026-09-28: commit 8ad08dc, database 1b00000000b4, run 36443507214.** Carried the
+restored timeline zoom, explain's per-cluster caching, and the observations table feeding the
+tuning queue on the quality dashboard.
 **Next action:** he sets a spend limit on the testing workspace in the Anthropic console; he
 puts the Grafana token on the box and refreshes the dependency lock so the observability commit
 can deploy; the release workflow gets automatic image pruning.
@@ -731,3 +743,41 @@ has been measured twice, so no prediction can yet be scored.
 routines.
 **Next action:** connect the Chrome extension, then the next flush after a walk runs the scout.
 **Updated:** 2026-09-15.
+
+## T-13 · Tuning signals: refusals, retries and failures dashboarded and queued for his review
+
+**Status:** built and deployed 2026-09-28 (commit 8ad08dc). Explain no longer spends a model call
+retelling a cluster's play-by-play when nothing about it changed. Six new kinds of failure —
+tool_refused, play_refused, play_failed, turn_failed, step_cap, turn_declined — are logged as
+observations, grouped into a queue of at most ten, and shown on the quality dashboard's new
+"Tuning queue" panel. Nothing has been rejected from the queue yet; he has not looked at it.
+**Decided:** the app's standing architectural rule is that nothing it does goes to waste —
+whatever the app or the coach does should be turned into data that makes that part of the app
+better over time [R-0517]. He widened that on 2026-09-28: any hint that a piece of the coach or
+the app needs work — his example was the warning logged when a tool call is refused and then
+retried — should be caught on its own, put on a dashboard, and turned into a short list of fixes
+for him to wave through or turn down; he wants the net cast wide, stopping only short of turning
+it into a research project for him, with the list he actually reads held to around ten things at
+a time [R-0578]. Sending a bad tool call back to the coach with a logged warning and one more try,
+instead of letting the whole turn fail, is the approved shape behind that first example [R-0579].
+Explain no longer pays for a fresh telling of a cluster when nothing about it moved: it hands
+back the last telling it already wrote, keyed to a fingerprint of everything that telling reads,
+and pays again only once that fingerprint changes [R-0576]. The fingerprint — the play's `digest`
+column — takes in the cluster, its events, the people drawn and their parents, every bond
+touching one of them including married state, and the wording of the play prompt itself, so
+tuning the prompt also earns a fresh telling.
+**Open:** (1) [verify] the Tuning queue panel and `flask admin observations queue` /
+`observations reject <key>` are live but he has not opened them or rejected anything; (2) [build]
+which further failure modes belong in the six observation kinds is an ongoing judgement call
+each time a new one turns up, per R-0578's "be aggressive"; (3) [waiting] whether a queue of ten
+groups is the right size in practice waits on him seeing a real queue; (4) [verify] whether a
+saved play-by-play still replays correctly across a session boundary (the commit note says "a
+play from another session is copied into this one") is proven only by the code, not by a walk.
+**Lives in:** btcopilot/observer.py, btcopilot/tuning.py, btcopilot/playturn.py,
+btcopilot/turns.py, btcopilot/models/observation.py, btcopilot/models/observationreject.py,
+btcopilot/admin/observations.py, btcopilot/migrations/versions/1b00000000b4_tuning_queue.py,
+deploy/grafana/fd-quality.json (the "Tuning queue" panel), .claude/skills/fd-admin/SKILL.md.
+**Next action:** he opens the quality dashboard's Tuning queue panel and runs `flask admin
+observations queue` on the box, and rules on whether the six tracked kinds and the ten-group cap
+are right.
+**Updated:** 2026-09-28.
