@@ -2,11 +2,17 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-09-28 (defined-self is an action taken toward others)
+**Last Updated**: 2026-09-28 (defined-self wording held; its eval kept as a regression case)
 
 ---
 
 ## FD-363 coach — defined-self is an action taken toward others (2026-09-28)
+
+**Held for the next PR: needs a multi-turn case modelled on the 2026-09-22 conversation to
+reproduce the fault.** The prompt change below was reverted the same day; the wording is kept in
+the private corpus (`fd-corpus/private/prompts/2026-09-28-defined-self-wording.md`). The eval stays
+as a regression case at $0, its replays answered on the subscription against the old prompt
+(3 of 3 runs pass, every step noted).
 
 **Scope**: the coach's definition of the defined-self move, in `private/prompts/tool_meanings.prompty`
 (the `relationship` field's meaning) and `private/prompts/fragments/agent_record_contract.md` (the
