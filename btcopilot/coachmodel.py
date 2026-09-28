@@ -5,25 +5,25 @@ asked for. The agent loop owns the looping; this owns the wire.
 """
 
 import logging
-from dataclasses import dataclass, field
 
 import anthropic
 from opentelemetry import trace
 
+from btcopilot.geminimodel import GeminiModel
 from btcopilot.llmutil import (
-    Served,
     anthropic_args,
     fallback_args,
+    is_gemini,
+    local_model,
     resolve_model,
     served,
     wire_model,
 )
+from btcopilot.modelturn import MAX_TOKENS, ModelTurn, Refusal, Spent, ToolCall
 
 _log = logging.getLogger(__name__)
 _tracer = trace.get_tracer(__name__)
 
-# Thinking counts toward the cap even though its text is not returned.
-MAX_TOKENS = 16000
 # How hard the coach thinks before it speaks. Medium keeps the first word quick.
 COACH_EFFORT = "medium"
 HAIKU = "claude-haiku-4-5"
@@ -73,45 +73,6 @@ def marked_messages(messages: list[dict]) -> list[dict]:
     """The chat with its last block marked, so the next call in the same turn
     reads back everything this one sent."""
     return messages[:-1] + [_mark_last(messages[-1])]
-
-
-@dataclass
-class ToolCall:
-    id: str
-    name: str
-    args: dict = field(default_factory=dict)
-
-
-@dataclass
-class Spent:
-    input: int = 0
-    output: int = 0
-    cache_creation: int = 0
-    cache_read: int = 0
-
-    def add(self, other: "Spent") -> None:
-        self.input += other.input
-        self.output += other.output
-        self.cache_creation += other.cache_creation
-        self.cache_read += other.cache_read
-
-
-@dataclass
-class ModelTurn:
-    text: str = ""
-    calls: list[ToolCall] = field(default_factory=list)
-    blocks: list[dict] = field(default_factory=list)
-    spent: Spent = field(default_factory=Spent)
-    served: Served | None = None
-
-
-class Refusal(Exception):
-    """Every model in the fallback chain declined the call on safety grounds.
-    The turn fails with the category it named rather than ending in silence."""
-
-    def __init__(self, message: str, category: str | None):
-        super().__init__(message)
-        self.category = category
 
 
 class CoachModel:
@@ -245,9 +206,13 @@ def model_for(
     name: str | None = None,
     effort: str | None = COACH_EFFORT,
     timeout: float | None = None,
-) -> CoachModel:
+) -> CoachModel | GeminiModel:
     """The coach model an alias names: none is the default, an unknown one
-    raises KeyError. Haiku 4.5 rejects the effort setting, so it gets none."""
-    if resolve_model(name).startswith(HAIKU):
+    raises KeyError. Haiku 4.5 rejects the effort setting, so it gets none. The
+    local server answers every name, Gemini's included."""
+    model = resolve_model(name)
+    if is_gemini(model) and not local_model():
+        return GeminiModel(model, effort, timeout)
+    if model.startswith(HAIKU):
         effort = None
     return CoachModel(name, effort, timeout)

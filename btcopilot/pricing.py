@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
-from btcopilot.coachmodel import Spent
+from btcopilot.modelturn import Spent
 from btcopilot.llmutil import local_model
 
 MILLION = Decimal(1_000_000)
@@ -19,6 +19,7 @@ class Price:
 
 FREE = Price(Decimal(0), Decimal(0), Decimal(0), Decimal(0))
 OPUS = Price(Decimal("5.00"), Decimal("25.00"), Decimal("6.25"), Decimal("0.50"))
+FLASH = Price(Decimal("0.75"), Decimal("3.75"), Decimal(0), Decimal("0.075"))
 
 PRICES = {
     "claude-opus-4-6": OPUS,
@@ -32,6 +33,21 @@ PRICES = {
     ),
     "claude-haiku-4-5": Price(
         Decimal("1.00"), Decimal("5.00"), Decimal("1.25"), Decimal("0.10")
+    ),
+    # Google's paid-tier text rates, ai.google.dev/gemini-api/docs/pricing, read
+    # 2026-09-28. The 3.6 to 3.8 Flash rates double on 2027-01-01. Gemini keeps
+    # its cache without a write charge; thinking is billed as output.
+    "gemini-3.8-flash": FLASH,
+    "gemini-3.7-flash": FLASH,
+    "gemini-3.6-flash": FLASH,
+    "gemini-3.5-flash": Price(
+        Decimal("1.50"), Decimal("9.00"), Decimal(0), Decimal("0.15")
+    ),
+    "gemini-2.5-flash": Price(
+        Decimal("0.30"), Decimal("2.50"), Decimal(0), Decimal("0.03")
+    ),
+    "gemini-2.5-flash-lite": Price(
+        Decimal("0.10"), Decimal("0.40"), Decimal(0), Decimal("0.01")
     ),
 }
 
