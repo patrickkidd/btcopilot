@@ -1941,3 +1941,19 @@ Patrick [R-0599]. The review app gained a Compare replies page that serves blind
 from shadow turns and replays and records which one Patrick picks in a new model_picks table.
 Patrick is the only oracle on these picks, the same standing rule as everywhere else model
 quality is judged in this project.
+
+## 2026-09-28: FD-363 — the live eval suite runs on the subscription, with paid API calls kept for one calibration and the ruled end-of-batch run
+
+Patrick [R-0568]. The live suite now runs through `bin/subscribe.py` on the Claude Code
+subscription, using the coach's real system prompt and MCP tools. It was calibrated once against
+the API for 8 paid calls, $0.1563, under Patrick's approval that day. The free path judges tool
+choice, event kind, who is kept and what is asked; finer fields and wording go to the ruled
+end-of-batch API run. The pre-deploy record-in-user-message change was proven by one post-deploy
+turn on the claude-test account.
+
+## 2026-09-28: FD-363 — the rulings store is split into topic files under a 300,000-byte ceiling, and its audit lists wait for Patrick
+
+The rulings store was restructured into topic files with a generated index and a hygiene guard,
+so a new ruling no longer forces a wording trim to stay under the size ceiling. The audit file
+(18 candidate merges, 19 supersessions with 5 conflicts, 115 uncited rulings, 7 bug-report
+rulings) is applied only on Patrick's approval; no ruling was touched.

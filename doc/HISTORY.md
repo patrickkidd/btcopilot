@@ -1908,3 +1908,46 @@ restructuring to cut prompt-cache-write cost (R-0595); shadow turns on a scratch
 shown to the user (R-0596); the replay command scored against a record he corrected himself
 (R-0597); the Gemini Flash model, wired in under his Google business associate agreement
 (R-0598); the review app's Compare replies page recording his blind picks (R-0599).
+
+## 2026-09-28 — FD-363: the batch deployed as d4971526 with the cost work folded in, and the live suite moved onto the subscription
+<!-- session: session_01CyJmVmyhVNKwpSjzvSVp8s · flushed: 2026-09-28T23:00:00Z -->
+
+Commit d4971526 went to production as image 3.2026.9.28.10+gd497152, database at 1b00000000b5,
+release run 36490165725. It carried everything since a8b2245b: the shared teal × on all six
+views [R-0588, R-0589]; explain's teal replay chip [R-0590]; the chat box above the keyboard and
+compact, tap-safe chips [R-0591, R-0592]; the events list's kind marks [R-0594]; the event
+editor and caption strip fixed for iPhone Safari; fourteen record rules refused at the writer and
+the coach's tool [R-0593, R-0585]; the agenda fix [R-0267]; and the FD-363-cost work folded in
+[R-0595 to R-0599]: prompt-cache reuse with the record in the newest user message, per-user coach
+and shadow models, the fd-shadow service, Gemini settings, the Compare replies page, quality
+replay and migration 1b00000000b5. The Gemini settings are absent on the box; an empty
+placeholder file sits at /etc/fd/gcp-sa.json. Dashboards now exclude scratch diagrams. The
+rulings store was restructured into topic files with a generated index and a hygiene guard, at a
+ceiling of 300,000 bytes, with an audit file left for Patrick's approval. The standalone-clone
+setup with doc/SETUP.md, and the sandbox kit with the shadow worker, shipped in the same batch.
+
+**Production data.** Events 9 and 10 in diagram 1 are now noted events with no move and no
+functioning, by review change 642. Event 66 had been made a toward move earlier, by change 635.
+The claude-test record gained a person and a birth for the post-deploy check.
+
+**The post-deploy turn proved the record-in-user-message change.** The coach answered a birth
+year that existed only in the record, from the record. Spend: 8 paid API calls, $0.1563, all on
+the live suite's one-time calibration, approved by Patrick that day; everything else ran on the
+subscription or the local model.
+
+**The live suite runs on the subscription** with the coach's real system prompt and MCP tools
+(`bin/subscribe.py`). Calibration showed the free path judges tool choice, event kind, who is
+kept and what is asked, but not finer fields or wording; those go to the ruled end-of-batch API
+run. The efficiency skill now lives at ~/.claude/skills/efficiency with reminder, spend and audit
+modes.
+
+**Queued for the next PR.** The record-correction policy and queue (event 26, the diagram 11
+births with a prepared script in the private corpus, diagram 14); the coach prompt's
+defined-self wording, held with its multi-turn eval; the ten live cases without saved answers,
+now partly re-answered; the back-arrow and step-button visual-language pairs; the rulings store
+audit lists (18 candidate merges, 19 supersessions with 5 conflicts, 115 uncited rulings, 7
+bug-report rulings) awaiting Patrick's approval; whether Patrick's published papers may be quoted
+on the public concept pages (about 125 quote lines); four verifier gaps (the notes pop-out's ×
+12px past its header row, the (i) button and a tool line overhanging the bubble by 5 to 7px, the
+hand-edit bad-date message showing a field name, the quality replay command writing to a tracked
+ledger file); and a unit test for the calibration cap and the per-call ledger code.

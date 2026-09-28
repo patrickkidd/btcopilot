@@ -510,15 +510,58 @@ container comes back up.
    wording ships with one paid confirmation run (about 9 calls on claude-opus-5-5, $0.15 to
    $0.40). The wording is saved in the private corpus at
    prompts/2026-09-28-defined-self-wording.md.
-5. Ten other live cases fail offline because their saved replays are missing or were lost to
-   later commits; they need re-answering on the subscription.
+5. Ten live cases have no saved answers; the subscription run has now re-answered some of them,
+   and the rest still need answering.
 6. The picture does not shrink while the coach types. Patrick said no to that; no work follows.
+7. The rulings store audit lists await Patrick's approval, none applied: 18 candidate merges, 19
+   supersessions of which 5 conflict with each other, 115 rulings no test cites, and 7 rulings
+   that are bug reports. The audit file is in the private corpus.
+8. Whether Patrick's published papers may be quoted on the public concept pages: about 125 quote
+   lines are in question, and none are published until he decides.
+9. Four gaps a verifier found and nobody has fixed: the notes pop-out's × sits 12px past its
+   header row; the (i) button and a tool line overhang the bubble by 5 to 7px; the hand-edit
+   bad-date message shows a field name instead of plain words; the quality replay command writes
+   to a ledger file that is tracked in git.
+10. A unit test for the calibration cap and the per-call ledger code that the live suite's
+   subscription runner uses.
 
-**The rulings index sits at its size ceiling.** Every ruling added now forces a wording trim
-somewhere in the store just to stay under it, including the store's own preamble text. Patrick
-decides whether to split the store into more than one file or raise the ceiling.
+**The rulings store is restructured (deployed 2026-09-28).** It is split into topic files with a
+generated index and a hygiene guard; the ceiling is 300,000 bytes, so adding a ruling no longer
+forces a trim elsewhere. An audit file of proposed merges, supersessions and uncited rulings
+awaits Patrick's approval (Next PR, item 7).
 
-**Deployed 2026-09-28: commit a8b2245b, image 3.2026.9.28.9+ga8b2245, database still at
+**Deployed 2026-09-28, latest: commit d4971526, image 3.2026.9.28.10+gd497152, database at
+1b00000000b5 (release run 36490165725).** It carries everything since a8b2245b:
+- The shared teal × on all six views [R-0588, R-0589]; explain's teal replay chip [R-0590]; the
+  chat box sitting above the keyboard, and compact, tap-safe chips [R-0591, R-0592]; the events
+  list's kind marks [R-0594]. The event editor and the caption strip are fixed for iPhone Safari.
+- Fourteen record rules refused at the writer and at the coach's tool [R-0593, R-0585]; the
+  Next meeting agenda fix [R-0267].
+- The cost work from branch FD-363-cost, folded in [R-0595 to R-0599]: prompt-cache reuse with
+  the record in the newest user message, per-user coach and shadow models, the fd-shadow service,
+  the Gemini settings, the Compare replies page, quality replay, and migration 1b00000000b5.
+  The Gemini settings are absent on the box; an empty placeholder file sits at
+  /etc/fd/gcp-sa.json, so no Gemini call can succeed yet.
+- Dashboards exclude scratch diagrams. The rulings store was restructured into topic files with
+  a generated index and a hygiene guard, ceiling 300,000 bytes, plus an audit file for Patrick's
+  approval. The standalone-clone setup and doc/SETUP.md. The sandbox kit with the shadow worker.
+
+Production data on that deploy: events 9 and 10 in diagram 1 are noted events with no move and
+no functioning, by review change 642 (event 66 was made a toward move earlier, change 635). The
+claude-test record gained a person and a birth for the post-deploy check.
+
+The post-deploy turn on the claude-test account proved the record-in-user-message change: the
+coach answered a birth year that existed only in the record, from the record. Spent: 8 paid API
+calls, $0.1563, on the live suite's one-time calibration (Patrick's approval, 2026-09-28); every
+other model call ran on the subscription or the local model.
+
+**The live suite now runs on the Claude Code subscription** with the coach's real system prompt
+and MCP tools (`bin/subscribe.py`) [R-0568]. Calibrated once against the API, the free path
+judges tool choice, event kind, who is kept and what is asked; it does not judge finer fields or
+wording, and those go to the ruled end-of-batch API run. The efficiency skill lives at
+~/.claude/skills/efficiency with reminder, spend and audit modes.
+
+**Deployed earlier 2026-09-28: commit a8b2245b, image 3.2026.9.28.9+ga8b2245, database still at
 1b00000000b4 (run 36462083019).** The database revision is unchanged: this PR's migrations are
 squashed into one [R-0584]. It carries:
 - The play-by-play drawer's close button is the app's own ×, the same one the meeting card uses,
@@ -545,8 +588,8 @@ cleared and they are noted events, not given targets. Still open: events 1 and 2
 have no target; any further edit to them is refused until one is given.
 
 Also open: the coach rule that links the people an event's own words name, prompt written and
-waiting on a live eval, which needs his spend approval (about $0.15 to $0.40); the older
-~/theapp copy of this worktree still awaits his word to discard it.
+waiting on its eval, which needs the ruled end-of-batch API run on his approval (about $0.15 to
+$0.40); the older ~/theapp copy of this worktree still awaits his word to discard it.
 
 **2026-09-28, branch FD-363-cost off FD-363 (draft PR #141) — a prompt-cache cost fix.** A
 heavy production day put 78% of that day's model cost in prompt-cache writes ($12.91 of $16.60
@@ -561,8 +604,9 @@ exceed 5 minutes — 30 of 37 gaps were under 5 minutes for the heavy user, only
 Patrick. A 1-hour cache life was weighed and left off, since it lands within measurement error
 either way. Unproven: the saving on real production sessions, and whether moving about 14,000
 characters of prompt out of the system prompt and into the user turn changes the coach's
-behaviour — that needs the live eval suite run against it, which awaits his spend approval. Real
-model calls spent proving this: $1.96.
+behaviour — the post-deploy turn showed the coach answering a birth year that existed only in the
+record, from the record; the wider live eval is the end-of-batch API run. Real model calls spent
+proving this: $1.96.
 
 **Same batch — model comparison plumbing, Patrick as the only oracle on which model is better.**
 A per-user coach model and shadow model live in the per-user settings table, set by `flask admin
