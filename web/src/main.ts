@@ -145,7 +145,7 @@ function onTap(tap: Tap): void {
   if (tap.target === Target.Cluster) {
     const cluster = picture.clusterAt(tap.index);
     if (cluster) {
-      picture.spotlight(cluster.event_ids);
+      picture.open(cluster.event_ids);
       // opening a cluster is a look at it, recorded like any other (R-0065)
       tapped(InteractionKind.Look, ItemKind.Cluster, cluster.id);
     }
@@ -227,7 +227,7 @@ const cases = new Map<number, Case>();
  * or not it was open when the drawer came up. */
 const pbp = new Drawer($("pbp"), (step, events) => {
   pbp.close();
-  if (step) picture.spotlight(events);
+  if (step) picture.open(events);
   else picture.back(0);
   pic = REST;
   actions();
@@ -668,8 +668,9 @@ function aim(chip: Chip): void {
       ? timeline.clusters.find((c) => ids.every((id) => c.event_ids.includes(id)))
       : undefined;
   if (cluster) {
-    picture.spotlight(ids);
     apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Cluster, id: cluster.id }));
+    // a chip may name a cluster off screen, so the line goes to it
+    picture.spotlight(cluster.event_ids);
   } else
     apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(ids[0]) }), ids);
 }
@@ -685,7 +686,7 @@ function apply(outcome: Outcome, named: number[] | null = null): void {
   else picture.select(null);
   if (sel?.kind === SelKind.Cluster) {
     const cluster = timeline.clusters.find((c) => c.id === sel.id);
-    if (cluster) picture.spotlight(cluster.event_ids);
+    if (cluster) picture.open(cluster.event_ids);
   }
   actions();
   if (outcome.record)
