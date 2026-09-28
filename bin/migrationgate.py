@@ -85,6 +85,11 @@ ORPHANS = {
          WHERE c.statement_id IS NULL AND c.author = 'coach'
            AND c.turn_id NOT LIKE 'undo:%'""",
 }
+# Play statements told before plays wrote their done event; the release adds one each.
+UNLOGGED_PLAYS = """
+    SELECT count(*) FROM statements s
+     WHERE s.kind = 'play' AND s.turn_id IS NOT NULL
+       AND NOT EXISTS (SELECT 1 FROM turn_events t WHERE t.turn_id = s.turn_id)"""
 CALLS = sa.text(
     """
     SELECT t.id, t.created_at, t.payload, d.diagram_id FROM turn_events t
@@ -316,10 +321,13 @@ def main(dump: Path) -> int:
             with engine.connect() as conn:
                 before = counts(conn)
                 blobs = dict(conn.execute(BLOBS).all())
+                added = {"turn_events": conn.execute(sa.text(UNLOGGED_PLAYS)).scalar_one()}
+                print(f"note: {added['turn_events']} play statements get the done event they never wrote")
             command.upgrade(config(), "head")
             with engine.connect() as conn:
                 after = counts(conn)
-                checks = [(f"rows in {t}", n, after[t]) for t, n in before.items()]
+                checks = [(f"rows in {t}", n + added.get(t, 0), after[t])
+                          for t, n in before.items()]
                 checks += [(label, 0, conn.execute(sa.text(q)).scalar_one())
                            for label, q in ORPHANS.items()]
                 checks += turn_checks(conn)

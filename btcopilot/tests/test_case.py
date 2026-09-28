@@ -3,10 +3,12 @@ import re
 import anthropic
 import httpx
 import pytest
+import sqlalchemy as sa
 
+import bin.migrationgate as migrationgate
 from btcopilot.case import GUESS, Case, RecordFault, Tool, Untold, tool
 from btcopilot.playturn import Untellable
-from btcopilot import prompts, toolbox
+from btcopilot import prompts, toolbox, turnstore
 from btcopilot.extensions import db
 from btcopilot.models import ModelCall, Statement, StatementKind
 from btcopilot import playturn
@@ -22,6 +24,7 @@ from btcopilot.schema import (
     VariableShift,
     asdict,
 )
+from btcopilot.turnlog import TurnEventKind
 from btcopilot.tests.conftest import Model, called, csrf_token, said
 
 # Invented names only: the Whitlock stand-in family (doc/mockups/family.md).
@@ -148,6 +151,19 @@ def test_the_play_turn_offers_only_its_tool_and_keeps_the_case(discussion):
         reply["case"],
     )
     assert [c.turn_id for c in ModelCall.query.all()] == [kept.turn_id]
+
+
+def test_a_play_turn_ends_in_a_done_event_the_migration_gate_accepts(discussion):
+    # R-0542, R-0478
+    model = Model(called(Tool.PlayByPlay, **told()))
+    reply = PlayTurn.stored(record(), "apart", discussion=discussion, model=model).run()
+
+    kept = db.session.get(Statement, reply["statement_id"])
+    assert turnstore.kept({kept.turn_id}) == {
+        kept.turn_id: [{"type": TurnEventKind.Done.value, "statement_id": kept.id}]
+    }
+    unlogged = migrationgate.ORPHANS["statements carrying a turn with no turn events"]
+    assert db.session.execute(sa.text(unlogged)).scalar_one() == 0
 
 
 def test_a_case_the_cluster_does_not_bear_out_is_handed_back_with_why():
