@@ -1,5 +1,5 @@
 from btcopilot.extensions import db
-from btcopilot.models import Author, Change, Interaction, InteractionKind
+from btcopilot.models import Author, Change, Interaction, InteractionKind, SpeakerType
 from btcopilot.review.models import Coding, Cut, Item, Note, ReviewStatus, Vote, VoteChoice
 from btcopilot.routes.fixtures import install
 from btcopilot.schema import ItemKind
@@ -51,3 +51,10 @@ def test_a_fixture_reinstalls_while_its_session_is_on_the_agenda(flask_app, fore
 
     assert [Cut.query.count(), Coding.query.count(), Note.query.count()] == [0, 0, 0]
     assert [Item.query.count(), Vote.query.count()] == [0, 0]
+
+
+def test_a_fixture_familys_coach_speaks_as_the_coach(flask_app):
+    # R-0322
+    session = install("whitlock").free_diagram.discussions[0]
+
+    assert session.chat_ai_speaker.type == SpeakerType.Expert

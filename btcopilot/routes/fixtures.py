@@ -14,6 +14,7 @@ import traceback
 import click
 
 from btcopilot import diagramjson, playturn
+from btcopilot.discussions import open_session
 from btcopilot.case import Case, Snapshot
 from btcopilot.models import (
     AccessRight,
@@ -579,7 +580,7 @@ def drop_cuts(discussion_id: int):
 def install(key: str):
     """Make the fixture user, replace their diagram, and replay their chat."""
     from btcopilot.extensions import db
-    from btcopilot.models import Discussion, Speaker, Statement
+    from btcopilot.models import Statement
     from btcopilot.models import Diagram, User
 
     builder, chat = FIXTURES[key]
@@ -621,15 +622,7 @@ def install(key: str):
     db.session.commit()
 
     if chat:
-        discussion = Discussion(user_id=user.id, diagram_id=diagram.id)
-        db.session.add(discussion)
-        db.session.flush()
-        me = Speaker(discussion_id=discussion.id, name="You")
-        coach = Speaker(discussion_id=discussion.id, name="Coach")
-        db.session.add_all([me, coach])
-        db.session.flush()
-        discussion.chat_user_speaker_id = me.id
-        discussion.chat_ai_speaker_id = coach.id
+        discussion = open_session(user, diagram)
         # a kept play is marked as told from the record as it stands, so it
         # opens with no call; worked out here, not at import, as it reads the
         # private play prompt
@@ -640,7 +633,11 @@ def install(key: str):
             db.session.add(
                 Statement(
                     discussion_id=discussion.id,
-                    speaker_id=coach.id if role == "coach" else me.id,
+                    speaker_id=(
+                        discussion.chat_ai_speaker_id
+                        if role == "coach"
+                        else discussion.chat_user_speaker_id
+                    ),
                     text=text,
                     order=order,
                     digest=told[said["cluster_id"]] if "told_case" in said else None,
