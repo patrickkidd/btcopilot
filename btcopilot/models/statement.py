@@ -46,6 +46,10 @@ class Statement(db.Model, ModelMixin):
     # A play-by-play's snapshots as the coach told them (btcopilot.case). Null
     # on every other kind, and on a play told before snapshots.
     told_case = Column(JSON)
+    # What the play was told from: the digest of the cluster's contents as the
+    # coach was shown them (btcopilot.playturn). A play told from what the
+    # cluster holds now opens with no new call.
+    digest = Column(String(64))
     custom_prompts = Column(JSON)  # Store custom prompts used for this statement
     order = Column(Integer)  # Order within discussion for reliable sorting
     # The coach turn this statement started or answered; its tool calls are the

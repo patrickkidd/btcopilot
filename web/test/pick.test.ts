@@ -15,6 +15,7 @@ const CLUSTER: Cluster = {
   event_ids: [10, 11, 12],
   play_ids: [10, 11, 12],
   count: 3,
+  digest: "cT-now",
 };
 const CLUSTERS = [CLUSTER];
 const EVENTS = 4;

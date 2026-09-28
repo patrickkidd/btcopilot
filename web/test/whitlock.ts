@@ -129,6 +129,7 @@ export const timeline = (): Timeline => ({
       event_ids: [201, 202, 203, 204, 205, 206, 207, 208],
       play_ids: [201, 202, 203, 204, 205, 206, 207, 208],
       count: 8,
+      digest: "apart-now",
     },
     {
       id: "death",
@@ -142,6 +143,7 @@ export const timeline = (): Timeline => ({
       event_ids: [130, 131, 132, 133, 135, 136],
       play_ids: [130, 131, 132, 133, 135, 136],
       count: 6,
+      digest: "death-now",
     },
   ],
   questions: [],

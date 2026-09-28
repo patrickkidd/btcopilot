@@ -13,7 +13,7 @@ import traceback
 
 import click
 
-from btcopilot import diagramjson
+from btcopilot import diagramjson, playturn
 from btcopilot.case import Case, Snapshot
 from btcopilot.models import (
     AccessRight,
@@ -396,6 +396,7 @@ PLAY_CHAT = [
             "kind": StatementKind.Play,
             "cluster_id": PLAY_CLUSTER,
             "told_case": PLAY_CASE.asdict(),
+            "digest": playturn.digests(play())[PLAY_CLUSTER],
         },
     ),
 ]
@@ -513,6 +514,7 @@ WHITLOCK_CHAT = [
             "kind": StatementKind.Play,
             "cluster_id": WHITLOCK_CLUSTER,
             "told_case": WHITLOCK_CASE.asdict(),
+            "digest": playturn.digests(whitlock())[WHITLOCK_CLUSTER],
         },
     ),
 ]

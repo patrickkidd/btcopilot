@@ -33,6 +33,7 @@ import {
 import { $, pathRow, setTitle, slideOver } from "./dom";
 import { Drawer } from "./drawer";
 import { among, untold } from "./snapshots";
+import { reopen, type Kept } from "./plays";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { ASK_MARK, IN_CHAT_MARK, listButton, PLAY_MARK, tok } from "./tokens";
@@ -55,7 +56,6 @@ import {
   emptyTimeline,
   Role,
   StatementKind,
-  type Case,
   type View,
   ViewKind,
   type Chip,
@@ -221,7 +221,7 @@ function chipLabel(chip: Chip): string {
 
 /** Each play-by-play on the thread, by its message, so a tap on it opens it
  * again. A walk told before snapshots has none and keeps its chips. */
-const cases = new Map<number, Case>();
+const cases = new Map<number, Kept>();
 
 /** The play-by-play drawer (R-0542): a tap on its path goes back to that step
  * of the picture: the whole timeline, or the case's cluster opened, whether
@@ -258,9 +258,10 @@ const chat = new Chat($("chat"), $("composer"), {
     actions();
   },
   onPlay: (statement) => {
-    const told = cases.get(statement);
-    if (told) pbp.open(timeline, told);
-    return !!told;
+    const kept = cases.get(statement);
+    if (!kept) return false;
+    reopen(kept, timeline.clusters, (told) => pbp.open(timeline, told), (id) => void explain(id));
+    return true;
   },
 });
 
@@ -582,7 +583,8 @@ let stopped: { turn: string; bubble: HTMLElement } | null = null;
 function addStatements(statements: Statement[]): void {
   for (const statement of statements) {
     const coach = statement.role === Role.Coach;
-    if (statement.case && statement.id !== null) cases.set(statement.id, statement.case);
+    if (statement.case && statement.id !== null)
+      cases.set(statement.id, { case: statement.case, digest: statement.digest });
     const lines = statement.tools.map(toolLine).filter((line) => line !== null);
     const notes = statement.tools.find((tool) => tool.name === NOTES_TOOL);
     chat.add(
@@ -861,8 +863,11 @@ async function explain(clusterId: string): Promise<void> {
     actions();
   }
   chat.settled();
-  chat.add(Role.Coach, reply.statement, ChipTone.Data, reply.statement_id, reply.cluster_id);
-  if (reply.statement_id !== null) cases.set(reply.statement_id, reply.case);
+  // a kept play already on the thread opens again; it is not said twice
+  const id = reply.statement_id;
+  if (id === null || !cases.has(id))
+    chat.add(Role.Coach, reply.statement, ChipTone.Data, id, reply.cluster_id);
+  if (id !== null) cases.set(id, { case: reply.case, digest: reply.digest });
   pbp.open(timeline, reply.case);
 }
 

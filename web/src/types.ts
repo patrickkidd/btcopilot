@@ -140,6 +140,8 @@ export interface Cluster {
    * the wire draws no dot for included: what the play-by-play steps through. */
   play_ids: number[];
   count: number;
+  /** What a play of this cluster told now would be told from. */
+  digest: string;
 }
 
 /** A place the record cannot tell which of two things came first. One amber
@@ -271,6 +273,9 @@ export interface Statement {
   /** A play-by-play's snapshots; null on every other message and on a play
    * told before snapshots. */
   case: Case | null;
+  /** What a play-by-play was told from; null on every other message and on a
+   * play kept before digests. */
+  digest: string | null;
   turn_id: string | null;
   /** What the coach did in this statement's turn: behind a reply, or before a
    * turn failed with these words left unanswered. */
@@ -388,6 +393,7 @@ export interface PlayReply {
   kind: StatementKind;
   cluster_id: string;
   case: Case;
+  digest: string;
 }
 
 /** A session is a Discussion. The sheet lists them by recency; the coach titles

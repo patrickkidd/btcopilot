@@ -44,6 +44,7 @@ def statements_payload(discussion: Discussion, user) -> list[dict]:
                 "kind": (s.kind or StatementKind.Turn).value,
                 "cluster_id": s.cluster_id,
                 "case": s.told_case,
+                "digest": s.digest,
                 "turn_id": s.turn_id,
                 "tools": (
                     [

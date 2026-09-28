@@ -11,7 +11,7 @@ from btcopilot.routes import bp, current_session, diagram
 from btcopilot.routes.diagrams import readable
 from btcopilot.discussions import session_payload
 from btcopilot.routes.sessions import statements_payload
-from btcopilot import questions, record
+from btcopilot import playturn, questions, record
 from btcopilot.licence import professional
 from btcopilot.timeline import build_timeline
 from btcopilot.schema import DiagramData
@@ -104,6 +104,11 @@ def timeline():
     in_use = _readable(asked) if asked else diagram()
     data = in_use.get_diagram_data() if in_use else DiagramData()
     payload = build_timeline(data)
+    # what a play of each cluster told now would be told from, so the page
+    # knows a kept play it may open again from one it must ask for anew
+    told = playturn.digests(data)
+    for cluster in payload["clusters"]:
+        cluster["digest"] = told[cluster["id"]]
     # Where each moment was written down comes from the command log, which is
     # the only place that knows: the coach stamps its own message on the
     # commands one turn made. What the record itself carries wins, for the

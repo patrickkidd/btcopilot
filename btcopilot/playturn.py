@@ -8,8 +8,13 @@ tells it fails the turn.
 
 The case is a message in the session like any other, marked as a play, so
 coming back a week later shows it where it happened and opens it again.
+
+A cluster is told once until what the coach is shown of it changes: a play
+told from the same events is the one kept, with no call.
 """
 
+import hashlib
+import json
 import logging
 import uuid
 
@@ -35,6 +40,36 @@ ASK = "Answer only by calling play_by_play once, with the pictures."
 # own limit, and the page's wait for it (web/src/api.ts PLAY_WAIT_S) with a
 # little over, so a slow model fails with the server's error, not the page's.
 WAIT = TRIES * ANTHROPIC_TIMEOUT + 30
+
+
+def events_of(data: DiagramData, cluster: dict) -> list[dict]:
+    wanted = set(cluster.get("eventIds") or [])
+    found = [e for e in data.events if isinstance(e, dict) and e.get("id") in wanted]
+    return sorted(
+        found,
+        key=lambda e: (recordtext.date_text(e.get("dateTime")) or "", e["id"]),
+    )
+
+
+def told_about(cluster: dict, events: list[dict]) -> dict:
+    """What the coach is shown of the cluster, which is all a telling can differ by."""
+    return {
+        "cluster": recordtext.cluster_line(cluster),
+        "events": "\n".join(recordtext.event_line(e) for e in events),
+    }
+
+
+def digest(about: dict) -> str:
+    return hashlib.sha256(json.dumps(about, sort_keys=True).encode()).hexdigest()
+
+
+def digests(data: DiagramData) -> dict[str, str]:
+    """Each cluster's digest as a play told now would carry it."""
+    return {
+        str(c["id"]): digest(told_about(c, events_of(data, c)))
+        for c in data.clusters
+        if isinstance(c, dict)
+    }
 
 
 class Untellable(Exception):
@@ -77,16 +112,7 @@ class PlayTurn:
 
     @property
     def events(self) -> list[dict]:
-        wanted = set(self.cluster.get("eventIds") or [])
-        found = [
-            e
-            for e in self.data.events
-            if isinstance(e, dict) and e.get("id") in wanted
-        ]
-        return sorted(
-            found,
-            key=lambda e: (recordtext.date_text(e.get("dateTime")) or "", e["id"]),
-        )
+        return events_of(self.data, self.cluster)
 
     def run(self) -> dict:
         events = self.events
@@ -95,20 +121,46 @@ class PlayTurn:
         wrong = faults(self.data)
         if wrong:
             raise RecordFault(f"record fault: {'; '.join(wrong)}. Correct the record first.")
-        prompt = prompts.PLAY_BY_PLAY_PROMPT.format(
-            cluster=recordtext.cluster_line(self.cluster),
-            events="\n".join(recordtext.event_line(e) for e in events),
-        )
+        about = told_about(self.cluster, events)
+        self.digest = digest(about)
+        kept = self._kept()
+        if kept is not None:
+            return reply(kept)
+        prompt = prompts.PLAY_BY_PLAY_PROMPT.format(**about)
         system = prompts.get_agent_prompt(record=recordtext.render(self.data))
         messages = [{"role": "user", "content": prompt}]
         told = self._tell(system, messages, events)
-        return {
-            "kind": StatementKind.Play.value,
-            "cluster_id": told.cluster_id,
-            "statement": told.point,
-            "statement_id": self._persist(told),
-            "case": told.asdict(),
-        }
+        return reply(
+            self._persist(
+                text=told.point,
+                cluster_id=told.cluster_id,
+                told_case=told.asdict(),
+                turn_id=self.turn_id,
+            )
+        )
+
+    def _kept(self) -> Statement | None:
+        """The newest play of this diagram told from the same cluster contents,
+        in this session: one from another session is copied into this one, with
+        no turn of its own since nothing was called."""
+        if self.discussion is None:
+            return None
+        kept = (
+            Statement.query.join(Discussion)
+            .filter(
+                Discussion.diagram_id == self.discussion.diagram_id,
+                Statement.kind == StatementKind.Play,
+                Statement.cluster_id == str(self.cluster["id"]),
+                Statement.digest == self.digest,
+            )
+            .order_by(Statement.id.desc())
+            .first()
+        )
+        if kept is None or kept.discussion_id == self.discussion.id:
+            return kept
+        return self._persist(
+            text=kept.text, cluster_id=kept.cluster_id, told_case=kept.told_case
+        )
 
     def _tell(self, system: str, messages: list[dict], events: list[dict]) -> Case:
         try:
@@ -162,21 +214,30 @@ class PlayTurn:
                     raise
                 raise Untellable(f"the API refused the call: {refused.status_code} {refused.message}") from refused
 
-    def _persist(self, told: Case) -> int | None:
-        if self.discussion is None:
-            return None
+    def _persist(self, turn_id: str | None = None, **told) -> Statement:
+        """The play as a message; outside a session it is kept nowhere."""
         statement = Statement(
-            discussion_id=self.discussion.id,
-            text=told.point,
-            speaker=self.discussion.chat_ai_speaker,
-            order=self.discussion.next_order(),
-            kind=StatementKind.Play,
-            cluster_id=told.cluster_id,
-            told_case=told.asdict(),
-            turn_id=self.turn_id,
+            kind=StatementKind.Play, digest=self.digest, turn_id=turn_id, **told
         )
+        if self.discussion is None:
+            return statement
+        statement.discussion_id = self.discussion.id
+        statement.speaker = self.discussion.chat_ai_speaker
+        statement.order = self.discussion.next_order()
         db.session.add(statement)
         db.session.flush()
-        turnstore.save(self.turn_id, self.discussion.id, [turnstore.done(statement.id)])
+        if turn_id:
+            turnstore.save(turn_id, self.discussion.id, [turnstore.done(statement.id)])
         db.session.commit()
-        return statement.id
+        return statement
+
+
+def reply(statement: Statement) -> dict:
+    return {
+        "kind": StatementKind.Play.value,
+        "cluster_id": statement.cluster_id,
+        "statement": statement.text,
+        "statement_id": statement.id,
+        "case": statement.told_case,
+        "digest": statement.digest,
+    }
