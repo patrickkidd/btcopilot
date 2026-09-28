@@ -13,8 +13,11 @@ project does not. familydiagram is out of scope for this trajectory.
 This is not optional and not deferred to the end of a session:
 - **STATE.md** — revise it as the current truth changes.
 - **HISTORY.md** — append what happened; never rewrite it (two clocks).
-- **Rulings** — log every ruling Patrick makes to the oracle store in fdserver the moment
-  he makes it. Never author a ruling he did not say. A preference he floats, a question he
+- **Rulings** — log every ruling Patrick makes to the oracle store the moment he makes it, in
+  its topic file under `private/oracle/topics/<topic>.md`, never in `rulings.md` by hand; run
+  `uv run python bin/oracleindex.py` with the key to regenerate the index after any store change
+  or citation change — CI's index-drift guard fails if it isn't rerun. Never author a ruling he
+  did not say. A preference he floats, a question he
   asks ("I don't know, what do you think?"), or an idea he wants tried is not a ruling: mark it
   "trying (date), not ruled", try it, and record it as a rule only after he has seen the result
   and said so (Patrick 2026-09-26: "don't mark things as rulings until you've tested them out
