@@ -181,6 +181,32 @@ test.describe("the drawer on a small phone", () => {
   });
 });
 
+test.describe("an event's words at the drawing's edge", () => {
+  test.use({ storageState: stateFor("whitlock") });
+
+  // R-0558, R-0551
+  test("beside the rightmost person keep the family's margin from the drawing's side", async ({ page }) => {
+    await page.route(/\/app\/timeline$/, async (route) => {
+      const tl = await (await route.fetch()).json();
+      const e = tl.events.find((e: { description?: string }) => e.description?.startsWith("Took a room"));
+      const right = tl.people.find((p: { name: string }) => p.name === "Delphine");
+      Object.assign(e, { description: "Started prerequisites at", person: right.id, person_name: right.name });
+      await route.fulfill({ json: tl });
+    });
+    await settle(page);
+    await stored(page).click();
+    const words = drawer(page).locator(".draw .evw", { hasText: "Started prerequisites at" });
+    await expect(words).toBeVisible();
+    // the word pops in; measured once it has landed
+    await page.waitForTimeout(400);
+    const [w, d] = [(await words.boundingBox())!, (await drawer(page).locator(".draw svg").boundingBox())!];
+    // the ruled 24px at 393 wide, at this phone's width
+    const margin = (24 * d.width) / 393;
+    expect(d.x + d.width - (w.x + w.width)).toBeGreaterThanOrEqual(margin - 1);
+    expect(w.x - d.x).toBeGreaterThanOrEqual(margin - 1);
+  });
+});
+
 test.describe("a new snapshot's marks", () => {
   test.use({ storageState: stateFor("whitlock") });
 

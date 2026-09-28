@@ -133,6 +133,14 @@ export enum Side {
   Under = "u",
 }
 
+/** How far past a person's shape to count: the shape and name, those and the
+ * event words, or those and every mark. */
+enum Reach {
+  Bare,
+  Words,
+  All,
+}
+
 export interface Box {
   x0: number;
   x1: number;
@@ -400,9 +408,10 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   const marked = new Set(cast.marked);
   const crossed = new Set(cast.cross);
   const words = cast.words;
-  // how far a person's marks reach past the shape: the cross and its arrow, or the longest event word
-  const zw = (id: string) =>
-    Math.max(crossed.has(id) ? d.ZONE : 0, words[id] ? 6 + words[id] * NAME * CH : 0);
+  // how far a person's longest event word reaches past the shape
+  const ww = (id: string) => (words[id] ? 6 + words[id] * NAME * CH : 0);
+  // how far a person's marks reach past the shape: the cross and its arrow, or the word
+  const zw = (id: string) => Math.max(crossed.has(id) ? d.ZONE : 0, ww(id));
 
   // ---- the order of each row, top to bottom ----
   const placed = new Set<string>();
@@ -499,21 +508,24 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
     if (!placed.has(id)) throw new Unplaceable(`a person the row rules do not reach (${P[id].name})`);
   });
 
-  function rightExt(id: string, bare = false): number {
+  // how far past a person's shape the given reach runs, on the marks' side
+  const marks = (id: string, reach: Reach) =>
+    reach === Reach.All ? zw(id) : reach === Reach.Words ? ww(id) : 0;
+  function rightExt(id: string, reach = Reach.All): number {
     const e = half(id);
     let r = e;
     if (side[id] === Side.Under || side[id] === Side.Top) r = Math.max(r, lw[id] / 2);
     if (side[id] === Side.Right) r = Math.max(r, e + OFF + lw[id]);
     if (side[id] === Side.Above) r = Math.max(r, 5 + lw[id]);
-    if (zone[id] === 1 && !bare) r = Math.max(r, e + zw(id));
+    if (zone[id] === 1) r = Math.max(r, e + marks(id, reach));
     return r;
   }
-  function leftExt(id: string, bare = false): number {
+  function leftExt(id: string, reach = Reach.All): number {
     const e = half(id);
     let r = e;
     if (side[id] === Side.Under || side[id] === Side.Top) r = Math.max(r, lw[id] / 2);
     if (side[id] === Side.Left) r = Math.max(r, e + OFF + lw[id]);
-    if (zone[id] === -1 && !bare) r = Math.max(r, e + zw(id));
+    if (zone[id] === -1) r = Math.max(r, e + marks(id, reach));
     return r;
   }
   function gapFor(a: string, b: string): number {
@@ -735,6 +747,7 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   // how far everything reaches, so the whole case fits one fixed box
   const box: Box = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity };
   const core: Box = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity };
+  const said = { x0: Infinity, x1: -Infinity };
   const grow = (ax: number, ay: number) => {
     box.x0 = Math.min(box.x0, ax);
     box.x1 = Math.max(box.x1, ax);
@@ -751,8 +764,10 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
     grow(x[id] - leftExt(id), y[id] - e);
     fam(x[id] + rightExt(id), y[id] + e);
     fam(x[id], y[id] - e);
-    core.x0 = Math.min(core.x0, x[id] - leftExt(id, true));
-    core.x1 = Math.max(core.x1, x[id] + rightExt(id, true));
+    core.x0 = Math.min(core.x0, x[id] - leftExt(id, Reach.Bare));
+    core.x1 = Math.max(core.x1, x[id] + rightExt(id, Reach.Bare));
+    said.x0 = Math.min(said.x0, x[id] - leftExt(id, Reach.Words));
+    said.x1 = Math.max(said.x1, x[id] + rightExt(id, Reach.Words));
     if (zone[id]) grow(x[id], y[id] - 16);
     if (side[id] === Side.Above || side[id] === Side.Top) fam(x[id], y[id] - e - 4 - LEAD * (nl[id] - 1) - 14);
     else if (side[id] === Side.Under) fam(x[id], y[id] + below[id] + LEAD * (nl[id] - 1) + 3);
@@ -768,19 +783,21 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   cast.bonds.forEach((b) => fam(x[b.a], bar(L, b).y + 4));
   cast.moves.forEach((mv) => awayTip(L, mv).forEach(([ax, ay]) => grow(ax, ay)));
 
-  // ruled 2026-09-26: the people and their names are centred; marks and arrows may reach into the margin
+  // ruled 2026-09-26: the people and their names are centred; marks and arrows may reach into the
+  // margin, and the words keep out of it as the names do, so no word runs to the phone's edge
   const mid = (core.x0 + core.x1) / 2;
   const reach = 2 * Math.max(mid - box.x0, box.x1 - mid);
+  const span = 2 * Math.max(mid - said.x0, said.x1 - mid);
   // ruled 2026-09-27: the family's margin at 393 wide
   let MX = (24 * VIEW) / 393;
   let MY = (20 * VIEW) / 393;
-  const wide = Math.max(core.x1 - core.x0 + 2 * MX, reach);
+  const wide = Math.max(span + 2 * MX, reach);
   // no room to widen: names may go above
   if (wide > VIEW && !tight && !under) return layout(cast, { ...opts, names: Names.Above });
   L.wide = wide;
   if (wide > VIEW && opts.fit) {
     // scaled down to fit the phone, the margin kept at its size on the screen
-    L.vw = Math.max(reach, (core.x1 - core.x0) / (1 - (2 * MX) / VIEW));
+    L.vw = Math.max(reach, span / (1 - (2 * MX) / VIEW));
     L.px = (d.W * VIEW) / L.vw;
     MX *= L.vw / VIEW;
     MY *= L.vw / VIEW;
