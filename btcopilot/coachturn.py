@@ -19,7 +19,7 @@ from opentelemetry import trace
 from btcopilot.extensions import ai_log, db
 from btcopilot import chips, clusters, profile, recordtext, turnstore
 from btcopilot.pricing import cost
-from btcopilot.coachmodel import CoachModel, Spent
+from btcopilot.coachmodel import CoachModel, Spent, marked_ends
 from btcopilot.models import (
     Change,
     Discussion,
@@ -288,12 +288,13 @@ class CoachTurn:
             db.session.add(user_statement)
             db.session.flush()
 
-        # The coaching text is the same every turn and the rest is not, so they
-        # go over the wire apart: the first is kept there, the second re-read.
+        # The coaching text is the same every turn and the rest is not, so the
+        # rest goes after the chat, heading the new message, and the chat before
+        # it is read back from the wire instead of written to it again.
         # In a note the clinician is writing, not the person whose entry it is.
         note = DiscussionKind(self.discussion.kind) is DiscussionKind.Note
         own = profile.own(data)
-        fixed, tail = agent_prompt(
+        system, tail = agent_prompt(
             record=recordtext.outline(
                 data, self.diagram.version, None if note or not own else own["id"]
             ),
@@ -307,8 +308,7 @@ class CoachTurn:
         gaps = profile.missing(data)
         if gaps:
             tail = f"{tail}\n\n{onboarding(gaps, own['id'] if own else 1)}"
-        system = [fixed, tail]
-        messages = self._history()
+        messages = self._history(tail)
         if self.resume:
             messages += self._picked_up()
         spoken = ""
@@ -516,10 +516,12 @@ class CoachTurn:
                     self._send({"type": TurnEventKind.TextReset.value})
                 return stop.value
 
-    def _history(self) -> list[dict]:
-        """The chat so far, with the new message and what its chips point at.
-        Each past coach reply comes with the tool calls its turn made, so the
-        coach knows what it has already done to the record."""
+    def _history(self, tail: str) -> list[dict]:
+        """The chat so far, then the record and the day, then the new message
+        and what its chips point at. Each past coach reply comes with the tool
+        calls its turn made, so the coach knows what it has already done to the
+        record. The chat is marked where it stood before this message and
+        before the last one: what this turn writes to the wire, the next reads."""
         prior = sorted(
             [s for s in self.discussion.statements if s.text],
             key=lambda s: (s.order or 0, s.id or 0),
@@ -532,19 +534,25 @@ class CoachTurn:
             }
         )
         messages = []
+        ends = []
         for s in prior:
             coach = s.speaker_id == self.discussion.chat_ai_speaker_id
             if coach:
                 _say(messages, *_calls(s.turn_id, did.get(s.turn_id, [])))
+            else:
+                ends.append(_settled(messages))
             _say(messages, ("assistant" if coach else "user", s.text))
         if messages and messages[0]["role"] == "assistant":
             messages.insert(0, {"role": "user", "content": "Hello"})
+            ends = [end + 1 for end in ends]
+        ends.append(_settled(messages))
+        messages = marked_ends(messages, ends[-2:])
 
         spoken = self.statement
         pointed = chips.context(self.statement, self.data, self.discussion.diagram_id)
         if pointed:
             spoken = f"{spoken}\n\n{pointed}"
-        _say(messages, ("user", spoken))
+        _say(messages, ("user", _blocks(tail) + _blocks(spoken)))
         return messages
 
 
@@ -588,6 +596,12 @@ def _say(messages: list[dict], *said: tuple[str, str | list[dict]]) -> None:
             messages[-1]["content"] = _blocks(messages[-1]["content"]) + _blocks(
                 content
             )
+
+
+def _settled(messages: list[dict]) -> int:
+    """How many messages a user's words would leave as they are: they join a
+    user message already last, so that one is not settled."""
+    return len(messages) - (1 if messages and messages[-1]["role"] == "user" else 0)
 
 
 def _blocks(content: str | list[dict]) -> list[dict]:

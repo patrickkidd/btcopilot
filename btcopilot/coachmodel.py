@@ -28,10 +28,11 @@ MAX_TOKENS = 16000
 COACH_EFFORT = "medium"
 HAIKU = "claude-haiku-4-5"
 
-# What the wire keeps between calls. One turn is several calls over the same
-# coaching text, the same tools and a growing history, so everything up to a
-# mark is sent once and read back cheaply by the calls after it. The API allows
-# four marks; this path sets three.
+# What the wire keeps between calls. The wire reads tools, then the system
+# prompt, then the chat, and keeps everything up to a mark, so the mark on the
+# coaching text keeps the tools too. The record and the day go after the chat,
+# the chat is marked where it has settled, and a turn's later calls and the
+# next turn read all of that back. The API allows four marks.
 CACHE = {"type": "ephemeral"}
 
 
@@ -47,23 +48,31 @@ def system_blocks(system: str | list[str]) -> list[dict]:
     return [_marked(blocks[0])] + blocks[1:]
 
 
-def marked_tools(tools: list[dict]) -> list[dict]:
-    """The tools with the last one marked, which keeps the whole list."""
-    return tools[:-1] + [_marked(tools[-1])]
-
-
-def marked_messages(messages: list[dict]) -> list[dict]:
-    """The chat with its last block marked, so the next call in the same turn
-    reads back everything this one sent."""
-    last = messages[-1]
-    content = last["content"]
+def _mark_last(message: dict) -> dict:
+    content = message["content"]
     blocks = (
         [{"type": "text", "text": content}]
         if isinstance(content, str)
         else list(content)
     )
     blocks[-1] = _marked(blocks[-1])
-    return messages[:-1] + [dict(last, content=blocks)]
+    return dict(message, content=blocks)
+
+
+def marked_ends(messages: list[dict], ends: list[int]) -> list[dict]:
+    """The chat with the last block of each of its first `ends` messages
+    marked: where it has settled, so a later turn reads it back."""
+    marked = list(messages)
+    for end in ends:
+        if end:
+            marked[end - 1] = _mark_last(marked[end - 1])
+    return marked
+
+
+def marked_messages(messages: list[dict]) -> list[dict]:
+    """The chat with its last block marked, so the next call in the same turn
+    reads back everything this one sent."""
+    return messages[:-1] + [_mark_last(messages[-1])]
 
 
 @dataclass
@@ -128,8 +137,7 @@ class CoachModel:
         """One model call: yields the words as they arrive, returns the turn.
 
         No tools means the call cannot make one, which is how a turn is forced
-        to end in words. A system prompt in two parts is the coaching text and
-        then the record, so the wire keeps the first and re-reads the second.
+        to end in words. A system prompt in parts keeps only the first.
         """
         # Counts only: no prompt or message text, which is private health data.
         with _tracer.start_span(
@@ -146,7 +154,7 @@ class CoachModel:
                     max_tokens=MAX_TOKENS,
                     system=system_blocks(system),
                     messages=marked_messages(messages),
-                    **({"tools": marked_tools(tools)} if tools else {}),
+                    **({"tools": tools} if tools else {}),
                     **(
                         {"output_config": {"effort": self.effort}}
                         if self.effort

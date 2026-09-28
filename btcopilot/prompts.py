@@ -118,8 +118,9 @@ def get_agent_prompt(record: str = "", interactions: str = "", today: str = "") 
 def _agent_fixed() -> str:
     """The head of the agent prompt that does not move with the record or with
     what the person has been looking at. Found by rendering the template both
-    ways rather than declared, so a private template splits where it differs."""
-    return os.path.commonprefix(
+    ways rather than declared, so a private template splits where it differs,
+    then cut back to a paragraph so the heading over the record goes with it."""
+    head = os.path.commonprefix(
         [
             files().text("agent", committed_state="", interactions="", today=""),
             files().text(
@@ -127,6 +128,7 @@ def _agent_fixed() -> str:
             ),
         ]
     )
+    return head[: head.rstrip().rfind("\n\n") + 2]
 
 
 def agent_prompt(
@@ -134,7 +136,7 @@ def agent_prompt(
 ) -> tuple[str, str]:
     """The same prompt in two parts: the coaching text that repeats every call,
     which the wire caches, and the tail that changes with the record and the
-    day."""
+    day, which goes after the chat so the chat stays cached too."""
     text = get_agent_prompt(record, interactions, today)
     fixed = _agent_fixed()
     if not text.startswith(fixed):

@@ -264,7 +264,7 @@ def test_the_coach_is_handed_a_map_of_the_record_and_what_the_user_pointed_at(
 
     assert "2 Bo events=1" in model.systems[0]
     assert model.systems[0].count("moved out") == get_agent_prompt().count("moved out")
-    assert "tell me about this" in model.histories[0][-1]["content"]
+    assert "tell me about this" in model.histories[0][-1]["content"][-1]["text"]
 
 
 def test_chat_returns_the_words_and_the_events_behind_them(web, family, monkeypatch):
@@ -368,7 +368,7 @@ def test_the_coach_is_told_which_of_its_questions_the_reader_answers(discussion,
         f"and [[message:{play.id}|Where was Bo that winter?]] away.",
         model,
     )
-    told = model.histories[0][-1]["content"]
+    told = model.histories[0][-1]["content"][-1]["text"]
     assert f'the question you asked in message {closing.id}: "Who did you turn to then?"' in told
     assert f'the question you asked in message {play.id}: "Where was Bo that winter?"' in told
 

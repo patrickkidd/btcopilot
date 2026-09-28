@@ -5,6 +5,7 @@ growing chat, so each call marks what the next one may read back instead of
 paying for it again.
 """
 
+import json
 import logging
 from decimal import Decimal
 
@@ -21,8 +22,10 @@ from btcopilot.coachmodel import (
     Spent,
 )
 from btcopilot.coachturn import CoachTurn
-from btcopilot.models import ModelCall
+from btcopilot.extensions import db
+from btcopilot.models import ModelCall, Speaker, SpeakerType
 from btcopilot.pricing import cost
+from btcopilot.toolbox import ToolName
 
 TOOLS = [
     {"name": "first", "description": "one", "input_schema": {"type": "object"}},
@@ -132,11 +135,10 @@ def test_the_coaching_text_goes_over_as_its_own_block_and_is_kept(wire):
     assert "cache_control" not in sent["system"][1]
 
 
-def test_the_last_tool_is_marked_so_the_whole_list_is_kept(wire):
-    # R-0392
+def test_the_tools_are_kept_by_the_mark_on_the_coaching_text_after_them(wire):
+    # R-0392, R-0588
     sent = call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
-    assert "cache_control" not in sent["tools"][0]
-    assert sent["tools"][-1]["cache_control"] == CACHE
+    assert not any("cache_control" in tool for tool in sent["tools"])
 
 
 def test_the_end_of_the_chat_is_marked_so_the_next_call_reads_it_back(wire):
@@ -163,7 +165,7 @@ def test_a_message_of_plain_words_becomes_a_block_so_it_can_be_marked(wire):
 def test_no_more_than_four_places_are_ever_marked(wire):
     # R-0392
     sent = call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
-    assert marks(sent) == 3
+    assert marks(sent) == 2
     sent = call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}], [])
     assert marks(sent) == 2
 
@@ -322,4 +324,76 @@ def test_a_model_cut_off_mid_answer_leaves_no_tool_call_to_run(wire):
     turn = run(CoachModel(), ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
     assert turn.calls == []
     assert [b["type"] for b in turn.blocks] == ["text", "text"]
+
+
+class Script(Wire):
+    """The wire answering each call with the next scripted reply, every request
+    kept as it was sent."""
+
+    def __init__(self, *replies):
+        super().__init__()
+        self.replies = list(replies)
+        self.requests = []
+
+    def messages_stream(self, **kwargs):
+        self.requests.append(json.loads(json.dumps(kwargs)))
+        self.reply = self.replies.pop(0)
+        return self
+
+
+def wire_order(sent: dict) -> tuple[list[str], list[int]]:
+    """A request as the wire reads it, tools then system then chat, one entry
+    per block with its mark taken off, and where the marks were."""
+    blocks = list(sent.get("tools", [])) + list(sent["system"])
+    for message in sent["messages"]:
+        content = message["content"]
+        if isinstance(content, str):
+            content = [{"type": "text", "text": content}]
+        blocks += [dict(block, role=message["role"]) for block in content]
+    marks = [i for i, block in enumerate(blocks) if "cache_control" in block]
+    unmarked = [
+        {k: v for k, v in block.items() if k != "cache_control"} for block in blocks
+    ]
+    return [json.dumps(block, sort_keys=True) for block in unmarked], marks
+
+
+def test_what_a_call_writes_to_the_wire_the_next_call_and_turn_read_back(
+    discussion, monkeypatch
+):
+    # R-0588
+    speakers = {s.type: s for s in Speaker.query.filter_by(discussion_id=discussion.id)}
+    discussion.chat_user_speaker = speakers[SpeakerType.Subject]
+    discussion.chat_ai_speaker = speakers[SpeakerType.Expert]
+    db.session.commit()
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "not-a-key")
+    monkeypatch.setattr(
+        "btcopilot.models.discussion.response_text_sync",
+        lambda *a, **k: "A session title",
+    )
+    nell = Block(
+        type="tool_use", id="t1", name=ToolName.EditPerson.value, input={"name": "Nell"}
+    )
+    script = Script(
+        Reply([nell], stop_reason="tool_use"),
+        Reply([Block(type="text", text="Tell me about Nell.")]),
+        Reply([Block(type="text", text="What was she like?")]),
+        Reply([Block(type="text", text="And your father?")]),
+    )
+    with patch("btcopilot.coachmodel.anthropic.Anthropic", lambda **k: script):
+        for words in ["My sister is Nell.", "She was kind.", "He left."]:
+            CoachTurn(discussion, words, model=CoachModel()).run()
+    first, second, third, fourth = [wire_order(sent) for sent in script.requests]
+
+    blocks, marks = first
+    assert second[0][: marks[-1] + 1] == blocks[: marks[-1] + 1]
+
+    pairs = [(second, third, "Hi there"), (third, fourth, "Tell me about Nell.")]
+    for (blocks, marks), (later, later_marks), reply in pairs:
+        settled = marks[-2]
+        assert settled in later_marks
+        assert later[: settled + 1] == blocks[: settled + 1]
+        assert reply in "".join(later[: settled + 1])
+        assert later[settled + 1 :] != blocks[settled + 1 :]
+    assert "Nell" not in "".join(first[0][: first[1][0] + 1])
+    assert "Nell" in third[0][-2]
 
