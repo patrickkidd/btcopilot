@@ -426,7 +426,7 @@ MOVE = {"kind": "shift", "date": "2001-02-03", "person": 1, "description": "Stop
     ],
 )
 def test_a_record_rule_is_refused_to_the_coach_naming_the_rule(subscriber, tool, args, match):
-    # R-0NNN
+    # R-0593
     diagram = _diagram(subscriber.user, RULES)
     args = {k: v for k, v in args.items() if v is not None}
     if tool == "edit_event":
@@ -441,7 +441,7 @@ def test_a_record_rule_is_refused_to_the_coach_naming_the_rule(subscriber, tool,
 
 
 def test_a_couple_event_adds_the_couples_bond_first(subscriber):
-    # R-0NNN
+    # R-0593
     diagram = _diagram(subscriber.user, RULES)
     _event(diagram, kind="divorced", date="1999-01-01", person=4, spouse=5)
     bond = diagram.get_diagram_data().pair_bonds[-1]
@@ -449,7 +449,7 @@ def test_a_couple_event_adds_the_couples_bond_first(subscriber):
 
 
 def test_a_birth_with_one_parent_takes_the_other_from_the_childs_parents(subscriber):
-    # R-0NNN
+    # R-0593
     diagram = _diagram(subscriber.user, RULES)
     birth = _event(diagram, kind="birth", date="1978-01-01", person=1, child=6)
     assert (birth["person"], birth["spouse"]) == (1, 2)

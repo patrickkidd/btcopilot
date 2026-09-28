@@ -791,7 +791,7 @@ def _write(diagram, kind: ItemKind, item_id, fields: dict):
     ],
 )
 def test_the_write_refuses_an_event_that_breaks_a_record_rule(subscriber, fields, match):
-    # R-0NNN
+    # R-0593
     diagram = _diagram(subscriber.user, RULES)
     event = {k: v for k, v in dict(SHIFT, **fields).items() if v is not None}
     with pytest.raises(record.Invalid, match=match) as refused:
@@ -813,7 +813,7 @@ def test_the_write_refuses_an_event_that_breaks_a_record_rule(subscriber, fields
     ],
 )
 def test_the_write_refuses_an_item_that_breaks_a_record_rule(subscriber, kind, item_id, fields, match):
-    # R-0NNN
+    # R-0593
     diagram = _diagram(subscriber.user, RULES)
     with pytest.raises(record.Invalid, match=match) as refused:
         if fields:
@@ -826,7 +826,7 @@ def test_the_write_refuses_an_item_that_breaks_a_record_rule(subscriber, kind, i
 
 
 def test_removing_an_event_takes_it_out_of_its_clusters(subscriber):
-    # R-0NNN
+    # R-0593
     events = [dict(SHIFT, id=i, dateTime=f"200{i - 40}-01-01") for i in range(40, 45)]
     diagram = _diagram(
         subscriber.user,
