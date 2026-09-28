@@ -503,7 +503,16 @@ container comes back up.
    place, a drawn chevron in another) and step back/forward (plain buttons in one place, pills in
    another). Patrick: "queue it for the next PR."
 3. Confirmed: a shift always needs a description. Patrick: "yes it needs a description, always."
-4. The picture does not shrink while the coach types. Patrick said no to that; no work follows.
+4. The coach prompt's defined-self wording is rewritten to Patrick's definition but held: the
+   eval built for it passes on the old prompt too, in a fresh session, because the 2026-09-22
+   fault came mid-conversation and the writer now refuses that data anyway. Next PR: a
+   multi-turn eval modelled on the logged conversation that fails on the old wording, then the
+   wording ships with one paid confirmation run (about 9 calls on claude-opus-5-5, $0.15 to
+   $0.40). The wording is saved in the private corpus at
+   prompts/2026-09-28-defined-self-wording.md.
+5. Ten other live cases fail offline because their saved replays are missing or were lost to
+   later commits; they need re-answering on the subscription.
+6. The picture does not shrink while the coach types. Patrick said no to that; no work follows.
 
 **The rulings index sits at its size ceiling.** Every ruling added now forces a wording trim
 somewhere in the store just to stay under it, including the store's own preamble text. Patrick
