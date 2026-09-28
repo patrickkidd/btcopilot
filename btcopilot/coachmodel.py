@@ -11,7 +11,6 @@ import anthropic
 from opentelemetry import trace
 
 from btcopilot.llmutil import (
-    RESPONSE_MODEL,
     Served,
     anthropic_args,
     fallback_args,
@@ -27,6 +26,7 @@ _tracer = trace.get_tracer(__name__)
 MAX_TOKENS = 16000
 # How hard the coach thinks before it speaks. Medium keeps the first word quick.
 COACH_EFFORT = "medium"
+HAIKU = "claude-haiku-4-5"
 
 # What the wire keeps between calls. One turn is several calls over the same
 # coaching text, the same tools and a growing history, so everything up to a
@@ -114,7 +114,7 @@ class CoachModel:
     ):
         """No effort is for a model that rejects the setting (Haiku 4.5). No
         timeout is the client's own default."""
-        self.model = wire_model(resolve_model(model) if model else RESPONSE_MODEL)
+        self.model = wire_model(resolve_model(model))
         self.effort = effort
         self.timeout = timeout
 
@@ -231,3 +231,15 @@ class CoachModel:
                 }
             )
             return turn
+
+
+def model_for(
+    name: str | None = None,
+    effort: str | None = COACH_EFFORT,
+    timeout: float | None = None,
+) -> CoachModel:
+    """The coach model an alias names: none is the default, an unknown one
+    raises KeyError. Haiku 4.5 rejects the effort setting, so it gets none."""
+    if resolve_model(name).startswith(HAIKU):
+        effort = None
+    return CoachModel(name, effort, timeout)

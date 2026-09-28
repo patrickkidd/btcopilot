@@ -38,6 +38,7 @@ MODEL_ALIASES = {
     "opus-4.6": "claude-opus-4-6",
     "gemini-2.5-flash": "gemini-2.5-flash",
     "haiku-4.5": "claude-haiku-4-5-20251001",
+    "sonnet-5": "claude-sonnet-5",
     "claude-opus-5-5": "claude-opus-5-5",
     "claude-opus-5": "claude-opus-5",
     "claude-opus-4-8": "claude-opus-4-8",
@@ -47,13 +48,8 @@ DEFAULT_RESPONSE_MODEL_ALIAS = "opus-5.5"
 
 
 def resolve_model(alias: str | None) -> str:
-    """Resolve a client-facing model alias to an API model ID.
-
-    Falls back to RESPONSE_MODEL if alias is None or unknown.
-    """
-    if alias and alias in MODEL_ALIASES:
-        return MODEL_ALIASES[alias]
-    return RESPONSE_MODEL
+    """No alias is RESPONSE_MODEL; an unknown one raises KeyError."""
+    return MODEL_ALIASES[alias] if alias else RESPONSE_MODEL
 
 
 def _is_claude_model(model: str) -> bool:
