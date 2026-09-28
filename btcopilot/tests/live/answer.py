@@ -35,10 +35,14 @@ def turn(message: dict) -> ModelTurn:
     return answered
 
 
-def save(request: Path, answer: Path, store: Path = STORE, seal: bool = True) -> Path:
-    path = store / request.name
-    Replay(Mode.Replay, store, seal).save(path, turn(json.loads(answer.read_text())), Source.Subscription)
+def saved(name: str, message: dict, store: Path = STORE, seal: bool = True) -> Path:
+    path = store / name
+    Replay(Mode.Replay, store, seal).save(path, turn(message), Source.Subscription)
     return path
+
+
+def save(request: Path, answer: Path, store: Path = STORE, seal: bool = True) -> Path:
+    return saved(request.name, json.loads(answer.read_text()), store, seal)
 
 
 if __name__ == "__main__":

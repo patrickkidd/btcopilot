@@ -19,10 +19,16 @@ Every coach call is saved and replayed (replay.py). LIVE_REPLAY picks the mode:
 a missing one, needs no testing key and spends nothing; `dump` replays and writes
 each missing request to LIVE_REQUESTS for an answer on the Claude Code
 subscription (answer.py), spending nothing.
+
+The calibration against the API (README.md) sets LIVE_CAP, dollars for the
+whole run: no call is made that could pass it, and each paid call is a ledger
+line as it is paid. LIVE_STORE keeps its answers apart from the subscription's,
+and LIVE_SAMPLES=1 runs a k of n case once.
 """
 
 import datetime
 import os
+from decimal import Decimal
 import subprocess
 from types import SimpleNamespace
 from pathlib import Path
@@ -34,13 +40,14 @@ from btcopilot.coachmodel import CoachModel
 from btcopilot import turnlog
 from btcopilot.extensions import db
 from btcopilot.models import ModelCall
+from btcopilot.pricing import cost
 from btcopilot.promptdir import key_present
 from btcopilot.schema import DiagramData
 from btcopilot.tests.conftest import csrf_token, replied
 from btcopilot.tests.live.criterion import WAITING
-from btcopilot.tests.live.replay import Mode, Replay
+from btcopilot.tests.live.replay import STORE, Miss, Mode, Replay
 from btcopilot.quality import Source
-from btcopilot.tests.live.run import Outcome, Run
+from btcopilot.tests.live.run import RUN_CAP, Outcome, Run
 
 HERE = Path(__file__).parent
 RUN = pytest.StashKey[Run]()
@@ -52,6 +59,21 @@ TODAY = datetime.date(2026, 9, 25)
 
 def mode() -> Mode:
     return Mode(os.environ.get("LIVE_REPLAY", Mode.Replay))
+
+
+def capped(real, run: Run):
+    """`real` is `CoachModel.turn`, refused once the next call could pass the
+    cap. A calibration charges each call as it returns, before the next."""
+
+    def turn(model, *args, **kwargs):
+        if not run.affords():
+            raise Miss(f"live run stopped: {run.reason}")
+        answered = yield from real(model, *args, **kwargs)
+        if run.calls:
+            run.charge(answered.spent, cost(answered.served.model, answered.spent))
+        return answered
+
+    return turn
 
 
 def pytest_collection_modifyitems(config, items):
@@ -78,22 +100,31 @@ def run(request):
         text=True,
         check=True,
     ).stdout.strip()
-    opened = request.config.stash[RUN] = Run(CoachModel().model, git)
+    cap = os.environ.get("LIVE_CAP")
+    opened = request.config.stash[RUN] = Run(
+        CoachModel().model, git, cap=Decimal(cap) if cap else RUN_CAP, calls=bool(cap)
+    )
     replay = request.config.stash[REPLAY] = Replay(
-        mode(), requests=Path(os.environ["LIVE_REQUESTS"]) if mode() is Mode.Dump else None
+        mode(),
+        Path(os.environ.get("LIVE_STORE", STORE)).resolve(),
+        requests=Path(os.environ["LIVE_REQUESTS"]) if mode() is Mode.Dump else None,
     )
     if not replay.mode.offline:
         opened.open(require_testing_key())
     charged = opened.recorded
-    event.listen(ModelCall, "after_insert", charged)
+    if not opened.calls:
+        event.listen(ModelCall, "after_insert", charged)
     with pytest.MonkeyPatch.context() as patched:
-        patched.setattr(CoachModel, "turn", replay.wrap(CoachModel.turn))
+        patched.setattr(
+            CoachModel, "turn", replay.wrap(capped(CoachModel.turn, opened))
+        )
         patched.setattr(
             "btcopilot.coachturn.datetime",
             SimpleNamespace(date=SimpleNamespace(today=lambda: TODAY)),
         )
         yield opened
-    event.remove(ModelCall, "after_insert", charged)
+    if not opened.calls:
+        event.remove(ModelCall, "after_insert", charged)
 
 
 @pytest.fixture(autouse=True)
@@ -112,7 +143,11 @@ def pytest_runtest_makereport(item, call):
     awaiting = item.config.stash[REPLAY].awaiting
     if report.when == "call" and awaiting:
         report.outcome = "skipped"
-        report.longrepr = (str(item.path), item.location[1] or 0, f"awaiting answers: {awaiting}")
+        report.longrepr = (
+            str(item.path),
+            item.location[1] or 0,
+            f"awaiting answers: {awaiting}",
+        )
         run.end(item.name, Outcome.Awaiting)
     elif report.when == "call" or not report.passed:
         run.end(item.name, Outcome(report.outcome))
@@ -124,7 +159,11 @@ def pytest_runtest_makereport(item, call):
 def pytest_sessionfinish(session, exitstatus):
     run = session.config.stash.get(RUN, None)
     if run is not None:
-        run.source = Source.Subscription if session.config.stash[REPLAY].subscribed else Source.Api
+        run.source = (
+            Source.Subscription
+            if session.config.stash[REPLAY].subscribed
+            else Source.Api
+        )
         run.finish(exitstatus)
 
 

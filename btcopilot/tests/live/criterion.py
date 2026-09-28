@@ -3,6 +3,7 @@ turn; or k of n, the case run n times on a fresh session and passing when at
 least k of those runs do."""
 
 import functools
+import os
 from dataclasses import dataclass
 
 import pytest
@@ -40,14 +41,16 @@ def passes(k: int, of: int):
 
         @functools.wraps(case)
         def sampled(*args, **kwargs):
+            n = min(of, int(os.environ.get("LIVE_SAMPLES", of)))
+            needed = min(k, n)
             misses = [
                 m
-                for m in (missed(case, args, kwargs) for _ in range(of))
+                for m in (missed(case, args, kwargs) for _ in range(n))
                 if m is not None
             ]
             assert (
-                of - len(misses) >= k
-            ), f"{of - len(misses)} of {of} runs passed, {k} needed: {misses}"
+                n - len(misses) >= needed
+            ), f"{n - len(misses)} of {n} runs passed, {needed} needed: {misses}"
 
         sampled.criterion = criterion
         return sampled

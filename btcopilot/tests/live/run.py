@@ -39,8 +39,20 @@ def spent_of(usage) -> Spent:
 
 
 class Run:
-    def __init__(self, model: str, git: str, results: Path = RESULTS):
+    def __init__(
+        self,
+        model: str,
+        git: str,
+        results: Path = RESULTS,
+        cap: Decimal = RUN_CAP,
+        calls: bool = False,
+    ):
+        """`calls` is the calibration's ledger: one line per paid call, written
+        as it is paid, in place of one line per case at the end."""
         self.model = model
+        self.cap = cap
+        self.calls = calls
+        self.largest = Decimal(0)
         self.git = git
         self.results = results
         self.started = datetime.datetime.now(datetime.timezone.utc)
@@ -91,17 +103,27 @@ class Run:
         if self.reason:
             pytest.exit(f"live run stopped: {self.reason}")
 
+    def affords(self) -> bool:
+        """Whether the next call fits under the cap, if it costs as much as the
+        dearest call so far."""
+        if self.cost + self.largest > self.cap:
+            self.stop(f"the next call could pass the cap of ${self.cap}")
+        return self.reason is None
+
     def charge(self, spent: Spent, dollars: Decimal) -> None:
         self.spent.add(spent)
         self.cost += dollars
+        self.largest = max(self.largest, dollars)
+        if self.calls and dollars:
+            ledger.append(self.paid(spent, dollars), self.results / ledger.PATH.name)
         if self.case:
             self.case.spent.add(spent)
             self.case.cost += dollars
         days = self.days()
         days[self.day] = str(self.today() + dollars)
         self.ledger.write_text(json.dumps(days, indent=2))
-        if self.cost >= RUN_CAP:
-            self.stop(f"the run cap of ${RUN_CAP} is reached")
+        if self.cost >= self.cap:
+            self.stop(f"the run cap of ${self.cap} is reached")
         elif self.today() >= DAILY_CAP:
             self.stop(f"today's cap of ${DAILY_CAP} is reached")
 
@@ -156,9 +178,24 @@ class Run:
         }
         self.path = self.results / f"{self.started:%Y-%m-%dT%H%M%S}-{self.git[:8]}.json"
         self.path.write_text(json.dumps(self.row, indent=2))
-        for name, case in self.cases.items():
-            ledger.append(self.line(name, case), self.results / ledger.PATH.name)
+        if not self.calls:
+            for name, case in self.cases.items():
+                ledger.append(self.line(name, case), self.results / ledger.PATH.name)
         return self.row
+
+    def paid(self, spent: Spent, dollars: Decimal) -> dict:
+        """One paid call as a line of the eval ledger."""
+        name = next(
+            (n for n, c in self.cases.items() if c is self.case), "balance check"
+        )
+        return dict(
+            self.line(name, Case("", spent=spent, cost=dollars)),
+            at=datetime.datetime.now(datetime.timezone.utc).isoformat(
+                timespec="seconds"
+            ),
+            turns=1,
+            source=Source.Api,
+        )
 
     def line(self, name: str, case: Case) -> dict:
         """One case as a line of the eval ledger, beside the replays."""
