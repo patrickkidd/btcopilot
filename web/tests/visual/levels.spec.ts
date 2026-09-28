@@ -126,12 +126,13 @@ const travel = (page: Page, selector: string, nth = 0) =>
     [selector, nth] as const,
   );
 
-/** Whitlock's line was wider than the screen; the pill strip draws every record
- * on one screen (R-0543), and the line must still never move. */
+/** Whitlock's line is wider than the screen and opens at the present
+ * (R-0381); opening a cluster, explaining it and going back through the
+ * drawer's path must never move it (R-0542). */
 test.describe("on the record with the longest line", () => {
   test.use({ storageState: stateFor("whitlock") });
 
-  // R-0542, R-0543
+  // R-0542, R-0381
   test("opening a cluster, explaining it and going back leave the line where it stands", async ({
     page,
   }) => {
@@ -146,14 +147,18 @@ test.describe("on the record with the longest line", () => {
         json: { statement: play.text, statement_id: play.id, kind: "play", cluster_id: play.cluster_id, case: play.case },
       }),
     );
-    const fits = await page
-      .locator(".ss-scroll")
-      .evaluate((s) => s.scrollWidth <= s.clientWidth);
-    expect(fits).toBe(true);
-    expect(await travel(page, '.ss-hit[data-target="cluster"]')).toHaveLength(1);
-    expect(await travel(page, "#cap-play")).toHaveLength(1);
+    const line = await page.locator(".ss-scroll").evaluate((s) => ({
+      left: s.scrollLeft,
+      end: s.scrollWidth - s.clientWidth,
+      screens: s.scrollWidth / s.clientWidth,
+    }));
+    expect(line.end).toBeGreaterThan(0);
+    expect(line.screens).toBeLessThanOrEqual(2);
+    expect(line.left).toBe(line.end);
+    expect(await travel(page, '.ss-hit[data-target="cluster"]')).toEqual([line.end]);
+    expect(await travel(page, "#cap-play")).toEqual([line.end]);
     await expect(page.locator("#pbp")).toBeVisible();
-    expect(await travel(page, '#pbp .path [data-step="1"]')).toHaveLength(1);
+    expect(await travel(page, '#pbp .path [data-step="1"]')).toEqual([line.end]);
     await expect(page.locator("#pbp")).toBeHidden();
   });
 });

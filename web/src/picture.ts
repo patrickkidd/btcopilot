@@ -61,6 +61,9 @@ const HIT_TOP = ROWS[1];
 const HIT_REACH = 60;
 /** The baseline of the years under the line. */
 const RULER_Y = 68;
+/** The resting line is never drawn wider than this many screens: past it the
+ * scale coarsens rather than the line reaching further (R-0381). */
+const SCREENS_MAX = 2;
 
 /** One mark on the line: a cluster as one pill over its years with nothing
  * drawn inside it, or an event no cluster claims as a dot (R-0543). */
@@ -121,6 +124,25 @@ export function strongest(ids: number[], touched: Map<number, Touch>): Touch | n
     .map((id) => touched.get(id))
     .filter((one): one is Touch => !!one)
     .reduce<Touch | null>((a, b) => (a ? stronger(a, b) : b), null);
+}
+
+/** How wide the resting line is drawn, for a picture this many pixels wide:
+ * wide enough that each pill and each loose dot has a thumb's width of the
+ * line to itself, and never more than SCREENS_MAX screens. A record that already
+ * reads at that density across one screen stays one screen (R-0381). */
+export function restWidth(clusters: Cluster[], dated: TimelineEvent[], screen: number): number {
+  const first = years(dated[0].dateTime as string);
+  const span = years(dated[dated.length - 1].dateTime as string) - first;
+  if (span <= 0) return screen;
+  const middles = [
+    ...clusters.map((cluster) => (years(cluster.start) + years(cluster.end)) / 2),
+    ...loose(dated, clusters).map((event) => years(event.dateTime as string)),
+  ].sort((a, b) => a - b);
+  const scale = middles.reduce(
+    (most, year, i) => (i && year > middles[i - 1] ? Math.max(most, ZONE / (year - middles[i - 1])) : most),
+    (screen - 2 * X_PAD) / span,
+  );
+  return Math.round(Math.min(SCREENS_MAX * screen, 2 * X_PAD + scale * span));
 }
 
 /** How far each mark's tap target reaches across the line: halfway to its
@@ -895,10 +917,11 @@ export class Picture {
   }
 
   /** The line: one drawing for the whole timeline and a cluster open on it
-   * (R-0538), always one screen wide. One pill per cluster with nothing drawn
-   * inside it, and a dot for each event no cluster claims (R-0543); the years
-   * under it as a ruler. What the reader opened or the coach named is lit and
-   * the rest is dimmed, never taken away. A picked event writes itself out
+   * (R-0538), wider than the screen when the record needs it and swiped
+   * sideways under it, at most two screens (R-0381). One pill per cluster
+   * with nothing drawn inside it, and a dot for each event no cluster claims
+   * (R-0543); the years under it as a ruler. What the reader opened or the
+   * coach named is lit and the rest is dimmed, never taken away. A picked event writes itself out
    * above the line, and a pill or dot the coach touched this turn takes that
    * colour, the strongest touch winning (R-0539, R-0544). Only a pill and a
    * loose dot answer a tap, each across the strip's height to halfway to its
@@ -921,7 +944,7 @@ export class Picture {
     }
 
     const clusters = this.restClusters();
-    const width = screen;
+    const width = restWidth(clusters, dated, screen);
     const held = this.host.querySelector<HTMLElement>(SCROLLER)?.scrollLeft ?? null;
     const x0 = X_PAD;
     const x1 = width - X_PAD;
@@ -1032,10 +1055,23 @@ export class Picture {
     // The band lies over the words and under the marks' own targets.
     const words = said.text ? said.text + bandHit(shows + X_PAD, screen - 2 * X_PAD) : "";
     const targets = restLayers(boxes, dotLayers(zoned)).map(hitButton).join("");
+    // where the line settles after a swipe: at a pill's near edge, so a
+    // cluster is never cut in half, and at the present (R-0381)
+    const stops = new Set(
+      laid
+        .filter((pill) => pill.cluster)
+        .flatMap((pill) => [pill.left - X_PAD, pill.right + X_PAD - screen])
+        .concat(width - screen)
+        // whole pixels, or a redraw lands the line a pixel off where it stood
+        .map((left) => Math.round(Math.max(0, left))),
+    );
+    const snaps = [...stops]
+      .map((left) => `<i class="ss-snap" style="left:${left}px"></i>`)
+      .join("");
 
     this.host.innerHTML =
       `<div class="ss"><div class="ss-scroll"><div class="ss-line" style="width:${width.toFixed(1)}px">` +
-      `${svg}${words}${targets}</div></div>${title}${shelf}</div>`;
+      `${svg}${words}${targets}${snaps}</div></div>${title}${shelf}</div>`;
     this.settle({ width, screen }, held, onX);
   }
 

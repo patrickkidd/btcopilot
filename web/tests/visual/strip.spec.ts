@@ -3,12 +3,13 @@ import { stateFor, type Key } from "./setup";
 
 /** The pill strip on every shape of record, at phone and desktop sizes: one
  * pill per cluster with nothing drawn inside it, a dot only for an event no
- * cluster claims, the years as a ruler under the line, the whole record on one
- * screen, and only pills and loose dots answering a tap (R-0543, R-0544).
- * Deterministic gates, not pictures: nothing outside the picture, nothing
- * sliding sideways, no two years written over each other, every target a
- * thumb's height, no console error or failed request, and the picture
- * changing after every tap. */
+ * cluster claims, the years as a ruler under the line, the line at most two
+ * screens wide and opening at the present, and only pills and loose dots
+ * answering a tap (R-0381, R-0543, R-0544). Deterministic gates, not pictures:
+ * nothing outside the picture's height or the line's ends, no sideways scroll
+ * of the page, no two years written over each other, every target a thumb's
+ * height, no console error or failed request, and the picture changing after
+ * every tap. */
 
 const RECORDS: Key[] = ["empty", "one", "three40", "dense60", "hostile", "whitlock"];
 
@@ -31,12 +32,14 @@ const measure = (page: Page) =>
     const scroll = view.querySelector<HTMLElement>(".ss-scroll");
     return {
       view: box(view),
+      line: box(view.querySelector(".ss-line") ?? view),
       pills: [...view.querySelectorAll("rect.pill")].map(box),
       dots: [...view.querySelectorAll("circle.dot")].map(box),
       years: [...view.querySelectorAll("text.ep-yrs")].map((t) => ({ ...box(t), text: t.textContent })),
       targets: [...view.querySelectorAll(".ss-hit")].map(box),
       sideways: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       slides: scroll ? scroll.scrollWidth - scroll.clientWidth : 0,
+      left: scroll?.scrollLeft ?? 0,
     };
   });
 
@@ -46,14 +49,21 @@ const within = (inner: Box, outer: Box) =>
   inner.x + inner.width <= outer.x + outer.width + 0.5 &&
   inner.y + inner.height <= outer.y + outer.height + 0.5;
 
+/** Inside the picture's height, and across inside the line, which may be
+ * wider than the picture and slide under it. */
+const drawn = (inner: Box, at: { view: Box; line: Box }) =>
+  within(inner, { x: at.line.x, y: at.view.y, width: at.line.width, height: at.view.height });
+
 const overlap = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width;
 
 for (const key of RECORDS) {
   test.describe(`the strip on the ${key} record`, () => {
     test.use({ storageState: stateFor(key) });
 
-    // R-0543, R-0544
-    test("draws inside the picture, on one screen, with its years apart", async ({ page }) => {
+    // R-0381, R-0543, R-0544
+    test("draws inside the picture, at most two screens wide from the present, with its years apart", async ({
+      page,
+    }) => {
       const errors: string[] = [];
       page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
       page.on("requestfailed", (r) => errors.push(`failed: ${r.url()}`));
@@ -61,9 +71,10 @@ for (const key of RECORDS) {
       const at = await measure(page);
 
       for (const mark of [...at.pills, ...at.dots, ...at.years, ...at.targets])
-        expect(within(mark, at.view), JSON.stringify(mark)).toBe(true);
+        expect(drawn(mark, at), JSON.stringify(mark)).toBe(true);
       expect(at.sideways).toBeLessThanOrEqual(0);
-      expect(at.slides).toBeLessThanOrEqual(0);
+      expect(at.slides).toBeLessThanOrEqual(at.view.width);
+      expect(at.left).toBe(at.slides);
       // nothing is drawn inside a pill
       for (const pill of at.pills)
         for (const dot of at.dots) expect(overlap(pill, dot), JSON.stringify(dot)).toBe(false);
@@ -78,7 +89,7 @@ for (const key of RECORDS) {
       expect(errors).toEqual([]);
     });
 
-    // R-0543, R-0544
+    // R-0381, R-0543, R-0544
     test("changes the picture after every tap on a pill or a dot", async ({ page }) => {
       const errors: string[] = [];
       page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
@@ -99,7 +110,7 @@ for (const key of RECORDS) {
         expect(await page.locator("#view").innerHTML()).not.toBe(before);
         const at = await measure(page);
         for (const mark of [...at.pills, ...at.dots, ...at.targets])
-          expect(within(mark, at.view), JSON.stringify(mark)).toBe(true);
+          expect(drawn(mark, at), JSON.stringify(mark)).toBe(true);
         expect(at.sideways).toBeLessThanOrEqual(0);
       }
       expect(errors).toEqual([]);

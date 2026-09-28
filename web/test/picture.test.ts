@@ -6,6 +6,7 @@ import {
   pills,
   reach,
   restLayers,
+  restWidth,
   ruler,
   spanYears,
   strongest,
@@ -113,22 +114,62 @@ describe("the marks on the line", () => {
   });
 
   // R-0381, R-0543
-  it("lays sixty events over fifty years across one screen, the pills apart", () => {
+  it("lays sixty events over fifty years across at most two screens, the pills apart", () => {
     const dated = Array.from({ length: 60 }, (_, i) =>
       event(i + 1, new Date(Date.UTC(1974, 0, 1 + i * 300)).toISOString().slice(0, 10)),
     );
     const clusters = Array.from({ length: 10 }, (_, i) =>
       cluster(100 + i, dated.slice(i * 6, i * 6 + 6)),
     );
-    const laid = lay(clusters, dated);
+    const width = restWidth(clusters, dated, PHONE);
+    expect(width).toBeLessThanOrEqual(2 * PHONE);
+    const dates = dated.map((e) => e.dateTime as string);
+    const laid = pills(clusters, dated, (iso) => at(iso, dates, width));
     expect(laid).toHaveLength(10);
     for (const mark of laid) {
       expect(mark.left).toBeGreaterThanOrEqual(0);
-      expect(mark.right).toBeLessThanOrEqual(PHONE);
+      expect(mark.right).toBeLessThanOrEqual(width);
     }
     laid.forEach((mark, i) => {
       if (i) expect(mark.left).toBeGreaterThan(laid[i - 1].right);
     });
+  });
+});
+
+/** A record three generations long: births decades apart, then the years a
+ * couple came apart as one cluster, the way the Whitlock fixture has it. */
+const generations = () => {
+  const born = ["1924-06-01", "1926-06-01", "1948-06-01", "1951-10-01", "1953-06-01", "1970-06-01", "1975-06-01", "1979-06-01"].map(
+    (iso, i) => event(i + 1, iso),
+  );
+  const apart = ["1980-09-15", "1981-06-15", "1982-11-15"].map((iso, i) => event(20 + i, iso));
+  return { clusters: [cluster(30, apart)], dated: [...born, ...apart] };
+};
+
+describe("how wide the line is drawn", () => {
+  // R-0381
+  it("draws a long record wider than the phone, so every mark has a thumb's width, and never past two screens", () => {
+    const { clusters, dated } = generations();
+    const width = restWidth(clusters, dated, PHONE);
+    expect(width).toBeGreaterThan(PHONE);
+    expect(width).toBeLessThanOrEqual(2 * PHONE);
+  });
+
+  // R-0381
+  it("keeps a record that reads across one screen at one screen", () => {
+    const dated = Array.from({ length: 60 }, (_, i) =>
+      event(i + 1, new Date(Date.UTC(2019, 0, 5 + 30 * i)).toISOString().slice(0, 10)),
+    );
+    const clusters = [cluster(1, dated.slice(0, 20)), cluster(2, dated.slice(20))];
+    expect(restWidth(clusters, dated, PHONE)).toBe(PHONE);
+  });
+
+  // R-0381
+  it("coarsens the scale rather than reach past two screens", () => {
+    const dated = Array.from({ length: 200 }, (_, i) =>
+      event(i + 1, `${1900 + Math.floor(i / 2)}-0${1 + (i % 2) * 5}-01`),
+    );
+    expect(restWidth([], dated, PHONE)).toBe(2 * PHONE);
   });
 });
 

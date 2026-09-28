@@ -93,49 +93,64 @@ test.describe("the undated shelf", () => {
   });
 });
 
-/** The whole record is drawn across one screen, first year to last, and the
- * years under it are a ruler that never moves (R-0543, replacing the line that
- * slid sideways, R-0381). The dense record is the one that used to slide. */
-test.describe("the resting line is one screen", () => {
-  test.use({ storageState: stateFor("dense60") });
+/** A long record is drawn wider than the screen, never more than two screens,
+ * and swiped sideways under it; it opens at the present, and the years under
+ * it slide with it (R-0381). A record that reads across one screen stays one
+ * screen. Whitlock's runs from 1924 to 1982. */
+const line = (page: import("@playwright/test").Page) => page.locator("#view .ss-scroll");
 
-  const line = (page: import("@playwright/test").Page) =>
-    page.locator("#view .ss-scroll");
+const at = (page: import("@playwright/test").Page) =>
+  line(page).evaluate((node) => ({
+    left: node.scrollLeft,
+    end: node.scrollWidth - node.clientWidth,
+    screens: node.scrollWidth / node.clientWidth,
+  }));
 
-  const at = (page: import("@playwright/test").Page) =>
-    line(page).evaluate((node) => ({
-      left: node.scrollLeft,
-      end: node.scrollWidth - node.clientWidth,
-    }));
+/** A swipe across the picture. */
+const swipe = async (page: import("@playwright/test").Page, by: number) => {
+  await line(page).hover();
+  await page.mouse.wheel(-by, 0);
+  await page.waitForTimeout(600);
+};
 
-  /** A swipe across the picture. */
-  const swipe = async (page: import("@playwright/test").Page, by: number) => {
-    await line(page).hover();
-    await page.mouse.wheel(-by, 0);
-    await page.waitForTimeout(600);
-  };
+const yearsUnder = (page: import("@playwright/test").Page) =>
+  page.locator("#view .ep-yrs").allTextContents();
 
-  const yearsUnder = (page: import("@playwright/test").Page) =>
-    page.locator("#view .ep-yrs").allTextContents();
+test.describe("the resting line on a long record", () => {
+  test.use({ storageState: stateFor("whitlock") });
 
   // R-0381, R-0111, R-0543
-  test("holds the whole record, its first year at one end and its last at the other", async ({
+  test("is wider than the screen, at most two screens, and opens at the present", async ({
     page,
   }) => {
     await settle(page);
-    expect((await at(page)).end).toBe(0);
+    const stands = await at(page);
+    expect(stands.end).toBeGreaterThan(0);
+    expect(stands.screens).toBeLessThanOrEqual(2);
+    expect(stands.left).toBe(stands.end);
     const years = await yearsUnder(page);
-    expect(years[0]).toBe("2019");
-    expect(years[years.length - 1]).toBe("2023");
+    expect(years[0]).toBe("1924");
+    expect(years[years.length - 1]).toBe("1982");
   });
 
-  // R-0381, R-0111, R-0543
-  test("a swipe moves neither the line nor the years under it", async ({ page }) => {
+  // R-0381
+  test("a swipe slides the line back toward its first year", async ({ page }) => {
     await settle(page);
-    const before = await yearsUnder(page);
+    const { end } = await at(page);
     await swipe(page, 300);
-    expect((await at(page)).left).toBe(0);
-    expect(await yearsUnder(page)).toEqual(before);
+    expect((await at(page)).left).toBeLessThan(end);
+  });
+
+  // R-0381
+  test("going back to the whole timeline puts the line at the present", async ({ page }) => {
+    await settle(page);
+    await line(page).evaluate((s) => (s.scrollLeft = 0));
+    await page.locator('.ss-hit[data-target="cluster"]').first().click();
+    await expect(page.locator('#path [data-step="0"]')).toBeVisible();
+    await page.locator('#path [data-step="0"]').click();
+    await page.waitForTimeout(400);
+    const stands = await at(page);
+    expect(stands.left).toBe(stands.end);
   });
 
   // R-0377, R-0543
@@ -154,11 +169,26 @@ test.describe("the resting line is one screen", () => {
   });
 
   // R-0045, R-0381
-  test("a tap still picks the cluster under the thumb", async ({ page }) => {
+  test("a tap still picks the cluster under the thumb after a swipe", async ({ page }) => {
     await settle(page);
-    await swipe(page, 300);
+    await swipe(page, 100);
     await page.locator('.ss-hit[data-target="cluster"]').first().click();
     await expect(page.locator('#path [data-step="0"]')).toBeVisible();
+  });
+});
+
+test.describe("the resting line on a record that reads across one screen", () => {
+  test.use({ storageState: stateFor("dense60") });
+
+  // R-0381, R-0543
+  test("stays one screen, its first year at one end and its last at the other", async ({
+    page,
+  }) => {
+    await settle(page);
+    expect((await at(page)).end).toBe(0);
+    const years = await yearsUnder(page);
+    expect(years[0]).toBe("2019");
+    expect(years[years.length - 1]).toBe("2023");
   });
 });
 

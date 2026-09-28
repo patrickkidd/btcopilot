@@ -339,6 +339,7 @@ button { font-family: inherit; }
 }
 .ss-scroll::-webkit-scrollbar { display: none; }
 .ss-line { position: relative; height: 100%; }
+.ss-snap { position: absolute; top: 0; width: 1px; height: 1px; scroll-snap-align: start; }
 
 /* the wire, and the years at its ends */
 .ss .wire { stroke: var(--line); stroke-width: 1.5; }
