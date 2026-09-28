@@ -143,7 +143,10 @@ def test_a_tuned_play_prompt_retells_the_cluster(discussion, monkeypatch):
     data = record()
     model = Model(called(Tool.PlayByPlay, **told()), called(Tool.PlayByPlay, **told()))
     explain(data, discussion, model)
-    monkeypatch.setattr(prompts, "PLAY_BY_PLAY_PROMPT", prompts.PLAY_BY_PLAY_PROMPT + "\nTuned.")
+    # the prompts are read on first use into their cache, never set on the
+    # module: patching the module would leave the text behind after the test
+    tuned = prompts.PLAY_BY_PLAY_PROMPT + "\nTuned."
+    monkeypatch.setitem(prompts.READ, "PLAY_BY_PLAY_PROMPT", tuned)
     explain(data, discussion, model)
 
     assert len(model.histories) == 2
