@@ -92,12 +92,18 @@ export class Coding {
     // chat's does.
     const drawer = el("div");
     view.closest<HTMLElement>(".screen")!.append(drawer);
-    this.pbp = new Drawer(drawer, (step, events) => {
-      this.pbp.close();
-      if (step) this.picture.spotlight(events);
-      else this.picture.back(0);
-      this.marks();
-    });
+    this.pbp = new Drawer(
+      drawer,
+      (step, events) => {
+        this.pbp.close();
+        if (step) this.picture.spotlight(events);
+        else this.picture.back(0);
+        this.marks();
+      },
+      () => {
+        throw new Error("a case nobody told has no question to answer");
+      },
+    );
     this.overlay.append(this.scrim, this.sheet);
     this.scrim.hidden = true;
     this.sheet.hidden = true;
@@ -304,7 +310,7 @@ export class Coding {
       listButton(LIST_ID);
     if (dated)
       this.caption.querySelector("#coding-play")?.addEventListener("click", () =>
-        this.pbp.open(this.timeline, untold(this.timeline, open.event_ids)),
+        this.pbp.open(this.timeline, untold(this.timeline, open.event_ids), null),
       );
     this.wireList();
   }

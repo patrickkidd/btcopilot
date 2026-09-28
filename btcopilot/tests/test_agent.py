@@ -19,7 +19,16 @@ from btcopilot.coachturn import (
     LabelTooLong,
 )
 from btcopilot.turnlog import TurnEventKind as EventKind
-from btcopilot.models import Author, Change, ModelCall, StatementKind
+from btcopilot.models import (
+    Author,
+    Change,
+    Discussion,
+    ModelCall,
+    Speaker,
+    SpeakerType,
+    Statement,
+    StatementKind,
+)
 from btcopilot.prompts import get_agent_prompt
 from btcopilot.toolbox import ToolName
 from btcopilot.schema import (
@@ -329,6 +338,60 @@ def test_people_and_their_events_all_land_in_one_turn(discussion, family):
     ] == [("1994-01-01", 11), ("1996-01-01", 12)]
 
 
+def coach_asked(discussion, text: str, **told) -> Statement:
+    coach = next(s for s in discussion.speakers if s.type == SpeakerType.Expert)
+    statement = Statement(
+        discussion_id=discussion.id,
+        speaker_id=coach.id,
+        text=text,
+        order=discussion.next_order(),
+        **told,
+    )
+    db.session.add(statement)
+    db.session.commit()
+    return statement
+
+
+def test_the_coach_is_told_which_of_its_questions_the_reader_answers(discussion, family):
+    # R-0587, R-0072
+    closing = coach_asked(discussion, "Bo moved out in 1994. Who did you turn to then?")
+    play = coach_asked(
+        discussion,
+        "Bo left, then Wren got sick.",
+        kind=StatementKind.Play,
+        told_case={"cluster_id": "c1", "point": "", "snapshots": [], "question": "Where was Bo that winter?"},
+    )
+    model = Model(said("Thank you."))
+    run(
+        discussion,
+        f"To answer your question [[message:{closing.id}|Who did you turn to then?]] my aunt, "
+        f"and [[message:{play.id}|Where was Bo that winter?]] away.",
+        model,
+    )
+    told = model.histories[0][-1]["content"]
+    assert f'the question you asked in message {closing.id}: "Who did you turn to then?"' in told
+    assert f'the question you asked in message {play.id}: "Where was Bo that winter?"' in told
+
+
+def test_a_message_chip_this_family_did_not_ask_becomes_its_words(discussion, family, test_user_2):
+    # R-0587, R-0072
+    test_user_2.set_free_diagram()
+    theirs = Discussion(user_id=test_user_2.id, diagram_id=test_user_2.free_diagram_id)
+    theirs.speakers = [Speaker(name="Coach", type=SpeakerType.Expert)]
+    db.session.add(theirs)
+    db.session.commit()
+    other = coach_asked(theirs, "Who else knew?")
+    plain = coach_asked(discussion, "Bo moved out in 1994.")
+    mine = next(s for s in discussion.statements if s.speaker.type == SpeakerType.Subject)
+    text = chips.validate(
+        f"[[message:{other.id}|Who else knew?]] [[message:{plain.id}|that]] "
+        f"[[message:{mine.id}|Hello]] [[message:x|this]]",
+        family.get_diagram_data(),
+        family.id,
+    )
+    assert text == "Who else knew? that Hello this"
+
+
 def test_offered_chips_never_reach_the_transcript():
     # R-0361
     """Offered answers are dropped (Patrick, 2026-09-21): people type their own
@@ -338,6 +401,7 @@ def test_offered_chips_never_reach_the_transcript():
         "[[person:1|Wren]] is where it starts. What came next?\n\n"
         "[[ask:the winter after he left]] [[ask:how Wren took it]]",
         data,
+        None,
     )
     assert kept == "[[person:1|Wren]] is where it starts. What came next?"
 

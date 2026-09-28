@@ -14,6 +14,8 @@ import re
 import regex
 
 from btcopilot import record
+from btcopilot.extensions import db
+from btcopilot.models import SpeakerType, Statement
 from btcopilot.recordtext import date_text
 from btcopilot.schema import DiagramData, enum_val
 
@@ -30,6 +32,9 @@ class ChipKind(enum.StrEnum):
     # What the coach offers to look at next. It carries the words themselves
     # rather than an id, so there is nothing to resolve and nothing to drop.
     Ask = "ask"
+    # The question a coach message closed on, which the reader is answering
+    # [Oracle: R-0587].
+    Message = "message"
 
 
 TOKEN = re.compile(
@@ -51,6 +56,7 @@ KIND_WORDS = {
     ChipKind.Question: "this question",
     ChipKind.Impression: "this impression",
     ChipKind.Ask: "this",
+    ChipKind.Message: "this question",
 }
 
 
@@ -74,18 +80,48 @@ def _ids(data: DiagramData, kind: ChipKind) -> set[str]:
     }
 
 
-def resolves(kind: ChipKind, target: str, data: DiagramData) -> bool:
+# The question that closes a reply is its last sentence, when that sentence is
+# a question; the page sets it apart the same way.
+_CLOSING = re.compile(r"[^.?!]*\?\s*$")
+
+
+def asked(statement: Statement) -> str | None:
+    """The question a coach message ends on: a play's own, or the reply's last
+    sentence when it is a question."""
+    if statement.told_case:
+        return statement.told_case["question"]
+    plain = TOKEN.sub(lambda m: m.group(3) or "", statement.text or "")
+    closing = _CLOSING.search(plain)
+    return closing.group(0).strip() if closing else None
+
+
+def _message(target: str, diagram_id: int | None) -> Statement | None:
+    """A coach message in this family's sessions that asked a question."""
+    statement = db.session.get(Statement, int(target)) if target.isdigit() else None
+    if (
+        statement is None
+        or statement.discussion.diagram_id != diagram_id
+        or statement.speaker.type != SpeakerType.Expert
+        or asked(statement) is None
+    ):
+        return None
+    return statement
+
+
+def resolves(kind: ChipKind, target: str, data: DiagramData, diagram_id: int | None) -> bool:
     if kind is ChipKind.Ask:
         return bool(str(target).strip())
+    if kind is ChipKind.Message:
+        return _message(str(target).strip(), diagram_id) is not None
     return str(target).strip() in _ids(data, kind)
 
 
-def parse(text: str, data: DiagramData) -> list[tuple[ChipKind, str, str]]:
+def parse(text: str, data: DiagramData, diagram_id: int | None) -> list[tuple[ChipKind, str, str]]:
     """Every chip in `text` that the record resolves, as (kind, id, label)."""
     found = []
     for match in TOKEN.finditer(text):
         kind, target = ChipKind(match.group(1)), match.group(2).strip()
-        if resolves(kind, target, data):
+        if resolves(kind, target, data, diagram_id):
             found.append((kind, target, (match.group(3) or "").strip()))
     return found
 
@@ -95,11 +131,11 @@ def length(words: str) -> int:
     return len(regex.findall(r"\X", words))
 
 
-def too_long(text: str, data: DiagramData) -> list[str]:
+def too_long(text: str, data: DiagramData, diagram_id: int | None) -> list[str]:
     """The labels in `text` that will not fit on a chip."""
     return [
         label or target
-        for kind, target, label in parse(text, data)
+        for kind, target, label in parse(text, data, diagram_id)
         if length(label or target) > CHIP_MAX
     ]
 
@@ -131,7 +167,7 @@ def bare_list(text: str) -> bool:
     return False
 
 
-def validate(text: str, data: DiagramData) -> str:
+def validate(text: str, data: DiagramData, diagram_id: int | None) -> str:
     """The words to persist: a chip the record cannot resolve becomes its own
     label, so the user never reads a reference that points at nothing."""
 
@@ -141,7 +177,7 @@ def validate(text: str, data: DiagramData) -> str:
         # own words. The token is still parsed so an old transcript renders.
         if kind is ChipKind.Ask:
             return ""
-        if resolves(kind, target, data):
+        if resolves(kind, target, data, diagram_id):
             return match.group(0)
         label = (match.group(3) or "").strip() or KIND_WORDS[kind]
         _log.warning(f"Chip to unknown {kind.value} {target!r} replaced with {label!r}")
@@ -150,9 +186,12 @@ def validate(text: str, data: DiagramData) -> str:
     return TOKEN.sub(_keep, text).rstrip()
 
 
-def _describe(kind: ChipKind, target: str, data: DiagramData) -> str:
+def _describe(kind: ChipKind, target: str, data: DiagramData, diagram_id: int | None) -> str:
     if kind is ChipKind.Ask:
         return f"the offer to talk about {target}"
+    if kind is ChipKind.Message:
+        question = asked(_message(target, diagram_id))
+        return f'the question you asked in message {target}: "{question}"'
     if kind is ChipKind.Person:
         person = next(p for p in data.people if str(p.get("id")) == target)
         return f"person {target}: {person.get('name') or 'unnamed'}"
@@ -175,15 +214,15 @@ def _describe(kind: ChipKind, target: str, data: DiagramData) -> str:
     return f"cluster {target}: {cluster.get('name') or cluster.get('title') or ''}".strip()
 
 
-def context(text: str, data: DiagramData) -> str:
+def context(text: str, data: DiagramData, diagram_id: int | None) -> str:
     """What the chips in a user's message point at, spelled out for the model.
 
     A message that is nothing but chips is the user asking about them.
     """
-    found = parse(text, data)
+    found = parse(text, data, diagram_id)
     if not found:
         return ""
-    lines = [_describe(kind, target, data) for kind, target, _ in found]
+    lines = [_describe(kind, target, data, diagram_id) for kind, target, _ in found]
     bare = not TOKEN.sub("", text).strip()
     head = (
         "The user sent these references on their own, which means: tell me about this."

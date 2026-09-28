@@ -12,6 +12,9 @@ export enum ChipKind {
   /** What the coach noticed, brought back by the reader. */
   Impression = "impression",
   PairBond = "pair_bond",
+  /** The question a coach message ended on, which the reader is answering
+   * (R-0587). */
+  Message = "message",
 }
 
 /** Teal is a reference to something the record holds; amber is the coach or the

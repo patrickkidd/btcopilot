@@ -1,8 +1,9 @@
 import "./drawer.css";
+import { askedChip, chipOf } from "./chips";
 import { closeX, esc, pathRow, slideOver } from "./dom";
 import { NAME, type Layout } from "./diagram";
 import { when, Told } from "./snapshots";
-import type { Case, Timeline } from "./types";
+import type { Case, Chip, Timeline } from "./types";
 
 /** The play-by-play drawer: a real drill-down that slides over the timeline and
  * the chat (R-0542). The path row with the close button at its right, the
@@ -52,8 +53,10 @@ export function yearsLine(tl: Timeline, told: Told, i: number): string {
   return s + "</svg>";
 }
 
-/** The controls and the caption under the picture for snapshot `i`. */
-export function below(told: Told, i: number): string {
+/** The controls and the caption under the picture for snapshot `i`. The
+ * question of a play kept as a message is the amber chip that answers it
+ * (R-0587); a play kept nowhere has no message to point at. */
+export function below(told: Told, i: number, statement: number | null): string {
   const n = told.length;
   const shot = told.shot(i);
   const dots = Array.from(
@@ -69,7 +72,9 @@ export function below(told: Told, i: number): string {
     (shot.gap ? `<span class="gap">${esc(shot.gap)}</span>` : "") +
     `</div><p class="fact">${esc(shot.fact)}</p>` +
     (shot.guess ? `<p class="guess">${esc(shot.guess)}</p>` : "") +
-    (shot.question ? `<p class="ask">${esc(shot.question)}</p>` : "") +
+    (shot.question
+      ? `<p class="ask">${statement === null ? esc(shot.question) : askedChip(statement, shot.question)}</p>`
+      : "") +
     `</div>`
   );
 }
@@ -109,6 +114,7 @@ export const leastScale = (L: Layout, padding: number) =>
 
 export class Drawer {
   private told: Told | null = null;
+  private statement: number | null = null;
   private i = 0;
   private height: number | null = null;
   private edge = 0;
@@ -118,15 +124,20 @@ export class Drawer {
     /** A tap on the path row: which step of it, the timeline first, and the
      * events the case is about. */
     private readonly back: (step: number, events: number[]) => void,
+    /** A tap on the question's chip, once the drawer has gone back to the
+     * cluster, so the message box it goes into is in sight. */
+    private readonly answer: (chip: Chip) => void,
   ) {
     panel.classList.add("pbp");
     panel.hidden = true;
     panel.addEventListener("click", (e) => this.tap(e));
   }
 
-  /** Slide the drawer in on the first snapshot of a told case. */
-  open(tl: Timeline, told: Case): void {
+  /** Slide the drawer in on the first snapshot of a told case, and the message
+   * it was kept as. */
+  open(tl: Timeline, told: Case, statement: number | null): void {
     this.told = new Told(tl, told);
+    this.statement = statement;
     this.i = 0;
     this.height = null;
     const years = tl.clusters.find((c) => c.id === told.cluster_id)?.label ?? spanOf(this.told);
@@ -146,7 +157,7 @@ export class Drawer {
     const q = (sel: string) => this.panel.querySelector<HTMLElement>(sel)!;
     q(".wire").innerHTML = yearsLine(told.tl, told, this.i);
     q(".draw").innerHTML = told.shot(this.i).svg;
-    q(".scroll").innerHTML = below(told, this.i);
+    q(".scroll").innerHTML = below(told, this.i, this.statement);
     this.fit();
   }
 
@@ -158,7 +169,7 @@ export class Drawer {
       const sc = lv.querySelector<HTMLElement>(".scroll")!;
       const keep = sc.innerHTML;
       const captions = told.steps.map((_, j) => {
-        sc.innerHTML = below(told, j);
+        sc.innerHTML = below(told, j, this.statement);
         return sc.offsetHeight;
       });
       sc.innerHTML = keep;
@@ -176,6 +187,11 @@ export class Drawer {
   private tap(e: Event): void {
     const step = (e.target as Element).closest<HTMLElement>("[data-step]");
     if (step) return this.back(Number(step.dataset.step), this.told!.eventIds);
+    const chip = (e.target as Element).closest<HTMLElement>("button.chip[data-kind]");
+    if (chip) {
+      this.back(CLUSTER, this.told!.eventIds);
+      return this.answer(chipOf(chip));
+    }
     const b = (e.target as Element).closest<HTMLElement>("[data-act]");
     if (!b || !this.told) return;
     const act = b.dataset.act as Act;

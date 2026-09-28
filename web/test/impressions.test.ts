@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { token } from "../src/chips";
+import { Lead, token } from "../src/chips";
 import { PARTLY, questionsHtml } from "../src/questions";
 import { text, toolLine, ToolName } from "../src/tools";
 import {
@@ -123,7 +123,7 @@ describe("tapping an impression", () => {
       label: "Moved to Tacoma",
       tone: ChipTone.Data,
       bare: false,
-    });
+    }, Lead.None);
     expect(handlers.record).toHaveBeenCalledWith(InteractionKind.ChipTap, ItemKind.Event, "14");
     await click("i2", "[data-ev]", { ev: "2" });
     expect(handlers.onAsked).toHaveBeenCalledWith({ discussion_id: 5, statement_id: 812 }, false);
@@ -154,6 +154,7 @@ describe("pushing back on an impression", () => {
     await click("i2", ".partly");
     expect(handlers.onChip).toHaveBeenCalledWith(
       expect.objectContaining({ kind: ChipKind.Impression, target: "i2" }),
+      Lead.None,
       " — partly, because ",
     );
     expect(handlers.record).toHaveBeenCalledWith(InteractionKind.Look, ItemKind.Question, "i2");

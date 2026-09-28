@@ -110,7 +110,7 @@ test.describe("the play-by-play drawer", () => {
     await expect(count(page)).toHaveText("2 of 4");
     await drawer(page).locator('[data-act="dot"]').nth(3).click();
     await expect(count(page)).toHaveText("4 of 4");
-    await expect(drawer(page).locator(".ask")).toHaveText("Where was Cal in the year Ada stopped speaking to Ben?");
+    await expect(drawer(page).locator("p.ask")).toHaveText("Where was Cal in the year Ada stopped speaking to Ben?");
     await drawer(page).locator('[data-act="back"]').click();
     await expect(count(page)).toHaveText("3 of 4");
     await expect(drawer(page).locator(".guess")).toHaveText(/^My guess: /);

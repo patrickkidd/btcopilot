@@ -1,5 +1,5 @@
 import { esc, el } from "./dom";
-import { tokenize } from "./chips";
+import { askedChip, chipOf, face, LEAD, Lead, pill, token, tokenize } from "./chips";
 import { hush, say } from "./speech";
 import { INFO, notesView, type Notes } from "./notes";
 import { html, type Line } from "./tools";
@@ -57,8 +57,6 @@ interface Written {
  * is amber too, but it is their own words, not an offer. */
 const isOffer = (p: Piece) => "chip" in p && p.chip.kind === ChipKind.Ask;
 
-/** An offer wears square brackets around its words. */
-export const face = (kind: ChipKind, full: string) => (kind === ChipKind.Ask ? `[${full}]` : full);
 
 function layout(pieces: Piece[]): Written {
   const offered = pieces.findIndex(isOffer);
@@ -85,6 +83,15 @@ function layout(pieces: Piece[]): Written {
     tail: rest.slice(lastOffer + 1),
   };
 }
+/** A reply's closing question: the amber chip that answers it once the reply
+ * is stored, the amber words before then. */
+const asked = (ask: string, statementId: number | null) =>
+  statementId === null ? esc(ask) : askedChip(statementId, ask);
+
+/** The statement a bubble was stored as, once the server has said. */
+const stamped = (bubble: HTMLElement) =>
+  bubble.dataset.statement ? Number(bubble.dataset.statement) : null;
+
 /** A reference the server has only half sent: it is held back until the rest
  * of it arrives, so the reader never sees brackets. */
 const PART = /\[\[[^\]]*$/;
@@ -149,13 +156,7 @@ export class Chat {
       }
       e.preventDefault();
       if (host === this.composer) return void button.remove();
-      this.handlers.onChip({
-        kind: button.dataset.kind as Chip["kind"],
-        target: button.dataset.target ?? "",
-        label: button.dataset.full ?? "",
-        tone: button.classList.contains(ChipTone.Ask) ? ChipTone.Ask : ChipTone.Data,
-        bare: false,
-      });
+      this.handlers.onChip(chipOf(button));
     };
     this.watchScrolling();
     // the thread's box changes size after it is put up — a phone's toolbar
@@ -169,17 +170,8 @@ export class Chat {
     this.composer.addEventListener("click", tap(this.composer));
   }
 
-  /** One size, the whole label, never cut. The coach's labels are capped at
-   * the source, so a chip that needs shortening is a bug upstream rather than
-   * something for the reader to expand. */
   private pill(chip: Chip): string {
-    const full = this.handlers.label(chip);
-    return (
-      `<button type="button" class="chip ${chip.tone}" ` +
-      `data-kind="${chip.kind}" data-target="${esc(chip.target)}" ` +
-      `data-full="${esc(full)}" title="${esc(full)}"${chip.bare ? " data-bare" : ""}>` +
-      `${esc(face(chip.kind, full))}</button>`
-    );
+    return pill(chip, this.handlers.label(chip));
   }
 
   /** The thread is drawn before the record arrives, so a chip written with no
@@ -208,11 +200,11 @@ export class Chat {
   /** A whole reply as it stands when nothing is typing: the words, the closing
    * question in amber, and the offers in their own row. A reopened session must
    * read exactly as the reply did when it was written. */
-  private written(pieces: Piece[]): string {
+  private written(pieces: Piece[], statementId: number | null): string {
     const { words, ask, offers, tail } = layout(pieces);
     return (
       this.render(words) +
-      (ask ? `<div class="ask">${esc(ask)}</div>` : "") +
+      (ask ? `<div class="ask">${asked(ask, statementId)}</div>` : "") +
       (offers.length
         ? `<div class="offer">${offers.map((c) => this.pill(c)).join("")}</div>`
         : "") +
@@ -270,7 +262,7 @@ export class Chat {
       "div",
       `bub ${role}`,
       role === Role.Coach
-        ? `<div class="who">Coach</div>` + this.written(tokenize(text, tone))
+        ? `<div class="who">Coach</div>` + this.written(tokenize(text, tone), statementId)
         : // Only the coach offers; the same chip sent back by the user is words
           // in their own sentence.
           this.render(tokenize(text, tone)),
@@ -413,7 +405,7 @@ export class Chat {
           extra.remove();
         const { words: said, ask, offers, tail } = layout(tokenize(text));
         words.innerHTML = this.render(said);
-        if (ask) bubble.append(el("div", "ask", esc(ask)));
+        if (ask) bubble.append(el("div", "ask", asked(ask, stamped(bubble))));
         if (offers.length) {
           const row = el("div", "offer");
           for (const offer of offers)
@@ -471,6 +463,7 @@ export class Chat {
           const line = el("div", "ask");
           bubble.append(line);
           await write(line, ask, ASK_TICK_MS);
+          line.innerHTML = asked(ask, stamped(bubble));
         }
         if (offers.length) {
           const row = el("div", "offer");
@@ -517,12 +510,13 @@ export class Chat {
   }
 
   /** Drop a chip into the composer at the caret, as an inline pill, with the
-   * words that follow it. A chip the coach offered keeps its amber, so what the
-   * user is about to send still looks like the thing they tapped. */
-  insert(chip: Chip, after = " "): void {
+   * words that go before it and the words that follow it. A chip the coach
+   * offered keeps its amber, so what the user is about to send still looks
+   * like the thing they tapped. */
+  insert(chip: Chip, lead: Lead, after = " "): void {
     this.composer.focus({ preventScroll: true });
     const selection = window.getSelection();
-    const html = this.pill(chip) + esc(after);
+    const html = (LEAD[lead] ? esc(`${LEAD[lead]} `) : "") + this.pill(chip) + esc(after);
     if (
       selection?.rangeCount &&
       this.composer.contains(selection.getRangeAt(0).commonAncestorContainer)
@@ -547,9 +541,11 @@ export class Chat {
   draft(): string {
     let out = "";
     this.composer.childNodes.forEach((node) => {
-      const kind = node instanceof HTMLElement ? node.dataset.kind : undefined;
+      const kind = node instanceof HTMLElement ? (node.dataset.kind as ChipKind) : undefined;
+      const at = (node as HTMLElement).dataset;
+      // a message is no item of the record, so its question travels as its words
       out += kind
-        ? `[[${kind}:${(node as HTMLElement).dataset.target}]]`
+        ? token(kind, at.target!, kind === ChipKind.Message ? at.full : undefined)
         : (node.textContent ?? "");
     });
     return out.replace(/\u00a0/g, " ").trim();

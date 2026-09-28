@@ -422,9 +422,9 @@ def test_a_chip_to_a_stored_cluster_resolves_and_the_picture_can_aim_at_it(famil
     data = family.get_diagram_data()
     cluster_id = next(iter(clusters_of(family)))
 
-    assert chips.resolves(ChipKind.Cluster, cluster_id, data)
+    assert chips.resolves(ChipKind.Cluster, cluster_id, data, None)
     assert (
-        chips.validate(f"[[cluster:{cluster_id}|that spring]]", data)
+        chips.validate(f"[[cluster:{cluster_id}|that spring]]", data, None)
         == f"[[cluster:{cluster_id}|that spring]]"
     )
     clusters = build_timeline(data)["clusters"]

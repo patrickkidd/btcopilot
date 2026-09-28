@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { drawer, fetched, sentAt } from "./drawer";
-import { token } from "../src/chips";
-import { face } from "../src/chat";
+import { face, token } from "../src/chips";
 import { EMPTY, questionsHtml } from "../src/questions";
 import { text, toolLine, ToolName } from "../src/tools";
 import {

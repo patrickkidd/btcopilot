@@ -54,7 +54,7 @@ def start(discussion: Discussion, statement: str) -> dict:
         raise Busy(BUSY)
     said = Statement(
         discussion_id=discussion.id,
-        text=chips.validate(statement, record_of(discussion)),
+        text=chips.validate(statement, record_of(discussion), discussion.diagram_id),
         speaker=discussion.chat_user_speaker,
         order=discussion.next_order(),
         kind=StatementKind.Turn,

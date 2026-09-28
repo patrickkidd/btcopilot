@@ -1,5 +1,5 @@
 import * as api from "./api";
-import { itemKind, token } from "./chips";
+import { itemKind, Lead, token } from "./chips";
 import { esc } from "./dom";
 import { Swipe } from "./swipe";
 import { Feature, tap } from "./track";
@@ -51,6 +51,14 @@ export const questionChip = (q: AskedQuestion): Chip =>
   q.kind === QuestionKind.Impression
     ? { kind: ChipKind.Impression, target: q.id, label: q.text, tone: ChipTone.Data, bare: false }
     : { kind: ChipKind.Question, target: q.id, label: q.text, tone: ChipTone.Ask, bare: false };
+
+/** The words a question from each list goes into the message box after
+ * (R-0586). An impression goes in with none. */
+const LEAD_OF: Record<QuestionKind, Lead> = {
+  [QuestionKind.Thought]: Lead.Thought,
+  [QuestionKind.Fact]: Lead.Fact,
+  [QuestionKind.Impression]: Lead.None,
+};
 
 /** A thing an impression rests on, as a chip into the message box. A message
  * is not a chip there: it opens where it was said. */
@@ -120,8 +128,9 @@ export function questionsHtml(asked: AskedQuestion[], now: Date): string {
 }
 
 export interface QuestionHandlers {
-  /** A reference goes into the message box, with any words after it. */
-  onChip(chip: Chip, after?: string): void;
+  /** A reference goes into the message box, with the words before it and any
+   * words after it. */
+  onChip(chip: Chip, lead: Lead, after?: string): void;
   /** The reader asked to see where something was said; `ask` lights the
    * question that closes that reply. */
   onAsked(where: CodedIn, ask: boolean): void;
@@ -187,7 +196,7 @@ export class Questions {
       this.handlers.record(InteractionKind.ChipTap, ItemKind.Question, q.id);
       const impression = q.kind === QuestionKind.Impression;
       tap(impression ? Feature.ImpressionText : Feature.QuestionChip, item);
-      this.handlers.onChip(questionChip(q));
+      this.handlers.onChip(questionChip(q), LEAD_OF[q.kind]);
     } else if (target.closest("button.qwhen")) {
       const impression = q.kind === QuestionKind.Impression;
       tap(impression ? Feature.ImpressionSession : Feature.QuestionSession, item);
@@ -206,7 +215,7 @@ export class Questions {
     }
     const chip = evidenceChip(e);
     this.handlers.record(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
-    this.handlers.onChip(chip);
+    this.handlers.onChip(chip, Lead.None);
   }
 
   private find(row: HTMLElement): AskedQuestion {
@@ -247,6 +256,6 @@ export class Questions {
     tap(Feature.ImpressionPartly, { kind: ItemKind.Question, id: q.id });
     this.partly.add(q.id);
     this.swipe.close();
-    this.handlers.onChip(questionChip(q), PARTLY);
+    this.handlers.onChip(questionChip(q), Lead.None, PARTLY);
   }
 }

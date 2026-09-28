@@ -356,9 +356,9 @@ def test_an_impression_chip_and_a_pair_bond_chip_survive_and_a_wrong_kind_does_n
         pair_bonds=[{"id": 3, "person_a": 1, "person_b": 2}],
         questions=MAP.questions,
     )
-    text = chips.validate("[[impression:i3]] [[pair_bond:3]] [[impression:q1]]", data)
+    text = chips.validate("[[impression:i3]] [[pair_bond:3]] [[impression:q1]]", data, None)
     assert text == "[[impression:i3]] [[pair_bond:3]] this impression"
-    assert chips.context("[[pair_bond:3]] [[impression:i3]]", data).splitlines()[1:] == [
+    assert chips.context("[[pair_bond:3]] [[impression:i3]]", data, None).splitlines()[1:] == [
         "pair bond 3: Wren & Bo",
         f'impression i3: "{TENSE}"',
     ]

@@ -495,8 +495,8 @@ def stored_data(diagram) -> DiagramData:
 
 def test_a_question_chip_survives_and_one_the_record_lacks_does_not():
     # R-0072
-    text = chips.validate("[[question:q3]] and [[question:q9]]", MAP)
+    text = chips.validate("[[question:q3]] and [[question:q9]]", MAP, None)
     assert text == "[[question:q3]] and this question"
-    assert chips.context("[[question:q3]]", MAP).splitlines()[1] == (
+    assert chips.context("[[question:q3]]", MAP, None).splitlines()[1] == (
         "question q3: \"How does your father respond when he's anxious?\""
     )

@@ -135,10 +135,10 @@ def _again(model, system, messages: list[dict], spoken: str, ask: str, turn_id: 
 
 
 def shorten_labels(
-    model, system, messages: list[dict], spoken: str, data, turn_id=""
+    model, system, messages: list[dict], spoken: str, data, diagram_id: int | None, turn_id=""
 ) -> str:
     """Ask once for shorter chip labels."""
-    over = chips.too_long(spoken, data)
+    over = chips.too_long(spoken, data, diagram_id)
     if not over:
         return spoken
     _log.warning(f"Chip labels too long, asking again: {over}")
@@ -152,7 +152,7 @@ def shorten_labels(
         ),
         turn_id,
     )
-    still = chips.too_long(shortened, data)
+    still = chips.too_long(shortened, data, diagram_id)
     if still:
         raise LabelTooLong(f"Chip labels still too long after asking again: {still}")
     return shortened
@@ -273,7 +273,7 @@ class CoachTurn:
         if self.statement_id is None:
             user_statement = Statement(
                 discussion_id=self.discussion.id,
-                text=chips.validate(self.statement, data),
+                text=chips.validate(self.statement, data, self.discussion.diagram_id),
                 speaker=self.discussion.chat_user_speaker,
                 order=self.discussion.next_order(),
                 kind=StatementKind.Turn,
@@ -381,11 +381,11 @@ class CoachTurn:
         if not spoken.strip():
             raise EmptyReply(f"Turn {self.turn_id} produced no words for the user")
         spoken = shorten_labels(
-            self.model, system, messages, spoken, self.data, self.turn_id
+            self.model, system, messages, spoken, self.data, self.discussion.diagram_id, self.turn_id
         )
         spoken = narrate(self.model, system, messages, spoken, self.turn_id)
 
-        reply = chips.validate(spoken.strip(), self.data)
+        reply = chips.validate(spoken.strip(), self.data, self.discussion.diagram_id)
         # What was typed out live is the words as the model first said them. A
         # retry for shorter labels or for sentences replaces them, so the page
         # is told to drop what it has and take these instead.
@@ -536,7 +536,7 @@ class CoachTurn:
             messages.insert(0, {"role": "user", "content": "Hello"})
 
         spoken = self.statement
-        pointed = chips.context(self.statement, self.data)
+        pointed = chips.context(self.statement, self.data, self.discussion.diagram_id)
         if pointed:
             spoken = f"{spoken}\n\n{pointed}"
         _say(messages, ("user", spoken))

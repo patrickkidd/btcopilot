@@ -11,10 +11,10 @@ const told = new Told(tl, apart());
 
 // R-0562
 it("steps by hand: Back is off on the first snapshot, Next on the last, and the count says where", () => {
-  const first = below(told, 0);
+  const first = below(told, 0, null);
   expect(first).toMatch(/data-act="back" disabled/);
   expect(first).toContain("1 of 5");
-  const last = below(told, 4);
+  const last = below(told, 4, null);
   expect(last).toMatch(/data-act="next" disabled/);
   expect(last).toContain("5 of 5");
   expect([...last.matchAll(/class="dot( on)?"/g)]).toHaveLength(5);
@@ -22,12 +22,12 @@ it("steps by hand: Back is off on the first snapshot, Next on the last, and the 
 
 // R-0563
 it("keeps the guess apart from the fact, and asks the question only on the last snapshot", () => {
-  const last = below(told, 4);
+  const last = below(told, 4, null);
   expect(last).toMatch(/<p class="fact">Your teacher called Delphine/);
   expect(last).toMatch(/<p class="guess">My guess: /);
   expect(last).toMatch(/<p class="ask">Theo started day care/);
-  expect(below(told, 3)).not.toContain('class="ask"');
-  expect(below(told, 0)).not.toContain('class="guess"');
+  expect(below(told, 3, null)).not.toContain('class="ask"');
+  expect(below(told, 0, null)).not.toContain('class="guess"');
 });
 
 // R-0542, R-0540
@@ -78,7 +78,7 @@ it("stops shrinking where labels reach 13px, shapes 36px or the margin 20px", ()
 // R-0570
 it("tells a case nobody told with no point line and no closing question", () => {
   const quiet = new Told(tl, untold(tl, [203, 204]));
-  expect(below(quiet, quiet.length - 1)).not.toContain('class="ask"');
+  expect(below(quiet, quiet.length - 1, null)).not.toContain('class="ask"');
   expect(pointLine(quiet)).toBe("");
   expect(pointLine(told)).toContain("As Marcus drank less");
 });
@@ -90,6 +90,6 @@ it("draws a sparse record's person with no family tie beside the reader, and end
   expect(L.bonds).toHaveLength(0);
   expect(L.gen[String(DELPHINE)]).toBe(L.gen[String(CORINNE)]);
   expect(L.x[String(DELPHINE)]).toBeGreaterThan(L.x[String(CORINNE)]);
-  expect(below(thin, 1)).toMatch(/<p class="ask">Who else was in the house that year\?/);
-  expect(below(thin, 0)).not.toContain('class="ask"');
+  expect(below(thin, 1, null)).toMatch(/<p class="ask">Who else was in the house that year\?/);
+  expect(below(thin, 0, null)).not.toContain('class="ask"');
 });

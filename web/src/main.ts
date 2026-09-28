@@ -16,7 +16,7 @@ import { Rules } from "./rules";
 import { Sessions } from "./sessions";
 import { sessionTitle, summaryOf } from "./search";
 import { Settings } from "./settings";
-import { aimedEvents, chips, itemKind } from "./chips";
+import { aimedEvents, chips, itemKind, Lead } from "./chips";
 import { feed } from "./turn";
 import { Release } from "./release";
 import { toolLine } from "./tools";
@@ -226,26 +226,34 @@ const cases = new Map<number, Kept>();
 /** The play-by-play drawer (R-0542): a tap on its path goes back to that step
  * of the picture: the whole timeline, or the case's cluster opened, whether
  * or not it was open when the drawer came up. */
-const pbp = new Drawer($("pbp"), (step, events) => {
-  pbp.close();
-  if (step) picture.open(events);
-  else picture.back(0);
-  pic = REST;
-  actions();
-});
+const pbp = new Drawer(
+  $("pbp"),
+  (step, events) => {
+    pbp.close();
+    if (step) picture.open(events);
+    else picture.back(0);
+    pic = REST;
+    actions();
+  },
+  (chip) => chipTap(chip),
+);
+
+/** A chip tapped in the thread or the drawer. Two kinds of chip, and the
+ * colour says which. An amber chip is the coach asking: an old offer goes into
+ * the message as words, and a question it asked goes in as the reference that
+ * answers it (R-0587). A teal chip is a reference into the record, so it aims
+ * the picture. A chip in an old prose walk is a chip like any other (R-0501,
+ * R-0570). */
+function chipTap(chip: Chip): void {
+  tapped(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
+  track.tap(Feature.ChipTap, { kind: itemKind(chip.kind), id: chip.target });
+  if (offered(chip)) chat.insert(chip, chip.kind === ChipKind.Message ? Lead.Answer : Lead.None);
+  else aim(chip);
+}
 
 const chat = new Chat($("chat"), $("composer"), {
   label: chipLabel,
-  onChip: (chip) => {
-    tapped(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
-    track.tap(Feature.ChipTap, { kind: itemKind(chip.kind), id: chip.target });
-    // Two kinds of chip, and the colour says which. An amber chip is an offer:
-    // it names nothing in the record, so it goes into the message as words. A
-    // teal chip is a reference into the record, so it aims the picture.
-    // A chip in an old prose walk is a chip like any other (R-0501, R-0570).
-    if (offered(chip)) chat.insert(chip);
-    else aim(chip);
-  },
+  onChip: chipTap,
   // A tap on a message's own words is a look: the picture lights what that
   // message named, nothing enters the composer, and no turn is spent.
   onBubble: (text) => {
@@ -260,7 +268,7 @@ const chat = new Chat($("chat"), $("composer"), {
   onPlay: (statement) => {
     const kept = cases.get(statement);
     if (!kept) return false;
-    reopen(kept, timeline.clusters, (told) => pbp.open(timeline, told), (id) => void explain(id));
+    reopen(kept, timeline.clusters, (told) => pbp.open(timeline, told, statement), (id) => void explain(id));
     return true;
   },
 });
@@ -280,9 +288,9 @@ const toThread = () => {
 /** A question or impression tapped in the drawer goes into the message as a
  * reference with the cursor after it, and nothing is sent (R-0072). */
 const questions = new Questions($("menu-body"), {
-  onChip: (chip, after) => {
+  onChip: (chip, lead, after) => {
     toThread();
-    chat.insert(chip, after);
+    chat.insert(chip, lead, after);
   },
   onAsked: (where, ask) => {
     toThread();
@@ -699,7 +707,7 @@ function apply(outcome: Outcome, named: number[] | null = null): void {
       label: selLabel(outcome.insert),
       tone: ChipTone.Data,
       bare: false,
-    });
+    }, Lead.Ask);
   if (outcome.play) void explain(outcome.play);
 }
 
@@ -840,7 +848,7 @@ function shown(view: View): Promise<void> | void {
         : null;
   if (ids === null) return picture.show(view);
   const told = untold(timeline, ids);
-  if (told.snapshots.length) pbp.open(timeline, told);
+  if (told.snapshots.length) pbp.open(timeline, told, null);
 }
 
 /** Ask the coach to tell the cluster on screen. The case opens in its drawer
@@ -868,7 +876,7 @@ async function explain(clusterId: string): Promise<void> {
   if (id === null || !cases.has(id))
     chat.add(Role.Coach, reply.statement, ChipTone.Data, id, reply.cluster_id);
   if (id !== null) cases.set(id, { case: reply.case, digest: reply.digest });
-  pbp.open(timeline, reply.case);
+  pbp.open(timeline, reply.case, id);
 }
 
 /** What went wrong, in the words the reader needs: nothing came back, the

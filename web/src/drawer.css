@@ -45,7 +45,7 @@
 .pbp .when .gap { color: var(--faint); font-weight: 400; }
 .pbp .fact { margin: 0; font: 400 16px/1.42 var(--sans); color: var(--ink); }
 .pbp .guess { margin: 0; font: 400 15px/1.42 var(--sans); color: var(--faint); }
-.pbp .ask { margin: 4px 0 0; font: 500 16px/1.42 var(--sans); color: var(--ask-text); }
+.pbp p.ask { margin: 4px 0 0; font: 500 16px/1.42 var(--sans); color: var(--ask-text); }
 
 /* ---- the drawings ---- */
 .pbp svg text { font-family: var(--mono); }
