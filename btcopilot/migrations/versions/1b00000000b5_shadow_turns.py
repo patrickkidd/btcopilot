@@ -1,5 +1,8 @@
-"""A real turn can be run again on a second model over a copy of the record,
-and what that model said, called and spent is kept for comparison [R-0595].
+"""A real turn can be run again on a second model over a scratch copy of the
+record, and what that model said, called and spent is kept for comparison; the
+scratch diagram is never listed to the user whose turn it copies [R-0595].
+Patrick picks the better of two replies to the same words without knowing
+which model wrote either, and each pick is kept per pair [R-0598].
 
 Revision ID: 1b00000000b5
 Revises: 1b00000000b4
@@ -15,8 +18,19 @@ down_revision = "1b00000000b4"
 branch_labels = None
 depends_on = None
 
+JSON = postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "sqlite")
+SOURCE = sa.Enum("shadow", "replay", name="picksource")
+CHOICE = sa.Enum("left", "right", "tie", name="pickchoice")
+
 
 def upgrade():
+    with op.batch_alter_table("diagrams", schema=None) as batch_op:
+        batch_op.add_column(
+            sa.Column(
+                "scratch", sa.Boolean(), nullable=False, server_default=sa.false()
+            )
+        )
+
     op.create_table(
         "shadow_turns",
         sa.Column("turn_id", sa.String(length=64), nullable=False),
@@ -27,11 +41,7 @@ def upgrade():
         sa.Column("model", sa.String(length=64), nullable=False),
         sa.Column("snapshot", sa.Text(), nullable=True),
         sa.Column("text", sa.Text(), nullable=True),
-        sa.Column(
-            "tool_calls",
-            postgresql.JSONB(astext_type=Text()).with_variant(sa.JSON(), "sqlite"),
-            nullable=True,
-        ),
+        sa.Column("tool_calls", JSON, nullable=True),
         sa.Column("input_tokens", sa.Integer(), nullable=True),
         sa.Column("output_tokens", sa.Integer(), nullable=True),
         sa.Column("cache_creation_tokens", sa.Integer(), nullable=True),
@@ -59,6 +69,30 @@ def upgrade():
         )
         batch_op.create_index(batch_op.f("ix_shadow_turns_user_id"), ["user_id"])
 
+    op.create_table(
+        "model_picks",
+        sa.Column("pair", sa.String(length=64), nullable=False),
+        sa.Column("source", SOURCE, nullable=False),
+        sa.Column("left_ref", JSON, nullable=False),
+        sa.Column("right_ref", JSON, nullable=False),
+        sa.Column("choice", CHOICE, nullable=True),
+        sa.Column("note", sa.String(length=200), nullable=True),
+        sa.Column("user_id", sa.Integer(), nullable=True),
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), nullable=True),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("pair"),
+    )
+    with op.batch_alter_table("model_picks", schema=None) as batch_op:
+        batch_op.create_index(batch_op.f("ix_model_picks_id"), ["id"])
+
 
 def downgrade():
+    op.drop_table("model_picks")
+    CHOICE.drop(op.get_bind(), checkfirst=True)
+    SOURCE.drop(op.get_bind(), checkfirst=True)
     op.drop_table("shadow_turns")
+    with op.batch_alter_table("diagrams", schema=None) as batch_op:
+        batch_op.drop_column("scratch")
