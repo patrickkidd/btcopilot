@@ -242,15 +242,24 @@ const pbp = new Drawer(
   (chip) => chipTap(chip),
 );
 
+/** A play-by-play message's stored telling, opened again with no call. */
+function replay(statement: number): boolean {
+  const kept = cases.get(statement);
+  if (kept) pbp.open(timeline, kept.case, statement);
+  return kept !== undefined;
+}
+
 /** A chip tapped in the thread or the drawer. Two kinds of chip, and the
  * colour says which. An amber chip is the coach asking: an old offer goes into
  * the message as words, and a question it asked goes in as the reference that
  * answers it (R-0587). A teal chip is a reference into the record, so it aims
- * the picture. A chip in an old prose walk is a chip like any other (R-0501,
- * R-0570). */
+ * the picture, except the cluster chip a play-by-play leads with, which plays
+ * that message's stored telling again with no call to the coach. A chip in an
+ * old prose walk is a chip like any other (R-0501, R-0570). */
 function chipTap(chip: Chip): void {
   tapped(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
   track.tap(Feature.ChipTap, { kind: itemKind(chip.kind), id: chip.target });
+  if (chip.play !== undefined && replay(chip.play)) return;
   if (offered(chip)) chat.insert(chip, chip.kind === ChipKind.Message ? Lead.Answer : Lead.None);
   else aim(chip);
 }
@@ -660,9 +669,7 @@ async function openSession(id: number, kind?: SessionKind): Promise<void> {
   const picked = known.find((s) => s.id === id);
   if (picked && statements.length)
     chat.system(`Resumed · ${sessionTitle(picked)} — ${summaryOf(picked)}`);
-  const last = [...statements].reverse().find((s) => s.role === Role.Coach);
-  if (last) spotlightFrom(last.text);
-  else actions();
+  leftAt(statements);
   thread.style.opacity = "";
   chat.toEnd();
 }
@@ -1086,6 +1093,13 @@ async function reattach(): Promise<void> {
   }
 }
 
+/** The picture where the last coach message left it. A play-by-play's
+ * cluster chip is there to play it again, so it aims nothing on the way back. */
+function leftAt(statements: Statement[]): void {
+  const last = [...statements].reverse().find((s) => s.role === Role.Coach);
+  spotlightFrom(last && !last.case ? last.text : "");
+}
+
 function spotlightFrom(text: string): void {
   const named = aimedFrom(text);
   if (named.length) picture.spotlight(named);
@@ -1310,8 +1324,7 @@ void load().then(async () => {
     return;
   }
   // Coming back a week later, the picture is where the last message left it.
-  const last = [...said].reverse().find((s) => s.role === Role.Coach);
-  if (last) spotlightFrom(last.text);
+  leftAt(said);
 });
 
 // Never while developing: the worker answers a reload out of its own cache,

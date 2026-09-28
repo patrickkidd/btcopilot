@@ -154,6 +154,14 @@ export const pill = (chip: Chip, full: string): string =>
   `data-full="${esc(full)}" title="${esc(full)}"${chip.bare ? " data-bare" : ""}>` +
   `${esc(face(chip.kind, full))}</button>`;
 
+/** The play-by-play message whose own cluster this pill names, if any. */
+function playOf(button: HTMLElement): number | undefined {
+  const bubble = button.closest<HTMLElement>(".bub[data-play][data-statement]");
+  if (!bubble || button.dataset.kind !== ChipKind.Cluster || bubble.dataset.play !== button.dataset.target)
+    return undefined;
+  return Number(bubble.dataset.statement);
+}
+
 /** The chip a tapped pill stands for. */
 export const chipOf = (button: HTMLElement): Chip => ({
   kind: button.dataset.kind as ChipKind,
@@ -161,6 +169,7 @@ export const chipOf = (button: HTMLElement): Chip => ({
   label: button.dataset.full ?? "",
   tone: button.classList.contains(ChipTone.Ask) ? ChipTone.Ask : ChipTone.Data,
   bare: false,
+  play: playOf(button),
 });
 
 /** The question a coach message ended on, as the amber chip that answers it:

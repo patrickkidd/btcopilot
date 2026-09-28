@@ -38,6 +38,23 @@ test.describe("the play-by-play drawer", () => {
     await expect(drawer(page).locator(".path .here")).toHaveText("explain");
   });
 
+  // R-0590, R-0545, R-0563
+  test("the teal cluster chip in the play message replays its stored telling, with no call to the coach", async ({ page }) => {
+    await settle(page);
+    const plays: string[] = [];
+    page.on("request", (r) => {
+      if (/\/app\/play$/.test(r.url())) plays.push(r.url());
+    });
+    const chip = stored(page).locator('button.chip[data-kind="cluster"]');
+    await expect(chip).toHaveClass(/\bdata\b/);
+    await expect(chip).toHaveText("The walk");
+    await chip.click();
+    await expect(drawer(page)).toBeVisible();
+    await expect(count(page)).toHaveText("1 of 4");
+    await expect(drawer(page).locator(".point")).toContainText("Ada moved toward Ben");
+    expect(plays).toEqual([]);
+  });
+
   // R-0542, R-0540, R-0223
   test("reopened from its message, the path's years step opens that cluster", async ({ page }) => {
     await settle(page);

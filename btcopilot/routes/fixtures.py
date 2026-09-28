@@ -394,7 +394,7 @@ PLAY_CHAT = [
     ("user", "and again, in pictures"),
     (
         "coach",
-        PLAY_CASE.point,
+        playturn.worded({"id": PLAY_CLUSTER, "name": "The walk"}, PLAY_CASE.point),
         {
             "kind": StatementKind.Play,
             "cluster_id": PLAY_CLUSTER,

@@ -142,12 +142,12 @@ def test_the_play_turn_offers_only_its_tool_and_keeps_the_case(discussion):
 
     assert model.offered == [[Tool.PlayByPlay.value]]
     assert "201 1980-09-15" in model.histories[0][-1]["content"]
-    assert reply["statement"] == told()["point"]
+    assert reply["statement"] == playturn.worded(record().clusters[0], told()["point"])
     assert reply["case"]["snapshots"][1]["event_ids"] == [203]
     kept = db.session.get(Statement, reply["statement_id"])
     assert (kept.kind, kept.text, kept.told_case) == (
         StatementKind.Play,
-        told()["point"],
+        reply["statement"],
         reply["case"],
     )
     assert [c.turn_id for c in ModelCall.query.all()] == [kept.turn_id]

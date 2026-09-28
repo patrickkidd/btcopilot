@@ -70,6 +70,9 @@ export interface Chip {
   /** True when the coach wrote the reference with no words of its own, so the
    * label is a stand-in the record can better. */
   bare: boolean;
+  /** The play-by-play message a cluster chip was tapped in, when the chip
+   * names that play's own cluster: the tap plays its telling again. */
+  play?: number;
 }
 
 export type Piece = { text: string } | { chip: Chip };
