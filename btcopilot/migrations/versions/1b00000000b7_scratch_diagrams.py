@@ -2,14 +2,14 @@
 user whose turn it copies [R-0589].
 
 Revision ID: 1b00000000b7
-Revises: 1b00000000b5
+Revises: 1b00000000b6
 """
 
 from alembic import op
 import sqlalchemy as sa
 
 revision = "1b00000000b7"
-down_revision = "1b00000000b5"
+down_revision = "1b00000000b6"
 branch_labels = None
 depends_on = None
 
