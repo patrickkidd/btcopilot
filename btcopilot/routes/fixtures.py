@@ -24,6 +24,7 @@ from btcopilot.models import (
     ProductEvent,
     StatementKind,
 )
+from btcopilot.review.models import Coding, Cut, Item, Note, Vote
 from btcopilot.routes import bp
 from btcopilot.timeline import build_timeline
 from btcopilot.schema import (
@@ -562,6 +563,19 @@ def username(key: str) -> str:
     return f"{key}@{DOMAIN}"
 
 
+def drop_cuts(discussion_id: int):
+    """A session on the agenda is held by its cuts, and each cut by what was
+    coded and voted on it; they go before its lines, children first."""
+    cuts = [c.id for c in Cut.query.filter_by(discussion_id=discussion_id)]
+    items = [i.id for i in Item.query.filter(Item.cut_id.in_(cuts))]
+    codings = [c.id for c in Coding.query.filter(Coding.cut_id.in_(cuts))]
+    Vote.query.filter(Vote.review_item_id.in_(items)).delete()
+    Note.query.filter(Note.coding_id.in_(codings)).delete()
+    Item.query.filter(Item.id.in_(items)).delete()
+    Coding.query.filter(Coding.id.in_(codings)).delete()
+    Cut.query.filter(Cut.id.in_(cuts)).delete()
+
+
 def install(key: str):
     """Make the fixture user, replace their diagram, and replay their chat."""
     from btcopilot.extensions import db
@@ -577,6 +591,7 @@ def install(key: str):
         db.session.flush()
     for old in Diagram.query.filter_by(user_id=user.id).all():
         for discussion in old.discussions:
+            drop_cuts(discussion.id)
             discussion.chat_user_speaker_id = None
             discussion.chat_ai_speaker_id = None
             db.session.flush()
