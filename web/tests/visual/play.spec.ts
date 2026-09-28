@@ -56,6 +56,32 @@ test.describe("the play-by-play drawer", () => {
     expect(plays).toEqual([]);
   });
 
+  // R-0590, R-0576, R-0563
+  test("the teal cluster chip of a play whose cluster has changed since tells it again through explain", async ({ page }) => {
+    await page.route(/\/app\/timeline$/, async (route) => {
+      const json = await (await route.fetch()).json();
+      for (const cluster of json.clusters) cluster.digest = "changed since";
+      await route.fulfill({ json });
+    });
+    await settle(page);
+    const play = await page.evaluate(async () => {
+      const sessions = await (await fetch("/app/sessions")).json();
+      const { statements } = await (await fetch(`/app/sessions/${sessions[0].id}`)).json();
+      return statements.find((s: { case: unknown }) => s.case);
+    });
+    const plays: string[] = [];
+    await page.route(/\/app\/play$/, (route) => {
+      plays.push(route.request().postData() ?? "");
+      return route.fulfill({
+        json: { statement: play.text, statement_id: play.id, kind: "play", cluster_id: play.cluster_id, case: play.case, digest: "changed since" },
+      });
+    });
+    await stored(page).locator('button.chip[data-kind="cluster"]').click();
+    await expect(drawer(page)).toBeVisible();
+    await expect(count(page)).toHaveText("1 of 4");
+    expect(plays).toEqual([JSON.stringify({ cluster_id: play.cluster_id })]);
+  });
+
   // R-0542, R-0540, R-0223
   test("reopened from its message, the path's years step opens that cluster", async ({ page }) => {
     await settle(page);

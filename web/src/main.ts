@@ -242,19 +242,22 @@ const pbp = new Drawer(
   (chip) => chipTap(chip),
 );
 
-/** A play-by-play message's stored telling, opened again with no call. */
+/** A play-by-play message opened again, from its words or its cluster chip:
+ * the stored telling while its cluster is unchanged, told through explain
+ * once it has changed. False when the message holds no told case. */
 function replay(statement: number): boolean {
   const kept = cases.get(statement);
-  if (kept) pbp.open(timeline, kept.case, statement);
-  return kept !== undefined;
+  if (!kept) return false;
+  reopen(kept, timeline.clusters, (told) => pbp.open(timeline, told, statement), (id) => void explain(id));
+  return true;
 }
 
 /** A chip tapped in the thread or the drawer. Two kinds of chip, and the
  * colour says which. An amber chip is the coach asking: an old offer goes into
  * the message as words, and a question it asked goes in as the reference that
  * answers it (R-0587). A teal chip is a reference into the record, so it aims
- * the picture, except the cluster chip a play-by-play leads with, which plays
- * that message's stored telling again with no call to the coach. A chip in an
+ * the picture, except the cluster chip a play-by-play leads with, which opens
+ * that play again as a tap on its words does. A chip in an
  * old prose walk is a chip like any other (R-0501, R-0570). */
 function chipTap(chip: Chip): void {
   tapped(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
@@ -278,12 +281,7 @@ const chat = new Chat($("chat"), $("composer"), {
     pic = REST;
     actions();
   },
-  onPlay: (statement) => {
-    const kept = cases.get(statement);
-    if (!kept) return false;
-    reopen(kept, timeline.clusters, (told) => pbp.open(timeline, told, statement), (id) => void explain(id));
-    return true;
-  },
+  onPlay: replay,
 });
 
 /** An offer: the coach holding out something to say next, drawn amber. */
