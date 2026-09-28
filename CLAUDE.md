@@ -95,6 +95,8 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
 
 ## Owner corrections that bind every reply (2026-09-09)
 
+- **Every tuning signal feeds the learning loop, automatically (2026-09-28, Patrick: "Remember this always").** Anything that shows the coach or the app needs tuning (tool refusals and retries, failed turns, rejected play-by-play tellings, model errors) is written to the observations table, counted on the quality dashboard, and grouped into the short improvement queue he accepts or rejects. Be aggressive about what is tracked; keep the queue he reads to about ten items; real-model spend still needs his yes [R-0517].
+
 - **His terms, verified 2026-09-22 on the round-6 mockups: "cluster" (never "stretch"), "event"
   (never "moment").** Captions, rulings and code comments use those two words.
 - **Never coin a term.** Say the thing in common words every time ("signing in with an email
