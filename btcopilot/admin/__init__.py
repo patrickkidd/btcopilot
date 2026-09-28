@@ -4,11 +4,15 @@ themselves (T-11)."""
 
 import click
 
+from btcopilot.admin.coachmodels import coach_model
 from btcopilot.admin.database import database
 from btcopilot.admin.diagrams import diagrams
 from btcopilot.admin.guard import run
 from btcopilot.admin.imports import imports
 from btcopilot.admin.licences import licences
+from btcopilot.admin.observations import observations
+from btcopilot.admin.quality import quality
+from btcopilot.admin.questions import impressions_group, questions_group
 from btcopilot.admin.review import review
 from btcopilot.admin.skill import write_skill
 from btcopilot.admin.tokens import token_cap
@@ -21,7 +25,22 @@ def admin():
     coding meeting."""
 
 
-for group in (users, licences, diagrams, imports, token_cap, review, database, write_skill, run):
+for group in (
+    users,
+    licences,
+    diagrams,
+    observations,
+    quality,
+    questions_group,
+    impressions_group,
+    imports,
+    token_cap,
+    coach_model,
+    review,
+    database,
+    write_skill,
+    run,
+):
     admin.add_command(group)
 
 

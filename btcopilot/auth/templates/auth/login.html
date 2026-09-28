@@ -1,44 +1,10 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    {% include "head.html" %}
     <meta name="csrf-token" content="{{ csrf_token() }}" />
-    <meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#171d1c" media="(prefers-color-scheme: dark)" />
     <title>Family Diagram</title>
-    <link rel="apple-touch-icon" href="/app/apple-touch-icon.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Libre+Franklin:wght@400;500;600;800&display=swap" />
     <style>
-      /* The same tokens as the app's own page (web/src/theme.css); this page is
-         served before the bundle, so it carries the few it needs itself. */
-      :root {
-        --bg: #f7f6f2;
-        --panel: #fff;
-        --ink: #26312f;
-        --faint: #67746f;
-        --line: #d8d5cc;
-        --data: #0e7d78;
-        --tint: rgba(14, 125, 120, 0.08);
-        --onaccent: #fff;
-        --sans: "Libre Franklin", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-        --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-        color-scheme: light dark;
-      }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #171d1c;
-          --panel: #1f2725;
-          --ink: #e6e9e6;
-          --faint: #818f8a;
-          --line: #31403c;
-          --data: #3fc4bc;
-          --tint: rgba(63, 196, 188, 0.13);
-          --onaccent: #0d1413;
-        }
-      }
       * { box-sizing: border-box; }
       body {
         margin: 0;

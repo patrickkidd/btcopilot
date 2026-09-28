@@ -4,6 +4,7 @@ from .item import Item, ReviewStatus
 from .note import Note
 from .vote import Vote, VoteChoice
 from .rule import Rule, RuleSource
+from .pick import Pick, PickChoice, PickSource
 
 __all__ = [
     "Cut",
@@ -15,4 +16,7 @@ __all__ = [
     "VoteChoice",
     "Rule",
     "RuleSource",
+    "Pick",
+    "PickChoice",
+    "PickSource",
 ]

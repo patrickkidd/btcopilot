@@ -27,6 +27,7 @@ app = [
     "flask-bcrypt",
     "flask-mail",
     "flask-sqlalchemy",
+    "sqlalchemy<2.1",  # 2.1 opens postgresql:// with psycopg 3, which is not installed
     "flask-wtf",
     "opentelemetry-api",
     "opentelemetry-sdk",
@@ -47,6 +48,8 @@ app = [
     "anthropic>=0.97,<1",
     "google-genai",
     "rapidfuzz>=3.0.0",
+    "markdown-it-py",
+    "requests",
 ]
 
 test = [
@@ -54,6 +57,7 @@ test = [
     "build",
     "freezegun",
     "mock",
+    "pgserver>=0.1.4",
     "playwright",
     "pytest",
     "pytest-asyncio",
@@ -71,5 +75,5 @@ packages = {find = {exclude = ["build*", "dist*"]}}
 package-dir = {"" = "."}
 
 [tool.setuptools.package-data]
-"btcopilot" = ["static/**/*", "prompty/**/*"]
+"btcopilot" = ["static/**/*", "prompty/**/*", "templates/**/*"]
 "btcopilot.auth" = ["templates/**/*"]

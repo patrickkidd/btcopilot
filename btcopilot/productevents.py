@@ -21,6 +21,7 @@ class Screen(enum.StrEnum):
     Agenda = "agenda"
     Meeting = "meeting"
     Result = "result"
+    Pairs = "pairs"
 
 
 class Feature(enum.StrEnum):
@@ -37,6 +38,15 @@ class Feature(enum.StrEnum):
     CloseMenu = "close_menu"
     TabEvents = "tab_events"
     TabPeople = "tab_people"
+    TabQuestions = "tab_questions"
+    QuestionChip = "question_chip"
+    QuestionSession = "question_session"
+    QuestionDismiss = "question_dismiss"
+    ImpressionText = "impression_text"
+    ImpressionEvidence = "impression_evidence"
+    ImpressionSession = "impression_session"
+    ImpressionDoesntFit = "impression_doesnt_fit"
+    ImpressionPartly = "impression_partly"
     EventOpen = "event_open"
     PersonOpen = "person_open"
     PeopleOrder = "people_order"
@@ -83,6 +93,8 @@ class Feature(enum.StrEnum):
     MeetingKeep = "meeting_keep"
     MeetingChange = "meeting_change"
     MeetingUnresolved = "meeting_unresolved"
+    PairsOpen = "pairs_open"
+    PairPick = "pair_pick"
 
 
 def record_events(user, session_id: str, events: list[dict]) -> int:

@@ -18,7 +18,7 @@ from btcopilot.models import Discussion, Statement
 from btcopilot.toolbox import ToolName
 from btcopilot.turnlog import TurnEventKind
 from btcopilot.schema import Person, asdict
-from btcopilot.tests.conftest import Model, called, csrf_token, said
+from btcopilot.tests.conftest import Model, called, calling, csrf_token, said
 
 
 @pytest.fixture(autouse=True)
@@ -50,7 +50,7 @@ def family(test_user):
 
 def coach(monkeypatch, *scripted):
     monkeypatch.setattr(
-        "btcopilot.coachturn.CoachModel",
+        "btcopilot.turns.model_for",
         lambda *a, **k: Model(*scripted),
     )
 
@@ -141,7 +141,7 @@ def test_a_refused_turn_says_so_in_the_coachs_voice_and_is_not_retried(
     # R-0410
     refuses = Refuses()
     monkeypatch.setattr(
-        "btcopilot.coachturn.CoachModel", lambda *a, **k: refuses
+        "btcopilot.turns.model_for", lambda *a, **k: refuses
     )
     with patch("btcopilot.turns.enqueue"):
         body = post(web, token).get_json()
@@ -268,3 +268,58 @@ def test_the_log_hands_a_watcher_what_lands_after_it_started(turn_log):
 
     seen = next(carried for carried in watching if carried is not None)
     assert seen == (1, {"type": TurnEventKind.Text.value, "text": "a word"})
+
+
+def test_an_event_kind_that_does_not_exist_is_refused_and_the_turn_goes_on(
+    web, token, family, monkeypatch
+):
+    # R-0075
+    coach(
+        monkeypatch,
+        called(
+            ToolName.EditEvent,
+            kind="symptom",
+            date="2019-03-01",
+            date_certainty="certain",
+            person=1,
+            description="Headaches",
+        ),
+        said("Noted the headaches."),
+    )
+    response = post(web, token)
+    assert response.status_code == 202
+
+    body = response.get_json()
+    events = logged(body["turn_id"])
+    assert "is not one of the event kinds" in events[0]["result"]
+    assert "shift" in events[0]["result"]
+    assert events[-1]["type"] == TurnEventKind.Done.value
+    assert family.get_diagram_data().events == []
+
+
+def test_an_evidence_kind_that_does_not_exist_is_refused_and_the_turn_goes_on(
+    web, token, family, monkeypatch
+):
+    # R-0075
+    coach(
+        monkeypatch,
+        calling(
+            (
+                ToolName.AddImpression,
+                {
+                    "text": "Wren goes quiet when things get tense.",
+                    "state": "held",
+                    "evidence": [{"kind": "feeling", "id": "1"}],
+                },
+            )
+        ),
+        said("Go on."),
+    )
+    response = post(web, token)
+    assert response.status_code == 202
+
+    body = response.get_json()
+    events = logged(body["turn_id"])
+    assert "is not one of the evidence kinds" in events[0]["result"]
+    assert events[-1]["type"] == TurnEventKind.Done.value
+    assert family.get_diagram_data().questions == []

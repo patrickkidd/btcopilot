@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { stateFor, tellWithoutModel } from "./setup";
 
 /** Every word the app says can be selected and copied. Dragging a scroll area
  * and selecting a line of it are the same gesture, so where the press lands
@@ -42,13 +42,14 @@ test.describe("what the app says can be taken away", () => {
     expect((await dragAcross(page, ".fs-body .row .r1")).trim()).not.toBe("");
   });
 
-  // R-0183
-  test("the words under the picture select", async ({ page }) => {
+  // R-0183, R-0570
+  test("the play-by-play's words select", async ({ page }) => {
+    await tellWithoutModel(page);
     await settle(page);
     await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    await page.waitForTimeout(800);
-    expect((await dragAcross(page, ".bcap")).trim()).not.toBe("");
+    await expect(page.locator("#pbp")).toBeVisible();
+    await page.waitForTimeout(400);
+    expect((await dragAcross(page, "#pbp .fact")).trim()).not.toBe("");
   });
 
 });
@@ -75,36 +76,47 @@ test.describe("dragging the thread", () => {
   });
 });
 
-/** The wire's tap targets are 44 tall so a thumb can find a dot, which is tall
+/** The wire's tap targets are tall so a thumb can find a dot, which is tall
  * enough to cover the second line of a label written above it. That line was
  * unreachable as words: a tap on it answered as the dot underneath, silently
- * naming a different moment (owner bug, 2026-09-08). */
+ * naming a different moment (owner bug, 2026-09-08). The words of a loose
+ * event lead to where it was said (R-0192). */
 test.describe("a label that runs onto a second line", () => {
   test.use({ storageState: stateFor("hostile") });
 
-  // R-0207
+  // R-0544
   test("answers on both of its lines, not just the first", async ({ page }) => {
-    await settle(page);
-    const box = page.locator('.ss-hit[data-target="cluster"]').first();
-    if (await box.isVisible().catch(() => false)) await box.click();
-    await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await page.waitForTimeout(400);
     const rows = page.locator("#view .ss-t");
+    /** Pick the first loose event afresh: one inside a cluster takes no pick
+     * (R-0543), and each line is tried on a thread nothing has traced yet. */
+    const pick = async () => {
+      await settle(page);
+      await page.locator('.ss-hit[data-target="zone"]').first().click();
+      await page.waitForTimeout(400);
+      await expect(rows).not.toHaveCount(0);
+    };
+    await pick();
     // the label wraps onto a second line on the phone's narrower picture; the
     // desktop window is wide enough to hold it on one. Every line it does take
     // has to answer, which is the bug this guards.
-    await expect(rows).not.toHaveCount(0);
     const lines = await rows.count();
     if ((page.viewportSize()?.width ?? 0) < 500) expect(lines).toBe(2);
 
-    for (let row = 0; row < lines; row += 1) {
-      const at = await rows.nth(row).boundingBox();
-      if (!at) throw new Error(`row ${row} is not drawn`);
-      await page.mouse.click(at.x + at.width / 2, at.y + at.height / 2);
-      await expect(page.locator("#menu-body .editor")).toBeVisible();
-      await page.locator("#menu-close").click();
-      await expect(page.locator("#menu-screen")).toBeHidden();
-      await page.waitForTimeout(300);
-    }
+    // straight above the picked dot, and above the pill, where each mark's
+    // own target reaches up under the words (R-0544)
+    for (const mark of ["#view circle.dot.on", "#view rect.pill"])
+      for (let row = 0; row < lines; row += 1) {
+        await pick();
+        const at = await rows.nth(row).boundingBox();
+        if (!at) throw new Error(`row ${row} is not drawn`);
+        await expect(page.locator(".bub.traced")).toHaveCount(0);
+        const under = (await page.locator(mark).boundingBox())!;
+        const x = Math.min(Math.max(under.x + under.width / 2, at.x + 2), at.x + at.width - 2);
+        await page.mouse.click(x, at.y + at.height / 2);
+        // the words answered, going to where the event was said, not the mark
+        // under them
+        await expect(page.locator(".bub.traced")).toHaveCount(1);
+        await expect(page.locator("#path")).not.toHaveText(/\u203a \d{4}/);
+      }
   });
 });

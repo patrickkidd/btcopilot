@@ -8,7 +8,7 @@ from btcopilot.extensions import db
 from btcopilot import record
 from btcopilot.models import Author, Change
 from btcopilot.models import Diagram
-from btcopilot.schema import EventKind, ItemKind
+from btcopilot.schema import EventKind, ItemKind, RelationshipKind
 
 
 def _diagram(user, data: dict) -> Diagram:
@@ -98,9 +98,15 @@ def test_undo_conflict_names_the_failing_delta(subscriber):
     assert diagram.get_diagram_data().people == [{"id": 1, "name": "Cy"}]
 
 
+THREE = [
+    {"id": i, "kind": "noted", "person": 1, "description": "Moved", "dateTime": f"200{i}-01-01"}
+    for i in (1, 2, 3)
+]
+
+
 def test_write_path_creates_a_cluster(subscriber):
     # R-0076, R-0085
-    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}], "events": THREE})
 
     record.apply(
         diagram.id,
@@ -211,7 +217,11 @@ def test_a_write_that_only_renames_a_cluster_is_not_held_to_events_it_did_not_to
     behind -- which still holds three."""
     diagram = _diagram(
         subscriber.user,
-        {"clusters": [{"id": "c1", "name": "Cutoff", "eventIds": [1, 2, 3]}]},
+        {
+            "people": [{"id": 1, "name": "Ada"}],
+            "events": THREE,
+            "clusters": [{"id": "c1", "name": "Cutoff", "eventIds": [1, 2, 3]}],
+        },
     )
 
     record.apply(
@@ -396,7 +406,7 @@ def test_the_write_refuses_an_early_birth_that_carries_a_variable(subscriber):
         },
     )
 
-    with pytest.raises(record.Invalid, match="early birth"):
+    with pytest.raises(record.Invalid, match="only a shift carries"):
         record.apply(
             diagram.id,
             [
@@ -462,6 +472,7 @@ def test_a_shift_that_names_its_move_beside_an_anchoring_birth_commits(subscribe
         diagram.id,
         [
             {"item_kind": ItemKind.Event, "item_id": 33, "field": "kind", "after": "shift"},
+                {"item_kind": ItemKind.Event, "item_id": 33, "field": "description", "after": "Stopped calling"},
             {"item_kind": ItemKind.Event, "item_id": 33, "field": "person", "after": 1},
             {"item_kind": ItemKind.Event, "item_id": 33, "field": "dateTime", "after": "1990-04-02"},
             {"item_kind": ItemKind.Event, "item_id": 33, "field": "anxiety", "after": "up"},
@@ -503,3 +514,332 @@ def test_the_write_refuses_a_noted_event_with_no_words(subscriber):
             turn_id="t1",
             user_id=subscriber.user.id,
         )
+
+
+def test_a_thing_made_is_logged_whole_and_undo_takes_it_off(subscriber):
+    # R-0084
+    diagram = _diagram(
+        subscriber.user, {"people": [{"id": 1, "name": "Ada"}], "events": THREE, "lastItemId": 3}
+    )
+    change = record.apply(
+        diagram.id,
+        [
+            {"item_kind": ItemKind.Person, "item_id": 4, "field": "name", "after": "Bea"},
+            {"item_kind": ItemKind.Diagram, "item_id": None, "field": "lastItemId", "after": 4},
+            {"item_kind": ItemKind.Cluster, "item_id": "c1", "field": "title", "after": "Cutoff"},
+            {"item_kind": ItemKind.Cluster, "item_id": "c1", "field": "eventIds", "after": [1, 2, 3]},
+        ],
+        author=Author.Coach,
+        turn_id="t1",
+    )
+    assert [(d["item_id"], d["field"], d["before"], d["after"]) for d in change.deltas] == [
+        (4, None, None, {"id": 4, "name": "Bea"}),
+        (None, "lastItemId", 3, 4),
+        ("c1", None, None, {"id": "c1", "title": "Cutoff", "eventIds": [1, 2, 3]}),
+    ]
+
+    record.undo(diagram.id, "t1", author=Author.User)
+    data = diagram.get_diagram_data()
+    assert data.people == [{"id": 1, "name": "Ada"}]
+    assert data.clusters == []
+
+
+def test_undo_will_not_take_off_a_thing_something_since_hangs_on(subscriber):
+    # R-0084
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
+    record.apply(
+        diagram.id,
+        [{"item_kind": ItemKind.Person, "item_id": 2, "field": "name", "after": "Bea"}],
+        author=Author.Coach,
+        turn_id="t1",
+    )
+    record.apply(
+        diagram.id,
+        [
+            {"item_kind": ItemKind.Event, "item_id": 3, "field": "kind", "after": "noted"},
+            {"item_kind": ItemKind.Event, "item_id": 3, "field": "person", "after": 2},
+            {"item_kind": ItemKind.Event, "item_id": 3, "field": "description", "after": "Moved"},
+        ],
+        author=Author.User,
+        turn_id="t2",
+    )
+
+    with pytest.raises(record.Conflict) as excinfo:
+        record.undo(diagram.id, "t1", author=Author.User)
+    assert excinfo.value.actual == ["event 3"]
+    assert [p["id"] for p in diagram.get_diagram_data().people] == [1, 2]
+
+
+@pytest.mark.parametrize(
+    "field, value",
+    [("relationshipTargets", [1]), ("relationshipTriangles", [2, 1])],
+)
+def test_the_write_refuses_an_event_whose_mover_is_also_its_target(
+    subscriber, field, value
+):
+    # R-0526, R-0532
+    diagram = _diagram(
+        subscriber.user,
+        {"people": [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}]},
+    )
+
+    with pytest.raises(record.Invalid, match="event 34 has person 1 as both"):
+        record.apply(
+            diagram.id,
+            [
+                {"item_kind": ItemKind.Event, "item_id": 34, "field": "kind", "after": "shift"},
+                {"item_kind": ItemKind.Event, "item_id": 34, "field": "description", "after": "Stopped calling"},
+                {"item_kind": ItemKind.Event, "item_id": 34, "field": "person", "after": 1},
+                {
+                    "item_kind": ItemKind.Event,
+                    "item_id": 34,
+                    "field": "relationship",
+                    "after": "distance",
+                },
+                {"item_kind": ItemKind.Event, "item_id": 34, "field": "relationshipTargets", "after": [2]},
+                {"item_kind": ItemKind.Event, "item_id": 34, "field": field, "after": value},
+                {"item_kind": ItemKind.Event, "item_id": 34, "field": "dateTime", "after": "1990-04-02"},
+            ],
+            author=Author.Coach,
+            turn_id="t1",
+        )
+    assert diagram.get_diagram_data().events == []
+
+
+@pytest.mark.parametrize("move", [kind.value for kind in RelationshipKind])
+def test_the_write_refuses_a_move_with_no_target(subscriber, move):
+    # R-0585
+    diagram = _diagram(
+        subscriber.user,
+        {"people": [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}]},
+    )
+
+    with pytest.raises(record.Invalid, match=f"event 36 is a {move} move with no target") as refused:
+        record.apply(
+            diagram.id,
+            [
+                {"item_kind": ItemKind.Event, "item_id": 36, "field": "kind", "after": "shift"},
+                {"item_kind": ItemKind.Event, "item_id": 36, "field": "description", "after": "Stopped calling"},
+                {"item_kind": ItemKind.Event, "item_id": 36, "field": "person", "after": 1},
+                {"item_kind": ItemKind.Event, "item_id": 36, "field": "relationship", "after": move},
+                {"item_kind": ItemKind.Event, "item_id": 36, "field": "dateTime", "after": "1990-04-02"},
+            ],
+            author=Author.User,
+            turn_id="t1",
+        )
+    assert refused.value.plain == f"{RelationshipKind(move).menuLabel()} needs the person it was aimed at."
+    assert diagram.get_diagram_data().events == []
+
+
+def test_a_move_already_missing_its_target_does_not_block_other_writes(subscriber):
+    # R-0585
+    diagram = _diagram(
+        subscriber.user,
+        {
+            "people": [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}],
+            "events": [
+                {
+                    "id": 3,
+                    "kind": "shift",
+                    "person": 1,
+                    "relationship": "defined-self",
+                    "relationshipTargets": [],
+                    "dateTime": "2015-09-01",
+                    "description": "Left for school",
+                }
+            ],
+        },
+    )
+
+    record.apply(
+        diagram.id,
+        [{"item_kind": ItemKind.Person, "item_id": 2, "field": "name", "after": "Bee"}],
+        author=Author.User,
+        turn_id="t1",
+    )
+    assert diagram.get_diagram_data().people[1]["name"] == "Bee"
+
+
+@pytest.mark.parametrize("kind", ["married", "bonded", "separated", "divorced"])
+def test_the_write_refuses_a_couple_event_with_no_spouse(subscriber, kind):
+    # R-0453
+    diagram = _diagram(
+        subscriber.user,
+        {"people": [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}]},
+    )
+
+    with pytest.raises(record.Invalid, match=f"event 36 is a {kind} event") as refused:
+        record.apply(
+            diagram.id,
+            [
+                {"item_kind": ItemKind.Event, "item_id": 36, "field": "kind", "after": kind},
+                {"item_kind": ItemKind.Event, "item_id": 36, "field": "person", "after": 1},
+                {"item_kind": ItemKind.Event, "item_id": 36, "field": "dateTime", "after": "1990-04-02"},
+            ],
+            author=Author.User,
+            turn_id="t1",
+        )
+    assert refused.value.plain
+    assert diagram.get_diagram_data().events == []
+
+
+@pytest.mark.parametrize(
+    "field, value",
+    [("relationshipTargets", None), ("relationshipTriangles", None), ("relationshipTargets", 2)],
+)
+def test_the_write_refuses_an_event_whose_people_of_a_move_are_not_a_list(
+    subscriber, field, value
+):
+    # R-0453
+    diagram = _diagram(
+        subscriber.user,
+        {"people": [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}]},
+    )
+
+    with pytest.raises(record.Invalid, match=f"event 35's {field} is not a list") as refused:
+        record.apply(
+            diagram.id,
+            [
+                {"item_kind": ItemKind.Event, "item_id": 35, "field": "kind", "after": "shift"},
+                {"item_kind": ItemKind.Event, "item_id": 35, "field": "description", "after": "Stopped calling"},
+                {"item_kind": ItemKind.Event, "item_id": 35, "field": "person", "after": 1},
+                {"item_kind": ItemKind.Event, "item_id": 35, "field": "relationship", "after": "distance"},
+                {"item_kind": ItemKind.Event, "item_id": 35, "field": field, "after": value},
+                {"item_kind": ItemKind.Event, "item_id": 35, "field": "dateTime", "after": "1990-04-02"},
+            ],
+            author=Author.User,
+            turn_id="t1",
+        )
+    assert refused.value.plain
+    assert diagram.get_diagram_data().events == []
+
+
+RULES = {
+    "people": [
+        {"id": 1, "name": "Ada", "gender": "female"},
+        {"id": 2, "name": "Bea", "gender": "male"},
+        {"id": 3, "name": "Cal", "parents": 9},
+        {"id": 4, "name": "Dee"},
+        {"id": 5, "name": "Eve", "parents": 9},
+    ],
+    "pair_bonds": [
+        {"id": 9, "person_a": 1, "person_b": 2},
+        {"id": 10, "person_a": 2, "person_b": 4},
+    ],
+    "events": [
+        {"id": 20, "kind": "birth", "child": 3, "person": 1, "spouse": 2, "dateTime": "1990-01-01"},
+        {"id": 21, "kind": "death", "person": 4, "dateTime": "2000-01-01"},
+        {"id": 22, "kind": "married", "person": 2, "spouse": 4, "dateTime": "1995-06-01"},
+    ],
+    "clusters": [],
+    "lastItemId": 22,
+}
+SHIFT = {
+    "kind": "shift",
+    "person": 1,
+    "dateTime": "2001-02-03",
+    "description": "Stopped calling",
+    "anxiety": "up",
+}
+
+
+def _write(diagram, kind: ItemKind, item_id, fields: dict):
+    return record.apply(
+        diagram.id,
+        [
+            {"item_kind": kind, "item_id": item_id, "field": field, "after": value}
+            for field, value in fields.items()
+        ],
+        author=Author.Coach,
+        turn_id="t1",
+    )
+
+
+@pytest.mark.parametrize(
+    "fields, match",
+    [
+        ({"kind": "moved"}, "event 40's kind is 'moved', which is not one of the event kinds"),
+        ({"anxiety": "sideways"}, "event 40's anxiety is 'sideways', which is not one of"),
+        ({"relationship": "hug", "relationshipTargets": [2]}, "event 40's relationship is 'hug'"),
+        ({"dateCertainty": "maybe"}, "event 40's dateCertainty is 'maybe'"),
+        ({"kind": "birth", "person": None, "anxiety": None}, "event 40 is a birth with no child"),
+        ({"kind": "death", "person": None, "anxiety": None}, "event 40 is a death event about nobody"),
+        ({"person": 7}, "event 40 names person 7, who is not in the record"),
+        ({"kind": "married", "spouse": 1, "anxiety": None}, "event 40 names person 1 as both person and spouse"),
+        ({"kind": "birth", "child": 1, "spouse": 2, "anxiety": None}, "event 40 has person 1 as both the child and a parent"),
+        (
+            {"anxiety": None, "relationship": "inside", "relationshipTargets": [2]},
+            "event 40 is an inside move with no third person",
+        ),
+        (
+            {"anxiety": None, "relationship": "outside", "relationshipTargets": [2], "relationshipTriangles": [2]},
+            "event 40 has person 2 as both a target and the third person",
+        ),
+        ({"relationshipTargets": [2]}, "event 40 has relationship_targets but no relationship move"),
+        (
+            {"anxiety": None, "relationship": "distance", "relationshipTargets": [2], "relationshipTriangles": [4]},
+            "event 40 has relationship_triangles but is not an inside or outside move",
+        ),
+        ({"kind": "noted"}, "event 40 is a noted event, and only a shift carries"),
+        ({"kind": "birth", "child": 5, "person": None}, "event 40 is a birth event, and only a shift carries"),
+        ({"description": None}, "event 40 is a shift event with no words"),
+        ({"dateTime": "1998"}, "event 40's dateTime '1998' is not a date"),
+        ({"kind": "divorced", "spouse": 3, "anxiety": None}, "event 40 is a divorced event between persons 1 and 3, who have no pair bond"),
+        ({"kind": "birth", "child": 5, "spouse": 4, "anxiety": None}, "event 40 names person 4 as a parent of person 5, who is born to pair bond 9"),
+        ({"kind": "birth", "child": 3, "person": None, "anxiety": None, "dateTime": "1991-01-01"}, "person 3 already has a birth, event 20"),
+        ({"kind": "death", "person": 4, "anxiety": None}, "person 4 already has a death, event 21"),
+    ],
+)
+def test_the_write_refuses_an_event_that_breaks_a_record_rule(subscriber, fields, match):
+    # R-0593
+    diagram = _diagram(subscriber.user, RULES)
+    event = {k: v for k, v in dict(SHIFT, **fields).items() if v is not None}
+    with pytest.raises(record.Invalid, match=match) as refused:
+        _write(diagram, ItemKind.Event, 40, event)
+    assert refused.value.plain
+    assert diagram.get_diagram_data().events == RULES["events"]
+
+
+@pytest.mark.parametrize(
+    "kind, item_id, fields, match",
+    [
+        (ItemKind.Person, 30, {"gender": "female"}, "person 30 has no name"),
+        (ItemKind.Person, 30, {"name": "Gus", "gender": "robot"}, "person 30's gender is 'robot'"),
+        (ItemKind.Person, 3, {"parents": 10}, "event 20 names person 1 as a parent of person 3, who is born to pair bond 10"),
+        (ItemKind.PairBond, 9, {"married": "yes"}, "pair bond 9's married is 'yes'"),
+        (ItemKind.PairBond, 10, {"person_b": 5}, "leaves event 22 naming persons 2 and 4 as a couple with no pair bond"),
+        (ItemKind.PairBond, 10, {}, "leaves event 22 naming persons 2 and 4 as a couple with no pair bond"),
+        (ItemKind.Cluster, "c1", {"title": "A", "summary": "", "eventIds": [20, 21, 99]}, "cluster c1 names event 99, which is not in the record"),
+    ],
+)
+def test_the_write_refuses_an_item_that_breaks_a_record_rule(subscriber, kind, item_id, fields, match):
+    # R-0593
+    diagram = _diagram(subscriber.user, RULES)
+    with pytest.raises(record.Invalid, match=match) as refused:
+        if fields:
+            _write(diagram, kind, item_id, fields)
+        else:
+            _write(diagram, kind, item_id, {None: None})
+    assert refused.value.plain
+    assert diagram.get_diagram_data().pair_bonds == RULES["pair_bonds"]
+    assert diagram.get_diagram_data().people == RULES["people"]
+
+
+def test_removing_an_event_takes_it_out_of_its_clusters(subscriber):
+    # R-0593
+    events = [dict(SHIFT, id=i, dateTime=f"200{i - 40}-01-01") for i in range(40, 45)]
+    diagram = _diagram(
+        subscriber.user,
+        dict(
+            RULES,
+            events=events,
+            clusters=[
+                {"id": "c1", "title": "A", "summary": "", "eventIds": [40, 41, 42, 43]},
+                {"id": "c2", "title": "B", "summary": "", "eventIds": [42, 43, 44]},
+            ],
+        ),
+    )
+    _write(diagram, ItemKind.Event, 42, {None: None})
+    assert [(c["id"], c["eventIds"]) for c in diagram.get_diagram_data().clusters] == [
+        ("c1", [40, 41, 43])
+    ]

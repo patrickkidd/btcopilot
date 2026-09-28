@@ -28,7 +28,7 @@ The Learn tab needs AI-powered clinical evaluation to help users make sense of r
 - **Family Therapy in Clinical Practice** (Bowen) - All 23 chapters (~900KB)
 - **Havstad Weight Loss Article** - Full article (~30KB)
 
-**Full findings**: [CLINICAL_EVAL_LIT_REVIEW.md](../sarf-definitions/log/CLINICAL_EVAL_LIT_REVIEW.md)
+**Full findings**: [CLINICAL_EVAL_LIT_REVIEW.md](../../sarf-definitions/archive/log/CLINICAL_EVAL_LIT_REVIEW.md)
 
 ### Key Findings from Exhaustive Review
 

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# PreToolUse guard: master is PR-only. Reads the hook JSON on stdin; exit 2 blocks the command.
+# The private corpus repo (btcopilot-sources) is master-only by design, so the master rules skip it.
+in=$(cat)
+c=$(printf '%s' "$in" | jq -r '.tool_input.command // empty')
+cwd=$(printf '%s' "$in" | jq -r '.cwd // empty')
+git='(^|[;&|[:space:]])git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+'
+tok='(^|[[:space:]:=])master([[:space:]]|$)'
+corpus=0
+if printf '%s' "$c" | grep -Eq '(^|[;&|[:space:]])git[[:space:]]+-C[[:space:]]+[^[:space:]]*btcopilot-sources'; then
+  corpus=1
+elif ! printf '%s' "$c" | grep -Eq '(^|[;&|[:space:]])git[[:space:]]+-C[[:space:]]' && [[ "$cwd" == *btcopilot-sources* ]]; then
+  corpus=1
+fi
+block=0
+if [ "$corpus" = 0 ] && { printf '%s' "$c" | grep -Eq "${git}push([[:space:]].*)?${tok}" \
+|| printf '%s' "$c" | grep -Eq "${git}(checkout|switch)[[:space:]]+master([[:space:]]|$)" \
+|| printf '%s' "$c" | grep -Eq "${git}branch[[:space:]]+(-D|-d|--delete)[[:space:]]+master([[:space:]]|$)"; }; then block=1; fi
+if printf '%s' "$c" | grep -Eq "${git}push[[:space:]]+(.*[[:space:]])?(--force|--force-with-lease(=[^[:space:]]*)?|-f)([[:space:]]|$)" \
+|| printf '%s' "$c" | grep -Eq '(^|[;&|[:space:]])gh[[:space:]]+pr[[:space:]]+merge([[:space:]]|$)'; then block=1; fi
+if [ "$block" = 1 ]; then
+  echo "git-guard: master is PR-only — no pushes to master, force pushes, or PR merges from Claude" >&2
+  exit 2
+fi

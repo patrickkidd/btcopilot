@@ -1431,3 +1431,523 @@ coverage gap is part of every change; he adjudicates the process, never reads te
 R-0449]. He ratified two proposed rulings and replaced a third [R-0450], chose CI-only guards with
 the key scoped to one step [R-0451], and asked that the session keep to merging efficiently so a
 new session can take his next ideas.
+
+
+## 2026-09-24 to 25 — FD-363: the fast-follow deployed twice, open questions and impressions, and the spend rules [T-1, T-2, T-5, T-9, T-10, T-11]
+<!-- session: dc02180f · flushed: 2026-09-26T00:45:00Z -->
+
+**What the session inherited.** The session before it (9626e1be) opened FD-363 after PR #136
+merged, and Patrick ruled there that a failed turn keeps its edits and is resumed, not redone
+[R-0477]; that every tool call stays visible [R-0478]; that the coach works over the record the
+way Claude Code works over code, with a map in the prompt, reading what it needs and changing
+only what is necessary [R-0479]; that reads carry the record version and a change based on an
+old version is refused [R-0480]; that nothing fixed guards against repeats because the coach has
+to see [R-0481], and mistakes are written down to seed evals, never blocked [R-0482]; that every
+push to production first shows evidence from the stored rows and from the page [R-0483]; that the
+fast-follow is one batch PR pushed continuously, tested in his own thread with no data loss
+[R-0484]; and that coverage of the history is the coach's call with no number bar [R-0485]. That
+session built kept tool calls, resume and record versions and handed over. R-0477 to R-0485 are
+still not in the store: agents may not decrypt it, and Patrick appends them by hand.
+
+**The first batch (2026-09-24 evening, UTC).** This session ran builders under an auditor for
+the map and the reads by id, words and notes, the recent-changes read, the check after each turn
+with its admin list, the page's stored tool lines with [try again], the three live eval cases,
+and the migration gate that restores a production dump into a throwaway Postgres. Writing the
+check found that the record already refuses an added event matching another exactly; Patrick
+ruled that it stays, because a rule that is right every time is code, while anything needing
+judgement is only observed. He ruled that every tool call draws a line in the thread, show calls
+included, so there is a complete log of what the coach did and how the user answered; that hand
+edits of events go through the coach's writer in this PR; that the old single-call chat path is
+deleted; and that a sandbox must make real model calls, a missing key going to him rather than
+being tested around. He asked for brainstorm topics one at a time and for items to reach him one
+related chunk at a time, and for development to run in an agent team so the coordinator talks to
+him at product level.
+
+**Deploying is not merging.** Asked for a merge yes, Patrick corrected the session: since FD-362
+a build for him to test goes to the box by a release run dispatched from the ticket branch, and
+the pull request stays open; what makes that safe is the session's own rigorous testing, which
+he called about half of the project's velocity. The rules behind it were collected into a
+14-point pre-deploy bar kept in the private corpus. The first deploy then hit a missing host
+setting from a rename already on master, was rehearsed on a copy of production, and went out
+with the rename: every thread kept its messages, every coach reply showed its tool lines, zero
+server errors. Creating a test sign-in link on the box was refused by the permission checks, so
+the first real production turn was left to Patrick's own thread.
+
+**Open questions.** Patrick asked for a nuanced product brainstorm rather than a plain list, then
+ruled on drawn mockups published as artifacts (mockups always are): a third tab beside Events and
+People; the user sees only open questions the coach has asked, never declined ones, dead ends or
+the coach's own register; two sections, "Food for thought" and "Facts to find", with Kerr's
+statement belonging to food for thought; a fact to find goes up only when the coach judges it
+relevant to the evaluation or history, and when in doubt it is included; past threads are
+backfilled once; swipe left to dismiss; a tap puts the question in the message box. Built, gated
+and deployed on 2026-09-25 at commit ec757d5 with the database at 1b00000000ad, which cannot be
+undone. The backfill gave his own family 4 questions, all facts to find; whether that is too few
+is his to judge.
+
+**His own use on production.** Testing in his thread he found an event's kind said twice, a
+label missing the speaker, a list button out of line, tool lines too close to the reply, a close
+button out of line, and spoken replies silent on iPhone. He ruled that every label names all its
+people, the speaker included; asked for room between an event's two-line title and its dot, using
+the usual touch-size conventions without a rewrite (the band went from 66 to 72 pixels); and ruled
+that a chip tap behaves like a dot tap, with a switch back per user. All fixed on the branch, with
+a date's certainty now required on every add or date change.
+
+**The SARF story and the coach's impressions.** Asked how the SARF shifts should tell the story,
+a brainstorm put four ideas and one question to him; he answered that shifts as people report
+them are remembered, isolated episodes, not a series or a trend, so no line or step graph of those
+shifts, while other shifts may yet suggest a line. He noticed the coach reading patterns in his
+own record, and ruled that such impressions are kept the way questions are and can be pushed
+back on: the tab becomes "From the coach", with a third section "Impressions", "Doesn't fit" and
+"Partly" beside dismiss, and a backfill. Built on the branch, not yet deployed.
+
+**Spend.** A night's testing used $20 of credit. An audit traced about $17 of it, 60% to running
+the full live suite three times per code version. Patrick asked for testing to be close to free
+without losing coverage and ruled: every real-model spend is asked for first; real calls happen
+only at the end of a batch when a prompt or tool changed; the sandbox runs on a local model by
+default; the live suite has hard caps and a daily ledger; separate production and testing keys,
+the box now on the new production key. He ruled that prompt evals come only from a human
+oracle; that clinical-coding evals wait for ground truth ratified by the IRR review group, since
+he cannot certify coding rules case by case; he rescinded his over- and under-functioning coding
+rulings as evals, and left R-0428 and R-0057 undecided. The paid suite now holds behaviour evals
+only. He asked to be told when to switch between Opus and Fable.
+
+**Also.** A project-agnostic design principles document for agentic chat over a data model was
+written for his work project and reviewed by Fable; he added that everything the app does feeds a
+data-driven learning loop, which the document now carries. A plan to move this work to a fresh
+clone at ~/btcopilot was written; he ruled no copying of sessions, a list of the FD-362-onward
+sessions instead, and the memories that apply carried over. He merged PR #139, which forwards the
+Pro app's update feeds to the legacy server.
+
+**The second deploy (2026-09-26 00:25 UTC).** The behaviour evals ran once on the real model with
+the testing key: 10 passed and 1 failed, for $0.555. The failure is a check that the private
+scribe prompt marks its fallback coding rules as provisional; it fails on master too and touches
+no coach behaviour. The batch then went to the box by hand from the branch, with a backup first
+and the database migrated to 1b00000000ae before the rollout; the app and worker came up healthy
+with no errors in the ten minutes after. The impressions backfill ran over three families for
+$0.261 on the production key, so the round cost $0.82. A real coach turn on the test account was
+not run, because the permission checks block creating its sign-in link; Patrick's next message is
+the first real turn on this build. Before the deploy, the final gate sat idle for two hours while
+each agent thought the other was running it, so the next coordinator checks the running
+processes itself. Every ruling of this session, with his words, waits in the private corpus for
+him to append by hand.
+
+## 2026-09-26 — FD-363: the coach's notes, the play button and italic tool lines deployed; paid responses saved; the frame of reference sent to its own session [T-1, T-2, T-5, T-9, T-11]
+<!-- session: b147ab7f · flushed: 2026-09-26T16:10:00Z -->
+
+**The provisional label.** The session opened on the handover's one failing check, the private
+scribe prompt missing the word "provisional". Patrick did not recognise it: he had expected
+literature definitions to fill the gaps and F1 after coding to judge them, and said the label was
+an earlier agent's assumption. The label and its two checks were removed from the coach and
+scribe prompts, and R-0440's part about it was superseded [R-0519]. He also said the reply that
+raised it was too vague to follow.
+
+**What he asked for from his own thread.** A play button on each coach reply like the Claude
+Code mobile app's, a fix for lines drawing over each other in the message box on iPhone, and some
+way to set a tool line's object apart from its verb. Built by two builders under an auditor and
+checked by a separate verifier, who found a play button that stuck on after a failed turn; it
+was fixed. He then asked twice more for the button to sit under the bubble as a simple line icon,
+and got it [R-0521]. The object names became italics in the font's real italic [R-0528]. He
+dropped the idea of tracing each coach statement to its source.
+
+**The coach's notes.** He asked what could show the coach's state of mind, for example whether it
+is following the symptom on purpose and will come back to the missing information. The first
+answer proposed a code check after each turn of which facts are filled in; he pointed out that
+coverage was already ruled a judgement [R-0485] and that such calls belong to state-based
+prompting, not to code, and a process rule was added: read the rulings on a topic before
+proposing coach behaviour. A field in a structured reply was set aside because it breaks
+streaming and a streamed-JSON parse is fragile, and he chose a tool call carrying as much useful
+learning data as possible [R-0520]. The coach now writes its notes each turn and reads them
+back the next; only admins and auditors see them, first behind a press and hold, then, because
+that clashes with selecting text on iOS, behind a circled (i) at the bubble's top right [R-0522],
+closing with the opening animation reversed [R-0529]. One real first turn proved the notes are
+written ($0.141, testing key); he accepted a unit test for the read-back.
+
+**The deploy.** Five old failing tests were fixed at the root and every uncited test was pointed
+at the ruling it follows from; the session wrongly put two of those citations to him as
+questions, and he asked why. The batch went out as 5b2a6bb after the full gate (613 Python and
+245 web tests, the paid behaviour suite 9 of 9 for $0.64, no migrations, his thread at 78
+statements before and after), by hand on the box because GitHub had no setting naming the
+server. He also corrected the session for relaying agent chatter instead of one message that
+stands alone [R-0025], and for spending on every test run [R-0531].
+
+**After the deploy, on his yes.** The deploy credentials went into a GitHub environment that only
+branch FD-363 may use, with the deploy job running only on a manual dispatch at the dispatched
+commit [R-0530]; a repository-wide setting that would have deployed master was created and
+removed within the hour. The paid behaviour suite now saves each real response encrypted and
+replays it, so a response is paid for once; the keys are proven stable for first calls only.
+
+**The play-by-play and the chalkboard.** He found the explained play-by-play hard to follow and
+asked for one of his own clusters (named in the private corpus only) to be stepped through on a
+copy of production. The reading of its story arc and the bugs found were both right, he said
+[R-0526, R-0527]: a distance move drawn on the person's own figure (the record lets an event
+target its own mover), a bond line drawn outside the bond's dates, a bond and a separation drawn
+alike, a second shift on the same event not drawn, the event with unknown date certainty
+dropped, and app words in the captions. The session then proposed a chalkboard the
+coach draws on only what the point needs. He said it missed: fitted to one example, and grounded
+in the model's training rather than his clinical frame. He ruled that the design waits until the frame is understood, must fit every case,
+and that the synthesis of the frame is built in a separate Fable session for all later sessions
+[R-0524, R-0525]. The session had meanwhile read the primary sources and drafted the frame as
+requirements, with his cluster re-read in it; he pointed out this was meant for the separate
+session. The draft is uncommitted, copied to the private corpus with a roles-only survey of 56
+clusters, and whether to start from it is his decision.
+
+**Spend.** $0.78 on the testing key: $0.141 for the notes' first turn and $0.64 for the paid
+behaviour suite. The session ended on his word that its context was spent.
+
+**Handovers retired.** Patrick ruled that handover files are not the design: STATE is where a
+session starts and the flush is the whole handover. This session's handover was folded into
+STATE and deleted.
+
+**Sessions on the chat app, oldest first** (reopen any with `claude --resume <id>`):
+
+| Session id | Dates | What it was about |
+|---|---|---|
+| 28e0dbdf-2159-4593-a6d9-838b9614e4fa | 09-02 → 09-03 | Resumed the chat-first direction from its handoff notes |
+| 3741f13c-3fe6-475e-a784-af6488db4d12 | 09-03 | Opened the architectural step back |
+| 8e002b21-eb23-4c6e-a5ab-5bc555188702 | 09-03 → 09-09 | The step back, starting with the UI principle (in the FD-362 worktree) |
+| 1674c7c2-ead0-4f26-b36c-72b502a9dbc7 | 09-03 → 09-11 | Same start, run from ~/theapp |
+| 33d688bb-e405-47d5-a08f-3733523203a0 | 09-09 → 09-11 | His testing, isolation and the beta deployment |
+| 16d9eee6-ff0e-44e0-9b09-bd5e01d37ca0 | 09-11 → 09-12 | Pro features and the IRR screen design in the new app |
+| 532a3cb1-370f-4a20-bfee-342b46e43e92 | 09-12 | An error on master about the invitations table |
+| c80c21c9-baac-4472-aab3-d6e57d5c9f2d | 09-12 → 09-16 | Testing the coding screen, the walks |
+| e2accdbb-3db3-422d-9551-65f7020022ea | 09-12 → 09-13 | Repo structure: everything in btcopilot, the platform reset |
+| 4919907a-6123-45e8-9fe3-cd4010254f74 | 09-16 | Walk 7, the deploy path, the box built |
+| 1a988ef4-2bcd-4a0b-90d3-f9585dde6598 | 09-16 → 09-23 | The deployment picked up; the app went live and he used it |
+| 94fe21b6-2190-47e6-96cb-9c26d6a64384 | 09-21 → 09-23 | Grafana against Datadog for the box |
+| fd4b64b9-9ac5-4ab8-bb03-338a47a683bc | 09-23 → 09-24 | First beta invites, his review of PR #136, the oracle regime |
+| 9626e1be-0ee6-4e03-86f9-d3781789ff49 | 09-24 | FD-363 opened: kept tool calls, resume, record versions |
+| dc02180f-9c7c-40e0-ad16-d56e7dfbb302 | 09-24 → 09-25 | FD-363 deployed twice, questions, impressions, spend rules |
+| b147ab7f-16e6-4fcf-ba58-42be2e2a2fcc | 09-26 | Coach's notes, play button, italic tool lines deployed; deploy environment; saved paid responses; the play-by-play review and the frame draft |
+| FD-363 Development(3) | 09-26 | The play-by-play fix split (four now, three held for the frame), the data-fault correction and feedback-loop rule, and the queued event-title rename; logged as R-0532 to R-0534 |
+
+Not the chat app: b8769210-d27b-4e72-865e-08a8f211cb70 (the Pro app's update feeds, PR #139) and
+2462071d-723f-44f1-89a1-25f63c537e86 (repairing an .fd file for the Pro app).
+
+## 2026-09-26 to 27 — FD-363: the play-by-play redesigned on a code-drawn family diagram, approved, and handed to the main session to build
+<!-- session: 3b685e4b (FD-363 play-by-play, Fable) · flushed: 2026-09-27 -->
+
+**What the session was for.** Designing the play-by-play visual, on Fable, with the theory expert loaded; Patrick ruled only on working mockups published as Artifacts (never on concepts), one open choice per code.
+
+**Round one.** The main session's gallery (two drawings × three made-up Whitlock cases: the moves board's figures against a small family diagram) was vetted against the theory (fact and guess lines apart, order not cause, nobody drawn alone, no theory words) and published. Patrick: the mockups must use the ruled symbols or say what is new; drawing a family diagram to spec had never been automated, so either show the path to automatic drawing or stop drawing diagrams. Research found the spec defines layout rules as well as symbols, that a deterministic auto-arrange had been built in May (a1814b7) and deleted with the Pro backend on 09-23 (the Pro app's "Arrange Selection" menu still imports it, broken), and that the small cast a play-by-play needs is fully decided by the spec's own rules.
+
+**Round two.** A mockup whose diagrams are generated by code from the case data by the spec's rules, positions fixed per case, marks and bond status changing between snapshots; every unsettled choice shown two or three ways. Patrick ruled the ten choices (full-screen drawer sized by UX norms; names left or above allowed; marks opposite the name; 4a; a short word for an event with no drawing; one emphasis colour for what happens now and grey for what carries, a death X emphasised on its date only; the "?" partner for a child with one recorded parent; no dots, emphasise the people). He said the concept was clicking ("a little of that magic feel").
+
+**Round three, his own record.** Four cases from his own family (private corpus dump; real data kept in fd-corpus/design/playbyplay-snapshots/, never in a repo) as a separate private page. Finding: the layout rules place every structure his family has (two partners over time, a half-brother, chains of couples, four generations, unnamed people); the phone's width is what fails, fixed by the cast rule (the point's people plus connecting parents) and by first names. He ruled Q3a (partners on opposite sides, no line under a third person), Q5a, first names with a surname initial only when the structure does not tell two apart, the dashed line staying dashed for the never-married, an event with no drawing emphasising the shape and keeping its word, "moved …" not "m.", the symptom mark pixel for pixel from the app's code, Q1b, earlier moves never vanishing, instant marks on Next, the diagram centred with marks allowed in the margin, real margins, Q6 = shrink the picture then scroll the drawer, and from then on only his own family's cases. Approved 2026-09-27: "This all looks good. let's do it." Handed to the main FD-363 session (which holds deployment) to fold into its timeline changes; this session verifies the running result once.
+
+**Open.** Q7: a group or institution on the far side of a move has no drawing (mock it up when a record has one). The coach writing the points, facts, guesses and questions live is untested (the mockup's were hand-written from the record). Whole-family layout is a separate later project. Record faults in his data to correct through the write path: a bond in his record not marked married though a marriage event exists.
+
+**Corrections this session (his words).** "are you giving me the same information in your response as you are in the artifact?" — the console repeated the page. "dont mark things as rulings until you've tested them out with me first. you just jumped ahead" — a floated idea written as a rule. "do you even need to be making all these file edits before anything is more settled?" — corpus edits held for the flush. "remember your instructions about sub-agent chatter" — agent progress relayed. "the term is not 'stretch'" and "there is no unique code for the choices" — coined term; open choices need codes unique across pages. "keep your communication with the other session minimal … I don't want an unattended feedback loop." The queued ~/btcopilot folder move: "not yet".
+
+## 2026-09-26 to 27 — FD-363 Development(3): the corpus kept in step through the play-by-play rebuild and the moves board's retirement
+<!-- session: FD-363 Development(3) · flushed: 2026-09-27 -->
+
+**What this thread was for.** Corpus maintenance running beside the main build and the play-by-play design session: logging every ruling the moment it landed, keeping doc/STATE.md and this file current, and holding the oracle store's guards green throughout.
+
+**Shipped.** Two production deploys: 2a797b0 on 2026-09-26 (~20:20 UTC), the first deploy dispatched through the GitHub production environment, carrying the play-by-play's four immediate fixes and follow-ups plus Patrick's account becoming admin; and f66d603, carrying the play-by-play drawer approved 2026-09-27 and retiring the old moves board. A data fault in Patrick's own record (two events wrongly naming him as their own move's target) was corrected through the record's write path rather than a direct database edit, logged as the first case for a new correction-data feedback loop. doc/HOW_THIS_PROJECT_WORKS.md was compressed by about 450 words without dropping any of the day's dozen new process rules.
+
+**Rulings logged, R-0532 to R-0570.** Covering: the play-by-play bug fixes and what stays held for the frame of reference (R-0532, R-0533); the queued event-title rename (R-0534); the coach's notes panel wording (R-0535, R-0536); the pill-strip timeline redesign (R-0537 to R-0544); the FD-364 theory-page access rule and its later narrowing to admins and auditors only (R-0541, R-0567); the Claude Code subscription testing rule (R-0568); the full play-by-play rebuild approved 2026-09-27 (R-0545 to R-0566, R-0569); and the old moves board's retirement (R-0570), which superseded nine board-only rulings (R-0130, R-0131, R-0135, R-0162, R-0173, R-0177, R-0178, R-0180, R-0292) once their own tests were confirmed gone. Two triangle-drawing rulings (R-0286, R-0288) were read and kept rather than superseded, since their content still governs the new drawer and their tests still pass.
+
+**Corrections caught and fixed.** A real first name from Patrick's own record had been used as an example inside a ruling's own text and inside this file's history; both were reworded to a stand-in name and to plain description, with a repo-wide sweep finding no further instances. The oracle store's size ceiling was hit twice from the volume of new rulings and brought back under it by shortening wording, never by dropping facts.
+
+**Open.** The coach producing a snapshot's point, facts, guess and closing question live is proven only by Claude Code subscription replies and one real explain on production, not a full eval. Nothing yet holds a play-by-play to three to six snapshots; real cases have shown as many as eleven and seventeen. Several of the pbp-builder's new test files do not yet cite the rulings they prove, which the coverage guard will keep flagging until they do.
+
+## 2026-09-28 — FD-363: two batches deployed (the pill strip, then the restored timeline zoom, explain's caching and the tuning queue), a third batch (the drawer's close button and margin, the cluster event count, chip pre-text, move-target validation, squashed migrations), eleven more rulings, the corpus caught up
+<!-- session: 0ae5e927 · flushed: 2026-09-28T18:06:57Z -->
+
+**What this thread was for.** Corpus maintenance alongside the main build: deploying the batch
+queued from the two prior sessions, logging the rulings that came out of it, and keeping
+doc/STATE.md, doc/TOPICS.md and the oracle store current.
+
+**Deployed.** Commit 07b9d8b (image 3.2026.9.28.7+g07b9d8b, database 1b00000000b2, run
+36428718588), dispatched from the ticket branch through the GitHub production environment. It
+carried, together, as Patrick asked so he could evaluate all of it at once: the cluster-select
+slide fix (a cluster opened from the timeline redraws in place rather than sliding a second view
+over the first); the stale home-screen app fix (a foreground check for the release version,
+no-cache HTML, hashed bundle names, a per-release service-worker cache); the pill strip (one
+pill per cluster, no inner dots, one screen wide, nothing merges); play turns now writing a done
+turn event, closing the gap the migration gate was flagging; refusals back to the coach for an
+invalid event kind and an unknown evidence kind; a couple event with no spouse refused at the
+writer; the first migration's table order fixed so an empty Postgres database builds; the people
+and cost dashboard's Person filter; and the sandbox kit moved into the repo at
+`bin/sandbox/sandbox`.
+
+**The disk.** The first release attempt that day failed: the box's disk was full, about 48 GB of
+unpruned untagged docker images left by earlier deploys. Pruned by hand. Open: the release
+workflow should prune old images itself so this does not happen again.
+
+**Rulings, R-0572 to R-0575.** Patrick chose to leave out the editor that would have opened from
+tapping an event's words inside a cluster, saying chat was always the real way in, with the
+event list as the fallback [R-0572, supersedes R-0207]. He also said the timeline was never
+meant for picking out one event at a time — clusters are what matter, since a cluster is the
+door to the play-by-play [R-0573]. The first migration's table order was cleared to be rewritten
+this once, an exception to R-0417's no-rewrite rule, since that revision had never reached
+production [R-0574]. And on how this thread's build had branched: he said the work belongs in
+one worktree, not many branches, since the merge rules exist to guard master alone [R-0575].
+
+R-0381 (the sliding line built into the timeline) and R-0402 (the crowded-line ruling) are both
+contradicted by the pill strip's one-screen line, but neither is marked superseded — that waits
+on his yes. The home-screen fix has no ruling of its own; its tests cite R-0486 for now. A
+candidate is recorded in STATE.md for his yes: "after a deploy, the home-screen app loads the
+new release when it comes back to the front."
+
+**The store's size.** Adding the four new rulings pushed the index over its 150,000-byte
+ceiling a third time. Brought back under it the same way as before — never by dropping a fact —
+by shortening the four new statements themselves and by shortening a 53-character origin
+annotation ("(paraphrased by the coordinator; not directly quoted)") repeated 35 times across
+the previous two sessions' rulings down to "(paraphrased)".
+
+**Dead tests removed.** R-0207 becoming superseded left five Playwright tests asserting the
+tap-to-editor behaviour that will now never be built; each was already skipped, and each skip
+reason read, verbatim, "needs Patrick's call". His call arrived, so the five tests, the
+`NO_EDITOR` constant they shared, and one helper function left unused after their removal were
+deleted from `web/tests/visual/{reset,crosslinks,clusters}.spec.ts` and `setup.ts`. One passing
+test's citation of R-0207 in `select.spec.ts` was dropped in favour of the ruling it actually
+needed, R-0544, since the guard that checks every citation points at a live ruling would
+otherwise have failed on a citation to a now-superseded one.
+
+**Guards and suites, all green.** The oracle guards (6 of 6); the oracle/fingerprint/release
+subset of the Python suite (15 of 15); the full non-conventions Python suite (687 passed, 26
+skipped, 1 xfailed); the web unit suite (338 passed); the TypeScript type check. The visual
+(Playwright) suite was not re-run against a live sandbox for this cleanup, since it removed
+dead, already-skipped tests rather than changing any built behaviour; the oracle guards' own
+Playwright collection step, which succeeded, confirms the edited spec files still parse and
+their citations are all live.
+
+**doc/STATE.md and doc/TOPICS.md.** STATE's top-of-file queue (Patrick's instruction for the
+batch, the select-slide note, the home-screen queue item) was removed now that all three are
+done; "Live on production now" was rewritten for 07b9d8b; the stale "migration gate flags play
+statements" and "pill strip is next" open items were dropped as done. TOPICS.md's T-1 (shipping
+the beta), T-5 (picture and interface rulings), T-9 (process) and T-11 (platform) were each
+revised for today's deploy, rulings and open items.
+
+**Second deploy of the day.** Commit 8ad08dc (image 3.2026.9.28.8+g8ad08dc, database
+1b00000000b4, run 36443507214), dispatched from the ticket branch. It carried three things: the
+timeline's zoom, width, scroll and open position restored to exactly what they were before the
+pill strip, with snap points now rounded to whole pixels so a pill tap never moves the line;
+explain reusing a cluster's last play-by-play telling until its events, the people and bonds it
+draws, or the play prompt itself change, so a repeat explain of an unchanged cluster makes no
+model call (verified on production: a second explain on the claude-test account made no call);
+and six new kinds of failure — a refused tool call, a refused or failed play, a failed turn, a
+turn that used every step, and a turn every model declined — written down as observations,
+grouped into a queue of at most ten, and shown on the quality dashboard's new "Tuning queue"
+panel, readable and dismissible from the command line.
+
+**Rulings, R-0576 to R-0580.** He said to cache one play-by-play telling per cluster until its
+events change, since retelling an unchanged one is a model call for no gain [R-0576]. On the
+timeline's zoom, he was specific: it had to go back to exactly what it was before the pill strip,
+not some new zoom amount or behaviour someone made up; R-0381 (the sliding line) was never
+actually superseded by the pill strip, so it comes off STATE's list of rulings waiting on his
+yes, and only R-0402 (the crowded-line ruling) stays there [R-0577]. He then widened the standing
+architectural rule that everything the app does should feed a loop that improves it [R-0517]: any
+signal anywhere that a part of the app needs tuning — his example was a refusal warning with a
+retry — should be caught automatically, put on a dashboard, and turned into a short list of fixes
+he can accept or reject; be aggressive about what gets caught, short of turning it into a research
+project for him, and keep the list he actually reads to about ten items, always [R-0578]. He
+approved the concrete first case behind that: sending a bad tool call back to the coach with a
+logged warning and a retry, rather than failing the turn [R-0579]. And he said, generally and for
+good: replies to him should name the actual table, column, file or screen rather than reach for
+vague, abstract language — narrows R-0523 [R-0580].
+
+**Keeping the store readable.** Adding five rulings pushed the index a few hundred bytes over its
+150,000-byte ceiling again. Brought back under it the same way as before, never by dropping a
+fact: a 94-byte origin annotation repeated on nine older rulings ("rule wording agent-derived from
+STATE.md \"Owner review round 1\"; not directly quoted") was shortened to "agent-derived wording,
+round 1", and the five new statements themselves were tightened. Two of the five new rulings'
+tags (R-0577, R-0578, R-0579) had to be swapped for ones in the code's closed `Tag` enum — the
+first drafts used tags ("timeline", "zoom", "tools", "reliability", "learning-loop") that do not
+exist there, caught by the conventions guard, replaced with valid ones (picture/scrolling;
+architecture/evaluation/observability; coach/architecture) with no change in meaning.
+
+**Citing tests, not new ones.** Every ruling this session's code already had tests for, written
+before the ruling had an id (their commits say "Pending ruling"); the work was adding each
+ruling's id to the citation comment on the tests that already proved it, not writing new tests.
+R-0576 (3 citations owed) went on three tests in `test_playcache.py` proving no call on an
+unchanged cluster, a call again once it changes, and a kept play joining another session with no
+call; its module docstring's quoted "pending ruling" text was replaced with the id, since a
+literal quote of a ruling's own words is not allowed outside the store. R-0577 (2) went on the two
+`picture.test.ts` tests proving the width never passes two screens and the present sits parked at
+the right edge. R-0578 (3) went on the two `test_admin.py` tests proving the queue groups and a
+rejected group stays off, plus the `test_observer.py` test proving a failed turn is written down
+automatically. R-0579 (2) went on the `test_observer.py` test proving a refused tool call is
+written down with whether its retry worked, and the `test_case.py` test proving a play-by-play
+telling the checks hand back is written down with its own tries. R-0580 carries the `process` tag,
+which excuses a comms/process ruling from needing a citing test at all.
+
+**A leak the guard caught, twice.** The conventions guard that looks for oracle wording leaking
+into tracked files outside the store flagged this session's own new writing: first, a docstring
+in `test_playcache.py` quoting his exact words (fixed above); then, this file's own T-13 topic
+block in doc/TOPICS.md, whose first draft of the "Decided" paragraph ran twelve or more words
+verbatim from the new rulings' own statements. Both were reworded to say the same things in
+different words, since the guard exists so nothing in the private store's own phrasing sits in a
+public, unencrypted file.
+
+**Guards and suites.** The oracle guards, 6 of 6. Fingerprints re-pinned twice — once after adding
+the five rulings, again after the wording was tightened for size — with `bin/fingerprints.py`.
+The full non-conventions Python suite: 704 passed, 26 skipped, 1 xfailed, and one failure,
+`test_promptfiles.py::test_the_open_source_prompts_say_what_their_constants_said`, which passes
+alone but fails when run after `test_playcache.py`; not something this session's edits caused —
+the diff to that file this session made is comments and a docstring only, confirmed against the
+diff — but a real test-isolation bug worth a builder's look: something in the play-prompt-tuning
+test's `monkeypatch.setattr` on `prompts.PLAY_BY_PLAY_PROMPT` is not fully undone before the next
+test reloads the module. The web unit suite: 347 passed, 33 files. The `picture.test.ts` file,
+edited for its new citation, re-run alone: 23 passed.
+
+**doc/STATE.md and doc/TOPICS.md.** STATE's "Open, waiting on his yes" note was cut down to only
+R-0402, with R-0381 marked resolved; a new deploy paragraph for 8ad08dc was added describing all
+three changes; a second "Rulings appended" summary paragraph lists R-0576 to R-0580 the same way
+the first batch's summary does. TOPICS.md: T-1 (shipping the beta) got the second deploy folded
+into its status and open items; T-5 (picture and interface rulings) had its duplicated R-0381/
+R-0402 note fixed in two places and its next action pointed at the new batch; T-11 (platform) got
+a one-line deploy note; a new topic, T-13, was opened for the tuning queue and explain's caching,
+since neither belongs under T-5 (interface) and the existing T-12 (the outward-looking scout,
+retired) is a different mechanism entirely, not touched.
+
+**Rulings, R-0581 to R-0587, appended across several short rounds after the corpus was moved to
+its own worktree.** He ruled that a new database table or column, or reusing an old table for a
+new kind of row, is put to him first with its names and what each holds, built only after his
+yes [R-0581]; the `statements` table's `told_case`-style columns stay as they are while testing
+continues, with a note that a later split into their own table, once a feature strains the shape
+further, must carry every existing row across with nothing lost [R-0582]; a selected cluster's
+title ends with its event count, narrowing the earlier never-a-count rule to the open state only
+[R-0583, narrows R-0376]; migrations always ship squashed into one per PR [R-0584]; every
+relationship-move event, not toward alone, needs a target, refused with a warning and retried
+[R-0585, defect on event 66's miscoding]; the four ruled chip pre-text phrases in the chat box
+[R-0586]; both the drawer's own question and a coach reply's closing question now tap like any
+other amber chip [R-0587]. R-0585's first wording read narrower than what Patrick said and what was
+built — louann caught it — and was reworded to cover every move kind, not toward alone; the
+evidence already held his full words, so only the statement changed.
+
+**The size ceiling, fought on every round.** Adding new rulings pushed the index over its
+150,000-byte ceiling on nearly every one of these additions, sometimes by several hundred bytes
+at once for a batch of three. Brought back under it each time the same way as before, never by
+dropping a fact: new statements trimmed to their essentials, a couple of the store's own
+repeated internal annotations shortened further, and — for the first time this session — the
+store's own preamble (its format notes, not any of his rulings) condensed for space. This is now
+a recurring cost on every flush, not a one-off; noted in STATE as an open item for Patrick to
+decide whether the store splits into more than one file or the ceiling is raised.
+
+**Deployed 2026-09-28: commit a8b2245b, image 3.2026.9.28.9+ga8b2245, database still at
+1b00000000b4** (the migration chain unchanged; this PR's migrations are squashed into one).
+Carried: the play-by-play drawer's close button shared with the meeting card's own ×, and its
+order path row, point and snapshot line on open; an event's words in the drawer kept inside the
+family's side margin; the selected-cluster event count; the "message" chip kind and the
+clickable amber question chips with their ruled pre-text; every relationship move refused
+without a target at both the writer and the coach's tool; the Next meeting agenda fix so picking
+your own session places its cut correctly; fixture reinstalls clearing their agenda cuts; the
+app importing with no sops key present; fixture coach speakers typed as the coach; and CI's
+visual jobs running on the open-source prompts like the unit tests already did.
+
+**Production data.** Event 66 in diagram 1, the one R-0585 was written about, is now a shift,
+toward, targeting person 54 (review change 635). Events 9 and 10 in diagram 1, from 2015, turned
+out not to be defined-self at all: Patrick ruled their words hold no defining-a-self behaviour,
+so their move is cleared and they stand as noted events, no target needed. Still open: events 1
+and 2 in diagram 14 have no target; R-0585's rule refuses any further edit to them until they get
+one.
+
+**Still open.** The coach rule linking the people an event's own words name is written into the
+prompt and needs a live eval, which needs his spend approval, about $0.15 to $0.40. The older
+copy of this worktree at ~/theapp still waits for his word to discard it.
+
+## 2026-09-28 — FD-363-cost: a prompt-cache cost fix, and model comparison plumbing (shadow turns, replay, Gemini Flash, blind picks)
+
+On branch FD-363-cost, off FD-363, draft PR #141. A heavy production day was found to put 78%
+of that day's model cost ($12.91 of $16.60 over 38 turns) into prompt-cache writes, because the
+record, the date and the "looked at" block sat in the system prompt ahead of the chat and
+changed every turn, rewriting the whole cached chat each time. Fixed [R-0595]: the system prompt
+now holds only the coaching text; the record block moves into the new user message after the
+chat; the chat is marked at the previous two turn boundaries; tool marks are capped at four;
+cache life stays 5 minutes. Measured on the sandbox with a 12,000-token chat, turns 2 and 3 cost
+42% less ($0.2472 to $0.1428). Estimated saving on that production day: about $4.50, near zero
+for a user whose gaps between replies mostly exceed 5 minutes — 30 of 37 gaps were under 5
+minutes for the heavy user, only 2 of 18 for Patrick. A 1-hour cache life was weighed and left
+off, within measurement error either way. Unproven: the saving on real production sessions, and
+whether moving about 14,000 characters of prompt out of the system prompt and into the user turn
+changes the coach's behaviour — that needs the live eval suite run against it, which awaits his
+spend approval. Real model calls spent proving the finding: $1.96.
+
+**Model comparison plumbing landed with Patrick as the only oracle on which model is better.** A
+per-user coach model and shadow model live in the per-user settings table, set by `flask admin
+coach-model show/set/shadow`. A shadow turn runs a candidate model on the real turn's input on a
+separate Celery queue, with a new fd-shadow worker service, stored in a new shadow_turns table on
+a scratch diagram flagged scratch, never shown to the user and excluded from the user's diagram
+list [R-0596]. `flask admin quality replay <discussion> <model> <reference_diagram> [--cap 5]`
+replays a conversation's user statements on a model onto a scratch record and scores people,
+pair-bonds, events, clusters and variables plus fault counts, appending a Replay line to the
+ledger; the reference record is one Patrick corrected himself, never a model-built one [R-0597].
+A Gemini Flash coach model is wired in (google-genai, Vertex by default, aliases gemini-flash,
+gemini-3.8-flash, gemini-3.6-flash, gemini-2.5-flash), because Patrick holds a business associate
+agreement with Google [R-0598]; a real call on it awaits Vertex credentials on the box and his
+confirmation of what the agreement covers. The review app's Compare replies page serves blind
+pairs from shadow rows and replays and records Patrick's picks in a new model_picks table
+[R-0599]. Live eval runs append one Live line per case to the ledger (`btcopilot/ledger.py`,
+`ledger.jsonl`, gitignored). One migration, 1b00000000b5, squashed for the whole pull request.
+Beta users stay on Opus 5.5, with no A/B test on them. Candidate pricing at Anthropic's rates for
+that same production day: Sonnet 5 would have cost $9.16, Haiku 4.5 $4.58; Opus 5.5 and Sonnet 5
+charge the same for cache reads.
+
+**Usage on production to date, counts only, five accounts.** Guillermo sent 44 messages over 3
+days for $17.31, no failed turns, never opened the picture, 78 of 111 events have certainty
+unknown, and two people are duplicated; Patrick sent 43 messages, with 4 turns where the coach
+saved edits but wrote no reply and 7 messages sent twice; Laura sent 6 messages, twice
+challenging an assumption the coach made; Kathy signed in and sent no messages. Total spend
+since the model_calls table began on 2026-09-23 is $22.99. Patrick's decision: no automated
+fault digest for now.
+
+**A harness problem surfaced building this in parallel with the main FD-363 session.** The
+harness moves every sub-agent's working directory when any one of them switches worktree, so two
+builders working in separate worktrees at once collided. The fix is process, not code: parallel
+builders use separate branches, and every commit is guarded by a branch check first (folded into
+HOW_THIS_PROJECT_WORKS.md).
+
+**Open.** The live eval run against the moved prompt awaits Patrick's spend approval; the real
+Gemini call awaits Vertex credentials on the box and his confirmation of what the agreement
+covers; the rulings index is 702 bytes over its 150,000-byte limit again.
+
+**Rulings, R-0595 to R-0599,** each with his words in the evidence file: the prompt
+restructuring to cut prompt-cache-write cost (R-0595); shadow turns on a scratch diagram, never
+shown to the user (R-0596); the replay command scored against a record he corrected himself
+(R-0597); the Gemini Flash model, wired in under his Google business associate agreement
+(R-0598); the review app's Compare replies page recording his blind picks (R-0599).
+
+## 2026-09-28 — FD-363: the batch deployed as d4971526 with the cost work folded in, and the live suite moved onto the subscription
+<!-- session: session_01CyJmVmyhVNKwpSjzvSVp8s · flushed: 2026-09-28T23:00:00Z -->
+
+Commit d4971526 went to production as image 3.2026.9.28.10+gd497152, database at 1b00000000b5,
+release run 36490165725. It carried everything since a8b2245b: the shared teal × on all six
+views [R-0588, R-0589]; explain's teal replay chip [R-0590]; the chat box above the keyboard and
+compact, tap-safe chips [R-0591, R-0592]; the events list's kind marks [R-0594]; the event
+editor and caption strip fixed for iPhone Safari; fourteen record rules refused at the writer and
+the coach's tool [R-0593, R-0585]; the agenda fix [R-0267]; and the FD-363-cost work folded in
+[R-0595 to R-0599]: prompt-cache reuse with the record in the newest user message, per-user coach
+and shadow models, the fd-shadow service, Gemini settings, the Compare replies page, quality
+replay and migration 1b00000000b5. The Gemini settings are absent on the box; an empty
+placeholder file sits at /etc/fd/gcp-sa.json. Dashboards now exclude scratch diagrams. The
+rulings store was restructured into topic files with a generated index and a hygiene guard, at a
+ceiling of 300,000 bytes, with an audit file left for Patrick's approval. The standalone-clone
+setup with doc/SETUP.md, and the sandbox kit with the shadow worker, shipped in the same batch.
+
+**Production data.** Events 9 and 10 in diagram 1 are now noted events with no move and no
+functioning, by review change 642. Event 66 had been made a toward move earlier, by change 635.
+The claude-test record gained a person and a birth for the post-deploy check.
+
+**The post-deploy turn proved the record-in-user-message change.** The coach answered a birth
+year that existed only in the record, from the record. Spend: 8 paid API calls, $0.1563, all on
+the live suite's one-time calibration, approved by Patrick that day; everything else ran on the
+subscription or the local model.
+
+**The live suite runs on the subscription** with the coach's real system prompt and MCP tools
+(`bin/subscribe.py`). Calibration showed the free path judges tool choice, event kind, who is
+kept and what is asked, but not finer fields or wording; those go to the ruled end-of-batch API
+run. The efficiency skill now lives at ~/.claude/skills/efficiency with reminder, spend and audit
+modes.
+
+**Queued for the next PR.** The record-correction policy and queue (event 26, the diagram 11
+births with a prepared script in the private corpus, diagram 14); the coach prompt's
+defined-self wording, held with its multi-turn eval; the ten live cases without saved answers,
+now partly re-answered; the back-arrow and step-button visual-language pairs; the rulings store
+audit lists (18 candidate merges, 19 supersessions with 5 conflicts, 115 uncited rulings, 7
+bug-report rulings) awaiting Patrick's approval; whether Patrick's published papers may be quoted
+on the public concept pages (about 125 quote lines); four verifier gaps (the notes pop-out's ×
+12px past its header row, the (i) button and a tool line overhanging the bubble by 5 to 7px, the
+hand-edit bad-date message showing a field name, the quality replay command writing to a tracked
+ledger file); and a unit test for the calibration cap and the per-call ledger code.

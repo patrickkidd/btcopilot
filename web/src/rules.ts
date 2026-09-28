@@ -1,4 +1,5 @@
 import * as api from "./api";
+import { Concept, conceptLinks } from "./concepts";
 import { esc, isAdmin } from "./dom";
 import { toast } from "./toast";
 import { RuleSource, type Rule } from "./types";
@@ -54,9 +55,11 @@ export class Rules {
   }
 
   private render(): void {
-    this.body.innerHTML = this.rules.length
-      ? this.rules.map((rule) => this.row(rule)).join("")
-      : `<div class="none">No coding guidelines yet.</div>`;
+    this.body.innerHTML =
+      conceptLinks(Object.values(Concept), true) +
+      (this.rules.length
+        ? this.rules.map((rule) => this.row(rule)).join("")
+        : `<div class="none">No coding guidelines yet.</div>`);
   }
 
   private row(rule: Rule): string {

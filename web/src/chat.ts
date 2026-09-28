@@ -1,6 +1,10 @@
 import { esc, el } from "./dom";
-import { tokenize } from "./chips";
-import { ChipTone, Role, type Chip, type Piece } from "./types";
+import { askedChip, chipOf, face, LEAD, Lead, pill, token, tokenize } from "./chips";
+import { hush, say } from "./speech";
+import { INFO, notesView, type Notes } from "./notes";
+import { html, type Line } from "./tools";
+import { fit } from "./viewport";
+import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
  * as pills, and a pill the user taps lands in the composer as something they
@@ -8,25 +12,21 @@ import { ChipTone, Role, type Chip, type Piece } from "./types";
  * lights as it lands and the picture draws what it names — pane A of the
  * approved play-by-play. */
 
-/** A chip tapped inside a play-by-play: the cluster it walks, and which chip in
- * that walk this is. The board is what such a chip steps, never the wire. */
-export interface PlayTap {
-  cluster: string;
-  ordinal: number;
-}
-
 export interface ChatHandlers {
-  onChip(chip: Chip, play: PlayTap | null): void;
+  onChip(chip: Chip): void;
   /** A tap on a bubble's own words rather than on a chip inside it: the picture
    * lights what that message named. It is a look, so it costs no turn. */
   onBubble(text: string): void;
+  /** A tap on a play-by-play's own words: open its drawer again, if it has a
+   * told case to open; false when it has none. */
+  onPlay(statement: number): boolean;
   /** What a chip should read as. The coach may write a reference with no words
    * of its own, and a name out of the record beats a pronoun in a sentence. */
   label(chip: Chip): string;
 }
 
-/** The beat after a move's sentence has been written, before the next move
- * takes the board: long enough to look at what was just drawn. The owner tunes
+/** The beat after a chip's sentence has been written, before the next chip
+ * lights: long enough to look at what was just drawn. The owner tunes
  * this by feel, so it is one number in one place. */
 const READ_MS = 2000;
 /** The coach writes two characters at a time, on the approved cadence. */
@@ -54,8 +54,13 @@ interface Written {
   tail: Piece[];
 }
 
+/** Something the coach offers to say next. A question the reader brought back
+ * is amber too, but it is their own words, not an offer. */
+const isOffer = (p: Piece) => "chip" in p && p.chip.kind === ChipKind.Ask;
+
+
 function layout(pieces: Piece[]): Written {
-  const offered = pieces.findIndex((p) => "chip" in p && p.chip.tone === ChipTone.Ask);
+  const offered = pieces.findIndex(isOffer);
   const first = offered < 0 ? pieces.length : offered;
   const words = pieces.slice(0, first);
   let ask = "";
@@ -69,42 +74,57 @@ function layout(pieces: Piece[]): Written {
   }
   const rest = pieces.slice(first);
   if (!rest.length) return { words, ask, offers: [], tail: [] };
-  const lastOffer =
-    rest.length -
-    1 -
-    [...rest].reverse().findIndex((p) => "chip" in p && p.chip.tone === ChipTone.Ask);
+  const lastOffer = rest.length - 1 - [...rest].reverse().findIndex(isOffer);
   return {
     words,
     ask,
     offers: rest
       .slice(0, lastOffer + 1)
-      .flatMap((p) => ("chip" in p && p.chip.tone === ChipTone.Ask ? [p.chip] : [])),
+      .flatMap((p) => ("chip" in p && isOffer(p) ? [p.chip] : [])),
     tail: rest.slice(lastOffer + 1),
   };
 }
+/** A reply's closing question: the amber chip that answers it once the reply
+ * is stored, the amber words before then. */
+const asked = (ask: string, statementId: number | null) =>
+  statementId === null ? esc(ask) : askedChip(statementId, ask);
+
+/** The statement a bubble was stored as, once the server has said. */
+const stamped = (bubble: HTMLElement) =>
+  bubble.dataset.statement ? Number(bubble.dataset.statement) : null;
+
 /** A reference the server has only half sent: it is held back until the rest
  * of it arrives, so the reader never sees brackets. */
 const PART = /\[\[[^\]]*$/;
 
+/** One thing the coach did, as a plain line above its words. */
+const did = (line: Line) => el("div", "did", html(line));
+
+/** A coach reply's own button that reads it aloud, whether or not replies are
+ * spoken as they arrive. It sits under the bubble, never in it, so the bubble
+ * is the same shape with or without it. */
+const PLAY =
+  `<button type="button" class="play" aria-label="Read aloud">` +
+  `<svg viewBox="0 0 16 16" aria-hidden="true">` +
+  `<path class="go" d="M4.5 2.75v10.5l8.5-5.25z"/>` +
+  `<rect class="halt" x="3.5" y="3.5" width="9" height="9" rx="1"/></svg></button>`;
+
+/** A bubble of tool lines alone, or a turn that failed, has no words to read. */
+const playable = (bubble: HTMLElement, text: string) => {
+  if (bubble.nextElementSibling?.matches(".play")) bubble.nextElementSibling.remove();
+  if (text) bubble.insertAdjacentHTML("afterend", PLAY);
+};
+
 /** How long a traced bubble stays outlined after a moment jumps to it. */
 const TRACE_MS = 2200;
-
-/** Where a tapped chip sits in its walk. Only a chip inside a play-by-play has
- * one, and the offers that close the walk are not moves, so they do not count
- * towards it. */
-function playTap(button: HTMLElement): PlayTap | null {
-  const bubble = button.closest<HTMLElement>(".bub");
-  const cluster = bubble?.dataset.play;
-  if (!bubble || !cluster) return null;
-  const moves = [...bubble.querySelectorAll<HTMLElement>(`.chip.${ChipTone.Data}`)];
-  return { cluster, ordinal: moves.indexOf(button) };
-}
 
 export class Chat {
   /** What each bubble was written from, chips and all, so a tap on its words
    * can light the same moments its chips name. */
   private said = new WeakMap<HTMLElement, string>();
   private typing: HTMLElement | null = null;
+  /** The coach's notes on each turn that carries them, for admins and auditors. */
+  private noted = new WeakMap<HTMLElement, Notes>();
   /** Whether the thread is following the newest words. */
   private stuck = true;
   /** True while this class is the one moving the scroll, so its own pinning is
@@ -117,30 +137,31 @@ export class Chat {
     private handlers: ChatHandlers,
   ) {
     const tap = (host: HTMLElement) => (e: Event) => {
-      const button = (e.target as Element).closest<HTMLElement>("button.chip");
+      const play = (e.target as Element).closest<HTMLElement>(".play");
+      if (play) return this.read(play);
+      const info = (e.target as Element).closest<HTMLElement>(".info");
+      if (info) return this.open(info.parentElement as HTMLElement);
+      // [try again] looks like a chip but names nothing in the record.
+      const button = (e.target as Element).closest<HTMLElement>("button.chip[data-kind]");
       if (!button) {
         if (host === this.composer) return;
         const bubble = (e.target as Element).closest<HTMLElement>(".bub");
-        // A play-by-play's own words never take the picture off its board.
-        if (!bubble || bubble.dataset.play) return;
+        if (!bubble) return;
+        // A play-by-play's own words open it again; an old prose walk has no
+        // case to open, and its words are a look like any message's.
+        if (bubble.dataset.play && bubble.dataset.statement && this.handlers.onPlay(Number(bubble.dataset.statement)))
+          return;
         const said = this.said.get(bubble);
         if (said) this.handlers.onBubble(said);
         return;
       }
       e.preventDefault();
-      if (host === this.composer) return void button.remove();
-      this.handlers.onChip(
-        {
-          kind: button.dataset.kind as Chip["kind"],
-          target: button.dataset.target ?? "",
-          label: button.dataset.full ?? "",
-          tone: button.classList.contains(ChipTone.Ask) ? ChipTone.Ask : ChipTone.Data,
-          bare: false,
-        },
-        playTap(button),
-      );
+      if (host === this.composer) return this.caret(button);
+      this.handlers.onChip(chipOf(button));
     };
     this.watchScrolling();
+    // the chat box stays above the phone's keyboard, however it came up
+    fit();
     // the thread's box changes size after it is put up — a phone's toolbar
     // collapsing, the picture taking its height — and stays on its last words
     new ResizeObserver(() => this.scroll()).observe(this.list);
@@ -152,18 +173,27 @@ export class Chat {
     this.composer.addEventListener("click", tap(this.composer));
   }
 
-  /** One size, the whole label, never cut. The coach's labels are capped at
-   * the source, so a chip that needs shortening is a bug upstream rather than
-   * something for the reader to expand. */
   private pill(chip: Chip): string {
-    const full = this.handlers.label(chip);
-    const offer = chip.tone === ChipTone.Ask;
-    return (
-      `<button type="button" class="chip ${chip.tone}" ` +
-      `data-kind="${chip.kind}" data-target="${esc(chip.target)}" ` +
-      `data-full="${esc(full)}" title="${esc(full)}">` +
-      `${offer ? "[" : ""}${esc(full)}${offer ? "]" : ""}</button>`
-    );
+    return pill(chip, this.handlers.label(chip));
+  }
+
+  /** The thread is drawn before the record arrives, so a chip written with no
+   * words of its own first says a stand-in word. Once the record is here it
+   * says what the record calls the thing it names. */
+  relabel(): void {
+    for (const button of this.list.querySelectorAll<HTMLElement>("button.chip[data-bare]")) {
+      const kind = button.dataset.kind as ChipKind;
+      const full = this.handlers.label({
+        kind,
+        target: button.dataset.target ?? "",
+        label: button.dataset.full ?? "",
+        tone: button.classList.contains(ChipTone.Ask) ? ChipTone.Ask : ChipTone.Data,
+        bare: true,
+      });
+      button.dataset.full = full;
+      button.title = full;
+      button.textContent = face(kind, full);
+    }
   }
 
   private render(pieces: Piece[]): string {
@@ -173,16 +203,32 @@ export class Chat {
   /** A whole reply as it stands when nothing is typing: the words, the closing
    * question in amber, and the offers in their own row. A reopened session must
    * read exactly as the reply did when it was written. */
-  private written(pieces: Piece[]): string {
+  private written(pieces: Piece[], statementId: number | null): string {
     const { words, ask, offers, tail } = layout(pieces);
     return (
       this.render(words) +
-      (ask ? `<div class="ask">${esc(ask)}</div>` : "") +
+      (ask ? `<div class="ask">${asked(ask, statementId)}</div>` : "") +
       (offers.length
         ? `<div class="offer">${offers.map((c) => this.pill(c)).join("")}</div>`
         : "") +
       this.render(tail)
     );
+  }
+
+  /** The tap is itself the gesture iOS wants before it will speak. */
+  private read(button: HTMLElement): void {
+    if (button.classList.contains("on")) return hush();
+    say(this.said.get(button.previousElementSibling as HTMLElement)!, () => button.classList.remove("on"));
+    button.classList.add("on");
+  }
+
+  private open(bubble: HTMLElement): void {
+    notesView(this.noted.get(bubble)!, bubble);
+  }
+
+  private annotate(bubble: HTMLElement, notes: Notes): void {
+    this.noted.set(bubble, notes);
+    if (!bubble.querySelector(":scope > .info")) bubble.insertAdjacentHTML("beforeend", INFO);
   }
 
   clear(): void {
@@ -211,25 +257,29 @@ export class Chat {
     tone = ChipTone.Data,
     statementId: number | null = null,
     play: string | null = null,
+    lines: Line[] = [],
+    notes: Notes | null = null,
   ): HTMLElement {
     if (role === Role.User) this.list.querySelector(".cta")?.remove();
     const bubble = el(
       "div",
       `bub ${role}`,
       role === Role.Coach
-        ? `<div class="who">Coach</div>` + this.written(tokenize(text, tone))
+        ? `<div class="who">Coach</div>` + this.written(tokenize(text, tone), statementId)
         : // Only the coach offers; the same chip sent back by the user is words
           // in their own sentence.
           this.render(tokenize(text, tone)),
     );
+    bubble.querySelector(".who")?.after(...lines.map(did));
+    if (notes) this.annotate(bubble, notes);
     // The bubble carries its statement so a moment on the picture can point
     // back at the words that coded it.
     if (statementId !== null) bubble.dataset.statement = String(statementId);
-    // A play-by-play carries the cluster it walks, so its chips step the board
-    // instead of taking the picture back to the wire.
+    // A play-by-play carries the cluster it tells, so a tap on it opens it again.
     if (play !== null) bubble.dataset.play = play;
     this.said.set(bubble, text);
     this.list.append(bubble);
+    if (role === Role.Coach) playable(bubble, text);
     this.stuck = true;
     this.scroll();
     return bubble;
@@ -276,8 +326,9 @@ export class Chat {
 
   /** Scroll one statement's bubble into the middle of the thread and mark it,
    * which is what a moment tracing back to where it was coded does. Never
-   * `scrollIntoView`: the outer page must not move (UI_STANDARDS). */
-  trace(statementId: number): boolean {
+   * `scrollIntoView`: the outer page must not move (UI_STANDARDS). A question
+   * tracing back to where it was asked also lights the question itself. */
+  trace(statementId: number, ask = false): boolean {
     const bubble = this.list.querySelector<HTMLElement>(
       `.bub[data-statement="${statementId}"]`,
     );
@@ -288,6 +339,8 @@ export class Chat {
       0,
       this.list.scrollTop + (at.top - box.top) - (box.height - at.height) / 2,
     );
+    for (const lit of this.list.querySelectorAll(".ask.hl")) lit.classList.remove("hl");
+    if (ask) bubble.querySelector(".ask")?.classList.add("hl");
     bubble.classList.remove("traced");
     void bubble.offsetWidth;
     bubble.classList.add("traced");
@@ -331,13 +384,15 @@ export class Chat {
       this.scroll();
     };
     return {
+      bubble,
       stamp: (statementId) => {
         bubble.dataset.statement = String(statementId);
       },
       note: (line) => {
-        bubble.insertBefore(el("div", "did", esc(line)), words);
+        bubble.insertBefore(did(line), words);
         this.scroll();
       },
+      notes: (notes) => this.annotate(bubble, notes),
       append: (text, onChip) => {
         sofar += text;
         paint(onChip);
@@ -353,7 +408,7 @@ export class Chat {
           extra.remove();
         const { words: said, ask, offers, tail } = layout(tokenize(text));
         words.innerHTML = this.render(said);
-        if (ask) bubble.append(el("div", "ask", esc(ask)));
+        if (ask) bubble.append(el("div", "ask", asked(ask, stamped(bubble))));
         if (offers.length) {
           const row = el("div", "offer");
           for (const offer of offers)
@@ -367,6 +422,7 @@ export class Chat {
         }
         for (const chip of [...said, ...offers.map((c) => ({ chip: c })), ...tail])
           if ("chip" in chip) onChip(chip.chip);
+        playable(bubble, text);
         bubble.classList.remove("typing");
         this.typing = null;
         this.scroll();
@@ -375,8 +431,8 @@ export class Chat {
         this.said.set(bubble, text);
         // A move holds until the sentence about it has been written and there
         // has been a beat to look at it, not for a fixed count from the moment
-        // it was named. The chip stays lit for as long as its move is the one
-        // on the board.
+        // it was named. The chip stays lit for as long as its moment is the
+        // one on the picture.
         let held: HTMLElement | null = null;
         const release = async () => {
           if (!held) return;
@@ -410,6 +466,7 @@ export class Chat {
           const line = el("div", "ask");
           bubble.append(line);
           await write(line, ask, ASK_TICK_MS);
+          line.innerHTML = asked(ask, stamped(bubble));
         }
         if (offers.length) {
           const row = el("div", "offer");
@@ -431,6 +488,7 @@ export class Chat {
             } else await write(after, piece.text, TICK_MS);
           }
         }
+        playable(bubble, text);
         bubble.classList.remove("typing");
         this.typing = null;
       },
@@ -454,30 +512,45 @@ export class Chat {
     }
   }
 
-  /** Drop a chip into the composer at the caret, as an inline pill. A chip the
-   * coach offered keeps its amber, so what the user is about to send still
-   * looks like the thing they tapped. */
-  insert(chip: Chip): void {
+  /** Drop a chip into the composer at the caret, as an inline pill, with the
+   * words that go before it and the words that follow it. A chip the coach
+   * offered keeps its amber, so what the user is about to send still looks
+   * like the thing they tapped. */
+  insert(chip: Chip, lead: Lead, after = " "): void {
     this.composer.focus({ preventScroll: true });
-    const selection = window.getSelection();
-    const html = this.pill(chip) + " ";
+    const selection = window.getSelection()!;
     if (
-      selection?.rangeCount &&
-      this.composer.contains(selection.getRangeAt(0).commonAncestorContainer)
+      !selection.rangeCount ||
+      !this.composer.contains(selection.getRangeAt(0).commonAncestorContainer)
     ) {
-      const range = selection.getRangeAt(0);
-      range.deleteContents();
-      const fragment = range.createContextualFragment(html);
-      range.insertNode(fragment);
-      selection.collapseToEnd();
-    } else {
-      this.composer.insertAdjacentHTML("beforeend", html);
-      const range = document.createRange();
-      range.selectNodeContents(this.composer);
-      range.collapse(false);
-      selection?.removeAllRanges();
-      selection?.addRange(range);
+      const end = document.createRange();
+      end.selectNodeContents(this.composer);
+      end.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(end);
     }
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    const fragment = range.createContextualFragment(
+      (LEAD[lead] ? esc(`${LEAD[lead]} `) : "") + this.pill(chip) + esc(after),
+    );
+    // one piece in the words: the caret goes round it, never into its label,
+    // and backspace takes it out whole
+    for (const button of fragment.querySelectorAll<HTMLElement>(".chip")) button.contentEditable = "false";
+    range.insertNode(fragment);
+    selection.collapseToEnd();
+  }
+
+  /** A chip in the chat box is a place in the words, not a control: a tap
+   * puts the caret just after it, and only backspace or delete removes it. */
+  private caret(chip: HTMLElement): void {
+    const range = document.createRange();
+    range.setStartAfter(chip);
+    range.collapse(true);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    this.composer.focus({ preventScroll: true });
   }
 
   /** What the composer says, with its pills back as reference markup. A bare
@@ -485,9 +558,11 @@ export class Chat {
   draft(): string {
     let out = "";
     this.composer.childNodes.forEach((node) => {
-      const kind = node instanceof HTMLElement ? node.dataset.kind : undefined;
+      const kind = node instanceof HTMLElement ? (node.dataset.kind as ChipKind) : undefined;
+      const at = (node as HTMLElement).dataset;
+      // a message is no item of the record, so its question travels as its words
       out += kind
-        ? `[[${kind}:${(node as HTMLElement).dataset.target}]]`
+        ? token(kind, at.target!, kind === ChipKind.Message ? at.full : undefined)
         : (node.textContent ?? "");
     });
     return out.replace(/\u00a0/g, " ").trim();
@@ -556,10 +631,12 @@ export class Chat {
 }
 
 export interface LiveBubble {
+  bubble: HTMLElement;
   /** The bubble carries its statement once the server has one, so a moment
    * coded in this very session can point back at it (review item 18). */
   stamp(statementId: number): void;
-  note(line: string): void;
+  note(line: Line): void;
+  notes(notes: Notes): void;
   /** The next words off the wire, drawn as they land. */
   append(text: string, onChip: (chip: Chip) => void): void;
   /** The coach said those words again: what is on screen is dropped. */

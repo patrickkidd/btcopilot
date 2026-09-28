@@ -20,6 +20,7 @@ HERE = Path(__file__).resolve().parent.parent.parent.parent.parent
 DOC = HERE / "doc"
 OUT = TRACE
 PROJECTS = Path.home() / ".claude" / "projects"
+# The sessions from before the move to a standalone clone; later ones match *btcopilot*.
 DIRS = [
     "-Users-patrick-theapp-btcopilot--claude-worktrees-FD-362",
     "-Users-patrick-theapp-btcopilot--claude-worktrees-chat-first-app",

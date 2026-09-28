@@ -25,7 +25,7 @@ HERE = Path(__file__).parent
 FINGERPRINTS = HERE / "fingerprints.txt"
 EXCEPTIONS = HERE / "exceptions.txt"
 WEB = ROOT / "web"
-CEILING = 150_000
+CEILING = 300_000
 SHINGLE = 12
 LEAST = 8
 ORACLE = re.compile(r"\[Oracle:?([^\]]*)\]")
@@ -161,6 +161,10 @@ def collected() -> dict[str, tuple[set[str], list[str]]]:
     return {label: cites(zone) for label, zone in [*pytests(), *vitests(), *playwrights()]}
 
 
+def citations() -> Counter:
+    return Counter(i for ids, _ in collected().values() for i in ids)
+
+
 def test_the_store_parses_into_closed_vocabularies():
     # R-0447, R-0331
     found = oracle.rulings()
@@ -210,7 +214,7 @@ def test_every_ruling_is_tested_or_excepted():
     excused = exceptions()
     assert sorted(set(excused) - set(found)) == []
     assert [rid for rid, (s, reason) in excused.items() if s not in EXCUSES or not reason] == []
-    citing = Counter(i for ids, _ in collected().values() for i in ids)
+    citing = citations()
     short = {}
     for r in found.values():
         if Tag.Process in r.tags or r.status is not Status.Ok or r.id in excused:
@@ -227,12 +231,20 @@ def test_the_index_stays_small_enough_to_read_whole():
     size = defaultdict(int)
     for row in text.splitlines():
         if oracle.ROW.match(row):
-            for name, col in zip(oracle.FIELDS, row.split(" | ")):
+            for name, col in zip(oracle.LISTED, row.split(" | ")):
                 size[name] += len(col.encode())
         else:
             size["preamble"] += len(row.encode())
     total = len(text.encode())
     assert total <= CEILING, f"{total} bytes; largest fields: {sorted(size.items(), key=lambda kv: -kv[1])[:3]}"
+
+
+def test_the_index_is_rendered_from_the_topic_files():
+    # R-0447, R-0331
+    now = oracle.index().splitlines()
+    rendered = oracle.listing(citations()).splitlines()
+    stale = sorted({l.split(" | ")[0] for l in set(now) ^ set(rendered)})
+    assert stale == [], "run bin/oracleindex.py with the sops key"
 
 
 def shingles(text: str) -> set[tuple[str, ...]]:

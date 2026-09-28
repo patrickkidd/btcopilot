@@ -1,3 +1,4 @@
+import { esc } from "./dom";
 import { ChipKind, ChipTone, ItemKind, type Chip, type Piece } from "./types";
 
 /** Reference markup as the coach writes it: `[[kind:target]]`, or
@@ -21,6 +22,14 @@ enum Markup {
    * so it goes in the composer as words rather than aiming the picture — the
    * offered chips that close the approved play-by-play. */
   Ask = "ask",
+  /** A question the coach asked, brought back by the reader from the list of
+   * open ones. */
+  Question = "question",
+  /** What the coach noticed, brought back by the reader. */
+  Impression = "impression",
+  PairBond = "pair_bond",
+  /** The question a coach message ended on, answered by the reader. */
+  Message = "message",
 }
 
 const NARROWED: Record<Markup, ChipKind | null> = {
@@ -30,6 +39,10 @@ const NARROWED: Record<Markup, ChipKind | null> = {
   [Markup.Person]: ChipKind.Person,
   [Markup.Range]: null,
   [Markup.Ask]: ChipKind.Ask,
+  [Markup.Question]: ChipKind.Question,
+  [Markup.Impression]: ChipKind.Impression,
+  [Markup.PairBond]: ChipKind.PairBond,
+  [Markup.Message]: ChipKind.Message,
 };
 
 const TOKEN = new RegExp(
@@ -42,6 +55,10 @@ const KIND_WORD: Record<ChipKind, string> = {
   [ChipKind.Cluster]: "this cluster",
   [ChipKind.Person]: "them",
   [ChipKind.Ask]: "this",
+  [ChipKind.Question]: "this question",
+  [ChipKind.Impression]: "this",
+  [ChipKind.PairBond]: "them",
+  [ChipKind.Message]: "this question",
 };
 
 const ITEM_OF: Record<ChipKind, ItemKind> = {
@@ -49,7 +66,15 @@ const ITEM_OF: Record<ChipKind, ItemKind> = {
   [ChipKind.Cluster]: ItemKind.Cluster,
   [ChipKind.Person]: ItemKind.Person,
   [ChipKind.Ask]: ItemKind.Diagram,
+  [ChipKind.Question]: ItemKind.Question,
+  // an impression is stored as a question of its own kind
+  [ChipKind.Impression]: ItemKind.Question,
+  [ChipKind.PairBond]: ItemKind.PairBond,
+  // a message is not an item of the record, as an offer is not
+  [ChipKind.Message]: ItemKind.Diagram,
 };
+
+const ASKING = new Set([ChipKind.Ask, ChipKind.Question, ChipKind.Message]);
 
 export const itemKind = (kind: ChipKind): ItemKind => ITEM_OF[kind];
 
@@ -74,8 +99,9 @@ export function tokenize(text: string, tone = ChipTone.Data): Piece[] {
           kind,
           target: m[2].trim(),
           label: label || (kind === ChipKind.Ask ? m[2].trim() : KIND_WORD[kind]),
-          // An offer is the coach asking, and asking is always amber.
-          tone: kind === ChipKind.Ask ? ChipTone.Ask : tone,
+          // An offer or a question is the coach asking, and asking is always
+          // amber.
+          tone: ASKING.has(kind) ? ChipTone.Ask : tone,
           bare: !label,
         },
       });
@@ -108,6 +134,65 @@ export function aimedEvents(
     }
     case ChipKind.Person:
     case ChipKind.Ask:
+    case ChipKind.Question:
+    case ChipKind.Impression:
+    case ChipKind.PairBond:
+    case ChipKind.Message:
       return [];
   }
 }
+
+/** An offer wears square brackets around its words. */
+export const face = (kind: ChipKind, full: string) => (kind === ChipKind.Ask ? `[${full}]` : full);
+
+/** One size, the whole label, never cut. The coach's labels are capped at the
+ * source, so a chip that needs shortening is a bug upstream rather than
+ * something for the reader to expand. */
+export const pill = (chip: Chip, full: string): string =>
+  `<button type="button" class="chip ${chip.tone}" ` +
+  `data-kind="${chip.kind}" data-target="${esc(chip.target)}" ` +
+  `data-full="${esc(full)}" title="${esc(full)}"${chip.bare ? " data-bare" : ""}>` +
+  `${esc(face(chip.kind, full))}</button>`;
+
+/** The play-by-play message whose own cluster this pill names, if any. */
+function playOf(button: HTMLElement): number | undefined {
+  const bubble = button.closest<HTMLElement>(".bub[data-play][data-statement]");
+  if (!bubble || button.dataset.kind !== ChipKind.Cluster || bubble.dataset.play !== button.dataset.target)
+    return undefined;
+  return Number(bubble.dataset.statement);
+}
+
+/** The chip a tapped pill stands for. */
+export const chipOf = (button: HTMLElement): Chip => ({
+  kind: button.dataset.kind as ChipKind,
+  target: button.dataset.target ?? "",
+  label: button.dataset.full ?? "",
+  tone: button.classList.contains(ChipTone.Ask) ? ChipTone.Ask : ChipTone.Data,
+  bare: false,
+  play: playOf(button),
+});
+
+/** The question a coach message ended on, as the amber chip that answers it:
+ * the closing question of a reply and the play-by-play's own (R-0587). */
+export const askedChip = (statementId: number, words: string): string =>
+  pill({ kind: ChipKind.Message, target: String(statementId), label: words, tone: ChipTone.Ask, bare: false }, words);
+
+/** What was tapped to put a chip in the message box, for the words that go
+ * before it. */
+export enum Lead {
+  None = "none",
+  Answer = "answer",
+  Thought = "thought",
+  Fact = "fact",
+  Ask = "ask",
+}
+
+/** The words before a chip in the message box, which the reader may change
+ * before sending (R-0586). */
+export const LEAD: Record<Lead, string> = {
+  [Lead.None]: "",
+  [Lead.Answer]: "To answer your question",
+  [Lead.Thought]: "About your question",
+  [Lead.Fact]: "Here's what I know about",
+  [Lead.Ask]: "I want to ask about",
+};

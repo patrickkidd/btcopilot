@@ -1,4 +1,7 @@
+import { Drawer } from "./drawer";
+import { untold } from "./snapshots";
 import * as api from "./api";
+import { conceptLinks, conceptsOf } from "./concepts";
 import { el, esc, slideOver, type Title } from "./dom";
 import { dragScroll } from "./drag";
 import { Picture, Target, type Tap } from "./picture";
@@ -8,9 +11,12 @@ import { listButton, PLAY_MARK, tok } from "./tokens";
 import { WIDE } from "./pro";
 import {
   emptyTimeline,
+  ItemKind,
+  Touch,
   type CodingThread,
   type CodingTurn,
   type Timeline,
+  type TimelineEvent,
 } from "./types";
 
 /** The coding screen: one conversation, read-only, up to the cut Patrick put
@@ -39,6 +45,19 @@ const PLACEHOLDER = {
   picked: "say what this line tells you happened",
 };
 
+/** The concept page of each code the scribe wrote, under what it wrote, so
+ * the coder reads a code's page with one tap (R-0541). */
+export function writtenConcepts(ids: number[], events: TimelineEvent[]): string {
+  return conceptLinks(conceptsOf(events.filter((event) => ids.includes(event.id))));
+}
+
+/** Which record events a piece of the thread wrote, for the concept pages
+ * hung under it once the record is read. */
+function wrote(node: HTMLElement, ids: number[]): HTMLElement {
+  if (ids.length) node.dataset.events = ids.join(",");
+  return node;
+}
+
 export class Coding {
   private thread: CodingThread | null = null;
   private timeline: Timeline = emptyTimeline();
@@ -46,6 +65,7 @@ export class Coding {
   private drawer: Menu | null = null;
   private sending = false;
   private picture: Picture;
+  private pbp: Drawer;
   /** Wide enough for the drawer to stand beside the thread; narrower and it
    * comes up over it instead (R-0345). */
   private wide = window.matchMedia(WIDE);
@@ -66,12 +86,24 @@ export class Coding {
     private overlay: HTMLElement,
     private handlers: CodingHandlers,
   ) {
-    // No coach turn in a coding, so the board it opens carries the two step
-    // arrows and nothing to ask with.
-    this.picture = new Picture(view, {
-      onTap: (tap: Tap) => this.onPicture(tap),
-      canExplain: false,
-    });
+    this.picture = new Picture(view, { onTap: (tap: Tap) => this.onPicture(tap) });
+    // The play-by-play drawer over this screen, told by nobody: a coding has no
+    // coach turn (R-0570). Its path goes back to the picture the way the
+    // chat's does.
+    const drawer = el("div");
+    view.closest<HTMLElement>(".screen")!.append(drawer);
+    this.pbp = new Drawer(
+      drawer,
+      (step, events) => {
+        this.pbp.close();
+        if (step) this.picture.spotlight(events);
+        else this.picture.back(0);
+        this.marks();
+      },
+      () => {
+        throw new Error("a case nobody told has no question to answer");
+      },
+    );
     this.overlay.append(this.scrim, this.sheet);
     this.scrim.hidden = true;
     this.sheet.hidden = true;
@@ -114,6 +146,17 @@ export class Coding {
   private async refresh(): Promise<void> {
     this.drawer?.show(await this.reread());
     this.marks();
+    this.paintConcepts();
+  }
+
+  /** The codes are read off the record as it stands, so a line written long
+   * ago shows its pages as well as one just written. */
+  private paintConcepts(): void {
+    for (const node of this.list.querySelectorAll<HTMLElement>("[data-events]")) {
+      node.querySelector(".concepts")?.remove();
+      const ids = node.dataset.events!.split(",").map(Number);
+      node.insertAdjacentHTML("beforeend", writtenConcepts(ids, this.timeline.events));
+    }
   }
 
   showing(): CodingThread | null {
@@ -249,19 +292,10 @@ export class Coding {
   }
 
   /** The row under the picture. Nothing in a coding speaks to the coach, so
-   * the chat's "ask", "in chat" and the board's "explain" are not here: the
-   * one thing the row offers is the walk through an open cluster's moves, on
-   * the record this coding is being written onto.
-   *
-   * The board has its own controls, so the row goes outright while it is up
-   * rather than sitting there as an empty strip (owner ruling 2026-09-08). */
+   * the chat's "ask" and "in chat" are not here: the one thing the row offers
+   * is the play-by-play of an open cluster, told by nobody, on the record this
+   * coding is being written onto (R-0570). */
   private marks(): void {
-    const onBoard = this.picture.onBoard();
-    this.caption.classList.toggle("gone", onBoard);
-    if (onBoard) {
-      this.caption.innerHTML = "";
-      return;
-    }
     const open = this.picture.openCluster();
     if (!open) {
       const say = this.picked === null ? "tap a line" : "tap a cluster";
@@ -270,15 +304,14 @@ export class Coding {
       this.wireList();
       return;
     }
-    const moves = this.picture.countMoves(open.event_ids);
+    const dated = this.picture.countDated(open.event_ids);
     this.caption.innerHTML =
-      tok("coding-play", "g", PLAY_MARK, "play-by-play", moves > 0) +
+      tok("coding-play", "g", PLAY_MARK, "play-by-play", dated > 0) +
       listButton(LIST_ID);
-    if (moves)
-      this.caption.querySelector("#coding-play")?.addEventListener("click", () => {
-        this.picture.openBoard(open.event_ids, open.id);
-        this.marks();
-      });
+    if (dated)
+      this.caption.querySelector("#coding-play")?.addEventListener("click", () =>
+        this.pbp.open(this.timeline, untold(this.timeline, open.event_ids), null),
+      );
     this.wireList();
   }
 
@@ -310,6 +343,7 @@ export class Coding {
     this.composer.innerHTML = "";
     const side = this.side(turn);
     this.after(turn, el("div", `bub said${side}`, esc(said)), turn);
+    this.picture.untouch();
     this.sending = true;
     let written;
     try {
@@ -317,7 +351,7 @@ export class Coding {
     } catch (error) {
       this.after(
         turn,
-        el("div", `bub coach sub${side}`, `<div class="did q">${esc(whatFailed(error))}</div>`),
+        el("div", `bub coach sub${side}`, `<div class="did q">${esc(api.whatFailed(error))}</div>`),
         turn,
       );
       // A scribe that stopped part way has still written that part.
@@ -329,10 +363,14 @@ export class Coding {
     const lines = written.asked
       ? `<div class="did q">${esc(written.asked)}</div>`
       : written.lines.map((line) => `<div class="did">${esc(line)}</div>`).join("");
-    this.after(turn, el("div", `bub coach sub${side}`, lines), turn);
+    const events = written.made
+      .filter((one) => one.kind === ItemKind.Event)
+      .map((one) => Number(one.id));
+    this.after(turn, wrote(el("div", `bub coach sub${side}`, lines), events), turn);
     if (written.made.length) {
       await this.refresh();
-      this.picture.light(written.made);
+      // what the scribe writes, it adds
+      this.picture.light(written.made.map((one) => ({ ...one, touch: Touch.Add })));
     }
   }
 
@@ -350,8 +388,8 @@ export class Coding {
   private onPicture(tap: Tap): void {
     if (tap.target === Target.Ground) this.picture.dismiss();
     else if (tap.target === Target.Cluster) {
-      const ids = this.picture.inCluster(tap.index);
-      if (ids.length) this.picture.spotlight(ids);
+      const cluster = this.picture.clusterAt(tap.index);
+      if (cluster) this.picture.spotlight(cluster.event_ids);
     }
     this.marks();
   }
@@ -374,17 +412,22 @@ export class Coding {
             turn.id,
           ),
         );
-        for (const line of said.lines)
+        said.lines.forEach((line, at) =>
           this.list.append(
             this.tagged(
-              el(
-                "div",
-                `bub coach sub${this.side(turn.id)}`,
-                `<div class="did">${esc(line)}</div>`,
+              wrote(
+                el(
+                  "div",
+                  `bub coach sub${this.side(turn.id)}`,
+                  `<div class="did">${esc(line)}</div>`,
+                ),
+                // the pages hang under the last of the lines
+                at === said.lines.length - 1 ? said.event_ids : [],
               ),
               turn.id,
             ),
-          );
+          ),
+        );
       }
     }
     this.list.append(this.cutline(thread, true));
@@ -448,14 +491,4 @@ export class Coding {
     node.scrollIntoView({ block: "nearest" });
   }
 
-}
-
-/** What went wrong, in the words the coder needs. */
-function whatFailed(error: unknown): string {
-  const failed = error instanceof api.Failed ? error : null;
-  if (!failed) throw error;
-  console.warn(failed.message);
-  if (failed.silent) return "No answer from the server";
-  if (failed.status >= 500) return "The server broke on that one";
-  return failed.detail.split(": ").slice(2).join(": ") || "That did not go in";
 }

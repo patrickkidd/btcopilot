@@ -4,7 +4,7 @@ import pytest
 
 from btcopilot.extensions import db
 from btcopilot.models import Discussion
-from btcopilot.models.preferences import ChatMode, PrefKey, Proactive, Theme
+from btcopilot.models.preferences import ChatMode, PrefKey, Proactive, Spotlight, Theme
 
 
 def test_defaults(test_user):
@@ -14,6 +14,7 @@ def test_defaults(test_user):
     assert test_user.pref(PrefKey.Proactive) is Proactive.Never
     assert test_user.pref(PrefKey.Mode) is ChatMode.Text
     assert test_user.pref(PrefKey.Theme) is Theme.System
+    assert test_user.pref(PrefKey.Spotlight) is Spotlight.Unified
 
 
 def test_set_prefs_round_trips(test_user):
@@ -66,3 +67,4 @@ def test_discussion_title_defaults_null_and_round_trips(test_user):
     discussion.title = "Sunday afternoon"
     db.session.commit()
     assert db.session.get(Discussion, discussion.id).title == "Sunday afternoon"
+

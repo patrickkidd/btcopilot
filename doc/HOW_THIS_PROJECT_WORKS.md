@@ -13,8 +13,15 @@ project does not. familydiagram is out of scope for this trajectory.
 This is not optional and not deferred to the end of a session:
 - **STATE.md** — revise it as the current truth changes.
 - **HISTORY.md** — append what happened; never rewrite it (two clocks).
-- **Rulings** — log every ruling Patrick makes to the oracle store in fdserver the moment
-  he makes it. Never author a ruling he did not say.
+- **Rulings** — log every ruling Patrick makes to the oracle store the moment he makes it, in
+  its topic file under `private/oracle/topics/<topic>.md`, never in `rulings.md` by hand; run
+  `uv run python bin/oracleindex.py` with the key to regenerate the index after any store change
+  or citation change — CI's index-drift guard fails if it isn't rerun. Never author a ruling he
+  did not say. A preference he floats, a question he
+  asks ("I don't know, what do you think?"), or an idea he wants tried is not a ruling: mark it
+  "trying (date), not ruled", try it, and record it as a rule only after he has seen the result
+  and said so (Patrick 2026-09-26: "don't mark things as rulings until you've tested them out
+  with me first. you just jumped ahead for example").
 - **FD-362's description** — keep it in line with STATE.md at *this* altitude only:
   inspiration, motivation, the bet, guardrails, what carries over, the product, and this
   maintenance rule. Detail belongs in the corpus, not the epic. Updating the epic needs
@@ -22,6 +29,8 @@ This is not optional and not deferred to the end of a session:
 - **decisions/log.md** — every significant decision, immediately.
 
 ## The flush: every session ends with `/two-clocks`
+**No handover documents (2026-09-26, Patrick).** The flush revises STATE.md and appends to
+HISTORY.md, and that is the whole handover; the next session starts from STATE.
 `.claude/skills/two-clocks/SKILL.md` holds the full procedure, including its scripts (now in
 `.claude/skills/two-clocks/bin/`) and how a topic is picked back up by name.
 
@@ -46,6 +55,9 @@ makes that possible. So:
 - Never review, harden or polish anything that has not been picked.
 - Test to the audience: a mockup gets one look; only real code gets the full loop.
 - No real names, emails, case identifiers or clinical content in any repo.
+- Parallel builders each get their own worktree and branch: the harness moves every sub-agent's
+  working directory when any one of them switches worktree, so builders in separate worktrees
+  running at the same time can collide. Guard every commit with a branch check first.
 
 ## Running tests: `bin/t`, and nothing else, while you build
 
@@ -105,9 +117,35 @@ no coordination chatter, and never a summary while a subagent is still running. 
 everything until the deliverable is ready for his action, then send one message with all of
 it. Never ask him to review before the agents have finished.
 
+**Reporting (2026-09-26).** An "open" item is only one needing his direction; work the
+coordinator already owns is simply done and named in one line, never listed as open. Never
+restate his message back to him — it burns tokens; answer or act directly.
+
+**Encrypted is never a reason not to know (2026-09-26).** The key is on this machine and the
+box; any question about a prompt, ruling or fixture is answered by decrypting and reading it,
+never guessed at.
+
+**UI and mockups (2026-09-26/27).** He rules on a visual concept only once it is a working
+mockup published as an Artifact and shown on real cases, never on a description or a build
+(his words: "I won't rule until we have a feature that works"); the order is theory footing,
+mockup, his ruling, then the build. A transition is judged by whether the user would think new
+content arrived, not by whether a ruled behaviour fired: new content earns a slide, a card or a
+new title, and the same content changing in place never does. A Fable UX critic reviews every
+UI change twice — the brief before building, the verifier's screenshots before handover —
+judging a first-time user's sense of what happened and whether a target is thumb-sized, not
+just whether rules were followed (his words: "you need a more intelligent critic of the UX
+here"). Every mockup decision carries a unique code shown on its frame, never reused across
+pages; existing app elements are rendered from the real app code with real screenshots, never
+redrawn as stand-ins (his words: "you can't make up elements that already exist … pixel for
+pixel only"). Trying, not yet ruled: a mockup page cut so each decision is one line naming it
+plus its frames, with method and measurement collapsed at the bottom, the way the feature
+itself must be self-explanatory to a non-technical user; becomes a rule once he has looked and
+said so.
+
 **There is a dev mode and it is used (2026-09-09).** Code changes on disk refresh the page
-instantly; working without one wastes his time [Oracle: R-0227]. The recipe is in STATE.md
-under the review sandbox.
+instantly; working without one wastes his time [Oracle: R-0227]. Every sandbox is started with
+the kit in the repo, `bin/sandbox/sandbox` (`up <name> <port> --dev` for his review on 8891);
+the commands are in the Sandbox section of CLAUDE.md.
 
 **Test to the audience, not the artifact (2026-09-02).** A mockup he will look at once gets
 one load and one screenshot. A gallery he must judge across records gets a deterministic
@@ -128,6 +166,12 @@ and nothing else: no summary of the artifact, no restated findings, no "TLDR" th
 its first section. His mental token budget is the bottleneck; anything he must read twice
 is a cost, and most output tokens are not necessary. His words: "It just makes for double
 reading where the main bottleneck to productivity is my own mental token budget."
+Broken again 2026-09-26: the play-by-play gallery handover repeated the page's two trade-off
+lines and its list of unruled inventions under "what you'll notice"; he asked "are you giving
+me the same information in your response as you are in the artifact?" The check, every time:
+extract the page's visible words before writing the reply, and cut every line the page
+already says; what stays is only what the page does not carry — the vetting findings, the
+assumptions, and the decision.
 
 **Fixtures are Claude's to stand up; bugs are fixed before he looks (2026-09-11).** If a
 harness, a role or a permission blocks a test fixture, fix the harness — never hand the block
@@ -152,3 +196,81 @@ he is asked to test.
   the dashboard. Rule: a test account is deleted the moment it is not needed, or one account is
   reused: `the claude-test account`. Never create a numbered series. Dashboards exclude
   the `claude-test` prefix, and the review walks run against a sandbox, not the box.
+
+**Spot-check evidence at two levels before any push to production (2026-09-24, Patrick).**
+A feature is not tested until the report shows evidence from both levels of the stack, for
+the specific feature, on the sandbox: (1) the data layer before rendering — the rows, the
+turn events, the record, the change log, printed as actual values from a query; (2) the
+rendered HTML in the sandbox — the words and elements on the page, from a real browser, with
+the deterministic gates. Each level names what was expected and what was seen. A pass with
+no printed values at both levels is not a pass. This exists because testing routinely got
+lazy: a feature was called done on one level, or on a builder's say-so, and Patrick found
+it broken. Only features validated this way go to production, where beta data is precious
+and cannot be reproduced.
+
+**Brainstorm topics are taken one at a time (2026-09-24, Patrick).** One topic per round,
+never several topics presented together.
+
+**A sandbox must be able to make real model calls (2026-09-24, Patrick).** A missing key is
+escalated to Patrick, never worked around by testing without it.
+
+**Test well, then push for him to test (2026-09-24, Patrick) [Oracle: R-0486].** Testing
+protects the beta data first; then a build goes to the production box for him to test.
+Deploying a build for him to test is not a merge. Since FD-362, every production deploy has
+been the release workflow dispatched from the ticket branch (`gh workflow run release.yml
+--ref <branch>`); the pull request stays open and unmerged. For the fast-follow (R-0484), once
+the gates pass, the coordinator dispatches that deploy without asking for a yes, then verifies
+on production.
+
+**Every test path spends the testing key, never the production key (2026-09-25, Patrick).**
+The sandbox, live evals, and browser walks with real turns all spend `ANTHROPIC_TESTING_KEY`;
+none of them ever spends `ANTHROPIC_API_KEY`, which is production's key, and there is no
+fallback to it. A missing testing key fails loudly, the same as a missing model key above,
+and is escalated to Patrick rather than worked around.
+
+**Real spend is asked first, every time, and only at the end of a batch (2026-09-25, Patrick).**
+A real call to Anthropic happens only right before a deploy, and only when a prompt or a tool
+changed since the last one. There is no free tier — every dollar spent is asked for first.
+
+**The live suite has hard caps (2026-09-25, Patrick).** Three dollars per run, and a daily
+ledger across runs. A balance check runs before any call. Every run writes a row of results.
+A run that stopped partway is reported as stopped, never counted as a pass.
+
+**The sandbox's coach runs on a local model by default (2026-09-25, Patrick).** Local Ollama,
+not a paid key. The testing key is spent only when the lead says so, and the sandbox never
+spends on Gemini by default either.
+
+**A prompt change ships with an eval built from a human ruling (2026-09-25, Patrick).** A
+candidate ruling is confirmed first; the eval then cites the confirmed ruling, fails on the
+old prompt, and passes on the new one. Its inputs are fictionalised, drawn from the shape of
+logged real cases but not the cases themselves.
+
+**Clinical-coding evals wait on the review group, not on Patrick case by case (2026-09-25,
+Patrick).** Ground truth for coding rules has to be ratified by the IRR review group; Patrick
+is never asked to certify a coding rule one case at a time. A code with no ruling yet goes on
+the waiting list in btcopilot/tests/live/README.md, never into the paid suite. The paid suite
+holds only behaviour evals and wording tests.
+
+**A ready message says what it spent (2026-09-25, Patrick).** It ends "spent $X on Y" — the
+amount and what it bought.
+
+**Read the rulings on a topic before proposing coach behaviour (2026-09-25, Patrick).** The
+coordinator proposed a deterministic after-turn coverage check one day after R-0485 ruled that
+coverage is the coach's judgement, never rules; Patrick restated that ruling, adding that
+judgement calls belong to inference, not to code (R-0485). Rule: before any design proposal about what the coach does, decrypt the
+store and grep the topic; cite the ruling in the proposal. Judgement calls stay inference
+(state-based prompting, tools the coach calls); code only where the behaviour is meant to be
+mechanical.
+
+**Spend is the exception, not the test method (2026-09-25, Patrick; R-0531).** Plumbing is
+proven with mocks, the local model and recorded real responses replayed from fixtures; a real
+call is never used to prove wiring a unit test already proves. Every paid response is saved as
+a replay fixture, paid for once; real calls happen only once per batch, before deploy, for a
+changed prompt or tool. The coordinator applies these rules itself and never asks him for spend
+they already answer, such as a refusal a unit test already proves (2026-09-26). Testing stays on
+the Claude Code subscription rather than paid API calls [R-0568, 2026-09-27]: a needed model
+call goes to a Claude Code agent instead, its answer kept as a subscription-sourced replay so
+the suite runs free after; the API is kept for
+the one real turn proving production after a deploy and nothing else unless he asks, and a
+spend request that has not first ruled out the subscription route is not sent. The local model
+answers wherever the model itself is not under test.

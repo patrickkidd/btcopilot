@@ -17,6 +17,8 @@
      (resolution 52). In dark mode the mark hues already clear the floor. */
   --ask-text: #9e6d15;
   --move-text: #27874b;
+  /* what the coach removed this turn, the one red on the line (R-0539) */
+  --remove: #c4473a;
   /* one step darker again, for the moment a chip is under the thumb */
   --data-press: #0a5b57;
   --ask-press: #7c560f;
@@ -44,6 +46,7 @@
     --data: #3fc4bc;
     --ask: #e0a83f;
     --move: #5fce85;
+    --remove: #ec7a6c;
     --tint: rgba(63, 196, 188, 0.13);
     --ask-tint: rgba(224, 168, 63, 0.14);
     --band: rgba(216, 168, 83, 0.26);
@@ -65,6 +68,7 @@
   --data: #3fc4bc;
   --ask: #e0a83f;
   --move: #5fce85;
+  --remove: #ec7a6c;
   --tint: rgba(63, 196, 188, 0.13);
   --ask-tint: rgba(224, 168, 63, 0.14);
   --band: rgba(216, 168, 83, 0.26);
@@ -103,7 +107,9 @@ button { font-family: inherit; }
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  /* the part of the screen above the keyboard, kept by viewport.ts */
+  height: var(--seen-h, 100dvh);
+  top: var(--seen-top, 0px);
   /* never wider than the window: a child that overflows must be clipped, not
      allowed to stretch the frame and step it sideways under the centring */
   width: 100%;
@@ -172,32 +178,21 @@ button { font-family: inherit; }
 .iconbtn:active { background: var(--tint); }
 
 /* ---- the picture: the sentence spotlight (converged, ruled 2026-09-02) ---- */
-/* 138 of the phone, and no more (picked mockup 2026-09-08, band grown by six
-   2026-09-08 so the year clears the controls): the name row 28, the band the
-   line is drawn in 66, and the row of controls under it 44. */
+/* 144 of the phone, and no more (picked mockup 2026-09-08, band grown by six
+   2026-09-08 so the year clears the controls, and by six more 2026-09-24 so a
+   thumb can tell the picked dot from its words): the name row 28, the band the
+   line is drawn in 72, and the row of controls under it 44. */
 .pic { flex: none; padding: 0; }
-/* the hairline under the picture is drawn inside its 138 rather than added to
+/* the hairline under the picture is drawn inside its 144 rather than added to
    it, so the region is the three rows and nothing more */
 .pic .caption { border-bottom: 1px solid var(--line); }
 /* One line, always: the state text on the right changes with the selection and
    must never push the label on the left onto a second line, which would move
    the picture and everything under it. */
-/* The back arrow's tap target is the ruled 44, not the glyph's 9px. */
-.up {
-  flex: none;
-  width: 44px;
-  height: 28px;
-  margin-left: -14px;
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--move);
-  font: inherit;
-  cursor: pointer;
-}
-/* the two small controls on the title line: the i after an open cluster's
-   name, and the ✕ at the row's end while a moment is picked at rest */
+/* the one small control on the title line: the i after the path while a
+   cluster is open */
 .pl-btn {
+  position: relative;
   flex: none;
   width: 28px;
   height: 28px;
@@ -213,12 +208,20 @@ button { font-family: inherit; }
 }
 .pl-btn:active { color: var(--data); }
 .pl-btn svg { display: block; }
-/* the box's fade while a moment is picked: the wire's colour at the wire,
-   nothing at the top edge, so the box stops short of the words */
-.ss .epfade-in { stop-color: var(--data); stop-opacity: 1; }
-.ss .epfade-out { stop-color: var(--data); stop-opacity: 0; }
-/* the about page: words, at the height they need */
-.ss.about { padding: 4px 16px 10px; box-sizing: border-box; }
+/* the about page: words, at the height they need, clear of its close button */
+.ss.about { padding: 4px 52px 10px 16px; box-sizing: border-box; }
+/* The about page: a card over the chat, from the top of the
+   picture down, on ground of its own (R-0230), so opening one resizes nothing
+   and the bubbles stay where they are under it (R-0460). */
+.view .card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  background: var(--panel);
+  box-shadow: 0 8px 24px var(--shadow);
+}
 .ab-why { margin: 0 0 8px; font: 400 14px/1.4 var(--sans); color: var(--ink); }
 .ab-span { margin: 0 0 6px; font: 400 13px var(--mono); color: var(--faint); }
 .ab-list { list-style: none; margin: 0; padding: 0; }
@@ -237,54 +240,68 @@ button { font-family: inherit; }
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-/* One line, cut with an ellipsis: a cluster's own name can be longer than the
-   row and must never push it onto a second line. */
-.pin-label span {
+/* The path: where the reader is, from the whole timeline down (R-0540). One
+   line always: the earlier steps keep their width and the last is cut with an
+   ellipsis rather than wrapping or pushing past the row. */
+.path {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   text-transform: none;
   letter-spacing: 0;
-  min-width: 0;
 }
-/* The row names the view the reader is in, and once a lower view is open it is
-   also the way up out of it. At rest it is a label: no pointer, no press, and
-   nothing to answer a tap. The row is 28 tall, so the words keep their place
-   and the target is grown around them. */
-#crumb { position: relative; }
-#crumb.deep { cursor: pointer; }
-#crumb.deep::before {
-  content: "";
-  position: absolute;
-  inset: -13px -16px;
-}
-#crumb.deep:active { color: var(--ink); }
-/* One way up, beside the name it is leaving, in the colour of a thing that
-   acts. The board has none of its own. */
-.pin-label .up {
-  position: relative;
+.path .sep { flex: none; margin: 0 6px; }
+/* The last step keeps its words whole and the earlier steps give way first,
+   down to an ellipsis; it is cut only when it alone is wider than the row. */
+.path .here {
   flex: none;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.path .step > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* An earlier step is the way back to it, in the colour of a thing that acts.
+   The row is 28 tall, so the words keep their place and the target is grown
+   around them to the ruled 44 (R-0091). */
+.path .step {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
   background: none;
-  font: 400 15px/1 var(--mono);
-  color: var(--move);
+  font: inherit;
+  color: var(--data);
   cursor: pointer;
 }
-.pin-label .up::before {
+.path .step::before,
+.pl-btn::before {
   content: "";
   position: absolute;
-  inset: -13px -14px;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
 }
-.pin-label .up:active { opacity: 0.55; }
+.path .step::before { width: calc(100% + 12px); }
+.path .step:active { color: var(--data-press); }
 /* The list button sits inside the thing it lists, in the same circle as the
    one beside the message bar. The picture's own box is what it sits in, so it
    is taken out of the flow and nothing below it moves. */
 .pic { position: relative; }
-/* The list button sits at the end of the row of chips, in the same circle as
-   the one beside the message bar, and nothing else is over there. */
-.caption .listglyph { margin-left: auto; margin-right: -13px; }
+/* The list button sits at the end of the row of chips, drawn the chips' height
+   and on their line. Its 44 target ends at the row's 16 of padding and the
+   drawing sits at the target's end: a target pulled out into the padding made
+   Safari count the padding again past it, and the strip scrolled sideways. */
+.caption .listglyph { margin-left: auto; padding-left: 8px; }
 .view { position: relative; transition: height 0.25s ease; }
 /* One level in or one level out. The two views stand side by side for the
    length of the slide, each at the height the region already had, so nothing
@@ -326,19 +343,6 @@ button { font-family: inherit; }
 .ss-scroll::-webkit-scrollbar { display: none; }
 .ss-line { position: relative; height: 100%; }
 .ss-snap { position: absolute; top: 0; width: 1px; height: 1px; scroll-snap-align: start; }
-/* The years at the two ends of the stretch on screen, rewritten as it slides.
-   They stand still while the line moves under them. */
-.ss-yrs {
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  top: 51px;
-  display: flex;
-  justify-content: space-between;
-  font: 400 10.5px/11px var(--mono);
-  color: var(--faint);
-  pointer-events: none;
-}
 
 /* the wire, and the years at its ends */
 .ss .wire { stroke: var(--line); stroke-width: 1.5; }
@@ -382,6 +386,8 @@ button { font-family: inherit; }
 }
 .ss-t.meta { color: var(--faint); }
 .ss-t.on { color: var(--data); font-weight: 500; }
+/* the open cluster's name, over the line while nothing in it is picked */
+.ss-t.ss-name { font-weight: 500; }
 /* why the moments in an open cluster are one episode, in the coach's sentence */
 .ss-t.why { color: var(--faint); }
 .ss-lead {
@@ -451,83 +457,6 @@ button { font-family: inherit; }
 /* an open state fades past its last confirmation rather than stopping dead */
 .ss .fade { stroke: url(#openfade); stroke-width: 2.2; stroke-linecap: round; }
 
-/* ---- the moves board: Bowen's chalkboard, the deepest level ---- */
-/* screen one zooms into screen two: the board arrives scaled up and settles */
-.ss.board { position: relative; }
-.ss.board.in svg { animation: boardin 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-@keyframes boardin {
-  from { transform: scale(1.35); opacity: 0.25; }
-  to { transform: scale(1); opacity: 1; }
-}
-/* people arrive on the board rather than being simply there (play-by-play) */
-.ss.board.in .node {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1);
-}
-@keyframes pop {
-  from { transform: scale(0.2); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-/* the years under the people: the axis, its decade ticks, one dot per move,
-   a blob where moves bunch and the pool under the move being drawn */
-.ss .axis .ax { stroke: var(--line); stroke-width: 1.4; }
-.ss .axis .ax-tick { stroke: var(--line); stroke-width: 1.2; }
-.ss .axis .ax-yr { font: 400 13px var(--mono); fill: var(--faint); }
-.ss .axis .ax-blob { fill: var(--faint); opacity: 0.22; }
-.ss .axis .ax-dot { fill: var(--faint); transition: fill 0.3s, r 0.3s; }
-.ss .axis .ax-dot.played { fill: var(--data); }
-/* the move being drawn: the dot itself, on top of whatever it is crowded by,
-   in the one action green. Nothing sits behind it. */
-.ss .axis .ax-now { fill: var(--move); }
-.ss .axis .ax-yr.on { fill: var(--move-text); }
-.ss .bond { stroke: var(--line); stroke-width: 1.2; }
-.ss .hist { opacity: 0.16; animation: histin 0.32s ease; }
-.ss .hist * { animation: none !important; }
-@keyframes histin { from { opacity: 0; } to { opacity: 0.16; } }
-/* The picture's own nav slot. Empty at rest and at chapter level; the board
-   level puts its back arrow in the left one. */
-.ss .corner {
-  position: absolute;
-  top: 2px;
-  width: 44px;
-  height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font: 600 18px/1 system-ui, -apple-system, sans-serif;
-  color: var(--data);
-  border: none;
-  background: none;
-}
-.ss .corner.l { left: 4px; }
-.ss .corner.r { right: 4px; }
-/* Two lines of room, always: the words under the board are a person and what
-   happened to them, and a long one must not push the board up the screen. What
-   does not fit is cut. */
-.bcap {
-  height: 30px;
-  padding: 2px 16px 0;
-  font: 400 13px/15px var(--mono);
-  color: var(--faint);
-  text-align: center;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-}
-.pctl {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding: 4px 16px 2px;
-}
-.pctl .btn { border-radius: 4px; }
-/* the way onto the board carries the same mark as the control that steps it,
-   and no words: three controls with words do not fit across a phone */
-.btn.icon { min-width: 44px; padding: 0; }
-.pctl .btn[disabled] { opacity: 0.4; cursor: default; }
 .btn.primary { border-color: var(--data); color: var(--data); }
 
 /* ---- the move language (ratified 2026-09-01): one green, never amber ----
@@ -809,8 +738,6 @@ button { font-family: inherit; }
   touch-action: pan-x;
   overscroll-behavior: contain;
 }
-/* On the board the row is not there at all: no strip, no hairline. */
-.caption.gone { display: none; }
 .caption::-webkit-scrollbar { display: none; }
 .caption > * { flex: none; }
 /* The chat's own chip, in the row (picked plate F): one mark and one word, a
@@ -836,7 +763,8 @@ button { font-family: inherit; }
 .caption .tok svg { flex: none; }
 /* while nothing is picked there is nothing to act on, so the row says what a
    tap will do instead (owner review round 3) */
-.caption .cta { font: 400 13px/1.35 var(--mono); color: var(--faint); }
+.caption .cta { margin: 0; font: 400 13px/1.35 var(--mono); color: var(--faint); }
+
 .caption .tok.g { color: var(--move-text); border-color: var(--move); border-radius: 10px; }
 .caption .tok.data { color: var(--data); border-color: var(--data); border-radius: 10px; }
 /* nothing to do with it here, so it is still shown and plainly not offered */
@@ -872,6 +800,7 @@ button { font-family: inherit; }
   overflow-wrap: anywhere;
 }
 .bub.coach {
+  position: relative;
   align-self: flex-start;
   background: var(--panel);
   border: 1px solid var(--line);
@@ -945,6 +874,8 @@ button { font-family: inherit; }
   font: 400 13px/1.5 var(--mono);
   color: var(--faint);
 }
+/* a line of the reply's own 17/1.45 between what the coach did and what it says */
+.bub .did:not(:has(+ .did)):not(:last-child) { margin-bottom: 24px; }
 .bub .did::before {
   content: "";
   position: absolute;
@@ -970,6 +901,106 @@ button { font-family: inherit; }
   margin-top: 10px;
 }
 .bub > .offer .chip { margin: 0; }
+/* Reads the reply aloud; a square while it reads, and a tap then stops it. It
+   sits under the bubble, never in it, a thin outline lined up with the
+   bubble's left edge, as Claude Code's mobile app puts its actions under a
+   reply. The 44px target reaches right and down from the icon. */
+.chat > .play {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: -10px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--faint);
+  cursor: pointer;
+}
+.chat > .play svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+}
+.chat > .play .halt,
+.chat > .play.on .go { display: none; }
+.chat > .play.on .halt { display: inline; }
+.chat > .play.on { color: var(--data); }
+.chat > .play:active { color: var(--data-press); }
+/* opens the coach's notes; out of the flow in the top-right padding beside the
+   COACH label, its 44px target spilling past the corner */
+.bub > .info {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--faint);
+  cursor: pointer;
+}
+.bub > .info svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+.bub > .info:active { color: var(--data-press); }
+/* the coach's own notes on a turn, for admins and auditors, popped out of the
+   bubble they belong to */
+.notes-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.35);
+  animation: veilin 0.16s ease both;
+}
+.notes-card {
+  width: min(420px, 100%);
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  font: 400 13px/1.5 var(--mono);
+  color: var(--faint);
+  animation: notesin 0.2s ease both;
+}
+.notes-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--ink);
+}
+/* the app's close button, kept in the heading row where the notes' own sat */
+.notes-head > .cardx { position: static; margin-right: -12px; }
+.notes-card dl { margin: 0; }
+.notes-card dt { color: var(--ink); }
+.notes-card dd { margin: 0 0 8px; overflow-wrap: anywhere; }
+.notes-possible { font-size: 11px; opacity: 0.75; }
+@keyframes veilin { from { opacity: 0; } }
+@keyframes notesin { from { opacity: 0; transform: scale(0.2); } }
+@media (prefers-reduced-motion: reduce) {
+  .notes-veil, .notes-card { animation: none; }
+}
 
 /* A chip never leaves its bubble: it may be as wide as the bubble and no
    wider, and it wraps to more lines rather than being cut. Labels are capped
@@ -1031,34 +1062,50 @@ button { font-family: inherit; }
   padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
 }
+/* The rounded outline is one box and the words scroll in a square box inside
+   it. On iOS a scroller with rounded corners is clipped through a mask layer
+   that goes stale as the words grow past the box's height, and the lines at
+   the bottom are drawn over each other. */
 .field {
-  white-space: pre-wrap; /* Return is a new line (R-0368) */
   flex: 1;
-  min-height: 44px;
-  max-height: 140px;
-  overflow-y: auto;
-  padding: 9px 16px;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 22px;
   background: var(--bg);
+}
+.field:focus-within { border-color: var(--data); }
+.field > [contenteditable] {
+  white-space: pre-wrap; /* Return is a new line (R-0368) */
+  min-height: 42px;
+  max-height: 138px;
+  overflow-y: auto;
+  padding: 9px 16px;
   color: var(--ink);
   font: 400 17px/1.4 var(--sans);
   outline: none;
 }
-.field:focus { border-color: var(--data); }
-.field:empty::before { content: attr(data-ph); color: var(--faint); }
+.field > :empty::before { content: attr(data-ph); color: var(--faint); }
 /* A token in the composer sits ON the line of words, not above it: the chip's
    own 26px box would make the field taller than its 44px resting height, and
-   the message bar growing pushes every bubble up the screen. */
+   the message bar growing pushes every bubble up the screen.
+   It is never wider than 60% of the box, the share the one cut chip in the
+   thread takes of the screen (.chip.trace), so there is always room beside it
+   to tap. Its label ends in an ellipsis; its whole words stay in data-full and
+   are what is sent. */
 .field .chip {
   font: 500 13px/18px var(--mono);
   border-radius: 6px;
   padding: 1px 6px;
   margin: 0 3px 0 0;
-  vertical-align: baseline;
+  max-width: 60%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: text-bottom;
 }
-/* the target still meets the floor, grown around the smaller pill */
-.field .chip::before { inset: -12px -6px; }
+/* a tap on it only puts the caret beside it, so its target is its own box: a
+   grown one caught taps meant for just after it */
+.field .chip::before { content: none; }
 .send {
   flex: none;
   position: relative;
@@ -1132,6 +1179,9 @@ button { font-family: inherit; }
 .btn:active { background: var(--tint); }
 .btn.play { border-color: var(--data); color: var(--data); }
 .btn.link { border: none; color: var(--data); }
+/* the concept pages of the codes in view (FD-364) */
+.concepts { margin: 6px 0; font: 400 13px/1.5 var(--sans); color: var(--faint); overflow-wrap: anywhere; }
+.concepts a { color: var(--data); }
 .scroller {
   flex: 1;
   min-height: 0;
@@ -1249,6 +1299,8 @@ button { font-family: inherit; }
 .editor .sec { margin: 16px 0 4px; font: 600 15px/1.2 var(--sans); }
 /* what the record keeps somewhere else, said once rather than left missing */
 .editor .hint { font: 400 13px/1.4 var(--mono); color: var(--faint); }
+/* why Save did nothing, until a field changes */
+.editor .refused { font: 500 14px/1.4 var(--sans); color: var(--ask-text); }
 .editor .lab {
   font: 500 13px/1.4 var(--mono);
   color: var(--faint);
@@ -1256,7 +1308,11 @@ button { font-family: inherit; }
   letter-spacing: 0.04em;
   padding-top: 6px;
 }
+/* No native look: Safari on iPhone draws a native date field content-box
+   whatever the page says, so its padding and border went past the editor's
+   right edge and the list scrolled sideways. */
 .editor .f, .editor textarea {
+  appearance: none;
   width: 100%;
   height: 44px;
   padding: 0 12px;
@@ -1367,13 +1423,13 @@ button { font-family: inherit; }
 .listglyph::before {
   content: "";
   position: absolute;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  width: 36px;
+  height: 26px;
+  box-sizing: border-box;
+  border-radius: 8px;
   border: 1px solid var(--line);
-  background: var(--bg);
 }
-.listglyph svg { position: relative; display: block; opacity: 0.8; width: 20px; height: 15px; }
+.listglyph svg { position: relative; display: block; opacity: 0.8; width: 16px; height: 12px; }
 .listglyph:active::before { background: var(--tint); }
 /* The home-screen badge: a quiet phone outline beside the account button,
    only while the app runs inside a browser. */
@@ -1425,7 +1481,9 @@ button { font-family: inherit; }
   left: 0;
   right: 0;
   bottom: 0;
-  height: 92%;
+  /* on a whole pixel: at a fraction the top row of the sheet is half the page
+     behind it, and the words under the sheet's edge show through */
+  height: round(down, 92%, 1px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1451,6 +1509,9 @@ button { font-family: inherit; }
 }
 .fs-grab { width: 36px; height: 5px; border-radius: 3px; background: var(--line); }
 .fs-search { flex: none; padding: 2px 12px 8px; border-bottom: 1px solid var(--line); }
+/* the close button stands beside the search field, just under the grabber */
+.fs-sheet > .cardx { top: 22px; }
+.fs-sheet > .cardx + .fs-search { padding-right: 52px; }
 .fs-search input {
   width: 100%;
   height: 44px;
@@ -1531,6 +1592,11 @@ button { font-family: inherit; }
 /* a session row is the app's list row with a date beside it */
 .row.side { flex-direction: row; align-items: center; gap: 10px; }
 .row.side .rmain { flex: 1; min-width: 0; }
+/* an event row leads with the family diagram's own mark for its kind, and the
+   kind that opens its words is in the data colour (R-0113) */
+.kmark { flex: none; width: 28px; height: 28px; }
+.kmark + .rmain { display: flex; flex-direction: column; gap: 3px; }
+.kw { color: var(--data); }
 .row.side .rwhen {
   flex: none;
   max-width: 44%;
@@ -2011,6 +2077,119 @@ button { font-family: inherit; }
   .sn-pane, .sw, .sw-thumb { transition: none !important; }
 }
 
+/* The Questions tab (approved open-questions mockup): a sticky heading per
+   kind, and each question the coach asked as an amber chip in its own words,
+   with the day it was asked under it. Swipe one left to put it away. */
+.qsec {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  font: 600 15px/1.2 var(--sans);
+  color: var(--ink);
+}
+.qrow {
+  position: relative;
+  padding: 12px 16px 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  transition: transform 0.18s ease;
+}
+.qrow:last-child { border-bottom: 0; }
+.qrow.swiped { transform: translateX(-96px); }
+.qrow .fs-acts { width: 96px; }
+.chip.q { font: 500 15px/22px var(--mono); padding: 5px 10px; margin: 0; }
+.chip.q::before { inset: -4px; }
+/* the words line up with the chip's edge while their target reaches past it,
+   into the row's own padding */
+.qmeta { display: flex; justify-content: flex-end; min-height: 44px; margin-right: -8px; }
+.qwhen {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--data);
+  font: 400 13px/1.2 var(--sans);
+  cursor: pointer;
+  white-space: nowrap;
+}
+span.qwhen { color: var(--faint); cursor: default; }
+button.qwhen:active { background: var(--tint); border-radius: 8px; }
+.scroller > .empty {
+  padding: 32px 24px;
+  font: 400 17px/1.45 var(--sans);
+  color: var(--faint);
+  text-align: center;
+}
+/* the question a trace from the Questions tab landed on */
+.bub > .ask.hl {
+  background: var(--ask-tint);
+  border-radius: 4px;
+  box-shadow: 0 0 0 3px var(--ask-tint);
+}
+
+/* An impression (approved impressions mockup, frames 1 and 4): what the coach
+   noticed in its words, what it rests on, and the day it was raised. The row
+   slides left over the two ways to push back. */
+.irow {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  touch-action: pan-y;
+}
+.irow:last-child { border-bottom: 0; }
+.islide {
+  position: relative;
+  z-index: 1;
+  padding: 12px 16px 0;
+  background: var(--panel);
+  transition: transform 0.18s ease;
+}
+.irow.swiped .islide { transform: translateX(-184px); }
+.itext { font: 400 17px/1.4 var(--sans); color: var(--ink); cursor: pointer; }
+.based {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px 8px;
+  margin-top: 10px;
+}
+.blabel { font: 400 13px/22px var(--sans); color: var(--faint); }
+.based .chip { margin: 0; }
+/* The dots are the sessions sheet's own button. Its 44-point target reaches
+   into the row's padding, never past the row: the line runs to the padding's
+   edge, and the dots sit where they would with the target overhanging. */
+.imeta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 44px;
+  margin: 4px -16px 0 0;
+}
+.imeta .rmore { margin-right: 0; padding: 0 0 0 16px; }
+.iacts { position: absolute; top: 0; right: 0; bottom: 0; width: 184px; display: flex; }
+.iact {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font: 600 15px/1.2 var(--sans);
+  cursor: pointer;
+}
+.iact.partly { color: var(--data); }
+.iact:active { background: var(--tint); }
+
 /* two-way traceability: the moment says which session coded it, and the words
    it came from light when you go there */
 .chip.trace {
@@ -2040,24 +2219,33 @@ button { font-family: inherit; }
    carry no prose of their own are held back, so a press on one is a press and
    never a half-selected label. A chip inside a bubble is part of the sentence
    it sits in, so it stays selectable and comes with the words around it. */
-.btn, .iconbtn, .send, .navbtn { user-select: none; -webkit-user-select: none; }
+.btn, .iconbtn, .send, .navbtn, .play { user-select: none; -webkit-user-select: none; }
 
-/* ---- the resting level: the whole line, one box per chapter (converged
-   mockup, crowded-chapter/timeline-converged.html renderRest) ---- */
-.ss .ep { fill: var(--data); opacity: 0.07; }
-.ss .ep-edge {
-  fill: none;
-  stroke: var(--data);
-  stroke-width: 1;
-  opacity: 0.35;
-  animation: chapter 2.2s ease-in-out infinite;
+/* ---- the line: one pill per cluster with nothing drawn inside it (R-0543).
+   The open or named pill stands at full strength and the rest recede; what the
+   coach touched this turn takes its colour as a fill and keeps it through the
+   dimming (R-0539, R-0544): added green, read grey, changed amber, removed red. ---- */
+.ss .pill { fill: var(--data); opacity: 0.85; }
+.ss .pill.on { opacity: 1; }
+.ss .pill.dim { opacity: 0.3; }
+.ss .pill.add { fill: var(--move); opacity: 1; }
+.ss .pill.read { fill: var(--faint); opacity: 0.7; }
+.ss .pill.change { fill: var(--ask); opacity: 1; }
+.ss .pill.remove { fill: var(--remove); opacity: 1; }
+.ss .dot.add { fill: var(--move); }
+.ss .dot.read { fill: var(--faint); }
+.ss .dot.change { fill: var(--ask); }
+.ss .dot.remove { fill: var(--remove); }
+/* each lands with a flash as its line lands in the chat */
+.ss .dot.flash, .ss .pill.flash { animation: touched 0.9s ease-out; }
+@keyframes touched {
+  0%, 40% { opacity: 0.15; }
+  20%, 60% { opacity: 1; }
 }
-@keyframes chapter {
-  50% { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .ss .dot.flash, .ss .pill.flash { animation: none; }
 }
-.ss .ep-many { fill: none; stroke: var(--data); stroke-width: 1.6; }
 /* a resting-wire data label keeps its ratified size, under the UI text floor */
-.ss .ep-count { font: 500 10px var(--mono); fill: var(--data); }
 .ss .ep-yrs { font: 400 10.5px var(--mono); fill: var(--faint); }
 .ss .ss-hint { font: 400 13px var(--mono); fill: var(--faint); }
 .ss-empty {
@@ -2071,9 +2259,6 @@ button { font-family: inherit; }
   text-align: center;
   font: 400 14px/1.4 var(--sans);
   color: var(--faint);
-}
-@media (prefers-reduced-motion: reduce) {
-  .ss .ep-edge { animation: none; }
 }
 
 /* A line the app says rather than either speaker: what just happened to the
@@ -2576,7 +2761,7 @@ button { font-family: inherit; }
 .tl .d-no { fill: var(--ask); }
 .tl .d-on { fill: var(--move); }
 .tl .d-n { font: 400 12px var(--mono); fill: var(--ask-text); }
-.bl-sheet { height: 88%; }
+.bl-sheet { height: round(down, 88%, 1px); }
 
 /* Tapping the meeting date row opens the phone's own date picker: the field
  * covers the whole row and is not drawn, so the row reads as any other. */
@@ -2708,10 +2893,11 @@ button { font-family: inherit; }
   height: 44px;
   border: none;
   background: none;
-  color: var(--faint);
+  color: var(--data);
   font: 400 21px/1 var(--sans);
   cursor: pointer;
 }
+.cardx:active { color: var(--data-press); }
 .drow .top { display: flex; align-items: center; gap: 12px; }
 .drow .tally { flex: none; width: 80px; }
 .drow .pick { font: 400 17px/1.3 var(--sans); color: var(--ink); flex: 1; }
@@ -2868,4 +3054,66 @@ button { font-family: inherit; }
 }
 @media (prefers-reduced-motion: reduce) {
   .slideover { transition: none !important; }
+}
+
+/* Blind pairs (R-0599): the conversation once, then the two replies, side by
+   side where the app widens and stacked on a phone. */
+.pr-ctx {
+  max-height: 40vh;
+  overflow-y: auto;
+  margin: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.pr-line {
+  padding: 8px 12px;
+  border-top: 1px solid var(--line);
+  font: 400 15px/1.4 var(--sans);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.pr-line:first-child { border-top: none; }
+.pr-line.coach { background: var(--tint); }
+.pr-who {
+  margin-bottom: 2px;
+  font: 500 12px var(--mono);
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.pr-two { display: grid; gap: 10px; margin: 0 16px; }
+.pr-card {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.pr-text {
+  font: 400 16px/1.45 var(--sans);
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.pr-note {
+  display: block;
+  box-sizing: border-box;
+  width: calc(100% - 32px);
+  min-height: 44px;
+  margin: 14px 16px 0;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  font: 400 15px var(--sans);
+}
+.pr-picks { display: flex; gap: 8px; margin: 0 16px 14px; }
+.pr-picks .nudge { flex: 1; width: auto; margin: 14px 0 0; }
+.pr-wide { display: none; }
+@media (min-width: 840px) {
+  .pr-two { grid-template-columns: 1fr 1fr; }
+  .pr-wide { display: inline; }
+  .pr-narrow { display: none; }
 }

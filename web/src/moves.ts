@@ -67,7 +67,9 @@ export const LOOP = 8;
  * drawing's proportions, not its arithmetic, so a ratified length scales to the
  * board it lands on (UI_SPEC resolution 42). Marks that carry no proportion —
  * stroke widths, dash arrays, spike lengths — keep their ratified numbers. */
-const DEMO = { w: 230, h: 130 };
+export const DEMO = { w: 230, h: 130 };
+/** How far a person's emotional field reaches on the ratified demo stage. */
+export const FIELD = 170;
 const tall = (f: Figure) => (f.stage ? f.stage.h / DEMO.h : 1);
 const wide = (f: Figure) => (f.stage ? f.stage.w / DEMO.w : 1);
 
@@ -231,7 +233,7 @@ function rings(
   klass: string,
   clip = "",
   width = 2.4,
-  to = 170,
+  to = FIELD,
   dur = "1.65s",
   fade = ".75;.45;0",
 ): string {
@@ -272,8 +274,8 @@ function wall(frm: Frame, mover: Figure, struck: boolean): string {
     `d="M${n1(back)} ${n1(-spread - 40)} H${n1(L * 2)} V${n1(spread + 40)} H${n1(back)} Z ` +
     `M${n1(wx)} ${-arm} L${n1(wx)} ${arm} L${n1(back)} ${n1(spread)} L${n1(back)} ${n1(-spread)} Z"/>` +
     `</clipPath></defs>` +
-    rings(L, 0, "preA", "", 2.4, 170 * tall(mover)) +
-    rings(L, 0, "postA", ` clip-path="url(#${shadow})"`, 2.4, 170 * tall(mover)) +
+    rings(L, 0, "preA", "", 2.4, FIELD * tall(mover)) +
+    rings(L, 0, "postA", ` clip-path="url(#${shadow})"`, 2.4, FIELD * tall(mover)) +
     `<line class="mv-trace" x1="${n1(rad(mover) + 2)}" y1="0" x2="${n1(wx - 3)}" y2="0" ` +
     `opacity="0">${animate("opacity", "0;0;.55;.55", "0;.4;.46;1", "8s")}</line>` +
     strike +
@@ -410,7 +412,7 @@ function drainArrow(from: Figure, to: Figure): string {
 const ARROW = 0.5;
 
 /** The health cross, and the arrow that says which way it went. */
-function cross(person: Figure, direction: Shift): string {
+export function cross(person: Figure, direction: Shift): string {
   const side = person.mirror ? -1 : 1;
   const cx = person.x + side * (rad(person) + 29);
   const cy = person.y - 6;
@@ -507,7 +509,7 @@ export function zigzag(from: Figure, to: Figure, klass = "mv-tension"): string {
 /** The other party's storm, and the calm that only arrives a beat after the
  * actor has held still. */
 function storm(other: Figure): string {
-  const loud = Math.round(170 * tall(other));
+  const loud = Math.round(FIELD * tall(other));
   const calm = Math.round(150 * tall(other));
   return (
     `<g class="stormlong">` +
@@ -564,7 +566,20 @@ const NONE: Drawn = {
   steps: {},
 };
 
-/** One move, in the ratified language. `third` is the other point of a
+const words = (...all: string[]) => all.filter(Boolean).join(" ");
+
+const merge = (a: Drawn, b: Drawn): Drawn => ({
+  actor: words(a.actor, b.actor),
+  target: words(a.target, b.target),
+  third: words(a.third, b.third),
+  ghosts: { ...a.ghosts, ...b.ghosts },
+  marks: a.marks + b.marks,
+  place: { ...a.place, ...b.place },
+  steps: { ...a.steps, ...b.steps },
+});
+
+/** Everything one moment says, in the ratified language: every shift it
+ * carries and its move, together (R-0526). `third` is the other point of a
  * triangle, which inside and outside both need. */
 export function draw(
   kind: string | null,
@@ -573,24 +588,35 @@ export function draw(
   shifts: { symptom: string | null; anxiety: string | null; functioning: string | null },
   third: Figure | null = null,
 ): Drawn {
-  if (shifts.anxiety)
-    return {
-      ...NONE,
-      actor: "anx pshake",
-      ghosts: { actor: "solo" },
-      marks: spikes(actor, "solo"),
-    };
-  if (shifts.symptom)
-    return {
-      ...NONE,
-      actor: "sym",
-      marks: cross(actor, shifts.symptom as Shift),
-    };
-  if (shifts.functioning)
-    return {
-      ...NONE,
-      marks: functioning(actor, shifts.functioning as Shift),
-    };
+  return [
+    move(kind, actor, target, third),
+    shifts.anxiety
+      ? {
+          ...NONE,
+          actor: "anx pshake",
+          ghosts: { actor: "solo" as const },
+          marks: spikes(actor, "solo"),
+        }
+      : NONE,
+    shifts.symptom
+      ? {
+          ...NONE,
+          actor: "sym",
+          marks: cross(actor, shifts.symptom as Shift),
+        }
+      : NONE,
+    shifts.functioning
+      ? { ...NONE, marks: functioning(actor, shifts.functioning as Shift) }
+      : NONE,
+  ].reduce(merge);
+}
+
+function move(
+  kind: string | null,
+  actor: Figure,
+  target: Figure | null,
+  third: Figure | null,
+): Drawn {
   const pair = target ? frame(actor, target) : null;
   switch (kind) {
     case Move.Toward: {

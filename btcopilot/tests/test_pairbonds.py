@@ -45,7 +45,7 @@ def test_a_bond_of_one_person_with_themselves_is_refused(web, family):
     # R-0326
     refused = _post(web, {"person_a": 1, "person_b": 1})
     assert refused.status_code == 400
-    assert "themselves" in refused.get_data(as_text=True)
+    assert refused.get_data(as_text=True) == "A pair-bond needs two different people."
 
 
 def test_a_second_bond_between_the_same_two_is_refused(web, family):
@@ -53,7 +53,7 @@ def test_a_second_bond_between_the_same_two_is_refused(web, family):
     _post(web, {"person_a": 1, "person_b": 2})
     refused = _post(web, {"person_a": 2, "person_b": 1})
     assert refused.status_code == 400
-    assert "already have pair bond" in refused.get_data(as_text=True)
+    assert "already have a pair-bond" in refused.get_data(as_text=True)
 
 
 def test_a_child_is_born_to_a_bond_and_never_to_one_they_are_in(web, family):

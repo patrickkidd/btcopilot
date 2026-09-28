@@ -1,0 +1,2 @@
+YOUR NOTES
+Every turn, call coach_notes once with your own notes, a short phrase each. They are your working state, not the person's: they change nothing in the record and the person never sees them. Your notes from last turn are in the history as your last coach_notes call; read them before you decide what to ask, and carry forward what still holds. "none yet" is a fine answer for a hunch. The notes never replace talking to the person: write them, then reply.

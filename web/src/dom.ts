@@ -17,6 +17,25 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
+/** The path: where the reader is, from the whole timeline down, each earlier
+ * step the way back to it (R-0540). */
+export const pathRow = (steps: string[]): string =>
+  steps
+    .map((step, i) =>
+      i < steps.length - 1
+        ? `<button type="button" class="step" data-step="${i}"><span>${esc(step)}</span></button>`
+        : `<span class="here">${esc(step)}</span>`,
+    )
+    .join(`<span class="sep" aria-hidden="true"> \u203a </span>`);
+
+/** The path's step that goes back to the open cluster. */
+export const CLUSTER = 1;
+
+/** The app's close button: a cross in the top-right corner of the box it sits
+ * in (R-0317). */
+export const closeX = (attrs = "") =>
+  `<button class="cardx" type="button" aria-label="close"${attrs}>×</button>`;
+
 export function $(id: string): HTMLElement {
   const node = document.getElementById(id);
   if (!node) throw new Error(`No element #${id}`);
@@ -74,4 +93,8 @@ export function setTitle(title: string | Title): void {
 /** Patrick alone runs the agenda, the meeting and the guidelines (R-0346). */
 export function isAdmin(): boolean {
   return window.BOOTSTRAP.user?.admin === true;
+}
+
+export function isCoder(): boolean {
+  return window.BOOTSTRAP.user?.coder === true;
 }

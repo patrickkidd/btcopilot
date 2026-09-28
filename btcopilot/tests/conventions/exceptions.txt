@@ -22,6 +22,7 @@ R-0046 | WAIVED | a rejected mockup control; nothing in the app to observe
 R-0050 | WAIVED | a watch-and-decide product call
 R-0054 | WAIVED | a statement of the theory the data rests on; no single behaviour
 R-0056 | TEST OWED | not built: nothing files friction reports and nothing answers from a reference manual
+R-0057 | TEST OWED | undecided since R-0511; the second test waits until the IRR group ratifies new ground truth (R-0509)
 R-0058 | WAIVED | a post-mortem of a discarded tab; the lesson is carried by R-0284
 R-0059 | WAIVED | a design principle; judged by eye
 R-0066 | WAIVED | a design principle of simplicity; judged by eye
@@ -61,7 +62,11 @@ R-0397 | WAIVED | a rule about how findings are reported
 R-0398 | WAIVED | a rule about how galleries are captioned
 R-0399 | WAIVED | a rule about how concepts are designed
 R-0400 | WAIVED | a decision to start the beta
+R-0425 | TEST OWED | a second coding eval waits until the IRR group ratifies ground truth (R-0509); the public prompt carries no wording to pin
 R-0426 | WAIVED | deferred until there is enough data; nothing fixed to observe
+R-0433 | TEST OWED | partly rescinded by R-0510; the second test waits until the IRR group ratifies ground truth (R-0509)
+R-0434 | TEST OWED | a second coding eval waits until the IRR group ratifies ground truth (R-0509); the public prompt carries no wording to pin
+R-0435 | TEST OWED | a second coding eval waits until the IRR group ratifies ground truth (R-0509); the public prompt carries no wording to pin
 R-0443 | TEST OWED | not built: no session-end or on-return review call exists; it is the ruled fast-follow
 R-0444 | WAIVED | an architecture principle; the review it calls for is R-0443
 R-0468 | WAIVED | the box was created by hand in the provider console; no file in the repo holds its region
@@ -71,3 +76,42 @@ R-0473 | WAIVED | who reads the README is a writing choice no test can observe
 R-0474 | WAIVED | how the history is told is a writing choice no test can observe
 R-0475 | WAIVED | how the README is written is a writing choice no test can observe
 R-0476 | WAIVED | how the project is presented is a writing choice no test can observe
+R-0489 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0490 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0491 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0492 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0493 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0495 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0496 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0497 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0498 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0499 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0500 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0501 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0502 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0503 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0504 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0505 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0506 | TEST OWED | built or specified this session; its tests cite an older ruling and need re-citing to this id
+R-0510 | WAIVED | a rescission; nothing to assert until the IRR group ratifies new ground truth
+R-0511 | WAIVED | marks a coding ruling undecided; nothing to assert until the IRR group ratifies new ground truth
+R-0517 | WAIVED | an architectural principle judged in design review; no single surface to assert on
+R-0519 | WAIVED | a rescission of a label; the literature rules are judged by F1 after coding, nothing to assert
+R-0523 | WAIVED | how replies to the owner are written; judged by him, no surface in the app
+R-0524 | WAIVED | how design work is grounded before it starts; judged in design review
+R-0525 | WAIVED | where a piece of design work is done; a process choice with nothing to assert
+R-0526 | TEST OWED | not fixed: the play-by-play drawing waits on the separate session's frame of reference (R-0525)
+R-0527 | TEST OWED | not fixed: events still accept a move whose target is its own mover
+R-0529 | WAIVED | a closing animation, judged by eye
+R-0530 | WAIVED | a repository setting outside the code; proven by the first dispatched deploy, not a test
+R-0533 | TEST OWED | not done: the data correction and its eval case have not been built yet
+R-0534 | TEST OWED | queued, not built
+R-0535 | TEST OWED | no visual spec opens the notes panel yet; the two web tests cover the row
+R-0536 | TEST OWED | the two web tests cover the plain-text value and its list of possibilities; no test yet asserts a chip is never used here
+R-0564 | TEST OWED | the play-by-play rebuild is not built yet
+R-0565 | TEST OWED | the play-by-play rebuild is not built yet
+R-0171 | WAIVED | the typed play-through it paced is replaced by the drawer tapped through by hand (R-0562); to be marked superseded in the store
+R-0286 | TEST OWED | the triangle-vs-conflict clinical distinction covers two of its three tags; the third awaits a citing test
+R-0288 | TEST OWED | the triangle position rules cover two of three tags; the third awaits a citing test
+R-0572 | WAIVED | a negative behaviour with no editor code path to assert against; editing now runs through chat and the event list, covered by their own rulings
+R-0573 | WAIVED | a design rationale for clusters over individual events as the tap target; the tap behaviour itself is proven by R-0543's and R-0537's citing tests

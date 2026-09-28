@@ -11,7 +11,7 @@ from btcopilot.routes import bp, current_session, diagram
 from btcopilot.routes.diagrams import readable
 from btcopilot.discussions import session_payload
 from btcopilot.routes.sessions import statements_payload
-from btcopilot import record
+from btcopilot import playturn, questions, record
 from btcopilot.licence import professional
 from btcopilot.timeline import build_timeline
 from btcopilot.schema import DiagramData
@@ -42,9 +42,10 @@ def _page() -> str:
             "coder": user.has_role(btcopilot.ROLE_AUDITOR)
             or user.has_role(btcopilot.ROLE_ADMIN),
             "pro": professional(user),
+            "prefs": user.prefs(),
         },
         "session": session_payload(discussion) if discussion else None,
-        "statements": statements_payload(discussion) if discussion else [],
+        "statements": statements_payload(discussion, user) if discussion else [],
         "diagram": (
             {"id": in_use.id, "name": in_use.name} if in_use else None
         ),
@@ -65,9 +66,14 @@ def _readable(diagram_id: int):
     return found
 
 
+# A home-screen app keeps the page it last loaded, so the page is asked for
+# again on every load.
+FRESH = {"Cache-Control": "no-cache"}
+
+
 @bp.route("/")
 def index():
-    return _page()
+    return _page(), FRESH
 
 
 @bp.route("/sw.js")
@@ -98,6 +104,11 @@ def timeline():
     in_use = _readable(asked) if asked else diagram()
     data = in_use.get_diagram_data() if in_use else DiagramData()
     payload = build_timeline(data)
+    # what a play of each cluster told now would be told from, so the page
+    # knows a kept play it may open again from one it must ask for anew
+    told = playturn.digests(data, payload)
+    for cluster in payload["clusters"]:
+        cluster["digest"] = told[cluster["id"]]
     # Where each moment was written down comes from the command log, which is
     # the only place that knows: the coach stamps its own message on the
     # commands one turn made. What the record itself carries wins, for the
@@ -107,6 +118,7 @@ def timeline():
             **{str(k): v for k, v in record.coded_in(in_use.id).items()},
             **{str(k): v for k, v in payload["coded_in"].items()},
         }
+    payload["asked_questions"] = questions.asked(in_use.id, data) if in_use else []
     return jsonify(payload)
 
 

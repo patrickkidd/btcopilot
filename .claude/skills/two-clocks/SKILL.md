@@ -8,14 +8,15 @@ description: Flush this session's decisions, learnings, rationale and code state
 Two clocks per topic. The **state clock** is `doc/TOPICS.md`: one block per topic,
 headed by the topic's plain name, rewritten in full. The **event clock** is
 `doc/HISTORY.md`: one entry per session, never rewritten by a later session.
-Rulings go to the private oracle store **in this repo** — `private/oracle/rulings.md` and
-`private/oracle/evidence.md`, encrypted with sops. Never fdserver; fdserver left this ticket on
-2026-09-16. Edit with `SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt sops <path>` (append a
-ruling, then its evidence block: the id line, then "> " lines holding his own words). Every
-store change needs its fingerprint lines added to btcopilot/tests/conventions/fingerprints.txt;
-CI's id-stability guard prints them. After a flush nothing the
-owner said, decided, learned or built in the session is missing, and running the flush again
-changes nothing.
+Rulings go to the private oracle store **in this repo** — a new ruling goes in its topic file
+under `private/oracle/topics/<topic>.md`, never in `rulings.md` by hand, with his words in
+`private/oracle/evidence.md`; both encrypted with sops. Never fdserver; fdserver left this
+ticket on 2026-09-16. Edit with `sops <path>`, `SOPS_AGE_KEY_FILE` set as in doc/SETUP.md
+(append a ruling, then its evidence block: the id line, then "> " lines holding his own words).
+After any store change or citation change, run `uv run python bin/oracleindex.py` with the key
+to regenerate the index, `rulings.md`; CI's index-drift guard fails if it isn't rerun. After a
+flush nothing the owner said, decided, learned or built in the session is missing, and running
+the flush again changes nothing.
 
 ## What makes it idempotent — follow these exactly
 
@@ -62,10 +63,11 @@ run from rewording what an earlier run already captured:
 1. Read `doc/TOPICS.md`. Walk the session from its first message and assign every
    decision, question, finding, build and correction to a topic by name, opening a new block
    only for a thread of work no block covers.
-2. Rulings: for each owner statement that decides something, append to
-   `private/oracle/rulings.md` in this repo (next id) with his words in `private/oracle/evidence.md`,
+2. Rulings: for each owner statement that decides something, append to the right topic file
+   under `private/oracle/topics/<topic>.md` (next id) with his words in `private/oracle/evidence.md`,
    unless the words are already there. Both files are sops-encrypted: decrypt, edit, re-encrypt
-   with `sops -e --filename-override <path> <plainfile>`.
+   with `sops -e --filename-override <path> <plainfile>`. Then run
+   `uv run python bin/oracleindex.py` with the key to regenerate `rulings.md`.
 3. Rewrite every touched block with its six fields — **Status · Decided** (ruling ids) ·
    **Open** (numbered, each self-contained with its example inline) · **Lives in** (files,
    commits, PRs, artifact URLs, sandbox paths) · **Next action · Updated** (today). Every
@@ -87,7 +89,7 @@ run from rewording what an earlier run already captured:
    commits titled `<ticket> flush: <date>`.
 9. Refresh Patrick's two pages, same links every time (URLs at the top of TOPICS.md, passed
    to the Artifact tool as `url`), in this order:
-   a. `python .claude/skills/two-clocks/bin/ledger.py` — rewrites events.json in `~/theapp/btcopilot-sources/fd-corpus/private/` from every dated source
+   a. `python .claude/skills/two-clocks/bin/ledger.py` — rewrites events.json in `fd-corpus/private/` of the private corpus (`BTCOPILOT_SOURCES`, default `btcopilot-sources/` at the main clone's root) from every dated source
       (history, rulings, decision log, review log, commits, artifacts).
    b. `python .claude/skills/two-clocks/bin/trace.py` — mines Patrick's own statements out of the local transcripts
       into trace.json in the same private folder, one row per thing he typed, in order. It writes nothing

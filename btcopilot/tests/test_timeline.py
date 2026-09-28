@@ -1,5 +1,8 @@
+import pytest
+
 from btcopilot.seed import seed_diagram_data
-from btcopilot.timeline import GAP_DAYS, build_timeline
+from btcopilot.refs import Ref, RefKind
+from btcopilot.timeline import GAP_DAYS, aimable, build_timeline
 from btcopilot.schema import (
     Cluster,
     DateCertainty,
@@ -390,6 +393,84 @@ def test_a_moment_says_who_from_its_links_and_what_without_the_name():
     assert said[13] == ("Elizabeth → Ray", "conflict")
 
 
+@pytest.mark.parametrize(
+    "kind, description, label",
+    [
+        (
+            EventKind.Death,
+            "died, possibly around July 4",
+            "died, possibly around July 4",
+        ),
+        (EventKind.Death, "Death of a heart attack", "Death of a heart attack"),
+        (EventKind.Death, "Passed away at home", "Passed away at home"),
+        (EventKind.Birth, "Born at home", "Born at home"),
+        (EventKind.Birth, "was born in Anchorage", "was born in Anchorage"),
+        (EventKind.Married, "Got married in Reno", "Got married in Reno"),
+        (EventKind.Married, "marriage to Nora", "marriage to Nora"),
+        (EventKind.Married, "in Reno", "married \u00b7 in Reno"),
+        (EventKind.Divorced, "divorce final", "divorce final"),
+        (
+            EventKind.Death,
+            "Moved in with the man who died",
+            "died \u00b7 Moved in with the man who died",
+        ),
+        (EventKind.Birth, "reborn in faith", "born \u00b7 reborn in faith"),
+        (
+            EventKind.Death,
+            "Robert Belgard died, possibly around July 4",
+            "Robert Belgard died, possibly around July 4",
+        ),
+        (EventKind.Married, "Robert married Ann", "Robert married Ann"),
+        (EventKind.Birth, "Robert was born at home", "Robert was born at home"),
+        (EventKind.Death, "Ann died", "died \u00b7 Ann died"),
+        (EventKind.Death, "", "died"),
+        (EventKind.Shift, "Moved to Anchorage", "Moved to Anchorage"),
+    ],
+)
+def test_a_label_says_the_kind_once(kind, description, label):
+    # R-0457
+    events = [
+        asdict(
+            Event(
+                id=1,
+                kind=kind,
+                person=1,
+                dateTime="1990-07-04",
+                description=description,
+            )
+        )
+    ]
+    said = build_timeline(_named([(1, "Robert Belgard")], events))["events"][0]
+    assert said["label"] == label
+
+
+def test_a_pair_bond_names_the_speaker_and_the_partner():
+    # R-0457
+    data = DiagramData(
+        people=[
+            {**asdict(Person(id=1, name="Patrick")), "primary": True},
+            asdict(Person(id=2, name="Emily")),
+        ],
+        events=[
+            asdict(
+                Event(
+                    id=10,
+                    kind=EventKind.Bonded,
+                    person=1,
+                    spouse=2,
+                    dateTime="2019-03-01",
+                    description="together for about a year and a half",
+                )
+            )
+        ],
+    )
+    event = build_timeline(data)["events"][0]
+    assert (event["person_name"], event["label"]) == (
+        "Patrick & Emily",
+        "bonded \u00b7 together for about a year and a half",
+    )
+
+
 def test_a_noted_event_near_a_shift_is_a_lead_and_raises_the_question():
     # R-0366
     """A move is not a change in the family, but a coach may wonder whether it
@@ -410,3 +491,41 @@ def test_a_noted_event_near_a_shift_is_a_lead_and_raises_the_question():
     ]
     timeline = build_timeline(_data([1], events))
     assert {(q["event_id"], q["other_event_id"]) for q in timeline["questions"]} == {(10, 11)}
+
+
+def _undated_in_cluster() -> DiagramData:
+    events = [
+        _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
+        _shift(11, 1, "1990-06-01", "symptom", VariableShift.Down),
+        _shift(12, 1, None, "symptom", VariableShift.Up, DateCertainty.Unknown),
+        _shift(13, 1, "1991-01-01", "symptom", VariableShift.Up),
+    ]
+    data = _data([1], events)
+    data.clusters = [
+        asdict(
+            Cluster(
+                id="cl-a",
+                title="The hard year",
+                summary="",
+                eventIds=[10, 12, 11, 13],
+                startDate="1990-01-01",
+                endDate="1991-01-01",
+            )
+        )
+    ]
+    return data
+
+
+def test_an_undated_event_plays_where_the_coach_put_it_but_draws_no_dot():
+    # R-0527, R-0532
+    cluster = build_timeline(_undated_in_cluster())["clusters"][0]
+    assert cluster["play_ids"] == [10, 12, 11, 13]
+    assert cluster["event_ids"] == [10, 11, 13]
+    assert cluster["count"] == 3
+
+
+def test_a_chip_naming_an_undated_event_in_a_cluster_survives():
+    # R-0527, R-0532
+    data = _undated_in_cluster()
+    chip = Ref(kind=RefKind.Events, label="that week", event_ids=[12])
+    assert aimable([chip], data) == [chip]

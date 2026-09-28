@@ -7,13 +7,13 @@ with Last-Event-ID and is given everything since, then the rest as it happens.
 
 import json
 
-from flask import Response, abort, request, stream_with_context
+from flask import Response, abort, jsonify, request, stream_with_context
 
 from btcopilot import auth
 from btcopilot.extensions import db
-from btcopilot import turnlog
-from btcopilot.models import Discussion
-from btcopilot.routes import bp
+from btcopilot import toolnames, turnlog, turns
+from btcopilot.models import Discussion, TurnEvent
+from btcopilot.routes import bp, owned_session, require_write_access
 
 HEARTBEAT_TICKS = 15
 
@@ -37,6 +37,11 @@ def _frame(seq: int, event: dict) -> str:
 def turn_events(turn_id: str):
     _mine(turn_id)
     last = request.headers.get("Last-Event-ID", type=int) or 0
+    user = auth.current_user()
+
+    def frame(seq: int, event: dict) -> str:
+        event = toolnames.shown(event, user)
+        return "" if event is None else _frame(seq, event)
 
     def stream():
         # Listening starts before the replay so an event landing between the
@@ -45,7 +50,7 @@ def turn_events(turn_id: str):
         sent = last
         for seq, event in turnlog.read_from(turn_id, last):
             sent = seq
-            yield _frame(seq, event)
+            yield frame(seq, event)
             if turnlog.ended(event):
                 return
         quiet = 0
@@ -61,7 +66,7 @@ def turn_events(turn_id: str):
             if seq <= sent:
                 continue
             sent = seq
-            yield _frame(seq, event)
+            yield frame(seq, event)
             if turnlog.ended(event):
                 return
 
@@ -69,3 +74,19 @@ def turn_events(turn_id: str):
     response.headers["Cache-Control"] = "no-cache"
     response.headers["X-Accel-Buffering"] = "no"
     return response
+
+
+@bp.route("/turns/<turn_id>/resume", methods=["POST"])
+def turn_resume(turn_id: str):
+    """Try again on a turn that failed: it goes on from where it stopped. The
+    kept events say which session it belongs to, long after the live log is
+    gone."""
+    kept = TurnEvent.query.filter_by(turn_id=turn_id).first()
+    if kept is None:
+        abort(404)
+    discussion = owned_session(kept.discussion_id)
+    require_write_access(discussion.diagram)
+    try:
+        return jsonify(turns.resume(discussion, turn_id)), 202
+    except (turns.Busy, turns.Unfinished) as refused:
+        abort(409, description=str(refused))

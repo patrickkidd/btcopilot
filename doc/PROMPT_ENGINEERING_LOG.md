@@ -2,9 +2,47 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-09-23 (the extraction pipeline and the pending data pool are retired)
+**Last Updated**: 2026-09-28 (defined-self wording held; its eval kept as a regression case)
 
 ---
+
+## FD-363 coach — defined-self is an action taken toward others (2026-09-28)
+
+**Held for the next PR: needs a multi-turn case modelled on the 2026-09-22 conversation to
+reproduce the fault.** The prompt change below was reverted the same day; the wording is kept in
+the private corpus (`fd-corpus/private/prompts/2026-09-28-defined-self-wording.md`). The eval stays
+as a regression case at $0, its replays answered on the subscription against the old prompt
+(3 of 3 runs pass, every step noted).
+
+**Scope**: the coach's definition of the defined-self move, in `private/prompts/tool_meanings.prompty`
+(the `relationship` field's meaning) and `private/prompts/fragments/agent_record_contract.md` (the
+relationship-moves section: its one-line list and its defined-self bullet). Nothing else changed.
+
+**Defect** [R-0533, R-0585]: the old definition counted a statement, belief or intention that
+says where the person stands. On 2026-09-22 the coach coded two steps in Patrick's own record,
+moving to another city for graduate school and starting the program the same autumn, as
+defined-self with functioning up and the speaker as his own target. Patrick ruled both noted
+events on 2026-09-28 (correction case of that date in the private corpus).
+
+**Change**: Patrick's definition of 2026-09-28, "the actual action that a person takes to define
+themselves in relation to others". Words, a belief or an intention alone are not it; it has
+targets, the people defined to, never the mover, whom the speaker may not name; an action taken
+in relation to no one is not defined-self. "Without trying to change or control the other" and
+"a move, not a state" are kept. The theory's concept page holds the sources (defined self, status
+items 11 and 12); which actions count stays open for the IRR group.
+
+**Eval**: `test_moving_away_for_graduate_school_is_noted_and_not_a_defined_self` in the live
+suite, 2 of 3 runs, fictionalized: the speaker did prerequisites in Marquette in 2006, then moved
+to Tucson for grad school and started the program in fall 2008, naming no one. Pass: every new
+event is noted or a shift carrying no symptom, anxiety, functioning or relationship.
+
+**Result, on the Claude Code subscription, $0**: new prompt 3 of 3 runs pass, all steps noted,
+nine answers saved as subscription replays. Old prompt: 9 of 9 first calls coded every step
+noted across three wordings (the bare statement, one with a stated intention, the logged
+shape), so the eval does not fail on the old prompt in a fresh session. The 2026-09-22 fault
+came mid-conversation on an earlier prompt, and the writer now refuses a move with no
+targets or with its mover as a target [R-0585, R-0593]. Old-prompt answers were not saved. The eval guards the ruled coding; it
+does not prove the new wording was needed.
 
 ## FD-362 review scribe — loop cap and three prompt rules (2026-09-11)
 
@@ -913,3 +951,128 @@ extraction prompts, passes or F1 on extraction is history. The undated sections
 that described that pipeline as the current design (model selection, Gemini issues,
 prompt architecture, what to include in extraction prompts, monitoring, related
 files) were removed with it. The pipeline's code was last present in a7eeb2c.
+
+### September 2026: The coach keeps the family's open questions (FD-363)
+
+**Change**: the agent prompt gains one paragraph, a fragment shared with a new
+backfill prompt, on keeping open questions in the record. Two kinds: food for
+thought, sourced to Kerr's "people usually require questions to stimulate their
+thinking" (Family Evaluation, ch. 10), and facts to find, kept only when the
+coach judges them relevant to the evaluation or the family's historical context,
+with inclusion as the default when in doubt and nothing kept that would spend the
+person's time, attention and motivation for nothing. It names the three question
+tools, the map's QUESTIONS section, and never asking again a question the person
+declined. It is worded as judgement, not rules. The backfill prompt goes once over
+a past session and adds the questions worth keeping with the message they were
+asked in. The private fragment sits after the record contract so it stays in the
+cached head. Public and private goldens were re-captured. [R-0482, R-0485]
+
+### September 2026: The question wording checks the record first and keeps one question per unknown (FD-363)
+
+**Change**: a backfill run on a copy of production kept 23 questions from about 33
+replies for one family. At least 7 were already answered in the record, 3 asked
+about one person's parents, and 3 of the 9 food-for-thought questions were facts.
+The shared paragraph now says: food for thought asks the person to think, and a
+question answered by a name, date, place or number is a fact; look first, and never
+keep a question the record already answers; keep one question per thing to find
+out, in the best-worded version; weigh every question for the person's time before
+keeping it, with inclusion still the default when in doubt. The backfill prompt
+says the map is drawn after every later session, so it often holds the answer.
+Not yet measured: the model account was out of credit. [R-0482, R-0485]
+
+### September 2026: A kept question reads on its own, and anything with a factual answer is a fact (FD-363)
+
+**Change**: stored questions read in the Questions tab away from the conversation,
+and real runs kept fragments such as "And how old are they now?". The coach now
+words a question it keeps so it names the person and the subject ("How old is
+Elizabeth's brother now?") and stores it in those words; the backfill may reword a
+question that leans on its context, changing nothing else about what it asks. A
+live turn filed an intake question as food for thought, so food for thought is now
+a thinking question about patterns or meaning, and anything with a factual answer,
+including the basics of who is in the family, is a fact to find. Not yet measured
+live. [R-0482, R-0485]
+
+### September 2026: A kept question says "you", and asking a question is keeping it (FD-363)
+
+**Change**: real turns stored questions that named the user in the third person
+("When [user] and [husband] go quiet…") while the reply said "you", and 3 of 5
+turns that asked a question stored nothing. The shared paragraph now says a kept
+question speaks to the person as "you" and names everyone else, and that asking
+and keeping are one act: a question put to the person is stored the same turn,
+asked, in the reply's words, unless it does not matter at all; one meant for later
+is stored held. The backfill keeps the "you" of the message. Not yet measured
+live. [R-0482, R-0485]
+
+### September 2026: A kept question is the question alone (FD-363)
+
+**Change**: a stored question carried the reply's lead-in ("Before we go further,
+what's your last name…") into the Questions tab. The shared paragraph and the
+backfill now say the reply may frame a question however it likes, but what is kept
+is the question alone, with no lead-in, hedge or reason, still in "you" wording and
+readable on its own. Not yet measured live. [R-0482, R-0485]
+
+### September 2026: Keep the question first, then write the reply that asks it (FD-363)
+
+**Change**: in 3 of 75 live turns the coach wrote its closing question as text
+beside an add_question call; that text was cleared as working notes and the turn
+ended with no words. The shared paragraph now says to call add_question on its
+own, then write the reply once the call comes back, so the reply is the last
+round's words, and that words beside a tool call never reach the person. Not yet
+measured live. [R-0482]
+
+### September 2026: Every date says how sure it is (FD-363)
+
+**Change**: the coach is told to give date_certainty (certain, approximate or
+unknown for a guess) whenever it adds an event or changes its date, public and
+private wording alike; the toolbox now refuses a date without it. Not yet measured
+live. [R-0482]
+
+### September 2026: The review scribe gives every date its certainty too (FD-363)
+
+**Change**: the scribe calls the same event tool, which now refuses a date without
+certainty, so its prompt, public and private, says to give date_certainty whenever
+it adds an event or changes a date. Not yet measured live. [R-0482]
+
+### September 2026: A date's certainty follows what was said about the day (FD-363)
+
+**Change**: "My dad died in June 1998" was stored as certain, but certain means
+within a week. The agent, scribe and onboarding wording now map it plainly:
+certain for an exact day, approximate for a month or a year only, unknown for
+"sometime around" or any hedge, or for the coach's own guess. The private record
+contract's "March 2019 is certain" is reversed to approximate. A live case checks
+the June 1998 death is stored approximate. [R-0482]
+
+### September 2026: The record moves out of the system prompt and into the user turn, to cut prompt-cache cost (FD-363-cost)
+
+**Scope**: coach prompt assembly on branch FD-363-cost (draft PR #141), off FD-363 — the record
+block, the date and the "looked at" block. Not a wording change; a structural change to where
+these three pieces sit in a turn.
+
+**Change**: a heavy production day put 78% of that day's model cost in prompt-cache writes,
+because these three pieces sat in the system prompt ahead of the chat and changed every turn, so
+the whole cached chat was rewritten each turn. The system prompt now holds only the coaching
+text; the record block moves into the new user message after the chat; the chat is marked at the
+previous two turn boundaries; tool marks are capped at four; cache life stays 5 minutes [R-0595].
+
+**Measured**: on the sandbox, with a 12,000-token chat, turns 2 and 3 cost 42% less ($0.2472 to
+$0.1428). Real model calls spent proving this: $1.96.
+
+**Not yet measured**: whether moving about 14,000 characters of prompt out of the system prompt
+and into the user turn changes the coach's behaviour. The coaching text now sits further from
+the record it reasons about, in the prompt's own order, than before; whether that changes what
+the coach asks or notices needs the live eval suite run against it, which awaits Patrick's spend
+approval. Until that runs, this change is deployed on cost grounds alone, not proven neutral on
+behaviour.
+
+### September 2026: The coach raises impressions and keeps them (FD-363)
+
+**Change**: a new paragraph, shared by the agent prompt and a new impression
+backfill prompt, public and private. An impression is the coach's inference, a
+pattern across chapters or a reading of a stretch of years. It is raised with its
+tool, with the evidence it rests on, before the reply says it in the same words.
+A stretch of years where a lot was happening becomes a cluster made or extended
+with that reason, not only words. Anxiety, symptom and functioning shifts are
+remembered episodes each reported on its own, never a series or a trend. An
+impression the user said doesn't fit is not raised again in those words; one
+they said fits partly is revised or let go. Not yet measured live: model calls
+are unavailable. [R-0482, R-0485]

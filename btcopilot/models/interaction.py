@@ -13,6 +13,8 @@ class InteractionKind(enum.StrEnum):
     Say = "say"
     ChipTap = "chip_tap"
     Play = "play"
+    Dismiss = "dismiss"
+    DoesntFit = "doesnt_fit"
 
 
 class Interaction(db.Model, ModelMixin):
@@ -23,7 +25,9 @@ class Interaction(db.Model, ModelMixin):
     diagram_id = Column(Integer, ForeignKey("diagrams.id"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     session_id = Column(String(64), nullable=True)
-    statement_id = Column(Integer, ForeignKey("statements.id"), nullable=True)
+    statement_id = Column(
+        Integer, ForeignKey("statements.id", ondelete="SET NULL"), nullable=True
+    )
     kind = Column(
         Enum(InteractionKind, values_callable=lambda e: [x.value for x in e]),
         nullable=False,

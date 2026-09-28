@@ -86,6 +86,14 @@ def create_discussion(data: dict, diagram: Diagram | None = None) -> Discussion:
         db.session.flush()
         user.free_diagram_id = diagram.id
 
+    discussion = open_session(user, diagram)
+    db.session.commit()
+    return discussion
+
+
+def open_session(user, diagram: Diagram) -> Discussion:
+    """A session on the diagram with its two chat speakers: the user as the
+    family's subject, and the coach."""
     # Read the speaker label off the diagram directly (not the lazily-populated
     # relationship) so a named primary is honored even at create time.
     subject_name = diagram.get_diagram_data().subject_display_name()
@@ -101,13 +109,8 @@ def create_discussion(data: dict, diagram: Diagram | None = None) -> Discussion:
     )
     db.session.add(discussion)
     db.session.flush()
-
-    # Update discussion with speaker IDs for chat
     discussion.chat_user_speaker_id = discussion.speakers[0].id
     discussion.chat_ai_speaker_id = discussion.speakers[1].id
-
-    db.session.commit()
-
     return discussion
 
 

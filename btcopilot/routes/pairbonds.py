@@ -8,14 +8,11 @@ a second bond between the same two (R-0326).
 """
 
 import itertools
-import uuid
 
 from flask import abort, jsonify, request
 
-from btcopilot import auth
 from btcopilot import prompts, record
-from btcopilot.models import Author
-from btcopilot.routes import asked_diagram, bp, writable_diagram
+from btcopilot.routes import asked_diagram, bp, delta, edit
 from btcopilot.schema import ItemKind, PersonKind
 
 WRITABLE = ("person_a", "person_b", "married")
@@ -42,28 +39,6 @@ def _find(data, bond_id: int) -> dict:
     abort(404, description=f"No pair bond {bond_id} on this diagram")
 
 
-def _apply(deltas: list[dict]):
-    dia = writable_diagram()
-    if dia is None:
-        abort(404)
-    return record.apply(
-        dia.id,
-        deltas,
-        author=Author.User,
-        turn_id=uuid.uuid4().hex,
-        user_id=auth.current_user().id,
-    )
-
-
-def _delta(bond_id, field, after) -> dict:
-    return {
-        "item_kind": ItemKind.PairBond.value,
-        "item_id": bond_id,
-        "field": field,
-        "after": after,
-    }
-
-
 #: What a parent nobody named is called, one role per side of the bond.
 PARENT_ROLES = (prompts.Role.Father, prompts.Role.Mother)
 PARENT_GENDER = {
@@ -72,22 +47,13 @@ PARENT_GENDER = {
 }
 
 
-def _person_delta(person_id, field, after) -> dict:
-    return {
-        "item_kind": ItemKind.Person.value,
-        "item_id": person_id,
-        "field": field,
-        "after": after,
-    }
-
-
 def _named_parent(person_id: int, child: dict, role) -> list[dict]:
     """A parent nobody named, added so the bond has two sides. What they are
     called comes from the overridable prompts (R-0325 rules 9 and 10)."""
     name = prompts.generic_name(child.get("name") or "someone", role)
     return [
-        _person_delta(person_id, "name", name),
-        _person_delta(person_id, "gender", PARENT_GENDER[role]),
+        delta(ItemKind.Person, person_id, "name", name),
+        delta(ItemKind.Person, person_id, "gender", PARENT_GENDER[role]),
     ]
 
 
@@ -124,18 +90,14 @@ def create_pair_bond():
         values[side] = next(ids)
         deltas += _named_parent(values[side], child, role)
     bond_id = next(ids)
-    deltas += [_delta(bond_id, field, value) for field, value in values.items()]
+    deltas += [
+        delta(ItemKind.PairBond, bond_id, field, value)
+        for field, value in values.items()
+    ]
     if child is not None:
-        deltas.append(_person_delta(child["id"], "parents", bond_id))
-    deltas.append(
-        {
-            "item_kind": ItemKind.Diagram.value,
-            "item_id": None,
-            "field": "lastItemId",
-            "after": bond_id,
-        }
-    )
-    _apply(deltas)
+        deltas.append(delta(ItemKind.Person, child["id"], "parents", bond_id))
+    deltas.append(delta(ItemKind.Diagram, None, "lastItemId", bond_id))
+    edit(deltas)
     return jsonify(_payload(_find(asked_diagram().get_diagram_data(), bond_id))), 201
 
 
@@ -145,7 +107,12 @@ def update_pair_bond(bond_id: int):
     _find(asked_diagram().get_diagram_data(), bond_id)
     if not values:
         raise ValueError("Nothing to change on that pair bond")
-    _apply([_delta(bond_id, field, value) for field, value in values.items()])
+    edit(
+        [
+            delta(ItemKind.PairBond, bond_id, field, value)
+            for field, value in values.items()
+        ]
+    )
     return jsonify(_payload(_find(asked_diagram().get_diagram_data(), bond_id)))
 
 
@@ -154,5 +121,5 @@ def delete_pair_bond(bond_id: int):
     """Removing a bond leaves the children of it without parents, the way the
     app's own scene does."""
     _find(asked_diagram().get_diagram_data(), bond_id)
-    _apply([_delta(bond_id, None, None)])
+    edit([delta(ItemKind.PairBond, bond_id, None, None)])
     return "", 204

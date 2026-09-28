@@ -1,5 +1,6 @@
 import * as api from "./api";
 import { Feature, tap } from "./track";
+import { conceptLinks, conceptsOf } from "./concepts";
 import { esc, el, type Title } from "./dom";
 import {
   openBondEditor,
@@ -445,6 +446,7 @@ export class Ballot {
         : `<div class="progress">${esc(when(first?.item.dateTime))}` +
           `${first?.person_name ? ` · → ${esc(first.person_name)}` : ""}</div>` +
           `<h3>${esc(what(item))}</h3>`) +
+      conceptLinks(conceptsOf(item.opinions.map((one) => one.item))) +
       opinions +
       ownOpinion +
       left +

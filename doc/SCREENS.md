@@ -6,7 +6,7 @@ behaviour, tagged `[built]` if it is in the app today, `[drawn]` if it is approv
 but not built, and `[open]` if it is a choice Patrick has not made yet. It is rewritten as
 decisions land; the exact sizes and colours live in the internal interface spec, not here.
 
-Updated: 2026-09-22
+Updated: 2026-09-28
 
 ---
 
@@ -60,6 +60,15 @@ What it is for: talking to the coach, which is how everything else in the app ge
 - The Return key starts a new line, and only the send button sends, so a message can have paragraphs. [built] {R-0368}
 - The coach's words and the steps it takes arrive as they happen rather than all at the end, so a long turn is never a blank wait. [built] {R-0369}
 - The turn runs on the server on its own, so reloading the page, or leaving the app and coming back, picks the turn up where it is. [built] {R-0369}
+- Every step the coach takes, reads and changes to the picture included, is a line in its reply, and the lines stay after a reload. [built] {R-0478}
+- There is a little room between those lines and the coach's words. [built]
+- If a reply fails, the lines that landed stay and [try again] carries on the same turn without sending your words again. [built] {R-0477}
+- Each line names the event or person it touched by the same label used everywhere else. [built]
+- Speak replies reads the coach's replies out loud, on an iPhone too. [built]
+- In each of those lines, the name of the thing it touched is in italics, set apart from the verb, as in "Changed *Dad's move*: date 1990". [built] {R-0528}
+- Under each coach reply that has words there is a thin, line-drawn play button, as in the Claude Code mobile app; tap it to hear that reply, tap again to stop. [built] {R-0521}
+- On an iPhone, a long message in the message box scrolls without its lines drawing over each other. [built]
+- Admins and auditors see a small circled (i) at the top right of a coach reply; tapping it opens the coach's own notes for that turn in a panel that grows out of the bubble and shrinks back into it. Nobody else sees the notes. [built] {R-0520, R-0522, R-0529}
 
 ## The picture at rest
 
@@ -74,6 +83,7 @@ What it is for: the one picture, always above the chat, that is the app's memory
 - At rest it shows your clusters over time on one line: a horizontal line with marks on it and nothing else. [built]
 - The line scrolls sideways a little: the most recent years fill the width and the rest is one swipe away, never more than two screens wide. [built] {R-0381}
 - Every event is a dot sitting on the line itself, always at the same height, never sometimes below it. [built] {R-0377}
+- An event's words sit far enough above its dot that a thumb can tap one without catching the other. [built]
 - An opened group of events prints the real years it covers. [built]
 - Only the line and the marks on it are drawn at this size. [built] {R-0005, R-0359}
 - The line is drawn a little wider than the screen and slides sideways, so a crowded record still reads at a size you can tap. The most recent years fill the width when it opens; the earlier ones are one swipe to the left, at most two. [built] {R-0381}
@@ -114,8 +124,8 @@ What it is for: the one picture, always above the chat, that is the app's memory
 
 What it is for: one group of related events, opened from the line.
 
-- Tapping a cluster opens it, and the opened cluster slides in from the right over the whole line like a card. [built] {R-0224, R-0230}
-- The card it slides in on has its own background, so it reads as a card and not as words over words. [built] {R-0230}
+- This section and "The play-by-play" below have not been walked line by line since the strip was redrawn as one pill per cluster and the moves board was rebuilt into a snapshot-based play-by-play on a real family diagram (R-0537 to R-0571). [open]
+- Selecting a cluster redraws the same timeline in place with the cluster selected, rather than sliding a second view over the first; a slide is kept only for a real drill-down into something new. [built] {R-0542}
 - The grey line above the picture becomes the name of what you are looking at, with a back arrow beside it. [built] {R-0223}
 - Tapping either the name or the back arrow goes up one level. [built] {R-0223}
 - An open cluster shows its name and the reason it is a cluster, never a list of its events, because a cluster can hold fifteen. [built] {R-0213}
@@ -133,7 +143,7 @@ What it is for: one group of related events, opened from the line.
 - The word for these is clusters, in the app and in the code. [built] {R-0197}
 - Backing out of an open cluster always closes it and puts you back on the full line, no matter whether you had picked an event first. [built] {R-0362}
 - Clusters are rebuilt from scratch after every turn that touches an event, so the same events can come back under different names; they are meant to stay put and change only when there is a reason. [open]
-- Whether tapping an event's words inside an open cluster should jump straight to its editor is unconfirmed, and Patrick will say after testing it. [open] {R-0207}
+- Tapping an event's words inside an open cluster does not open an editor; you edit an event by chatting about it, or by finding it in the event list and editing it there, but mainly by chat. [built] {R-0572}
 
 ## The play-by-play
 
@@ -144,8 +154,7 @@ What it is for: a play-by-play of what people did, one move at a time.
 
 - The board is reached from the picture by the play mark alone, with no words beside it. [built]
 - The board grows to fit what it is showing rather than sitting at a fixed height. [built] {R-0173}
-- It draws the people involved on a simple ring and the moves between them, not your family's real layout. [built]
-- The family will eventually be drawn as more than a circle of people, and you will never have to arrange it by hand. [drawn] {R-0187}
+- The board now draws a real family diagram, generated by code from your record to the same rules the picture uses elsewhere, one snapshot per date the story needs, rather than a simple ring of people. [built] {R-0546, R-0547}
 - One row of controls sits under it, always back, explain and forward, whichever way you arrived. [built] {R-0180}
 - The button says "explain", because it makes the coach answer rather than playing an animation. [built] {R-0166}
 - Explain is dead only while the coach is still answering the last time you tapped it. [built] {R-0180}
@@ -165,6 +174,8 @@ What it is for: a play-by-play of what people did, one move at a time.
 - Every move mark is drawn in one green, and green means action. [built]
 - Amber never marks a move or a symptom, because amber means the record is asking. [built]
 - Whether the whole thing reads without a legend, and whether the words and drawings tell the same story, is a judgement only Patrick can make by playing a stretch through. [open]
+- Four of the five bugs found playing through a real cluster are fixed: a move aimed at nobody no longer draws on the mover, a bond line no longer shows outside the bond's dates, a second shift on one event now gets its own step, and an event of unknown date keeps its place in the story. [built] {R-0532}
+- Still open: telling a separation apart from an ongoing bond, and the captions using app words like "bonded"/"separated", both wait on the theory behind the coach's storytelling being written down in its own session. [open] {R-0532, R-0524, R-0525}
 
 ## The row of chips under the picture
 
@@ -194,6 +205,7 @@ What it is for: the coach's references to real things in your record, and yours 
 - Tapping one drops that reference into your message and you type your own words around it. [built] {R-0072}
 - Sending a reference on its own means "tell me about this". [built] {R-0072}
 - Tapping a chip is you speaking, never you steering the coach. [built] {R-0072}
+- Tapping a chip for an event in a message picks it in the picture the same way tapping its dot does: the rest fades and its cluster's brackets show. An admin switch per person puts back the old behaviour. [built]
 - A chip is the one visual that means "this puts words in the chat", so nothing else ever costs you a turn. [built] {R-0073}
 - Chips are one size and show their whole label; they are never cut short and never expand. [built] {R-0169}
 - Labels are kept short where they are written rather than trimmed afterwards, and the coach is asked once to shorten an over-long one. [built] {R-0169}
@@ -212,6 +224,17 @@ What it is for: seeing and editing everything in the record by hand.
 
 - One button in the row under the picture opens a drawer holding everything in the record. [built] {R-0198}
 - The events list and the people list are two tabs in that one drawer, not a filter. [built] {R-0199}
+- A third tab, "From the coach", holds what the coach is keeping for you: questions under "Food for thought" and "Facts to find", and its impressions under "Impressions". [built]
+- You only see questions the coach has actually asked and that are still open; ones you turned down or that led nowhere never show. [built]
+- The coach only keeps a fact to find it thinks matters to your family's story, and keeps it when in doubt. [built]
+- Tapping a question or an impression puts it in the message box; nothing sends until you do. [built]
+- Swipe a question left to dismiss it, and the coach will not ask it again. [built]
+- Swipe an impression left for "Doesn't fit", which tells the coach in the chat, or "Partly", which starts a reply for you to finish. [built]
+- Each impression shows the things in your record it rests on. [built]
+- The list button has no circle round it and sits at the same height as the chips beside it. [built]
+- Every label names all the people in it, you included: "Sam & Alex", never "& Alex". [built]
+- An event's kind is said once, never "died · died". [built]
+- An event that sits in no cluster says why. [built]
 - The button sits inside the picture's own frame, matching the sessions button beside the chat input. [built] {R-0198}
 - On a phone the drawer slides up over the chat, the picture and the title row, full screen, and its own back arrow is the way out; the chat stays under it while it travels. [built] {R-0345}
 - The coding screen's drawer opens the same way from the same button, and still stands beside the thread on a wide window. [built] {R-0345}
@@ -240,6 +263,7 @@ What it is for: correcting or adding one event by hand.
 - A move is a noted event with the place kept; there is no longer a kind of its own for moving. [built] {R-0364}
 - A noted event changes nothing about the family, but it is a lead: sitting near a shift it raises the question of what came first, the way a structural event does. [built] {R-0366}
 - How sure you are is one of unknown, approximate or certain. [built]
+- Every date says how sure it is: an exact day is certain, a month or a year alone is approximate, and "around then" is unknown. [built]
 - Symptom, anxiety and functioning are each set to up, down, same or not said. [built]
 - A relationship change sits at the same level as those three, under one heading, never in its own section. [built]
 - A relationship change is a kind plus the people involved, from the person who moved to the people it was aimed at. [built]
@@ -314,7 +338,7 @@ What it is for: you, your families, your plan, and signing out.
 - There is a row for whether the coach speaks its replies out loud. [built]
 - The same speaking switch appears once in the chat as a named shortcut, writing the same setting. [built]
 - With it on, your phone's own voice reads each reply as it starts arriving, and sending the next message cuts it off. [built] {R-0099}
-- A button under each coach reply that plays it again, the way the Claude app has one, is not built yet. [open]
+- A button under each coach reply plays it again, the way the Claude Code mobile app has one. [built] {R-0521}
 - Which voice reads the replies is not settled: today it is your phone's own, which costs nothing, and a better-sounding paid one waits on Patrick. [open]
 - No other setting appears in two places. [built]
 - There is a row for how often the coach may message you first, and it says the coach never messages first unless you ask. [built]

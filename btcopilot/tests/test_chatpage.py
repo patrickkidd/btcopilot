@@ -13,10 +13,12 @@ from btcopilot.models import (
     Speaker,
     SpeakerType,
     Statement,
+    StatementKind,
 )
 from btcopilot.interactions import recent
 from btcopilot.schema import Event, EventKind, ItemKind
-from btcopilot.tests.conftest import Model, csrf_token, replied, said
+from btcopilot.case import Tool
+from btcopilot.tests.conftest import Model, called, csrf_token, replied, said
 
 
 @pytest.fixture(autouse=True)
@@ -27,6 +29,28 @@ def no_auto_auth(monkeypatch):
 def test_health_reports_the_version(flask_app):
     # R-0419
     assert flask_app.test_client().get("/health").get_data(as_text=True) == btcopilot.__version__
+
+
+def test_page_is_asked_for_again_on_every_load(web):
+    # R-0486
+    response = web.get("/app/")
+    assert response.headers["Cache-Control"] == "no-cache"
+
+
+def test_version_is_the_release_the_server_runs(web):
+    # R-0486
+    response = web.get("/app/version")
+    assert response.get_json() == {"version": btcopilot.__version__}
+    assert response.headers["Cache-Control"] == "no-cache"
+
+
+def test_version_needs_no_sign_in(flask_app):
+    # R-0486
+    flask_app.test_client_class = flask.testing.FlaskClient
+    with flask_app.test_client(use_cookies=True) as client:
+        response = client.get("/app/version")
+        assert response.status_code == 200
+        assert response.get_json() == {"version": btcopilot.__version__}
 
 
 def test_page_requires_login(flask_app):
@@ -176,41 +200,50 @@ def test_a_tap_that_names_no_item_kind_is_refused_in_words(web, test_user):
     assert "chip_tap tap on statement 7" in response.get_data(as_text=True)
 
 
-def test_play_hands_the_coach_the_cluster_events_in_date_order(
+def test_play_hands_the_coach_the_cluster_events_and_returns_the_told_case(
     web, test_user, monkeypatch
 ):
-    # R-0074
-    """The play-by-play is coach-authored (R-0074): the words are the model's,
-    the events it may name are not."""
+    # R-0074, R-0563
+    """The coach picks and words the snapshots; the events it may name are the
+    cluster's, handed to it in date order."""
     diagram = test_user.free_diagram
     diagram.set_diagram_data(seed_diagram_data())
     db.session.commit()
-    cluster = web.get("/app/timeline").get_json()["clusters"][0]
-    token = csrf_token(web)
-
-    # the walk is sentences, not a list of chips: a bare run is sent back
+    timeline = web.get("/app/timeline").get_json()
+    cluster = timeline["clusters"][0]
+    dated = {e["id"]: e["dateTime"][:10] for e in timeline["events"] if e["dateTime"]}
+    one_a_day = {dated[i]: i for i in reversed(cluster["event_ids"])}
+    picked = sorted(one_a_day.items())[:6]
+    ids = [i for _, i in picked]
     model = Model(
-        said(
-            " ".join(
-                f"That winter Ada [[event:{i}|move]] and Ben went quiet."
-                for i in cluster["event_ids"]
-            )
+        called(
+            Tool.PlayByPlay,
+            cluster_id=cluster["id"],
+            point="One thing followed another.",
+            snapshots=[
+                {"date": date, "event_ids": [i], "fact": f"Fact {i}."} for date, i in picked
+            ],
+            question="Who else was there?",
         )
     )
-    monkeypatch.setattr(
-        "btcopilot.playturn.CoachModel", lambda *a, **k: model
-    )
+    monkeypatch.setattr("btcopilot.playturn.CoachModel", lambda *a, **k: model)
     reply = web.post(
         "/app/play",
         json={"cluster_id": cluster["id"]},
-        headers={"X-CSRFToken": token},
+        headers={"X-CSRFToken": csrf_token(web)},
     ).get_json()
     assert reply["cluster_id"] == cluster["id"]
-    cited = [int(i) for i in re.findall(r"\[\[event:(\d+)\|", reply["statement"])]
-    assert cited == cluster["event_ids"]
-
+    assert [s["event_ids"] for s in reply["case"]["snapshots"]] == [[i] for i in ids]
     handed = model.histories[0][-1]["content"]
     assert all(str(i) in handed for i in cluster["event_ids"])
+
+    session = web.get("/app/sessions").get_json()[0]["id"]
+    thread = web.get(f"/app/sessions/{session}").get_json()["statements"]
+    assert (thread[-1]["kind"], thread[-1]["cluster_id"], thread[-1]["case"]) == (
+        StatementKind.Play.value,
+        cluster["id"],
+        reply["case"],
+    )
 
 
 def test_play_refuses_a_cluster_that_is_not_on_the_line(web, test_user):

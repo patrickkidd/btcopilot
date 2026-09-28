@@ -11,6 +11,7 @@ from btcopilot.timeline import build_timeline
 from btcopilot.models import Author, Change
 from btcopilot.toolbox import ToolError, ToolName, Toolbox, schemas
 from btcopilot.models import Diagram
+from btcopilot.tests.conftest import version
 
 FAMILY = {
     "people": [
@@ -30,6 +31,10 @@ def _diagram(user, data: dict | None = None) -> Diagram:
 
 
 def _event(diagram, **args) -> dict:
+    if "id" in args:
+        args["version"] = version(diagram)
+    else:
+        args.setdefault("date_certainty", "certain")
     Toolbox(diagram.id, "t1").call(ToolName.EditEvent.value, args)
     return diagram.get_diagram_data().events[-1]
 
@@ -68,9 +73,9 @@ def test_notes_are_read_by_tool_not_shown_in_the_record(subscriber):
     assert record.count("(has notes)") == 2
     tools = Toolbox(diagram.id, "t2")
     one, _ = tools.call(ToolName.ReadNotes.value, {"event": first["id"]})
-    assert one == f"{first['id']}: Took the job in Tulsa"
+    assert one.splitlines()[0] == f"{first['id']}: Took the job in Tulsa"
     every, _ = tools.call(ToolName.ReadNotes.value, {})
-    assert every.splitlines() == [
+    assert every.splitlines()[:2] == [
         f"{first['id']}: Took the job in Tulsa",
         f"{second['id']}: \"Finally some quiet\"",
     ]
@@ -98,6 +103,33 @@ def test_two_same_day_shifts_on_one_person_land_when_the_variables_differ(subscr
     assert len(diagram.get_diagram_data().events) == 2
 
 
+def test_a_couple_event_with_no_spouse_is_refused_to_the_coach(subscriber):
+    # R-0453
+    diagram = _diagram(subscriber.user)
+    with pytest.raises(ToolError, match="name the other one as spouse") as refused:
+        _event(diagram, kind="married", date="2010-06-01", person=1)
+    assert refused.value.plain
+    assert diagram.get_diagram_data().events == []
+
+
+def test_a_move_with_no_target_is_refused_to_the_coach_naming_the_rule(subscriber):
+    # R-0585
+    diagram = _diagram(subscriber.user)
+    with pytest.raises(
+        ToolError, match="every relationship move names who it was aimed at"
+    ) as refused:
+        _event(
+            diagram,
+            kind="shift",
+            date="2013-06-01",
+            person=1,
+            relationship="toward",
+            description="Told her about the new plan",
+        )
+    assert refused.value.plain == "Toward needs the person it was aimed at."
+    assert diagram.get_diagram_data().events == []
+
+
 def test_a_same_day_shift_moving_the_same_variable_is_refused(subscriber):
     # R-0432
     diagram = _diagram(subscriber.user)
@@ -120,7 +152,7 @@ def test_a_same_day_shift_moving_the_same_variable_is_refused(subscriber):
         )
 
 
-def test_an_omitted_certainty_is_unknown_and_a_change_leaves_it(subscriber):
+def test_a_date_with_no_certainty_is_refused_and_a_change_leaves_it(subscriber):
     # R-0438
     diagram = _diagram(subscriber.user)
     added = _event(
@@ -134,16 +166,17 @@ def test_an_omitted_certainty_is_unknown_and_a_change_leaves_it(subscriber):
     )
     changed = _event(diagram, id=added["id"], description="On edge at work")
     assert changed["dateCertainty"] == "approximate"
-    guessed = _event(
-        diagram,
-        kind="shift",
-        date="2001-01-01",
-        person=2,
-        symptom="up",
-        description="Back pain",
-    )
-    assert guessed["dateCertainty"] == "unknown"
-
+    for args in (
+        {"kind": "shift", "date": "2001-01-01", "person": 2, "symptom": "up", "description": "Back pain"},
+        {"id": added["id"], "version": version(diagram), "date": "2019-04-01"},
+    ):
+        with pytest.raises(ToolError) as refused:
+            Toolbox(diagram.id, "t1").call(ToolName.EditEvent.value, args)
+        assert refused.value.plain == (
+            "Say how sure the date is: certain for an exact day, approximate for a "
+            'month or a year only, unknown for "sometime around" or any hedge.'
+        )
+    assert diagram.get_diagram_data().events[-1]["dateTime"] == "2019-03-01"
 
 def test_a_birth_naming_both_parents_makes_the_child_their_offspring(subscriber):
     # R-0438
@@ -315,7 +348,8 @@ def test_a_correction_changes_the_record_at_once_with_nothing_held_pending(subsc
         description="Worried after the move",
     )
     Toolbox(diagram.id, "t2").call(
-        ToolName.EditEvent.value, {"id": added["id"], "date": "2018-03-01"}
+        ToolName.EditEvent.value,
+        {"id": added["id"], "date": "2018-03-01", "date_certainty": "certain", "version": version(diagram)},
     )
     data = diagram.get_diagram_data()
     assert data.events[0]["dateTime"] == "2018-03-01"
@@ -331,8 +365,92 @@ def test_a_correction_changes_the_record_at_once_with_nothing_held_pending(subsc
 def test_moved_is_not_an_event_kind_the_coach_can_write(subscriber):
     # R-0364
     diagram = _diagram(subscriber.user)
-    with pytest.raises(ValueError, match="moved"):
+    with pytest.raises(ToolError, match="'moved' is not one of the event kinds"):
         _event(diagram, kind="moved", date="2019-03-01", person=1, description="moved to Arizona")
     assert diagram.get_diagram_data().events == []
     kinds = next(s for s in schemas() if s["name"] == ToolName.EditEvent.value)
     assert "moved" not in kinds["input_schema"]["properties"]["kind"]["enum"]
+
+
+RULES = {
+    "people": FAMILY["people"]
+    + [
+        {"id": 3, "name": "Corinne", "parents": 9},
+        {"id": 4, "name": "Theo"},
+        {"id": 5, "name": "Errol"},
+        {"id": 6, "name": "Ivy", "parents": 9},
+    ],
+    "pair_bonds": [{"id": 9, "person_a": 1, "person_b": 2}],
+    "events": [
+        {"id": 20, "kind": "birth", "child": 3, "person": 1, "spouse": 2, "dateTime": "1975-01-01"},
+        {"id": 21, "kind": "death", "person": 5, "dateTime": "1989-01-01"},
+        {"id": 22, "kind": "married", "person": 1, "spouse": 2, "dateTime": "1970-06-01"},
+    ],
+    "lastItemId": 22,
+}
+MOVE = {"kind": "shift", "date": "2001-02-03", "person": 1, "description": "Stopped calling"}
+
+
+@pytest.mark.parametrize(
+    "tool, args, match",
+    [
+        ("edit_event", dict(MOVE, anxiety="sideways"), "'sideways' is not one of the anxiety shifts"),
+        ("edit_event", {"kind": "birth", "date": "1980-01-01"}, "is a birth with no child"),
+        ("edit_event", {"kind": "death", "date": "1980-01-01"}, "is a death event about nobody"),
+        ("edit_event", dict(MOVE, person=77, anxiety="up"), "No person 77 in the record"),
+        ("edit_event", {"kind": "married", "date": "1980-01-01", "person": 4, "spouse": 4}, "names person 4 as both person and spouse"),
+        ("edit_event", {"kind": "birth", "date": "1980-01-01", "person": 4, "spouse": 5, "child": 4}, "has person 4 as both the child and a parent"),
+        ("edit_event", dict(MOVE, relationship="inside", relationship_targets=[2]), "is an inside move with no third person"),
+        (
+            "edit_event",
+            dict(MOVE, relationship="inside", relationship_targets=[2], relationship_triangles=[2]),
+            "has person 2 as both a target and the third person",
+        ),
+        ("edit_event", dict(MOVE, anxiety="up", relationship_targets=[2]), "has relationship_targets but no relationship move"),
+        (
+            "edit_event",
+            dict(MOVE, relationship="distance", relationship_targets=[2], relationship_triangles=[4]),
+            "has relationship_triangles but is not an inside or outside move",
+        ),
+        ("edit_event", dict(MOVE, kind="noted", anxiety="up"), "is a noted event, and only a shift carries"),
+        ("edit_event", dict(MOVE, description=None, anxiety="up"), "is a shift event with no words"),
+        ("edit_event", dict(MOVE, date="1998", anxiety="up"), "'1998' is not a date"),
+        ("edit_event", dict(MOVE, date=None, anxiety="up"), "Every event needs a date"),
+        ("edit_event", {"kind": "birth", "date": "1980-01-01", "person": 4, "child": 6}, "names person 4 as a parent of person 6, who is born to pair bond 9"),
+        ("edit_event", {"kind": "birth", "date": "1976-01-01", "child": 3}, "person 3 already has a birth, event 20"),
+        ("edit_event", {"kind": "death", "date": "1990-01-01", "person": 5}, "person 5 already has a death, event 21"),
+        ("edit_person", {"gender": "female"}, "has no name"),
+        ("edit_person", {"name": "Gus", "gender": "robot"}, "'robot' is not one of the genders"),
+        ("remove", {"item_kind": "pair_bond", "item_id": 9}, "leaves event 22 naming persons 1 and 2 as a couple with no pair bond"),
+        ("edit_cluster", {"name": "A", "event_ids": [20, 21, 99]}, "No event 99 in the record"),
+    ],
+)
+def test_a_record_rule_is_refused_to_the_coach_naming_the_rule(subscriber, tool, args, match):
+    # R-0593
+    diagram = _diagram(subscriber.user, RULES)
+    args = {k: v for k, v in args.items() if v is not None}
+    if tool == "edit_event":
+        args.setdefault("date_certainty", "certain")
+    if tool == "remove":
+        args["version"] = version(diagram)
+    with pytest.raises(ToolError, match=match) as refused:
+        Toolbox(diagram.id, "t1").call(tool, args)
+    assert refused.value.plain
+    data = diagram.get_diagram_data()
+    assert (data.events, data.pair_bonds) == (RULES["events"], RULES["pair_bonds"])
+
+
+def test_a_couple_event_adds_the_couples_bond_first(subscriber):
+    # R-0593
+    diagram = _diagram(subscriber.user, RULES)
+    _event(diagram, kind="divorced", date="1999-01-01", person=4, spouse=5)
+    bond = diagram.get_diagram_data().pair_bonds[-1]
+    assert (bond["person_a"], bond["person_b"], bond.get("married")) == (4, 5, None)
+
+
+def test_a_birth_with_one_parent_takes_the_other_from_the_childs_parents(subscriber):
+    # R-0593
+    diagram = _diagram(subscriber.user, RULES)
+    birth = _event(diagram, kind="birth", date="1978-01-01", person=1, child=6)
+    assert (birth["person"], birth["spouse"]) == (1, 2)
+    assert len(diagram.get_diagram_data().people) == len(RULES["people"])

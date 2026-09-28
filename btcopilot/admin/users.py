@@ -11,6 +11,7 @@ from btcopilot.auth.invitation import Invitation
 from btcopilot.extensions import db
 from btcopilot.licence import professional
 from btcopilot.models import User
+from btcopilot.models.preferences import PREF_DEFAULTS, PrefKey
 from btcopilot.admin.guard import writes
 
 ROLES = (btcopilot.ROLE_SUBSCRIBER, btcopilot.ROLE_AUDITOR, btcopilot.ROLE_ADMIN)
@@ -77,6 +78,28 @@ def user_roles(email, roles):
         user.roles = ",".join(dict.fromkeys(roles))
         db.session.commit()
     return [{"email": user.username, "roles": user.roles or ""}]
+
+
+@writes
+@users.command("prefs")
+@click.argument("email")
+@click.argument("key", required=False, type=click.Choice([key.value for key in PrefKey]))
+@click.argument("value", required=False)
+@rows_option
+def user_prefs(email, key, value):
+    """Show somebody's settings, or set the one named to the value given.
+    `spotlight chip` gives them back the old way a chip lit the picture;
+    `spotlight unified`, the default, has a chip and a dot do the same thing."""
+    user = find(email)
+    if key:
+        if value is None:
+            raise click.UsageError(f"{key} needs a value")
+        # a switch is typed as on or off; the rest are words the setting knows
+        if isinstance(PREF_DEFAULTS[PrefKey(key)], bool):
+            value = click.BOOL.convert(value, None, None)
+        user.set_prefs(**{key: value})
+        db.session.commit()
+    return [{"email": user.username, **user.prefs()}]
 
 
 @writes

@@ -121,8 +121,8 @@ def test_an_undated_event_never_enters_a_cluster():
 
 def test_a_nodal_event_seeds_a_cluster_with_no_variable_on_it():
     # R-0375
-    """The intake engine's nodal kinds seed a cluster on their own; a birth is
-    not one of them."""
+    """The nodal kinds seed a cluster on their own; a birth is not one of
+    them."""
     data = record(
         asdict(Event(id=1, kind=EventKind.Death, person=1, dateTime="1994-06-01")),
         moment(2, "1994-09-01", person=1, description="the months after"),

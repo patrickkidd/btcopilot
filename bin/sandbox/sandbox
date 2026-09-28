@@ -1,0 +1,355 @@
+#!/bin/bash
+# A sandbox of this checkout: its own Postgres, Redis and Celery workers, the
+# stand-in family and the other fixture records installed, the coach on the
+# local Ollama model, and the built page served by Flask. Each instance keeps
+# everything it writes in ~/btcopilot-sandbox/<name>/, outside every repo and
+# job folder, so several agents can run one each side by side.
+#
+#   sandbox up <name> <port> [--dev [port]] [--build] [--real] [--model M] [--open-prompts]
+#   sandbox down <name> [--purge]     stop everything; --purge also deletes the data
+#   sandbox reset <name>              empty the database and put the fixtures back
+#   sandbox invite <name> <email>     a sign-in link (and the Mac's copy under --dev)
+#   sandbox turn <name> [email] [words]   send one coach turn and print the reply
+#   sandbox status [name]             what is running
+#   sandbox env <name>                the settings file to source for tests
+#
+# Postgres listens on <port>+10000 and Redis on <port>+11000. --dev adds the
+# Vite dev server (default 8891) at https://turin:<dev port>/app/ for Patrick's
+# phone. --real puts the coach on Anthropic with the testing key from .env at
+# the main clone's root; ask Patrick before spending. Without a sops key, up
+# refuses to start unless --open-prompts says the open-source prompts will do.
+# Readiness gives up after SANDBOX_WAIT seconds (default 120) and prints the
+# log tails. doc/SETUP.md lists what the machine needs.
+set -euo pipefail
+
+REPO=$(cd "$(dirname "$0")/../.." && pwd -P)
+# A worktree shares the main clone's .env and private corpus, both gitignored.
+MAIN=$(dirname "$(git -C "$REPO" rev-parse --path-format=absolute --git-common-dir)")
+HOME_DIR=${SANDBOX_HOME:-$HOME/btcopilot-sandbox}
+DOTENV=${SANDBOX_DOTENV:-$MAIN/.env}
+SOURCES=${BTCOPILOT_SOURCES:-$MAIN/btcopilot-sources}
+OLLAMA=http://127.0.0.1:11434
+WAIT=${SANDBOX_WAIT:-120}
+
+die() { echo "sandbox: $*" >&2; exit 1; }
+usage() { sed -n '8,14p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+
+at() {
+  NAME=${1:-}
+  [[ $NAME =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "name the instance in lower case letters, digits and dashes"
+  D=$HOME_DIR/$NAME
+  PG=sandbox-$NAME-pg
+}
+
+loaded() {
+  at "$1"
+  [ -f "$D/instance.sh" ] || die "no instance named $NAME; start it with: sandbox up $NAME <port>"
+  . "$D/instance.sh"
+  PY=${SANDBOX_PYTHON:-$REPO/.venv/bin/python}
+}
+
+alive() { [ -f "$D/$1.pid" ] && kill -0 "$(cat "$D/$1.pid")" 2>/dev/null; }
+
+free() {
+  ! lsof -nP -iTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1 || die "port $1 is taken: $(lsof -nP -iTCP:"$1" -sTCP:LISTEN | tail -1)"
+}
+
+tails() {
+  for log in "$D"/*.log; do
+    [ -s "$log" ] || continue
+    echo "----- $(basename "$log")" >&2
+    tail -n 20 "$log" >&2
+  done
+}
+
+# Waits until the check passes or the one deadline for this command runs out.
+ready() {
+  local what=$1
+  shift
+  until "$@" >/dev/null 2>&1; do
+    if [ "$SECONDS" -ge "$WAIT" ]; then
+      echo "sandbox: $what not ready after ${WAIT}s" >&2
+      tails
+      stop_all
+      exit 1
+    fi
+    sleep 1
+  done
+  echo "  $what ready (${SECONDS}s)"
+}
+
+write_settings() {
+  local site=http://127.0.0.1:$PORT
+  [ -n "$DEV" ] && site=https://turin:$DEV
+  cat > "$D/instance.sh" <<SETTINGS
+REPO=$REPO
+PORT=$PORT
+PG_PORT=$((PORT + 10000))
+REDIS_PORT=$((PORT + 11000))
+DEV=$DEV
+MODEL=$MODEL
+REAL=$REAL
+SETTINGS
+  local db=sandbox_${NAME//-/_}
+  cat > "$D/env.sh" <<SETTINGS
+# The settings every command against sandbox $NAME runs with. No secrets.
+export FLASK_APP=btcopilot.app:create_app FLASK_CONFIG=development FLASK_SKIP_DOTENV=1
+export PYTHONPATH=$REPO
+export FLASK_SQLALCHEMY_DATABASE_URI=postgresql://familydiagram:sandbox@127.0.0.1:$((PORT + 10000))/$db
+export CELERY_BROKER_URL=redis://127.0.0.1:$((PORT + 11000))/0
+export CELERY_RESULT_BACKEND=redis://127.0.0.1:$((PORT + 11000))/0
+export FLASK_TURN_LOG=redis
+export FLASK_SITE_URL=$site FLASK_RP_ORIGIN=$site
+export FLASK_ADMIN_EMAIL= FLASK_INVITATION_REUSABLE=1
+export BTCOPILOT_SOURCES=$SOURCES
+export SANDBOX_URL=http://127.0.0.1:$PORT
+export FIXTURE_CMD="$REPO/.venv/bin/python -m flask app fixtures" FIXTURE_CWD=$REPO
+SETTINGS
+  [ -z "$OPEN" ] || echo "export FD_OPEN_PROMPTS=1" >> "$D/env.sh"
+  if [ -z "$REAL" ]; then
+    echo "export BTCOPILOT_LOCAL_URL=$OLLAMA BTCOPILOT_LOCAL_MODEL=$MODEL" >> "$D/env.sh"
+  fi
+}
+
+# The paid keys reach the server and the worker only, never a file.
+keys() {
+  [ -n "$REAL" ] || return 0
+  [ -f "$DOTENV" ] || die "--real reads its keys from $DOTENV, which is missing"
+  ANTHROPIC_API_KEY=$(grep '^ANTHROPIC_TESTING_KEY=' "$DOTENV" | cut -d= -f2-)
+  GOOGLE_GEMINI_API_KEY=$(grep '^GOOGLE_GEMINI_API_KEY=' "$DOTENV" | cut -d= -f2-)
+  [ -n "$ANTHROPIC_API_KEY" ] || die "no ANTHROPIC_TESTING_KEY in $DOTENV"
+  export ANTHROPIC_API_KEY GOOGLE_GEMINI_API_KEY
+}
+
+flask_() { (. "$D/env.sh" && cd "$REPO" && "$PY" -m flask "$@"); }
+
+start_db() {
+  mkdir -p "$D/pg"
+  if docker ps -a --format '{{.Names}}' | grep -qx "$PG"; then
+    docker start "$PG" >/dev/null
+  else
+    docker run -d --name "$PG" -e POSTGRES_USER=familydiagram -e POSTGRES_PASSWORD=sandbox \
+      -e POSTGRES_DB="sandbox_${NAME//-/_}" -p "127.0.0.1:$PG_PORT:5432" \
+      -v "$D/pg:/var/lib/postgresql/data" postgres:16 >/dev/null
+  fi
+  ready "Postgres on $PG_PORT" docker exec "$PG" pg_isready -q -h 127.0.0.1 -U familydiagram
+}
+
+# The chain's first revision creates discussions before diagrams, which an empty
+# Postgres refuses, so a new database is made from the models and stamped at the
+# newest revision; an existing one is upgraded like production.
+SCHEMA='
+from alembic import command
+from btcopilot.admin.database import config, current
+from btcopilot.app import create_app
+from btcopilot.extensions import db
+app = create_app()
+app.app_context().push()
+db.create_all()
+command.stamp(config(), "head")
+print("at", current())'
+
+fill_db() {
+  (. "$D/env.sh" && cd "$REPO" && "$PY" -c "$SCHEMA") > "$D/migrate.log" 2>&1 || { tails; stop_all; die "the schema was not made"; }
+  flask_ app fixtures > "$D/fixtures.out" 2> "$D/fixtures.log" || { tails; stop_all; die "the fixtures failed"; }
+  local base
+  base=$(. "$D/env.sh" && echo "$FLASK_SITE_URL")
+  grep -E '^[a-z0-9]+ [A-Za-z0-9_-]{20,}$' "$D/fixtures.out" \
+    | awk -v base="$base" '{ print $1, base "/app/invite/" $2 }' > "$D/links.txt"
+  echo "  database migrated, $(wc -l < "$D/links.txt" | tr -d ' ') fixture records installed (${SECONDS}s)"
+}
+
+start_app() {
+  (
+    . "$D/env.sh"
+    keys
+    cd "$REPO"
+    nohup "$PY" -m flask run -h 127.0.0.1 -p "$PORT" --no-reload >> "$D/flask.log" 2>&1 &
+    echo $! > "$D/flask.pid"
+    # prefork crashes on macOS; solo runs one turn at a time, which is plenty
+    nohup "$REPO/.venv/bin/celery" -A btcopilot.celery:celery worker -P solo \
+      -n "$NAME@%h" --loglevel=info >> "$D/worker.log" 2>&1 &
+    echo $! > "$D/worker.pid"
+    nohup "$REPO/.venv/bin/celery" -A btcopilot.celery:celery worker -P solo -Q shadow \
+      -n "$NAME-shadow@%h" --loglevel=info >> "$D/shadow.log" 2>&1 &
+    echo $! > "$D/shadow.pid"
+  )
+  ready "Flask on $PORT" curl -sf "http://127.0.0.1:$PORT/health"
+  ready "the Celery worker" grep -q "ready\." "$D/worker.log"
+  ready "the shadow worker" grep -q "ready\." "$D/shadow.log"
+}
+
+start_dev() {
+  [ -n "$DEV" ] || return 0
+  local certs=$HOME_DIR/certs
+  [ -f "$certs/turin.key" ] || die "no certificate for turin in $certs; make one with: $REPO/web/devcerts.sh $certs turin"
+  (
+    cd "$REPO/web"
+    FLASK_URL=http://127.0.0.1:$PORT DEV_CERT_DIR=$certs DEV_HOST=turin \
+      nohup node_modules/.bin/vite --host 0.0.0.0 --port "$DEV" --strictPort >> "$D/vite.log" 2>&1 &
+    echo $! > "$D/vite.pid"
+  )
+  ready "Vite on $DEV" curl -skf -o /dev/null "https://127.0.0.1:$DEV/app/static/web/@vite/client"
+}
+
+stop_pid() {
+  alive "$1" || { rm -f "$D/$1.pid"; return 0; }
+  local pid
+  pid=$(cat "$D/$1.pid")
+  kill "$pid"
+  for _ in $(seq 1 20); do kill -0 "$pid" 2>/dev/null || break; sleep 0.5; done
+  kill -0 "$pid" 2>/dev/null && kill -9 "$pid"
+  rm -f "$D/$1.pid"
+}
+
+stop_app() { stop_pid vite; stop_pid flask; stop_pid worker; stop_pid shadow; }
+
+stop_all() {
+  stop_app
+  redis-cli -p "$REDIS_PORT" shutdown nosave >/dev/null 2>&1 || true
+  if docker ps -a --format '{{.Names}}' | grep -qx "$PG"; then
+    docker rm -f "$PG" >/dev/null
+  fi
+}
+
+cmd_up() {
+  at "${1:-}"
+  PORT=${2:-}
+  [[ $PORT =~ ^[0-9]+$ ]] || usage
+  shift 2
+  DEV= REAL= OPEN= MODEL=qwen3:8b
+  local build=
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --dev) DEV=8891; [[ ${2:-} =~ ^[0-9]+$ ]] && { DEV=$2; shift; } ;;
+      --build) build=1 ;;
+      --real) REAL=1 ;;
+      --open-prompts) OPEN=1 ;;
+      --model) MODEL=$2; shift ;;
+      *) usage ;;
+    esac
+    shift
+  done
+  if [ -f "$D/instance.sh" ] && [ -f "$D/flask.pid" ] && kill -0 "$(cat "$D/flask.pid")" 2>/dev/null; then
+    die "$NAME is already running; sandbox down $NAME first"
+  fi
+  mkdir -p "$D"
+  write_settings
+  . "$D/instance.sh"
+  PY=${SANDBOX_PYTHON:-$REPO/.venv/bin/python}
+  for port in "$PORT" "$PG_PORT" "$REDIS_PORT" ${DEV:+"$DEV"}; do free "$port"; done
+  [ -x "$PY" ] || (cd "$REPO" && uv sync --extra app --extra test)
+  local keyless
+  if ! keyless=$(cd "$REPO" && "$PY" -m btcopilot.promptdir); then
+    echo "sandbox: $keyless" >&2
+    [ -n "$OPEN" ] || die "not started; pass --open-prompts to run on the open-source prompts"
+  fi
+  if [ -z "$REAL" ]; then
+    curl -sf "$OLLAMA/api/tags" | grep -q "\"name\":\"$MODEL\"" \
+      || die "Ollama at $OLLAMA does not answer with $MODEL; start Ollama or pull the model"
+  fi
+  if [ -n "$build" ] || [ -n "$DEV" ] || [ ! -f "$REPO/btcopilot/static/web/index.html" ]; then
+    [ -d "$REPO/web/node_modules" ] || (cd "$REPO/web" && npm ci --silent)
+  fi
+  if [ -n "$build" ] || [ ! -f "$REPO/btcopilot/static/web/index.html" ]; then
+    (cd "$REPO/web" && npm run build > "$D/build.log" 2>&1) || { tail -n 20 "$D/build.log"; die "the page did not build"; }
+    echo "  page built"
+  fi
+  SECONDS=0
+  local fresh=
+  [ -d "$D/pg/base" ] || fresh=1
+  redis-server --port "$REDIS_PORT" --bind 127.0.0.1 --save '' --appendonly no --daemonize yes \
+    --dir "$D" --pidfile "$D/redis.pid" --logfile "$D/redis.log"
+  ready "Redis on $REDIS_PORT" redis-cli -p "$REDIS_PORT" ping
+  start_db
+  if [ -n "$fresh" ]; then fill_db; else flask_ admin db upgrade > "$D/migrate.log" 2>&1 || { tails; stop_all; die "the migrations failed"; }; fi
+  start_app
+  start_dev
+  echo "sandbox $NAME is up in ${SECONDS}s: http://127.0.0.1:$PORT/app/"
+  [ -n "$DEV" ] && echo "  Patrick's phone: https://turin:$DEV/app/  (this Mac: https://127.0.0.1:$DEV/app/)"
+  echo "  sign-in links for the fixture records: $D/links.txt"
+  echo "  settings for tests: . $D/env.sh"
+}
+
+cmd_down() {
+  loaded "${1:-}"
+  stop_all
+  if [ "${2:-}" = --purge ]; then
+    rm -rf "${D:?}"
+    echo "sandbox $NAME stopped and its data deleted"
+  else
+    echo "sandbox $NAME stopped; its data stays in $D"
+  fi
+}
+
+cmd_reset() {
+  loaded "${1:-}"
+  SECONDS=0
+  stop_app
+  local db=sandbox_${NAME//-/_}
+  docker exec "$PG" psql -q -U familydiagram -d postgres \
+    -c "DROP DATABASE IF EXISTS $db WITH (FORCE)" -c "CREATE DATABASE $db" >/dev/null
+  redis-cli -p "$REDIS_PORT" flushall >/dev/null
+  fill_db
+  start_app
+  start_dev
+  echo "sandbox $NAME is back on the fixtures in ${SECONDS}s"
+}
+
+cmd_invite() {
+  loaded "${1:-}"
+  [ -n "${2:-}" ] || usage
+  local link
+  link=$(cd "$REPO" && . "$D/env.sh" && "$PY" -m btcopilot.auth.invite "$2" 2>/dev/null | tail -1)
+  echo "$link"
+  [ -n "$DEV" ] && echo "$link" | sed 's|//turin:|//127.0.0.1:|'
+  return 0
+}
+
+# One coach turn through the running stack: sign in, say something, and follow
+# the turn's events until the reply or the failure arrives.
+cmd_turn() {
+  loaded "${1:-}"
+  local email=${2:-coach@sandbox.invalid} words=${3:-"My mother and I have not spoken since the funeral."}
+  local jar=$D/turn.cookies base=http://127.0.0.1:$PORT link csrf turn
+  rm -f "$jar"
+  link=$(cd "$REPO" && . "$D/env.sh" && "$PY" -m btcopilot.auth.invite "$email" --base-url "$base" 2>/dev/null | tail -1)
+  curl -sf -o /dev/null -c "$jar" -b "$jar" -L "$link" || die "the sign-in link failed: $link"
+  csrf=$(curl -sf -b "$jar" -c "$jar" "$base/app/" | sed -n 's/.*name="csrf-token" content="\([^"]*\)".*/\1/p' | head -1)
+  [ -n "$csrf" ] || die "signed in, but the page carried no CSRF token"
+  turn=$(curl -sf -b "$jar" -c "$jar" -H "Content-Type: application/json" -H "X-CSRFToken: $csrf" \
+    -H "Referer: $base/app/" -d "$(python3 -c 'import json,sys; print(json.dumps({"statement": sys.argv[1]}))' "$words")" \
+    "$base/app/chat" | python3 -c 'import json,sys; print(json.load(sys.stdin)["turn_id"])') \
+    || die "the server refused the turn; see $D/flask.log"
+  echo "  said: $words"
+  curl -sN -b "$jar" --max-time "${SANDBOX_TURN_WAIT:-600}" "$base/app/turns/$turn/events" | python3 -c '
+import json, sys
+for line in sys.stdin:
+    if not line.startswith("data: "):
+        continue
+    event = json.loads(line[6:])
+    if event["type"] in ("done", "failed", "refused"):
+        print("  " + event["type"] + ": " + json.dumps(event)[:600])
+        sys.exit(0 if event["type"] == "done" else 1)
+sys.exit("  the stream ended with no reply")'
+}
+
+cmd_status() {
+  local names
+  if [ -n "${1:-}" ]; then names=$1; else names=$(ls "$HOME_DIR" 2>/dev/null | grep -v '^certs$' || true); fi
+  for n in $names; do
+    loaded "$n"
+    local state=""
+    for p in flask worker shadow vite; do alive "$p" && state="$state $p"; done
+    redis-cli -p "$REDIS_PORT" ping >/dev/null 2>&1 && state="$state redis"
+    docker ps --format '{{.Names}}' | grep -qx "$PG" && state="$state postgres"
+    echo "$NAME port $PORT${DEV:+ dev $DEV}:${state:- stopped}"
+  done
+}
+
+cmd_env() { loaded "${1:-}"; echo "$D/env.sh"; }
+
+case ${1:-} in
+  up | down | reset | invite | turn | status | env) c=$1; shift; "cmd_$c" "$@" ;;
+  *) usage ;;
+esac

@@ -11,7 +11,8 @@ import {
   when,
   words,
 } from "./ballot";
-import { esc, el, type Title } from "./dom";
+import { conceptLinks, conceptsOf } from "./concepts";
+import { closeX, esc, el, type Title } from "./dom";
 import {
   openBondEditor,
   openEditor,
@@ -393,14 +394,13 @@ export class Meeting {
           `&ldquo;${esc(item.line.text)}&rdquo;</div>`;
     return (
       `<div class="drow${closable ? " hasx" : ""}" data-item="${item.id}">` +
-      (closable
-        ? `<button class="mt-close cardx" type="button" aria-label="close">×</button>`
-        : "") +
+      (closable ? closeX() : "") +
       `<div class="top"><span class="tally">` +
       `${dots(biggest, item.coders - biggest)}</span>` +
       `<span class="pick">${esc(this.rowName(item))}</span></div>` +
       `<div class="tline">${versions}${missing}</div>` +
       line +
+      conceptLinks(conceptsOf(item.opinions.map((one) => one.item))) +
       `<div class="acts2">` +
       this.choice(Decision.Change, "change…", chosen) +
       this.choice(Decision.Unresolved, "mark unresolved", chosen) +
@@ -508,7 +508,7 @@ export class Meeting {
     if (!row) return;
     const item = this.items.find((one) => one.id === Number(row.dataset.item));
     if (!item) return;
-    if (target.closest(".mt-close")) {
+    if (target.closest(".cardx")) {
       this.at = null;
       this.render();
       return;
@@ -603,7 +603,7 @@ export class Meeting {
       // says why in its own words, which is what the room needs to hear.
       toast(
         error instanceof api.Failed && error.status === 400
-          ? error.detail.replace(/^\w+ [^:]+: /, "")
+          ? error.said
           : "Nothing came back",
       );
       return false;

@@ -1,36 +1,202 @@
 """The live venue: one real coach turn on the private prompts, and the record it
 leaves behind. It costs money and needs the prompts' key, so it never runs on CI
-(R-0451). Run it by hand:
+(R-0451). It always spends on ANTHROPIC_TESTING_KEY, never ANTHROPIC_API_KEY
+(production's key); there is no fallback to the production key. Run it by hand:
 
     SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt uv run pytest \
         btcopilot/btcopilot/tests/live --e2e
 
-Without --e2e every test here is skipped; with it and no key, every test fails.
+Without --e2e every test here is skipped; with it and no key (either key), every
+test fails.
+
+A run checks the balance with one 1-token call first, charges every model call
+at the app's own prices, stops at its cap, prints what it spent and leaves one
+results file; `python -m btcopilot.tests.live.passrate` reads them back.
+
+Every coach call is saved and replayed (replay.py). LIVE_REPLAY picks the mode:
+`replay` (the default) replays a saved response and records a missing one;
+`record` makes every call real and saves it again; `only` replays and fails on
+a missing one, needs no testing key and spends nothing; `dump` replays and writes
+each missing request to LIVE_REQUESTS for an answer on the Claude Code
+subscription (answer.py), spending nothing.
+
+The calibration against the API (README.md) sets LIVE_CAP, dollars for the
+whole run: no call is made that could pass it, and each paid call is a ledger
+line as it is paid. LIVE_STORE keeps its answers apart from the subscription's,
+and LIVE_SAMPLES=1 runs a k of n case once.
 """
 
+import datetime
+import os
+from decimal import Decimal
+import subprocess
+from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
+from sqlalchemy import event
 
+from btcopilot.coachmodel import CoachModel
+from btcopilot import turnlog
 from btcopilot.extensions import db
+from btcopilot.models import ModelCall
+from btcopilot.pricing import cost
 from btcopilot.promptdir import key_present
 from btcopilot.schema import DiagramData
 from btcopilot.tests.conftest import csrf_token, replied
+from btcopilot.tests.live.criterion import WAITING
+from btcopilot.tests.live.replay import STORE, Miss, Mode, Replay
+from btcopilot.quality import Source
+from btcopilot.tests.live.run import RUN_CAP, Outcome, Run
 
 HERE = Path(__file__).parent
+RUN = pytest.StashKey[Run]()
+REPLAY = pytest.StashKey[Replay]()
+# The prompt carries today's date; a fixed one keeps a saved response's request
+# the same from one day to the next.
+TODAY = datetime.date(2026, 9, 25)
+
+
+def mode() -> Mode:
+    return Mode(os.environ.get("LIVE_REPLAY", Mode.Replay))
+
+
+def capped(real, run: Run):
+    """`real` is `CoachModel.turn`, refused once the next call could pass the
+    cap. A calibration charges each call as it returns, before the next."""
+
+    def turn(model, *args, **kwargs):
+        if not run.affords():
+            raise Miss(f"live run stopped: {run.reason}")
+        answered = yield from real(model, *args, **kwargs)
+        if run.calls:
+            run.charge(answered.spent, cost(answered.served.model, answered.spent))
+        return answered
+
+    return turn
 
 
 def pytest_collection_modifyitems(config, items):
-    for item in items:
-        if HERE in Path(item.path).parents:
-            item.add_marker(pytest.mark.live)
-            item.add_marker(pytest.mark.e2e)
+    live = [item for item in items if HERE in Path(item.path).parents]
+    undeclared = [item.name for item in live if not hasattr(item.function, "criterion")]
+    if undeclared:
+        raise pytest.UsageError(f"live cases without a pass criterion: {undeclared}")
+    for item in live:
+        item.add_marker(pytest.mark.live)
+        item.add_marker(pytest.mark.e2e)
+        if item.get_closest_marker("waiting"):
+            item.add_marker(pytest.mark.skip(reason=WAITING))
+
+
+@pytest.fixture(scope="session", autouse=True)
+def run(request):
+    """The run's meter: opened with a balance check before any spend, and
+    charged for every model call the app writes down."""
+    if not request.config.getoption("--e2e"):
+        pytest.skip("need --e2e option to run")
+    git = subprocess.run(
+        ["git", "-C", str(HERE), "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    cap = os.environ.get("LIVE_CAP")
+    opened = request.config.stash[RUN] = Run(
+        CoachModel().model, git, cap=Decimal(cap) if cap else RUN_CAP, calls=bool(cap)
+    )
+    replay = request.config.stash[REPLAY] = Replay(
+        mode(),
+        Path(os.environ.get("LIVE_STORE", STORE)).resolve(),
+        requests=Path(os.environ["LIVE_REQUESTS"]) if mode() is Mode.Dump else None,
+    )
+    if not replay.mode.offline:
+        opened.open(require_testing_key())
+    charged = opened.recorded
+    if not opened.calls:
+        event.listen(ModelCall, "after_insert", charged)
+    with pytest.MonkeyPatch.context() as patched:
+        patched.setattr(
+            CoachModel, "turn", replay.wrap(capped(CoachModel.turn, opened))
+        )
+        patched.setattr(
+            "btcopilot.coachturn.datetime",
+            SimpleNamespace(date=SimpleNamespace(today=lambda: TODAY)),
+        )
+        yield opened
+    if not opened.calls:
+        event.remove(ModelCall, "after_insert", charged)
+
+
+@pytest.fixture(autouse=True)
+def replayed(request):
+    request.config.stash[REPLAY].begin()
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_makereport(item, call):
+    report = yield
+    run = item.config.stash.get(RUN, None)
+    if run is None:
+        return report
+    if report.when == "setup":
+        run.begin(item.name, str(item.function.criterion))
+    awaiting = item.config.stash[REPLAY].awaiting
+    if report.when == "call" and awaiting:
+        report.outcome = "skipped"
+        report.longrepr = (
+            str(item.path),
+            item.location[1] or 0,
+            f"awaiting answers: {awaiting}",
+        )
+        run.end(item.name, Outcome.Awaiting)
+    elif report.when == "call" or not report.passed:
+        run.end(item.name, Outcome(report.outcome))
+    if run.reason:
+        item.session.shouldstop = f"live run stopped: {run.reason}"
+    return report
+
+
+def pytest_sessionfinish(session, exitstatus):
+    run = session.config.stash.get(RUN, None)
+    if run is not None:
+        run.source = (
+            Source.Subscription
+            if session.config.stash[REPLAY].subscribed
+            else Source.Api
+        )
+        run.finish(exitstatus)
+
+
+def pytest_terminal_summary(terminalreporter, config):
+    run = config.stash.get(RUN, None)
+    if run is not None:
+        terminalreporter.write_line(run.summary())
+        terminalreporter.write_line(config.stash[REPLAY].summary())
+
+
+def require_testing_key() -> str:
+    key = os.environ.get("ANTHROPIC_TESTING_KEY")
+    assert key, (
+        "the live venue makes real model calls; set ANTHROPIC_TESTING_KEY "
+        "(never ANTHROPIC_API_KEY, which is production's key; there is no fallback)"
+    )
+    return key
+
+
+@pytest.fixture(autouse=True)
+def testing_key(request, monkeypatch):
+    """The live venue's own key, never production's: set ANTHROPIC_API_KEY from
+    ANTHROPIC_TESTING_KEY for this test only, and fail loudly if it is unset."""
+    if request.config.getoption("--e2e") and not mode().offline:
+        monkeypatch.setenv("ANTHROPIC_API_KEY", require_testing_key())
 
 
 @pytest.fixture(autouse=True)
 def private_prompts(request):
     if request.config.getoption("--e2e"):
-        assert key_present(), "the live venue runs the private prompts; set SOPS_AGE_KEY_FILE"
+        assert (
+            key_present()
+        ), "the live venue runs the private prompts; set SOPS_AGE_KEY_FILE"
 
 
 @pytest.fixture(autouse=True)
@@ -49,11 +215,25 @@ def token(web):
 
 # The speaker's own place in the record is complete, so the coach's first turn
 # goes to what is said rather than to intake questions about the speaker.
-ME = {"id": 1, "name": "Wren", "last_name": "Hale", "gender": "female", "primary": True, "parents": 10}
+ME = {
+    "id": 1,
+    "name": "Wren",
+    "last_name": "Hale",
+    "gender": "female",
+    "primary": True,
+    "parents": 10,
+}
 MOTHER = {"id": 2, "name": "Ada", "last_name": "Hale", "gender": "female"}
 FATHER = {"id": 3, "name": "Hugh", "last_name": "Hale", "gender": "male"}
 PARENTS = {"id": 10, "person_a": 2, "person_b": 3, "married": True}
-BORN = {"id": 30, "kind": "birth", "person": 2, "spouse": 3, "child": 1, "dateTime": "1985-04-12"}
+BORN = {
+    "id": 30,
+    "kind": "birth",
+    "person": 2,
+    "spouse": 3,
+    "child": 1,
+    "dateTime": "1985-04-12",
+}
 
 
 class Coach:
@@ -63,8 +243,14 @@ class Coach:
         self.web, self.token, self.user = web, token, user
 
     def record(self, people=(), pair_bonds=(), events=()) -> None:
-        """The speaker, their parents and their birth, plus what the test adds."""
-        people = [ME, MOTHER, FATHER, *people]
+        """The speaker, their parents and their birth, plus what the test adds,
+        in a new session, so a case run again starts from nothing said. A person
+        the test adds replaces the one the record already has with that id."""
+        response = self.web.post(
+            "/app/sessions", json={}, headers={"X-CSRFToken": self.token}
+        )
+        assert response.status_code == 201, response.get_data(as_text=True)
+        people = list({p["id"]: p for p in (ME, MOTHER, FATHER, *people)}.values())
         pair_bonds = [PARENTS, *pair_bonds]
         events = [BORN, *events]
         ids = [item["id"] for item in (*people, *pair_bonds, *events)]
@@ -85,14 +271,19 @@ class Coach:
         db.session.expire_all()
         return self.user.free_diagram.get_diagram_data().people
 
-    def say(self, statement: str) -> str:
+    def turn(self, statement: str) -> list[dict]:
+        """Everything one real turn told the page, in order, ending in its reply."""
         response = self.web.post(
             "/app/chat",
             json={"statement": statement},
             headers={"X-CSRFToken": self.token},
         )
         assert response.status_code == 202, response.get_data(as_text=True)
-        return replied(response)["statement"]
+        replied(response)
+        return [e for _, e in turnlog.read_from(response.get_json()["turn_id"], 0)]
+
+    def say(self, statement: str) -> str:
+        return self.turn(statement)[-1]["statement"]
 
 
 @pytest.fixture

@@ -8,7 +8,7 @@ from btcopilot import profile
 from btcopilot.coachturn import CoachTurn
 from btcopilot.toolbox import ToolName
 from btcopilot.schema import DateCertainty, EventKind
-from btcopilot.tests.conftest import Model, called, said
+from btcopilot.tests.conftest import Model, called, said, version
 
 
 @pytest.fixture(autouse=True)
@@ -50,7 +50,13 @@ def test_the_coach_is_told_what_to_get_first(discussion):
 def test_a_complete_profile_lifts_the_gate_and_reaches_the_account(discussion, test_user):
     # R-0360
     model = Model(
-        called(ToolName.EditPerson, id=1, name="Wren", last_name="Hale"),
+        called(
+            ToolName.EditPerson,
+            id=1,
+            name="Wren",
+            last_name="Hale",
+            version=version(discussion.diagram),
+        ),
         called(
             ToolName.EditEvent,
             kind=EventKind.Birth.value,

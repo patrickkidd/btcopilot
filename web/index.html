@@ -18,7 +18,7 @@
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Libre+Franklin:wght@400;500;600;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=Libre+Franklin:wght@400;500;600;800&display=swap">
 </head>
 <body>
 <div class="app">
@@ -40,9 +40,7 @@
   <div class="screen" id="chat-screen">
     <div class="pic">
       <div class="pin-label">
-        <button class="up" id="up" type="button" aria-label="back one level" hidden>&#8592;</button>
-        <button class="up" id="clear" type="button" aria-label="put the event down" hidden>&#10005;</button>
-        <span id="crumb">Family timeline</span>
+        <nav class="path" id="path" aria-label="where you are on the timeline"><span class="here">Timeline</span></nav>
         <button class="pl-btn" id="info" type="button" aria-label="about this cluster" hidden>
           <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="6.4" r="1.1" fill="currentColor"/><path d="M10 9v5.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
         </button>
@@ -59,10 +57,11 @@
       <button class="fs-glyph" id="sessions-open" type="button" aria-label="sessions">
         <svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 1h14M1 6h14M1 11h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>
       </button>
-      <div class="field" id="composer" contenteditable="true" role="textbox"
-           aria-label="Message your coach" data-ph="Message your coach"></div>
+      <div class="field"><div id="composer" contenteditable="true" role="textbox"
+           aria-label="Message your coach" data-ph="Message your coach"></div></div>
       <button class="send" id="send" type="button" aria-label="Send"><span>&#8593;</span></button>
     </div>
+    <div id="pbp" hidden></div>
   </div>
   <aside class="pinned" id="chat-drawer" hidden></aside>
   </div>
@@ -72,11 +71,12 @@
       <button class="backbtn" id="menu-close" type="button" aria-label="back">
         <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M13.5 4.5 7 11l6.5 6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
       </button>
-      <span class="ovt">Timeline</span>
+      <span class="ovt" id="menu-title"></span>
     </div>
     <div class="tabs" id="menu-tabs" role="tablist">
       <button class="tab on" id="tab-events" type="button" role="tab" aria-selected="true">Events</button>
       <button class="tab" id="tab-people" type="button" role="tab" aria-selected="false">People</button>
+      <button class="tab" id="tab-questions" type="button" role="tab" aria-selected="false">From the coach</button>
     </div>
     <div class="search" id="menu-searchrow">
       <input id="menu-search" type="text" placeholder="Search events" aria-label="Search events">
@@ -133,6 +133,10 @@
     <div class="fs-body" id="agenda-body"></div>
   </div>
 
+  <div class="screen" id="pairs-screen" hidden>
+    <div class="fs-body" id="pairs-body"></div>
+  </div>
+
   <div class="split" id="coding-screen" hidden>
     <div class="screen">
       <div class="pic">
@@ -142,9 +146,9 @@
       </div>
       <div class="chat" id="coding-chat"></div>
       <div class="inbar" id="coding-inbar">
-        <div class="field" id="coding-composer" contenteditable="true" role="textbox"
+        <div class="field"><div id="coding-composer" contenteditable="true" role="textbox"
              aria-label="Say what this line tells you happened"
-             data-ph="tap a line, then say what happened"></div>
+             data-ph="tap a line, then say what happened"></div></div>
         <button class="send" id="coding-send" type="button" aria-label="Send"><span>&#8593;</span></button>
       </div>
     </div>

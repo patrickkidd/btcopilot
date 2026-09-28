@@ -12,7 +12,8 @@ from the Pro box on purpose. Nothing in it has run yet; the droplet does not exi
    (Gemini is the model that groups events into clusters on the picture)
    with a new credential (none of the old compose file's values are reused),
    encrypt it: `sops -e secrets.env > secrets.env.enc`, delete the plain file,
-   commit `secrets.env.enc`.
+   commit `secrets.env.enc`. The Vertex service account file for Gemini goes on
+   the box at `GCP_SA_FILE` (default `/etc/fd/gcp-sa.json`, root, 600).
 2. **Keys.** On the new box: `age-keygen -o /etc/fd/age.key`, `chmod 600`. Its
    public key goes into `.sops.yaml` here beside the Mac's; the prompts, the
    rulings and the secrets file are re-encrypted with `sops updatekeys`. Claude
@@ -35,7 +36,13 @@ from the Pro box on purpose. Nothing in it has run yet; the droplet does not exi
 
 ## Every deploy after that
 
-On a merge to master `release.yml` builds the image, tags it with the release
+**The deploy lock (R-0530).** Only one branch may deploy: the production environment's
+single allowed deployment branch. A session holds the lock only when Patrick tells it so, then
+runs `uv run bin/deploy-lock set <its branch>`. Every deploy runs `uv run bin/deploy-lock show`
+first and does not dispatch unless the lock names its own branch. A merge to master never
+deploys; the lock never names master or a second branch.
+
+A dispatch of `release.yml` from the lock's branch builds the image, tags it with the release
 version `3.YYYY.M.D.N+g<sha7>` (UTC commit date, N counts that day's releases; the
 image tag has `-` for `+`; R-0419), pushes it to GHCR, then pulls it on the box, rolls the app and the worker with
 `docker rollout` (the new container comes up beside the old one and the old one
@@ -46,6 +53,28 @@ once at /root/.docker/cli-plugins/docker-rollout (github.com/wowu/docker-rollout
 **One-time stamp (R-0417).** The seven old migrations became one revision, `1b00000000aa`.
 Before its upgrade the deploy moves a database at the old head `1a00000000af` to it (from
 `1a00000000ae` it adds the one missing column first); any other old revision stops the deploy.
+
+## Rolling back
+
+`release.yml` cannot do it: the production environment only takes a dispatch from the
+branch, and a dispatch deploys the branch head. Dispatching from an older release's tag is
+refused ("not allowed to deploy to production due to environment protection rules",
+2026-09-28). Roll back by hand on the box instead, to the last good release: its commit is
+the tag `3.YYYY.M.D.N+g<sha7>` and its image the same with `-` for `+`. As root:
+
+    cd /var/www/btcopilot && git fetch origin <sha> && git checkout --detach <sha> && cd deploy
+    export BTCOPILOT_TAG=<image tag, e.g. 3.2026.9.28.1-gf66d603>
+    docker compose --env-file /etc/fd/secrets.env pull fd-app fd-worker fd-shadow
+    docker rollout --env-file /etc/fd/secrets.env fd-app
+    docker rollout --env-file /etc/fd/secrets.env fd-worker
+    docker compose --env-file /etc/fd/secrets.env up -d fd-shadow
+    docker compose --env-file /etc/fd/secrets.env ps
+
+This holds only when the release being left added no migration: the database stays where it
+is, and an older app on a newer schema is not safe. When it did, restore the backup taken
+before that deploy instead (`/root/backups/prod-<date>-pre-<sha>.dump`, `pg_restore --clean`
+into fd-postgres) and say so, since it loses every write since. The next dispatch from the
+branch puts the branch head back.
 
 ## One time: the names move from "chat" to "familydiagram" (R-0472)
 
@@ -93,6 +122,10 @@ It reads `GRAFANA_CLOUD_TOKEN` from the secrets file like everything else, and i
 is `alloy/config.alloy`. Its UI on port 12345 has no host port, so it is not exposed.
 `fd-pdc` (Grafana's Private Data source Connect agent) holds an outbound tunnel to Grafana Cloud with `GRAFANA_PDC_TOKEN`; no port is opened.
 Grafana's Postgres data source reaches `fd-postgres:5432` through it as the read-only role `grafana`, password `GRAFANA_PG_PASSWORD`.
+The quality dashboard, `fd-quality`, is kept in `grafana/fd-quality.json` and put to Grafana
+with `POST /api/dashboards/db` (`{"dashboard": ..., "overwrite": true}`) on the service account
+token `GRAFANA_SA_TOKEN`. Its recorded-run panels read `quality_runs`, which every release fills
+with `flask admin quality load` (see `quality/evals/README.md`).
 
 The desktop app's update feeds live on the legacy box and are forwarded because shipped apps have this address built in.
 
@@ -104,6 +137,6 @@ The desktop app's update feeds live on the legacy box and are forwarded because 
 
 Patrick's local assistant runs the admin CLI over SSH with its own key. The key's
 line in `/root/.ssh/authorized_keys` is pinned to `bin/fd-admin-gate` (installed at
-`/usr/local/bin/fd-admin-gate`), which hands the words it was given to
+`/usr/local/bin/fd-admin-gate` by every release), which hands the words it was given to
 `flask admin run -- <words>` inside fd-app and nothing else. Reads run at once; a
 command that changes data prints a preview and stops until the words carry `--yes`.

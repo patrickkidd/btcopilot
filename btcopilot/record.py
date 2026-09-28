@@ -8,21 +8,30 @@ compare-and-set on each value.
 
 import logging
 import re
+from dataclasses import dataclass
 
 from sqlalchemy import update as sql_update
 
 from btcopilot import diagramjson
 from btcopilot.extensions import db
-from btcopilot.models import Author, Change
+from btcopilot.models import Author, Change, Statement
 from btcopilot.prompts import Role
 from btcopilot.models import Diagram
 from btcopilot.schema import (
     ITEM_COLLECTIONS,
     MIN_CLUSTER_EVENTS,
+    DateCertainty,
     EventKind,
+    EvidenceKind,
     ItemKind,
+    PersonKind,
+    Pushback,
+    QuestionKind,
+    QuestionOutcome,
+    QuestionState,
     RelationshipKind,
     VariableShift,
+    parse_date,
 )
 
 _log = logging.getLogger(__name__)
@@ -42,8 +51,28 @@ def next_id(data) -> int:
     return max(used + [data.lastItemId or 0]) + 1
 
 
+def next_key(prefix: str, taken: set[str]) -> str:
+    """The first free id of a kind keyed by a letter and a number: c3, q4."""
+    n = len(taken) + 1
+    while f"{prefix}{n}" in taken:
+        n += 1
+    return f"{prefix}{n}"
+
+
 class Invalid(Exception):
-    """The record the deltas would leave behind breaks a rule of the data model."""
+    """The record the deltas would leave behind breaks a rule of the data model.
+    The reason is for the coach; `plain` says the same rule to a person editing
+    by hand, with no ids and no field names."""
+
+    def __init__(self, reason: str, plain: str):
+        super().__init__(reason)
+        self.plain = plain
+
+
+# A question is closed, never removed (R-0006): what the user declined has to
+# stay where the coach can see it.
+NEVER_REMOVED = ("a question is never removed; close it", "A question is never removed.")
+GONE = "That is not in the record."
 
 
 class Conflict(Exception):
@@ -76,7 +105,8 @@ def apply(
 
     A delta with field None and after None removes the item, cascading the way
     the app's own scene does, and logs `before` as the whole item so undo puts
-    it back.
+    it back. A field set on an id the record does not hold makes the item, and
+    is logged as one add holding the whole item, so undo takes it off.
     """
     diagram = _lock(diagram_id)
     data = diagramjson.loads(diagram.data)
@@ -114,12 +144,21 @@ def undo(
     data = diagramjson.loads(diagram.data)
     applied = []
     for change in changes:
+        # A question is put back only where a removal closed it.
+        removal = any(_removes(delta) for delta in change.deltas)
         for delta in reversed(change.deltas):
-            inverse = dict(delta, before=delta["after"], after=delta["before"])
+            if delta["item_kind"] == ItemKind.Question.value and not removal:
+                continue
+            inverse = _inverse(delta)
             actual = _get(data, inverse)
             if actual != inverse["before"]:
                 raise Conflict(inverse, actual)
-            applied.extend(_apply(data, inverse))
+            done = _apply(data, inverse)
+            # Taking off what the turn made would also take what hangs on it
+            # since, which the turn did not make.
+            if inverse["field"] is None and inverse["after"] is None and len(done) > 1:
+                raise Conflict(inverse, [f"{d['item_kind']} {d['item_id']}" for d in done[:-1]])
+            applied.extend(done)
     return _commit(
         diagram,
         data,
@@ -129,13 +168,50 @@ def undo(
         user_id,
         session_id,
         None,
+        undoing=True,
     )
 
 
+def rewind(data: dict, deltas: list[dict]):
+    """Take one change row's logged deltas back off the record, newest first,
+    one for one: a removal's cascade is logged delta by delta, so nothing here
+    cascades. A thing the row made comes off whole, whether it was logged as one
+    add or, as rows written before adds were logged whole did, as field sets on
+    a new id, which once taken back leave it holding nothing but that id."""
+    for delta in reversed(deltas):
+        if delta["field"] is not None:
+            _set(data, _inverse(delta))
+        elif delta["after"] is None:
+            _restore(data, _inverse(delta))
+        else:
+            _drop(data, ItemKind(delta["item_kind"]), delta["item_id"])
+    for kind, item_id in {
+        (ItemKind(d["item_kind"]), str(d["item_id"]))
+        for d in deltas
+        if d["field"] is not None and d["item_kind"] != ItemKind.Diagram.value
+    }:
+        item = _find(data, kind, item_id)
+        if all(value is None for field, value in item.items() if field != "id"):
+            _collection(data, kind).remove(item)
+
+
+def _inverse(delta: dict) -> dict:
+    return dict(delta, before=delta["after"], after=delta["before"])
+
+
 def compress(deltas: list[dict]) -> list[dict]:
-    """Collapse consecutive deltas on the same item and field: first before, last after."""
+    """Collapse consecutive deltas on the same item and field, first before and
+    last after, and fold the field sets that follow an item's add into that
+    add, so a thing made is logged whole."""
     out = []
+    made = {}
     for delta in deltas:
+        key = (delta["item_kind"], str(delta["item_id"]))
+        if delta["field"] is None:
+            made.pop(key, None)
+        elif key in made:
+            made[key]["after"] = {**made[key]["after"], delta["field"]: delta["after"]}
+            continue
         if out and (out[-1]["item_id"], out[-1]["item_kind"], out[-1]["field"]) == (
             delta["item_id"],
             delta["item_kind"],
@@ -144,6 +220,8 @@ def compress(deltas: list[dict]) -> list[dict]:
             out[-1] = dict(out[-1], after=delta["after"])
         else:
             out.append(dict(delta))
+        if delta["field"] is None and out[-1]["before"] is None:
+            made[key] = out[-1]
     return out
 
 
@@ -196,12 +274,17 @@ def _get(data: dict, delta: dict):
 
 
 def _apply(data: dict, delta: dict) -> list[dict]:
-    if delta["field"] is not None:
-        return [_set(data, delta)]
     kind = ItemKind(delta["item_kind"])
+    if delta["field"] is not None:
+        if kind is ItemKind.Diagram or _find(data, kind, delta["item_id"]) is not None:
+            return [_set(data, delta)]
+        made = dict(delta, field=None, after={"id": delta["item_id"]})
+        return [_restore(data, made), _set(data, delta)]
     if kind is ItemKind.Diagram:
         raise ValueError("the diagram itself cannot be removed by a delta")
     if delta["after"] is None:
+        if kind is ItemKind.Question:
+            raise Invalid(*NEVER_REMOVED)
         return _remove(data, kind, delta["item_id"])
     return [_restore(data, delta)]
 
@@ -240,11 +323,34 @@ def _remove(data: dict, kind: ItemKind, item_id) -> list[dict]:
 
     Mirrors Scene._do_removeItem: a person takes their events, the emotions
     naming them, and their pair bonds; a pair bond orphans its children; an
-    event takes the emotions it caused.
+    event takes the emotions it caused. A question about the item is let go
+    and loses its link, since a question is never removed.
     """
     deltas = []
+    for question in _collection(data, ItemKind.Question):
+        fields = {}
+        if question.get("item_kind") == kind.value and str(question.get("item_id")) == str(item_id):
+            fields = {"item_kind": None, "item_id": None}
+            if question["state"] != QuestionState.Resolved:
+                fields.update(state=QuestionState.Resolved.value, outcome=QuestionOutcome.LetGo.value)
+        kept = [
+            one
+            for one in question.get("evidence") or []
+            if (one["kind"], str(one["id"])) != (kind.value, str(item_id))
+        ]
+        if len(kept) != len(question.get("evidence") or []):
+            fields["evidence"] = kept
+        deltas += [
+            _set(
+                data,
+                {"item_kind": ItemKind.Question, "item_id": question["id"], "field": f, "after": v},
+            )
+            for f, v in fields.items()
+        ]
     if kind is ItemKind.Person:
-        for event in [e for e in _collection(data, ItemKind.Event) if _names(e, item_id)]:
+        for event in [
+            e for e in _collection(data, ItemKind.Event) if involves(e, item_id)
+        ]:
             deltas += _remove(data, ItemKind.Event, event["id"])
         for emotion in [
             e
@@ -280,11 +386,32 @@ def _remove(data: dict, kind: ItemKind, item_id) -> list[dict]:
             if str(e.get("event")) == str(item_id)
         ]:
             deltas.append(_drop(data, ItemKind.Emotion, emotion["id"]))
+        # a cluster holds only events in the record; one left under the floor
+        # goes, and its events are dots again
+        for cluster in list(_collection(data, ItemKind.Cluster)):
+            ids = cluster.get("eventIds") or []
+            kept = [i for i in ids if str(i) != str(item_id)]
+            if len(kept) == len(ids):
+                continue
+            if len(kept) < MIN_CLUSTER_EVENTS:
+                deltas += _remove(data, ItemKind.Cluster, cluster["id"])
+            else:
+                deltas.append(
+                    _set(
+                        data,
+                        {
+                            "item_kind": ItemKind.Cluster,
+                            "item_id": cluster["id"],
+                            "field": "eventIds",
+                            "after": kept,
+                        },
+                    )
+                )
     deltas.append(_drop(data, kind, item_id))
     return deltas
 
 
-def _names(event: dict, person_id) -> bool:
+def involves(event: dict, person_id) -> bool:
     """Scene's Event.people(): the person is one of the event's roles."""
     ids = [event.get("person"), event.get("spouse"), event.get("child")]
     ids += event.get("relationshipTargets") or []
@@ -292,7 +419,11 @@ def _names(event: dict, person_id) -> bool:
     return any(str(x) == str(person_id) for x in ids if x is not None)
 
 
-def _validate(data: dict, deltas: list[dict]):
+def _removes(delta: dict) -> bool:
+    return delta["field"] is None and delta["after"] is None
+
+
+def _validate(data: dict, deltas: list[dict], author: Author, undoing: bool):
     """Every cluster this write leaves behind holds at least MIN_CLUSTER_EVENTS
     events.
 
@@ -303,34 +434,48 @@ def _validate(data: dict, deltas: list[dict]):
     holding. A write answers for the clusters it touches, not for the ones it
     inherited.
     """
-    small = []
-    for cluster_id in dict.fromkeys(
-        str(delta["item_id"])
-        for delta in deltas
-        if delta["item_kind"] == ItemKind.Cluster.value
-    ):
-        cluster = _find(data, ItemKind.Cluster, cluster_id)
-        if cluster and len(cluster.get("eventIds") or []) < MIN_CLUSTER_EVENTS:
-            small.append(cluster_id)
+    touched = [
+        (cluster_id, cluster)
+        for cluster_id in _touched_kind(deltas, ItemKind.Cluster)
+        if (cluster := _find(data, ItemKind.Cluster, cluster_id)) is not None
+    ]
+    small = [
+        cluster_id
+        for cluster_id, cluster in touched
+        if len(cluster.get("eventIds") or []) < MIN_CLUSTER_EVENTS
+    ]
     if small:
         raise Invalid(
             f"that would leave clusters {small} with fewer than {MIN_CLUSTER_EVENTS} "
-            "events: add an event to the cluster, or remove the grouping"
+            "events: add an event to the cluster, or remove the grouping",
+            f"A cluster needs at least {MIN_CLUSTER_EVENTS} events.",
         )
+    for cluster_id, cluster in touched:
+        for event_id in cluster.get("eventIds") or []:
+            if _find(data, ItemKind.Event, event_id) is None:
+                raise Invalid(
+                    f"cluster {cluster_id} names event {event_id}, which is not in "
+                    "the record: a cluster groups events the record holds",
+                    "One of the events in that cluster is no longer in the diagram.",
+                )
+    _values(data, deltas)
     _words(data, deltas)
     _moves(data, deltas)
     _twins(data, deltas)
     _people(data, deltas)
     _structure(data, deltas)
+    # What a removal or an undo does to a question is the record's own doing.
+    if not undoing and not any(_removes(delta) for delta in deltas):
+        _questions(data, deltas, author)
 
 
-LINKS = (
-    ("person", "person"),
-    ("spouse", "spouse"),
-    ("child", "child"),
+COUPLE_KINDS = {kind.value for kind in EventKind if kind.isCouple()}
+
+MOVE_LINKS = (
     ("relationshipTargets", "target"),
     ("relationshipTriangles", "third person"),
 )
+LINKS = (("person", "person"), ("spouse", "spouse"), ("child", "child")) + MOVE_LINKS
 
 
 def _role(event: dict, person_id) -> str | None:
@@ -346,6 +491,19 @@ VARIABLES = ("symptom", "anxiety", "functioning")
 SHIFTS = {shift.value for shift in VariableShift}
 RELATIONSHIPS = {relationship.value for relationship in RelationshipKind}
 MATCH_LINKS = ("person", "spouse", "child", "relationshipTargets", "relationshipTriangles")
+KINDS = {kind.value for kind in EventKind}
+OFFSPRING_KINDS = {kind.value for kind in EventKind if kind.isOffspring()}
+WORDED_KINDS = (EventKind.Noted.value, EventKind.Shift.value)
+TRIANGLES = (RelationshipKind.Inside.value, RelationshipKind.Outside.value)
+DATES = ("dateTime", "endDateTime")
+#: Each closed field of an event, the values it may hold, and what they are called.
+EVENT_SETS = (
+    ("kind", KINDS, "event kinds"),
+    *((field, SHIFTS, "shift directions") for field in VARIABLES),
+    ("relationship", RELATIONSHIPS, "relationships"),
+    ("dateCertainty", {c.value for c in DateCertainty}, "date certainties"),
+)
+GENDERS = {kind.value for kind in PersonKind}
 
 
 def _val(value):
@@ -374,25 +532,57 @@ def _day(value) -> str | None:
     return str(value)[:10]
 
 
-def _words(data: dict, deltas: list[dict]):
-    """A moment's words are who and what (owner ruling, 2026-09-09): the
-    description says what happened and never names a person the event already
-    links, and a birth is about the child. Checked on the events this write
-    touches, the way the cluster floor is."""
+def _values(data: dict, deltas: list[dict]):
+    """Every closed field holds one of its own values, and a person has a name.
+    Checked on the items this write touches."""
     for event_id in _touched(deltas):
         event = _find(data, ItemKind.Event, event_id)
         if event is None:
             continue
-        kind = getattr(event.get("kind"), "value", event.get("kind"))
-        if (
-            kind in (EventKind.Birth.value, EventKind.Adopted.value)
-            and event.get("person") is not None
-            and event.get("child") is None
-        ):
+        for field, allowed, noun in EVENT_SETS:
+            value = _val(event.get(field))
+            if (value is not None or field == "kind") and value not in allowed:
+                raise Invalid(
+                    f"event {event_id}'s {field} is {value!r}, which is not one of "
+                    f"the {noun}: {', '.join(sorted(allowed))}",
+                    f"That event needs one of the {noun}.",
+                )
+    for person_id in _touched_kind(deltas, ItemKind.Person):
+        person = _find(data, ItemKind.Person, person_id)
+        if person is None:
+            continue
+        if not (person.get("name") or "").strip():
             raise Invalid(
-                f"event {event_id}: a birth is about the child: "
-                "set child, not person"
+                f"person {person_id} has no name: use the name as it was said, or "
+                "whose relation they are where nobody named them",
+                "A person needs a name.",
             )
+        gender = _val(person.get("gender"))
+        if gender is not None and gender not in GENDERS:
+            raise Invalid(
+                f"person {person_id}'s gender is {gender!r}, which is not one of the "
+                f"genders: {', '.join(sorted(GENDERS))}",
+                "That person needs one of the genders.",
+            )
+    for bond_id in _touched_kind(deltas, ItemKind.PairBond):
+        bond = _find(data, ItemKind.PairBond, bond_id)
+        if bond is not None and bond.get("married") not in (True, False, None):
+            raise Invalid(
+                f"pair bond {bond_id}'s married is {bond['married']!r}: it is true, "
+                "false, or left out when nobody said",
+                "Whether they married could not be read.",
+            )
+
+
+def _words(data: dict, deltas: list[dict]):
+    """A moment's words are who and what (owner ruling, 2026-09-09): the
+    description says what happened and never names a person the event already
+    links. Checked on the events this write touches, the way the cluster floor
+    is."""
+    for event_id in _touched(deltas):
+        event = _find(data, ItemKind.Event, event_id)
+        if event is None:
+            continue
         description = event.get("description") or ""
         if not description:
             continue
@@ -408,54 +598,61 @@ def _words(data: dict, deltas: list[dict]):
                 ):
                     raise Invalid(
                         f"event {event_id}'s description names {name}, who is "
-                        f"already its {role}; say what happened without the name"
+                        f"already its {role}; say what happened without the name",
+                        f"The summary names {name}, who is already on this event. "
+                        "Say what happened without the name.",
                     )
 
 
 def _moves(data: dict, deltas: list[dict]):
-    """A noted event says what happened, a shift says which way something
-    moved, and an early birth says nothing but when someone was born (owner
-    ruling R-0037). Checked on the events this
-    write touches, the way the cluster floor is."""
-    events = _collection(data, ItemKind.Event)
+    """A noted event and a shift say in words what happened, a shift says
+    which way something moved, and only a shift carries a move: a birth,
+    marriage or death is not itself a shift (R-0037, R-0364, R-0375). Dates are
+    dates, and an event ends after it begins. Checked on the events this write
+    touches, the way the cluster floor is."""
     for event_id in _touched(deltas):
         event = _find(data, ItemKind.Event, event_id)
         if event is None:
             continue
         kind = _val(event.get("kind"))
-        if kind == EventKind.Noted.value and not (event.get("description") or "").strip():
+        if kind in WORDED_KINDS and not (event.get("description") or "").strip():
             raise Invalid(
-                f"event {event_id} is a noted event with no words: say what "
-                "happened"
+                f"event {event_id} is a {kind} event with no words: say what "
+                "happened",
+                f"A {EventKind(kind).menuLabel().lower()} event needs a few words "
+                "saying what happened.",
             )
         if kind == EventKind.Shift.value and not _moved(event):
             raise Invalid(
                 f"event {event_id} is a shift with no variable and no "
                 "relationship move: say which of symptom, anxiety, functioning "
-                "or relationship moved, and which way"
+                "or relationship moved, and which way",
+                "A shift needs to say what moved and which way: symptom, anxiety, "
+                "functioning or a relationship.",
             )
+        if kind != EventKind.Shift.value and _moved(event):
+            raise Invalid(
+                f"event {event_id} is a {kind} event, and only a shift carries "
+                "symptom, anxiety, functioning or a relationship move: record "
+                "what moved as a shift of its own, dated to it",
+                "Only a shift carries symptom, anxiety, functioning or a "
+                "relationship: record that as a shift of its own.",
+            )
+        for field in DATES:
+            day = _day(event.get(field))
+            if day and parse_date(day) is None:
+                raise Invalid(
+                    f"event {event_id}'s {field} {event.get(field)!r} is not a "
+                    "date: give it as YYYY-MM-DD, the first of the month or the "
+                    "year when only those are known",
+                    "That date could not be read.",
+                )
         end = _day(event.get("endDateTime"))
         if end and end < (_day(event.get("dateTime")) or end):
             raise Invalid(
                 f"event {event_id} ends before it begins: date is when it began, "
-                "end_date when it ended"
-            )
-        if kind not in (EventKind.Birth.value, EventKind.Adopted.value):
-            continue
-        # early = before the first moment that moved anything: that is where
-        # the diagnostic period starts (R-0038); births before it are scaffolding
-        day = _day(event.get("dateTime"))
-        days = [
-            other_day
-            for other in events
-            if str(other.get("id")) != event_id
-            and _moved(other)
-            and (other_day := _day(other.get("dateTime")))
-        ]
-        if day and (not days or day < min(days)) and _moved(event):
-            raise Invalid(
-                f"event {event_id} is an early birth: it anchors age and "
-                "carries no symptom, anxiety, functioning or relationship"
+                "end_date when it ended",
+                "The end date is before the start date.",
             )
 
 
@@ -472,6 +669,17 @@ def _links(event: dict) -> tuple:
 
 def _moves_of(event: dict) -> tuple:
     return tuple(_val(event.get(field)) for field in (*VARIABLES, "relationship"))
+
+
+def twin_key(event: dict) -> tuple:
+    """Two events are the same event when kind, day, people and what moved
+    all match."""
+    return (
+        _val(event.get("kind")),
+        _day(event.get("dateTime")),
+        _links(event),
+        _moves_of(event),
+    )
 
 
 def _twins(data: dict, deltas: list[dict]):
@@ -496,15 +704,12 @@ def _twins(data: dict, deltas: list[dict]):
         for other in events:
             if str(other.get("id")) == event_id:
                 continue
-            if (
-                _val(other.get("kind")) == _val(event.get("kind"))
-                and _day(other.get("dateTime")) == _day(event.get("dateTime"))
-                and _links(other) == _links(event)
-                and _moves_of(other) == _moves_of(event)
-            ):
+            if twin_key(other) == twin_key(event):
                 raise Invalid(
                     f"that event is already event {other.get('id')}: change it "
-                    f"with edit_event(id={other.get('id')}) rather than adding it"
+                    f"with edit_event(id={other.get('id')}) rather than adding it",
+                    "That event is already in the diagram. Change the one that is "
+                    "there rather than adding it again.",
                 )
 
 
@@ -563,17 +768,22 @@ def _people(data: dict, deltas: list[dict]):
             if str(other.get("id")) != person_id and generic_key(other) == key:
                 raise Invalid(
                     f"{person['name']} is already person {other['id']} "
-                    f"({other['name']}): use that person rather than adding another"
+                    f"({other['name']}): use that person rather than adding another",
+                    f"{person['name']} is already in the diagram as {other['name']}. "
+                    "Use that person rather than adding another.",
                 )
 
 
 def _structure(data: dict, deltas: list[dict]):
     """Who belongs to whom, checked on what this write leaves behind.
 
-    Nobody is their own parent or their own partner, a bond is between two
-    different people who are both in the record, and any two people have one
-    bond ever, because a child is the offspring of a bond rather than of a
-    pairing written twice.
+    Nobody is their own parent, their own partner, or the target or third
+    person of their own move, a bond is between two different people who are
+    both in the record, and any two people have one bond ever, because a child
+    is the offspring of a bond rather than of a pairing written twice. An event
+    names who it is about, only people in the record, a couple that has a bond,
+    and for a birth the child's own parents; a person is born once and dies
+    once.
     """
     bonds = _collection(data, ItemKind.PairBond)
     for bond_id in _touched_kind(deltas, ItemKind.PairBond):
@@ -584,48 +794,469 @@ def _structure(data: dict, deltas: list[dict]):
         if any(side is None for side in sides):
             raise Invalid(
                 f"pair bond {bond_id} needs two people: add the missing one as a "
-                "person first, generically named where nobody named them"
+                "person first, generically named where nobody named them",
+                "A pair-bond needs two people.",
             )
         if str(sides[0]) == str(sides[1]):
-            raise Invalid(f"pair bond {bond_id} is one person with themselves")
+            raise Invalid(
+                f"pair bond {bond_id} is one person with themselves",
+                "A pair-bond needs two different people.",
+            )
         for side in sides:
             if _find(data, ItemKind.Person, side) is None:
-                raise Invalid(f"pair bond {bond_id} names person {side}, who is not in the record")
+                raise Invalid(
+                    f"pair bond {bond_id} names person {side}, who is not in the record",
+                    "One of those two is no longer in the diagram.",
+                )
         for other in bonds:
             if str(other.get("id")) != str(bond_id) and pair(other) == pair(bond):
                 raise Invalid(
                     f"those two already have pair bond {other.get('id')}: change "
                     f"it with edit_pair_bond(id={other.get('id')}) rather than "
-                    "adding a second one"
+                    "adding a second one",
+                    "Those two already have a pair-bond. Change that one rather "
+                    "than adding a second.",
                 )
+
+    for couple in _lost(data, deltas):
+        events = [
+            str(event.get("id"))
+            for event in _collection(data, ItemKind.Event)
+            if _val(event.get("kind")) in COUPLE_KINDS
+            and pair({"person_a": event.get("person"), "person_b": event.get("spouse")})
+            == couple
+        ]
+        if events:
+            raise Invalid(
+                f"that leaves event {', '.join(events)} naming persons "
+                f"{' and '.join(couple)} as a couple with no pair bond: change or "
+                "remove those events first",
+                "Those two still have events as a couple: change or remove those "
+                "first.",
+            )
 
     for person_id in _touched_kind(deltas, ItemKind.Person):
         person = _find(data, ItemKind.Person, person_id)
-        if person is None or person.get("parents") is None:
+        if person is None:
+            continue
+        for event in _collection(data, ItemKind.Event):
+            if _val(event.get("kind")) == EventKind.Birth.value and str(
+                event.get("child")
+            ) == str(person_id):
+                _born(data, str(event.get("id")), event)
+        if person.get("parents") is None:
             continue
         bond = _find(data, ItemKind.PairBond, person["parents"])
         if bond is None:
             raise Invalid(
                 f"person {person_id} is born to pair bond {person['parents']}, "
-                "which is not in the record"
+                "which is not in the record",
+                "Those parents are no longer in the diagram.",
             )
         if str(person_id) in pair(bond):
-            raise Invalid(f"person {person_id} cannot be their own parent")
+            raise Invalid(
+                f"person {person_id} cannot be their own parent",
+                "Nobody can be their own parent.",
+            )
+
+    people = {str(person.get("id")) for person in _collection(data, ItemKind.Person)}
+    for event_id in _touched(deltas):
+        event = _find(data, ItemKind.Event, event_id)
+        if event is None:
+            continue
+        for field, role in MOVE_LINKS:
+            if field in event and not isinstance(event[field], list):
+                raise Invalid(
+                    f"event {event_id}'s {field} is not a list: give the "
+                    f"{role}s as a list of person ids, empty when there is none",
+                    f"The {role}s of a move could not be read.",
+                )
+        kind = _val(event.get("kind"))
+        label = EventKind(kind).menuLabel()
+        if kind in OFFSPRING_KINDS and event.get("child") is None:
+            raise Invalid(
+                f"event {event_id} is a {kind} with no child: a {kind} is about "
+                "the child: "
+                + (
+                    "set child, not person"
+                    if event.get("person") is not None
+                    else "set child to who was born or taken in"
+                ),
+                f"{label} is about the child: choose who under Child.",
+            )
+        if kind not in OFFSPRING_KINDS and event.get("person") is None:
+            raise Invalid(
+                f"event {event_id} is a {kind} event about nobody: set person to "
+                "who it happened to, adding them as a person first",
+                f"{label} needs the person it happened to.",
+            )
+        for field in ("person", "spouse", "child", *(f for f, _ in MOVE_LINKS)):
+            value = event.get(field)
+            for person_id in value if isinstance(value, list) else [value]:
+                if person_id is not None and str(person_id) not in people:
+                    raise Invalid(
+                        f"event {event_id} names person {person_id}, who is not in "
+                        "the record: add them as a person first",
+                        "Someone on that event is not in the diagram.",
+                    )
+        if event.get("spouse") is not None and str(event["spouse"]) == str(
+            event.get("person")
+        ):
+            raise Invalid(
+                f"event {event_id} names person {event['spouse']} as both person "
+                "and spouse: they are two different people",
+                "Those must be two different people.",
+            )
+        if event.get("child") is not None and str(event["child"]) in {
+            str(event.get("person")),
+            str(event.get("spouse")),
+        }:
+            raise Invalid(
+                f"event {event_id} has person {event['child']} as both the child "
+                "and a parent: nobody is born to themselves",
+                "Nobody can be their own parent.",
+            )
+        mover = str(event.get("person"))
+        for field, role in MOVE_LINKS:
+            if mover in {str(x) for x in event.get(field) or []}:
+                raise Invalid(
+                    f"event {event_id} has person {mover} as both the mover and "
+                    f"the {role}: a move is toward, away from or about someone "
+                    f"else, so name the other person as the {role}",
+                    f"Someone cannot be their own {role} in a move.",
+                )
+        move = _val(event.get("relationship"))
+        targets = {str(x) for x in event.get("relationshipTargets") or []}
+        thirds = {str(x) for x in event.get("relationshipTriangles") or []}
+        if move and not targets:
+            raise Invalid(
+                f"event {event_id} is a {move} move with no target: every "
+                "relationship move names who it was aimed at, so put them in "
+                "relationship_targets, adding them as a person first, "
+                "generically named where nobody named them",
+                f"{RelationshipKind(move).menuLabel()} needs the person it was "
+                "aimed at.",
+            )
+        if targets and not move:
+            raise Invalid(
+                f"event {event_id} has relationship_targets but no relationship "
+                "move: set the move they were the target of, or leave them out",
+                "Only a relationship move names who it was aimed at.",
+            )
+        if move in TRIANGLES and not thirds:
+            raise Invalid(
+                f"event {event_id} is an {move} move with no third person: a "
+                "triangle is three people, so put the one left outside of an "
+                "inside move, or the second of the two left together by an "
+                "outside move, in relationship_triangles",
+                f"{RelationshipKind(move).menuLabel()} needs the third person.",
+            )
+        if thirds and move not in TRIANGLES:
+            raise Invalid(
+                f"event {event_id} has relationship_triangles but is not an inside "
+                "or outside move: only a triangle move has a third person",
+                "Only a triangle move has a third person.",
+            )
+        if targets & thirds:
+            raise Invalid(
+                f"event {event_id} has person {min(targets & thirds)} as both a "
+                "target and the third person: a triangle is three different "
+                "people",
+                "A triangle is three different people.",
+            )
+        if kind in COUPLE_KINDS and event.get("spouse") is None:
+            raise Invalid(
+                f"event {event_id} is a {kind} event, which is about a couple: "
+                "name the other one as spouse, adding them as a person first, "
+                "generically named where nobody named them",
+                f"{label} needs both partners.",
+            )
+        if kind in COUPLE_KINDS and not any(
+            pair(bond) == pair({"person_a": event["person"], "person_b": event["spouse"]})
+            for bond in _collection(data, ItemKind.PairBond)
+        ):
+            raise Invalid(
+                f"event {event_id} is a {kind} event between persons "
+                f"{event['person']} and {event['spouse']}, who have no pair bond: "
+                "add their pair bond first",
+                f"{label} needs those two to be partners first.",
+            )
+        if kind == EventKind.Birth.value:
+            _born(data, event_id, event)
+        if kind in (EventKind.Birth.value, EventKind.Death.value):
+            role = "child" if kind == EventKind.Birth.value else "person"
+            for other in _collection(data, ItemKind.Event):
+                if (
+                    str(other.get("id")) != event_id
+                    and _val(other.get("kind")) == kind
+                    and str(other.get(role)) == str(event[role])
+                ):
+                    raise Invalid(
+                        f"person {event[role]} already has a {kind}, event "
+                        f"{other.get('id')}: change it with "
+                        f"edit_event(id={other.get('id')}) rather than adding a "
+                        "second",
+                        f"That person already has a {kind}.",
+                    )
+
+
+def couple_bond(bonds: list[dict], event: dict) -> tuple | None:
+    """What a couple event needs of the couple's bond before it is written, as
+    (bond id, fields): the bond itself, id None, when they have none, or married
+    set on theirs when the event is a marriage (R-0430, R-0593)."""
+    kind = _val(event.get("kind"))
+    a, b = event.get("person"), event.get("spouse")
+    if kind not in COUPLE_KINDS or None in (a, b) or str(a) == str(b):
+        return None
+    married = kind == EventKind.Married.value
+    couple = {"person_a": a, "person_b": b}
+    bond = next((x for x in bonds if pair(x) == pair(couple)), None)
+    if bond is None:
+        return None, dict(couple, married=True) if married else couple
+    if married and bond.get("married") is not True:
+        return bond["id"], {"married": True}
+    return None
+
+
+def _born(data: dict, event_id: str, birth: dict):
+    """A birth's parents are the child's own parents: the two sides of the bond
+    the child is born to, so the birth and the child never disagree about who
+    someone's mother is."""
+    child = _find(data, ItemKind.Person, birth.get("child"))
+    bond = child and _find(data, ItemKind.PairBond, child.get("parents"))
+    if not bond:
+        return
+    for parent in (birth.get("person"), birth.get("spouse")):
+        if parent is not None and str(parent) not in pair(bond):
+            raise Invalid(
+                f"event {event_id} names person {parent} as a parent of person "
+                f"{child['id']}, who is born to pair bond {bond['id']} (persons "
+                f"{' and '.join(pair(bond))}): a birth's parents are the child's "
+                "parents, so name those two",
+                "A birth's parents must be the child's own parents.",
+            )
+
+
+def _lost(data: dict, deltas: list[dict]) -> set[tuple]:
+    """The pairs of people that had a bond before this write and have none
+    after it."""
+    was = {}
+    for delta in deltas:
+        if delta["item_kind"] != ItemKind.PairBond.value:
+            continue
+        bond_id = str(delta["item_id"])
+        if delta["field"] is None and delta["before"]:
+            was[bond_id] = dict(delta["before"])
+        elif delta["field"] in ("person_a", "person_b"):
+            was.setdefault(
+                bond_id, dict(_find(data, ItemKind.PairBond, bond_id) or {})
+            )[delta["field"]] = delta["before"]
+    now = {pair(bond) for bond in _collection(data, ItemKind.PairBond)}
+    return {
+        pair(bond)
+        for bond in was.values()
+        if None not in (bond.get("person_a"), bond.get("person_b"))
+    } - now
+
+
+QUESTION_LINKS = (ItemKind.Person, ItemKind.PairBond, ItemKind.Event, ItemKind.Cluster)
+
+
+@dataclass(frozen=True)
+class Note:
+    """What differs between a question and an impression; everything else
+    about the two is one set of rules."""
+
+    noun: str
+    # The state the person sees it in: a question is asked, an impression raised.
+    shown: QuestionState
+    # The outcomes only the user writes, and the one that bars the same words.
+    theirs: tuple
+    barred: QuestionOutcome
+    barred_plain: str
+    ours: tuple
+    # What the user may write on it at all.
+    fields: tuple
+
+    @property
+    def order(self) -> list:
+        return [QuestionState.Held, self.shown, QuestionState.Resolved]
+
+
+QUESTION = Note(
+    "question",
+    QuestionState.Asked,
+    (QuestionOutcome.DeclinedByUser,),
+    QuestionOutcome.DeclinedByUser,
+    "The user already turned this question down.",
+    (
+        QuestionOutcome.Fact,
+        QuestionOutcome.Answered,
+        QuestionOutcome.Unknown,
+        QuestionOutcome.DeclinedInChat,
+        QuestionOutcome.LetGo,
+    ),
+    ("state", "outcome"),
+)
+IMPRESSION = Note(
+    "impression",
+    QuestionState.Raised,
+    (QuestionOutcome.DoesntFit,),
+    QuestionOutcome.DoesntFit,
+    "You said that one doesn't fit.",
+    (QuestionOutcome.Revised, QuestionOutcome.LetGo),
+    ("state", "outcome", "pushback"),
+)
+
+
+def note(item: dict) -> Note:
+    return IMPRESSION if item.get("kind") == QuestionKind.Impression else QUESTION
+
+
+def normal(text: str) -> str:
+    return " ".join(text.lower().split())
+
+
+def _questions(data: dict, deltas: list[dict], author: Author):
+    """A question or an impression has words, moves only forward from held to
+    shown to resolved, says how it ended exactly when it is resolved, is kept
+    once in the same words and never in words the user turned down, and is
+    turned down or pushed back on by the user alone, who writes nothing else
+    on it (R-0006, R-0077)."""
+    questions = _collection(data, ItemKind.Question)
+    user = Author(author) is Author.User
+    for question_id in _touched_kind(deltas, ItemKind.Question):
+        question = _find(data, ItemKind.Question, question_id)
+        rules = note(question)
+        noun = rules.noun
+        mine = [
+            d
+            for d in deltas
+            if d["item_kind"] == ItemKind.Question.value and str(d["item_id"]) == question_id
+        ]
+        state = QuestionState(_val(question.get("state")))
+        outcome = question.get("outcome") and QuestionOutcome(_val(question["outcome"]))
+        QuestionKind(_val(question.get("kind")))
+        moved = [d for d in mine if d["field"] == "state"]
+        added = any(d["field"] is None for d in mine)
+        was = None if added else QuestionState(moved[0]["before"] if moved else state)
+        if state not in rules.order:
+            raise Invalid(
+                f"{noun} {question_id} cannot be {state.value}: it is held, "
+                f"{rules.shown.value} or resolved",
+                f"A {noun} cannot be {state.value}.",
+            )
+        if was is QuestionState.Resolved:
+            raise Invalid(f"{noun} {question_id} is already closed", f"That {noun} is already closed.")
+        if moved and not added and rules.order.index(state) <= rules.order.index(was):
+            if was is rules.shown:
+                raise Invalid(
+                    f"{noun} {question_id} was already {was.value}",
+                    f"That {noun} was already {was.value}.",
+                )
+            raise Invalid(
+                f"{noun} {question_id} is already held",
+                f"That {noun} is already kept for later.",
+            )
+        if not (question.get("text") or "").strip():
+            raise Invalid(f"{noun} {question_id} has no words", f"It gave the {noun} no words.")
+        if (state is QuestionState.Resolved) != bool(outcome):
+            raise Invalid(
+                f"{noun} {question_id}: give an outcome exactly when it is resolved",
+                f"It did not say how the {noun} ended.",
+            )
+        written = {d["field"] for d in mine}
+        theirs = outcome in rules.theirs or "pushback" in written
+        if user != theirs or (user and not written <= set(rules.fields)):
+            raise Invalid(
+                f"only the user turns {noun} {question_id} down or pushes back on it, "
+                "and does nothing else to it",
+                "Only you can dismiss a question."
+                if rules is QUESTION
+                else f"Only you can push back on an {noun}.",
+            )
+        if outcome and outcome not in (*rules.theirs, *rules.ours):
+            raise Invalid(
+                f"{noun} {question_id} ends only as one of "
+                f"{', '.join(o.value for o in rules.ours)}",
+                f"That is not how an {noun} ends." if rules is IMPRESSION
+                else f"That is not how a {noun} ends.",
+            )
+        if question.get("pushback") is not None:
+            Pushback(question["pushback"])
+        if rules is IMPRESSION:
+            _rests(data, question, question_id, added)
+        else:
+            _linked(data, question, question_id)
+        for other in questions:
+            if (
+                str(other.get("id")) == question_id
+                or note(other) is not rules
+                or normal(other["text"]) != normal(question["text"])
+            ):
+                continue
+            if other.get("outcome") == rules.barred:
+                raise Invalid(
+                    f"the user turned that {noun} down as {other['id']}: never say it again",
+                    rules.barred_plain,
+                )
+            if other["state"] != QuestionState.Resolved:
+                raise Invalid(f"that {noun} is already {other['id']}", f"That {noun} is already there.")
+
+
+def _linked(data: dict, question: dict, question_id: str):
+    link = (question.get("item_kind"), question.get("item_id"))
+    if (link[0] is None) != (link[1] is None):
+        raise Invalid(
+            f"question {question_id}: give item_kind and item_id together, or neither",
+            "It named what the question is about only halfway.",
+        )
+    if link[0] is not None and (
+        ItemKind(link[0]) not in QUESTION_LINKS or _find(data, ItemKind(link[0]), link[1]) is None
+    ):
+        raise Invalid(
+            f"question {question_id} is about {link[0]} {link[1]}, which is not in the record",
+            GONE,
+        )
+
+
+def _rests(data: dict, impression: dict, impression_id: str, added: bool):
+    """An impression is raised on something in the record. Whether a
+    statement is this family's is the toolbox's to check; the record holds
+    no statements. Evidence taken off the record since leaves it on less, or
+    on nothing, for the coach to judge."""
+    evidence = impression.get("evidence") or []
+    if added and not evidence:
+        raise Invalid(
+            f"impression {impression_id} rests on nothing: give the events, people, "
+            "bonds, clusters or messages it comes from",
+            "It gave the impression nothing to rest on.",
+        )
+    for one in evidence:
+        kind = EvidenceKind(one["kind"])
+        if kind is not EvidenceKind.Statement and _find(data, ItemKind(kind.value), one["id"]) is None:
+            raise Invalid(
+                f"impression {impression_id} rests on {kind.value} {one['id']}, which is "
+                "not in the record",
+                GONE,
+            )
 
 
 def _commit(
-    diagram, data, deltas, author, turn_id, user_id, session_id, statement_id
+    diagram, data, deltas, author, turn_id, user_id, session_id, statement_id, undoing=False
 ) -> Change:
-    _validate(data, deltas)
-    db.session.execute(
+    _validate(data, deltas, author, undoing)
+    version = db.session.execute(
         sql_update(Diagram)
         .where(Diagram.id == diagram.id)
         .values(
             data=diagramjson.encode(data, diagram.data), version=Diagram.version + 1
         )
-    )
+        .returning(Diagram.version)
+    ).scalar_one()
     change = Change(
         diagram_id=diagram.id,
+        version=version,
         statement_id=statement_id,
         turn_id=turn_id,
         user_id=user_id,
@@ -675,6 +1306,25 @@ def diff(old: dict, new: dict) -> list[dict]:
     return deltas
 
 
+def _stated(diagram_id: int) -> tuple[list[Change], dict[int, int]]:
+    """This diagram's change rows that carry a statement, oldest first, and
+    the session each of those statements belongs to."""
+    rows = (
+        Change.query.filter(
+            Change.diagram_id == diagram_id, Change.statement_id.isnot(None)
+        )
+        .order_by(Change.id)
+        .all()
+    )
+    said = {
+        statement.id: statement.discussion_id
+        for statement in Statement.query.filter(
+            Statement.id.in_({row.statement_id for row in rows})
+        ).all()
+    }
+    return rows, said
+
+
 def coded_in(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[int, dict]:
     """Where each moment on this diagram was written down: the message the coach
     was saying when it went in, and the session that message belongs to. People
@@ -686,24 +1336,8 @@ def coded_in(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[int, dict
     newest such command wins: a moment changed twice belongs to the last thing
     said about it.
     """
-    from btcopilot.models import Statement
-
     found: dict[int, dict] = {}
-    rows = (
-        Change.query.filter(
-            Change.diagram_id == diagram_id, Change.statement_id.isnot(None)
-        )
-        .order_by(Change.id)
-        .all()
-    )
-    if not rows:
-        return found
-    said = {
-        statement.id: statement.discussion_id
-        for statement in Statement.query.filter(
-            Statement.id.in_({row.statement_id for row in rows})
-        ).all()
-    }
+    rows, said = _stated(diagram_id)
     for row in rows:
         for delta in row.deltas or []:
             if delta.get("item_kind") != kind.value:
@@ -717,4 +1351,28 @@ def coded_in(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[int, dict
                 "statement_id": row.statement_id,
                 "turn_id": row.turn_id,
             }
+    return found
+
+
+SHOWN = (QuestionState.Asked, QuestionState.Raised)
+
+
+def asks(delta: dict) -> bool:
+    if delta["field"] is None:
+        return delta["after"].get("state") in SHOWN
+    return delta["field"] == "state" and delta["after"] in SHOWN
+
+
+def asked_in(diagram_id: int) -> dict[str, dict]:
+    """The message each question was asked in, and its session: the newest
+    change row whose delta made the question asked."""
+    found = {}
+    rows, said = _stated(diagram_id)
+    for row in rows:
+        for delta in row.deltas:
+            if delta["item_kind"] == ItemKind.Question.value and asks(delta):
+                found[str(delta["item_id"])] = {
+                    "discussion_id": said[row.statement_id],
+                    "statement_id": row.statement_id,
+                }
     return found

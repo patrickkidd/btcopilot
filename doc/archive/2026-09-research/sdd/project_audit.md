@@ -99,7 +99,7 @@ All frozen point-in-time assessments:
 - btcopilot/CONTEXT.md — Domain model overview (delegates to specs)
 - btcopilot/doc/specs/BOWEN_THEORY.md — Core constructs, SARF variables, constraints
 - btcopilot/doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md — Clinical underpinnings
-- btcopilot/doc/sarf-definitions/01-functioning.md through 12-definedself.md — Exhaustive variable definitions
+- btcopilot/doc/sarf-definitions/archive/01-functioning.md through 12-definedself.md — Exhaustive variable definitions
 - btcopilot/doc/basic-series/Basic-Series-*.md (7 files) — Bowen theory foundational concepts
 - btcopilot/doc/SARF_EXTRACTION_REFERENCE.md — Reference definitions (marked "too verbose for prompts")
 
@@ -119,7 +119,7 @@ All frozen point-in-time assessments:
 ### Duplication / Unclear Relationships
 - PROMPT_INDUCTION_AUTOMATED.md vs PROMPT_INDUCTION_CLI.md vs induction_agent.md — three similar docs, unclear which is authoritative
 - F1_METRICS.md vs F1_DASHBOARD.md — unclear if separate concerns or duplication
-- SARF_EXTRACTION_REFERENCE.md vs sarf-definitions/*.md — former marked "too verbose," may be redundant
+- SARF_EXTRACTION_REFERENCE.md vs sarf-definitions/archive/*.md — former marked "too verbose," may be redundant
 - PLAN_TAB_VISION.md vs PLAN_TAB_ARCHITECTURE.md — both deferred, should archive
 
 ### Missing from Index

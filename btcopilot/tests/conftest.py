@@ -7,11 +7,14 @@ import re
 import flask.testing
 import pytest
 from mock import patch
+from sqlalchemy import text
 import btcopilot
 from btcopilot.extensions import db
 from btcopilot.llmutil import Served
 from btcopilot.coachmodel import ModelTurn, ToolCall
-from btcopilot.models import Discussion, Statement, Speaker, SpeakerType
+from btcopilot.coachturn import SPEAK
+from btcopilot.models import Diagram, Discussion, Statement, Speaker, SpeakerType
+from btcopilot.promptdir import missing
 from btcopilot.toolbox import ToolName
 from btcopilot import turnlog, turns
 from btcopilot.turnlog import TurnEventKind
@@ -38,6 +41,11 @@ from btcopilot.tests.fixtures import (
 )
 
 
+def pytest_terminal_summary(terminalreporter):
+    if missing():
+        terminalreporter.write_line(missing())
+
+
 def pytest_addoption(parser):
     add_e2e_option(parser)
 
@@ -60,7 +68,20 @@ def flask_app(request, tmp_path):
     yield from make_app(request, tmp_path, tables=TABLES)
 
 
+@pytest.fixture
+def foreign_keys(flask_app):
+    """SQLite enforces foreign keys only when asked; Postgres always does."""
+    db.session.execute(text("PRAGMA foreign_keys=ON"))
+    yield
+    db.session.execute(text("PRAGMA foreign_keys=OFF"))
+
+
 SERVED = "claude-opus-5-5"
+
+
+def version(diagram) -> int:
+    """The record's version as it stands, for a change that has to name it."""
+    return db.session.query(Diagram.version).filter_by(id=diagram.id).scalar()
 
 
 def said(text: str) -> ModelTurn:
@@ -88,6 +109,27 @@ def calling(*wanted: tuple[ToolName, dict], text: str = "") -> ModelTurn:
     return turn
 
 
+def opening(messages: list[dict]) -> str:
+    """The record and the day a coach turn puts in its new message, just
+    before the person's words: the message after the last settled one, which
+    is the only place the chat is marked before the call."""
+    settled = [
+        i
+        for i, message in enumerate(messages)
+        if isinstance(message["content"], list)
+        and any("cache_control" in block for block in message["content"])
+    ]
+    message = messages[settled[-1] + 1 if settled else 0]
+    if message["role"] != "user" or isinstance(message["content"], str):
+        return ""
+    words = [
+        block["text"]
+        for block in message["content"]
+        if block["type"] == "text" and block["text"] != SPEAK
+    ]
+    return words[-2] if len(words) > 1 else ""
+
+
 class Model:
     """A coach that says exactly what the test scripted, in order."""
 
@@ -100,7 +142,10 @@ class Model:
         self.offered = []
 
     def turn(self, system, messages, tools, turn_id=""):
-        self.systems.append(system if isinstance(system, str) else "".join(system))
+        self.systems.append(
+            (system if isinstance(system, str) else "".join(system))
+            + opening(messages)
+        )
         self.histories.append(messages)
         self.offered.append([schema["name"] for schema in tools])
         scripted = self.turns.pop(0)
@@ -147,17 +192,11 @@ def chat_flow(request):
 
             response = marker.kwargs.get("response", "some response")
 
-            stack.enter_context(
-                patch(
-                    "btcopilot.ask._generate_response",
-                    return_value=response,
-                )
-            )
             # The coach's turn is the agent loop; a test that scripts the
             # coach's words scripts them there too.
             stack.enter_context(
                 patch(
-                    "btcopilot.coachturn.CoachModel",
+                    "btcopilot.turns.model_for",
                     new=lambda *a, **k: Model(said(response)),
                 )
             )

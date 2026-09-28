@@ -1,5 +1,5 @@
 import * as api from "./api";
-import { esc } from "./dom";
+import { esc, isCoder } from "./dom";
 import { TaskKind, type FinishedTask, type Task, type Tasks } from "./types";
 
 /** The coder's one task. One card, one button, and under it a faint record of
@@ -34,7 +34,7 @@ export const coder = (found: Tasks): boolean =>
 /** Whether this reader takes part in the coding work at all: only a user with
  * the auditor role does, Patrick included (R-0311). A professional licence is
  * not a coding role. */
-export const CODER = window.BOOTSTRAP.user?.coder === true;
+export const CODER = isCoder();
 
 /** What the sessions sheet calls the way in to the card, which every coder
  * keeps whether or not a task is open: with nothing left to code the card is

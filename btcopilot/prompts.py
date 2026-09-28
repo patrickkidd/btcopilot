@@ -9,16 +9,19 @@ open source default, so the app runs whole with the private directory absent.
 import enum
 import functools
 import os
+import sys
 from pathlib import Path
 
-from btcopilot.llmutil import RESPONSE_MODEL, _is_claude_model
-from btcopilot.promptdir import PromptDir
+from btcopilot.promptdir import PromptDir, missing
 
 # Stands in for the record while the fixed head of the agent prompt is found.
 MARK = "\ue000"
 
 PUBLIC = Path(__file__).parent / "prompty"
 PRIVATE = Path(__file__).parents[1] / "private" / "prompts"
+# Set, the prompts fall back to the open-source ones when no key opens the
+# private ones, and say so. Unset, a missing key fails on the first read.
+OPEN = "FD_OPEN_PROMPTS"
 
 
 @functools.cache
@@ -26,7 +29,14 @@ def files() -> PromptDir:
     """Where the prompts are read from. Resolved on first use, not at import,
     so a caller that points FD_PRIVATE_PROMPTS somewhere else is heard however
     early this module was imported."""
-    return PromptDir([Path(os.environ.get("FD_PRIVATE_PROMPTS", PRIVATE)), PUBLIC])
+    chosen = os.environ.get("FD_PRIVATE_PROMPTS")
+    if chosen:
+        return PromptDir([Path(chosen), PUBLIC])
+    line = missing()
+    if line and os.environ.get(OPEN):
+        print(line, file=sys.stderr)
+        return PromptDir([PUBLIC])
+    return PromptDir([PRIVATE, PUBLIC])
 
 
 class ToolText(enum.StrEnum):
@@ -100,19 +110,6 @@ def __getattr__(name: str) -> str:
     return value
 
 
-def get_conversation_flow_prompt(
-    model: str | None = None, committed_state: str = ""
-) -> str:
-    """The coach's system prompt for a plain chat turn. Which model is answering
-    is a deployment setting, so it is resolved here and never named in a prompt
-    file."""
-    return files().text(
-        "conversation_flow",
-        committed_state=committed_state,
-        claude=_is_claude_model(model or RESPONSE_MODEL),
-    )
-
-
 def onboarding(missing: list[str], person_id: int) -> str:
     """What the coach must get first while the person's own name or birth date
     is not in the record."""
@@ -132,8 +129,9 @@ def get_agent_prompt(record: str = "", interactions: str = "", today: str = "") 
 def _agent_fixed() -> str:
     """The head of the agent prompt that does not move with the record or with
     what the person has been looking at. Found by rendering the template both
-    ways rather than declared, so a private template splits where it differs."""
-    return os.path.commonprefix(
+    ways rather than declared, so a private template splits where it differs,
+    then cut back to a paragraph so the heading over the record goes with it."""
+    head = os.path.commonprefix(
         [
             files().text("agent", committed_state="", interactions="", today=""),
             files().text(
@@ -141,6 +139,7 @@ def _agent_fixed() -> str:
             ),
         ]
     )
+    return head[: head.rstrip().rfind("\n\n") + 2]
 
 
 def agent_prompt(
@@ -148,12 +147,25 @@ def agent_prompt(
 ) -> tuple[str, str]:
     """The same prompt in two parts: the coaching text that repeats every call,
     which the wire caches, and the tail that changes with the record and the
-    day."""
+    day, which goes after the chat so the chat stays cached too."""
     text = get_agent_prompt(record, interactions, today)
     fixed = _agent_fixed()
     if not text.startswith(fixed):
         raise ValueError("The agent prompt no longer opens with its fixed part")
     return fixed, text[len(fixed) :]
+
+
+def question_backfill(map: str, transcript: str) -> str:
+    """The system prompt for going back once over a past session to fill in the
+    questions asked in it. `transcript` numbers each coach message by its
+    statement id."""
+    return files().text("question_backfill", map=map, transcript=transcript)
+
+
+def impression_backfill(map: str, transcript: str) -> str:
+    """The system prompt for going back once over a past session to fill in the
+    impressions given in it, numbered the same way as the question backfill's."""
+    return files().text("impression_backfill", map=map, transcript=transcript)
 
 
 def note_register() -> str:

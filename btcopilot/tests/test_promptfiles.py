@@ -11,7 +11,7 @@ import sys
 import pytest
 from jinja2 import TemplateNotFound
 
-from btcopilot import prompts
+from btcopilot import promptdir, prompts
 from btcopilot.promptdir import PromptDir, key_present, read, split
 from btcopilot.tests.repo import REPO
 
@@ -21,7 +21,7 @@ REAL_PRIVATE = REPO / "private" / "prompts"
 
 RECORD = "RECORD-SENTINEL\nsecond line"
 INTERACTIONS = "INTERACTIONS-SENTINEL"
-STATE = "STATE-SENTINEL"
+TRANSCRIPT = "TRANSCRIPT-SENTINEL\n41 coach: Who were your father's brothers and sisters?"
 
 
 def rendered(module, names) -> dict:
@@ -34,18 +34,15 @@ def rendered(module, names) -> dict:
     out["get_agent_prompt/both"] = module.get_agent_prompt(
         record=RECORD, interactions=INTERACTIONS
     )
+    out["question_backfill"] = module.question_backfill(
+        map=RECORD, transcript=TRANSCRIPT
+    )
+    out["impression_backfill"] = module.impression_backfill(
+        map=RECORD, transcript=TRANSCRIPT
+    )
     out["note_register"] = module.note_register()
     out["scribe_prompt/empty"] = module.scribe_prompt()
     out["scribe_prompt/record"] = module.scribe_prompt(record=RECORD)
-    out["get_conversation_flow_prompt/claude"] = module.get_conversation_flow_prompt(
-        model="claude-opus-5-5", committed_state=STATE
-    )
-    out["get_conversation_flow_prompt/claude_empty"] = (
-        module.get_conversation_flow_prompt(model="claude-opus-5-5")
-    )
-    out["get_conversation_flow_prompt/gemini"] = module.get_conversation_flow_prompt(
-        model="gemini-2.5-flash", committed_state=STATE
-    )
     out["tool_meanings"] = {str(k): v for k, v in module.tool_meanings().items()}
     out["generic_name"] = module.generic_name("Marcus", module.Role.Father)
     return out
@@ -95,6 +92,37 @@ def test_the_app_runs_whole_with_no_private_prompts(public):
     assert public.get_agent_prompt(record="Marcus, 40")
     assert public.scribe_prompt(record="Marcus, 40")
     assert set(public.tool_meanings()) == set(public.ToolText)
+
+
+def test_the_backfill_prompt_carries_the_session_the_map_and_the_judgement(public):
+    # R-0482
+    prompt = public.question_backfill(map=RECORD, transcript=TRANSCRIPT)
+    assert TRANSCRIPT in prompt
+    assert RECORD in prompt
+    assert "people usually require questions to stimulate their thinking" in prompt
+    assert "`asked_in`" in prompt
+    assert "does the map or the rest of the session already answer it" in prompt
+    assert "does an open question or one you have just added ask nearly the same thing" in prompt
+    assert "write it so it reads alone, naming the person and the subject" in prompt
+    assert 'it speaks to the person as "you"' in prompt
+    assert "leave out any lead-in, hedge or reason" in prompt
+
+
+def test_the_impression_backfill_carries_the_session_the_map_and_the_judgement(public):
+    # R-0482
+    prompt = public.impression_backfill(map=RECORD, transcript=TRANSCRIPT)
+    assert TRANSCRIPT in prompt
+    assert RECORD in prompt
+    assert "`add_impression`" in prompt
+    assert "one that treats shifts as a series or a trend" in prompt
+
+
+def test_the_scribe_gives_every_date_its_certainty(public):
+    # R-0482
+    prompt = " ".join(public.scribe_prompt().split())
+    assert "Whenever you add an event or change its date, always give its date_certainty" in prompt
+    assert "certain when the coder gave the exact day" in prompt
+    assert "approximate when they gave only the month" in prompt
 
 
 def test_a_prompt_renders_the_fragments_it_includes(tmp_path):
@@ -171,3 +199,55 @@ def test_one_coach_prompt_and_no_mode_variants():
         assert "agent" in names
         assert [n for n in names if n != "agent" and n.startswith("agent")] == []
         assert [n for n in names if "mode" in n] == []
+
+
+@pytest.fixture
+def loader(monkeypatch):
+    """The loader as a session sees it: the open-source prompts allowed, the
+    private directory where the repo keeps it, and nothing cached."""
+    monkeypatch.setenv(prompts.OPEN, "1")
+    monkeypatch.delenv("FD_PRIVATE_PROMPTS", raising=False)
+    prompts.files.cache_clear()
+    yield prompts.files
+    prompts.files.cache_clear()
+
+
+def test_without_a_key_the_open_prompts_are_used_and_said(
+    loader, monkeypatch, tmp_path, capsys
+):
+    # R-0488
+    monkeypatch.delenv("SOPS_AGE_KEY", raising=False)
+    monkeypatch.setenv("SOPS_AGE_KEY_FILE", str(tmp_path / "keys.txt"))
+    assert loader().dirs == [prompts.PUBLIC]
+    assert capsys.readouterr().err == promptdir.missing() + "\n"
+    assert str(tmp_path / "keys.txt") in promptdir.missing()
+
+
+def test_with_the_key_the_private_prompts_are_used(loader, capsys):
+    # R-0454
+    if promptdir.missing():
+        pytest.skip(promptdir.missing())
+    files = loader()
+    assert files.dirs == [REAL_PRIVATE, prompts.PUBLIC]
+    assert files.head("scribe")["name"] == "scribe"
+    assert capsys.readouterr().err == ""
+
+
+def test_the_sandbox_will_not_start_on_the_open_prompts_unasked(tmp_path):
+    # R-0488
+    env = dict(
+        os.environ,
+        SANDBOX_HOME=str(tmp_path),
+        SOPS_AGE_KEY_FILE=str(tmp_path / "keys.txt"),
+        SANDBOX_PYTHON=sys.executable,
+    )
+    env.pop("SOPS_AGE_KEY", None)
+    done = subprocess.run(
+        [REPO / "bin" / "sandbox" / "sandbox", "up", "keyless", "8916"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert done.returncode != 0
+    assert f"no sops key in {tmp_path / 'keys.txt'}" in done.stderr
+    assert "--open-prompts" in done.stderr

@@ -17,9 +17,9 @@ from typing import Callable
 from opentelemetry import trace
 
 from btcopilot.extensions import ai_log, db
-from btcopilot import chips, clusters, profile, recordtext
+from btcopilot import chips, clusters, profile, recordtext, turnstore
 from btcopilot.pricing import cost
-from btcopilot.coachmodel import CoachModel, Spent
+from btcopilot.coachmodel import CoachModel, Spent, marked_ends
 from btcopilot.models import (
     Change,
     Discussion,
@@ -31,7 +31,8 @@ from btcopilot.models import (
 )
 from btcopilot.prompts import agent_prompt, note_register, onboarding
 from btcopilot.interactions import recent
-from btcopilot.toolbox import ToolError, Toolbox, schemas
+from btcopilot.toolbox import READS, ToolError, Toolbox, schemas
+from btcopilot.toolnames import toolcall
 from btcopilot.turnlog import TurnEventKind
 from btcopilot.schema import DiagramData, ItemKind
 
@@ -50,6 +51,14 @@ FINISH = (
 )
 
 
+# What the coach is told when it stops after its tool calls without a word to
+# the person: it was working, not done, so it is asked once to reply.
+SPEAK = (
+    "You stopped without saying anything to the person. Reply to them now, in "
+    "your own voice."
+)
+
+
 SHORTEN = (
     "These chip labels are too long for the chip they go on: {labels}. Write "
     "your reply again with every label at most {limit} characters — a noun "
@@ -63,6 +72,11 @@ SHORTEN = (
 # the same for every call in the turn and the wire keeps it. The
 # coach_story_shape fragment in its system prompt says what to do with them.
 STORY = "**What changed in the story since last time**\n\n{sentences}"
+
+
+# What a past turn's read answers are replaced with in the history: the record
+# may have moved since, and the map and the read tools are how the coach sees it.
+NOT_KEPT = "What this read returned is not kept. Read again if you need it."
 
 
 NARRATE = (
@@ -90,6 +104,26 @@ class BareList(Exception):
     that can turn one into sentences."""
 
 
+def drain(words):
+    """The model's turn, once every piece of its words has gone by."""
+    while True:
+        try:
+            next(words)
+        except StopIteration as stop:
+            return stop.value
+
+
+def run_call(toolbox: Toolbox, call) -> tuple[str, dict | None, str | None]:
+    """What the model reads, what the page sees, and why the record refused
+    the call in plain words, or None."""
+    try:
+        text, event = toolbox.call(call.name, call.args)
+    except ToolError as e:
+        _log.warning(f"Tool {call.name} refused: {e}")
+        return f"That did not work: {e}", None, e.plain
+    return text, event, None
+
+
 def _again(model, system, messages: list[dict], spoken: str, ask: str, turn_id: str):
     """Ask once for the reply again. The words are the coach's own, so nothing
     here rewrites them — it asks the coach to."""
@@ -97,19 +131,14 @@ def _again(model, system, messages: list[dict], spoken: str, ask: str, turn_id: 
         {"role": "assistant", "content": spoken},
         {"role": "user", "content": ask},
     ]
-    words = model.turn(system, asked, [], turn_id)
-    while True:
-        try:
-            next(words)
-        except StopIteration as stop:
-            return stop.value.text
+    return drain(model.turn(system, asked, [], turn_id)).text
 
 
 def shorten_labels(
-    model, system, messages: list[dict], spoken: str, data, turn_id=""
+    model, system, messages: list[dict], spoken: str, data, diagram_id: int | None, turn_id=""
 ) -> str:
     """Ask once for shorter chip labels."""
-    over = chips.too_long(spoken, data)
+    over = chips.too_long(spoken, data, diagram_id)
     if not over:
         return spoken
     _log.warning(f"Chip labels too long, asking again: {over}")
@@ -123,7 +152,7 @@ def shorten_labels(
         ),
         turn_id,
     )
-    still = chips.too_long(shortened, data)
+    still = chips.too_long(shortened, data, diagram_id)
     if still:
         raise LabelTooLong(f"Chip labels still too long after asking again: {still}")
     return shortened
@@ -195,13 +224,22 @@ class CoachTurn:
         statement_id: int | None = None,
         sink: Callable[[dict], None] | None = None,
         turn_id: str | None = None,
+        resume: bool = False,
+        scratch: bool = False,
     ):
+        """A scratch turn runs on a copy: it charges no one's monthly cap and
+        leaves the user's profile alone."""
         self.discussion = discussion
         self.statement = statement
         # The route stores the user's words before the turn is handed to the
         # worker, so the turn is told which statement it is answering.
         self.statement_id = statement_id
+        self.resume = resume
+        self.scratch = scratch
         self.sink = sink
+        # Everything the database keeps of this turn once it ends: what the page
+        # was told, less the words, plus each round of tool calls as sent.
+        self.kept: list[dict] = []
         self.streamed = ""
         self.session_id = session_id or str(discussion.id)
         self.turn_id = turn_id or uuid.uuid4().hex
@@ -239,23 +277,27 @@ class CoachTurn:
         if self.statement_id is None:
             user_statement = Statement(
                 discussion_id=self.discussion.id,
-                text=chips.validate(self.statement, data),
+                text=chips.validate(self.statement, data, self.discussion.diagram_id),
                 speaker=self.discussion.chat_user_speaker,
                 order=self.discussion.next_order(),
                 kind=StatementKind.Turn,
+                turn_id=self.turn_id,
             )
             # Flushed, not committed: a turn that fails before the coach answers
             # leaves no words behind, so a retry does not store them twice.
             db.session.add(user_statement)
             db.session.flush()
 
-        # The coaching text is the same every turn and the rest is not, so they
-        # go over the wire apart: the first is kept there, the second re-read.
+        # The coaching text is the same every turn and the rest is not, so the
+        # rest goes after the chat, heading the new message, and the chat before
+        # it is read back from the wire instead of written to it again.
         # In a note the clinician is writing, not the person whose entry it is.
         note = DiscussionKind(self.discussion.kind) is DiscussionKind.Note
         own = profile.own(data)
-        fixed, tail = agent_prompt(
-            record=recordtext.render(data, None if note or not own else own["id"]),
+        system, tail = agent_prompt(
+            record=recordtext.outline(
+                data, self.diagram.version, None if note or not own else own["id"]
+            ),
             interactions=recordtext.interactions(
                 recent(self.diagram.id, RECENT_INTERACTIONS)
             ),
@@ -266,10 +308,12 @@ class CoachTurn:
         gaps = profile.missing(data)
         if gaps:
             tail = f"{tail}\n\n{onboarding(gaps, own['id'] if own else 1)}"
-        system = [fixed, tail]
-        messages = self._history()
+        messages = self._history(tail)
+        if self.resume:
+            messages += self._picked_up()
         spoken = ""
         events = []
+        silent = False
 
         for step in range(MAX_STEPS):
             turn = self._say(system, messages, schemas(), stream=True)
@@ -278,30 +322,38 @@ class CoachTurn:
             # it, so only a step that calls nothing is the coach speaking.
             spoken = turn.text
             if not turn.calls:
-                break
+                if spoken.strip() or step == 0 or silent:
+                    break
+                _log.warning(f"Turn {self.turn_id} step {step} stopped with no words")
+                silent = True
+                _say(messages, ("user", SPEAK))
+                continue
             if turn.text:
                 _log.info(f"Turn {self.turn_id} step {step} thought aloud: {turn.text}")
 
             results = []
             for call in turn.calls:
-                self._note(
-                    events,
-                    {
-                        "type": TurnEventKind.ToolCall.value,
-                        "name": call.name,
-                        "args": call.args,
-                    },
-                )
-                text, event, refused = self._call(call)
+                asked = toolcall(self.toolbox.data, call.name, call.args)
+                text, event, refusal = run_call(self.toolbox, call)
+                asked["refusal"] = refusal
+                # a read changes nothing, so which events it read rides on the
+                # call itself, for the page to grey them (R-0540)
+                if call.name in READS and event:
+                    asked.update(event)
+                self._note(events, asked)
+                # Kept after the page was told, so only the database holds what
+                # it answered; a read's answer is too long to keep and goes stale.
+                if call.name not in READS:
+                    asked["result"] = text
                 results.append(
                     {
                         "type": "tool_result",
                         "tool_use_id": call.id,
                         "content": text,
-                        "is_error": refused,
+                        "is_error": refusal is not None,
                     }
                 )
-                if event:
+                if event and call.name not in READS:
                     kind = (
                         TurnEventKind.View
                         if "view" in event
@@ -315,6 +367,13 @@ class CoachTurn:
                 last["content"] = f"{last['content']}\n\n{said}"
             messages.append({"role": "assistant", "content": turn.blocks})
             messages.append({"role": "user", "content": results})
+            self.kept.append(
+                {
+                    "type": TurnEventKind.Step.value,
+                    "blocks": turn.blocks,
+                    "results": results,
+                }
+            )
         else:
             _log.warning(
                 f"Turn {self.turn_id} hit the step cap: {MAX_STEPS} steps used, "
@@ -326,11 +385,11 @@ class CoachTurn:
         if not spoken.strip():
             raise EmptyReply(f"Turn {self.turn_id} produced no words for the user")
         spoken = shorten_labels(
-            self.model, system, messages, spoken, self.data, self.turn_id
+            self.model, system, messages, spoken, self.data, self.discussion.diagram_id, self.turn_id
         )
         spoken = narrate(self.model, system, messages, spoken, self.turn_id)
 
-        reply = chips.validate(spoken.strip(), self.data)
+        reply = chips.validate(spoken.strip(), self.data, self.discussion.diagram_id)
         # What was typed out live is the words as the model first said them. A
         # retry for shorter labels or for sentences replaces them, so the page
         # is told to drop what it has and take these instead.
@@ -345,6 +404,7 @@ class CoachTurn:
             order=self.discussion.next_order(),
             views=self.toolbox.views or None,
             kind=StatementKind.Turn,
+            turn_id=self.turn_id,
         )
         db.session.add(coach_statement)
         db.session.flush()
@@ -354,8 +414,9 @@ class CoachTurn:
         if self.discussion.title is None:
             self.discussion.update_title()
             self.discussion.update_summary()
-        profile.mirror(self.discussion.user, self.data)
-        TokenMeter.charge(self.discussion.user_id, self.model.spent)
+        if not self.scratch:
+            profile.mirror(self.discussion.user, self.data)
+            TokenMeter.charge(self.discussion.user_id, self.model.spent)
         db.session.commit()
 
         return {
@@ -419,9 +480,25 @@ class CoachTurn:
 
     def _note(self, events: list[dict], event: dict) -> None:
         """What the turn returns at the end and what it says as it goes are the
-        same events, in the same order."""
+        same events, in the same order. The record's own edits are kept in the
+        change log, so they are not kept twice."""
         events.append(event)
+        if event["type"] != TurnEventKind.RecordPatch.value:
+            self.kept.append(event)
         self._send(event)
+
+    def _picked_up(self) -> list[dict]:
+        """A failed turn going on from where it stopped: the page is told again
+        what was already done, and the model gets its own rounds of tool calls
+        back, so it finishes the turn rather than starting it over."""
+        messages = []
+        for event in turnstore.kept({self.turn_id}).get(self.turn_id, []):
+            if event["type"] == TurnEventKind.ToolCall.value:
+                self._send(event)
+            elif event["type"] == TurnEventKind.Step.value:
+                messages.append({"role": "assistant", "content": event["blocks"]})
+                messages.append({"role": "user", "content": event["results"]})
+        return messages
 
     def _say(self, system, messages: list[dict], tools: list[dict], stream=False):
         """One model call. The words go out as they arrive; a step that ends in
@@ -439,40 +516,93 @@ class CoachTurn:
                     self._send({"type": TurnEventKind.TextReset.value})
                 return stop.value
 
-    def _call(self, call) -> tuple[str, dict | None, bool]:
-        try:
-            text, event = self.toolbox.call(call.name, call.args)
-        except ToolError as e:
-            _log.warning(f"Tool {call.name} refused: {e}")
-            return f"That did not work: {e}", None, True
-        return text, event, False
-
-    def _history(self) -> list[dict]:
-        """The chat so far, with the new message and what its chips point at."""
-        messages = []
+    def _history(self, tail: str) -> list[dict]:
+        """The chat so far, then the record and the day, then the new message
+        and what its chips point at. Each past coach reply comes with the tool
+        calls its turn made, so the coach knows what it has already done to the
+        record. The chat is marked where it stood before this message and
+        before the last one: what this turn writes to the wire, the next reads."""
         prior = sorted(
             [s for s in self.discussion.statements if s.text],
             key=lambda s: (s.order or 0, s.id or 0),
         )[:-1]
+        did = turnstore.kept(
+            {
+                s.turn_id
+                for s in prior
+                if s.turn_id and s.speaker_id == self.discussion.chat_ai_speaker_id
+            }
+        )
+        messages = []
+        ends = []
         for s in prior:
-            role = (
-                "assistant"
-                if s.speaker_id == self.discussion.chat_ai_speaker_id
-                else "user"
-            )
-            if messages and messages[-1]["role"] == role:
-                messages[-1]["content"] += "\n\n" + s.text
+            coach = s.speaker_id == self.discussion.chat_ai_speaker_id
+            if coach:
+                _say(messages, *_calls(s.turn_id, did.get(s.turn_id, [])))
             else:
-                messages.append({"role": role, "content": s.text})
+                ends.append(_settled(messages))
+            _say(messages, ("assistant" if coach else "user", s.text))
         if messages and messages[0]["role"] == "assistant":
             messages.insert(0, {"role": "user", "content": "Hello"})
+            ends = [end + 1 for end in ends]
+        ends.append(_settled(messages))
+        messages = marked_ends(messages, ends[-2:])
 
         spoken = self.statement
-        pointed = chips.context(self.statement, self.data)
+        pointed = chips.context(self.statement, self.data, self.discussion.diagram_id)
         if pointed:
             spoken = f"{spoken}\n\n{pointed}"
-        if messages and messages[-1]["role"] == "user":
-            messages[-1]["content"] += "\n\n" + spoken
-        else:
-            messages.append({"role": "user", "content": spoken})
+        _say(messages, ("user", _blocks(tail) + _blocks(spoken)))
         return messages
+
+
+def _calls(turn_id: str, events: list[dict]) -> list[tuple[str, list[dict]]]:
+    """A past turn's tool calls as the model made them, and what each answered."""
+    asked = [e for e in events if e["type"] == TurnEventKind.ToolCall.value]
+    if not asked:
+        return []
+    ids = [f"past_{turn_id}_{i}" for i in range(len(asked))]
+    return [
+        (
+            "assistant",
+            [
+                {"type": "tool_use", "id": id, "name": e["name"], "input": e["args"]}
+                for id, e in zip(ids, asked)
+            ],
+        ),
+        (
+            "user",
+            [
+                {
+                    "type": "tool_result",
+                    "tool_use_id": id,
+                    "content": e.get("result") or NOT_KEPT,
+                    "is_error": bool(e.get("refusal")),
+                }
+                for id, e in zip(ids, asked)
+            ],
+        ),
+    ]
+
+
+def _say(messages: list[dict], *said: tuple[str, str | list[dict]]) -> None:
+    """Add to the chat, running two in a row from one side into one message."""
+    for role, content in said:
+        if not messages or messages[-1]["role"] != role:
+            messages.append({"role": role, "content": content})
+        elif isinstance(content, str) and isinstance(messages[-1]["content"], str):
+            messages[-1]["content"] += "\n\n" + content
+        else:
+            messages[-1]["content"] = _blocks(messages[-1]["content"]) + _blocks(
+                content
+            )
+
+
+def _settled(messages: list[dict]) -> int:
+    """How many messages a user's words would leave as they are: they join a
+    user message already last, so that one is not settled."""
+    return len(messages) - (1 if messages and messages[-1]["role"] == "user" else 0)
+
+
+def _blocks(content: str | list[dict]) -> list[dict]:
+    return [{"type": "text", "text": content}] if isinstance(content, str) else content

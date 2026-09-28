@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { CASES, drawings, freeze } from "./drawings";
-import { inside, stateFor } from "./setup";
+import { inside, lists, openList, stateFor } from "./setup";
 
 /** The move language, one drawing per move: each draws its people, named, inside
  * its cell. Pixels are not compared here (R-0416).
@@ -38,28 +38,20 @@ test.describe("the move language", () => {
       await inside(cell.locator("svg"), cell);
     });
   }
-
-  // R-0288
-  test("the board a coach's triangle opens", async ({ page: browser }) => {
-    test.skip(test.info().project.name !== "phone");
-    await browser.goto(url);
-    const cell = browser.locator("#m-triangle-board");
-    await expect(cell.locator("svg")).toBeVisible();
-    await inside(cell.locator("svg"), cell);
-  });
 });
 
 test.describe("what a chip does", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0168
+  // R-0168, R-0543
   test("what the coach named stays lit on the picture", async ({ page }) => {
     await page.goto("/app/");
     await expect(page.locator("#view .ss")).toBeVisible();
     await page.waitForTimeout(500);
     // the record rests on one open cluster, which writes no words on the
-    // drawing (owner, 2026-09-09): what the coach named is lit on its dots
-    await expect(page.locator("#view .dot.lit").first()).toBeVisible();
+    // drawing (owner, 2026-09-09): what the coach named is inside it, so its
+    // pill is lit
+    await expect(page.locator("#view rect.pill.on")).toHaveCount(1);
   });
 });
 
@@ -69,19 +61,19 @@ test.describe("the timeline behind the menu", () => {
   // R-0141
   test("the list of everything", async ({ page }) => {
     await page.goto("/app/");
-    await page.locator("#menu-open").click();
+    await openList(page);
     await expect(page.locator("#menu-body .row").first()).toBeVisible();
     await expect(page.locator("#menu-body .row").first()).not.toBeEmpty();
-    await inside(page.locator("#menu-body .row").first(), page.locator("#menu-screen"), true);
+    await inside(page.locator("#menu-body .row").first(), lists(page), true);
   });
 
   // R-0174
   test("the editor's fields, text centred in the box", async ({ page }) => {
     await page.goto("/app/");
-    await page.locator("#menu-open").click();
+    await openList(page);
     await page.locator("#menu-body .row").first().click();
     await expect(page.locator(".editor .segs").first()).toBeVisible();
-    await inside(page.locator(".editor").first(), page.locator("#menu-screen"), true);
+    await inside(page.locator(".editor").first(), lists(page), true);
   });
 });
 
@@ -92,7 +84,7 @@ test.describe("the editor's fields by kind", () => {
 
   const openEditor = async (page: import("@playwright/test").Page) => {
     await page.goto("/app/");
-    await page.locator("#menu-open").click();
+    await openList(page);
     await page.locator("#menu-body .row").first().click();
     await expect(page.locator(".editor .segs").first()).toBeVisible();
   };
@@ -160,12 +152,30 @@ test.describe("the editor's fields by kind", () => {
     await expect(page.locator('.editor [data-label="person"]')).toHaveText("Overfunctioner");
   });
 
-  // R-0142
+  // R-0527
+  test("the mover is never offered as a target or a third person", async ({ page }) => {
+    await openEditor(page);
+    await pick(page, "kind", "shift");
+    await pick(page, "relationship", "inside");
+    const offered = (group: string) =>
+      page.locator(`.segs[data-name="${group}"] .seg:visible`).allTextContents();
+    const people = page.locator('.segs[data-name="person"] .seg:not([data-value=""])');
+    const mover = (await page.locator('.segs[data-name="person"] .seg.on').textContent())!;
+    expect(await offered("relationshipTargets")).not.toContain(mover);
+    expect(await offered("relationshipTriangles")).not.toContain(mover);
+    const other = people.filter({ hasNotText: mover }).first();
+    const next = (await other.textContent())!;
+    await other.click();
+    expect(await offered("relationshipTargets")).toContain(mover);
+    expect(await offered("relationshipTargets")).not.toContain(next);
+  });
+
+  // R-0142, R-0527
   test("a relationship saves with two targets", async ({ page }) => {
     await openEditor(page);
     await pick(page, "kind", "shift");
     await pick(page, "relationship", "conflict");
-    const targets = page.locator('.segs[data-name="relationshipTargets"] .seg');
+    const targets = page.locator('.segs[data-name="relationshipTargets"] .seg:visible');
     // whatever a previous run left on comes off first, so two is two
     for (const chip of await page
       .locator('.segs[data-name="relationshipTargets"] .seg.on')
@@ -192,15 +202,20 @@ test.describe("the editor's fields by kind", () => {
     await openEditor(page);
     await pick(page, "kind", "shift");
     await pick(page, "relationship", "conflict");
-    await page.locator('.segs[data-name="relationshipTargets"] .seg').nth(0).click();
+    await page.locator('.segs[data-name="relationshipTargets"] .seg:visible').nth(0).click();
     await pick(page, "anxiety", "up");
     await pick(page, "kind", "married");
+    // a marriage is refused without the other partner (R-0453)
+    await pick(page, "spouse", "2");
     const saved = page.waitForResponse(
       (r) => /\/app\/events/.test(r.url()) && r.request().method() === "PATCH",
     );
     await page.locator(".editor .save").click();
-    const body = (await saved).request().postDataJSON();
+    const response = await saved;
+    expect(response.ok()).toBe(true);
+    const body = response.request().postDataJSON();
     expect(body.kind).toBe("married");
+    expect(body.spouse).toBe(2);
     expect(body.relationship).toBeNull();
     expect(body.relationshipTargets).toEqual([]);
     expect(body.anxiety).toBeNull();

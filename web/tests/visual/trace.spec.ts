@@ -14,16 +14,14 @@ const tapItsWords = async (page: Page) => {
   await page.locator('.ss-hit[data-target="zone"]').last().click();
   const words = page.locator("#view .ss-t.on").first();
   await expect(words).toBeVisible();
-  const label = (await page.locator("#view .ss-t.on").allTextContents()).join(" ");
+  const label = (await page.locator("#path .here").textContent()) ?? "";
   const box = (await words.boundingBox())!;
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
   return label;
 };
 
-// defect: at rest the picked event's words carry no tap target, so the tap
-// lands on empty ground and puts the picture down
 // R-0192
-test.fail("tapping the picked event's words takes the chat to where it was said", async ({
+test("tapping the picked event's words takes the chat to where it was said", async ({
   page,
 }) => {
   await tapItsWords(page);
@@ -31,9 +29,8 @@ test.fail("tapping the picked event's words takes the chat to where it was said"
   await expect(page.locator(".bub.traced")).toBeInViewport();
 });
 
-// defect: the same missing tap target
 // R-0192
-test.fail("the chat lands on the very words that recorded that event", async ({ page }) => {
+test("the chat lands on the very words that recorded that event", async ({ page }) => {
   const label = await tapItsWords(page);
   const timeline = await (await page.request.get("/app/timeline")).json();
   const event = timeline.events.find((e: { label: string }) => label.includes(e.label));

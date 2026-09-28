@@ -1,0 +1,842 @@
+{
+  "uid": "fd-chat",
+  "title": "Chat: people and cost",
+  "tags": [
+    "fd",
+    "chat"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "1m",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "user",
+        "label": "Person",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "ffz1wy7unkdfke"
+        },
+        "query": "select u.username as __text, u.id as __value from users u where u.username not like 'claude-test%' and (exists (select 1 from model_calls mc where mc.user_id=u.id and not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch)) or exists (select 1 from discussions d join statements s on s.discussion_id=d.id where d.user_id=u.id and not exists (select 1 from diagrams dg where dg.id=d.diagram_id and dg.scratch))) order by u.username",
+        "definition": "select u.username as __text, u.id as __value from users u where u.username not like 'claude-test%' and (exists (select 1 from model_calls mc where mc.user_id=u.id and not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch)) or exists (select 1 from discussions d join statements s on s.discussion_id=d.id where d.user_id=u.id and not exists (select 1 from diagrams dg where dg.id=d.diagram_id and dg.scratch))) order by u.username",
+        "refresh": 1,
+        "sort": 0,
+        "multi": true,
+        "includeAll": true,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": []
+      }
+    ]
+  },
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(distinct d.user_id) as value from statements s join discussions d on d.id=s.discussion_id join users u on u.id=d.user_id join speakers sp on sp.id=s.speaker_id where not exists (select 1 from diagrams dg where dg.id=d.diagram_id and dg.scratch) and sp.type='Subject' and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(s.created_at)",
+          "refId": "A"
+        }
+      ],
+      "title": "People who chatted",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as value from statements s join discussions d on d.id=s.discussion_id join users u on u.id=d.user_id join speakers sp on sp.id=s.speaker_id where not exists (select 1 from diagrams dg where dg.id=d.diagram_id and dg.scratch) and sp.type='Subject' and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(s.created_at)",
+          "refId": "A"
+        }
+      ],
+      "title": "Messages from people",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as value from statements s join discussions d on d.id=s.discussion_id join users u on u.id=d.user_id join speakers sp on sp.id=s.speaker_id where not exists (select 1 from diagrams dg where dg.id=d.diagram_id and dg.scratch) and sp.type='Expert' and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(s.created_at)",
+          "refId": "A"
+        }
+      ],
+      "title": "Coach replies",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select coalesce(sum(mc.cost_usd),0) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at)",
+          "refId": "A"
+        }
+      ],
+      "title": "Cost in range",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select coalesce(sum(mc.input_tokens+mc.output_tokens+mc.cache_creation_tokens+mc.cache_read_tokens),0) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at)",
+          "refId": "A"
+        }
+      ],
+      "title": "Tokens in range",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(s.created_at,'1d'), u.username as metric, count(*) as value from statements s join discussions d on d.id=s.discussion_id join users u on u.id=d.user_id join speakers sp on sp.id=s.speaker_id where not exists (select 1 from diagrams dg where dg.id=d.diagram_id and dg.scratch) and sp.type='Subject' and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(s.created_at) group by 1, u.username order by 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Messages a day, by person",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(s.created_at,'1d'), count(*) as value from statements s join discussions d on d.id=s.discussion_id join users u on u.id=d.user_id join speakers sp on sp.id=s.speaker_id where not exists (select 1 from diagrams dg where dg.id=d.diagram_id and dg.scratch) and sp.type='Expert' and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(s.created_at) group by 1 order by 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Coach replies a day",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), u.username as metric, sum(mc.cost_usd) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1, u.username order by 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Cost a day, by person",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), mc.model as metric, sum(mc.cost_usd) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1, mc.model order by 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Cost a day, by model",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cost"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tokens_in"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tokens_out"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tokens_cache_read"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "id": 10,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with msgs as (\n  select d.user_id, count(*) as messages\n  from statements s join discussions d on d.id=s.discussion_id\n  join speakers sp on sp.id=s.speaker_id\n  where not exists (select 1 from diagrams dg where dg.id=d.diagram_id and dg.scratch) and sp.type='Subject' and $__timeFilter(s.created_at)\n  group by d.user_id\n),\nreplies as (\n  select d.user_id, count(*) as replies\n  from statements s join discussions d on d.id=s.discussion_id\n  join speakers sp on sp.id=s.speaker_id\n  where not exists (select 1 from diagrams dg where dg.id=d.diagram_id and dg.scratch) and sp.type='Expert' and $__timeFilter(s.created_at)\n  group by d.user_id\n),\ncalls as (\n  select mc.user_id, count(*) as calls, sum(mc.input_tokens) as tokens_in,\n         sum(mc.output_tokens) as tokens_out, sum(mc.cache_read_tokens) as tokens_cache_read,\n         sum(mc.cost_usd) as cost\n  from model_calls mc\n  where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and $__timeFilter(mc.created_at)\n  group by mc.user_id\n)\nselect u.username as email,\n  coalesce(msgs.messages,0) as messages,\n  coalesce(replies.replies,0) as coach_replies,\n  coalesce(calls.calls,0) as calls,\n  coalesce(calls.tokens_in,0) as tokens_in,\n  coalesce(calls.tokens_out,0) as tokens_out,\n  coalesce(calls.tokens_cache_read,0) as tokens_cache_read,\n  coalesce(calls.cost,0) as cost\nfrom users u\nleft join msgs on msgs.user_id=u.id\nleft join replies on replies.user_id=u.id\nleft join calls on calls.user_id=u.id\nwhere (coalesce(msgs.messages,0) > 0 or coalesce(replies.replies,0) > 0 or coalesce(calls.calls,0) > 0)\n  and u.id in ($user) and u.username not like 'claude-test%'\norder by cost desc, messages desc",
+          "refId": "A"
+        }
+      ],
+      "title": "This month by person",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "duration_ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cost"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 46
+      },
+      "id": 11,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select mc.created_at as time, u.username as email, mc.model, mc.duration_ms, mc.tool_calls, mc.cost_usd as cost\nfrom model_calls mc join users u on u.id=mc.user_id\nwhere not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch)\n  and mc.created_at >= now() - interval '24 hours'\n  and u.id in ($user) and u.username not like 'claude-test%'\norder by mc.duration_ms desc\nlimit 20",
+          "refId": "A"
+        }
+      ],
+      "title": "Slowest coach calls (last 24h)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false
+          },
+          "max": 1,
+          "min": 0,
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 54
+      },
+      "id": 12,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), case when sum(mc.input_tokens+mc.cache_read_tokens+mc.cache_creation_tokens)=0 then null else sum(mc.cache_read_tokens)::float/sum(mc.input_tokens+mc.cache_read_tokens+mc.cache_creation_tokens) end as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1 order by 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Cache hit share",
+      "type": "timeseries"
+    }
+  ]
+}

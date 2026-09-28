@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { lists, openList, stateFor } from "./setup";
 
 /** One record, reached from either side. A person's editor offers the events
  * about them; an event's editor offers the people in it; and the words on the
@@ -10,11 +10,6 @@ const settle = async (page: Page) => {
   await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(500);
-};
-
-const openList = async (page: Page) => {
-  await page.locator("#menu-open").click();
-  await expect(page.locator("#menu-screen")).toBeVisible();
 };
 
 const editor = (page: Page) => page.locator("#menu-body .editor");
@@ -57,7 +52,7 @@ test.describe("an event and the people in it", () => {
     // the person already chosen: tapping them goes to them
     await editor(page).locator('.segs[data-name="person"] .seg.on').click();
     await expect(page.locator("#tab-people")).toHaveClass(/on/);
-    await expect(page.locator("#menu-screen")).toBeVisible();
+    await expect(lists(page)).toBeVisible();
     await expect(editor(page).locator('[data-name="name"]')).toHaveValue("Ada");
   });
 
@@ -107,39 +102,23 @@ test.describe("the picture with one cluster open", () => {
 
   const openCluster = async (page: Page) => {
     await page.locator('.ss-hit[data-target="cluster"]').first().click();
-    await expect(page.locator('.ss-hit[data-target="zone"]').first()).toBeVisible();
+    await expect(page.locator('#path [data-step="0"]')).toBeVisible();
     await page.waitForTimeout(400);
   };
 
-  // R-0202
+  // R-0202, R-0540
   test("shows the way back to all of them", async ({ page }) => {
     await settle(page);
-    // the name of the picture is the way back, and says so while one is open
-    await expect(page.locator("#crumb")).toHaveText("Family timeline");
+    // the path is the way back, and names where the reader is
+    await expect(page.locator("#path")).toHaveText("Timeline");
     await openCluster(page);
-    // the name row says the open cluster's own name, and the way back up is
-    // the green arrow beside it, which does the same thing (ruling 2026-09-08)
-    await expect(page.locator("#crumb")).toHaveText("Leaving and losing");
-    await expect(page.locator("#up")).toBeVisible();
+    // the path names the open cluster by its years and the row under the line
+    // by its own name; the first step of the path is the way back up
+    await expect(page.locator("#path")).toHaveText("Timeline \u203a 1981\u20132003");
+    await expect(page.locator("#view .ss-name")).toHaveText("Leaving and losing (3)");
 
-    await page.locator("#crumb").click();
+    await page.locator('#path [data-step="0"]').click();
     await expect(page.locator('.ss-hit[data-target="cluster"]').first()).toBeVisible();
-    await expect(page.locator("#crumb")).toHaveText("Family timeline");
-  });
-
-  // R-0207
-  test("the words of the moment picked open its editor", async ({ page }) => {
-    await settle(page);
-    await openCluster(page);
-    await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator("#view .ss-t.on").first()).toBeVisible();
-
-    const label = page.locator("#view .ss-t.on").first();
-    const box = (await label.boundingBox())!;
-    await page.mouse.click(box.x + 30, box.y + box.height / 2);
-
-    await expect(page.locator("#menu-screen")).toBeVisible();
-    await expect(page.locator("#tab-events")).toHaveClass(/on/);
-    await expect(editor(page)).toBeVisible();
+    await expect(page.locator("#path")).toHaveText("Timeline");
   });
 });

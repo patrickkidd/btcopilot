@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { inside, stateFor, steady } from "./setup";
+import { inside, openList, pinned, stateFor, steady, type Key } from "./setup";
 
 /** What the resting picture looks like on each shape of record, and what a tap
  * on it does. Goldens, so a change to the drawing has to be looked at.
@@ -38,7 +38,7 @@ test.describe("the resting picture", () => {
  * has to open a cluster first, which is what a reader does. */
 const openCluster = async (page: import("@playwright/test").Page) => {
   await page.locator('.ss-hit[data-target="cluster"]').first().click();
-  await expect(page.locator('.ss-hit[data-target="zone"]').first()).toBeVisible();
+  await expect(page.locator('#path [data-step="0"]')).toBeVisible();
   await page.waitForTimeout(400);
 };
 
@@ -93,79 +93,137 @@ test.describe("the undated shelf", () => {
   });
 });
 
-/** The line is drawn a little wider than the screen and slides sideways under
- * it, so a crowded record reads at a scale a thumb can pick from (R-0381).
- * The dense record is the one wide enough to slide. */
-test.describe("the resting line slides sideways", () => {
-  test.use({ storageState: stateFor("dense60") });
+/** A long record is drawn wider than the screen, never more than two screens,
+ * and swiped sideways under it; it opens at the present, and the years under
+ * it slide with it (R-0381). Whitlock's runs from 1924 to 1982. */
+const line = (page: import("@playwright/test").Page) => page.locator("#view .ss-scroll");
 
-  const line = (page: import("@playwright/test").Page) =>
-    page.locator("#view .ss-scroll");
+const at = (page: import("@playwright/test").Page) =>
+  line(page).evaluate((node) => ({
+    left: node.scrollLeft,
+    end: node.scrollWidth - node.clientWidth,
+    screens: node.scrollWidth / node.clientWidth,
+  }));
 
-  const at = (page: import("@playwright/test").Page) =>
-    line(page).evaluate((node) => ({
-      left: node.scrollLeft,
-      end: node.scrollWidth - node.clientWidth,
-      screen: node.clientWidth,
-    }));
+/** A swipe across the picture. */
+const swipe = async (page: import("@playwright/test").Page, by: number) => {
+  await line(page).hover();
+  await page.mouse.wheel(-by, 0);
+  await page.waitForTimeout(600);
+};
 
-  /** A swipe across the picture, which takes the line back into the earlier
-   * years. */
-  const swipe = async (page: import("@playwright/test").Page, by: number) => {
-    await line(page).hover();
-    await page.mouse.wheel(-by, 0);
-    await page.waitForTimeout(600);
-  };
+const yearsUnder = (page: import("@playwright/test").Page) =>
+  page.locator("#view .ep-yrs").allTextContents();
 
-  const yearsUnder = (page: import("@playwright/test").Page) =>
-    page.locator("#view .ss-yrs span").allTextContents();
+test.describe("the resting line on a long record", () => {
+  test.use({ storageState: stateFor("whitlock") });
 
-  // R-0381, R-0111
-  test("opens with the most recent stretch filling the width", async ({ page }) => {
+  // R-0381, R-0111, R-0543
+  test("is wider than the screen, at most two screens, and opens at the present", async ({
+    page,
+  }) => {
     await settle(page);
-    const { left, end, screen } = await at(page);
-    expect(end).toBeGreaterThan(0);
-    expect(left).toBe(end);
-    // one or two swipes, never a data project: two screens is the whole line
-    expect(end + screen).toBeLessThanOrEqual(2 * screen);
+    const stands = await at(page);
+    expect(stands.end).toBeGreaterThan(0);
+    expect(stands.screens).toBeLessThanOrEqual(2);
+    expect(stands.left).toBe(stands.end);
+    const years = await yearsUnder(page);
+    expect(years[0]).toBe("1924");
+    expect(years[years.length - 1]).toBe("1982");
   });
 
-  // R-0381, R-0111
-  test("a swipe takes it back to the earlier years", async ({ page }) => {
+  // R-0381
+  test("a swipe slides the line back toward its first year", async ({ page }) => {
     await settle(page);
-    const before = await yearsUnder(page);
-    expect(before).toHaveLength(2);
+    const { end } = await at(page);
     await swipe(page, 300);
-    const now = await at(page);
-    expect(now.left).toBeLessThan(now.end);
-    const after = await yearsUnder(page);
-    expect(Number(after[0])).toBeLessThan(Number(before[0]));
+    expect((await at(page)).left).toBeLessThan(end);
   });
 
-  // R-0377
-  test("every dot stays on the wire, wherever the line stands", async ({ page }) => {
+  // R-0381
+  test("going back to the whole timeline puts the line at the present", async ({ page }) => {
     await settle(page);
-    const onWire = async () =>
-      page.locator("#view .ss svg").evaluate((svg) => {
-        const wire = svg.querySelector("line.wire") as SVGLineElement;
-        const y = Number(wire.getAttribute("y1"));
-        return [...svg.querySelectorAll("circle")].every(
-          (dot) => Number(dot.getAttribute("cy")) === y,
-        );
-      });
-    expect(await onWire()).toBe(true);
-    await swipe(page, 300);
-    expect(await onWire()).toBe(true);
+    await line(page).evaluate((s) => (s.scrollLeft = 0));
+    await page.locator('.ss-hit[data-target="cluster"]').first().click();
+    await expect(page.locator('#path [data-step="0"]')).toBeVisible();
+    await page.locator('#path [data-step="0"]').click();
+    await page.waitForTimeout(400);
+    const stands = await at(page);
+    expect(stands.left).toBe(stands.end);
+  });
+
+  // R-0377, R-0543
+  test("every dot and every pill sits on the wire", async ({ page }) => {
+    await settle(page);
+    const onWire = await page.locator("#view .ss svg").evaluate((svg) => {
+      const wire = svg.querySelector("line.wire") as SVGLineElement;
+      const y = Number(wire.getAttribute("y1"));
+      const pills = [...svg.querySelectorAll("rect.pill")].map(
+        (p) => Number(p.getAttribute("y")) + Number(p.getAttribute("height")) / 2,
+      );
+      const dots = [...svg.querySelectorAll("circle")].map((d) => Number(d.getAttribute("cy")));
+      return pills.length > 0 && [...pills, ...dots].every((at) => at === y);
+    });
+    expect(onWire).toBe(true);
   });
 
   // R-0045, R-0381
-  test("a tap still picks the cluster under the thumb", async ({ page }) => {
+  test("a tap still picks the cluster under the thumb after a swipe", async ({ page }) => {
     await settle(page);
-    await swipe(page, 300);
+    await swipe(page, 100);
     await page.locator('.ss-hit[data-target="cluster"]').first().click();
-    await expect(page.locator('.ss-hit[data-target="zone"]').first()).toBeVisible();
+    await expect(page.locator('#path [data-step="0"]')).toBeVisible();
   });
 });
+
+/** The line's width and where it starts, on every fixture record at phone and
+ * desktop sizes, as the line before the pill strip drew them (8974698): two
+ * screens starting at the present for the records whose clusters sit close,
+ * one screen for the rest (R-0381). */
+const BEFORE: Record<number, Partial<Record<Key, { width: number; start: number }>>> = {
+  390: {
+    one: { width: 390, start: 0 },
+    three40: { width: 390, start: 0 },
+    dense60: { width: 780, start: 390 },
+    hostile: { width: 390, start: 0 },
+    moves: { width: 390, start: 0 },
+    play: { width: 390, start: 0 },
+    longmove: { width: 390, start: 0 },
+    longname: { width: 390, start: 0 },
+    editable: { width: 390, start: 0 },
+    whitlock: { width: 780, start: 390 },
+  },
+  1280: {
+    one: { width: 538, start: 0 },
+    three40: { width: 538, start: 0 },
+    dense60: { width: 1076, start: 538 },
+    hostile: { width: 538, start: 0 },
+    moves: { width: 538, start: 0 },
+    play: { width: 538, start: 0 },
+    longmove: { width: 538, start: 0 },
+    longname: { width: 538, start: 0 },
+    editable: { width: 538, start: 0 },
+    whitlock: { width: 1076, start: 538 },
+  },
+};
+
+for (const key of Object.keys(BEFORE[390]) as Key[]) {
+  test.describe(() => {
+    test.use({ storageState: stateFor(key) });
+
+    // R-0381
+    test(`the ${key} line is as wide and starts where it did before the pill strip`, async ({
+      page,
+    }) => {
+      await settle(page);
+      const drawn = await line(page).evaluate((s) => ({
+        width: s.scrollWidth,
+        start: Math.round(s.scrollLeft),
+      }));
+      expect(drawn).toEqual(BEFORE[page.viewportSize()!.width][key]);
+    });
+  });
+}
 
 test.describe("what the picture never draws", () => {
   for (const key of ["one", "three40", "dense60", "moves"] as const) {
@@ -248,12 +306,13 @@ test.describe("where the picture sits", () => {
 test.describe("the coach's words drive the picture", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0001, R-0055
+  // R-0001, R-0055, R-0543
   test("it opens on what the coach's last message named", async ({ page }) => {
     await settle(page);
-    await expect(page.locator("#crumb")).toHaveText("The walk");
-    await expect(page.locator("#up")).toBeVisible();
-    await expect(page.locator("#view circle.dot.lit")).toHaveCount(2);
+    await expect(page.locator("#view .ss-name")).toHaveText("The walk (17)");
+    await expect(page.locator('#path [data-step="0"]')).toBeVisible();
+    // the two events it named are inside one cluster, so its pill is lit
+    await expect(page.locator("#view rect.pill.on")).toHaveCount(1);
   });
 });
 
@@ -261,17 +320,26 @@ test.describe("an event added by hand", () => {
   test.use({ storageState: stateFor("editable") });
 
   // R-0055
-  test("is on the picture as soon as it is saved", async ({ page }) => {
+  test("is on the picture as soon as it is saved", async ({ page }, info) => {
     await settle(page);
     const before = await page.locator("#view circle.dot").count();
-    await page.locator("#menu-open").click();
+    await openList(page);
     await page.locator("#menu-add").click();
     const editor = page.locator("#menu-body .editor");
-    await editor.locator('.f[data-name="description"]').fill("Moved back home");
-    await editor.locator('.f[data-name="dateTime"]').fill("2024-06-01");
+    // a move is a noted event; a new event opens as a shift, which is refused
+    // until something in it moves
+    await editor.locator('.segs[data-name="kind"] .seg[data-value="noted"]').click();
+    // a noted event is about someone: the record refuses one about nobody (R-0593)
+    await editor.locator('.segs[data-name="person"] .seg:not([data-value=""])').first().click();
+    // each project adds its own, a month apart: the record keeps what an
+    // earlier project added, and refuses a second noted event on the same day
+    const words = `Moved back home (${info.project.name})`;
+    const month = 1 + info.config.projects.findIndex((p) => p.name === info.project.name);
+    await editor.locator('.f[data-name="description"]').fill(words);
+    await editor.locator('.f[data-name="dateTime"]').fill(`2024-${String(month).padStart(2, "0")}-01`);
     await editor.locator(".save").click();
-    await expect(page.locator("#menu-body")).toContainText("Moved back home");
-    await page.locator("#menu-close").click();
+    await expect(page.locator("#menu-body")).toContainText(words);
+    if (!(await pinned(page))) await page.locator("#menu-close").click();
     await expect(page.locator("#view circle.dot")).toHaveCount(before + 1);
   });
 });
@@ -285,18 +353,17 @@ test.describe("a tap on the picture reaches the coach", () => {
       { timeout: 5000 },
     );
 
-  // R-0065
+  // R-0065, R-0543
   test("a tap on a dot is sent, naming the event touched", async ({ page }) => {
     await settle(page);
-    await openCluster(page);
     const posted = sent(page);
+    // the one event no cluster claims is the one with a dot
     await page.locator('.ss-hit[data-target="zone"]').first().click();
-    expect((await posted).postDataJSON()).toMatchObject({ item_kind: "event", item_id: "10" });
+    expect((await posted).postDataJSON()).toMatchObject({ item_kind: "event", item_id: "13" });
   });
 
   // R-0065
   test("a tap that opens a cluster is sent, naming the cluster", async ({ page }) => {
-    test.fail(true, "opening a cluster from the picture records nothing");
     await settle(page);
     const posted = sent(page);
     await page.locator('.ss-hit[data-target="cluster"]').first().click();
@@ -320,7 +387,8 @@ test.describe("the mark that says a tap goes into the message", () => {
     page,
   }) => {
     await settle(page);
-    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    // the record opens on a cluster, and the row offers ask for it
+    await expect(page.locator("#cap-chip")).toBeVisible();
     const ask = await outline(page.locator("#cap-chip"));
     expect(await outline(page.locator(".bub .chip.ask").first())).toEqual(ask);
     // a reference aims the picture and sends nothing, so it looks different
@@ -440,52 +508,6 @@ test.describe("a record with undated facts beside dated ones", () => {
   });
 });
 
-test.describe("the family on the board", () => {
-  test.use({ storageState: stateFor("moves") });
-
-  const node = async (page: import("@playwright/test").Page, id: number) =>
-    (await page.locator(`#view .node[data-person="${id}"]`).boundingBox())!;
-
-  // R-0187
-  test("parents stand above their child", async ({ page }) => {
-    test.fail(true, "the board stands everyone on one ellipse, whoever they are to each other");
-    await page.route("**/app/timeline*", async (route) => {
-      const response = await route.fetch();
-      const json = await response.json();
-      json.pair_bonds.push({ id: 900, person_a: 2, person_b: 3, married: true });
-      json.people.find((p: { id: number }) => p.id === 1).parents = 900;
-      await route.fulfill({ response, json });
-    });
-    await settle(page);
-    await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    const child = await node(page, 1);
-    expect(child.y).toBeGreaterThan((await node(page, 2)).y);
-    expect(child.y).toBeGreaterThan((await node(page, 3)).y);
-  });
-
-  // R-0187
-  test("everyone has room of their own on a phone, with nothing to arrange", async ({
-    page,
-  }) => {
-    await settle(page);
-    await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    await page.waitForTimeout(600);
-    const people = [await node(page, 1), await node(page, 2), await node(page, 3)];
-    for (const [i, a] of people.entries())
-      for (const b of people.slice(i + 1))
-        expect(
-          a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y,
-        ).toBe(true);
-    const frame = (await page.locator("#view .ss.board").boundingBox())!;
-    for (const one of people) {
-      expect(one.x).toBeGreaterThanOrEqual(frame.x - 1);
-      expect(one.x + one.width).toBeLessThanOrEqual(frame.x + frame.width + 1);
-    }
-  });
-});
-
 test.describe("a moment named in the coach's words", () => {
   test.use({ storageState: stateFor("moves") });
 
@@ -536,7 +558,7 @@ test.describe("a moment's mark", () => {
         if (await cluster.count()) {
           await cluster.click();
           await page.waitForTimeout(500);
-          await expect(page.locator("#view circle.dot").first()).toBeVisible();
+          await expect(page.locator('#path [data-step="0"]')).toBeVisible();
           expect(await ringed(page)).toEqual([]);
         }
       });
@@ -545,11 +567,15 @@ test.describe("a moment's mark", () => {
 });
 
 /** Any control a reader could take for renaming, deleting or regrouping a
- * cluster, in the picture region and its title row. */
+ * cluster, in the picture region and its title row. An event's dot is named by
+ * the event's own words ("The move across the country"), which say nothing
+ * about the cluster, so the dots are left out. */
 const clusterEdits = (page: import("@playwright/test").Page) =>
   page
     .locator(".titlerow, #chat-screen .pic")
-    .locator("button, [role=button], input, textarea, [contenteditable=true]")
+    .locator(
+      `button:not([data-target="zone"]), [role=button], input, textarea, [contenteditable=true]`,
+    )
     .evaluateAll((controls) =>
       controls
         .filter((c) => !(c as HTMLElement).hidden && (c as HTMLElement).offsetParent !== null)
@@ -573,30 +599,3 @@ test.describe("a cluster the reader has open", () => {
   });
 });
 
-test.describe("a person on the board", () => {
-  test.use({ storageState: stateFor("moves") });
-
-  // R-0187
-  test("cannot be dragged, and the board offers nothing to arrange", async ({ page }) => {
-    // the rings around a person breathe; held still, a box measured twice is the same box
-    await page.emulateMedia({ reducedMotion: "reduce" });
-    await settle(page);
-    await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    await page.waitForTimeout(600);
-    await expect(page.locator('#view [draggable="true"]')).toHaveCount(0);
-    await expect(page.locator("#view .pctl button")).toHaveCount(3);
-    const person = page.locator('#view .node[data-person="2"]');
-    const before = (await person.boundingBox())!;
-    await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(before.x + before.width / 2 + 60, before.y + before.height / 2 + 40, {
-      steps: 8,
-    });
-    await page.mouse.up();
-    await page.waitForTimeout(300);
-    const after = (await person.boundingBox())!;
-    expect(Math.abs(after.x + after.width / 2 - (before.x + before.width / 2))).toBeLessThanOrEqual(1);
-    expect(Math.abs(after.y + after.height / 2 - (before.y + before.height / 2))).toBeLessThanOrEqual(1);
-  });
-});

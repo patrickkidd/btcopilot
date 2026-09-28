@@ -1,5 +1,5 @@
 import * as api from "./api";
-import { el, esc } from "./dom";
+import { closeX, el, esc } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { VoiceRole, type Session, type Utterance, type Voice } from "./types";
@@ -43,7 +43,7 @@ export class Recording {
   private sheet = el(
     "div",
     "fs-sheet",
-    `<div class="fs-handle"><div class="fs-grab"></div></div>
+    `<div class="fs-handle"><div class="fs-grab"></div></div>${closeX()}
      <div class="fs-search"><input type="search" readonly aria-label="the recording"></div>
      <div class="fs-body"></div>
      <div class="fs-foot"><button class="fs-new" type="button">Create session</button></div>`,
@@ -66,6 +66,8 @@ export class Recording {
   ) {
     this.scrim.hidden = true;
     this.sheet.hidden = true;
+    this.sheet.id = "recording-sheet";
+    this.scrim.id = "recording-scrim";
     overlay.append(this.scrim, this.sheet);
     this.body = this.sheet.querySelector<HTMLElement>(".fs-body")!;
     this.head = this.sheet.querySelector<HTMLInputElement>(".fs-search input")!;
@@ -76,6 +78,7 @@ export class Recording {
     overlay.append(this.file);
     this.file.addEventListener("change", () => void this.take());
     this.scrim.addEventListener("click", () => this.lower());
+    this.sheet.querySelector(".cardx")!.addEventListener("click", () => this.lower());
     this.sheet
       .querySelector(".fs-handle")!
       .addEventListener("click", () => this.lower());

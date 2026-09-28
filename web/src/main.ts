@@ -1,13 +1,15 @@
 import "./telemetry";
 import "./theme.css";
 import * as api from "./api";
-import { Chat, wait, type LiveBubble, type PlayTap } from "./chat";
-import { Picture, Target, type Tap } from "./picture";
+import { Chat, wait, type LiveBubble } from "./chat";
+import { Picture, Target, Via, type Tap } from "./picture";
 import { Menu, Tab } from "./menu";
+import { Questions } from "./questions";
 import { Ballot } from "./ballot";
 import { Coding } from "./coding";
 import { Cut } from "./cut";
 import { Agenda } from "./agenda";
+import { Pairs } from "./pairs";
 import { Meeting } from "./meeting";
 import { ResultScreen } from "./result";
 import { CODER, OneTask, beforeMeeting, coder, wayIn } from "./task";
@@ -15,8 +17,10 @@ import { Rules } from "./rules";
 import { Sessions } from "./sessions";
 import { sessionTitle, summaryOf } from "./search";
 import { Settings } from "./settings";
-import { aimedEvents, chips, itemKind } from "./chips";
+import { aimedEvents, chips, itemKind, Lead } from "./chips";
 import { feed } from "./turn";
+import { Release } from "./release";
+import { toolLine } from "./tools";
 import {
   CHIP_KIND,
   PicEvent,
@@ -27,7 +31,10 @@ import {
   type PicState,
   type Sel,
 } from "./caption";
-import { $, setTitle, slideOver } from "./dom";
+import { $, CLUSTER, pathRow, setTitle, slideOver } from "./dom";
+import { Drawer } from "./drawer";
+import { among, untold } from "./snapshots";
+import { reopen, type Kept } from "./plays";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { ASK_MARK, IN_CHAT_MARK, listButton, PLAY_MARK, tok } from "./tokens";
@@ -36,6 +43,7 @@ import { offerPasskey } from "./passkey";
 import { PRO, WIDE } from "./pro";
 import { shortDate } from "./when";
 import * as speech from "./speech";
+import { NOTES_TOOL, type Notes } from "./notes";
 import * as track from "./track";
 import { Feature, Screen } from "./track";
 import {
@@ -45,17 +53,23 @@ import {
   type Task,
   InteractionKind,
   ItemKind,
+  Touch,
   emptyTimeline,
   Role,
   StatementKind,
+  type View,
+  ViewKind,
   type Chip,
   type CodedIn,
   type Diagram,
   type Session,
+  type Started,
   type Statement,
   type Cluster,
   type Timeline,
   SessionKind,
+  Spotlight,
+  type Preferences,
 } from "./types";
 
 declare global {
@@ -68,6 +82,7 @@ declare global {
         pro: boolean;
         /** Only an auditor takes part in the coding work (R-0311). */
         coder: boolean;
+        prefs: Pick<Preferences, "spotlight">;
       } | null;
       diagram: { id: number; name: string } | null;
       session: { id: number; turn: string | null } | null;
@@ -87,6 +102,7 @@ const CODING_SCREENS = [
   Screen.Agenda,
   Screen.Meeting,
   Screen.Result,
+  Screen.Pairs,
 ];
 
 let timeline: Timeline = emptyTimeline();
@@ -107,7 +123,11 @@ function tapped(kind: InteractionKind, item: ItemKind, id: string | null = null)
  * same 150ms the stylesheet transitions it over. */
 const FADE_MS = 150;
 
-const picture = new Picture($("view"), { onTap: (tap: Tap) => onTap(tap) });
+const picture = new Picture(
+  $("view"),
+  { onTap: (tap: Tap) => onTap(tap) },
+  window.BOOTSTRAP.user?.prefs.spotlight ?? Spotlight.Unified,
+);
 
 /** A tap on the wire steps through the moments under the thumb; a tap on the
  * words picks the one whose row was tapped; a tap on the shelf asks about what
@@ -119,9 +139,8 @@ function onTap(tap: Tap): void {
     putDown();
     return;
   }
-  if (tap.target === Target.Explain) {
-    const cluster = picture.showing();
-    if (cluster) void explain(cluster);
+  if (tap.target === Target.Close) {
+    climb(CLUSTER);
     return;
   }
   if (tap.target === Target.Shelf) {
@@ -131,8 +150,12 @@ function onTap(tap: Tap): void {
   // At rest the picture shows the whole line; a tap opens one cluster, which
   // is the one level change the reader makes for themselves.
   if (tap.target === Target.Cluster) {
-    const ids = picture.inCluster(tap.index);
-    if (ids.length) picture.spotlight(ids);
+    const cluster = picture.clusterAt(tap.index);
+    if (cluster) {
+      picture.open(cluster.event_ids);
+      // opening a cluster is a look at it, recorded like any other (R-0065)
+      tapped(InteractionKind.Look, ItemKind.Cluster, cluster.id);
+    }
     pic = REST;
     actions();
     return;
@@ -187,6 +210,14 @@ function chipLabel(chip: Chip): string {
     return (
       timeline.events.find((e) => String(e.id) === chip.target)?.label ?? chip.label
     );
+  if (chip.kind === ChipKind.Question || chip.kind === ChipKind.Impression)
+    return (
+      timeline.asked_questions.find((q) => q.id === chip.target)?.text ?? chip.label
+    );
+  if (chip.kind === ChipKind.PairBond)
+    return (
+      timeline.pair_bonds.find((b) => String(b.id) === chip.target)?.label ?? chip.label
+    );
   return (
     timeline.clusters.find(
       (c) => c.id === chip.target || c.cluster_ids.includes(chip.target),
@@ -194,20 +225,53 @@ function chipLabel(chip: Chip): string {
   );
 }
 
+/** Each play-by-play on the thread, by its message, so a tap on it opens it
+ * again. A walk told before snapshots has none and keeps its chips. */
+const cases = new Map<number, Kept>();
+
+/** The play-by-play drawer (R-0542): a tap on its path goes back to that step
+ * of the picture: the whole timeline, or the case's cluster opened, whether
+ * or not it was open when the drawer came up. */
+const pbp = new Drawer(
+  $("pbp"),
+  (step, events) => {
+    pbp.close();
+    if (step) picture.open(events);
+    else picture.back(0);
+    pic = REST;
+    actions();
+  },
+  (chip) => chipTap(chip),
+);
+
+/** A play-by-play message opened again, from its words or its cluster chip:
+ * the stored telling while its cluster is unchanged, told through explain
+ * once it has changed. False when the message holds no told case. */
+function replay(statement: number): boolean {
+  const kept = cases.get(statement);
+  if (!kept) return false;
+  reopen(kept, timeline.clusters, (told) => pbp.open(timeline, told, statement), (id) => void explain(id));
+  return true;
+}
+
+/** A chip tapped in the thread or the drawer. Two kinds of chip, and the
+ * colour says which. An amber chip is the coach asking: an old offer goes into
+ * the message as words, and a question it asked goes in as the reference that
+ * answers it (R-0587). A teal chip is a reference into the record, so it aims
+ * the picture, except the cluster chip a play-by-play leads with, which opens
+ * that play again as a tap on its words does. A chip in an
+ * old prose walk is a chip like any other (R-0501, R-0570). */
+function chipTap(chip: Chip): void {
+  tapped(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
+  track.tap(Feature.ChipTap, { kind: itemKind(chip.kind), id: chip.target });
+  if (chip.play !== undefined && replay(chip.play)) return;
+  if (offered(chip)) chat.insert(chip, chip.kind === ChipKind.Message ? Lead.Answer : Lead.None);
+  else aim(chip);
+}
+
 const chat = new Chat($("chat"), $("composer"), {
   label: chipLabel,
-  onChip: (chip, play) => {
-    tapped(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
-    track.tap(Feature.ChipTap, { kind: itemKind(chip.kind), id: chip.target });
-    // Two kinds of chip, and the colour says which. An amber chip is an offer:
-    // it names nothing in the record, so it goes into the message as words. A
-    // teal chip is a reference into the record, so it aims the picture.
-    if (offered(chip)) chat.insert(chip);
-    // A teal chip inside a play-by-play is a step of that walk: it moves the
-    // board and never takes the picture back to the wire (owner review 1).
-    else if (play) stepBoard(play, chip);
-    else aim(chip);
-  },
+  onChip: chipTap,
   // A tap on a message's own words is a look: the picture lights what that
   // message named, nothing enters the composer, and no turn is spent.
   onBubble: (text) => {
@@ -219,6 +283,7 @@ const chat = new Chat($("chat"), $("composer"), {
     pic = REST;
     actions();
   },
+  onPlay: replay,
 });
 
 /** An offer: the coach holding out something to say next, drawn amber. */
@@ -226,6 +291,33 @@ const offered = (chip: Chip) =>
   chip.kind === ChipKind.Ask || chip.tone === ChipTone.Ask;
 
 const menu = new Menu($("menu-body"), load);
+
+/** On a phone the drawer gets out of the way of the thread; pinned beside it,
+ * it stays. */
+const toThread = () => {
+  if (!pinned()) screen(Screen.Chat);
+};
+
+/** A question or impression tapped in the drawer goes into the message as a
+ * reference with the cursor after it, and nothing is sent (R-0072). */
+const questions = new Questions($("menu-body"), {
+  onChip: (chip, lead, after) => {
+    toThread();
+    chat.insert(chip, lead, after);
+  },
+  onAsked: (where, ask) => {
+    toThread();
+    void traceTo(where, ask);
+  },
+  onDismissed: () => void load(),
+  busy: () => inFlight,
+  say: (statement) => {
+    toThread();
+    post(statement);
+  },
+  record: tapped,
+});
+menu.questions = questions;
 
 /** The session door beside the message box. The sheet lists every session and a
  * tap swaps the chat to it (family-sections, the owner's pick). */
@@ -249,6 +341,7 @@ const sessions = new Sessions(
     onTask: () => void openTask(),
     onAgenda: (picked) => void placeCut(picked.id),
     onAgendaScreen: () => void openAgenda(),
+    onPairs: () => void openPairs(),
   },
 );
 
@@ -411,6 +504,14 @@ async function openAgenda(): Promise<void> {
   screen(Screen.Agenda);
 }
 
+/** Two replies to the same words, picked blind (R-0599). Patrick's. */
+const pairs = new Pairs($("pairs-body"), { onTitle: (title) => setTitle(title) });
+
+async function openPairs(): Promise<void> {
+  await pairs.load();
+  screen(Screen.Pairs);
+}
+
 /** Where the guidelines were opened from, so closing them goes back there:
  * the coding screen mid-task, the one task card between meetings. */
 let readingFrom = Screen.Coding;
@@ -451,6 +552,7 @@ $("coding-back").addEventListener("click", () => {
 function onDiagram(diagram: Diagram, how = { switched: true }): void {
   track.diagram(diagram.id);
   familyTitle = diagram.name;
+  $("menu-title").textContent = familyTitle;
   // The settings stack owns the title while it is open, so only write it when
   // the chat is what the title row is naming.
   if ($("settings-back").hidden) $("title").textContent = familyTitle;
@@ -468,6 +570,8 @@ function onDiagram(diagram: Diagram, how = { switched: true }): void {
 let familyTitle =
   window.BOOTSTRAP.diagram?.name ?? $("title").textContent ?? "Your family";
 $("title").textContent = familyTitle;
+// the drawer is the family's too, so it carries the same name (frame 2)
+$("menu-title").textContent = familyTitle;
 
 /** Speak replies is the one ruled duplicate: this row and the Coach settings
  * page are two doors onto the same value. */
@@ -497,16 +601,39 @@ speak.addEventListener("change", () => {
 // Every scroll area takes wheel, trackpad, touch AND mouse drag (UI_STANDARDS).
 for (const id of ["chat", "menu-body"]) dragScroll($(id));
 
-/** One stored message back on the thread. A play-by-play keeps the cluster it
- * walked, so its chips still step the board a week later. */
-function addStatement(statement: Statement): void {
-  chat.add(
-    statement.role,
-    statement.text,
-    ChipTone.Data,
-    statement.id,
-    statement.kind === StatementKind.Play ? statement.cluster_id : null,
-  );
+/** The bubble of a turn that failed, drawn live or from the store. Picking
+ * the turn up reads it again from its first event, so this one gives way. */
+let stopped: { turn: string; bubble: HTMLElement } | null = null;
+
+/** The stored messages back on the thread, each coach reply under the lines
+ * of what it did (R-0478). A play-by-play keeps its told case, so a tap on it
+ * opens it again a week later. A turn that failed shows what it
+ * did before it stopped, and as the last message it can be picked up again
+ * (R-0477). */
+function addStatements(statements: Statement[]): void {
+  for (const statement of statements) {
+    const coach = statement.role === Role.Coach;
+    if (statement.case && statement.id !== null)
+      cases.set(statement.id, { case: statement.case, digest: statement.digest });
+    const lines = statement.tools.map(toolLine).filter((line) => line !== null);
+    const notes = statement.tools.find((tool) => tool.name === NOTES_TOOL);
+    chat.add(
+      statement.role,
+      statement.text,
+      ChipTone.Data,
+      statement.id,
+      statement.kind === StatementKind.Play ? statement.cluster_id : null,
+      coach ? lines : [],
+      coach && notes ? (notes.args as unknown as Notes) : null,
+    );
+    if (statement.unfinished && lines.length)
+      stopped = {
+        turn: statement.turn_id!,
+        bubble: chat.add(Role.Coach, "", ChipTone.Data, null, null, lines),
+      };
+  }
+  const last = statements.at(-1);
+  if (last?.unfinished) chat.warn(last.failure!, () => void resume(last.turn_id!));
 }
 
 /** Opening a session replaces the thread with its statements and puts the
@@ -542,7 +669,7 @@ async function openSession(id: number, kind?: SessionKind): Promise<void> {
   thread.style.opacity = "0";
   await wait(FADE_MS);
   chat.clear();
-  for (const statement of statements) addStatement(statement);
+  addStatements(statements);
   if (!statements.length) showPrompt(kind);
   picture.clear();
   pic = REST;
@@ -551,9 +678,7 @@ async function openSession(id: number, kind?: SessionKind): Promise<void> {
   const picked = known.find((s) => s.id === id);
   if (picked && statements.length)
     chat.system(`Resumed · ${sessionTitle(picked)} — ${summaryOf(picked)}`);
-  const last = [...statements].reverse().find((s) => s.role === Role.Coach);
-  if (last) spotlightFrom(last.text);
-  else actions();
+  leftAt(statements);
   thread.style.opacity = "";
   chat.toEnd();
 }
@@ -561,48 +686,36 @@ async function openSession(id: number, kind?: SessionKind): Promise<void> {
 /** The coach pointing: the moments its words name become the spotlight, and
  * everything else on the wire recedes. A chip only ever aims the picture; it
  * never changes the picture's level, so nothing below it moves (the owner:
- * chat bubbles must never move from a tap on a chip). The moves board is a
- * level change and is entered from Play. */
+ * chat bubbles must never move from a tap on a chip). */
 function aim(chip: Chip): void {
   const ids = aimedEvents(chip, timeline.clusters);
   if (!ids.length) return;
-  picture.spotlight(ids);
   // A chip in the coach's words does exactly what a tap on the picture does:
-  // there is one selection, wherever the reader touched it. A chip naming one
-  // moment selects that moment; a chip naming a cluster selects the cluster,
-  // so the caption offers Play for it.
-  const cluster =
-    ids.length > 1
-      ? timeline.clusters.find((c) => ids.every((id) => c.event_ids.includes(id)))
-      : undefined;
-  apply(
-    reduce(
-      REST,
-      PicEvent.Tap,
-      cluster
-        ? { kind: SelKind.Cluster, id: cluster.id }
-        : { kind: SelKind.Event, id: String(ids[0]) },
-    ),
-  );
-}
-
-/** The nth chip of a walk steps the board to the nth move. The caption row
- * belongs to the wire, so it clears: the board carries its own. */
-function stepBoard(play: PlayTap, chip: Chip): void {
-  picture.playStep(play.cluster, aimedEvents(chip, timeline.clusters), play.ordinal);
-  pic = REST;
-  actions();
+  // there is one selection, wherever the reader touched it. A chip naming an
+  // event no cluster claims selects that event; a chip naming a cluster, or an
+  // event inside one, selects the cluster, since an event in a cluster has no
+  // mark of its own on the line (R-0543).
+  const cluster = timeline.clusters.find((c) => ids.every((id) => c.event_ids.includes(id)));
+  if (cluster) {
+    apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Cluster, id: cluster.id }));
+    // a chip may name a cluster off screen, so the line goes to it
+    picture.spotlight(cluster.event_ids);
+  } else
+    apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(ids[0]) }), ids);
 }
 
 /** One place turns a picture tap into its consequences: what the picture shows,
- * what goes in the composer, what gets recorded, what plays. */
-function apply(outcome: Outcome): void {
+ * what goes in the composer, what gets recorded, what plays. `named` is what a
+ * chip named, when the tap was on a chip rather than the picture. */
+function apply(outcome: Outcome, named: number[] | null = null): void {
   pic = outcome.state;
   const sel = pic.sel;
-  picture.select(sel && sel.kind === SelKind.Event ? Number(sel.id) : null);
+  if (sel?.kind === SelKind.Event)
+    picture.pick(Number(sel.id), named ?? [Number(sel.id)], named ? Via.Chip : Via.Dot);
+  else picture.select(null);
   if (sel?.kind === SelKind.Cluster) {
     const cluster = timeline.clusters.find((c) => c.id === sel.id);
-    if (cluster) picture.spotlight(cluster.event_ids);
+    if (cluster) picture.open(cluster.event_ids);
   }
   actions();
   if (outcome.record)
@@ -614,8 +727,8 @@ function apply(outcome: Outcome): void {
       label: selLabel(outcome.insert),
       tone: ChipTone.Data,
       bare: false,
-    });
-  if (outcome.play) enterBoard(outcome.play);
+    }, Lead.Ask);
+  if (outcome.play) void explain(outcome.play);
 }
 
 function selLabel(sel: Sel): string {
@@ -644,13 +757,13 @@ function codedIn(eventId: number): { label: string; where: CodedIn } | null {
 
 /** Jump to the words that coded this moment: the session if it is not the one
  * on screen, then the bubble itself, outlined while it settles. */
-async function traceTo(where: CodedIn): Promise<void> {
+async function traceTo(where: CodedIn, ask = false): Promise<void> {
   if (where.statement_id === null) return;
   if (where.discussion_id !== session) {
     session = where.discussion_id;
     await openSession(where.discussion_id);
   }
-  if (!chat.trace(where.statement_id)) toast("Those words are no longer here");
+  if (!chat.trace(where.statement_id, ask)) toast("Those words are no longer here");
 }
 
 /** The row under the picture: what it is showing, and the things a tap can do
@@ -660,16 +773,6 @@ function actions(): void {
   const host = $("caption");
   const sel = pic.sel;
   const open = picture.openCluster();
-  // The board has its own controls, and two rows saying explain is one too
-  // many. Entering the board is the one level change allowed to move what is
-  // under the picture, so the row goes outright rather than sitting there as
-  // an empty strip with a hairline under it (owner ruling 2026-09-08).
-  const onBoard = picture.onBoard();
-  host.classList.toggle("gone", onBoard);
-  if (onBoard) {
-    host.innerHTML = "";
-    return;
-  }
   // Nothing open and nothing picked: there is nothing to act on, so the row
   // says what a tap will do instead.
   if (!sel && !open) {
@@ -686,7 +789,7 @@ function actions(): void {
   // inside it: ask about that, or go to where it was said.
   const moment = sel?.kind === SelKind.Event ? Number(sel.id) : null;
   const trace = moment === null ? null : codedIn(moment);
-  const moves = !sel && open ? picture.countMoves(open.event_ids) : 0;
+  const moves = !sel && open ? picture.countDated(open.event_ids) : 0;
 
   host.innerHTML =
     tok("cap-chip", "", ASK_MARK, "ask", true) +
@@ -710,6 +813,7 @@ function actions(): void {
       void traceTo(trace.where);
     });
   if (moves && open)
+    // explain opens the play-by-play drawer straight away (R-0542, R-0570)
     $("cap-play").addEventListener("click", () =>
       apply(reduce(pic, PicEvent.TapPlay, { kind: SelKind.Cluster, id: open.id })),
     );
@@ -752,41 +856,47 @@ wide.addEventListener("change", () => {
   actions();
 });
 
-/** The board is its own level, and entering it is the one deliberate act that
- * changes the picture's height. It goes up before the coach's words are
- * written, and stays up until the reader taps back off it. */
-function enterBoard(clusterId: string): void {
-  const cluster = timeline.clusters.find((c) => c.id === clusterId);
-  if (cluster) picture.openBoard(cluster.event_ids, clusterId);
-  pic = REST;
-  actions();
+/** What the coach aimed the picture at. A triangle or a sequence has people
+ * and moves to draw, so it opens the play-by-play drawer, told by nobody: the
+ * coach's own words stay in the bubble that asked for it (R-0570). */
+function shown(view: View): Promise<void> | void {
+  const ids =
+    view.kind === ViewKind.Triangle
+      ? among(timeline, view.persons)
+      : view.kind === ViewKind.Sequence
+        ? view.events
+        : null;
+  if (ids === null) return picture.show(view);
+  const told = untold(timeline, ids);
+  if (told.snapshots.length) pbp.open(timeline, told, null);
 }
 
-/** The board's own control: ask the coach to talk through the cluster on
- * screen. The board is already up, so nothing here changes the picture's
- * height; the words land beneath it and step it as they are typed. */
+/** Ask the coach to tell the cluster on screen. The case opens in its drawer
+ * over the picture and the chat, and its point joins the thread, where a tap
+ * opens it again. A record the picture cannot draw is refused in the
+ * server's own words. */
 async function explain(clusterId: string): Promise<void> {
   track.tap(Feature.Play, { kind: ItemKind.Cluster, id: clusterId });
-  picture.explains(true);
   chat.busy(true);
   let reply;
   try {
     reply = await api.play(clusterId);
   } catch (error) {
-    picture.explains(false);
-    chat.warn(whatFailed(error), () => void explain(clusterId));
+    chat.warn(api.whatFailed(error), () => void explain(clusterId));
     return;
   } finally {
+    // answered or not, the row is back to what the cluster offers, explain again
     chat.busy(false);
+    pic = REST;
+    actions();
   }
-  picture.explains(false);
   chat.settled();
-  await chat.live(reply.cluster_id).type(reply.statement, (chip) => {
-    const ids = aimedEvents(chip, timeline.clusters);
-    if (ids.length) picture.step(ids[0]);
-  });
-  pic = REST;
-  actions();
+  // a kept play already on the thread opens again; it is not said twice
+  const id = reply.statement_id;
+  if (id === null || !cases.has(id))
+    chat.add(Role.Coach, reply.statement, ChipTone.Data, id, reply.cluster_id);
+  if (id !== null) cases.set(id, { case: reply.case, digest: reply.digest });
+  pbp.open(timeline, reply.case, id);
 }
 
 /** What went wrong, in the words the reader needs: nothing came back, the
@@ -813,13 +923,34 @@ let inFlight = false;
 async function send(): Promise<void> {
   const statement = chat.draft();
   if (!statement || inFlight) return;
+  await questions.sending(statement);
+  chat.resetDraft();
+  post(statement);
+}
+
+/** The reader's words go into the thread as theirs and on to the coach. */
+function post(statement: string): void {
+  if (!statement || inFlight) return;
   track.tap(Feature.SendMessage);
   chat.add(Role.User, statement);
-  chat.resetDraft();
-  await deliver(statement);
+  void deliver(statement);
 }
 
 async function deliver(statement: string): Promise<void> {
+  const started = await begin(() => api.say(statement, session), () => void deliver(statement));
+  if (started) follow(started.turn_id);
+}
+
+/** Try a failed turn again: the same turn goes on, and the words are not sent
+ * a second time (R-0477). */
+async function resume(turnId: string): Promise<void> {
+  if (await begin(() => api.resume(turnId), () => void resume(turnId))) follow(turnId);
+}
+
+async function begin(
+  ask: () => Promise<Started>,
+  again: () => void,
+): Promise<Started | null> {
   // One turn at a time: a second send while the coach is answering would store
   // the words again.
   inFlight = true;
@@ -828,16 +959,15 @@ async function deliver(statement: string): Promise<void> {
 
   let started;
   try {
-    started = await api.say(statement, session);
+    started = await ask();
   } catch (error) {
     inFlight = false;
     chat.busy(false);
-    chat.warn(whatFailed(error), () => void deliver(statement));
-    return;
+    chat.warn(whatFailed(error), again);
+    return null;
   }
   session = started.discussion_id;
-  chat.settled();
-  follow(started.turn_id, () => void deliver(statement));
+  return started;
 }
 
 /** The turn the coach is running, drawn as it happens. Everything the page
@@ -851,9 +981,13 @@ let onTurn: string | null = null;
  * back finds out it has already finished and reads the thread again. */
 let awaiting: string | null = null;
 
-function follow(turnId: string, again: () => void): void {
+function follow(turnId: string): void {
   if (onTurn === turnId) return;
   stopFollowing();
+  chat.settled();
+  // the next message has arrived: what the last reply touched goes back to how
+  // the line draws it (R-0539)
+  picture.untouch();
   onTurn = turnId;
   awaiting = turnId;
   inFlight = true;
@@ -861,10 +995,15 @@ function follow(turnId: string, again: () => void): void {
 
   let bubble: LiveBubble | null = null;
   // The typing dots stay until the coach's first word or first step, and the
-  // bubble takes their place.
+  // bubble takes their place, and that of a failed try at the same turn.
   const opened = () => {
     if (!bubble) {
       chat.busy(false);
+      if (stopped?.turn === turnId) {
+        if (stopped.bubble.nextElementSibling?.matches(".play"))
+          stopped.bubble.nextElementSibling.remove();
+        stopped.bubble.remove();
+      }
       bubble = chat.live();
     }
     return bubble;
@@ -878,12 +1017,22 @@ function follow(turnId: string, again: () => void): void {
 
   const take = feed({
     note: (line) => step(() => void opened().note(line)),
+    notes: (notes) => step(() => opened().notes(notes)),
     made: (items) =>
       step(async () => {
+        // a removed event is gone from the record read back, so it is taken
+        // from the one on screen, to stay where it was in its colour
+        const removed = new Set(
+          items
+            .filter((one) => one.kind === ItemKind.Event && one.touch === Touch.Remove)
+            .map((one) => Number(one.id)),
+        );
+        const gone = timeline.events.filter((e) => removed.has(e.id));
         await load();
-        if (items.length) picture.light(items);
+        if (items.length) picture.light(items, gone);
       }),
-    show: (view) => step(() => picture.show(view)),
+    read: (ids) => step(() => picture.read(ids)),
+    show: (view) => step(() => shown(view)),
     text: (text) => step(() => void opened().append(text, (chip) => aim(chip))),
     reset: () => step(() => void opened().reset()),
     done: (reply) =>
@@ -905,7 +1054,12 @@ function follow(turnId: string, again: () => void): void {
         awaiting = null;
         stopFollowing();
         chat.busy(false);
-        chat.warn(message, again);
+        // What it did stays; the words it had begun are not kept, so they go.
+        if (bubble) {
+          bubble.settle("", () => {});
+          stopped = { turn: turnId, bubble: bubble.bubble };
+        }
+        chat.warn(message, () => void resume(turnId));
       }),
     refused: (message) =>
       step(() => {
@@ -939,13 +1093,20 @@ function stopFollowing(): void {
 async function reattach(): Promise<void> {
   if (session === null || watching) return;
   const { turn } = await api.session(session);
-  if (turn) follow(turn, () => {});
+  if (turn) follow(turn);
   else if (awaiting) {
     // It finished while the page was away: the thread is read again, which is
     // what a reload would have shown.
     awaiting = null;
     await openSession(session);
   }
+}
+
+/** The picture where the last coach message left it. A play-by-play's
+ * cluster chip is there to play it again, so it aims nothing on the way back. */
+function leftAt(statements: Statement[]): void {
+  const last = [...statements].reverse().find((s) => s.role === Role.Coach);
+  spotlightFrom(last && !last.case ? last.text : "");
 }
 
 function spotlightFrom(text: string): void {
@@ -966,43 +1127,16 @@ async function load(): Promise<Timeline> {
   timeline = await api.timeline();
   picture.setData(timeline);
   menu.show(timeline);
+  chat.relabel();
   actions();
   return timeline;
 }
 
-/** The name of the picture is also the way back to it, so while one cluster is
- * open it says so with the arrow in front of it (picked phone mockup). */
-/** The name row says which view the reader is in: the whole line at rest, and
- * the cluster's own name once a cluster or its board is open. A green arrow
- * stands beside the name whenever there is a view above this one, and the
- * arrow and the name do the same thing (owner ruling 2026-09-08). */
+/** The path over the line: where the reader is, from the whole timeline
+ * down, each earlier step the way back to it (R-0540). */
 function crumb(): void {
-  const deep = picture.deep();
-  const name = $("crumb");
-  // a picked moment at rest takes the title line: the ✕ that puts it down
-  // stands where the back arrow stands one level in, and the label goes
-  const picked = !deep && picture.selection() !== null;
-  name.textContent = picked ? "" : (picture.title() ?? "Family timeline");
-  name.classList.toggle("deep", deep);
-  name.setAttribute("aria-hidden", "false");
-  if (deep) {
-    name.setAttribute("role", "button");
-    name.setAttribute("tabindex", "0");
-  } else {
-    name.removeAttribute("role");
-    name.removeAttribute("tabindex");
-  }
-  $("up").hidden = !deep;
+  $("path").innerHTML = pathRow(picture.path());
   $("info").hidden = !picture.opened();
-  $("clear").hidden = !picked;
-}
-
-/** Up exactly one level: the board to the cluster it is showing, an open
- * cluster to the whole line. */
-function upOne(): void {
-  picture.up();
-  pic = REST;
-  actions();
 }
 
 /** The list is full screen with its own back button, so it takes the title row
@@ -1017,6 +1151,7 @@ function screen(which: Screen): void {
   $("ballot-screen").hidden = which !== Screen.Ballot;
   $("cut-screen").hidden = which !== Screen.Cut;
   $("agenda-screen").hidden = which !== Screen.Agenda;
+  $("pairs-screen").hidden = which !== Screen.Pairs;
   $("meeting-screen").hidden = which !== Screen.Meeting;
   $("result-screen").hidden = which !== Screen.Result;
   $("coding-screen").hidden = which !== Screen.Coding;
@@ -1031,7 +1166,9 @@ function screen(which: Screen): void {
     .querySelector<HTMLElement>(".app")!
     .classList.toggle(
       "wide",
-      which === Screen.Coding || (which === Screen.Chat && pinned()),
+      which === Screen.Coding ||
+        which === Screen.Pairs ||
+        (which === Screen.Chat && pinned()),
     );
   // Done and the guidelines belong to the coding screen; the back arrow also
   // stands on the one task card, which is where Done returns to.
@@ -1056,17 +1193,25 @@ function screen(which: Screen): void {
 let here = Screen.Chat;
 track.start(here, window.BOOTSTRAP.diagram?.id ?? null);
 
-/** The name of the picture is also the way back to it: tapping it puts the
- * picture down, the same as tapping empty ground on it. */
+/** Empty ground on the picture puts it down: the whole line at a glance. */
 function putDown(): void {
   picture.dismiss();
   pic = REST;
   actions();
 }
 
-$("up").addEventListener("click", () => {
+/** Back up to one step of the path: the path's own steps, and the about
+ * page's close button, which goes where the cluster's step goes. */
+function climb(step: number): void {
   track.tap(Feature.PictureUp);
-  upOne();
+  picture.back(step);
+  pic = REST;
+  actions();
+}
+
+$("path").addEventListener("click", (e) => {
+  const step = (e.target as Element).closest<HTMLElement>("[data-step]");
+  if (step) climb(Number(step.dataset.step));
 });
 $("info").addEventListener("click", () => {
   track.tap(Feature.PictureInfo);
@@ -1074,21 +1219,6 @@ $("info").addEventListener("click", () => {
   pic = REST;
   actions();
 });
-$("clear").addEventListener("click", () => {
-  track.tap(Feature.PictureClear);
-  putDown();
-});
-$("crumb").addEventListener("click", () => {
-  if (picture.deep()) upOne();
-});
-$("crumb").addEventListener("keydown", (e) => {
-  const key = (e as KeyboardEvent).key;
-  if ((key === "Enter" || key === " ") && picture.deep()) {
-    e.preventDefault();
-    upOne();
-  }
-});
-
 // Return starts a new line; only the send button sends (R-0368), so a message
 // can have paragraphs. The break is a plain newline so the draft keeps it.
 $("composer").addEventListener("keydown", (e) => {
@@ -1128,20 +1258,25 @@ $("menu-search").addEventListener("input", (e) =>
   menu.search((e.target as HTMLInputElement).value),
 );
 
-/** The two lists behind the one button: what happened, and who it happened to.
- * The search and the add button say which one they are for. */
-const TABS: [string, Tab, string, string, Feature][] = [
+/** The lists behind the one button: what happened, who it happened to, and
+ * what the coach asked that is still open. The search and the add button say
+ * which list they are for; the questions are the coach's, so that list has
+ * neither. */
+const TABS: [string, Tab, string | null, string | null, Feature][] = [
   ["tab-events", Tab.Events, "Search events", "+ Add event", Feature.TabEvents],
   ["tab-people", Tab.People, "Search people", "+ Add someone", Feature.TabPeople],
+  ["tab-questions", Tab.Questions, null, null, Feature.TabQuestions],
 ];
 
-/** Dress the drawer for one of its two lists. */
+/** Dress the drawer for one of its lists. */
 function onTab(tab: Tab): void {
   for (const [id, which, placeholder, add] of TABS) {
     const on = which === tab;
     $(id).classList.toggle("on", on);
     $(id).setAttribute("aria-selected", String(on));
     if (!on) continue;
+    $("menu-searchrow").hidden = $("menu-foot").hidden = placeholder === null;
+    if (placeholder === null) continue;
     const field = $("menu-search") as HTMLInputElement;
     field.value = "";
     field.placeholder = placeholder;
@@ -1163,7 +1298,7 @@ menu.onTab = onTab;
 
 pinDrawer();
 
-for (const statement of window.BOOTSTRAP.statements) addStatement(statement);
+addStatements(window.BOOTSTRAP.statements);
 chat.toEnd();
 
 void sessions.load(session);
@@ -1172,14 +1307,27 @@ void settings.load();
 // A turn the coach is still running when the page opens is drawn from its first
 // event, so a reload lands back in the middle of it rather than on nothing.
 const running = window.BOOTSTRAP.session?.turn ?? null;
-if (running) follow(running, () => {});
+if (running) follow(running);
 
 // Coming back to the app — a phone returning to it, a tab shown again, the page
 // restored from the back cache — attaches to whatever the coach is doing now.
+// It also loads the release the server runs now, if a deploy happened while
+// the page was away.
+const release = new Release(
+  window.BOOTSTRAP.version,
+  api.version,
+  () => inFlight || chat.draft() !== "" || !!$("coding-composer").textContent?.trim(),
+  () => location.reload(),
+);
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") void reattach();
+  if (document.visibilityState !== "visible") return;
+  void reattach();
+  void release.check();
 });
-window.addEventListener("pageshow", () => void reattach());
+window.addEventListener("pageshow", (e) => {
+  void reattach();
+  if (e.persisted) void release.check();
+});
 
 void load().then(async () => {
   const said = window.BOOTSTRAP.statements;
@@ -1188,15 +1336,17 @@ void load().then(async () => {
     return;
   }
   // Coming back a week later, the picture is where the last message left it.
-  const last = [...said].reverse().find((s) => s.role === Role.Coach);
-  if (last) spotlightFrom(last.text);
+  leftAt(said);
 });
 
 // Never while developing: the worker answers a reload out of its own cache,
 // so a saved edit would never reach the page.
 if (import.meta.env.PROD && "serviceWorker" in navigator)
   window.addEventListener("load", () =>
-    navigator.serviceWorker.register("/app/sw.js", { scope: "/app/" }),
+    navigator.serviceWorker.register(
+      `/app/sw.js?release=${encodeURIComponent(window.BOOTSTRAP.version)}`,
+      { scope: "/app/" },
+    ),
   );
 
 // A coder opens on their one task rather than on the chat (R-0265, frame f1),

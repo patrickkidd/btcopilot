@@ -227,29 +227,32 @@ def _said_by_turn(
     coding_id: int, diagram_id: int, data: dict
 ) -> dict[int, list[dict]]:
     """What this coder typed about each turn, oldest first, each with the lines
-    the scribe wrote from those words (R-0270)."""
-    by_scribe_turn = _written_by_scribe_turn(diagram_id, data)
+    the scribe wrote from those words, in the record's own words so a later
+    correction to an event still reads as the record has it (R-0270), and the
+    events those lines are, whose codes' concept pages hang under them
+    (R-0541)."""
+    by_scribe_turn = _events_by_scribe_turn(diagram_id)
     by_turn: dict[int, list[dict]] = {}
     notes = Note.query.filter(Note.coding_id == coding_id).order_by(Note.id.asc())
     for note in notes:
+        event_ids = by_scribe_turn.get(note.turn_id, [])
         by_turn.setdefault(note.statement_id, []).append(
-            {"text": note.text, "lines": by_scribe_turn.get(note.turn_id, [])}
+            {
+                "text": note.text,
+                "lines": scribe.written(data, event_ids),
+                "event_ids": event_ids,
+            }
         )
     return by_turn
 
 
-def _written_by_scribe_turn(diagram_id: int, data: dict) -> dict[str, list[str]]:
-    """What the scribe wrote from each of its own turns, in the record's own
-    words, so a later correction to an event still reads as the record has it."""
+def _events_by_scribe_turn(diagram_id: int) -> dict[str, list[int]]:
     by_turn: dict[str, list[int]] = {}
     for event_id, where in adapter.coded_in(diagram_id).items():
         turn_id = where.get("turn_id")
         if turn_id is not None:
             by_turn.setdefault(turn_id, []).append(event_id)
-    return {
-        turn_id: scribe.written(data, event_ids)
-        for turn_id, event_ids in by_turn.items()
-    }
+    return by_turn
 
 
 def _who(statement) -> str:

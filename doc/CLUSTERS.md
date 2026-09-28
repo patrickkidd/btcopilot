@@ -12,13 +12,12 @@ three events is a wall.
 
 Computed from `DiagramData` alone, no model call, in `btcopilot/clusters.py`:
 
-- A cluster is seeded by a **nodal event or a shift**: one of the kinds the
-  intake engine already counts as nodal (death, married, divorced, separated,
-  moved), or any event carrying a symptom, anxiety, relationship, or functioning
-  value. [Oracle: R-0054 — no absolute values exist, only relative shifts,
-  captured in clusters.] The nodal kinds are reused from `btcopilot/intake.py`
-  rather than redefined, and that set now compares against `EventKind` instead of
-  raw strings.
+- A cluster is seeded by a **nodal event or a shift**: one of the nodal kinds
+  (death, married, divorced, separated, moved), or any event carrying a
+  symptom, anxiety, relationship, or functioning value. [Oracle: R-0054 — no
+  absolute values exist, only relative shifts, captured in clusters.] The nodal
+  kinds are `NODAL_KINDS` in `btcopilot/clusters.py` and compare against
+  `EventKind`, not raw strings.
 - A **candidate** is a seeding event plus every event within **18 months** either
   side of it that shares a person, or shares a couple, with it. Sharing a couple
   means each event names a member of the same pair-bond. The 18 months are a

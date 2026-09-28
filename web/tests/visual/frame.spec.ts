@@ -44,7 +44,9 @@ const boxes = (page: Page): Promise<Box[]> =>
       if (at.width < 1 || at.height < 1) return;
       seen.push({ what, x: at.x, y: at.y, right: at.right, bottom: at.bottom, edge: span(node) });
     };
-    take("the list button", document.getElementById("menu-open")!);
+    // a wide window draws no list button (R-0352)
+    const list = document.getElementById("menu-open");
+    if (list) take("the list button", list);
     for (const box of document.querySelectorAll(".ss .ep")) take("a cluster box", box);
     for (const words of document.querySelectorAll(".ss-t")) take("the words", words);
     // the year under the moment picked, and anything else written over the line

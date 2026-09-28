@@ -22,22 +22,58 @@ from btcopilot.discussions import (
     session_payload,
     sync_chat_speakers,
 )
-from btcopilot import turns
+from btcopilot import toolnames, turns, turnstore
+from btcopilot.turnlog import TurnEventKind
 
 
-def statements_payload(discussion: Discussion) -> list[dict]:
-    return [
-        {
-            "id": s.id,
-            "role": (
-                "coach" if s.speaker_id == discussion.chat_ai_speaker_id else "user"
-            ),
-            "text": s.text,
-            "kind": (s.kind or StatementKind.Turn).value,
-            "cluster_id": s.cluster_id,
-        }
-        for s in discussion.statements
-    ]
+def statements_payload(discussion: Discussion, user) -> list[dict]:
+    """Each message with the tool calls of its turn: a coach reply carries the
+    calls that led to it, and the words of a turn that never answered carry the
+    calls it made before it failed, marked unfinished with why it stopped."""
+    kept = turnstore.kept({s.turn_id for s in discussion.statements if s.turn_id})
+    out = []
+    for s in discussion.statements:
+        coach = s.speaker_id == discussion.chat_ai_speaker_id
+        events = kept.get(s.turn_id, []) if s.turn_id else []
+        unfinished = not coach and turnstore.failed(events)
+        out.append(
+            {
+                "id": s.id,
+                "role": "coach" if coach else "user",
+                "text": s.text,
+                "kind": (s.kind or StatementKind.Turn).value,
+                "cluster_id": s.cluster_id,
+                "case": s.told_case,
+                "digest": s.digest,
+                "turn_id": s.turn_id,
+                "tools": (
+                    [
+                        {
+                            "name": e["name"],
+                            "args": e["args"],
+                            "names": toolnames.drawn(e),
+                            "refusal": e.get("refusal"),
+                        }
+                        for e in events
+                        if e["type"] == TurnEventKind.ToolCall.value
+                        and toolnames.shown(e, user)
+                    ]
+                    if coach or unfinished
+                    else []
+                ),
+                "unfinished": unfinished,
+                "failure": (
+                    next(
+                        e["message"]
+                        for e in reversed(events)
+                        if e["type"] == TurnEventKind.Failed.value
+                    )
+                    if unfinished
+                    else None
+                ),
+            }
+        )
+    return out
 
 
 def _start(discussion: Discussion, statement: str):
@@ -102,7 +138,7 @@ def session_create():
 def session_get(session_id: int):
     discussion = owned_session(session_id)
     payload = session_payload(discussion)
-    payload["statements"] = statements_payload(discussion)
+    payload["statements"] = statements_payload(discussion, auth.current_user())
     return jsonify(payload)
 
 

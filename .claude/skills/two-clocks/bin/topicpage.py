@@ -9,9 +9,10 @@ import re
 import sys
 from pathlib import Path
 
+from btcopilot import oracle
+
 HERE = Path(__file__).resolve().parent.parent.parent.parent.parent
 DOC = HERE / "doc"
-RULINGS = HERE.parent.parent.parent.parent / "fdserver" / ".claude" / "worktrees" / "FD-362" / "doc" / "oracle" / "rulings.md"
 
 STYLE = """:root{--bg:#f7f6f2;--panel:#fff;--ink:#26312f;--faint:#67746f;--line:#d8d5cc;--data:#0e7d78;--sans:"Libre Franklin",-apple-system,system-ui,sans-serif;--mono:ui-monospace,Menlo,monospace}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171d1c;--panel:#1f2725;--ink:#e6e8e4;--faint:#9aa5a0;--line:#39443f}}:root[data-theme="dark"]{--bg:#171d1c;--panel:#1f2725;--ink:#e6e8e4;--faint:#9aa5a0;--line:#39443f}
@@ -35,11 +36,7 @@ def md(s: str) -> str:
 def main(out: str) -> int:
     topics = (DOC / "TOPICS.md").read_text()
     history = (DOC / "HISTORY.md").read_text()
-    rules = {}
-    if RULINGS.exists():
-        for row in RULINGS.read_text().splitlines():
-            if re.match(r"^R-\d{4} \|", row):
-                rules[row.split(" | ")[0]] = row.split(" | ")[1]
+    rules = {rid: r.statement for rid, r in oracle.rulings().items()}
     entries = re.split(r"^## ", history, flags=re.M)[1:]
     blocks = []
     for block in re.split(r"^## ", topics, flags=re.M)[1:]:

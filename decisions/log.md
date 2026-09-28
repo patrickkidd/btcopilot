@@ -1701,8 +1701,264 @@ IRR-derived changes need his confirmation [R-0423]. Rejected: relying on the age
 the second pass. Chosen: a narrow independent review at session end, shown as coaching, measured
 by replay against IRR codes, in a fast-follow PR [R-0443, R-0444].
 
+## 2026-09-24: FD-363 — the coach sees its own work; mistakes are written down, not blocked
+
+Patrick [R-0477 to R-0485]. A failed turn is resumed with its own tool calls and keeps its
+edits; the user's words are stored once, before the turn runs. Every tool call is kept in the
+database and shown in every session. The prompt carries a map of the record and the coach reads
+the rest. Reads carry the record version; a change based on an older version than another
+writer's is refused, and that refusal is the one piece of app logic kept, because two writers
+would otherwise overwrite each other [R-0482]. Repeated people and events have no fixed guard;
+a check after every turn writes rows for them instead.
+
+Choices made in building the check: it looks only at what the turn touched, so an old repeat is
+written once against the turn that made it; a resumed turn is checked whole again and its rows
+replace those of the attempt that failed; an add counts as made without reading when it comes
+before the turn's first read; two events are the same on kind, day, people and what moved, the
+record's own rule, because two shifts for one person on one day that move different variables
+are two events [R-0432]; people are the same on full name and birth year, a missing year
+matching a missing year. The rows are listed by an admin command, not a page. The three live
+eval cases score zero repeats both in the record and in those rows.
+
+Rejected: blocking or rewriting a turn on a likely repeat [R-0481, R-0482]; checking the whole
+record after every turn, which would write every old repeat again on every turn; starting a
+failed turn over, which repeated its adds. Open: the record's existing refusal of an added event
+that matches another conflicts with R-0481 and awaits Patrick's ruling.
+
+## 2026-09-25: FD-363 — open questions: refusal scope, close-on-removal, backfill wording, and a reply safety net
+
+Patrick. The same-words refusal on an added question now covers only a question that is open or
+already declined by the user, not one that was answered or let go — so it blocks a duplicate
+only while the original still matters. Removing the person, event, pair bond or cluster a
+question is about closes every open question linked to it as let go, with the link cleared, in
+the same write; undo restores both. The check on an asked question whose reply barely holds its
+words was a live check and is now only an observation, logged and never blocking or rewriting
+anything. The one-off backfill may reword a bare fragment from an old session into a
+self-contained question rather than only copying words verbatim. The coach writes a question to
+the record before it sends the reply that asks it, so the two can never disagree about what was
+asked. A turn that stops with no words and no further tool call right after a silent tool step
+is asked once more for a reply, as a safety net, instead of being failed outright.
+
+## 2026-09-25: FD-363 — deploying is not merging; a refusal right every time stays as code
+
+Patrick (rulings not yet numbered; listed with his words in the private corpus). A build for him
+to test reaches the box by a release run dispatched from the ticket branch, and the pull request
+stays open; the gate is the session's own testing against the 14-point pre-deploy bar, not a
+merge. The record's refusal of an exactly repeated event, and of a question with the same words
+as an open or declined one, stays as code beside R-0481, because it is right every time; near
+duplicates are only logged. Every tool call draws a line in the thread, show and view calls
+included, for a complete log of what the coach did and how the user answered. Hand edits of
+events go through the coach's writer. The old single-call chat path is deleted. Rejected: asking
+him for a merge yes before each deploy.
+
+## 2026-09-25: FD-363 — the coach's impressions, and SARF shifts as episodes
+
+Patrick (not yet numbered). What the coach infers from the record — a pattern across chapters,
+or a stretch of years where a lot happened — is kept the way open questions are: stored with a
+tool before it is said, never removed, naming what it rests on, and open to push-back with
+"Doesn't fit" or "Partly". The drawer tab becomes "From the coach" with a third section,
+"Impressions"; a within-years reading becomes a cluster; past sessions are backfilled once. SARF
+shifts as people report them are remembered, isolated episodes, not a series or a trend, so no
+line or step graph of those shifts; whether other shifts suggest a line stays open. Three choices
+the build made under his general yes wait on his word: "Partly" counts only once the reply is
+sent, "Doesn't fit" posts the impression as a chip, and the empty tab's sentence.
+
+## 2026-09-25: FD-363 — testing is close to free; paid calls are asked for; evals need a human oracle
+
+Patrick (not yet numbered). A night's testing spent about $20, 60% of it on running the full live
+suite three times per code version. From now on every real-model spend is asked for first; real
+calls happen only at the end of a batch and only when a prompt or tool changed; the sandbox runs
+on a local model by default; the live suite stops at hard caps and keeps a daily ledger; testing
+and production run on separate keys. Prompt evals are built only from a human oracle, never an
+LLM's. Clinical-coding evals wait for ground truth ratified by the IRR review group, so the paid
+suite keeps behaviour evals only; his over- and under-functioning coding rulings are rescinded as
+evals and R-0428 and R-0057 are undecided. Rejected: measuring variance by repeated full runs;
+asking him to certify coding rules case by case.
+
+## 2026-09-25: The move to a standalone ~/btcopilot copies no sessions
+
+Patrick. The FD-362-onward sessions are reopened by id from the new home instead of copied,
+because a copied session breaks the lookup by id; a list of those sessions with dates and topics
+is kept in the private corpus; the memories that apply are carried over; ~/theapp becomes the
+legacy home for master-legacy and the familydiagram release branches. The plan's remaining
+choices wait on his word; nothing has moved.
+
+## 2026-09-25: Literature coding rules carry no provisional label
+
+Patrick [R-0519]. The 2026-09-23 entry's "provisional" wording for the open coding questions was
+an agent assumption; he never ruled it. Coding-judgment gaps are filled with best-guess rules
+worded from the literature and judged by F1 after coding. The label is removed from the private
+prompts and the two checks that grepped for it are deleted; R-0440 is superseded by R-0519.
+
+## 2026-09-26: FD-363 — the coach's notes go through a tool, not a structured reply
+
+Patrick [R-0520]. The coach states its own read of each turn (register, lane, why this question
+now, what it holds for later, the history plateau and biggest gap, any hunch, its sense of the
+person, which variable is live) by calling a notes tool, and reads its last notes back
+through the replay of its earlier tool calls. Rejected: a metadata field in structured JSON
+output, because structured output and streaming do not mix and a streamed-JSON parse was judged
+hacky and brittle. The notes are stripped on the server for anyone who is not an admin or
+auditor. Whether the coach is on track stays a judgement read from these notes and the log, not
+a deterministic after-turn check [R-0485].
+
+## 2026-09-26: FD-363 — paid calls are paid for once
+
+Patrick [R-0531]. A good test does not need a fresh paid call each time. The paid behaviour suite now
+saves each real response, sops-encrypted under private/replays, keyed by a hash of the whole
+request, and replays it; only changed calls reach the model, and replayed calls go into the ledger
+at $0. The date the coach sees is pinned to 2026-09-25 in that suite so a saved response still
+matches the next day. Proven only for each case's first call; one paid run followed by a
+replay-only run proves the rest. Rejected: proving wiring with real calls a unit test already
+proves.
+
+## 2026-09-26: FD-363 — the deploy credentials live in a GitHub environment limited to FD-363
+
+Patrick said yes to adding the setting that lets the release workflow deploy by itself [R-0530];
+the shape of it is the agent's. The host, user and key sit in a GitHub environment named
+production that only branch FD-363 may use; the deploy job runs only on a manual dispatch and
+checks out the dispatched commit on the box. A repository-wide host setting, which would have
+deployed every push to master, was created and removed within the hour. Every deploy so far,
+including 5b2a6bb on 2026-09-26, ran by hand on the box; the first dispatch through the
+environment is untested. A later ticket branch needs the environment's branch rule widened.
+
+## 2026-09-26: The frame of reference is built in its own session
+
+Patrick [R-0524, R-0525]. A chalkboard design proposed for the play-by-play was fitted to one of
+his clusters and drew on mainstream attachment ideas rather than his clinical frame. He ruled that
+design of the chalkboard waits until an agent can reason from his frame, fits every case rather
+than one, and that the frame's synthesis gets its own Fable session, serving every later
+session. A first draft written in this session is kept uncommitted and copied to
+the private corpus; whether the separate session starts from it or from nothing is his call.
+Deferred with it: fixing the play-by-play drawing bugs he confirmed [R-0526].
+
+## 2026-09-26: The move to ~/btcopilot runs at the start of the next new session
+
+Patrick. Queued, not run now: it happens when he next starts a new session, so the progress of
+the running session is not lost mid-move. It follows the recommendations of the 2026-09-25
+migration plan; the next session reminds him first (STATE's top paragraph).
+
+## 2026-09-27: FD-363 — the coach tells a play-by-play through one tool; the drawing reads the record
+
+Built to the approved snapshots design and its prompt draft (design/playbyplay-snapshots/
+PROMPT_DRAFT.md) [R-0545, R-0563]. The coach is offered one tool, play_by_play: the cluster id,
+the point, 3 to 6 snapshots of {date, event ids, fact, optional "My guess:" line}, and the
+question. Code refuses only on ids, dates, count, order and the guess prefix; judgement faults
+are observed in the evals, never blocked. A refused call is handed back with what is wrong, up to
+three times; a coach that never calls it fails the turn. The case is
+kept on the play message (a new column), so it opens again. The cast and every mark are computed
+by code from the record, not named by the coach: the cast rule is a rule, and a drawing the coach
+could word differently each time would break the fixed positions [R-0546]. Play calls are now
+metered like a turn's; they never were. Rejected: a structured prose reply parsed afterwards (no
+schema, and a parse failure has nothing to hand back); forcing the tool with tool_choice (not
+allowed with the coach's thinking). The drawing is a TypeScript port of the approved reference,
+checked to draw byte-for-byte the same on the stand-in cases and on Patrick's four cases.
+
+## 2026-09-28: The queued batch deployed; chat stays the primary way to edit an event; the timeline is not for selecting events
+
+Deployed at commit 07b9d8b: the cluster-select slide fix, the stale home-screen app fix, the
+pill strip, play turns writing their own done event, refusals for an invalid event kind and an
+unknown evidence kind, a couple event with no spouse refused at the writer, the first
+migration's table order fixed so an empty Postgres builds, the dashboard's Person filter, and
+the sandbox kit moved into the repo. The first release attempt failed on a full disk from
+unpruned docker images, pruned by hand; automatic pruning is still owed.
+
+Patrick ruled the editor that would have opened from tapping an event's words inside a cluster
+is not being built — chat was always the real way to edit an event, with the event list as the
+fallback [R-0572, supersedes R-0207]. He also ruled the timeline was never meant for picking out
+one event at a time; a cluster is what matters, since that is the door to the play-by-play
+[R-0573]. The first migration's table order was cleared for a one-time rewrite, an exception to
+R-0417, since that revision had never reached production [R-0574]. And on how the build had
+branched during the play-by-play work, he ruled that development stays in one worktree per
+ticket, since the merge rules exist only to guard master [R-0575].
+
+R-0381 and R-0402 are contradicted by the pill strip's one-screen line but were left standing,
+pending his yes to supersede them.
+
+## 2026-09-28: A second batch deployed; explain caches a telling until it goes stale; the tuning queue widens the learning-loop rule
+
+Deployed at commit 8ad08dc: the timeline's zoom, width, scroll and open position restored to
+exactly what they were before the pill strip, with snap points rounded to whole pixels; explain
+reusing a cluster's last play-by-play telling until its events, the people and bonds it draws, or
+the play prompt change; and six new kinds of failure written down as observations, grouped into a
+queue of at most ten, and shown on the quality dashboard's new "Tuning queue" panel.
+
+Patrick ruled explain should cache one play-by-play telling per cluster until its events change,
+since retelling an unchanged one is a model call for no gain [R-0576]. He confirmed the
+timeline's zoom had to return to exactly what it was before the pill strip, not some new zoom
+behaviour invented for it; R-0381 was never actually superseded, so only R-0402 stays on STATE's
+list of rulings waiting on his yes [R-0577]. He widened the standing rule that everything the app
+does should feed a loop that improves it [R-0517]: any signal anywhere that a part of the app
+needs tuning should be caught automatically, dashboarded and queued as a short list he can accept
+or reject, aggressively, short of turning it into a research project, with the list he reads held
+to about ten items [R-0578]. He approved the first concrete case: a bad tool call is refused back
+to the coach with a logged warning and a retry, rather than failing the turn [R-0579]. And he
+ruled, for good: replies to him name the actual table, column, file or screen rather than vague,
+abstract language [R-0580].
+
+## 2026-09-28: FD-363-cost — the system prompt holds only the coaching text; the record moves into the user turn
+
+Patrick [R-0595]. A heavy production day put 78% of that day's model cost in prompt-cache writes
+($12.91 of $16.60 over 38 turns), because the record, the date and the "looked at" block sat in
+the system prompt ahead of the chat and changed every turn, rewriting the whole cached chat each
+time. The system prompt now holds only the coaching text; the record block moves into the new
+user message after the chat; the chat is marked at the previous two turn boundaries; tool marks
+are capped at four; cache life stays 5 minutes. Measured on the sandbox with a 12,000-token chat,
+turns 2 and 3 cost 42% less. Estimated saving on that production day: about $4.50, near zero for
+a user whose gaps between replies mostly exceed 5 minutes. A 1-hour cache life was weighed and
+left off, within measurement error either way. Unproven: the saving on real production sessions,
+and whether moving about 14,000 characters of prompt into the user turn changes the coach's
+behaviour, which needs the live eval suite run against it.
+
+## 2026-09-28: FD-363-cost — a shadow model runs the real turn's input on a separate queue, never shown to the user
+
+Patrick [R-0596]. Comparing a candidate coach model against the model in use needed a way to run
+it without the user seeing or waiting on it. A per-user coach model and shadow model now live in
+the per-user settings table, set by `flask admin coach-model show/set/shadow`. A shadow turn runs
+the candidate model on the real turn's input on a separate Celery queue, with a new fd-shadow
+worker service, and is stored in a new shadow_turns table on a scratch diagram flagged scratch,
+excluded from the user's diagram list. Beta users stay on Opus 5.5; there is no A/B test on them.
+
+## 2026-09-28: FD-363-cost — a replay command scores a candidate model against a record Patrick corrected himself
+
+Patrick [R-0597]. `flask admin quality replay <discussion> <model> <reference_diagram> [--cap
+5]` replays a conversation's user statements on a model onto a scratch record and scores people,
+pair-bonds, events, clusters and variables plus fault counts against the reference record,
+appending a Replay line to the ledger. The reference record must be one Patrick corrected
+himself, never a model-built one — the same standing rule as ground truth elsewhere in the
+project.
+
+## 2026-09-28: FD-363-cost — a Gemini Flash coach model, because Patrick holds a business associate agreement with Google
+
+Patrick [R-0598]. A Gemini Flash coach model is wired in through google-genai, Vertex by
+default, with aliases gemini-flash, gemini-3.8-flash, gemini-3.6-flash and gemini-2.5-flash. The
+reason is that Patrick holds a business associate agreement with Google, not with every model
+vendor. A real call on this model awaits Vertex credentials on the box and his confirmation of
+what the agreement covers.
+
+## 2026-09-28: FD-363-cost — the review app's Compare replies page records Patrick's blind picks between models
+
+Patrick [R-0599]. The review app gained a Compare replies page that serves blind pairs drawn
+from shadow turns and replays and records which one Patrick picks in a new model_picks table.
+Patrick is the only oracle on these picks, the same standing rule as everywhere else model
+quality is judged in this project.
+
+## 2026-09-28: FD-363 — the live eval suite runs on the subscription, with paid API calls kept for one calibration and the ruled end-of-batch run
+
+Patrick [R-0568]. The live suite now runs through `bin/subscribe.py` on the Claude Code
+subscription, using the coach's real system prompt and MCP tools. It was calibrated once against
+the API for 8 paid calls, $0.1563, under Patrick's approval that day. The free path judges tool
+choice, event kind, who is kept and what is asked; finer fields and wording go to the ruled
+end-of-batch API run. The pre-deploy record-in-user-message change was proven by one post-deploy
+turn on the claude-test account.
+
+## 2026-09-28: FD-363 — the rulings store is split into topic files under a 300,000-byte ceiling, and its audit lists wait for Patrick
+
+The rulings store was restructured into topic files with a generated index and a hygiene guard,
+so a new ruling no longer forces a wording trim to stay under the size ceiling. The audit file
+(18 candidate merges, 19 supersessions with 5 conflicts, 115 uncited rulings, 7 bug-report
+rulings) is applied only on Patrick's approval; no ruling was touched.
 ## 2026-09-25: The Pro update feeds stay on the legacy box
 
 The Pro app's update feeds (`appcast_*.xml`) live on the legacy box; familydiagram.com only
-forwards `/appcast_*.xml` to it, so installed apps keep their feed address [R-0477]. The Pro
+forwards `/appcast_*.xml` to it, so installed apps keep their feed address [R-0600]. The Pro
 release job uploads the feeds to database.familydiagram.com (familydiagram PR #153).

@@ -19,6 +19,7 @@ x-app-env: &app-env
   OTEL_EXPORTER_OTLP_ENDPOINT: http://fd-alloy:4318
   OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
   OTEL_RESOURCE_ATTRIBUTES: deployment.environment=production
+  GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp-sa.json
 
 # No container_name on the app and the worker: `docker rollout <service>` starts the
 # new container beside the old one and stops the old one only once the new one is
@@ -30,6 +31,7 @@ x-app: &app
   volumes:
     - ./instance:/app/instance
     - /etc/fd/age.key:/run/secrets/age.key:ro
+    - ${GCP_SA_FILE:-/etc/fd/gcp-sa.json}:/run/secrets/gcp-sa.json:ro
   depends_on:
     fd-postgres:
       condition: service_healthy
@@ -58,18 +60,28 @@ services:
     expose:
       - "8888"
 
-  fd-worker:
+  # Real turns only: the solo pool runs one task at a time, so a shadow turn on
+  # this queue would hold up the next real one (R-0596).
+  fd-worker: &worker
     <<: *app
     environment:
       <<: *app-env
       FD_IS_CELERY: "1"
       OTEL_SERVICE_NAME: fd-worker
-    command: ["python", "-m", "celery", "-A", "btcopilot.celery:celery", "worker", "--pool=solo", "--loglevel=info"]
+    command: ["python", "-m", "celery", "-A", "btcopilot.celery:celery", "worker", "-Q", "celery", "--pool=solo", "--loglevel=info"]
     healthcheck:
       test: ["CMD-SHELL", "python -m celery -A btcopilot.celery:celery inspect ping -d celery@$$HOSTNAME --timeout 10 || exit 1"]
       interval: 30s
       timeout: 15s
       retries: 3
+
+  fd-shadow:
+    <<: *worker
+    environment:
+      <<: *app-env
+      FD_IS_CELERY: "1"
+      OTEL_SERVICE_NAME: fd-shadow
+    command: ["python", "-m", "celery", "-A", "btcopilot.celery:celery", "worker", "-Q", "shadow", "--pool=solo", "--loglevel=info"]
 
   fd-postgres:
     image: postgres:16-alpine

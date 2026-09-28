@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { PIC_H } from "../../src/spotlight";
+import { NO_LIST, pinned, stateFor } from "./setup";
 
 /** The layout contract, asserted rather than eyeballed: the picture region owns
  * its level's height and the chat fills what is left, so a tap on a chip or on
@@ -87,80 +88,82 @@ test.describe("nothing moves when a chip is tapped", () => {
     expect(after.bubbles).toEqual(before.bubbles);
   });
 
-  // R-0210
-  test("tapping the wire selects a moment and moves nothing", async ({ page }) => {
-    await settle(page);
-    const before = await frame(page);
-    await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator("#view .ss-t.on").first()).toBeVisible();
-    const after = await frame(page);
+  // the moves record's events are all inside clusters, which take no pick of
+  // their own (R-0543), so a pick is made on the record with a loose event
+  test.describe(() => {
+    test.use({ storageState: stateFor("three40") });
+    // R-0210, R-0543
+    test("tapping the wire selects a moment and moves nothing", async ({ page }) => {
+      await settle(page);
+      const before = await frame(page);
+      await page.locator('.ss-hit[data-target="zone"]').first().click();
+      await expect(page.locator("#view .ss-t.on").first()).toBeVisible();
+      const after = await frame(page);
 
-    expect(after.picture).toEqual(before.picture);
-    expect(after.caption).toEqual(before.caption);
-    expect(after.bubbles).toEqual(before.bubbles);
-  });
+      expect(after.picture).toEqual(before.picture);
+      expect(after.caption).toEqual(before.caption);
+      expect(after.bubbles).toEqual(before.bubbles);
+    });
 
-  // R-0212
-  test("the row keeps its height and its three chips whatever is picked", async ({
-    page,
-  }) => {
-    await settle(page);
-    // this record opens on the cluster the coach's last message named, so the
-    // picture is put down first to see the row with nothing picked
-    await page.locator("#crumb").click();
-    await page.waitForTimeout(400);
-    const empty = await frame(page);
-    await expect(page.locator("#chat-screen .caption .cta")).toHaveText("tap a cluster");
+    // R-0212, R-0450, R-0543
+    test("the row keeps its height and its three chips whatever is picked", async ({
+      page,
+    }) => {
+      await settle(page);
+      const empty = await frame(page);
+      await expect(page.locator("#chat-screen .caption .cta")).toHaveText("tap a cluster");
 
-    await page.locator('.ss-hit[data-target="cluster"]').first().click();
-    await page.waitForTimeout(400);
-    // a cluster open: ask about it, or have it explained
-    await expect(page.locator("#cap-chip")).not.toHaveClass(/dim/);
-    await expect(page.locator("#cap-play")).not.toHaveClass(/dim/);
-    await expect(page.locator("#cap-trace")).toHaveClass(/dim/);
-    const open = await frame(page);
+      await page.locator('.ss-hit[data-target="cluster"]').first().click();
+      await page.waitForTimeout(400);
+      // a cluster open: ask about it, or have it explained
+      await expect(page.locator("#cap-chip")).not.toHaveClass(/dim/);
+      await expect(page.locator("#cap-play")).not.toHaveClass(/dim/);
+      await expect(page.locator("#cap-trace")).toHaveClass(/dim/);
+      const open = await frame(page);
 
-    await page.locator('.ss-hit[data-target="zone"]').first().click();
-    // a moment picked: ask about it, or go to where it was said
-    await expect(page.locator("#cap-play")).toHaveClass(/dim/);
-    await expect(page.locator("#cap-trace")).not.toHaveClass(/dim/);
-    const picked = await frame(page);
+      await page.locator('.ss-hit[data-target="zone"]').first().click();
+      // a moment picked: ask about it, or go to where it was said
+      await expect(page.locator("#cap-play")).toHaveClass(/dim/);
+      await expect(page.locator("#cap-trace")).not.toHaveClass(/dim/);
+      const picked = await frame(page);
 
-    // and the row is the same height throughout
-    expect(open.caption).toEqual(empty.caption);
-    expect(picked.caption).toEqual(empty.caption);
-  });
+      // and the row is the same height throughout
+      expect(open.caption).toEqual(empty.caption);
+      expect(picked.caption).toEqual(empty.caption);
+    });
 
-  // R-0212
-  test("the caption stays one strip however many controls it holds", async ({
-    page,
-  }) => {
-    await settle(page);
-    await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator("#cap-chip")).toBeVisible();
-    // The three chips are 26 tall in the middle of the 44 band, on one line,
-    // and each is as wide as its own word (picked plate F).
-    const strip = await page.locator("#chat-screen .caption").evaluate((node) => ({
-      height: Math.round(node.getBoundingClientRect().height),
-      children: node.childElementCount,
-      rows: new Set(
-        [...node.children].map((c) => {
-          const at = c.getBoundingClientRect();
-          return Math.round(at.top + at.height / 2);
-        }),
-      ).size,
-      heights: [...node.children].map((c) =>
-        Math.round(c.getBoundingClientRect().height),
-      ),
-      fits: node.scrollWidth <= node.clientWidth,
-    }));
-    expect(strip.children).toBe(4);
-    expect(strip.height).toBe(44);
-    expect(strip.rows).toBe(1);
-    expect(strip.heights).toEqual([26, 26, 26, 44]);
-    // and with one word each they fit across a phone, which the record's own
-    // words in the asking chip never did
-    expect(strip.fits).toBe(true);
+    // R-0212, R-0543
+    test("the caption stays one strip however many controls it holds", async ({
+      page,
+    }) => {
+      await settle(page);
+      await page.locator('.ss-hit[data-target="zone"]').first().click();
+      await expect(page.locator("#cap-chip")).toBeVisible();
+      // The three chips are 26 tall in the middle of the 44 band, on one line,
+      // and each is as wide as its own word (picked plate F).
+      const strip = await page.locator("#chat-screen .caption").evaluate((node) => ({
+        height: Math.round(node.getBoundingClientRect().height),
+        children: node.childElementCount,
+        rows: new Set(
+          [...node.children].map((c) => {
+            const at = c.getBoundingClientRect();
+            return Math.round(at.top + at.height / 2);
+          }),
+        ).size,
+        heights: [...node.children].map((c) =>
+          Math.round(c.getBoundingClientRect().height),
+        ),
+        fits: node.scrollWidth <= node.clientWidth,
+      }));
+      // ask, explain and in chat, and the list button where one is drawn
+      const chips = [26, 26, 26];
+      expect(strip.heights).toEqual((await pinned(page)) ? chips : [...chips, 44]);
+      expect(strip.height).toBe(44);
+      expect(strip.rows).toBe(1);
+      // and with one word each they fit across a phone, which the record's own
+      // words in the asking chip never did
+      expect(strip.fits).toBe(true);
+    });
   });
 });
 
@@ -172,7 +175,7 @@ for (const key of ["one", "three40", "dense60", "hostile", "moves", "play", "lon
   test.describe(`the caption row on the ${key} record`, () => {
     test.use({ storageState: stateFor(key) });
 
-    // R-0212
+    // R-0212, R-0543
     test("holds every control inside itself, on one line", async ({ page }) => {
       await settle(page);
       // a record whose moments are inside a cluster needs it opened first
@@ -181,8 +184,9 @@ for (const key of ["one", "three40", "dense60", "hostile", "moves", "play", "lon
         await clusters.first().click();
         await page.waitForTimeout(400);
       }
+      // and an event no cluster claims picked, where the record has one
       const zones = page.locator('.ss-hit[data-target="zone"]');
-      await zones.first().click();
+      if (await zones.count()) await zones.first().click();
       await expect(page.locator("#chat-screen .caption .tok").first()).toBeVisible();
 
       const row = await page.locator("#chat-screen .caption").evaluate((node) => {
@@ -246,21 +250,25 @@ test.describe("a scrollbar appearing never shifts the page", () => {
   });
 });
 
-test.describe("the board is the only thing that resizes the picture", () => {
+test.describe("explain resizes nothing until it is tapped", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0212
-  test("the way onto the board says explain, and moves nothing until it is tapped", async ({
+  // R-0212, R-0543
+  test("the way into the play-by-play says explain, and moves nothing until it is tapped", async ({
     page,
   }) => {
     await settle(page);
-    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    // the record opens on the cluster the coach named
     await expect(page.locator("#cap-play")).toHaveText("explain");
 
-    // the button appearing must not have moved anything
+    // the button going and coming back must not move anything: a tap on the
+    // open pill puts it down, and a tap on a pill opens it again
     const before = await frame(page);
-    await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    const pill = (await page.locator("#view rect.pill.on").boundingBox())!;
+    await page.mouse.click(pill.x + pill.width / 2, pill.y + pill.height / 2);
+    await expect(page.locator("#chat-screen .caption .cta")).toHaveText("tap a cluster");
+    await page.locator('.ss-hit[data-target="cluster"]').first().click();
+    await expect(page.locator("#cap-play")).toHaveText("explain");
     const after = await frame(page);
     expect(after.picture).toEqual(before.picture);
     expect(after.caption).toEqual(before.caption);
@@ -301,51 +309,22 @@ test.describe("a long family name", () => {
     expect(Math.round(avatar.width)).toBe(44);
     expect(Math.round(avatar.height)).toBe(44);
     // the list button is at the end of the row of chips, at its ruled size
-    const list = (await page.locator("#menu-open").boundingBox())!;
-    expect([Math.round(list.width), Math.round(list.height)]).toEqual([44, 44]);
+    if (!(await pinned(page))) {
+      const list = (await page.locator("#menu-open").boundingBox())!;
+      expect([Math.round(list.width), Math.round(list.height)]).toEqual([44, 44]);
+    }
 
     // the picture starts where it always starts
     expect(await pictureHeight(page)).toBe(BAND);
   });
 });
 
-test.describe("the moves board fills the room it takes", () => {
-  test.use({ storageState: stateFor("moves") });
-
-  // R-0210, R-0132
-  test("no empty band under the drawing or the controls", async ({ page }) => {
-    await settle(page);
-    await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    await page.waitForTimeout(600);
-
-    const fit = await page.evaluate(() => {
-      const view = document.querySelector("#view")!;
-      const parts = [...view.children].map((n) => n.getBoundingClientRect().height);
-      const last = view.lastElementChild!;
-      return {
-        region: Math.round(view.getBoundingClientRect().height),
-        content: Math.round(parts.reduce((a, b) => a + b, 0)),
-        lastClass: last.className,
-        lastBottom: Math.round(last.getBoundingClientRect().bottom),
-        regionBottom: Math.round(view.getBoundingClientRect().bottom),
-      };
-    });
-    // the region is exactly what it holds, and the controls are the last thing
-    expect(fit.region).toBe(fit.content);
-    expect(fit.lastClass).toContain("pctl");
-    expect(fit.regionBottom - fit.lastBottom).toBeLessThanOrEqual(1);
-
-    // and the ruled control height survives
-    for (const box of await page.locator("#chat-screen .pctl .btn").all())
-      expect(Math.round((await box.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
-  });
-});
 
 test.describe("a moment traces back to the words that coded it", () => {
-  test.use({ storageState: stateFor("moves") });
+  // a loose event, since one inside a cluster takes no pick (R-0543)
+  test.use({ storageState: stateFor("three40") });
 
-  // R-0220, R-0192
+  // R-0220, R-0192, R-0543
   test("the said chip takes the thread to where it was said", async ({
     page,
   }) => {
@@ -367,16 +346,17 @@ test.describe("a moment traces back to the words that coded it", () => {
   });
 });
 
-/** The band the line is drawn in: 66 of the picture's ruled 138 (picked phone
- * mockup 2026-09-08, band grown by six on 2026-09-08 so the year under the
- * picked moment clears the row of controls), the other 72 being the name row
- * and the row of controls under it. */
-const BAND = 66;
+/** The band the line is drawn in: 72 of the picture's 144 (picked phone mockup
+ * 2026-09-08, band grown by six on 2026-09-08 so the year under the picked
+ * moment clears the row of controls, and by six more on 2026-09-24 so the
+ * picked dot stands clear of its words), the other 72 being the name row and
+ * the row of controls under it. */
+const BAND = PIC_H;
 
 const pictureHeight = (page: Page) =>
   page.locator("#view").evaluate((node) => Math.round(node.getBoundingClientRect().height));
 
-/** What each row of the picture region measures, which is what the 138 is made
+/** What each row of the picture region measures, which is what the 144 is made
  * of. Exact, because the whole point of the number is that nothing under it
  * moves. */
 const rowHeights = (page: Page) =>
@@ -396,7 +376,7 @@ test.describe("each level is one fixed height", () => {
       }) => {
         await settle(page);
         expect(await pictureHeight(page)).toBe(BAND);
-        // the name row, the band, and the row of controls: 28, 60 and 44
+        // the name row, the band, and the row of controls: 28, 72 and 44
         expect(await rowHeights(page)).toEqual([28, BAND, 44]);
       });
     });
@@ -408,7 +388,7 @@ test.describe("each level is one fixed height", () => {
   for (const key of ["one", "three40", "dense60"] as const) {
     test.describe(() => {
       test.use({ storageState: stateFor(key) });
-      // R-0210, R-0132
+      // R-0210, R-0132, R-0543
       test(`opening a cluster moves nothing on the ${key} record`, async ({
         page,
       }) => {
@@ -420,7 +400,7 @@ test.describe("each level is one fixed height", () => {
         const box = page.locator('.ss-hit[data-target="cluster"]');
         if (await box.first().isVisible().catch(() => false)) await box.first().click();
         else await page.locator('.ss-hit[data-target="zone"]').first().click();
-        await expect(page.locator('.ss-hit[data-target="zone"]').first()).toBeVisible();
+        await expect(page.locator('#path [data-step="0"]')).toBeVisible();
         await page.waitForTimeout(400);
 
         const open = await frame(page);
@@ -430,8 +410,11 @@ test.describe("each level is one fixed height", () => {
         expect(open.chat).toEqual(before.chat);
         expect(open.bubbles).toEqual(before.bubbles);
 
-        // and tapping about inside the open cluster changes nothing either
-        await page.locator('.ss-hit[data-target="zone"]').first().click();
+        // and tapping on to the next mark changes nothing either: a loose dot
+        // where there is one, the next pill where there is not (R-0543)
+        const zone = page.locator('.ss-hit[data-target="zone"]').first();
+        if (await zone.count()) await zone.click();
+        else await page.locator('.ss-hit[data-target="cluster"]').first().click();
         const after = await frame(page);
         expect(after.picture).toEqual(open.picture);
         expect(after.bubbles).toEqual(open.bubbles);
@@ -447,12 +430,12 @@ const live = (page: Page) =>
     .evaluateAll((buttons) => buttons.map((b) => b.id));
 
 test.describe("the row under the picture from one view to the next", () => {
-  test.use({ storageState: stateFor("moves") });
+  // a record with a loose event, the only kind a tap picks (R-0543)
+  test.use({ storageState: stateFor("three40") });
 
-  // R-0450
+  // R-0450, R-0543
   test("the picture stays put while the row's buttons change", async ({ page }) => {
     await settle(page);
-    await page.locator("#up").click();
     await expect(page.locator('#view .ss-hit[data-target="cluster"]').first()).toBeVisible();
     await page.waitForTimeout(400);
     const rest = { at: await frame(page), live: await live(page) };
@@ -478,17 +461,6 @@ test.describe("the row under the picture from one view to the next", () => {
     expect(rest.at.caption?.[3]).toBe(44);
   });
 
-  // R-0450
-  test("the row keeps its height with the board open", async ({ page }) => {
-    test.fail(true, "the row is taken away entirely while the board is open");
-    await settle(page);
-    const before = await frame(page);
-    await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    await page.waitForTimeout(600);
-    const after = await frame(page);
-    expect(after.caption?.[3]).toBe(before.caption?.[3]);
-  });
 });
 
 test.describe("the button that opens the lists", () => {
@@ -510,6 +482,7 @@ test.describe("the button that opens the lists", () => {
   // R-0221
   test("sits in the row under the picture, at its right end", async ({ page }) => {
     await settle(page);
+    test.skip(await pinned(page), NO_LIST);
     const at = await place(page);
     expect(at.inRow).toBe(true);
     expect(at.last).toBe("menu-open");
@@ -520,6 +493,7 @@ test.describe("the button that opens the lists", () => {
   // R-0221
   test("stays at the right end after ask, explain and in chat", async ({ page }) => {
     await settle(page);
+    test.skip(await pinned(page), NO_LIST);
     await page.locator('#view .ss-hit[data-target="cluster"]').first().click();
     await page.locator('#view .ss-hit[data-target="zone"]').first().click();
     await expect(page.locator("#cap-chip")).toBeVisible();

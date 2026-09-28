@@ -6,12 +6,18 @@ from unittest import mock
 import click
 
 import pytest
+from alembic.script import ScriptDirectory
 
 import btcopilot
+from btcopilot import tuning
 from btcopilot.admin import admin
 from btcopilot.admin import guard, setting, skill
+from btcopilot.admin.database import config
 from btcopilot.tests import olddump
 from btcopilot.admin.setting import SettingKey
+from btcopilot.extensions import db
+from btcopilot.models import Observation, ObservationKind
+from btcopilot.models.preferences import PrefKey, Spotlight
 
 
 @pytest.fixture
@@ -47,6 +53,24 @@ def test_users_roles_set_then_read(run, test_user):
     )
 
 
+def test_users_prefs_flip_the_spotlight_and_back(run, test_user):
+    # R-0168
+    shown = rows(run("users", "prefs", test_user.username, "--json"))
+    assert shown[0]["spotlight"] == "unified"
+
+    run("users", "prefs", test_user.username, "spotlight", "chip")
+    assert test_user.pref(PrefKey.Spotlight) is Spotlight.Chip
+
+    run("users", "prefs", test_user.username, "spotlight", "unified")
+    assert test_user.pref(PrefKey.Spotlight) is Spotlight.Unified
+
+
+def test_users_prefs_takes_a_switch_as_on_or_off(run, test_user):
+    # R-0453
+    run("users", "prefs", test_user.username, "speak", "on")
+    assert test_user.pref(PrefKey.Speak) is True
+
+
 def test_users_invite_prints_a_link(run, flask_app):
     # R-0390
     invited = rows(run("users", "invite", "new@fd362-fixture.invalid", "--json"))
@@ -75,6 +99,63 @@ def test_diagram_counts_and_export(run, test_user):
 
     exported = json.loads(run("diagrams", "export", str(test_user.free_diagram_id)))
     assert isinstance(exported, dict)
+
+
+def test_observations_list_by_kind(run, test_user):
+    # R-0482
+    for kind in (ObservationKind.DuplicatePerson, ObservationKind.AddWithoutRead):
+        db.session.add(
+            Observation(
+                diagram_id=test_user.free_diagram_id,
+                turn_id="t1",
+                kind=kind,
+                detail={"ids": [2, 4]},
+            )
+        )
+    db.session.commit()
+    listed = rows(run("observations", "list", "--kind", "duplicate_person", "--json"))
+    assert [(one["kind"], one["detail"]) for one in listed] == [
+        ("duplicate_person", {"ids": [2, 4]})
+    ]
+
+
+def refusal(test_user, turn_id: str, said: str):
+    db.session.add(
+        Observation(
+            diagram_id=test_user.free_diagram_id,
+            turn_id=turn_id,
+            kind=ObservationKind.ToolRefused,
+            detail={"reason": tuning.reason(said)},
+        )
+    )
+
+
+def test_the_queue_groups_rows_whose_reasons_differ_only_in_ids(run, test_user):
+    # R-0517, R-0578
+    refusal(test_user, "t1", "edit_event: No person 12 in the record")
+    refusal(test_user, "t2", "edit_event: No person 40 in the record")
+    refusal(test_user, "3f2a9c01d4", "show: It asked for 'tri', which is not one of the kinds.")
+    db.session.commit()
+    queued = rows(run("observations", "queue", "--json"))
+    assert [(q["reason"], q["count"], q["example_turn"]) for q in queued] == [
+        ("edit_event: No person # in the record", 2, "t2"),
+        ("show: It asked for '…', which is not one of the kinds.", 1, "3f2a9c01d4"),
+    ]
+
+
+def test_a_rejected_group_leaves_the_queue_and_stays_off(run, test_user):
+    # R-0517, R-0578
+    refusal(test_user, "t1", "edit_event: No person 12 in the record")
+    refusal(test_user, "t2", "show: No people were named.")
+    db.session.commit()
+    queued = rows(run("observations", "queue", "--json"))
+    key = next(q["key"] for q in queued if q["reason"].startswith("edit_event"))
+    run("observations", "reject", key)
+    refusal(test_user, "t3", "edit_event: No person 99 in the record")
+    db.session.commit()
+    assert [q["reason"] for q in rows(run("observations", "queue", "--json"))] == [
+        "show: No people were named."
+    ]
 
 
 def test_import_dry_run_counts_and_writes_nothing(run, tmp_path):
@@ -120,12 +201,16 @@ def test_db_upgrade_builds_the_chain_from_empty(flask_app, tmp_path):
     flask_app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{tmp_path / 'fresh.db'}"
     result = flask_app.test_cli_runner().invoke(admin, ["db", "upgrade"])
     assert result.exit_code == 0, result.output
-    assert result.output.strip().startswith("at 1b00000000aa")
+    with flask_app.app_context():
+        head = ScriptDirectory.from_config(config()).get_current_head()
+    assert result.output.strip().startswith(f"at {head}")
 
 
 READS = {
     "users list", "users show", "licences list", "licences plans", "diagrams list",
-    "diagrams show", "diagrams export", "imports dry-run", "token-cap show",
+    "diagrams show", "diagrams export", "observations list", "observations queue",
+    "imports dry-run",
+    "token-cap show", "coach-model show",
     "review agenda", "review cuts", "review codings", "review nudge show",
     "db current", "skill", "run",
 }

@@ -2,6 +2,7 @@
 kind at a time, and a play-by-play that cannot invent a move."""
 
 import datetime
+import re
 import pytest
 from opentelemetry import trace
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
@@ -18,8 +19,16 @@ from btcopilot.coachturn import (
     LabelTooLong,
 )
 from btcopilot.turnlog import TurnEventKind as EventKind
-from btcopilot.models import Author, Change, ModelCall, StatementKind
-from btcopilot.playturn import PlayTurn
+from btcopilot.models import (
+    Author,
+    Change,
+    Discussion,
+    ModelCall,
+    Speaker,
+    SpeakerType,
+    Statement,
+    StatementKind,
+)
 from btcopilot.prompts import get_agent_prompt
 from btcopilot.toolbox import ToolName
 from btcopilot.schema import (
@@ -102,7 +111,7 @@ def test_edit_writes_a_coach_change_and_the_record_moves(discussion, family):
                 date="1994-12-01",
                 description="got sick",
                 person=1,
-                symptom="up",
+                symptom="up", date_certainty="certain",
             ),
             said("I put that down. [[event:11|that winter]]"),
         ),
@@ -111,7 +120,9 @@ def test_edit_writes_a_coach_change_and_the_record_moves(discussion, family):
 
     change = Change.query.filter_by(diagram_id=family.id).one()
     assert change.author is Author.Coach
-    assert {d["field"] for d in change.deltas} >= {"description", "symptom", "dateTime"}
+    made = next(d for d in change.deltas if d["item_kind"] == ItemKind.Event.value)
+    assert made["field"] is None
+    assert set(made["after"]) >= {"description", "symptom", "dateTime"}
 
     added = [e for e in family.get_diagram_data().events if e["id"] == 11]
     assert len(added) == 1
@@ -132,7 +143,7 @@ def test_the_coach_can_write_a_noted_event(discussion, family):
                 date="2019-03-01",
                 description="moved to Arizona",
                 location="Arizona",
-                person=1,
+                person=1, date_certainty="certain",
             ),
             said("I put that down."),
         ),
@@ -244,48 +255,16 @@ def test_show_stores_the_view_on_the_coach_statement(discussion, family):
     assert reply["views"] == [span]
 
 
-def test_the_coach_is_handed_the_record_and_what_the_user_pointed_at(
+def test_the_coach_is_handed_a_map_of_the_record_and_what_the_user_pointed_at(
     discussion, family
 ):
-    # R-0072
+    # R-0072, R-0479
     model = Model(said("Say more about that."))
     run(discussion, "[[event:10]]", model)
 
-    assert "10 1994-06-01 [noted] person=2 \"moved out\"" in model.systems[0]
-    assert "tell me about this" in model.histories[0][-1]["content"]
-
-
-def test_play_by_play_names_every_event_once_in_date_order(test_user):
-    # R-0074
-    data = DiagramData(
-        people=[asdict(Person(id=1, name="Wren"))],
-        events=[
-            asdict(
-                Event(
-                    id=10,
-                    kind=Kind.Noted,
-                    person=1,
-                    dateTime="1994-06-01",
-                    description="moved out",
-                )
-            ),
-            asdict(Event(id=11, kind=Kind.Shift, person=1, dateTime="1994-12-01")),
-        ],
-        clusters=[asdict(Cluster(id="c1", title="That year", summary="", eventIds=[10, 11]))],
-    )
-    model = Model(
-        said("[[event:10|he moved out]] then [[event:11|she got sick]]. [[event:10]]")
-    )
-    reply = PlayTurn.stored(data, "c1", model=model).run()
-
-    assert reply["cluster_id"] == "c1"
-    assert [target for _, target, _ in chips.parse(reply["statement"], data)] == [
-        "10",
-        "11",
-        "10",
-    ]
-    assert "10 1994-06-01" in model.histories[0][-1]["content"]
-    assert "11 1994-12-01" in model.histories[0][-1]["content"]
+    assert "2 Bo events=1" in model.systems[0]
+    assert model.systems[0].count("moved out") == get_agent_prompt().count("moved out")
+    assert "tell me about this" in model.histories[0][-1]["content"][-1]["text"]
 
 
 def test_chat_returns_the_words_and_the_events_behind_them(web, family, monkeypatch):
@@ -293,7 +272,7 @@ def test_chat_returns_the_words_and_the_events_behind_them(web, family, monkeypa
     from btcopilot.tests.conftest import csrf_token
 
     monkeypatch.setattr(
-        "btcopilot.coachturn.CoachModel",
+        "btcopilot.turns.model_for",
         lambda *a, **k: Model(
             called(ToolName.EditPerson, name="Nell"), said("Added [[person:11|Nell]].")
         ),
@@ -330,7 +309,7 @@ def test_people_and_their_events_all_land_in_one_turn(discussion, family):
             calling(
                 (
                     ToolName.EditEvent,
-                    {
+                    {"date_certainty": "certain",
                         "kind": "noted",
                         "date": "1994-01-01",
                         "person": 11,
@@ -339,11 +318,12 @@ def test_people_and_their_events_all_land_in_one_turn(discussion, family):
                 ),
                 (
                     ToolName.EditEvent,
-                    {
+                    {"date_certainty": "certain",
                         "kind": "shift",
                         "date": "1996-01-01",
                         "person": 12,
                         "symptom": "up",
+                        "description": "got ill",
                     },
                 ),
             ),
@@ -359,36 +339,72 @@ def test_people_and_their_events_all_land_in_one_turn(discussion, family):
     ] == [("1994-01-01", 11), ("1996-01-01", 12)]
 
 
-def test_offered_chips_never_reach_the_transcript(test_user):
+def coach_asked(discussion, text: str, **told) -> Statement:
+    coach = next(s for s in discussion.speakers if s.type == SpeakerType.Expert)
+    statement = Statement(
+        discussion_id=discussion.id,
+        speaker_id=coach.id,
+        text=text,
+        order=discussion.next_order(),
+        **told,
+    )
+    db.session.add(statement)
+    db.session.commit()
+    return statement
+
+
+def test_the_coach_is_told_which_of_its_questions_the_reader_answers(discussion, family):
+    # R-0587, R-0072
+    closing = coach_asked(discussion, "Bo moved out in 1994. Who did you turn to then?")
+    play = coach_asked(
+        discussion,
+        "Bo left, then Wren got sick.",
+        kind=StatementKind.Play,
+        told_case={"cluster_id": "c1", "point": "", "snapshots": [], "question": "Where was Bo that winter?"},
+    )
+    model = Model(said("Thank you."))
+    run(
+        discussion,
+        f"To answer your question [[message:{closing.id}|Who did you turn to then?]] my aunt, "
+        f"and [[message:{play.id}|Where was Bo that winter?]] away.",
+        model,
+    )
+    told = model.histories[0][-1]["content"][-1]["text"]
+    assert f'the question you asked in message {closing.id}: "Who did you turn to then?"' in told
+    assert f'the question you asked in message {play.id}: "Where was Bo that winter?"' in told
+
+
+def test_a_message_chip_this_family_did_not_ask_becomes_its_words(discussion, family, test_user_2):
+    # R-0587, R-0072
+    test_user_2.set_free_diagram()
+    theirs = Discussion(user_id=test_user_2.id, diagram_id=test_user_2.free_diagram_id)
+    theirs.speakers = [Speaker(name="Coach", type=SpeakerType.Expert)]
+    db.session.add(theirs)
+    db.session.commit()
+    other = coach_asked(theirs, "Who else knew?")
+    plain = coach_asked(discussion, "Bo moved out in 1994.")
+    mine = next(s for s in discussion.statements if s.speaker.type == SpeakerType.Subject)
+    text = chips.validate(
+        f"[[message:{other.id}|Who else knew?]] [[message:{plain.id}|that]] "
+        f"[[message:{mine.id}|Hello]] [[message:x|this]]",
+        family.get_diagram_data(),
+        family.id,
+    )
+    assert text == "Who else knew? that Hello this"
+
+
+def test_offered_chips_never_reach_the_transcript():
     # R-0361
     """Offered answers are dropped (Patrick, 2026-09-21): people type their own
     words. A model that still writes them loses only the offers."""
-    data = DiagramData(
-        people=[asdict(Person(id=1, name="Wren"))],
-        events=[
-            asdict(
-                Event(
-                    id=10,
-                    kind=Kind.Noted,
-                    person=1,
-                    dateTime="1994-06-01",
-                    description="moved out",
-                )
-            )
-        ],
-        clusters=[asdict(Cluster(id="c1", title="That year", summary="", eventIds=[10]))],
+    data = DiagramData(people=[asdict(Person(id=1, name="Wren"))])
+    kept = chips.validate(
+        "[[person:1|Wren]] is where it starts. What came next?\n\n"
+        "[[ask:the winter after he left]] [[ask:how Wren took it]]",
+        data,
+        None,
     )
-    model = Model(
-        said(
-            "[[event:10|he moved out]] is where it starts. What came next?\n\n"
-            "[[ask:the winter after he left]] [[ask:how Wren took it]]"
-        )
-    )
-    statement = PlayTurn.stored(data, "c1", model=model).run()["statement"]
-
-    assert "[[ask:" not in statement
-    assert statement.endswith("What came next?")
-    assert chips.parse(statement, data) == [(chips.ChipKind.Event, "10", "he moved out")]
+    assert kept == "[[person:1|Wren]] is where it starts. What came next?"
 
 
 def test_a_turn_that_never_stops_calling_tools_still_says_something(
@@ -549,23 +565,6 @@ def test_a_label_is_measured_in_what_a_reader_sees(discussion, family):
     assert reply["statement"] == f"[[event:10|{label}]]."
 
 
-def test_a_play_by_play_is_marked_as_one_and_names_its_stretch(discussion, family):
-    # R-0170
-    """The page routes a tap by the kind of message it is in: a chip in a walk
-    steps the board, a chip anywhere else selects the moment."""
-    data = family.get_diagram_data()
-    model = Model(said("[[event:10|the move]] is the whole of it."))
-    reply = PlayTurn.stored(data, "c1", discussion=discussion, model=model).run()
-
-    assert reply["kind"] == StatementKind.Play.value
-    assert reply["cluster_id"] == "c1"
-
-    stored = discussion.statements[-1]
-    assert stored.id == reply["statement_id"]
-    assert stored.kind is StatementKind.Play
-    assert stored.cluster_id == "c1"
-
-
 def test_every_message_the_page_reads_back_carries_its_kind(web, family, monkeypatch):
     # R-0170
     """The page routes a chip tap by the kind of message it sits in, so the
@@ -573,12 +572,8 @@ def test_every_message_the_page_reads_back_carries_its_kind(web, family, monkeyp
     from btcopilot.tests.conftest import csrf_token
 
     monkeypatch.setattr(
-        "btcopilot.coachturn.CoachModel",
+        "btcopilot.turns.model_for",
         lambda *a, **k: Model(said("Tell me about [[event:10|the move]].")),
-    )
-    monkeypatch.setattr(
-        "btcopilot.playturn.CoachModel",
-        lambda *a, **k: Model(said("[[event:10|the move]] is the whole of it.")),
     )
     token = csrf_token(web)
 
@@ -591,19 +586,10 @@ def test_every_message_the_page_reads_back_carries_its_kind(web, family, monkeyp
     )
     assert said_reply["kind"] == StatementKind.Turn.value
 
-    played = web.post(
-        "/app/play",
-        json={"cluster_id": "c1"},
-        headers={"X-CSRFToken": token},
-    ).get_json()
-    assert played["kind"] == StatementKind.Play.value
-    assert played["cluster_id"] == "c1"
-
     stored = web.get(f"/app/sessions/{said_reply['discussion_id']}").get_json()
     assert [(s["kind"], s["cluster_id"]) for s in stored["statements"]] == [
         (StatementKind.Turn.value, None),
         (StatementKind.Turn.value, None),
-        (StatementKind.Play.value, "c1"),
     ]
 
 
@@ -620,7 +606,7 @@ def test_a_csrf_token_older_than_an_hour_still_posts(web, family, monkeypatch):
     from btcopilot.tests.conftest import csrf_token
 
     monkeypatch.setattr(
-        "btcopilot.coachturn.CoachModel",
+        "btcopilot.turns.model_for",
         lambda *a, **k: Model(said("Tell me about [[event:10|the move]].")),
     )
     token = csrf_token(web)
@@ -646,7 +632,7 @@ def test_a_moment_the_coach_wrote_traces_to_the_message_that_wrote_it(
     from btcopilot.tests.conftest import csrf_token
 
     monkeypatch.setattr(
-        "btcopilot.coachturn.CoachModel",
+        "btcopilot.turns.model_for",
         lambda *a, **k: Model(
             called(
                 ToolName.EditEvent,
@@ -654,7 +640,7 @@ def test_a_moment_the_coach_wrote_traces_to_the_message_that_wrote_it(
                 date="1994-12-01",
                 description="got sick",
                 person=1,
-                symptom="up",
+                symptom="up", date_certainty="certain",
             ),
             said("I put that down."),
         ),
@@ -788,9 +774,9 @@ def test_the_notes_stay_out_of_every_call_and_the_tool_to_read_them_is_offered(
     model = Model(called(ToolName.ReadEvents), said("What happened next?"))
     run(discussion, "Tell me about when he moved out.", model)
     assert len(model.systems) == 2
-    for system in model.systems:
-        assert "(has notes)" in system
-        assert QUOTE not in system
+    assert "(has notes)" in str(model.histories[1][-1])
+    for system, history in zip(model.systems, model.histories):
+        assert QUOTE not in system + str(history)
     assert all(ToolName.ReadNotes.value in offered for offered in model.offered)
 
 
@@ -801,7 +787,7 @@ def test_the_coach_reads_an_events_notes_when_it_asks_for_them(discussion, famil
     run(discussion, "What did he say about the house?", model)
     answer = model.histories[-1][-1]["content"][-1]
     assert answer["type"] == "tool_result"
-    assert answer["content"] == f"10: {QUOTE}"
+    assert answer["content"].splitlines()[0] == f"10: {QUOTE}"
 
 
 def test_the_coach_is_told_to_end_its_reply_with_a_question():
@@ -810,3 +796,76 @@ def test_the_coach_is_told_to_end_its_reply_with_a_question():
     assert "A reply usually ends with one question in your own words" in prompt
     assert "it always does while the record still lacks any of the minimum data" in prompt
 
+
+def test_the_coach_is_told_how_to_raise_an_impression():
+    # R-0482, R-0485
+    prompt = " ".join(get_agent_prompt().split())
+    assert "Raise it with `add_impression` before you say it" in prompt
+    assert "an impression you have not raised is one you do not say" in prompt
+    assert "make or extend the cluster with `edit_cluster`, giving that as its `reason`" in prompt
+    assert "a remembered episode, each reported on its own" in prompt
+    assert "Never treat shifts as a series or a trend" in prompt
+    assert "close it with `set_impression` as `revised`" in prompt
+
+
+def test_the_coach_is_told_to_give_every_date_its_certainty():
+    # R-0482
+    prompt = " ".join(get_agent_prompt().split())
+    assert "Whenever you add an event or change its date" in prompt
+    assert "date_certainty" in prompt
+    assert re.search(r"certain (when they gave the exact day|only when the day is known)", prompt)
+    assert re.search(r'approximate when they g[ai]ve only the month, as "June 1998"', prompt)
+    assert 'unknown when they hedge, as "sometime around 1998"' in prompt
+
+
+def test_the_coach_is_told_how_to_keep_its_questions():
+    # R-0482, R-0485
+    prompt = " ".join(get_agent_prompt().split())
+    assert "people usually require questions to stimulate their thinking" in prompt
+    assert "Family Evaluation, ch. 10" in prompt
+    assert "When in doubt, include it rather than leave it out" in prompt
+    assert "Never ask again a question the map marks declined" in prompt
+    assert "never keep one the record already answers" in prompt
+    assert "keep the one whose words ask it best" in prompt
+    assert "a thinking question about patterns or meaning" in prompt
+    assert "Facts to find (`fact`): anything with a factual answer" in prompt
+    assert 'It says "you" and "your" for them' in prompt
+    assert "Asking a question and keeping it are one act" in prompt
+    assert "What you keep is the question alone" in prompt
+    assert "a lead-in, a hedge or a reason stays out of what you keep" in prompt
+    assert "Keep it first, then ask it" in prompt
+    assert "so the reply is the words of your last round" in prompt
+    for tool in (ToolName.AddQuestion, ToolName.SetQuestion, ToolName.ReadQuestions):
+        assert f"`{tool.value}`" in prompt
+
+
+
+def test_a_remove_of_a_kind_the_record_does_not_hold_is_refused(discussion, family):
+    # R-0478
+    model = Model(
+        called(ToolName.Remove, item_kind="household", item_id="1", version=family.version),
+        said("There is no household to remove."),
+    )
+    reply = run(discussion, "Remove the household.", model)
+
+    asked = event(reply, EventKind.ToolCall)
+    assert asked["names"] == {"it": "something the record has no kind for"}
+    assert asked["refusal"] == "There is no such kind of thing to remove."
+    refused = model.histories[-1][-1]["content"][0]
+    assert refused["is_error"] is True
+
+
+def test_a_read_tells_the_page_which_events_it_read(discussion, family):
+    # R-0539
+    reply = run(
+        discussion,
+        "Tell me about when he moved out.",
+        Model(
+            called(ToolName.ReadEvents, cluster="c1"),
+            called(ToolName.ReadNotes, event=10),
+            called(ToolName.ReadPeople),
+            said("What happened next?"),
+        ),
+    )
+    reads = [e for e in reply["events"] if e["type"] == EventKind.ToolCall.value]
+    assert [e.get("read") for e in reads] == [[10], [10], None]

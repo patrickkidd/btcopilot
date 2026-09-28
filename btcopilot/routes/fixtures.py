@@ -13,9 +13,21 @@ import traceback
 
 import click
 
-from btcopilot import diagramjson
-from btcopilot.models import StatementKind
+from btcopilot import diagramjson, playturn
+from btcopilot.discussions import open_session
+from btcopilot.case import Case, Snapshot
+from btcopilot.models import (
+    AccessRight,
+    Change,
+    Interaction,
+    ModelCall,
+    Observation,
+    ProductEvent,
+    StatementKind,
+)
+from btcopilot.review.models import Coding, Cut, Item, Note, Vote
 from btcopilot.routes import bp
+from btcopilot.timeline import build_timeline
 from btcopilot.schema import (
     Cluster,
     DateCertainty,
@@ -350,38 +362,44 @@ def long_move() -> DiagramData:
     return data
 
 
-# The walk the coach speaks: every move in order, each one named inside a
-# sentence that says who did what and what it meant. Never a bare list of chips.
-PLAY_WALK = " ".join(
-    (
-        "In 1990 Ada [[event:20|moved toward Ben]], and a year later she"
-        " [[event:21|pulled away from him]] again.",
-        "Through 1992 she [[event:22|kept her distance]], and by 1993 that had"
-        " hardened into [[event:23|not speaking to him at all]].",
-        "When they did speak in 1994 it was [[event:24|open conflict]], and the"
-        " year after that neither of them"
-        " [[event:25|could tell where one ended and the other began]].",
-        "In 1996 Ada [[event:26|said plainly what she thought]] for the first" " time.",
-        "Cal was drawn in next: in 1997 Ada was"
-        " [[event:27|close in with Ben while Cal was left out]], and in 1998"
-        " she was [[event:28|the one left out]].",
-        "In 1999 she [[event:29|took over what Ben should have carried]], and in"
-        " 2000 Ben [[event:30|let her carry it]].",
-        "By 2001 the worry had settled on Cal, and Ada"
-        " [[event:31|watched him for signs of it]].",
-        "In 2002 the house [[event:32|grew more anxious]], in 2003 Cal's"
-        " [[event:33|trouble got worse]], and in 2004 it [[event:34|eased]].",
-        "In 2005 Cal [[event:35|was managing less well]], and in 2006 he"
-        " [[event:36|was steadier than he had been]].",
-    )
+# The case the coach tells about the walk, in its snapshots (R-0563): four of the
+# moves between Ada and Ben, one picture per year.
+PLAY_CASE = Case(
+    cluster_id=PLAY_CLUSTER,
+    point="Ada moved toward Ben in 1990; by 1994 they were in open conflict.",
+    snapshots=[
+        Snapshot("1990-04-01", [20], "In April 1990 Ada moved toward Ben.", None),
+        Snapshot("1992-04-01", [22], "By 1992 she kept her distance from him.", None),
+        Snapshot(
+            "1993-04-01",
+            [23],
+            "In 1993 she stopped speaking to him.",
+            "My guess: the distance came before the silence, not after it.",
+        ),
+        Snapshot("1994-04-01", [24], "When they spoke again in 1994 it was open conflict.", None),
+    ],
+    question="Where was Cal in the year Ada stopped speaking to Ben?",
+)
+
+# A walk told the old way, in prose with chips, as production sessions still
+# hold them: its chips are chips like any other now (R-0501, R-0570).
+OLD_WALK = (
+    "In 1990 Ada [[event:20|moved toward Ben]], and a year later she"
+    " [[event:21|pulled away from him]] again."
 )
 
 PLAY_CHAT = [
     ("user", "walk me through it"),
+    ("coach", OLD_WALK, {"kind": StatementKind.Play, "cluster_id": PLAY_CLUSTER}),
+    ("user", "and again, in pictures"),
     (
         "coach",
-        PLAY_WALK,
-        {"kind": StatementKind.Play, "cluster_id": PLAY_CLUSTER},
+        playturn.worded({"id": PLAY_CLUSTER, "name": "The walk"}, PLAY_CASE.point),
+        {
+            "kind": StatementKind.Play,
+            "cluster_id": PLAY_CLUSTER,
+            "told_case": PLAY_CASE.asdict(),
+        },
     ),
 ]
 
@@ -403,11 +421,116 @@ HOSTILE_CHAT = [
     ("user", "🙂🎉😀🔥🌍💡🥲🫠🧠🌱🕰️🪞 " * 12),
 ]
 
+def whitlock() -> DiagramData:
+    """The Whitlock stand-in family (doc/mockups/family.md), wholly invented,
+    with the years Marcus and Delphine came apart as one stored cluster: what
+    the play-by-play drawer tells."""
+
+    def kin(id, name, gender, primary=False, **fields):
+        return dict(_person(id, name, gender, primary=primary), **fields)
+
+    def bond(id, a, b):
+        return {"id": id, "person_a": a, "person_b": b, "married": True}
+
+    def event(id, kind, date, **fields):
+        return asdict(Event(id=id, kind=kind, dateTime=date, dateCertainty=CERTAIN, **fields))
+
+    male, female = PersonKind.Male, PersonKind.Female
+    people = [
+        kin(1, "Errol", male, last_name="Whitlock"),
+        kin(2, "Odile", female, last_name="Whitlock"),
+        kin(3, "Marcus", male, last_name="Whitlock", parents=20),
+        kin(4, "Delphine", female, last_name="Reyes"),
+        kin(5, "Corinne", female, primary=True, last_name="Whitlock", parents=21),
+        kin(6, "Theo", male, last_name="Whitlock", parents=21),
+    ]
+    born = [
+        event(101, EventKind.Birth, "1924-06-01", child=1),
+        event(102, EventKind.Birth, "1926-06-01", child=2),
+        event(103, EventKind.Married, "1948-06-01", person=1, spouse=2),
+        event(104, EventKind.Birth, "1951-10-01", person=1, spouse=2, child=3),
+        event(105, EventKind.Birth, "1953-06-01", child=4),
+        event(106, EventKind.Married, "1970-06-01", person=3, spouse=4),
+        event(107, EventKind.Birth, "1975-06-01", person=3, spouse=4, child=5),
+        event(108, EventKind.Birth, "1979-06-01", person=3, spouse=4, child=6),
+    ]
+    apart = [
+        event(201, EventKind.Separated, "1980-09-15", person=3, spouse=4),
+        event(202, EventKind.Noted, "1980-09-15", person=3, description="Took a room over the hardware store"),
+        event(203, EventKind.Shift, "1981-01-15", person=3, symptom=VariableShift.Up, description="Drinking most nights"),
+        event(204, EventKind.Divorced, "1981-06-15", person=3, spouse=4),
+        event(205, EventKind.Noted, "1981-09-15", person=6, description="Started at the church day care"),
+        event(206, EventKind.Shift, "1982-04-15", person=3, symptom=VariableShift.Down, description="Stopped drinking"),
+        event(207, EventKind.Noted, "1982-09-15", person=5, description="Started school"),
+        event(208, EventKind.Shift, "1982-11-15", person=5, symptom=VariableShift.Up, description="Her teacher called Delphine"),
+    ]
+    return DiagramData(
+        people=people,
+        pair_bonds=[bond(20, 1, 2), bond(21, 3, 4)],
+        events=born + apart,
+        clusters=[
+            asdict(
+                Cluster(
+                    id=WHITLOCK_CLUSTER,
+                    reason="Marcus and Delphine came apart, and the trouble moved.",
+                    title="The years apart",
+                    summary="Separation to the teacher's call.",
+                    eventIds=[e["id"] for e in apart],
+                    name="The years apart",
+                )
+            )
+        ],
+        lastItemId=300,
+    )
+
+
+WHITLOCK_CLUSTER = "apart"
+WHITLOCK_CASE = Case(
+    cluster_id=WHITLOCK_CLUSTER,
+    point="As Marcus drank less, school got hard for you.",
+    snapshots=[
+        Snapshot(
+            "1980-09-15",
+            [201, 202],
+            "Marcus and Delphine separated, and Marcus took a room over the hardware store. You were five; Theo was one.",
+            None,
+        ),
+        Snapshot("1981-01-15", [203], "Marcus was drinking “most nights,” as Delphine put it later.", None),
+        Snapshot("1981-06-15", [204], "The divorce went through in June.", None),
+        Snapshot("1982-04-15", [206], "Marcus “hadn’t had a drink since Easter.”", None),
+        Snapshot(
+            "1982-11-15",
+            [208],
+            "Your teacher called Delphine: you had stopped talking in class.",
+            "My guess: the trouble moved from Marcus to you as his drinking eased.",
+        ),
+    ],
+    question="Theo started day care that autumn. Who was looking after the two of you?",
+)
+WHITLOCK_CHAT = [
+    ("user", "explain those years"),
+    (
+        "coach",
+        WHITLOCK_CASE.point,
+        {
+            "kind": StatementKind.Play,
+            "cluster_id": WHITLOCK_CLUSTER,
+            "told_case": WHITLOCK_CASE.asdict(),
+        },
+    ),
+]
+
+
 def editable() -> DiagramData:
     """A copy of the sparse record for the tests that write through the editor.
     They change what they open, so they need a record of their own or every
-    picture taken after them is of a record they altered."""
-    return three_over_forty()
+    picture taken after them is of a record they altered. A third person lets a
+    move name two people besides its mover, and Ada and Ben's bond lets an event
+    be made a couple's."""
+    data = three_over_forty()
+    data.people.append(_person(3, "Cy"))
+    data.pair_bonds.append({"id": 20, "person_a": 1, "person_b": 2})
+    return data
 
 
 def long_name() -> DiagramData:
@@ -427,20 +550,37 @@ FIXTURES = {
     "longmove": (long_move, None),
     "longname": (long_name, None),
     "editable": (editable, None),
+    "whitlock": (whitlock, WHITLOCK_CHAT),
 }
 
 # the diagram name each fixture's record carries, when it is not the default
 DIAGRAM_NAMES = {"longname": LONG_DIAGRAM_NAME}
 
 
+DIAGRAM_ROWS = (AccessRight, Change, Interaction, ModelCall, Observation, ProductEvent)
+
+
 def username(key: str) -> str:
     return f"{key}@{DOMAIN}"
+
+
+def drop_cuts(discussion_id: int):
+    """A session on the agenda is held by its cuts, and each cut by what was
+    coded and voted on it; they go before its lines, children first."""
+    cuts = [c.id for c in Cut.query.filter_by(discussion_id=discussion_id)]
+    items = [i.id for i in Item.query.filter(Item.cut_id.in_(cuts))]
+    codings = [c.id for c in Coding.query.filter(Coding.cut_id.in_(cuts))]
+    Vote.query.filter(Vote.review_item_id.in_(items)).delete()
+    Note.query.filter(Note.coding_id.in_(codings)).delete()
+    Item.query.filter(Item.id.in_(items)).delete()
+    Coding.query.filter(Coding.id.in_(codings)).delete()
+    Cut.query.filter(Cut.id.in_(cuts)).delete()
 
 
 def install(key: str):
     """Make the fixture user, replace their diagram, and replay their chat."""
     from btcopilot.extensions import db
-    from btcopilot.models import Discussion, Speaker, Statement
+    from btcopilot.models import Statement
     from btcopilot.models import Diagram, User
 
     builder, chat = FIXTURES[key]
@@ -452,12 +592,19 @@ def install(key: str):
         db.session.flush()
     for old in Diagram.query.filter_by(user_id=user.id).all():
         for discussion in old.discussions:
+            drop_cuts(discussion.id)
             discussion.chat_user_speaker_id = None
             discussion.chat_ai_speaker_id = None
             db.session.flush()
             db.session.delete(discussion)
         if user.free_diagram_id == old.id:
             user.free_diagram_id = None
+        if user.current_diagram_id == old.id:
+            user.current_diagram_id = None
+        # what was done to the old record goes with it; the database will not
+        # delete a diagram while rows still point at it
+        for kept in DIAGRAM_ROWS:
+            kept.query.filter_by(diagram_id=old.id).delete()
         db.session.flush()
         db.session.delete(old)
     db.session.flush()
@@ -467,30 +614,34 @@ def install(key: str):
         name=DIAGRAM_NAMES.get(key, DIAGRAM_NAME),
         data=diagramjson.dumps({}),
     )
-    diagram.set_diagram_data(builder())
+    data = builder()
+    diagram.set_diagram_data(data)
     db.session.add(diagram)
     db.session.flush()
     user.free_diagram_id = diagram.id
     db.session.commit()
 
     if chat:
-        discussion = Discussion(user_id=user.id, diagram_id=diagram.id)
-        db.session.add(discussion)
-        db.session.flush()
-        me = Speaker(discussion_id=discussion.id, name="You")
-        coach = Speaker(discussion_id=discussion.id, name="Coach")
-        db.session.add_all([me, coach])
-        db.session.flush()
-        discussion.chat_user_speaker_id = me.id
-        discussion.chat_ai_speaker_id = coach.id
+        discussion = open_session(user, diagram)
+        # a kept play is marked as told from the record as it stands, so it
+        # opens with no call; worked out here, not at import, as it reads the
+        # private play prompt
+        kept = any(extra and "told_case" in extra[0] for _, _, *extra in chat)
+        told = playturn.digests(data, build_timeline(data)) if kept else {}
         for order, (role, text, *extra) in enumerate(chat):
+            said = extra[0] if extra else {}
             db.session.add(
                 Statement(
                     discussion_id=discussion.id,
-                    speaker_id=coach.id if role == "coach" else me.id,
+                    speaker_id=(
+                        discussion.chat_ai_speaker_id
+                        if role == "coach"
+                        else discussion.chat_user_speaker_id
+                    ),
                     text=text,
                     order=order,
-                    **(extra[0] if extra else {}),
+                    digest=told[said["cluster_id"]] if "told_case" in said else None,
+                    **said,
                 )
             )
         db.session.commit()

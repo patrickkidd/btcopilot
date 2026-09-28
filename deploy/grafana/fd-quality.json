@@ -1,0 +1,639 @@
+{
+  "uid": "fd-quality",
+  "title": "Quality: cost, steps and scores",
+  "tags": [
+    "fd",
+    "quality"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "1h",
+  "time": {
+    "from": "now-1y",
+    "to": "now"
+  },
+  "annotations": {
+    "list": [
+      {
+        "name": "Extraction scorer changed",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "ffz1wy7unkdfke"
+        },
+        "enable": true,
+        "iconColor": "orange",
+        "rawQuery": "select q.ran_at as time, 'Scorer changed (E4): F1 either side is not comparable' as text from quality_runs q where q.kind = 'extraction_f1' and q.note like 'ERA BREAK%' group by q.ran_at",
+        "target": {
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select q.ran_at as time, 'Scorer changed (E4): F1 either side is not comparable' as text from quality_runs q where q.kind = 'extraction_f1' and q.note like 'ERA BREAK%' group by q.ran_at",
+          "refId": "Anno"
+        },
+        "filter": {
+          "exclude": false,
+          "ids": [
+            9
+          ]
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "In production: every coach turn people took, test accounts left out",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": [],
+      "id": 1
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "timeseries",
+      "title": "Cost per coach turn, by model",
+      "description": "Dollars spent on model calls in a day, divided by the coach turns that day.",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "showPoints": "always",
+            "spanNulls": true,
+            "fillOpacity": 0
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), mc.model as metric, sum(mc.cost_usd)/count(distinct mc.turn_id) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1, mc.model order by 1",
+          "refId": "A"
+        }
+      ],
+      "id": 2
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "timeseries",
+      "title": "Steps per coach turn, by model",
+      "description": "Model calls and tool calls in a day, each divided by the coach turns that day.",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "showPoints": "always",
+            "spanNulls": true,
+            "fillOpacity": 0
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), mc.model || ' model calls' as metric, count(*)::float/count(distinct mc.turn_id) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1, mc.model order by 1",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), mc.model || ' tool calls' as metric, sum(mc.tool_calls)::float/count(distinct mc.turn_id) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1, mc.model order by 1",
+          "refId": "B"
+        }
+      ],
+      "id": 3
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "timeseries",
+      "title": "Watcher findings per coach turn, by kind",
+      "description": "What the watcher after each turn wrote down (a possible repeated person or event, an add made before any read, a question kept that the reply did not ask), divided by the coach turns that day. It blocks nothing; each finding is a candidate eval case.",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "showPoints": "always",
+            "spanNulls": true,
+            "fillOpacity": 0
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "with t as (select mc.turn_id, min(mc.created_at) as at from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by mc.turn_id) select $__timeGroupAlias(t.at,'1d'), k.kind as metric, count(o.id)::float/count(distinct t.turn_id) as value from t cross join (select unnest(enum_range(null::observationkind))::text as kind) k left join observations o on o.turn_id = t.turn_id and o.kind::text = k.kind and not exists (select 1 from diagrams dg where dg.id=o.diagram_id and dg.scratch) where k.kind not in ('tool_refused','step_cap','turn_failed','turn_declined','play_refused','play_failed') group by 1, k.kind order by 1",
+          "refId": "A"
+        }
+      ],
+      "id": 4
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "timeseries",
+      "title": "Refused tool calls, used-up turns and failures per day, by kind",
+      "description": "Counts per day: a tool call the record refused, a turn that used every tool step, a coach reply that failed or that every model declined, a play-by-play telling the checks handed back, and a play-by-play that was never told. Each is grouped into the queue below.",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "showPoints": "always",
+            "spanNulls": true,
+            "fillOpacity": 0
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(o.created_at,'1d'), o.kind::text as metric, count(*) as value from observations o join diagrams d on d.id = o.diagram_id join users u on u.id = d.user_id where not d.scratch and u.username not like 'claude-test%' and $__timeFilter(o.created_at) and o.kind::text in ('tool_refused','step_cap','turn_failed','turn_declined','play_refused','play_failed') group by 1, 2 order by 1",
+          "refId": "A"
+        }
+      ],
+      "id": 11
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "table",
+      "title": "Tuning queue: the ten biggest groups not yet rejected",
+      "description": "Every observation grouped by its kind and its reason with ids, dates and quoted values taken out, most often first, over all time. Reject a group with: flask admin observations reject <key>.",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 33
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with g as (select o.kind::text as kind, coalesce(o.detail->>'reason','') as reason, o.turn_id, o.created_at from observations o join diagrams d on d.id = o.diagram_id join users u on u.id = d.user_id where not d.scratch and u.username not like 'claude-test%') select left(md5(kind || ':' || reason), 8) as key, kind, reason, count(*) as count, min(created_at) as first_seen, max(created_at) as last_seen, (array_agg(turn_id order by created_at desc))[1] as example_turn from g where left(md5(kind || ':' || reason), 8) not in (select key from observation_rejects) group by kind, reason order by count desc limit 10",
+          "refId": "A"
+        }
+      ],
+      "id": 12
+    },
+    {
+      "type": "row",
+      "title": "Recorded runs: kept in the repository, loaded by every release",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 41
+      },
+      "panels": [],
+      "id": 5
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "timeseries",
+      "title": "Behaviour evals: share of cases passed, by model and who answered",
+      "description": "One point per kept live eval run: the cases that passed over the cases that ran. Skipped and waiting cases are left out. Runs answered on the Claude Code subscription (no API spend) are their own line, marked subscription.",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 42
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "showPoints": "always",
+            "spanNulls": true,
+            "fillOpacity": 0
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select q.ran_at as time, q.model || ' (' || q.source || ')' as metric, q.value from quality_runs q where q.kind = 'eval_pass_rate' and $__timeFilter(q.ran_at) and q.metric = 'overall' order by 1",
+          "refId": "A"
+        }
+      ],
+      "id": 6
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "state-timeline",
+      "title": "Behaviour evals: each case over time",
+      "description": "One row per case and model; green where the kept run passed the case, red where it failed.",
+      "gridPos": {
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 50
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 0
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showValue": "never",
+        "mergeValues": false,
+        "rowHeight": 0.8,
+        "legend": {
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select q.ran_at as time, q.model || ' (' || q.source || ') ' || q.metric as metric, q.value from quality_runs q where q.kind = 'eval_pass_rate' and $__timeFilter(q.ran_at) and q.metric <> 'overall' order by 1",
+          "refId": "A"
+        }
+      ],
+      "id": 7
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "table",
+      "title": "Behaviour evals: each case, by model",
+      "description": "Each case's share of kept runs passed in the chosen range, lowest first.",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 64
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "passed"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select q.metric as \"case\", q.model as model, q.source as source, count(*) as runs, avg(q.value) as passed, max(q.ran_at) as last_run from quality_runs q where q.kind = 'eval_pass_rate' and $__timeFilter(q.ran_at) and q.metric <> 'overall' group by 1, 2, 3 order by passed, 1",
+          "refId": "A"
+        }
+      ],
+      "id": 8
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "timeseries",
+      "title": "Extraction F1 history, with its sub-scores",
+      "description": "The retired extraction pipeline's F1 against the ground-truth discussions, aggregate and per kind. The dashed line on 2026-07-22 is where the scorer changed (E4): values either side of it are not comparable.",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 72
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "showPoints": "always",
+            "spanNulls": true,
+            "fillOpacity": 0
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select q.ran_at as time, q.metric, q.value from quality_runs q where q.kind = 'extraction_f1' and $__timeFilter(q.ran_at) order by 1",
+          "refId": "A"
+        }
+      ],
+      "id": 9
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "timeseries",
+      "title": "Coding F1 against the IRR group's ground truth: empty until the group ratifies its codings",
+      "description": "The coach's own coding scored against codings the IRR review group has ratified. No run is recorded until that ground truth exists.",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 82
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "showPoints": "always",
+            "spanNulls": true,
+            "fillOpacity": 0
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select q.ran_at as time, q.metric, q.value from quality_runs q where q.kind = 'coding_f1' and $__timeFilter(q.ran_at) order by 1",
+          "refId": "A"
+        }
+      ],
+      "id": 10
+    }
+  ]
+}

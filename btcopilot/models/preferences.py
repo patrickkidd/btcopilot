@@ -6,6 +6,7 @@ class PrefKey(enum.StrEnum):
     Proactive = "proactive"
     Mode = "mode"
     Theme = "theme"
+    Spotlight = "spotlight"
 
 
 class Proactive(enum.StrEnum):
@@ -25,10 +26,20 @@ class Theme(enum.StrEnum):
     Dark = "dark"
 
 
+class Spotlight(enum.StrEnum):
+    """How the picture answers a tap on an event. Unified: a chip naming it and
+    its dot do one thing (R-0168). Chip: the old chip spotlight, kept so one
+    person can be switched back without a deploy."""
+
+    Unified = "unified"
+    Chip = "chip"
+
+
 PREF_ENUMS = {
     PrefKey.Proactive: Proactive,
     PrefKey.Mode: ChatMode,
     PrefKey.Theme: Theme,
+    PrefKey.Spotlight: Spotlight,
 }
 
 PREF_DEFAULTS = {
@@ -36,6 +47,7 @@ PREF_DEFAULTS = {
     PrefKey.Proactive: Proactive.Never,
     PrefKey.Mode: ChatMode.Text,
     PrefKey.Theme: Theme.System,
+    PrefKey.Spotlight: Spotlight.Unified,
 }
 
 

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { stateFor } from "./setup";
+import { stateFor, tellWithoutModel } from "./setup";
 
-/** The up and down marks beside a person on the board. They used to fade out
+/** The up and down marks beside a person in the play-by-play. They used to fade out
  * for half of the loop, so a reader who looked away found nothing there. The
  * mark is on screen for the whole loop now, and says which way it went by
  * travelling along its own axis instead. */
@@ -10,18 +10,16 @@ const LOOP = [0, 1000, 2400, 4000, 5200, 6800, 7900];
 
 test.use({ storageState: stateFor("moves") });
 
-// R-0163
+// R-0163, R-0570
 test("the symptom mark is on screen for the whole loop", async ({ page }) => {
   test.skip(test.info().project.name !== "phone");
+  // a play-by-play that opens on the record's symptom rising
+  await tellWithoutModel(page, (e) => !!(e.symptom || e.functioning));
   await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.waitForTimeout(600);
   await page.locator("#cap-play").click();
-  await page.waitForTimeout(1200);
-  const next = page.locator('.pctl [data-target="next"]');
-  // the fourteenth move is the one the symptom mark belongs to
-  for (let i = 0; i < 13; i += 1) await next.click();
-  await expect(page.locator("#chat-screen .bcap")).toHaveText("Ada · symptom up");
+  await expect(page.locator("#pbp .draw .sym-arrow.worse")).toHaveCount(1);
 
   const seen = [];
   for (const at of LOOP)

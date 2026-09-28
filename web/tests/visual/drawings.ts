@@ -48,8 +48,7 @@ export function drawings(): string {
   const entry = join(out, "entry.ts");
   writeFileSync(
     entry,
-    `export * from ${JSON.stringify(join(SRC, "moves.ts"))};\n` +
-      `export { triangle } from ${JSON.stringify(join(SRC, "board.ts"))};\n`,
+    `export * from ${JSON.stringify(join(SRC, "moves.ts"))};\n`,
   );
   execFileSync(
     join(HERE, "..", "..", "node_modules", ".bin", "esbuild"),
@@ -94,17 +93,6 @@ for (const spec of cases) {
     '"><g class="cast">' + body + '</g></svg></div>';
   root.append(cell);
 }
-// the board a coach's triangle view opens, which only a coach turn can reach
-// in the app and so cannot be driven from a golden there
-const tri = document.createElement("div");
-tri.className = "cell";
-tri.id = "m-triangle-board";
-tri.style.height = "264px";
-tri.innerHTML =
-  '<div class="ss board" style="height:264px">' +
-  triangle(trio.map((p) => ({ ...p, primary: false })), W).svg +
-  '</div>';
-root.append(tri);
 </script>`;
   const file = join(out, "moves.html");
   writeFileSync(file, html);

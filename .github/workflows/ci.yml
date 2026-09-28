@@ -76,6 +76,9 @@ jobs:
       SANDBOX_URL: http://127.0.0.1:8889
       FIXTURE_CWD: ${{ github.workspace }}
       FIXTURE_CMD: python -m flask app fixtures
+      # no key here, so the app runs on the open-source prompts, as the unit
+      # tests do; a kept play-by-play's digest reads the play prompt
+      FD_PRIVATE_PROMPTS: /nonexistent
     steps:
       - uses: actions/checkout@v4
 
@@ -159,6 +162,9 @@ jobs:
       SANDBOX_URL: http://127.0.0.1:8889
       FIXTURE_CWD: ${{ github.workspace }}
       FIXTURE_CMD: python -m flask app fixtures
+      # no key here, so the app runs on the open-source prompts, as the unit
+      # tests do; a kept play-by-play's digest reads the play prompt
+      FD_PRIVATE_PROMPTS: /nonexistent
     steps:
       - uses: actions/checkout@v4
         with:

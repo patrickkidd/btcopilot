@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Boolean, String, Integer, LargeBinary, ForeignKey
+from sqlalchemy import Column, Boolean, String, Integer, LargeBinary, ForeignKey, false
 from sqlalchemy import update as sql_update
 from sqlalchemy.orm import relationship
 from dataclasses import fields as dc_fields
@@ -9,6 +9,14 @@ from btcopilot import diagramjson
 from btcopilot.schema import DiagramData, PDP, asdict, from_dict
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
+
+
+def diagram_data(data: dict) -> DiagramData:
+    pdp_dict = data.get("pdp", {})
+    known = {f.name for f in dc_fields(DiagramData)} - {"pdp"}
+    kwargs = {k: data[k] for k in known if k in data}
+    kwargs["pdp"] = from_dict(PDP, pdp_dict) if pdp_dict else PDP()
+    return DiagramData(**kwargs)
 
 
 class Diagram(db.Model, ModelMixin):
@@ -28,6 +36,8 @@ class Diagram(db.Model, ModelMixin):
 
     data = Column(LargeBinary)
     version = Column(Integer, nullable=False, default=1)
+    # a copy a shadow turn writes on and throws away; never listed to anyone
+    scratch = Column(Boolean, nullable=False, default=False, server_default=false())
 
     access_rights = relationship(
         "AccessRight",
@@ -38,12 +48,7 @@ class Diagram(db.Model, ModelMixin):
     discussions = relationship("Discussion", back_populates="diagram")
 
     def get_diagram_data(self) -> DiagramData:
-        data = diagramjson.loads(self.data)
-        pdp_dict = data.get("pdp", {})
-        known = {f.name for f in dc_fields(DiagramData)} - {"pdp"}
-        kwargs = {k: data[k] for k in known if k in data}
-        kwargs["pdp"] = from_dict(PDP, pdp_dict) if pdp_dict else PDP()
-        return DiagramData(**kwargs)
+        return diagram_data(diagramjson.loads(self.data))
 
     def set_diagram_data(self, diagram_data: DiagramData):
         data = diagramjson.loads(self.data)

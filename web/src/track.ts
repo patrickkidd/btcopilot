@@ -15,6 +15,7 @@ export enum Screen {
   Agenda = "agenda",
   Meeting = "meeting",
   Result = "result",
+  Pairs = "pairs",
 }
 
 export enum Feature {
@@ -31,6 +32,15 @@ export enum Feature {
   CloseMenu = "close_menu",
   TabEvents = "tab_events",
   TabPeople = "tab_people",
+  TabQuestions = "tab_questions",
+  QuestionChip = "question_chip",
+  QuestionSession = "question_session",
+  QuestionDismiss = "question_dismiss",
+  ImpressionText = "impression_text",
+  ImpressionEvidence = "impression_evidence",
+  ImpressionSession = "impression_session",
+  ImpressionDoesntFit = "impression_doesnt_fit",
+  ImpressionPartly = "impression_partly",
   EventOpen = "event_open",
   PersonOpen = "person_open",
   PeopleOrder = "people_order",
@@ -77,6 +87,8 @@ export enum Feature {
   MeetingKeep = "meeting_keep",
   MeetingChange = "meeting_change",
   MeetingUnresolved = "meeting_unresolved",
+  PairsOpen = "pairs_open",
+  PairPick = "pair_pick",
 }
 
 const FLUSH_MS = 5_000;

@@ -7,6 +7,8 @@ import logging
 from dataclasses import dataclass, field, fields, MISSING
 from typing import get_origin, get_args, Union
 
+from google import genai
+from google.genai import types
 from google.genai.errors import ClientError, ServerError
 
 from btcopilot.schema import from_dict
@@ -36,8 +38,12 @@ STRUCTURED_EFFORT = "high"
 MODEL_ALIASES = {
     "opus-5.5": "claude-opus-5-5",
     "opus-4.6": "claude-opus-4-6",
+    "gemini-flash": "gemini-3.8-flash",
+    "gemini-3.8-flash": "gemini-3.8-flash",
+    "gemini-3.6-flash": "gemini-3.6-flash",
     "gemini-2.5-flash": "gemini-2.5-flash",
     "haiku-4.5": "claude-haiku-4-5-20251001",
+    "sonnet-5": "claude-sonnet-5",
     "claude-opus-5-5": "claude-opus-5-5",
     "claude-opus-5": "claude-opus-5",
     "claude-opus-4-8": "claude-opus-4-8",
@@ -47,13 +53,12 @@ DEFAULT_RESPONSE_MODEL_ALIAS = "opus-5.5"
 
 
 def resolve_model(alias: str | None) -> str:
-    """Resolve a client-facing model alias to an API model ID.
+    """No alias is RESPONSE_MODEL; an unknown one raises KeyError."""
+    return MODEL_ALIASES[alias] if alias else RESPONSE_MODEL
 
-    Falls back to RESPONSE_MODEL if alias is None or unknown.
-    """
-    if alias and alias in MODEL_ALIASES:
-        return MODEL_ALIASES[alias]
-    return RESPONSE_MODEL
+
+def is_gemini(model: str) -> bool:
+    return model.startswith("gemini-")
 
 
 def _is_claude_model(model: str) -> bool:
@@ -222,6 +227,35 @@ def _client():
     )
 
 
+# Which Google endpoint the coach's Gemini calls go to. Vertex AI runs under
+# the Google Cloud project, whose agreement covers health data; the Developer
+# API runs on an API key.
+GEMINI_ENDPOINT = "BTCOPILOT_GEMINI_ENDPOINT"
+
+
+class GeminiEndpoint(enum.StrEnum):
+    Vertex = "vertex"
+    Developer = "developer"
+
+
+def gemini_client(timeout: float | None = None) -> genai.Client:
+    """No timeout, in seconds, is the Gemini default."""
+    options = types.HttpOptions(
+        timeout=int(timeout * 1000) if timeout else GEMINI_TIMEOUT_MS
+    )
+    endpoint = GeminiEndpoint(os.environ.get(GEMINI_ENDPOINT, GeminiEndpoint.Vertex))
+    if endpoint is GeminiEndpoint.Vertex:
+        return genai.Client(
+            vertexai=True,
+            project=os.environ["GOOGLE_CLOUD_PROJECT"],
+            location=os.environ["GOOGLE_CLOUD_LOCATION"],
+            http_options=options,
+        )
+    return genai.Client(
+        api_key=os.environ["GOOGLE_GEMINI_API_KEY"], http_options=options
+    )
+
+
 # --- Anthropic client ---
 
 
@@ -311,11 +345,36 @@ def served(message, label: str) -> Served:
     return Served(model=message.model, hops=hops, sticky=sticky)
 
 
+# A local Anthropic-compatible server, such as Ollama, answers every Anthropic
+# call and every structured or response-text Gemini call, on the one local
+# model named. The sandbox sets
+# both; production sets neither. With the URL set no Anthropic key is read.
+LOCAL_URL = "BTCOPILOT_LOCAL_URL"
+LOCAL_MODEL = "BTCOPILOT_LOCAL_MODEL"
+
+
+def anthropic_args(key: str = "ANTHROPIC_API_KEY") -> dict:
+    """The client's endpoint and key: the local server's, else Anthropic's."""
+    url = os.environ.get(LOCAL_URL)
+    if url:
+        return {"base_url": url, "api_key": "local"}
+    return {"api_key": os.environ[key]}
+
+
+def local_model() -> str | None:
+    return os.environ[LOCAL_MODEL] if os.environ.get(LOCAL_URL) else None
+
+
+def wire_model(model: str) -> str:
+    """The model a call names on the wire: the local one when it is set."""
+    return local_model() or model
+
+
 def _anthropic_client():
     import anthropic
 
     return anthropic.AsyncAnthropic(
-        api_key=os.environ["ANTHROPIC_API_KEY"],
+        **anthropic_args(),
         timeout=ANTHROPIC_TIMEOUT,
         max_retries=ANTHROPIC_MAX_RETRIES,
     )
@@ -328,7 +387,7 @@ def _extraction_anthropic_client():
     import anthropic
 
     return anthropic.AsyncAnthropic(
-        api_key=os.environ["ANTHROPIC_EXTRACTION_API_KEY"],
+        **anthropic_args("ANTHROPIC_EXTRACTION_API_KEY"),
         timeout=ANTHROPIC_EXTRACTION_TIMEOUT,
         max_retries=ANTHROPIC_MAX_RETRIES,
     )
@@ -388,7 +447,7 @@ async def claude_text(prompt=None, **kwargs):
 
     messages = _prepare_claude_messages(prompt=prompt, turns=kwargs.get("turns"))
 
-    resolved_model = kwargs.get("model", RESPONSE_MODEL)
+    resolved_model = wire_model(kwargs.get("model", RESPONSE_MODEL))
     client = _anthropic_client()
     api_kwargs = {
         "model": resolved_model,
@@ -436,7 +495,7 @@ async def response_text(prompt=None, model=None, **kwargs):
     model: optional client-facing alias (e.g. "opus-4.6") or raw API model ID.
     """
     resolved = resolve_model(model) if model else RESPONSE_MODEL
-    if _is_claude_model(resolved):
+    if _is_claude_model(resolved) or local_model():
         _log.info(f"response_text using Claude: {resolved}")
         return await claude_text(prompt, model=resolved, **kwargs)
     else:
@@ -456,7 +515,7 @@ async def gemini_structured(prompt, response_format, large=False, model=None):
     from google.genai import types
 
     model = model or (EXTRACTION_MODEL_LARGE if large else EXTRACTION_MODEL)
-    if _is_claude_model(model):
+    if _is_claude_model(model) or local_model():
         return await claude_structured(prompt, response_format, model)
 
     start_time = time.time()
@@ -533,7 +592,7 @@ async def claude_structured(prompt, response_format, model):
 
     client = _extraction_anthropic_client()
     async with client.messages.stream(
-        model=model,
+        model=wire_model(model),
         max_tokens=32000,
         thinking={"type": "adaptive"},
         output_config={"effort": STRUCTURED_EFFORT},

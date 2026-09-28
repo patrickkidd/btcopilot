@@ -22,27 +22,46 @@ def encrypted(raw: str) -> bool:
         return False
 
 
+KEYFILE = Path.home() / ".config" / "sops" / "age" / "keys.txt"
+
+
+def keyfile() -> Path:
+    return Path(os.environ.get("SOPS_AGE_KEY_FILE") or KEYFILE)
+
+
 def key_present() -> bool:
     """Whether this machine can open the encrypted files at all. Nothing in the
-    app asks: the app decrypts and fails loudly if it cannot. It is the test run
-    that needs to know, so it can use the open-source prompts instead of failing
-    to start."""
-    key = os.environ.get("SOPS_AGE_KEY_FILE")
+    app asks: the app decrypts and fails loudly if it cannot."""
     return bool(
-        shutil.which("sops")
-        and (os.environ.get("SOPS_AGE_KEY") or (key and Path(key).is_file()))
+        shutil.which("sops") and (os.environ.get("SOPS_AGE_KEY") or keyfile().is_file())
     )
+
+
+def missing() -> str | None:
+    """The one line said wherever a run falls back to the open-source prompts."""
+    if key_present():
+        return None
+    return (
+        f"no sops key in {keyfile()} or SOPS_AGE_KEY"
+        f"{'' if shutil.which('sops') else ', and sops is not installed'}"
+        ": the open-source prompts are in use, not the private ones"
+    )
+
+
+def decrypt(path: Path) -> str:
+    """sops's own default key path on macOS is under ~/Library, so the key file
+    this module resolves is handed to it."""
+    env = os.environ | {"SOPS_AGE_KEY_FILE": str(keyfile())}
+    done = subprocess.run(
+        ["sops", "-d", str(path)], capture_output=True, text=True, check=True, env=env
+    )
+    return done.stdout
 
 
 def read(path: Path) -> str:
     """The file's text, decrypted when sops holds it."""
     raw = path.read_text()
-    if not encrypted(raw):
-        return raw
-    done = subprocess.run(
-        ["sops", "-d", str(path)], capture_output=True, text=True, check=True
-    )
-    return done.stdout
+    return decrypt(path) if encrypted(raw) else raw
 
 
 def split(text: str) -> tuple[dict, str]:
@@ -117,3 +136,10 @@ class PromptDir:
         if not found:
             raise TemplateNotFound(name + ".prompty")
         return found
+
+
+if __name__ == "__main__":
+    line = missing()
+    if line:
+        print(line)
+        raise SystemExit(1)
