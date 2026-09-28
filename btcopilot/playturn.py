@@ -170,8 +170,10 @@ def drawn(tl: dict, cluster_id: str) -> dict | None:
 
 def digest(tl: dict, cluster: dict, events: list[dict]) -> str:
     """What a play was told from and is drawn with: what the coach is shown of
-    the cluster, its own title, and what the drawer reads for it."""
+    the cluster, its own title, what the drawer reads for it, and the play
+    prompt, so a tuned prompt tells it again."""
     told = {
+        "prompt": prompts.PLAY_BY_PLAY_PROMPT,
         "about": told_about(cluster, events),
         "title": cluster.get("title"),
         "drawn": drawn(tl, str(cluster["id"])),

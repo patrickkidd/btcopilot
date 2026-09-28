@@ -7,7 +7,7 @@ import pytest
 import sqlalchemy as sa
 from alembic import command
 
-from btcopilot import playturn
+from btcopilot import playturn, prompts
 from btcopilot.admin.database import config
 from btcopilot.case import Tool
 from btcopilot.extensions import db
@@ -134,6 +134,17 @@ def test_a_couple_marked_married_or_not_is_told_again(discussion):
     model = Model(called(Tool.PlayByPlay, **told()), called(Tool.PlayByPlay, **told()))
     explain(data, discussion, model)
     data.pair_bonds[0]["married"] = False
+    explain(data, discussion, model)
+
+    assert len(model.histories) == 2
+
+
+def test_a_tuned_play_prompt_retells_the_cluster(discussion, monkeypatch):
+    # R-0563, R-0542
+    data = record()
+    model = Model(called(Tool.PlayByPlay, **told()), called(Tool.PlayByPlay, **told()))
+    explain(data, discussion, model)
+    monkeypatch.setattr(prompts, "PLAY_BY_PLAY_PROMPT", prompts.PLAY_BY_PLAY_PROMPT + "\nTuned.")
     explain(data, discussion, model)
 
     assert len(model.histories) == 2
