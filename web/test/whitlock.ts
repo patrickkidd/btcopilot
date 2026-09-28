@@ -188,3 +188,40 @@ export const death = (): Case => ({
   ],
   question: "Seven months pass between the letters and the clear scan. Where were you living that autumn?",
 });
+
+/** A record as sparse as a first session leaves it: the reader and her
+ * mother, with no parent link and no bond between them. */
+export const sparse = (): Timeline => ({
+  ...timeline(),
+  people: [
+    person(CORINNE, "Corinne", "female", "1975-06-01", { primary: true }),
+    person(DELPHINE, "Delphine", "female", null),
+  ],
+  pair_bonds: [],
+  events: [
+    event(301, "2019-03-15", "shift", CORINNE, { symptom: "up", description: "Couldn't sleep" }),
+    event(302, "2019-10-15", "shift", DELPHINE, { description: "Moved in with her sister" }),
+  ],
+  clusters: [
+    {
+      ...timeline().clusters[0],
+      id: "alone",
+      label: "2019",
+      start: "2019-03-15",
+      end: "2019-10-15",
+      event_ids: [301, 302],
+      play_ids: [301, 302],
+      count: 2,
+    },
+  ],
+});
+
+export const alone = (): Case => ({
+  cluster_id: "alone",
+  point: "You stopped sleeping months before Delphine moved.",
+  snapshots: [
+    { date: "2019-03-15", event_ids: [301], fact: "You couldn't sleep that March.", guess: null },
+    { date: "2019-10-15", event_ids: [302], fact: "Delphine moved in with her sister.", guess: null },
+  ],
+  question: "Who else was in the house that year?",
+});

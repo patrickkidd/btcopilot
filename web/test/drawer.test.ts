@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { pathRow } from "../src/dom";
 import { below, leastScale, pictureHeight, pointLine, yearsLine } from "../src/drawer";
 import { Told, untold } from "../src/snapshots";
-import { apart, timeline } from "./whitlock";
+import { alone, apart, CORINNE, DELPHINE, sparse, timeline } from "./whitlock";
 
 /** The play-by-play drawer's own words and controls, read off its markup. */
 
@@ -72,4 +72,15 @@ it("tells a case nobody told with no point line and no closing question", () => 
   expect(below(quiet, quiet.length - 1)).not.toContain('class="ask"');
   expect(pointLine(quiet)).toBe("");
   expect(pointLine(told)).toContain("As Marcus drank less");
+});
+
+// R-0545, R-0563
+it("draws a sparse record's person with no family tie beside the reader, and ends on the question", () => {
+  const thin = new Told(sparse(), alone());
+  const L = thin.layout;
+  expect(L.bonds).toHaveLength(0);
+  expect(L.gen[String(DELPHINE)]).toBe(L.gen[String(CORINNE)]);
+  expect(L.x[String(DELPHINE)]).toBeGreaterThan(L.x[String(CORINNE)]);
+  expect(below(thin, 1)).toMatch(/<p class="ask">Who else was in the house that year\?/);
+  expect(below(thin, 0)).not.toContain('class="ask"');
 });

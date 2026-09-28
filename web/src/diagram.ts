@@ -343,13 +343,15 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
       });
     });
   }
-  // spec 8.4: someone with no family tie stands on the row of the person they relate to
+  // spec 8.4: someone with no family tie stands on the row of the person they
+  // relate to, and failing anyone placed, at the end of the reader's row: a
+  // sparse record's missing link is the coach's question, not a failed drawing
+  const loose: Record<string, string> = {};
   ids.forEach((id) => {
     // the reader stands on row 0 even with no family drawn beside them
     if (tied(id) || gen[id] != null) return;
-    if (assoc[id] == null || gen[assoc[id]] == null)
-      throw new Unplaceable(`a person with no family tie and nobody they relate to (${P[id].name})`);
-    gen[id] = gen[assoc[id]];
+    loose[id] = assoc[id] != null && gen[assoc[id]] != null ? assoc[id] : cast.index;
+    gen[id] = gen[loose[id]];
   });
   let lo = Infinity;
   let hi = -Infinity;
@@ -475,10 +477,15 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
       lay(anchor, P[anchor].g === Sex.Female ? -1 : 1, seq, true);
       if (roots.some((id) => !placed.has(id))) throw new Unplaceable("two separate families side by side in one row");
     }
+    // a reader with no family drawn stands first, the others at the end beside them
+    if (gen[cast.index] === g && !tied(cast.index)) {
+      seq.push(cast.index);
+      placed.add(cast.index);
+    }
     ids
-      .filter((id) => gen[id] === g && !tied(id))
+      .filter((id) => gen[id] === g && !tied(id) && id !== cast.index)
       .forEach((id) => {
-        const a = assoc[id];
+        const a = loose[id];
         const i = seq.indexOf(a);
         const right = bondsOf[a].some((b) => seq.indexOf(other(b, a)) > i);
         if (right) seq.unshift(id);
