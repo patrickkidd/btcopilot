@@ -329,6 +329,8 @@ test.describe("an event added by hand", () => {
     // a move is a noted event; a new event opens as a shift, which is refused
     // until something in it moves
     await editor.locator('.segs[data-name="kind"] .seg[data-value="noted"]').click();
+    // a noted event is about someone: the record refuses one about nobody (R-0593)
+    await editor.locator('.segs[data-name="person"] .seg:not([data-value=""])').first().click();
     // each project adds its own, a month apart: the record keeps what an
     // earlier project added, and refuses a second noted event on the same day
     const words = `Moved back home (${info.project.name})`;
