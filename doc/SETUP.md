@@ -6,7 +6,7 @@ cloud session. Follow it top to bottom. Every path below is relative to the clon
 ## 1. Clone
 
 ```bash
-git clone git@github.com:patrickkidd/btcopilot.git
+git clone https://github.com/patrickkidd/btcopilot.git
 cd btcopilot
 ```
 
@@ -19,7 +19,7 @@ plain copies of the rulings live in the private repo `patrickkidd/btcopilot-sour
 inside the main clone (it is gitignored there):
 
 ```bash
-git clone git@github.com:patrickkidd/btcopilot-sources.git btcopilot-sources
+git clone https://github.com/patrickkidd/btcopilot-sources.git btcopilot-sources
 ```
 
 To keep it elsewhere, set `BTCOPILOT_SOURCES` to its path. Nothing in the app, the tests or the
