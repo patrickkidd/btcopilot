@@ -7,6 +7,7 @@ import anthropic
 import httpx
 import pytest
 
+from btcopilot import ledger
 from btcopilot.coachmodel import Spent
 from btcopilot.tests.live import passrate
 from btcopilot.tests.live import test_coachturn as coachturn
@@ -170,3 +171,25 @@ def test_a_refused_balance_check_stops_the_run(tmp_path, monkeypatch):
     ):
         run.open("key")
     assert run.finish(pytest.ExitCode.INTERRUPTED)["status"] == "stopped"
+
+
+def test_a_finished_run_appends_one_ledger_line_per_case(tmp_path):
+    # R-0592
+    run = Run(MODEL, GIT, tmp_path)
+    run.begin("passes", "once")
+    run.charge(Spent(input=100, output=10), Decimal("0.25"))
+    run.end("passes", Outcome.Passed)
+    run.begin("misses", "2 of 3")
+    run.end("misses", Outcome.Failed)
+    run.finish(pytest.ExitCode.TESTS_FAILED)
+    lines = [
+        json.loads(line)
+        for line in (tmp_path / ledger.PATH.name).read_text().splitlines()
+    ]
+    assert [
+        (line["kind"], line["model"], line["case"], line["outcome"], line["cost"])
+        for line in lines
+    ] == [
+        ("live", MODEL, "passes", "passed", 0.25),
+        ("live", MODEL, "misses", "failed", 0.0),
+    ]

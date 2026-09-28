@@ -37,6 +37,7 @@ from btcopilot.schema import PDP, Event, ItemKind, PairBond, Person, from_dict
 __all__ = [
     "Author",
     "Change",
+    "ModelCall",
     "schemas",
     "ToolError",
     "Toolbox",
