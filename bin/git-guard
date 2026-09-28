@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# PreToolUse guard: master is PR-only. Reads the hook JSON on stdin; exit 2 blocks the command.
+c=$(jq -r '.tool_input.command // empty')
+git='(^|[;&|[:space:]])git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+'
+tok='(^|[[:space:]:=])master([[:space:]]|$)'
+if printf '%s' "$c" | grep -Eq "${git}push([[:space:]].*)?${tok}" \
+|| printf '%s' "$c" | grep -Eq "${git}push[[:space:]]+(.*[[:space:]])?(--force|--force-with-lease(=[^[:space:]]*)?|-f)([[:space:]]|$)" \
+|| printf '%s' "$c" | grep -Eq "${git}(checkout|switch)[[:space:]]+master([[:space:]]|$)" \
+|| printf '%s' "$c" | grep -Eq "${git}branch[[:space:]]+(-D|-d|--delete)[[:space:]]+master([[:space:]]|$)" \
+|| printf '%s' "$c" | grep -Eq '(^|[;&|[:space:]])gh[[:space:]]+pr[[:space:]]+merge([[:space:]]|$)'; then
+  echo "git-guard: master is PR-only — no pushes to master, force pushes, or PR merges from Claude" >&2
+  exit 2
+fi

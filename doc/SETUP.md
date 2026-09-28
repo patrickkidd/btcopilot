@@ -38,6 +38,7 @@ from `btcopilot-sources/fd-corpus/design/`.
 | Ollama with `qwen3:8b` | the sandbox's coach, free | `brew install ollama`, `ollama pull qwen3:8b` |
 | sops and age | the encrypted prompts and rulings under `private/` | `brew install sops age` |
 | gh | PRs and the release workflow | `brew install gh`, `gh auth login` |
+| jq | the git guard `bin/git-guard`, run before every Bash command by `.claude/settings.json` | `brew install jq` |
 
 ## 3. Install
 
@@ -146,3 +147,15 @@ proxy. Not yet tried in a cloud session:
 | The sandbox | Docker and Redis are there; the kit also needs `lsof`. Ollama is not documented: with no GPU the local coach would be minutes per turn at best, so plan on `--real` with Patrick's yes |
 | `ssh familydiagram`, the phone at `turin` | no: there is no ssh egress documented and no key |
 | Deploys | `gh workflow run` works if the session's GitHub access allows workflow dispatch |
+
+## 10. Claude Code user-level files
+
+Patrick's user-level Claude Code rules and the efficiency skill live in the private corpus,
+under `btcopilot-sources/claude-user/`, as the only copy. On a new machine, after cloning the
+corpus, link them into `~/.claude`:
+
+```bash
+ln -s ~/btcopilot/btcopilot-sources/claude-user/CLAUDE.md ~/.claude/CLAUDE.md
+mkdir -p ~/.claude/skills
+ln -s ~/btcopilot/btcopilot-sources/claude-user/skills/efficiency ~/.claude/skills/efficiency
+```
