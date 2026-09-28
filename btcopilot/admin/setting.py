@@ -1,6 +1,6 @@
-"""One table for the values an admin sets by hand: a token cap that belongs to
-one person, and switches that belong to the whole room. Scope is the row the
-value is about — a user id, or nothing when it is the room's."""
+"""One table for the values an admin sets by hand: a token cap and coach models
+that belong to one person, and switches that belong to the whole room. Scope is
+the row the value is about — a user id, or nothing when it is the room's."""
 
 import enum
 
@@ -14,6 +14,8 @@ from btcopilot.modelmixin import ModelMixin
 class SettingKey(enum.StrEnum):
     TokenCap = "token_cap"
     NudgesOn = "nudges_on"
+    CoachModel = "coach_model"
+    ShadowModel = "shadow_model"
 
 
 class Setting(db.Model, ModelMixin):
@@ -41,6 +43,11 @@ def write(key: SettingKey, value, scope_id: int | None = None) -> None:
         row = Setting(key=key.value, scope_id=scope_id)
         db.session.add(row)
     row.value = value
+    db.session.commit()
+
+
+def clear(key: SettingKey, scope_id: int | None = None) -> None:
+    Setting.query.filter_by(key=key.value, scope_id=scope_id).delete()
     db.session.commit()
 
 

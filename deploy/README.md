@@ -57,9 +57,10 @@ the tag `3.YYYY.M.D.N+g<sha7>` and its image the same with `-` for `+`. As root:
 
     cd /var/www/btcopilot && git fetch origin <sha> && git checkout --detach <sha> && cd deploy
     export BTCOPILOT_TAG=<image tag, e.g. 3.2026.9.28.1-gf66d603>
-    docker compose --env-file /etc/fd/secrets.env pull fd-app fd-worker
+    docker compose --env-file /etc/fd/secrets.env pull fd-app fd-worker fd-shadow
     docker rollout --env-file /etc/fd/secrets.env fd-app
     docker rollout --env-file /etc/fd/secrets.env fd-worker
+    docker compose --env-file /etc/fd/secrets.env up -d fd-shadow
     docker compose --env-file /etc/fd/secrets.env ps
 
 This holds only when the release being left added no migration: the database stays where it

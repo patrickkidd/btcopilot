@@ -272,7 +272,7 @@ def test_chat_returns_the_words_and_the_events_behind_them(web, family, monkeypa
     from btcopilot.tests.conftest import csrf_token
 
     monkeypatch.setattr(
-        "btcopilot.coachturn.CoachModel",
+        "btcopilot.turns.model_for",
         lambda *a, **k: Model(
             called(ToolName.EditPerson, name="Nell"), said("Added [[person:11|Nell]].")
         ),
@@ -571,7 +571,7 @@ def test_every_message_the_page_reads_back_carries_its_kind(web, family, monkeyp
     from btcopilot.tests.conftest import csrf_token
 
     monkeypatch.setattr(
-        "btcopilot.coachturn.CoachModel",
+        "btcopilot.turns.model_for",
         lambda *a, **k: Model(said("Tell me about [[event:10|the move]].")),
     )
     token = csrf_token(web)
@@ -605,7 +605,7 @@ def test_a_csrf_token_older_than_an_hour_still_posts(web, family, monkeypatch):
     from btcopilot.tests.conftest import csrf_token
 
     monkeypatch.setattr(
-        "btcopilot.coachturn.CoachModel",
+        "btcopilot.turns.model_for",
         lambda *a, **k: Model(said("Tell me about [[event:10|the move]].")),
     )
     token = csrf_token(web)
@@ -631,7 +631,7 @@ def test_a_moment_the_coach_wrote_traces_to_the_message_that_wrote_it(
     from btcopilot.tests.conftest import csrf_token
 
     monkeypatch.setattr(
-        "btcopilot.coachturn.CoachModel",
+        "btcopilot.turns.model_for",
         lambda *a, **k: Model(
             called(
                 ToolName.EditEvent,

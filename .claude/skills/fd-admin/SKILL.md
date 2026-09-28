@@ -26,6 +26,43 @@ not edit it by hand; change the commands and generate it again.
 
 ## The commands
 
+### `flask admin coach-model`
+
+The coach model and the shadow model of one person.
+
+### `flask admin coach-model set <email> <alias>`
+
+Coach this person on a model alias, or on the default with the word default.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `email` | required |
+| `alias` | required |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin coach-model shadow <email> <alias>`
+
+Run each of this person's turns again on a model alias, never shown to them and never charged to them; the word off stops it.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `email` | required |
+| `alias` | required |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin coach-model show [email]`
+
+One person's models, or the default and everyone who differs from it.
+
+| Argument | What it is |
+|---|---|
+| `email` | optional |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin db`
 
 The chat database's own migration chain.

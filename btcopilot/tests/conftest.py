@@ -190,7 +190,7 @@ def chat_flow(request):
             # coach's words scripts them there too.
             stack.enter_context(
                 patch(
-                    "btcopilot.coachturn.CoachModel",
+                    "btcopilot.turns.model_for",
                     new=lambda *a, **k: Model(said(response)),
                 )
             )
