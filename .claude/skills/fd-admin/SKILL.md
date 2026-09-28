@@ -202,6 +202,19 @@ Changes something: needs `--yes`.
 |---|---|
 | `root` | optional |
 
+### `flask admin quality replay <discussion_id> <model> <reference_diagram_id>`
+
+Replay a session's words on MODEL onto a scratch record, score it against the record Patrick corrected, and append one ledger line. Never on the box: it spends on the model and writes scratch records.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `discussion_id` | required |
+| `model` | required |
+| `reference_diagram_id` | required |
+| `--cap` | Dollars; no turn starts past it. |
+
 ### `flask admin questions`
 
 The questions the coach keeps in each record.

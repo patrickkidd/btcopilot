@@ -5,6 +5,7 @@
   parent names break ties.
 - Events: kind + date proximity + person links (description not used).
 - PairBonds: person_a/person_b match after person id mapping.
+- Clusters: event sets overlap at CLUSTER_OVERLAP or more after event id mapping.
 - SARF variables: macro-F1 across matched events (exact enum match).
 - IDs are ignored: matching is by content only.
 """
@@ -18,6 +19,7 @@ from dateutil import parser as date_parser
 from rapidfuzz import fuzz
 
 from btcopilot.schema import (
+    Cluster,
     Person,
     Event,
     EventKind,
@@ -471,6 +473,33 @@ def match_pair_bonds(
     result.ai_unmatched = [b for b in ai_bonds if id(b) not in ai_processed]
     result.gt_unmatched = gt_remaining
 
+    return result
+
+
+CLUSTER_OVERLAP = 0.5
+
+
+def match_clusters(
+    ai: list[Cluster], gt: list[Cluster], event_map: dict[int, int]
+) -> EntityMatchResult:
+    """The share is of the larger cluster's events, so a cluster that swallows
+    another's few events does not match it."""
+    result = EntityMatchResult()
+    gt_remaining = list(gt)
+    for cluster in ai:
+        mapped = {event_map[i] for i in cluster.eventIds if i in event_map}
+        best, best_share = None, 0.0
+        for candidate in gt_remaining:
+            larger = max(len(cluster.eventIds), len(candidate.eventIds))
+            share = len(mapped & set(candidate.eventIds)) / larger if larger else 0.0
+            if share >= CLUSTER_OVERLAP and share > best_share:
+                best, best_share = candidate, share
+        if best is None:
+            result.ai_unmatched.append(cluster)
+        else:
+            result.matched_pairs.append((cluster, best))
+            gt_remaining.remove(best)
+    result.gt_unmatched = gt_remaining
     return result
 
 
