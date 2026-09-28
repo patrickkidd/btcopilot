@@ -939,22 +939,9 @@ class Toolbox:
         return next((x for x in self.data.pair_bonds if record.pair(x) == pair), None)
 
     def _couple(self, event: dict):
-        """A couple event stands on the couple's bond, so the bond is added
-        before the event when they have none; a marriage sets married on it so
-        the picture draws them married (R-0430)."""
-        kind = _enum_value(event.get("kind"))
-        a, b = event.get("person"), event.get("spouse")
-        if kind not in record.COUPLE_KINDS or None in (a, b) or str(a) == str(b):
-            return
-        married = kind == EventKind.Married.value
-        bond = self._bond(a, b)
-        if bond is None:
-            fields = {"person_a": a, "person_b": b}
-            if married:
-                fields["married"] = True
-            self._write(ItemKind.PairBond, None, fields)
-        elif married and bond.get("married") is not True:
-            self._write(ItemKind.PairBond, bond["id"], {"married": True})
+        needed = record.couple_bond(self.data.pair_bonds, event)
+        if needed is not None:
+            self._write(ItemKind.PairBond, *needed)
 
     def _born_to(self, event: dict):
         """A birth naming both parents makes the child the offspring of their

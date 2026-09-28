@@ -1000,6 +1000,24 @@ def _structure(data: dict, deltas: list[dict]):
                     )
 
 
+def couple_bond(bonds: list[dict], event: dict) -> tuple | None:
+    """What a couple event needs of the couple's bond before it is written, as
+    (bond id, fields): the bond itself, id None, when they have none, or married
+    set on theirs when the event is a marriage (R-0430, R-0593)."""
+    kind = _val(event.get("kind"))
+    a, b = event.get("person"), event.get("spouse")
+    if kind not in COUPLE_KINDS or None in (a, b) or str(a) == str(b):
+        return None
+    married = kind == EventKind.Married.value
+    couple = {"person_a": a, "person_b": b}
+    bond = next((x for x in bonds if pair(x) == pair(couple)), None)
+    if bond is None:
+        return None, dict(couple, married=True) if married else couple
+    if married and bond.get("married") is not True:
+        return bond["id"], {"married": True}
+    return None
+
+
 def _born(data: dict, event_id: str, birth: dict):
     """A birth's parents are the child's own parents: the two sides of the bond
     the child is born to, so the birth and the child never disagree about who

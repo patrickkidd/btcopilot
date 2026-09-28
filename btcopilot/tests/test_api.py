@@ -551,6 +551,25 @@ def test_a_named_record_takes_the_write_and_a_stranger_s_does_not(
     assert theirs.get_diagram_data().people == []
 
 
+def test_a_hand_added_couple_event_adds_the_couples_bond(web, token, family):
+    # R-0593
+    created = post(
+        web,
+        token,
+        "/app/events",
+        {
+            "kind": EventKind.Married.value,
+            "person": 1,
+            "spouse": 2,
+            "dateTime": "1990-06-01",
+            "dateCertainty": DateCertainty.Certain.value,
+        },
+    )
+    assert created.status_code == 201
+    bonds = family.get_diagram_data().pair_bonds
+    assert [(b["person_a"], b["person_b"], b["married"]) for b in bonds] == [(1, 2, True)]
+
+
 def test_event_write_takes_the_diagram_lock(web, token, family):
     # R-0084
     before = family.version
