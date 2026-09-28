@@ -2,9 +2,41 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-09-23 (the extraction pipeline and the pending data pool are retired)
+**Last Updated**: 2026-09-28 (defined-self is an action taken toward others)
 
 ---
+
+## FD-363 coach — defined-self is an action taken toward others (2026-09-28)
+
+**Scope**: the coach's definition of the defined-self move, in `private/prompts/tool_meanings.prompty`
+(the `relationship` field's meaning) and `private/prompts/fragments/agent_record_contract.md` (the
+relationship-moves section: its one-line list and its defined-self bullet). Nothing else changed.
+
+**Defect** [R-0533, R-0585]: the old definition counted a statement, belief or intention that
+says where the person stands. On 2026-09-22 the coach coded two steps in Patrick's own record,
+moving to another city for graduate school and starting the program the same autumn, as
+defined-self with functioning up and the speaker as his own target. Patrick ruled both noted
+events on 2026-09-28 (correction case of that date in the private corpus).
+
+**Change**: Patrick's definition of 2026-09-28, "the actual action that a person takes to define
+themselves in relation to others". Words, a belief or an intention alone are not it; it has
+targets, the people defined to, never the mover, whom the speaker may not name; an action taken
+in relation to no one is not defined-self. "Without trying to change or control the other" and
+"a move, not a state" are kept. The theory's concept page holds the sources (defined self, status
+items 11 and 12); which actions count stays open for the IRR group.
+
+**Eval**: `test_moving_away_for_graduate_school_is_noted_and_not_a_defined_self` in the live
+suite, 2 of 3 runs, fictionalized: the speaker did prerequisites in Marquette in 2006, then moved
+to Tucson for grad school and started the program in fall 2008, naming no one. Pass: every new
+event is noted or a shift carrying no symptom, anxiety, functioning or relationship.
+
+**Result, on the Claude Code subscription, $0**: new prompt 3 of 3 runs pass, all steps noted,
+nine answers saved as subscription replays. Old prompt: 9 of 9 first calls coded every step
+noted across three wordings (the bare statement, one with a stated intention, the logged
+shape), so the eval does not fail on the old prompt in a fresh session. The 2026-09-22 fault
+came mid-conversation on an earlier prompt, and the writer now refuses a move with no
+targets or with its mover as a target [R-0585, R-0593]. Old-prompt answers were not saved. The eval guards the ruled coding; it
+does not prove the new wording was needed.
 
 ## FD-362 review scribe — loop cap and three prompt rules (2026-09-11)
 

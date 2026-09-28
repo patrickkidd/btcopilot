@@ -7,6 +7,7 @@ names only.
 import re
 
 from btcopilot import prompts
+from btcopilot.schema import EventKind
 from btcopilot.tests.live.criterion import once, passes, waiting
 from btcopilot.toolbox import ToolName
 from btcopilot.turnlog import TurnEventKind
@@ -254,6 +255,26 @@ def test_a_move_carries_no_symptom_anxiety_or_functioning_shift(coach):
         for e in moved(coach.events)
         for v in ("symptom", "anxiety", "functioning")
     )
+
+
+GRAD_SCHOOL = (
+    "I did my prerequisites at the college in Marquette in 2006. Then I moved to "
+    "Tucson for grad school and started the program in fall 2008."
+)
+VARIABLES = ("symptom", "anxiety", "functioning", "relationship")
+
+
+@passes(2, of=3)
+def test_moving_away_for_graduate_school_is_noted_and_not_a_defined_self(coach):
+    # R-0585, R-0533
+    # Patrick, 2026-09-28: defined-self "is the actual action that a person takes to
+    # define themselves in relation to others", and it has targets.
+    coach.record()
+    coach.say(GRAD_SCHOOL)
+    new = [e for e in coach.events if e["id"] != 30]
+    assert new
+    assert not [e for e in new if EventKind(e["kind"]).isStructural()]
+    assert [e for e in new if any(e.get(v) not in NOTHING for v in VARIABLES)] == []
 
 
 OPEN = "My grandmother had a younger sister, but nobody ever told me her name."
