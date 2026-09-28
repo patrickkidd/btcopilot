@@ -56,7 +56,7 @@ test.describe("the three levels on the moves record", () => {
     await expect(page.locator("#view .ss.board")).toHaveCount(0);
   });
 
-  // R-0213, R-0538
+  // R-0213, R-0538, R-0583
   test("an open cluster's title ends with how many events it holds", async ({ page }) => {
     await tellWithoutModel(page);
     await settle(page);
