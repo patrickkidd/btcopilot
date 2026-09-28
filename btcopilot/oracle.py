@@ -2,19 +2,18 @@
 
 Full entries live in one file per topic (topics/<topic>.md); rulings.md is the
 one-line index rendered from them by listing(). Nothing else parses the store.
-Reading it needs a sops key in SOPS_AGE_KEY_FILE or SOPS_AGE_KEY; without one it
+Reading it needs a sops key; without one it
 raises rather than reading as empty.
 """
 
 import enum
 import hashlib
 import re
-import subprocess
 from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
 
-from btcopilot.promptdir import key_present
+from btcopilot import promptdir
 
 ROOT = Path(__file__).parents[1]
 STORE = ROOT / "private" / "oracle"
@@ -210,14 +209,11 @@ class Ruling:
 
 
 def decrypt(path: Path) -> str:
-    if not key_present():
+    if not promptdir.key_present():
         raise RuntimeError(
-            f"{path.relative_to(ROOT)} needs a sops key: set SOPS_AGE_KEY_FILE or SOPS_AGE_KEY"
+            f"{path.relative_to(ROOT)} needs a sops key in {promptdir.keyfile()} or SOPS_AGE_KEY"
         )
-    done = subprocess.run(
-        ["sops", "-d", str(path)], capture_output=True, text=True, check=True
-    )
-    return done.stdout
+    return promptdir.decrypt(path)
 
 
 def status(field: str) -> tuple[Status, tuple[str, ...]]:

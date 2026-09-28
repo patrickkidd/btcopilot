@@ -11,7 +11,7 @@ import sys
 import pytest
 from jinja2 import TemplateNotFound
 
-from btcopilot import prompts
+from btcopilot import promptdir, prompts
 from btcopilot.promptdir import PromptDir, key_present, read, split
 from btcopilot.tests.repo import REPO
 
@@ -199,3 +199,54 @@ def test_one_coach_prompt_and_no_mode_variants():
         assert "agent" in names
         assert [n for n in names if n != "agent" and n.startswith("agent")] == []
         assert [n for n in names if "mode" in n] == []
+
+
+@pytest.fixture
+def loader(monkeypatch):
+    """The loader as a session sees it: the open-source prompts allowed, the
+    private directory where the repo keeps it, and nothing cached."""
+    monkeypatch.setenv(prompts.OPEN, "1")
+    monkeypatch.delenv("FD_PRIVATE_PROMPTS", raising=False)
+    prompts.files.cache_clear()
+    yield prompts.files
+    prompts.files.cache_clear()
+
+
+def test_without_a_key_the_open_prompts_are_used_and_said(
+    loader, monkeypatch, tmp_path, capsys
+):
+    # R-0488
+    monkeypatch.delenv("SOPS_AGE_KEY", raising=False)
+    monkeypatch.setenv("SOPS_AGE_KEY_FILE", str(tmp_path / "keys.txt"))
+    assert loader().dirs == [prompts.PUBLIC]
+    assert capsys.readouterr().err == promptdir.missing() + "\n"
+    assert str(tmp_path / "keys.txt") in promptdir.missing()
+
+
+def test_with_the_key_the_private_prompts_are_used(loader, capsys):
+    # R-0454
+    if promptdir.missing():
+        pytest.skip(promptdir.missing())
+    files = loader()
+    assert files.dirs == [REAL_PRIVATE, prompts.PUBLIC]
+    assert files.head("scribe")["name"] == "scribe"
+    assert capsys.readouterr().err == ""
+
+
+def test_the_sandbox_will_not_start_on_the_open_prompts_unasked(tmp_path):
+    # R-0488
+    env = dict(
+        os.environ,
+        SANDBOX_HOME=str(tmp_path),
+        SOPS_AGE_KEY_FILE=str(tmp_path / "keys.txt"),
+    )
+    env.pop("SOPS_AGE_KEY", None)
+    done = subprocess.run(
+        [REPO / "bin" / "sandbox" / "sandbox", "up", "keyless", "8916"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert done.returncode != 0
+    assert f"no sops key in {tmp_path / 'keys.txt'}" in done.stderr
+    assert "--open-prompts" in done.stderr

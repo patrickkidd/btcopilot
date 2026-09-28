@@ -5,7 +5,7 @@
 # everything it writes in ~/btcopilot-sandbox/<name>/, outside every repo and
 # job folder, so several agents can run one each side by side.
 #
-#   sandbox up <name> <port> [--dev [port]] [--build] [--real] [--model M]
+#   sandbox up <name> <port> [--dev [port]] [--build] [--real] [--model M] [--open-prompts]
 #   sandbox down <name> [--purge]     stop everything; --purge also deletes the data
 #   sandbox reset <name>              empty the database and put the fixtures back
 #   sandbox invite <name> <email>     a sign-in link (and the Mac's copy under --dev)
@@ -16,9 +16,10 @@
 # Postgres listens on <port>+10000 and Redis on <port>+11000. --dev adds the
 # Vite dev server (default 8891) at https://turin:<dev port>/app/ for Patrick's
 # phone. --real puts the coach on Anthropic with the testing key from .env at
-# the main clone's root; ask Patrick before spending. Readiness gives up after
-# SANDBOX_WAIT seconds (default 120) and prints the log tails. doc/SETUP.md
-# lists what the machine needs.
+# the main clone's root; ask Patrick before spending. Without a sops key, up
+# refuses to start unless --open-prompts says the open-source prompts will do.
+# Readiness gives up after SANDBOX_WAIT seconds (default 120) and prints the
+# log tails. doc/SETUP.md lists what the machine needs.
 set -euo pipefail
 
 REPO=$(cd "$(dirname "$0")/../.." && pwd -P)
@@ -27,7 +28,6 @@ MAIN=$(dirname "$(git -C "$REPO" rev-parse --path-format=absolute --git-common-d
 HOME_DIR=${SANDBOX_HOME:-$HOME/btcopilot-sandbox}
 DOTENV=${SANDBOX_DOTENV:-$MAIN/.env}
 SOURCES=${BTCOPILOT_SOURCES:-$MAIN/btcopilot-sources}
-AGE_KEY=${SOPS_AGE_KEY_FILE:-$HOME/.config/sops/age/keys.txt}
 OLLAMA=http://127.0.0.1:11434
 WAIT=${SANDBOX_WAIT:-120}
 
@@ -101,11 +101,11 @@ export CELERY_RESULT_BACKEND=redis://127.0.0.1:$((PORT + 11000))/0
 export FLASK_TURN_LOG=redis
 export FLASK_SITE_URL=$site FLASK_RP_ORIGIN=$site
 export FLASK_ADMIN_EMAIL= FLASK_INVITATION_REUSABLE=1
-export SOPS_AGE_KEY_FILE=$AGE_KEY
 export BTCOPILOT_SOURCES=$SOURCES
 export SANDBOX_URL=http://127.0.0.1:$PORT
 export FIXTURE_CMD="$REPO/.venv/bin/python -m flask app fixtures" FIXTURE_CWD=$REPO
 SETTINGS
+  [ -z "$OPEN" ] || echo "export FD_OPEN_PROMPTS=1" >> "$D/env.sh"
   if [ -z "$REAL" ]; then
     echo "export BTCOPILOT_LOCAL_URL=$OLLAMA BTCOPILOT_LOCAL_MODEL=$MODEL" >> "$D/env.sh"
   fi
@@ -217,13 +217,14 @@ cmd_up() {
   PORT=${2:-}
   [[ $PORT =~ ^[0-9]+$ ]] || usage
   shift 2
-  DEV= REAL= MODEL=qwen3:8b
+  DEV= REAL= OPEN= MODEL=qwen3:8b
   local build=
   while [ $# -gt 0 ]; do
     case $1 in
       --dev) DEV=8891; [[ ${2:-} =~ ^[0-9]+$ ]] && { DEV=$2; shift; } ;;
       --build) build=1 ;;
       --real) REAL=1 ;;
+      --open-prompts) OPEN=1 ;;
       --model) MODEL=$2; shift ;;
       *) usage ;;
     esac
@@ -237,12 +238,16 @@ cmd_up() {
   . "$D/instance.sh"
   PY=$REPO/.venv/bin/python
   for port in "$PORT" "$PG_PORT" "$REDIS_PORT" ${DEV:+"$DEV"}; do free "$port"; done
-  [ -f "$AGE_KEY" ] || die "no age key at $AGE_KEY; the private prompts cannot be read"
+  [ -x "$PY" ] || (cd "$REPO" && uv sync --extra app --extra test)
+  local keyless
+  if ! keyless=$(cd "$REPO" && "$PY" -m btcopilot.promptdir); then
+    echo "sandbox: $keyless" >&2
+    [ -n "$OPEN" ] || die "not started; pass --open-prompts to run on the open-source prompts"
+  fi
   if [ -z "$REAL" ]; then
     curl -sf "$OLLAMA/api/tags" | grep -q "\"name\":\"$MODEL\"" \
       || die "Ollama at $OLLAMA does not answer with $MODEL; start Ollama or pull the model"
   fi
-  [ -x "$PY" ] || (cd "$REPO" && uv sync --extra app --extra test)
   if [ -n "$build" ] || [ -n "$DEV" ] || [ ! -f "$REPO/btcopilot/static/web/index.html" ]; then
     [ -d "$REPO/web/node_modules" ] || (cd "$REPO/web" && npm ci --silent)
   fi

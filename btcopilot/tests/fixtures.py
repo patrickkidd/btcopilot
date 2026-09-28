@@ -5,16 +5,14 @@ test by virtue of the directory it sits in.
 """
 
 import os
-import sys
 
 # The private prompts are encrypted. Without a key that opens them the run uses
-# the open-source ones, rather than failing to start — and says which it used, so
-# a green run is never mistaken for a run against the real wording.
-from btcopilot.promptdir import key_present
+# the open-source ones, rather than failing to start — and says which it used
+# (conftest's run summary), so a green run is never mistaken for a run against
+# the real wording.
+from btcopilot.prompts import OPEN
 
-if not key_present():
-    os.environ.setdefault("FD_PRIVATE_PROMPTS", "/nonexistent")
-    print("no sops key: running on the open-source prompts", file=sys.stderr)
+os.environ[OPEN] = "1"
 
 import contextlib
 import logging

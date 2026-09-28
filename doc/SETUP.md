@@ -54,24 +54,40 @@ a failure that only one machine sees may be a version difference.
 ## 4. The encryption key
 
 `private/prompts/` (the coach's prompts) and `private/oracle/` (Patrick's rulings) are encrypted
-with sops to age keys. Ask Patrick to add your age public key as a recipient, then:
+with sops to age keys. The app, the tests and the sandbox look for the key in
+`~/.config/sops/age/keys.txt` (or the file `SOPS_AGE_KEY_FILE` names), or take its text from the
+`SOPS_AGE_KEY` environment variable.
+
+**From a machine that already has it** (Patrick's Mac): copy `~/.config/sops/age/keys.txt`, a
+two-line file (a comment carrying the public key, then the `AGE-SECRET-KEY-` line), to the same
+path on the new machine, then:
 
 ```bash
-age-keygen -o ~/.config/sops/age/keys.txt    # once; send him the public key it prints
+chmod 600 ~/.config/sops/age/keys.txt
 bin/sops-setup.sh ~/.config/sops/age/keys.txt
-export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt   # in your shell profile
+export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt   # in your shell profile, for sops itself
 ```
 
-sops's own default on macOS is under `~/Library`, so `SOPS_AGE_KEY_FILE` must be set.
-`SOPS_AGE_KEY` holding the key text works for the app and tests instead; the sandbox wants the
-file.
+**A new key of your own:** `age-keygen -o ~/.config/sops/age/keys.txt`, send Patrick the public
+key it prints, and wait for him to add it as a recipient.
 
-Without the key:
+**Claude Code cloud:** put the key file's text in the environment's settings as `SOPS_AGE_KEY`.
+Anyone using that environment can read it.
 
-- **Works:** the unit suites. The test run prints "no sops key: running on the open-source
-  prompts" and uses those instead of the private ones.
-- **Does not work:** the sandbox and the app itself (both read the private prompts and stop if
-  they cannot), the oracle guards (`-m conventions`), the live prompt evals, and the flush.
+`SOPS_AGE_KEY_FILE` is only needed for the `sops` command itself (git diffs of the encrypted
+files, editing a ruling), whose own default on macOS is under `~/Library`.
+
+Without the key, every place that notices says one line naming the file and the variable:
+
+```
+no sops key in ~/.config/sops/age/keys.txt or SOPS_AGE_KEY: the open-source prompts are in use, not the private ones
+```
+
+- **The unit suites** print it once per run and run on the open-source prompts.
+- **The sandbox** prints it and refuses to start; `sandbox up <name> <port> --open-prompts`
+  starts it on the open-source prompts on purpose.
+- **Does not work at all:** the app itself (it stops on the first private prompt), the oracle
+  guards (`-m conventions`), the live prompt evals, and the flush.
 
 ## 5. `.env` at the clone root
 
@@ -104,7 +120,8 @@ bin/sandbox/sandbox up <name> <port>     # e.g. bin/sandbox/sandbox up mine 8912
 bin/sandbox/sandbox down <name> --purge
 ```
 
-It needs Docker, `redis-server`, Ollama with the model (or `--real`), and the age key. Its data
+It needs Docker, `redis-server`, Ollama with the model (or `--real`), and the age key
+(section 4). Its data
 lives in `~/btcopilot-sandbox/<name>/` (override with `SANDBOX_HOME`); `.env` is read from the
 main clone's root (override with `SANDBOX_DOTENV`). `bin/sandbox/sandbox` with no arguments
 prints every command. Port 8888 is Patrick's own server: never use it.
@@ -142,7 +159,7 @@ proxy. Not yet tried in a cloud session:
 |---|---|
 | Clone, `uv sync`, `npm ci`, build, both unit suites | expected to work |
 | The private corpus | only if btcopilot-sources is added to the session when it starts |
-| The age key | put its text in the environment's settings as `SOPS_AGE_KEY` and have the setup script write it to `~/.config/sops/age/keys.txt`; anyone using that environment can read it |
+| The age key | put its text in the environment's settings as `SOPS_AGE_KEY` (section 4); anyone using that environment can read it |
 | sops | not installed; the setup script downloads it, as `.github/workflows/ci.yml` does |
 | The sandbox | Docker and Redis are there; the kit also needs `lsof`. Ollama is not documented: with no GPU the local coach would be minutes per turn at best, so plan on `--real` with Patrick's yes |
 | `ssh familydiagram`, the phone at `turin` | no: there is no ssh egress documented and no key |
@@ -150,7 +167,7 @@ proxy. Not yet tried in a cloud session:
 
 ## 10. Claude Code user-level files
 
-Patrick's user-level Claude Code rules and the efficiency skill live in the private corpus,
+Patrick's user-level Claude Code rules and the efficiency and theory skills live in the private corpus,
 under `btcopilot-sources/claude-user/`, as the only copy. On a new machine, after cloning the
 corpus, link them into `~/.claude`:
 
@@ -158,4 +175,5 @@ corpus, link them into `~/.claude`:
 ln -s ~/btcopilot/btcopilot-sources/claude-user/CLAUDE.md ~/.claude/CLAUDE.md
 mkdir -p ~/.claude/skills
 ln -s ~/btcopilot/btcopilot-sources/claude-user/skills/efficiency ~/.claude/skills/efficiency
+ln -s ~/btcopilot/btcopilot-sources/claude-user/skills/theory ~/.claude/skills/theory
 ```

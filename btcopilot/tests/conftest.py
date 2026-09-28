@@ -14,6 +14,7 @@ from btcopilot.llmutil import Served
 from btcopilot.coachmodel import ModelTurn, ToolCall
 from btcopilot.coachturn import SPEAK
 from btcopilot.models import Diagram, Discussion, Statement, Speaker, SpeakerType
+from btcopilot.promptdir import missing
 from btcopilot.toolbox import ToolName
 from btcopilot import turnlog, turns
 from btcopilot.turnlog import TurnEventKind
@@ -38,6 +39,11 @@ from btcopilot.tests.fixtures import (
     test_user_2,  # noqa: F401
     unmocks,  # noqa: F401
 )
+
+
+def pytest_terminal_summary(terminalreporter):
+    if missing():
+        terminalreporter.write_line(missing())
 
 
 def pytest_addoption(parser):

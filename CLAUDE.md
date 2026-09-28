@@ -80,7 +80,7 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
   serves.** One command brings up Postgres with the fixture records (the stand-in family of
   `doc/mockups/family.md` among them), Redis, the Celery worker, and the built page on Flask,
   with the coach on the local Ollama model and the private prompts read with the age key in
-  `SOPS_AGE_KEY_FILE` (default `~/.config/sops/age/keys.txt`). Each instance keeps its data, logs
+  `~/.config/sops/age/keys.txt` (or `SOPS_AGE_KEY_FILE`, or the key text in `SOPS_AGE_KEY`). Each instance keeps its data, logs
   and settings in `~/btcopilot-sandbox/<name>/` (`SANDBOX_HOME`), outside every repo, so several
   agents run side
   by side: pick a free port and a name of your own. Postgres takes the port plus 10000, Redis
@@ -101,6 +101,8 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
   before spending. `--build` rebuilds the page first; without it the page already built in the
   worktree is served, so rebuilding under another agent's running sandbox is a choice, not a
   side effect. A turn on the local model takes one to several minutes.
+- **A session that sees "no sops key in ... the open-source prompts are in use" stops and tells
+  Patrick before doing any prompt or ruling work** (doc/SETUP.md section 4 says what to copy).
 - Every web change is verified in a real browser against a sandbox before it is called done:
   check it answers (`curl -sf http://127.0.0.1:<port>/health`), open the page, take a snapshot
   and a screenshot, exercise the interactions, report what was seen. Say "appears correct in

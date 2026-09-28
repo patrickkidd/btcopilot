@@ -9,15 +9,19 @@ open source default, so the app runs whole with the private directory absent.
 import enum
 import functools
 import os
+import sys
 from pathlib import Path
 
-from btcopilot.promptdir import PromptDir
+from btcopilot.promptdir import PromptDir, missing
 
 # Stands in for the record while the fixed head of the agent prompt is found.
 MARK = "\ue000"
 
 PUBLIC = Path(__file__).parent / "prompty"
 PRIVATE = Path(__file__).parents[1] / "private" / "prompts"
+# Set, the prompts fall back to the open-source ones when no key opens the
+# private ones, and say so. Unset, a missing key fails on the first read.
+OPEN = "FD_OPEN_PROMPTS"
 
 
 @functools.cache
@@ -25,6 +29,10 @@ def files() -> PromptDir:
     """Where the prompts are read from. Resolved on first use, not at import,
     so a caller that points FD_PRIVATE_PROMPTS somewhere else is heard however
     early this module was imported."""
+    line = missing()
+    if line and os.environ.get(OPEN):
+        print(line, file=sys.stderr)
+        return PromptDir([PUBLIC])
     return PromptDir([Path(os.environ.get("FD_PRIVATE_PROMPTS", PRIVATE)), PUBLIC])
 
 
