@@ -34,8 +34,8 @@ from btcopilot.models import (
     StatementKind,
 )
 from btcopilot import prompts
-from btcopilot.schema import DiagramData, EventKind, enum_val
-from btcopilot.timeline import _life_event
+from btcopilot.schema import DiagramData, enum_val
+from btcopilot.timeline import build_timeline
 
 _log = logging.getLogger(__name__)
 
@@ -66,32 +66,55 @@ def told_about(cluster: dict, events: list[dict]) -> dict:
     }
 
 
-def linked(events: list[dict]) -> set[int]:
-    ids = {e.get(key) for e in events for key in ("person", "spouse", "child")}
-    for e in events:
-        ids.update(e.get("relationshipTargets") or [])
-        ids.update(e.get("relationshipTriangles") or [])
-    return ids - {None}
+# What the play-by-play drawer reads of the timeline (web/src/snapshots.ts,
+# web/src/drawer.ts): of the cluster, of each event, of each person, of a bond.
+CLUSTER_FIELDS = ("id", "event_ids", "label", "title")
+EVENT_FIELDS = (
+    "id",
+    "kind",
+    "dateTime",
+    "dateCertainty",
+    "person",
+    "spouse",
+    "child",
+    "relationshipTargets",
+    "relationshipTriangles",
+    "description",
+    "symptom",
+    "functioning",
+    "anxiety",
+    "relationship",
+)
+PERSON_FIELDS = ("id", "name", "last_name", "gender", "primary", "birth", "death_event", "parents")
+BOND_FIELDS = ("id", "person_a", "person_b", "married")
 
 
-def cast(data: DiagramData, events: list[dict]) -> set[int]:
+def pick(item: dict, fields: tuple[str, ...]) -> dict:
+    return {f: enum_val(item.get(f)) for f in fields}
+
+
+def named(event: dict) -> list[int]:
+    ids = [event.get("person"), event.get("spouse"), event.get("child")]
+    ids += (event.get("relationshipTargets") or []) + (event.get("relationshipTriangles") or [])
+    return [i for i in ids if i is not None]
+
+
+def cast(tl: dict, events: list[dict]) -> set[int]:
     """Everyone the drawer draws for these events, found as its castOf does
     (web/src/snapshots.ts): the primary person and everyone the events name,
     the ancestors joining any two of them, and both parents of two of them."""
-    people = {p["id"]: p for p in data.people if isinstance(p, dict) and p.get("id") is not None}
-    bonds = {b["id"]: b for b in data.pair_bonds if isinstance(b, dict) and b.get("id") is not None}
+    people = {p["id"]: p for p in tl["people"]}
+    bonds = {b["id"]: b for b in tl["pair_bonds"]}
 
     def pair(bond: dict) -> list[int]:
-        return [i for i in (bond.get("person_a"), bond.get("person_b")) if i is not None]
+        return [i for i in (bond["person_a"], bond["person_b"]) if i is not None]
 
     def up(pid: int) -> list[int]:
         bond = bonds.get((people.get(pid) or {}).get("parents"))
         return pair(bond) if bond else []
 
-    found = linked(events)
-    primary = next((p["id"] for p in people.values() if p.get("primary")), None)
-    if primary is not None:
-        found.add(primary)
+    found = {i for e in events for i in named(e)}
+    found |= {next((p["id"] for p in tl["people"] if p["primary"]), None)} - {None}
 
     def climb(pid: int, path: list[int]):
         of = up(pid)
@@ -106,49 +129,61 @@ def cast(data: DiagramData, events: list[dict]) -> set[int]:
         for pid in list(found):
             climb(pid, [])
         for bond in bonds.values():
-            kids = [p for p in people.values() if p.get("parents") == bond["id"] and p["id"] in found]
+            kids = [p for p in tl["people"] if p["parents"] == bond["id"] and p["id"] in found]
             if len(kids) > 1:
                 found.update(pair(bond))
         if len(found) == before:
             return found
 
 
-def drawn(data: DiagramData, events: list[dict]) -> list[dict]:
-    """What the drawer shows of each person it draws for the cluster."""
-    ids = cast(data, events)
-    return [
-        {
-            "id": p["id"],
-            "name": p.get("name"),
-            "last_name": p.get("last_name"),
-            "gender": enum_val(p.get("gender")),
-            "primary": bool(p.get("primary")),
-            "parents": p.get("parents"),
-            "born": (_life_event(p["id"], data.events, EventKind.Birth) or {}).get("dateTime"),
-            "died": (_life_event(p["id"], data.events, EventKind.Death) or {}).get("dateTime"),
-        }
-        for p in sorted(
-            (p for p in data.people if isinstance(p, dict) and p.get("id") in ids),
-            key=lambda p: p["id"],
-        )
+def drawn(tl: dict, cluster_id: str) -> dict | None:
+    """What the drawer reads for this cluster: the cluster, its events, the
+    people it draws in record order, every bond touching them, and the events
+    that date those people's deaths and those couples' ties. None when the
+    timeline has no such cluster to draw."""
+    cluster = next((c for c in tl["clusters"] if c["id"] == cluster_id), None)
+    if cluster is None:
+        return None
+    events = {e["id"]: e for e in tl["events"]}
+    own = [events[i] for i in cluster["event_ids"]]
+    who = cast(tl, own)
+    people = [p for p in tl["people"] if p["id"] in who]
+    bonds = [b for b in tl["pair_bonds"] if {b["person_a"], b["person_b"]} & who]
+    couples = {
+        frozenset((b["person_a"], b["person_b"]))
+        for b in bonds
+        if None not in (b["person_a"], b["person_b"])
+    }
+    also = [
+        e
+        for e in tl["events"]
+        if e["id"] in {p["death_event"] for p in people}
+        or frozenset((e.get("person"), e.get("spouse"))) in couples
     ]
+    return {
+        "cluster": pick(cluster, CLUSTER_FIELDS),
+        "events": [pick(e, EVENT_FIELDS) for e in own + also],
+        "people": [pick(p, PERSON_FIELDS) for p in people],
+        "bonds": [pick(b, BOND_FIELDS) for b in bonds],
+    }
 
 
-def digest(data: DiagramData, cluster: dict, events: list[dict]) -> str:
+def digest(tl: dict, cluster: dict, events: list[dict]) -> str:
     """What a play was told from and is drawn with: what the coach is shown of
-    the cluster, its title, and the people the drawer draws."""
+    the cluster, its own title, and what the drawer reads for it."""
     told = {
-        **told_about(cluster, events),
+        "about": told_about(cluster, events),
         "title": cluster.get("title"),
-        "people": drawn(data, events),
+        "drawn": drawn(tl, str(cluster["id"])),
     }
     return hashlib.sha256(json.dumps(told, sort_keys=True).encode()).hexdigest()
 
 
-def digests(data: DiagramData) -> dict[str, str]:
-    """Each cluster's digest as a play told now would carry it."""
+def digests(data: DiagramData, tl: dict) -> dict[str, str]:
+    """Each cluster's digest as a play told now would carry it; `tl` is the
+    record's timeline, the drawer's own input."""
     return {
-        str(c["id"]): digest(data, c, events_of(data, c))
+        str(c["id"]): digest(tl, c, events_of(data, c))
         for c in data.clusters
         if isinstance(c, dict)
     }
@@ -204,7 +239,7 @@ class PlayTurn:
         if wrong:
             raise RecordFault(f"record fault: {'; '.join(wrong)}. Correct the record first.")
         about = told_about(self.cluster, events)
-        self.digest = digest(self.data, self.cluster, events)
+        self.digest = digest(build_timeline(self.data), self.cluster, events)
         kept = self._kept()
         if kept is not None:
             return reply(kept)

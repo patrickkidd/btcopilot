@@ -25,6 +25,7 @@ from btcopilot.models import (
     StatementKind,
 )
 from btcopilot.routes import bp
+from btcopilot.timeline import build_timeline
 from btcopilot.schema import (
     Cluster,
     DateCertainty,
@@ -396,7 +397,7 @@ PLAY_CHAT = [
             "kind": StatementKind.Play,
             "cluster_id": PLAY_CLUSTER,
             "told_case": PLAY_CASE.asdict(),
-            "digest": playturn.digests(play())[PLAY_CLUSTER],
+            "digest": playturn.digests(play(), build_timeline(play()))[PLAY_CLUSTER],
         },
     ),
 ]
@@ -514,7 +515,7 @@ WHITLOCK_CHAT = [
             "kind": StatementKind.Play,
             "cluster_id": WHITLOCK_CLUSTER,
             "told_case": WHITLOCK_CASE.asdict(),
-            "digest": playturn.digests(whitlock())[WHITLOCK_CLUSTER],
+            "digest": playturn.digests(whitlock(), build_timeline(whitlock()))[WHITLOCK_CLUSTER],
         },
     ),
 ]

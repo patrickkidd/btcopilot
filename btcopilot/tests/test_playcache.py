@@ -14,6 +14,7 @@ from btcopilot.extensions import db
 from btcopilot.models import Discussion, ModelCall, Statement, StatementKind
 from btcopilot.playturn import PlayTurn
 from btcopilot.schema import Event, EventKind, PairBond, Person, asdict
+from btcopilot.timeline import build_timeline
 from btcopilot.tests.conftest import Model, called
 from btcopilot.tests.test_case import SHOTS, record, told
 from btcopilot.tests.test_turnbackfill import at, rows, seed
@@ -32,7 +33,7 @@ def test_a_second_explain_of_an_unchanged_cluster_makes_no_call(discussion):
 
     assert len(model.histories) == 1
     assert again == first
-    assert again["digest"] == playturn.digests(data)["apart"]
+    assert again["digest"] == playturn.digests(data, build_timeline(data))["apart"]
     assert Statement.query.filter_by(kind=StatementKind.Play).count() == 1
 
 
@@ -85,7 +86,7 @@ def test_a_changed_cluster_is_told_again(discussion, change):
 
     assert len(model.histories) == 2
     assert again["statement_id"] != first["statement_id"]
-    assert again["digest"] == playturn.digests(data)["apart"] != first["digest"]
+    assert again["digest"] == playturn.digests(data, build_timeline(data))["apart"] != first["digest"]
 
 
 def test_a_new_title_on_a_named_cluster_is_told_again(discussion):
@@ -119,6 +120,20 @@ def test_a_renamed_relative_the_drawer_draws_is_told_again_and_a_stranger_is_not
 
     assert len(model.histories) == 1
     data.people[3]["name"] = "Hal"
+    explain(data, discussion, model)
+
+    assert len(model.histories) == 2
+
+
+def test_a_couple_marked_married_or_not_is_told_again(discussion):
+    # R-0563, R-0542, R-0560
+    data = record()
+    data.events = [e for e in data.events if e["id"] != 204]
+    data.clusters[0]["eventIds"].remove(204)
+    data.pair_bonds = [asdict(PairBond(id=11, person_a=3, person_b=4, married=True))]
+    model = Model(called(Tool.PlayByPlay, **told()), called(Tool.PlayByPlay, **told()))
+    explain(data, discussion, model)
+    data.pair_bonds[0]["married"] = False
     explain(data, discussion, model)
 
     assert len(model.histories) == 2

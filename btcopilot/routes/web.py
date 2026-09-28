@@ -106,7 +106,7 @@ def timeline():
     payload = build_timeline(data)
     # what a play of each cluster told now would be told from, so the page
     # knows a kept play it may open again from one it must ask for anew
-    told = playturn.digests(data)
+    told = playturn.digests(data, payload)
     for cluster in payload["clusters"]:
         cluster["digest"] = told[cluster["id"]]
     # Where each moment was written down comes from the command log, which is
