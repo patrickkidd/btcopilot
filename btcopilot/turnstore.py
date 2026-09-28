@@ -33,6 +33,10 @@ def save(turn_id: str, discussion_id: int, kept: list[dict]) -> None:
         )
 
 
+def done(statement_id: int) -> dict:
+    return {"type": TurnEventKind.Done.value, "statement_id": statement_id}
+
+
 def kept(turn_ids: set[str]) -> dict[str, list[dict]]:
     """Each turn's events in order."""
     if not turn_ids:

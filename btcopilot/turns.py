@@ -137,9 +137,7 @@ def run(
         turnlog.clear(discussion_id)
         turnlog.append(turn_id, failed)
         raise
-    _keep(
-        turn, {"type": TurnEventKind.Done.value, "statement_id": reply["statement_id"]}
-    )
+    _keep(turn, turnstore.done(reply["statement_id"]))
     reply["kind"] = StatementKind.Turn.value
     reply["discussion_id"] = discussion_id
     turnlog.clear(discussion_id)
