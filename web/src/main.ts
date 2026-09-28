@@ -9,6 +9,7 @@ import { Ballot } from "./ballot";
 import { Coding } from "./coding";
 import { Cut } from "./cut";
 import { Agenda } from "./agenda";
+import { Pairs } from "./pairs";
 import { Meeting } from "./meeting";
 import { ResultScreen } from "./result";
 import { CODER, OneTask, beforeMeeting, coder, wayIn } from "./task";
@@ -101,6 +102,7 @@ const CODING_SCREENS = [
   Screen.Agenda,
   Screen.Meeting,
   Screen.Result,
+  Screen.Pairs,
 ];
 
 let timeline: Timeline = emptyTimeline();
@@ -328,6 +330,7 @@ const sessions = new Sessions(
     onTask: () => void openTask(),
     onAgenda: (picked) => void placeCut(picked.id),
     onAgendaScreen: () => void openAgenda(),
+    onPairs: () => void openPairs(),
   },
 );
 
@@ -488,6 +491,14 @@ async function placeCut(discussionId: number): Promise<void> {
 async function openAgenda(): Promise<void> {
   await agenda.load();
   screen(Screen.Agenda);
+}
+
+/** Two replies to the same words, picked blind (R-0592). Patrick's. */
+const pairs = new Pairs($("pairs-body"), { onTitle: (title) => setTitle(title) });
+
+async function openPairs(): Promise<void> {
+  await pairs.load();
+  screen(Screen.Pairs);
 }
 
 /** Where the guidelines were opened from, so closing them goes back there:
@@ -1124,6 +1135,7 @@ function screen(which: Screen): void {
   $("ballot-screen").hidden = which !== Screen.Ballot;
   $("cut-screen").hidden = which !== Screen.Cut;
   $("agenda-screen").hidden = which !== Screen.Agenda;
+  $("pairs-screen").hidden = which !== Screen.Pairs;
   $("meeting-screen").hidden = which !== Screen.Meeting;
   $("result-screen").hidden = which !== Screen.Result;
   $("coding-screen").hidden = which !== Screen.Coding;
@@ -1138,7 +1150,9 @@ function screen(which: Screen): void {
     .querySelector<HTMLElement>(".app")!
     .classList.toggle(
       "wide",
-      which === Screen.Coding || (which === Screen.Chat && pinned()),
+      which === Screen.Coding ||
+        which === Screen.Pairs ||
+        (which === Screen.Chat && pinned()),
     );
   // Done and the guidelines belong to the coding screen; the back arrow also
   // stands on the one task card, which is where Done returns to.

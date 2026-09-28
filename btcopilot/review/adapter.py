@@ -21,18 +21,20 @@ from btcopilot.models import (
     Change,
     Discussion,
     DiscussionKind,
+    ModelCall,
     Speaker,
     SpeakerType,
     Statement,
 )
 from btcopilot.recordtext import date_text, render
 from btcopilot.toolbox import EDITS, ToolError, Toolbox, schemas
-from btcopilot.models import Diagram, User
+from btcopilot.models import Diagram, ShadowTurn, User
 from btcopilot.schema import PDP, Event, ItemKind, PairBond, Person, from_dict
 
 __all__ = [
     "Author",
     "Change",
+    "ModelCall",
     "schemas",
     "ToolError",
     "Toolbox",
@@ -50,6 +52,7 @@ __all__ = [
     "Discussion",
     "DiscussionKind",
     "Statement",
+    "ShadowTurn",
     "User",
     "case_diagram",
     "coach_model",

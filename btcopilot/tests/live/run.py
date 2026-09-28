@@ -11,6 +11,7 @@ from pathlib import Path
 import anthropic
 import pytest
 
+from btcopilot import ledger
 from btcopilot.coachmodel import Spent
 from btcopilot.pricing import cost
 from btcopilot.quality import Outcome, Source, Status
@@ -155,7 +156,32 @@ class Run:
         }
         self.path = self.results / f"{self.started:%Y-%m-%dT%H%M%S}-{self.git[:8]}.json"
         self.path.write_text(json.dumps(self.row, indent=2))
+        for name, case in self.cases.items():
+            ledger.append(self.line(name, case), self.results / ledger.PATH.name)
         return self.row
+
+    def line(self, name: str, case: Case) -> dict:
+        """One case as a line of the eval ledger, beside the replays."""
+        return {
+            "at": self.started.isoformat(timespec="seconds"),
+            "kind": ledger.LedgerKind.Live,
+            "git": self.git,
+            "model": self.model,
+            "requested": self.model,
+            "discussion_id": None,
+            "reference_diagram_id": None,
+            "scratch_diagram_id": None,
+            "scratch_discussion_id": None,
+            "case": name,
+            "outcome": case.outcome,
+            "turns": None,
+            "scores": None,
+            "faults": None,
+            "tokens": asdict(case.spent),
+            "cost": float(case.cost),
+            "duration_ms": None,
+            "source": self.source,
+        }
 
     def summary(self) -> str:
         stopped = f" ({self.reason})" if self.reason else ""
