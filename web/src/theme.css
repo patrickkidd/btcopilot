@@ -107,7 +107,9 @@ button { font-family: inherit; }
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  /* the part of the screen above the keyboard, kept by viewport.ts */
+  height: var(--seen-h, 100dvh);
+  top: var(--seen-top, 0px);
   /* never wider than the window: a child that overflows must be clipped, not
      allowed to stretch the frame and step it sideways under the centring */
   width: 100%;
@@ -1092,16 +1094,25 @@ button { font-family: inherit; }
 .field > :empty::before { content: attr(data-ph); color: var(--faint); }
 /* A token in the composer sits ON the line of words, not above it: the chip's
    own 26px box would make the field taller than its 44px resting height, and
-   the message bar growing pushes every bubble up the screen. */
+   the message bar growing pushes every bubble up the screen.
+   It is never wider than 60% of the box, the share the one cut chip in the
+   thread takes of the screen (.chip.trace), so there is always room beside it
+   to tap. Its label ends in an ellipsis; its whole words stay in data-full and
+   are what is sent. */
 .field .chip {
   font: 500 13px/18px var(--mono);
   border-radius: 6px;
   padding: 1px 6px;
   margin: 0 3px 0 0;
-  vertical-align: baseline;
+  max-width: 60%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: text-bottom;
 }
-/* the target still meets the floor, grown around the smaller pill */
-.field .chip::before { inset: -12px -6px; }
+/* a tap on it only puts the caret beside it, so its target is its own box: a
+   grown one caught taps meant for just after it */
+.field .chip::before { content: none; }
 .send {
   flex: none;
   position: relative;

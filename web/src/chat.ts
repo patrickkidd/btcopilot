@@ -3,6 +3,7 @@ import { askedChip, chipOf, face, LEAD, Lead, pill, token, tokenize } from "./ch
 import { hush, say } from "./speech";
 import { INFO, notesView, type Notes } from "./notes";
 import { html, type Line } from "./tools";
+import { fit } from "./viewport";
 import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
@@ -155,10 +156,12 @@ export class Chat {
         return;
       }
       e.preventDefault();
-      if (host === this.composer) return void button.remove();
+      if (host === this.composer) return this.caret(button);
       this.handlers.onChip(chipOf(button));
     };
     this.watchScrolling();
+    // the chat box stays above the phone's keyboard, however it came up
+    fit();
     // the thread's box changes size after it is put up — a phone's toolbar
     // collapsing, the picture taking its height — and stays on its last words
     new ResizeObserver(() => this.scroll()).observe(this.list);
@@ -515,25 +518,39 @@ export class Chat {
    * like the thing they tapped. */
   insert(chip: Chip, lead: Lead, after = " "): void {
     this.composer.focus({ preventScroll: true });
-    const selection = window.getSelection();
-    const html = (LEAD[lead] ? esc(`${LEAD[lead]} `) : "") + this.pill(chip) + esc(after);
+    const selection = window.getSelection()!;
     if (
-      selection?.rangeCount &&
-      this.composer.contains(selection.getRangeAt(0).commonAncestorContainer)
+      !selection.rangeCount ||
+      !this.composer.contains(selection.getRangeAt(0).commonAncestorContainer)
     ) {
-      const range = selection.getRangeAt(0);
-      range.deleteContents();
-      const fragment = range.createContextualFragment(html);
-      range.insertNode(fragment);
-      selection.collapseToEnd();
-    } else {
-      this.composer.insertAdjacentHTML("beforeend", html);
-      const range = document.createRange();
-      range.selectNodeContents(this.composer);
-      range.collapse(false);
-      selection?.removeAllRanges();
-      selection?.addRange(range);
+      const end = document.createRange();
+      end.selectNodeContents(this.composer);
+      end.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(end);
     }
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    const fragment = range.createContextualFragment(
+      (LEAD[lead] ? esc(`${LEAD[lead]} `) : "") + this.pill(chip) + esc(after),
+    );
+    // one piece in the words: the caret goes round it, never into its label,
+    // and backspace takes it out whole
+    for (const button of fragment.querySelectorAll<HTMLElement>(".chip")) button.contentEditable = "false";
+    range.insertNode(fragment);
+    selection.collapseToEnd();
+  }
+
+  /** A chip in the chat box is a place in the words, not a control: a tap
+   * puts the caret just after it, and only backspace or delete removes it. */
+  private caret(chip: HTMLElement): void {
+    const range = document.createRange();
+    range.setStartAfter(chip);
+    range.collapse(true);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    this.composer.focus({ preventScroll: true });
   }
 
   /** What the composer says, with its pills back as reference markup. A bare
