@@ -36,7 +36,6 @@ WATCHED = (
     ObservationKind.AddWithoutRead,
     ObservationKind.StepCap,
     ObservationKind.QuestionUnsaid,
-    ObservationKind.TurnFailed,
 )
 SCORES = ("people", "pair_bonds", "events", "clusters", "variables")
 
