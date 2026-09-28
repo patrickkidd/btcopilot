@@ -19,7 +19,7 @@ GRANTED = (btcopilot.ACCESS_READ_ONLY, btcopilot.ACCESS_READ_WRITE)
 
 def readable(user) -> list[Diagram]:
     """Owned first, then granted, each once."""
-    found = list(user.diagrams)
+    found = [d for d in user.diagrams if not d.scratch]
     seen = {d.id for d in found}
     granted = (
         Diagram.query.join(AccessRight, AccessRight.diagram_id == Diagram.id)
@@ -102,4 +102,6 @@ def diagram_select(diagram_id: int):
         abort(404)
     user.current_diagram_id = diagram_id
     db.session.commit()
-    return jsonify(diagram_payload(next(d for d in writable(user) if d.id == diagram_id), user))
+    return jsonify(
+        diagram_payload(next(d for d in writable(user) if d.id == diagram_id), user)
+    )

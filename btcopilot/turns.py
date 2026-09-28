@@ -11,8 +11,10 @@ import uuid
 
 from btcopilot import extensions
 from btcopilot.extensions import db
-from btcopilot import chips, observer, turnlog, turnstore
-from btcopilot.coachmodel import Refusal
+from btcopilot import chips, observer, shadow, turnlog, turnstore
+from btcopilot.admin import setting
+from btcopilot.admin.setting import SettingKey
+from btcopilot.coachmodel import Refusal, model_for
 from btcopilot.coachturn import CoachTurn, record_of
 from btcopilot.discussions import session_payload
 from btcopilot.models import (
@@ -114,9 +116,16 @@ def run(
     _log.info(f"coach_turn {turn_id} discussion={discussion_id}")
     discussion = db.session.get(Discussion, discussion_id)
     said = db.session.get(Statement, statement_id)
+    # a resumed turn's record already holds its first attempt's edits, so it
+    # has no clean copy to run a shadow on
+    shadowed = (
+        None if resume else setting.read(SettingKey.ShadowModel, discussion.user_id)
+    )
+    before = discussion.diagram.data
     turn = CoachTurn(
         discussion,
         said.text,
+        model=model_for(setting.read(SettingKey.CoachModel, discussion.user_id)),
         session_id=str(discussion_id),
         statement_id=statement_id,
         turn_id=turn_id,
@@ -148,7 +157,10 @@ def run(
         _ended(
             turn,
             ObservationKind.TurnFailed,
-            {"error": f"{type(error).__name__}: {error}", "reason": type(error).__name__},
+            {
+                "error": f"{type(error).__name__}: {error}",
+                "reason": type(error).__name__,
+            },
         )
         failed = {"type": TurnEventKind.Failed.value, "message": BROKE}
         _unanswered(turn, statement_id, failed)
@@ -161,6 +173,8 @@ def run(
     turnlog.clear(discussion_id)
     reply["session"] = session_payload(discussion)
     turnlog.append(turn_id, dict(reply, type=TurnEventKind.Done.value))
+    if shadowed:
+        shadow.start(turn, statement_id, shadowed, before)
     return reply
 
 

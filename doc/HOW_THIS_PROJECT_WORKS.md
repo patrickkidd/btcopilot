@@ -55,6 +55,9 @@ makes that possible. So:
 - Never review, harden or polish anything that has not been picked.
 - Test to the audience: a mockup gets one look; only real code gets the full loop.
 - No real names, emails, case identifiers or clinical content in any repo.
+- Parallel builders each get their own worktree and branch: the harness moves every sub-agent's
+  working directory when any one of them switches worktree, so builders in separate worktrees
+  running at the same time can collide. Guard every commit with a branch check first.
 
 ## Running tests: `bin/t`, and nothing else, while you build
 

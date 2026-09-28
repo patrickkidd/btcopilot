@@ -1847,3 +1847,64 @@ one.
 **Still open.** The coach rule linking the people an event's own words name is written into the
 prompt and needs a live eval, which needs his spend approval, about $0.15 to $0.40. The older
 copy of this worktree at ~/theapp still waits for his word to discard it.
+
+## 2026-09-28 — FD-363-cost: a prompt-cache cost fix, and model comparison plumbing (shadow turns, replay, Gemini Flash, blind picks)
+
+On branch FD-363-cost, off FD-363, draft PR #141. A heavy production day was found to put 78%
+of that day's model cost ($12.91 of $16.60 over 38 turns) into prompt-cache writes, because the
+record, the date and the "looked at" block sat in the system prompt ahead of the chat and
+changed every turn, rewriting the whole cached chat each time. Fixed [R-0595]: the system prompt
+now holds only the coaching text; the record block moves into the new user message after the
+chat; the chat is marked at the previous two turn boundaries; tool marks are capped at four;
+cache life stays 5 minutes. Measured on the sandbox with a 12,000-token chat, turns 2 and 3 cost
+42% less ($0.2472 to $0.1428). Estimated saving on that production day: about $4.50, near zero
+for a user whose gaps between replies mostly exceed 5 minutes — 30 of 37 gaps were under 5
+minutes for the heavy user, only 2 of 18 for Patrick. A 1-hour cache life was weighed and left
+off, within measurement error either way. Unproven: the saving on real production sessions, and
+whether moving about 14,000 characters of prompt out of the system prompt and into the user turn
+changes the coach's behaviour — that needs the live eval suite run against it, which awaits his
+spend approval. Real model calls spent proving the finding: $1.96.
+
+**Model comparison plumbing landed with Patrick as the only oracle on which model is better.** A
+per-user coach model and shadow model live in the per-user settings table, set by `flask admin
+coach-model show/set/shadow`. A shadow turn runs a candidate model on the real turn's input on a
+separate Celery queue, with a new fd-shadow worker service, stored in a new shadow_turns table on
+a scratch diagram flagged scratch, never shown to the user and excluded from the user's diagram
+list [R-0596]. `flask admin quality replay <discussion> <model> <reference_diagram> [--cap 5]`
+replays a conversation's user statements on a model onto a scratch record and scores people,
+pair-bonds, events, clusters and variables plus fault counts, appending a Replay line to the
+ledger; the reference record is one Patrick corrected himself, never a model-built one [R-0597].
+A Gemini Flash coach model is wired in (google-genai, Vertex by default, aliases gemini-flash,
+gemini-3.8-flash, gemini-3.6-flash, gemini-2.5-flash), because Patrick holds a business associate
+agreement with Google [R-0598]; a real call on it awaits Vertex credentials on the box and his
+confirmation of what the agreement covers. The review app's Compare replies page serves blind
+pairs from shadow rows and replays and records Patrick's picks in a new model_picks table
+[R-0599]. Live eval runs append one Live line per case to the ledger (`btcopilot/ledger.py`,
+`ledger.jsonl`, gitignored). One migration, 1b00000000b5, squashed for the whole pull request.
+Beta users stay on Opus 5.5, with no A/B test on them. Candidate pricing at Anthropic's rates for
+that same production day: Sonnet 5 would have cost $9.16, Haiku 4.5 $4.58; Opus 5.5 and Sonnet 5
+charge the same for cache reads.
+
+**Usage on production to date, counts only, five accounts.** Guillermo sent 44 messages over 3
+days for $17.31, no failed turns, never opened the picture, 78 of 111 events have certainty
+unknown, and two people are duplicated; Patrick sent 43 messages, with 4 turns where the coach
+saved edits but wrote no reply and 7 messages sent twice; Laura sent 6 messages, twice
+challenging an assumption the coach made; Kathy signed in and sent no messages. Total spend
+since the model_calls table began on 2026-09-23 is $22.99. Patrick's decision: no automated
+fault digest for now.
+
+**A harness problem surfaced building this in parallel with the main FD-363 session.** The
+harness moves every sub-agent's working directory when any one of them switches worktree, so two
+builders working in separate worktrees at once collided. The fix is process, not code: parallel
+builders use separate branches, and every commit is guarded by a branch check first (folded into
+HOW_THIS_PROJECT_WORKS.md).
+
+**Open.** The live eval run against the moved prompt awaits Patrick's spend approval; the real
+Gemini call awaits Vertex credentials on the box and his confirmation of what the agreement
+covers; the rulings index is 702 bytes over its 150,000-byte limit again.
+
+**Rulings, R-0595 to R-0599,** each with his words in the evidence file: the prompt
+restructuring to cut prompt-cache-write cost (R-0595); shadow turns on a scratch diagram, never
+shown to the user (R-0596); the replay command scored against a record he corrected himself
+(R-0597); the Gemini Flash model, wired in under his Google business associate agreement
+(R-0598); the review app's Compare replies page recording his blind picks (R-0599).

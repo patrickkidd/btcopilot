@@ -23,6 +23,10 @@ import type {
   PairBond,
   Person,
   Passkey,
+  Pair,
+  Picked,
+  PickChoice,
+  ModelPicks,
   PasskeyCreationOptions,
   Preferences,
   Started,
@@ -466,3 +470,11 @@ export const rules = () => ask<Rule[]>("GET", "/rules");
  * Patrick alone may do either (R-0276, R-0346). */
 export const flagRule = (id: number, on: boolean) =>
   ask<Rule>("PATCH", `/rules/${id}`, { flag: on });
+
+/** The blind pairs not yet picked, and each model's picks so far (R-0599). */
+export const pairs = () => ask<Pair[]>("GET", "/pairs");
+export const modelPicks = () => ask<ModelPicks[]>("GET", "/picks");
+
+/** Patrick's pick, which is answered with the two model names. */
+export const pick = (id: number, choice: PickChoice, note: string) =>
+  ask<Picked>("PUT", `/picks/${id}`, { choice, note });

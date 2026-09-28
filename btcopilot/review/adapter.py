@@ -8,11 +8,14 @@ it reached into the app.
 
 import datetime
 import re
+from decimal import Decimal
+
+from sqlalchemy import func
 
 import btcopilot
 from btcopilot import diagramjson
 from btcopilot.extensions import db
-from btcopilot import prompts, record
+from btcopilot import observer, prompts, record, turnstore
 from btcopilot.record import Invalid
 from btcopilot.coachmodel import COACH_EFFORT, CoachModel
 from btcopilot.coachturn import CoachTurn
@@ -21,18 +24,20 @@ from btcopilot.models import (
     Change,
     Discussion,
     DiscussionKind,
+    ModelCall,
     Speaker,
     SpeakerType,
     Statement,
 )
 from btcopilot.recordtext import date_text, render
 from btcopilot.toolbox import EDITS, ToolError, Toolbox, schemas
-from btcopilot.models import Diagram, User
+from btcopilot.models import Diagram, ShadowTurn, User
 from btcopilot.schema import PDP, Event, ItemKind, PairBond, Person, from_dict
 
 __all__ = [
     "Author",
     "Change",
+    "ModelCall",
     "schemas",
     "ToolError",
     "Toolbox",
@@ -50,6 +55,7 @@ __all__ = [
     "Discussion",
     "DiscussionKind",
     "Statement",
+    "ShadowTurn",
     "User",
     "case_diagram",
     "coach_model",
@@ -191,13 +197,16 @@ def _dated(event: dict) -> dict:
     )
 
 
-def coding_diagram(user, name: str, source: Diagram | None = None) -> Diagram:
+def coding_diagram(
+    user, name: str, source: Diagram | None = None, scratch: bool = False
+) -> Diagram:
     """A coder's own record for a case: the one they built last time carried
     forward, or a fresh empty one."""
     diagram = Diagram(
         user_id=user.id,
         name=name,
         data=diagramjson.dumps(record_of(source) if source is not None else {}),
+        scratch=scratch,
     )
     db.session.add(diagram)
     db.session.flush()
@@ -269,15 +278,22 @@ def coach_model(
     return CoachModel(model=name, effort=effort)
 
 
-def replay_into(diagram: Diagram, discussion: Discussion, statements, model=None):
-    """Run the coach over a cut's turns, writing what it codes onto `diagram`.
-
-    The replay harness owns the loop; this only points it at the review's own
-    diagram and hands back what the coach was."""
+def replay_into(
+    diagram: Diagram,
+    discussion: Discussion,
+    statements,
+    model=None,
+    cap: Decimal | None = None,
+) -> tuple[Discussion, list[dict]]:
+    """Run the coach over a cut's turns, writing what it codes onto `diagram`,
+    as scratch turns that charge no one. Each turn's tool calls are kept and
+    watched as a real turn's are, so its mistakes are written down. With a
+    cap, no turn starts once the diagram's calls cost that much."""
     copy = Discussion(
         user_id=discussion.user_id,
         diagram_id=diagram.id,
-        title=discussion.title,
+        # an untitled copy would spend a naming call on its first turn
+        title=discussion.title or f"Replay of session {discussion.id}",
         title_set_by_user=True,
         discussion_date=discussion.discussion_date,
         speakers=[
@@ -296,10 +312,30 @@ def replay_into(diagram: Diagram, discussion: Discussion, statements, model=None
         for s in statements
         if s.text and s.speaker and s.speaker.type == SpeakerType.Subject
     ]
-    turn_id = f"review-replay-{discussion.id}"
+    session_id = f"review-replay-{discussion.id}"
+    replies = []
     for text in said:
-        CoachTurn(copy, text, model=model, session_id=turn_id).run()
-    return copy
+        if cap is not None and spent(diagram.id) >= cap:
+            break
+        turn = CoachTurn(copy, text, model=model, session_id=session_id, scratch=True)
+        reply = turn.run()
+        turnstore.save(
+            turn.turn_id,
+            copy.id,
+            turn.kept + [turnstore.done(reply["statement_id"])],
+        )
+        observer.observe(diagram.id, turn.turn_id, turn.data)
+        db.session.commit()
+        replies.append(reply)
+    return copy, replies
+
+
+def spent(diagram_id: int) -> Decimal:
+    return (
+        db.session.query(func.coalesce(func.sum(ModelCall.cost_usd), 0))
+        .filter(ModelCall.diagram_id == diagram_id)
+        .scalar()
+    )
 
 
 def utcnow() -> datetime.datetime:

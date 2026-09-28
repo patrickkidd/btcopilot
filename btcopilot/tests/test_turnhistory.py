@@ -9,6 +9,7 @@ from mock import patch
 
 from btcopilot.extensions import db
 from btcopilot import record, turnlog, turns
+from btcopilot.coachmodel import CACHE
 from btcopilot.coachturn import NOT_KEPT
 from btcopilot.models import Author, Change, Discussion, Statement, TurnEvent
 from btcopilot.schema import ItemKind, Person, asdict
@@ -62,7 +63,7 @@ class Breaks(Model):
 
 
 def coach(monkeypatch, model):
-    monkeypatch.setattr("btcopilot.coachturn.CoachModel", lambda *a, **k: model)
+    monkeypatch.setattr("btcopilot.turns.model_for", lambda *a, **k: model)
     return model
 
 
@@ -262,7 +263,9 @@ def test_the_coach_is_given_the_tool_calls_its_earlier_turns_made(
     assert [b["name"] for b in asked] == ["read_people", "edit_person"]
     assert [b["content"] for b in answered] == [NOT_KEPT, "Added person 2."]
     assert [b["tool_use_id"] for b in answered] == [b["id"] for b in asked]
-    assert history[3]["content"] == "Nell is in."
+    assert history[3]["content"] == [
+        {"type": "text", "text": "Nell is in.", "cache_control": CACHE}
+    ]
 
 
 def test_a_turns_events_are_kept_in_order_and_end_in_how_it_ended(

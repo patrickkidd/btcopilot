@@ -817,6 +817,43 @@ export interface BallotItem {
   kept_coding_id?: number | null;
 }
 
+/** Whose line of the conversation a blind pair shows above the replies. */
+export enum Who {
+  User = "user",
+  Coach = "coach",
+}
+
+export enum PickChoice {
+  Left = "left",
+  Right = "right",
+  Tie = "tie",
+}
+
+/** Two replies to the same words, with no model named (R-0599). */
+export interface Pair {
+  id: number;
+  source: string;
+  context: { who: Who; text: string }[];
+  left: string;
+  right: string;
+}
+
+/** A pick as stored, which is when the two model names are first sent. */
+export interface Picked {
+  id: number;
+  choice: PickChoice;
+  note: string | null;
+  left: string;
+  right: string;
+}
+
+export interface ModelPicks {
+  model: string;
+  won: number;
+  lost: number;
+  tied: number;
+}
+
 /** The three things a vote can say (R-0257). */
 export enum VoteChoice {
   Opinion = "opinion",

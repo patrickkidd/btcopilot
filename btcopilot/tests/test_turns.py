@@ -50,7 +50,7 @@ def family(test_user):
 
 def coach(monkeypatch, *scripted):
     monkeypatch.setattr(
-        "btcopilot.coachturn.CoachModel",
+        "btcopilot.turns.model_for",
         lambda *a, **k: Model(*scripted),
     )
 
@@ -141,7 +141,7 @@ def test_a_refused_turn_says_so_in_the_coachs_voice_and_is_not_retried(
     # R-0410
     refuses = Refuses()
     monkeypatch.setattr(
-        "btcopilot.coachturn.CoachModel", lambda *a, **k: refuses
+        "btcopilot.turns.model_for", lambda *a, **k: refuses
     )
     with patch("btcopilot.turns.enqueue"):
         body = post(web, token).get_json()

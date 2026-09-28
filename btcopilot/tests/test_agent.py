@@ -264,7 +264,7 @@ def test_the_coach_is_handed_a_map_of_the_record_and_what_the_user_pointed_at(
 
     assert "2 Bo events=1" in model.systems[0]
     assert model.systems[0].count("moved out") == get_agent_prompt().count("moved out")
-    assert "tell me about this" in model.histories[0][-1]["content"]
+    assert "tell me about this" in model.histories[0][-1]["content"][-1]["text"]
 
 
 def test_chat_returns_the_words_and_the_events_behind_them(web, family, monkeypatch):
@@ -272,7 +272,7 @@ def test_chat_returns_the_words_and_the_events_behind_them(web, family, monkeypa
     from btcopilot.tests.conftest import csrf_token
 
     monkeypatch.setattr(
-        "btcopilot.coachturn.CoachModel",
+        "btcopilot.turns.model_for",
         lambda *a, **k: Model(
             called(ToolName.EditPerson, name="Nell"), said("Added [[person:11|Nell]].")
         ),
@@ -369,7 +369,7 @@ def test_the_coach_is_told_which_of_its_questions_the_reader_answers(discussion,
         f"and [[message:{play.id}|Where was Bo that winter?]] away.",
         model,
     )
-    told = model.histories[0][-1]["content"]
+    told = model.histories[0][-1]["content"][-1]["text"]
     assert f'the question you asked in message {closing.id}: "Who did you turn to then?"' in told
     assert f'the question you asked in message {play.id}: "Where was Bo that winter?"' in told
 
@@ -572,7 +572,7 @@ def test_every_message_the_page_reads_back_carries_its_kind(web, family, monkeyp
     from btcopilot.tests.conftest import csrf_token
 
     monkeypatch.setattr(
-        "btcopilot.coachturn.CoachModel",
+        "btcopilot.turns.model_for",
         lambda *a, **k: Model(said("Tell me about [[event:10|the move]].")),
     )
     token = csrf_token(web)
@@ -606,7 +606,7 @@ def test_a_csrf_token_older_than_an_hour_still_posts(web, family, monkeypatch):
     from btcopilot.tests.conftest import csrf_token
 
     monkeypatch.setattr(
-        "btcopilot.coachturn.CoachModel",
+        "btcopilot.turns.model_for",
         lambda *a, **k: Model(said("Tell me about [[event:10|the move]].")),
     )
     token = csrf_token(web)
@@ -632,7 +632,7 @@ def test_a_moment_the_coach_wrote_traces_to_the_message_that_wrote_it(
     from btcopilot.tests.conftest import csrf_token
 
     monkeypatch.setattr(
-        "btcopilot.coachturn.CoachModel",
+        "btcopilot.turns.model_for",
         lambda *a, **k: Model(
             called(
                 ToolName.EditEvent,

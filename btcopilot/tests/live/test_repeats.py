@@ -48,7 +48,7 @@ def test_trying_a_failed_turn_again_repeats_nothing(coach):
     # R-0477, R-0481
     coach.record()
     with (
-        patch("btcopilot.coachturn.CoachModel", Breaks),
+        patch("btcopilot.turns.model_for", lambda *a, **k: Breaks()),
         patch("btcopilot.turns.enqueue"),
     ):
         body = coach.web.post(

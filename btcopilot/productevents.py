@@ -21,6 +21,7 @@ class Screen(enum.StrEnum):
     Agenda = "agenda"
     Meeting = "meeting"
     Result = "result"
+    Pairs = "pairs"
 
 
 class Feature(enum.StrEnum):
@@ -92,6 +93,8 @@ class Feature(enum.StrEnum):
     MeetingKeep = "meeting_keep"
     MeetingChange = "meeting_change"
     MeetingUnresolved = "meeting_unresolved"
+    PairsOpen = "pairs_open"
+    PairPick = "pair_pick"
 
 
 def record_events(user, session_id: str, events: list[dict]) -> int:

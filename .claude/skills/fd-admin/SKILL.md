@@ -26,6 +26,43 @@ not edit it by hand; change the commands and generate it again.
 
 ## The commands
 
+### `flask admin coach-model`
+
+The coach model and the shadow model of one person.
+
+### `flask admin coach-model set <email> <alias>`
+
+Coach this person on a model alias, or on the default with the word default.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `email` | required |
+| `alias` | required |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin coach-model shadow <email> <alias>`
+
+Run each of this person's turns again on a model alias, never shown to them and never charged to them; the word off stops it.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `email` | required |
+| `alias` | required |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin coach-model show [email]`
+
+One person's models, or the default and everyone who differs from it.
+
+| Argument | What it is |
+|---|---|
+| `email` | optional |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin db`
 
 The chat database's own migration chain.
@@ -201,6 +238,19 @@ Changes something: needs `--yes`.
 | Argument | What it is |
 |---|---|
 | `root` | optional |
+
+### `flask admin quality replay <discussion_id> <model> <reference_diagram_id>`
+
+Replay a session's words on MODEL onto a scratch record, score it against the record Patrick corrected, and append one ledger line. Never on the box: it spends on the model and writes scratch records.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `discussion_id` | required |
+| `model` | required |
+| `reference_diagram_id` | required |
+| `--cap` | Dollars; no turn starts past it. |
 
 ### `flask admin questions`
 

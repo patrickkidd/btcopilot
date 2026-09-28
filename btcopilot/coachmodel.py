@@ -5,33 +5,34 @@ asked for. The agent loop owns the looping; this owns the wire.
 """
 
 import logging
-from dataclasses import dataclass, field
 
 import anthropic
 from opentelemetry import trace
 
+from btcopilot.geminimodel import GeminiModel
 from btcopilot.llmutil import (
-    RESPONSE_MODEL,
-    Served,
     anthropic_args,
     fallback_args,
+    is_gemini,
+    local_model,
     resolve_model,
     served,
     wire_model,
 )
+from btcopilot.modelturn import MAX_TOKENS, ModelTurn, Refusal, Spent, ToolCall
 
 _log = logging.getLogger(__name__)
 _tracer = trace.get_tracer(__name__)
 
-# Thinking counts toward the cap even though its text is not returned.
-MAX_TOKENS = 16000
 # How hard the coach thinks before it speaks. Medium keeps the first word quick.
 COACH_EFFORT = "medium"
+HAIKU = "claude-haiku-4-5"
 
-# What the wire keeps between calls. One turn is several calls over the same
-# coaching text, the same tools and a growing history, so everything up to a
-# mark is sent once and read back cheaply by the calls after it. The API allows
-# four marks; this path sets three.
+# What the wire keeps between calls. The wire reads tools, then the system
+# prompt, then the chat, and keeps everything up to a mark, so the mark on the
+# coaching text keeps the tools too. The record and the day go after the chat,
+# the chat is marked where it has settled, and a turn's later calls and the
+# next turn read all of that back. The API allows four marks.
 CACHE = {"type": "ephemeral"}
 
 
@@ -47,62 +48,31 @@ def system_blocks(system: str | list[str]) -> list[dict]:
     return [_marked(blocks[0])] + blocks[1:]
 
 
-def marked_tools(tools: list[dict]) -> list[dict]:
-    """The tools with the last one marked, which keeps the whole list."""
-    return tools[:-1] + [_marked(tools[-1])]
-
-
-def marked_messages(messages: list[dict]) -> list[dict]:
-    """The chat with its last block marked, so the next call in the same turn
-    reads back everything this one sent."""
-    last = messages[-1]
-    content = last["content"]
+def _mark_last(message: dict) -> dict:
+    content = message["content"]
     blocks = (
         [{"type": "text", "text": content}]
         if isinstance(content, str)
         else list(content)
     )
     blocks[-1] = _marked(blocks[-1])
-    return messages[:-1] + [dict(last, content=blocks)]
+    return dict(message, content=blocks)
 
 
-@dataclass
-class ToolCall:
-    id: str
-    name: str
-    args: dict = field(default_factory=dict)
+def marked_ends(messages: list[dict], ends: list[int]) -> list[dict]:
+    """The chat with the last block of each of its first `ends` messages
+    marked: where it has settled, so a later turn reads it back."""
+    marked = list(messages)
+    for end in ends:
+        if end:
+            marked[end - 1] = _mark_last(marked[end - 1])
+    return marked
 
 
-@dataclass
-class Spent:
-    input: int = 0
-    output: int = 0
-    cache_creation: int = 0
-    cache_read: int = 0
-
-    def add(self, other: "Spent") -> None:
-        self.input += other.input
-        self.output += other.output
-        self.cache_creation += other.cache_creation
-        self.cache_read += other.cache_read
-
-
-@dataclass
-class ModelTurn:
-    text: str = ""
-    calls: list[ToolCall] = field(default_factory=list)
-    blocks: list[dict] = field(default_factory=list)
-    spent: Spent = field(default_factory=Spent)
-    served: Served | None = None
-
-
-class Refusal(Exception):
-    """Every model in the fallback chain declined the call on safety grounds.
-    The turn fails with the category it named rather than ending in silence."""
-
-    def __init__(self, message: str, category: str | None):
-        super().__init__(message)
-        self.category = category
+def marked_messages(messages: list[dict]) -> list[dict]:
+    """The chat with its last block marked, so the next call in the same turn
+    reads back everything this one sent."""
+    return messages[:-1] + [_mark_last(messages[-1])]
 
 
 class CoachModel:
@@ -114,7 +84,7 @@ class CoachModel:
     ):
         """No effort is for a model that rejects the setting (Haiku 4.5). No
         timeout is the client's own default."""
-        self.model = wire_model(resolve_model(model) if model else RESPONSE_MODEL)
+        self.model = wire_model(resolve_model(model))
         self.effort = effort
         self.timeout = timeout
 
@@ -128,8 +98,7 @@ class CoachModel:
         """One model call: yields the words as they arrive, returns the turn.
 
         No tools means the call cannot make one, which is how a turn is forced
-        to end in words. A system prompt in two parts is the coaching text and
-        then the record, so the wire keeps the first and re-reads the second.
+        to end in words. A system prompt in parts keeps only the first.
         """
         # Counts only: no prompt or message text, which is private health data.
         with _tracer.start_span(
@@ -146,7 +115,7 @@ class CoachModel:
                     max_tokens=MAX_TOKENS,
                     system=system_blocks(system),
                     messages=marked_messages(messages),
-                    **({"tools": marked_tools(tools)} if tools else {}),
+                    **({"tools": tools} if tools else {}),
                     **(
                         {"output_config": {"effort": self.effort}}
                         if self.effort
@@ -231,3 +200,19 @@ class CoachModel:
                 }
             )
             return turn
+
+
+def model_for(
+    name: str | None = None,
+    effort: str | None = COACH_EFFORT,
+    timeout: float | None = None,
+) -> CoachModel | GeminiModel:
+    """The coach model an alias names: none is the default, an unknown one
+    raises KeyError. Haiku 4.5 rejects the effort setting, so it gets none. The
+    local server answers every name, Gemini's included."""
+    model = resolve_model(name)
+    if is_gemini(model) and not local_model():
+        return GeminiModel(model, effort, timeout)
+    if model.startswith(HAIKU):
+        effort = None
+    return CoachModel(name, effort, timeout)

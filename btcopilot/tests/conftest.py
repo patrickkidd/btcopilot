@@ -12,6 +12,7 @@ import btcopilot
 from btcopilot.extensions import db
 from btcopilot.llmutil import Served
 from btcopilot.coachmodel import ModelTurn, ToolCall
+from btcopilot.coachturn import SPEAK
 from btcopilot.models import Diagram, Discussion, Statement, Speaker, SpeakerType
 from btcopilot.toolbox import ToolName
 from btcopilot import turnlog, turns
@@ -102,6 +103,27 @@ def calling(*wanted: tuple[ToolName, dict], text: str = "") -> ModelTurn:
     return turn
 
 
+def opening(messages: list[dict]) -> str:
+    """The record and the day a coach turn puts in its new message, just
+    before the person's words: the message after the last settled one, which
+    is the only place the chat is marked before the call."""
+    settled = [
+        i
+        for i, message in enumerate(messages)
+        if isinstance(message["content"], list)
+        and any("cache_control" in block for block in message["content"])
+    ]
+    message = messages[settled[-1] + 1 if settled else 0]
+    if message["role"] != "user" or isinstance(message["content"], str):
+        return ""
+    words = [
+        block["text"]
+        for block in message["content"]
+        if block["type"] == "text" and block["text"] != SPEAK
+    ]
+    return words[-2] if len(words) > 1 else ""
+
+
 class Model:
     """A coach that says exactly what the test scripted, in order."""
 
@@ -114,7 +136,10 @@ class Model:
         self.offered = []
 
     def turn(self, system, messages, tools, turn_id=""):
-        self.systems.append(system if isinstance(system, str) else "".join(system))
+        self.systems.append(
+            (system if isinstance(system, str) else "".join(system))
+            + opening(messages)
+        )
         self.histories.append(messages)
         self.offered.append([schema["name"] for schema in tools])
         scripted = self.turns.pop(0)
@@ -165,7 +190,7 @@ def chat_flow(request):
             # coach's words scripts them there too.
             stack.enter_context(
                 patch(
-                    "btcopilot.coachturn.CoachModel",
+                    "btcopilot.turns.model_for",
                     new=lambda *a, **k: Model(said(response)),
                 )
             )

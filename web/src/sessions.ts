@@ -38,6 +38,8 @@ export interface SessionsHandlers {
   onAgenda(session: Session): void;
   /** The agenda itself, which is Patrick's whole administration (R-0259). */
   onAgendaScreen(): void;
+  /** Two replies to the same words, picked blind (R-0599). Admins only. */
+  onPairs(): void;
 }
 
 
@@ -67,7 +69,8 @@ export class Sessions {
        <button class="fs-new fs-upload" type="button" hidden>Upload a recording</button>
        <button class="fs-new fs-note" type="button" hidden>+ new note</button>
        <button class="fs-task" type="button" hidden></button>
-       <button class="fs-task fs-agenda" type="button" hidden>Next meeting</button></div>`,
+       <button class="fs-task fs-agenda" type="button" hidden>Next meeting</button>
+       <button class="fs-task fs-pairs" type="button" hidden>Compare replies</button></div>`,
   );
 
   private body: HTMLElement;
@@ -80,6 +83,7 @@ export class Sessions {
   private noteButton: HTMLButtonElement;
   private taskButton: HTMLButtonElement;
   private agendaButton: HTMLButtonElement;
+  private pairsButton: HTMLButtonElement;
   private recording: Recording;
 
   constructor(
@@ -112,6 +116,8 @@ export class Sessions {
     this.taskButton = this.sheet.querySelector<HTMLButtonElement>(".fs-task")!;
     this.agendaButton = this.sheet.querySelector<HTMLButtonElement>(".fs-agenda")!;
     this.agendaButton.hidden = !this.admin;
+    this.pairsButton = this.sheet.querySelector<HTMLButtonElement>(".fs-pairs")!;
+    this.pairsButton.hidden = !this.admin;
     if (this.admin) void this.nameAgenda();
     this.uploadButton.hidden = !PRO;
     this.noteButton.hidden = !PRO;
@@ -225,6 +231,11 @@ export class Sessions {
       tap(Feature.AgendaOpen);
       this.lower();
       this.handlers.onAgendaScreen();
+    });
+    this.pairsButton.addEventListener("click", () => {
+      tap(Feature.PairsOpen);
+      this.lower();
+      this.handlers.onPairs();
     });
     this.body.addEventListener("click", (e) => this.onBodyClick(e));
     this.pressToRename();
