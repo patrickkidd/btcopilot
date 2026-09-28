@@ -34,7 +34,8 @@ from btcopilot.models import (
     StatementKind,
 )
 from btcopilot import prompts
-from btcopilot.schema import DiagramData
+from btcopilot.schema import DiagramData, EventKind, enum_val
+from btcopilot.timeline import _life_event
 
 _log = logging.getLogger(__name__)
 
@@ -65,14 +66,50 @@ def told_about(cluster: dict, events: list[dict]) -> dict:
     }
 
 
-def digest(about: dict) -> str:
-    return hashlib.sha256(json.dumps(about, sort_keys=True).encode()).hexdigest()
+def linked(events: list[dict]) -> set[int]:
+    ids = {e.get(key) for e in events for key in ("person", "spouse", "child")}
+    for e in events:
+        ids.update(e.get("relationshipTargets") or [])
+        ids.update(e.get("relationshipTriangles") or [])
+    return ids - {None}
+
+
+def drawn(data: DiagramData, events: list[dict]) -> list[dict]:
+    """What the drawer shows of each person the cluster's events name."""
+    ids = linked(events)
+    return [
+        {
+            "id": p["id"],
+            "name": p.get("name"),
+            "last_name": p.get("last_name"),
+            "gender": enum_val(p.get("gender")),
+            "primary": bool(p.get("primary")),
+            "parents": p.get("parents"),
+            "born": (_life_event(p["id"], data.events, EventKind.Birth) or {}).get("dateTime"),
+            "died": (_life_event(p["id"], data.events, EventKind.Death) or {}).get("dateTime"),
+        }
+        for p in sorted(
+            (p for p in data.people if isinstance(p, dict) and p.get("id") in ids),
+            key=lambda p: p["id"],
+        )
+    ]
+
+
+def digest(data: DiagramData, cluster: dict, events: list[dict]) -> str:
+    """What a play was told from and is drawn with: what the coach is shown of
+    the cluster, its title, and the people its events name."""
+    told = {
+        **told_about(cluster, events),
+        "title": cluster.get("title"),
+        "people": drawn(data, events),
+    }
+    return hashlib.sha256(json.dumps(told, sort_keys=True).encode()).hexdigest()
 
 
 def digests(data: DiagramData) -> dict[str, str]:
     """Each cluster's digest as a play told now would carry it."""
     return {
-        str(c["id"]): digest(told_about(c, events_of(data, c)))
+        str(c["id"]): digest(data, c, events_of(data, c))
         for c in data.clusters
         if isinstance(c, dict)
     }
@@ -128,7 +165,7 @@ class PlayTurn:
         if wrong:
             raise RecordFault(f"record fault: {'; '.join(wrong)}. Correct the record first.")
         about = told_about(self.cluster, events)
-        self.digest = digest(about)
+        self.digest = digest(self.data, self.cluster, events)
         kept = self._kept()
         if kept is not None:
             return reply(kept)

@@ -69,7 +69,12 @@ def removed(data):
     return told(snapshots=[{**SHOTS[0], "event_ids": [201]}, *SHOTS[1:]])
 
 
-@pytest.mark.parametrize("change", [edited, added, removed])
+def renamed(data):
+    data.people[0]["name"] = "Marc"
+    return told()
+
+
+@pytest.mark.parametrize("change", [edited, added, removed, renamed])
 def test_a_changed_cluster_is_told_again(discussion, change):
     # R-0563, R-0542
     data = record()
@@ -81,6 +86,19 @@ def test_a_changed_cluster_is_told_again(discussion, change):
     assert len(model.histories) == 2
     assert again["statement_id"] != first["statement_id"]
     assert again["digest"] == playturn.digests(data)["apart"] != first["digest"]
+
+
+def test_a_new_title_on_a_named_cluster_is_told_again(discussion):
+    # R-0563, R-0542
+    data = record()
+    data.clusters[0]["name"] = "Apart"
+    model = Model(called(Tool.PlayByPlay, **told()), called(Tool.PlayByPlay, **told()))
+    first = explain(data, discussion, model)
+    data.clusters[0]["title"] = "Marcus and Delphine come apart"
+    again = explain(data, discussion, model)
+
+    assert len(model.histories) == 2
+    assert again["digest"] != first["digest"]
 
 
 def test_the_revision_keeps_old_plays_with_no_digest_so_they_are_told_again(flask_app, tmp_path):
