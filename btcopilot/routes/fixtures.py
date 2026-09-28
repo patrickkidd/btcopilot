@@ -397,7 +397,6 @@ PLAY_CHAT = [
             "kind": StatementKind.Play,
             "cluster_id": PLAY_CLUSTER,
             "told_case": PLAY_CASE.asdict(),
-            "digest": playturn.digests(play(), build_timeline(play()))[PLAY_CLUSTER],
         },
     ),
 ]
@@ -515,7 +514,6 @@ WHITLOCK_CHAT = [
             "kind": StatementKind.Play,
             "cluster_id": WHITLOCK_CLUSTER,
             "told_case": WHITLOCK_CASE.asdict(),
-            "digest": playturn.digests(whitlock(), build_timeline(whitlock()))[WHITLOCK_CLUSTER],
         },
     ),
 ]
@@ -600,7 +598,8 @@ def install(key: str):
         name=DIAGRAM_NAMES.get(key, DIAGRAM_NAME),
         data=diagramjson.dumps({}),
     )
-    diagram.set_diagram_data(builder())
+    data = builder()
+    diagram.set_diagram_data(data)
     db.session.add(diagram)
     db.session.flush()
     user.free_diagram_id = diagram.id
@@ -616,14 +615,21 @@ def install(key: str):
         db.session.flush()
         discussion.chat_user_speaker_id = me.id
         discussion.chat_ai_speaker_id = coach.id
+        # a kept play is marked as told from the record as it stands, so it
+        # opens with no call; worked out here, not at import, as it reads the
+        # private play prompt
+        kept = any(extra and "told_case" in extra[0] for _, _, *extra in chat)
+        told = playturn.digests(data, build_timeline(data)) if kept else {}
         for order, (role, text, *extra) in enumerate(chat):
+            said = extra[0] if extra else {}
             db.session.add(
                 Statement(
                     discussion_id=discussion.id,
                     speaker_id=coach.id if role == "coach" else me.id,
                     text=text,
                     order=order,
-                    **(extra[0] if extra else {}),
+                    digest=told[said["cluster_id"]] if "told_case" in said else None,
+                    **said,
                 )
             )
         db.session.commit()
