@@ -268,3 +268,30 @@ def test_the_log_hands_a_watcher_what_lands_after_it_started(turn_log):
 
     seen = next(carried for carried in watching if carried is not None)
     assert seen == (1, {"type": TurnEventKind.Text.value, "text": "a word"})
+
+
+def test_an_event_kind_that_does_not_exist_is_refused_and_the_turn_goes_on(
+    web, token, family, monkeypatch
+):
+    # R-0075
+    coach(
+        monkeypatch,
+        called(
+            ToolName.EditEvent,
+            kind="symptom",
+            date="2019-03-01",
+            date_certainty="certain",
+            person=1,
+            description="Headaches",
+        ),
+        said("Noted the headaches."),
+    )
+    response = post(web, token)
+    assert response.status_code == 202
+
+    body = response.get_json()
+    events = logged(body["turn_id"])
+    assert "is not one of the event kinds" in events[0]["result"]
+    assert "shift" in events[0]["result"]
+    assert events[-1]["type"] == TurnEventKind.Done.value
+    assert family.get_diagram_data().events == []

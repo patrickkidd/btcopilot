@@ -600,6 +600,17 @@ class ToolError(Exception):
         self.plain = plain
 
 
+def choice(cls, value, noun: str):
+    """One of a tool's closed set of values, or a refusal naming the set."""
+    try:
+        return cls(value)
+    except ValueError:
+        raise ToolError(
+            f"{value!r} is not one of the {noun}: {', '.join(_values(cls))}",
+            f"It asked for {value!r}, which is not one of the {noun}.",
+        )
+
+
 SMALL_CLUSTER = f"A cluster needs at least {MIN_CLUSTER_EVENTS} events."
 GONE = record.GONE
 
@@ -777,7 +788,7 @@ class Toolbox:
             if args.get(key) is not None:
                 fields[key] = args[key]
         if args.get("gender"):
-            fields["gender"] = PersonKind(args["gender"]).value
+            fields["gender"] = choice(PersonKind, args["gender"], "genders").value
         return self._write(ItemKind.Person, args.get("id"), fields)
 
     def _edit_pair_bond(self, args: dict) -> tuple[str, dict]:
@@ -834,13 +845,15 @@ class Toolbox:
         new = args.get("id") is None
         fields = {}
         if args.get("kind"):
-            fields["kind"] = EventKind(args["kind"]).value
+            fields["kind"] = choice(EventKind, args["kind"], "event kinds").value
         if args.get("date"):
             fields["dateTime"] = args["date"]
         if args.get("end_date"):
             fields["endDateTime"] = args["end_date"]
         if args.get("date_certainty"):
-            fields["dateCertainty"] = DateCertainty(args["date_certainty"]).value
+            fields["dateCertainty"] = choice(
+                DateCertainty, args["date_certainty"], "date certainties"
+            ).value
         elif new or args.get("date"):
             raise ToolError(
                 f"Say how sure the date is with date_certainty: {CERTAINTY}",
@@ -856,9 +869,11 @@ class Toolbox:
                 fields[key] = self._person(data, args[key])
         for key in SHIFTS:
             if args.get(key):
-                fields[key] = VariableShift(args[key]).value
+                fields[key] = choice(VariableShift, args[key], f"{key} shifts").value
         if args.get("relationship"):
-            fields["relationship"] = RelationshipKind(args["relationship"]).value
+            fields["relationship"] = choice(
+                RelationshipKind, args["relationship"], "relationships"
+            ).value
         for arg, key in (
             ("relationship_targets", "relationshipTargets"),
             ("relationship_triangles", "relationshipTriangles"),
@@ -1034,7 +1049,7 @@ class Toolbox:
             args,
             record.QUESTION,
             {
-                "kind": QuestionKind(args["kind"]).value,
+                "kind": choice(QuestionKind, args["kind"], "question kinds").value,
                 "item_kind": args.get("item_kind"),
                 "item_id": args.get("item_id"),
             },
@@ -1052,7 +1067,7 @@ class Toolbox:
         )
 
     def _add_note(self, args: dict, rules, own: dict) -> tuple[str, dict]:
-        state = QuestionState(args["state"])
+        state = choice(QuestionState, args["state"], "states")
         fields = {
             "text": args["text"],
             **own,
@@ -1094,10 +1109,10 @@ class Toolbox:
         found = next((q for q in self.data.questions if q["id"] == str(args["id"])), None)
         if found is None or record.note(found) is not rules:
             raise ToolError(f"No {rules.noun} {args['id']} in the record", GONE)
-        state = QuestionState(args["state"])
+        state = choice(QuestionState, args["state"], "states")
         fields = {"state": state.value}
         if args.get("outcome") is not None:
-            fields["outcome"] = QuestionOutcome(args["outcome"]).value
+            fields["outcome"] = choice(QuestionOutcome, args["outcome"], "outcomes").value
         if state is rules.shown:
             fields.update(self._asked(None))
         return self._write(ItemKind.Question, args["id"], fields)
@@ -1106,7 +1121,7 @@ class Toolbox:
         """What an impression rests on. A message must be one of this family's
         sessions and keeps its label, since a session can be deleted; the
         record checks the rest."""
-        kind = EvidenceKind(one["kind"])
+        kind = choice(EvidenceKind, one["kind"], "evidence kinds")
         if kind is not EvidenceKind.Statement:
             return {"kind": kind.value, "id": one["id"]}
         statement = (
