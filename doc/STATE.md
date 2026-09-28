@@ -481,6 +481,15 @@ merge rules only guard master [R-0575].
   the app needs tuning, is now the binding rule everywhere, not just here [R-0578, refines
   R-0517].
 
+**Schema debt, noted 2026-09-28, not built [R-0582, R-0581].** The `statements` table now carries
+two kinds of row through its `kind` column, `turn` and `play`; four of its columns (`kind`,
+`cluster_id`, `told_case`, `digest`) are read only by a `play` row, and a telling is also copied
+into every thread that reuses it from the cache. He chose to leave this as it is while testing
+continues, rather than split it into its own table now. Whenever a future feature strains this
+shape further, the split (a `play_by_plays` table, with `statements` rows pointing into it) has
+to carry every existing row across with nothing lost, proven first on a copy of production: a
+beta thread cannot be recreated once its opportunity to chat has passed.
+
 **Open, waiting on his yes:** the pill strip's one-screen line (R-0543) contradicts the earlier
 crowded-line ruling [R-0402]; not superseded until he says so. R-0381 stands: he confirmed the
 timeline's zoom, width, scroll and open position return exactly to what they were before the
