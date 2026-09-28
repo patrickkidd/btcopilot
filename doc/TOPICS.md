@@ -433,13 +433,13 @@ reference [R-0524, R-0525].
 the critic's verdicts); doc/MOBILE_VIEWS.md (the twenty-four phone views, the mapping
 onto the eight messages, the five hybrids); doc/archive/2026-09-UI_GAP.md; REVIEW_LOG.md round 5;
 STATE.md; doc/FRAGMENT_CONVENTIONS.md; the drawings and their verdict files in
-~/theapp/btcopilot-sources/fd-corpus/design/round6, round7 and round8; the published pages
+btcopilot-sources/fd-corpus/design/round6, round7 and round8; the published pages
 https://claude.ai/artifact/Twf8XW5GHDVRiUWsxQcARj , https://claude.ai/artifact/FzfjSGH6EQVt61vC5R2DFi , https://claude.ai/artifact/G5gYDqzhvar5KXPJAhtbzm and https://claude.ai/artifact/WrGWM6m2cXJfQ3FLHnNMu3 ; the open-questions mockups
 https://claude.ai/artifact/XSmWsbSEdyChP1SM6AHKMd and the impressions mockups
 https://claude.ai/artifact/AfUU6Pzq2vaLPm3QvY7BH7 ; the SARF brainstorm and the two build
 contracts in the private corpus's session-dc02180f/; the play-by-play step shots, the sheet and
 the survey of 56 clusters in the private corpus's session-b147ab7f/; the play-by-play build
-brief at ~/theapp/btcopilot-sources/fd-corpus/design/playbyplay-snapshots/BUILD_BRIEF.md.
+brief at btcopilot-sources/fd-corpus/design/playbyplay-snapshots/BUILD_BRIEF.md.
 **Next action:** he tests the 8ad08dc batch on production, including the pill strip and the
 restored timeline zoom, and rules on whether R-0402 is superseded by it (R-0381 is resolved,
 standing); the chalkboard and the SARF story resume on Fable after the frame.
@@ -470,7 +470,7 @@ he has marked no example clusters yet, and the examples are the input only he ca
 (3) [waiting] cluster quality on anyone else's record stays unmeasured until the coding loop
 produces numbers.
 **Lives in:** btcopilot/clusters.py; the grouping prompt in the private prompt files;
-doc/PICTURE_IDEAS.md; the drawings in ~/theapp/btcopilot-sources/fd-corpus/design/ and
+doc/PICTURE_IDEAS.md; the drawings in btcopilot-sources/fd-corpus/design/ and
 their pages https://claude.ai/artifact/FzfjSGH6EQVt61vC5R2DFi , https://claude.ai/artifact/G5gYDqzhvar5KXPJAhtbzm and https://claude.ai/artifact/WrGWM6m2cXJfQ3FLHnNMu3 .
 **Next action:** teach the model to name each grouping's key shift and who carries the trouble,
 so the picture can say it.
@@ -584,8 +584,9 @@ btcopilot/CLAUDE.md; .claude/skills/two-clocks/SKILL.md; bin/flushcheck.py; bin/
 
 **Status:** the two clocks are the working system of record; the trace and dashboard pages are
 retired as things he reads, kept for the record only. Agents cannot write the rulings store, so
-each flush leaves a plain list of the session's rulings with his words for him to append. A move
-of this work to a fresh clone at ~/btcopilot is planned and has not started.
+each flush leaves a plain list of the session's rulings with his words for him to append. The
+work moved to a standalone clone on 2026-09-28; the private corpus is an optional clone inside
+it, and doc/SETUP.md is how a new machine or a cloud session gets going.
 **Decided:** one thought-and-decision trace in the order of Patrick's own statements, mined
 from the transcripts; the flush is idempotent and topics are picked up by name; he never runs a
 command — he reads pages or files; the register and dashboard pages are retired, his word

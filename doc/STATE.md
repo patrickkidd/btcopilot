@@ -16,15 +16,6 @@ from the theory corpus and approved by Patrick 2026-09-27, replaced the old move
 starts one. The flush revises this file and appends to HISTORY, and that is the whole handover.
 The older handover files in the private corpus stay as they were, for the record only.
 
-**FIRST ACTION OF THE NEXT NEW SESSION — remind Patrick before anything else (queued
-2026-09-26).** He queued the move to a standalone ~/btcopilot to run at the start of his next
-new session, not mid-session, so no session's progress is lost. Tell him in one line that it is
-queued and run it on his yes, on the recommendations in the private corpus's
-session-dc02180f/MIGRATION_PLAN.md. The three points that touch him: he rotates the Gemini key
-found in plain text in the old local permissions; the self-learning and correction-detection
-rules move to his global instructions; FD-336, FD-342 and FD-360 stay in ~/theapp. Sessions are
-not copied; old ones reopen by id. Remove this paragraph once the move is done. 2026-09-26: at the start of the play-by-play session he said "not yet"; remind again at the next new session.
-
 ## The product (ruled)
 
 **"A coach who never forgets your family."** You talk to it (voice or text) the way
@@ -498,7 +489,7 @@ candidate with no id yet, needing his yes: "after a deploy, the home-screen app 
 release when it comes back to the front" — its tests cite R-0486 until then.
 
 Open for the next session: the first tap right after a rollout can hit a 502 while the
-container comes back up; the ~/btcopilot move still waits for the next session.
+container comes back up.
 
 **The rulings index sits at its size ceiling.** Every ruling added now forces a wording trim
 somewhere in the store just to stay under it, including the store's own preamble text. Patrick
@@ -551,7 +542,7 @@ against his own; agreement across about ten clusters, his and clinic cases, is t
 disagreement becomes an example in the document. Inputs: the draft (on disk, uncommitted, at
 doc/FRAME_OF_REFERENCE.md in this worktree, with a copy in the private corpus's
 session-b147ab7f/); the survey and the play-by-play folder beside it; the primary sources in
-~/theapp/btcopilot-sources/bowentheory/ (Family Evaluation, Family Therapy in Clinical Practice,
+btcopilot-sources/bowentheory/ (Family Evaluation, Family Therapy in Clinical Practice,
 the Basic Series lectures, Havstad and Sheffield's shifts paper, Patrick's 2020 talk on the
 implicit model); the coders' rules in doc/irr/; the rulings store. Whether the session starts
 from the draft or from nothing is his decision.
@@ -593,8 +584,6 @@ Open:
   after the frame session.
 - Found, next batch to fix: the play-by-play's own model calls never reach the model-call
   record, so their spend goes uncounted.
-- The move of this work to ~/btcopilot is queued for the next new session (see the reminder at
-  the top of this file); he said "not yet" once, on 2026-09-26.
 - Patrick's question about a decrypted prompt copy was really about agents always reading the
   decrypted prompts instead of assuming their contents; resolved as a process rule in
   HOW_THIS_PROJECT_WORKS.md ("Encrypted is never a reason not to know"). No mirror or extra
@@ -1101,7 +1090,7 @@ deployment").
   "Assistant" person appears in lane data; unknown-certainty dated events route to
   the shelf; rule-5 fades/death hard-stops unimplemented. One Jira closing comment on
   FD-360 is pre-authorized but HELD until Patrick reviews the PR.
-- **proto.html** (durable copy: ~/theapp/btcopilot-sources/fd-corpus/design/proto.html; jobs-tmp original is ephemeral): interactive two-concept prototype — REJECTED by Patrick,
+- **proto.html** (durable copy: btcopilot-sources/fd-corpus/design/proto.html; jobs-tmp original is ephemeral): interactive two-concept prototype — REJECTED by Patrick,
   shelved. It embeds real names inside prod-derived event descriptions: NEVER publish
   or commit it; local file only. Its creative-round survivors (Chapter Shelf, Quiet Threads) and
   cross-cutting findings remain hypotheses only.
@@ -1115,8 +1104,8 @@ moves + three variable shifts, one action-green, 8s felt animations on the field
 vocabulary (rings = a person's emotional field; tremble = moved by it; wall +
 field shadow = withdrawal; ghost-double + spikes = anxiety EVERYWHERE it appears;
 F-up ≈ defined self; symptom = interim cross + up/down arrow). Rulings:
-~/theapp/btcopilot-sources/fd-corpus/OWNER_RULINGS.md (2026-09-01). Reference HTML (durable):
-~/theapp/btcopilot-sources/fd-corpus/design/move-language.html (ratified galleries) and drilldown.html
+btcopilot-sources/fd-corpus/OWNER_RULINGS.md (2026-09-01). Reference HTML (durable):
+btcopilot-sources/fd-corpus/design/move-language.html (ratified galleries) and drilldown.html
 (three-level drill-down on two real records — KNOWN BUGGY; the rulings are the
 standard, not the prototype). Three-level shape, REVISED 2026-09-03 by the UI
 principle: wire with episode clusters → (the tap-zoom episode level is CUT; a tap is
@@ -1127,7 +1116,7 @@ FD-360 against his real record — brief in NEXT_SESSIONS.md.
 On 2026-09-02 the picture design CONVERGED on the SENTENCE SPOTLIGHT — the coach's
 latest message lights the events it names, the rest of the dots stay dim, and up to
 three rows of words sit on the picture tied to their dots by leader lines (Oracle:
-OWNER_RULINGS.md 2026-09-02; folder ~/theapp/btcopilot-sources/fd-corpus/design/crowded-chapter/).
+OWNER_RULINGS.md 2026-09-02; folder btcopilot-sources/fd-corpus/design/crowded-chapter/).
 This supersedes the FD-360 resting strip as the picture reference. The fidelity
 standard for every front-end build from here on is: playbyplay_ab.html pane A,
 move-language.html + OWNER_RULINGS.md, crowded-chapter/, and DRAWABILITY.md — each
@@ -1135,7 +1124,7 @@ build is checked against them with an approved-vs-built deviation table.
 
 ## The corpus (system of record for phases A and B)
 
-Location **~/theapp/btcopilot-sources/fd-corpus/** (moved 2026-09-02 from ~/fd-corpus, symlink left behind; his ruling: everything load-bearing consolidates into the PRIVATE btcopilot-sources repo — supersedes the older never-in-a-repo rule for this data); rebuild everything with
+Location **btcopilot-sources/fd-corpus/** (moved 2026-09-02 from ~/fd-corpus, symlink left behind; his ruling: everything load-bearing consolidates into the PRIVATE btcopilot-sources repo — supersedes the older never-in-a-repo rule for this data); rebuild everything with
 `rebuild.py <diagrams-dir> <out-dir>` (self-verifying allowlist, no data inside it).
 - `clinic/case_01..61.json` + `index.json`: his 61 real clinical cases, one-way
   anonymized (P-ids, gender, decimal years, unsure flags, kind enums, per-variable
@@ -1152,7 +1141,7 @@ Location **~/theapp/btcopilot-sources/fd-corpus/** (moved 2026-09-02 from ~/fd-c
 - `QUALITY_NOTES.md`: volume ≠ quality, in writing. `OWNER_RULINGS.md`: his teachings.
 
 Corpus facts (details in HISTORY). **Numbers rule: never trust counts written in
-docs — ~/theapp/btcopilot-sources/fd-corpus/clinic/index.json is always authoritative; recompute before use.**
+docs — btcopilot-sources/fd-corpus/clinic/index.json is always authoritative; recompute before use.**
 Computed from index.json 2026-09-01 10:44: events live in five homes; median dated-bearing case
 28 dated events over ~85 years; direction tagging in 21% of his cases;
 uncertainty right-skewed (median ~96% guessed); he dates marriages 2–3x more than the
@@ -1427,7 +1416,7 @@ Kept for when there are enough users to run one.
   snapshot makes one point of order, of trouble moving between people, or of a move after an
   event, with a fact line, an optional "My guess:" line and a closing question; tap-through only,
   never self-playing; built only from Patrick's own family's cases from here on. Brief:
-  `~/theapp/btcopilot-sources/fd-corpus/design/playbyplay-snapshots/BUILD_BRIEF.md` (copied there
+  `btcopilot-sources/fd-corpus/design/playbyplay-snapshots/BUILD_BRIEF.md` (copied there
   2026-09-27; written during the design session at
   `/Users/patrick/.claude/jobs/0b7dc61d/tmp/pbp/BRIEF.md`), section 3 lists what the mockup does
   not prove: the coach writing a snapshot's point, facts, guess and question live (needs real
@@ -1475,7 +1464,7 @@ Kept for when there are enough users to run one.
 
 - **Patrick's own comprehensive timeline (queued 2026-09-01, after the clinical
   run)**: merge his old diagram, new diagram, and journal into one timeline —
-  sources exist in ~/theapp/btcopilot-sources/fd-corpus/design/ (his chat/journal corpus files) plus his
+  sources exist in btcopilot-sources/fd-corpus/design/ (his chat/journal corpus files) plus his
   live records; same synthesis machinery expected to apply.
 
 - **Sleep and alcohol over time (queued, a Fable brainstorm after the frame session returns)**:
