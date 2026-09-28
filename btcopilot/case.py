@@ -126,9 +126,8 @@ def tool() -> dict:
                     "description": "The one point, one line of at most 140 characters.",
                 },
                 "snapshots": {
+                    # strict schemas take no size bounds; Case.told holds the count
                     "type": "array",
-                    "minItems": 1,
-                    "maxItems": MOST,
                     "items": {
                         "type": "object",
                         "properties": {

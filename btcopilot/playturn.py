@@ -13,6 +13,8 @@ coming back a week later shows it where it happened and opens it again.
 import logging
 import uuid
 
+import anthropic
+
 from btcopilot.extensions import db
 from btcopilot import recordtext
 from btcopilot.case import Case, RecordFault, Tool, Untold, faults, tool
@@ -154,6 +156,11 @@ class PlayTurn:
                 next(words)
             except StopIteration as stop:
                 return stop.value
+            except anthropic.APIStatusError as refused:
+                # the API turned the request away; a server fault there stays a 500
+                if refused.status_code >= 500:
+                    raise
+                raise Untellable(f"the API refused the call: {refused.status_code} {refused.message}") from refused
 
     def _persist(self, told: Case) -> int | None:
         if self.discussion is None:

@@ -47,6 +47,27 @@ once at /root/.docker/cli-plugins/docker-rollout (github.com/wowu/docker-rollout
 Before its upgrade the deploy moves a database at the old head `1a00000000af` to it (from
 `1a00000000ae` it adds the one missing column first); any other old revision stops the deploy.
 
+## Rolling back
+
+`release.yml` cannot do it: the production environment only takes a dispatch from the
+branch, and a dispatch deploys the branch head. Dispatching from an older release's tag is
+refused ("not allowed to deploy to production due to environment protection rules",
+2026-09-28). Roll back by hand on the box instead, to the last good release: its commit is
+the tag `3.YYYY.M.D.N+g<sha7>` and its image the same with `-` for `+`. As root:
+
+    cd /var/www/btcopilot && git fetch origin <sha> && git checkout --detach <sha> && cd deploy
+    export BTCOPILOT_TAG=<image tag, e.g. 3.2026.9.28.1-gf66d603>
+    docker compose --env-file /etc/fd/secrets.env pull fd-app fd-worker
+    docker rollout --env-file /etc/fd/secrets.env fd-app
+    docker rollout --env-file /etc/fd/secrets.env fd-worker
+    docker compose --env-file /etc/fd/secrets.env ps
+
+This holds only when the release being left added no migration: the database stays where it
+is, and an older app on a newer schema is not safe. When it did, restore the backup taken
+before that deploy instead (`/root/backups/prod-<date>-pre-<sha>.dump`, `pg_restore --clean`
+into fd-postgres) and say so, since it loses every write since. The next dispatch from the
+branch puts the branch head back.
+
 ## One time: the names move from "chat" to "familydiagram" (R-0472)
 
 The compose project, the Postgres role and the Postgres database were all named

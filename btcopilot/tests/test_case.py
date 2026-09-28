@@ -1,10 +1,12 @@
 import re
 
+import anthropic
+import httpx
 import pytest
 
 from btcopilot.case import GUESS, Case, RecordFault, Tool, Untold, tool
 from btcopilot.playturn import Untellable
-from btcopilot import prompts
+from btcopilot import prompts, toolbox
 from btcopilot.extensions import db
 from btcopilot.models import ModelCall, Statement, StatementKind
 from btcopilot import playturn
@@ -171,7 +173,7 @@ def test_a_coach_that_never_tells_the_case_fails_the_turn():
 def test_the_tool_asks_for_dated_pictures_of_the_clusters_events():
     # R-0563
     shot = tool()["input_schema"]["properties"]["snapshots"]
-    assert (shot["minItems"], shot["maxItems"]) == (1, 6)
+    assert shot["type"] == "array"
     assert shot["items"]["required"] == ["date", "event_ids", "fact"]
 
 
@@ -256,6 +258,53 @@ def test_the_tool_holds_the_coach_to_its_schema():
     assert schema["strict"] is True
     assert schema["input_schema"]["additionalProperties"] is False
     assert schema["input_schema"]["properties"]["snapshots"]["items"]["additionalProperties"] is False
+
+
+# The keywords a strict tool schema may carry (Anthropic's strict tool use limits):
+# no numeric, length or array-size bounds, and every object closed
+STRICT = {"type", "properties", "required", "items", "description", "enum", "const",
+          "anyOf", "allOf", "$ref", "$defs", "format", "additionalProperties"}
+
+
+def unsupported(node: dict, where: str = "") -> list[str]:
+    found = [f"{where}.{key}" for key in node if key not in STRICT]
+    if node.get("type") == "object" and node.get("additionalProperties") is not False:
+        found.append(f"{where} is not closed")
+    subs = [(f"{where}.{k}", v) for k, v in node.get("properties", {}).items()]
+    subs += [(f"{where}.{k}", v) for k, v in node.get("$defs", {}).items()]
+    subs += [(f"{where}[]", node["items"])] if "items" in node else []
+    subs += [(f"{where}|{i}", v) for i, v in enumerate(node.get("anyOf", []) + node.get("allOf", []))]
+    return found + [bad for at, sub in subs for bad in unsupported(sub, at)]
+
+
+def test_every_strict_tool_schema_uses_only_what_strict_mode_accepts():
+    # R-0563
+    strict = [schema for schema in toolbox.schemas() + [tool()] if schema.get("strict")]
+    assert strict
+    for schema in strict:
+        assert unsupported(schema["input_schema"], schema["name"]) == []
+
+
+def test_a_request_the_api_refuses_is_a_clear_refusal(web, test_user, monkeypatch):
+    # R-0563, R-0182
+    """The API turning a play call away shows as the page's error line, not a server error."""
+    diagram = test_user.free_diagram
+    diagram.set_diagram_data(record())
+    db.session.commit()
+
+    class Refusing(Model):
+        def turn(self, system, messages, tools, turn_id=""):
+            raise anthropic.BadRequestError(
+                "tools.0.custom: For 'array' type, property 'maxItems' is not supported",
+                response=httpx.Response(400, request=httpx.Request("POST", "https://api.anthropic.com/v1/messages")),
+                body=None,
+            )
+            yield
+
+    monkeypatch.setattr("btcopilot.playturn.CoachModel", lambda *a, **k: Refusing())
+    response = web.post("/app/play", json={"cluster_id": "apart"}, headers={"X-CSRFToken": csrf_token(web)})
+    assert response.status_code == 422
+    assert response.get_data(as_text=True) == "untold: The coach couldn't tell this one; try again."
 
 
 def test_every_play_call_is_metered_even_when_the_case_is_never_told(discussion):
