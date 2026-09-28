@@ -1,14 +1,6 @@
-import {
-  board,
-  castOfSteps,
-  dateOf,
-  movesIn,
-  triangle,
-  type Step,
-} from "./board";
+import { DateCertainty } from "./certainty";
 import { esc } from "./dom";
-// The drawability marks belong to the level with room to read them, which is
-// the board; this line draws dots, the wire and the record's own question.
+// this line draws dots, the wire and the record's own question
 import { rangesTouch } from "./marks";
 import {
   CH,
@@ -35,7 +27,6 @@ import {
   Touch,
   ViewKind,
   type Cluster,
-  type Person,
   type Question,
   type Timeline,
   type TimelineEvent,
@@ -45,9 +36,6 @@ import { stronger, type Made } from "./turn";
 
 /** Patrick, 2026-09-21: the undated shelf's "?" stays off until it explains itself. */
 const HIDE_SHELF_MARK = true;
-/** The ratified hold: 1000ms after each move before the prose continues. */
-const HOLD_MS = 1000;
-const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** The pinned picture: the sentence spotlight the owner converged on
  * (OWNER_RULINGS 2026-09-02). A wire with a dot per moment; the moments the
@@ -57,8 +45,8 @@ const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * out in full. The people appear only while a play-by-play walks the moves. */
 
 /** The picture region is ONE height for the whole line and a cluster open on
- * it, because a tap on the picture must never move a bubble; only entering the
- * moves board, which is a screen of its own, may change the layout. */
+ * it, because a tap on the picture must never move a bubble; the play-by-play
+ * is a drawer of its own over it (R-0570). */
 /** The least space left between two cluster boxes that would otherwise touch. */
 const BOX_GAP = 6;
 /** How far a box reaches past the moments it holds, at each end. */
@@ -179,14 +167,13 @@ export function pairSvg(
 }
 
 /** The picture's levels. The whole line and a cluster open on it are one
- * drawing (R-0538); the board, the about page and a comparison are modes of
- * the cluster level. */
+ * drawing (R-0538); the about page and a comparison are modes of the cluster
+ * level. The play-by-play is its own drawer (R-0570). */
 export enum Level {
   /** Nothing named yet: the whole line at a glance, one box per cluster. */
   Rest = "rest",
   /** The same line with a cluster open, or what the coach named, lit. */
   Wire = "wire",
-  Board = "board",
   /** What the open cluster is: the coach's reason, its span, its moments. A
    * level of its own behind the small i beside the title (owner, 2026-09-09). */
   About = "about",
@@ -200,7 +187,7 @@ export enum Level {
 const TOLD_CH = 20;
 
 /** A moment picked, as the path names it: the first name and what happened,
- * "Catherine died", and whatever of its words that leaves over, which the line
+ * "Delphine died", and whatever of its words that leaves over, which the line
  * writes instead (R-0540). The path's words end on a whole word, and never on
  * a small one. */
 export function told(who: string, label: string): [string, string] {
@@ -214,7 +201,6 @@ export function told(who: string, label: string): [string, string] {
 
 /** What each mode inside a cluster is called in the path. */
 const MODE: Partial<Record<Level, string>> = {
-  [Level.Board]: "explain",
   [Level.About]: "about",
   [Level.Compare]: "compare",
 };
@@ -256,16 +242,9 @@ export enum Target {
   Band = "band",
   Question = "question",
   Shelf = "shelf",
-  /** The board's own controls, which the picture answers itself. */
-  /** Anywhere on the picture that is not a moment, a label or a control. */
+  /** Anywhere on the picture that is not a moment or a label. */
   Ground = "ground",
-  Prev = "prev",
-  Next = "next",
-  /** Ask the coach to talk through the cluster the board is showing. */
-  Explain = "explain",
 }
-
-const OWN = new Set<string>([Target.Prev, Target.Next]);
 
 /** One invisible tap target along the line. */
 export interface Layer {
@@ -309,14 +288,13 @@ export const dotLayers = (zoned: { left: number; width: number; marks: Mark[] }[
 const SLIDE_MS = 320;
 
 /** How deep each level sits. Only something entirely new slides: the about
- * page and the board arrive over the line and go back off it. Picking a
+ * page arrives over the line and goes back off it. Picking a
  * cluster or a moment on the line, putting it down, and two moments face to
  * face change the line in place and slide nothing (R-0542). */
 const DEPTH: Record<Level, number> = {
   [Level.Rest]: 0,
   [Level.Wire]: 0,
   [Level.Compare]: 0,
-  [Level.Board]: 1,
   [Level.About]: 1,
 };
 
@@ -396,25 +374,13 @@ export interface Tap {
 
 export interface PictureHandlers {
   onTap(tap: Tap): void;
-  /** Whether the board may ask the coach to talk the cluster through. A coding
-   * has no coach turn, so its board carries only the two step arrows. */
-  canExplain?: boolean;
 }
 
 const YEAR = 365.25 * 24 * 3600 * 1000;
 
-/** The events these ids name, as the play-by-play steps them: the dated ones
- * in date order, which is the record's own, and each undated one right after
- * the event stored before it, or first when it is stored first. */
-export function inOrder(events: TimelineEvent[], ids: number[]): TimelineEvent[] {
-  const named = events.filter((e) => ids.includes(e.id));
-  const stored = ids.flatMap((id) => named.filter((e) => e.id === id));
-  const out = named.filter((e) => dateOf(e) !== null);
-  stored.forEach((e, i) => {
-    if (dateOf(e) === null) out.splice(i ? out.indexOf(stored[i - 1]) + 1 : 0, 0, e);
-  });
-  return out;
-}
+/** When a moment happened, or nothing when the record cannot say. */
+const dateOf = (event: TimelineEvent) =>
+  event.dateCertainty === DateCertainty.Unknown ? null : event.dateTime;
 
 export function years(iso: string): number {
   return new Date(iso + "T00:00:00Z").getTime() / YEAR;
@@ -484,23 +450,8 @@ export class Picture {
   /** The moments the coach's latest message named — the spotlight. */
   private named: number[] = [];
   private selected: number | null = null;
-  private cast: number[] = [];
   private level = Level.Rest;
-  private moves: Step[] = [];
-  /** The cluster the board is currently showing, so a chip already on its own
-   * board steps it rather than reopening it. */
-  private cluster: string | null = null;
-  private at = 0;
   private pair: [number, number] | null = null;
-  private entering = false;
-  /** True while the coach is still answering the last "explain", so the control
-   * that asked cannot be asked again until the words land or fail. */
-  private explaining = false;
-  /** Set once the reader steps the board themselves. */
-  private steered = false;
-  /** Who the coach has just put in the record. They stay lit the way a
-   * spotlit moment does: until the next thing is aimed at or picked. */
-  private litPeople: number[] = [];
   /** What the coach's tool calls did to each event this turn, kept until the
    * next message (R-0539); the ones just touched flash as they land. */
   private touched = new Map<number, Touch>();
@@ -534,17 +485,12 @@ export class Picture {
     this.host.addEventListener("click", (e) => {
       const hit = (e.target as Element).closest<HTMLElement>("[data-target]");
       // Empty ground. Nothing on the picture is under the thumb, so the tap is
-      // the reader putting the picture down; the board has its own way back.
+      // the reader putting the picture down.
       if (!hit) {
-        if (this.level !== Level.Board)
-          this.handlers.onTap(this.tapAt(Target.Ground, e));
+        this.handlers.onTap(this.tapAt(Target.Ground, e));
         return;
       }
       e.preventDefault();
-      if (OWN.has(hit.dataset.target as string)) {
-        this.control(hit.dataset.target as Target);
-        return;
-      }
       const tap = this.tapAt(
         hit.dataset.target as Target,
         e,
@@ -577,9 +523,8 @@ export class Picture {
 
   /** Colour what one line of what the coach did has just touched, at the
    * moment that line lands, on the line as it stands: nothing opens and
-   * nothing moves but the line, to the first it wrote (R-0539). A person is
-   * lit wherever people are drawn, which today is the board. `gone` is what
-   * the line removed, as the record held it before. */
+   * nothing moves but the line, to the first it wrote (R-0539). `gone` is
+   * what the line removed, as the record held it before. */
   light(made: Made[], gone: TimelineEvent[] = []): void {
     const moments = made.filter((one) => one.kind === ItemKind.Event);
     this.fresh = new Set(moments.map((one) => Number(one.id)));
@@ -589,9 +534,6 @@ export class Picture {
       this.touched.set(id, had ? stronger(had, one.touch) : one.touch);
     }
     this.gone.push(...gone);
-    this.litPeople = made
-      .filter((one) => one.kind === ItemKind.Person)
-      .map((one) => Number(one.id));
     const wrote = moments.find((one) => one.touch !== Touch.Read);
     if (wrote) this.aim(Number(wrote.id));
     this.render();
@@ -616,10 +558,8 @@ export class Picture {
   dismiss(): void {
     this.named = [];
     this.selected = null;
-    this.litPeople = [];
     this.park = Park.Present;
     this.focus = null;
-    this.cluster = null;
     this.level = Level.Rest;
     this.render();
   }
@@ -636,12 +576,10 @@ export class Picture {
   spotlight(eventIds: number[]): void {
     this.named = eventIds;
     this.selected = null;
-    this.litPeople = [];
     this.aim(eventIds[0] ?? null);
     // naming something opens the cluster it belongs to; naming nothing leaves
     // the picture at rest, showing the whole line
     this.level = eventIds.length ? Level.Wire : Level.Rest;
-    this.cluster = null;
     this.focus = this.clusterOf(eventIds[0]);
     this.render();
   }
@@ -655,11 +593,9 @@ export class Picture {
       named: this.named,
       selected: this.selected,
     } = picked(this.look(), id, named, this.data?.clusters ?? [], this.spot, via));
-    this.litPeople = [];
     if (via === Via.Chip) {
       this.aim(id);
-      this.cluster = null;
-    }
+      }
     this.render();
   }
 
@@ -674,7 +610,6 @@ export class Picture {
 
   select(eventId: number | null): void {
     this.selected = eventId;
-    this.litPeople = [];
     // a tap moves nothing: the reader is already looking at what they touched
     this.render();
   }
@@ -721,70 +656,14 @@ export class Picture {
   }
 
   step(eventId: number): void {
-    // while the board is open a named moment steps the board rather than
-    // off the board it only picks the moment out on the wire, because a move
-    // with people on stage is drawn on the board and nowhere else (ruled)
-    const on = this.moves.findIndex((m) => m.event.id === eventId);
-    if (this.level === Level.Board && on >= 0) {
-      // once the reader has taken the controls the play-through stops moving
-      // the board under them
-      if (this.steered) return;
-      this.at = on;
-      this.render();
-      return;
-    }
     this.selected = eventId;
     this.aim(eventId);
     this.render();
   }
 
-  /** Enter the board: the moves of one cluster, numbered, on the people they
-   * happened between. The level below it is CUT, so this comes straight from
-   * the chat. */
-  openBoard(eventIds: number[], cluster: string | null = null): number {
-    this.moves = movesIn(inOrder(this.data?.events ?? [], eventIds));
-    if (!this.moves.length) return 0;
-    this.cluster = cluster;
-    this.level = Level.Board;
-    this.entering = true;
-    this.steered = false;
-    this.at = 0;
-    this.cast = [];
-    this.render();
-    return this.moves.length;
-  }
-
-  /** A chip in a play-by-play steps the board and never goes back to the wire
-   * (owner review round 1). The board opens on the cluster the walk narrates if
-   * it is not already up, then goes to the move the chip names — or, when the
-   * chip names no move of its own, to the nth move of the walk. */
-  playStep(clusterId: string, eventIds: number[], ordinal: number): void {
-    if (this.level !== Level.Board || this.cluster !== clusterId) {
-      const cluster =
-        this.clusterOf(eventIds[0]) ??
-        this.data?.clusters.find(
-          (c) => c.id === clusterId || c.cluster_ids.includes(clusterId),
-        );
-      if (!cluster || !this.openBoard(cluster.play_ids, clusterId)) return;
-    }
-    // the reader stepping the board themselves outranks a play-through still
-    // running, which is what steering already means here
-    this.steered = true;
-    const named = this.moves.findIndex((m) => eventIds.includes(m.event.id));
-    this.at =
-      named >= 0
-        ? named
-        : Math.min(this.moves.length - 1, Math.max(0, ordinal));
-    this.render();
-  }
-
-  /** How many moves a cluster would put on the board, for the entry button. */
-  countMoves(eventIds: number[]): number {
-    return movesIn(inOrder(this.data?.events ?? [], eventIds)).length;
-  }
-
-  onBoard(): boolean {
-    return this.level === Level.Board;
+  /** How many dated moments a cluster has, which is what explain can tell. */
+  countDated(eventIds: number[]): number {
+    return (this.data?.events ?? []).filter((e) => eventIds.includes(e.id) && dateOf(e)).length;
   }
 
   /** Whether the picture is showing one cluster rather than the whole line. */
@@ -797,43 +676,13 @@ export class Picture {
     return this.opened() ? this.focus : null;
   }
 
-  /** The cluster the board is showing, which is what "explain" asks about. */
-  showing(): string | null {
-    return this.cluster;
-  }
-
-  /** The coach is answering, or has finished answering, an explain. */
-  explains(busy: boolean): void {
-    this.explaining = busy;
-    if (this.level === Level.Board) this.render();
-  }
-
-  private control(target: Target): void {
-    // the reader taking the controls outranks a play-through still running:
-    // from here the board is theirs to step
-    this.steered = true;
-    if (target === Target.Next)
-      this.at = Math.min(this.moves.length - 1, this.at + 1);
-    else if (target === Target.Prev) this.at = Math.max(0, this.at - 1);
-    this.render();
-  }
-
-  /** The cluster the reader is in: the one open on the line, or the one the
-   * board is showing. */
-  private within(): Cluster | null {
-    if (this.focus) return this.focus;
-    const id = this.cluster;
-    return id === null
-      ? null
-      : (this.data?.clusters.find((c) => c.id === id || c.cluster_ids.includes(id)) ?? null);
-  }
 
   /** The path from the whole timeline to where the reader is (R-0540). */
   path(): string[] {
     const picked = this.level === Level.Rest || this.level === Level.Wire ? this.event(this.selected) : null;
     return trail(
       this.level,
-      this.level === Level.Rest ? null : this.within(),
+      this.level === Level.Rest ? null : this.focus,
       picked && told(picked.person_name, picked.label)[0],
     );
   }
@@ -841,14 +690,11 @@ export class Picture {
   /** Back to one step of the path: the whole timeline, or the cluster with
    * nothing picked and no mode open. */
   back(step: number): void {
-    const open = this.within();
+    const open = this.focus;
     if (!step || !open) {
       this.dismiss();
       return;
     }
-    this.moves = [];
-    this.cast = [];
-    this.at = 0;
     this.spotlight(open.event_ids);
   }
 
@@ -869,22 +715,14 @@ export class Picture {
     return this.dated().length === 0;
   }
 
-  async show(view: View): Promise<void> {
+  /** A view the coach aimed at. A triangle or a sequence has people and moves
+   * to draw, so the play-by-play drawer tells it instead (R-0570). */
+  show(view: View): void {
     this.band = null;
-    this.cast = [];
     // every view starts from the resting wire; the ones that are a level of
     // their own say so below
     this.level = Level.Wire;
-    this.moves = [];
-    this.cluster = null;
     switch (view.kind) {
-      case ViewKind.Triangle:
-        // people on stage draw only on the board, which is a level of its own
-        this.cast = view.persons;
-        this.level = Level.Board;
-        this.entering = true;
-        this.render();
-        return;
       case ViewKind.Span:
         this.band = { start: view.start, end: view.end };
         this.render();
@@ -895,20 +733,6 @@ export class Picture {
         this.level = Level.Compare;
         this.render();
         return;
-      case ViewKind.Sequence: {
-        // a sequence is the moves board, stepped in order, and it stays up
-        // afterwards so the reader can hold on any one move
-        const n = this.openBoard(view.events);
-        if (!n) return;
-        for (let i = 1; i < n; i += 1) {
-          await pause(HOLD_MS);
-          // a tap on back, or another view, ends the walk through
-          if ((this.level as Level) !== Level.Board) return;
-          this.at = i;
-          this.render();
-        }
-        return;
-      }
       case ViewKind.Cluster: {
         const cluster = this.data?.clusters.find(
           (c) => c.id === view.cluster || c.cluster_ids.includes(view.cluster),
@@ -926,12 +750,9 @@ export class Picture {
     this.named = [];
     this.selected = null;
     this.park = Park.Present;
-    this.cast = [];
     this.band = null;
     this.focus = null;
     this.level = Level.Rest;
-    this.moves = [];
-    this.at = 0;
     this.pair = null;
     this.touched.clear();
     this.gone = [];
@@ -953,10 +774,6 @@ export class Picture {
 
   private dated(): TimelineEvent[] {
     return (this.data?.events ?? []).filter((e) => !!dateOf(e));
-  }
-
-  private person(id: number | null): Person | undefined {
-    return id === null ? undefined : this.data?.people.find((p) => p.id === id);
   }
 
   private get width(): number {
@@ -1309,44 +1126,6 @@ export class Picture {
     return this.restClusters()[index];
   }
 
-  private renderBoard(): void {
-    const ids = this.moves.length ? castOfSteps(this.moves) : this.cast;
-    const people = ids
-      .map((id) => this.person(id))
-      .filter((p): p is Person => !!p);
-    const { svg, caption, height } = this.moves.length
-      ? board(this.moves, this.at, people, this.data?.events ?? [], this.width)
-      : triangle(people, this.width);
-    const last = this.moves.length - 1;
-    // people pop in when the board opens, and only then: a step through the
-    // cluster must not restage everyone on every move
-    const zoom = this.entering ? " in" : "";
-    this.entering = false;
-    this.card(
-      `<div class="ss board${zoom}" style="height:${height}px">${svg}</div>` +
-      `<div class="bcap">${esc(caption)}</div>` +
-      // a cast the coach put on the board has nothing to step through
-      (this.moves.length
-        ? `<div class="pctl">` +
-          `<button type="button" class="btn" data-target="${Target.Prev}" ` +
-          `${this.at === 0 ? "disabled" : ""} aria-label="the move before">&#9664;</button>` +
-          // One row, whichever way the board was opened. Explain is dead only
-          // while the coach is still answering the last one.
-          (this.handlers.canExplain === false
-            ? ""
-            : `<button type="button" class="btn primary" data-target="${Target.Explain}" ` +
-              `${this.explaining ? "disabled" : ""}>&#9654; explain</button>`) +
-          `<button type="button" class="btn" data-target="${Target.Next}" ` +
-          `${this.at >= last ? "disabled" : ""} aria-label="the move after">&#9654;</button>` +
-          `</div>`
-        : ""),
-    );
-    for (const id of this.litPeople)
-      this.host.querySelector(`.node[data-person="${id}"]`)?.classList.add("lit");
-    if (still())
-      this.host.querySelector("svg")?.pauseAnimations();
-  }
-
   /** Two moments side by side with the record's one asking mark between them.
    * No axis: a comparison is not a measurement. */
   private renderPair(): string | null {
@@ -1424,10 +1203,6 @@ export class Picture {
   private draw(): void {
     if (this.level === Level.About && this.focus) {
       this.renderAbout(this.focus);
-      return;
-    }
-    if (this.level === Level.Board && (this.moves.length || this.cast.length)) {
-      this.renderBoard();
       return;
     }
     if (this.level === Level.Compare) {

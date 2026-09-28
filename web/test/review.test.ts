@@ -11,7 +11,7 @@ const SRC = join(dirname(fileURLToPath(import.meta.url)), "../src");
 
 const REVIEW = ["agenda", "ballot", "coding", "cut", "meeting", "result", "rules", "task"];
 const CORE = [
-  "board", "caption", "chat", "chips", "editor", "menu", "picture", "recording",
+  "caption", "chat", "chips", "drawer", "editor", "menu", "picture", "recording",
   "rows", "search", "sessions", "settings", "speech", "turn",
 ];
 

@@ -254,8 +254,8 @@
         "uid": "ffz1wy7unkdfke"
       },
       "type": "timeseries",
-      "title": "Behaviour evals: share of cases passed, by model",
-      "description": "One point per kept live eval run: the cases that passed over the cases that ran. Skipped and waiting cases are left out.",
+      "title": "Behaviour evals: share of cases passed, by model and who answered",
+      "description": "One point per kept live eval run: the cases that passed over the cases that ran. Skipped and waiting cases are left out. Runs answered on the Claude Code subscription (no API spend) are their own line, marked subscription.",
       "gridPos": {
         "h": 8,
         "w": 24,
@@ -301,7 +301,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select q.ran_at as time, q.model as metric, q.value from quality_runs q where q.kind = 'eval_pass_rate' and $__timeFilter(q.ran_at) and q.metric = 'overall' order by 1",
+          "rawSql": "select q.ran_at as time, q.model || ' (' || q.source || ')' as metric, q.value from quality_runs q where q.kind = 'eval_pass_rate' and $__timeFilter(q.ran_at) and q.metric = 'overall' order by 1",
           "refId": "A"
         }
       ],
@@ -367,7 +367,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select q.ran_at as time, q.model || ' ' || q.metric as metric, q.value from quality_runs q where q.kind = 'eval_pass_rate' and $__timeFilter(q.ran_at) and q.metric <> 'overall' order by 1",
+          "rawSql": "select q.ran_at as time, q.model || ' (' || q.source || ') ' || q.metric as metric, q.value from quality_runs q where q.kind = 'eval_pass_rate' and $__timeFilter(q.ran_at) and q.metric <> 'overall' order by 1",
           "refId": "A"
         }
       ],
@@ -417,7 +417,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select q.metric as \"case\", q.model as model, count(*) as runs, avg(q.value) as passed, max(q.ran_at) as last_run from quality_runs q where q.kind = 'eval_pass_rate' and $__timeFilter(q.ran_at) and q.metric <> 'overall' group by 1, 2 order by passed, 1",
+          "rawSql": "select q.metric as \"case\", q.model as model, q.source as source, count(*) as runs, avg(q.value) as passed, max(q.ran_at) as last_run from quality_runs q where q.kind = 'eval_pass_rate' and $__timeFilter(q.ran_at) and q.metric <> 'overall' group by 1, 2, 3 order by passed, 1",
           "refId": "A"
         }
       ],

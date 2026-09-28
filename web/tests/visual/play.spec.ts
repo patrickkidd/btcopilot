@@ -1,17 +1,16 @@
 import { expect, test, type Page } from "@playwright/test";
 import { stateFor } from "./setup";
+import { mockTurn } from "./turn";
 
-/** Step chips in a play-by-play (owner review round 1). The `play` record holds
- * one moment per move, all in one stored cluster, and its session holds a
- * play-by-play about that cluster whose chips are its moves in order.
+/** The play-by-play drawer (R-0542, R-0562, R-0563). The `play` record holds
+ * one moment per move in one stored cluster, and its session holds a play-by-
+ * play about that cluster told in four snapshots. Explaining again is answered
+ * with that stored case, so no coach turn is involved and it is deterministic.
  *
- * The walk is coach-authored and each move is a chip [Oracle: R-0074], and a
- * button reaches a whole digestible concept rather than cycling one datum at a
- * time [Oracle: R-0071].
- *
- * What is under test is routing, not drawing: a chip in a walk opens the board
- * if it is closed, goes to the move it names, and never puts the picture back
- * on the timeline. No coach turn is involved, so it is deterministic. */
+ * What the old chip walk tested is gone with it: chips stepping the board
+ * (R-0170's first half) and the typed pacing of a play-through (R-0171) are
+ * replaced by a drawer tapped through by hand. What R-0170 kept, the play
+ * message stored with its kind and cluster, is what reopens the drawer here. */
 
 const settle = async (page: Page) => {
   await page.goto("/app/");
@@ -19,128 +18,185 @@ const settle = async (page: Page) => {
   await page.waitForTimeout(400);
 };
 
-/** The chips of the walk, in the order the coach wrote them. */
-const walk = (page: Page) => page.locator(".bub .chip.data");
+const drawer = (page: Page) => page.locator("#pbp");
+const count = (page: Page) => drawer(page).locator(".count");
 
-const board = (page: Page) => page.locator("#view .ss.board");
+/** The stored play message, the one the session already holds. */
+const stored = (page: Page) => page.locator(".bub.coach[data-play]").last();
 
-/** The words under the board. The board that is leaving and the board that is
- * arriving are both on the page for the length of the zoom, so wait for the
- * one caption before reading it. A move names the pair it is aimed at, which
- * is who the moment is about. */
-const expectCaption = async (page: Page, words: string) => {
-  // one caption holding these words, retried as a whole: a count read first
-  // can pass a moment before the arriving board adds its own
-  await expect(page.locator("#chat-screen .bcap")).toHaveText([words]);
-};
-
-test.describe("a chip in a play-by-play", () => {
+test.describe("the play-by-play drawer", () => {
   test.use({ storageState: stateFor("play") });
 
-  // R-0170
-  test("the third chip opens the board on the third move", async ({ page }) => {
+  // R-0170, R-0563
+  test("the stored play message opens its case again on the first snapshot", async ({ page }) => {
     await settle(page);
-    await expect(board(page)).toHaveCount(0);
-    await walk(page).nth(2).click();
-    await expect(board(page)).toBeVisible();
-    await expectCaption(page, "Ada \u2192 Ben · distance");
+    await expect(drawer(page)).toBeHidden();
+    await stored(page).click();
+    await expect(drawer(page)).toBeVisible();
+    await expect(count(page)).toHaveText("1 of 4");
+    await expect(drawer(page).locator(".point")).toContainText("Ada moved toward Ben");
+    await expect(drawer(page).locator(".path .here")).toHaveText("explain");
   });
 
-  // R-0170
-  test("a further chip steps the board and never leaves it", async ({ page }) => {
+  // R-0542, R-0540, R-0223
+  test("reopened from its message, the path's years step opens that cluster", async ({ page }) => {
     await settle(page);
-    await walk(page).nth(2).click();
-    await expectCaption(page, "Ada \u2192 Ben · distance");
-    await walk(page).nth(6).click();
-    await expect(board(page)).toBeVisible();
-    // a move aimed at nobody names only the person it is about
-    await expectCaption(page, "Ada · defined self");
+    await expect(page.locator("#path .here")).toHaveText("Timeline");
+    await stored(page).click();
+    const years = await drawer(page).locator('.path [data-step="1"]').innerText();
+    await drawer(page).locator('.path [data-step="1"]').click();
+    await expect(drawer(page)).toBeHidden();
+    await expect(page.locator("#path .here")).toHaveText(years);
   });
 
-  // R-0178
-  test("the picture keeps its height while the walk is stepped", async ({
-    page,
-  }) => {
+  // R-0113, R-0161
+  test("is a drawing, with no legend, no table and no name for a symbol", async ({ page }) => {
     await settle(page);
-    await walk(page).nth(2).click();
-    await expect(board(page)).toBeVisible();
-    await page.waitForTimeout(800);
-    const before = await page.locator("#chat-screen .pic").boundingBox();
-    await walk(page).nth(6).click();
-    await page.waitForTimeout(500);
-    const after = await page.locator("#chat-screen .pic").boundingBox();
-    expect(after?.height).toBe(before?.height);
+    await stored(page).click();
+    await expect(drawer(page).locator(".draw svg")).toBeVisible();
+    await expect(drawer(page).locator("table")).toHaveCount(0);
+    // the words are the people's own; the drawing names no symbol
+    await expect(drawer(page).locator(".draw")).not.toContainText(/legend|toward|distance|cutoff|conflict|symptom|functioning|anxiety/i);
+  });
+
+  // R-0562, R-0071
+  test("steps only when tapped, and Back and the dots step it too", async ({ page }) => {
+    await settle(page);
+    await stored(page).click();
+    await page.waitForTimeout(3000);
+    await expect(count(page)).toHaveText("1 of 4");
+    await drawer(page).locator('[data-act="next"]').click();
+    await expect(count(page)).toHaveText("2 of 4");
+    await drawer(page).locator('[data-act="dot"]').nth(3).click();
+    await expect(count(page)).toHaveText("4 of 4");
+    await expect(drawer(page).locator(".ask")).toHaveText("Where was Cal in the year Ada stopped speaking to Ben?");
+    await drawer(page).locator('[data-act="back"]').click();
+    await expect(count(page)).toHaveText("3 of 4");
+    await expect(drawer(page).locator(".guess")).toHaveText(/^My guess: /);
+  });
+
+  // R-0546, R-0561
+  test("the picture keeps its height from the first snapshot to the last", async ({ page }) => {
+    await settle(page);
+    await stored(page).click();
+    const height = () => drawer(page).locator(".draw").evaluate((d) => d.getBoundingClientRect().height);
+    const first = await height();
+    for (let i = 1; i < 4; i++) {
+      await drawer(page).locator('[data-act="next"]').click();
+      expect(await height()).toBe(first);
+    }
+  });
+
+  // R-0542, R-0563, R-0071
+  test("the cluster's explain opens the told case straight away, never the board", async ({ page }) => {
+    await settle(page);
+    const statements = await page.evaluate(async () => {
+      const sessions = await (await fetch("/app/sessions")).json();
+      return (await (await fetch(`/app/sessions/${sessions[0].id}`)).json()).statements;
+    });
+    const play = statements.find((s: { case: unknown }) => s.case);
+    await page.route(/\/app\/play$/, (route) =>
+      route.fulfill({
+        json: { statement: play.text, statement_id: play.id, kind: "play", cluster_id: play.cluster_id, case: play.case },
+      }),
+    );
+    const cluster = page.locator('.ss-hit[data-target="cluster"]');
+    if (await cluster.first().isVisible().catch(() => false)) await cluster.first().click();
+    await page.locator("#cap-play").click();
+    await expect(drawer(page)).toBeVisible();
+    await expect(page.locator("#view .ss.board")).toHaveCount(0);
+    await expect(drawer(page).locator(".path")).toHaveText(/^Timeline › .+ › explain$/);
+    await expect(count(page)).toHaveText("1 of 4");
+    await drawer(page).locator('.path [data-step="1"]').click();
+    await expect(drawer(page)).toBeHidden();
+    await expect(page.locator("#path .here")).not.toHaveText("Timeline");
   });
 });
 
-/** The coach talking a cluster through: two moves, each named in its own
- * sentence, answered at once so the pacing is the page's own. */
-const walkThrough = async (page: Page) => {
-  await page.route(/\/app\/play$/, (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        statement:
-          "In 1990 Ada [[event:20|moved toward Ben]], and it was the start of a long " +
-          "stretch of trying. A year later she [[event:21|pulled away from him]] again.",
-        statement_id: 9401,
-        kind: "play",
-        cluster_id: (route.request().postDataJSON() as { cluster_id: string }).cluster_id,
-      }),
-    }),
-  );
-  await settle(page);
-  const cluster = page.locator('.ss-hit[data-target="cluster"]');
-  if (await cluster.first().isVisible().catch(() => false)) await cluster.first().click();
-  await page.locator("#cap-play").click();
-  await expect(board(page)).toBeVisible();
-  await page.waitForTimeout(800);
-};
+test.describe("the drawer on a small phone", () => {
+  test.use({ storageState: stateFor("whitlock"), viewport: { width: 375, height: 667 } });
 
-test.describe("a play-through", () => {
+  // R-0547, R-0558, R-0561
+  test("stops shrinking at 13px labels, 36px shapes and a 20px margin, and scrolls instead", async ({ page }) => {
+    await settle(page);
+    await stored(page).click();
+    await drawer(page).locator('[data-act="dot"]').last().click();
+    const seen = await drawer(page).evaluate((p) => {
+      const svg = p.querySelector<SVGSVGElement>(".draw svg")!;
+      const top = p.querySelector(".draw")!.getBoundingClientRect().top;
+      const drawn = [...svg.querySelectorAll(".p")].map((g) => g.getBoundingClientRect());
+      const lv = p.querySelector(".lv")!;
+      return {
+        label: 13 * svg.getScreenCTM()!.a,
+        shape: Math.min(...[...svg.querySelectorAll(".shape")].map((s) => s.getBoundingClientRect().width)),
+        margin: Math.min(...drawn.map((r) => r.top)) - top,
+        scrolls: lv.scrollHeight > lv.clientHeight,
+      };
+    });
+    expect(seen.label).toBeGreaterThanOrEqual(13);
+    expect(seen.shape).toBeGreaterThanOrEqual(36);
+    expect(seen.margin).toBeGreaterThanOrEqual(20);
+    expect(seen.scrolls).toBe(true);
+  });
+});
+
+test.describe("a new snapshot's marks", () => {
+  test.use({ storageState: stateFor("whitlock") });
+
+  // R-0557
+  test("are at full strength within 300ms of the tap", async ({ page }) => {
+    await settle(page);
+    await stored(page).click();
+    await page.waitForTimeout(600);
+    await drawer(page).locator('[data-act="next"]').click();
+    await page.waitForTimeout(300);
+    const faint = await drawer(page).evaluate((p) =>
+      [...p.querySelectorAll(".draw .now, .draw .pop")]
+        .map((m) => Number(getComputedStyle(m).opacity))
+        .filter((o) => o < 0.99),
+    );
+    expect(faint).toEqual([]);
+  });
+});
+
+test.describe("a chip in a walk told the old way", () => {
   test.use({ storageState: stateFor("play") });
 
-  // R-0171
-  test("holds a move until its sentence is typed, and about two seconds more", async ({
-    page,
-  }) => {
-    await walkThrough(page);
-    await page.evaluate(() => {
-      const log: { at: number; what: string; text: string }[] = [];
-      (window as unknown as { paced: typeof log }).paced = log;
-      new MutationObserver(() => {
-        const words = [...document.querySelectorAll(".bub.coach .words")].at(-1);
-        const caption = document.querySelector("#chat-screen .bcap");
-        log.push({ at: performance.now(), what: "words", text: words?.textContent ?? "" });
-        log.push({ at: performance.now(), what: "caption", text: caption?.textContent ?? "" });
-      }).observe(document.body, { subtree: true, childList: true, characterData: true });
-    });
-    await page.locator('#chat-screen .pctl [data-target="explain"]').click();
-    await expect(page.locator("#chat-screen .bcap")).toContainText("away", { timeout: 30_000 });
-    const log = await page.evaluate(
-      () => (window as unknown as { paced: { at: number; what: string; text: string }[] }).paced,
-    );
-    const stepped = log.find((e) => e.what === "caption" && e.text.includes("away"))!.at;
-    // the last words written before the board moved on: the sentence about
-    // the first move and the start of the next one, up to its chip
-    const typed = log
-      .filter((e) => e.what === "words" && e.at < stepped - 100)
-      .reduce((last, e, i, all) => (i && e.text !== all[i - 1].text ? e : last)).at;
-    expect(stepped - typed).toBeGreaterThanOrEqual(1500);
-    expect(stepped - typed).toBeLessThanOrEqual(2600);
+  // R-0501, R-0570
+  test("selects its moment on the timeline, in place, and opens nothing", async ({ page }) => {
+    await settle(page);
+    const old = page.locator(".bub.coach[data-play]").first();
+    await old.locator(".chip.data").first().click();
+    await expect(page.locator("#path .here")).toContainText("Ada");
+    await expect(drawer(page)).toBeHidden();
+  });
+});
+
+test.describe("what the coach aims at with people and moves", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  const aim = async (page: Page, view: Record<string, unknown>) => {
+    await mockTurn(page, { statement: "Look at these.", statement_id: 9501, did: [{ type: "view", view }] });
+    await settle(page);
+    await page.locator("#composer").fill("Show me.");
+    await page.locator("#send").click();
+    await expect(drawer(page)).toBeVisible();
+  };
+
+  // R-0570, R-0075
+  test("a sequence opens the play-by-play told by nobody: the events' own words, no point and no question", async ({ page }) => {
+    await aim(page, { kind: "sequence", events: [20, 22, 23] });
+    await expect(count(page)).toHaveText("1 of 3");
+    await expect(drawer(page).locator(".point")).toHaveCount(0);
+    await drawer(page).locator('[data-act="dot"]').last().click();
+    await expect(drawer(page).locator(".ask")).toHaveCount(0);
+    await expect(page.locator(".bub.coach").last()).toContainText("Look at these.");
   });
 
-  // R-0171
-  test("keeps each move's own eight-second loop while it is held", async ({ page }) => {
-    await walkThrough(page);
-    await page.locator('#chat-screen .pctl [data-target="explain"]').click();
-    await expect(page.locator(".bub.coach .chip").first()).toBeVisible({ timeout: 30_000 });
-    const loop = await page.locator("#view .ss.board .tarrow").evaluate((arrow) => ({
-      css: arrow.getAnimations().map((a) => Number(a.effect!.getTiming().duration)),
-      svg: [...arrow.querySelectorAll("animate")].map((a) => a.getAttribute("dur")),
-    }));
-    expect(loop.css).toEqual([8000]);
-    expect(new Set(loop.svg)).toEqual(new Set(["8s"]));
+  // R-0570, R-0076
+  test("a triangle opens the play-by-play of the events between its people", async ({ page }) => {
+    await aim(page, { kind: "triangle", persons: [1, 2, 3] });
+    await expect(count(page)).toContainText(" of ");
+    await expect(page.locator("#view .ss.board")).toHaveCount(0);
   });
 });

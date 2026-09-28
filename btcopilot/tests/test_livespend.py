@@ -11,6 +11,7 @@ from btcopilot.coachmodel import Spent
 from btcopilot.tests.live import passrate
 from btcopilot.tests.live import test_coachturn as coachturn
 from btcopilot.tests.live.criterion import Criterion, passes
+from btcopilot.quality import Source
 from btcopilot.tests.live.run import RUN_CAP, Outcome, Run
 
 MODEL = "claude-opus-5-5"
@@ -65,6 +66,16 @@ def test_a_run_over_its_cap_stops_and_is_recorded_stopped(tmp_path, monkeypatch)
         Run(MODEL, GIT, tmp_path).open("key")
 
 
+def test_a_run_with_a_case_awaiting_an_answer_is_neither_passed_nor_paid(tmp_path):
+    # R-0568
+    run = Run(MODEL, GIT, tmp_path)
+    run.source = Source.Subscription
+    run.begin("dumped", "once")
+    run.end("dumped", Outcome.Awaiting)
+    row = run.finish(pytest.ExitCode.OK)
+    assert (row["status"], row["source"], row["cost"]) == ("awaiting", "subscription", 0.0)
+
+
 def test_a_run_writes_one_results_row(tmp_path):
     # R-0507
     run = Run(MODEL, GIT, tmp_path)
@@ -77,12 +88,13 @@ def test_a_run_writes_one_results_row(tmp_path):
     run.finish(pytest.ExitCode.TESTS_FAILED)
     (path,) = tmp_path.glob("????-??-??T*.json")
     row = json.loads(path.read_text())
-    assert {k: row[k] for k in ("model", "git", "status", "reason", "cost")} == {
+    assert {k: row[k] for k in ("model", "git", "status", "reason", "cost", "source")} == {
         "model": MODEL,
         "git": GIT,
         "status": "failed",
         "reason": None,
         "cost": 0.75,
+        "source": "api",
     }
     assert row["tokens"] == {
         "input": 300,

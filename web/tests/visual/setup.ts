@@ -102,6 +102,7 @@ export const KEYS = [
   "longmove",
   "longname",
   "editable",
+  "whitlock",
 ] as const;
 export type Key = (typeof KEYS)[number];
 
@@ -122,6 +123,33 @@ export function flask(...args: string[]): string {
 
 /** A wide window pins the drawer open beside the thread and draws no list
  * button (R-0352); on a phone the drawer waits behind the button. */
+/** Explain answered without a model (R-0568): the play-by-play for whatever
+ * cluster is asked for, told from the record's own events, one picture for each
+ * of its first dated moments, three at least and six at most. Nothing reaches
+ * the server's /play, so no run adds a message to a shared session. */
+export async function tellWithoutModel(
+  page: Page,
+  only: (e: Record<string, unknown>) => boolean = () => true,
+): Promise<void> {
+  await page.route(/\/app\/play$/, async (route) => {
+    const cluster_id = (route.request().postDataJSON() as { cluster_id: string }).cluster_id;
+    const timeline = await (await page.request.get("/app/timeline")).json();
+    const cluster = timeline.clusters.find((c: { id: string }) => c.id === cluster_id);
+    const dated = new Map<string, number>();
+    for (const e of timeline.events as { id: number; dateTime: string | null }[])
+      if (cluster.event_ids.includes(e.id) && e.dateTime && only(e) && !dated.has(e.dateTime.slice(0, 10)))
+        dated.set(e.dateTime.slice(0, 10), e.id);
+    const snapshots = [...dated]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(0, 6)
+      .map(([date, id]) => ({ date, event_ids: [id], fact: `What happened on ${date}.`, guess: null }));
+    const told = { cluster_id, point: "One thing followed another.", snapshots, question: "Who else was there?" };
+    await route.fulfill({
+      json: { statement: told.point, statement_id: null, kind: "play", cluster_id, case: told },
+    });
+  });
+}
+
 export const pinned = (page: Page) => page.locator("#chat-drawer").isVisible();
 
 /** Where the lists are: the drawer pinned beside the thread on a wide window,

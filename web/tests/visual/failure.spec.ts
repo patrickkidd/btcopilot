@@ -92,22 +92,28 @@ test.describe("a send that does not go through", () => {
 test.describe("an explain that does not go through", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0182
-  test("warns under the board and leaves the board up", async ({ page }) => {
+  // R-0182, R-0570
+  test("warns in the thread and opens no play-by-play", async ({ page }) => {
     await settle(page);
     await page.route("**/app/play", (route) =>
       route.fulfill({ status: 500, body: "no" }),
     );
     await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-
-    // the board leaving and the board arriving overlap for the zoom
-    const explain = page.locator('#chat-screen .pctl [data-target="explain"]');
-    await expect(explain).toHaveCount(1);
-    await explain.click();
     await expect(warning(page)).toHaveText(/server broke/);
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    // and the control is live again, so it can be asked a second time
-    await expect(explain).toBeEnabled();
+    await expect(page.locator("#pbp")).toBeHidden();
+    // and explain is live again, so it can be asked a second time
+    await expect(page.locator("#cap-play")).toBeEnabled();
+  });
+
+  // R-0182, R-0563
+  test("says in plain words when the coach could not tell it, and explain can be asked again", async ({ page }) => {
+    await settle(page);
+    await page.route("**/app/play", (route) =>
+      route.fulfill({ status: 422, body: "untold: The coach couldn't tell this one; try again." }),
+    );
+    await page.locator("#cap-play").click();
+    await expect(warning(page)).toContainText("The coach couldn't tell this one; try again.");
+    await expect(page.locator("#pbp")).toBeHidden();
+    await expect(page.locator("#cap-play")).toBeEnabled();
   });
 });

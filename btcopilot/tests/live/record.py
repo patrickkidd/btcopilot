@@ -9,12 +9,13 @@ import json
 import sys
 from pathlib import Path
 
-from btcopilot.quality import EVALS, SCORED, Status
+from btcopilot.quality import EVALS, SCORED, Source, Status
 from btcopilot.tests.repo import REPO
 
 
 def record(path: Path, note: str, kept: Path = REPO / EVALS) -> Path:
     run = json.loads(path.read_text())
+    Source(run["source"])
     if run["status"] == Status.Stopped:
         raise ValueError(f"{path.name} stopped partway ({run['reason']}); a stopped run is never kept")
     if not any(case["outcome"] in SCORED for case in run["cases"]):

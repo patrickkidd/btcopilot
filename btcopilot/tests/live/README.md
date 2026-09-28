@@ -21,6 +21,13 @@ date is fixed so a saved call matches from one day to the next. `LIVE_REPLAY` pi
 | `replay` (default) | replays what is saved, records what is not |
 | `record` | every call real, saved again |
 | `only` | replays, fails on a call not saved; no testing key, $0 |
+| `dump` | replays; writes each call not saved to `LIVE_REQUESTS` and marks its case awaiting; no testing key, $0 |
+
+A dumped request is answered on the Claude Code subscription, not the API: write the assistant
+message (`{"model": ..., "content": [text and tool_use blocks]}`) to a file and save it with
+`uv run python -m btcopilot.tests.live.answer <request file> <answer file>`. It is sealed into
+`private/replays/` marked `source: subscription`; the next run replays it at $0 and its results
+and the dashboard's pass-rate rows say `subscription`.
 
     LIVE_REPLAY=only SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt uv run pytest \
         btcopilot/tests/live --e2e -m "not waiting"

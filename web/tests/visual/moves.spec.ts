@@ -38,15 +38,6 @@ test.describe("the move language", () => {
       await inside(cell.locator("svg"), cell);
     });
   }
-
-  // R-0288
-  test("the board a coach's triangle opens", async ({ page: browser }) => {
-    test.skip(test.info().project.name !== "phone");
-    await browser.goto(url);
-    const cell = browser.locator("#m-triangle-board");
-    await expect(cell.locator("svg")).toBeVisible();
-    await inside(cell.locator("svg"), cell);
-  });
 });
 
 test.describe("what a chip does", () => {

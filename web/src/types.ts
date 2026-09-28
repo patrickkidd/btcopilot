@@ -268,6 +268,9 @@ export interface Statement {
   kind: StatementKind;
   /** The cluster a play-by-play narrates. Null on every other kind. */
   cluster_id: string | null;
+  /** A play-by-play's snapshots; null on every other message and on a play
+   * told before snapshots. */
+  case: Case | null;
   turn_id: string | null;
   /** What the coach did in this statement's turn: behind a reply, or before a
    * turn failed with these words left unanswered. */
@@ -361,11 +364,30 @@ export interface Reply {
   discussion_id: number;
 }
 
+/** One picture of a play-by-play: a date, the events on it, the fact line and
+ * the coach's optional guess (btcopilot/case.py). */
+export interface Snapshot {
+  date: string;
+  event_ids: number[];
+  fact: string;
+  guess: string | null;
+}
+
+/** A cluster as the coach told it in snapshots (R-0563), or a set of events
+ * nobody told, with no cluster, point or question (R-0570). */
+export interface Case {
+  cluster_id: string | null;
+  point: string;
+  snapshots: Snapshot[];
+  question: string;
+}
+
 export interface PlayReply {
   statement: string;
   statement_id: number | null;
   kind: StatementKind;
   cluster_id: string;
+  case: Case;
 }
 
 /** A session is a Discussion. The sheet lists them by recency; the coach titles

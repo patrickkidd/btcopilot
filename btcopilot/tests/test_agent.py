@@ -20,7 +20,6 @@ from btcopilot.coachturn import (
 )
 from btcopilot.turnlog import TurnEventKind as EventKind
 from btcopilot.models import Author, Change, ModelCall, StatementKind
-from btcopilot.playturn import PlayTurn
 from btcopilot.prompts import get_agent_prompt
 from btcopilot.toolbox import ToolName
 from btcopilot.schema import (
@@ -259,39 +258,6 @@ def test_the_coach_is_handed_a_map_of_the_record_and_what_the_user_pointed_at(
     assert "tell me about this" in model.histories[0][-1]["content"]
 
 
-def test_play_by_play_names_every_event_once_in_date_order(test_user):
-    # R-0074
-    data = DiagramData(
-        people=[asdict(Person(id=1, name="Wren"))],
-        events=[
-            asdict(
-                Event(
-                    id=10,
-                    kind=Kind.Noted,
-                    person=1,
-                    dateTime="1994-06-01",
-                    description="moved out",
-                )
-            ),
-            asdict(Event(id=11, kind=Kind.Shift, person=1, dateTime="1994-12-01")),
-        ],
-        clusters=[asdict(Cluster(id="c1", title="That year", summary="", eventIds=[10, 11]))],
-    )
-    model = Model(
-        said("[[event:10|he moved out]] then [[event:11|she got sick]]. [[event:10]]")
-    )
-    reply = PlayTurn.stored(data, "c1", model=model).run()
-
-    assert reply["cluster_id"] == "c1"
-    assert [target for _, target, _ in chips.parse(reply["statement"], data)] == [
-        "10",
-        "11",
-        "10",
-    ]
-    assert "10 1994-06-01" in model.histories[0][-1]["content"]
-    assert "11 1994-12-01" in model.histories[0][-1]["content"]
-
-
 def test_chat_returns_the_words_and_the_events_behind_them(web, family, monkeypatch):
     # R-0185
     from btcopilot.tests.conftest import csrf_token
@@ -363,36 +329,17 @@ def test_people_and_their_events_all_land_in_one_turn(discussion, family):
     ] == [("1994-01-01", 11), ("1996-01-01", 12)]
 
 
-def test_offered_chips_never_reach_the_transcript(test_user):
+def test_offered_chips_never_reach_the_transcript():
     # R-0361
     """Offered answers are dropped (Patrick, 2026-09-21): people type their own
     words. A model that still writes them loses only the offers."""
-    data = DiagramData(
-        people=[asdict(Person(id=1, name="Wren"))],
-        events=[
-            asdict(
-                Event(
-                    id=10,
-                    kind=Kind.Noted,
-                    person=1,
-                    dateTime="1994-06-01",
-                    description="moved out",
-                )
-            )
-        ],
-        clusters=[asdict(Cluster(id="c1", title="That year", summary="", eventIds=[10]))],
+    data = DiagramData(people=[asdict(Person(id=1, name="Wren"))])
+    kept = chips.validate(
+        "[[person:1|Wren]] is where it starts. What came next?\n\n"
+        "[[ask:the winter after he left]] [[ask:how Wren took it]]",
+        data,
     )
-    model = Model(
-        said(
-            "[[event:10|he moved out]] is where it starts. What came next?\n\n"
-            "[[ask:the winter after he left]] [[ask:how Wren took it]]"
-        )
-    )
-    statement = PlayTurn.stored(data, "c1", model=model).run()["statement"]
-
-    assert "[[ask:" not in statement
-    assert statement.endswith("What came next?")
-    assert chips.parse(statement, data) == [(chips.ChipKind.Event, "10", "he moved out")]
+    assert kept == "[[person:1|Wren]] is where it starts. What came next?"
 
 
 def test_a_turn_that_never_stops_calling_tools_still_says_something(
@@ -553,23 +500,6 @@ def test_a_label_is_measured_in_what_a_reader_sees(discussion, family):
     assert reply["statement"] == f"[[event:10|{label}]]."
 
 
-def test_a_play_by_play_is_marked_as_one_and_names_its_stretch(discussion, family):
-    # R-0170
-    """The page routes a tap by the kind of message it is in: a chip in a walk
-    steps the board, a chip anywhere else selects the moment."""
-    data = family.get_diagram_data()
-    model = Model(said("[[event:10|the move]] is the whole of it."))
-    reply = PlayTurn.stored(data, "c1", discussion=discussion, model=model).run()
-
-    assert reply["kind"] == StatementKind.Play.value
-    assert reply["cluster_id"] == "c1"
-
-    stored = discussion.statements[-1]
-    assert stored.id == reply["statement_id"]
-    assert stored.kind is StatementKind.Play
-    assert stored.cluster_id == "c1"
-
-
 def test_every_message_the_page_reads_back_carries_its_kind(web, family, monkeypatch):
     # R-0170
     """The page routes a chip tap by the kind of message it sits in, so the
@@ -579,10 +509,6 @@ def test_every_message_the_page_reads_back_carries_its_kind(web, family, monkeyp
     monkeypatch.setattr(
         "btcopilot.coachturn.CoachModel",
         lambda *a, **k: Model(said("Tell me about [[event:10|the move]].")),
-    )
-    monkeypatch.setattr(
-        "btcopilot.playturn.CoachModel",
-        lambda *a, **k: Model(said("[[event:10|the move]] is the whole of it.")),
     )
     token = csrf_token(web)
 
@@ -595,19 +521,10 @@ def test_every_message_the_page_reads_back_carries_its_kind(web, family, monkeyp
     )
     assert said_reply["kind"] == StatementKind.Turn.value
 
-    played = web.post(
-        "/app/play",
-        json={"cluster_id": "c1"},
-        headers={"X-CSRFToken": token},
-    ).get_json()
-    assert played["kind"] == StatementKind.Play.value
-    assert played["cluster_id"] == "c1"
-
     stored = web.get(f"/app/sessions/{said_reply['discussion_id']}").get_json()
     assert [(s["kind"], s["cluster_id"]) for s in stored["statements"]] == [
         (StatementKind.Turn.value, None),
         (StatementKind.Turn.value, None),
-        (StatementKind.Play.value, "c1"),
     ]
 
 

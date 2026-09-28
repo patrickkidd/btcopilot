@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { stateFor, tellWithoutModel } from "./setup";
 
 /** Opening a cluster and coming back out of it: the boxes at rest, the path
  * that goes back up, the page behind the small i, the board, and the card
@@ -48,40 +48,17 @@ const wireY = (page: Page) =>
 test.describe("the three levels on the moves record", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0128
-  test("the whole line, one cluster, then its board, each in turn", async ({ page }) => {
+  // R-0128, R-0570
+  test("the whole line, one cluster, then its play-by-play, each in turn", async ({ page }) => {
+    await tellWithoutModel(page);
     await settle(page);
     await toRest(page);
     await expect(path(page)).toHaveText("Timeline");
     await openCluster(page);
     await expect(name(page)).toHaveText("The walk");
     await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    await expect(page.locator("#view .pctl button")).toHaveCount(3);
-  });
-
-  // R-0131, R-0540
-  test("the path on the board goes back to the cluster it came from", async ({ page }) => {
-    await settle(page);
-    await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    await step(page, 1).click();
+    await expect(page.locator("#pbp")).toBeVisible();
     await expect(page.locator("#view .ss.board")).toHaveCount(0);
-    await expect(zones(page).first()).toBeVisible();
-    await expect(name(page)).toHaveText("The walk");
-  });
-
-  // R-0071
-  test("explain puts the whole cluster on the board at once", async ({ page }) => {
-    await settle(page);
-    await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    // the first move is between two people, and everyone the cluster
-    // involves is already on stage for it
-    for (const name of ["Ada", "Ben", "Cal"])
-      await expect(page.locator("#view .ss.board svg")).toContainText(name);
-    await expect(page.locator('#view [data-target="prev"]')).toBeDisabled();
-    await expect(page.locator('#view [data-target="next"]')).toBeEnabled();
   });
 
   // R-0376
@@ -152,7 +129,7 @@ test.describe("the boxes at rest", () => {
 test.describe("one cluster open on the sparse record", () => {
   test.use({ storageState: stateFor("three40") });
 
-  // R-0131, R-0540
+  // R-0540
   test("the path closes it and shows the whole line", async ({ page }) => {
     await settle(page);
     await openCluster(page);
@@ -342,20 +319,19 @@ test.describe("a level sliding in", () => {
     expect(colours.every(solid)).toBe(true);
   });
 
-  // R-0230
-  test("the board slides in on ground of its own", async ({ page }) => {
+  // R-0230, R-0570, R-0132
+  test("the play-by-play slides in on ground of its own", async ({ page }) => {
+    await tellWithoutModel(page);
     await settle(page);
-    const seen = cards(page, 2);
     await page.locator("#cap-play").click();
-    const colours = await seen;
-    expect(colours.every(solid)).toBe(true);
+    await expect(page.locator("#pbp")).toBeVisible();
+    expect(solid(await page.locator("#pbp").evaluate((d) => getComputedStyle(d).backgroundColor))).toBe(true);
   });
 
   // R-0230, R-0542
   test("going back up slides the level away on ground of its own", async ({ page }) => {
     await settle(page);
-    await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
+    await page.locator("#info").click();
     await page.waitForTimeout(600);
     const seen = cards(page, 1);
     await step(page, 1).click();

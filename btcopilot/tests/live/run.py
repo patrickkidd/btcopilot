@@ -13,7 +13,7 @@ import pytest
 
 from btcopilot.coachmodel import Spent
 from btcopilot.pricing import cost
-from btcopilot.quality import Outcome, Status
+from btcopilot.quality import Outcome, Source, Status
 
 RUN_CAP = Decimal("3.00")
 DAILY_CAP = RUN_CAP
@@ -50,6 +50,7 @@ class Run:
         self.reason: str | None = None
         self.path: Path | None = None
         self.row: dict | None = None
+        self.source = Source.Api
 
     @property
     def day(self) -> str:
@@ -126,6 +127,8 @@ class Run:
             self.stop("interrupted")
         if self.reason:
             status = Status.Stopped
+        elif any(case.outcome is Outcome.Awaiting for case in self.cases.values()):
+            status = Status.Awaiting
         elif exitstatus == pytest.ExitCode.OK:
             status = Status.Passed
         else:
@@ -136,6 +139,7 @@ class Run:
             "git": self.git,
             "status": status,
             "reason": self.reason,
+            "source": self.source,
             "tokens": asdict(self.spent),
             "cost": float(self.cost),
             "cases": [
@@ -156,7 +160,7 @@ class Run:
     def summary(self) -> str:
         stopped = f" ({self.reason})" if self.reason else ""
         return (
-            f"live run {self.row['status']}{stopped}: ${self.cost:.4f} spent "
+            f"live run {self.row['status']}{stopped} on the {self.source}: ${self.cost:.4f} spent "
             f"({self.spent.input} tokens in, {self.spent.output} out, "
             f"{self.spent.cache_creation} cached, {self.spent.cache_read} read back); "
             f"${self.today():.4f} of ${DAILY_CAP} spent today; results in {self.path}"

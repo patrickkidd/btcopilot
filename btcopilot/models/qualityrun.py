@@ -12,6 +12,14 @@ class QualityKind(enum.StrEnum):
     CodingF1 = "coding_f1"
 
 
+class Source(enum.StrEnum):
+    """Who answered a run's model calls: the paid API, or a Claude Code
+    subscription answering the saved requests at no API cost."""
+
+    Api = "api"
+    Subscription = "subscription"
+
+
 class QualityRun(db.Model, ModelMixin):
     """One measured value of one recorded run, for the quality dashboard. The
     release loads every run recorded in the repository (R-0517)."""
@@ -31,3 +39,7 @@ class QualityRun(db.Model, ModelMixin):
     metric = Column(String(255), nullable=False)
     value = Column(Float, nullable=False)
     note = Column(Text, nullable=True)
+    source = Column(
+        Enum(Source, values_callable=lambda e: [x.value for x in e]),
+        nullable=False,
+    )

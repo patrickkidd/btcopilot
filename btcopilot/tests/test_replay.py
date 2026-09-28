@@ -1,7 +1,11 @@
+import json
+
 import pytest
 
 from btcopilot.coachmodel import CoachModel, ModelTurn, Spent, ToolCall
 from btcopilot.llmutil import Served
+from btcopilot.quality import Source
+from btcopilot.tests.live import answer
 from btcopilot.tests.live.replay import Miss, Mode, Replay
 
 MESSAGES = [{"role": "user", "content": "My brother moved away last spring."}]
@@ -82,3 +86,60 @@ def test_record_calls_the_model_even_when_saved(tmp_path):
     call(Replay(Mode.Replay, tmp_path, seal=False), wire)
     call(Replay(Mode.Record, tmp_path, seal=False), wire)
     assert wire.calls == 2
+
+
+class Unpaid:
+    """A coach with no key: any call is a paid call that must not happen."""
+
+    def turn(self, model, system, messages, tools, turn_id=""):
+        raise AssertionError("dump mode reached the model")
+        yield
+
+
+def dumped(tmp_path) -> Replay:
+    replay = Replay(Mode.Dump, tmp_path / "store", seal=False, requests=tmp_path / "requests")
+    replay.begin()
+    with pytest.raises(Miss):
+        call(replay, Unpaid())
+    return replay
+
+
+def test_dump_writes_the_request_and_calls_no_model(tmp_path):
+    # R-0568
+    replay = dumped(tmp_path)
+    (request,) = (tmp_path / "requests").glob("*.json")
+    assert replay.awaiting == [request.name]
+    written = json.loads(request.read_text())
+    assert (written["system"], written["messages"], written["tools"]) == (
+        "The coaching text.",
+        MESSAGES,
+        TOOLS,
+    )
+    assert written["model"] == CoachModel().model
+    assert not (tmp_path / "store").exists()
+
+
+def test_a_subscription_answer_replays_where_replay_only_finds_it(tmp_path):
+    # R-0568
+    dumped(tmp_path)
+    (request,) = (tmp_path / "requests").glob("*.json")
+    reply = tmp_path / "reply.json"
+    reply.write_text(
+        json.dumps(
+            {
+                "model": "claude-opus-5-5",
+                "content": [
+                    {"type": "text", "text": "When did he leave?"},
+                    {"type": "tool_use", "id": "t1", "name": "add_event", "input": {"kind": "moved"}},
+                ],
+            }
+        )
+    )
+    saved = answer.save(request, reply, tmp_path / "store", seal=False)
+    assert json.loads(saved.read_text())["source"] == Source.Subscription
+    replay = Replay(Mode.Only, tmp_path / "store", seal=False)
+    words, turn = call(replay, Unpaid())
+    assert words == ["When did he leave?"]
+    assert turn.calls == [ToolCall("t1", "add_event", {"kind": "moved"})]
+    assert turn.spent == Spent()
+    assert replay.subscribed

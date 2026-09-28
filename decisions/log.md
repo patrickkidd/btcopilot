@@ -1836,3 +1836,19 @@ Deferred with it: fixing the play-by-play drawing bugs he confirmed [R-0526].
 Patrick. Queued, not run now: it happens when he next starts a new session, so the progress of
 the running session is not lost mid-move. It follows the recommendations of the 2026-09-25
 migration plan; the next session reminds him first (STATE's top paragraph).
+
+## 2026-09-27: FD-363 — the coach tells a play-by-play through one tool; the drawing reads the record
+
+Built to the approved snapshots design and its prompt draft (design/playbyplay-snapshots/
+PROMPT_DRAFT.md) [R-0545, R-0563]. The coach is offered one tool, play_by_play: the cluster id,
+the point, 3 to 6 snapshots of {date, event ids, fact, optional "My guess:" line}, and the
+question. Code refuses only on ids, dates, count, order and the guess prefix; judgement faults
+are observed in the evals, never blocked. A refused call is handed back with what is wrong, up to
+three times; a coach that never calls it fails the turn. The case is
+kept on the play message (a new column), so it opens again. The cast and every mark are computed
+by code from the record, not named by the coach: the cast rule is a rule, and a drawing the coach
+could word differently each time would break the fixed positions [R-0546]. Play calls are now
+metered like a turn's; they never were. Rejected: a structured prose reply parsed afterwards (no
+schema, and a parse failure has nothing to hand back); forcing the tool with tool_choice (not
+allowed with the coach's thinking). The drawing is a TypeScript port of the approved reference,
+checked to draw byte-for-byte the same on the stand-in cases and on Patrick's four cases.

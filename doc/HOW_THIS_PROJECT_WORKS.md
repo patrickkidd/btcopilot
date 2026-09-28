@@ -111,24 +111,30 @@ no coordination chatter, and never a summary while a subagent is still running. 
 everything until the deliverable is ready for his action, then send one message with all of
 it. Never ask him to review before the agents have finished.
 
-**"Open" means his direction is needed, nothing else (2026-09-26).** An open item is a topic
-he must steer. Work the coordinator owns (deploying, committing, data fixes he already ruled,
-known bugs) is simply done and mentioned in one short line, never listed as open.
+**Reporting (2026-09-26).** An "open" item is only one needing his direction; work the
+coordinator already owns is simply done and named in one line, never listed as open. Never
+restate his message back to him — it burns tokens; answer or act directly.
 
-**Encrypted is never a reason not to know (2026-09-26).** The key is on this machine and on the
-box. Any question about what a prompt, ruling or fixture says is answered by decrypting it
-(`sops -d`, read-only, into context or the job's tmp folder, never into the repo) and reading it;
-"I didn't look at the decrypted prompt" is never an answer.
+**Encrypted is never a reason not to know (2026-09-26).** The key is on this machine and the
+box; any question about a prompt, ruling or fixture is answered by decrypting and reading it,
+never guessed at.
 
-**He rules on a visual concept shown working in a mockup, not on a description and not on a build (2026-09-26; his words: "I won't rule until we have a feature that works", then "I assumed we were talking about a new visual concept with mockups?").** The order for a visual feature: the design's footing in the theory and its assumptions in a few lines; a mockup published as an Artifact, shown on several cases; his ruling; then the build. A concept question is not put to him as a decision, and a build never starts before the ruling.
-
-**Judge a screen by what the user will think is happening, not by whether a ruled behaviour fired (2026-09-27).** A verifier passed the slide-in on selecting a cluster because R-0224 says drilling slides; Patrick: sliding in the same timeline with something selected is disorienting, because the user expects new content. Every UI brief and verification asks, for each transition: is the content new? A slide, a card or a new title only for new content; the same content changes in place (R-0542).
-
-**A Fable UX critic reviews every UI change twice (2026-09-27; Patrick: "you need a more intelligent critic of the UX here").** Once on the brief or mockup before building, once on the verifier's screenshots before handover. It judges from a first-time user's seat: what they think is happening after each tap, whether a target can be hit by a thumb (44px), whether any state is the same content dressed as a new view. The verifier checks rules; the critic checks sense. Failures seen: tapping events a pixel apart inside a cluster; the same timeline slid in as a new view.
-
-**Mockups he rules on (2026-09-27, his words: "Each decision in here needs to have a code … You can't make up elements that already exist … pixel for pixel only").** Every decision carries a code (D1, D2 …) and each frame is labelled with its code and what differs; near-identical frames are cut. Existing elements (the sessions button, play, (i), path row, chat, input) are never redrawn as stand-ins. A mockup of a change to an existing screen is rendered from the real app code in a scratch copy, with real screenshots, not hand-drawn HTML. Trying since 2026-09-26 (his words: "The mock ups basically need to be self-explanatory … then we can look at all the detail with the paragraphs"): each decision is one line naming it, then its frames; method and measurements sit in one collapsed "How this was made" at the bottom. Codes are unique across all pages and never reused. No coined terms.
-
-**Never restate his message back to him (2026-09-26).** It burns tokens; answer or act directly.
+**UI and mockups (2026-09-26/27).** He rules on a visual concept only once it is a working
+mockup published as an Artifact and shown on real cases, never on a description or a build
+(his words: "I won't rule until we have a feature that works"); the order is theory footing,
+mockup, his ruling, then the build. A transition is judged by whether the user would think new
+content arrived, not by whether a ruled behaviour fired: new content earns a slide, a card or a
+new title, and the same content changing in place never does. A Fable UX critic reviews every
+UI change twice — the brief before building, the verifier's screenshots before handover —
+judging a first-time user's sense of what happened and whether a target is thumb-sized, not
+just whether rules were followed (his words: "you need a more intelligent critic of the UX
+here"). Every mockup decision carries a unique code shown on its frame, never reused across
+pages; existing app elements are rendered from the real app code with real screenshots, never
+redrawn as stand-ins (his words: "you can't make up elements that already exist … pixel for
+pixel only"). Trying, not yet ruled: a mockup page cut so each decision is one line naming it
+plus its frames, with method and measurement collapsed at the bottom, the way the feature
+itself must be self-explanatory to a non-technical user; becomes a rule once he has looked and
+said so.
 
 **There is a dev mode and it is used (2026-09-09).** Code changes on disk refresh the page
 instantly; working without one wastes his time [Oracle: R-0227]. The recipe is in STATE.md
@@ -137,18 +143,6 @@ under the review sandbox.
 **Test to the audience, not the artifact (2026-09-02).** A mockup he will look at once gets
 one load and one screenshot. A gallery he must judge across records gets a deterministic
 gate. Only code gets the full loop.
-
-**Trying (2026-09-26), not ruled: a mockup page cut the way a user would see the feature.**
-Patrick asked whether a mockup should be self-explanatory the way the feature must be for a
-non-technical user, with the explaining paragraphs and text levels kept for afterwards — his
-words: "the goal here is to communicate something very simply and effectively to users who are
-non-technical … the mock ups basically need to be self-explanatory … and then we can look at
-all the detail with the paragraphs and multiple levels of hierarchy of text in the artifact. I
-don't know what do you think?" The play-by-play gallery is being re-cut that way to see: one
-line naming the decision, then the phone frames, everything else in one collapsed section at
-the bottom; the console reply the link and the decision. Claude's added reasoning, not his: a
-frame that needs a legend has already failed R-0398. This becomes a rule only when he has
-looked at a page cut this way and said so.
 
 **Captions are written for someone who was not in the room (2026-09-02).** Card captions,
 trade-off lines and option names use common words and name concrete things on screen: what
@@ -261,9 +255,15 @@ store and grep the topic; cite the ruling in the proposal. Judgement calls stay 
 (state-based prompting, tools the coach calls); code only where the behaviour is meant to be
 mechanical.
 
-**Spend is the exception, not the test method (2026-09-25, Patrick; R-0531).** Rule: plumbing is proven with mocks, the local model and recorded real responses replayed from
-fixtures; a real call is never used to prove wiring a unit test already proves. Every paid
-response is saved as a replay fixture so it is paid for once. Real calls happen only once per
-batch, before deploy, and only for a changed prompt or tool. A new refusal in the record's
-checks is wiring a unit test proves, not a tool change; the coordinator applies these rules
-itself and never asks him for spend they already answer (2026-09-26).
+**Spend is the exception, not the test method (2026-09-25, Patrick; R-0531).** Plumbing is
+proven with mocks, the local model and recorded real responses replayed from fixtures; a real
+call is never used to prove wiring a unit test already proves. Every paid response is saved as
+a replay fixture, paid for once; real calls happen only once per batch, before deploy, for a
+changed prompt or tool. The coordinator applies these rules itself and never asks him for spend
+they already answer, such as a refusal a unit test already proves (2026-09-26). Testing stays on
+the Claude Code subscription rather than paid API calls [R-0568, 2026-09-27]: a needed model
+call goes to a Claude Code agent instead, its answer kept as a subscription-sourced replay so
+the suite runs free after; the API is kept for
+the one real turn proving production after a deploy and nothing else unless he asks, and a
+spend request that has not first ruled out the subscription route is not sent. The local model
+answers wherever the model itself is not under test.

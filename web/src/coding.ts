@@ -1,3 +1,5 @@
+import { Drawer } from "./drawer";
+import { untold } from "./snapshots";
 import * as api from "./api";
 import { conceptLinks, conceptsOf } from "./concepts";
 import { el, esc, slideOver, type Title } from "./dom";
@@ -63,6 +65,7 @@ export class Coding {
   private drawer: Menu | null = null;
   private sending = false;
   private picture: Picture;
+  private pbp: Drawer;
   /** Wide enough for the drawer to stand beside the thread; narrower and it
    * comes up over it instead (R-0345). */
   private wide = window.matchMedia(WIDE);
@@ -83,11 +86,17 @@ export class Coding {
     private overlay: HTMLElement,
     private handlers: CodingHandlers,
   ) {
-    // No coach turn in a coding, so the board it opens carries the two step
-    // arrows and nothing to ask with.
-    this.picture = new Picture(view, {
-      onTap: (tap: Tap) => this.onPicture(tap),
-      canExplain: false,
+    this.picture = new Picture(view, { onTap: (tap: Tap) => this.onPicture(tap) });
+    // The play-by-play drawer over this screen, told by nobody: a coding has no
+    // coach turn (R-0570). Its path goes back to the picture the way the
+    // chat's does.
+    const drawer = el("div");
+    view.closest<HTMLElement>(".screen")!.append(drawer);
+    this.pbp = new Drawer(drawer, (step, events) => {
+      this.pbp.close();
+      if (step) this.picture.spotlight(events);
+      else this.picture.back(0);
+      this.marks();
     });
     this.overlay.append(this.scrim, this.sheet);
     this.scrim.hidden = true;
@@ -277,18 +286,10 @@ export class Coding {
   }
 
   /** The row under the picture. Nothing in a coding speaks to the coach, so
-   * the chat's "ask", "in chat" and the board's "explain" are not here: the
-   * one thing the row offers is the walk through an open cluster's moves, on
-   * the record this coding is being written onto.
-   *
-   * The board has its own controls, so while it is up the row holds only
-   * the list button, and keeps its height (R-0450). */
+   * the chat's "ask" and "in chat" are not here: the one thing the row offers
+   * is the play-by-play of an open cluster, told by nobody, on the record this
+   * coding is being written onto (R-0570). */
   private marks(): void {
-    if (this.picture.onBoard()) {
-      this.caption.innerHTML = listButton(LIST_ID);
-      this.wireList();
-      return;
-    }
     const open = this.picture.openCluster();
     if (!open) {
       const say = this.picked === null ? "tap a line" : "tap a cluster";
@@ -297,15 +298,14 @@ export class Coding {
       this.wireList();
       return;
     }
-    const moves = this.picture.countMoves(open.play_ids);
+    const dated = this.picture.countDated(open.event_ids);
     this.caption.innerHTML =
-      tok("coding-play", "g", PLAY_MARK, "play-by-play", moves > 0) +
+      tok("coding-play", "g", PLAY_MARK, "play-by-play", dated > 0) +
       listButton(LIST_ID);
-    if (moves)
-      this.caption.querySelector("#coding-play")?.addEventListener("click", () => {
-        this.picture.openBoard(open.play_ids, open.id);
-        this.marks();
-      });
+    if (dated)
+      this.caption.querySelector("#coding-play")?.addEventListener("click", () =>
+        this.pbp.open(this.timeline, untold(this.timeline, open.event_ids)),
+      );
     this.wireList();
   }
 

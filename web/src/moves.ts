@@ -67,7 +67,9 @@ export const LOOP = 8;
  * drawing's proportions, not its arithmetic, so a ratified length scales to the
  * board it lands on (UI_SPEC resolution 42). Marks that carry no proportion —
  * stroke widths, dash arrays, spike lengths — keep their ratified numbers. */
-const DEMO = { w: 230, h: 130 };
+export const DEMO = { w: 230, h: 130 };
+/** How far a person's emotional field reaches on the ratified demo stage. */
+export const FIELD = 170;
 const tall = (f: Figure) => (f.stage ? f.stage.h / DEMO.h : 1);
 const wide = (f: Figure) => (f.stage ? f.stage.w / DEMO.w : 1);
 
@@ -231,7 +233,7 @@ function rings(
   klass: string,
   clip = "",
   width = 2.4,
-  to = 170,
+  to = FIELD,
   dur = "1.65s",
   fade = ".75;.45;0",
 ): string {
@@ -272,8 +274,8 @@ function wall(frm: Frame, mover: Figure, struck: boolean): string {
     `d="M${n1(back)} ${n1(-spread - 40)} H${n1(L * 2)} V${n1(spread + 40)} H${n1(back)} Z ` +
     `M${n1(wx)} ${-arm} L${n1(wx)} ${arm} L${n1(back)} ${n1(spread)} L${n1(back)} ${n1(-spread)} Z"/>` +
     `</clipPath></defs>` +
-    rings(L, 0, "preA", "", 2.4, 170 * tall(mover)) +
-    rings(L, 0, "postA", ` clip-path="url(#${shadow})"`, 2.4, 170 * tall(mover)) +
+    rings(L, 0, "preA", "", 2.4, FIELD * tall(mover)) +
+    rings(L, 0, "postA", ` clip-path="url(#${shadow})"`, 2.4, FIELD * tall(mover)) +
     `<line class="mv-trace" x1="${n1(rad(mover) + 2)}" y1="0" x2="${n1(wx - 3)}" y2="0" ` +
     `opacity="0">${animate("opacity", "0;0;.55;.55", "0;.4;.46;1", "8s")}</line>` +
     strike +
@@ -410,7 +412,7 @@ function drainArrow(from: Figure, to: Figure): string {
 const ARROW = 0.5;
 
 /** The health cross, and the arrow that says which way it went. */
-function cross(person: Figure, direction: Shift): string {
+export function cross(person: Figure, direction: Shift): string {
   const side = person.mirror ? -1 : 1;
   const cx = person.x + side * (rad(person) + 29);
   const cy = person.y - 6;
@@ -507,7 +509,7 @@ export function zigzag(from: Figure, to: Figure, klass = "mv-tension"): string {
 /** The other party's storm, and the calm that only arrives a beat after the
  * actor has held still. */
 function storm(other: Figure): string {
-  const loud = Math.round(170 * tall(other));
+  const loud = Math.round(FIELD * tall(other));
   const calm = Math.round(150 * tall(other));
   return (
     `<g class="stormlong">` +

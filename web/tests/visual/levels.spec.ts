@@ -106,39 +106,3 @@ test("the arriving level covers the one it came from", async ({ page }) => {
   expect(flight.ground).not.toMatch(/rgba\(0, 0, 0, 0\)|transparent/);
 });
 
-test.describe("the copy of a level that slides", () => {
-  test.use({ storageState: stateFor("moves") });
-
-  // R-0224
-  test("holds no button or control: one explain button while the board slides in", async ({
-    page,
-  }) => {
-    await settle(page);
-    const during = await page.evaluate(
-      () =>
-        new Promise<{ lays: number; explain: number; live: number; controls: number }>((done) => {
-          (document.querySelector("#cap-play") as HTMLElement).click();
-          requestAnimationFrame(() =>
-            requestAnimationFrame(() =>
-              done({
-                lays: document.querySelectorAll(".pic .slide-lay").length,
-                explain: document.querySelectorAll('#chat-screen [data-target="explain"]').length,
-                // the copy is a picture: no button or control of any kind
-                controls: document.querySelectorAll(
-                  ".pic .slide-lay :is(button, input, select, textarea, a[href], [role=button], [tabindex])",
-                ).length,
-                // nothing in the copy can be found, read out or pressed
-                live: document.querySelectorAll(
-                  ".pic .slide-lay:not([inert][aria-hidden='true']), .pic .slide-lay [data-target]",
-                ).length,
-              }),
-            ),
-          );
-        }),
-    );
-    expect(during.lays).toBeGreaterThan(0);
-    expect(during.explain).toBe(1);
-    expect(during.live).toBe(0);
-    expect(during.controls).toBe(0);
-  });
-});

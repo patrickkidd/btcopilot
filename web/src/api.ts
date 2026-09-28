@@ -45,6 +45,9 @@ const REVIEW = "/review";
 /** How long the page waits for an answer before it tells the reader nothing
  * came back. A server that never answers must not leave a caret blinking. */
 const PATIENCE_MS = 60_000;
+/** How long the page waits for a play-by-play: the server's own longest answer
+ * (btcopilot/playturn.py WAIT), so a slow model fails with the server's error. */
+export const PLAY_WAIT_S = 390;
 
 function csrf(): string {
   return (
@@ -87,8 +90,8 @@ export function whatFailed(error: unknown, words = instruction): string {
   return words(failed.said) || "That did not go in";
 }
 
-async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
-  return send(method, ROOT + path, body);
+async function call<T>(method: string, path: string, body?: unknown, patience?: number): Promise<T> {
+  return send(method, ROOT + path, body, false, patience);
 }
 
 /** The same request against the review's own endpoints. */
@@ -101,6 +104,7 @@ async function send<T>(
   url: string,
   body?: unknown,
   keepalive = false,
+  patience = PATIENCE_MS,
 ): Promise<T> {
   let response: Response;
   try {
@@ -112,7 +116,7 @@ async function send<T>(
         "X-CSRFToken": csrf(),
       },
       body: body === undefined ? undefined : JSON.stringify(body),
-      signal: AbortSignal.timeout(PATIENCE_MS),
+      signal: AbortSignal.timeout(patience),
     });
   } catch (error) {
     // Only a request that never got an answer: the network, or the wait above
@@ -158,7 +162,7 @@ export const turnEvents = (turnId: string) =>
   new EventSource(`${ROOT}/turns/${turnId}/events`);
 
 export const play = (clusterId: string) =>
-  call<PlayReply>("POST", "/play", { cluster_id: clusterId });
+  call<PlayReply>("POST", "/play", { cluster_id: clusterId }, PLAY_WAIT_S * 1000);
 
 /** Every tap is learning data (R-0077), including the looks that send nothing.
  * A tap with no item in view is still about the record, so it is stored against

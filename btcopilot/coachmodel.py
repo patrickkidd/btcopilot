@@ -106,10 +106,17 @@ class Refusal(Exception):
 
 
 class CoachModel:
-    def __init__(self, model: str | None = None, effort: str | None = COACH_EFFORT):
-        """No effort is for a model that rejects the setting (Haiku 4.5)."""
+    def __init__(
+        self,
+        model: str | None = None,
+        effort: str | None = COACH_EFFORT,
+        timeout: float | None = None,
+    ):
+        """No effort is for a model that rejects the setting (Haiku 4.5). No
+        timeout is the client's own default."""
         self.model = wire_model(resolve_model(model) if model else RESPONSE_MODEL)
         self.effort = effort
+        self.timeout = timeout
 
     def turn(
         self,
@@ -129,7 +136,10 @@ class CoachModel:
             "coach.turn",
             attributes={"model": self.model, "turn_id": turn_id, "tools": len(tools)},
         ) as span:
-            client = anthropic.Anthropic(**anthropic_args())
+            client = anthropic.Anthropic(
+                **anthropic_args(),
+                **({"timeout": self.timeout} if self.timeout else {}),
+            )
             try:
                 with client.beta.messages.stream(
                     model=self.model,

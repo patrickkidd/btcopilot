@@ -1,7 +1,7 @@
 import "./telemetry";
 import "./theme.css";
 import * as api from "./api";
-import { Chat, wait, type LiveBubble, type PlayTap } from "./chat";
+import { Chat, wait, type LiveBubble } from "./chat";
 import { Picture, Target, Via, type Tap } from "./picture";
 import { Menu, Tab } from "./menu";
 import { Questions } from "./questions";
@@ -29,7 +29,9 @@ import {
   type PicState,
   type Sel,
 } from "./caption";
-import { $, esc, setTitle, slideOver } from "./dom";
+import { $, pathRow, setTitle, slideOver } from "./dom";
+import { Drawer } from "./drawer";
+import { among, untold } from "./snapshots";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { ASK_MARK, IN_CHAT_MARK, listButton, PLAY_MARK, tok } from "./tokens";
@@ -52,6 +54,9 @@ import {
   emptyTimeline,
   Role,
   StatementKind,
+  type Case,
+  type View,
+  ViewKind,
   type Chip,
   type CodedIn,
   type Diagram,
@@ -129,11 +134,6 @@ function onTap(tap: Tap): void {
   // the whole line at a glance again.
   if (tap.target === Target.Ground) {
     putDown();
-    return;
-  }
-  if (tap.target === Target.Explain) {
-    const cluster = picture.showing();
-    if (cluster) void explain(cluster);
     return;
   }
   if (tap.target === Target.Shelf) {
@@ -218,18 +218,31 @@ function chipLabel(chip: Chip): string {
   );
 }
 
+/** Each play-by-play on the thread, by its message, so a tap on it opens it
+ * again. A walk told before snapshots has none and keeps its chips. */
+const cases = new Map<number, Case>();
+
+/** The play-by-play drawer (R-0542): a tap on its path goes back to that step
+ * of the picture: the whole timeline, or the case's cluster opened, whether
+ * or not it was open when the drawer came up. */
+const pbp = new Drawer($("pbp"), (step, events) => {
+  pbp.close();
+  if (step) picture.spotlight(events);
+  else picture.back(0);
+  pic = REST;
+  actions();
+});
+
 const chat = new Chat($("chat"), $("composer"), {
   label: chipLabel,
-  onChip: (chip, play) => {
+  onChip: (chip) => {
     tapped(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
     track.tap(Feature.ChipTap, { kind: itemKind(chip.kind), id: chip.target });
     // Two kinds of chip, and the colour says which. An amber chip is an offer:
     // it names nothing in the record, so it goes into the message as words. A
     // teal chip is a reference into the record, so it aims the picture.
+    // A chip in an old prose walk is a chip like any other (R-0501, R-0570).
     if (offered(chip)) chat.insert(chip);
-    // A teal chip inside a play-by-play is a step of that walk: it moves the
-    // board and never takes the picture back to the wire (owner review 1).
-    else if (play) stepBoard(play, chip);
     else aim(chip);
   },
   // A tap on a message's own words is a look: the picture lights what that
@@ -242,6 +255,11 @@ const chat = new Chat($("chat"), $("composer"), {
     picture.spotlight(named);
     pic = REST;
     actions();
+  },
+  onPlay: (statement) => {
+    const told = cases.get(statement);
+    if (told) pbp.open(timeline, told);
+    return !!told;
   },
 });
 
@@ -556,13 +574,14 @@ for (const id of ["chat", "menu-body"]) dragScroll($(id));
 let stopped: { turn: string; bubble: HTMLElement } | null = null;
 
 /** The stored messages back on the thread, each coach reply under the lines
- * of what it did (R-0478). A play-by-play keeps the cluster it walked, so its
- * chips still step the board a week later. A turn that failed shows what it
+ * of what it did (R-0478). A play-by-play keeps its told case, so a tap on it
+ * opens it again a week later. A turn that failed shows what it
  * did before it stopped, and as the last message it can be picked up again
  * (R-0477). */
 function addStatements(statements: Statement[]): void {
   for (const statement of statements) {
     const coach = statement.role === Role.Coach;
+    if (statement.case && statement.id !== null) cases.set(statement.id, statement.case);
     const lines = statement.tools.map(toolLine).filter((line) => line !== null);
     const notes = statement.tools.find((tool) => tool.name === NOTES_TOOL);
     chat.add(
@@ -636,8 +655,7 @@ async function openSession(id: number, kind?: SessionKind): Promise<void> {
 /** The coach pointing: the moments its words name become the spotlight, and
  * everything else on the wire recedes. A chip only ever aims the picture; it
  * never changes the picture's level, so nothing below it moves (the owner:
- * chat bubbles must never move from a tap on a chip). The moves board is a
- * level change and is entered from Play. */
+ * chat bubbles must never move from a tap on a chip). */
 function aim(chip: Chip): void {
   const ids = aimedEvents(chip, timeline.clusters);
   if (!ids.length) return;
@@ -654,14 +672,6 @@ function aim(chip: Chip): void {
     apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Cluster, id: cluster.id }));
   } else
     apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(ids[0]) }), ids);
-}
-
-/** The nth chip of a walk steps the board to the nth move. The caption row
- * belongs to the wire, so it clears: the board carries its own. */
-function stepBoard(play: PlayTap, chip: Chip): void {
-  picture.playStep(play.cluster, aimedEvents(chip, timeline.clusters), play.ordinal);
-  pic = REST;
-  actions();
 }
 
 /** One place turns a picture tap into its consequences: what the picture shows,
@@ -688,7 +698,7 @@ function apply(outcome: Outcome, named: number[] | null = null): void {
       tone: ChipTone.Data,
       bare: false,
     });
-  if (outcome.play) enterBoard(outcome.play);
+  if (outcome.play) void explain(outcome.play);
 }
 
 function selLabel(sel: Sel): string {
@@ -733,15 +743,6 @@ function actions(): void {
   const host = $("caption");
   const sel = pic.sel;
   const open = picture.openCluster();
-  // The board has its own controls, and two rows saying explain is one too
-  // many, so while it is up the row holds only the list button. It keeps its
-  // height, so nothing under it moves (R-0450, replacing the 2026-09-08 ruling
-  // that took the row away).
-  if (picture.onBoard()) {
-    host.innerHTML = pinned() ? "" : listButton("menu-open");
-    wireList();
-    return;
-  }
   // Nothing open and nothing picked: there is nothing to act on, so the row
   // says what a tap will do instead.
   if (!sel && !open) {
@@ -758,7 +759,7 @@ function actions(): void {
   // inside it: ask about that, or go to where it was said.
   const moment = sel?.kind === SelKind.Event ? Number(sel.id) : null;
   const trace = moment === null ? null : codedIn(moment);
-  const moves = !sel && open ? picture.countMoves(open.play_ids) : 0;
+  const moves = !sel && open ? picture.countDated(open.event_ids) : 0;
 
   host.innerHTML =
     tok("cap-chip", "", ASK_MARK, "ask", true) +
@@ -782,6 +783,7 @@ function actions(): void {
       void traceTo(trace.where);
     });
   if (moves && open)
+    // explain opens the play-by-play drawer straight away (R-0542, R-0570)
     $("cap-play").addEventListener("click", () =>
       apply(reduce(pic, PicEvent.TapPlay, { kind: SelKind.Cluster, id: open.id })),
     );
@@ -824,41 +826,44 @@ wide.addEventListener("change", () => {
   actions();
 });
 
-/** The board is its own level, and entering it is the one deliberate act that
- * changes the picture's height. It goes up before the coach's words are
- * written, and stays up until the reader taps back off it. */
-function enterBoard(clusterId: string): void {
-  const cluster = timeline.clusters.find((c) => c.id === clusterId);
-  if (cluster) picture.openBoard(cluster.play_ids, clusterId);
-  pic = REST;
-  actions();
+/** What the coach aimed the picture at. A triangle or a sequence has people
+ * and moves to draw, so it opens the play-by-play drawer, told by nobody: the
+ * coach's own words stay in the bubble that asked for it (R-0570). */
+function shown(view: View): Promise<void> | void {
+  const ids =
+    view.kind === ViewKind.Triangle
+      ? among(timeline, view.persons)
+      : view.kind === ViewKind.Sequence
+        ? view.events
+        : null;
+  if (ids === null) return picture.show(view);
+  const told = untold(timeline, ids);
+  if (told.snapshots.length) pbp.open(timeline, told);
 }
 
-/** The board's own control: ask the coach to talk through the cluster on
- * screen. The board is already up, so nothing here changes the picture's
- * height; the words land beneath it and step it as they are typed. */
+/** Ask the coach to tell the cluster on screen. The case opens in its drawer
+ * over the picture and the chat, and its point joins the thread, where a tap
+ * opens it again. A record the picture cannot draw is refused in the
+ * server's own words. */
 async function explain(clusterId: string): Promise<void> {
   track.tap(Feature.Play, { kind: ItemKind.Cluster, id: clusterId });
-  picture.explains(true);
   chat.busy(true);
   let reply;
   try {
     reply = await api.play(clusterId);
   } catch (error) {
-    picture.explains(false);
-    chat.warn(whatFailed(error), () => void explain(clusterId));
+    chat.warn(api.whatFailed(error), () => void explain(clusterId));
     return;
   } finally {
+    // answered or not, the row is back to what the cluster offers, explain again
     chat.busy(false);
+    pic = REST;
+    actions();
   }
-  picture.explains(false);
   chat.settled();
-  await chat.live(reply.cluster_id).type(reply.statement, (chip) => {
-    const ids = aimedEvents(chip, timeline.clusters);
-    if (ids.length) picture.step(ids[0]);
-  });
-  pic = REST;
-  actions();
+  chat.add(Role.Coach, reply.statement, ChipTone.Data, reply.statement_id, reply.cluster_id);
+  if (reply.statement_id !== null) cases.set(reply.statement_id, reply.case);
+  pbp.open(timeline, reply.case);
 }
 
 /** What went wrong, in the words the reader needs: nothing came back, the
@@ -994,7 +999,7 @@ function follow(turnId: string): void {
         if (items.length) picture.light(items, gone);
       }),
     read: (ids) => step(() => picture.read(ids)),
-    show: (view) => step(() => picture.show(view)),
+    show: (view) => step(() => shown(view)),
     text: (text) => step(() => void opened().append(text, (chip) => aim(chip))),
     reset: () => step(() => void opened().reset()),
     done: (reply) =>
@@ -1090,14 +1095,7 @@ async function load(): Promise<Timeline> {
 /** The path over the line: where the reader is, from the whole timeline
  * down, each earlier step the way back to it (R-0540). */
 function crumb(): void {
-  const steps = picture.path();
-  $("path").innerHTML = steps
-    .map((step, i) =>
-      i < steps.length - 1
-        ? `<button type="button" class="step" data-step="${i}"><span>${esc(step)}</span></button>`
-        : `<span class="here">${esc(step)}</span>`,
-    )
-    .join(`<span class="sep" aria-hidden="true"> \u203a </span>`);
+  $("path").innerHTML = pathRow(picture.path());
   $("info").hidden = !picture.opened();
 }
 

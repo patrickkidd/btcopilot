@@ -1,0 +1,75 @@
+import { expect, it } from "vitest";
+import { pathRow } from "../src/dom";
+import { below, leastScale, pictureHeight, pointLine, yearsLine } from "../src/drawer";
+import { Told, untold } from "../src/snapshots";
+import { apart, timeline } from "./whitlock";
+
+/** The play-by-play drawer's own words and controls, read off its markup. */
+
+const tl = timeline();
+const told = new Told(tl, apart());
+
+// R-0562
+it("steps by hand: Back is off on the first snapshot, Next on the last, and the count says where", () => {
+  const first = below(told, 0);
+  expect(first).toMatch(/data-act="back" disabled/);
+  expect(first).toContain("1 of 5");
+  const last = below(told, 4);
+  expect(last).toMatch(/data-act="next" disabled/);
+  expect(last).toContain("5 of 5");
+  expect([...last.matchAll(/class="dot( on)?"/g)]).toHaveLength(5);
+});
+
+// R-0563
+it("keeps the guess apart from the fact, and asks the question only on the last snapshot", () => {
+  const last = below(told, 4);
+  expect(last).toMatch(/<p class="fact">Your teacher called Delphine/);
+  expect(last).toMatch(/<p class="guess">My guess: /);
+  expect(last).toMatch(/<p class="ask">Theo started day care/);
+  expect(below(told, 3)).not.toContain('class="ask"');
+  expect(below(told, 0)).not.toContain('class="guess"');
+});
+
+// R-0542, R-0540
+it("leads the path row back to the timeline and to the years", () => {
+  expect(pathRow(["Timeline", "1980–82", "explain"])).toMatch(/data-step="0"><span>Timeline<.*data-step="1"><span>1980–82<.*<span class="here">explain</);
+});
+
+// R-0545
+it("dims the years' other events and rings this snapshot's", () => {
+  const line = yearsLine(tl, told, 1);
+  expect([...line.matchAll(/class="wd dim"/g)]).toHaveLength(2);
+  expect([...line.matchAll(/class="wnow"/g)]).toHaveLength(1);
+  expect(line).toContain('class="wgap"');
+});
+
+// R-0561
+it("shrinks the picture to leave the caption room, down to a floor, then lets the drawer scroll", () => {
+  expect(pictureHeight(300, 500, [100], 250)).toBe(300);
+  expect(pictureHeight(300, 500, [240], 250)).toBe(260);
+  expect(pictureHeight(300, 500, [300], 250)).toBe(250);
+  expect(pictureHeight(300, 500, [450], 250)).toBe(250);
+});
+
+// R-0561, R-0546
+it("sizes the picture once for the case, by its longest caption, so nothing moves between snapshots", () => {
+  expect(pictureHeight(300, 500, [100, 320, 150], 0)).toBe(pictureHeight(300, 500, [320], 0));
+});
+
+// R-0547, R-0558, R-0561
+it("stops shrinking where labels reach 13px, shapes 36px or the margin 20px", () => {
+  const L = told.layout;
+  const least = leastScale(L, 4);
+  expect(13 * least).toBeGreaterThanOrEqual(13);
+  expect(L.w * least).toBeGreaterThanOrEqual(36);
+  expect(L.my * least + 4).toBeGreaterThanOrEqual(20);
+  expect(pictureHeight(300, 100, [90], 1000)).toBe(300);
+});
+
+// R-0570
+it("tells a case nobody told with no point line and no closing question", () => {
+  const quiet = new Told(tl, untold(tl, [203, 204]));
+  expect(below(quiet, quiet.length - 1)).not.toContain('class="ask"');
+  expect(pointLine(quiet)).toBe("");
+  expect(pointLine(told)).toContain("As Marcus drank less");
+});

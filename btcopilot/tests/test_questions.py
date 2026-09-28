@@ -6,9 +6,9 @@ Invented names only.
 
 import datetime
 import json
-import time
 
 import pytest
+from freezegun import freeze_time
 from mock import patch
 
 from btcopilot import chips, coachturn, observer, record, turnlog
@@ -23,7 +23,16 @@ from btcopilot.toolbox import ToolError, ToolName, Toolbox
 
 ASK = "Who were your father's brothers and sisters?"
 LATER = "When did your grandmother die?"
-TODAY = datetime.datetime.utcnow().date().isoformat()
+NOW = datetime.datetime(2026, 9, 27, 12, 0)
+TODAY = NOW.date().isoformat()
+
+
+@pytest.fixture(autouse=True)
+def clock():
+    """A question is dated by the clock when it is written, so the clock is
+    pinned: a run crossing midnight would date it a day after TODAY."""
+    with freeze_time(NOW):
+        yield
 
 
 def box(diagram, turn="t1", author=Author.Coach) -> Toolbox:
@@ -78,17 +87,13 @@ def test_a_question_is_added_whole_in_one_change_row(family):
     }
 
 
-def test_a_question_is_dated_on_the_clock_its_messages_are_dated_on(family, monkeypatch):
+def test_a_question_is_dated_on_the_clock_its_messages_are_dated_on(family):
     # R-0006, R-0084
-    ahead = datetime.datetime.utcnow().hour >= 12
-    monkeypatch.setenv("TZ", "Etc/GMT-14" if ahead else "Etc/GMT+12")
-    time.tzset()
-    assert datetime.date.today().isoformat() != TODAY
-    add(box(family))
+    with freeze_time(NOW, tz_offset=14):
+        assert datetime.date.today().isoformat() != TODAY
+        add(box(family))
 
     assert stored(family)["q1"]["asked_at"] == TODAY
-    monkeypatch.undo()
-    time.tzset()
 
 
 def test_undo_puts_back_the_turn_but_never_a_question(family):

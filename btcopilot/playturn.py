@@ -1,29 +1,49 @@
-"""The play-by-play for one cluster, written by the coach [Oracle: R-0074].
+"""The play-by-play for one cluster, told by the coach as snapshots [R-0542].
 
-The moves are data and animate deterministically. The coach picks which ones to
-speak about and in what order, makes each one a chip, and cannot invent one:
-the events it is given are the only ids it sees, and every chip it writes is
-checked against the record before the words go out.
+The coach picks the point, the dates and the words; the page draws each
+snapshot from the record. It tells the case through one tool call, checked
+against the cluster before anything is kept: a call the cluster does not bear
+out is handed back to the coach with what is wrong, and a coach that never
+tells it fails the turn.
 
-The walk is a message in the session like any other, marked as a play so the
-page knows a tap on its chips steps the board rather than selecting a moment.
+The case is a message in the session like any other, marked as a play, so
+coming back a week later shows it where it happened and opens it again.
 """
 
 import logging
+import uuid
 
 from btcopilot.extensions import db
-from btcopilot import chips, recordtext
+from btcopilot import recordtext
+from btcopilot.case import Case, RecordFault, Tool, Untold, faults, tool
 from btcopilot.coachmodel import CoachModel
-from btcopilot.coachturn import narrate, shorten_labels
+from btcopilot.coachturn import Metered
+from btcopilot.llmutil import ANTHROPIC_TIMEOUT
 from btcopilot.models import Discussion, Statement, StatementKind
 from btcopilot import prompts
 from btcopilot.schema import DiagramData
 
 _log = logging.getLogger(__name__)
 
+# How many times a case the cluster does not bear out is handed back.
+TRIES = 3
+# The longest the server takes to answer, every try timing out at the model's
+# own limit, and the page's wait for it (web/src/api.ts PLAY_WAIT_S) with a
+# little over, so a slow model fails with the server's error, not the page's.
+WAIT = TRIES * ANTHROPIC_TIMEOUT + 30
+
+
+class Untellable(Exception):
+    """The coach did not tell the case: no call at all, or none the cluster bore
+    out in every try. The page is told so in plain words (R-0182)."""
+
+    def __init__(self, why: str):
+        super().__init__("untold: The coach couldn't tell this one; try again.")
+        self.why = why
+
 
 class PlayTurn:
-    """One cluster in, one coach message whose chips are its events."""
+    """One cluster in, one told case out."""
 
     def __init__(
         self,
@@ -36,7 +56,13 @@ class PlayTurn:
         self.data = data
         self.cluster = cluster
         self.discussion = discussion
-        self.model = model or CoachModel()
+        self.turn_id = uuid.uuid4().hex
+        self.model = model or CoachModel(timeout=ANTHROPIC_TIMEOUT)
+        # Asked for in a session, the calls are charged to its owner like a turn's.
+        if discussion is not None:
+            self.model = Metered(
+                self.model, discussion.user_id, discussion.diagram_id, self.turn_id
+            )
 
     @classmethod
     def stored(cls, data: DiagramData, cluster_id: str, **kwargs) -> "PlayTurn":
@@ -62,44 +88,70 @@ class PlayTurn:
         events = self.events
         if not events:
             raise ValueError(f"Cluster {self.cluster['id']} has no events to play")
+        wrong = faults(self.data)
+        if wrong:
+            raise RecordFault(f"record fault: {'; '.join(wrong)}. Correct the record first.")
         prompt = prompts.PLAY_BY_PLAY_PROMPT.format(
             cluster=recordtext.cluster_line(self.cluster),
             events="\n".join(recordtext.event_line(e) for e in events),
         )
         system = prompts.get_agent_prompt(record=recordtext.render(self.data))
         messages = [{"role": "user", "content": prompt}]
-        words = self.model.turn(system, messages, [])
+        told = self._tell(system, messages, events)
+        return {
+            "kind": StatementKind.Play.value,
+            "cluster_id": told.cluster_id,
+            "statement": told.point,
+            "statement_id": self._persist(told),
+            "case": told.asdict(),
+        }
+
+    def _tell(self, system: str, messages: list[dict], events: list[dict]) -> Case:
+        for _ in range(TRIES):
+            turn = self._call(system, messages)
+            call = next((c for c in turn.calls if c.name == Tool.PlayByPlay), None)
+            if call is None:
+                raise Untellable("no play_by_play call")
+            try:
+                return Case.told(call.args, self.cluster, events)
+            except Untold as untold:
+                _log.info(f"Case handed back: {untold}")
+                messages = messages + [
+                    {"role": "assistant", "content": turn.blocks},
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": call.id,
+                                "content": str(untold),
+                                "is_error": True,
+                            }
+                        ],
+                    },
+                ]
+        raise Untellable(f"refused {TRIES} times")
+
+    def _call(self, system: str, messages: list[dict]):
+        words = self.model.turn(system, messages, [tool()])
         while True:
             try:
                 next(words)
             except StopIteration as stop:
-                turn = stop.value
-                break
+                return stop.value
 
-        spoken = shorten_labels(
-            self.model, system, messages, turn.text.strip(), self.data
-        )
-        spoken = narrate(self.model, system, messages, spoken)
-        walk = chips.validate(spoken, self.data)
-        return {
-            "kind": StatementKind.Play.value,
-            "cluster_id": self.cluster["id"],
-            "statement": walk,
-            "statement_id": self._persist(walk),
-        }
-
-    def _persist(self, walk: str) -> int | None:
-        """The walk joins the session it was asked for, so coming back a week
-        later shows it where it happened."""
+    def _persist(self, told: Case) -> int | None:
         if self.discussion is None:
             return None
         statement = Statement(
             discussion_id=self.discussion.id,
-            text=walk,
+            text=told.point,
             speaker=self.discussion.chat_ai_speaker,
             order=self.discussion.next_order(),
             kind=StatementKind.Play,
-            cluster_id=self.cluster["id"],
+            cluster_id=told.cluster_id,
+            told_case=told.asdict(),
+            turn_id=self.turn_id,
         )
         db.session.add(statement)
         db.session.commit()

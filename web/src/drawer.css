@@ -1,0 +1,106 @@
+/* The play-by-play drawer, from the approved reference page
+   (design/playbyplay-snapshots/own.html). A drill-down: it arrives from the
+   right over the timeline and the chat and goes back off the same way (R-0542).
+   The ruled health cross keeps its own rules from theme.css (.ss …). */
+/* The drawer covers the screen it is mounted in: the picture, the chat and the message box. */
+.screen:has(> .pbp) { position: relative; }
+.pbp {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  transform: translateX(100%);
+  transition: transform 0.26s cubic-bezier(0.4, 0, 0.7, 0.5);
+}
+.pbp.in { transform: none; transition-timing-function: cubic-bezier(0.3, 1.25, 0.5, 1); }
+.pbp[hidden] { display: none; }
+
+.pbp .point { flex: none; padding: 8px 16px 0; font: 400 13px/20px var(--sans); color: var(--ink); }
+.pbp .path { flex: none; height: 28px; padding: 0 16px; font: 400 13px/1.2 var(--mono); color: var(--faint); }
+.pbp .path .step:focus-visible, .pbp .nav:focus-visible, .pbp .dot:focus-visible { outline: 2px solid var(--data); outline-offset: 2px; }
+
+/* Q6: the picture shrinks so the caption fits; when even that does not fit, the whole drawer scrolls */
+.pbp .lv { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
+.pbp .wire, .pbp .draw, .pbp .scroll { flex: none; }
+.pbp .wire svg { display: block; width: 100%; height: auto; }
+.pbp .draw { padding: 4px 0 0; border-top: 1px solid var(--line); }
+.pbp .draw svg { display: block; width: 100%; height: 100%; }
+
+.pbp .step { display: flex; align-items: center; gap: 4px; padding: 4px 10px 8px; }
+.pbp .nav { flex: none; height: 40px; min-width: 70px; padding: 0 12px; border: 1px solid var(--line); border-radius: 20px; background: var(--panel); color: var(--data); font: 500 13px var(--mono); cursor: pointer; }
+.pbp .nav:disabled { opacity: 0.35; cursor: default; }
+.pbp .nav:not(:disabled):active { background: var(--tint); }
+.pbp .dots { flex: 1; min-width: 0; display: flex; justify-content: center; }
+.pbp .dot { flex: none; width: 22px; height: 40px; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.pbp .dot::after { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--data); box-sizing: border-box; }
+.pbp .dot.on::after { background: var(--data); }
+.pbp .count { flex: none; min-width: 48px; text-align: center; font: 400 13px var(--mono); color: var(--faint); }
+.pbp .cap { padding: 12px 16px 18px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 7px; }
+.pbp .when { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; font: 500 13px var(--mono); }
+.pbp .when .date { color: var(--data); }
+.pbp .when .gap { color: var(--faint); font-weight: 400; }
+.pbp .fact { margin: 0; font: 400 16px/1.42 var(--sans); color: var(--ink); }
+.pbp .guess { margin: 0; font: 400 15px/1.42 var(--sans); color: var(--faint); }
+.pbp .ask { margin: 4px 0 0; font: 500 16px/1.42 var(--sans); color: var(--ask-text); }
+
+/* ---- the drawings ---- */
+.pbp svg text { font-family: var(--mono); }
+.pbp .wl { stroke: var(--line); stroke-width: 1.5; }
+.pbp .wgap { stroke: var(--data); stroke-width: 3; opacity: 0.45; stroke-linecap: round; }
+.pbp .wd { fill: var(--data); }
+.pbp .wd.dim { opacity: 0.26; }
+.pbp .wahead { fill: var(--panel); stroke: var(--data); stroke-width: 1.6; }
+.pbp .wnow { fill: var(--move); }
+.pbp .wring { fill: none; stroke: var(--move); stroke-width: 1.4; opacity: 0.5; }
+.pbp .wlab { font-size: 12px; fill: var(--data); font-weight: 500; }
+.pbp .wyr { font-size: 12px; fill: var(--faint); }
+.pbp .shape { fill: var(--panel); stroke: var(--ink); stroke-width: 1.6; }
+.pbp .you { fill: none; stroke: var(--ink); stroke-width: 1.1; }
+.pbp .age { font-size: 13px; fill: var(--faint); text-anchor: middle; }
+.pbp .tie { stroke: var(--faint); stroke-width: 1.4; fill: none; }
+.pbp .tie.dash { stroke-dasharray: 5 4; }
+.pbp .tie.now { stroke: var(--move); stroke-width: 2.2; }
+.pbp .kin { stroke: var(--faint); stroke-width: 1.3; fill: none; }
+.pbp .slash { stroke: var(--faint); stroke-width: 1.8; stroke-linecap: round; }
+.pbp .slash.now { stroke: var(--move); stroke-width: 2.4; }
+.pbp .lbn { font-size: 13px; fill: var(--ink); }
+.pbp .lbd { font-size: 13px; fill: var(--faint); }
+.pbp .nh { paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; }
+.pbp .xd { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
+.pbp .xd.now { stroke: var(--move); stroke-width: 2.2; }
+.pbp .fn { fill: none; stroke: var(--move); stroke-width: 2.6; }
+.pbp .fn.down { stroke-dasharray: 5 6; }
+.pbp .fn.was { stroke: var(--faint); }
+.pbp .spikes line { stroke: var(--move); stroke-width: 1.8; stroke-linecap: round; }
+.pbp .spikes.was line { stroke: var(--faint); }
+.pbp .evw { font-size: 13px; fill: var(--move-text); font-weight: 500; }
+.pbp .evw.was { fill: var(--faint); }
+.pbp .hl { fill: none; stroke: var(--move); stroke-width: 2.8; }
+.pbp .hl.was { stroke: var(--faint); }
+/* carried from an earlier date: the same mark in grey and still */
+.pbp .mk.was .tipfill { fill: var(--faint); }
+.pbp .mk.was .mv-dir { stroke: var(--faint); }
+.pbp .mk.was .sym-arrow { animation: none; }
+/* the moves board's way (Q1b): the flowing dashed arrow */
+.pbp .arr line { stroke: var(--move); stroke-width: 2.4; stroke-dasharray: 10 8; fill: none; animation: pbp-flow 1s linear infinite; }
+.pbp .arr.back line { animation-direction: reverse; }
+.pbp .arr polygon { fill: var(--move); }
+.pbp .arr { animation: pbp-fade 0.2s ease both; }
+.pbp .arr.was, .pbp .arr.was line { animation: none; }
+.pbp .arr.was line { stroke: var(--faint); }
+.pbp .arr.was polygon { fill: var(--faint); }
+/* the other moves keep the board's own drawing (theme.css .ss .mv-*); carried, grey and still */
+.pbp .mvk.was * { stroke: var(--faint); animation: none; }
+.pbp .mvk.was .tipfill { fill: var(--faint); }
+/* a new mark is on screen the moment Next is tapped, at full strength within 200ms */
+.pbp .pop { transform-box: fill-box; transform-origin: center; animation: pbp-pop 0.2s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+@keyframes pbp-pop { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes pbp-flow { to { stroke-dashoffset: -36; } }
+@keyframes pbp-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .pbp { transition: none !important; }
+  .pbp .pop, .pbp .arr, .pbp .arr line { animation: none; }
+  .pbp .ss * { animation: none !important; transition: none !important; }
+}

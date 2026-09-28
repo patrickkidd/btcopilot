@@ -180,7 +180,7 @@ test("every move's marks are drawn in the one green", async ({ page }) => {
   await freeze(page, 0);
   const green = await token(page, "--move");
   const colours = await page.evaluate(() =>
-    [...document.querySelectorAll(".cell:not(#m-triangle-board) .cast *")]
+    [...document.querySelectorAll(".cell .cast *")]
       .filter((el) => /(^| )(mv-|fld|tipfill)/.test(el.getAttribute("class") ?? "") || el.closest(".mv-flank"))
       .filter((el) => el.tagName !== "g")
       .map((el) => {
@@ -197,7 +197,7 @@ test("every move's animation runs the same length", async ({ page }) => {
   test.skip(true, "unbuilt ruling, needs a design: the one loop length every move animation runs");
   // the ratified loops run 8, 10 and 12 seconds
   const loops = new Set<number>();
-  for (const cell of await page.locator(".cell:not(#m-triangle-board)").all()) {
+  for (const cell of await page.locator(".cell").all()) {
     const id = await cell.getAttribute("id");
     for (const ms of await lengths(page, `#${id} .cast`)) if (ms >= 5000) loops.add(ms);
   }

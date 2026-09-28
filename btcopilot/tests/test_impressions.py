@@ -16,7 +16,7 @@ from btcopilot.models import Author, Change, InteractionKind, Observation, Obser
 from btcopilot.recordtext import outline
 from btcopilot.schema import DiagramData, ItemKind
 from btcopilot.tests.conftest import Model, called, calling, csrf_token, said, version
-from btcopilot.tests.test_questions import TODAY, box, stored
+from btcopilot.tests.test_questions import TODAY, box, clock, stored  # noqa: F401
 from btcopilot.tests.test_turnhistory import coach, family, post, statements, titles  # noqa: F401
 from btcopilot.toolbox import ToolError, ToolName
 

@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { triangle } from "../src/board";
 import { draw, figure, Move, ring, type Drawn, type Figure } from "../src/moves";
-import type { Person } from "../src/types";
 
 /** The move language as drawn: what each move puts on the board, read off the
  * markup `draw` returns for two or three people standing on the stage ring. */
@@ -264,32 +262,6 @@ describe("the triangle moves", () => {
     const [, b, c] = trio;
     const drawn = move(Move.Outside, trio);
     expect(apart(landed(drawn, b), landed(drawn, c))).toBeLessThan(b.r! + c.r!);
-  });
-
-  const view = () =>
-    triangle(
-      [ann, bo, cy].map((p) => ({ ...p, primary: false }) as unknown as Person),
-      W,
-    ).svg;
-
-  // R-0286
-  it.fails("draws no zigzag on the triangle view", () => {
-    expect(els(view(), "mv-tension")).toHaveLength(0);
-  });
-
-  // R-0288, R-0292
-  it.fails("stands two close together and one apart on the triangle view", () => {
-    const centres = els(view(), "disc").map((d) =>
-      d.tag === "circle"
-        ? { x: Number(d.cx), y: Number(d.cy) }
-        : { x: Number(d.x) + Number(d.width) / 2, y: Number(d.y) + Number(d.height) / 2 },
-    );
-    const gaps = [
-      apart(centres[0], centres[1]),
-      apart(centres[1], centres[2]),
-      apart(centres[0], centres[2]),
-    ].sort((p, q) => p - q);
-    expect(gaps[0]).toBeLessThan(gaps[1] / 2);
   });
 });
 

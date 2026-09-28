@@ -101,7 +101,7 @@ test.describe("nothing moves when a chip is tapped", () => {
     expect(after.bubbles).toEqual(before.bubbles);
   });
 
-  // R-0212
+  // R-0212, R-0450
   test("the row keeps its height and its three chips whatever is picked", async ({
     page,
   }) => {
@@ -248,11 +248,11 @@ test.describe("a scrollbar appearing never shifts the page", () => {
   });
 });
 
-test.describe("the board is the only thing that resizes the picture", () => {
+test.describe("explain resizes nothing until it is tapped", () => {
   test.use({ storageState: stateFor("moves") });
 
   // R-0212
-  test("the way onto the board says explain, and moves nothing until it is tapped", async ({
+  test("the way into the play-by-play says explain, and moves nothing until it is tapped", async ({
     page,
   }) => {
     await settle(page);
@@ -313,39 +313,6 @@ test.describe("a long family name", () => {
   });
 });
 
-test.describe("the moves board fills the room it takes", () => {
-  test.use({ storageState: stateFor("moves") });
-
-  // R-0210, R-0132, R-0460
-  test("no empty band under the drawing or the controls", async ({ page }) => {
-    await settle(page);
-    await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    await page.waitForTimeout(600);
-
-    // the board is a card over the chat, as tall as what it holds
-    const fit = await page.evaluate(() => {
-      const view = document.querySelector("#view .card")!;
-      const parts = [...view.children].map((n) => n.getBoundingClientRect().height);
-      const last = view.lastElementChild!;
-      return {
-        region: Math.round(view.getBoundingClientRect().height),
-        content: Math.round(parts.reduce((a, b) => a + b, 0)),
-        lastClass: last.className,
-        lastBottom: Math.round(last.getBoundingClientRect().bottom),
-        regionBottom: Math.round(view.getBoundingClientRect().bottom),
-      };
-    });
-    // the region is exactly what it holds, and the controls are the last thing
-    expect(fit.region).toBe(fit.content);
-    expect(fit.lastClass).toContain("pctl");
-    expect(fit.regionBottom - fit.lastBottom).toBeLessThanOrEqual(1);
-
-    // and the ruled control height survives
-    for (const box of await page.locator("#chat-screen .pctl .btn").all())
-      expect(Math.round((await box.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
-  });
-});
 
 test.describe("a moment traces back to the words that coded it", () => {
   test.use({ storageState: stateFor("moves") });
@@ -484,16 +451,6 @@ test.describe("the row under the picture from one view to the next", () => {
     expect(rest.at.caption?.[3]).toBe(44);
   });
 
-  // R-0450
-  test("the row keeps its height with the board open", async ({ page }) => {
-    await settle(page);
-    const before = await frame(page);
-    await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    await page.waitForTimeout(600);
-    const after = await frame(page);
-    expect(after.caption?.[3]).toBe(before.caption?.[3]);
-  });
 });
 
 test.describe("the button that opens the lists", () => {

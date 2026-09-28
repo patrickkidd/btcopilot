@@ -10,6 +10,7 @@ from pathlib import Path
 
 from btcopilot.extensions import db
 from btcopilot.models import QualityKind, QualityRun
+from btcopilot.models.qualityrun import Source
 
 EVALS = Path("quality") / "evals"
 F1 = Path("doc") / "f1" / "f1_timeseries.json"
@@ -20,12 +21,14 @@ class Outcome(enum.StrEnum):
     Passed = "passed"
     Failed = "failed"
     Skipped = "skipped"
+    Awaiting = "awaiting"
 
 
 class Status(enum.StrEnum):
     Passed = "passed"
     Failed = "failed"
     Stopped = "stopped"
+    Awaiting = "awaiting"
 
 
 SCORED = (Outcome.Passed, Outcome.Failed)
@@ -52,6 +55,7 @@ def evals(run: dict) -> list[dict]:
             "metric": metric,
             "value": value,
             "note": run["note"],
+            "source": Source(run["source"]),
         }
         for metric, value in passed.items()
     ]
@@ -67,6 +71,7 @@ def f1(history: dict) -> list[dict]:
             "metric": metric,
             "value": point[metric],
             "note": point["note"],
+            "source": Source.Api,
         }
         for point in history["data"]
         for metric in history["metrics"]

@@ -9,8 +9,13 @@ hash takes the count of times it was seen before in the case, so a case run
 k of n times replays n different saved responses.
 
 The saved file holds the prompt only by hash. The response itself can echo the
-private prompt, so the suite's store is sealed with sops like the prompts."""
+private prompt, so the suite's store is sealed with sops like the prompts.
 
+Dump mode spends nothing: a call with no saved response writes its whole request
+to a file named by the key it would be saved under, and the case awaits an
+answer written on the Claude Code subscription (answer.py)."""
+
+import datetime
 import enum
 import hashlib
 import json
@@ -22,6 +27,7 @@ from pathlib import Path
 from btcopilot import promptdir
 from btcopilot.coachmodel import MAX_TOKENS, ModelTurn, ToolCall
 from btcopilot.llmutil import Hop, Served
+from btcopilot.quality import Source
 
 REPO = Path(__file__).parents[3]
 STORE = REPO / "private" / "replays"
@@ -31,14 +37,19 @@ class Mode(enum.StrEnum):
     Replay = "replay"
     Record = "record"
     Only = "only"
+    Dump = "dump"
+
+    @property
+    def offline(self) -> bool:
+        return self in (Mode.Only, Mode.Dump)
 
 
 class Miss(Exception):
     pass
 
 
-def request_hash(model, system, messages, tools) -> str:
-    request = {
+def request(model, system, messages, tools) -> dict:
+    return {
         "model": model.model,
         "effort": model.effort,
         "max_tokens": MAX_TOKENS,
@@ -46,8 +57,11 @@ def request_hash(model, system, messages, tools) -> str:
         "messages": messages,
         "tools": tools,
     }
+
+
+def request_hash(model, system, messages, tools) -> str:
     return hashlib.sha256(
-        json.dumps(request, sort_keys=True, default=str).encode()
+        json.dumps(request(model, system, messages, tools), sort_keys=True, default=str).encode()
     ).hexdigest()
 
 
@@ -65,13 +79,18 @@ def loaded(raw: dict) -> ModelTurn:
 
 
 class Replay:
-    def __init__(self, mode: Mode, store: Path = STORE, seal: bool = True):
-        self.mode, self.store, self.seal = mode, store, seal
+    def __init__(
+        self, mode: Mode, store: Path = STORE, seal: bool = True, requests: Path | None = None
+    ):
+        self.mode, self.store, self.seal, self.requests = mode, store, seal, requests
         self.seen: Counter = Counter()
         self.replayed = self.recorded = 0
+        self.awaiting: list[str] = []
+        self.subscribed = mode is Mode.Dump
 
     def begin(self) -> None:
         self.seen.clear()
+        self.awaiting.clear()
 
     def path(self, model, system, messages, tools) -> Path:
         request = request_hash(model, system, messages, tools)
@@ -86,10 +105,19 @@ class Replay:
             path = self.path(model, system, messages, tools)
             if path.exists() and self.mode is not Mode.Record:
                 self.replayed += 1
-                saved = loaded(json.loads(promptdir.read(path)))
+                raw = json.loads(promptdir.read(path))
+                self.subscribed |= Source(raw["source"]) is Source.Subscription
+                saved = loaded(raw)
                 if saved.text:
                     yield saved.text
                 return saved
+            if self.mode is Mode.Dump:
+                self.requests.mkdir(parents=True, exist_ok=True)
+                (self.requests / path.name).write_text(
+                    json.dumps(request(model, system, messages, tools), indent=2, default=str)
+                )
+                self.awaiting.append(path.name)
+                raise Miss(f"awaiting an answer to {self.requests / path.name}")
             if self.mode is Mode.Only:
                 raise Miss(f"no saved response for this request ({path.name})")
             answered = yield from real(model, system, messages, tools, turn_id)
@@ -98,12 +126,14 @@ class Replay:
 
         return turn
 
-    def save(self, path: Path, answered: ModelTurn) -> None:
+    def save(self, path: Path, answered: ModelTurn, source: Source = Source.Api) -> None:
         self.recorded += 1
         self.store.mkdir(parents=True, exist_ok=True)
         # Spent stays behind: a replay is free, and its tokens are not charged.
         row = asdict(answered)
         row.pop("spent")
+        row["source"] = source
+        row["date"] = datetime.date.today().isoformat()
         path.write_text(json.dumps(row, indent=2))
         if self.seal:
             subprocess.run(

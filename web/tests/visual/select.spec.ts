@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { stateFor, tellWithoutModel } from "./setup";
 
 /** Every word the app says can be selected and copied. Dragging a scroll area
  * and selecting a line of it are the same gesture, so where the press lands
@@ -42,13 +42,14 @@ test.describe("what the app says can be taken away", () => {
     expect((await dragAcross(page, ".fs-body .row .r1")).trim()).not.toBe("");
   });
 
-  // R-0183
-  test("the words under the picture select", async ({ page }) => {
+  // R-0183, R-0570
+  test("the play-by-play's words select", async ({ page }) => {
+    await tellWithoutModel(page);
     await settle(page);
     await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    await page.waitForTimeout(800);
-    expect((await dragAcross(page, ".bcap")).trim()).not.toBe("");
+    await expect(page.locator("#pbp")).toBeVisible();
+    await page.waitForTimeout(400);
+    expect((await dragAcross(page, "#pbp .fact")).trim()).not.toBe("");
   });
 
 });

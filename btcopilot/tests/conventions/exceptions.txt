@@ -110,25 +110,8 @@ R-0535 | TEST OWED | no visual spec opens the notes panel yet; the two web tests
 R-0536 | TEST OWED | the two web tests cover the plain-text value and its list of possibilities; no test yet asserts a chip is never used here
 R-0543 | TEST OWED | not built yet
 R-0544 | TEST OWED | not built yet
-R-0545 | TEST OWED | the play-by-play rebuild is not built yet
-R-0546 | TEST OWED | the play-by-play rebuild is not built yet
-R-0547 | TEST OWED | the play-by-play rebuild is not built yet
-R-0548 | TEST OWED | the play-by-play rebuild is not built yet
-R-0549 | TEST OWED | the play-by-play rebuild is not built yet
-R-0550 | TEST OWED | the play-by-play rebuild is not built yet
-R-0551 | TEST OWED | the play-by-play rebuild is not built yet
-R-0552 | TEST OWED | the play-by-play rebuild is not built yet
-R-0553 | TEST OWED | the play-by-play rebuild is not built yet
-R-0554 | TEST OWED | the play-by-play rebuild is not built yet
-R-0555 | TEST OWED | the play-by-play rebuild is not built yet
-R-0556 | TEST OWED | the play-by-play rebuild is not built yet
-R-0557 | TEST OWED | the play-by-play rebuild is not built yet
-R-0558 | TEST OWED | the play-by-play rebuild is not built yet
-R-0559 | TEST OWED | the play-by-play rebuild is not built yet
-R-0560 | TEST OWED | the play-by-play rebuild is not built yet
-R-0561 | TEST OWED | the play-by-play rebuild is not built yet
-R-0562 | TEST OWED | the play-by-play rebuild is not built yet
-R-0563 | TEST OWED | the play-by-play rebuild is not built yet
 R-0564 | TEST OWED | the play-by-play rebuild is not built yet
 R-0565 | TEST OWED | the play-by-play rebuild is not built yet
-R-0566 | TEST OWED | the play-by-play rebuild is not built yet
+R-0171 | WAIVED | the typed play-through it paced is replaced by the drawer tapped through by hand (R-0562); to be marked superseded in the store
+R-0286 | TEST OWED | the triangle-vs-conflict clinical distinction covers two of its three tags; the third awaits a citing test
+R-0288 | TEST OWED | the triangle position rules cover two of three tags; the third awaits a citing test

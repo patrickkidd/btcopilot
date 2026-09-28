@@ -157,22 +157,6 @@ test.describe("the path row", () => {
   });
 });
 
-test.describe("the path row on the board", () => {
-  test.use({ storageState: stateFor("moves") });
-
-  // R-0540
-  test("names the play-by-play as a mode of its cluster, and goes back to it", async ({
-    page,
-  }) => {
-    await settle(page);
-    await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    await expect(path(page)).toHaveText(/^Timeline › [\d–]+ › explain$/);
-    await step(page, 1).click();
-    await expect(page.locator("#view .ss.board")).toHaveCount(0);
-    await expect(zones(page).first()).toBeVisible();
-  });
-});
 
 test.describe("the path row at a phone's width", () => {
   test.use({ storageState: stateFor("three40") });
@@ -220,11 +204,6 @@ test.describe("the modes of a cluster", () => {
 
   test.describe(() => {
     test.use({ storageState: stateFor("moves") });
-    // R-0460, R-0230
-    test("the board opens as a card over the chat, and nothing moves", async ({ page }) => {
-      await settle(page);
-      await still(page, () => page.locator("#cap-play").click());
-    });
   });
 });
 

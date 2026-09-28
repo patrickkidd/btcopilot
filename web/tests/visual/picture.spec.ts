@@ -446,52 +446,6 @@ test.describe("a record with undated facts beside dated ones", () => {
   });
 });
 
-test.describe("the family on the board", () => {
-  test.use({ storageState: stateFor("moves") });
-
-  const node = async (page: import("@playwright/test").Page, id: number) =>
-    (await page.locator(`#view .node[data-person="${id}"]`).boundingBox())!;
-
-  // R-0187
-  test("parents stand above their child", async ({ page }) => {
-    test.skip(true, "unbuilt ruling, needs a design: an automatic family arrangement on the board, parents above their child");
-    await page.route("**/app/timeline*", async (route) => {
-      const response = await route.fetch();
-      const json = await response.json();
-      json.pair_bonds.push({ id: 900, person_a: 2, person_b: 3, married: true });
-      json.people.find((p: { id: number }) => p.id === 1).parents = 900;
-      await route.fulfill({ response, json });
-    });
-    await settle(page);
-    await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    const child = await node(page, 1);
-    expect(child.y).toBeGreaterThan((await node(page, 2)).y);
-    expect(child.y).toBeGreaterThan((await node(page, 3)).y);
-  });
-
-  // R-0187
-  test("everyone has room of their own on a phone, with nothing to arrange", async ({
-    page,
-  }) => {
-    await settle(page);
-    await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    await page.waitForTimeout(600);
-    const people = [await node(page, 1), await node(page, 2), await node(page, 3)];
-    for (const [i, a] of people.entries())
-      for (const b of people.slice(i + 1))
-        expect(
-          a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y,
-        ).toBe(true);
-    const frame = (await page.locator("#view .ss.board").boundingBox())!;
-    for (const one of people) {
-      expect(one.x).toBeGreaterThanOrEqual(frame.x - 1);
-      expect(one.x + one.width).toBeLessThanOrEqual(frame.x + frame.width + 1);
-    }
-  });
-});
-
 test.describe("a moment named in the coach's words", () => {
   test.use({ storageState: stateFor("moves") });
 
@@ -583,30 +537,3 @@ test.describe("a cluster the reader has open", () => {
   });
 });
 
-test.describe("a person on the board", () => {
-  test.use({ storageState: stateFor("moves") });
-
-  // R-0187
-  test("cannot be dragged, and the board offers nothing to arrange", async ({ page }) => {
-    // the rings around a person breathe; held still, a box measured twice is the same box
-    await page.emulateMedia({ reducedMotion: "reduce" });
-    await settle(page);
-    await page.locator("#cap-play").click();
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    await page.waitForTimeout(600);
-    await expect(page.locator('#view [draggable="true"]')).toHaveCount(0);
-    await expect(page.locator("#view .pctl button")).toHaveCount(3);
-    const person = page.locator('#view .node[data-person="2"]');
-    const before = (await person.boundingBox())!;
-    await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(before.x + before.width / 2 + 60, before.y + before.height / 2 + 40, {
-      steps: 8,
-    });
-    await page.mouse.up();
-    await page.waitForTimeout(300);
-    const after = (await person.boundingBox())!;
-    expect(Math.abs(after.x + after.width / 2 - (before.x + before.width / 2))).toBeLessThanOrEqual(1);
-    expect(Math.abs(after.y + after.height / 2 - (before.y + before.height / 2))).toBeLessThanOrEqual(1);
-  });
-});

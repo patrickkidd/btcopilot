@@ -4,7 +4,6 @@ import {
   Target,
   dotLayers,
   dotXs,
-  inOrder,
   restLayers,
   restWidth,
   spanYears,
@@ -162,61 +161,36 @@ describe("a tap on the resting line", () => {
   });
 });
 
-describe("the play-by-play of a cluster", () => {
-  /** The record's own order: dated by date, then the undated. */
-  const events = [
-    [10, "1990-01-01"],
-    [11, "1991-01-01"],
-    [13, "1992-01-01"],
-    [12, null],
-    [14, null],
-    [15, null],
-  ].map(([id, dateTime]) => ({ id, dateTime, dateCertainty: null }) as TimelineEvent);
-
-  // R-0532
-  it("steps the dated events in date order whatever order the coach stored", () => {
-    expect(inOrder(events, [13, 10, 11]).map((e) => e.id)).toEqual([10, 11, 13]);
-  });
-
-  // R-0527, R-0532
-  it("steps an undated event right after the one stored before it, or first", () => {
-    expect(inOrder(events, [15, 13, 12, 10, 11, 14]).map((e) => e.id)).toEqual([
-      15, 10, 11, 14, 13, 12,
-    ]);
-  });
-});
-
 describe("the path row over the line", () => {
   const cluster = { start: "2009-03-01", end: "2010-11-20" };
 
   // R-0540
   it("names each level from the whole line down, the cluster by its years", () => {
     expect(trail(Level.Rest, null, null)).toEqual(["Timeline"]);
-    expect(trail(Level.Rest, null, "Catherine died")).toEqual(["Timeline", "Catherine died"]);
+    expect(trail(Level.Rest, null, "Delphine died")).toEqual(["Timeline", "Delphine died"]);
     expect(trail(Level.Wire, null, null)).toEqual(["Timeline"]);
     expect(trail(Level.Wire, cluster, null)).toEqual(["Timeline", "2009–10"]);
-    expect(trail(Level.Wire, cluster, "Catherine died")).toEqual([
+    expect(trail(Level.Wire, cluster, "Delphine died")).toEqual([
       "Timeline",
       "2009–10",
-      "Catherine died",
+      "Delphine died",
     ]);
   });
 
-  // R-0540
-  it("names the board, the about page and a comparison as modes of the cluster", () => {
-    expect(trail(Level.Board, cluster, null)).toEqual(["Timeline", "2009–10", "explain"]);
+  // R-0540, R-0570
+  it("names the about page and a comparison as modes of the cluster", () => {
     expect(trail(Level.About, cluster, null)).toEqual(["Timeline", "2009–10", "about"]);
     expect(trail(Level.Compare, null, null)).toEqual(["Timeline", "compare"]);
   });
 
   // R-0540
   it("names a moment picked by the first name and what happened, the rest left over", () => {
-    expect(told("Catherine Hale", "died")).toEqual(["Catherine died", ""]);
+    expect(told("Delphine Reyes", "died")).toEqual(["Delphine died", ""]);
     expect(told("Ben", "Ben stopped calling")).toEqual(["Ben stopped calling", ""]);
     expect(told("", "Moved to Denver")).toEqual(["Moved to Denver", ""]);
     // a long one keeps its first words, never ending on a small word
-    expect(told("Catherine Hale", "died of breast cancer")).toEqual([
-      "Catherine died",
+    expect(told("Delphine Reyes", "died of breast cancer")).toEqual([
+      "Delphine died",
       "of breast cancer",
     ]);
   });

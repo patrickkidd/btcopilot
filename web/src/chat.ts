@@ -11,25 +11,21 @@ import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
  * lights as it lands and the picture draws what it names — pane A of the
  * approved play-by-play. */
 
-/** A chip tapped inside a play-by-play: the cluster it walks, and which chip in
- * that walk this is. The board is what such a chip steps, never the wire. */
-export interface PlayTap {
-  cluster: string;
-  ordinal: number;
-}
-
 export interface ChatHandlers {
-  onChip(chip: Chip, play: PlayTap | null): void;
+  onChip(chip: Chip): void;
   /** A tap on a bubble's own words rather than on a chip inside it: the picture
    * lights what that message named. It is a look, so it costs no turn. */
   onBubble(text: string): void;
+  /** A tap on a play-by-play's own words: open its drawer again, if it has a
+   * told case to open; false when it has none. */
+  onPlay(statement: number): boolean;
   /** What a chip should read as. The coach may write a reference with no words
    * of its own, and a name out of the record beats a pronoun in a sentence. */
   label(chip: Chip): string;
 }
 
-/** The beat after a move's sentence has been written, before the next move
- * takes the board: long enough to look at what was just drawn. The owner tunes
+/** The beat after a chip's sentence has been written, before the next chip
+ * lights: long enough to look at what was just drawn. The owner tunes
  * this by feel, so it is one number in one place. */
 const READ_MS = 2000;
 /** The coach writes two characters at a time, on the approved cadence. */
@@ -114,17 +110,6 @@ const playable = (bubble: HTMLElement, text: string) => {
 /** How long a traced bubble stays outlined after a moment jumps to it. */
 const TRACE_MS = 2200;
 
-/** Where a tapped chip sits in its walk. Only a chip inside a play-by-play has
- * one, and the offers that close the walk are not moves, so they do not count
- * towards it. */
-function playTap(button: HTMLElement): PlayTap | null {
-  const bubble = button.closest<HTMLElement>(".bub");
-  const cluster = bubble?.dataset.play;
-  if (!bubble || !cluster) return null;
-  const moves = [...bubble.querySelectorAll<HTMLElement>(`.chip.${ChipTone.Data}`)];
-  return { cluster, ordinal: moves.indexOf(button) };
-}
-
 export class Chat {
   /** What each bubble was written from, chips and all, so a tap on its words
    * can light the same moments its chips name. */
@@ -153,24 +138,24 @@ export class Chat {
       if (!button) {
         if (host === this.composer) return;
         const bubble = (e.target as Element).closest<HTMLElement>(".bub");
-        // A play-by-play's own words never take the picture off its board.
-        if (!bubble || bubble.dataset.play) return;
+        if (!bubble) return;
+        // A play-by-play's own words open it again; an old prose walk has no
+        // case to open, and its words are a look like any message's.
+        if (bubble.dataset.play && bubble.dataset.statement && this.handlers.onPlay(Number(bubble.dataset.statement)))
+          return;
         const said = this.said.get(bubble);
         if (said) this.handlers.onBubble(said);
         return;
       }
       e.preventDefault();
       if (host === this.composer) return void button.remove();
-      this.handlers.onChip(
-        {
-          kind: button.dataset.kind as Chip["kind"],
-          target: button.dataset.target ?? "",
-          label: button.dataset.full ?? "",
-          tone: button.classList.contains(ChipTone.Ask) ? ChipTone.Ask : ChipTone.Data,
-          bare: false,
-        },
-        playTap(button),
-      );
+      this.handlers.onChip({
+        kind: button.dataset.kind as Chip["kind"],
+        target: button.dataset.target ?? "",
+        label: button.dataset.full ?? "",
+        tone: button.classList.contains(ChipTone.Ask) ? ChipTone.Ask : ChipTone.Data,
+        bare: false,
+      });
     };
     this.watchScrolling();
     // the thread's box changes size after it is put up — a phone's toolbar
@@ -295,8 +280,7 @@ export class Chat {
     // The bubble carries its statement so a moment on the picture can point
     // back at the words that coded it.
     if (statementId !== null) bubble.dataset.statement = String(statementId);
-    // A play-by-play carries the cluster it walks, so its chips step the board
-    // instead of taking the picture back to the wire.
+    // A play-by-play carries the cluster it tells, so a tap on it opens it again.
     if (play !== null) bubble.dataset.play = play;
     this.said.set(bubble, text);
     this.list.append(bubble);
@@ -452,8 +436,8 @@ export class Chat {
         this.said.set(bubble, text);
         // A move holds until the sentence about it has been written and there
         // has been a beat to look at it, not for a fixed count from the moment
-        // it was named. The chip stays lit for as long as its move is the one
-        // on the board.
+        // it was named. The chip stays lit for as long as its moment is the
+        // one on the picture.
         let held: HTMLElement | null = null;
         const release = async () => {
           if (!held) return;

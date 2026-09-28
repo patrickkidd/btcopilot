@@ -208,7 +208,7 @@ button { font-family: inherit; }
 .pl-btn svg { display: block; }
 /* the about page: words, at the height they need */
 .ss.about { padding: 4px 16px 10px; box-sizing: border-box; }
-/* The board and the about page: a card over the chat, from the top of the
+/* The about page: a card over the chat, from the top of the
    picture down, on ground of its own (R-0230), so opening one resizes nothing
    and the bubbles stay where they are under it (R-0460). */
 .view .card {
@@ -467,83 +467,6 @@ button { font-family: inherit; }
 /* an open state fades past its last confirmation rather than stopping dead */
 .ss .fade { stroke: url(#openfade); stroke-width: 2.2; stroke-linecap: round; }
 
-/* ---- the moves board: Bowen's chalkboard, the deepest level ---- */
-/* screen one zooms into screen two: the board arrives scaled up and settles */
-.ss.board { position: relative; }
-.ss.board.in svg { animation: boardin 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-@keyframes boardin {
-  from { transform: scale(1.35); opacity: 0.25; }
-  to { transform: scale(1); opacity: 1; }
-}
-/* people arrive on the board rather than being simply there (play-by-play) */
-.ss.board.in .node {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1);
-}
-@keyframes pop {
-  from { transform: scale(0.2); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-/* the years under the people: the axis, its decade ticks, one dot per move,
-   a blob where moves bunch and the pool under the move being drawn */
-.ss .axis .ax { stroke: var(--line); stroke-width: 1.4; }
-.ss .axis .ax-tick { stroke: var(--line); stroke-width: 1.2; }
-.ss .axis .ax-yr { font: 400 13px var(--mono); fill: var(--faint); }
-.ss .axis .ax-blob { fill: var(--faint); opacity: 0.22; }
-.ss .axis .ax-dot { fill: var(--faint); transition: fill 0.3s, r 0.3s; }
-.ss .axis .ax-dot.played { fill: var(--data); }
-/* the move being drawn: the dot itself, on top of whatever it is crowded by,
-   in the one action green. Nothing sits behind it. */
-.ss .axis .ax-now { fill: var(--move); }
-.ss .axis .ax-yr.on { fill: var(--move-text); }
-.ss .bond { stroke: var(--line); stroke-width: 1.2; }
-.ss .hist { opacity: 0.16; animation: histin 0.32s ease; }
-.ss .hist * { animation: none !important; }
-@keyframes histin { from { opacity: 0; } to { opacity: 0.16; } }
-/* The picture's own nav slot. Empty at rest and at chapter level; the board
-   level puts its back arrow in the left one. */
-.ss .corner {
-  position: absolute;
-  top: 2px;
-  width: 44px;
-  height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font: 600 18px/1 system-ui, -apple-system, sans-serif;
-  color: var(--data);
-  border: none;
-  background: none;
-}
-.ss .corner.l { left: 4px; }
-.ss .corner.r { right: 4px; }
-/* Two lines of room, always: the words under the board are a person and what
-   happened to them, and a long one must not push the board up the screen. What
-   does not fit is cut. */
-.bcap {
-  height: 30px;
-  padding: 2px 16px 0;
-  font: 400 13px/15px var(--mono);
-  color: var(--faint);
-  text-align: center;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-}
-.pctl {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding: 4px 16px 2px;
-}
-.pctl .btn { border-radius: 4px; }
-/* the way onto the board carries the same mark as the control that steps it,
-   and no words: three controls with words do not fit across a phone */
-.btn.icon { min-width: 44px; padding: 0; }
-.pctl .btn[disabled] { opacity: 0.4; cursor: default; }
 .btn.primary { border-color: var(--data); color: var(--data); }
 
 /* ---- the move language (ratified 2026-09-01): one green, never amber ----

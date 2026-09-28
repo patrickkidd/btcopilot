@@ -83,14 +83,3 @@ test.describe("the timeline's views", () => {
   });
 });
 
-test.describe("the board", () => {
-  test.use({ storageState: stateFor("play") });
-
-  // R-0234, R-0540
-  test("the path over the board", async ({ page }) => {
-    await settle(page);
-    await tap(page, ".bub .chip.data");
-    await expect(page.locator("#view .ss.board")).toBeVisible();
-    await lined(page, "board", { line: false, ask: false });
-  });
-});

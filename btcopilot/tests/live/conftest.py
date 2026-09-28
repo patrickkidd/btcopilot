@@ -16,7 +16,9 @@ results file; `python -m btcopilot.tests.live.passrate` reads them back.
 Every coach call is saved and replayed (replay.py). LIVE_REPLAY picks the mode:
 `replay` (the default) replays a saved response and records a missing one;
 `record` makes every call real and saves it again; `only` replays and fails on
-a missing one, needs no testing key and spends nothing.
+a missing one, needs no testing key and spends nothing; `dump` replays and writes
+each missing request to LIVE_REQUESTS for an answer on the Claude Code
+subscription (answer.py), spending nothing.
 """
 
 import datetime
@@ -37,6 +39,7 @@ from btcopilot.schema import DiagramData
 from btcopilot.tests.conftest import csrf_token, replied
 from btcopilot.tests.live.criterion import WAITING
 from btcopilot.tests.live.replay import Mode, Replay
+from btcopilot.quality import Source
 from btcopilot.tests.live.run import Outcome, Run
 
 HERE = Path(__file__).parent
@@ -76,8 +79,10 @@ def run(request):
         check=True,
     ).stdout.strip()
     opened = request.config.stash[RUN] = Run(CoachModel().model, git)
-    replay = request.config.stash[REPLAY] = Replay(mode())
-    if replay.mode is not Mode.Only:
+    replay = request.config.stash[REPLAY] = Replay(
+        mode(), requests=Path(os.environ["LIVE_REQUESTS"]) if mode() is Mode.Dump else None
+    )
+    if not replay.mode.offline:
         opened.open(require_testing_key())
     charged = opened.recorded
     event.listen(ModelCall, "after_insert", charged)
@@ -104,7 +109,12 @@ def pytest_runtest_makereport(item, call):
         return report
     if report.when == "setup":
         run.begin(item.name, str(item.function.criterion))
-    if report.when == "call" or not report.passed:
+    awaiting = item.config.stash[REPLAY].awaiting
+    if report.when == "call" and awaiting:
+        report.outcome = "skipped"
+        report.longrepr = (str(item.path), item.location[1] or 0, f"awaiting answers: {awaiting}")
+        run.end(item.name, Outcome.Awaiting)
+    elif report.when == "call" or not report.passed:
         run.end(item.name, Outcome(report.outcome))
     if run.reason:
         item.session.shouldstop = f"live run stopped: {run.reason}"
@@ -114,6 +124,7 @@ def pytest_runtest_makereport(item, call):
 def pytest_sessionfinish(session, exitstatus):
     run = session.config.stash.get(RUN, None)
     if run is not None:
+        run.source = Source.Subscription if session.config.stash[REPLAY].subscribed else Source.Api
         run.finish(exitstatus)
 
 
@@ -137,7 +148,7 @@ def require_testing_key() -> str:
 def testing_key(request, monkeypatch):
     """The live venue's own key, never production's: set ANTHROPIC_API_KEY from
     ANTHROPIC_TESTING_KEY for this test only, and fail loudly if it is unset."""
-    if request.config.getoption("--e2e") and mode() is not Mode.Only:
+    if request.config.getoption("--e2e") and not mode().offline:
         monkeypatch.setenv("ANTHROPIC_API_KEY", require_testing_key())
 
 

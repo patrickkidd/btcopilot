@@ -11,6 +11,7 @@ import pytest
 from btcopilot import quality
 from btcopilot.admin import admin
 from btcopilot.models import QualityKind, QualityRun
+from btcopilot.quality import Source
 from btcopilot.tests.live import record
 from btcopilot.tests.live.run import Outcome, Status
 from btcopilot.tests.repo import REPO
@@ -25,6 +26,7 @@ def run(status=Status.Passed, second=Outcome.Failed) -> dict:
         "git": "5b2a6bbf65600e2944c6a0728e36120accdded8f",
         "status": status,
         "reason": None,
+        "source": Source.Api,
         "cases": [
             {"case": "test_one", "criterion": "once", "outcome": Outcome.Passed},
             {"case": "test_two", "criterion": "2 of 3", "outcome": second},
@@ -111,3 +113,12 @@ def test_every_release_loads_the_recorded_runs_after_the_migrations():
     image = (REPO / "Dockerfile").read_text()
     assert f"COPY {quality.EVALS} /app/{quality.EVALS}" in image
     assert f"COPY {quality.F1} /app/{quality.F1}" in image
+
+
+def test_a_subscription_run_is_kept_apart_from_paid_runs(flask_app, root):
+    # R-0568
+    recorded(root, {**run(), "source": Source.Subscription, "cost": 0.0})
+    quality.load(root)
+    assert {row.source for row in rows().values()} == {Source.Subscription}
+    f1 = QualityRun.query.filter_by(kind=QualityKind.ExtractionF1)
+    assert {row.source for row in f1} == {Source.Api}
