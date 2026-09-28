@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { Failed } from "../src/api";
-import type { TimelineEvent } from "../src/types";
+import { EventKind, type TimelineEvent } from "../src/types";
 
 const refusal: { error: Error | null } = { error: null };
 vi.mock("../src/api", async (original) => ({
@@ -10,7 +10,7 @@ vi.mock("../src/api", async (original) => ({
   },
 }));
 
-const { Direction, EventKind, MAX_FIELD_LINES, Relationship, grownHeight, moved, save } =
+const { Direction, MAX_FIELD_LINES, Relationship, grownHeight, moved, save } =
   await import("../src/editor");
 
 describe("grownHeight", () => {

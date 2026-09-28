@@ -106,6 +106,18 @@ export interface PairBond {
   label?: string;
 }
 
+export enum EventKind {
+  Shift = "shift",
+  Birth = "birth",
+  Adopted = "adopted",
+  Bonded = "bonded",
+  Married = "married",
+  Separated = "separated",
+  Divorced = "divorced",
+  Noted = "noted",
+  Death = "death",
+}
+
 export interface TimelineEvent {
   id: number;
   label: string;

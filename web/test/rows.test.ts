@@ -56,13 +56,32 @@ const coded: TimelineEvent = {
   child: null,
 };
 
+const tree = {
+  people: [person(), person({ id: 2, name: "Delphine", gender: "female" })],
+  pair_bonds: [{ id: 21, person_a: 2, person_b: 1, married: true }],
+};
+
+describe("an event row's kind", () => {
+  // R-0113, R-0161, R-0NNN
+  it("carries the diagram's mark and opens with the kind in the data colour", () => {
+    const divorce = { ...coded, kind: "divorced", label: "divorced", spouse: 2, symptom: null, anxiety: null, functioning: null, relationship: null };
+    const row = eventRow(divorce, new Map(), tree);
+    expect(row).toContain('<div class="r1"><span class="kw">divorced</span></div>');
+    expect(row.match(/<line class="slash"/g)).toHaveLength(2);
+    expect(row.indexOf('<rect class="shape"')).toBeLessThan(row.indexOf('<circle class="shape"'));
+    const shift = eventRow(coded, new Map([[2, "Mom"]]), tree);
+    expect(shift).not.toContain('class="kw"');
+    expect(shift).toContain('<svg class="kmark" viewBox="0 0 28 28" aria-hidden="true"></svg>');
+  });
+});
+
 describe("an event row's summary line", () => {
   // R-0143
   it("writes the coding in letters and arrows so it fits a phone", () => {
     const names = new Map([[2, "Mom"]]);
     const said = codes(coded, names);
     expect(said).toBe("S\u2191  A\u2191  F=  R conflict\u2192Mom");
-    const row = eventRow(coded, names);
+    const row = eventRow(coded, names, tree);
     expect(row).not.toMatch(/symptom|anxiety|functioning|relationship/i);
   });
 });
@@ -70,7 +89,7 @@ describe("an event row's summary line", () => {
 describe("an event row's first line", () => {
   // R-0457
   it("is the label the server gives every view, as it is", () => {
-    const row = eventRow({ ...coded, label: "died, possibly around July 4" }, new Map());
+    const row = eventRow({ ...coded, label: "died, possibly around July 4" }, new Map(), tree);
     expect(row).toContain('<div class="r1">died, possibly around July 4</div>');
   });
 });

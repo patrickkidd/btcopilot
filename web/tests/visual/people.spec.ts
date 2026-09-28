@@ -380,3 +380,35 @@ test.describe("the two views of the record", () => {
     await expect(page.locator("#menu-body .row").first()).toBeVisible();
   });
 });
+
+test.describe("an event's kind in the events list", () => {
+  test.use({ storageState: stateFor("whitlock") });
+
+  // R-0113, R-0161, R-0NNN
+  test("carries the diagram's mark and opens with the kind in the data colour", async ({ page }) => {
+    await settle(page);
+    await openList(page);
+    const divorce = lists(page).locator('.row[data-event="204"]');
+    await expect(divorce).toBeVisible();
+    const seen = await divorce.evaluate((row) => {
+      const probe = document.createElement("span");
+      probe.style.color = "var(--data)";
+      row.append(probe);
+      const data = getComputedStyle(probe).color;
+      probe.remove();
+      const word = row.querySelector(".r1 .kw");
+      return {
+        word: word?.textContent,
+        colour: word ? getComputedStyle(word).color : null,
+        data,
+        slashes: row.querySelectorAll(".kmark .slash").length,
+        shapes: row.querySelectorAll(".kmark .shape").length,
+      };
+    });
+    expect(seen.word).toBe("divorced");
+    expect(seen.colour).toBe(seen.data);
+    expect(seen.slashes).toBe(2);
+    expect(seen.shapes).toBe(2);
+    await expect(lists(page).locator('.row[data-event="203"] .kw')).toHaveCount(0);
+  });
+});
