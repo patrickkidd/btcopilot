@@ -10,7 +10,7 @@ For coders: what the original authors wrote about defining a self (the "I positi
 
 ## Coder summary
 
-Nothing about this code is settled for coding. What kind of thing a defined self is (a relationship move, a functioning shift, or a third kind) is open for the IRR group (status item 5). Whether the others' "change back" reaction must be seen before it is coded is open too (status item 8). The only rulings are two picture rules and the rule that a reading from theory stays apart from the facts (status items 3, 4, 9). Patrick added on 2026-09-28 that a defined self has targets, the people the self was defined to, whom the person may not name (status item 11), and defined the move as "the actual action that a person takes to define themselves in relation to others" (status item 12). Who the targets are when nobody is named, and which actions count, stay open for the IRR group.
+Nothing about this code is settled for coding. What kind of thing a defined self is (a relationship move, a functioning shift, or a third kind) is open for the IRR group (status item 5). Whether the others' "change back" reaction must be seen before it is coded is open too (status item 8). The only rulings are two picture rules and the rule that a reading from theory stays apart from the facts (status items 3, 4, 9). Patrick added on 2026-09-28 that a defined self has targets, the people the self was defined to, whom the person may not name (status item 11), and defined the move as an action a person takes to define themselves in relation to others (status item 12). Who the targets are when nobody is named, and which actions count, stay open for the IRR group.
 
 The passages that matter most:
 - DS13: Bowen, "A self is never defined in words. It's defined only when you can take an action stand."
@@ -44,10 +44,7 @@ The main off-theory trap: coding a defined self from the words of a statement ("
 #### Patrick, 2026-09-28 (conversation)
 
 11. **A defined self has targets; the report need not name them.** Patrick's words, not in the rulings store; the definition is OPEN for the IRR group (OPEN_QUESTIONS 35).
-   - <a id="DS124"></a>**DS124** “defined self does require targets who you defined yourself to” Patrick, correction case 2026-09-28 L15. Said of two events he ruled are noted events, not defined-self moves (4l).
-   - <a id="DS125"></a>**DS125** “they may not say it. it is the behavior of the move to define a self.” Patrick, correction case 2026-09-28 L19. His answer to a rule, written by a session from one case, that a defined self is coded only when the person says whom; he sent the definition to the theory and the IRR group.
-12. **Patrick's definition of the move.** Patrick's words, 2026-09-28, not in the rulings store; a working definition, authority for design, not evidence (REFERENCE tag legend). Who the targets are when nobody is named, and which actions count, stay OPEN for the IRR group (OPEN_QUESTIONS 35).
-   - <a id="DS126"></a>**DS126** “define self as a move is the actual action that a person takes to define themselves in relation to others.” Patrick, OPEN_QUESTIONS 35 L133. An action, not words or an intention (compare DS13), and in relation to others (compare DS6).
+12. **Patrick's definition of the move.** A defined-self move is an action a person takes to define themselves in relation to others. Patrick, 2026-09-28, not in the rulings store; a working definition, authority for design, not evidence (REFERENCE tag legend). Who the targets are when nobody is named, and which actions count, stay OPEN for the IRR group (OPEN_QUESTIONS 35).
 
 ## 2. What the original authors wrote
 
@@ -300,7 +297,7 @@ The acts are dated to the vacation, and the husband's and son's demands come aft
 
 ### 4l. Moving away for graduate school (a real record, fictionalized)
 
-Marcus says "I moved to San Francisco for grad school" and, later in the same conversation, "I started the grad program". The coach coded both as defined-self moves, functioning up, with Marcus as his own target. Patrick ruled both are noted events: the words hold no defining behaviour toward anyone (DS124). He did not rule that a defined self needs the target named (DS125). Case card: case card defined-self-grad-school.
+Marcus says "I moved to San Francisco for grad school" and, later in the same conversation, "I started the grad program". The coach coded both as defined-self moves, functioning up, with Marcus as his own target. Patrick ruled both are noted events: the words hold no defining behaviour toward anyone. He did not rule that a defined self needs the target named (status item 11). Case card: case card defined-self-grad-school.
 
 #### Questions
 
@@ -313,7 +310,7 @@ A move for school is a step on his own path; what, if anything, would make it a 
 | "I think", "I believe", "I won't": an I-statement is a defined self. | "A self is never defined in words." Many so-called I positions are attempts to change others. Stated positions left the family's view of a person "unaltered". | DS13, DS30, DS19; 4c |
 | A firm demand or ultimatum ("go, or else") defines a self. | A threat is the low-level kind. A defining effort "does not insist others change". | DS27, DS28, DS7; 4f |
 | Declaring independence, breaking away, or skipping the family holiday is a defined self. | "broken away" is not "grown away". Patrick's writing codes skipping a holiday as an away move. | DS34, DS24, DS35 |
-| A defined self is coded only when the person says whom they took the stand with. | The self is defined in action "to which others respond"; "You don't have to tell anybody". Patrick: "they may not say it". | DS6, DS17, DS18, DS125 |
+| A defined self is coded only when the person says whom they took the stand with. | The self is defined in action "to which others respond"; "You don't have to tell anybody". Patrick, 2026-09-28: the person may not say whom. | DS6, DS17, DS18; status item 11 |
 | Moving away for school or a job is a defined self. | A step on one's own path is not by itself a stand taken with others; Patrick ruled such a case a noted event. | DS1, DS6, DS34; 4l |
 | Telling the family off at last is a defined self. | "avoid confrontation". | DS25 |
 | Calm distance and silence show a self. | "Distance and silence do not fool an emotional system." | DS22, DS32 |
