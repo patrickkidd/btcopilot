@@ -339,20 +339,6 @@ button { font-family: inherit; }
 }
 .ss-scroll::-webkit-scrollbar { display: none; }
 .ss-line { position: relative; height: 100%; }
-.ss-snap { position: absolute; top: 0; width: 1px; height: 1px; scroll-snap-align: start; }
-/* The years at the two ends of the stretch on screen, rewritten as it slides.
-   They stand still while the line moves under them. */
-.ss-yrs {
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  top: 51px;
-  display: flex;
-  justify-content: space-between;
-  font: 400 10.5px/11px var(--mono);
-  color: var(--faint);
-  pointer-events: none;
-}
 
 /* the wire, and the years at its ends */
 .ss .wire { stroke: var(--line); stroke-width: 1.5; }
@@ -2218,42 +2204,29 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
    it sits in, so it stays selectable and comes with the words around it. */
 .btn, .iconbtn, .send, .navbtn, .play { user-select: none; -webkit-user-select: none; }
 
-/* ---- the resting level: the whole line, one box per chapter (converged
-   mockup, crowded-chapter/timeline-converged.html renderRest) ---- */
-.ss .ep { fill: var(--data); opacity: 0.07; }
-.ss .ep-edge {
-  fill: none;
-  stroke: var(--data);
-  stroke-width: 1;
-  opacity: 0.35;
-  animation: chapter 2.2s ease-in-out infinite;
-}
-@keyframes chapter {
-  50% { opacity: 1; }
-}
-/* One drawing at every level (R-0538): the open cluster's box is drawn solid
-   and still, every other box recedes, and nothing is taken away. */
-.ss .ep-g.open .ep { opacity: 0.12; }
-.ss .ep-g.open .ep-edge { opacity: 1; animation: none; }
-.ss .ep-g.dim { opacity: 0.4; }
-/* What the coach touched this turn keeps its colour until the next message
-   (R-0539): added green, read grey, changed amber, removed red. A read over a
-   whole cluster greys its box rather than every dot in it. */
+/* ---- the line: one pill per cluster with nothing drawn inside it (R-0543).
+   The open or named pill stands at full strength and the rest recede; what the
+   coach touched this turn takes its colour as a fill and keeps it through the
+   dimming (R-0539, R-0544): added green, read grey, changed amber, removed red. ---- */
+.ss .pill { fill: var(--data); opacity: 0.85; }
+.ss .pill.on { opacity: 1; }
+.ss .pill.dim { opacity: 0.3; }
+.ss .pill.add { fill: var(--move); opacity: 1; }
+.ss .pill.read { fill: var(--faint); opacity: 0.7; }
+.ss .pill.change { fill: var(--ask); opacity: 1; }
+.ss .pill.remove { fill: var(--remove); opacity: 1; }
 .ss .dot.add { fill: var(--move); }
 .ss .dot.read { fill: var(--faint); }
 .ss .dot.change { fill: var(--ask); }
 .ss .dot.remove { fill: var(--remove); }
-.ss .ep-g.read { opacity: 1; }
-.ss .ep-g.read .ep { fill: var(--faint); opacity: 0.16; }
-.ss .ep-g.read .ep-edge { stroke: var(--faint); opacity: 1; animation: none; }
 /* each lands with a flash as its line lands in the chat */
-.ss .dot.flash, .ss .ep-g.flash { animation: touched 0.9s ease-out; }
+.ss .dot.flash, .ss .pill.flash { animation: touched 0.9s ease-out; }
 @keyframes touched {
   0%, 40% { opacity: 0.15; }
   20%, 60% { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ss .dot.flash, .ss .ep-g.flash { animation: none; }
+  .ss .dot.flash, .ss .pill.flash { animation: none; }
 }
 /* a resting-wire data label keeps its ratified size, under the UI text floor */
 .ss .ep-yrs { font: 400 10.5px var(--mono); fill: var(--faint); }
@@ -2269,9 +2242,6 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   text-align: center;
   font: 400 14px/1.4 var(--sans);
   color: var(--faint);
-}
-@media (prefers-reduced-motion: reduce) {
-  .ss .ep-edge { animation: none; }
 }
 
 /* A line the app says rather than either speaker: what just happened to the

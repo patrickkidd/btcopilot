@@ -660,13 +660,11 @@ function aim(chip: Chip): void {
   const ids = aimedEvents(chip, timeline.clusters);
   if (!ids.length) return;
   // A chip in the coach's words does exactly what a tap on the picture does:
-  // there is one selection, wherever the reader touched it. A chip naming one
-  // moment selects that moment; a chip naming a cluster selects the cluster,
-  // so the caption offers Play for it.
-  const cluster =
-    ids.length > 1
-      ? timeline.clusters.find((c) => ids.every((id) => c.event_ids.includes(id)))
-      : undefined;
+  // there is one selection, wherever the reader touched it. A chip naming an
+  // event no cluster claims selects that event; a chip naming a cluster, or an
+  // event inside one, selects the cluster, since an event in a cluster has no
+  // mark of its own on the line (R-0543).
+  const cluster = timeline.clusters.find((c) => ids.every((id) => c.event_ids.includes(id)));
   if (cluster) {
     picture.spotlight(ids);
     apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Cluster, id: cluster.id }));
