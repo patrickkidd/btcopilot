@@ -491,6 +491,20 @@ release when it comes back to the front" — its tests cite R-0486 until then.
 Open for the next session: the first tap right after a rollout can hit a 502 while the
 container comes back up.
 
+**Next PR, queued 2026-09-28:**
+1. Record-data corrections get a general policy and a queue, not one-at-a-time fixes. Patrick:
+   "We should not be going through all of these nitpicky data migration issues. They should be
+   queued up and flagged for sure but we should figure out a general policy and not do it one at
+   a time. And not in this PR." Queued under it: event 26 in diagram 1, a noted event carrying a
+   variable; the 8 births in diagram 11 naming an invented second parent, repair calls prepared
+   by the louann agent but not run; diagram 14's two events naming nobody, on which Patrick said
+   "Leave for now."
+2. Two control pairs still look different from each other: the back arrow (a text glyph in one
+   place, a drawn chevron in another) and step back/forward (plain buttons in one place, pills in
+   another). Patrick: "queue it for the next PR."
+3. Confirmed: a shift always needs a description. Patrick: "yes it needs a description, always."
+4. The picture does not shrink while the coach types. Patrick said no to that; no work follows.
+
 **The rulings index sits at its size ceiling.** Every ruling added now forces a wording trim
 somewhere in the store just to stay under it, including the store's own preamble text. Patrick
 decides whether to split the store into more than one file or raise the ceiling.
