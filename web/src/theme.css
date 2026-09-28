@@ -206,8 +206,8 @@ button { font-family: inherit; }
 }
 .pl-btn:active { color: var(--data); }
 .pl-btn svg { display: block; }
-/* the about page: words, at the height they need */
-.ss.about { padding: 4px 16px 10px; box-sizing: border-box; }
+/* the about page: words, at the height they need, clear of its close button */
+.ss.about { padding: 4px 52px 10px 16px; box-sizing: border-box; }
 /* The about page: a card over the chat, from the top of the
    picture down, on ground of its own (R-0230), so opening one resizes nothing
    and the bubbles stay where they are under it (R-0460). */

@@ -30,7 +30,7 @@ import {
   type PicState,
   type Sel,
 } from "./caption";
-import { $, pathRow, setTitle, slideOver } from "./dom";
+import { $, CLUSTER, pathRow, setTitle, slideOver } from "./dom";
 import { Drawer } from "./drawer";
 import { among, untold } from "./snapshots";
 import { reopen, type Kept } from "./plays";
@@ -135,6 +135,10 @@ function onTap(tap: Tap): void {
   // the whole line at a glance again.
   if (tap.target === Target.Ground) {
     putDown();
+    return;
+  }
+  if (tap.target === Target.Close) {
+    climb(CLUSTER);
     return;
   }
   if (tap.target === Target.Shelf) {
@@ -1170,13 +1174,18 @@ function putDown(): void {
   actions();
 }
 
-$("path").addEventListener("click", (e) => {
-  const step = (e.target as Element).closest<HTMLElement>("[data-step]");
-  if (!step) return;
+/** Back up to one step of the path: the path's own steps, and the about
+ * page's close button, which goes where the cluster's step goes. */
+function climb(step: number): void {
   track.tap(Feature.PictureUp);
-  picture.back(Number(step.dataset.step));
+  picture.back(step);
   pic = REST;
   actions();
+}
+
+$("path").addEventListener("click", (e) => {
+  const step = (e.target as Element).closest<HTMLElement>("[data-step]");
+  if (step) climb(Number(step.dataset.step));
 });
 $("info").addEventListener("click", () => {
   track.tap(Feature.PictureInfo);

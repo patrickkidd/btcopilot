@@ -191,6 +191,41 @@ test.describe("one cluster open on the sparse record", () => {
     );
   });
 
+  /** What the page shows once the about page has gone: the path, what is lit
+   * on the line, the caption and where the line sits. */
+  const shown = async (page: Page) => {
+    await expect(page.locator("#view .card")).toHaveCount(0);
+    await page.waitForTimeout(600);
+    return page.evaluate(() => ({
+      path: document.querySelector("#path")!.textContent,
+      info: (document.querySelector("#info") as HTMLElement).hidden,
+      on: [...document.querySelectorAll("#view .on")].map((e) => e.getAttribute("class")),
+      caption: document.querySelector("#caption")!.textContent,
+      line: document.querySelector("#view svg")!.getBoundingClientRect().toJSON(),
+    }));
+  };
+
+  // R-0317, R-0540, R-0588
+  test("the about page has the app's close button in its top-right corner, and it goes back to the cluster as the path's years step does", async ({ page }) => {
+    await settle(page);
+    await openCluster(page);
+    await page.locator("#info").click();
+    await page.waitForTimeout(600);
+    await step(page, 1).click();
+    const byYears = await shown(page);
+    await page.locator("#info").click();
+    await page.waitForTimeout(600);
+    const card = page.locator("#view .card");
+    const x = card.locator(".cardx");
+    await expect(x).toHaveCount(1);
+    await expect(x).toHaveText("\u00d7");
+    const [b, p] = [(await x.boundingBox())!, (await card.boundingBox())!];
+    expect(p.x + p.width - (b.x + b.width)).toBeLessThanOrEqual(8);
+    expect(b.y - p.y).toBeLessThanOrEqual(8);
+    await x.click();
+    expect(await shown(page)).toEqual(byYears);
+  });
+
   // R-0213
   test("the i writes out no list of the cluster's moments", async ({ page }) => {
     test.skip(true, "unbuilt ruling, needs a design: what the picture spot draws behind a cluster's i, with no list and no count");
