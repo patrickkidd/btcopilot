@@ -7,6 +7,8 @@ import logging
 from dataclasses import dataclass, field, fields, MISSING
 from typing import get_origin, get_args, Union
 
+from google import genai
+from google.genai import types
 from google.genai.errors import ClientError, ServerError
 
 from btcopilot.schema import from_dict
@@ -36,6 +38,9 @@ STRUCTURED_EFFORT = "high"
 MODEL_ALIASES = {
     "opus-5.5": "claude-opus-5-5",
     "opus-4.6": "claude-opus-4-6",
+    "gemini-flash": "gemini-3.8-flash",
+    "gemini-3.8-flash": "gemini-3.8-flash",
+    "gemini-3.6-flash": "gemini-3.6-flash",
     "gemini-2.5-flash": "gemini-2.5-flash",
     "haiku-4.5": "claude-haiku-4-5-20251001",
     "sonnet-5": "claude-sonnet-5",
@@ -50,6 +55,10 @@ DEFAULT_RESPONSE_MODEL_ALIAS = "opus-5.5"
 def resolve_model(alias: str | None) -> str:
     """No alias is RESPONSE_MODEL; an unknown one raises KeyError."""
     return MODEL_ALIASES[alias] if alias else RESPONSE_MODEL
+
+
+def is_gemini(model: str) -> bool:
+    return model.startswith("gemini-")
 
 
 def _is_claude_model(model: str) -> bool:
@@ -215,6 +224,35 @@ def _client():
     return genai.Client(
         api_key=os.environ["GOOGLE_GEMINI_API_KEY"],
         http_options=types.HttpOptions(timeout=GEMINI_TIMEOUT_MS),
+    )
+
+
+# Which Google endpoint the coach's Gemini calls go to. Vertex AI runs under
+# the Google Cloud project, whose agreement covers health data; the Developer
+# API runs on an API key.
+GEMINI_ENDPOINT = "BTCOPILOT_GEMINI_ENDPOINT"
+
+
+class GeminiEndpoint(enum.StrEnum):
+    Vertex = "vertex"
+    Developer = "developer"
+
+
+def gemini_client(timeout: float | None = None) -> genai.Client:
+    """No timeout, in seconds, is the Gemini default."""
+    options = types.HttpOptions(
+        timeout=int(timeout * 1000) if timeout else GEMINI_TIMEOUT_MS
+    )
+    endpoint = GeminiEndpoint(os.environ.get(GEMINI_ENDPOINT, GeminiEndpoint.Vertex))
+    if endpoint is GeminiEndpoint.Vertex:
+        return genai.Client(
+            vertexai=True,
+            project=os.environ["GOOGLE_CLOUD_PROJECT"],
+            location=os.environ["GOOGLE_CLOUD_LOCATION"],
+            http_options=options,
+        )
+    return genai.Client(
+        api_key=os.environ["GOOGLE_GEMINI_API_KEY"], http_options=options
     )
 
 
