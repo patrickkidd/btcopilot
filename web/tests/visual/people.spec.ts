@@ -384,7 +384,7 @@ test.describe("the two views of the record", () => {
 test.describe("an event's kind in the events list", () => {
   test.use({ storageState: stateFor("whitlock") });
 
-  // R-0113, R-0161, R-0NNN
+  // R-0113, R-0161
   test("carries the diagram's mark and opens with the kind in the data colour", async ({ page }) => {
     await settle(page);
     await openList(page);

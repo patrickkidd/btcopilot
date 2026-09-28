@@ -62,7 +62,7 @@ const tree = {
 };
 
 describe("an event row's kind", () => {
-  // R-0113, R-0161, R-0NNN
+  // R-0113, R-0161
   it("carries the diagram's mark and opens with the kind in the data colour", () => {
     const divorce = { ...coded, kind: "divorced", label: "divorced", spouse: 2, symptom: null, anxiety: null, functioning: null, relationship: null };
     const row = eventRow(divorce, new Map(), tree);
