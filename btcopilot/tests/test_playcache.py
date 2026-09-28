@@ -13,7 +13,7 @@ from btcopilot.case import Tool
 from btcopilot.extensions import db
 from btcopilot.models import Discussion, ModelCall, Statement, StatementKind
 from btcopilot.playturn import PlayTurn
-from btcopilot.schema import Event, EventKind, asdict
+from btcopilot.schema import Event, EventKind, PairBond, Person, asdict
 from btcopilot.tests.conftest import Model, called
 from btcopilot.tests.test_case import SHOTS, record, told
 from btcopilot.tests.test_turnbackfill import at, rows, seed
@@ -99,6 +99,29 @@ def test_a_new_title_on_a_named_cluster_is_told_again(discussion):
 
     assert len(model.histories) == 2
     assert again["digest"] != first["digest"]
+
+
+def test_a_renamed_relative_the_drawer_draws_is_told_again_and_a_stranger_is_not(discussion):
+    # R-0563, R-0542, R-0546
+    data = record()
+    data.people[0]["parents"] = 10
+    data.people += [
+        asdict(Person(id=6, name="Harold")),
+        asdict(Person(id=7, name="Iris")),
+        {**asdict(Person(id=8, name="Nell", parents=10)), "primary": True},
+        asdict(Person(id=9, name="Otto")),
+    ]
+    data.pair_bonds = [asdict(PairBond(id=10, person_a=6, person_b=7))]
+    model = Model(called(Tool.PlayByPlay, **told()), called(Tool.PlayByPlay, **told()))
+    explain(data, discussion, model)
+    data.people[-1]["name"] = "Otis"
+    explain(data, discussion, model)
+
+    assert len(model.histories) == 1
+    data.people[3]["name"] = "Hal"
+    explain(data, discussion, model)
+
+    assert len(model.histories) == 2
 
 
 def test_the_revision_keeps_old_plays_with_no_digest_so_they_are_told_again(flask_app, tmp_path):

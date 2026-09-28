@@ -74,9 +74,48 @@ def linked(events: list[dict]) -> set[int]:
     return ids - {None}
 
 
+def cast(data: DiagramData, events: list[dict]) -> set[int]:
+    """Everyone the drawer draws for these events, found as its castOf does
+    (web/src/snapshots.ts): the primary person and everyone the events name,
+    the ancestors joining any two of them, and both parents of two of them."""
+    people = {p["id"]: p for p in data.people if isinstance(p, dict) and p.get("id") is not None}
+    bonds = {b["id"]: b for b in data.pair_bonds if isinstance(b, dict) and b.get("id") is not None}
+
+    def pair(bond: dict) -> list[int]:
+        return [i for i in (bond.get("person_a"), bond.get("person_b")) if i is not None]
+
+    def up(pid: int) -> list[int]:
+        bond = bonds.get((people.get(pid) or {}).get("parents"))
+        return pair(bond) if bond else []
+
+    found = linked(events)
+    primary = next((p["id"] for p in people.values() if p.get("primary")), None)
+    if primary is not None:
+        found.add(primary)
+
+    def climb(pid: int, path: list[int]):
+        of = up(pid)
+        path = path + of
+        for parent in of:
+            if parent in found:
+                found.update(path)
+            climb(parent, path)
+
+    while True:
+        before = len(found)
+        for pid in list(found):
+            climb(pid, [])
+        for bond in bonds.values():
+            kids = [p for p in people.values() if p.get("parents") == bond["id"] and p["id"] in found]
+            if len(kids) > 1:
+                found.update(pair(bond))
+        if len(found) == before:
+            return found
+
+
 def drawn(data: DiagramData, events: list[dict]) -> list[dict]:
-    """What the drawer shows of each person the cluster's events name."""
-    ids = linked(events)
+    """What the drawer shows of each person it draws for the cluster."""
+    ids = cast(data, events)
     return [
         {
             "id": p["id"],
@@ -97,7 +136,7 @@ def drawn(data: DiagramData, events: list[dict]) -> list[dict]:
 
 def digest(data: DiagramData, cluster: dict, events: list[dict]) -> str:
     """What a play was told from and is drawn with: what the coach is shown of
-    the cluster, its title, and the people its events name."""
+    the cluster, its title, and the people the drawer draws."""
     told = {
         **told_about(cluster, events),
         "title": cluster.get("title"),
