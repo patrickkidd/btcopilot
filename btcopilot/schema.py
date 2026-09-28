@@ -197,6 +197,9 @@ class EventKind(enum.Enum):
             self.Divorced,
         )
 
+    def isCouple(self) -> bool:
+        return self.isPairBond() and not self.isOffspring()
+
     def isSelfDescribing(self) -> bool:
         """Kind name is the description; Event.description not required."""
         return self in (

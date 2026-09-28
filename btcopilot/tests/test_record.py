@@ -592,6 +592,29 @@ def test_the_write_refuses_an_event_whose_mover_is_also_its_target(
     assert diagram.get_diagram_data().events == []
 
 
+@pytest.mark.parametrize("kind", ["married", "bonded", "separated", "divorced"])
+def test_the_write_refuses_a_couple_event_with_no_spouse(subscriber, kind):
+    # R-0453
+    diagram = _diagram(
+        subscriber.user,
+        {"people": [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}]},
+    )
+
+    with pytest.raises(record.Invalid, match=f"event 36 is a {kind} event") as refused:
+        record.apply(
+            diagram.id,
+            [
+                {"item_kind": ItemKind.Event, "item_id": 36, "field": "kind", "after": kind},
+                {"item_kind": ItemKind.Event, "item_id": 36, "field": "person", "after": 1},
+                {"item_kind": ItemKind.Event, "item_id": 36, "field": "dateTime", "after": "1990-04-02"},
+            ],
+            author=Author.User,
+            turn_id="t1",
+        )
+    assert refused.value.plain
+    assert diagram.get_diagram_data().events == []
+
+
 @pytest.mark.parametrize(
     "field, value",
     [("relationshipTargets", None), ("relationshipTriangles", None), ("relationshipTargets", 2)],

@@ -205,12 +205,17 @@ test.describe("the editor's fields by kind", () => {
     await page.locator('.segs[data-name="relationshipTargets"] .seg:visible').nth(0).click();
     await pick(page, "anxiety", "up");
     await pick(page, "kind", "married");
+    // a marriage is refused without the other partner (R-0453)
+    await pick(page, "spouse", "2");
     const saved = page.waitForResponse(
       (r) => /\/app\/events/.test(r.url()) && r.request().method() === "PATCH",
     );
     await page.locator(".editor .save").click();
-    const body = (await saved).request().postDataJSON();
+    const response = await saved;
+    expect(response.ok()).toBe(true);
+    const body = response.request().postDataJSON();
     expect(body.kind).toBe("married");
+    expect(body.spouse).toBe(2);
     expect(body.relationship).toBeNull();
     expect(body.relationshipTargets).toEqual([]);
     expect(body.anxiety).toBeNull();

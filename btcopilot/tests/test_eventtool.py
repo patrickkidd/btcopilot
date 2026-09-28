@@ -103,6 +103,15 @@ def test_two_same_day_shifts_on_one_person_land_when_the_variables_differ(subscr
     assert len(diagram.get_diagram_data().events) == 2
 
 
+def test_a_couple_event_with_no_spouse_is_refused_to_the_coach(subscriber):
+    # R-0453
+    diagram = _diagram(subscriber.user)
+    with pytest.raises(ToolError, match="name the other one as spouse") as refused:
+        _event(diagram, kind="married", date="2010-06-01", person=1)
+    assert refused.value.plain
+    assert diagram.get_diagram_data().events == []
+
+
 def test_a_same_day_shift_moving_the_same_variable_is_refused(subscriber):
     # R-0432
     diagram = _diagram(subscriber.user)

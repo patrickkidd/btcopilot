@@ -435,6 +435,8 @@ def _validate(data: dict, deltas: list[dict], author: Author, undoing: bool):
         _questions(data, deltas, author)
 
 
+COUPLE_KINDS = {kind.value for kind in EventKind if kind.isCouple()}
+
 MOVE_LINKS = (
     ("relationshipTargets", "target"),
     ("relationshipTriangles", "third person"),
@@ -764,6 +766,14 @@ def _structure(data: dict, deltas: list[dict]):
                     f"{role}s as a list of person ids, empty when there is none",
                     f"The {role}s of a move could not be read.",
                 )
+        kind = _val(event.get("kind"))
+        if kind in COUPLE_KINDS and event.get("spouse") is None:
+            raise Invalid(
+                f"event {event_id} is a {kind} event, which is about a couple: "
+                "name the other one as spouse, adding them as a person first, "
+                "generically named where nobody named them",
+                f"{EventKind(kind).menuLabel()} needs both partners.",
+            )
         if event.get("person") is None:
             continue
         mover = str(event["person"])

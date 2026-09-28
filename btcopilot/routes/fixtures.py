@@ -522,9 +522,11 @@ def editable() -> DiagramData:
     """A copy of the sparse record for the tests that write through the editor.
     They change what they open, so they need a record of their own or every
     picture taken after them is of a record they altered. A third person lets a
-    move name two people besides its mover."""
+    move name two people besides its mover, and Ada and Ben's bond lets an event
+    be made a couple's."""
     data = three_over_forty()
     data.people.append(_person(3, "Cy"))
+    data.pair_bonds.append({"id": 20, "person_a": 1, "person_b": 2})
     return data
 
 
