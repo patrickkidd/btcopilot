@@ -12,11 +12,16 @@ record is ever involved.
 
 ## Running them
 
-Start a sandbox server on 8889 against a throwaway database, then, from `web/`:
+Start a sandbox and take its settings, then run from `web/`:
 
 ```
-npm run test:visual
+bin/sandbox/sandbox up <name> <port>
+. $(bin/sandbox/sandbox env <name>)
+cd web && npm run test:visual
 ```
+
+The run writes its sign-in files and a lock into this folder, so two agents
+running the suite from one checkout wait on each other.
 
 Environment, if your sandbox is elsewhere:
 
@@ -41,9 +46,11 @@ about behaviour at every step. They run as their own projects
 sandbox and its sign-in links are named in the environment, so a plain golden
 run never waits on them. `tests/visual/sandbox.ts` says which variables.
 
-The scripts in `~/worktrees/fd362-sandbox` set those variables and reset the
-fixture between walks: `runspec.sh <spec> <width> <height> <tag>` runs one,
-`runall.sh` runs the table, the ballot and the meeting in order.
+Start the sandbox with `bin/sandbox/sandbox up <name> <port>` and source what
+`bin/sandbox/sandbox env <name>` names; that sets `SANDBOX_URL`, `FIXTURE_CMD` and
+the Flask settings. The review-screen fixtures the table, ballot and meeting
+walks need (the `INVITE_*` links) were SQLite scripts in the FD-362 folder and
+do not run against the current code; those walks skip until they are rebuilt.
 
 ## The thread walks
 

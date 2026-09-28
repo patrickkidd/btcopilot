@@ -137,8 +137,9 @@ itself must be self-explanatory to a non-technical user; becomes a rule once he 
 said so.
 
 **There is a dev mode and it is used (2026-09-09).** Code changes on disk refresh the page
-instantly; working without one wastes his time [Oracle: R-0227]. The recipe is in STATE.md
-under the review sandbox.
+instantly; working without one wastes his time [Oracle: R-0227]. Every sandbox is started with
+the kit in the repo, `bin/sandbox/sandbox` (`up <name> <port> --dev` for his review on 8891);
+the commands are in the Sandbox section of CLAUDE.md.
 
 **Test to the audience, not the artifact (2026-09-02).** A mockup he will look at once gets
 one load and one screenshot. A gallery he must judge across records gets a deterministic

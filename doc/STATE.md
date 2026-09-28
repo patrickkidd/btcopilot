@@ -744,36 +744,38 @@ pick (C6).
 **His own record is small**: seven events, and one cluster he made himself holding two events.
 It predates the three-event floor and is grandfathered; see Open issues.
 
-**Review sandbox** (addresses use `turin`, never `turin.local`; the API is started with the ABSOLUTE database path; the sandbox's error mailer recipient is blank). Durable scripts live in `/Users/patrick/worktrees/fd362-sandbox/`, outside
-every job directory on purpose: a database inside a job directory is deleted with the job, and
-that has already cost one sandbox.
+**Review sandbox** (addresses use `turin`, never `turin.local`). Since 2026-09-27 the kit is in
+the repo, `bin/sandbox/sandbox`, and the Sandbox section of CLAUDE.md has its commands. Each
+instance keeps its data, logs and settings in `~/btcopilot-sandbox/<name>/`, outside every job
+directory on purpose: a database inside a job directory is deleted with the job, and that has
+already cost one sandbox. Postgres runs in a container per instance, the Celery worker uses the
+solo pool because the default one crashes on macOS, the turn log goes through Redis so the
+worker's events reach the page, and the coach runs on the local Ollama model (qwen3:8b) unless
+`--real` is given.
 
-- `serve.sh 8890 beta3.db` — the Flask API from this worktree, bound to every interface, no
-  reload, so a Python change needs a restart.
-- `dev.sh` — the Vite dev server on 8891 proxying to 8890, host header forwarded so sign-in and
-  cookies mint for 8891; the service worker is off. **Patrick reviews at
-  https://turin:8891/personal/** and every saved front-end edit shows on refresh, no
-  build. This is the dev mode he asked for [Oracle: R-0227]. A page already open on his
-  phone reloads itself when a file is saved; that socket was refused for the host name
-  `turin` (only `turin.local` was allowed) until 2026-09-11 night, so open pages never
-  refreshed — allowed now. A home-screen app on iOS keeps its own cookies, separate from
-  Safari: the first open inside it shows the sign-in page, and the email code signs it in
-  once; an invite link opened from Mail signs in Safari, not the home-screen app.
-- `invite.sh <email>` — a sign-in link at turin, not 127.0.0.1, so his phone can open it. A
-  sandbox link is reusable: it signs that browser in as many times as you like until it
-  expires, so a walk can be repeated. A phone already signed in needs no new invite.
-- `env.sh` — the settings both scripts source. It no longer points at a second repo: the
-  prompts are encrypted files in this one, read with the key at
-  `/Users/patrick/worktrees/fd362-sandbox/keys/dev.agekey` (set `SOPS_AGE_KEY_FILE` to it).
-  His own public key is beside it as `patrick-mac.pub`, so the same files decrypt on his Mac.
-- `beta3.db` is the chat app's own database, on its own migration chain from empty, with its
-  own accounts — nothing shared with Pro [R-0327]. It is never seeded blindly, never wiped,
-  and backed up before any restart. `beta2.db` is the older shared-chain database, kept only
-  for reference. Session history is kept across code changes [Oracle: R-0191].
-- Mail is on, so sign-in codes and nudges send. It was off during the overnight walks.
-- **On this Mac, open `https://127.0.0.1:8891/personal/`, not turin** — the name turin only
+- `up <name> <port> --dev` adds the Vite dev server on 8891 proxying to the instance, host
+  header forwarded so sign-in and cookies mint for 8891; the service worker is off. **Patrick
+  reviews at https://turin:8891/app/** and every saved front-end edit shows on refresh, no
+  build. This is the dev mode he asked for [Oracle: R-0227]. The certificate is made by the dev
+  CA his phone already trusts, kept in `~/btcopilot-sandbox/certs/`. A home-screen app on iOS
+  keeps its own cookies, separate from Safari: the first open inside it shows the sign-in page,
+  and the email code signs it in once; the sandbox sends no mail, so the code is in the
+  instance's `flask.log`. An invite link opened from Mail signs in Safari, not the home-screen
+  app.
+- `invite <name> <email>` prints a sign-in link at turin under `--dev`, plus the same link at
+  127.0.0.1 for this Mac. A sandbox link is reusable until it expires, so a walk can be
+  repeated.
+- A new database is made from the models and stamped at the newest revision, because the chain's
+  first revision creates discussions before diagrams and an empty Postgres refuses that; an
+  instance that kept its data is upgraded the way production is. Session history is kept across
+  code changes [Oracle: R-0191]: `down` keeps the data, `down --purge` and `reset` do not.
+- **On this Mac, open `https://127.0.0.1:8891/app/`, not turin** — the name turin only
   resolves over the network, and with Tailscale off the Mac cannot look it up. On his phone,
   on his own wifi, turin works.
+- The FD-362 folder `/Users/patrick/worktrees/fd362-sandbox/` is kept for reference only. Its
+  SQLite databases and the review-screen fixtures (the ballot, the votes, the coach replay)
+  import modules the current code no longer has, so the table, ballot and meeting walks have no
+  working fixture until those are rebuilt against the kit.
 
 **Suites and continuous integration (2026-09-16 morning, first green on a runner).** The chat
 suite is 572 passed and 25 skipped in 31 seconds, built on the chat chain's tables alone. The

@@ -63,12 +63,35 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
 ## Sandbox and manual testing (MANDATORY)
 
 - **Port 8888 is Patrick's server** on `master`: never start, stop, restart or test worktree
-  changes against it. **Port 8889 is Claude's sandbox**, started from the worktree; Claude
-  owns its lifecycle. Never the production database.
-- Every web change is verified in a real browser against the sandbox before it is called
-  done: check it answers (`curl -s http://127.0.0.1:8889/ >/dev/null && echo OK`), open the
-  page, take a snapshot and a screenshot, exercise the interactions, report what was seen.
-  Say "appears correct in testing, please verify", never "done".
+  changes against it. Never the production database.
+- **Every sandbox is started with the kit, `bin/sandbox/sandbox`, from the worktree whose code it
+  serves.** One command brings up Postgres with the fixture records (the stand-in family of
+  `doc/mockups/family.md` among them), Redis, the Celery worker, and the built page on Flask,
+  with the coach on the local Ollama model and the private prompts read with
+  `~/.config/sops/age/keys.txt`. Each instance keeps its data, logs and settings in
+  `~/btcopilot-sandbox/<name>/`, outside every repo and job folder, so several agents run side
+  by side: pick a free port and a name of your own. Postgres takes the port plus 10000, Redis
+  the port plus 11000.
+
+  ```bash
+  bin/sandbox/sandbox up <name> <port>            # ready in about 20s from empty; gives up at 2 minutes
+  bin/sandbox/sandbox up <name> <port> --dev      # plus the Vite dev server on 8891 for Patrick
+  bin/sandbox/sandbox invite <name> <email>       # a sign-in link; the fixtures' own are in links.txt
+  bin/sandbox/sandbox turn <name>                 # one coach turn through the whole stack
+  bin/sandbox/sandbox reset <name>                # empty the database and put the fixtures back
+  bin/sandbox/sandbox down <name> [--purge]       # stop; --purge also deletes the data
+  bin/sandbox/sandbox status
+  . $(bin/sandbox/sandbox env <name>)             # the settings, for Playwright and flask commands
+  ```
+
+  `--real` puts the coach on Anthropic with the testing key from `~/btcopilot/.env`; ask Patrick
+  before spending. `--build` rebuilds the page first; without it the page already built in the
+  worktree is served, so rebuilding under another agent's running sandbox is a choice, not a
+  side effect. A turn on the local model takes one to several minutes.
+- Every web change is verified in a real browser against a sandbox before it is called done:
+  check it answers (`curl -sf http://127.0.0.1:<port>/health`), open the page, take a snapshot
+  and a screenshot, exercise the interactions, report what was seen. Say "appears correct in
+  testing, please verify", never "done".
 
 ## Owner corrections that bind every reply (2026-09-09)
 
@@ -111,7 +134,7 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
   default) and give the link. The source stays in ~/btcopilot/btcopilot-sources/fd-corpus/design/.
 - **He is Patrick (2026-09-11).** Never "the owner" in a document or a reply; it is ambiguous.
 - **Sandbox addresses use `turin`, never `turin.local` (2026-09-11).** The review app is
-  https://turin:8891/personal/.
+  https://turin:8891/app/ (`bin/sandbox/sandbox up <name> <port> --dev`).
 - **Every question mark is a question (2026-09-11).** Each "?" he types is covered somewhere,
   explicitly or implicitly, never recited one by one and never repeated between the reply and
   the drawing.
