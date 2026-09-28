@@ -67,19 +67,13 @@ def _readable(diagram_id: int):
 
 
 # A home-screen app keeps the page it last loaded, so the page is asked for
-# again on every load, and the release it was served with is asked for when the
-# app comes back to the front.
+# again on every load.
 FRESH = {"Cache-Control": "no-cache"}
 
 
 @bp.route("/")
 def index():
     return _page(), FRESH
-
-
-@bp.route("/version")
-def version():
-    return jsonify(version=btcopilot.__version__), FRESH
 
 
 @bp.route("/sw.js")

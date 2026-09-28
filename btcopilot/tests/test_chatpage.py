@@ -44,6 +44,15 @@ def test_version_is_the_release_the_server_runs(web):
     assert response.headers["Cache-Control"] == "no-cache"
 
 
+def test_version_needs_no_sign_in(flask_app):
+    # R-0486
+    flask_app.test_client_class = flask.testing.FlaskClient
+    with flask_app.test_client(use_cookies=True) as client:
+        response = client.get("/app/version")
+        assert response.status_code == 200
+        assert response.get_json() == {"version": btcopilot.__version__}
+
+
 def test_page_requires_login(flask_app):
     # R-0080
     flask_app.test_client_class = flask.testing.FlaskClient
