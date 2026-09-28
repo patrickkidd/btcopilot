@@ -121,7 +121,7 @@ with `POST /api/dashboards/db` (`{"dashboard": ..., "overwrite": true}`) on the 
 token `GRAFANA_SA_TOKEN`. Its recorded-run panels read `quality_runs`, which every release fills
 with `flask admin quality load` (see `quality/evals/README.md`).
 
-The desktop app's update feeds are not served here; they live with `master-legacy`.
+The desktop app's update feeds live on the legacy box and are forwarded because shipped apps have this address built in.
 
 ## What is not here yet
 

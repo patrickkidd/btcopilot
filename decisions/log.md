@@ -1957,3 +1957,8 @@ The rulings store was restructured into topic files with a generated index and a
 so a new ruling no longer forces a wording trim to stay under the size ceiling. The audit file
 (18 candidate merges, 19 supersessions with 5 conflicts, 115 uncited rulings, 7 bug-report
 rulings) is applied only on Patrick's approval; no ruling was touched.
+## 2026-09-25: The Pro update feeds stay on the legacy box
+
+The Pro app's update feeds (`appcast_*.xml`) live on the legacy box; familydiagram.com only
+forwards `/appcast_*.xml` to it, so installed apps keep their feed address [R-0600]. The Pro
+release job uploads the feeds to database.familydiagram.com (familydiagram PR #153).

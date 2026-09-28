@@ -103,6 +103,7 @@ jobs:
             set -e
             export BTCOPILOT_TAG=${{ needs.build.outputs.tag }}
             cd /var/www/btcopilot
+            was=$(git rev-parse HEAD)
             git fetch origin ${{ github.sha }}
             git checkout --detach ${{ github.sha }}
             # one time: the box's files move from deploy/chat to deploy; the database lives in instance/
@@ -129,6 +130,8 @@ jobs:
             docker rollout --env-file /etc/fd/secrets.env fd-app
             docker rollout --env-file /etc/fd/secrets.env fd-worker
             docker compose --env-file /etc/fd/secrets.env up -d --remove-orphans
+            # Caddy's file is a single-file mount, which keeps the replaced file until the container restarts
+            git diff --quiet "$was" HEAD -- Caddyfile || docker compose --env-file /etc/fd/secrets.env restart fd-caddy
             docker compose --env-file /etc/fd/secrets.env exec -T fd-app flask admin db upgrade
             # the quality dashboard's recorded runs, from this commit (R-0517)
             docker compose --env-file /etc/fd/secrets.env exec -T fd-app flask admin quality load

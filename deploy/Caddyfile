@@ -1,9 +1,18 @@
 # familydiagram.com on the app box. /app is the app (R-0356); everything else
 # keeps redirecting to alaskafamilysystems.com as the old box did, until a
-# product homepage exists. The desktop update feeds live with master-legacy.
+# product homepage exists. The desktop update feeds live on the legacy box and
+# are forwarded because shipped apps have this address built in.
 familydiagram.com {
     encode gzip
     redir /app /app/ 302
+    handle /appcast_*.xml {
+        reverse_proxy https://database.familydiagram.com {
+            header_up Host familydiagram.com
+            transport http {
+                tls_server_name database.familydiagram.com
+            }
+        }
+    }
     handle /app* {
         # The coach's turn arrives as it happens, so nothing here may hold it
         # back waiting for a buffer to fill.
