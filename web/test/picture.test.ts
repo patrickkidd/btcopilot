@@ -121,9 +121,9 @@ describe("the marks on the line", () => {
     const clusters = Array.from({ length: 10 }, (_, i) =>
       cluster(100 + i, dated.slice(i * 6, i * 6 + 6)),
     );
-    const width = restWidth(clusters, dated, PHONE);
-    expect(width).toBeLessThanOrEqual(2 * PHONE);
     const dates = dated.map((e) => e.dateTime as string);
+    const width = restWidth(clusters, dates, PHONE);
+    expect(width).toBeLessThanOrEqual(2 * PHONE);
     const laid = pills(clusters, dated, (iso) => at(iso, dates, width));
     expect(laid).toHaveLength(10);
     for (const mark of laid) {
@@ -136,40 +136,85 @@ describe("the marks on the line", () => {
   });
 });
 
-/** A record three generations long: births decades apart, then the years a
- * couple came apart as one cluster, the way the Whitlock fixture has it. */
-const generations = () => {
-  const born = ["1924-06-01", "1926-06-01", "1948-06-01", "1951-10-01", "1953-06-01", "1970-06-01", "1975-06-01", "1979-06-01"].map(
-    (iso, i) => event(i + 1, iso),
-  );
-  const apart = ["1980-09-15", "1981-06-15", "1982-11-15"].map((iso, i) => event(20 + i, iso));
-  return { clusters: [cluster(30, apart)], dated: [...born, ...apart] };
-};
+const box = (
+  cluster: { start: string; end: string },
+  dates: string[],
+  width: number,
+) => ({
+  left: at(cluster.start, dates, width) - 10,
+  right: at(cluster.end, dates, width) + 10,
+});
 
-describe("how wide the line is drawn", () => {
+describe("how wide the resting line is drawn", () => {
   // R-0381
-  it("draws a long record wider than the phone, so every mark has a thumb's width, and never past two screens", () => {
-    const { clusters, dated } = generations();
-    const width = restWidth(clusters, dated, PHONE);
+  it("fills the screen and no more when one cluster is all there is", () => {
+    const dates = ["1981-05-01", "1994-02-14", "2003-09-10", "2021-11-02"];
+    const width = restWidth(
+      [{ start: "1981-05-01", end: "2003-09-10" }],
+      dates,
+      PHONE,
+    );
+    expect(width).toBe(PHONE);
+  });
+
+  // R-0381
+  it("is the screen for a record with nothing to separate", () => {
+    expect(restWidth([], ["2014-03-02"], PHONE)).toBe(PHONE);
+    expect(restWidth([], [], PHONE)).toBe(PHONE);
+  });
+
+  // R-0134
+  it("pulls two clusters apart until their boxes clear each other", () => {
+    const dates = ["2001-01-01", "2001-08-01", "2004-02-01", "2006-06-01"];
+    const clusters = [
+      { start: "2001-01-01", end: "2001-08-01" },
+      { start: "2004-02-01", end: "2006-06-01" },
+    ];
+    const width = restWidth(clusters, dates, PHONE);
+    const [one, two] = clusters.map((c) => box(c, dates, width));
+    expect(two.left - one.right).toBeGreaterThanOrEqual(6);
+  });
+
+  // R-0134
+  it("keeps a box wide enough for the two years written in it", () => {
+    const dates = ["2001-01-01", "2002-04-01", "2030-01-01"];
+    const cluster = { start: "2001-01-01", end: "2002-04-01" };
+    const width = restWidth([cluster], dates, PHONE);
+    const only = box(cluster, dates, width);
+    // "01-02" at the 10.5px the years are written in, and room around it
+    expect(only.right - only.left).toBeGreaterThanOrEqual(39);
+  });
+
+  // R-0381
+  it("never reaches past two screens, however crowded the record", () => {
+    const dates = Array.from({ length: 120 }, (_, i) =>
+      new Date(Date.UTC(2019, 0, 5 + i * 15)).toISOString().slice(0, 10),
+    );
+    const width = restWidth(
+      [
+        { start: dates[0], end: dates[59] },
+        { start: dates[60], end: dates[119] },
+      ],
+      dates,
+      PHONE,
+    );
+    expect(width).toBe(2 * PHONE);
+  });
+
+  // R-0381
+  it("parks the present at the right edge, one screen of line behind it", () => {
+    const dates = ["2019-01-05", "2020-08-01", "2020-09-01", "2023-12-01"];
+    const width = restWidth(
+      [
+        { start: "2019-01-05", end: "2020-08-01" },
+        { start: "2020-09-01", end: "2023-12-01" },
+      ],
+      dates,
+      PHONE,
+    );
     expect(width).toBeGreaterThan(PHONE);
-    expect(width).toBeLessThanOrEqual(2 * PHONE);
-  });
-
-  // R-0381
-  it("keeps a record that reads across one screen at one screen", () => {
-    const dated = Array.from({ length: 60 }, (_, i) =>
-      event(i + 1, new Date(Date.UTC(2019, 0, 5 + 30 * i)).toISOString().slice(0, 10)),
-    );
-    const clusters = [cluster(1, dated.slice(0, 20)), cluster(2, dated.slice(20))];
-    expect(restWidth(clusters, dated, PHONE)).toBe(PHONE);
-  });
-
-  // R-0381
-  it("coarsens the scale rather than reach past two screens", () => {
-    const dated = Array.from({ length: 200 }, (_, i) =>
-      event(i + 1, `${1900 + Math.floor(i / 2)}-0${1 + (i % 2) * 5}-01`),
-    );
-    expect(restWidth([], dated, PHONE)).toBe(2 * PHONE);
+    // parked at the far right, the last moment is the last thing on screen
+    expect(at(dates[3], dates, width) - (width - PHONE)).toBeLessThanOrEqual(PHONE);
   });
 });
 

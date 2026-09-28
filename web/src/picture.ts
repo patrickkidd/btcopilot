@@ -63,7 +63,10 @@ const HIT_REACH = 60;
 const RULER_Y = 68;
 /** The resting line is never drawn wider than this many screens: past it the
  * scale coarsens rather than the line reaching further (R-0381). */
-const SCREENS_MAX = 2;
+const REACH = 2;
+/** The least space between two dot centres inside a box for the two to read as
+ * two rather than as one solid bar. */
+const DOT_GAP = 11;
 
 /** One mark on the line: a cluster as one pill over its years with nothing
  * drawn inside it, or an event no cluster claims as a dot (R-0543). */
@@ -88,18 +91,11 @@ export function pills(
   dated: TimelineEvent[],
   at: (iso: string) => number,
 ): Pill[] {
-  const bars: Pill[] = clusters.map((cluster) => ({
-    cluster,
+  const bars: Pill[] = edges(clusters, at).map((edge, i) => ({
+    cluster: clusters[i],
     event: null,
-    left: at(cluster.start) - BOX_PAD,
-    right: at(cluster.end) + BOX_PAD,
+    ...edge,
   }));
-  for (let i = 1; i < bars.length; i += 1) {
-    if (bars[i].left - bars[i - 1].right >= BOX_GAP) continue;
-    const seam = (bars[i - 1].right + bars[i].left) / 2;
-    bars[i - 1].right = seam - BOX_GAP / 2;
-    bars[i].left = seam + BOX_GAP / 2;
-  }
   const dots: Pill[] = loose(dated, clusters).map((event) => {
     const x = at(event.dateTime as string);
     return { cluster: null, event, left: x - DOT_R, right: x + DOT_R };
@@ -126,23 +122,63 @@ export function strongest(ids: number[], touched: Map<number, Touch>): Touch | n
     .reduce<Touch | null>((a, b) => (a ? stronger(a, b) : b), null);
 }
 
-/** How wide the resting line is drawn, for a picture this many pixels wide:
- * wide enough that each pill and each loose dot has a thumb's width of the
- * line to itself, and never more than SCREENS_MAX screens. A record that already
- * reads at that density across one screen stays one screen (R-0381). */
-export function restWidth(clusters: Cluster[], dated: TimelineEvent[], screen: number): number {
-  const first = years(dated[0].dateTime as string);
-  const span = years(dated[dated.length - 1].dateTime as string) - first;
+/** A cluster's years at a glance, two digits each, as the converged mockup
+ * writes them: "93–97". One year when it starts and ends in the same one. */
+function shortYears(start: string, end: string): string {
+  const a = start.slice(2, 4);
+  const b = end.slice(2, 4);
+  return a === b ? a : `${a}\u2013${b}`;
+}
+
+/** Where each cluster reaches on the line: a little past the moments it holds,
+ * and where two clusters a month apart would then touch, the two give way to
+ * each other and leave a gap between them. */
+function edges(clusters: { start: string; end: string }[], at: (iso: string) => number): Span[] {
+  const spans = clusters.map((cluster) => ({
+    left: at(cluster.start) - BOX_PAD,
+    right: at(cluster.end) + BOX_PAD,
+  }));
+  for (let i = 1; i < spans.length; i += 1) {
+    if (spans[i].left - spans[i - 1].right >= BOX_GAP) continue;
+    const seam = (spans[i - 1].right + spans[i].left) / 2;
+    spans[i - 1].right = seam - BOX_GAP / 2;
+    spans[i].left = seam + BOX_GAP / 2;
+  }
+  return spans;
+}
+
+/** How wide the resting line is drawn, for a picture this many pixels wide.
+ *
+ * Wide enough that no two cluster boxes run into each other and every box keeps
+ * room for the years written in it, and never more than two screens: on a
+ * record too crowded for that the scale coarsens rather than the line reaching
+ * further, so the whole history is always one or two swipes (R-0381). The
+ * clusters come in time order; the dates are every dated moment, in order. */
+export function restWidth(
+  clusters: { start: string; end: string; count?: number }[],
+  dates: string[],
+  screen: number,
+): number {
+  if (dates.length < 2) return screen;
+  const span = years(dates[dates.length - 1]) - years(dates[0]);
   if (span <= 0) return screen;
-  const middles = [
-    ...clusters.map((cluster) => (years(cluster.start) + years(cluster.end)) / 2),
-    ...loose(dated, clusters).map((event) => years(event.dateTime as string)),
-  ].sort((a, b) => a - b);
-  const scale = middles.reduce(
-    (most, year, i) => (i && year > middles[i - 1] ? Math.max(most, ZONE / (year - middles[i - 1])) : most),
-    (screen - 2 * X_PAD) / span,
-  );
-  return Math.round(Math.min(SCREENS_MAX * screen, 2 * X_PAD + scale * span));
+  let scale = (screen - 2 * X_PAD) / span;
+  clusters.forEach((cluster, i) => {
+    const dots = cluster.count ?? 0;
+    const room =
+      Math.max(
+        shortYears(cluster.start, cluster.end).length * YEAR_CH + 8,
+        dots ? (dots - 1) * DOT_GAP + 2 * DOT_R : 0,
+      ) -
+      2 * BOX_PAD;
+    const held = years(cluster.end) - years(cluster.start);
+    if (held > 0 && room > 0) scale = Math.max(scale, room / held);
+    // two clusters that already touch in time can never be pulled apart, and
+    // the boxes give way to each other instead
+    const apart = i ? years(cluster.start) - years(clusters[i - 1].end) : 0;
+    if (apart > 0) scale = Math.max(scale, (2 * BOX_PAD + BOX_GAP) / apart);
+  });
+  return Math.round(Math.min(REACH * screen, 2 * X_PAD + scale * span));
 }
 
 /** How far each mark's tap target reaches across the line: halfway to its
@@ -944,7 +980,13 @@ export class Picture {
     }
 
     const clusters = this.restClusters();
-    const width = restWidth(clusters, dated, screen);
+    // The line is drawn wider than the screen and slides sideways under it, so
+    // a crowded record reads at a scale a thumb can pick from (R-0381).
+    const width = restWidth(
+      clusters,
+      dated.map((e) => e.dateTime as string),
+      screen,
+    );
     const held = this.host.querySelector<HTMLElement>(SCROLLER)?.scrollLeft ?? null;
     const x0 = X_PAD;
     const x1 = width - X_PAD;
@@ -1055,17 +1097,16 @@ export class Picture {
     // The band lies over the words and under the marks' own targets.
     const words = said.text ? said.text + bandHit(shows + X_PAD, screen - 2 * X_PAD) : "";
     const targets = restLayers(boxes, dotLayers(zoned)).map(hitButton).join("");
-    // where the line settles after a swipe: at a pill's near edge, so a
-    // cluster is never cut in half, and at the present (R-0381)
-    const stops = new Set(
-      laid
-        .filter((pill) => pill.cluster)
-        .flatMap((pill) => [pill.left - X_PAD, pill.right + X_PAD - screen])
-        .concat(width - screen)
-        // whole pixels, or a redraw lands the line a pixel off where it stood
-        .map((left) => Math.round(Math.max(0, left))),
-    );
-    const snaps = [...stops]
+    // Where the line settles after a swipe: at a box's near edge, so a cluster
+    // is never cut in half, and at the present.
+    const stops = new Set<number>();
+    for (const edge of edges(clusters, at)) {
+      stops.add(Math.max(0, edge.left - X_PAD));
+      stops.add(Math.max(0, edge.right + X_PAD - screen));
+    }
+    stops.add(Math.max(0, width - screen));
+    // whole pixels, or a redraw lands the line a pixel off where it stood (R-0542)
+    const snaps = [...new Set([...stops].map(Math.round))]
       .map((left) => `<i class="ss-snap" style="left:${left}px"></i>`)
       .join("");
 

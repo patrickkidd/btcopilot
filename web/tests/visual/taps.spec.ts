@@ -92,7 +92,7 @@ for (const { key, loose } of cases) {
 test.describe("dense60, every pill", () => {
   test.use({ storageState: stateFor("dense60") });
 
-  // R-0103, R-0402, R-0544
+  // R-0103, R-0402, R-0544, R-0381
   test("a tap on each pill opens its cluster, and every target is the strip's height", async ({
     page,
   }) => {
@@ -102,14 +102,16 @@ test.describe("dense60, every pill", () => {
       .evaluateAll((all) => all.map((hit) => hit.getBoundingClientRect().height));
     expect(Math.min(...heights)).toBeGreaterThanOrEqual(44);
     await expect(dots(page)).toHaveCount(0);
-    const pills = await page.locator("#view rect.pill").evaluateAll((all) =>
-      all.map((p) => {
-        const r = p.getBoundingClientRect();
-        return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
-      }),
-    );
-    expect(pills).toHaveLength(2);
-    for (const pill of pills) {
+    await expect(page.locator("#view rect.pill")).toHaveCount(2);
+    for (const i of [0, 1]) {
+      // the line comes to rest at the present; a pill behind it is slid to first
+      await page.evaluate((n) => {
+        const pill = document.querySelectorAll("#view rect.pill")[n];
+        document.querySelector("#view .ss-scroll")!.scrollTo(Number(pill.getAttribute("x")) - 16, 0);
+      }, i);
+      await page.waitForTimeout(400);
+      const r = (await page.locator("#view rect.pill").nth(i).boundingBox())!;
+      const pill = { x: r.x + r.width / 2, y: r.y + r.height / 2 };
       await page.touchscreen.tap(pill.x, pill.y);
       await expect(page.locator('#path [data-step="0"]')).toBeVisible();
       await expect(page.locator("#view rect.pill.on")).toHaveCount(1);

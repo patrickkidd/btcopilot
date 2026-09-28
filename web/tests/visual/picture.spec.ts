@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { inside, openList, pinned, stateFor, steady } from "./setup";
+import { inside, openList, pinned, stateFor, steady, type Key } from "./setup";
 
 /** What the resting picture looks like on each shape of record, and what a tap
  * on it does. Goldens, so a change to the drawing has to be looked at.
@@ -95,8 +95,7 @@ test.describe("the undated shelf", () => {
 
 /** A long record is drawn wider than the screen, never more than two screens,
  * and swiped sideways under it; it opens at the present, and the years under
- * it slide with it (R-0381). A record that reads across one screen stays one
- * screen. Whitlock's runs from 1924 to 1982. */
+ * it slide with it (R-0381). Whitlock's runs from 1924 to 1982. */
 const line = (page: import("@playwright/test").Page) => page.locator("#view .ss-scroll");
 
 const at = (page: import("@playwright/test").Page) =>
@@ -177,20 +176,54 @@ test.describe("the resting line on a long record", () => {
   });
 });
 
-test.describe("the resting line on a record that reads across one screen", () => {
-  test.use({ storageState: stateFor("dense60") });
+/** The line's width and where it starts, on every fixture record at phone and
+ * desktop sizes, as the line before the pill strip drew them (8974698): two
+ * screens starting at the present for the records whose clusters sit close,
+ * one screen for the rest (R-0381). */
+const BEFORE: Record<number, Partial<Record<Key, { width: number; start: number }>>> = {
+  390: {
+    one: { width: 390, start: 0 },
+    three40: { width: 390, start: 0 },
+    dense60: { width: 780, start: 390 },
+    hostile: { width: 390, start: 0 },
+    moves: { width: 390, start: 0 },
+    play: { width: 390, start: 0 },
+    longmove: { width: 390, start: 0 },
+    longname: { width: 390, start: 0 },
+    editable: { width: 390, start: 0 },
+    whitlock: { width: 780, start: 390 },
+  },
+  1280: {
+    one: { width: 538, start: 0 },
+    three40: { width: 538, start: 0 },
+    dense60: { width: 1076, start: 538 },
+    hostile: { width: 538, start: 0 },
+    moves: { width: 538, start: 0 },
+    play: { width: 538, start: 0 },
+    longmove: { width: 538, start: 0 },
+    longname: { width: 538, start: 0 },
+    editable: { width: 538, start: 0 },
+    whitlock: { width: 1076, start: 538 },
+  },
+};
 
-  // R-0381, R-0543
-  test("stays one screen, its first year at one end and its last at the other", async ({
-    page,
-  }) => {
-    await settle(page);
-    expect((await at(page)).end).toBe(0);
-    const years = await yearsUnder(page);
-    expect(years[0]).toBe("2019");
-    expect(years[years.length - 1]).toBe("2023");
+for (const key of Object.keys(BEFORE[390]) as Key[]) {
+  test.describe(() => {
+    test.use({ storageState: stateFor(key) });
+
+    // R-0381
+    test(`the ${key} line is as wide and starts where it did before the pill strip`, async ({
+      page,
+    }) => {
+      await settle(page);
+      const drawn = await line(page).evaluate((s) => ({
+        width: s.scrollWidth,
+        start: Math.round(s.scrollLeft),
+      }));
+      expect(drawn).toEqual(BEFORE[page.viewportSize()!.width][key]);
+    });
   });
-});
+}
 
 test.describe("what the picture never draws", () => {
   for (const key of ["one", "three40", "dense60", "moves"] as const) {
