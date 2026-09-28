@@ -17,6 +17,7 @@ from btcopilot.models import (
     ShadowTurn,
     TokenMeter,
 )
+from btcopilot.routes.diagrams import readable
 from btcopilot.schema import ItemKind
 from btcopilot.toolbox import ToolName
 from btcopilot.tests.conftest import Model, called, csrf_token, said, version
@@ -195,3 +196,31 @@ def test_a_shadow_waits_on_its_own_queue(flask_app, monkeypatch):
         router.route({}, turns.TASK)["queue"].name
         == extensions.celery.conf.task_default_queue
     )
+
+
+class Looks(Model):
+    """A shadow model that reads the user's diagram list while it runs."""
+
+    def __init__(self, user, *turns):
+        super().__init__(*turns)
+        self.user = user
+        self.listed = []
+        self.scratch = []
+
+    def turn(self, system, messages, tools, turn_id=""):
+        self.listed.append({d.id for d in readable(self.user)})
+        self.scratch.append({d.id for d in Diagram.query.filter_by(scratch=True)})
+        return (yield from super().turn(system, messages, tools, turn_id))
+
+
+def test_the_user_never_sees_the_scratch_record(web, token, test_user, monkeypatch):
+    # R-0589
+    coach(monkeypatch, "btcopilot.turns.model_for", Model(said("Tell me about Nell.")))
+    looks = coach(
+        monkeypatch, "btcopilot.shadow.model_for", Looks(test_user, said("Go on."))
+    )
+    setting.write(SettingKey.ShadowModel, "haiku-4.5", test_user.id)
+    with patch("btcopilot.shadow.enqueue", shadow.run):
+        post(web, token, "My sister is Nell.")
+    assert looks.scratch[0]
+    assert not looks.listed[0] & looks.scratch[0]

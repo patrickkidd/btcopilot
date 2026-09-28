@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Boolean, String, Integer, LargeBinary, ForeignKey
+from sqlalchemy import Column, Boolean, String, Integer, LargeBinary, ForeignKey, false
 from sqlalchemy import update as sql_update
 from sqlalchemy.orm import relationship
 from dataclasses import fields as dc_fields
@@ -36,6 +36,8 @@ class Diagram(db.Model, ModelMixin):
 
     data = Column(LargeBinary)
     version = Column(Integer, nullable=False, default=1)
+    # a copy a shadow turn writes on and throws away; never listed to anyone
+    scratch = Column(Boolean, nullable=False, default=False, server_default=false())
 
     access_rights = relationship(
         "AccessRight",

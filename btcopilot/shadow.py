@@ -68,6 +68,7 @@ def run(turn_id: str) -> None:
         user_id=row.user_id,
         name=f"shadow {turn_id}",
         data=row.snapshot.encode("utf-8"),
+        scratch=True,
     )
     db.session.add(diagram)
     db.session.flush()
