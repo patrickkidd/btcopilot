@@ -82,6 +82,7 @@ def run(turn_id: str) -> None:
             copy,
             said.text,
             model=model_for(row.model),
+            statement_id=said.id,
             turn_id=shadow_id,
             scratch=True,
         )
@@ -118,8 +119,10 @@ def run(turn_id: str) -> None:
 
 
 def _copy(said: Statement, diagram: Diagram) -> Discussion:
-    """The session as it stood before the user's words, on the scratch record.
-    The title is copied so the scratch turn does not name the session again."""
+    """A session on the scratch record for the scratch turn's reply, with the
+    real one's speakers. The words before it are read from the real family,
+    so none are copied. The title is copied so the scratch turn does not name
+    the session again."""
     real = said.discussion
     copy = Discussion(
         user_id=real.user_id,
@@ -138,18 +141,6 @@ def _copy(said: Statement, diagram: Diagram) -> Discussion:
     db.session.flush()
     copy.chat_user_speaker_id = speakers[real.chat_user_speaker_id].id
     copy.chat_ai_speaker_id = speakers[real.chat_ai_speaker_id].id
-    for s in real.statements:
-        if s.order < said.order:
-            db.session.add(
-                Statement(
-                    discussion_id=copy.id,
-                    text=s.text,
-                    speaker_id=speakers[s.speaker_id].id,
-                    order=s.order,
-                    kind=s.kind,
-                    turn_id=s.turn_id,
-                )
-            )
     db.session.flush()
     db.session.refresh(copy)
     return copy

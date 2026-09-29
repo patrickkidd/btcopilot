@@ -275,7 +275,7 @@ class CoachTurn:
         ai_log.info(f"User statement: {self.statement}")
         data = self.data
         if self.statement_id is None:
-            user_statement = Statement(
+            answered = Statement(
                 discussion_id=self.discussion.id,
                 text=chips.validate(self.statement, data, self.discussion.diagram_id),
                 speaker=self.discussion.chat_user_speaker,
@@ -285,8 +285,10 @@ class CoachTurn:
             )
             # Flushed, not committed: a turn that fails before the coach answers
             # leaves no words behind, so a retry does not store them twice.
-            db.session.add(user_statement)
+            db.session.add(answered)
             db.session.flush()
+        else:
+            answered = db.session.get(Statement, self.statement_id)
 
         # The coaching text is the same every turn and the rest is not, so the
         # rest goes after the chat, heading the new message, and the chat before
@@ -303,7 +305,7 @@ class CoachTurn:
             ),
             today=datetime.date.today().isoformat(),
         )
-        last = last_notes(self.discussion)
+        last = last_notes(answered)
         if last:
             notes = recordtext.notes(last.payload["args"], last.created_at)
             tail = f"{tail}\n\n{notes}"
@@ -312,7 +314,7 @@ class CoachTurn:
         gaps = profile.missing(data)
         if gaps:
             tail = f"{tail}\n\n{onboarding(gaps, own['id'] if own else 1)}"
-        messages = self._history(tail)
+        messages = self._history(tail, answered)
         if self.resume:
             messages += self._picked_up()
         spoken = ""
@@ -520,16 +522,16 @@ class CoachTurn:
                     self._send({"type": TurnEventKind.TextReset.value})
                 return stop.value
 
-    def _history(self, tail: str) -> list[dict]:
-        """The family's latest words from the user's sessions on it, then the
-        record, the coach's last notes and the day, then the new message and
-        what its chips point at. No past tool call is given back: what the
+    def _history(self, tail: str, answered: Statement) -> list[dict]:
+        """The words said before the ones this turn answers, then the record,
+        the coach's last notes and the day, then the new message and what its
+        chips point at. No past tool call is given back: what the
         coach did is in the record, and the map is how it sees it (R-0481). The
         chat is marked where it stood before this message and before the last
         one: what this turn writes to the wire, the next reads."""
         messages = []
         ends = []
-        for s in self._recent():
+        for s in _recent(answered):
             coach = s.speaker_id == s.discussion.chat_ai_speaker_id
             if not coach:
                 ends.append(_settled(messages))
@@ -547,37 +549,42 @@ class CoachTurn:
         _say(messages, ("user", _blocks(tail) + _blocks(spoken)))
         return messages
 
-    def _recent(self) -> list[Statement]:
-        """The family's last words before this message, oldest first: the
-        person's and the coach's, in any of this user's sessions on it. Another
-        user's sessions on the same family are theirs alone."""
-        latest = (
-            Statement.query.join(Discussion)
-            .filter(
-                Discussion.diagram_id == self.diagram.id,
-                Discussion.user_id == self.discussion.user_id,
-                Statement.text.isnot(None),
-                Statement.text != "",
-                or_(Statement.turn_id.is_(None), Statement.turn_id != self.turn_id),
-                or_(
-                    Statement.speaker_id == Discussion.chat_user_speaker_id,
-                    Statement.speaker_id == Discussion.chat_ai_speaker_id,
-                ),
-            )
-            .order_by(Statement.created_at.desc(), Statement.id.desc())
-            .limit(RECENT_STATEMENTS)
+
+def _recent(said: Statement) -> list[Statement]:
+    """The last words before these, oldest first: the person's and the
+    coach's, in any of that user's sessions on the family they were said
+    about. Another user's sessions on the same family are theirs alone. A
+    shadow turn answers the real turn's words, so it reads the same ones."""
+    family = said.discussion
+    latest = (
+        Statement.query.join(Discussion)
+        .filter(
+            Discussion.diagram_id == family.diagram_id,
+            Discussion.user_id == family.user_id,
+            Statement.created_at < said.created_at,
+            Statement.text.isnot(None),
+            Statement.text != "",
+            or_(
+                Statement.speaker_id == Discussion.chat_user_speaker_id,
+                Statement.speaker_id == Discussion.chat_ai_speaker_id,
+            ),
         )
-        return latest.all()[::-1]
+        .order_by(Statement.created_at.desc(), Statement.id.desc())
+        .limit(RECENT_STATEMENTS)
+    )
+    return latest.all()[::-1]
 
 
-def last_notes(discussion: Discussion) -> TurnEvent | None:
-    """The coach's latest notes on this family, from whichever of this user's
-    sessions on it."""
+def last_notes(said: Statement) -> TurnEvent | None:
+    """The coach's latest notes before these words, from whichever of that
+    user's sessions on the family."""
+    family = said.discussion
     return (
         TurnEvent.query.join(Discussion, Discussion.id == TurnEvent.discussion_id)
         .filter(
-            Discussion.diagram_id == discussion.diagram_id,
-            Discussion.user_id == discussion.user_id,
+            Discussion.diagram_id == family.diagram_id,
+            Discussion.user_id == family.user_id,
+            TurnEvent.created_at < said.created_at,
             TurnEvent.kind == TurnEventKind.ToolCall.value,
             TurnEvent.payload["name"].as_string() == ToolName.CoachNotes.value,
         )
