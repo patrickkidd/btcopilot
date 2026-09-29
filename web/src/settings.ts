@@ -1,6 +1,7 @@
 import * as api from "./api";
 import { Feature, tap } from "./track";
-import { $, el, esc } from "./dom";
+import { $, el, esc, isCoder } from "./dom";
+import { INDEX_URL } from "./concepts";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { identify } from "./telemetry";
@@ -248,13 +249,17 @@ export class Settings {
   }
 
   private pushRow(label: string, value: string, page: Page): HTMLElement {
+    return this.tapRow(label, value, () => this.push(page));
+  }
+
+  private tapRow(label: string, value: string, go: () => void): HTMLElement {
     const row = el("div", "sn-row push");
     row.append(
       el("div", "sn-lbl", esc(label)),
       el("div", "sn-val", esc(value)),
       el("div", "sn-chev", "›"),
     );
-    row.addEventListener("click", () => this.push(page));
+    row.addEventListener("click", go);
     return row;
   }
 
@@ -382,6 +387,16 @@ export class Settings {
         ),
       ]),
     );
+
+    // The concept pages open in a tab of their own, for coders alone (R-0567).
+    if (isCoder())
+      pane.append(
+        this.group([
+          this.tapRow("Concept pages", "", () =>
+            window.open(INDEX_URL, "_blank", "noopener"),
+          ),
+        ]),
+      );
 
     const out = document.createElement("button");
     out.type = "button";

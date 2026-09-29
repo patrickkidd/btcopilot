@@ -347,6 +347,7 @@ What it is for: you, your families, your plan, and signing out.
 - Tapping a family opens it, and one is open at a time. [built] {R-0175}
 - A search box appears in that list once you have six or more families. [built]
 - Licences and the plan are listed; nothing on that page implies a price yet. [built]
+- Auditors and admins see one more row, Concept pages, in a box of its own above Sign out; it opens the concept pages in a tab of their own, and nobody else sees it. [built] {R-0541, R-0567}
 - Sign out sits alone at the bottom and signs you out immediately, with no confirmation step. [built]
 - Every icon button in the app is the same size: a forty-four point target with a forty point mark inside it. [built] {R-0234}
 

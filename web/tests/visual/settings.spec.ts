@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { EXACT, stateFor } from "./setup";
+import { EXACT, flask, stateFor, username } from "./setup";
 
 /** The settings stack: the avatar in the title row, and the pages it pushes.
  * Every value has one home, and the chat view's speak-replies row is the one
@@ -410,5 +410,34 @@ test.describe("opening the account view", () => {
     expect(cover.top).toBeLessThanOrEqual(1);
     expect(cover.bottom).toBeLessThanOrEqual(1);
     expect(cover.ground).not.toBe("rgba(0, 0, 0, 0)");
+  });
+});
+
+test.describe("the concept pages row", () => {
+  test.use({ storageState: stateFor("empty") });
+  const roles = (...names: string[]) =>
+    flask("admin", "run", "--", "users", "roles", username("empty"), ...names, "--yes");
+  const row = (page: Page) =>
+    page.locator(".sn-pane.in .sn-row.push", { hasText: "Concept pages" });
+  test.afterAll(() => roles("subscriber"));
+
+  // R-0541, R-0567
+  test("shows to an auditor and an admin, opens the pages, and is absent for a subscriber", async ({
+    page,
+  }) => {
+    for (const role of ["auditor", "admin"]) {
+      roles(role, "subscriber");
+      await page.goto("/app/");
+      await openSettings(page);
+      await expect(row(page)).toHaveCount(1);
+    }
+    const [tab] = await Promise.all([page.waitForEvent("popup"), row(page).click()]);
+    expect(new URL(tab.url()).pathname).toBe("/app/theory");
+    await tab.close();
+
+    roles("subscriber");
+    await page.goto("/app/");
+    await openSettings(page);
+    await expect(row(page)).toHaveCount(0);
   });
 });
