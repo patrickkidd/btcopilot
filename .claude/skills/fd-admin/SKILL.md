@@ -198,7 +198,7 @@ Product notices shown in the app, to everyone, a role, or named people.
 
 ### `flask admin notice list`
 
-Every notice, newest first: who it is for, how many that is now, and how many got it and opened it.
+Every notice, newest first: who it is for, how many that is now, and how many have it and opened it.
 
 | Argument | What it is |
 |---|---|
@@ -206,7 +206,7 @@ Every notice, newest first: who it is for, how many that is now, and how many go
 
 ### `flask admin notice send`
 
-Keep a notice. Each person it is for gets it the next time they open the app: a push when they have one, else an email when their role gets email, and in the app's own list either way. Prints the notice and how many people it is for now.
+Keep a notice and send it now to everyone it is for: a push to whoever has one, else an email when --email is given, and in the app's own list either way. Whoever joins its audience later finds it in the app's list the next time they open the app. Prints the notice and how many people it was sent to.
 
 Changes something: needs `--yes`.
 
@@ -217,6 +217,7 @@ Changes something: needs `--yes`.
 | `--body` | One or two short sentences. |
 | `--link` | The screen a tap opens; left out, it opens nothing. |
 | `--until` | The last day, in UTC, that it reaches anyone new; left out, it runs on. |
+| `--email` | Email everyone it is for who has no browser that takes a push. |
 | `--by` | The email of the admin sending it. |
 | `--json` | Print JSON, not a table. |
 

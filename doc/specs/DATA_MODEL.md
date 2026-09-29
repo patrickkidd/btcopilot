@@ -296,8 +296,8 @@ A `notifications` row is one delivery to one person: `kind`
 its kind names, `statement_id`, `cut_id` or `notice_id`, enforced by a check;
 `channel` (`NotificationChannel`: push, email, app); `opened_at`, stamped on
 open or dismiss. One row per person and notice, enforced by a unique key. A
-notice's rows are made when each person next opens the app, so someone who
-joins its audience later still gets it while it runs.
+notice's rows are made and sent when it is sent; someone who joins its audience
+later gets a row, in the app only, when they next open it while it runs.
 
 ### Serialization
 

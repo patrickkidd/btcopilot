@@ -11,8 +11,10 @@ from btcopilot import auth, push
 from btcopilot.discussions import utc_iso
 from btcopilot.extensions import db
 from btcopilot.models import (
+    Notice,
     NoticeLink,
     Notification,
+    NotificationChannel,
     NotificationKind,
     PushSubscription,
     Statement,
@@ -79,13 +81,36 @@ def row(notification: Notification) -> dict:
     }
 
 
+def missed(user) -> list[Notification]:
+    """A row in the app's list, sent nowhere, for each running notice this
+    person joined the audience of after it was sent. Not committed."""
+    have = {
+        row.notice_id
+        for row in Notification.query.filter(
+            Notification.user_id == user.id, Notification.notice_id.isnot(None)
+        )
+    }
+    rows = [
+        Notification(
+            user_id=user.id,
+            kind=NotificationKind.Notice,
+            notice_id=notice.id,
+            channel=NotificationChannel.App,
+        )
+        for notice in Notice.live(datetime.datetime.utcnow())
+        if notice.id not in have and notice.reaches(user)
+    ]
+    db.session.add_all(rows)
+    return rows
+
+
 @bp.route("/notifications", methods=["GET"])
 def notifications():
-    """Opening the app is when each running notice meant for this person
-    becomes their own row, and is sent. Unread rows of every kind, newest
-    first; ?all=true adds the opened ones."""
+    """Unread rows of every kind, newest first; ?all=true adds the opened
+    ones. A notice this person joined the audience of after it was sent
+    becomes their row here."""
     user = auth.current_user()
-    push.notices(user)
+    missed(user)
     db.session.commit()
     query = Notification.query.filter_by(user_id=user.id)
     if request.args.get("all") != "true":

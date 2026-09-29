@@ -66,7 +66,7 @@ Patrick sets the numbers), `diagrams` (`id`, `name`, `last_activity`, `free`),
 
 | | |
 |---|---|
-| `GET /notifications` | the signed-in person's unread rows of every kind, newest first, as a bare array; `?all=true` adds the opened ones. Each call first makes a row for every running notice meant for them that they have none for, and sends it (below) |
+| `GET /notifications` | the signed-in person's unread rows of every kind, newest first, as a bare array; `?all=true` adds the opened ones. Each call first makes a row, channel `app`, for every running notice meant for them that they have none for: one whose audience they joined after it was sent |
 | `PATCH /notifications/<id>` | `{"opened": true}` only, for opening and for dismissing alike; the first stamp counts; answers the row |
 | `GET /push-subscriptions`, `POST /push-subscriptions` | the server's public key with this person's browsers; a browser's own subscription, 201 |
 
@@ -78,11 +78,13 @@ other kind carries the push's title, a null body, and the link `task` for a task
 or reminder, null for a coach message, which opens its thread at
 `statement_id`. `link` is `account`, `coach_settings`, `task`, `agenda` or null.
 
-A new notice row is sent as it is made: a push to every browser the person
+`flask admin notice send` writes a notice and sends it at once to everyone it
+is for, each getting their own row: a push to every browser the person
 subscribed, with the notice's title as its words under the kind `notice`, which
 is its own tag, so it neither replaces nor waits on a coach message; with no
-browser left, an email only to an auditor or an admin; otherwise nothing leaves
-the app. `flask admin notice send` writes a notice; see the admin skill file.
+browser, an email only when the command was given `--email`; otherwise nothing
+leaves the app. Someone who joins the audience later gets their row on their
+next open, in the app only.
 
 ## Events
 

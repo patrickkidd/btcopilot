@@ -32,9 +32,10 @@ class NoticeLink(enum.StrEnum):
 
 
 class Notice(db.Model, ModelMixin):
-    """A product message written once with who it is for. Each person it
-    reaches gets their own notification row the next time they open the app,
-    so someone who joins its audience later still gets it while it runs."""
+    """A product message written once with who it is for. Each person it is
+    for gets their own notification row when it is sent; someone who joins
+    its audience later gets one the next time they open the app, while it
+    runs."""
 
     __tablename__ = "notices"
     __table_args__ = (

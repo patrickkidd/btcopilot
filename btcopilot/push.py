@@ -1,7 +1,7 @@
 """A pointer to a coach message already in the thread, to a coding task on
 the agenda, or to a product notice: a web push to every browser its person
-subscribed, or one email when none is left. A notice is emailed only to the
-roles that get email, and otherwise waits in the app's own list. The service
+subscribed, or one email when none is left. A notice is emailed only when
+its sender asked, and otherwise waits in the app's own list. The service
 worker shows each kind under its own tag, so the phone shows one of each kind
 and the newest replaces that kind's unread one.
 
@@ -9,9 +9,7 @@ A VAPID key pair for a new server: python -m btcopilot.push
 """
 
 import base64
-import datetime
 import json
-import logging
 import re
 
 from cryptography.hazmat.primitives import serialization
@@ -19,7 +17,6 @@ from flask import current_app
 from py_vapid import Vapid02
 from pywebpush import WebPushException, webpush
 
-import btcopilot
 from btcopilot import chips
 from btcopilot.auth.emails import send_notification
 from btcopilot.extensions import db
@@ -30,8 +27,6 @@ from btcopilot.models import (
     NotificationKind,
     PushSubscription,
 )
-
-_log = logging.getLogger(__name__)
 
 # A phone that is off for a week still gets it when it wakes.
 TTL_S = 7 * 24 * 3600
@@ -45,8 +40,6 @@ SUBJECT = {
     NotificationKind.Task: "A coding task is waiting for you",
     NotificationKind.Reminder: "Your coding task is due soon",
 }
-# Who gets a notice by email when no browser of theirs takes a push.
-EMAILED = (btcopilot.ROLE_AUDITOR, btcopilot.ROLE_ADMIN)
 
 
 def first_sentence(text: str) -> str:
@@ -70,43 +63,14 @@ def send_task(user, cut, kind: NotificationKind, words: str) -> Notification:
     return _deliver(user, notification, words, (SUBJECT[kind], words))
 
 
-def send_notice(user, notice: Notice) -> Notification:
-    """Not committed: the caller commits it with the person's other notices."""
+def send_notice(user, notice: Notice, email: bool) -> Notification:
+    """Not committed: the caller commits it with the rest of the send."""
     notification = Notification(
         user_id=user.id, kind=NotificationKind.Notice, notice_id=notice.id
     )
-    emailed = any(user.has_role(role) for role in EMAILED)
     return _deliver(
-        user,
-        notification,
-        notice.title,
-        (notice.title, notice.body) if emailed else None,
+        user, notification, notice.title, (notice.title, notice.body) if email else None
     )
-
-
-def notices(user) -> list[Notification]:
-    """One notification for each running notice this person is in the audience
-    of and has none for yet, each delivered as it is made. Not committed. A
-    notice a push service refuses is left for their next open, and the log
-    says so."""
-    have = {
-        row.notice_id
-        for row in Notification.query.filter(
-            Notification.user_id == user.id, Notification.notice_id.isnot(None)
-        )
-    }
-    made = []
-    for notice in Notice.live(datetime.datetime.utcnow()):
-        if notice.id in have or not notice.reaches(user):
-            continue
-        try:
-            with db.session.begin_nested():
-                made.append(send_notice(user, notice))
-        except WebPushException as e:
-            _log.error(
-                f"notice {notice.id} did not reach {user.username}: {failure(e)}"
-            )
-    return made
 
 
 def failure(e: WebPushException) -> str:

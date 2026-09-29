@@ -5,7 +5,7 @@ import http_ece
 import pytest
 
 import btcopilot
-from btcopilot import extensions, push
+from btcopilot import extensions
 from btcopilot.admin import admin
 from btcopilot.extensions import db
 from btcopilot.models import (
@@ -17,6 +17,7 @@ from btcopilot.models import (
     NotificationKind,
 )
 from btcopilot.routes.fixtures import install
+from btcopilot.routes.notifications import missed
 from btcopilot.tests.conftest import csrf_token
 from btcopilot.tests.test_push import service, subscribe  # noqa: F401
 
@@ -31,104 +32,94 @@ def notice(title: str, **columns) -> Notice:
     return row
 
 
+@pytest.fixture
+def send(flask_app):
+    runner = flask_app.test_cli_runner()
+
+    def invoke(to, *extra):
+        words = ["notice", "send", "--to", to, "--title", "New", "--body", BODY]
+        return runner.invoke(admin, [*words, *extra, "--json"])
+
+    return invoke
+
+
+@pytest.mark.parametrize(
+    "flag, channel, emails", [((), "app", []), (("--email",), "email", ["New"])]
+)
+def test_sending_delivers_now_to_everyone_it_is_for(
+    send, test_user, test_user_2, service, flag, channel, emails
+):
+    # R-0017
+    posts, _ = service
+    key, secret = subscribe(test_user, "https://push.example/phone")
+    with extensions.mail.record_messages() as outbox:
+        result = send("everyone", *flag)
+    assert json.loads(result.output)[0]["people"] == 2
+    rows = {n.user_id: n for n in Notification.query}
+    assert (rows[test_user.id].channel, rows[test_user_2.id].channel) == (
+        NotificationChannel.Push,
+        NotificationChannel(channel),
+    )
+    [post] = posts
+    body = http_ece.decrypt(
+        post["data"], private_key=key, auth_secret=secret, version="aes128gcm"
+    )
+    assert json.loads(body) == {
+        "id": rows[test_user.id].id,
+        "kind": "notice",
+        "body": "New",
+    }
+    assert [m.subject for m in outbox] == emails
+
+
 def test_each_open_makes_one_row_per_running_notice_meant_for_the_person(
     web, test_user, test_user_2
 ):
     # R-0017
     now = datetime.datetime.utcnow()
-    everyone = notice("For all", audience=Audience.Everyone, link=NoticeLink.Account)
+    notice("For all", audience=Audience.Everyone, link=NoticeLink.Account)
     notice("For coders", audience=Audience.Role, role=btcopilot.ROLE_AUDITOR)
     notice("For them", audience=Audience.People, user_ids=[test_user_2.id])
     notice("Over", audience=Audience.Everyone, ends_at=now)
     notice("Not yet", audience=Audience.Everyone, starts_at=now + DAY)
     first = web.get("/app/notifications").json
     assert first == web.get("/app/notifications").json
-    assert [(r["kind"], r["title"], r["body"], r["link"]) for r in first] == [
-        ("notice", "For all", BODY, "account")
-    ]
-    push.notices(test_user_2)
-    db.session.commit()
-    assert sorted(
-        (n.user_id, n.notice.title)
-        for n in Notification.query.filter_by(kind=NotificationKind.Notice)
-    ) == [
-        (test_user.id, "For all"),
-        (test_user_2.id, "For all"),
-        (test_user_2.id, "For them"),
-    ]
-    assert Notification.query.filter_by(notice_id=everyone.id).count() == 2
+    assert [
+        (r["kind"], r["channel"], r["title"], r["body"], r["link"]) for r in first
+    ] == [("notice", "app", "For all", BODY, "account")]
 
 
-def test_someone_who_joins_the_audience_later_gets_it_on_their_next_open(
-    web, test_user
+def test_someone_who_joins_the_audience_later_finds_it_in_the_app_only(
+    web, test_user, send, service
 ):
     # R-0017
-    notice("For coders", audience=Audience.Role, role=btcopilot.ROLE_AUDITOR)
+    posts, _ = service
+    send("auditor", "--email")
     assert web.get("/app/notifications").json == []
+    subscribe(test_user, "https://push.example/phone")
     test_user.roles = btcopilot.ROLE_AUDITOR
     db.session.commit()
-    [row] = web.get("/app/notifications").json
-    assert (row["title"], row["link"], row["opened_at"]) == ("For coders", None, None)
+    with extensions.mail.record_messages() as outbox:
+        [row] = web.get("/app/notifications").json
+    assert (row["title"], row["channel"], row["opened_at"]) == ("New", "app", None)
+    assert (posts, outbox) == ([], [])
     path = f"/app/notifications/{row['id']}"
     opened = web.patch(
         path, json={"opened": True}, headers={"X-CSRFToken": csrf_token(web)}
     )
     assert opened.json["opened_at"] is not None
     assert web.get("/app/notifications").json == []
-    assert [r["id"] for r in web.get("/app/notifications?all=true").json] == [row["id"]]
-
-
-def test_a_notice_push_carries_its_own_kind_and_its_title(test_user, service):
-    # R-0017
-    posts, _ = service
-    key, secret = subscribe(test_user, "https://push.example/phone")
-    notice("New in the app", audience=Audience.Everyone)
-    with extensions.mail.record_messages() as outbox:
-        [sent] = push.notices(test_user)
-    [post] = posts
-    body = http_ece.decrypt(
-        post["data"], private_key=key, auth_secret=secret, version="aes128gcm"
-    )
-    assert json.loads(body) == {
-        "id": sent.id,
-        "kind": "notice",
-        "body": "New in the app",
-    }
-    assert (sent.channel, outbox) == (NotificationChannel.Push, [])
-
-
-@pytest.mark.parametrize(
-    "role, channel, emails",
-    [
-        (btcopilot.ROLE_SUBSCRIBER, NotificationChannel.App, []),
-        (btcopilot.ROLE_AUDITOR, NotificationChannel.Email, ["New in the app"]),
-    ],
-)
-def test_with_no_push_only_a_role_that_gets_email_is_emailed(
-    test_user, role, channel, emails
-):
-    # R-0017
-    test_user.roles = role
-    db.session.commit()
-    notice("New in the app", audience=Audience.Everyone)
-    with extensions.mail.record_messages() as outbox:
-        [sent] = push.notices(test_user)
-    assert sent.channel == channel
-    assert [m.subject for m in outbox] == emails
+    assert [r["id"] for r in web.get("/app/notifications?all=true").json] == [
+        row["id"]
+    ]
 
 
 def test_the_command_reads_everyone_a_role_or_addresses(
-    flask_app, test_user, test_user_2
+    flask_app, send, test_user, test_user_2
 ):
     # R-0390
     test_user_2.roles = btcopilot.ROLE_AUDITOR
     db.session.commit()
-    runner = flask_app.test_cli_runner()
-
-    def send(to, *extra):
-        words = ["notice", "send", "--to", to, "--title", "T", "--body", BODY]
-        return runner.invoke(admin, [*words, *extra, "--json"])
-
     people = {
         to: json.loads(send(to).output)[0]["people"] for to in ("everyone", "auditor")
     }
@@ -150,12 +141,16 @@ def test_the_command_reads_everyone_a_role_or_addresses(
             datetime.datetime(2026, 10, 2),
         ),
     ]
+    runner = flask_app.test_cli_runner()
     listed = json.loads(runner.invoke(admin, ["notice", "list", "--json"]).output)
-    assert [r["to"] for r in listed] == [test_user.username, "auditor", "everyone"]
+    assert [(r["to"], r["got"]) for r in listed] == [
+        (test_user.username, 1),
+        ("auditor", 1),
+        ("everyone", 2),
+    ]
     refused = send("nobody@example.com")
-    assert (
-        refused.exit_code != 0 and "no account for nobody@example.com" in refused.output
-    )
+    assert refused.exit_code != 0
+    assert "no account for nobody@example.com" in refused.output
 
 
 def test_the_notice_fixture_reinstalls_and_reaches_no_other_fixture(
@@ -165,7 +160,7 @@ def test_the_notice_fixture_reinstalls_and_reaches_no_other_fixture(
     install("notice")
     user = install("notice")
     other = install("one")
-    assert push.notices(user) == push.notices(other) == []
+    assert missed(user) == missed(other) == []
     assert sorted(
         (n.kind, n.notice.title if n.notice else None, n.opened_at is None)
         for n in Notification.query.filter_by(user_id=user.id)
