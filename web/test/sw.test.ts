@@ -54,13 +54,18 @@ describe("the offline copy of the app", () => {
 
 describe("a coach notification", () => {
   // R-0055
-  it("shows the push's words under the one tag every notification shares", async () => {
+  it("shows the push's words under its kind's tag, so kinds never replace each other", async () => {
     const { fire, shown } = worker("1");
-    for (const [id, body] of [[7, "Your mother called."], [8, "Sunday came up again."]] as const)
-      await fire("push", { data: { json: () => ({ id, body }) } });
+    for (const [id, kind, body] of [
+      [7, "coach", "Your mother called."],
+      [8, "task", "A coding task is waiting for you."],
+      [9, "coach", "Sunday came up again."],
+    ] as const)
+      await fire("push", { data: { json: () => ({ id, kind, body }) } });
     expect(shown.mock.calls.map(([title, o]) => [title, o.body, o.tag, o.data])).toEqual([
       ["Coach", "Your mother called.", "coach", { id: 7 }],
-      ["Coach", "Sunday came up again.", "coach", { id: 8 }],
+      ["Coding task", "A coding task is waiting for you.", "task", { id: 8 }],
+      ["Coach", "Sunday came up again.", "coach", { id: 9 }],
     ]);
   });
 

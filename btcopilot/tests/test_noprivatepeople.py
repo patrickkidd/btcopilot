@@ -25,6 +25,7 @@ ALLOWED_EMAIL = {
     "auditor2@example.com",
     "ballot1@fd362-fixture.invalid",
     "ballot3@fd362-fixture.invalid",
+    "ci@fd362-fixture.invalid",
     "coach@example.com",
     "coach@fd362.invalid",
     "coach_chat@example.com",

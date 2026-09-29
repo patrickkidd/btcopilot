@@ -36,12 +36,6 @@ export const coder = (found: Tasks): boolean =>
  * not a coding role. */
 export const CODER = isCoder();
 
-/** What the sessions sheet calls the way in to the card, which every coder
- * keeps whether or not a task is open: with nothing left to code the card is
- * how the last meeting's result stays reachable (R-0265, R-0275). */
-export const wayIn = (coder: boolean): string | null =>
-  coder ? "Your coding task" : null;
-
 const CHECK = "&#10003;";
 
 /** What a coder reads above the start button until they tap Got it, so
