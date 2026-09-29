@@ -157,7 +157,7 @@ test.describe("the two lists behind it", () => {
     await settle(page);
     await openList(page);
     const tabs = page.locator("#menu-tabs [role=tab]");
-    await expect(tabs).toHaveText(["Events", "People", "From the coach"]);
+    await expect(tabs).toHaveText(["Events", "People", "Questions"]);
     await expect(page.locator('#menu-tabs [aria-selected="true"]')).toHaveText("Events");
     await expect(page.locator("#menu-body [data-event]").first()).toBeVisible();
     const drawer = await lists(page).elementHandle();

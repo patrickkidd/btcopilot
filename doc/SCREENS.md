@@ -229,7 +229,7 @@ What it is for: seeing and editing everything in the record by hand.
 
 - One button in the row under the picture opens a drawer holding everything in the record. [built] {R-0198}
 - The events list and the people list are two tabs in that one drawer, not a filter. [built] {R-0199}
-- A third tab, "From the coach", holds what the coach is keeping for you: questions under "Food for thought" and "Facts to find", and its impressions under "Impressions". [built]
+- A third tab, "Questions", holds what the coach is keeping for you: questions under "Food for thought" and "Facts to find", and its impressions under "Impressions". [built]
 - You only see questions the coach has actually asked and that are still open; ones you turned down or that led nowhere never show. [built]
 - The coach only keeps a fact to find it thinks matters to your family's story, and keeps it when in doubt. [built]
 - Tapping a question or an impression puts it in the message box; nothing sends until you do. [built]
