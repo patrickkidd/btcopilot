@@ -15,7 +15,6 @@ import uuid
 from typing import Callable
 
 from opentelemetry import trace
-from sqlalchemy import or_
 
 from btcopilot.extensions import ai_log, db
 from btcopilot import chips, clusters, profile, recordtext, turnstore
@@ -33,7 +32,14 @@ from btcopilot.models import (
 )
 from btcopilot.prompts import agent_prompt, note_register, onboarding
 from btcopilot.interactions import recent
-from btcopilot.toolbox import LOOKUPS, ToolError, ToolName, Toolbox, schemas
+from btcopilot.toolbox import (
+    LOOKUPS,
+    ToolError,
+    ToolName,
+    Toolbox,
+    said_before,
+    schemas,
+)
 from btcopilot.toolnames import toolcall
 from btcopilot.turnlog import TurnEventKind
 from btcopilot.schema import DiagramData, ItemKind
@@ -46,6 +52,7 @@ RECENT_INTERACTIONS = 50
 # The family's latest words, from every one of the user's sessions on it, that
 # the coach reads back each turn; older ones it finds with the chat search.
 RECENT_STATEMENTS = 20
+RECENT_STEP = 10
 
 # What the coach is told when it has used every step and is still working. The
 # turn has to end in words, so the last call is made with no tools at all.
@@ -247,12 +254,6 @@ class CoachTurn:
         self.model = Metered(
             model or CoachModel(), discussion.user_id, self.diagram.id, self.turn_id
         )
-        self.toolbox = Toolbox(
-            self.diagram.id,
-            self.turn_id,
-            user_id=discussion.user_id,
-            session_id=self.session_id,
-        )
 
     @property
     def data(self) -> DiagramData:
@@ -289,6 +290,13 @@ class CoachTurn:
             db.session.flush()
         else:
             answered = db.session.get(Statement, self.statement_id)
+        self.toolbox = Toolbox(
+            self.diagram.id,
+            self.turn_id,
+            user_id=self.discussion.user_id,
+            session_id=self.session_id,
+            said=answered,
+        )
 
         # The coaching text is the same every turn and the rest is not, so the
         # rest goes after the chat, heading the new message, and the chat before
@@ -551,28 +559,14 @@ class CoachTurn:
 
 
 def _recent(said: Statement) -> list[Statement]:
-    """The last words before these, oldest first: the person's and the
-    coach's, in any of that user's sessions on the family they were said
-    about. Another user's sessions on the same family are theirs alone. A
-    shadow turn answers the real turn's words, so it reads the same ones."""
-    family = said.discussion
-    latest = (
-        Statement.query.join(Discussion)
-        .filter(
-            Discussion.diagram_id == family.diagram_id,
-            Discussion.user_id == family.user_id,
-            Statement.created_at < said.created_at,
-            Statement.text.isnot(None),
-            Statement.text != "",
-            or_(
-                Statement.speaker_id == Discussion.chat_user_speaker_id,
-                Statement.speaker_id == Discussion.chat_ai_speaker_id,
-            ),
-        )
-        .order_by(Statement.created_at.desc(), Statement.id.desc())
-        .limit(RECENT_STATEMENTS)
-    )
-    return latest.all()[::-1]
+    """The last words before these, oldest first. A shadow turn answers the
+    real turn's words, so it reads the same ones. The first word read moves
+    on only RECENT_STEP at a time, so between RECENT_STATEMENTS and
+    RECENT_STATEMENTS + RECENT_STEP - 1 are read, and the chat before the
+    newest turns stays the same, and cached, until the next step."""
+    before = said_before(said)
+    start = max(0, (before.count() - RECENT_STATEMENTS) // RECENT_STEP * RECENT_STEP)
+    return before.order_by(Statement.created_at, Statement.id).offset(start).all()
 
 
 def last_notes(said: Statement) -> TurnEvent | None:

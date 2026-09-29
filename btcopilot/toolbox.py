@@ -648,6 +648,24 @@ def said_label(statement: Statement) -> str:
     return f"{who} said, {statement.created_at.day} {statement.created_at:%b}"
 
 
+def said_before(said: Statement):
+    """The person's and the coach's words before these, in any of that user's
+    sessions on the family they were said about. Another user's sessions on
+    the same family are theirs alone."""
+    family = said.discussion
+    return Statement.query.join(Discussion).filter(
+        Discussion.diagram_id == family.diagram_id,
+        Discussion.user_id == family.user_id,
+        Statement.created_at < said.created_at,
+        Statement.text.isnot(None),
+        Statement.text != "",
+        or_(
+            Statement.speaker_id == Discussion.chat_user_speaker_id,
+            Statement.speaker_id == Discussion.chat_ai_speaker_id,
+        ),
+    )
+
+
 def _day(value: str) -> datetime.date:
     try:
         return datetime.date.fromisoformat(str(value))
@@ -711,6 +729,7 @@ class Toolbox:
         session_id: str | None = None,
         author: Author = Author.Coach,
         statement_id: int | None = None,
+        said: Statement | None = None,
     ):
         self.diagram_id = diagram_id
         self.turn_id = turn_id
@@ -718,6 +737,9 @@ class Toolbox:
         self.session_id = session_id
         self.author = author
         self.statement_id = statement_id
+        # The words the turn answers: the chat search reads what was said
+        # before them, on the family they were said about.
+        self.said = said
         self.deltas: list[dict] = []
         self.views: list[dict] = []
         # The record versions this turn's own writes made, undo included.
@@ -792,15 +814,8 @@ class Toolbox:
                 "Search by words, a person, or the days it was said",
                 "It searched the chat for nothing.",
             )
-        found = Statement.query.join(Discussion).filter(
-            Discussion.diagram_id == self.diagram_id,
-            Discussion.user_id == self.user_id,
-            or_(Statement.turn_id.is_(None), Statement.turn_id != self.turn_id),
-            or_(
-                Statement.speaker_id == Discussion.chat_user_speaker_id,
-                Statement.speaker_id == Discussion.chat_ai_speaker_id,
-            ),
-            *(Statement.text.icontains(term, autoescape=True) for term in terms),
+        found = said_before(self.said).filter(
+            *(Statement.text.icontains(term, autoescape=True) for term in terms)
         )
         if args.get("start"):
             found = found.filter(Statement.created_at >= _day(args["start"]))

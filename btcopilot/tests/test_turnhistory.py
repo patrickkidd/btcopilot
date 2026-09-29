@@ -5,6 +5,8 @@ family's latest words from every session rather than its past tool calls.
 Invented names only.
 """
 
+import datetime
+
 import pytest
 from mock import patch
 
@@ -278,6 +280,7 @@ def test_the_latest_words_come_from_every_one_of_the_users_sessions_on_the_famil
 ):
     # R-0520
     monkeypatch.setattr("btcopilot.coachturn.RECENT_STATEMENTS", 3)
+    monkeypatch.setattr("btcopilot.coachturn.RECENT_STEP", 1)
     coach(monkeypatch, Model(said("Who is Nell?")))
     post(web, token)
     later = open_session(test_user, family)
@@ -304,6 +307,29 @@ def test_the_latest_words_come_from_every_one_of_the_users_sessions_on_the_famil
         "How old is Ash?",
     ]
     assert words(history[-1]).endswith("He is ten.")
+
+
+def test_the_chat_read_back_moves_on_in_steps_so_it_stays_cached(
+    web, token, family, monkeypatch
+):
+    # R-0595
+    monkeypatch.setattr("btcopilot.coachturn.RECENT_STATEMENTS", 4)
+    monkeypatch.setattr("btcopilot.coachturn.RECENT_STEP", 4)
+    model = coach(monkeypatch, Model(*(said(f"Reply {n}.") for n in range(1, 6))))
+    for n in range(1, 6):
+        post(web, token, f"Message {n}.")
+    third, fourth, fifth = model.histories[2:5]
+
+    def settled(history: list[dict]) -> list[tuple]:
+        return [(m["role"], words(m)) for m in history[:-1]]
+
+    assert settled(fourth)[: len(third) - 1] == settled(third)
+    assert words(fifth[0]) == "Message 3."
+    today = datetime.date.today().isoformat()
+    assert "Record version" in words(fourth[-1]) and today in words(fourth[-1])
+    assert not any(
+        "Record version" in words(m) or today in words(m) for m in fourth[:-1]
+    )
 
 
 def test_a_turns_events_are_kept_in_order_and_end_in_how_it_ended(

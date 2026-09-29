@@ -26,9 +26,8 @@ def family(test_user):
     return diagram
 
 
-def says(session, text: str, day: str, coach: bool = False) -> None:
-    db.session.add(
-        Statement(
+def says(session, text: str, day: str, coach: bool = False) -> Statement:
+    statement = Statement(
             discussion_id=session.id,
             text=text,
             speaker_id=(
@@ -36,12 +35,15 @@ def says(session, text: str, day: str, coach: bool = False) -> None:
             ),
             created_at=datetime.datetime.fromisoformat(day),
         )
-    )
+    db.session.add(statement)
     db.session.commit()
+    return statement
 
 
 def search(family, user, **args) -> list[str]:
-    text, _ = Toolbox(family.id, "t9", user_id=user.id).call(
+    """Searched from the words of a turn said after everything above."""
+    said = says(open_session(user, family), "What did I say?", "2027-01-01T00:00")
+    text, _ = Toolbox(family.id, "t9", user_id=user.id, said=said).call(
         ToolName.SearchChat.value, args
     )
     return [line.split(" ", 1)[1] for line in text.splitlines()]
@@ -109,3 +111,20 @@ def test_a_search_for_nothing_is_refused(family, test_user):
     # R-0520
     with pytest.raises(ToolError):
         search(family, test_user)
+
+
+def test_a_search_from_a_scratch_record_reads_the_family_the_words_were_said_on(
+    family, test_user
+):
+    # R-0596
+    session = open_session(test_user, family)
+    says(session, "Wren left home.", "2026-01-05T10:00")
+    said = says(session, "What did I say?", "2026-01-06T10:00")
+    says(session, "Wren left again, later.", "2026-01-07T10:00")
+
+    text, _ = Toolbox(0, "shadow-t", user_id=test_user.id, said=said).call(
+        ToolName.SearchChat.value, {"words": "left"}
+    )
+    assert [line.split(" ", 1)[1] for line in text.splitlines()] == [
+        "2026-01-05 user: Wren left home."
+    ]
