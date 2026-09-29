@@ -690,14 +690,15 @@ reports.always = window.BOOTSTRAP.user?.prefs.bug_reports === BugReports.Always;
 const lastSaid = () =>
   [...$("chat").querySelectorAll(".bub.user")].at(-1)?.textContent ?? "";
 
-/** The turn the page last followed, which a page error is reported against. */
-let latestTurn = window.BOOTSTRAP.statements.at(-1)?.turn_id ?? "";
+/** The newest statement the thread on screen holds, which an error on the
+ * page is reported against. */
+let newest: number | null = window.BOOTSTRAP.statements.at(-1)?.id ?? null;
 
 /** An error on the page, raised only when it is the app's own; the browser
  * logs every one to the console either way. */
 const pageBroke = (thrown: unknown, said: string) => {
   const fault = faults.fault(thrown, said);
-  if (fault) reports.bug(fault.error, lastSaid(), latestTurn, fault.signature);
+  if (fault) reports.page(fault, newest);
 };
 window.addEventListener("error", (e) => pageBroke(e.error, e.message));
 window.addEventListener("unhandledrejection", (e) => pageBroke(e.reason, String(e.reason)));
@@ -809,9 +810,6 @@ function showPrompt(kind?: SessionKind): void {
 async function reload(): Promise<void> {
   redraw(await api.thread());
 }
-
-/** The newest statement the thread on screen holds. */
-let newest: number | null = window.BOOTSTRAP.statements.at(-1)?.id ?? null;
 
 function redraw(page: api.Said[]): void {
   newest = page.at(-1)?.id ?? null;
@@ -1144,7 +1142,7 @@ function follow(turnId: string): void {
   // the next message has arrived: what the last reply touched goes back to how
   // the line draws it (R-0539)
   picture.untouch();
-  onTurn = latestTurn = turnId;
+  onTurn = turnId;
   inFlight = true;
   chat.busy(true);
 

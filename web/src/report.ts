@@ -1,7 +1,7 @@
 import * as api from "./api";
 import { esc } from "./dom";
 import { dragScroll } from "./drag";
-import type { Faults } from "./faults";
+import type { Fault, Faults } from "./faults";
 import { Sheet } from "./sheet";
 import { ReportKind, type Report, type RequestFailure } from "./types";
 
@@ -67,15 +67,34 @@ export class Reports {
     });
   }
 
-  /** A turn or the page broke with this error, after these words of the
-   * person's; an error of the same key is raised once. */
-  bug(error: string, text: string, turnId: string, key = error): void {
+  /** A turn broke with this error, after these words of the person's; the
+   * same error is raised once. */
+  bug(error: string, text: string, turnId: string): void {
     const version = window.BOOTSTRAP.version;
-    this.broke(key, { kind: ReportKind.Bug, turn_id: turnId, text, error, version }, [
+    this.broke(error, { kind: ReportKind.Bug, turn_id: turnId, text, error, version }, [
       ["Your last message", text],
       ["The error", error],
       ["The app version", version],
     ]);
+  }
+
+  /** The page broke, raised once per error: it names the screen and the
+   * newest statement on it, never the person's words, and the turn being
+   * drawn if one was. */
+  page(fault: Fault, statementId: number | null, turnId = ""): void {
+    const version = window.BOOTSTRAP.version;
+    const address = location.pathname;
+    this.broke(
+      fault.signature,
+      { kind: ReportKind.Bug, turn_id: turnId, error: fault.error, frame: fault.frame, address, statement_id: statementId, version },
+      [
+        ["The error", fault.error],
+        ["Where it broke", fault.frame ?? ""],
+        ["The screen", address],
+        ["The newest message", statementId === null ? "" : `Number ${statementId}, not its words`],
+        ["The app version", version],
+      ],
+    );
   }
 
   /** The server broke on a request, raised once per endpoint. */

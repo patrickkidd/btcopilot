@@ -48,6 +48,26 @@ def test_a_request_the_server_broke_on_keeps_its_endpoint_status_and_id(web):
     assert (row.turn_id, row.detail) == ("", {k: failure[k] for k in failure if k not in ("kind", "turn_id")})
 
 
+def test_an_error_on_the_page_keeps_the_screen_and_statement_never_the_words(web):
+    # R-0056
+    fault = {
+        "kind": "bug",
+        "turn_id": "",
+        "error": "TypeError: x is undefined",
+        "frame": "https://familydiagram.com/app/static/web/assets/index-B26jI9NK.js:1:52301",
+        "address": "/app/people/4",
+        "statement_id": 9100,
+        "version": "2.0.0",
+    }
+    response = post(web, fault)
+    assert response.status_code == 201
+    assert Observation.query.one().detail == {
+        k: fault[k] for k in ("error", "frame", "address", "statement_id", "version")
+    }
+    response = post(web, dict(fault, text="My dad moved out."))
+    assert response.status_code == 400
+
+
 def test_the_coach_can_offer_the_persons_words_as_a_bug(web):
     # R-0056
     response = post(web, {"kind": "bug", "turn_id": "t3", "text": "The picture froze."})

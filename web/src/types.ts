@@ -556,6 +556,18 @@ export interface RequestFailure {
 export type Report =
   | { kind: ReportKind; turn_id: string; text: string }
   | ({ kind: ReportKind.Bug; turn_id: ""; version: string } & RequestFailure)
+  | {
+      kind: ReportKind.Bug;
+      /** The turn being drawn when the page broke, if one was. */
+      turn_id: string;
+      error: string;
+      frame: string | null;
+      /** The screen the page was on. */
+      address: string;
+      /** The newest statement on screen, never the person's words. */
+      statement_id: number | null;
+      version: string;
+    }
   | { kind: ReportKind.Bug; turn_id: string; text: string; error: string; version: string };
 
 export interface Preferences {

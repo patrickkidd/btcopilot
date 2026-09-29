@@ -8,14 +8,17 @@ from btcopilot.models import REPORTS, Observation, ObservationKind
 from btcopilot.routes import bp, diagram
 
 # What each kind carries, as one of these sets of fields: the person's own
-# words about the app; for a bug, what broke and in which release of the app,
-# or the request the server broke on and the id its answer carried.
+# words about the app; for a bug, what broke in a turn and in which release of
+# the app, the request the server broke on and the id its answer carried, or
+# the error on the page with the screen and the newest statement on it, never
+# the person's words.
 SHAPES = {
     ObservationKind.Feedback: ({"text"},),
     ObservationKind.Bug: (
         {"text"},
         {"text", "error", "version"},
         {"status", "method", "path", "request_id", "version"},
+        {"error", "frame", "address", "statement_id", "version"},
     ),
 }
 

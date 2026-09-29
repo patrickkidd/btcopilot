@@ -8,7 +8,14 @@ import { mockTurn, SEND, STREAM } from "./turn";
  * Sent, the sheet says so, and goes on OK or after ten seconds. */
 
 const SENT_MS = 10_000;
+/** How long the sheet takes to go down, after which it is hidden. */
+const LOWER_MS = 280;
 const REPORTS = "**/app/observations";
+
+/** The card saying the report was sent goes, and then the sheet is down; run
+ * through rather than jumped, so the lowering the card's going schedules
+ * fires too. */
+const sentOut = (page: Page) => page.clock.runFor(SENT_MS + LOWER_MS);
 
 const settle = async (page: Page) => {
   await page.clock.install();
@@ -100,7 +107,7 @@ test.describe("a coach turn that breaks", () => {
     });
     expect((await sent[0].response())!.status()).toBe(201);
 
-    await page.clock.fastForward(SENT_MS);
+    await sentOut(page);
     await expect(sheet(page)).toBeHidden();
     expect(await thread(page)).toBe(before);
     // the same error is never raised twice
@@ -128,7 +135,7 @@ test.describe("a coach turn that breaks", () => {
       "The coach could not answer",
       "The model timed out",
     ]);
-    await page.clock.fastForward(SENT_MS);
+    await sentOut(page);
     await expect(sheet(page)).toBeHidden();
   });
 });
@@ -199,25 +206,32 @@ test.describe("the server breaking", () => {
   }) => {
     await settle(page);
     const sent = posted(page);
-    const answers = [
-      { status: 502, body: "bad gateway" },
-      { status: 404, headers: ID, body: "gone" },
-      { status: 500, headers: ID, body: "the server's own words" },
-      { status: 500, headers: ID, body: "the server's own words" },
-    ];
+    const SERVER_BROKE = { status: 500, headers: ID, body: "the server's own words" };
+    let answer = {};
     let asked = 0;
-    await page.route("**/app/statements*", (route) => route.fulfill(answers[asked++]));
-    const minute = async (times: number) => {
-      await page.clock.fastForward(CATCH_UP_MS);
-      await expect.poll(() => asked).toBe(times);
+    await page.route("**/app/statements*", (route) => {
+      asked += 1;
+      return route.fulfill(answer);
+    });
+    /** The thread read again with this answer: the minute is gone through
+     * again until the page asks, since the clock can pass a timer by. */
+    const minute = async (given: object) => {
+      answer = given;
+      const before = asked;
+      await expect
+        .poll(async () => {
+          if (asked === before) await page.clock.fastForward(CATCH_UP_MS);
+          return asked;
+        })
+        .toBeGreaterThan(before);
       await page.waitForTimeout(400);
     };
 
-    await minute(1);
+    await minute({ status: 502, body: "bad gateway" });
     await expect(sheet(page)).toBeHidden();
-    await minute(2);
+    await minute({ status: 404, headers: ID, body: "gone" });
     await expect(sheet(page)).toBeHidden();
-    await minute(3);
+    await minute(SERVER_BROKE);
     await expect(heading(page)).toHaveText("Something went wrong");
     const version = await page.evaluate(() => window.BOOTSTRAP.version);
     const rows = sheet(page).locator(".rp-row");
@@ -244,8 +258,71 @@ test.describe("the server breaking", () => {
     await sheet(page).getByRole("button", { name: "OK" }).click();
     await expect(sheet(page)).toBeHidden();
 
-    await minute(4);
+    await minute(SERVER_BROKE);
     await expect(sheet(page)).toBeHidden();
     expect(sent).toHaveLength(1);
+  });
+});
+
+test.describe("the page breaking", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  /** An error thrown from the app's own bundle, as its stack names it; off a
+   * microtask, since the installed clock catches what a timer throws. */
+  const throws = (page: Page, message: string) =>
+    page.evaluate((message) => {
+      queueMicrotask(() => {
+        const error = new TypeError(message);
+        error.stack = `TypeError: ${message}\n    at draw (${location.origin}/app/static/web/assets/index.js:1:52301)`;
+        throw error;
+      });
+    }, message);
+
+  // R-0056
+  test("names the screen and the newest message, never the person's words", async ({ page }) => {
+    await settle(page);
+    const sent = posted(page);
+    await throws(page, "x is undefined");
+
+    await expect(heading(page)).toHaveText("Something went wrong");
+    const { version, newest } = await page.evaluate(() => ({
+      version: window.BOOTSTRAP.version,
+      newest: window.BOOTSTRAP.statements.at(-1)!.id,
+    }));
+    const here = new URL(page.url());
+    const frame = `${here.origin}/app/static/web/assets/index.js:1:52301`;
+    const rows = sheet(page).locator(".rp-row");
+    await expect(rows.locator(".rp-l")).toHaveText([
+      "The error",
+      "Where it broke",
+      "The screen",
+      "The newest message",
+      "The app version",
+    ]);
+    await expect(rows.locator(".rp-v")).toHaveText([
+      "TypeError: x is undefined",
+      frame,
+      here.pathname,
+      `Number ${newest}, not its words`,
+      version,
+    ]);
+    await sheet(page).getByRole("button", { name: "Send the report" }).click();
+    await expect(heading(page)).toHaveText("Your report was sent");
+    expect(sent[0].postDataJSON()).toEqual({
+      kind: "bug",
+      turn_id: "",
+      error: "TypeError: x is undefined",
+      frame,
+      address: here.pathname,
+      statement_id: newest,
+      version,
+    });
+    expect((await sent[0].response())!.status()).toBe(201);
+    await sheet(page).getByRole("button", { name: "OK" }).click();
+
+    // the same error again raises nothing
+    await throws(page, "x is undefined");
+    await page.waitForTimeout(400);
+    await expect(sheet(page)).toBeHidden();
   });
 });
