@@ -13,6 +13,9 @@ import { ReportKind, ReportSource, ReportStatus, type Report, type RequestFailur
 
 /** How long the card saying the report was sent stays up. */
 export const SENT_MS = 10_000;
+/** The sitting the coach last offered to send the person's words in: one
+ * offer a sitting, even across a reload. */
+const OFFERED = "reports.offered";
 
 enum Act {
   Send = "send",
@@ -48,8 +51,6 @@ export class Reports {
   private sheet: Sheet;
   private at: Raised | null = null;
   private waiting: Raised[] = [];
-  /** Offers already raised on this page, never raised again. */
-  private raised = new Set<string>();
   private closing = 0;
   /** A bug goes without asking once the person has chosen Always send. */
   always = false;
@@ -60,6 +61,8 @@ export class Reports {
     private readonly alwaysSend: () => Promise<void>,
     /** Which errors were raised already on this page. */
     private readonly faults: Faults,
+    /** The person is writing: a bug waits until the message box is empty. */
+    private readonly drafting: () => boolean,
   ) {
     this.sheet = new Sheet(host, "rp");
     this.sheet.panel.addEventListener("click", (e) => {
@@ -103,12 +106,19 @@ export class Reports {
     ]);
   }
 
-  /** The coach heard the person say this about the app. */
-  offer(kind: ReportKind, words: string, turnId: string): void {
-    if (this.once(`${turnId}:${words}`)) return;
+  /** The coach heard the person say this about the app, in the reply now
+   * done; it is offered once a sitting. */
+  offer(kind: ReportKind, words: string, turnId: string, sitting: number): void {
+    if (Number(window.localStorage.getItem(OFFERED)) === sitting) return;
+    window.localStorage.setItem(OFFERED, String(sitting));
     const report = { ...this.sent(kind), turn_id: turnId, words };
     if (kind === ReportKind.Bug) report.source = ReportSource.Page;
     this.queue({ report, list: [["", words]], broke: false });
+  }
+
+  /** The message box is empty again: a bug that waited on it comes up. */
+  resume(): void {
+    if (this.at === null) this.flush();
   }
 
   /** What every report from this page carries. */
@@ -125,18 +135,17 @@ export class Reports {
     if (this.faults.first(key)) this.queue({ report, list, broke: true });
   }
 
-  private once(key: string): boolean {
-    if (this.raised.has(key)) return true;
-    this.raised.add(key);
-    return false;
-  }
-
-  /** One sheet at a time: the rest wait their turn. A bug goes with no sheet
-   * and no card once the person chose Always send. */
+  /** One sheet at a time: the rest wait their turn, and a bug waits while the
+   * person is writing. A bug goes with no sheet and no card once the person
+   * chose Always send. */
   private queue(raised: Raised): void {
     if (raised.broke && this.always) void this.quietly(raised.report);
-    else if (this.at === null) this.raise(raised);
+    else if (this.at === null && !(raised.broke && this.drafting())) this.raise(raised);
     else this.waiting.push(raised);
+  }
+
+  private flush(): void {
+    for (const raised of this.waiting.splice(0)) this.queue(raised);
   }
 
   private raise(raised: Raised): void {
@@ -209,7 +218,7 @@ export class Reports {
   private next(): void {
     window.clearTimeout(this.closing);
     this.at = null;
-    for (const raised of this.waiting.splice(0)) this.queue(raised);
+    this.flush();
     if (this.at === null) this.sheet.lower();
   }
 }

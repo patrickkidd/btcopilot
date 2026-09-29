@@ -19,6 +19,9 @@ export class Sheet {
     this.panel.classList.add(className);
     this.panel.setAttribute("role", "dialog");
     this.panel.setAttribute("aria-modal", "true");
+    // it takes the focus itself, so no button is pressed by a key meant for
+    // something else
+    this.panel.tabIndex = -1;
     this.scrim.hidden = this.panel.hidden = true;
     host.append(this.scrim, this.panel);
   }
@@ -41,7 +44,7 @@ export class Sheet {
     void this.panel.offsetWidth;
     this.scrim.classList.add("in");
     this.panel.classList.add("in");
-    this.panel.querySelector<HTMLElement>("button:not([disabled])")?.focus({ preventScroll: true });
+    this.panel.focus({ preventScroll: true });
   }
 
   lower(): void {

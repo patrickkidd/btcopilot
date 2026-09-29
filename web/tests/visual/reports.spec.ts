@@ -175,6 +175,34 @@ test.describe("what the person says about the app", () => {
   });
 
   // R-0056
+  test("comes up once the reply is done, and once a sitting", async ({ page }) => {
+    await settle(page);
+    await mockTurn(page, {
+      statement: "I will pass that on. What happened after he left?",
+      statement_id: 9203,
+      did: [
+        { type: "tool_call", name: "report", args: { kind: "feedback", words: WORDS }, names: {}, refusal: null },
+        { type: "report", report: { kind: "feedback", words: WORDS } },
+      ],
+      pause: 1500,
+    });
+    await say(page, WORDS);
+    await page.waitForTimeout(700);
+    await expect(sheet(page)).toBeHidden();
+    await expect(heading(page)).toHaveText("Send this as feedback?", { timeout: 10_000 });
+    await expect(page.locator('.bub.coach[data-statement="9203"]')).toContainText("What happened after he left?");
+    await sheet(page).getByRole("button", { name: "Not feedback" }).click();
+    await expect(sheet(page)).toBeHidden();
+
+    await page.unrouteAll({ behavior: "wait" });
+    await offered(page, 9204);
+    await say(page, "And the dots are too small.");
+    await expect(page.locator('.bub.coach[data-statement="9204"]')).toBeVisible();
+    await page.waitForTimeout(400);
+    await expect(sheet(page)).toBeHidden();
+  });
+
+  // R-0056
   test("sends one report on Send and says so", async ({ page }) => {
     await settle(page);
     const sent = posted(page);
@@ -283,6 +311,8 @@ test.describe("the page breaking", () => {
     await throws(page, "x is undefined");
 
     await expect(heading(page)).toHaveText("Something went wrong");
+    // the sheet takes the focus, not one of its buttons
+    await expect(sheet(page)).toBeFocused();
     const { version, newest } = await page.evaluate(() => ({
       version: window.BOOTSTRAP.version,
       newest: window.BOOTSTRAP.statements.at(-1)!.id,
@@ -323,6 +353,21 @@ test.describe("the page breaking", () => {
     await throws(page, "x is undefined");
     await page.waitForTimeout(400);
     await expect(sheet(page)).toBeHidden();
+  });
+});
+
+test.describe("a bug while the person is writing", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  // R-0056
+  test("waits until the message box is empty", async ({ page }) => {
+    await settle(page);
+    await page.locator("#composer").fill("My dad");
+    await throws(page, "x is undefined");
+    await page.waitForTimeout(400);
+    await expect(sheet(page)).toBeHidden();
+    await page.locator("#composer").fill("");
+    await expect(heading(page)).toHaveText("Something went wrong");
   });
 });
 

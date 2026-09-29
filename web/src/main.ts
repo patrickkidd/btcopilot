@@ -80,6 +80,7 @@ import {
   Spotlight,
   BugReports,
   type Preferences,
+  type ReportKind,
 } from "./types";
 
 declare global {
@@ -683,6 +684,7 @@ const reports = new Reports(
   $("overlay").parentElement!,
   () => settings.set({ bug_reports: BugReports.Always }),
   faults,
+  () => chat.draft() !== "",
 );
 reports.always = window.BOOTSTRAP.user?.prefs.bug_reports === BugReports.Always;
 
@@ -1077,6 +1079,7 @@ async function send(): Promise<void> {
   if (!statement || inFlight) return;
   await questions.sending(statement);
   chat.resetDraft();
+  reports.resume();
   post(statement);
 }
 
@@ -1167,6 +1170,8 @@ function follow(turnId: string): void {
   // warns, and trying again reads the thread back from the server.
   let queue: Promise<void> = Promise.resolve();
   let broken = false;
+  /** What the person said about the app, which the coach offered to send. */
+  let offered: { kind: ReportKind; words: string } | null = null;
   const step = (work: () => Promise<void> | void) => {
     queue = queue
       .then(() => (broken ? undefined : work()))
@@ -1198,7 +1203,8 @@ function follow(turnId: string): void {
     read: (ids) => step(() => picture.read(ids)),
     show: (view) => step(() => shown(view)),
     go: (address) => step(() => navigate(address)),
-    report: (kind, words) => step(() => reports.offer(kind, words, turnId)),
+    // offered once the reply is done, never over words still coming
+    report: (kind, words) => step(() => void (offered = { kind, words })),
     text: (text) => step(() => void opened().append(text, (chip) => aim(chip))),
     reset: () => step(() => void opened().reset()),
     done: (reply) =>
@@ -1215,6 +1221,7 @@ function follow(turnId: string): void {
         // What the message named stays lit after it is written: the spotlight
         // is the resting state of the picture, not a flourish while it types.
         spotlightFrom(reply.statement);
+        if (offered) reports.offer(offered.kind, offered.words, turnId, reply.discussion_id);
       }),
     failed: (message) =>
       step(() => {
@@ -1410,6 +1417,9 @@ $("info").addEventListener("click", () => {
 // With a real keyboard Return sends; a new line is Shift- or Alt-Return, and
 // on a touch screen Return, so a message can have paragraphs (R-0368). The
 // break is a plain newline so the draft keeps it.
+$("composer").addEventListener("input", () => {
+  if (chat.draft() === "") reports.resume();
+});
 $("composer").addEventListener("keydown", (e) => {
   const key = e as KeyboardEvent;
   const act = returnKey(key, touch());
