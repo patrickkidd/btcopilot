@@ -125,22 +125,18 @@ test.describe("Always send", () => {
   test.afterEach(({ page }) => answer(page, { bug_reports: "ask" }));
 
   // R-0056
-  test("sends with no sheet once the person chose it, and only says it was sent", async ({ page }) => {
+  test("sends with no sheet and no card from the moment the person chose it", async ({ page }) => {
     await settle(page);
     const sent = posted(page);
     await throws(page, "x is undefined");
     await sheet(page).getByRole("button", { name: "Always send" }).click();
-    await expect(heading(page)).toHaveText("Your report was sent");
-    await sheet(page).getByRole("button", { name: "OK" }).click();
     await expect(sheet(page)).toBeHidden();
 
     await throws(page, "y is undefined");
-    await expect(heading(page)).toHaveText("Your report was sent");
-    await expect(sheet(page).getByRole("button", { name: "Send the report" })).toHaveCount(0);
     await expect
       .poll(() => sent.map((r) => r.postDataJSON().error))
       .toEqual(["TypeError: x is undefined", "TypeError: y is undefined"]);
-    await sentOut(page);
+    await page.waitForTimeout(400);
     await expect(sheet(page)).toBeHidden();
   });
 });
@@ -168,6 +164,7 @@ test.describe("what the person says about the app", () => {
 
     await expect(heading(page)).toHaveText("Send this as feedback?");
     await expect(sheet(page).locator(".rp-v")).toHaveText(WORDS);
+    await expect(sheet(page).getByRole("button")).toHaveText(["Send the report", "Not feedback"]);
     await expect(page.locator('.bub.coach[data-statement="9201"]')).toContainText("What happened after he left?");
     const before = await thread(page);
 

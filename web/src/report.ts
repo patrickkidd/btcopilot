@@ -131,17 +131,28 @@ export class Reports {
     return false;
   }
 
-  /** One sheet at a time: the rest wait their turn. */
+  /** One sheet at a time: the rest wait their turn. A bug goes with no sheet
+   * and no card once the person chose Always send. */
   private queue(raised: Raised): void {
-    if (this.at === null) this.raise(raised);
+    if (raised.broke && this.always) void this.quietly(raised.report);
+    else if (this.at === null) this.raise(raised);
     else this.waiting.push(raised);
   }
 
   private raise(raised: Raised): void {
     this.at = raised;
-    if (raised.broke && this.always) return void this.send(raised.report);
     this.ask(raised);
     dragScroll(this.sheet.panel.querySelector<HTMLElement>(".rp-list")!);
+  }
+
+  /** Sent with nothing on screen: one that could not be sent is only logged. */
+  private async quietly(report: Report | null): Promise<void> {
+    if (!report) return;
+    try {
+      await api.report(report);
+    } catch (error) {
+      console.warn(api.whatFailed(error, (words) => words));
+    }
   }
 
   private ask({ report, list, broke }: Raised): void {
@@ -161,7 +172,6 @@ export class Reports {
           `<div class="rp-list"><div class="rp-v">${esc(list[0][1])}</div></div>` +
           `<div class="cf-btns">` +
           button(Act.Send, "Send the report", true) +
-          (this.always ? "" : button(Act.Always, "Always send")) +
           button(Act.Not, "Not feedback") +
           `</div>`,
       );
@@ -174,6 +184,8 @@ export class Reports {
     if (act === Act.Always) {
       this.always = true;
       await this.alwaysSend();
+      await this.quietly(report);
+      return this.next();
     }
     await this.send(report);
   }
@@ -193,12 +205,11 @@ export class Reports {
     this.closing = window.setTimeout(() => this.next(), SENT_MS);
   }
 
-  /** The sheet down, or on to the next report waiting. */
+  /** On to the next report waiting, or the sheet down. */
   private next(): void {
     window.clearTimeout(this.closing);
     this.at = null;
-    const raised = this.waiting.shift();
-    if (raised === undefined) this.sheet.lower();
-    else this.raise(raised);
+    for (const raised of this.waiting.splice(0)) this.queue(raised);
+    if (this.at === null) this.sheet.lower();
   }
 }
