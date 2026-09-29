@@ -1,7 +1,7 @@
 """A pointer to a coach message already in the thread: a web push to every
-browser its person subscribed, or one email when none is left. Every push
-carries one tag, so the phone shows one at a time and the newest replaces the
-unread one.
+browser its person subscribed, or one email when none is left. The service
+worker shows every push under one tag, so the phone shows one at a time and the
+newest replaces the unread one.
 
 A VAPID key pair for a new server: python -m btcopilot.push
 """
@@ -20,10 +20,7 @@ from btcopilot.auth.emails import send_coach_message
 from btcopilot.extensions import db
 from btcopilot.models import Notification, NotificationChannel, PushSubscription
 
-# The notification's tag in web/public/sw.js, and the push service's topic,
-# which drops an undelivered push when a newer one arrives.
-TAG = "coach"
-# A phone that is off for a week still gets the newest one when it wakes.
+# A phone that is off for a week still gets it when it wakes.
 TTL_S = 7 * 24 * 3600
 # pywebpush waits forever unless told otherwise.
 TIMEOUT_S = 10
@@ -60,13 +57,15 @@ def send(user, statement) -> Notification:
 def _push(subscription: PushSubscription, payload: str) -> bool:
     config = current_app.config
     try:
+        # No Topic header to any service: Apple's refused "coach" with 400
+        # BadWebPushTopic although it meets Apple's documented rule. The tag
+        # in web/public/sw.js does the replacing.
         webpush(
             subscription.info(),
             payload,
             vapid_private_key=config["VAPID_PRIVATE_KEY"],
             vapid_claims={"sub": config["VAPID_SUBJECT"]},
             ttl=TTL_S,
-            headers={"Topic": TAG},
             timeout=TIMEOUT_S,
         )
     except WebPushException as e:

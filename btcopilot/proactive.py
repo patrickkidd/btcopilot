@@ -9,6 +9,8 @@ import enum
 import re
 from zoneinfo import ZoneInfo
 
+from pywebpush import WebPushException
+
 from btcopilot import correlation, prompts, push
 from btcopilot.discussions import chats, sitting, sync_chat_speakers
 from btcopilot.extensions import db
@@ -123,17 +125,26 @@ def run(now: datetime.datetime | None = None, dry_run: bool = False) -> list[dic
             )
             continue
         message, text, refused = _compose(user, found)
-        rows.append(
-            {
-                "email": user.username,
-                "trigger": message.trigger.value,
-                "text": text,
-                "refused": refused,
-                "reason": None,
-            }
-        )
-        if not dry_run and not refused:
-            _send(user, message, text, now)
+        row = {
+            "email": user.username,
+            "trigger": message.trigger.value,
+            "text": text,
+            "refused": refused,
+            "reason": None,
+        }
+        rows.append(row)
+        if dry_run or refused:
+            continue
+        # a send the push service refuses leaves the message unsent for the
+        # next run rather than in the thread with no notification
+        try:
+            with db.session.begin_nested():
+                _send(user, message, text, now)
+        except WebPushException as e:
+            said = f"{e.response.status_code} {e.response.text}"
+            row["reason"] = f"push failed: {' '.join(said.split())}"
+            continue
+        db.session.commit()
     if dry_run:
         db.session.rollback()
     else:
@@ -322,10 +333,7 @@ def _send(user: User, message: ProactiveMessage, text: str, now):
     db.session.add(message)
     db.session.flush()
     _count(message, ObservationKind.ProactiveSent)
-    # one transaction: a send that raises leaves the message unsent for the
-    # next run rather than in the thread with no notification
     push.send(user, statement)
-    db.session.commit()
 
 
 def _answers(user: User, now: datetime.datetime):

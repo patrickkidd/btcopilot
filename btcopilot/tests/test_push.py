@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import time
 
 import http_ece
 import pytest
@@ -84,14 +85,34 @@ def test_every_browser_gets_the_first_sentence_under_one_tag(
             post["data"], private_key=key, auth_secret=secret, version="aes128gcm"
         )
         assert json.loads(body) == {"id": sent.id, "body": HOOK}
-        assert (post["headers"]["Topic"], post["headers"]["TTL"]) == (
-            push.TAG,
-            str(push.TTL_S),
-        )
+        assert post["headers"]["TTL"] == str(push.TTL_S)
         assert (
             f"k={flask_app.config['VAPID_PUBLIC_KEY']}"
             in post["headers"]["Authorization"]
         )
+
+
+def test_apple_gets_the_headers_its_documented_rules_accept(
+    flask_app, test_user, statement, service
+):
+    # R-0055
+    posts, _ = service
+    subscribe(test_user, "https://web.push.apple.com/QKKBhlNKX9DKr")
+    push.send(test_user, statement)
+    [post] = posts
+    headers = post["headers"]
+    # Apple refused Topic "coach" with BadWebPushTopic although it meets the
+    # documented rule of up to 32 base64url characters
+    assert "Topic" not in headers
+    assert headers["Content-Encoding"] == "aes128gcm"
+    assert headers["TTL"].isdigit()
+    scheme, fields = headers["Authorization"].split(" ", 1)
+    fields = dict(f.strip().split("=", 1) for f in fields.split(","))
+    assert (scheme, fields["k"]) == ("vapid", flask_app.config["VAPID_PUBLIC_KEY"])
+    claims = json.loads(base64.urlsafe_b64decode(fields["t"].split(".")[1] + "=="))
+    assert claims["aud"] == "https://web.push.apple.com"
+    assert claims["sub"].startswith(("mailto:", "https://"))
+    assert claims["exp"] - time.time() <= 24 * 3600
 
 
 @pytest.mark.parametrize("gone", [404, 410])

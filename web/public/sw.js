@@ -50,7 +50,7 @@ self.addEventListener("fetch", (e) => {
 
 // A push is only a pointer to a coach message already in the thread. Every
 // one carries the same tag, so the lock screen holds one at a time and the
-// newest replaces the unread one (btcopilot/push.py TAG).
+// newest replaces the unread one.
 const TAG = "coach";
 
 self.addEventListener("push", (e) => {

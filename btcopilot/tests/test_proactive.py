@@ -2,6 +2,7 @@ import datetime
 from unittest.mock import patch
 
 import pytest
+import requests
 from pywebpush import WebPushException
 
 from btcopilot import proactive, tuning
@@ -67,18 +68,21 @@ def _pattern(first_id: int, first_year: int, variable: str) -> list[dict]:
     return events
 
 
-@pytest.fixture
-def family(test_user):
-    """The test user's record holding one pattern, with the budget set weekly."""
+def _record(user):
+    """The user's record holding one pattern, with the budget set weekly."""
     people = [asdict(Person(id=i, name=f"P{i}")) for i in (1, 3)]
     people[0]["primary"] = True
-    diagram = test_user.free_diagram
-    diagram.set_diagram_data(
+    user.free_diagram.set_diagram_data(
         DiagramData(people=people, events=_pattern(10, 1990, "symptom"))
     )
-    test_user.set_prefs(**{PrefKey.Proactive.value: Proactive.Weekly})
+    user.set_prefs(**{PrefKey.Proactive.value: Proactive.Weekly})
     db.session.commit()
-    return test_user
+    return user
+
+
+@pytest.fixture
+def family(test_user):
+    return _record(test_user)
 
 
 @pytest.fixture
@@ -180,20 +184,32 @@ def test_words_making_one_event_the_cause_of_the_other_stay_unsent(family, sent)
     assert _counts() == [ObservationKind.ProactiveRefused]
 
 
-def test_a_send_that_raises_keeps_nothing_and_the_next_run_sends(family, sent):
+def test_a_refused_push_keeps_nothing_says_why_and_the_next_family_is_sent(
+    family, test_user_2, sent
+):
     # R-0004
     send, _ = sent
-    send.side_effect = WebPushException("Push failed: 503")
-    with pytest.raises(WebPushException):
-        proactive.run(now=T0)
-    # the run's process ends there, and its open transaction with it
-    db.session.rollback()
-    assert Statement.query.count() == 0
-    assert ProactiveMessage.query.count() == 0
+    test_user_2.set_free_diagram()
+    other = _record(test_user_2)
+    answer = requests.Response()
+    answer.status_code, answer._content = 400, b'{"reason":"BadWebPushTopic"}'
+
+    def refuse(user, statement):
+        if user is family:
+            raise WebPushException("Push failed: 400 Bad Request", response=answer)
+
+    send.side_effect = refuse
+    assert _why(proactive.run(now=T0)) == [
+        'push failed: 400 {"reason":"BadWebPushTopic"}',
+        None,
+    ]
+    [message] = ProactiveMessage.query.all()
+    assert (message.user_id, message.sent_at) == (other.id, T0)
+    assert Statement.query.filter_by(text=WORDS).count() == 1
 
     send.side_effect = None
     proactive.run(now=T0)
-    assert ProactiveMessage.query.one().sent_at == T0
+    assert ProactiveMessage.query.filter_by(user_id=family.id).one().sent_at == T0
 
 
 def test_never_sends_nothing_unasked_but_a_follow_up_they_asked_for_goes(family, sent):
