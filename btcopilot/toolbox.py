@@ -648,12 +648,10 @@ def said_label(statement: Statement) -> str:
     return f"{who} said, {statement.created_at.day} {statement.created_at:%b}"
 
 
-def said_on(diagram_id: int, user_id: int):
-    """The person's and the coach's words in any of that user's sessions on one
-    family. Another user's sessions on the same family are theirs alone."""
+def said_in(*where):
+    """The person's and the coach's words in the sessions `where` picks."""
     return Statement.query.join(Discussion).filter(
-        Discussion.diagram_id == diagram_id,
-        Discussion.user_id == user_id,
+        *where,
         Statement.text.isnot(None),
         Statement.text != "",
         or_(
@@ -661,6 +659,12 @@ def said_on(diagram_id: int, user_id: int):
             Statement.speaker_id == Discussion.chat_ai_speaker_id,
         ),
     )
+
+
+def said_on(diagram_id: int, user_id: int):
+    """The person's and the coach's words in any of that user's sessions on one
+    family. Another user's sessions on the same family are theirs alone."""
+    return said_in(Discussion.diagram_id == diagram_id, Discussion.user_id == user_id)
 
 
 def said_before(said: Statement):

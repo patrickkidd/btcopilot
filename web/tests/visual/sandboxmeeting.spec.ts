@@ -20,9 +20,9 @@ test.describe(() => {
     // ── 1. the table, with the vote open ──────────────────────────────────
     await page.goto(invite, { waitUntil: "networkidle" });
     await page.waitForTimeout(1400);
-    await page.locator("#sessions-open").click();
+    await page.locator("#account").click();
     await page.waitForTimeout(900);
-    await page.locator(".fs-agenda").click();
+    await page.locator(".sn-pane.in .sn-row", { hasText: "Next meeting" }).click();
     await page.waitForTimeout(1600);
     check(await visible("#agenda-screen"), "the table opens");
     check(await visible(".tb-meet"), "the meeting can be run on the open cut");
@@ -206,9 +206,9 @@ test.describe(() => {
       await page.waitForTimeout(1600);
       await page.locator("#coding-back").click();
       await page.waitForTimeout(1600);
-      await page.locator("#sessions-open").click();
+      await page.locator("#account").click();
       await page.waitForTimeout(900);
-      await page.locator(".fs-agenda").click();
+      await page.locator(".sn-pane.in .sn-row", { hasText: "Next meeting" }).click();
       await page.waitForTimeout(1800);
       const agenda = await text(".agbox");
       say(`agenda: "${agenda.replace(/\s+/g, " ").slice(0, 200)}"`);
@@ -227,13 +227,13 @@ test.describe(() => {
       if (await visible("#coding-back")) await page.locator("#coding-back").click();
       await page.waitForTimeout(1000);
     }
-    await page.locator("#sessions-open").click();
+    await page.locator("#account").click();
     await page.waitForTimeout(900);
     check(
-      await visible(".fs-task:not(.fs-agenda)"),
-      "a coder's sheet offers the task card with nothing left to code",
+      await visible('.sn-pane.in .sn-row:has-text("Your coding task")'),
+      "a coder's account view offers the task card with nothing left to code",
     );
-    await page.locator(".fs-agenda").click();
+    await page.locator(".sn-pane.in .sn-row", { hasText: "Next meeting" }).click();
     await page.waitForTimeout(1600);
     check(
       await visible(".tb-result"),

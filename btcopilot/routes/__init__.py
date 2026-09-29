@@ -15,6 +15,7 @@ from btcopilot.discussions import (  # noqa: F401  routes import them from here
     create_discussion,
     family,
     last_activity,
+    newest,
     sitting,
     utc_iso,
 )
@@ -82,8 +83,7 @@ def _inject_globals():
 def user_sessions(user, diagram_id: int | None = None) -> list[Discussion]:
     """The user's sessions on one diagram, most recently active first. Without
     a diagram it is the one the app is on."""
-    found = chats(user, diagram_id or user.diagram_in_use()).all()
-    return sorted(found, key=lambda d: (last_activity(d), d.id), reverse=True)
+    return newest(chats(user, diagram_id or user.diagram_in_use()))
 
 
 def current_session(user, create: bool = False) -> Discussion | None:

@@ -1,6 +1,6 @@
 import * as api from "./api";
 import { Feature, tap } from "./track";
-import { $, el, esc, isCoder } from "./dom";
+import { $, el, esc, isAdmin, isCoder } from "./dom";
 import { INDEX_URL } from "./concepts";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
@@ -25,10 +25,15 @@ import {
  * chat view is the one named shortcut, and it writes this same value. */
 
 const PANE_MS = 240;
-/** What each choice of how often the coach may message first means: what
- * makes it write, and how often at most. */
+/** How often the coach may message first is a most, never a schedule: the
+ * choices say so, and the hint says what makes it write. */
+const PROACTIVE_CHOICE: Record<Proactive, string> = {
+  [Proactive.Never]: "never",
+  [Proactive.Rarely]: "at most monthly",
+  [Proactive.Weekly]: "at most weekly",
+};
 const writesFirst = (often: string) =>
-  `The coach writes first when it notices a pattern in your family's events, or to follow up on something you agreed to, at most once a ${often}.`;
+  `Never more than once a ${often}, and only when the coach notices a pattern in your family's events or follows up on something you agreed to.`;
 const PROACTIVE_HINT: Record<Proactive, string> = {
   [Proactive.Never]: "The coach never messages first unless you ask it to.",
   [Proactive.Rarely]: writesFirst("month"),
@@ -65,6 +70,12 @@ export interface SettingsHandlers {
   /** Which family the app is on. `switched` is false when this is simply the
    * family it opened on, and true when the reader moved it. */
   onDiagram(diagram: Diagram, how: { switched: boolean }): void;
+  /** The coder's one task (R-0265). */
+  onTask(): void;
+  /** The agenda, which is Patrick's whole administration (R-0259). */
+  onAgenda(): void;
+  /** Two replies to the same words, picked blind (R-0599). */
+  onPairs(): void;
 }
 
 /** A stored user agent is unreadable, so the row names the phone it came from. */
@@ -268,6 +279,15 @@ export class Settings {
     return this.tapRow(label, value, () => this.push(page));
   }
 
+  /** A row that leaves the account view for a screen of its own. */
+  private screenRow(label: string, feature: Feature, go: () => void): HTMLElement {
+    return this.tapRow(label, "", () => {
+      tap(feature);
+      this.close();
+      go();
+    });
+  }
+
   private tapRow(label: string, value: string, go: () => void): HTMLElement {
     const row = el("div", "sn-row push");
     row.append(
@@ -313,6 +333,7 @@ export class Settings {
     options: T[],
     current: T,
     pick: (value: T) => void,
+    words: (value: T) => string = (value) => value,
   ): HTMLElement {
     const row = el("div", "sn-row");
     const seg = el("div", "sn-seg");
@@ -320,7 +341,7 @@ export class Settings {
       const button = document.createElement("button");
       button.type = "button";
       button.className = option === current ? "on" : "";
-      button.textContent = option;
+      button.textContent = words(option);
       button.addEventListener("click", () => {
         tap(Feature.SettingChange);
         pick(option);
@@ -404,14 +425,32 @@ export class Settings {
       ]),
     );
 
-    // The concept pages open in a tab of their own, for coders alone (R-0567).
+    // Coding and its meeting are for coders, and the meeting and the replies
+    // picked blind are Patrick's; none of it hangs on the family the app is
+    // on. The concept pages open in a tab of their own (R-0567).
+    const admin = isAdmin();
     if (isCoder())
       pane.append(
-        this.group([
-          this.tapRow("Concept pages", "", () =>
-            window.open(INDEX_URL, "_blank", "noopener"),
-          ),
-        ]),
+        this.group(
+          [
+            this.screenRow("Your coding task", Feature.TaskOpen, () => this.handlers.onTask()),
+            ...(admin
+              ? [this.screenRow("Next meeting", Feature.AgendaOpen, () => this.handlers.onAgenda())]
+              : []),
+            this.tapRow("Concept pages", "", () =>
+              window.open(INDEX_URL, "_blank", "noopener"),
+            ),
+          ],
+          "Coding",
+        ),
+      );
+    if (admin)
+      pane.append(
+        this.group(
+          [this.screenRow("Better reply", Feature.PairsOpen, () => this.handlers.onPairs())],
+          "Quality",
+        ),
+        el("div", "sn-hint", "Pick the better of two coach replies"),
       );
 
     const out = document.createElement("button");
@@ -521,6 +560,18 @@ export class Settings {
 
   private coach(prefs: Preferences): Built {
     const pane = el("div");
+    const often = this.segRow(
+      "messages first",
+      [Proactive.Never, Proactive.Rarely, Proactive.Weekly],
+      prefs.proactive,
+      (proactive) => {
+        if (proactive !== Proactive.Never) void offerPush();
+        void this.write({ proactive });
+      },
+      (proactive) => PROACTIVE_CHOICE[proactive],
+    );
+    // the choices are too long to stand beside their label on a phone
+    often.classList.add("below");
     pane.append(
       this.group([
         this.switchRow(
@@ -534,15 +585,7 @@ export class Settings {
           prefs.mode,
           (mode) => void this.write({ mode }),
         ),
-        this.segRow(
-          "messages first",
-          [Proactive.Never, Proactive.Rarely, Proactive.Weekly],
-          prefs.proactive,
-          (proactive) => {
-            if (proactive !== Proactive.Never) void offerPush();
-            void this.write({ proactive });
-          },
-        ),
+        often,
       ]),
       el("div", "sn-hint", PROACTIVE_HINT[prefs.proactive]),
     );

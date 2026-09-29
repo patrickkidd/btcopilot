@@ -12,7 +12,7 @@ import { Agenda } from "./agenda";
 import { Pairs } from "./pairs";
 import { Meeting } from "./meeting";
 import { ResultScreen } from "./result";
-import { CODER, OneTask, beforeMeeting, coder, wayIn } from "./task";
+import { CODER, OneTask, beforeMeeting, coder } from "./task";
 import { Rules } from "./rules";
 import { Sessions } from "./sessions";
 import { sessionTitle } from "./search";
@@ -326,9 +326,9 @@ const questions = new Questions($("menu-body"), {
 menu.questions = questions;
 
 /** The sheet beside the message box, for the few who have work in it: a
- * professional's notes and recordings, a coder's task, and Patrick's agenda.
- * Nobody opens, starts or switches a conversation there; the family has one
- * thread. */
+ * professional's notes and recordings, and Patrick's list of the family's
+ * conversations. Nobody opens, starts or switches a conversation there; the
+ * family has one thread. */
 const sessions = new Sessions(
   $("sessions-open"),
   $("overlay"),
@@ -341,10 +341,6 @@ const sessions = new Sessions(
         if (!made.message_count) showPrompt(made.kind);
       });
     },
-    onTask: () => void openTask(),
-    onAgenda: (picked) => void placeCut(picked.id),
-    onAgendaScreen: () => void openAgenda(),
-    onPairs: () => void openPairs(),
   },
 );
 
@@ -452,7 +448,6 @@ const placing = new Cut($("cut-chat"), $("cut-bar"), {
 });
 
 const agenda = new Agenda($("agenda-body"), {
-  onAdd: () => sessions.show(),
   onPlace: (discussionId) => void placeCut(discussionId),
   onMeeting: (cutId) => void openMeeting(cutId),
   onResult: (cutId) => void openResult(cutId),
@@ -541,7 +536,12 @@ $("coding-back").addEventListener("click", () => {
   if (here === Screen.Coding && voting)
     void openBallot(voting.cutId, voting.codingId, voting.itemId);
   else if (here === Screen.Coding || here === Screen.Ballot) void openTask();
-  else if (here === Screen.Cut || here === Screen.Meeting) void openAgenda();
+  else if (
+    here === Screen.Cut ||
+    here === Screen.Meeting ||
+    (here === Screen.Agenda && agenda.picking)
+  )
+    void openAgenda();
   else if (here === Screen.Result) void openTask();
   else {
     $("title").textContent = familyTitle;
@@ -588,6 +588,9 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
     speak.checked = prefs.speak;
   },
   onDiagram: (diagram, how) => onDiagram(diagram, how),
+  onTask: () => void openTask(),
+  onAgenda: () => void openAgenda(),
+  onPairs: () => void openPairs(),
 });
 
 speak.addEventListener("change", () => {
@@ -1366,7 +1369,7 @@ void load().then(async () => {
   }
   // Coming back a week later, the picture is where the last message left it.
   leftAt(said);
-}).then(() => landing(traceTo));
+}).then(() => landing(traceTo, openTask));
 
 // The dev server too: push needs the worker, and the worker asks the network
 // first, so a saved edit still reaches the page.
@@ -1385,10 +1388,6 @@ if ("serviceWorker" in navigator)
 // never coded never sees the card, and a server without the review tables
 // leaves the chat exactly as it was.
 if (CODER) {
-  // The way to the card is always in the sheet for a coder, task or no task:
-  // between meetings the card is how what they finished, and the result of the
-  // last meeting, stays reachable (R-0265).
-  sessions.task(wayIn(CODER));
   void api
     .tasks()
     .then((found) => {

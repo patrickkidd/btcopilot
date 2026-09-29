@@ -5,6 +5,7 @@ which puts the words in the sitting they belong to."""
 from flask import abort, jsonify, request
 from sqlalchemy import func, tuple_
 
+import btcopilot
 from btcopilot import auth
 from btcopilot.routes import (
     bp,
@@ -19,14 +20,16 @@ from btcopilot.extensions import db
 from btcopilot.licence import require_professional
 from btcopilot.models import Discussion, DiscussionKind, Statement, StatementKind
 from btcopilot.discussions import (
+    all_sessions,
     chats,
     create_discussion,
+    newest,
     session_payload,
     sync_chat_speakers,
     utc_iso,
 )
-from btcopilot import toolnames, turns, turnstore
-from btcopilot.toolbox import excerpt, said_on, said_with
+from btcopilot import chips, toolnames, turns, turnstore
+from btcopilot.toolbox import excerpt, said_in, said_with
 from btcopilot.turnlog import TurnEventKind
 
 THREAD_PAGE = 50
@@ -172,22 +175,36 @@ def statement_index():
 def session_index():
     """`?diagram_id=` lists another readable diagram's sessions, which is what
     the sessions sheet needs to show a professional's families in one scroll.
-    A diagram the user cannot read is a 404, never a 403. `?words=` keeps the
-    sessions where something said carries every word, the coach's own search,
-    each with the newest line that does as `match`."""
+    A diagram the user cannot read is a 404, never a 403. `?all=true` is
+    Patrick's: every session on every family, whoever had it, each with its
+    family's name, which is what the meeting page puts one on the agenda from.
+    `?words=` keeps the sessions where something said carries every word, the
+    coach's own search, each with the newest line that does as `match`, in the
+    words a reader sees."""
     user = auth.current_user()
+    every = request.args.get("all") == "true"
     asked = request.args.get("diagram_id", type=int)
+    if every and not user.has_role(btcopilot.ROLE_ADMIN):
+        abort(403)
     if asked is not None and asked not in {d.id for d in readable(user)}:
         abort(404)
-    found = user_sessions(user, asked)
+    found = newest(all_sessions()) if every else user_sessions(user, asked)
     terms = request.args.get("words", "").split()
-    if not terms:
-        return jsonify([session_payload(d) for d in found])
     lines = {}
-    for s in said_with(said_on(asked or user.diagram_in_use(), user.id), terms):
-        lines.setdefault(s.discussion_id, excerpt(s.text, terms, MATCH_CUT))
+    if terms:
+        ids = [d.id for d in found]
+        for s in said_with(said_in(Discussion.id.in_(ids)), terms):
+            lines.setdefault(
+                s.discussion_id, excerpt(chips.plain(s.text), terms, MATCH_CUT)
+            )
+        found = [d for d in found if d.id in lines]
     return jsonify(
-        [{**session_payload(d), "match": lines[d.id]} for d in found if d.id in lines]
+        [
+            session_payload(d)
+            | ({"family": d.diagram.name} if every else {})
+            | ({"match": lines[d.id]} if terms else {})
+            for d in found
+        ]
     )
 
 

@@ -1896,6 +1896,10 @@ button { font-family: inherit; }
   white-space: nowrap;
   cursor: pointer;
 }
+/* choices too long to stand beside their label take a line of their own */
+.sn-row.below { flex-wrap: wrap; }
+.sn-row.below .sn-seg { flex-basis: 100%; }
+.sn-row.below .sn-seg button { flex: 1; height: auto; white-space: normal; }
 .sn-seg button:first-child { border-radius: 4px 0 0 4px; margin-left: 0; }
 .sn-seg button:last-child { border-radius: 0 4px 4px 0; }
 .sn-seg button.on {

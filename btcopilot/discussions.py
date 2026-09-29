@@ -72,14 +72,24 @@ def session_payload(discussion: Discussion) -> dict:
     }
 
 
-def chats(user, diagram_id: int):
-    """The user's sessions on one family. A discussion missing either chat
-    speaker id is not one: its speakers are not the two chat roles, so every
-    line would render as the user's."""
-    return Discussion.query.filter_by(user_id=user.id, diagram_id=diagram_id).filter(
+def all_sessions():
+    """Every session on every family. A discussion missing either chat speaker
+    id is not one: its speakers are not the two chat roles, so every line would
+    render as the user's."""
+    return Discussion.query.filter(
         Discussion.chat_user_speaker_id.isnot(None),
         Discussion.chat_ai_speaker_id.isnot(None),
     )
+
+
+def chats(user, diagram_id: int):
+    """The user's sessions on one family."""
+    return all_sessions().filter_by(user_id=user.id, diagram_id=diagram_id)
+
+
+def newest(found) -> list[Discussion]:
+    """Most recently active first."""
+    return sorted(found, key=lambda d: (last_activity(d), d.id), reverse=True)
 
 
 def family(user, diagram: Diagram | None) -> Diagram:

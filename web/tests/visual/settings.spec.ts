@@ -53,6 +53,31 @@ test.describe("the settings stack", () => {
     );
   });
 
+  // R-0004
+  test("how often the coach messages first reads as a most, never a schedule", async ({
+    page,
+  }) => {
+    await settle(page);
+    await openSettings(page);
+    await page.locator(".sn-pane.in .sn-row.push", { hasText: "Coach" }).click();
+    const choices = page.locator(
+      '.sn-pane.in .sn-row:has-text("messages first") .sn-seg button',
+    );
+    const hint = page.locator(".sn-pane.in .sn-hint");
+    await expect(choices).toHaveText(["never", "at most monthly", "at most weekly"]);
+    // each choice's words fit inside it on a phone
+    expect(
+      await choices.evaluateAll((all) => all.filter((b) => b.scrollWidth > b.clientWidth).length),
+    ).toBe(0);
+    await choices.nth(2).click();
+    await expect(hint).toHaveText(
+      "Never more than once a week, and only when the coach notices a pattern in " +
+        "your family's events or follows up on something you agreed to.",
+    );
+    await choices.nth(0).click();
+    await expect(hint).toHaveText("The coach never messages first unless you ask it to.");
+  });
+
   // R-0098
   test("a row pushes its own page and the chevron pops it", async ({ page }) => {
     await settle(page);
@@ -410,6 +435,82 @@ test.describe("opening the account view", () => {
     expect(cover.top).toBeLessThanOrEqual(1);
     expect(cover.bottom).toBeLessThanOrEqual(1);
     expect(cover.ground).not.toBe("rgba(0, 0, 0, 0)");
+  });
+});
+
+/** Coding, the meeting and the replies picked blind hang on no family, so
+ * they sit in the account view, each for whoever does it. */
+test.describe("the coding and quality sections", () => {
+  test.use({ storageState: stateFor("empty") });
+  const roles = (...names: string[]) =>
+    flask("admin", "run", "--", "users", "roles", username("empty"), ...names, "--yes");
+  const heads = (page: Page) => page.locator(".sn-pane.in .sn-hd").allTextContents();
+  const row = (page: Page, label: string) =>
+    page.locator(".sn-pane.in .sn-row.push", { hasText: label });
+  const as = async (page: Page, ...names: string[]) => {
+    roles(...names, "subscriber");
+    await page.goto("/app/");
+    await openSettings(page);
+  };
+  test.afterAll(() => roles("subscriber"));
+
+  // R-0259, R-0265, R-0599
+  test("a subscriber sees neither, an auditor sees Coding, and an admin sees Coding with the meeting and Quality", async ({
+    page,
+  }) => {
+    await as(page);
+    expect(await heads(page)).toEqual([]);
+
+    await as(page, "auditor");
+    expect(await heads(page)).toEqual(["Coding"]);
+    await expect(row(page, "Your coding task")).toHaveCount(1);
+    await expect(row(page, "Next meeting")).toHaveCount(0);
+
+    await as(page, "admin");
+    expect(await heads(page)).toEqual(["Coding", "Quality"]);
+    await expect(row(page, "Next meeting")).toHaveCount(1);
+    await expect(row(page, "Better reply")).toHaveCount(1);
+    await expect(page.locator(".sn-pane.in .sn-hint")).toHaveText(
+      "Pick the better of two coach replies",
+    );
+    await row(page, "Your coding task").click();
+    await expect(page.locator("#task-screen")).toBeVisible();
+    await expect(page.locator(".sn-pane.in")).toHaveCount(0);
+  });
+
+  // R-0267
+  test("an admin puts another family's session on the agenda from the meeting page, and placing the cut returns there", async ({
+    page,
+  }) => {
+    await as(page, "admin");
+    await row(page, "Next meeting").click();
+    await expect(page.locator("#agenda-screen")).toBeVisible();
+    await page.locator(".tb-add").click();
+    await expect(page.locator("#title")).toHaveText("Pick a session");
+    await page.locator("#coding-back").click();
+    await expect(page.locator("#agenda-screen .tb-add")).toBeVisible();
+
+    await page.locator(".tb-add").click();
+    // said only in the moves fixture's session, never in this admin's family,
+    // and inside a chip, which the line shows as its words
+    await page.locator(".tb-words").fill("altogether");
+    const picked = page.locator(".tb-pick");
+    await expect(picked).toHaveCount(1);
+    const line = await picked.locator(".sn-s").last().innerText();
+    expect(line).toContain("stopped speaking to him altogether.");
+    expect(line).not.toContain("[[");
+    await picked.click();
+    await expect(page.locator("#cut-screen")).toBeVisible();
+    await expect(page.locator("#cut-chat")).toContainText("walk me through it");
+    const session = await page.locator("#title").innerText();
+
+    await page.locator(".ct-go").click();
+    await expect(page.locator("#agenda-screen")).toBeVisible();
+    const cut = page.locator(".tb-cut", { hasText: session });
+    await expect(cut).toHaveCount(1);
+    // taken back off, so the fixtures install again over this record
+    await cut.locator(".pl-btn").click();
+    await expect(cut).toHaveCount(0);
   });
 });
 

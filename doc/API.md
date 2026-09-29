@@ -14,7 +14,7 @@ same rule in its own words. Another user's resource returns 404.
 | `POST /chat` | `{statement}` into the family's current sitting: the session last spoken in, or a new one once its last statement is 12 hours old |
 | `GET /statements` | the family's one thread across its sessions, 50 statements at a time, oldest first; `?before=<statement id>` reads the page just older. Each carries `session_id`; a session's first statement carries `sitting: {id, started, previous_started}`, the last being when the sitting before it started, or null for the first |
 | `POST /sessions/<id>/statements` | `{statement}` into a named session |
-| `GET /sessions` | every session, most recently active first; `?words=` keeps those where something said carries every word, the coach's chat search, each with `match`, the newest line that does |
+| `GET /sessions` | the user's sessions on the family the app is on (`?diagram_id=` another readable one), most recently active first; `?all=true`, admins only (403 otherwise), is every session on every family, whoever had it, each with `family`, its family's name, which is what the meeting page puts one on the agenda from; `?words=` keeps those where something said carries every word, the coach's chat search, each with `match`, the newest line that does, chips shown as their words |
 | `POST /sessions` | new empty session, 201 |
 | `GET /sessions/<id>` | one session plus `statements: [{id, role, text}]`, role is `user` or `coach` |
 | `PATCH /sessions/<id>` | `{title}` only |

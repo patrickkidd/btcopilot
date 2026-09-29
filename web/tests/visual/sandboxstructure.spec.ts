@@ -139,9 +139,9 @@ test.describe(() => {
     // ── 3. the meeting with the same person ───────────────────────────────
     await page.goto(adminInvite, { waitUntil: "networkidle" });
     await page.waitForTimeout(1800);
-    await page.locator("#sessions-open").click();
+    await page.locator("#account").click();
     await page.waitForTimeout(900);
-    await page.locator(".fs-agenda").click();
+    await page.locator(".sn-pane.in .sn-row", { hasText: "Next meeting" }).click();
     await page.waitForTimeout(1600);
     await page.locator(".tb-meet").first().click();
     await page.waitForTimeout(2200);

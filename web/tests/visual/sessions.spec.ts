@@ -3,8 +3,8 @@ import { colours } from "./gate";
 import { flask, stateFor, username } from "./setup";
 
 /** The sheet's door beside the message box, and the sheet it raises. Only a
- * professional, a coder or Patrick has one, and no fixture is any of them, so
- * the door is shown here the way their bootstrap shows it. */
+ * professional or Patrick has one, and no fixture is either of them, so the
+ * door is shown here the way their bootstrap shows it. */
 
 const settle = async (page: Page) => {
   await page.goto("/app/");
@@ -246,6 +246,20 @@ test.describe("searching the sessions", () => {
     flask("admin", "run", "--", "users", "roles", username("sittings"), ...names, "--yes");
   test.beforeAll(() => roles("admin", "subscriber"));
   test.afterAll(() => roles("subscriber"));
+
+  // R-0259, R-0267
+  test("holds no way to coding, the meeting or the replies, and a row only renames or deletes", async ({
+    page,
+  }) => {
+    await page.goto("/app/");
+    await openSheet(page);
+    await expect(page.locator("#sessions-sheet .fs-foot button:visible")).toHaveCount(0);
+    const row = page.locator("#sessions-sheet .row").first();
+    await row.locator(".rsub").click();
+    await expect(page.locator("#cut-screen")).toBeHidden();
+    await row.locator(".rmore").click();
+    await expect(page.locator("#sessions-sheet .fs-act")).toHaveText(["Rename", "Delete"]);
+  });
 
   // R-0347
   test("finds a session by a word said only inside it", async ({ page }) => {

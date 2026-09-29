@@ -314,7 +314,8 @@ What it is for: your past conversations.
 - A button at the foot starts a new session, and refuses while the current one is still empty. [built]
 - With no sessions at all it says past conversations collect here. [built]
 - The sheet holds only the sessions of the family the app is on; the family is chosen on the account page, never in the sheet, and a personal user never sees the word case at all. [built] {R-0285, R-0347}
-- The three buttons at the foot are spaced apart. [built] {R-0347}
+- The buttons at the foot, a professional's upload and new note, are spaced apart. [built] {R-0347}
+- The sheet holds no way to coding, the meeting or picking the better reply, and a session row neither opens nor goes on the agenda; those live on the account page, since none of them hangs on the family the app is on. [built] {R-0259, R-0267}
 - Someone else's session is simply not found rather than refused, so the app never confirms a session it will not show you. [built]
 - The history in the review database is kept across code changes rather than reset. [built] {R-0191}
 - Existing diagrams and conversations made before this app must open in it as sessions; old training transcripts are kept out of the list. [built]
@@ -341,13 +342,15 @@ What it is for: you, your families, your plan, and signing out.
 - A button under each coach reply plays it again, the way the Claude Code mobile app has one. [built] {R-0521}
 - Which voice reads the replies is not settled: today it is your phone's own, which costs nothing, and a better-sounding paid one waits on Patrick. [open]
 - No other setting appears in two places. [built]
-- There is a row for how often the coach may message you first, and the line under it says what the chosen setting means: never unless you ask, or when it notices a pattern in your family's events or to follow up on something you agreed to, at most once a month or once a week. [built]
+- There is a row for how often the coach may message you first, and its choices read as a most, never a schedule: never, at most monthly, at most weekly. The line under it says never unless you ask, or never more than once a month (a week), and only when the coach notices a pattern in your family's events or follows up on something you agreed to. [built] {R-0004}
 - There is a row for light, dark or matching your phone. [built]
 - Your families are listed, with the number of sessions and when each was last used, and a tick on the one you are in. [built]
 - Tapping a family opens it, and one is open at a time. [built] {R-0175}
 - A search box appears in that list once you have six or more families. [built]
 - Licences and the plan are listed; nothing on that page implies a price yet. [built]
-- Auditors and admins see one more row, Concept pages, in a box of its own above Sign out; it opens the concept pages in a tab of their own, and nobody else sees it. [built] {R-0541, R-0567}
+- Auditors and admins see a Coding section above Sign out: Your coding task, which opens the one task card; Next meeting, for admins only, which opens the agenda; and Concept pages, which opens the concept pages in a tab of their own. [built] {R-0265, R-0259, R-0541, R-0567}
+- Admins also see a Quality section with one row, Better reply, over the line "Pick the better of two coach replies"; it opens the screen where two coach replies to the same words are picked blind. [built] {R-0599}
+- A plain subscriber or a professional sees neither section. [built] {R-0311}
 - Sign out sits alone at the bottom and signs you out immediately, with no confirmation step. [built]
 - Every icon button in the app is the same size: a forty-four point target with a forty point mark inside it. [built] {R-0234}
 
@@ -432,7 +435,7 @@ What it is for: saying what each line of a conversation tells you happened, so w
 @frame coding#f7 | Tapping Done asks once and explains that your coding will be saved and submitted for the meeting.
 
 - Coding is stage one of reaching agreement, and it is done blind: you never see anyone else's coding of that conversation until you press Done. [drawn] {R-0242, R-0250}
-- Only a user with the auditor role is a coder; a professional licence holder and a plain subscriber open on the chat and never see the task card, the coding task in the sessions sheet, the ballot or the meeting. [drawn] {R-0311}
+- Only a user with the auditor role is a coder; a professional licence holder and a plain subscriber open on the chat and never see the task card, the Coding section of the account page, the ballot or the meeting. [drawn] {R-0311}
 - You are given one task at a time and never a list to choose from. [drawn] {R-0265}
 - The task names the conversation, the point it is frozen at, how many turns are new since you last pressed Done, and roughly how long it will take. [drawn] {R-0267}
 - One green button starts it, and under it is a faint record of the tasks you have already finished. [drawn] {R-0265}
@@ -473,7 +476,8 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 @frame coding#f6 | After Done the next single card takes its place, greyed until Patrick opens the vote.
 @frame review#f10 | Patrick's screen: the date, what is on the agenda, who is done, the button that opens the vote, and the agenda that fills itself.
 
-- Patrick opens the sessions sheet like anyone else, swipes the conversation he wants, and taps to put it on the agenda. [drawn] {R-0267}
+- Patrick puts a conversation on the agenda from the meeting page, never from a session: "Put a session on the agenda" lists every session on every family, newest first, each with its family, its day and how many statements it holds, and a search box finds sessions by words said in them, showing the line that carries them. [built] {R-0267}
+- Tapping one opens it to place the cut, and placing the cut, or the back button, returns to the agenda. [built] {R-0267}
 - That opens the conversation so he can place the cut: the point everyone codes up to. [drawn] {R-0267}
 - The cut starts at the last turn, and tapping any line moves it there. [drawn] {R-0267}
 - The cut can never be moved back past the last point that was already ratified. [drawn] {R-0267}

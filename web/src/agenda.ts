@@ -2,13 +2,16 @@ import * as api from "./api";
 import { Feature, tap } from "./track";
 import { esc, type Title } from "./dom";
 import { toast } from "./toast";
-import { dayText, meetingTitle } from "./when";
+import { dayText, meetingTitle, rowDate } from "./when";
+import { sessionTitle } from "./search";
+import { sessionWhen } from "./sessions";
 import {
   CoderState,
   type NextMeeting,
   type CoderLine,
   type Cut,
   type Rule,
+  type Session,
 } from "./types";
 
 /** The agenda: the whole of Patrick's administration (R-0259, R-0267).
@@ -22,9 +25,8 @@ import {
  */
 
 export interface AgendaHandlers {
-  /** Put another conversation on the agenda: the sessions sheet opens. */
-  onAdd(): void;
-  /** Open one cut again to move its line. */
+  /** Place the cut on one conversation: one already on the agenda, to move
+   * its line, or one picked from every family's sessions, to put it on. */
   onPlace(discussionId: number): void;
   /** Run the meeting on what is on the agenda: decide the open items and
    * ratify (R-0250). */
@@ -36,12 +38,16 @@ export interface AgendaHandlers {
 }
 
 const CROSS = "&#10005;";
+const PICK_TITLE = "Pick a session";
 
 export class Agenda {
   private cuts: Cut[] = [];
   private ratified: Cut[] = [];
   private coders: CoderLine[] = [];
   private next: NextMeeting | null = null;
+  /** Whether the screen is the list a session is put on the agenda from,
+   * which the back button returns from to the agenda. */
+  picking = false;
 
   constructor(
     private body: HTMLElement,
@@ -49,9 +55,14 @@ export class Agenda {
   ) {
     this.body.addEventListener("click", (e) => void this.onClick(e));
     this.body.addEventListener("change", (e) => void this.onDate(e));
+    this.body.addEventListener("input", (e) => {
+      const field = (e.target as Element).closest<HTMLInputElement>(".tb-words");
+      if (field) void this.seek(field);
+    });
   }
 
   async load(): Promise<void> {
+    this.picking = false;
     const [cuts, coders, next, every] = await Promise.all([
       api.onAgenda(),
       api.coders(),
@@ -116,7 +127,13 @@ export class Agenda {
     }
     if (target.closest(".tb-add")) {
       tap(Feature.AgendaAdd);
-      this.handlers.onAdd();
+      await this.pick();
+      return;
+    }
+    const picked = target.closest<HTMLElement>(".tb-pick");
+    if (picked) {
+      tap(Feature.SessionToAgenda);
+      this.handlers.onPlace(Number(picked.dataset.discussion));
       return;
     }
     if (target.closest(".tb-nudge")) {
@@ -195,7 +212,7 @@ export class Agenda {
       (this.cuts.length
         ? this.cuts.map((cut) => this.cutRow(cut)).join("")
         : `<div class="none">Nothing is on the agenda yet.</div>`) +
-      `<button class="nudge tb-add" type="button">+ put another on the agenda</button>` +
+      `<button class="nudge tb-add" type="button">Put a session on the agenda</button>` +
       this.results() +
       `<div class="sn-hd">Coders</div>` +
       this.coders.map((one) => this.coderRow(one)).join("") +
@@ -247,6 +264,44 @@ export class Agenda {
           `run the meeting</button>`,
       )
       .join("");
+  }
+
+  /** Every session on every family, newest first, to put one on the agenda;
+   * the words typed keep those where something said carries them. */
+  private async pick(): Promise<void> {
+    this.picking = true;
+    this.handlers.onTitle(PICK_TITLE);
+    this.body.innerHTML =
+      `<div class="sn-srch"><input class="tb-words" type="search" ` +
+      `placeholder="Search what was said" aria-label="Search what was said"></div>` +
+      `<div class="tb-found"></div>`;
+    await this.seek(this.body.querySelector<HTMLInputElement>(".tb-words")!);
+  }
+
+  /** An answer for words since typed over, or for a list since left, is
+   * dropped. */
+  private async seek(field: HTMLInputElement): Promise<void> {
+    const words = field.value;
+    const found = await api.allSessions(words);
+    if (words === field.value && field.isConnected) this.list(found, words);
+  }
+
+  private list(found: Session[], words: string): void {
+    const now = new Date();
+    this.body.querySelector(".tb-found")!.innerHTML = found.length
+      ? found
+          .map(
+            (session) =>
+              `<div class="sn-row push tb-pick" data-discussion="${session.id}">` +
+              `<div class="sn-m"><div class="sn-t">${esc(sessionTitle(session))}</div>` +
+              `<div class="sn-s">${esc(session.family ?? "")} · ` +
+              `${rowDate(sessionWhen(session), now)} · ${session.message_count} ` +
+              `statement${session.message_count === 1 ? "" : "s"}</div>` +
+              (session.match ? `<div class="sn-s">${esc(session.match)}</div>` : "") +
+              `</div></div>`,
+          )
+          .join("")
+      : `<div class="none">${words.trim() ? "No session matches." : "No sessions yet."}</div>`;
   }
 
   private nudged(): string {

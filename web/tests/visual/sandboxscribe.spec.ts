@@ -42,9 +42,9 @@ test.describe(() => {
       if ((await open.count()) && (await open.isEnabled())) await open.click();
       await page.waitForTimeout(2500);
     } else {
-      await page.locator("#sessions-open").click();
+      await page.locator("#account").click();
       await page.waitForTimeout(800);
-      const card = page.locator(".fs-task").first();
+      const card = page.locator(".sn-pane.in .sn-row", { hasText: "Your coding task" });
       say(`the card says: ${(await card.innerText()).replace(/\s+/g, " ")}`);
       await card.click();
       await page.waitForTimeout(2000);

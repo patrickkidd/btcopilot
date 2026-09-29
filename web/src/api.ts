@@ -289,6 +289,12 @@ export const sessionSearch = (diagramId: number, words: string) =>
     `${onDiagram("/sessions", diagramId)}&words=${encodeURIComponent(words)}`,
   );
 
+/** Every session on every family, each with its family's name, and on a
+ * search only those where something said carries every word. Patrick's, to put
+ * one on the agenda from the meeting page. */
+export const allSessions = (words: string) =>
+  call<Session[]>("GET", `/sessions?all=true&words=${encodeURIComponent(words)}`);
+
 export const newSession = (kind?: SessionKind) =>
   call<Session>("POST", "/sessions", kind ? { kind } : {});
 
