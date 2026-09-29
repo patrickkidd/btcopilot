@@ -81,12 +81,14 @@ test.describe("the question that closes a reply", () => {
   });
 });
 
-test.describe("the message box", () => {
-  test.use({ storageState: stateFor("moves") });
+test.describe("the message box on a touch screen", () => {
+  test.use({ storageState: stateFor("moves"), hasTouch: true });
 
   /** Type two lines with Return between them; the bubbles there were before,
    * and what was POSTed meanwhile. */
   const twoLines = async (page: import("@playwright/test").Page) => {
+    // a phone that already answered the add-to-home-screen card
+    await page.addInitScript(() => localStorage.setItem("fd-home-screen-asked", String(Date.now())));
     await page.goto("/app/");
     await expect(page.locator(".bub").first()).toBeVisible();
     const bubbles = await page.locator(".bub").count();
