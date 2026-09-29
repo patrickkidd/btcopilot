@@ -54,6 +54,16 @@ once at /root/.docker/cli-plugins/docker-rollout (github.com/wowu/docker-rollout
 Before its upgrade the deploy moves a database at the old head `1a00000000af` to it (from
 `1a00000000ae` it adds the one missing column first); any other old revision stops the deploy.
 
+**The landing page's keys (R-0601).** The page at `/` needs `FLASK_TURNSTILE_SITE_KEY` and
+`FLASK_TURNSTILE_SECRET_KEY` in `/etc/fd/secrets.env`, the two keys of a Turnstile widget created
+in the Cloudflare dashboard for familydiagram.com. Without them the page shows but its two forms
+refuse every post. Beta requests go to `FLASK_ADMIN_EMAIL`.
+
+**A changed Caddyfile needs the Caddy container restarted**, not reloaded: the file is a
+single-file bind mount, which keeps the old file after a pull replaces it. The release
+workflow's deploy does this itself whenever the Caddyfile changed; by hand it is
+`docker compose --env-file /etc/fd/secrets.env restart fd-caddy`.
+
 ## Rolling back
 
 `release.yml` cannot do it: the production environment only takes a dispatch from the
