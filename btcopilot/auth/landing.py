@@ -89,13 +89,10 @@ def signin_link():
         Invitation.email == email, Invitation.created_at >= window
     ).count()
     if issued >= current_app.config["LOGIN_CODES_PER_HOUR"]:
+        # The same words as every other case, so the cap never shows which
+        # addresses are invited.
         _log.warning(f"Sign-in link rate limit hit for {email}")
-        return page(
-            429,
-            where="link",
-            link_email=email,
-            error="Too many links requested. Try again in an hour.",
-        )
+        return page(link_sent=True)
 
     invitation = Invitation.issue(email, current_app.config["LANDING_LINK_DAYS"])
     base = current_app.config["SITE_URL"].rstrip("/")
@@ -105,9 +102,10 @@ def signin_link():
 
 @bp.route("/beta-request", methods=("POST",))
 def beta_request():
-    # A name goes into the mail's subject line, so it is kept to one line.
-    name = " ".join(request.form.get("name", "").split())[:200]
-    email = request.form.get("email", "").strip().lower()[:255]
+    raw_name = request.form.get("name", "")
+    raw_email = request.form.get("email", "")
+    name = raw_name.strip()[:200]
+    email = raw_email.strip().lower()[:255]
     words = request.form.get("words", "").strip()[:WORDS_LIMIT]
     kept = {"beta_name": name, "beta_email": email, "beta_words": words}
     refused = _refused("beta", **kept)
@@ -115,10 +113,30 @@ def beta_request():
         return refused
     if not name or not email:
         return page(400, where="beta", error="Enter your name and your email.", **kept)
-    if "@" not in email:
+    # The name goes into the mail's subject and the address into its reply-to
+    # header, where a line break is refused by the mailer.
+    if any(c in raw_name + raw_email for c in "\r\n"):
         return page(
-            400, where="beta", error="That email address is not complete.", **kept
+            400,
+            where="beta",
+            error="Put your name and your email on one line each.",
+            **kept,
+        )
+    if not _looks_like_email(email):
+        return page(
+            400, where="beta", error="That email address does not look right.", **kept
         )
 
     emails.send_beta_request(name, email, words)
     return page(beta_sent=True)
+
+
+def _looks_like_email(email: str) -> bool:
+    local, at, domain = email.partition("@")
+    return bool(
+        at
+        and local
+        and domain
+        and "@" not in domain
+        and not any(c.isspace() for c in email)
+    )

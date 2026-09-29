@@ -14,7 +14,7 @@ from btcopilot.extensions import db
 from btcopilot.models import User
 from btcopilot.tests.test_passwordless import INVITED, browser, token  # noqa: F401
 
-ASKER = "asker@example.com"
+ASKER = "test@example.com"
 SENT = "If that address has been invited, a sign-in link is on its way. It lasts one day."
 THANKS = "Thanks. You are on the list and will hear from us when a spot opens."
 
@@ -71,6 +71,10 @@ def test_a_visitor_sees_the_landing_page(flask_app, browser, keyed):
     assert html.count('data-sitekey="site-key-for-tests"') == 2
     assert html.count("turnstile/v0/api.js") == 1
     assert "!" not in text
+    assert '<link rel="icon" type="image/png" href="/app/afs-logo.png"' in html
+    assert "/app/theory" not in html
+    assert '<meta name="theme-color" content="#f6f6fb"' in html
+    assert '<meta name="theme-color" content="#16152a"' in html
 
 
 def test_an_invited_address_gets_a_link_that_signs_in(flask_app, browser, keyed):
@@ -109,7 +113,7 @@ def test_an_unknown_address_is_told_the_same_and_sent_nothing(browser, keyed):
     assert Invitation.query.count() == 0
 
 
-def test_links_are_capped_each_hour(flask_app, browser, keyed):
+def test_links_are_capped_each_hour_without_saying_so(flask_app, browser, keyed):
     # R-0601
     old = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
     old.created_at = datetime.datetime.utcnow() - datetime.timedelta(hours=2)
@@ -120,9 +124,10 @@ def test_links_are_capped_each_hour(flask_app, browser, keyed):
     assert [len(outbox) for outbox in sent] == [1] * cap
 
     response, outbox = ask_for_link(browser, INVITED)
-    assert response.status_code == 429
-    assert "Too many links requested. Try again in an hour." in seen(response)
+    assert response.status_code == 200
+    assert SENT in seen(response)
     assert outbox == []
+    assert Invitation.query.count() == cap + 1
 
 
 @pytest.mark.parametrize("form", ["link", "beta"])
@@ -165,6 +170,31 @@ def test_a_long_beta_request_is_cut_to_its_limit(browser, keyed):
     _, outbox = ask_to_join(browser, name="Sam Tester", email=ASKER, words="x" * 5000)
     assert "x" * landing.WORDS_LIMIT in outbox[0].body
     assert "x" * (landing.WORDS_LIMIT + 1) not in outbox[0].body
+
+
+@pytest.mark.parametrize(
+    "name, email",
+    [
+        ("Sam Tester", "test@example.com\nBcc: test@example.com"),
+        ("Sam Tester", "test@example.com\r"),
+        ("Sam\r\nTester", ASKER),
+        ("Sam Tester", "test @example.com"),
+        ("Sam Tester", "test@@example.com"),
+        ("Sam Tester", "@example.com"),
+    ],
+)
+def test_a_beta_request_with_a_broken_name_or_email_is_refused(
+    browser, keyed, name, email
+):
+    # R-0601
+    response, outbox = ask_to_join(browser, name=name, email=email)
+    assert response.status_code == 400
+    text = seen(response)
+    assert (
+        "Put your name and your email on one line each." in text
+        or "That email address does not look right." in text
+    )
+    assert outbox == []
 
 
 @pytest.mark.parametrize("missing", ["name", "email"])

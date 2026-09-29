@@ -1,22 +1,34 @@
 <!doctype html>
 <html lang="en">
   <head>
+    {% set theme_colors = ("#f6f6fb", "#16152a") %}
     {% include "head.html" %}
+    <link rel="icon" type="image/png" href="{{ url_for('auth.logo') }}" />
     <meta name="description" content="Family Diagram 3, an AI chat-first app from Alaska Family Systems. Beta access is by invitation." />
     <title>Family Diagram</title>
     {% if site_key %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endif %}
     <style>
       /* The page's own colours, matched to the Alaska Family Systems logo. */
       :root {
+        --bg: #f6f6fb;
+        --panel: #fff;
+        --ink: #221f3d;
+        --faint: #5f5b7c;
+        --line: #dcdaea;
         --accent: #675aa7;
         --blue: #76b4cf;
         --ring: rgba(103, 90, 167, 0.16);
         --onaccent: #fff;
         /* The purple words under the logo's mark need a light ground to be read. */
-        --logo-ground: #f7f6f2;
+        --logo-ground: #f6f6fb;
       }
       @media (prefers-color-scheme: dark) {
         :root {
+          --bg: #16152a;
+          --panel: #1f1d38;
+          --ink: #e8e6f5;
+          --faint: #a09cc2;
+          --line: #37345c;
           --accent: #9b8fd6;
           --blue: #8fc8de;
           --ring: rgba(155, 143, 214, 0.22);
@@ -141,7 +153,6 @@
 
       <footer>
         <span>© {{ year }} Alaska Family Systems</span>
-        <a href="{{ url_for('app.theory_index') }}">Concept pages</a>
       </footer>
     </main>
     <script>
