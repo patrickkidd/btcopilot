@@ -354,3 +354,24 @@ test.describe("a reply the page could not draw", () => {
     expect(sent[0].postDataJSON().frames[0]).toContain("/app/static/web/");
   });
 });
+
+test.describe("the worker", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  // R-0056
+  test("that will not start raises the bug sheet with the browser's words", async ({ page }) => {
+    // the browser fetches the worker's script past the page's routes, so its
+    // refusal is the browser's own words, as it gives them
+    await page.addInitScript(() => {
+      navigator.serviceWorker.register = () =>
+        Promise.reject(
+          new TypeError(
+            "Failed to register a ServiceWorker: A bad HTTP response code (404) was received when fetching the script.",
+          ),
+        );
+    });
+    await settle(page);
+    await expect(heading(page)).toHaveText("Something went wrong");
+    await expect(sheet(page).locator(".rp-row").first().locator(".rp-v")).toContainText("ServiceWorker");
+  });
+});

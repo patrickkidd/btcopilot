@@ -1858,13 +1858,17 @@ void load().then(async () => {
   .then(() => landing(land));
 
 // The dev server too: push needs the worker, and the worker asks the network
-// first, so a saved edit still reaches the page.
+// first, so a saved edit still reaches the page. A worker that will not start
+// is a bug, unless the phone is offline.
 if ("serviceWorker" in navigator)
   window.addEventListener("load", () =>
-    navigator.serviceWorker.register(
-      `/app/sw.js?release=${encodeURIComponent(window.BOOTSTRAP.version)}`,
-      { scope: "/app/" },
-    ),
+    navigator.serviceWorker
+      .register(`/app/sw.js?release=${encodeURIComponent(window.BOOTSTRAP.version)}`, {
+        scope: "/app/",
+      })
+      .catch((error) => {
+        if (navigator.onLine) pageBroke(error, String(error));
+      }),
   );
 
 // A coder opens on their one task rather than on the chat (R-0265, frame f1),
