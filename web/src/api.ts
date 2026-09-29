@@ -335,6 +335,10 @@ export const renameSession = (id: number, title: string) =>
 /** A bug or feedback the person chose to send (R-0056). */
 export const report = (body: Report) => call<{ id: number }>("POST", "/reports", body);
 
+/** A sent bug's repeats, added to its count as the page goes: with keepalive,
+ * as the product events are, so they still land as the page hides. */
+export const repeated = (body: Report) => send<{ id: number }>("POST", REPORTS, body, true);
+
 export const preferences = () => call<Preferences>("GET", "/preferences");
 
 export const setPreferences = (body: Partial<Preferences>) =>

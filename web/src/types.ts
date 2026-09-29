@@ -578,6 +578,8 @@ export interface Report {
   /** The error's stack, only the frames in the app's own scripts. */
   frames?: string[];
   request_id?: string;
+  /** How many times it happened, when more than once. */
+  count?: number;
   /** The person's own words, which the coach offered to send. */
   words?: string;
 }

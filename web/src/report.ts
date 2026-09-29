@@ -16,6 +16,12 @@ export const SENT_MS = 10_000;
 /** The sitting the coach last offered to send the person's words in: one
  * offer a sitting, even across a reload. */
 const OFFERED = "reports.offered";
+/** At most this many bug sheets come up on one page load. */
+export const SHEETS = 3;
+/** The bugs this device sent in this release, by what each is raised once
+ * by, so one sent before a reload is counted rather than asked about again.
+ * Kept on the device only as a convenience. */
+const SENT = "reports.sent";
 
 enum Act {
   Send = "send",
@@ -34,6 +40,8 @@ interface Raised {
   list: List;
   /** Something that broke, rather than words the coach heard. */
   broke: boolean;
+  /** What a bug is raised once by. */
+  key: string | null;
 }
 
 const button = (act: Act, words: string, primary = false, off = false) =>
@@ -52,6 +60,12 @@ export class Reports {
   private at: Raised | null = null;
   private waiting: Raised[] = [];
   private closing = 0;
+  /** Bug sheets raised on this page load. */
+  private sheets = 0;
+  /** Bugs sent in this release, by their key. */
+  private sent: Record<string, Report>;
+  /** Repeats of a bug held back since the page last said how many. */
+  private repeats = new Map<string, number>();
   /** A bug goes without asking once the person has chosen Always send. */
   always = false;
 
@@ -69,6 +83,16 @@ export class Reports {
       const act = (e.target as Element).closest<HTMLElement>("[data-act]")?.dataset.act;
       if (act) void this.answer(act as Act);
     });
+    const kept = JSON.parse(window.localStorage.getItem(SENT) ?? "null") as {
+      release: string;
+      reports: Record<string, Report>;
+    } | null;
+    this.sent = kept?.release === window.BOOTSTRAP.version ? kept.reports : {};
+    // the repeats go as the page goes, as the product events do
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") this.tally();
+    });
+    window.addEventListener("pagehide", () => this.tally());
   }
 
   /** A turn failed with this error, raised once per error. The server kept
@@ -111,9 +135,9 @@ export class Reports {
   offer(kind: ReportKind, words: string, turnId: string, statementId: number, sitting: number): void {
     if (Number(window.localStorage.getItem(OFFERED)) === sitting) return;
     window.localStorage.setItem(OFFERED, String(sitting));
-    const report = { ...this.sent(kind), turn_id: turnId, statement_id: statementId, words };
+    const report = { ...this.common(kind), turn_id: turnId, statement_id: statementId, words };
     if (kind === ReportKind.Bug) report.source = ReportSource.Page;
-    this.queue({ report, list: [["", words]], broke: false });
+    this.queue({ report, list: [["", words]], broke: false, key: null });
   }
 
   /** The message box is empty again: a bug that waited on it comes up. */
@@ -122,24 +146,45 @@ export class Reports {
   }
 
   /** What every report from this page carries. */
-  private sent(kind: ReportKind): Report {
+  private common(kind: ReportKind): Report {
     return { kind, status: ReportStatus.Sent, release: window.BOOTSTRAP.version, address: location.pathname };
   }
 
   /** What a bug this page caught carries. */
   private caught(): Report {
-    return { ...this.sent(ReportKind.Bug), source: ReportSource.Page };
+    return { ...this.common(ReportKind.Bug), source: ReportSource.Page };
   }
 
+  /** Raised once a page, and never again for one this device sent in this
+   * release: a repeat is only counted. */
   private broke(key: string, report: Report | null, list: List): void {
-    if (this.faults.first(key)) this.queue({ report, list, broke: true });
+    if (this.faults.first(key) && !(key in this.sent)) this.queue({ report, list, broke: true, key });
+    else this.repeats.set(key, (this.repeats.get(key) ?? 0) + 1);
+  }
+
+  /** Each sent bug's repeats since the last time, added to its count; not a
+   * request the server broke on, which the server counts itself. */
+  private tally(): void {
+    for (const [key, count] of this.repeats) {
+      const report = this.sent[key];
+      if (report && !report.request_id) void api.repeated({ ...report, count });
+    }
+    this.repeats.clear();
+  }
+
+  private remember({ key, report }: Raised): void {
+    if (!key || !report) return;
+    this.sent[key] = report;
+    window.localStorage.setItem(SENT, JSON.stringify({ release: window.BOOTSTRAP.version, reports: this.sent }));
   }
 
   /** One sheet at a time: the rest wait their turn, and a bug waits while the
    * person is writing. A bug goes with no sheet and no card once the person
    * chose Always send. */
   private queue(raised: Raised): void {
-    if (raised.broke && this.always) void this.quietly(raised.report);
+    if (raised.broke && this.always) void this.quietly(raised);
+    // past the few a page, a bug is left in the console where the browser put it
+    else if (raised.broke && this.sheets >= SHEETS) return;
     else if (this.at === null && !(raised.broke && this.drafting())) this.raise(raised);
     else this.waiting.push(raised);
   }
@@ -150,15 +195,17 @@ export class Reports {
 
   private raise(raised: Raised): void {
     this.at = raised;
+    if (raised.broke) this.sheets += 1;
     this.ask(raised);
     dragScroll(this.sheet.panel.querySelector<HTMLElement>(".rp-list")!);
   }
 
   /** Sent with nothing on screen: one that could not be sent is only logged. */
-  private async quietly(report: Report | null): Promise<void> {
-    if (!report) return;
+  private async quietly(raised: Raised): Promise<void> {
+    if (!raised.report) return;
     try {
-      await api.report(report);
+      await api.report(raised.report);
+      this.remember(raised);
     } catch (error) {
       console.warn(api.whatFailed(error, (words) => words));
     }
@@ -187,29 +234,31 @@ export class Reports {
   }
 
   private async answer(act: Act): Promise<void> {
-    const { report } = this.at!;
+    const raised = this.at!;
     if (act === Act.Ok) return this.next();
     if (act === Act.Not) {
       // turned down, the offer keeps only where it was, never the words
-      void this.quietly({ ...report!, status: ReportStatus.Declined, words: undefined });
+      const declined = { ...raised.report!, status: ReportStatus.Declined, words: undefined };
+      void this.quietly({ ...raised, report: declined });
       return this.next();
     }
     for (const one of this.sheet.panel.querySelectorAll("button")) one.disabled = true;
     if (act === Act.Always) {
       this.always = true;
       await this.alwaysSend();
-      await this.quietly(report);
+      await this.quietly(raised);
       return this.next();
     }
-    await this.send(report);
+    await this.send(raised);
   }
 
   /** Sent, the sheet says so in place of what it asked. A report that could
    * not be sent says why, and is not tried again. */
-  private async send(report: Report | null): Promise<void> {
+  private async send(raised: Raised): Promise<void> {
     let said: string;
     try {
-      if (report) await api.report(report);
+      if (raised.report) await api.report(raised.report);
+      this.remember(raised);
       said = `<div class="cf-t">Your report was sent</div>`;
     } catch (error) {
       const why = api.whatFailed(error, (words) => words);

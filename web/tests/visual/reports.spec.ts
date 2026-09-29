@@ -368,6 +368,35 @@ test.describe("the page breaking", () => {
   });
 });
 
+test.describe("many bugs", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  // R-0056
+  test("come up at most three a page, and one sent before is only counted, as the page goes", async ({ page }) => {
+    await settle(page);
+    const sent = posted(page);
+    for (const n of [1, 2, 3, 4]) await throws(page, `x${n} is undefined`);
+    for (const n of [1, 2, 3]) {
+      await expect(sheet(page).locator(".rp-row").first().locator(".rp-v")).toHaveText(`TypeError: x${n} is undefined`);
+      await sheet(page).getByRole("button", { name: "Send the report" }).click();
+      await sheet(page).getByRole("button", { name: "OK" }).click();
+    }
+    await expect(sheet(page)).toBeHidden();
+    expect(sent.map((r) => r.postDataJSON().error)).toEqual([1, 2, 3].map((n) => `TypeError: x${n} is undefined`));
+
+    await page.reload();
+    await expect(page.locator("#view .ss")).toBeVisible();
+    await throws(page, "x1 is undefined");
+    await throws(page, "x1 is undefined");
+    await page.waitForTimeout(400);
+    await expect(sheet(page)).toBeHidden();
+    await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+    await expect.poll(() => sent.length).toBe(4);
+    expect(sent[3].postDataJSON()).toMatchObject({ error: "TypeError: x1 is undefined", count: 2 });
+    expect((await sent[3].response())!.status()).toBe(201);
+  });
+});
+
 test.describe("a bug while the person is writing", () => {
   test.use({ storageState: stateFor("moves") });
 
