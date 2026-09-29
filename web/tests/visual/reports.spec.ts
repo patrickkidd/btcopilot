@@ -61,6 +61,17 @@ const breaks = async (page: Page, message: string) => {
   );
 };
 
+/** An error thrown from the app's own bundle, as its stack names it; off a
+ * microtask, since the installed clock catches what a timer throws. */
+const throws = (page: Page, message: string) =>
+  page.evaluate((message) => {
+    queueMicrotask(() => {
+      const error = new TypeError(message);
+      error.stack = `TypeError: ${message}\n    at draw (${location.origin}/app/static/web/assets/index.js:1:52301)`;
+      throw error;
+    });
+  }, message);
+
 const answer = (page: Page, prefs: Record<string, string>) =>
   page.evaluate(async (body) => {
     const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')!.content;
@@ -73,10 +84,9 @@ const answer = (page: Page, prefs: Record<string, string>) =>
 
 test.describe("a coach turn that breaks", () => {
   test.use({ storageState: stateFor("moves") });
-  test.afterEach(({ page }) => answer(page, { bug_reports: "ask" }));
 
   // R-0056, R-0182
-  test("raises the bug sheet over the thread, which Send turns into the card saying it was sent", async ({ page }) => {
+  test("raises the bug sheet over the thread, which Send turns into the card saying it was sent, posting nothing more", async ({ page }) => {
     await settle(page);
     const sent = posted(page);
     await breaks(page, "The coach could not answer");
@@ -87,9 +97,9 @@ test.describe("a coach turn that breaks", () => {
     await expect(page.locator(".sys.warn")).toBeVisible();
     expect(await page.locator("#chat").evaluate((chat) => chat.closest("[inert]") !== null)).toBe(true);
     const rows = sheet(page).locator(".rp-row");
-    await expect(rows.locator(".rp-l")).toHaveText(["The error", "The app version"]);
+    await expect(rows.locator(".rp-l")).toHaveText(["The error", "The reply that failed", "The app version"]);
     const version = await page.evaluate(() => window.BOOTSTRAP.version);
-    await expect(rows.locator(".rp-v")).toHaveText(["The coach could not answer", version]);
+    await expect(rows.locator(".rp-v")).toHaveText(["The coach could not answer", "broke1", version]);
     await expect(sheet(page).getByRole("button", { name: "Don't send" })).toBeDisabled();
     await expect(sheet(page).getByText("Disabled during the beta")).toBeVisible();
     const before = await thread(page);
@@ -97,17 +107,8 @@ test.describe("a coach turn that breaks", () => {
     await sheet(page).getByRole("button", { name: "Send the report" }).click();
     await expect(heading(page)).toHaveText("Your report was sent");
     await expect(sheet(page).getByRole("button", { name: "OK" })).toBeVisible();
-    expect(sent).toHaveLength(1);
-    expect(sent[0].postDataJSON()).toEqual({
-      kind: "bug",
-      status: "sent",
-      source: "page",
-      release: version,
-      address: new URL(page.url()).pathname,
-      turn_id: "broke1",
-      error: "The coach could not answer",
-    });
-    expect((await sent[0].response())!.status()).toBe(201);
+    // the server kept the failure under the turn when it happened
+    expect(sent).toHaveLength(0);
 
     await sentOut(page);
     await expect(sheet(page)).toBeHidden();
@@ -117,26 +118,28 @@ test.describe("a coach turn that breaks", () => {
     await expect(page.locator(".sys.warn")).toBeVisible();
     await expect(sheet(page)).toBeHidden();
   });
+});
+
+test.describe("Always send", () => {
+  test.use({ storageState: stateFor("moves") });
+  test.afterEach(({ page }) => answer(page, { bug_reports: "ask" }));
 
   // R-0056
-  test("sends with no sheet once the person chose Always send, and only says it was sent", async ({ page }) => {
+  test("sends with no sheet once the person chose it, and only says it was sent", async ({ page }) => {
     await settle(page);
     const sent = posted(page);
-    await breaks(page, "The coach could not answer");
-    await say(page, "My dad moved out.");
+    await throws(page, "x is undefined");
     await sheet(page).getByRole("button", { name: "Always send" }).click();
     await expect(heading(page)).toHaveText("Your report was sent");
     await sheet(page).getByRole("button", { name: "OK" }).click();
     await expect(sheet(page)).toBeHidden();
 
-    await breaks(page, "The model timed out");
-    await say(page, "And my mum got ill.");
+    await throws(page, "y is undefined");
     await expect(heading(page)).toHaveText("Your report was sent");
     await expect(sheet(page).getByRole("button", { name: "Send the report" })).toHaveCount(0);
-    expect(sent.map((r) => r.postDataJSON().error)).toEqual([
-      "The coach could not answer",
-      "The model timed out",
-    ]);
+    await expect
+      .poll(() => sent.map((r) => r.postDataJSON().error))
+      .toEqual(["TypeError: x is undefined", "TypeError: y is undefined"]);
     await sentOut(page);
     await expect(sheet(page)).toBeHidden();
   });
@@ -275,17 +278,6 @@ test.describe("the server breaking", () => {
 
 test.describe("the page breaking", () => {
   test.use({ storageState: stateFor("moves") });
-
-  /** An error thrown from the app's own bundle, as its stack names it; off a
-   * microtask, since the installed clock catches what a timer throws. */
-  const throws = (page: Page, message: string) =>
-    page.evaluate((message) => {
-      queueMicrotask(() => {
-        const error = new TypeError(message);
-        error.stack = `TypeError: ${message}\n    at draw (${location.origin}/app/static/web/assets/index.js:1:52301)`;
-        throw error;
-      });
-    }, message);
 
   // R-0056
   test("names the screen and the newest message, never the person's words", async ({ page }) => {

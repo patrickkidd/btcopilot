@@ -1211,7 +1211,7 @@ function follow(turnId: string): void {
           stopped = { turn: turnId, bubble: bubble.bubble };
         }
         chat.warn(message, () => void resume(turnId));
-        reports.bug(message, turnId);
+        reports.turn(message, turnId);
       }),
     refused: (message) =>
       step(() => {

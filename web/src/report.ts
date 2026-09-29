@@ -26,7 +26,8 @@ type List = [string, string][];
 
 /** A report on its way up, with the list of what it sends. */
 interface Raised {
-  report: Report;
+  /** Null for a turn that failed, which the server already keeps. */
+  report: Report | null;
   list: List;
   /** Something that broke, rather than words the coach heard. */
   broke: boolean;
@@ -67,10 +68,13 @@ export class Reports {
     });
   }
 
-  /** A turn broke with this error; the same error is raised once. */
-  bug(error: string, turnId: string): void {
-    this.broke(error, { ...this.caught(), turn_id: turnId, error }, [
+  /** A turn failed with this error, raised once per error. The server kept
+   * the failure under the turn when it happened, so sending it posts nothing
+   * more: the report is that turn. */
+  turn(error: string, turnId: string): void {
+    this.broke(error, null, [
       ["The error", error],
+      ["The reply that failed", turnId],
       ["The app version", window.BOOTSTRAP.version],
     ]);
   }
@@ -117,7 +121,7 @@ export class Reports {
     return { ...this.sent(ReportKind.Bug), source: ReportSource.Page };
   }
 
-  private broke(key: string, report: Report, list: List): void {
+  private broke(key: string, report: Report | null, list: List): void {
     if (this.faults.first(key)) this.queue({ report, list, broke: true });
   }
 
@@ -153,7 +157,7 @@ export class Reports {
       );
     else
       this.sheet.show(
-        `<div class="cf-t">${HEADING[report.kind]}</div>` +
+        `<div class="cf-t">${HEADING[report!.kind]}</div>` +
           `<div class="rp-list"><div class="rp-v">${esc(list[0][1])}</div></div>` +
           `<div class="cf-btns">` +
           button(Act.Send, "Send the report", true) +
@@ -176,10 +180,10 @@ export class Reports {
 
   /** Sent, the sheet says so in place of what it asked. A report that could
    * not be sent says why, and is not tried again. */
-  private async send(report: Report): Promise<void> {
+  private async send(report: Report | null): Promise<void> {
     let said: string;
     try {
-      await api.report(report);
+      if (report) await api.report(report);
       said = `<div class="cf-t">Your report was sent</div>`;
     } catch (error) {
       const why = api.whatFailed(error, (words) => words);
