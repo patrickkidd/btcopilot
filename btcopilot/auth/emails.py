@@ -5,6 +5,7 @@ from flask_mail import Message
 
 import btcopilot
 from btcopilot import extensions
+from btcopilot.config import Config
 from btcopilot.models import User
 
 _log = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ def _deliver(recipient: str, subject: str, body: str):
     """A development server with no mail server configured writes the link or
     the code to the log instead, so a sandbox can be driven without one."""
     config = current_app.config
-    if config["CONFIG"] == "development" and "MAIL_SERVER" not in config:
+    if config["CONFIG"] == Config.Development and "MAIL_SERVER" not in config:
         _log.warning(f"[dev mail] {recipient} — {subject}\n{body}")
         return
     message = Message(

@@ -114,11 +114,6 @@ def theory(flask_app, github):
     return github
 
 
-@pytest.fixture(autouse=True)
-def no_auto_auth(monkeypatch):
-    monkeypatch.delenv("FLASK_AUTO_AUTH_USER", raising=False)
-
-
 @pytest.fixture
 def coder(web):
     web.user.roles = btcopilot.ROLE_AUDITOR

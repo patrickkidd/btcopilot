@@ -21,11 +21,6 @@ from btcopilot.case import Tool
 from btcopilot.tests.conftest import Model, called, csrf_token, replied, said
 
 
-@pytest.fixture(autouse=True)
-def no_auto_auth(monkeypatch):
-    monkeypatch.delenv("FLASK_AUTO_AUTH_USER", raising=False)
-
-
 def test_health_reports_the_version(flask_app):
     # R-0419
     assert flask_app.test_client().get("/health").get_data(as_text=True) == btcopilot.__version__

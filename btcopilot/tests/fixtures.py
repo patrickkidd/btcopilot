@@ -177,6 +177,9 @@ def make_app(request, tmp_path, tables=None):
         "VAPID_PRIVATE_KEY": private,
         "VAPID_SUBJECT": "mailto:test@example.com",
     }
+    # A test parametrizes flask_app indirectly to build the app under another
+    # config, since some routes are made only under one.
+    kwargs.update(getattr(request, "param", {}))
 
     app = create_app(config=kwargs)
     app.instance_path = str(tmp_path)

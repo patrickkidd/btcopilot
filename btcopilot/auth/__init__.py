@@ -1,16 +1,16 @@
-import os
 import sys
 import logging
 from typing import Union
 
-from flask import g, request, session, redirect, url_for
+from flask import current_app, g, request, session, redirect, url_for
 from werkzeug.exceptions import HTTPException
 
+from btcopilot.config import Config
 from btcopilot.models import User
 from btcopilot.auth import routes
 from btcopilot.auth.blueprint import bp
 from btcopilot.auth.longsessions import LongSessions
-from btcopilot.auth.signin import SESSION_TOKEN
+from btcopilot.auth.signin import SESSION_TOKEN, sign_in
 from btcopilot.auth.websession import WebSession
 
 
@@ -27,12 +27,17 @@ CONFIG_DEFAULTS = {
     # and devices until it expires; production links are used once.
     "INVITATION_REUSABLE": False,
     "SITE_URL": "http://127.0.0.1:8888",
+    # A development stack may name one account that every request without a
+    # session is signed in as, so a home-screen app needs no code.
+    "DEV_AUTOLOGIN": None,
 }
 
 
 def init_app(app):
     for key, value in CONFIG_DEFAULTS.items():
         app.config.setdefault(key, value)
+    if app.config["DEV_AUTOLOGIN"] and app.config["CONFIG"] != Config.Development:
+        raise ValueError("FLASK_DEV_AUTOLOGIN is for the development config only")
     app.session_interface = LongSessions()
     # Sign-in belongs to the chat app the reader is signing in to, so its pages
     # live under the same path as the app itself.
@@ -77,17 +82,10 @@ def _web_session_ok() -> bool:
 
 
 def authenticate_web() -> User | None:
-    # First, check for auto-auth environment variable (for testing/development)
-    auto_auth_email = os.environ.get("FLASK_AUTO_AUTH_USER")
-    if auto_auth_email:
-        user = User.query.filter_by(username=auto_auth_email).first()
-        if user:
-            g.current_user = user
-            _set_tracing_tags(user)
-            return user
-
-    # Next, try session-based authentication (for web users)
     user_id = session.get("user_id")
+    autologin = current_app.config["DEV_AUTOLOGIN"]
+    if not user_id and autologin:
+        user_id = sign_in(User.query.filter_by(username=autologin).one()).user_id
     if user_id:
         user = User.query.get(user_id)
         if user and _web_session_ok():

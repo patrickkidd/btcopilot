@@ -29,11 +29,6 @@ from btcopilot.tests.conftest import csrf_token, replied, version
 from btcopilot.toolbox import ToolName, Toolbox
 
 
-@pytest.fixture(autouse=True)
-def no_auto_auth(monkeypatch):
-    monkeypatch.delenv("FLASK_AUTO_AUTH_USER", raising=False)
-
-
 @pytest.fixture
 def token(web):
     return csrf_token(web)

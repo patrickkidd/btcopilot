@@ -5,7 +5,7 @@
 # everything it writes in ~/btcopilot-sandbox/<name>/, outside every repo and
 # job folder, so several agents can run one each side by side.
 #
-#   sandbox up <name> <port> [--dev [port]] [--build] [--real] [--model M] [--open-prompts]
+#   sandbox up <name> <port> [--dev [port]] [--build] [--real] [--model M] [--open-prompts] [--autologin email]
 #   sandbox down <name> [--purge]     stop everything; --purge also deletes the data
 #   sandbox reset <name>              empty the database and put the fixtures back
 #   sandbox invite <name> <email>     a sign-in link (and the Mac's copy under --dev)
@@ -18,6 +18,9 @@
 # phone. --real puts the coach on Anthropic with the testing key from .env at
 # the main clone's root; ask Patrick before spending. Without a sops key, up
 # refuses to start unless --open-prompts says the open-source prompts will do.
+# --autologin signs every visitor with no session in as that account, so a
+# home-screen app needs no code; without it the sign-in page lists every
+# account to sign in as with one tap.
 # Readiness gives up after SANDBOX_WAIT seconds (default 120) and prints the
 # log tails. doc/SETUP.md lists what the machine needs.
 set -euo pipefail
@@ -106,6 +109,7 @@ export SANDBOX_URL=http://127.0.0.1:$PORT
 export FIXTURE_CMD="$REPO/.venv/bin/python -m flask app fixtures" FIXTURE_CWD=$REPO
 SETTINGS
   [ -z "$OPEN" ] || echo "export FD_OPEN_PROMPTS=1" >> "$D/env.sh"
+  [ -z "$AUTOLOGIN" ] || echo "export FLASK_DEV_AUTOLOGIN=$(printf %q "$AUTOLOGIN")" >> "$D/env.sh"
   if [ -z "$REAL" ]; then
     echo "export BTCOPILOT_LOCAL_URL=$OLLAMA BTCOPILOT_LOCAL_MODEL=$MODEL" >> "$D/env.sh"
   fi
@@ -217,7 +221,7 @@ cmd_up() {
   PORT=${2:-}
   [[ $PORT =~ ^[0-9]+$ ]] || usage
   shift 2
-  DEV= REAL= OPEN= MODEL=qwen3:8b
+  DEV= REAL= OPEN= AUTOLOGIN= MODEL=qwen3:8b
   local build=
   while [ $# -gt 0 ]; do
     case $1 in
@@ -226,6 +230,7 @@ cmd_up() {
       --real) REAL=1 ;;
       --open-prompts) OPEN=1 ;;
       --model) MODEL=$2; shift ;;
+      --autologin) AUTOLOGIN=${2:?--autologin takes an email}; shift ;;
       *) usage ;;
     esac
     shift

@@ -20,10 +20,14 @@ from btcopilot.auth.logincode import LoginCode
 from btcopilot.auth.passkey import Passkey
 from btcopilot.auth.signin import SESSION_TOKEN
 from btcopilot.auth.websession import WebSession
+from btcopilot.config import Config
 from btcopilot.extensions import db
 from btcopilot.models import User
+from btcopilot.tests.fixtures import TEST_USER_ATTRS
 
 INVITED = "invited+unittest@gmail.com"
+DEVELOPMENT = {"CONFIG": Config.Development}
+WITHOUT_A_CODE = "Sign in without a code (development)"
 
 
 CSRF_SEED = "unittest-csrf-seed"
@@ -275,3 +279,39 @@ def test_passkey_signs_the_user_in(flask_app, browser, monkeypatch):
     assert db.session.get(Passkey, passkey.id).sign_count == 1
 
 
+@pytest.mark.parametrize("flask_app", [DEVELOPMENT], indirect=True)
+def test_one_tap_signs_in_on_a_development_server(browser, test_user):
+    # R-0452
+    page = browser.get("/app/login").text
+    assert WITHOUT_A_CODE in page
+    assert test_user.username in page
+
+    response = browser.post(
+        "/app/login/dev",
+        data={"csrf_token": token(browser), "email": test_user.username},
+    )
+    assert response.headers["Location"] == "/app/"
+    assert browser.get("/app/me").get_json()["user"]["email"] == test_user.username
+
+
+@pytest.mark.parametrize("flask_app", [{"CONFIG": Config.Production}], indirect=True)
+def test_production_has_no_sign_in_without_a_code(browser, test_user):
+    # R-0452
+    assert WITHOUT_A_CODE not in browser.get("/app/login").text
+
+    response = browser.post(
+        "/app/login/dev",
+        data={"csrf_token": token(browser), "email": test_user.username},
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.parametrize(
+    "flask_app",
+    [DEVELOPMENT | {"DEV_AUTOLOGIN": TEST_USER_ATTRS["username"]}],
+    indirect=True,
+)
+def test_a_development_stack_can_sign_in_everyone_as_one_account(browser, test_user):
+    # R-0452
+    assert browser.get("/app/diagrams").status_code == 200
+    assert browser.get("/app/me").get_json()["user"]["email"] == test_user.username

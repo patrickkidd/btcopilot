@@ -58,6 +58,11 @@
       }
       .or { display: none; color: var(--faint); font: 400 13px var(--sans); text-align: center; margin: 0 0 14px; }
       #device.on, #device.on + .or { display: block; }
+      .dev { margin-top: 34px; border-top: 1px solid var(--line); padding-top: 18px; }
+      .dev h2 { font: 600 13px var(--sans); color: var(--faint); margin: 0 0 12px; }
+      .dev form { margin-bottom: 10px; }
+      .dev button { color: var(--ink); background: var(--panel); border: 1px solid var(--line); text-align: left; overflow-wrap: anywhere; }
+      .dev small { display: block; font: 400 12px var(--mono); color: var(--faint); }
     </style>
   </head>
   <body>
@@ -82,6 +87,18 @@
           <input name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required autofocus />
           <button type="submit">Email me a code</button>
         </form>
+      {% endif %}
+      {% if dev_users %}
+        <section class="dev">
+          <h2>Sign in without a code (development)</h2>
+          {% for user in dev_users %}
+            <form method="post" action="{{ url_for('auth.dev_login', next=request.args.get('next')) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <input type="hidden" name="email" value="{{ user.username }}" />
+              <button type="submit">{{ user.username }}<small>{{ user.roles.replace(",", ", ") }}</small></button>
+            </form>
+          {% endfor %}
+        </section>
       {% endif %}
     </main>
     <script>

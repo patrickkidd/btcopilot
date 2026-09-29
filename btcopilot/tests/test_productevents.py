@@ -10,11 +10,6 @@ from btcopilot.tests.conftest import csrf_token
 TRACK = Path(__file__).parents[2] / "web" / "src" / "track.ts"
 
 
-@pytest.fixture(autouse=True)
-def no_auto_auth(monkeypatch):
-    monkeypatch.delenv("FLASK_AUTO_AUTH_USER", raising=False)
-
-
 def post(web, *events):
     return web.post(
         "/app/product-events",

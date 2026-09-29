@@ -27,11 +27,13 @@ from btcopilot.auth.signin import (
     sign_out,
 )
 from btcopilot.auth.websession import WebSession
+from btcopilot.config import Config
 from btcopilot.extensions import db
 from btcopilot.models import User
 
 REGISTER_CHALLENGE = "passkey_register_challenge"
 LOGIN_CHALLENGE = "passkey_login_challenge"
+DEV_LOGIN = "auth.dev_login"
 
 _log = logging.getLogger(__name__)
 
@@ -117,6 +119,27 @@ def verify():
     login_code.consume()
     sign_in(User.query.filter_by(username=email).first())
     return redirect(next_page())
+
+
+def dev_login():
+    sign_in(User.query.filter_by(username=request.form["email"]).one())
+    return redirect(next_page())
+
+
+@bp.record
+def _development(state):
+    """A development server sends no mail and a home-screen app cannot open an
+    invitation link, so there any account signs in with one tap. The route is
+    never made under any other config."""
+    if state.app.config["CONFIG"] == Config.Development:
+        state.add_url_rule("/login/dev", view_func=dev_login, methods=("POST",))
+
+
+@bp.context_processor
+def _dev_users():
+    if DEV_LOGIN not in current_app.view_functions:
+        return {}
+    return {"dev_users": User.query.order_by(User.username).all()}
 
 
 @bp.route("/logout", methods=("POST",))
