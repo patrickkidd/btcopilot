@@ -2,12 +2,14 @@ import { Failed } from "./api";
 
 /** Errors that are never the app's to report, matched exactly on the error's
  * message, or on its name where each browser words the message its own way:
- * the browser's warning that a resize observer ran late, and a request that
- * was cancelled. */
+ * the browser's warning that a resize observer ran late, a request that was
+ * cancelled, and a script from another origin, which the browser names no
+ * further. */
 export const NOISE = [
   "ResizeObserver loop limit exceeded",
   "ResizeObserver loop completed with undelivered notifications.",
   "AbortError",
+  "Script error.",
 ] as const;
 
 /** Where the app's own scripts are served from: the built bundle, and the dev
@@ -23,9 +25,21 @@ const FRAME = /[a-z][a-z0-9+.-]*:\/\/[^\s()]+?:\d+:\d+/g;
  * `GET /app/sessions/12` is `GET /app/sessions/:id`. */
 export const endpoint = (request: string) => request.replace(/\/\d+(?=\/|$)/g, "/:id");
 
-/** Which errors on the page raise the bug sheet (R-0056): only one the app's
- * own scripts threw, never noise or the page being torn down, and each once
- * per page, counted after that. */
+/** An error on the page as it is reported: its name and message, and the
+ * first frame of its stack in the app's own scripts, which a stack with no
+ * frames at all has none of. */
+export interface Fault {
+  /** What it is raised once by. */
+  signature: string;
+  error: string;
+  frame: string | null;
+}
+
+/** Which errors on the page raise the bug sheet (R-0056): one thrown from the
+ * app's own scripts or naming no script at all, a refused passkey or a
+ * worker that would not start among them; never noise, a request that failed,
+ * which the call helper reports, or the page being torn down. Each is raised
+ * once per page, counted after that. */
 export class Faults {
   /** The page is going away: what breaks now is the browser tearing it down. */
   leaving = false;
@@ -34,16 +48,19 @@ export class Faults {
 
   constructor(private readonly origin: string) {}
 
-  /** The key this error is raised once by, its message and the top frame of
-   * its stack, or null when it is not the app's to report. The server breaking
-   * is not one: the call helper raises that itself. */
-  key(thrown: unknown, message: string): string | null {
+  /** This error as it is reported, or null when it is not the app's to
+   * report. `said` is what the browser said of it, for something thrown that
+   * is not an error. */
+  fault(thrown: unknown, said: string): Fault | null {
     const name = thrown instanceof Error ? thrown.name : "";
-    if (this.leaving || NOISE.some((noise) => noise === message || noise === name)) return null;
-    if (!(thrown instanceof Error) || (thrown instanceof Failed && thrown.status >= 500)) return null;
-    const frames = thrown.stack?.match(FRAME) ?? [];
-    if (!frames.some((frame) => this.ours(frame))) return null;
-    return `${message}\n${frames[0]}`;
+    const message = thrown instanceof Error ? thrown.message : said;
+    if (this.leaving || NOISE.some((noise) => [name, message, said].includes(noise))) return null;
+    if (thrown instanceof Failed) return null;
+    const frames = (thrown instanceof Error && thrown.stack?.match(FRAME)) || [];
+    const frame = frames.find((one) => this.ours(one)) ?? null;
+    if (frames.length && frame === null) return null;
+    const error = name ? `${name}: ${message}` : message;
+    return { signature: `${error}\n${frame ?? ""}`, error, frame };
   }
 
   /** True the first time this key comes up on the page; every time is counted. */

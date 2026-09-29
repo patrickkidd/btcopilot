@@ -693,16 +693,14 @@ const lastSaid = () =>
 /** The turn the page last followed, which a page error is reported against. */
 let latestTurn = window.BOOTSTRAP.statements.at(-1)?.turn_id ?? "";
 
-/** An error on the page, raised only when the app's own scripts threw it;
- * the browser logs every one to the console either way. */
-const pageBroke = (thrown: unknown, message: string) => {
-  const key = faults.key(thrown, message);
-  if (key !== null) reports.bug(message, lastSaid(), latestTurn, key);
+/** An error on the page, raised only when it is the app's own; the browser
+ * logs every one to the console either way. */
+const pageBroke = (thrown: unknown, said: string) => {
+  const fault = faults.fault(thrown, said);
+  if (fault) reports.bug(fault.error, lastSaid(), latestTurn, fault.signature);
 };
 window.addEventListener("error", (e) => pageBroke(e.error, e.message));
-window.addEventListener("unhandledrejection", (e) =>
-  pageBroke(e.reason, e.reason instanceof Error ? e.reason.message : String(e.reason)),
-);
+window.addEventListener("unhandledrejection", (e) => pageBroke(e.reason, String(e.reason)));
 window.addEventListener("pagehide", () => (faults.leaving = true));
 // a page kept by the browser and shown again is not going away
 window.addEventListener("pageshow", () => (faults.leaving = false));

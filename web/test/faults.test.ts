@@ -14,56 +14,69 @@ const thrown = (message: string, ...frames: string[]) => {
 // R-0056
 it("ignores an error thrown by a browser extension", () => {
   const error = thrown("x is undefined", "inject (chrome-extension://abcdef/content.js:4:11)");
-  expect(new Faults(ORIGIN).key(error, error.message)).toBeNull();
+  expect(new Faults(ORIGIN).fault(error, error.message)).toBeNull();
 });
 
 // R-0056
-it("keeps an error thrown by the app's own bundle, keyed by its message and top frame", () => {
+it("keeps an error thrown by the app's own bundle, by its name, message and first own frame", () => {
   const error = thrown(
     "x is undefined",
-    `draw (${BUNDLE}:1:52301)`,
     "inject (chrome-extension://abcdef/content.js:4:11)",
+    `draw (${BUNDLE}:1:52301)`,
+    `place (${BUNDLE}:1:90)`,
   );
-  expect(new Faults(ORIGIN).key(error, error.message)).toBe(`x is undefined\n${BUNDLE}:1:52301`);
+  expect(new Faults(ORIGIN).fault(error, `Uncaught ${error}`)).toEqual({
+    signature: `TypeError: x is undefined\n${BUNDLE}:1:52301`,
+    error: "TypeError: x is undefined",
+    frame: `${BUNDLE}:1:52301`,
+  });
 });
 
 // R-0056
-it("ignores an error with no stack, one from another origin, and the dev server's packages", () => {
+it("keeps an error naming no script, and drops one whose every frame is another origin's or a package's", () => {
   const faults = new Faults(ORIGIN);
-  expect(faults.key(null, "Script error.")).toBeNull();
-  const bare = new TypeError("x is undefined");
-  bare.stack = undefined;
-  expect(faults.key(bare, bare.message)).toBeNull();
+  const refused = new DOMException("The operation either timed out or was not allowed.", "NotAllowedError");
+  refused.stack = undefined;
+  expect(faults.fault(refused, refused.message)).toEqual({
+    signature: "NotAllowedError: The operation either timed out or was not allowed.\n",
+    error: "NotAllowedError: The operation either timed out or was not allowed.",
+    frame: null,
+  });
+  expect(faults.fault("not-allowed", "not-allowed")?.error).toBe("not-allowed");
   const elsewhere = thrown("x is undefined", "draw (https://cdn.example.com/app/static/web/a.js:1:2)");
-  expect(faults.key(elsewhere, elsewhere.message)).toBeNull();
+  expect(faults.fault(elsewhere, elsewhere.message)).toBeNull();
   const vendored = thrown(
     "x is undefined",
     `send (${ORIGIN}/app/static/web/node_modules/.vite/deps/faro.js:9:1)`,
   );
-  expect(faults.key(vendored, vendored.message)).toBeNull();
+  expect(faults.fault(vendored, vendored.message)).toBeNull();
 });
 
 // R-0056
-it("ignores the noise, the server breaking, and anything once the page is going away", () => {
+it("ignores the noise, any failed request, and anything once the page is going away", () => {
   const faults = new Faults(ORIGIN);
   for (const noise of NOISE) {
     const error = thrown(noise, `draw (${BUNDLE}:1:2)`);
-    expect(faults.key(error, noise)).toBeNull();
+    expect(faults.fault(error, noise)).toBeNull();
   }
+  expect(faults.fault(null, "Script error.")).toBeNull();
   const cancelled = new DOMException("signal is aborted without reason", "AbortError");
-  expect(faults.key(cancelled, cancelled.message)).toBeNull();
-  expect(faults.key(new Failed(500, "GET /app/timeline", "boom"), "boom")).toBeNull();
+  expect(faults.fault(cancelled, cancelled.message)).toBeNull();
+  for (const status of [0, 404, 500]) {
+    const failed = new Failed(status, "GET /app/timeline", "boom");
+    expect(faults.fault(failed, failed.message)).toBeNull();
+  }
 
   const error = thrown("x is undefined", `draw (${BUNDLE}:1:2)`);
   faults.leaving = true;
-  expect(faults.key(error, error.message)).toBeNull();
+  expect(faults.fault(error, error.message)).toBeNull();
 });
 
 // R-0056
 it("raises each error once per page and counts the repeats", () => {
   const faults = new Faults(ORIGIN);
-  const one = faults.key(thrown("x is undefined", `draw (${BUNDLE}:1:2)`), "x is undefined")!;
-  const other = faults.key(thrown("x is undefined", `place (${BUNDLE}:1:9)`), "x is undefined")!;
+  const one = faults.fault(thrown("x is undefined", `draw (${BUNDLE}:1:2)`), "")!.signature;
+  const other = faults.fault(thrown("x is undefined", `place (${BUNDLE}:1:9)`), "")!.signature;
   expect(faults.first(one)).toBe(true);
   expect(faults.first(one)).toBe(false);
   expect(faults.first(one)).toBe(false);
