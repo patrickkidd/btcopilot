@@ -31,11 +31,11 @@ test.describe("the button that opens the list", () => {
     await settle(page);
     test.skip(await pinned(page), NO_LIST);
     await page.locator('#view .ss-hit[data-target="cluster"]').first().click();
-    await expect(page.locator("#cap-chip")).toBeVisible();
+    await expect(page.locator("#cap-play")).toBeVisible();
     const where = await page.evaluate(() => {
       const button = document.getElementById("menu-open")!;
       const row = document.querySelector(".caption")!;
-      const chip = document.getElementById("cap-chip")!;
+      const chip = document.getElementById("cap-play")!;
       const box = button.getBoundingClientRect();
       const drawn = getComputedStyle(button, "::before");
       const beside = chip.getBoundingClientRect();
@@ -56,7 +56,8 @@ test.describe("the button that opens the list", () => {
     expect(where.last).toBe(true);
     expect(where.size).toEqual([44, 44]);
     expect(where.height[0]).toBe(where.height[1]);
-    expect(where.corner[0]).toBe(where.corner[1]);
+    // its corner matched the ask chip, hidden for now (Patrick, 2026-09-29)
+    expect(where.corner[0]).toBe("8px");
     expect(where.line[0]).toBe(where.line[1]);
   });
 });

@@ -768,6 +768,9 @@ async function traceTo(where: CodedIn, ask = false): Promise<void> {
   if (!chat.trace(where.statement_id, ask)) toast("Those words are no longer here");
 }
 
+// Hidden for now (Patrick, 2026-09-29: "the design is too busy and I'm not sure what value that brings yet").
+const ASK_SHOWN = false;
+
 /** The row under the picture: what it is showing, and the things a tap can do
  * about it. The words themselves live on the picture (converged mockup). */
 function actions(): void {
@@ -794,21 +797,22 @@ function actions(): void {
   const moves = !sel && open ? picture.countDated(open.event_ids) : 0;
 
   host.innerHTML =
-    tok("cap-chip", "", ASK_MARK, "ask", true) +
+    (ASK_SHOWN ? tok("cap-chip", "", ASK_MARK, "ask", true) : "") +
     tok("cap-play", "g", PLAY_MARK, "explain", moves > 0) +
     tok("cap-trace", "data", IN_CHAT_MARK, "in chat", !!trace) +
     (pinned() ? "" : listButton("menu-open"));
 
-  $("cap-chip").addEventListener("click", () =>
-    apply(
-      sel
-        ? reduce(pic, PicEvent.TapChip)
-        : reduce(pic, PicEvent.TapChip, {
-            kind: SelKind.Cluster,
-            id: (open as Cluster).id,
-          }),
-    ),
-  );
+  if (ASK_SHOWN)
+    $("cap-chip").addEventListener("click", () =>
+      apply(
+        sel
+          ? reduce(pic, PicEvent.TapChip)
+          : reduce(pic, PicEvent.TapChip, {
+              kind: SelKind.Cluster,
+              id: (open as Cluster).id,
+            }),
+      ),
+    );
   if (trace)
     $("cap-trace").addEventListener("click", () => {
       track.tap(Feature.TraceToChat);
