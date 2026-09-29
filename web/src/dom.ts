@@ -36,6 +36,10 @@ export const CLUSTER = 1;
 export const closeX = (attrs = "") =>
   `<button class="cardx" type="button" aria-label="close"${attrs}>×</button>`;
 
+/** A step back or forward, the same pill wherever steps are walked. */
+export const stepBtn = (label: string, attrs: string, off: boolean) =>
+  `<button class="stepbtn" type="button" ${attrs}${off ? " disabled" : ""}>${label}</button>`;
+
 export function $(id: string): HTMLElement {
   const node = document.getElementById(id);
   if (!node) throw new Error(`No element #${id}`);

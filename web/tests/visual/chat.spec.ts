@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { stateFor } from "./setup";
+import { inside, stateFor } from "./setup";
 import { mockTurn } from "./turn";
 
 /** Chips have to stay inside their bubble whatever the record calls things, and
@@ -288,5 +288,51 @@ test.describe("an empty session", () => {
     await expect(help(page)).not.toHaveText(chatHelp);
     // what a note is for: writing up a session that already happened
     await expect(help(page)).toContainText(/session you just had|write up/i);
+  });
+});
+
+test.describe("the coach's notes", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  const noted = {
+    statement: "I put that down.",
+    statement_id: 9301,
+    did: [
+      {
+        type: "tool_call",
+        name: "coach_notes",
+        args: {
+          register: "coaching",
+          lane: "the move",
+          why: "to hear more",
+          holding: "none",
+          plateau: { reached: false, biggest_gap: "dates" },
+          hunch: "she pulled back",
+          person: "calm",
+          variable: "anxiety",
+        },
+      },
+      {
+        type: "tool_call",
+        name: "edit_event",
+        args: { description: "she stopped calling her mother every Sunday", dateTime: "1992-04-01" },
+        names: { it: "she stopped calling her mother every Sunday" },
+      },
+    ],
+  };
+
+  // R-0520, R-0317
+  test("the (i), the tool line and the cross stay inside their boxes", async ({ page }) => {
+    await page.goto("/app/");
+    await expect(page.locator("#view .ss")).toBeVisible();
+    await mockTurn(page, noted);
+    await page.locator("#composer").fill("She stopped calling.");
+    await page.locator("#send").click();
+    const bubble = page.locator(".bub.coach").last();
+    await expect(bubble.locator(":scope > .info")).toBeVisible();
+    await inside(bubble.locator(":scope > .info"), bubble);
+    await inside(bubble.locator(".did"), bubble);
+    await bubble.locator(":scope > .info").click();
+    await inside(page.locator(".notes-head > .cardx"), page.locator(".notes-head"));
   });
 });

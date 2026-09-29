@@ -934,11 +934,11 @@ button { font-family: inherit; }
 .chat > .play.on { color: var(--data); }
 .chat > .play:active { color: var(--data-press); }
 /* opens the coach's notes; out of the flow in the top-right padding beside the
-   COACH label, its 44px target spilling past the corner */
+   COACH label, its 44px target inside the bubble's corner, never past it */
 .bub > .info {
   position: absolute;
-  top: -8px;
-  right: -8px;
+  top: 0;
+  right: 0;
   width: 44px;
   height: 44px;
   display: flex;
@@ -990,8 +990,10 @@ button { font-family: inherit; }
   justify-content: space-between;
   color: var(--ink);
 }
-/* the app's close button, kept in the heading row where the notes' own sat */
-.notes-head > .cardx { position: static; margin-right: -12px; }
+/* the app's close button, kept in the heading row where the notes' own sat;
+   the row reaches into the card's padding so the cross keeps the corner */
+.notes-head { margin-right: -12px; }
+.notes-head > .cardx { position: static; }
 .notes-card dl { margin: 0; }
 .notes-card dt { color: var(--ink); }
 .notes-card dd { margin: 0 0 8px; overflow-wrap: anywhere; }
@@ -1177,6 +1179,10 @@ button { font-family: inherit; }
   cursor: pointer;
 }
 .btn:active { background: var(--tint); }
+/* a step back or forward, one pill wherever steps are walked */
+.stepbtn { flex: none; height: 40px; min-width: 70px; padding: 0 12px; border: 1px solid var(--line); border-radius: 20px; background: var(--panel); color: var(--data); font: 500 13px var(--mono); cursor: pointer; }
+.stepbtn:disabled { opacity: 0.35; cursor: default; }
+.stepbtn:not(:disabled):active { background: var(--tint); }
 .btn.play { border-color: var(--data); color: var(--data); }
 .btn.link { border: none; color: var(--data); }
 /* the concept pages of the codes in view (FD-364) */
@@ -1759,21 +1765,6 @@ button { font-family: inherit; }
 .avatar > * , .avatar svg { position: relative; }
 .avatar svg { width: 24px; height: 24px; display: block; }
 .avatar:active { color: var(--data-press); }
-.sn-back {
-  flex: none;
-  min-width: 44px;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  padding: 0 2px 2px 12px;
-  margin-left: -12px;
-  border: none;
-  background: none;
-  color: var(--data);
-  font: 500 19px/1 var(--mono);
-  cursor: pointer;
-}
-.sn-back:active { background: var(--tint); }
 
 /* The box the settings pages travel in has no ground of its own: what is
    already on screen stays there and the page slides in over it, rather than
@@ -2750,8 +2741,6 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 }
 .say::placeholder { color: var(--faint); }
 .nextrow { display: flex; justify-content: flex-end; gap: 8px; padding: 0 16px 16px; }
-.nextrow .btn[disabled] { opacity: 0.4; pointer-events: none; }
-.nextrow .btn { min-width: 96px; border-color: var(--data); color: var(--data); }
 /* The wire keeps the height its row was given: left to scale with the width it
  * grows to 211 tall on a desktop and lies over the controls under it, taking
  * their taps with it (verified at 1280 wide). */

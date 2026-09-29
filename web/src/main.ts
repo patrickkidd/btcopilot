@@ -37,7 +37,7 @@ import { among, untold } from "./snapshots";
 import { reopen, type Kept } from "./plays";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
-import { ASK_MARK, IN_CHAT_MARK, listButton, PLAY_MARK, tok } from "./tokens";
+import { ASK_MARK, BACK, IN_CHAT_MARK, listButton, PLAY_MARK, tok } from "./tokens";
 import { offerHomeScreen, showHomeScreen, homeScreenBadge } from "./homescreen";
 import { offerPasskey } from "./passkey";
 import { PRO, WIDE } from "./pro";
@@ -104,6 +104,8 @@ const CODING_SCREENS = [
   Screen.Result,
   Screen.Pairs,
 ];
+
+document.querySelectorAll(".backbtn").forEach((b) => (b.innerHTML = BACK));
 
 let timeline: Timeline = emptyTimeline();
 let pic: PicState = REST;

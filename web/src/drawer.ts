@@ -1,6 +1,6 @@
 import "./drawer.css";
 import { askedChip, chipOf } from "./chips";
-import { CLUSTER, closeX, esc, pathRow, slideOver } from "./dom";
+import { CLUSTER, closeX, esc, pathRow, slideOver, stepBtn } from "./dom";
 import { NAME, type Layout } from "./diagram";
 import { when, Told } from "./snapshots";
 import type { Case, Chip, Timeline } from "./types";
@@ -65,9 +65,9 @@ export function below(told: Told, i: number, statement: number | null): string {
       `<button class="dot${j === i ? " on" : ""}" type="button" data-act="${Act.Dot}" data-i="${j}" aria-label="Snapshot ${j + 1}"${j === i ? ' aria-current="step"' : ""}></button>`,
   ).join("");
   return (
-    `<div class="step"><button class="nav" type="button" data-act="${Act.Back}"${i === 0 ? " disabled" : ""}>‹ Back</button>` +
+    `<div class="step">${stepBtn("‹ Back", `data-act="${Act.Back}"`, i === 0)}` +
     `<div class="dots">${dots}</div><span class="count">${i + 1} of ${n}</span>` +
-    `<button class="nav" type="button" data-act="${Act.Next}"${i === n - 1 ? " disabled" : ""}>Next ›</button></div>` +
+    `${stepBtn("Next ›", `data-act="${Act.Next}"`, i === n - 1)}</div>` +
     `<div class="cap" aria-live="polite"><div class="when"><span class="date">${esc(shot.date)}</span>` +
     (shot.gap ? `<span class="gap">${esc(shot.gap)}</span>` : "") +
     `</div><p class="fact">${esc(shot.fact)}</p>` +
