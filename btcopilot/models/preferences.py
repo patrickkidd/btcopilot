@@ -11,6 +11,7 @@ class PrefKey(enum.StrEnum):
     # tap Got it, and the hint on the first line they tap in the coding screen.
     HowItWorks = "how_it_works"
     LineHint = "line_hint"
+    BugReports = "bug_reports"
 
 
 class Proactive(enum.StrEnum):
@@ -39,11 +40,19 @@ class Spotlight(enum.StrEnum):
     Chip = "chip"
 
 
+class BugReports(enum.StrEnum):
+    """Whether a turn or the page breaking asks before its report is sent."""
+
+    Ask = "ask"
+    Always = "always"
+
+
 PREF_ENUMS = {
     PrefKey.Proactive: Proactive,
     PrefKey.Mode: ChatMode,
     PrefKey.Theme: Theme,
     PrefKey.Spotlight: Spotlight,
+    PrefKey.BugReports: BugReports,
 }
 
 PREF_DEFAULTS = {
@@ -54,6 +63,7 @@ PREF_DEFAULTS = {
     PrefKey.Spotlight: Spotlight.Unified,
     PrefKey.HowItWorks: True,
     PrefKey.LineHint: True,
+    PrefKey.BugReports: BugReports.Ask,
 }
 
 

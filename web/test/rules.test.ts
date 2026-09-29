@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { beforeEach, expect, it } from "vitest";
 import { flagLine } from "../src/rules";
-import { RuleSource, Spotlight, type Rule } from "../src/types";
+import { BugReports, RuleSource, Spotlight, type Rule } from "../src/types";
 
 const rule = (flagged: boolean): Rule => ({
   id: 7,
@@ -22,7 +22,7 @@ const signIn = (admin: boolean) => {
       admin,
       pro: false,
       coder: true,
-      prefs: { spotlight: Spotlight.Unified },
+      prefs: { spotlight: Spotlight.Unified, bug_reports: BugReports.Ask },
     },
     diagram: null,
     session: null,

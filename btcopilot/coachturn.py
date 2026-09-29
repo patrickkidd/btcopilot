@@ -87,7 +87,11 @@ STORY = "**What changed in the story since last time**\n\n{sentences}"
 
 # What a call's event tells the page, by the key it carries; anything else it
 # tells is the record changing.
-TOLD = {"view": TurnEventKind.View, "address": TurnEventKind.Navigate}
+TOLD = {
+    "view": TurnEventKind.View,
+    "address": TurnEventKind.Navigate,
+    "report": TurnEventKind.Report,
+}
 
 
 NARRATE = (

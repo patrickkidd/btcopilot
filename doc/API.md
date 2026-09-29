@@ -53,8 +53,17 @@ in …" reads. Events never traced are absent.
 ## Preferences
 
 `GET /preferences`, `PATCH /preferences` — one object: `speak`, `proactive`,
-`mode`, `theme`, `first_name`, `last_name`, `birthdate`. PATCH takes any subset;
-an unknown key or a bad value is a 400.
+`mode`, `theme`, `bug_reports` (`ask` or `always`), `first_name`, `last_name`,
+`birthdate`. PATCH takes any subset; an unknown key or a bad value is a 400.
+
+## Reports
+
+`POST /observations` — a bug or feedback the person chose to send, stored as one
+row in the observations table on the diagram the app is on. `kind` is `bug` or
+`feedback`; `turn_id` is the turn it came from, empty when there is none; `text`
+is the person's words. A bug also carries `error` and `version`. Any other kind or
+field is a 400; answers `{"id"}` with 201. Reports stay out of the queue Patrick
+accepts or rejects.
 
 ## Account
 

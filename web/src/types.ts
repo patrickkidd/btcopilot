@@ -327,6 +327,8 @@ export enum TurnEventKind {
   View = "view",
   /** The coach moved the app to an address in it (R-0055). */
   Navigate = "navigate",
+  /** The coach offered to send what the person said about the app (R-0056). */
+  Report = "report",
   /** The next words of the reply, as the coach says them. */
   Text = "text",
   /** The coach said those words again: drop what has been drawn. */
@@ -358,6 +360,7 @@ export type TurnEvent =
   | { type: TurnEventKind.RecordPatch; deltas: Delta[]; turn_id: string }
   | { type: TurnEventKind.View; view: View }
   | { type: TurnEventKind.Navigate; address: string }
+  | { type: TurnEventKind.Report; report: { kind: ReportKind; words: string } }
   | { type: TurnEventKind.Text; text: string }
   | { type: TurnEventKind.TextReset }
   | ({ type: TurnEventKind.Done } & Reply)
@@ -522,6 +525,30 @@ export enum Spotlight {
   Chip = "chip",
 }
 
+/** Whether a turn or the page breaking asks before its report is sent.
+ * Mirrors `BugReports` on the server. */
+export enum BugReports {
+  Ask = "ask",
+  Always = "always",
+}
+
+/** What the person can send from the app (R-0056). Mirrors the report kinds
+ * of `ObservationKind` on the server. */
+export enum ReportKind {
+  Bug = "bug",
+  Feedback = "feedback",
+}
+
+/** A report as it is sent: the person's words, and for something that broke
+ * the error and the app's version. */
+export interface Report {
+  kind: ReportKind;
+  turn_id: string;
+  text: string;
+  error?: string;
+  version?: string;
+}
+
 export interface Preferences {
   speak: boolean;
   proactive: Proactive;
@@ -533,6 +560,7 @@ export interface Preferences {
   birthdate: string | null;
   how_it_works: boolean;
   line_hint: boolean;
+  bug_reports: BugReports;
 }
 
 /** What a notification points at. Mirrors `NotificationKind` on the server. */

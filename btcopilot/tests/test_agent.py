@@ -24,6 +24,7 @@ from btcopilot.models import (
     Change,
     Discussion,
     ModelCall,
+    Observation,
     Speaker,
     SpeakerType,
     Statement,
@@ -279,6 +280,36 @@ def test_navigate_to_a_place_the_app_or_the_record_lacks_is_refused(
     model = Model(called(ToolName.Navigate, address=address), said("I cannot open that."))
     reply = run(discussion, "Open it.", model)
     assert EventKind.Navigate.value not in kinds(reply)
+    refused = model.histories[-1][-1]["content"][0]
+    assert refused["is_error"] is True
+    assert reason in refused["content"]
+
+
+def test_a_report_asks_the_page_and_keeps_no_observation(discussion, family):
+    # R-0056
+    words = "I wish the picture were bigger."
+    reply = run(
+        discussion,
+        words,
+        Model(called(ToolName.Report, kind="feedback", words=words), said("Good to know.")),
+    )
+    assert event(reply, EventKind.Report)["report"] == {"kind": "feedback", "words": words}
+    assert event(reply, EventKind.ToolCall)["names"] == {}
+    assert Observation.query.count() == 0
+
+
+@pytest.mark.parametrize(
+    "args, reason",
+    [
+        ({"kind": "turn_failed", "words": "It broke."}, "not one of the kinds of report"),
+        ({"kind": "bug", "words": " "}, "own words"),
+    ],
+)
+def test_a_report_of_no_kind_or_no_words_is_refused(discussion, family, args, reason):
+    # R-0056
+    model = Model(called(ToolName.Report, **args), said("Noted."))
+    reply = run(discussion, "The app keeps freezing.", model)
+    assert EventKind.Report.value not in kinds(reply)
     refused = model.histories[-1][-1]["content"][0]
     assert refused["is_error"] is True
     assert reason in refused["content"]

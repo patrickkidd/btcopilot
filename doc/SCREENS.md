@@ -351,6 +351,7 @@ What it is for: you, your families, your plan, and signing out.
 - Which voice reads the replies is not settled: today it is your phone's own, which costs nothing, and a better-sounding paid one waits on Patrick. [open]
 - No other setting appears in two places. [built]
 - There is a row for how often the coach may message you first, and its choices read as a most, never a schedule: never, at most monthly, at most weekly. The line under it says never unless you ask, or never more than once a month (a week), and only when the coach notices a pattern in your family's events or follows up on something you agreed to. [built] {R-0004}
+- The coach page has a row for bug reports: ask me, or always send. [built] {R-0056}
 - There is a row for light, dark or matching your phone. [built]
 - Your families are listed, with the number of sessions and when each was last used, and a tick on the one you are in. [built]
 - Tapping a family opens it, and one is open at a time. [built] {R-0175}
@@ -430,6 +431,20 @@ What it is for: knowing what happened when a message does not go through.
 - Your words are only stored once the coach's answer lands, so sending again never stores them twice. [built]
 - The coach's bubble is never left blank waiting. [built] {R-0184}
 - A record edit the app cannot make on your behalf fails and says so rather than writing something invented. [built]
+
+## Bug reports and feedback
+
+What it is for: telling the people who make the app that something broke, or what you want changed, without leaving the conversation.
+
+- When the coach's turn ends in an error, or the page itself hits an error, a sheet slides up from the bottom headed "Something went wrong". The app's amber warning in the thread stays as it is. [built] {R-0056, R-0182}
+- The sheet lists what is sent: your last message, the error, and the app version. [built] {R-0056}
+- Its buttons are "Send the report", "Always send", and "Don't send", which is drawn disabled with the line "Disabled during the beta" under it. [built] {R-0056}
+- The same error raises the sheet once; it never comes up twice for it. [built]
+- When you tell the coach something about the app itself (something that does not work, something you want changed, dislike, or wish it did), the coach answers in one sentence and goes back to the conversation, and the same sheet slides up headed "Send this as feedback?" with your own words. Its buttons are "Send the report", "Always send" and "Not feedback", which closes the sheet and sends nothing. [built] {R-0056}
+- The sheet is modal: the thread behind it is dimmed and cannot be tapped until you answer it, and nothing is ever added to the thread. [built] {R-0056}
+- After Send, the sheet turns in place into "Your report was sent" with an OK button; it closes on OK or by itself after ten seconds. If the report cannot be sent, the same card says so and why. [built] {R-0056}
+- "Always send" is kept in your settings: a later bug is sent without asking, and only the "Your report was sent" card shows for its ten seconds. Feedback still asks, so you can always say it was not feedback. [built] {R-0056}
+- A sent report is one row in the observations table, of kind bug or feedback, with your words and the turn it came from; nothing is kept when you tap "Not feedback". Reports stay out of Patrick's accept-or-reject queue for now. [built] {R-0056, R-0517}
 
 ## On a desktop (Pro)
 

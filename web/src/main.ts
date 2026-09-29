@@ -23,6 +23,7 @@ import { Strip } from "./strip";
 import { aimedEvents, chips, itemKind, Lead } from "./chips";
 import { feed } from "./turn";
 import { Release } from "./release";
+import { Reports } from "./report";
 import { toolLine } from "./tools";
 import {
   CHIP_KIND,
@@ -76,6 +77,7 @@ import {
   type Timeline,
   SessionKind,
   Spotlight,
+  BugReports,
   type Preferences,
 } from "./types";
 
@@ -89,7 +91,7 @@ declare global {
         pro: boolean;
         /** Only an auditor takes part in the coding work (R-0311). */
         coder: boolean;
-        prefs: Pick<Preferences, "spotlight">;
+        prefs: Pick<Preferences, "spotlight" | "bug_reports">;
       } | null;
       diagram: { id: number; name: string } | null;
       session: { id: number; turn: string | null } | null;
@@ -659,6 +661,7 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
   },
   onPrefs: (prefs) => {
     speak.checked = prefs.speak;
+    reports.always = prefs.bug_reports === BugReports.Always;
   },
   onDiagram: (diagram, how) => onDiagram(diagram, how),
   onTask: () => void readTask().then(() => settings.push(TASK)),
@@ -671,6 +674,25 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
     if (!one.link) await settings.show();
   },
 });
+
+/** A coach turn or the page that broke, or what the coach heard the person
+ * say about the app, offered to be sent as a report (R-0056). */
+const reports = new Reports($("overlay").parentElement!, () =>
+  settings.set({ bug_reports: BugReports.Always }),
+);
+reports.always = window.BOOTSTRAP.user?.prefs.bug_reports === BugReports.Always;
+
+/** The person's last words in the thread, which a bug report carries. */
+const lastSaid = () =>
+  [...$("chat").querySelectorAll(".bub.user")].at(-1)?.textContent ?? "";
+
+/** The turn the page last followed, which a page error is reported against. */
+let latestTurn = window.BOOTSTRAP.statements.at(-1)?.turn_id ?? "";
+
+window.addEventListener("error", (e) => reports.bug(e.message, lastSaid(), latestTurn));
+window.addEventListener("unhandledrejection", (e) =>
+  reports.bug(e.reason instanceof Error ? e.reason.message : String(e.reason), lastSaid(), latestTurn),
+);
 
 /** A notice goes to the screen it names or the address it carries (R-0611). */
 const notices = new Notices(new Strip($("speakrow")), $("account"), (link) =>
@@ -1088,6 +1110,8 @@ async function begin(
     inFlight = false;
     chat.busy(false);
     chat.warn(whatFailed(error), again);
+    // the send made no turn
+    reports.bug((error as api.Failed).message, lastSaid(), "");
     return null;
   }
   session = started.discussion_id;
@@ -1109,7 +1133,7 @@ function follow(turnId: string): void {
   // the next message has arrived: what the last reply touched goes back to how
   // the line draws it (R-0539)
   picture.untouch();
-  onTurn = turnId;
+  onTurn = latestTurn = turnId;
   inFlight = true;
   chat.busy(true);
 
@@ -1154,6 +1178,7 @@ function follow(turnId: string): void {
     read: (ids) => step(() => picture.read(ids)),
     show: (view) => step(() => shown(view)),
     go: (address) => step(() => navigate(address)),
+    report: (kind, words) => step(() => reports.offer(kind, words, turnId)),
     text: (text) => step(() => void opened().append(text, (chip) => aim(chip))),
     reset: () => step(() => void opened().reset()),
     done: (reply) =>
@@ -1181,6 +1206,7 @@ function follow(turnId: string): void {
           stopped = { turn: turnId, bubble: bubble.bubble };
         }
         chat.warn(message, () => void resume(turnId));
+        reports.bug(message, lastSaid(), turnId);
       }),
     refused: (message) =>
       step(() => {

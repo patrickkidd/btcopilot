@@ -30,6 +30,7 @@ import type {
   PasskeyCreationOptions,
   Preferences,
   Started,
+  Report,
   Result,
   Session,
   SessionKind,
@@ -303,6 +304,9 @@ export const deleteSession = (id: number) => call<void>("DELETE", `/sessions/${i
 
 export const renameSession = (id: number, title: string) =>
   call<Session>("PATCH", `/sessions/${id}`, { title });
+
+/** A bug or feedback the person chose to send (R-0056). */
+export const report = (body: Report) => call<{ id: number }>("POST", "/observations", body);
 
 export const preferences = () => call<Preferences>("GET", "/preferences");
 

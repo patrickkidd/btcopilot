@@ -12,6 +12,7 @@ import { subscribe } from "./push";
 import { PRO, RECORD, RECORDS, Records } from "./pro";
 import { address, linked, Place } from "./place";
 import {
+  BugReports,
   Mode,
   Proactive,
   Theme,
@@ -37,6 +38,10 @@ const PROACTIVE_CHOICE: Record<Proactive, string> = {
 };
 const writesFirst = (often: string) =>
   `Never more than once a ${often}, and only when the coach notices a pattern in your family's events or follows up on something you agreed to.`;
+const BUG_REPORTS_CHOICE: Record<BugReports, string> = {
+  [BugReports.Ask]: "ask me",
+  [BugReports.Always]: "always send",
+};
 const PROACTIVE_HINT: Record<Proactive, string> = {
   [Proactive.Never]: "The coach never messages first unless you ask it to.",
   [Proactive.Rarely]: writesFirst("month"),
@@ -699,6 +704,15 @@ export class Settings {
         often,
       ]),
       el("div", "sn-hint", PROACTIVE_HINT[prefs.proactive]),
+      this.group([
+        this.segRow(
+          "Bug reports",
+          [BugReports.Ask, BugReports.Always],
+          prefs.bug_reports,
+          (bug_reports) => void this.write({ bug_reports }),
+          (choice) => BUG_REPORTS_CHOICE[choice],
+        ),
+      ]),
     );
     return { title: "Coach", pane };
   }

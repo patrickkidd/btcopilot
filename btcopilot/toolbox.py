@@ -15,7 +15,7 @@ import re
 from sqlalchemy import or_
 
 from btcopilot import clusters, place, proactive, prompts, record, views
-from btcopilot.models import Author, Change, Discussion, Statement
+from btcopilot.models import REPORTS, Author, Change, Discussion, Statement
 from btcopilot.recordtext import (
     change_line,
     date_text,
@@ -72,6 +72,7 @@ class ToolName(enum.StrEnum):
     SearchChat = "search_chat"
     FollowUp = "follow_up"
     Navigate = "navigate"
+    Report = "report"
 
 
 class Register(enum.StrEnum):
@@ -614,6 +615,33 @@ def schemas() -> list[dict]:
                     },
                 },
                 "required": ["address"],
+            },
+        },
+        {
+            "name": ToolName.Report.value,
+            "description": (
+                "Offer to send what the person said about the app to the people "
+                "who make it: the app asks them whether to send it, and nothing "
+                "is sent unless they say so.\n\n"
+                + prompts.files().fragment("report")
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "enum": [kind.value for kind in REPORTS],
+                        "description": (
+                            "bug: something in the app does not work; feedback: "
+                            "something they want changed, dislike, or wish it did."
+                        ),
+                    },
+                    "words": {
+                        "type": "string",
+                        "description": "The person's own words, as they said them.",
+                    },
+                },
+                "required": ["kind", "words"],
             },
         },
         {
@@ -1425,6 +1453,27 @@ class Toolbox:
         elif where is place.Place.Person:
             self._person(data, slots[0])
         return f"The app is at {address}.", {"address": address}
+
+    # ── REPORT ──────────────────────────────────────────────────────────────
+
+    def _report(self, args: dict) -> tuple[str, dict]:
+        """The page asks the person whether to send their words; nothing is
+        kept unless they do (R-0056)."""
+        kind = args.get("kind")
+        if kind not in REPORTS:
+            raise ToolError(
+                f"{kind!r} is not one of the kinds of report: {', '.join(REPORTS)}",
+                "It tried to send a report of a kind the app does not have.",
+            )
+        words = (args.get("words") or "").strip()
+        if not words:
+            raise ToolError(
+                "Give the person's own words", "It tried to send a report with no words."
+            )
+        return (
+            "The app is asking them whether to send it.",
+            {"report": {"kind": kind, "words": words}},
+        )
 
     # ── the record itself ───────────────────────────────────────────────────
 

@@ -28,6 +28,7 @@ function watch() {
     read: () => {},
     show: () => {},
     go: () => {},
+    report: () => {},
     text: () => {},
     reset: () => {},
     done: () => {},
