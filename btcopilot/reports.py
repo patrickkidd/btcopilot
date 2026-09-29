@@ -72,15 +72,14 @@ def take(body: dict, user: User | None, diagram: Diagram | None) -> Report:
     if unknown:
         raise ValueError(f"A {kind} does not carry {', '.join(sorted(unknown))}")
     status = ReportStatus(body["status"])
-    if kind is ReportKind.Feedback and (status is ReportStatus.Sent) != bool(body.get("words")):
-        raise ValueError("Feedback sent carries the person's words, and declined none")
+    # what the coach offered and the person turned down keeps only where it was
+    if (status is ReportStatus.Sent) != bool(body.get("error") or body.get("words")):
+        raise ValueError("A report sent carries what broke or the person's words; one declined, neither")
     source = None
     if kind is ReportKind.Bug:
         source = ReportSource(body["source"])
         if source not in SENDERS:
             raise ValueError("Only the server reports as the server")
-        if not body.get("error") and not body.get("words"):
-            raise ValueError("A bug carries what broke or the person's words")
     return write(
         Report(
             kind=kind,

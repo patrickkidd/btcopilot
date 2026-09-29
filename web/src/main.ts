@@ -1221,7 +1221,8 @@ function follow(turnId: string): void {
         // What the message named stays lit after it is written: the spotlight
         // is the resting state of the picture, not a flourish while it types.
         spotlightFrom(reply.statement);
-        if (offered) reports.offer(offered.kind, offered.words, turnId, reply.discussion_id);
+        if (offered)
+          reports.offer(offered.kind, offered.words, turnId, reply.statement_id, reply.discussion_id);
       }),
     failed: (message) =>
       step(() => {

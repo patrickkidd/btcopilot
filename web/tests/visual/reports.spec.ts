@@ -156,7 +156,9 @@ test.describe("what the person says about the app", () => {
     });
 
   // R-0056
-  test("raises the feedback sheet, and Not feedback puts it away and sends nothing", async ({ page }) => {
+  test("raises the feedback sheet, and Not feedback puts it away and sends where it was, never the words", async ({
+    page,
+  }) => {
     await settle(page);
     const sent = posted(page);
     await offered(page, 9201);
@@ -170,7 +172,16 @@ test.describe("what the person says about the app", () => {
 
     await sheet(page).getByRole("button", { name: "Not feedback" }).click();
     await expect(sheet(page)).toBeHidden();
-    expect(sent).toHaveLength(0);
+    await expect.poll(() => sent.length).toBe(1);
+    expect(sent[0].postDataJSON()).toEqual({
+      kind: "feedback",
+      status: "declined",
+      release: await page.evaluate(() => window.BOOTSTRAP.version),
+      address: new URL(page.url()).pathname,
+      turn_id: "t1",
+      statement_id: 9201,
+    });
+    expect((await sent[0].response())!.status()).toBe(201);
     expect(await thread(page)).toBe(before);
   });
 
@@ -221,6 +232,7 @@ test.describe("what the person says about the app", () => {
       release: await page.evaluate(() => window.BOOTSTRAP.version),
       address: new URL(page.url()).pathname,
       turn_id: "t1",
+      statement_id: 9202,
       words: WORDS,
     });
     expect((await sent[0].response())!.status()).toBe(201);

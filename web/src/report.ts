@@ -108,10 +108,10 @@ export class Reports {
 
   /** The coach heard the person say this about the app, in the reply now
    * done; it is offered once a sitting. */
-  offer(kind: ReportKind, words: string, turnId: string, sitting: number): void {
+  offer(kind: ReportKind, words: string, turnId: string, statementId: number, sitting: number): void {
     if (Number(window.localStorage.getItem(OFFERED)) === sitting) return;
     window.localStorage.setItem(OFFERED, String(sitting));
-    const report = { ...this.sent(kind), turn_id: turnId, words };
+    const report = { ...this.sent(kind), turn_id: turnId, statement_id: statementId, words };
     if (kind === ReportKind.Bug) report.source = ReportSource.Page;
     this.queue({ report, list: [["", words]], broke: false });
   }
@@ -188,7 +188,12 @@ export class Reports {
 
   private async answer(act: Act): Promise<void> {
     const { report } = this.at!;
-    if (act === Act.Ok || act === Act.Not) return this.next();
+    if (act === Act.Ok) return this.next();
+    if (act === Act.Not) {
+      // turned down, the offer keeps only where it was, never the words
+      void this.quietly({ ...report!, status: ReportStatus.Declined, words: undefined });
+      return this.next();
+    }
     for (const one of this.sheet.panel.querySelectorAll("button")) one.disabled = true;
     if (act === Act.Always) {
       this.always = true;

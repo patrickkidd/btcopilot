@@ -67,6 +67,16 @@ def test_sent_feedback_keeps_the_words(web):
     assert (row.kind, row.words, row.turn_id, row.source) == (ReportKind.Feedback, "Bigger dots.", "t2", None)
 
 
+def test_feedback_the_person_turned_down_keeps_where_it_was_and_no_words(web):
+    # R-0056
+    declined = {"kind": "feedback", "status": "declined", "release": "r", "turn_id": "t2", "statement_id": 9202}
+    response = post(web, declined)
+    assert response.status_code == 201
+    row = Report.query.one()
+    assert (row.status, row.turn_id, row.statement_id, row.words) == (ReportStatus.Declined, "t2", 9202, None)
+    assert post(web, dict(declined, words="Bigger dots.")).status_code == 400
+
+
 @pytest.mark.parametrize(
     "body",
     [
