@@ -16,4 +16,5 @@ from .productevent import ProductEvent
 from .turnevent import TurnEvent
 from .observation import Observation, ObservationKind
 from .observationreject import ObservationReject
+from .proactivemessage import ProactiveMessage, Trigger
 from .qualityrun import QualityRun, QualityKind

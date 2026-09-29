@@ -22,6 +22,13 @@ class ObservationKind(enum.StrEnum):
     TurnDeclined = "turn_declined"
     PlayRefused = "play_refused"
     PlayFailed = "play_failed"
+    # How a message the coach wrote first fared.
+    ProactiveSent = "proactive_sent"
+    ProactiveOpened = "proactive_opened"
+    ProactiveReplied = "proactive_replied"
+    ProactiveReturned = "proactive_returned"
+    # The words for a message the coach writes first broke its shape.
+    ProactiveRefused = "proactive_refused"
 
 
 class Observation(db.Model, ModelMixin):

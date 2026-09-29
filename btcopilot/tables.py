@@ -44,6 +44,7 @@ TABLES = frozenset(
         "observations",
         "passkeys",
         "policies",
+        "proactive_messages",
         "product_events",
         "quality_runs",
         "review_codings",
