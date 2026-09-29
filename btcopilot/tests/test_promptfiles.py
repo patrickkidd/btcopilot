@@ -10,6 +10,7 @@ import sys
 
 import pytest
 from jinja2 import TemplateNotFound
+from mock import patch
 
 from btcopilot import promptdir, prompts
 from btcopilot.promptdir import PromptDir, key_present, read, split
@@ -221,6 +222,30 @@ def test_without_a_key_the_open_prompts_are_used_and_said(
     assert loader().dirs == [prompts.PUBLIC]
     assert capsys.readouterr().err == promptdir.missing() + "\n"
     assert str(tmp_path / "keys.txt") in promptdir.missing()
+
+
+def test_a_key_in_the_environment_alone_is_left_for_sops_to_read(
+    monkeypatch, tmp_path
+):
+    # R-0488
+    """A cloud session holds the key in SOPS_AGE_KEY and has no key file; naming
+    the missing file would make sops fail."""
+    monkeypatch.setenv("SOPS_AGE_KEY", "AGE-SECRET-KEY-FOR-TESTS")
+    monkeypatch.delenv("SOPS_AGE_KEY_FILE", raising=False)
+    monkeypatch.setattr(promptdir, "KEYFILE", tmp_path / "keys.txt")
+
+    def sent_env() -> dict:
+        with patch.object(promptdir.subprocess, "run") as run:
+            run.return_value.stdout = "plain"
+            assert promptdir.decrypt(tmp_path / "a.prompty") == "plain"
+        return run.call_args.kwargs["env"]
+
+    env = sent_env()
+    assert "SOPS_AGE_KEY_FILE" not in env
+    assert env["SOPS_AGE_KEY"] == "AGE-SECRET-KEY-FOR-TESTS"
+
+    (tmp_path / "keys.txt").write_text("AGE-SECRET-KEY-FOR-TESTS\n")
+    assert sent_env()["SOPS_AGE_KEY_FILE"] == str(tmp_path / "keys.txt")
 
 
 def test_with_the_key_the_private_prompts_are_used(loader, capsys):

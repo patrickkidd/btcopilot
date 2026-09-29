@@ -555,6 +555,16 @@ coach answered a birth year that existed only in the record, from the record. Sp
 calls, $0.1563, on the live suite's one-time calibration (Patrick's approval, 2026-09-28); every
 other model call ran on the subscription or the local model.
 
+**The landing page for familydiagram.com is built on branch `landing-page`, not deployed
+[R-0601].** A visitor to `/` gets the page, with the Alaska Family Systems logo and the logo's
+blue-purple colours (someone signed in still goes to the app); its two
+forms send an invited address its sign-in link and email a request to join the beta to Patrick,
+both behind Cloudflare Turnstile, and Caddy now serves `/` from the app. Before it can go out,
+Patrick creates a Turnstile widget for familydiagram.com in the Cloudflare dashboard and puts its
+two keys in /etc/fd/secrets.env as `FLASK_TURNSTILE_SITE_KEY` and `FLASK_TURNSTILE_SECRET_KEY`;
+without them the forms refuse every post. The release deploy restarts Caddy itself when the
+Caddyfile changed.
+
 **The live suite now runs on the Claude Code subscription** with the coach's real system prompt
 and MCP tools (`bin/subscribe.py`) [R-0568]. Calibrated once against the API, the free path
 judges tool choice, event kind, who is kept and what is asked; it does not judge finer fields or
