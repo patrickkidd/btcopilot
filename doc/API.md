@@ -5,7 +5,9 @@ own free diagram. Writes need the CSRF token from the page's
 `<meta name="csrf-token">` in `X-CSRFToken`. A rejected value returns 400 with a
 plain-text reason; a write the record refuses returns 400 with the rule in plain
 words for the person editing (no ids, no field names), while the coach gets the
-same rule in its own words. Another user's resource returns 404.
+same rule in its own words. Another user's resource returns 404. Every answer
+carries `X-Request-Id`, the id every server log line written while serving it
+names; a proxy's own error page has none.
 
 ## Chat and sessions (a session is a `Discussion`)
 

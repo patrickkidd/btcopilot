@@ -1,5 +1,5 @@
-import os, os.path, logging
-from flask import Flask, jsonify, redirect, request, url_for
+import os, os.path, logging, uuid
+from flask import Flask, g, jsonify, redirect, request, url_for
 from werkzeug.exceptions import Unauthorized, HTTPException
 
 import btcopilot
@@ -13,6 +13,11 @@ _log = logging.getLogger(__name__)
 # A push goes out long after the message it points at is committed, so these
 # are read when the app is made rather than at the first send.
 VAPID = ("VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT")
+
+# The header naming the request each response answers, which every line logged
+# while serving it names too; only this server sets it, so a proxy's own error
+# page never carries it [Oracle: R-0056].
+REQUEST_ID = "X-Request-Id"
 
 
 def create_app(config: dict = None, **kwargs):
@@ -138,6 +143,7 @@ def create_app(config: dict = None, **kwargs):
 
     @app.before_request
     def _():
+        g.request_id = uuid.uuid4().hex
         if request.path == "/health":
             return
 
@@ -155,6 +161,11 @@ def create_app(config: dict = None, **kwargs):
                 }
             },
         )
+
+    @app.after_request
+    def _(response):
+        response.headers[REQUEST_ID] = g.request_id
+        return response
 
     ## Initialize Modules
 
