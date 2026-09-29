@@ -1,6 +1,7 @@
 """Bugs and feedback, from the app's page, its service worker and the server
 itself, all written here [Oracle: R-0056]."""
 
+import datetime
 import threading
 import time
 from collections import deque
@@ -9,6 +10,7 @@ from flask import current_app, request
 
 from btcopilot.extensions import db
 from btcopilot.models import Diagram, Report, ReportKind, ReportSource, ReportStatus, User
+from btcopilot.tuning import reason
 
 # At most this many reports an hour from one sender, so a page caught in a
 # loop, or a stranger's script, cannot fill the table.
@@ -82,7 +84,30 @@ def take(body: dict, user: User | None, diagram: Diagram | None) -> Report:
     )
 
 
+def signature(error: str, frames: list[str] | None) -> str:
+    """What the same fault is counted by: its name and message with the ids
+    and quoted names taken out, as the tuning queue groups, and its first
+    frame in the app's own code."""
+    return " at ".join([reason(error), *(frames or [])[:1]])
+
+
 def write(row: Report) -> Report:
+    """The same fault for the same person in the same release on the same
+    day adds to the count of that day's row instead of making another."""
+    if row.kind is ReportKind.Bug and row.error:
+        row.signature = signature(row.error, row.frames)
+        today = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        same = Report.query.filter(
+            Report.kind == ReportKind.Bug,
+            Report.release == row.release,
+            Report.signature == row.signature,
+            Report.user_id == row.user_id,
+            Report.created_at >= today,
+        ).first()
+        if same:
+            same.count += row.count
+            db.session.commit()
+            return same
     db.session.add(row)
     db.session.commit()
     return row
