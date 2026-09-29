@@ -2324,11 +2324,14 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .strip-c {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
+  min-height: 44px;
   padding: 4px 0 4px 14px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--panel);
+  cursor: pointer;
 }
 .strip-m { flex: 1; min-width: 0; }
 .strip-t, .strip-s {
@@ -2346,10 +2349,14 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
 }
-/* A tap on the words unfolds the whole title and body in place, scrolling
-   inside the card past half the screen, and a second tap folds them. */
-.strip-m { cursor: pointer; }
-.strip.open .strip-m { max-height: 50vh; overflow-y: auto; }
+/* Folded, the card is its two lines and a mark that it opens. A tap unfolds
+   the whole title and body in place, scrolling inside the card past half the
+   screen, with Open and the cross under them; a tap on the words folds it. */
+.strip-more { transform: rotate(90deg); padding: 0 14px; }
+.strip:not(.open) .strip-c > .stepbtn, .strip:not(.open) .strip-c > .cardx,
+.strip.open .strip-more { display: none; }
+.strip.open .strip-c { justify-content: flex-end; }
+.strip.open .strip-m { flex-basis: 100%; padding-right: 14px; max-height: 50vh; overflow-y: auto; }
 .strip.open .strip-t { white-space: normal; }
 .strip.open .strip-s { display: block; -webkit-line-clamp: none; }
 .strip-c > .stepbtn { height: 44px; border-radius: 22px; }

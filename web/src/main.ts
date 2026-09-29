@@ -3,7 +3,7 @@ import "./theme.css";
 import * as api from "./api";
 import { Chat, type LiveBubble } from "./chat";
 import { Picture, Target, Via, type Tap } from "./picture";
-import { Menu, Tab } from "./menu";
+import { Menu, Tab, shut } from "./menu";
 import { Questions } from "./questions";
 import { Ballot } from "./ballot";
 import { Coding } from "./coding";
@@ -67,6 +67,7 @@ import {
   ViewKind,
   type Chip,
   type CodedIn,
+  type Delivery,
   type Diagram,
   type Session,
   type Started,
@@ -1432,6 +1433,35 @@ window.addEventListener("pageshow", (e) => {
   if (e.persisted) void release.check();
 });
 
+/** Everything over the chat put away: the sessions drawer and its upload
+ * panel, the play-by-play drawer, the new-event form, the coding, vote and
+ * meeting cards, and any other screen. */
+function uncover(): void {
+  sessions.close();
+  pbp.leave();
+  coding.close();
+  ballot.close();
+  meeting.close();
+  shut();
+  screen(Screen.Chat);
+}
+
+/** A tapped notification lands where it points from wherever the app was
+ * (Patrick, 2026-09-29): with everything over the chat put away, at its
+ * message in the thread, lit, or at the page of the account view a task or
+ * notice names, pushed from the view's root. One opened from its push no
+ * longer holds the strip or the mark. */
+async function land(one: Delivery): Promise<void> {
+  uncover();
+  if (one.discussion_id !== null) {
+    settings.close();
+    await catchUp();
+    return traceTo({ discussion_id: one.discussion_id, statement_id: one.statement_id });
+  }
+  await notices.refresh();
+  if (one.link) go(one.link);
+}
+
 void load().then(async () => {
   const said = window.BOOTSTRAP.statements;
   if (!said.length) {
@@ -1440,13 +1470,7 @@ void load().then(async () => {
   }
   // Coming back a week later, the picture is where the last message left it.
   leftAt(said);
-}).then(() =>
-  // a task or notice opened from its push no longer holds the strip or the mark
-  landing(
-    (where) => catchUp().then(() => traceTo(where)),
-    (link) => void notices.refresh().then(() => go(link)),
-  ),
-);
+}).then(() => landing(land));
 
 // The dev server too: push needs the worker, and the worker asks the network
 // first, so a saved edit still reaches the page.

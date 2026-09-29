@@ -1,8 +1,5 @@
 import { call, openNotification } from "./api";
-import type { CodedIn, Link } from "./types";
-
-/** Where a tap on a notification opens the thread. */
-type Open = (where: CodedIn) => Promise<void>;
+import type { Delivery } from "./types";
 
 /** The server's public key arrives base64url; the browser takes raw bytes. */
 function bytes(key: string): Uint8Array<ArrayBuffer> {
@@ -30,38 +27,20 @@ export async function subscribe(): Promise<boolean> {
   return true;
 }
 
-async function reach(
-  id: number,
-  open: Open,
-  go: (link: Link) => void,
-): Promise<void> {
-  const where = await openNotification(id);
-  if (where.discussion_id !== null)
-    return open({
-      discussion_id: where.discussion_id,
-      statement_id: where.statement_id,
-    });
-  if (where.link) go(where.link);
-}
-
-/** A tap on a notification, or on the link in its email, opens the thread at
- * the message it points to, or the screen a task or notice points to, and the
- * server counts it opened. The worker names the notification in the address
- * when it opens the app, and in a message when the app is already open. */
-export function landing(open: Open, go: (link: Link) => void): void {
+/** A tap on a notification, or on the link in its email, is counted opened
+ * by the server and then lands where it points. The worker names the
+ * notification in the address when it opens the app, and in a message when
+ * the app is already open; both land through the one function. */
+export function landing(land: (where: Delivery) => Promise<void>): void {
+  const reach = async (id: number) => land(await openNotification(id));
   const id = new URLSearchParams(location.search).get("notification");
   if (id) {
     history.replaceState(null, "", location.pathname + location.hash);
-    void reach(Number(id), open, go);
+    void reach(Number(id));
   }
   if ("serviceWorker" in navigator)
     navigator.serviceWorker.addEventListener(
       "message",
-      (e) =>
-        void reach(
-          (e.data as { notification: number }).notification,
-          open,
-          go,
-        ),
+      (e) => void reach((e.data as { notification: number }).notification),
     );
 }

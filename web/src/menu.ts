@@ -50,7 +50,7 @@ function addSheet(): HTMLElement {
 }
 
 /** The form for something new goes back down, if one ever came up. */
-function shut(): void {
+export function shut(): void {
   const sheet = document.getElementById(ADD);
   if (sheet) slideOver(sheet, false);
 }

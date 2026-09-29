@@ -268,6 +268,12 @@ export class Sessions {
     if (!viaDrag && this.admin) this.search.focus({ preventScroll: true });
   }
 
+  /** The sessions drawer and the upload panel it hands over to, both put away. */
+  close(): void {
+    this.lower();
+    this.recording.lower();
+  }
+
   private lower(): void {
     if (!this.open) return;
     this.open = false;

@@ -222,7 +222,7 @@ export class Recording {
     this.sheet.classList.add("in");
   }
 
-  private lower(): void {
+  lower(): void {
     this.scrim.classList.remove("in");
     this.sheet.classList.remove("in");
     this.hiding = window.setTimeout(() => {

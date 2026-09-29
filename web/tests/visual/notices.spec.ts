@@ -13,6 +13,8 @@ const LINE = 15 * 1.3 + 1;
 const TWO_LINES = 2 * LINE;
 
 const strip = (page: Page) => page.locator(".strip");
+/** Folded, the card holds no buttons: a tap on it shows them under the words. */
+const unfold = (page: Page) => strip(page).locator(".strip-m").click();
 const account = (page: Page) => page.locator("#account");
 
 /** The app, once it has read the reader's notifications. */
@@ -40,6 +42,7 @@ test("a coach message never takes the strip: the notice under it does, and once 
   await expect(strip(page)).toBeVisible();
   await expect(strip(page).locator(".strip-t")).toHaveText(NEW);
 
+  await unfold(page);
   await strip(page).locator(".cardx").click();
   await expect(strip(page)).toBeHidden();
   const read = page.waitForResponse((r) => r.url().endsWith("/app/notifications?all=true"));
@@ -66,6 +69,7 @@ test("a notice shows once in a strip above the message box, the cross counts it 
   await expect(account(page)).toHaveClass(/\bunread\b/);
 
   const put = opened(page);
+  await unfold(page);
   await strip(page).locator(".cardx").click();
   expect((await put).ok()).toBe(true);
   await expect(strip(page)).toBeHidden();
@@ -82,7 +86,7 @@ test("a notice shows once in a strip above the message box, the cross counts it 
 });
 
 // R-0017
-test("a 60-character title and a 100-character body take two lines, each cut with its own ellipsis, and nothing leaves the card", async ({
+test("a 60-character title and a 100-character body take two lines, each cut with its own ellipsis, beside the mark that the card opens and with no buttons, and nothing leaves the card", async ({
   page,
 }) => {
   await page.route("**/app/notifications?all=true", async (route) => {
@@ -107,8 +111,7 @@ test("a 60-character title and a 100-character body take two lines, each cut wit
       words: box(".strip-m"),
       title: box(".strip-t"),
       body: box(".strip-s"),
-      open: box(".strip-c > .stepbtn"),
-      cross: box(".strip-c > .cardx"),
+      more: box(".strip-more"),
       ellipses: [".strip-t", ".strip-s"].map((s) => getComputedStyle(document.querySelector(s)!).textOverflow),
       sideways: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     };
@@ -118,7 +121,9 @@ test("a 60-character title and a 100-character body take two lines, each cut wit
   expect(at.words.height).toBeLessThanOrEqual(TWO_LINES);
   expect([at.title.cut, at.body.cut]).toEqual([true, true]);
   expect(at.ellipses).toEqual(["ellipsis", "ellipsis"]);
-  for (const part of [at.words, at.open, at.cross]) {
+  await expect(strip(page).locator(".stepbtn")).toBeHidden();
+  await expect(strip(page).locator(".cardx")).toBeHidden();
+  for (const part of [at.words, at.more]) {
     expect(part.left).toBeGreaterThanOrEqual(at.card.left);
     expect(part.right).toBeLessThanOrEqual(at.card.right);
   }
@@ -127,7 +132,7 @@ test("a 60-character title and a 100-character body take two lines, each cut wit
 });
 
 // R-0017
-test("a 160-character body folds to two lines, a tap on the words shows all of it without counting it opened, and a second tap folds it", async ({
+test("a 160-character body folds to two lines, a tap shows all of it and then Open and the cross, without counting it opened, and a tap on the words folds it", async ({
   page,
 }) => {
   const body = "Choose how often under Coach messages on your account page, and **turn them off** there. ".repeat(2).slice(0, 160);
@@ -154,6 +159,8 @@ test("a 160-character body folds to two lines, a tap on the words shows all of i
 
   expect((await words.boundingBox())!.height).toBeLessThanOrEqual(TWO_LINES);
   expect((await at()).cut).toBe(true);
+  await expect(strip(page).locator(".stepbtn")).toBeHidden();
+  await expect(strip(page).locator(".cardx")).toBeHidden();
 
   await strip(page).locator(".strip-s").click();
   await expect(strip(page)).toHaveClass(/\bopen\b/);
@@ -163,6 +170,10 @@ test("a 160-character body folds to two lines, a tap on the words shows all of i
   await expect(strip(page).locator(".strip-s strong")).toHaveText("turn them off");
   await expect(strip(page).locator(".strip-c > .stepbtn")).toBeVisible();
   await expect(strip(page).locator(".strip-c > .cardx")).toBeVisible();
+  await expect(strip(page).locator(".strip-more")).toBeHidden();
+  const under = (await words.boundingBox())!;
+  for (const button of [".stepbtn", ".cardx"])
+    expect((await strip(page).locator(button).boundingBox())!.y).toBeGreaterThanOrEqual(under.y + under.height);
   expect(open.card.left).toBeGreaterThanOrEqual(0);
   expect(open.card.right).toBeLessThanOrEqual(page.viewportSize()!.width);
   expect(open.sideways).toBeLessThanOrEqual(0);
@@ -188,6 +199,7 @@ test("Open on a notice pointing at the coach settings lands on the coach setting
   await expect(page.locator(".sn-pane")).toHaveCount(0);
 
   const put = opened(page);
+  await unfold(page);
   await strip(page).locator(".stepbtn").click();
   expect((await put).ok()).toBe(true);
   await expect(page.locator('.sn-pane.in[data-page="coach"]')).toBeVisible();

@@ -648,7 +648,7 @@ export class Ballot {
     this.close();
   }
 
-  private close(): void {
+  close(): void {
     this.scrim.classList.remove("in");
     this.sheet.classList.remove("in");
     window.setTimeout(() => {

@@ -149,6 +149,11 @@ export class Drawer {
     slideOver(this.panel, false);
   }
 
+  /** Put away from outside, as its cross puts it away. */
+  leave(): void {
+    if (this.told && this.panel.classList.contains("in")) this.back(CLUSTER, this.told.eventIds);
+  }
+
   private render(): void {
     const told = this.told!;
     const q = (sel: string) => this.panel.querySelector<HTMLElement>(sel)!;
