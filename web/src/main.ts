@@ -17,7 +17,9 @@ import { Rules } from "./rules";
 import { Sessions } from "./sessions";
 import { sessionTitle } from "./search";
 import { Thread, divider } from "./thread";
-import { Settings } from "./settings";
+import { Page, Settings } from "./settings";
+import { Notices } from "./notices";
+import { Strip } from "./strip";
 import { aimedEvents, chips, itemKind, Lead } from "./chips";
 import { feed } from "./turn";
 import { Release } from "./release";
@@ -52,6 +54,7 @@ import { Feature, Screen } from "./track";
 import {
   ChipKind,
   ChipTone,
+  Link,
   TaskKind,
   type Task,
   InteractionKind,
@@ -591,7 +594,31 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
   onTask: () => void openTask(),
   onAgenda: () => void openAgenda(),
   onPairs: () => void openPairs(),
+  notices: () => notices.list,
+  // one that points nowhere is only counted read, which its row then shows
+  onNotice: async (one) => {
+    await notices.open(one);
+    if (!one.link) await settings.show(Page.Root);
+  },
 });
+
+/** The screen each notice points to (R-0611). */
+const GO: Record<Link, () => void> = {
+  [Link.Account]: () => void settings.show(Page.Root),
+  [Link.Coach]: () => void settings.show(Page.Coach),
+  [Link.Task]: () => {
+    settings.close();
+    void openTask();
+  },
+  [Link.Agenda]: () => {
+    settings.close();
+    void openAgenda();
+  },
+};
+
+const go = (link: Link) => GO[link]();
+
+const notices = new Notices(new Strip($("speakrow")), $("account"), go);
 
 speak.addEventListener("change", () => {
   track.tap(Feature.SettingChange);
@@ -1072,6 +1099,7 @@ function follow(turnId: string): void {
         stopFollowing();
         await load();
         void refreshKnown();
+        void notices.refresh();
         // What the message named stays lit after it is written: the spotlight
         // is the resting state of the picture, not a flourish while it types.
         spotlightFrom(reply.statement);
@@ -1335,6 +1363,7 @@ chat.toEnd();
 
 void refreshKnown();
 void settings.load();
+void notices.refresh();
 
 // A turn the coach is still running when the page opens is drawn from its first
 // event, so a reload lands back in the middle of it rather than on nothing.
@@ -1369,7 +1398,10 @@ void load().then(async () => {
   }
   // Coming back a week later, the picture is where the last message left it.
   leftAt(said);
-}).then(() => landing(traceTo, openTask));
+}).then(() =>
+  // a task or notice opened from its push no longer holds the strip or the mark
+  landing(traceTo, (link) => void notices.refresh().then(() => go(link))),
+);
 
 // The dev server too: push needs the worker, and the worker asks the network
 // first, so a saved edit still reaches the page.

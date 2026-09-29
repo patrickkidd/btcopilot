@@ -530,6 +530,39 @@ export interface Preferences {
   line_hint: boolean;
 }
 
+/** What a notification points at. Mirrors `NotificationKind` on the server. */
+export enum NotificationKind {
+  Coach = "coach",
+  Task = "task",
+  Reminder = "reminder",
+  Notice = "notice",
+}
+
+/** The screen a notification opens. Never the chat: a notice never points
+ * into the thread (R-0611). */
+export enum Link {
+  Account = "account",
+  Coach = "coach_settings",
+  Task = "task",
+  Agenda = "agenda",
+}
+
+/** One notification delivered to the signed-in person, and when they opened
+ * it. */
+export interface Delivery {
+  id: number;
+  kind: NotificationKind;
+  title: string;
+  /** A notice's words; the other kinds are their title alone. */
+  body: string | null;
+  link: Link | null;
+  /** A coach message's own place in the thread. */
+  discussion_id: number | null;
+  statement_id: number | null;
+  created_at: string;
+  opened_at: string | null;
+}
+
 /** A key held by one device that signs the reader in without an emailed code. */
 export interface Passkey {
   id: number;

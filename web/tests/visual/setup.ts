@@ -106,6 +106,7 @@ export const KEYS = [
   "sitting",
   "sittings",
   "sameday",
+  "notice",
 ] as const;
 export type Key = (typeof KEYS)[number];
 

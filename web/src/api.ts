@@ -34,6 +34,7 @@ import type {
   Session,
   SessionKind,
   Decision,
+  Delivery,
   Tally,
   Statement,
   Timeline,
@@ -309,6 +310,15 @@ export const setPreferences = (body: Partial<Preferences>) =>
   call<Preferences>("PATCH", "/preferences", body);
 
 export const account = () => call<Account>("GET", "/account");
+
+/** The signed-in person's notifications, newest first: the unread ones, or
+ * with `all` the opened ones too. */
+export const notifications = (all = false) =>
+  call<Delivery[]>("GET", `/notifications${all ? "?all=true" : ""}`);
+
+/** Opening and putting away are one stamp, and the first counts. */
+export const openNotification = (id: number) =>
+  call<Delivery>("PATCH", `/notifications/${id}`, { opened: true });
 
 /** Every diagram the user can open — owned and granted — most recently active
  * first, each with how many sessions sit on it. */

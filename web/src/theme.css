@@ -992,7 +992,7 @@ button { font-family: inherit; }
    and in a full-screen form's top bar, below the phone's own status bar; the
    notes' row reaches into the card's padding so the cross keeps the corner */
 .notes-head { margin-right: -12px; }
-.notes-head > .cardx, .ovbar > .cardx { position: static; }
+.notes-head > .cardx, .ovbar > .cardx, .strip-c > .cardx { position: static; flex: none; }
 .notes-card dl { margin: 0; }
 .notes-card dt { color: var(--ink); }
 .notes-card dd { margin: 0 0 8px; overflow-wrap: anywhere; }
@@ -1754,6 +1754,22 @@ button { font-family: inherit; }
 .avatar > * , .avatar svg { position: relative; }
 .avatar svg { width: 24px; height: 24px; display: block; }
 .avatar:active { color: var(--data-press); }
+/* A notice is unread: the amber of the coach's question chips, on the ring of
+   the account button and before the notice's row (R-0611). */
+.avatar.unread::after, .sn-unread {
+  content: "";
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ask);
+}
+.avatar.unread::after {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  box-shadow: 0 0 0 2px var(--bg);
+}
 
 /* The box the settings pages travel in has no ground of its own: what is
    already on screen stays there and the page slides in over it, rather than
@@ -2294,6 +2310,30 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   overflow: visible;
 }
 .sys.warn .chip.retry { flex: none; margin: 0; }
+
+/* One call to the reader above the message box, never in the thread and never
+   over the page (R-0611): a card of two lines at most, the way in as the step
+   pill, and the app's close cross. It stands on the thread's own ground. */
+.strip { flex: none; padding: 0 16px 8px; background: var(--bg); }
+.strip-c {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0 4px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+.strip-m { flex: 1; min-width: 0; }
+.strip-t, .strip-s {
+  font: 600 15px/1.3 var(--sans);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.strip-s { font-weight: 400; color: var(--faint); }
+.strip-c > .stepbtn { height: 44px; border-radius: 22px; }
 
 /* The home-screen card: shown once per device after signing in, over the chat
    rather than in front of it — tapping the ground behind it puts it away. */

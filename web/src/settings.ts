@@ -14,6 +14,7 @@ import {
   Proactive,
   Theme,
   type Account,
+  type Delivery,
   type Diagram,
   type Passkey,
   type Preferences,
@@ -46,7 +47,7 @@ const SILHOUETTE =
   `<circle cx="11" cy="7.5" r="4" fill="currentColor"/>` +
   `<path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"/></svg>`;
 
-enum Page {
+export enum Page {
   Root = "root",
   Profile = "profile",
   Coach = "coach",
@@ -76,6 +77,10 @@ export interface SettingsHandlers {
   onAgenda(): void;
   /** Two replies to the same words, picked blind (R-0599). */
   onPairs(): void;
+  /** Every notice sent to this person, newest first (R-0611). */
+  notices(): Delivery[];
+  /** A notice tapped in the list: counted opened, then where it points. */
+  onNotice(one: Delivery): void;
 }
 
 /** A stored user agent is unreadable, so the row names the phone it came from. */
@@ -168,6 +173,14 @@ export class Settings {
     return name.trim().charAt(0).toUpperCase();
   }
 
+  /** The account view at one of its pages, which is where a notice points:
+   * opened on it, or drawn again where it stands with what just changed. */
+  async show(page: Page): Promise<void> {
+    if (this.open) this.replaceTop();
+    else await this.raise();
+    if (page !== Page.Root && this.stack.at(-1)?.page !== page) this.push(page);
+  }
+
   private async raise(): Promise<void> {
     if (this.open) return;
     // The account is already in hand from the load at start-up, so the view
@@ -214,7 +227,8 @@ export class Settings {
     this.handlers.onTitle(under.title);
   }
 
-  private close(): void {
+  close(): void {
+    if (!this.open) return;
     this.open = false;
     this.back.hidden = true;
     this.handlers.onTitle(null);
@@ -406,6 +420,10 @@ export class Settings {
     first.append(cell);
     pane.append(first);
 
+    const notices = this.handlers.notices();
+    if (notices.length)
+      pane.append(this.group(notices.map((one) => this.noticeRow(one)), "Notices"));
+
     pane.append(
       this.group([
         this.pushRow("Coach", `speak ${prefs.speak ? "on" : "off"}`, Page.Coach),
@@ -465,6 +483,25 @@ export class Settings {
     last.append(out);
     pane.append(last, el("div", "sn-foot", "Family Diagram · beta"));
     return { title: "Account", pane };
+  }
+
+  /** A notice: unread ones carry the account button's mark, and a tap opens
+   * where it points, or only counts it read when it points nowhere. */
+  private noticeRow(one: Delivery): HTMLElement {
+    const unread = one.opened_at === null;
+    const row = el("div", `sn-row${one.link || unread ? " push" : ""}`);
+    if (unread) row.append(el("span", "sn-unread"));
+    const main = el("div", "sn-m");
+    const when = shortDate(new Date(one.created_at), new Date());
+    main.append(
+      el("div", "sn-t", esc(one.title)),
+      el("div", "sn-s", esc(`${when} · ${one.body}`)),
+    );
+    row.append(main);
+    if (one.link) row.append(el("div", "sn-chev", "›"));
+    if (one.link || unread)
+      row.addEventListener("click", () => this.handlers.onNotice(one));
+    return row;
   }
 
   private profile(prefs: Preferences, account: Account): Built {

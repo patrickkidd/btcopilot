@@ -48,10 +48,15 @@ self.addEventListener("fetch", (e) => {
   );
 });
 
-// A push is only a pointer: to a coach message already in the thread, or to a
-// coding task. Its kind is its tag, so the lock screen holds one of each kind
+// A push is only a pointer: to a coach message already in the thread, to a
+// coding task, or to a product notice. Its kind is its tag, so the lock screen holds one of each kind
 // and the newest of a kind replaces that kind's unread one.
-const TITLE = { coach: "Coach", task: "Coding task", reminder: "Coding task" };
+const TITLE = {
+  coach: "Coach",
+  task: "Coding task",
+  reminder: "Coding task",
+  notice: "Family Diagram",
+};
 
 self.addEventListener("push", (e) => {
   const { id, kind, body } = e.data.json();
