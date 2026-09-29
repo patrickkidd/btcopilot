@@ -465,6 +465,8 @@ export interface Session {
   turn: string | null;
   /** On a search, the newest line said in it that carries the words. */
   match?: string;
+  /** The family it was said about, on the list of every family's sessions. */
+  family?: string;
 }
 
 export interface Diagram {
@@ -524,6 +526,8 @@ export interface Preferences {
   first_name: string | null;
   last_name: string | null;
   birthdate: string | null;
+  how_it_works: boolean;
+  line_hint: boolean;
 }
 
 /** A key held by one device that signs the reader in without an emailed code. */
