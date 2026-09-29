@@ -99,7 +99,8 @@ test("a 60-character title and a 100-character body take two lines, each cut wit
     const box = (s: string) => {
       const el = document.querySelector(s)!;
       const r = el.getBoundingClientRect();
-      return { left: r.left, right: r.right, height: r.height, cut: el.scrollWidth > el.clientWidth };
+      const cut = el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight;
+      return { left: r.left, right: r.right, height: r.height, cut };
     };
     return {
       card: box(".strip-c"),
@@ -123,6 +124,55 @@ test("a 60-character title and a 100-character body take two lines, each cut wit
   }
   expect(at.card.right).toBeLessThanOrEqual(page.viewportSize()!.width);
   expect(at.sideways).toBeLessThanOrEqual(0);
+});
+
+// R-0017
+test("a 160-character body folds to two lines, a tap on the words shows all of it without counting it opened, and a second tap folds it", async ({
+  page,
+}) => {
+  const body = "Choose how often under Coach messages on your account page, and **turn them off** there. ".repeat(2).slice(0, 160);
+  await page.route("**/app/notifications?all=true", async (route) => {
+    const res = await route.fetch();
+    const rows = (await res.json()) as { body: string | null }[];
+    for (const one of rows) one.body = body;
+    await route.fulfill({ response: res, json: rows });
+  });
+  const patched: string[] = [];
+  page.on("request", (r) => r.method() === "PATCH" && patched.push(r.url()));
+  await arrive(page);
+  const words = strip(page).locator(".strip-m");
+  const at = () =>
+    page.evaluate(() => {
+      const card = document.querySelector(".strip-c")!.getBoundingClientRect();
+      const s = document.querySelector(".strip-s")!;
+      return {
+        card: { left: card.left, right: card.right },
+        cut: s.scrollHeight > s.clientHeight,
+        sideways: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      };
+    });
+
+  expect((await words.boundingBox())!.height).toBeLessThanOrEqual(TWO_LINES);
+  expect((await at()).cut).toBe(true);
+
+  await strip(page).locator(".strip-s").click();
+  await expect(strip(page)).toHaveClass(/\bopen\b/);
+  expect((await words.boundingBox())!.height).toBeGreaterThan(TWO_LINES);
+  const open = await at();
+  expect(open.cut).toBe(false);
+  await expect(strip(page).locator(".strip-s strong")).toHaveText("turn them off");
+  await expect(strip(page).locator(".strip-c > .stepbtn")).toBeVisible();
+  await expect(strip(page).locator(".strip-c > .cardx")).toBeVisible();
+  expect(open.card.left).toBeGreaterThanOrEqual(0);
+  expect(open.card.right).toBeLessThanOrEqual(page.viewportSize()!.width);
+  expect(open.sideways).toBeLessThanOrEqual(0);
+
+  await strip(page).locator(".strip-t").click();
+  await expect(strip(page)).not.toHaveClass(/\bopen\b/);
+  expect((await words.boundingBox())!.height).toBeLessThanOrEqual(TWO_LINES);
+  expect((await at()).cut).toBe(true);
+  await expect(strip(page)).toBeVisible();
+  expect(patched).toEqual([]);
 });
 
 // R-0017

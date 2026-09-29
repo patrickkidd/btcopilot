@@ -85,6 +85,7 @@ is its own tag, so it neither replaces nor waits on a coach message; with no
 browser, an email only when the command was given `--email`; otherwise nothing
 leaves the app. Someone who joins the audience later gets their row on their
 next open, in the app only.
+The body may carry `**bold**`, `_italics_`, `[words](https://…)` or `[words](/path)` links that open in a new tab, and line breaks; the app shows anything else as written, never as HTML.
 
 ## Events
 

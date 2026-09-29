@@ -6,6 +6,7 @@ import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { identify } from "./telemetry";
 import { shortDate } from "./when";
+import { markup } from "./markup";
 import { addPasskey, available, deviceWords } from "./passkey";
 import { subscribe } from "./push";
 import { PRO, RECORD, RECORDS, Records } from "./pro";
@@ -538,12 +539,14 @@ export class Settings {
     const when = shortDate(new Date(one.created_at), new Date());
     main.append(
       el("div", "sn-t", esc(one.title)),
-      el("div", "sn-s", esc(`${when} · ${one.body}`)),
+      el("div", "sn-s sn-wrap", `${esc(when)} · ${markup(one.body ?? "")}`),
     );
     row.append(main);
     if (goes) row.append(el("div", "sn-chev", "›"));
     if (goes || unread)
-      row.addEventListener("click", () => this.handlers.onNotice(one));
+      row.addEventListener("click", (e) => {
+        if (!(e.target as Element).closest("a")) this.handlers.onNotice(one);
+      });
     return row;
   }
 

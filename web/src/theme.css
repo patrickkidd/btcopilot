@@ -1186,7 +1186,7 @@ button { font-family: inherit; }
 .btn.link { border: none; color: var(--data); }
 /* the concept pages of the codes in view (FD-364) */
 .concepts { margin: 6px 0; font: 400 13px/1.5 var(--sans); color: var(--faint); overflow-wrap: anywhere; }
-.concepts a { color: var(--data); }
+.concepts a, .strip-s a, .sn-s a { color: var(--data); }
 .scroller {
   flex: 1;
   min-height: 0;
@@ -1971,6 +1971,7 @@ button { font-family: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.sn-s.sn-wrap { white-space: normal; }
 .sn-tick { flex: none; color: var(--data); font: 500 17px/1 var(--mono); }
 /* the diagram in use, marked the same way the current session is */
 .sn-row.cur { position: relative; }
@@ -2337,7 +2338,20 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.strip-s { font-weight: 400; color: var(--faint); }
+.strip-s {
+  font-weight: 400;
+  color: var(--faint);
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+/* A tap on the words unfolds the whole title and body in place, scrolling
+   inside the card past half the screen, and a second tap folds them. */
+.strip-m { cursor: pointer; }
+.strip.open .strip-m { max-height: 50vh; overflow-y: auto; }
+.strip.open .strip-t { white-space: normal; }
+.strip.open .strip-s { display: block; -webkit-line-clamp: none; }
 .strip-c > .stepbtn { height: 44px; border-radius: 22px; }
 
 /* The home-screen card: shown once per device after signing in, over the chat

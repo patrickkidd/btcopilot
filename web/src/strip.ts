@@ -1,4 +1,5 @@
 import { closeX, el, esc, stepBtn } from "./dom";
+import { markup } from "./markup";
 
 /** What the strip says and what its two taps do. */
 export interface Call {
@@ -21,7 +22,11 @@ export class Strip {
     this.box.setAttribute("role", "status");
     above.before(this.box);
     this.box.addEventListener("click", (e) => {
-      const hit = (e.target as Element).closest("button");
+      const at = e.target as Element;
+      if (at.closest("a")) return;
+      const hit = at.closest("button");
+      // the words fold and unfold in place and do not count the call opened
+      if (!hit && at.closest(".strip-m")) this.box.classList.toggle("open");
       if (!hit || !this.call) return;
       const call = this.call;
       this.hide();
@@ -31,11 +36,13 @@ export class Strip {
   }
 
   show(call: Call): void {
+    if (call.title !== this.call?.title || call.body !== this.call?.body)
+      this.box.classList.remove("open");
     this.call = call;
     this.box.innerHTML =
       `<div class="strip-c"><div class="strip-m">` +
       `<div class="strip-t">${esc(call.title)}</div>` +
-      (call.body ? `<div class="strip-s">${esc(call.body)}</div>` : "") +
+      (call.body ? `<div class="strip-s">${markup(call.body)}</div>` : "") +
       `</div>` +
       (call.open ? stepBtn(esc(call.open.label), "", false) : "") +
       closeX() +
