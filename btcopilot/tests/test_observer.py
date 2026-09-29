@@ -14,7 +14,7 @@ from btcopilot import turns
 from btcopilot.models import Observation, ObservationKind
 from btcopilot.schema import DiagramData
 from btcopilot.toolbox import ToolName
-from btcopilot.tests.conftest import Model, called, csrf_token, said
+from btcopilot.tests.conftest import Model, called, csrf_token, said, version
 from btcopilot.tests.test_turnhistory import Breaks, coach, post, resume
 
 WREN = {"id": 1, "name": "Wren"}
@@ -103,9 +103,11 @@ def test_an_event_changed_to_match_another_on_kind_date_and_people_is_written_do
         ),
     )
     post(web, token, "We moved in March 2000.")
-    assert [(kind, detail["ids"]) for kind, detail in seen()] == [
-        (ObservationKind.DuplicateEvent, [4, 5])
+    assert [kind for kind, _ in seen()] == [
+        ObservationKind.DuplicateEvent,
+        ObservationKind.EarlierEdit,
     ]
+    assert seen()[0][1]["ids"] == [4, 5]
 
 
 def test_a_repeat_the_turn_did_not_touch_is_not_written_down_again(
@@ -291,4 +293,29 @@ def test_a_turn_every_model_declined_is_written_down(
     turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
     assert seen() == [
         (ObservationKind.TurnDeclined, {"category": "cyber", "reason": "cyber"})
+    ]
+
+
+def test_edits_on_what_an_earlier_sitting_made_are_counted(
+    web, token, test_user, monkeypatch
+):
+    # R-0517
+    record(test_user)
+    read = version(test_user.free_diagram)
+    coach(
+        monkeypatch,
+        Model(
+            called(ToolName.ReadPeople),
+            called(ToolName.EditPerson, id=1, version=read, name="Wrenna"),
+            called(ToolName.EditPerson, name="Nell"),
+            called(ToolName.EditPerson, id=2, version=read, last_name="Hale"),
+            said("Wrenna and Nell Hale."),
+        ),
+    )
+    post(web, token)
+    assert seen() == [
+        (
+            ObservationKind.EarlierEdit,
+            {"count": 1, "calls": [{"name": "edit_person", "item": ["person", "1"]}]},
+        )
     ]
