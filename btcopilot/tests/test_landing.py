@@ -263,9 +263,14 @@ def test_the_copyright_year_is_the_year_of_the_visit(browser, keyed):
     assert "© 2031 Alaska Family Systems" in text
 
 
-def test_the_logo_is_shown_to_a_visitor(browser, keyed):
+def test_the_logo_and_the_copyright_link_to_alaska_family_systems(browser, keyed):
     # R-0601
     html = browser.get("/").get_data(as_text=True)
+    year = datetime.date.today().year
+    assert re.search(
+        rf'<a href="https://alaskafamilysystems.com">© {year} Alaska Family Systems</a>',
+        html,
+    )
     assert re.search(
         r'<a class="logo" href="https://alaskafamilysystems.com"><img src="/app/afs-logo.png" alt="Alaska Family Systems"',
         html,
