@@ -783,6 +783,8 @@ def _write(diagram, kind: ItemKind, item_id, fields: dict):
         ({"kind": "noted"}, "event 40 is a noted event, and only a shift carries"),
         ({"kind": "birth", "child": 5, "person": None}, "event 40 is a birth event, and only a shift carries"),
         ({"description": None}, "event 40 is a shift event with no words"),
+        ({"description": "New Event"}, "event 40 is a shift event with no words"),
+        ({"description": " unknown "}, "event 40 is a shift event with no words"),
         ({"dateTime": "1998"}, "event 40's dateTime '1998' is not a date"),
         ({"kind": "divorced", "spouse": 3, "anxiety": None}, "event 40 is a divorced event between persons 1 and 3, who have no pair bond"),
         ({"kind": "birth", "child": 5, "spouse": 4, "anxiety": None}, "event 40 names person 4 as a parent of person 5, who is born to pair bond 9"),

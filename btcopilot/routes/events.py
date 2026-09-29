@@ -32,6 +32,7 @@ PERSON_FIELDS = ("person", "spouse", "child")
 PERSON_LIST_FIELDS = ("relationshipTargets", "relationshipTriangles")
 SHIFT_VARIABLES = ("symptom", "anxiety", "functioning", "relationship")
 TRIANGLE_KINDS = (RelationshipKind.Inside, RelationshipKind.Outside)
+DATE_LABELS = {"dateTime": "date", "endDateTime": "end date"}
 
 ENUMS = {
     "kind": EventKind,
@@ -56,7 +57,10 @@ def _coerce(body: dict, people: set) -> dict:
         if values.get(name):
             date = parse_date(values[name])
             if date is None:
-                raise ValueError(f"{name} is not a date: {values[name]!r}")
+                raise ValueError(
+                    f'The {DATE_LABELS[name]} "{values[name]}" could not be read. '
+                    "Give the year, month and day."
+                )
             values[name] = date.isoformat()
     for name in PERSON_FIELDS:
         if values.get(name) is not None and values[name] not in people:
