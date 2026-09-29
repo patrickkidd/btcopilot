@@ -35,6 +35,7 @@ function watch(): { shown: Shown; take: (event: TurnEvent) => void } {
       shown.read = ids;
     },
     show: () => {},
+    go: () => {},
     text: (text) => {
       shown.words += text;
     },

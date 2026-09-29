@@ -37,6 +37,8 @@ class TurnEventKind(enum.StrEnum):
     ToolCall = "tool_call"
     RecordPatch = "record_patch"
     View = "view"
+    # The coach moved the app to an address in it (R-0055).
+    Navigate = "navigate"
     Text = "text"
     TextReset = "text_reset"
     # What the grouping of the record's events now says that it did not before,

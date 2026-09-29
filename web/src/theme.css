@@ -2205,18 +2205,22 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   text-overflow: ellipsis;
   max-width: 60vw;
 }
-.bub.traced {
+/* The one light for whatever an address or a jump points at: a message, a
+   row in a drawer or a list (R-0055). A row fills its list's width, so its
+   ring is drawn just inside it, where the list cannot clip it. */
+.traced {
   outline: 2px solid var(--move);
   outline-offset: 2px;
   animation: tracefade 2.2s ease-out forwards;
 }
+.traced:not(.bub) { outline-offset: -2px; }
 @keyframes tracefade {
   0% { outline-color: var(--move); }
   70% { outline-color: var(--move); }
   100% { outline-color: transparent; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .bub.traced { animation: none; }
+  .traced { animation: none; }
 }
 
 /* while a mouse drag is scrolling, the surface is being moved, not read */

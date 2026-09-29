@@ -70,7 +70,7 @@ def row(notification: Notification) -> dict:
         "channel": notification.channel.value,
         "title": notice.title if notice else push.SUBJECT[notification.kind],
         "body": notice.body if notice else None,
-        "link": link.value if link else None,
+        "link": link,
         "statement_id": notification.statement_id,
         "discussion_id": statement.discussion_id if statement else None,
         "cut_id": notification.cut_id,

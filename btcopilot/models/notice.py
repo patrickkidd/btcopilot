@@ -14,6 +14,7 @@ from sqlalchemy import (
 
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
+from btcopilot.place import APP
 
 
 class Audience(enum.StrEnum):
@@ -23,12 +24,16 @@ class Audience(enum.StrEnum):
 
 
 class NoticeLink(enum.StrEnum):
-    """The screen a notice opens; no link opens nothing."""
+    """The fixed screens a notice opens by name. A link may instead be any
+    address in the app, starting with /app/ (R-0055); no link opens nothing."""
 
     Account = "account"
     CoachSettings = "coach_settings"
     Task = "task"
     Agenda = "agenda"
+
+
+LINKS = ", ".join(f"'{link.value}'" for link in NoticeLink)
 
 
 class Notice(db.Model, ModelMixin):
@@ -44,11 +49,15 @@ class Notice(db.Model, ModelMixin):
             " AND (audience = 'people') = (user_ids IS NOT NULL)",
             name="notice_names_its_audience",
         ),
+        CheckConstraint(
+            f"link IN ({LINKS}) OR link LIKE '{APP}%'",
+            name="notice_link_is_a_screen_or_an_address",
+        ),
     )
 
     title = Column(String(100), nullable=False)
     body = Column(String(300), nullable=False)
-    link = Column(Enum(NoticeLink, values_callable=lambda e: [x.value for x in e]))
+    link = Column(String(200))
     audience = Column(
         Enum(Audience, values_callable=lambda e: [x.value for x in e]), nullable=False
     )

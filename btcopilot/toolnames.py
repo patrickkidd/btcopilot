@@ -3,7 +3,7 @@ record when the call is made and kept with it, so a line names what the coach
 touched as it was then, even once it is renamed or removed; the page never
 shows an id."""
 
-from btcopilot import ROLE_AUDITOR, record
+from btcopilot import ROLE_AUDITOR, place, record
 from btcopilot.clusters import _title
 from btcopilot.extensions import db
 from btcopilot.models import Statement
@@ -122,12 +122,33 @@ def evidence_label(data: DiagramData, one: dict) -> str:
     return MESSAGE_GONE if statement is None else said_label(statement)
 
 
+# The places the record names, by the kind of thing each one is.
+NAMED = {
+    place.Place.Cluster: ItemKind.Cluster,
+    place.Place.Event: ItemKind.Event,
+    place.Place.EventEditor: ItemKind.Event,
+    place.Place.Person: ItemKind.Person,
+}
+NOWHERE = "a place the app does not have"
+
+
+def where(data: DiagramData, address: str) -> str:
+    """What the line calls the place a navigate call goes to."""
+    found = place.parse(address)
+    if found is None:
+        return NOWHERE
+    at, slots = found
+    return label(data, NAMED[at], slots[0]) if at in NAMED else place.WORDS[at]
+
+
 def names(data: DiagramData, tool: str, args: dict) -> dict:
     """What each id in the call's args is called, keyed by the arg, and what
     the call itself touches under `it`: the thing it changes or removes as the
     record holds it, or the thing it adds as its args describe it."""
     if tool == ToolName.CoachNotes:
         return {}
+    if tool == ToolName.Navigate:
+        return {"it": where(data, args.get("address") or "")}
     people = {p["id"]: p for p in data.people}
 
     out = {

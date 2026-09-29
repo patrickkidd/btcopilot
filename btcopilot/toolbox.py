@@ -14,7 +14,7 @@ import re
 
 from sqlalchemy import or_
 
-from btcopilot import clusters, proactive, prompts, record, views
+from btcopilot import clusters, place, proactive, prompts, record, views
 from btcopilot.models import Author, Change, Discussion, Statement
 from btcopilot.recordtext import (
     change_line,
@@ -71,6 +71,7 @@ class ToolName(enum.StrEnum):
     CoachNotes = "coach_notes"
     SearchChat = "search_chat"
     FollowUp = "follow_up"
+    Navigate = "navigate"
 
 
 class Register(enum.StrEnum):
@@ -589,6 +590,30 @@ def schemas() -> list[dict]:
                     "question": {"type": "string"},
                 },
                 "required": ["when", "question"],
+            },
+        },
+        {
+            "name": ToolName.Navigate.value,
+            "description": (
+                "Move the person's app to a place in it while you speak: a screen, "
+                "a list, a setting, or something in the record. Your reply carries "
+                "a button that goes there again.\n\n"
+                + prompts.files().fragment("navigate")
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "address": {
+                        "type": "string",
+                        "description": (
+                            "The place, one of: "
+                            + ", ".join(place.APP + p.value for p in place.Place)
+                            + ". :n is a number, :key a cluster's id, :day a "
+                            "meeting's YYYY-MM-DD."
+                        ),
+                    },
+                },
+                "required": ["address"],
             },
         },
         {
@@ -1378,6 +1403,28 @@ class Toolbox:
             raise ToolError(str(e), e.plain)
         self.views.append(view)
         return (f"Showing the {view['kind']}.", {"view": view})
+
+    # ── NAVIGATE ────────────────────────────────────────────────────────────
+
+    def _navigate(self, args: dict) -> tuple[str, dict]:
+        """The app goes where the address says; what it names in the record
+        must be there (R-0055)."""
+        address = args.get("address") or ""
+        found = place.parse(address)
+        if found is None:
+            raise ToolError(
+                f"{address!r} is no address in the app; the tool's description lists them",
+                "It tried to open a place the app does not have.",
+            )
+        where, slots = found
+        data = self.data
+        if where is place.Place.Cluster:
+            self._cluster(data, slots[0])
+        elif where in (place.Place.Event, place.Place.EventEditor):
+            self._event(data, slots[0])
+        elif where is place.Place.Person:
+            self._person(data, slots[0])
+        return f"The app is at {address}.", {"address": address}
 
     # ── the record itself ───────────────────────────────────────────────────
 

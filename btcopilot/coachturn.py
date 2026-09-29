@@ -85,6 +85,10 @@ SHORTEN = (
 # coach_story_shape fragment in its system prompt says what to do with them.
 STORY = "**What changed in the story since last time**\n\n{sentences}"
 
+# What a call's event tells the page, by the key it carries; anything else it
+# tells is the record changing.
+TOLD = {"view": TurnEventKind.View, "address": TurnEventKind.Navigate}
+
 
 NARRATE = (
     "That reply is a list of chips, not something you said. Write it again as "
@@ -368,10 +372,9 @@ class CoachTurn:
                     }
                 )
                 if event and call.name not in LOOKUPS:
-                    kind = (
-                        TurnEventKind.View
-                        if "view" in event
-                        else TurnEventKind.RecordPatch
+                    kind = next(
+                        (kind for key, kind in TOLD.items() if key in event),
+                        TurnEventKind.RecordPatch,
                     )
                     self._note(events, dict(event, type=kind.value))
             sentences = self._regroup(events)

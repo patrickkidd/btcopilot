@@ -1,4 +1,4 @@
-import { closeX, el, slideOver } from "./dom";
+import { closeX, el, flash, slideOver } from "./dom";
 import { openEditor, openPersonEditor } from "./editor";
 import { Feature, tap } from "./track";
 import { eventDivider, eventRow, fullName, personRow, sections } from "./rows";
@@ -49,6 +49,10 @@ function addSheet(): HTMLElement {
   return sheet;
 }
 
+/** Whether the form for something new is up. */
+export const adding = (): boolean =>
+  document.getElementById(ADD)?.classList.contains("in") ?? false;
+
 /** The form for something new goes back down, if one ever came up. */
 export function shut(): void {
   const sheet = document.getElementById(ADD);
@@ -78,11 +82,20 @@ export class Menu {
     const people = this.tab === Tab.People;
     const sheet = addSheet();
     sheet.querySelector(".ovt")!.textContent = people ? "New person" : "New event";
-    sheet.querySelector<HTMLElement>(".cardx")!.onclick = shut;
+    sheet.querySelector<HTMLElement>(".cardx")!.onclick = () => {
+      shut();
+      this.onMove?.();
+    };
     const body = sheet.querySelector<HTMLElement>(".scroller")!;
     body.replaceChildren(people ? this.personEditor(null) : this.editor(null));
     body.scrollTop = 0;
     slideOver(sheet, true);
+    this.onMove?.();
+  }
+
+  /** The thing whose editor is open, if one is. */
+  edited(): number | null {
+    return this.editing;
   }
 
   /** Which of the two lists is on screen. */
@@ -107,14 +120,19 @@ export class Menu {
     this.query = "";
     this.onTab?.(tab);
     this.render();
-    this.body
-      .querySelector(tab === Tab.People ? `.row[data-person="${id}"]` : `.row[data-event="${id}"]`)
-      ?.scrollIntoView({ block: "center" });
+    const row = this.body.querySelector<HTMLElement>(
+      tab === Tab.People ? `.row[data-person="${id}"]` : `.row[data-event="${id}"]`,
+    );
+    if (row) flash(row);
+    this.onMove?.();
   }
 
   /** Told when the drawer changes tab under its own steam, so the header and
    * the buttons above the list say the same thing it does. */
   onTab?: (tab: Tab) => void;
+
+  /** Told when an editor opens or closes, so the address says so. */
+  onMove?: () => void;
 
   search(query: string): void {
     this.query = query;
@@ -183,6 +201,7 @@ export class Menu {
           tap(Feature.EventOpen, { kind: ItemKind.Event, id: String(id) });
         this.editing = this.editing === id ? null : id;
         this.render();
+        this.onMove?.();
       });
     });
     if (this.editing !== null) {
@@ -223,6 +242,7 @@ export class Menu {
           tap(Feature.PersonOpen, { kind: ItemKind.Person, id: String(id) });
         this.editing = this.editing === id ? null : id;
         this.render();
+        this.onMove?.();
       });
     });
     if (this.editing !== null) {
@@ -237,6 +257,7 @@ export class Menu {
   private done(): void {
     this.editing = null;
     shut();
+    this.onMove?.();
     void this.reload().then((data) => this.show(data));
   }
 

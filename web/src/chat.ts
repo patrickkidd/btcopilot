@@ -1,4 +1,4 @@
-import { esc, el } from "./dom";
+import { esc, el, flash } from "./dom";
 import { askedChip, chipOf, face, LEAD, Lead, pill, token, tokenize } from "./chips";
 import { hush, say } from "./speech";
 import { INFO, notesView, type Notes } from "./notes";
@@ -114,9 +114,6 @@ const playable = (bubble: HTMLElement, text: string) => {
   if (bubble.nextElementSibling?.matches(".play")) bubble.nextElementSibling.remove();
   if (text) bubble.insertAdjacentHTML("afterend", PLAY);
 };
-
-/** How long a traced bubble stays outlined after a moment jumps to it. */
-const TRACE_MS = 2200;
 
 export class Chat {
   /** What each bubble was written from, chips and all, so a tap on its words
@@ -333,18 +330,9 @@ export class Chat {
       `.bub[data-statement="${statementId}"]`,
     );
     if (!bubble) return false;
-    const box = this.list.getBoundingClientRect();
-    const at = bubble.getBoundingClientRect();
-    this.list.scrollTop = Math.max(
-      0,
-      this.list.scrollTop + (at.top - box.top) - (box.height - at.height) / 2,
-    );
     for (const lit of this.list.querySelectorAll(".ask.hl")) lit.classList.remove("hl");
     if (ask) bubble.querySelector(".ask")?.classList.add("hl");
-    bubble.classList.remove("traced");
-    void bubble.offsetWidth;
-    bubble.classList.add("traced");
-    window.setTimeout(() => bubble.classList.remove("traced"), TRACE_MS);
+    flash(bubble);
     return true;
   }
 

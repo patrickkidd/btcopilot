@@ -1,6 +1,6 @@
 import * as api from "./api";
 import { Feature, tap, type Screen } from "./track";
-import { $, el, esc, isAdmin, isCoder, type Title } from "./dom";
+import { $, el, esc, flash, isAdmin, isCoder, type Title } from "./dom";
 import { INDEX_URL } from "./concepts";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
@@ -10,8 +10,8 @@ import { markup } from "./markup";
 import { addPasskey, available, deviceWords } from "./passkey";
 import { subscribe } from "./push";
 import { PRO, RECORD, RECORDS, Records } from "./pro";
+import { address, linked, Place } from "./place";
 import {
-  Link,
   Mode,
   Proactive,
   Theme,
@@ -44,6 +44,8 @@ const PROACTIVE_HINT: Record<Proactive, string> = {
 };
 const SEARCH_AT = 6;
 const LITERATURE = "Literature review";
+/** The Notices group on the root, which an address can light. */
+export const NOTICES = "notices";
 
 const SILHOUETTE =
   `<svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true">` +
@@ -68,6 +70,8 @@ export interface Sub {
   name?: Screen;
   /** The app widens under it, as it does for two replies side by side. */
   wide?: boolean;
+  /** Its address while it is on top (R-0055). */
+  at?: string;
 }
 
 type Pane = Page | Sub;
@@ -137,7 +141,10 @@ export class Settings {
   private canPasskey = false;
   private host = el("div", "sn-stack");
   /** The concept pages, read on this stack like any page of it. */
-  private literature: Sub;
+  readonly literature: Sub;
+  /** The account read again once the view has slid in, which draws its top
+   * page again; a light waits for it, so it is not drawn away. */
+  private reloaded: Promise<void> = Promise.resolve();
 
   constructor(
     private avatar: HTMLElement,
@@ -151,7 +158,7 @@ export class Settings {
     frame.id = "literature";
     frame.title = LITERATURE;
     frame.src = INDEX_URL;
-    this.literature = { title: LITERATURE, screen: frame };
+    this.literature = { title: LITERATURE, screen: frame, at: address(Place.Literature) };
     this.back.hidden = true;
     this.avatar.addEventListener("click", () => {
       tap(Feature.OpenSettings);
@@ -227,7 +234,24 @@ export class Settings {
     this.push(Page.Root);
     // ...and the fresh account arrives after the page has landed: redrawing it
     // mid-slide replaces the pane that is moving and the slide stops dead.
-    if (!first) window.setTimeout(() => void this.load(), PANE_MS);
+    if (!first)
+      this.reloaded = new Promise((done) =>
+        window.setTimeout(() => void this.load().then(done), PANE_MS),
+      );
+  }
+
+  /** The page or screen on top, while the view is open. */
+  top(): Pane | null {
+    return this.open ? (this.stack.at(-1)?.page ?? null) : null;
+  }
+
+  /** Light one item on the page on top, the way a message is lit in the
+   * thread (R-0055). False when the page has no such item. */
+  async light(selector: string): Promise<boolean> {
+    await this.reloaded;
+    const item = this.stack.at(-1)?.pane.querySelector<HTMLElement>(selector);
+    if (item) flash(item);
+    return !!item;
   }
 
   /** A page, or a screen of the app's own, slid in on top. */
@@ -466,8 +490,11 @@ export class Settings {
     pane.append(first);
 
     const notices = this.handlers.notices();
-    if (notices.length)
-      pane.append(this.group(notices.map((one) => this.noticeRow(one)), "Notices"));
+    if (notices.length) {
+      const list = this.group(notices.map((one) => this.noticeRow(one)), "Notices");
+      list.dataset.group = NOTICES;
+      pane.append(list);
+    }
 
     pane.append(
       this.group([
@@ -532,8 +559,9 @@ export class Settings {
    * where it points, or only counts it read when it points nowhere or here. */
   private noticeRow(one: Delivery): HTMLElement {
     const unread = one.opened_at === null;
-    const goes = one.link !== null && one.link !== Link.Account;
+    const goes = one.link !== null && linked(one.link) !== address(Place.Account);
     const row = el("div", `sn-row${goes || unread ? " push" : ""}`);
+    row.dataset.notice = String(one.id);
     if (unread) row.append(el("span", "sn-unread"));
     const main = el("div", "sn-m");
     const when = shortDate(new Date(one.created_at), new Date());

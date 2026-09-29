@@ -1,6 +1,6 @@
 import * as api from "./api";
 import { Feature, tap } from "./track";
-import { $, closeX, el, esc, isAdmin } from "./dom";
+import { $, closeX, el, esc, flash, isAdmin } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { periodLabel, rowDate } from "./when";
@@ -33,6 +33,8 @@ export const sessionWhen = (session: Session): Date =>
 export interface SessionsHandlers {
   /** A professional's new note or recording, which joins the thread. */
   onMade(session: Session): void;
+  /** The drawer came up or went down, so the address says so. */
+  onMoved(): void;
 }
 
 
@@ -148,7 +150,7 @@ export class Sessions {
   private wire(): void {
     this.button.addEventListener("click", () => {
       tap(Feature.OpenSessions);
-      void this.raise(false);
+      void this.raise(true);
     });
     this.scrim.addEventListener("click", () => this.lower());
     this.sheet.querySelector(".cardx")!.addEventListener("click", () => this.lower());
@@ -239,7 +241,7 @@ export class Sessions {
       this.drag = null;
       if (!drag) return;
       if (drag.kind === "open") {
-        if (drag.dy <= -OPEN_DRAG) void this.raise(true);
+        if (drag.dy <= -OPEN_DRAG) void this.raise(false);
         return;
       }
       this.sheet.style.transition = "";
@@ -250,7 +252,28 @@ export class Sessions {
     this.overlay.addEventListener("pointercancel", settle);
   }
 
-  private async raise(viaDrag: boolean): Promise<void> {
+  /** Whether the drawer is up. */
+  get up(): boolean {
+    return this.open;
+  }
+
+  /** The drawer up from wherever the app is, and one session's row in it lit,
+   * the way a message is lit in the thread (R-0055). */
+  async show(id: number | null): Promise<void> {
+    await this.raise(false);
+    if (id === null) return;
+    if (this.filter) {
+      this.search.value = this.filter = "";
+      this.render();
+    }
+    const row = this.body.querySelector<HTMLElement>(`.row[data-id="${id}"]`);
+    if (row) flash(row);
+    else toast("That session is not in the list");
+  }
+
+  /** Up on a tap of its door with the search ready to type in; a drag or an
+   * address brings it up without the keyboard. */
+  private async raise(focus: boolean): Promise<void> {
     if (this.open) return;
     this.open = true;
     if (this.admin) {
@@ -265,7 +288,8 @@ export class Sessions {
     this.sheet.classList.add("in");
     this.screen.style.transformOrigin = "50% 0";
     this.screen.style.transform = "scale(.96)";
-    if (!viaDrag && this.admin) this.search.focus({ preventScroll: true });
+    if (focus && this.admin) this.search.focus({ preventScroll: true });
+    this.handlers.onMoved();
   }
 
   /** The sessions drawer and the upload panel it hands over to, both put away. */
@@ -277,6 +301,7 @@ export class Sessions {
   private lower(): void {
     if (!this.open) return;
     this.open = false;
+    this.handlers.onMoved();
     this.swipe.close();
     this.drag = null;
     this.sheet.style.transition = "";

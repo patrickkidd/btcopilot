@@ -312,7 +312,7 @@ export class Agenda {
 
   /** Every session on every family, newest first, to put one on the agenda;
    * the words typed keep those where something said carries them. */
-  private async pick(): Promise<void> {
+  async pick(): Promise<void> {
     this.picker.innerHTML =
       `<div class="sn-srch"><input class="tb-words" type="search" ` +
       `placeholder="Search what was said" aria-label="Search what was said"></div>` +

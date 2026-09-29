@@ -374,6 +374,50 @@ What it is for: what the app is, one level in from the picture.
 - It is words, so no hint line is drawn under it. [built]
 - Going back from it returns you to the whole line. [built]
 
+## Addresses
+
+What it is for: every screen and everything on it has its own web address, so the address bar says where you are, the back button steps back, and the coach, a notice or a link can take you anywhere in the app.
+
+- The address bar changes as you move: opening the account view, one of its pages, the sessions drawer, the lists, an editor, the play-by-play or a coding screen is a new step the back button undoes. [built] {R-0055}
+- Opening a cluster or picking an event on the picture changes the address without adding a step, so a reply that points at five things is not five presses of back. [built] {R-0055}
+- Opening the app at any address, or signing in from one, lands there; an address that names something to light (a message, a session, a notice, a cut, a snapshot) scrolls it into the middle of its list and rings it the way a message is ringed when a moment traces back to it. [built] {R-0055}
+- An address whose thing is gone says so in a short note and leaves the app where it could get to. [built] {R-0055}
+- A notice may point at any address in the app as well as at the four screens it named before. [built] {R-0055, R-0611}
+- When you ask the coach for help with the app, or ask to see something, it can take the app there while it answers; its reply then carries a line such as "Opened *the coach settings*" whose name is a chip that goes there again. It never moves the app during coaching otherwise. [built] {R-0055}
+
+| address | what it opens |
+|---|---|
+| `/app/` | the chat, with the picture put down |
+| `/app/chat/<message>` | the chat, scrolled to that message and ringed |
+| `/app/sessions` | the sessions drawer |
+| `/app/sessions/<session>` | the sessions drawer, with that session's row ringed |
+| `/app/account` | the account view |
+| `/app/account/profile`, `coach`, `appearance`, `diagrams`, `plan` | that page of the account view |
+| `/app/account/notices` | the account view, with its Notices ringed |
+| `/app/account/notices/<notice>` | the account view, with that notice ringed |
+| `/app/account/coding-task` | your coding task |
+| `/app/account/meeting` | Next meeting |
+| `/app/account/meeting/sessions` | Pick a session, over Next meeting |
+| `/app/account/meeting/<day>` | the page of the meeting on that day (`undated` for the one with no day) |
+| `/app/account/meeting/<day>/<cut>` | that meeting's page, with that cut ringed |
+| `/app/account/better-replies` | Better replies |
+| `/app/account/literature-review` | Literature review |
+| `/app/cut/<session>` | the cut screen for that session, over Next meeting |
+| `/app/cluster/<cluster>` | that cluster opened on the picture |
+| `/app/event/<event>` | that event picked on the picture |
+| `/app/event/<event>/edit` | the events list with that event's editor open and its row ringed |
+| `/app/event/new` | the new-event form |
+| `/app/person/<person>` | the people list with that person's editor open and its row ringed |
+| `/app/person/new` | the new-person form |
+| `/app/events`, `/app/people`, `/app/questions` | that list of the lists drawer |
+| `/app/play/<message>` | the play-by-play that message keeps |
+| `/app/play/<message>/<snapshot>` | that play-by-play at one snapshot, its caption ringed |
+| `/app/coding/<coding>` | a coding screen |
+| `/app/vote/<cut>` | the vote on that cut |
+| `/app/meeting/<cut>` | the meeting run on that cut |
+| `/app/result/<cut>` | what the meeting produced on that cut |
+| `/app/guidelines` | the coding guidelines |
+
 ## When something goes wrong
 
 @frame built#f19 | A message that did not go through: the notice sits where the reply would have been and stays until you tap try again.

@@ -255,6 +255,35 @@ def test_show_stores_the_view_on_the_coach_statement(discussion, family):
     assert reply["views"] == [span]
 
 
+def test_navigate_moves_the_app_and_its_line_names_the_place(discussion, family):
+    # R-0055
+    reply = run(
+        discussion,
+        "Where is the year he left?",
+        Model(called(ToolName.Navigate, address="/app/cluster/c1"), said("It is open now.")),
+    )
+    assert event(reply, EventKind.Navigate)["address"] == "/app/cluster/c1"
+    call = event(reply, EventKind.ToolCall)
+    assert call["names"] == {"it": "the cluster The year he left"}
+    assert call["refusal"] is None
+
+
+@pytest.mark.parametrize(
+    "address, reason",
+    [("/app/cluster/c9", "No cluster c9"), ("/app/nowhere", "no address in the app")],
+)
+def test_navigate_to_a_place_the_app_or_the_record_lacks_is_refused(
+    discussion, family, address, reason
+):
+    # R-0055
+    model = Model(called(ToolName.Navigate, address=address), said("I cannot open that."))
+    reply = run(discussion, "Open it.", model)
+    assert EventKind.Navigate.value not in kinds(reply)
+    refused = model.histories[-1][-1]["content"][0]
+    assert refused["is_error"] is True
+    assert reason in refused["content"]
+
+
 def test_the_coach_is_handed_a_map_of_the_record_and_what_the_user_pointed_at(
     discussion, family
 ):

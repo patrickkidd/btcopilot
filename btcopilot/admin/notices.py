@@ -10,7 +10,7 @@ from pywebpush import WebPushException
 
 from btcopilot.admin.guard import writes
 from btcopilot.admin.output import rows_option
-from btcopilot import push
+from btcopilot import place, push
 from btcopilot.admin.users import ROLES, find
 from btcopilot.extensions import db
 from btcopilot.models import Audience, Notice, NoticeLink, Notification, User
@@ -42,6 +42,16 @@ def people(notice: Notice) -> list[User]:
     return [user for user in active if notice.reaches(user)]
 
 
+def linked(link: str | None) -> str | None:
+    """A notice's link as the page takes it, refused when the page has no such
+    screen or address."""
+    if link is None or link in list(NoticeLink) or place.parse(link):
+        return link
+    raise click.BadParameter(
+        f"{link!r} is none of {', '.join(NoticeLink)} and no address in the app"
+    )
+
+
 @click.group("notice")
 def notice_group():
     """Product notices shown in the app, to everyone, a role, or named people."""
@@ -58,8 +68,11 @@ def notice_group():
 @click.option("--body", required=True, help="One or two short sentences.")
 @click.option(
     "--link",
-    type=click.Choice([link.value for link in NoticeLink]),
-    help="The screen a tap opens; left out, it opens nothing.",
+    callback=lambda ctx, param, value: linked(value),
+    help=(
+        f"The screen a tap opens: {', '.join(NoticeLink)}, or any address in the "
+        "app such as /app/account/notices; left out, it opens nothing."
+    ),
 )
 @click.option(
     "--until",
@@ -82,7 +95,7 @@ def notice_send(to, title, body, link, until, email, by):
     notice = Notice(
         title=title,
         body=body,
-        link=NoticeLink(link) if link else None,
+        link=link,
         ends_at=until + datetime.timedelta(days=1) if until else None,
         created_by=find(by).id if by else None,
         **audience(to),
@@ -114,7 +127,7 @@ def notice_list():
                 "id": notice.id,
                 "title": notice.title,
                 "to": recipients(notice),
-                "link": notice.link.value if notice.link else None,
+                "link": notice.link,
                 "ends_at": notice.ends_at,
                 "people": len(people(notice)),
                 "got": got.count(),

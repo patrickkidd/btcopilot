@@ -76,7 +76,11 @@ discussion_id, cut_id, created_at, opened_at}`. `kind` is `coach`, `task`,
 nowhere but this list. A notice carries its own `title`, `body` and `link`; any
 other kind carries the push's title, a null body, and the link `task` for a task
 or reminder, null for a coach message, which opens its thread at
-`statement_id`. `link` is `account`, `coach_settings`, `task`, `agenda` or null.
+`statement_id`. `link` is one of the fixed screens `account`, `coach_settings`,
+`task` or `agenda`, or any address in the app starting with `/app/` (the address
+table is in [SCREENS.md](SCREENS.md#addresses)), or null. The notices table keeps
+it as text with a check that it is one or the other, and `flask admin notice send
+--link` refuses an address the app does not have.
 
 `flask admin notice send` writes a notice and sends it at once to everyone it
 is for, each getting their own row: a push to every browser the person

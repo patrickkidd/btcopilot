@@ -2,6 +2,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { request as ask } from "node:http";
 import { defineConfig, type Plugin, type ProxyOptions } from "vite";
+import { parse } from "./src/place";
 
 // Flask serves the bundle through the app blueprint's static folder and the
 // built index.html as the page, so the files keep Vite's hashed names: a new
@@ -94,7 +95,10 @@ function page(): Plugin {
     configureServer(server) {
       server.middlewares.use(async (request, response, next) => {
         const url = (request.url ?? "").split("?")[0];
-        if (url !== "/app/" && url !== "/app") return next();
+        // the page itself, and any address in the app opened as a page
+        // (R-0055), which the server would answer with the built page
+        const opened = request.headers["sec-fetch-dest"] === "document" && parse(url);
+        if (url !== "/app/" && url !== "/app" && !opened) return next();
         const from = await fromServer(request.headers);
         for (const cookie of from.cookies) response.appendHeader("Set-Cookie", cookie);
         if (from.status !== 200) {

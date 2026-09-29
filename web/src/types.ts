@@ -15,6 +15,8 @@ export enum ChipKind {
   /** The question a coach message ended on, which the reader is answering
    * (R-0587). */
   Message = "message",
+  /** An address in the app, which a tap goes to (R-0055). */
+  Place = "place",
 }
 
 /** Teal is a reference to something the record holds; amber is the coach or the
@@ -323,6 +325,8 @@ export enum TurnEventKind {
   ToolCall = "tool_call",
   RecordPatch = "record_patch",
   View = "view",
+  /** The coach moved the app to an address in it (R-0055). */
+  Navigate = "navigate",
   /** The next words of the reply, as the coach says them. */
   Text = "text",
   /** The coach said those words again: drop what has been drawn. */
@@ -353,6 +357,7 @@ export type TurnEvent =
   | ({ type: TurnEventKind.ToolCall } & ToolCall)
   | { type: TurnEventKind.RecordPatch; deltas: Delta[]; turn_id: string }
   | { type: TurnEventKind.View; view: View }
+  | { type: TurnEventKind.Navigate; address: string }
   | { type: TurnEventKind.Text; text: string }
   | { type: TurnEventKind.TextReset }
   | ({ type: TurnEventKind.Done } & Reply)
@@ -538,8 +543,8 @@ export enum NotificationKind {
   Notice = "notice",
 }
 
-/** The screen a notification opens. Never the chat: a notice never points
- * into the thread (R-0611). */
+/** The fixed screens a notification opens by name. A notice may instead
+ * carry any address in the app (R-0055). */
 export enum Link {
   Account = "account",
   Coach = "coach_settings",
@@ -555,7 +560,8 @@ export interface Delivery {
   title: string;
   /** A notice's words; the other kinds are their title alone. */
   body: string | null;
-  link: Link | null;
+  /** A `Link`, or an address starting /app/. */
+  link: string | null;
   /** A coach message's own place in the thread. */
   discussion_id: number | null;
   statement_id: number | null;

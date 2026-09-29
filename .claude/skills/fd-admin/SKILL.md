@@ -215,7 +215,7 @@ Changes something: needs `--yes`.
 | `--to` | everyone, a role (subscriber, auditor, admin), or email addresses joined by commas. |
 | `--title` | The heading, and the words of the push. |
 | `--body` | One or two short sentences. |
-| `--link` | The screen a tap opens; left out, it opens nothing. |
+| `--link` | The screen a tap opens: account, coach_settings, task, agenda, or any address in the app such as /app/account/notices; left out, it opens nothing. |
 | `--until` | The last day, in UTC, that it reaches anyone new; left out, it runs on. |
 | `--email` | Email everyone it is for who has no browser that takes a push. |
 | `--by` | The email of the admin sending it. |

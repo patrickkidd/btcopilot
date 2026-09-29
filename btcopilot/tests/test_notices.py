@@ -170,3 +170,12 @@ def test_the_notice_fixture_reinstalls_and_reaches_no_other_fixture(
         (NotificationKind.Notice, "Welcome to the app", False),
     ]
     assert Notice.query.count() == 2
+
+
+def test_a_notice_links_to_any_address_in_the_app_and_nowhere_else(send, web, test_user):
+    # R-0055
+    assert send(test_user.username, "--link", "/app/account/notices").exit_code == 0
+    assert Notice.query.one().link == "/app/account/notices"
+    assert web.get("/app/notifications").get_json()[0]["link"] == "/app/account/notices"
+    assert send(test_user.username, "--link", "/app/nowhere").exit_code != 0
+    assert Notice.query.count() == 1

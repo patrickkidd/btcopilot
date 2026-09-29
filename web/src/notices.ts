@@ -1,6 +1,6 @@
 import * as api from "./api";
 import { Strip } from "./strip";
-import { NotificationKind, type Delivery, type Link } from "./types";
+import { NotificationKind, type Delivery } from "./types";
 
 /** The newest unread notification the thread does not already show: a coach
  * message is in the thread, so it never takes the strip (R-0606, R-0611). */
@@ -17,7 +17,8 @@ export class Notices {
   constructor(
     private strip: Strip,
     private account: HTMLElement,
-    private go: (link: Link) => void,
+    /** Where a notice's link goes: a fixed screen's name or an address. */
+    private go: (link: string) => void,
   ) {}
 
   async refresh(): Promise<void> {
