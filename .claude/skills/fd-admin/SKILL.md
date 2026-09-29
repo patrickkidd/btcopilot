@@ -225,6 +225,21 @@ Changes something: needs `--yes`.
 | `key` | required |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin proactive`
+
+Messages the coach writes before the person does.
+
+### `flask admin proactive run`
+
+Write and send at most one message per person, within their budget. The words come from the model even on a dry run.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--dry-run` | Print what would be sent; keep and send nothing. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin quality`
 
 The recorded runs the quality dashboard reads.

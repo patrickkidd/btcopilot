@@ -14,7 +14,7 @@ import re
 
 from sqlalchemy import or_
 
-from btcopilot import clusters, prompts, record, views
+from btcopilot import clusters, proactive, prompts, record, views
 from btcopilot.models import Author, Change, Discussion, Statement
 from btcopilot.recordtext import (
     change_line,
@@ -70,6 +70,7 @@ class ToolName(enum.StrEnum):
     ReadImpressions = "read_impressions"
     CoachNotes = "coach_notes"
     SearchChat = "search_chat"
+    FollowUp = "follow_up"
 
 
 class Register(enum.StrEnum):
@@ -575,6 +576,22 @@ def schemas() -> list[dict]:
             },
         },
         {
+            "name": ToolName.FollowUp.value,
+            "description": (
+                "Ask the person something on a later day: on that day your "
+                "question is written into their chat and they are told of it.\n\n"
+                + prompts.files().fragment("follow_up")
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "when": {"type": "string", "description": "The day: YYYY-MM-DD, after today."},
+                    "question": {"type": "string"},
+                },
+                "required": ["when", "question"],
+            },
+        },
+        {
             "name": ToolName.CoachNotes.value,
             "description": (
                 "Your own notes for this turn, a short phrase each. They change "
@@ -804,6 +821,23 @@ class Toolbox:
         return "\n".join(lines) or "Nothing said matches.", None
 
     # ── READ ────────────────────────────────────────────────────────────────
+
+    def _follow_up(self, args: dict) -> tuple[str, None]:
+        when = _day(args["when"])
+        if when <= datetime.date.today():
+            raise ToolError(
+                f"{when} is not after today; give a later day",
+                "It set a question to ask later for a day already here.",
+            )
+        question = args["question"].strip()
+        if not question.endswith("?"):
+            raise ToolError(
+                "Word it as the question you will ask", "It set a follow-up with no question."
+            )
+        # A shadow turn's record is thrown away, and so is what it would ask.
+        if not self.diagram.scratch:
+            proactive.ask_later(self.user_id, self.diagram_id, when, question)
+        return f"You will ask on {when}.", None
 
     def _read_people(self, args: dict) -> tuple[str, None]:
         rows = [p for p in self.data.people if isinstance(p, dict) and p.get("id")]

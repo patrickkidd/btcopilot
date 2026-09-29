@@ -364,10 +364,17 @@ def init_celery(app):
     # Register tasks only once
     if not hasattr(celery, "_tasks_registered"):
 
-        from btcopilot import shadow, turns
+        from btcopilot import proactive, shadow, turns
         from btcopilot.review import tasks as review_tasks
 
         celery.task(turns.run, name=turns.TASK)
+        celery.task(proactive.run, name=proactive.TASK)
+        celery.conf.beat_schedule = {
+            proactive.TASK: {
+                "task": proactive.TASK,
+                "schedule": app.config["PROACTIVE_EVERY_S"],
+            }
+        }
         celery.task(shadow.run, name=shadow.TASK)
         # a shadow waits on its own worker, never ahead of a real turn
         celery.conf.task_routes = {shadow.TASK: {"queue": shadow.QUEUE}}

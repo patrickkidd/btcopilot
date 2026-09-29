@@ -113,7 +113,10 @@ def test_a_parents_death_counts_for_the_child_and_a_spouses_for_the_widow():
             _worse(31, "2010-03-01", person=1, symptom=VariableShift.Up),
         ],
         people=(1, 4, 5, 6),
-        bonds=[PairBond(id=7, person_a=4, person_b=5), PairBond(id=8, person_a=5, person_b=6)],
+        bonds=[
+            PairBond(id=7, person_a=4, person_b=5),
+            PairBond(id=8, person_a=5, person_b=6),
+        ],
         parents={1: 7},
     )
     assert firings(record) == [

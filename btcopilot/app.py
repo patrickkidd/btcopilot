@@ -51,6 +51,8 @@ def create_app(config: dict = None, **kwargs):
         # Web push signs with FLASK_VAPID_PRIVATE_KEY and hands browsers
         # FLASK_VAPID_PUBLIC_KEY (python -m btcopilot.push makes a pair).
         VAPID_SUBJECT="mailto:info@alaskafamilysystems.com",
+        # How often celery beat looks for a message the coach may write first.
+        PROACTIVE_EVERY_S=15 * 60,
     )
 
     if config and config.get("CONFIG"):
