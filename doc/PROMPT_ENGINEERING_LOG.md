@@ -12,10 +12,9 @@
 it ships; no real model calls were made.
 
 **Scope**: `private/prompts/fragments/coach_notes.md` and its public twin now say where the coach
-reads its last notes. `private/prompts/agent.prompty` and its public twin gain one include, for the
-follow-up fragment, whose wording belongs to the follow-up work. When to search the chat is
-`btcopilot/prompty/fragments/search_chat.md`, read into the search tool's description rather than
-the system prompt. No other wording changed; both sets of goldens are regenerated.
+reads its last notes. When to search the chat is `btcopilot/prompty/fragments/search_chat.md`,
+read into the search tool's description rather than the system prompt, as the follow-up tool's
+paragraph is. No other wording changed; both sets of goldens are regenerated.
 
 **Why** [R-0520, R-0481; queued R-0606, R-0607, R-0608]: the coach no longer gets its past tool
 calls back in the chat, so the thread cannot grow without end. It gets the last 20 statements from
