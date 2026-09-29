@@ -3,9 +3,9 @@ a follow-up the person agreed to."""
 
 import click
 
-from btcopilot import proactive
 from btcopilot.admin.guard import writes
 from btcopilot.admin.output import rows_option
+from btcopilot.review import reminders
 
 
 @click.group("proactive")
@@ -22,5 +22,6 @@ def proactive_group():
 def proactive_run(dry_run):
     """Write and send at most one message per person, within their budget. The
     words come from the model even on a dry run. Each person nothing went to
-    gets the reason instead."""
-    return proactive.run(dry_run=dry_run)
+    gets the reason instead. Then each coder's reminder that is due, a row
+    each, outside that budget."""
+    return reminders.run(dry_run=dry_run)

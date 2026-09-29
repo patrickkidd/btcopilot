@@ -33,7 +33,7 @@ async function deliver(page: Page, context: BrowserContext, payload: object): Pr
 }
 
 // R-0055
-test("a push shows one notification at a time, and a tap opens the thread at its message", async ({
+test("a push shows one notification of each kind at a time, and a tap opens the thread at its message", async ({
   page,
   context,
   baseURL,
@@ -57,19 +57,24 @@ test("a push shows one notification at a time, and a tap opens the thread at its
         n.data.id,
       ]),
     );
-  await deliver(page, context, { id: id - 1, body: "An older message." });
-  await deliver(page, context, { id, body: "Tell me what you remember about it." });
-  await expect.poll(shown).toEqual([["Tell me what you remember about it.", "coach", id]]);
+  const task = ["A coding task is waiting for you.", "task", id + 1];
+  await deliver(page, context, { id: id - 1, kind: "coach", body: "An older message." });
+  await deliver(page, context, { id: task[2], kind: task[1], body: task[0] });
+  await deliver(page, context, { id, kind: "coach", body: "Tell me what you remember about it." });
+  // a coding task never replaces an unread coach message, nor the other way
+  await expect
+    .poll(async () => (await shown()).sort())
+    .toEqual([["Tell me what you remember about it.", "coach", id], task].sort());
 
   const opened = page.waitForResponse((r) => r.url().endsWith(`/app/notifications/${id}`));
   await worker.evaluate(async () => {
     const scope = self as unknown as Scope;
-    const [notification] = await scope.registration.getNotifications();
+    const [notification] = await scope.registration.getNotifications({ tag: "coach" });
     self.dispatchEvent(new scope.NotificationEvent("notificationclick", { notification }));
   });
   expect((await opened).ok()).toBe(true);
   await expect(page.locator(`.bub.traced[data-statement="${where.statement_id}"]`)).toBeVisible();
-  expect(await shown()).toEqual([]);
+  expect(await shown()).toEqual([task]);
 
   // the app was closed: the worker opens it with the notification in the address
   await page.goto(`/app/?notification=${id}`);

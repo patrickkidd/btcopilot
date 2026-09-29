@@ -1,7 +1,8 @@
 """A new auditor and one conversation on the agenda for the onboarding walk
-(sandboxonboarding): each run makes an auditor who has seen nothing yet, and
-prints their sign-in link. Run from the repo root with the sandbox's Flask
-settings: uv run python btcopilot/tests/frontend/seedauditor.py"""
+(sandboxonboarding): each run makes an auditor who has seen nothing yet, tells
+them of the cut the way dating it on the agenda does, and prints the id of
+that notification and then their sign-in link. Run from the repo root with the
+sandbox's Flask settings: uv run python btcopilot/tests/frontend/seedauditor.py"""
 
 import datetime
 import secrets
@@ -13,7 +14,16 @@ from btcopilot import diagramjson
 from btcopilot.app import create_app
 from btcopilot.auth.invitation import Invitation
 from btcopilot.extensions import db
-from btcopilot.models import Diagram, Discussion, Speaker, SpeakerType, Statement, User
+from btcopilot.models import (
+    Diagram,
+    Discussion,
+    Notification,
+    Speaker,
+    SpeakerType,
+    Statement,
+    User,
+)
+from btcopilot.review import notify
 from btcopilot.review.models import Cut
 from btcopilot.routes.fixtures import DOMAIN
 
@@ -34,6 +44,8 @@ def account(name: str, role: str) -> User:
 app = create_app()
 with app.app_context():
     stamp = secrets.token_hex(4)
+    auditor = account(f"auditor-{stamp}", btcopilot.ROLE_AUDITOR)
+    auditor.set_free_diagram(_commit=True)
     admin = account(f"agenda-{stamp}", btcopilot.ROLE_ADMIN)
     case = Diagram(user_id=admin.id, name="Case", data=diagramjson.dumps({}))
     db.session.add(case)
@@ -56,18 +68,19 @@ with app.app_context():
     ]
     db.session.add_all(turns)
     db.session.flush()
-    db.session.add(
-        Cut(
-            discussion_id=discussion.id,
-            start_statement_id=turns[0].id,
-            end_statement_id=turns[-1].id,
-            user_id=admin.id,
-            meeting_date=datetime.date.today() + datetime.timedelta(days=7),
-        )
+    cut = Cut(
+        discussion_id=discussion.id,
+        start_statement_id=turns[0].id,
+        end_statement_id=turns[-1].id,
+        user_id=admin.id,
+        meeting_date=datetime.date.today() + datetime.timedelta(days=7),
     )
+    db.session.add(cut)
+    db.session.flush()
+    notify.told(cut, datetime.datetime.utcnow())
     db.session.commit()
-    auditor = account(f"auditor-{stamp}", btcopilot.ROLE_AUDITOR)
-    auditor.set_free_diagram(_commit=True)
+    told = Notification.query.filter_by(user_id=auditor.id, cut_id=cut.id).one()
+    print(f"notification {told.id}")
     token = Invitation.issue(
         auditor.username, current_app.config["INVITATION_DAYS"]
     ).token

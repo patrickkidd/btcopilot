@@ -365,10 +365,11 @@ def init_celery(app):
     if not hasattr(celery, "_tasks_registered"):
 
         from btcopilot import proactive, shadow, turns
-        from btcopilot.review import tasks as review_tasks
+        from btcopilot.review import reminders, tasks as review_tasks
 
         celery.task(turns.run, name=turns.TASK)
-        celery.task(proactive.run, name=proactive.TASK)
+        # the coders' reminders ride the coach's run, one schedule for both
+        celery.task(reminders.run, name=proactive.TASK)
         celery.conf.beat_schedule = {
             proactive.TASK: {
                 "task": proactive.TASK,

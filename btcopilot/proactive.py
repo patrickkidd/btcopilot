@@ -105,14 +105,14 @@ def run(now: datetime.datetime | None = None, dry_run: bool = False) -> list[dic
     model."""
     now = now or datetime.datetime.utcnow()
     rows = []
-    daytime = _local(now).hour in HOURS
+    day = daytime(now)
     asked = _asked()
     for user in User.query.order_by(User.id):
         if user.id not in asked and user.pref(PrefKey.Proactive) is Proactive.Never:
             found = Reason.Off
         else:
             _answers(user, now)
-            found = _pick(user, now) if daytime else Reason.Night
+            found = _pick(user, now) if day else Reason.Night
         if isinstance(found, Reason):
             rows.append(
                 {
@@ -141,8 +141,7 @@ def run(now: datetime.datetime | None = None, dry_run: bool = False) -> list[dic
             with db.session.begin_nested():
                 _send(user, message, text, now)
         except WebPushException as e:
-            said = f"{e.response.status_code} {e.response.text}"
-            row["reason"] = f"push failed: {' '.join(said.split())}"
+            row["reason"] = push.failure(e)
             continue
         db.session.commit()
     if dry_run:
@@ -156,7 +155,11 @@ def _utc(moment: datetime.datetime) -> datetime.datetime:
     return moment.astimezone(datetime.timezone.utc).replace(tzinfo=None)
 
 
-def _local(moment: datetime.datetime) -> datetime.datetime:
+def daytime(moment: datetime.datetime) -> bool:
+    return local(moment).hour in HOURS
+
+
+def local(moment: datetime.datetime) -> datetime.datetime:
     return moment.replace(tzinfo=datetime.timezone.utc).astimezone(ZONE)
 
 

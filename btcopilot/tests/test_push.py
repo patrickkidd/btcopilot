@@ -65,7 +65,7 @@ def subscribe(user, endpoint: str) -> tuple[ec.EllipticCurvePrivateKey, bytes]:
     return key, secret
 
 
-def test_every_browser_gets_the_first_sentence_under_one_tag(
+def test_every_browser_gets_the_first_sentence_and_its_kind(
     flask_app, test_user, statement, service
 ):
     # R-0055
@@ -84,7 +84,7 @@ def test_every_browser_gets_the_first_sentence_under_one_tag(
         body = http_ece.decrypt(
             post["data"], private_key=key, auth_secret=secret, version="aes128gcm"
         )
-        assert json.loads(body) == {"id": sent.id, "body": HOOK}
+        assert json.loads(body) == {"id": sent.id, "kind": "coach", "body": HOOK}
         assert post["headers"]["TTL"] == str(push.TTL_S)
         assert (
             f"k={flask_app.config['VAPID_PUBLIC_KEY']}"

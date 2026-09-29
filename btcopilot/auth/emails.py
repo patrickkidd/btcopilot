@@ -80,5 +80,5 @@ def send_login_code(email: str, code: str, minutes: int):
     )
 
 
-def send_coach_message(email: str, words: str, url: str):
-    _deliver(email, "The coach wrote to you", f"{words}\n\n{url}\n")
+def send_notification(email: str, subject: str, words: str, url: str):
+    _deliver(email, subject, f"{words}\n\n{url}\n")

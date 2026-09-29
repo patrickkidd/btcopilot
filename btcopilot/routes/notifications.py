@@ -45,7 +45,8 @@ def create_push_subscription():
 
 @bp.route("/notifications/<int:notification_id>", methods=["PATCH"])
 def update_notification(notification_id: int):
-    """The first open counts; the answer says where the thread opens."""
+    """The first open counts; the answer says where the app opens: the thread
+    at a coach message, or the task card for a cut."""
     notification = db.session.get(Notification, notification_id)
     if notification is None or notification.user_id != auth.current_user().id:
         abort(404)
@@ -53,12 +54,15 @@ def update_notification(notification_id: int):
         raise ValueError('a notification only takes {"opened": true}')
     notification.opened_at = notification.opened_at or datetime.datetime.utcnow()
     db.session.commit()
+    statement = notification.statement
     return jsonify(
         {
             "id": notification.id,
+            "kind": notification.kind.value,
             "channel": notification.channel.value,
             "statement_id": notification.statement_id,
-            "discussion_id": notification.statement.discussion_id,
+            "discussion_id": statement.discussion_id if statement else None,
+            "cut_id": notification.cut_id,
             "opened_at": utc_iso(notification.opened_at),
         }
     )

@@ -10,6 +10,7 @@ from btcopilot.proactive import Reason
 from btcopilot.tests.conftest import csrf_token
 from btcopilot.extensions import db
 from btcopilot.models import (
+    NotificationKind,
     Discussion,
     Notification,
     NotificationChannel,
@@ -307,6 +308,7 @@ def test_the_loop_counts_are_written_once_each(family, sent):
         [
             Notification(
                 user_id=family.id,
+                kind=NotificationKind.Coach,
                 statement_id=message.statement_id,
                 channel=NotificationChannel.Push,
                 opened_at=T0 + DAY,
