@@ -2,7 +2,29 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-09-28 (defined-self wording held; its eval kept as a regression case)
+**Last Updated**: 2026-09-28 (the coach's memory is the record, its last notes and a chat search)
+
+---
+
+## Sittings — the coach's memory is the record, its last notes and a chat search (2026-09-28)
+
+**Not evaluated yet.** An eval answered on the Claude Code subscription replay gates this before
+it ships; no real model calls were made.
+
+**Scope**: `private/prompts/fragments/coach_notes.md` and its public twin now say where the coach
+reads its last notes. `private/prompts/agent.prompty` and its public twin gain one include, for the
+follow-up fragment, whose wording belongs to the follow-up work. When to search the chat is
+`btcopilot/prompty/fragments/search_chat.md`, read into the search tool's description rather than
+the system prompt. No other wording changed; both sets of goldens are regenerated.
+
+**Why** [R-0520, R-0481; queued R-0606, R-0607, R-0608]: the coach no longer gets its past tool
+calls back in the chat, so the thread cannot grow without end. It gets the last 20 statements from
+the user's sessions on the family, its latest notes as labelled lines at the head of the newest
+message, and a map listing each event's date, kind and people. Older words it finds with the
+search tool.
+
+**Known gap**: the sentence over the map still says it shows "how many events each person has";
+the map now lists every event too. Left as it is, since no other wording change was approved.
 
 ---
 

@@ -25,6 +25,8 @@ Below is a map of the record, not the record itself: who is in it, how many even
 
 {% include "fragments/coach_notes.md" %}
 
+{% include "fragments/follow_up.md" %}
+
 {% if committed_state %}THE MAP
 {{ committed_state }}{% else %}The record is empty.{% endif %}{% if interactions %}
 
