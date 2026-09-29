@@ -4,7 +4,7 @@
     {% set theme_colors = ("#f6f6fb", "#16152a") %}
     {% include "head.html" %}
     <link rel="icon" type="image/png" href="{{ url_for('auth.logo') }}" />
-    <meta name="description" content="Family Diagram 3, an AI chat-first app from Alaska Family Systems. Beta access is by invitation." />
+    <meta name="description" content="Family Diagram 3 from Alaska Family Systems. Beta access is by direct invitation only." />
     <title>Family Diagram</title>
     {% if site_key %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endif %}
     <style>
@@ -52,7 +52,6 @@
       @media (prefers-color-scheme: dark) { .logo { background: var(--logo-ground); padding: 10px 14px; } }
       .kicker { font: 500 12px var(--mono); letter-spacing: 1px; text-transform: uppercase; color: var(--accent); margin: 0 0 4px; }
       h1 { font: 800 30px/1.15 var(--sans); margin: 0 0 16px; }
-      abbr { text-decoration: underline dotted; cursor: help; }
       .only { font-weight: 600; margin: 0 0 24px; }
       section {
         background: var(--panel);
@@ -102,9 +101,9 @@
       <p class="kicker">Version 3</p>
       <h1>Family Diagram</h1>
       <p>
-        Family Diagram 3 is an AI chat-first app. It collects your family diagram and
-        timeline for you as you talk, using the novel
-        <abbr title="Symptom, Anxiety, Relationship, Functioning">SARF</abbr> clinical data model.
+        An AI coach that keeps the story of your life. Tell it what happened, year by year;
+        the record builds with every conversation, and it gets smarter at seeing patterns in
+        the moments that matter.
       </p>
       <p class="only">Beta access is by direct invitation only.</p>
 

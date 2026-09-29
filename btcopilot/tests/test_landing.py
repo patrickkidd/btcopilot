@@ -63,8 +63,7 @@ def test_a_visitor_sees_the_landing_page(flask_app, browser, keyed):
     html = response.get_data(as_text=True)
     text = seen(response)
     assert "Alaska Family Systems" in text
-    assert "Family Diagram 3 is an AI chat-first app." in text
-    assert 'title="Symptom, Anxiety, Relationship, Functioning">SARF</abbr>' in html
+    assert "Version 3" in text and "Family Diagram" in text
     assert "Beta access is by direct invitation only." in text
     assert 'action="/app/signin-link"' in html
     assert 'action="/app/beta-request"' in html
@@ -75,6 +74,47 @@ def test_a_visitor_sees_the_landing_page(flask_app, browser, keyed):
     assert "/app/theory" not in html
     assert '<meta name="theme-color" content="#f6f6fb"' in html
     assert '<meta name="theme-color" content="#16152a"' in html
+
+
+PARAGRAPH = (
+    "An AI coach that keeps the story of your life. Tell it what happened, year by "
+    "year; the record builds with every conversation, and it gets smarter at seeing "
+    "patterns in the moments that matter."
+)
+
+
+def described(browser) -> str:
+    """The paragraph under the heading, as a visitor reads it."""
+    html = browser.get("/").get_data(as_text=True)
+    return " ".join(re.search(r"</h1>\s*<p>(.*?)</p>", html, re.S).group(1).split())
+
+
+def test_the_page_says_what_the_app_is_in_patricks_words(browser, keyed):
+    # R-0601, R-0602
+    assert described(browser) == PARAGRAPH
+    html = browser.get("/").get_data(as_text=True)
+    assert "<abbr" not in html and "SARF" not in html and "chat-first" not in html
+
+
+def test_the_description_starts_from_the_persons_own_life(browser, keyed):
+    # R-0602
+    first = described(browser).split(". ")[0].lower()
+    assert "your life" in first
+    assert "family" not in described(browser).lower()
+
+
+def test_the_description_is_never_framed_as_therapy(browser, keyed):
+    # R-0602
+    text = seen(browser.get("/")).lower()
+    for word in ("therapy", "therapist", "wounded", "hard stretch", "healing", "trauma"):
+        assert word not in text
+
+
+def test_the_description_says_the_record_grows_and_the_coach_learns(browser, keyed):
+    # R-0602
+    words = described(browser)
+    assert "the record builds with every conversation" in words
+    assert "it gets smarter" in words
 
 
 def test_an_invited_address_gets_a_link_that_signs_in(flask_app, browser, keyed):
