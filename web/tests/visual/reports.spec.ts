@@ -185,3 +185,41 @@ test.describe("what the person says about the app", () => {
     expect(await thread(page)).toBe(before);
   });
 });
+
+test.describe("the server breaking", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  /** How often the page reads the thread again while it is in front. */
+  const CATCH_UP_MS = 60_000;
+
+  // R-0056
+  test("raises the bug sheet once for an endpoint, naming the request and its status", async ({ page }) => {
+    await settle(page);
+    const sent = posted(page);
+    let broken = 0;
+    await page.route("**/app/statements*", (route) => {
+      broken += 1;
+      return route.fulfill({ status: 500, body: "boom" });
+    });
+
+    await page.clock.fastForward(CATCH_UP_MS);
+    await expect(heading(page)).toHaveText("Something went wrong");
+    const error = sheet(page).locator(".rp-row", { hasText: "The error" }).locator(".rp-v");
+    await expect(error).toHaveText("The server answered 500 to GET /app/statements");
+    await sheet(page).getByRole("button", { name: "Send the report" }).click();
+    await expect(heading(page)).toHaveText("Your report was sent");
+    expect(sent).toHaveLength(1);
+    expect(sent[0].postDataJSON()).toMatchObject({
+      kind: "bug",
+      error: "The server answered 500 to GET /app/statements",
+    });
+    await sheet(page).getByRole("button", { name: "OK" }).click();
+    await expect(sheet(page)).toBeHidden();
+
+    await page.clock.fastForward(CATCH_UP_MS);
+    await expect.poll(() => broken).toBe(2);
+    await page.waitForTimeout(400);
+    await expect(sheet(page)).toBeHidden();
+    expect(sent).toHaveLength(1);
+  });
+});

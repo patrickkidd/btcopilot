@@ -24,6 +24,7 @@ import { aimedEvents, chips, itemKind, Lead } from "./chips";
 import { feed } from "./turn";
 import { Release } from "./release";
 import { Reports } from "./report";
+import { endpoint, Faults } from "./faults";
 import { toolLine } from "./tools";
 import {
   CHIP_KIND,
@@ -677,8 +678,11 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
 
 /** A coach turn or the page that broke, or what the coach heard the person
  * say about the app, offered to be sent as a report (R-0056). */
-const reports = new Reports($("overlay").parentElement!, () =>
-  settings.set({ bug_reports: BugReports.Always }),
+const faults = new Faults(location.origin);
+const reports = new Reports(
+  $("overlay").parentElement!,
+  () => settings.set({ bug_reports: BugReports.Always }),
+  faults,
 );
 reports.always = window.BOOTSTRAP.user?.prefs.bug_reports === BugReports.Always;
 
@@ -689,9 +693,23 @@ const lastSaid = () =>
 /** The turn the page last followed, which a page error is reported against. */
 let latestTurn = window.BOOTSTRAP.statements.at(-1)?.turn_id ?? "";
 
-window.addEventListener("error", (e) => reports.bug(e.message, lastSaid(), latestTurn));
+/** An error on the page, raised only when the app's own scripts threw it;
+ * the browser logs every one to the console either way. */
+const pageBroke = (thrown: unknown, message: string) => {
+  const key = faults.key(thrown, message);
+  if (key !== null) reports.bug(message, lastSaid(), latestTurn, key);
+};
+window.addEventListener("error", (e) => pageBroke(e.error, e.message));
 window.addEventListener("unhandledrejection", (e) =>
-  reports.bug(e.reason instanceof Error ? e.reason.message : String(e.reason), lastSaid(), latestTurn),
+  pageBroke(e.reason, e.reason instanceof Error ? e.reason.message : String(e.reason)),
+);
+window.addEventListener("pagehide", () => (faults.leaving = true));
+// a page kept by the browser and shown again is not going away
+window.addEventListener("pageshow", () => (faults.leaving = false));
+
+/** The server broke on a request, raised once per endpoint. */
+api.onBroke((request, status) =>
+  reports.bug(`The server answered ${status} to ${request}`, lastSaid(), latestTurn, endpoint(request)),
 );
 
 /** A notice goes to the screen it names or the address it carries (R-0611). */

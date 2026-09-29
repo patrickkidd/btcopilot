@@ -55,6 +55,20 @@ const PATIENCE_MS = 60_000;
  * (btcopilot/playturn.py WAIT), so a slow model fails with the server's error. */
 export const PLAY_WAIT_S = 390;
 
+/** Requests whose own caller raises the bug sheet when they fail: the coach
+ * turn, and the report itself, whose sheet already says it was not sent. */
+const SELF_REPORTED = ["/app/chat", "/app/turns/", "/app/observations"] as const;
+
+/** Who hears that the server broke on a request: `METHOD /path`, without
+ * the query, which can carry the family's own words, and the status. */
+type Broke = (request: string, status: number) => void;
+let broke: Broke | null = null;
+
+/** The server breaking on any request raises the bug sheet (R-0056). */
+export const onBroke = (listener: Broke) => {
+  broke = listener;
+};
+
 function csrf(): string {
   return (
     document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? ""
@@ -131,8 +145,12 @@ async function send<T>(
     if (!(error instanceof TypeError || error instanceof DOMException)) throw error;
     throw new Failed(0, `${method} ${url}`, error.message);
   }
-  if (!response.ok)
+  if (!response.ok) {
+    const path = url.split("?")[0];
+    if (response.status >= 500 && !SELF_REPORTED.some((own) => path.startsWith(own)))
+      broke?.(`${method} ${path}`, response.status);
     throw new Failed(response.status, `${method} ${url}`, await response.text());
+  }
   // an empty answer left unread is logged by the browser as aborted
   if (response.status === 204) {
     await response.text();

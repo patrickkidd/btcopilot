@@ -1,6 +1,7 @@
 import * as api from "./api";
 import { esc } from "./dom";
 import { dragScroll } from "./drag";
+import type { Faults } from "./faults";
 import { Sheet } from "./sheet";
 import { ReportKind, type Report } from "./types";
 
@@ -38,7 +39,7 @@ export class Reports {
   private sheet: Sheet;
   private at: Report | null = null;
   private waiting: Report[] = [];
-  /** Errors and offers already raised on this page, never raised again. */
+  /** Offers already raised on this page, never raised again. */
   private raised = new Set<string>();
   private closing = 0;
   /** A bug goes without asking once the person has chosen Always send. */
@@ -48,6 +49,8 @@ export class Reports {
     host: HTMLElement,
     /** Always send, tapped: the person's settings say so from now on. */
     private readonly alwaysSend: () => Promise<void>,
+    /** Which errors were raised already on this page. */
+    private readonly faults: Faults,
   ) {
     this.sheet = new Sheet(host, "rp");
     this.sheet.panel.addEventListener("click", (e) => {
@@ -56,10 +59,10 @@ export class Reports {
     });
   }
 
-  /** A turn or the page broke with this error, after these words of the
-   * person's; the same error is raised once. */
-  bug(error: string, text: string, turnId: string): void {
-    if (this.once(error)) return;
+  /** A turn, the page or the server broke with this error, after these words
+   * of the person's; an error of the same key is raised once. */
+  bug(error: string, text: string, turnId: string, key = error): void {
+    if (!this.faults.first(key)) return;
     this.queue({ kind: ReportKind.Bug, turn_id: turnId, text, error, version: window.BOOTSTRAP.version });
   }
 
