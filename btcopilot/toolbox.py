@@ -648,15 +648,12 @@ def said_label(statement: Statement) -> str:
     return f"{who} said, {statement.created_at.day} {statement.created_at:%b}"
 
 
-def said_before(said: Statement):
-    """The person's and the coach's words before these, in any of that user's
-    sessions on the family they were said about. Another user's sessions on
-    the same family are theirs alone."""
-    family = said.discussion
+def said_on(diagram_id: int, user_id: int):
+    """The person's and the coach's words in any of that user's sessions on one
+    family. Another user's sessions on the same family are theirs alone."""
     return Statement.query.join(Discussion).filter(
-        Discussion.diagram_id == family.diagram_id,
-        Discussion.user_id == family.user_id,
-        Statement.created_at < said.created_at,
+        Discussion.diagram_id == diagram_id,
+        Discussion.user_id == user_id,
         Statement.text.isnot(None),
         Statement.text != "",
         or_(
@@ -664,6 +661,42 @@ def said_before(said: Statement):
             Statement.speaker_id == Discussion.chat_ai_speaker_id,
         ),
     )
+
+
+def said_before(said: Statement):
+    """The words before these, on the family they were said about."""
+    family = said.discussion
+    return said_on(family.diagram_id, family.user_id).filter(
+        Statement.created_at < said.created_at
+    )
+
+
+def _starts(terms: list[str]) -> list[re.Pattern]:
+    return [re.compile(rf"\b{re.escape(term)}", re.I) for term in terms]
+
+
+def said_with(found, terms: list[str]) -> list[Statement]:
+    """What in `found` carries every one of the words at the start of a word,
+    newest first."""
+    starts = _starts(terms)
+    found = found.filter(
+        *(Statement.text.icontains(term, autoescape=True) for term in terms)
+    )
+    return [
+        s
+        for s in found.order_by(Statement.created_at.desc(), Statement.id.desc())
+        if all(start.search(s.text) for start in starts)
+    ]
+
+
+def excerpt(text: str, terms: list[str], cut: int = SEARCH_CUT) -> str:
+    """Words a search found, cut around the first match when they run long."""
+    if len(text) <= cut:
+        return text
+    at = min((m.start() for s in _starts(terms) if (m := s.search(text))), default=0)
+    begin = max(0, at - cut // 3)
+    after = "…" if begin + cut < len(text) else ""
+    return ("…" if begin else "") + text[begin : begin + cut] + after
 
 
 def _day(value: str) -> datetime.date:
@@ -675,22 +708,16 @@ def _day(value: str) -> datetime.date:
         )
 
 
-def _hit(statement: Statement, starts: list[re.Pattern]) -> str:
+def _hit(statement: Statement, terms: list[str]) -> str:
     """One message a search found: its id, the day, who said it, and its
-    words, cut around the first match when they run long."""
+    words."""
     who = (
         "coach"
         if statement.speaker_id == statement.discussion.chat_ai_speaker_id
         else "user"
     )
-    text = statement.text
-    if len(text) > SEARCH_CUT:
-        at = min((m.start() for s in starts if (m := s.search(text))), default=0)
-        begin = max(0, at - SEARCH_CUT // 3)
-        cut = text[begin : begin + SEARCH_CUT]
-        after = "…" if begin + SEARCH_CUT < len(text) else ""
-        text = ("…" if begin else "") + cut + after
-    return f"{statement.id} {statement.created_at.date().isoformat()} {who}: {text}"
+    day = statement.created_at.date().isoformat()
+    return f"{statement.id} {day} {who}: {excerpt(statement.text, terms)}"
 
 
 class ToolError(Exception):
@@ -814,22 +841,15 @@ class Toolbox:
                 "Search by words, a person, or the days it was said",
                 "It searched the chat for nothing.",
             )
-        found = said_before(self.said).filter(
-            *(Statement.text.icontains(term, autoescape=True) for term in terms)
-        )
+        found = said_before(self.said)
         if args.get("start"):
             found = found.filter(Statement.created_at >= _day(args["start"]))
         if args.get("end"):
             found = found.filter(
                 Statement.created_at < _day(args["end"]) + datetime.timedelta(days=1)
             )
-        starts = [re.compile(rf"\b{re.escape(term)}", re.I) for term in terms]
-        hits = [
-            s
-            for s in found.order_by(Statement.created_at.desc(), Statement.id.desc())
-            if all(start.search(s.text) for start in starts)
-        ]
-        lines = [_hit(s, starts) for s in hits[:SEARCH_SHOWN]]
+        hits = said_with(found, terms)
+        lines = [_hit(s, terms) for s in hits[:SEARCH_SHOWN]]
         if len(hits) > SEARCH_SHOWN:
             more = len(hits) - SEARCH_SHOWN
             lines.append(f"{more} older ones matched too; narrow the days to see them.")

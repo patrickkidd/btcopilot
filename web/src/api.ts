@@ -279,9 +279,14 @@ export const saveQuestion = (
 /** Sessions, newest activity first. The server has no current-session pointer:
  * posting into a session is what makes it the one you come back to. */
 export const sessionIndex = (diagramId?: number) =>
+  call<Session[]>("GET", onDiagram("/sessions", diagramId));
+
+/** One family's sessions where something said carries every word, searched
+ * the way the coach searches the chat. */
+export const sessionSearch = (diagramId: number, words: string) =>
   call<Session[]>(
     "GET",
-    diagramId === undefined ? "/sessions" : `/sessions?diagram_id=${diagramId}`,
+    `${onDiagram("/sessions", diagramId)}&words=${encodeURIComponent(words)}`,
   );
 
 export const newSession = (kind?: SessionKind) =>

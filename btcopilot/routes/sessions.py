@@ -26,9 +26,12 @@ from btcopilot.discussions import (
     utc_iso,
 )
 from btcopilot import toolnames, turns, turnstore
+from btcopilot.toolbox import excerpt, said_on, said_with
 from btcopilot.turnlog import TurnEventKind
 
 THREAD_PAGE = 50
+# About two lines of a session's row, so the words a search found stay in sight.
+MATCH_CUT = 90
 
 
 def statements_payload(statements: list[Statement], user) -> list[dict]:
@@ -169,12 +172,23 @@ def statement_index():
 def session_index():
     """`?diagram_id=` lists another readable diagram's sessions, which is what
     the sessions sheet needs to show a professional's families in one scroll.
-    A diagram the user cannot read is a 404, never a 403."""
+    A diagram the user cannot read is a 404, never a 403. `?words=` keeps the
+    sessions where something said carries every word, the coach's own search,
+    each with the newest line that does as `match`."""
     user = auth.current_user()
     asked = request.args.get("diagram_id", type=int)
     if asked is not None and asked not in {d.id for d in readable(user)}:
         abort(404)
-    return jsonify([session_payload(d) for d in user_sessions(user, asked)])
+    found = user_sessions(user, asked)
+    terms = request.args.get("words", "").split()
+    if not terms:
+        return jsonify([session_payload(d) for d in found])
+    lines = {}
+    for s in said_with(said_on(asked or user.diagram_in_use(), user.id), terms):
+        lines.setdefault(s.discussion_id, excerpt(s.text, terms, MATCH_CUT))
+    return jsonify(
+        [{**session_payload(d), "match": lines[d.id]} for d in found if d.id in lines]
+    )
 
 
 @bp.route("/sessions", methods=["POST"])

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { colours } from "./gate";
-import { stateFor } from "./setup";
+import { flask, stateFor, username } from "./setup";
 
 /** The sheet's door beside the message box, and the sheet it raises. Only a
  * professional, a coder or Patrick has one, and no fixture is any of them, so
@@ -234,5 +234,27 @@ test.describe("uploading a recording", () => {
     const warning = page.locator(".cf-p");
     await expect(warning.first()).toContainText("costs Alaska Family Systems money");
     await expect(warning.last()).toContainText("patrick@alaskafamilysystems.com");
+  });
+});
+
+/** Patrick's search reads what was said in each session, not only its title
+ * and summary: a word said only inside one session finds that session, with
+ * the line that carries it under its title. */
+test.describe("searching the sessions", () => {
+  test.use({ storageState: stateFor("sittings") });
+  const roles = (...names: string[]) =>
+    flask("admin", "run", "--", "users", "roles", username("sittings"), ...names, "--yes");
+  test.beforeAll(() => roles("admin", "subscriber"));
+  test.afterAll(() => roles("subscriber"));
+
+  // R-0347
+  test("finds a session by a word said only inside it", async ({ page }) => {
+    await page.goto("/app/");
+    await openSheet(page);
+    await page.locator("#sessions-sheet .fs-search input").fill("job");
+    const rows = page.locator("#sessions-sheet .row");
+    await expect(rows).toHaveCount(1);
+    await expect(rows.locator(".rtitle")).not.toContainText("job");
+    await expect(rows.locator(".rsub")).toHaveText("What happened first, with my brother's job?");
   });
 });

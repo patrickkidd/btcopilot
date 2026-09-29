@@ -988,10 +988,11 @@ button { font-family: inherit; }
   justify-content: space-between;
   color: var(--ink);
 }
-/* the app's close button, kept in the heading row where the notes' own sat;
-   the row reaches into the card's padding so the cross keeps the corner */
+/* the app's close button, kept in the heading row where the notes' own sat,
+   and in a full-screen form's top bar, below the phone's own status bar; the
+   notes' row reaches into the card's padding so the cross keeps the corner */
 .notes-head { margin-right: -12px; }
-.notes-head > .cardx { position: static; }
+.notes-head > .cardx, .ovbar > .cardx { position: static; }
 .notes-card dl { margin: 0; }
 .notes-card dt { color: var(--ink); }
 .notes-card dd { margin: 0 0 8px; overflow-wrap: anywhere; }

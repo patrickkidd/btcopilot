@@ -463,6 +463,8 @@ export interface Session {
   /** The turn the coach is running on this session, if one is running: a page
    * that has just loaded attaches to it instead of showing nothing. */
   turn: string | null;
+  /** On a search, the newest line said in it that carries the words. */
+  match?: string;
 }
 
 export interface Diagram {

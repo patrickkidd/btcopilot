@@ -33,6 +33,7 @@ import {
   type Sel,
 } from "./caption";
 import { $, CLUSTER, pathRow, setTitle, slideOver } from "./dom";
+import { Return, returnKey, touch } from "./keyboard";
 import { Drawer } from "./drawer";
 import { among, untold } from "./snapshots";
 import { reopen, type Kept } from "./plays";
@@ -1243,12 +1244,15 @@ $("info").addEventListener("click", () => {
   pic = REST;
   actions();
 });
-// Return starts a new line; only the send button sends (R-0368), so a message
-// can have paragraphs. The break is a plain newline so the draft keeps it.
+// With a real keyboard Return sends; a new line is Shift- or Alt-Return, and
+// on a touch screen Return, so a message can have paragraphs (R-0368). The
+// break is a plain newline so the draft keeps it.
 $("composer").addEventListener("keydown", (e) => {
   const key = e as KeyboardEvent;
-  if (key.key !== "Enter") return;
+  const act = returnKey(key, touch());
+  if (!act) return;
   key.preventDefault();
+  if (act === Return.Send) return void send();
   const selection = window.getSelection();
   if (!selection?.rangeCount) return;
   const range = selection.getRangeAt(0);

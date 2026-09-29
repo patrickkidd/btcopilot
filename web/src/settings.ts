@@ -25,13 +25,14 @@ import {
  * chat view is the one named shortcut, and it writes this same value. */
 
 const PANE_MS = 240;
-/** What each choice of how often the coach may message first means. */
+/** What each choice of how often the coach may message first means: what
+ * makes it write, and how often at most. */
+const writesFirst = (often: string) =>
+  `The coach writes first when it notices a pattern in your family's events, or to follow up on something you agreed to, at most once a ${often}.`;
 const PROACTIVE_HINT: Record<Proactive, string> = {
   [Proactive.Never]: "The coach never messages first unless you ask it to.",
-  [Proactive.Rarely]:
-    "The coach may message first at most once a month, about a pattern in your family's events, and whenever you ask it to.",
-  [Proactive.Weekly]:
-    "The coach may message first at most once a week, about a pattern in your family's events, and whenever you ask it to.",
+  [Proactive.Rarely]: writesFirst("month"),
+  [Proactive.Weekly]: writesFirst("week"),
 };
 const SEARCH_AT = 6;
 

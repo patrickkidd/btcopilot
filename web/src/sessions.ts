@@ -42,6 +42,9 @@ export interface SessionsHandlers {
 export class Sessions {
   private families: Family[] = [];
   private filter = "";
+  /** On a search, each session where something said carries the words, and
+   * the newest line that does, which stands under its title. */
+  private lines = new Map<number, string>();
   private open = false;
   private drag: { kind: "open" | "close"; y0: number; dy: number } | null = null;
   /** Only Patrick puts a conversation on the agenda, so only he is offered it,
@@ -191,10 +194,7 @@ export class Sessions {
     });
     this.scrim.addEventListener("click", () => this.lower());
     this.sheet.querySelector(".cardx")!.addEventListener("click", () => this.lower());
-    this.search.addEventListener("input", () => {
-      this.filter = this.search.value;
-      this.render();
-    });
+    this.search.addEventListener("input", () => void this.seek());
     // One sheet is up at a time: the upload sheet takes the sessions sheet's
     // place rather than standing on top of it.
     this.uploadButton.addEventListener("click", () => {
@@ -361,11 +361,24 @@ export class Sessions {
     }, 280);
   }
 
+  /** The words typed, looked for in what was said as well as in the titles.
+   * The server reads what was said, with the coach's own search; an answer
+   * for words since typed over is dropped. */
+  private async seek(): Promise<void> {
+    const words = this.search.value;
+    const home = this.home();
+    const found = home && words.trim() ? await api.sessionSearch(home.diagram.id, words) : [];
+    if (words !== this.search.value) return;
+    this.filter = words;
+    this.lines = new Map(found.map((s) => [s.id, s.match!]));
+    this.render();
+  }
+
   private render(): void {
     const home = this.home();
     const now = new Date();
     const searching = !!this.filter.trim();
-    const rows = home ? matching(home, this.filter).rows : [];
+    const rows = home ? matching(home, this.filter, new Set(this.lines.keys())).rows : [];
 
     let html = "";
     let period = "";
@@ -395,12 +408,13 @@ export class Sessions {
   }
 
   /** A row the way a messages list draws one: the title with the day small
-   * at its right, then two lines of what the client first said. */
+   * at its right, then two lines of what the client first said, or on a
+   * search the line that carries the words. */
   private rowHtml(session: Session, now: Date, period: string): string {
     const when = new Date(session.date ? `${session.date}T12:00:00` : session.last_activity);
     // inside Today and Yesterday the heading already says the day
     const day = DAY_HEADINGS.has(period) ? "" : rowDate(when, now);
-    const said = session.preview ?? (session.kind === SessionKind.Chat ? "Nothing said yet" : `A ${session.kind} with nothing in it yet`);
+    const said = this.lines.get(session.id) ?? session.preview ?? (session.kind === SessionKind.Chat ? "Nothing said yet" : `A ${session.kind} with nothing in it yet`);
     return (
       `<div class="row" data-id="${session.id}">` +
       `<div class="rmain">` +

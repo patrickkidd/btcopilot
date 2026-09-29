@@ -326,7 +326,7 @@ test.describe("an event added by hand", () => {
     const before = await page.locator("#view circle.dot").count();
     await openList(page);
     await page.locator("#menu-add").click();
-    const editor = page.locator("#menu-body .editor");
+    const editor = page.locator("#add-sheet .editor");
     // a move is a noted event; a new event opens as a shift, which is refused
     // until something in it moves
     await editor.locator('.segs[data-name="kind"] .seg[data-value="noted"]').click();

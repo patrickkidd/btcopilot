@@ -57,7 +57,7 @@ What it is for: talking to the coach, which is how everything else in the app ge
 - Without your birth date the coach has nothing to turn an age into a year, so early events land on years it invented. [built] {R-0360}
 - The last sentence of a coach reply is its question and is set in amber. It reads as bold, which is where your eye should go. [built] {R-0358}
 - The coach no longer holds out answers for you to tap; you type your own words. [built] {R-0361}
-- The Return key starts a new line, and only the send button sends, so a message can have paragraphs. [built] {R-0368}
+- With a real keyboard, Return sends and Shift-Return or Alt-Return starts a new line; on a touch screen, Return starts a new line and only the send button sends, so a message can have paragraphs. A touch screen is told by its pointer, not by the browser's name. [built] {R-0368}
 - The coach's words and the steps it takes arrive as they happen rather than all at the end, so a long turn is never a blank wait. [built] {R-0369}
 - The turn runs on the server on its own, so reloading the page, or leaving the app and coming back, picks the turn up where it is. [built] {R-0369}
 - Every step the coach takes, reads and changes to the picture included, is a line in its reply, and the lines stay after a reload. [built] {R-0478}
@@ -247,7 +247,7 @@ What it is for: seeing and editing everything in the record by hand.
 - The scrollbar is never covered by a cluster heading. [built] {R-0218}
 - Tapping a row opens the editor for that item in place. [built]
 - The line saying you can also edit by chatting was removed from these lists. [built] {R-0219}
-- There is a button to add an event. [built]
+- There is a button to add an event; the new event's form slides up over the lists, full screen, with its name and the app's close button at its top. [built]
 - Editing by hand is possible but is not what the app is being tested on. [built]
 
 ## The event editor
@@ -302,7 +302,7 @@ What it is for: your past conversations.
 
 - A button beside the chat input opens a sheet holding your past sessions. [built]
 - The sheet rises from the input bar and can be dragged back down to close. [built]
-- Sessions are searchable by their titles and their summaries. [built] {R-0347}
+- Sessions are searchable by their titles, their summaries and the words said in them, with the coach's own search; a session found by its words shows the line that carries them under its title. [built] {R-0347}
 - The list is drawn on the notes-list precedent: a small uppercase grey heading per period — today, yesterday, previous 7 days, previous 30 days, then the month — over a rounded group of rows; no clock column, no badges, no pencil. [built] {R-0347}
 - Each row is a bold title with the day small at its right (left out under today and yesterday), then two lines of the first thing the client said, so a session can be told apart without opening it. A session nobody titled is named by its first six words, or "New session". [built] {R-0347}
 - A "⋯" at the row's right opens the same rename and delete actions as the swipe. [built] {R-0347}
@@ -341,7 +341,7 @@ What it is for: you, your families, your plan, and signing out.
 - A button under each coach reply plays it again, the way the Claude Code mobile app has one. [built] {R-0521}
 - Which voice reads the replies is not settled: today it is your phone's own, which costs nothing, and a better-sounding paid one waits on Patrick. [open]
 - No other setting appears in two places. [built]
-- There is a row for how often the coach may message you first, and the line under it says what the chosen setting means: never unless you ask, at most once a month, or at most once a week. [built]
+- There is a row for how often the coach may message you first, and the line under it says what the chosen setting means: never unless you ask, or when it notices a pattern in your family's events or to follow up on something you agreed to, at most once a month or once a week. [built]
 - There is a row for light, dark or matching your phone. [built]
 - Your families are listed, with the number of sessions and when each was last used, and a tick on the one you are in. [built]
 - Tapping a family opens it, and one is open at a time. [built] {R-0175}
