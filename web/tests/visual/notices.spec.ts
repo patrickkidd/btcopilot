@@ -33,7 +33,7 @@ test.beforeEach(() => {
   flask("app", "fixtures", "notice");
 });
 
-// R-0017, R-0606
+// R-0017
 test("a coach message never takes the strip: the notice under it does, and once the notice is put away the strip stays empty", async ({
   page,
 }) => {
@@ -209,7 +209,7 @@ test("Open on a notice pointing at the coach settings lands on the coach setting
   await expect(account(page)).not.toHaveClass(/\bunread\b/);
 });
 
-// R-0606
+// R-0017
 test("a coach message written from outside the page appears in the thread when the page comes back to the front", async ({
   page,
 }) => {
