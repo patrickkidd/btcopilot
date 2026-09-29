@@ -4,7 +4,7 @@ from werkzeug.exceptions import Unauthorized, HTTPException
 
 import btcopilot
 
-from btcopilot import tracing
+from btcopilot import reports, tracing
 from btcopilot.turnlog import TurnLogBackend
 
 
@@ -123,6 +123,7 @@ def create_app(config: dict = None, **kwargs):
             return e
 
         app.logger.exception(f"Unhandled exception: {type(e).__name__}")
+        reports.crashed(e)
         return "Internal Server Error", 500
 
     @app.errorhandler(Unauthorized)

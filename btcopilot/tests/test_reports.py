@@ -1,8 +1,12 @@
 import datetime
+import logging
 
 import pytest
+from sqlalchemy.exc import OperationalError
 
-from btcopilot import reports
+import btcopilot
+from btcopilot import auth, reports
+from btcopilot.app import REQUEST_ID
 from btcopilot.extensions import db
 from btcopilot.models import Report, ReportKind, ReportSource, ReportStatus
 
@@ -110,3 +114,52 @@ def test_the_same_fault_for_the_same_person_release_and_day_is_counted_on_one_ro
     db.session.commit()
     post(web, PAGE_BUG)
     assert sorted(row.count for row in Report.query) == [1, 1, 1, 2, 4]
+
+
+@pytest.fixture
+def boom(flask_app):
+    """A route of the signed-in app that begins a write and then breaks."""
+
+    def broke():
+        auth.authenticate_web()
+        db.session.add(Report(kind=ReportKind.Feedback, status=ReportStatus.Sent, release="r", words="half"))
+        db.session.flush()
+        raise KeyError("Sarah")
+
+    flask_app.add_url_rule("/app/boom", "boom", broke)
+
+
+def test_the_server_breaking_writes_its_own_row_which_the_pages_report_of_it_is(boom, web, test_user):
+    # R-0056
+    response = web.get("/app/boom")
+    assert response.status_code == 500
+    row = Report.query.one()
+    assert (row.kind, row.source, row.user_id, row.release, row.address, row.count) == (
+        ReportKind.Bug,
+        ReportSource.Server,
+        test_user.id,
+        btcopilot.__version__,
+        "/app/boom",
+        1,
+    )
+    assert row.request_id == response.headers[REQUEST_ID]
+    assert row.error == "KeyError: 'Sarah'"
+    assert row.frames[0].startswith("btcopilot/tests/test_reports.py:")
+    assert row.signature == f"KeyError: '…' at {row.frames[0]}"
+    page = dict(PAGE_BUG, error="500 GET /app/boom", request_id=row.request_id)
+    del page["frames"]
+    assert post(web, page).get_json() == {"id": row.id}
+    assert Report.query.count() == 1
+
+
+def test_a_row_that_cannot_be_written_is_logged_and_the_server_still_answers_500(boom, web, monkeypatch, caplog):
+    # R-0056
+    def down(row):
+        raise OperationalError("INSERT", {}, Exception("the database is gone"))
+
+    monkeypatch.setattr(reports, "write", down)
+    with caplog.at_level(logging.ERROR, logger="btcopilot.reports"):
+        response = web.get("/app/boom")
+    assert response.status_code == 500
+    assert "could not be written" in caplog.text
+    assert Report.query.count() == 0

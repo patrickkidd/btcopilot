@@ -2,15 +2,26 @@
 itself, all written here [Oracle: R-0056]."""
 
 import datetime
+import logging
+import os
 import threading
 import time
+import traceback
 from collections import deque
 
-from flask import current_app, request
+from flask import current_app, g, request
+from sqlalchemy.exc import SQLAlchemyError
 
+import btcopilot
+from btcopilot import auth
 from btcopilot.extensions import db
 from btcopilot.models import Diagram, Report, ReportKind, ReportSource, ReportStatus, User
 from btcopilot.tuning import reason
+
+_log = logging.getLogger(__name__)
+
+# Where the server's own code lives, and what its frames are named from.
+PACKAGE = os.path.dirname(btcopilot.__file__)
 
 # At most this many reports an hour from one sender, so a page caught in a
 # loop, or a stranger's script, cannot fill the table.
@@ -49,7 +60,13 @@ def allowed(who: str) -> bool:
 
 
 def take(body: dict, user: User | None, diagram: Diagram | None) -> Report:
-    """A report as the page or the worker sent it, checked and written."""
+    """A report as the page or the worker sent it, checked and written. A
+    request the server broke on is already its own row, which the page's
+    report of it is."""
+    if body.get("request_id"):
+        found = Report.query.filter_by(request_id=body["request_id"]).first()
+        if found:
+            return found
     kind = ReportKind(body["kind"])
     unknown = set(body) - COMMON - FIELDS[kind]
     if unknown:
@@ -111,3 +128,39 @@ def write(row: Report) -> Report:
     db.session.add(row)
     db.session.commit()
     return row
+
+
+def frames(error: BaseException) -> list[str]:
+    """The traceback's frames in the server's own code, innermost first, the
+    way a page's stack lists them."""
+    return [
+        f"{os.path.relpath(frame.filename, os.path.dirname(PACKAGE))}:{frame.lineno} in {frame.name}"
+        for frame in reversed(traceback.extract_tb(error.__traceback__))
+        if frame.filename.startswith(PACKAGE + os.sep)
+    ]
+
+
+def crashed(error: Exception) -> None:
+    """The server broke on a request: its own row, in a transaction of its own
+    after what the request had begun is rolled back. A row that cannot be
+    written is logged, and the request still answers 500."""
+    db.session.rollback()
+    try:
+        user = auth.current_user()
+        write(
+            Report(
+                kind=ReportKind.Bug,
+                status=ReportStatus.Sent,
+                source=ReportSource.Server,
+                user_id=user.id if user else None,
+                release=btcopilot.__version__,
+                address=request.path,
+                count=1,
+                error=f"{type(error).__name__}: {error}",
+                frames=frames(error),
+                request_id=g.request_id,
+            )
+        )
+    except SQLAlchemyError:
+        db.session.rollback()
+        _log.exception("The server's own report of that error could not be written")
