@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
-from btcopilot import proactive
+from btcopilot import proactive, tuning
 from btcopilot.extensions import db
 from btcopilot.models import (
     Discussion,
@@ -257,6 +257,21 @@ def test_the_loop_counts_are_written_once_each(family, sent):
             ObservationKind.ProactiveReturned,
         ]
     )
+
+
+def test_the_loop_counts_stay_out_of_the_queue_patrick_rules_on(family, sent):
+    # R-0517
+    proactive.run(now=T0)
+    db.session.add(
+        Observation(
+            diagram_id=family.free_diagram_id,
+            turn_id="t1",
+            kind=ObservationKind.ToolRefused,
+            detail={"reason": "show: No people were named."},
+        )
+    )
+    db.session.commit()
+    assert [g["kind"] for g in tuning.queue()] == [ObservationKind.ToolRefused.value]
 
 
 def test_a_dry_run_keeps_and_sends_nothing(family, sent):
