@@ -2244,42 +2244,25 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
    thread. The mockup's 10.5px is below the binding 13px floor, so it is set at
    the floor. */
 /* Where one sitting of the family's thread ends and the next begins: the day
-   between two hairlines, and what the sitting was about under it. Quieter
-   than any bubble, so the thread still reads as one conversation. */
+   between two hairlines, quieter than any bubble, so the thread still reads
+   as one conversation. */
 .sitting {
   flex: none;
   align-self: stretch;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  margin: 10px 0 4px;
-  color: var(--faint);
-}
-.sitting:first-child { margin-top: 0; }
-.sit-day {
-  align-self: stretch;
-  display: flex;
   align-items: center;
   gap: 10px;
+  margin: 10px 0 4px;
   font: 500 12px/1.3 var(--mono);
+  color: var(--faint);
   white-space: nowrap;
 }
-.sit-day::before,
-.sit-day::after {
+.sitting:first-child { margin-top: 0; }
+.sitting::before,
+.sitting::after {
   content: "";
   flex: 1;
   border-top: 1px solid var(--line);
-}
-.sit-sum {
-  max-width: 88%;
-  font: 400 13px/1.35 var(--sans);
-  text-align: center;
-  overflow-wrap: anywhere;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
 }
 
 .sys {

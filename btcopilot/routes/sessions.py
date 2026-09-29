@@ -86,8 +86,8 @@ def thread(user, before: int | None = None) -> list[dict]:
     """The words of every sitting on the family the app is on, as one thread:
     sittings in the order they started, THREAD_PAGE statements at a time back
     from the statement `before`. A sitting's first words carry the sitting —
-    its id, when it started and its summary — which is where the page draws
-    the line between one sitting and the next."""
+    its id and when it started — which is where the page draws the line
+    between one sitting and the next."""
     start = (
         db.session.query(
             Statement.discussion_id,
@@ -118,9 +118,7 @@ def thread(user, before: int | None = None) -> list[dict]:
     out = statements_payload([s for s, _, _ in rows], user)
     for said, (s, at, first) in zip(out, rows):
         said["sitting"] = (
-            {"id": s.discussion_id, "started": utc_iso(at), "summary": s.discussion.summary}
-            if s.id == first
-            else None
+            {"id": s.discussion_id, "started": utc_iso(at)} if s.id == first else None
         )
     return out
 

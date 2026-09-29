@@ -12,7 +12,7 @@ same rule in its own words. Another user's resource returns 404.
 | | |
 |---|---|
 | `POST /chat` | `{statement}` into the family's current sitting: the session last spoken in, or a new one once its last statement is 12 hours old |
-| `GET /statements` | the family's one thread across its sessions, 50 statements at a time, oldest first; `?before=<statement id>` reads the page just older. Each carries `session_id`; a session's first statement carries `sitting: {id, started, summary}` |
+| `GET /statements` | the family's one thread across its sessions, 50 statements at a time, oldest first; `?before=<statement id>` reads the page just older. Each carries `session_id`; a session's first statement carries `sitting: {id, started}` |
 | `POST /sessions/<id>/statements` | `{statement}` into a named session |
 | `GET /sessions` | every session, most recently active first |
 | `POST /sessions` | new empty session, 201 |
@@ -22,8 +22,8 @@ same rule in its own words. Another user's resource returns 404.
 A session reads `{id, title, summary, last_activity, message_count}`. The title
 and summary are written by the coach after the first exchange and are editable
 after that. A session is a sitting: nobody
-opens, starts or switches one; the page shows one thread with a line where each
-sitting starts, and the server starts the next sitting when the family has been
+opens, starts or switches one; the page shows one thread with a dated line where
+each sitting starts, and the server starts the next sitting when the family has been
 quiet 12 hours (`discussions.sitting`, which coach-first messages use too).
 
 A chat reply reads `{statement, refs, discussion_id, session}`.

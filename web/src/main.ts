@@ -608,7 +608,7 @@ let stopped: { turn: string; bubble: HTMLElement } | null = null;
  * newest page, as the last message, it can be picked up again (R-0477). */
 function addStatements(statements: api.Said[], newest = false): void {
   for (const statement of statements) {
-    if (statement.sitting) $("chat").append(divider(statement.sitting));
+    if (statement.sitting) $("chat").append(divider(statement.sitting.started));
     const coach = statement.role === Role.Coach;
     if (statement.case && statement.id !== null)
       cases.set(statement.id, { case: statement.case, digest: statement.digest });
@@ -636,21 +636,19 @@ function addStatements(statements: api.Said[], newest = false): void {
 const thread = new Thread($("chat"), (page) => addStatements(page));
 
 /** Words that went into another sitting than the newest on screen start it:
- * the line goes in above them, dated now, and takes the sitting's summary
- * once the coach has written one. */
+ * the line goes in above them, dated now, and the thread stays on its foot,
+ * where the reader just wrote. */
 function sat(sittingId: number, words: Element | null): void {
   if (sittingId === lastSitting) return;
   lastSitting = sittingId;
-  words?.before(
-    divider({ id: sittingId, started: new Date().toISOString(), summary: null }),
-  );
+  words?.before(divider(new Date().toISOString()));
+  chat.toEnd();
 }
 
-/** The family's sittings read again: what names the session that coded a
- * moment, and the summary a new sitting's line was waiting for. */
+/** The family's sittings read again, which name the session that coded a
+ * moment. */
 async function refreshKnown(): Promise<void> {
   known = await api.sessionIndex();
-  for (const one of known) thread.summarize(one.id, one.summary);
   actions();
   // the list says what kind of session the empty one is
   if ($("chat").querySelector(".cta")) showPrompt();

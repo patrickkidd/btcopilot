@@ -2,8 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { watch } from "./gate";
 import { inside, stateFor } from "./setup";
 
-/** A family has one thread. A light line with the day and the sitting's
- * summary stands where each sitting starts, older sittings read in as the
+/** A family has one thread. A light line with the day stands where each
+ * sitting starts, never the sitting's summary, older sittings read in as the
  * reader scrolls up, and nothing lets anyone open or start a conversation. */
 
 const open = async (page: Page) => {
@@ -19,37 +19,38 @@ const sideways = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
 /** Every line lies inside the thread's box, across it and within what it
- * scrolls, and its summary holds to two lines. Read in one pass, so a page
- * read in meanwhile cannot move the lines under the check. */
+ * scrolls, and says only a day. Read in one pass, so a page read in meanwhile
+ * cannot move the lines under the check. */
+const DAY = /^(Today|Yesterday|[A-Z][a-z]{2} \d{1,2}(, \d{4})?)$/;
+
 async function held(page: Page): Promise<void> {
   const outside = await page.locator("#chat").evaluate((chat) => {
     const box = chat.getBoundingClientRect();
     const top = box.top - chat.scrollTop;
     return [...chat.querySelectorAll(".sitting")].flatMap((line) => {
       const r = line.getBoundingClientRect();
-      const sum = line.querySelector(".sit-sum")?.getBoundingClientRect().height ?? 0;
       const out =
         r.left < box.left - 1 ||
         r.right > box.right + 1 ||
         r.top < top - 1 ||
-        r.bottom > top + chat.scrollHeight + 1 ||
-        sum > 2 * 13 * 1.35 + 1;
+        r.bottom > top + chat.scrollHeight + 1;
       return out ? [line.textContent] : [];
     });
   });
   expect(outside).toEqual([]);
+  for (const day of await page.locator("#chat .sitting").allInnerTexts())
+    expect(day).toMatch(DAY);
 }
 
 test.describe("a family with one sitting", () => {
   test.use({ storageState: stateFor("sitting") });
 
   // R-0055
-  test("one line above the first words, today, with the summary", async ({ page }) => {
+  test("one line above the first words, saying today", async ({ page }) => {
     const w = await open(page);
     const line = page.locator("#chat .sitting");
     await expect(line).toHaveCount(1);
-    await expect(line.locator(".sit-day")).toHaveText("Today");
-    await expect(line.locator(".sit-sum")).toHaveText("Talking about Mum's move to the coast");
+    await expect(line).toHaveText("Today");
     expect(await page.locator("#chat > *").first().getAttribute("class")).toBe("sitting");
     await line.scrollIntoViewIfNeeded();
     await inside(line, page.locator("#chat"));
@@ -73,7 +74,7 @@ test.describe("a family with one sitting", () => {
   // R-0055
   test("the line takes the app's quiet colours in light and dark", async ({ page }) => {
     await open(page);
-    const day = page.locator("#chat .sit-day");
+    const day = page.locator("#chat .sitting");
     const read = () =>
       day.evaluate((node) => {
         const probe = document.body.appendChild(document.createElement("i"));
@@ -96,18 +97,15 @@ test.describe("twelve sittings over eight months", () => {
   test.use({ storageState: stateFor("sittings") });
 
   // R-0055
-  test("every line sits inside the thread, whatever its summary", async ({ page }) => {
+  test("every line sits inside the thread and says only the day, whatever the summary", async ({
+    page,
+  }) => {
     const w = await open(page);
     const lines = page.locator("#chat .sitting");
     await expect(lines).toHaveCount(9);
-    await expect(lines.nth(7).locator(".sit-day")).toHaveText("Yesterday");
-    await expect(lines.nth(8).locator(".sit-day")).toHaveText("Today");
-    // sixty characters, none at all, and unicode
-    await expect(lines.nth(0).locator(".sit-sum")).toHaveText(
-      "Why the Sunday calls to Mum stopped after the funeral in May",
-    );
-    await expect(lines.nth(1).locator(".sit-sum")).toHaveCount(0);
-    await expect(lines.nth(2).locator(".sit-sum")).toHaveText("Zoë, 祖母 and the move to Łódź 🏠");
+    await expect(lines.nth(7)).toHaveText("Yesterday");
+    await expect(lines.nth(8)).toHaveText("Today");
+    // the sittings carry summaries of sixty characters, none, empty and unicode
     await held(page);
     expect(await sideways(page)).toBe(0);
     expect(w.bad).toEqual([]);
@@ -131,13 +129,7 @@ test.describe("twelve sittings over eight months", () => {
       () => (window as unknown as { ref: Element }).ref.getBoundingClientRect().top,
     );
     expect(Math.abs(now - was)).toBeLessThanOrEqual(1);
-    const lines = chat.locator(".sitting");
-    await expect(lines).toHaveCount(12);
-    await expect(lines.first().locator(".sit-sum")).toHaveText(
-      "How the house sale started the arguments",
-    );
-    // a sitting whose summary was never written
-    await expect(lines.nth(2).locator(".sit-sum")).toHaveCount(0);
+    await expect(chat.locator(".sitting")).toHaveCount(12);
     expect(await chat.evaluate((c) => c.firstElementChild!.className)).toBe("sitting");
     await held(page);
     expect(await sideways(page)).toBe(0);

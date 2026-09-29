@@ -1,10 +1,10 @@
 import * as api from "./api";
-import type { Said, Sitting } from "./api";
+import type { Said } from "./api";
 import { el, esc } from "./dom";
 import { periodLabel, rowDate } from "./when";
 
 /** The family's one thread: every sitting's words in the order they were said,
- * a light line where one sitting ends and the next begins, and older pages
+ * a light line with the day where one sitting ends and the next begins, and older pages
  * read in as the reader scrolls up. Nobody opens, starts or closes a sitting;
  * the server starts one when the family has been quiet a while. */
 
@@ -56,12 +56,6 @@ export class Thread {
       await this.older();
   }
 
-  /** A sitting's line takes its summary once the coach has written one. */
-  summarize(sittingId: number, summary: string | null): void {
-    const line = this.list.querySelector(`.sitting[data-sitting="${sittingId}"]`);
-    if (summary && line && !line.querySelector(".sit-sum")) line.append(said(summary));
-  }
-
   private async readBack(): Promise<void> {
     const page = await api.thread(this.oldest!);
     this.start(page);
@@ -82,17 +76,10 @@ export class Thread {
   }
 }
 
-/** The line where a sitting starts: the day, and what the sitting was about
- * once the coach has said. */
-export function divider(sitting: Sitting): HTMLElement {
-  const started = new Date(sitting.started);
+/** The line where a sitting starts, with the day it started. */
+export function divider(when: string): HTMLElement {
+  const started = new Date(when);
   const now = new Date();
   const period = periodLabel(started, now);
-  const day = DAY_WORDS.has(period) ? period : rowDate(started, now);
-  const line = el("div", "sitting", `<div class="sit-day">${esc(day)}</div>`);
-  line.dataset.sitting = String(sitting.id);
-  if (sitting.summary) line.append(said(sitting.summary));
-  return line;
+  return el("div", "sitting", esc(DAY_WORDS.has(period) ? period : rowDate(started, now)));
 }
-
-const said = (summary: string) => el("div", "sit-sum", esc(summary));

@@ -52,7 +52,6 @@ def test_thread_marks_each_sitting_start(web, token):
         ("two", second),
         ("noted", None),
     ]
-    assert thread[0]["sitting"]["summary"] == "A session title"
 
 
 def test_thread_pages_back(web, test_user):

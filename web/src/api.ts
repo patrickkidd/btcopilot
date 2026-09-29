@@ -156,7 +156,6 @@ export const say = (statement: string) => call<Started>("POST", "/chat", { state
 export interface Sitting {
   id: number;
   started: string;
-  summary: string | null;
 }
 
 /** A statement as the thread reads it: which sitting it is in, and on a
