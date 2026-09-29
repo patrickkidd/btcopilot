@@ -436,15 +436,16 @@ What it is for: knowing what happened when a message does not go through.
 
 What it is for: telling the people who make the app that something broke, or what you want changed, without leaving the conversation.
 
-- When the coach's turn ends in an error, or the page itself hits an error, a sheet slides up from the bottom headed "Something went wrong". The app's amber warning in the thread stays as it is. [built] {R-0056, R-0182}
-- The sheet lists what is sent: your last message, the error, and the app version. [built] {R-0056}
-- Its buttons are "Send the report", "Always send", and "Don't send", which is drawn disabled with the line "Disabled during the beta" under it. [built] {R-0056}
-- The same error raises the sheet once; it never comes up twice for it. [built]
-- When you tell the coach something about the app itself (something that does not work, something you want changed, dislike, or wish it did), the coach answers in one sentence and goes back to the conversation, and the same sheet slides up headed "Send this as feedback?" with your own words. Its buttons are "Send the report", "Always send" and "Not feedback", which closes the sheet and sends nothing. [built] {R-0056}
+- A sheet slides up from the bottom headed "Something went wrong" when the coach's turn ends in an error, when the page hits an error in its own code, when the server itself answers a request with an error of its own, or when drawing a reply breaks; always in full, never folded. The app's amber warning in the thread stays as it is. [built] {R-0056, R-0182}
+- It never comes up for the phone being offline, a request the server turned down, an error page from the proxy in front of the server, a browser extension's error, or the page closing. [built] {R-0056}
+- The sheet lists what is sent. For the page: the error, where in the app's code it broke, the screen, the number of the newest message on screen (never its words), and the app version. For the server: the request, the server's answer and its id. For a turn: the error and the reply that failed, which the server already kept, so sending posts nothing more. [built] {R-0056}
+- Its buttons are "Send the report", "Always send", and "Don't send", which is drawn disabled with the line "Disabled during the beta" under it. The sheet takes the focus itself, not a button. [built] {R-0056}
+- The same error comes up once a page; one this phone already sent in this release is only counted after a reload, and the count goes to the server as the page closes. At most three sheets come up on one page load. A bug waits while you are typing, and comes up once the message box is empty. [built] {R-0056}
+- When you tell the coach something about the app itself, the coach answers in one sentence and goes back to the conversation; once its reply is done, the same sheet slides up headed "Send this as feedback?" with your own words and the buttons "Send the report" and "Not feedback". It comes up at most once a sitting. [built] {R-0056}
 - The sheet is modal: the thread behind it is dimmed and cannot be tapped until you answer it, and nothing is ever added to the thread. [built] {R-0056}
 - After Send, the sheet turns in place into "Your report was sent" with an OK button; it closes on OK or by itself after ten seconds. If the report cannot be sent, the same card says so and why. [built] {R-0056}
-- "Always send" is kept in your settings: a later bug is sent without asking, and only the "Your report was sent" card shows for its ten seconds. Feedback still asks, so you can always say it was not feedback. [built] {R-0056}
-- A sent report is one row in the observations table, of kind bug or feedback, with your words and the turn it came from; nothing is kept when you tap "Not feedback". Reports stay out of Patrick's accept-or-reject queue for now. [built] {R-0056, R-0517}
+- "Always send" is kept in your settings: from then on a bug is sent with no sheet and no card at all. Feedback still asks. [built] {R-0056}
+- A report is one row in the reports table: sent feedback keeps your words, "Not feedback" keeps only the turn and the message it came from. [built] {R-0056}
 
 ## On a desktop (Pro)
 

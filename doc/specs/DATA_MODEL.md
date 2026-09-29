@@ -299,6 +299,33 @@ open or dismiss. One row per person and notice, enforced by a unique key. A
 notice's rows are made and sent when it is sent; someone who joins its audience
 later gets a row, in the app only, when they next open it while it runs.
 
+### Reports
+
+`btcopilot/models/report.py`, written only through `btcopilot/reports.py`
+[Oracle: R-0056]
+
+A `reports` row is one bug or piece of feedback: `kind` (`ReportKind`: bug,
+feedback), `status` (`ReportStatus`: sent, declined), and optionally the person
+(`user_id`), the diagram they were on (`diagram_id`), `turn_id` and
+`statement_id` (never the person's words), then `release` (the app's version),
+`address` (the screen, or for the server's own row the address it was asked
+for) and `count`. A bug also has `source` (`ReportSource`: page, server,
+worker), `signature`, `error` (name and message), `frames` (a JSON list, only
+the frames in the app's own code, innermost first) and `request_id`; a check
+keeps these null on feedback. `words` holds the person's own words when the
+coach offered to send them and they said yes; declined, a row keeps only where
+it was.
+
+The server computes `signature`: the error's name and message with ids and
+quoted names taken out by the tuning queue's normalizer, then its first frame.
+The same signature for the same person in the same release on the same UTC day
+adds to that row's `count` instead of making a row; the page sends the repeats
+it held back as a `count` when it hides. The server's 500 handler writes its
+own row, source server, after rolling back the request; the page's report of
+that request, by its `request_id`, is that row. A coach turn that fails is kept
+as a `turn_failed` observation and gets no report row. The observations table
+no longer has the bug and feedback kinds.
+
 ### Serialization
 
 - **Pickle**: Entire DiagramData in `Diagram.data` (preserves Qt scene objects)
