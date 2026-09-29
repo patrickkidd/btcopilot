@@ -44,6 +44,23 @@ export const wayIn = (coder: boolean): string | null =>
 
 const CHECK = "&#10003;";
 
+/** What a coder reads above the start button until they tap Got it, so
+ * nobody has to be told what the task is or how to do it. Kept per person
+ * rather than per browser. */
+const HOW_IT_WORKS = [
+  "A cut is the part of one conversation Patrick put on the agenda for the next meeting.",
+  "Tap a line of it and type what that line tells you happened.",
+  "The app writes what you type into the record for you.",
+  "When you are finished, tap Done, then Submit for the meeting, before the meeting day.",
+];
+
+const HELP =
+  `<div class="r2" data-help>How this works</div><div data-help>` +
+  HOW_IT_WORKS.map(
+    (line, at) => `<p class="cta-p">${at + 1}. ${esc(line)}</p>`,
+  ).join("") +
+  `</div><button class="donebtn" type="button" data-help>Got it</button>`;
+
 /** One task already finished. A cut the room has ratified opens what the
  * meeting produced, so that row is a way in and reads like one; a cut still
  * waiting on the room is only a record and stays faint (R-0275, R-0344). */
@@ -63,12 +80,17 @@ export function finishedRow(one: FinishedTask): string {
 
 export class OneTask {
   private task: Task | null = null;
+  private help = false;
 
   constructor(
     private body: HTMLElement,
     private handlers: TaskHandlers,
   ) {
     this.body.addEventListener("click", (e) => {
+      if ((e.target as Element).closest("button[data-help]")) {
+        void this.gotIt();
+        return;
+      }
       const start = (e.target as Element).closest(".addbtn");
       if (start && this.task?.ready) {
         this.handlers.onStart(this.task);
@@ -82,14 +104,21 @@ export class OneTask {
 
   /** What the coder has to do now, and what they have already finished. */
   async load(): Promise<Tasks> {
-    const found: Tasks = await api.tasks();
+    const [found, prefs] = await Promise.all([api.tasks(), api.preferences()]);
     this.task = found.task;
+    this.help = prefs.how_it_works;
     this.render(found);
     return found;
   }
 
   showing(): Task | null {
     return this.task;
+  }
+
+  private async gotIt(): Promise<void> {
+    this.help = false;
+    for (const part of this.body.querySelectorAll("[data-help]")) part.remove();
+    await api.setPreferences({ how_it_works: false });
   }
 
   private render(found: Tasks): void {
@@ -107,6 +136,7 @@ export class OneTask {
       `<div class="row tkcard${waiting}">` +
       `<div class="r1">${esc(task.title)}</div>` +
       `<div class="r2">${esc(task.detail)}</div>` +
+      (this.help && task.kind === TaskKind.Code ? HELP : "") +
       `<button class="addbtn" type="button"${task.ready ? "" : " disabled"}>` +
       `${task.kind === TaskKind.Vote ? "vote" : "start"}</button></div>`
     );

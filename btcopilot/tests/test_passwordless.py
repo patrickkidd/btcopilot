@@ -12,7 +12,9 @@ from itsdangerous import TimestampSigner
 from mock import patch
 from webauthn.helpers import bytes_to_base64url
 
+import btcopilot
 from btcopilot import extensions
+from btcopilot.auth.emails import AUDITOR
 from btcopilot.auth.invitation import Invitation
 from btcopilot.auth.logincode import LoginCode
 from btcopilot.auth.passkey import Passkey
@@ -145,6 +147,17 @@ def test_code_signs_in_an_existing_user(flask_app, browser, test_user):
     )
     assert response.status_code == 302
     assert browser.get("/app/me").get_json()["user"]["email"] == test_user.username
+
+
+def test_only_an_auditor_is_told_what_the_coding_is(browser, test_user):
+    # R-0078, R-0311
+    _, outbox = request_code(browser, test_user.username)
+    assert AUDITOR not in outbox[0].body
+
+    test_user.roles = btcopilot.ROLE_AUDITOR
+    db.session.commit()
+    _, outbox = request_code(browser, test_user.username)
+    assert AUDITOR in outbox[0].body
 
 
 def test_a_signed_out_tap_on_a_notification_lands_on_it_after_sign_in(

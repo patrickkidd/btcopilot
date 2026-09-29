@@ -352,6 +352,8 @@ def test_preferences_defaults(web, test_user):
         PrefKey.Mode.value: ChatMode.Text.value,
         PrefKey.Theme.value: Theme.System.value,
         PrefKey.Spotlight.value: Spotlight.Unified.value,
+        PrefKey.HowItWorks.value: True,
+        PrefKey.LineHint.value: True,
         "first_name": test_user.first_name,
         "last_name": test_user.last_name,
         "birthdate": None,

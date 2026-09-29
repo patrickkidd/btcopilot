@@ -7,6 +7,10 @@ class PrefKey(enum.StrEnum):
     Mode = "mode"
     Theme = "theme"
     Spotlight = "spotlight"
+    # Shown to a coder once: the task card's four numbered lines until they
+    # tap Got it, and the hint on the first line they tap in the coding screen.
+    HowItWorks = "how_it_works"
+    LineHint = "line_hint"
 
 
 class Proactive(enum.StrEnum):
@@ -48,11 +52,13 @@ PREF_DEFAULTS = {
     PrefKey.Mode: ChatMode.Text,
     PrefKey.Theme: Theme.System,
     PrefKey.Spotlight: Spotlight.Unified,
+    PrefKey.HowItWorks: True,
+    PrefKey.LineHint: True,
 }
 
 
 def coerce_pref(key: PrefKey, value):
-    if key is PrefKey.Speak:
+    if isinstance(PREF_DEFAULTS[key], bool):
         if not isinstance(value, bool):
             raise ValueError(f"{key} must be a bool, got {value!r}")
         return value
