@@ -545,7 +545,7 @@ const pairs = new Pairs($("pairs-body"));
 
 /** Where the guidelines go back to when closed: the coding screen mid-task,
  * the one task card between meetings. */
-let rulesBack = () => screen(Screen.Coding);
+let rulesBack: () => void;
 
 async function openRules(): Promise<void> {
   rulesBack =
@@ -1256,16 +1256,15 @@ function screen(which: Screen): void {
   // everything, with its own back arrow.
   document.querySelector<HTMLElement>(".titlerow")!.hidden = which === Screen.Rules;
   widen(which);
-  // Done and the guidelines belong to the coding screen; the back arrow also
-  // stands on the one task card, which is where Done returns to.
+  // Done and the guidelines belong to the coding screen.
   // A submitted coding is read, not added to: no Done and nothing to type
   // into (R-0271). The ballot opens the transcript that way.
   const writing = which === Screen.Coding && !coding.finished();
   $("coding-done").hidden = !writing;
   $("coding-inbar").hidden = !writing;
-  // The guidelines are read from the (i) at the top of the coding screen, and
-  // from the one task card too, so they are still reachable in the window after
-  // a meeting when nothing is on the agenda (R-0275, R-0278).
+  // The guidelines are read from the (i) at the top of the coding screen; the
+  // task card's own is set when it comes to the top of the stack (R-0275,
+  // R-0278).
   $("coding-info").hidden = which !== Screen.Coding;
   $("coding-back").hidden = !CODING_SCREENS.includes(which);
   $("account").hidden = which === Screen.Rules;

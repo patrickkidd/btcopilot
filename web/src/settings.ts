@@ -136,7 +136,7 @@ export class Settings {
   private canPasskey = false;
   private host = el("div", "sn-stack");
   /** The concept pages, read on this stack like any page of it. */
-  private literature: Sub = { title: LITERATURE, screen: el("iframe") };
+  private literature: Sub;
 
   constructor(
     private avatar: HTMLElement,
@@ -146,10 +146,11 @@ export class Settings {
   ) {
     this.host.hidden = true;
     overlay.append(this.host);
-    const frame = this.literature.screen as HTMLIFrameElement;
+    const frame = el("iframe");
     frame.id = "literature";
     frame.title = LITERATURE;
     frame.src = INDEX_URL;
+    this.literature = { title: LITERATURE, screen: frame };
     this.back.hidden = true;
     this.avatar.addEventListener("click", () => {
       tap(Feature.OpenSettings);
@@ -241,11 +242,11 @@ export class Settings {
     pane.classList.add("in");
     if (under) under.pane.classList.add("under");
     this.stack.push({ page, title, pane });
-    this.top();
+    this.retitle();
     this.back.hidden = false;
   }
 
-  private top(): void {
+  private retitle(): void {
     const { title, page } = this.stack[this.stack.length - 1];
     this.handlers.onTitle(title, typeof page === "string" ? undefined : page);
   }
@@ -261,7 +262,7 @@ export class Settings {
     top.pane.classList.remove("in");
     window.setTimeout(() => top.pane.remove(), PANE_MS);
     this.stack[this.stack.length - 1].pane.classList.remove("under");
-    this.top();
+    this.retitle();
   }
 
   close(): void {
@@ -294,7 +295,7 @@ export class Settings {
     pane.dataset.page = top.page;
     this.host.append(pane);
     this.stack.push({ page: top.page, title, pane });
-    this.top();
+    this.retitle();
   }
 
   private async write(body: Partial<Preferences>): Promise<void> {

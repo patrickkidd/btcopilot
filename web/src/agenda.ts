@@ -294,15 +294,17 @@ export class Agenda {
 
   private meetRow(cut: Cut, coders: CoderLine[]): string {
     const done = coders.filter((one) => SUBMITTED.includes(one.state));
-    const not = coders.filter((one) => !SUBMITTED.includes(one.state));
+    const missing = coders.filter((one) => !SUBMITTED.includes(one.state));
     const names = (some: CoderLine[]) => some.map((one) => esc(one.name)).join(", ");
     const opens = done.length > 0 && cut.vote_opened_at !== null;
     return (
-      `<div class="sn-grp"><div class="sn-row${opens ? " push tb-run" : ""}" data-cut="${cut.id}">` +
-      `<div class="sn-m"><div class="sn-t">${esc(cut.session)}</div>` +
-      `<div class="sn-s">up to turn ${cut.end_order ?? 0} · ${esc(cut.cut_day ?? "")}</div>` +
+      `<div class="sn-grp">` +
+      `<div class="sn-row${opens ? " push tb-run" : ""}" data-cut="${cut.id}">` +
+      this.cutLines(cut) +
       (done.length ? `<div class="sn-s">Submitted: ${names(done)}</div>` : "") +
-      (done.length && not.length ? `<div class="sn-s">Not submitted: ${names(not)}</div>` : "") +
+      (done.length && missing.length
+        ? `<div class="sn-s">Not submitted: ${names(missing)}</div>`
+        : "") +
       `</div>${opens ? `<span class="sn-chev">&rsaquo;</span>` : ""}</div></div>` +
       (done.length ? "" : `<div class="sn-hint">No coder has submitted yet</div>`)
     );
@@ -382,9 +384,18 @@ export class Agenda {
         `aria-label="take off the agenda">${CROSS}</button>`;
     return (
       `<div class="sn-row tb-cut" data-discussion="${cut.discussion_id}">` +
+      this.cutLines(cut) +
+      `</div>${off}</div>`
+    );
+  }
+
+  /** A cut's session and where it stops, in a row's words left open for more
+   * lines under them. */
+  private cutLines(cut: Cut): string {
+    return (
       `<div class="sn-m"><div class="sn-t">${esc(cut.session)}</div>` +
       `<div class="sn-s">up to turn ${cut.end_order ?? 0} · ` +
-      `${esc(cut.cut_day ?? "")}</div></div>${off}</div>`
+      `${esc(cut.cut_day ?? "")}</div>`
     );
   }
 

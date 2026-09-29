@@ -177,7 +177,8 @@ def test_pwa_files_are_served_without_a_session(flask_app):
         assert client.get("/app/static/web/index.html").status_code == 302
         # an app added to a home screen opens the host it was added from
         manifest = got["/app/manifest.webmanifest"].get_data(as_text=True)
-        assert "Family Diagram" in manifest and "://" not in manifest
+        assert "Family Diagram" in manifest
+        assert "://" not in manifest
 
 
 def test_a_tap_is_recorded_against_the_diagram(web, test_user):
