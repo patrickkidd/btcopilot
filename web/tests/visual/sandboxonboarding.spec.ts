@@ -13,8 +13,10 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const HOW = "How this works";
 const HINT = "Type what this line tells you happened, then send.";
 
+/** The new auditor's sign-in link, as a path on whichever address the run
+ * reaches the sandbox by. */
 function newAuditor(): string {
-  return execSync(
+  const link = execSync(
     `. "${process.env.SANDBOX_ENV}" && uv run python ${ROOT}/btcopilot/tests/frontend/seedauditor.py`,
     { shell: "/bin/bash", cwd: process.env.FIXTURE_CWD ?? ROOT },
   )
@@ -22,6 +24,7 @@ function newAuditor(): string {
     .trim()
     .split("\n")
     .at(-1)!;
+  return new URL(link).pathname;
 }
 
 /** Sign in, and collect what the page threw so a test can say there was none. */
