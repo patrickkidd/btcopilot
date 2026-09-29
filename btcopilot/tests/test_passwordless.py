@@ -18,6 +18,7 @@ from btcopilot.auth.emails import AUDITOR
 from btcopilot.auth.invitation import Invitation
 from btcopilot.auth.logincode import LoginCode
 from btcopilot.auth.passkey import Passkey
+from btcopilot.auth.routes import DEV_LOGIN
 from btcopilot.auth.signin import SESSION_TOKEN
 from btcopilot.auth.websession import WebSession
 from btcopilot.config import Config
@@ -295,15 +296,16 @@ def test_one_tap_signs_in_on_a_development_server(browser, test_user):
 
 
 @pytest.mark.parametrize("flask_app", [{"CONFIG": Config.Production}], indirect=True)
-def test_production_has_no_sign_in_without_a_code(browser, test_user):
+def test_production_has_no_sign_in_without_a_code(flask_app, browser, test_user):
     # R-0452
     assert WITHOUT_A_CODE not in browser.get("/app/login").text
+    assert DEV_LOGIN not in flask_app.view_functions
 
-    response = browser.post(
+    browser.post(
         "/app/login/dev",
         data={"csrf_token": token(browser), "email": test_user.username},
     )
-    assert response.status_code == 404
+    assert browser.get("/app/me").get_json()["user"] is None
 
 
 @pytest.mark.parametrize(
