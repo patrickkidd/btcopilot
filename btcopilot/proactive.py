@@ -36,6 +36,19 @@ IGNORED_AFTER = datetime.timedelta(days=7)
 IGNORED_IN_A_ROW = 2
 MOST_SENTENCES = 2
 SENTENCE_END = re.compile(r"[.?!]+(?=\s|$)")
+# Two events are set side by side as nearness in time, never as one causing the other.
+CAUSES = (
+    "led to",
+    "leads to",
+    "caused",
+    "causes",
+    "because",
+    "triggered",
+    "resulted in",
+    "due to",
+    "made you",
+)
+CAUSE = re.compile(r"\b(" + "|".join(CAUSES) + r")\b", re.IGNORECASE)
 REPLIED_WITHIN = datetime.timedelta(hours=48)
 RETURNED_WITHIN = datetime.timedelta(days=7)
 # How long after sending the loop's counts are still looked for.
@@ -67,7 +80,8 @@ class Reason(enum.StrEnum):
 
 class Unsendable(ValueError):
     """The model's words broke the shape a first message must have: at most
-    two sentences, the last a question."""
+    two sentences, the last a question, and no word making one event the
+    cause of the other."""
 
 
 def ask_later(user_id: int, diagram_id: int, when: datetime.date, question: str):
@@ -274,7 +288,11 @@ def words(data: DiagramData, firing: correlation.Firing) -> str:
     text = response_text_sync(
         prompts.proactive(events="\n".join(lines), speaker=data.subject_display_name())
     ).strip()
-    if not text.endswith("?") or len(SENTENCE_END.findall(text)) > MOST_SENTENCES:
+    if (
+        not text.endswith("?")
+        or len(SENTENCE_END.findall(text)) > MOST_SENTENCES
+        or CAUSE.search(text)
+    ):
         raise Unsendable(text)
     return text
 

@@ -1,5 +1,6 @@
 import datetime
 import email.utils
+import html
 import re
 
 import flask
@@ -144,6 +145,24 @@ def test_code_signs_in_an_existing_user(flask_app, browser, test_user):
     )
     assert response.status_code == 302
     assert browser.get("/app/me").get_json()["user"]["email"] == test_user.username
+
+
+def test_a_signed_out_tap_on_a_notification_lands_on_it_after_sign_in(
+    browser, test_user
+):
+    # R-0055
+    login = browser.get("/app/?notification=7").headers["Location"]
+    with extensions.mail.record_messages() as outbox:
+        page = browser.post(
+            login, data={"csrf_token": token(browser), "email": test_user.username}
+        )
+    verify = html.unescape(re.search(r'action="([^"]*verify[^"]*)"', page.text)[1])
+    code = re.search(r"\b(\d{6})\b", outbox[0].body)[1]
+    response = browser.post(
+        verify,
+        data={"csrf_token": token(browser), "email": test_user.username, "code": code},
+    )
+    assert response.headers["Location"] == "/app/?notification=7"
 
 
 def test_revoking_the_session_logs_out(flask_app, browser):

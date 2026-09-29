@@ -1,5 +1,6 @@
 import datetime
 import logging
+from urllib.parse import urlsplit, urlunsplit
 
 from flask import current_app, request, session
 
@@ -15,6 +16,16 @@ _log = logging.getLogger(__name__)
 
 def chat_home() -> str:
     return current_app.config["APP_HOME"]
+
+
+def next_page() -> str:
+    """The app page the reader was sent to sign in from, carried as `next`,
+    else the app's home. Only a path under the app is kept, so the address
+    never leads off the site."""
+    back = urlsplit(request.args.get("next", ""))
+    if not back.path.startswith(chat_home()):
+        return chat_home()
+    return urlunsplit(("", "", back.path, back.query, ""))
 
 
 def ensure_user(email: str) -> User:

@@ -22,6 +22,7 @@ from btcopilot.auth.signin import (
     chat_home,
     current_web_session,
     ensure_user,
+    next_page,
     sign_in,
     sign_out,
 )
@@ -64,7 +65,7 @@ def invite(token):
 def login():
     if request.method == "GET":
         if _signed_in_user():
-            return redirect(chat_home())
+            return redirect(next_page())
         return render_template("auth/login.html")
 
     email = request.form.get("email", "").strip().lower()
@@ -115,7 +116,7 @@ def verify():
         )
     login_code.consume()
     sign_in(User.query.filter_by(username=email).first())
-    return redirect(chat_home())
+    return redirect(next_page())
 
 
 @bp.route("/logout", methods=("POST",))
@@ -290,7 +291,7 @@ def passkey_login():
     user = passkey.user
     sign_in(user)
     passkey.used(verified.new_sign_count)
-    return jsonify({"ok": True, "next": chat_home()})
+    return jsonify({"ok": True, "next": next_page()})
 
 
 @bp.route("/passkeys/<int:passkey_id>/revoke", methods=("POST",))

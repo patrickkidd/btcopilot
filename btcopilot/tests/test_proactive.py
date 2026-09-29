@@ -167,6 +167,19 @@ def test_words_out_of_shape_stay_unsent_and_are_tried_twice_more_then_never(
     assert model.call_count == proactive.TRIES
 
 
+def test_words_making_one_event_the_cause_of_the_other_stay_unsent(family, sent):
+    # R-0004
+    send, model = sent
+    model.return_value = (
+        "The loss in November 1998 led to the symptoms that December. "
+        "What do you notice?"
+    )
+    said = proactive.run(now=T0)
+    assert [s["refused"] for s in said] == [True]
+    assert send.call_count == 0
+    assert _counts() == [ObservationKind.ProactiveRefused]
+
+
 def test_a_send_that_raises_keeps_nothing_and_the_next_run_sends(family, sent):
     # R-0004
     send, _ = sent
