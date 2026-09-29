@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
-import { Failed } from "../src/api";
-import { endpoint, Faults, NOISE } from "../src/faults";
+import { endpoint, Failed } from "../src/api";
+import { Faults, NOISE } from "../src/faults";
 
 const ORIGIN = "https://familydiagram.com";
 const BUNDLE = `${ORIGIN}/app/static/web/assets/index-B26jI9NK.js`;
@@ -82,6 +82,6 @@ it("raises each error once per page and counts the repeats", () => {
   expect(faults.first(one)).toBe(false);
   expect(faults.seen.get(one)).toBe(3);
   expect(faults.first(other)).toBe(true);
-  expect(faults.first(endpoint("GET /app/sessions/12"))).toBe(true);
-  expect(faults.first(endpoint("GET /app/sessions/13"))).toBe(false);
+  expect(endpoint("/app/sessions/12/statements")).toBe("/app/sessions/:id/statements");
+  expect(endpoint("/app/items/7")).toBe("/app/items/:id");
 });

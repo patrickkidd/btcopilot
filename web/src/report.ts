@@ -3,7 +3,7 @@ import { esc } from "./dom";
 import { dragScroll } from "./drag";
 import type { Faults } from "./faults";
 import { Sheet } from "./sheet";
-import { ReportKind, type Report } from "./types";
+import { ReportKind, type Report, type RequestFailure } from "./types";
 
 /** What the person sends from the app (R-0056): a bug when a coach turn or
  * the page breaks, and feedback when the coach heard them say something about
@@ -21,8 +21,16 @@ enum Act {
   Ok = "ok",
 }
 
-/** Something that broke, rather than words the coach heard. */
-const broke = (report: Report) => report.error !== undefined;
+/** What the sheet lists of a report: each thing sent, named. */
+type List = [string, string][];
+
+/** A report on its way up, with the list of what it sends. */
+interface Raised {
+  report: Report;
+  list: List;
+  /** Something that broke, rather than words the coach heard. */
+  broke: boolean;
+}
 
 const button = (act: Act, words: string, primary = false, off = false) =>
   `<button class="${primary ? "cf-go" : "cf-no"}" type="button" data-act="${act}"${off ? " disabled" : ""}>${words}</button>`;
@@ -37,8 +45,8 @@ const HEADING = {
 
 export class Reports {
   private sheet: Sheet;
-  private at: Report | null = null;
-  private waiting: Report[] = [];
+  private at: Raised | null = null;
+  private waiting: Raised[] = [];
   /** Offers already raised on this page, never raised again. */
   private raised = new Set<string>();
   private closing = 0;
@@ -59,17 +67,36 @@ export class Reports {
     });
   }
 
-  /** A turn, the page or the server broke with this error, after these words
-   * of the person's; an error of the same key is raised once. */
+  /** A turn or the page broke with this error, after these words of the
+   * person's; an error of the same key is raised once. */
   bug(error: string, text: string, turnId: string, key = error): void {
-    if (!this.faults.first(key)) return;
-    this.queue({ kind: ReportKind.Bug, turn_id: turnId, text, error, version: window.BOOTSTRAP.version });
+    const version = window.BOOTSTRAP.version;
+    this.broke(key, { kind: ReportKind.Bug, turn_id: turnId, text, error, version }, [
+      ["Your last message", text],
+      ["The error", error],
+      ["The app version", version],
+    ]);
+  }
+
+  /** The server broke on a request, raised once per endpoint. */
+  request(failure: RequestFailure): void {
+    const version = window.BOOTSTRAP.version;
+    this.broke(`${failure.method} ${failure.path}`, { kind: ReportKind.Bug, turn_id: "", ...failure, version }, [
+      ["The request", `${failure.method} ${failure.path}`],
+      ["The server's answer", String(failure.status)],
+      ["The request's id", failure.request_id],
+      ["The app version", version],
+    ]);
   }
 
   /** The coach heard the person say this about the app. */
   offer(kind: ReportKind, words: string, turnId: string): void {
     if (this.once(`${turnId}:${words}`)) return;
-    this.queue({ kind, turn_id: turnId, text: words });
+    this.queue({ report: { kind, turn_id: turnId, text: words }, list: [["", words]], broke: false });
+  }
+
+  private broke(key: string, report: Report, list: List): void {
+    if (this.faults.first(key)) this.queue({ report, list, broke: true });
   }
 
   private once(key: string): boolean {
@@ -79,27 +106,24 @@ export class Reports {
   }
 
   /** One sheet at a time: the rest wait their turn. */
-  private queue(report: Report): void {
-    if (this.at === null) this.raise(report);
-    else this.waiting.push(report);
+  private queue(raised: Raised): void {
+    if (this.at === null) this.raise(raised);
+    else this.waiting.push(raised);
   }
 
-  private raise(report: Report): void {
-    this.at = report;
-    if (broke(report) && this.always) return void this.send(report);
-    this.ask(report);
+  private raise(raised: Raised): void {
+    this.at = raised;
+    if (raised.broke && this.always) return void this.send(raised.report);
+    this.ask(raised);
     dragScroll(this.sheet.panel.querySelector<HTMLElement>(".rp-list")!);
   }
 
-  private ask(report: Report): void {
-    if (broke(report))
+  private ask({ report, list, broke }: Raised): void {
+    if (broke)
       this.sheet.show(
         `<div class="cf-t">Something went wrong</div>` +
-          `<div class="rp-list">` +
-          row("Your last message", report.text) +
-          row("The error", report.error!) +
-          row("The app version", report.version!) +
-          `</div><div class="cf-btns">` +
+          `<div class="rp-list">${list.map(([label, value]) => row(label, value)).join("")}</div>` +
+          `<div class="cf-btns">` +
           button(Act.Send, "Send the report", true) +
           button(Act.Always, "Always send") +
           button(Act.Not, "Don't send", false, true) +
@@ -108,7 +132,7 @@ export class Reports {
     else
       this.sheet.show(
         `<div class="cf-t">${HEADING[report.kind]}</div>` +
-          `<div class="rp-list"><div class="rp-v">${esc(report.text)}</div></div>` +
+          `<div class="rp-list"><div class="rp-v">${esc(list[0][1])}</div></div>` +
           `<div class="cf-btns">` +
           button(Act.Send, "Send the report", true) +
           (this.always ? "" : button(Act.Always, "Always send")) +
@@ -118,7 +142,7 @@ export class Reports {
   }
 
   private async answer(act: Act): Promise<void> {
-    const report = this.at!;
+    const { report } = this.at!;
     if (act === Act.Ok || act === Act.Not) return this.next();
     for (const one of this.sheet.panel.querySelectorAll("button")) one.disabled = true;
     if (act === Act.Always) {
@@ -147,8 +171,8 @@ export class Reports {
   private next(): void {
     window.clearTimeout(this.closing);
     this.at = null;
-    const report = this.waiting.shift();
-    if (report === undefined) this.sheet.lower();
-    else this.raise(report);
+    const raised = this.waiting.shift();
+    if (raised === undefined) this.sheet.lower();
+    else this.raise(raised);
   }
 }

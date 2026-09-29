@@ -31,6 +31,7 @@ import type {
   Preferences,
   Started,
   Report,
+  RequestFailure,
   Result,
   Session,
   SessionKind,
@@ -55,16 +56,23 @@ const PATIENCE_MS = 60_000;
  * (btcopilot/playturn.py WAIT), so a slow model fails with the server's error. */
 export const PLAY_WAIT_S = 390;
 
-/** Requests whose own caller raises the bug sheet when they fail: the coach
- * turn, and the report itself, whose sheet already says it was not sent. */
-const SELF_REPORTED = ["/app/chat", "/app/turns/", "/app/observations"] as const;
+/** Where a report goes, which never reports itself. */
+const REPORTS = `${ROOT}/observations`;
+/** The header only this server's own answers carry: a proxy's error page, or
+ * the dev server's when the server is down, has none. */
+const REQUEST_ID = "X-Request-Id";
 
-/** Who hears that the server broke on a request: `METHOD /path`, without
- * the query, which can carry the family's own words, and the status. */
-type Broke = (request: string, status: number) => void;
+/** A request as the endpoint it is, whichever row it names:
+ * `/app/sessions/12` is `/app/sessions/:id`. */
+export const endpoint = (path: string) => path.replace(/\/\d+(?=\/|$)/g, "/:id");
+
+/** Who hears that the server broke on a request. */
+type Broke = (failure: RequestFailure) => void;
 let broke: Broke | null = null;
 
-/** The server breaking on any request raises the bug sheet (R-0056). */
+/** The server breaking on a request raises the bug sheet (R-0056): only an
+ * answer of 500 or above that the server itself gave, never no answer at all,
+ * a refusal, or a proxy's. */
 export const onBroke = (listener: Broke) => {
   broke = listener;
 };
@@ -147,8 +155,9 @@ async function send<T>(
   }
   if (!response.ok) {
     const path = url.split("?")[0];
-    if (response.status >= 500 && !SELF_REPORTED.some((own) => path.startsWith(own)))
-      broke?.(`${method} ${path}`, response.status);
+    const id = response.headers.get(REQUEST_ID);
+    if (response.status >= 500 && id !== null && path !== REPORTS)
+      broke?.({ status: response.status, method, path: endpoint(path), request_id: id });
     throw new Failed(response.status, `${method} ${url}`, await response.text());
   }
   // an empty answer left unread is logged by the browser as aborted

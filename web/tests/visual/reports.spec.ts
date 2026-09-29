@@ -191,34 +191,60 @@ test.describe("the server breaking", () => {
 
   /** How often the page reads the thread again while it is in front. */
   const CATCH_UP_MS = 60_000;
+  const ID = { "X-Request-Id": "5d1c0ffee" };
 
   // R-0056
-  test("raises the bug sheet once for an endpoint, naming the request and its status", async ({ page }) => {
+  test("raises the bug sheet once for an endpoint the server itself broke on, never for a proxy or a refusal", async ({
+    page,
+  }) => {
     await settle(page);
     const sent = posted(page);
-    let broken = 0;
-    await page.route("**/app/statements*", (route) => {
-      broken += 1;
-      return route.fulfill({ status: 500, body: "boom" });
-    });
+    const answers = [
+      { status: 502, body: "bad gateway" },
+      { status: 404, headers: ID, body: "gone" },
+      { status: 500, headers: ID, body: "the server's own words" },
+      { status: 500, headers: ID, body: "the server's own words" },
+    ];
+    let asked = 0;
+    await page.route("**/app/statements*", (route) => route.fulfill(answers[asked++]));
+    const minute = async (times: number) => {
+      await page.clock.fastForward(CATCH_UP_MS);
+      await expect.poll(() => asked).toBe(times);
+      await page.waitForTimeout(400);
+    };
 
-    await page.clock.fastForward(CATCH_UP_MS);
+    await minute(1);
+    await expect(sheet(page)).toBeHidden();
+    await minute(2);
+    await expect(sheet(page)).toBeHidden();
+    await minute(3);
     await expect(heading(page)).toHaveText("Something went wrong");
-    const error = sheet(page).locator(".rp-row", { hasText: "The error" }).locator(".rp-v");
-    await expect(error).toHaveText("The server answered 500 to GET /app/statements");
+    const version = await page.evaluate(() => window.BOOTSTRAP.version);
+    const rows = sheet(page).locator(".rp-row");
+    await expect(rows.locator(".rp-l")).toHaveText([
+      "The request",
+      "The server's answer",
+      "The request's id",
+      "The app version",
+    ]);
+    await expect(rows.locator(".rp-v")).toHaveText(["GET /app/statements", "500", "5d1c0ffee", version]);
     await sheet(page).getByRole("button", { name: "Send the report" }).click();
     await expect(heading(page)).toHaveText("Your report was sent");
     expect(sent).toHaveLength(1);
-    expect(sent[0].postDataJSON()).toMatchObject({
+    expect(sent[0].postDataJSON()).toEqual({
       kind: "bug",
-      error: "The server answered 500 to GET /app/statements",
+      turn_id: "",
+      status: 500,
+      method: "GET",
+      path: "/app/statements",
+      request_id: "5d1c0ffee",
+      version,
     });
+    expect((await sent[0].response())!.status()).toBe(201);
     await sheet(page).getByRole("button", { name: "OK" }).click();
     await expect(sheet(page)).toBeHidden();
 
-    await page.clock.fastForward(CATCH_UP_MS);
-    await expect.poll(() => broken).toBe(2);
-    await page.waitForTimeout(400);
+    await minute(4);
     await expect(sheet(page)).toBeHidden();
     expect(sent).toHaveLength(1);
   });

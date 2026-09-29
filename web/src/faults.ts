@@ -21,10 +21,6 @@ const PACKAGES = "/node_modules/";
  * wording of a stack. */
 const FRAME = /[a-z][a-z0-9+.-]*:\/\/[^\s()]+?:\d+:\d+/g;
 
-/** A request as the endpoint it is, whichever row it names:
- * `GET /app/sessions/12` is `GET /app/sessions/:id`. */
-export const endpoint = (request: string) => request.replace(/\/\d+(?=\/|$)/g, "/:id");
-
 /** An error on the page as it is reported: its name and message, and the
  * first frame of its stack in the app's own scripts, which a stack with no
  * frames at all has none of. */

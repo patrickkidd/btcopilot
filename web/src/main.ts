@@ -24,7 +24,7 @@ import { aimedEvents, chips, itemKind, Lead } from "./chips";
 import { feed } from "./turn";
 import { Release } from "./release";
 import { Reports } from "./report";
-import { endpoint, Faults } from "./faults";
+import { Faults } from "./faults";
 import { toolLine } from "./tools";
 import {
   CHIP_KIND,
@@ -705,10 +705,7 @@ window.addEventListener("pagehide", () => (faults.leaving = true));
 // a page kept by the browser and shown again is not going away
 window.addEventListener("pageshow", () => (faults.leaving = false));
 
-/** The server broke on a request, raised once per endpoint. */
-api.onBroke((request, status) =>
-  reports.bug(`The server answered ${status} to ${request}`, lastSaid(), latestTurn, endpoint(request)),
-);
+api.onBroke((failure) => reports.request(failure));
 
 /** A notice goes to the screen it names or the address it carries (R-0611). */
 const notices = new Notices(new Strip($("speakrow")), $("account"), (link) =>
@@ -1126,8 +1123,6 @@ async function begin(
     inFlight = false;
     chat.busy(false);
     chat.warn(whatFailed(error), again);
-    // the send made no turn
-    reports.bug((error as api.Failed).message, lastSaid(), "");
     return null;
   }
   session = started.discussion_id;
@@ -1275,7 +1270,13 @@ async function catchUp(): Promise<void> {
 }
 
 window.setInterval(() => {
-  if (document.visibilityState === "visible") void catchUp();
+  // a phone that lost its signal is not a bug; the server breaking on it is
+  // raised by the call itself
+  if (document.visibilityState === "visible")
+    void catchUp().catch((error) => {
+      if (!(error instanceof api.Failed)) throw error;
+      console.warn(error.message);
+    });
 }, CATCH_UP_MS);
 
 /** The picture where the last coach message left it. A play-by-play's

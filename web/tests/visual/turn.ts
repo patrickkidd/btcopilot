@@ -44,7 +44,9 @@ export async function mockTurn(page: Page, turn: MockedTurn): Promise<void> {
   let started = 0;
   await page.route(SEND, async (route) => {
     const refused = turn.refuse?.() ?? null;
-    if (refused !== null) return route.fulfill({ status: refused, body: "no" });
+    // refused by the server itself, whose answers name their request
+    if (refused !== null)
+      return route.fulfill({ status: refused, headers: { "X-Request-Id": "refused1" }, body: "no" });
     started += 1;
     await route.fulfill({
       status: 202,

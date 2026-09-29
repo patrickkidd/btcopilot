@@ -539,15 +539,24 @@ export enum ReportKind {
   Feedback = "feedback",
 }
 
-/** A report as it is sent: the person's words, and for something that broke
- * the error and the app's version. */
-export interface Report {
-  kind: ReportKind;
-  turn_id: string;
-  text: string;
-  error?: string;
-  version?: string;
+/** A request the server broke on, as a report names it: never the server's
+ * own words, which can quote the record. */
+export interface RequestFailure {
+  status: number;
+  method: string;
+  /** The address with every id in it replaced. */
+  path: string;
+  /** The id the server's answer carried, which its log lines name. */
+  request_id: string;
 }
+
+/** A report as it is sent: the person's own words about the app, which the
+ * coach offered to send; or a bug, a request the server broke on, or what
+ * broke on the page or in a turn. */
+export type Report =
+  | { kind: ReportKind; turn_id: string; text: string }
+  | ({ kind: ReportKind.Bug; turn_id: ""; version: string } & RequestFailure)
+  | { kind: ReportKind.Bug; turn_id: string; text: string; error: string; version: string };
 
 export interface Preferences {
   speak: boolean;

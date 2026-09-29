@@ -20,8 +20,8 @@ const say = async (page: Page, words: string) => {
 
 const warning = (page: Page) => page.locator(".sys.warn");
 
-/** A turn that breaks raises the bug sheet over the thread, which has to be
- * answered before anything behind it can be tapped (R-0056). */
+/** The server breaking on the send raises the bug sheet over the thread,
+ * which has to be answered before anything behind it can be tapped (R-0056). */
 const report = async (page: Page) => {
   const sheet = page.locator(".fs-sheet.rp");
   await sheet.getByRole("button", { name: "Send the report" }).click();
@@ -46,7 +46,8 @@ test.describe("a send that does not go through", () => {
 
     await say(page, "My dad moved out.");
     await expect(warning(page)).toHaveText(/would not take that/);
-    await report(page);
+    // a refusal is not a bug
+    await expect(page.locator(".fs-sheet.rp")).toBeHidden();
     // the words the reader typed are still in the thread, and nothing is typing
     await expect(page.locator(".bub.user").last()).toHaveText("My dad moved out.");
     await expect(page.locator(".bub.typing")).toHaveCount(0);
