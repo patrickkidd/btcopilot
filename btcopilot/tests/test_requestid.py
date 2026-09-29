@@ -4,7 +4,7 @@ from btcopilot.app import REQUEST_ID
 from btcopilot.extensions import RequestIdFilter
 
 
-def test_every_request_is_named_in_its_answer_and_every_line_logged_for_it(flask_app, web, caplog):
+def test_every_request_is_named_in_its_answer_and_every_line_logged_for_it(flask_app, web, caplog, logged):
     # R-0056
     def boom():
         raise RuntimeError("broke")

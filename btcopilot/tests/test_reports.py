@@ -162,7 +162,9 @@ def test_the_server_breaking_writes_its_own_row_which_the_pages_report_of_it_is(
     assert Report.query.count() == 1
 
 
-def test_a_row_that_cannot_be_written_is_logged_and_the_server_still_answers_500(boom, web, monkeypatch, caplog):
+def test_a_row_that_cannot_be_written_is_logged_and_the_server_still_answers_500(
+    boom, web, monkeypatch, caplog, logged
+):
     # R-0056
     def down(row):
         raise OperationalError("INSERT", {}, Exception("the database is gone"))
