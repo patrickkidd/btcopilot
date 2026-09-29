@@ -22,8 +22,8 @@ PAGE_BUG = {
 }
 
 
-def post(client, body):
-    return client.post("/app/reports", json=body)
+def post(client, body, **headers):
+    return client.post("/app/reports", json=body, headers=headers or {"Sec-Fetch-Site": "same-origin"})
 
 
 def test_a_bug_from_the_page_is_one_row_for_the_person_and_the_diagram_the_app_is_on(web, test_user):
@@ -54,6 +54,15 @@ def test_a_signed_out_page_reports_without_a_person_or_a_csrf_token(flask_app):
     assert response.status_code == 201
     row = Report.query.one()
     assert (row.user_id, row.diagram_id, row.source) == (None, None, ReportSource.Worker)
+
+
+def test_only_a_report_posted_from_this_site_is_taken(flask_app):
+    # R-0056
+    client = flask_app.test_client()
+    assert post(client, PAGE_BUG, **{"Sec-Fetch-Site": "cross-site", "Origin": "https://example.com"}).status_code == 403
+    assert post(client, PAGE_BUG, Origin="https://example.com").status_code == 403
+    assert post(client, PAGE_BUG, Origin="http://127.0.0.1").status_code == 201
+    assert Report.query.count() == 1
 
 
 def test_sent_feedback_keeps_the_words(web):

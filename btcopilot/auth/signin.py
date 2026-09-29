@@ -18,6 +18,10 @@ def chat_home() -> str:
     return current_app.config["APP_HOME"]
 
 
+def origin() -> str:
+    return current_app.config.get("RP_ORIGIN") or f"{request.scheme}://{request.host}"
+
+
 def next_page() -> str:
     """The app page the reader was sent to sign in from, carried as `next`,
     else the app's home. Only a path under the app is kept, so the address

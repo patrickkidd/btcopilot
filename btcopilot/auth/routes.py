@@ -23,6 +23,7 @@ from btcopilot.auth.signin import (
     current_web_session,
     ensure_user,
     next_page,
+    origin,
     sign_in,
     sign_out,
 )
@@ -209,10 +210,6 @@ def _rp_id() -> str:
     return current_app.config.get("RP_ID") or request.host.split(":")[0]
 
 
-def _rp_origin() -> str:
-    return current_app.config.get("RP_ORIGIN") or f"{request.scheme}://{request.host}"
-
-
 @bp.route("/passkeys")
 def passkeys():
     user = _signed_in_user()
@@ -261,7 +258,7 @@ def passkey_register():
             credential=request.get_json(),
             expected_challenge=base64url_to_bytes(challenge),
             expected_rp_id=_rp_id(),
-            expected_origin=_rp_origin(),
+            expected_origin=origin(),
         )
     except InvalidRegistrationResponse as e:
         _log.warning(f"Passkey registration refused for {user.username}: {e}")
@@ -304,7 +301,7 @@ def passkey_login():
             credential=credential,
             expected_challenge=base64url_to_bytes(challenge),
             expected_rp_id=_rp_id(),
-            expected_origin=_rp_origin(),
+            expected_origin=origin(),
             credential_public_key=passkey.public_key,
             credential_current_sign_count=passkey.sign_count,
         )

@@ -1,3 +1,4 @@
+import enum
 import logging
 import re
 import uuid
@@ -6,6 +7,7 @@ from flask import Blueprint, abort, request
 from flask_wtf.csrf import CSRFError, generate_csrf
 
 from btcopilot import auth
+from btcopilot.auth.signin import origin
 from btcopilot.extensions import csrf, db
 from btcopilot import record
 from btcopilot.models import Author, Discussion
@@ -37,10 +39,16 @@ bp = Blueprint(
 # What a browser fetches without its cookie: the service worker, the manifest,
 # the icons the manifest names, and the icon iOS puts on the home screen; and
 # where a bug is reported from a signed-out page or the worker, which carry no
-# CSRF token.
+# CSRF token, so the browser's word that the post came from this site stands in
+# for one.
 PUBLIC = {"app.service_worker", "app.manifest", "app.apple_touch_icon", "app.create_report"}
-UNGUARDED = {"app.create_report"}
+TOKENLESS = {"app.create_report"}
 PUBLIC_STATIC = re.compile(r"web/icon-\w+\.png")
+
+
+class FetchSite(enum.StrEnum):
+    SameOrigin = "same-origin"
+    Typed = "none"
 
 
 def public() -> bool:
@@ -51,10 +59,22 @@ def public() -> bool:
 
 @bp.before_request
 def _authenticate():
-    if request.method in ("POST", "PUT", "PATCH", "DELETE") and request.endpoint not in UNGUARDED:
-        csrf.protect()
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        if request.endpoint in TOKENLESS:
+            _same_origin()
+        else:
+            csrf.protect()
     if not public():
         auth.authenticate_web()
+
+
+def _same_origin():
+    if (
+        request.headers.get("Sec-Fetch-Site") not in (FetchSite.SameOrigin, FetchSite.Typed)
+        and request.headers.get("Origin") != origin()
+    ):
+        _log.warning(f"Cross-site post to {request.path} from {request.remote_addr}")
+        abort(403)
 
 
 @bp.errorhandler(CSRFError)
