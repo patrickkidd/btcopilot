@@ -52,6 +52,8 @@ def test_thread_marks_each_sitting_start(web, token):
         ("two", second),
         ("noted", None),
     ]
+    assert thread[0]["sitting"]["previous_started"] is None
+    assert thread[2]["sitting"]["previous_started"] == thread[0]["sitting"]["started"]
 
 
 def test_thread_pages_back(web, test_user):

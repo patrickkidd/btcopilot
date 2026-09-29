@@ -608,7 +608,8 @@ let stopped: { turn: string; bubble: HTMLElement } | null = null;
  * newest page, as the last message, it can be picked up again (R-0477). */
 function addStatements(statements: api.Said[], newest = false): void {
   for (const statement of statements) {
-    if (statement.sitting) $("chat").append(divider(statement.sitting.started));
+    if (statement.sitting)
+      $("chat").append(divider(statement.sitting.started, statement.sitting.previous_started));
     const coach = statement.role === Role.Coach;
     if (statement.case && statement.id !== null)
       cases.set(statement.id, { case: statement.case, digest: statement.digest });
@@ -637,11 +638,14 @@ const thread = new Thread($("chat"), (page) => addStatements(page));
 
 /** Words that went into another sitting than the newest on screen start it:
  * the line goes in above them, dated now, and the thread stays on its foot,
- * where the reader just wrote. */
+ * where the reader just wrote. The newest line on screen is the sitting before
+ * it, and there is none when that sitting started further back than the
+ * thread has read. */
 function sat(sittingId: number, words: Element | null): void {
   if (sittingId === lastSitting) return;
   lastSitting = sittingId;
-  words?.before(divider(new Date().toISOString()));
+  const before = [...$("chat").querySelectorAll<HTMLElement>(".sitting")].at(-1);
+  words?.before(divider(new Date().toISOString(), before?.dataset.started ?? null));
   chat.toEnd();
 }
 

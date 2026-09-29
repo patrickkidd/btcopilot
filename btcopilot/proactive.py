@@ -5,6 +5,7 @@ unanswered message at a time, a budget from the person's own setting, and a
 kind of message ignored twice in a row stops until they answer."""
 
 import datetime
+import enum
 import re
 from zoneinfo import ZoneInfo
 
@@ -42,11 +43,26 @@ COUNTED_FOR = datetime.timedelta(days=14)
 # No one's time zone is kept yet, so every message waits for the day in one.
 ZONE = ZoneInfo("America/Anchorage")
 HOURS = range(9, 20)
+# Words that broke the shape this many times for one pattern end its tries.
+TRIES = 3
 # How often a message the person did not ask for may come, by their setting.
 BUDGET = {
     Proactive.Weekly: datetime.timedelta(days=7),
     Proactive.Rarely: datetime.timedelta(days=30),
 }
+
+
+class Reason(enum.StrEnum):
+    """Why nothing went to a person on a run, as the run prints it."""
+
+    Night = (
+        f"outside sending hours, {HOURS.start}:00 to {HOURS.stop - 1}:59 Alaska time"
+    )
+    Waiting = "the last message is still waiting for an answer"
+    Ignored = "the last two of its kind went unanswered; it waits for a reply"
+    Off = "preference off: the person chose never"
+    Budget = "over budget: the last message they did not ask for is too recent for their setting"
+    Quiet = "no new pattern in the record to write about"
 
 
 class Unsendable(ValueError):
@@ -67,24 +83,39 @@ def ask_later(user_id: int, diagram_id: int, when: datetime.date, question: str)
 
 
 def run(now: datetime.datetime | None = None, dry_run: bool = False) -> list[dict]:
-    """At most one message per person per run, and only in the day. A dry run
+    """At most one message per person per run, and only in the day. Each
+    person gets a row: the words written, or the reason none were. A dry run
     keeps nothing and sends nothing, but the words are still asked of the
     model."""
     now = now or datetime.datetime.utcnow()
-    said = []
+    rows = []
     daytime = _local(now).hour in HOURS
-    for user in _people():
-        _answers(user, now)
-        found = _pick(user, now) if daytime else None
-        if found is None:
+    asked = _asked()
+    for user in User.query.order_by(User.id):
+        if user.id not in asked and user.pref(PrefKey.Proactive) is Proactive.Never:
+            found = Reason.Off
+        else:
+            _answers(user, now)
+            found = _pick(user, now) if daytime else Reason.Night
+        if isinstance(found, Reason):
+            rows.append(
+                {
+                    "email": user.username,
+                    "trigger": None,
+                    "text": None,
+                    "refused": None,
+                    "reason": found.value,
+                }
+            )
             continue
         message, text, refused = _compose(user, found)
-        said.append(
+        rows.append(
             {
                 "email": user.username,
                 "trigger": message.trigger.value,
                 "text": text,
                 "refused": refused,
+                "reason": None,
             }
         )
         if not dry_run and not refused:
@@ -93,7 +124,7 @@ def run(now: datetime.datetime | None = None, dry_run: bool = False) -> list[dic
         db.session.rollback()
     else:
         db.session.commit()
-    return said
+    return rows
 
 
 def _utc(moment: datetime.datetime) -> datetime.datetime:
@@ -104,19 +135,15 @@ def _local(moment: datetime.datetime) -> datetime.datetime:
     return moment.replace(tzinfo=datetime.timezone.utc).astimezone(ZONE)
 
 
-def _people() -> list[User]:
-    asked = {
+def _asked() -> set[int]:
+    """Everyone with a follow-up they agreed to still waiting to go."""
+    return {
         user_id
         for (user_id,) in db.session.query(ProactiveMessage.user_id).filter(
             ProactiveMessage.trigger == Trigger.FollowUp,
             ProactiveMessage.sent_at.is_(None),
         )
     }
-    return [
-        user
-        for user in User.query.order_by(User.id)
-        if user.id in asked or user.pref(PrefKey.Proactive) is not Proactive.Never
-    ]
 
 
 def _sent(user: User) -> list[ProactiveMessage]:
@@ -135,30 +162,29 @@ def _ignored(message: ProactiveMessage, now: datetime.datetime) -> bool:
 
 def _pick(
     user: User, now: datetime.datetime
-) -> ProactiveMessage | correlation.Firing | None:
+) -> ProactiveMessage | correlation.Firing | Reason:
     """A follow-up the person asked for comes before a pattern, and outside
     the budget; neither comes while the last message waits for an answer or
     after two of its kind in a row went unanswered."""
     sent = _sent(user)
     if sent and sent[-1].replied_at is None and not _ignored(sent[-1], now):
-        return None
+        return Reason.Waiting
     stopped = {t for t in Trigger if _stopped([m for m in sent if m.trigger is t], now)}
-    if Trigger.FollowUp not in stopped:
-        due = (
-            ProactiveMessage.query.filter(
-                ProactiveMessage.user_id == user.id,
-                ProactiveMessage.trigger == Trigger.FollowUp,
-                ProactiveMessage.sent_at.is_(None),
-                ProactiveMessage.due_at <= now,
-            )
-            .order_by(ProactiveMessage.due_at)
-            .first()
+    due = (
+        ProactiveMessage.query.filter(
+            ProactiveMessage.user_id == user.id,
+            ProactiveMessage.trigger == Trigger.FollowUp,
+            ProactiveMessage.sent_at.is_(None),
+            ProactiveMessage.due_at <= now,
         )
-        if due:
-            return due
-    if Trigger.Correlation in stopped or not _allowed(user, sent, now):
-        return None
-    return _pattern(user)
+        .order_by(ProactiveMessage.due_at)
+        .first()
+    )
+    if due and Trigger.FollowUp not in stopped:
+        return due
+    found = _unasked(user, sent, Trigger.Correlation in stopped, now)
+    # a follow-up that was due and held back is the reason, over the pattern's
+    return Reason.Ignored if due and isinstance(found, Reason) else found
 
 
 def _stopped(sent: list[ProactiveMessage], now: datetime.datetime) -> bool:
@@ -166,26 +192,33 @@ def _stopped(sent: list[ProactiveMessage], now: datetime.datetime) -> bool:
     return len(last) == IGNORED_IN_A_ROW and all(_ignored(m, now) for m in last)
 
 
-def _allowed(user: User, sent: list[ProactiveMessage], now) -> bool:
+def _unasked(
+    user: User, sent: list[ProactiveMessage], stopped: bool, now
+) -> correlation.Firing | Reason:
     setting = user.pref(PrefKey.Proactive)
     if setting is Proactive.Never:
-        return False
+        return Reason.Off
+    if stopped:
+        return Reason.Ignored
     unasked = [m for m in sent if m.trigger is not Trigger.FollowUp]
-    return not unasked or now - unasked[-1].sent_at >= BUDGET[setting]
+    if unasked and now - unasked[-1].sent_at < BUDGET[setting]:
+        return Reason.Budget
+    return _pattern(user) or Reason.Quiet
 
 
 def _pattern(user: User) -> correlation.Firing | None:
-    """The newest pattern not yet written about on the family the person is on."""
+    """The newest pattern on the family the person is on that was neither
+    sent nor out of tries."""
     diagram_id = user.diagram_in_use()
     if diagram_id is None:
         return None
     data = db.session.get(Diagram, diagram_id).get_diagram_data()
     written = {
-        key
-        for (key,) in db.session.query(ProactiveMessage.key).filter(
-            ProactiveMessage.diagram_id == diagram_id,
-            ProactiveMessage.trigger == Trigger.Correlation,
+        m.key
+        for m in ProactiveMessage.query.filter_by(
+            diagram_id=diagram_id, trigger=Trigger.Correlation
         )
+        if m.sent_at or _counted(m, ObservationKind.ProactiveRefused) >= TRIES
     }
     events = {e["id"]: e for e in data.events}
     fresh = [f for f in correlation.firings(data) if f.key not in written]
@@ -195,12 +228,15 @@ def _pattern(user: User) -> correlation.Firing | None:
 
 
 def _compose(user: User, found) -> tuple[ProactiveMessage, str, bool]:
-    """Words that break the shape are kept unsent against the pattern, so it
-    is not asked of the model again, and written down as a fault to tune."""
+    """Words that break the shape are kept unsent against the pattern and
+    written down as a fault to tune each time; the pattern is asked of the
+    model again on later runs until it has broken the shape TRIES times."""
     if isinstance(found, ProactiveMessage):
         return found, found.question, False
     diagram = db.session.get(Diagram, user.diagram_in_use())
-    message = ProactiveMessage(
+    message = ProactiveMessage.query.filter_by(
+        diagram_id=diagram.id, key=found.key
+    ).one_or_none() or ProactiveMessage(
         user_id=user.id,
         diagram_id=diagram.id,
         trigger=Trigger.Correlation,
@@ -268,8 +304,10 @@ def _send(user: User, message: ProactiveMessage, text: str, now):
     db.session.add(message)
     db.session.flush()
     _count(message, ObservationKind.ProactiveSent)
-    db.session.commit()
+    # one transaction: a send that raises leaves the message unsent for the
+    # next run rather than in the thread with no notification
     push.send(user, statement)
+    db.session.commit()
 
 
 def _answers(user: User, now: datetime.datetime):
@@ -332,14 +370,20 @@ def _returned(user: User, message: ProactiveMessage) -> bool:
     )
 
 
+def _counted(message: ProactiveMessage, kind: ObservationKind) -> int:
+    return Observation.query.filter_by(
+        turn_id=f"proactive-{message.id}", kind=kind
+    ).count()
+
+
 def _count(message: ProactiveMessage, kind: ObservationKind, detail=None):
-    turn_id = f"proactive-{message.id}"
-    if Observation.query.filter_by(turn_id=turn_id, kind=kind).first():
+    """Once per message and kind, but a refusal each time it happens."""
+    if kind is not ObservationKind.ProactiveRefused and _counted(message, kind):
         return
     db.session.add(
         Observation(
             diagram_id=message.diagram_id,
-            turn_id=turn_id,
+            turn_id=f"proactive-{message.id}",
             kind=kind,
             detail={
                 "reason": message.trigger.value,

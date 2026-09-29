@@ -1,7 +1,7 @@
 import * as api from "./api";
 import type { Said } from "./api";
 import { el, esc } from "./dom";
-import { periodLabel, rowDate } from "./when";
+import { clockTime, dayKey, periodLabel, rowDate } from "./when";
 
 /** The family's one thread: every sitting's words in the order they were said,
  * a light line with the day where one sitting ends and the next begins, and older pages
@@ -76,10 +76,16 @@ export class Thread {
   }
 }
 
-/** The line where a sitting starts, with the day it started. */
-export function divider(when: string): HTMLElement {
+/** The line where a sitting starts, with the day it started, and the time
+ * as well when the sitting before it started that same day, so two lines in
+ * a row never say the same thing. */
+export function divider(when: string, previous: string | null): HTMLElement {
   const started = new Date(when);
   const now = new Date();
   const period = periodLabel(started, now);
-  return el("div", "sitting", esc(DAY_WORDS.has(period) ? period : rowDate(started, now)));
+  const day = DAY_WORDS.has(period) ? period : rowDate(started, now);
+  const again = previous !== null && dayKey(new Date(previous)) === dayKey(started);
+  const line = el("div", "sitting", esc(again ? `${day}, ${clockTime(started)}` : day));
+  line.dataset.started = when;
+  return line;
 }

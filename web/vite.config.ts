@@ -84,6 +84,13 @@ function page(): Plugin {
   return {
     name: "fd-dev-page",
     apply: "serve",
+    // Vite's dev server puts its base in front of every root path in the page,
+    // the server's own among them, which the build leaves alone: the manifest
+    // and the touch icon go back to the addresses the built page has.
+    transformIndexHtml: {
+      order: "post",
+      handler: (html) => html.replaceAll(`"${BASE}app/`, `"/app/`),
+    },
     configureServer(server) {
       server.middlewares.use(async (request, response, next) => {
         const url = (request.url ?? "").split("?")[0];

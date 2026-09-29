@@ -152,10 +152,12 @@ export const timeline = (diagramId?: number) =>
  * them in the sitting they belong to. */
 export const say = (statement: string) => call<Started>("POST", "/chat", { statement });
 
-/** Where one sitting starts, carried by its first words. */
+/** Where one sitting starts, carried by its first words, and when the
+ * sitting before it started; the family's first sitting has none before it. */
 export interface Sitting {
   id: number;
   started: string;
+  previous_started: string | null;
 }
 
 /** A statement as the thread reads it: which sitting it is in, and on a

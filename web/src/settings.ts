@@ -25,6 +25,14 @@ import {
  * chat view is the one named shortcut, and it writes this same value. */
 
 const PANE_MS = 240;
+/** What each choice of how often the coach may message first means. */
+const PROACTIVE_HINT: Record<Proactive, string> = {
+  [Proactive.Never]: "The coach never messages first unless you ask it to.",
+  [Proactive.Rarely]:
+    "The coach may message first at most once a month, about a pattern in your family's events, and whenever you ask it to.",
+  [Proactive.Weekly]:
+    "The coach may message first at most once a week, about a pattern in your family's events, and whenever you ask it to.",
+};
 const SEARCH_AT = 6;
 
 const SILHOUETTE =
@@ -535,11 +543,7 @@ export class Settings {
           },
         ),
       ]),
-      el(
-        "div",
-        "sn-hint",
-        "The coach never messages first unless you ask it to.",
-      ),
+      el("div", "sn-hint", PROACTIVE_HINT[prefs.proactive]),
     );
     return { title: "Coach", pane };
   }

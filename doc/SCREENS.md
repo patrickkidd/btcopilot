@@ -341,7 +341,7 @@ What it is for: you, your families, your plan, and signing out.
 - A button under each coach reply plays it again, the way the Claude Code mobile app has one. [built] {R-0521}
 - Which voice reads the replies is not settled: today it is your phone's own, which costs nothing, and a better-sounding paid one waits on Patrick. [open]
 - No other setting appears in two places. [built]
-- There is a row for how often the coach may message you first, and it says the coach never messages first unless you ask. [built]
+- There is a row for how often the coach may message you first, and the line under it says what the chosen setting means: never unless you ask, at most once a month, or at most once a week. [built]
 - There is a row for light, dark or matching your phone. [built]
 - Your families are listed, with the number of sessions and when each was last used, and a tick on the one you are in. [built]
 - Tapping a family opens it, and one is open at a time. [built] {R-0175}

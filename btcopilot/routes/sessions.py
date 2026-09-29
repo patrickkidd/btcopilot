@@ -86,13 +86,17 @@ def thread(user, before: int | None = None) -> list[dict]:
     """The words of every sitting on the family the app is on, as one thread:
     sittings in the order they started, THREAD_PAGE statements at a time back
     from the statement `before`. A sitting's first words carry the sitting —
-    its id and when it started — which is where the page draws the line
-    between one sitting and the next."""
+    its id, when it started, and when the one before it started — which is
+    where the page draws the line between one sitting and the next."""
+    at = func.min(Statement.created_at)
     start = (
         db.session.query(
             Statement.discussion_id,
-            func.min(Statement.created_at).label("at"),
+            at.label("at"),
             func.min(Statement.id).label("first"),
+            func.lag(at, type_=Statement.created_at.type)
+            .over(order_by=(at, Statement.discussion_id))
+            .label("previous"),
         )
         .filter(
             Statement.discussion_id.in_(
@@ -110,15 +114,21 @@ def thread(user, before: int | None = None) -> list[dict]:
             abort(404)
         found = found.filter(tuple_(*key) < tuple_(*edge))
     rows = (
-        found.add_columns(start.c.at, start.c.first)
+        found.add_columns(start.c.at, start.c.first, start.c.previous)
         .order_by(*(k.desc() for k in key))
         .limit(THREAD_PAGE)
         .all()[::-1]
     )
-    out = statements_payload([s for s, _, _ in rows], user)
-    for said, (s, at, first) in zip(out, rows):
+    out = statements_payload([s for s, *_ in rows], user)
+    for said, (s, at, first, previous) in zip(out, rows):
         said["sitting"] = (
-            {"id": s.discussion_id, "started": utc_iso(at)} if s.id == first else None
+            {
+                "id": s.discussion_id,
+                "started": utc_iso(at),
+                "previous_started": utc_iso(previous) if previous else None,
+            }
+            if s.id == first
+            else None
         )
     return out
 

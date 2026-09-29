@@ -10,6 +10,10 @@ from btcopilot.turnlog import TurnLogBackend
 
 _log = logging.getLogger(__name__)
 
+# A push goes out long after the message it points at is committed, so these
+# are read when the app is made rather than at the first send.
+VAPID = ("VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT")
+
 
 def create_app(config: dict = None, **kwargs):
     from btcopilot import auth, extensions, routes
@@ -81,6 +85,13 @@ def create_app(config: dict = None, **kwargs):
         # load the test config if passed in
         _log.debug("Importing config overrides passed to create_app().")
         app.config.from_mapping(config)
+
+    missing = [f"FLASK_{key}" for key in VAPID if not app.config.get(key)]
+    if missing:
+        raise ValueError(
+            f"{', '.join(missing)} must be set: python -m btcopilot.push makes"
+            " the key pair, and the subject is mailto: and an address"
+        )
 
     ## Instance
 

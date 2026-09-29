@@ -231,7 +231,7 @@ Messages the coach writes before the person does.
 
 ### `flask admin proactive run`
 
-Write and send at most one message per person, within their budget. The words come from the model even on a dry run.
+Write and send at most one message per person, within their budget. The words come from the model even on a dry run. Each person nothing went to gets the reason instead.
 
 Changes something: needs `--yes`.
 

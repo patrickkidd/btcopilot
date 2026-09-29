@@ -3,7 +3,8 @@ import { watch } from "./gate";
 import { inside, stateFor } from "./setup";
 
 /** A family has one thread. A light line with the day stands where each
- * sitting starts, never the sitting's summary, older sittings read in as the
+ * sitting starts, with the start time too when the sitting before it started
+ * that day, never the sitting's summary; older sittings read in as the
  * reader scrolls up, and nothing lets anyone open or start a conversation. */
 
 const open = async (page: Page) => {
@@ -19,9 +20,9 @@ const sideways = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
 /** Every line lies inside the thread's box, across it and within what it
- * scrolls, and says only a day. Read in one pass, so a page read in meanwhile
- * cannot move the lines under the check. */
-const DAY = /^(Today|Yesterday|[A-Z][a-z]{2} \d{1,2}(, \d{4})?)$/;
+ * scrolls, and says only a day, and a time after it. Read in one pass, so a
+ * page read in meanwhile cannot move the lines under the check. */
+const DAY = /^(Today|Yesterday|[A-Z][a-z]{2} \d{1,2}(, \d{4})?)(, \d{1,2}:\d{2} [ap]m)?$/;
 
 async function held(page: Page): Promise<void> {
   const outside = await page.locator("#chat").evaluate((chat) => {
@@ -131,6 +132,25 @@ test.describe("twelve sittings over eight months", () => {
     expect(Math.abs(now - was)).toBeLessThanOrEqual(1);
     await expect(chat.locator(".sitting")).toHaveCount(12);
     expect(await chat.evaluate((c) => c.firstElementChild!.className)).toBe("sitting");
+    await held(page);
+    expect(await sideways(page)).toBe(0);
+    expect(w.bad).toEqual([]);
+  });
+});
+
+test.describe("two sittings on one day", () => {
+  test.use({ storageState: stateFor("sameday") });
+
+  // R-0055
+  test("the second line that day says when it started, the first only the day", async ({
+    page,
+  }) => {
+    const w = await open(page);
+    const lines = page.locator("#chat .sitting");
+    await expect(lines).toHaveCount(2);
+    const [first, second] = await lines.allInnerTexts();
+    expect(first).toMatch(/^[A-Z][a-z]{2} \d{1,2}(, \d{4})?$/);
+    expect(second).toBe(`${first}, 9:40 pm`);
     await held(page);
     expect(await sideways(page)).toBe(0);
     expect(w.bad).toEqual([]);

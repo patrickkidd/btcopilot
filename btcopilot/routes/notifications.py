@@ -72,4 +72,5 @@ def notify_command(email: str, statement_id: int):
     they have no subscription. Prints the notification's id and channel."""
     user = User.query.filter_by(username=email).one()
     notification = push.send(user, db.session.get(Statement, statement_id))
+    db.session.commit()
     click.echo(f"{notification.id} {notification.channel.value}")

@@ -39,6 +39,7 @@ def first_sentence(text: str) -> str:
 
 
 def send(user, statement) -> Notification:
+    """Not committed: the caller commits it with the message it points at."""
     words = first_sentence(statement.text)
     notification = Notification(
         user_id=user.id, statement_id=statement.id, channel=NotificationChannel.Push
@@ -53,7 +54,6 @@ def send(user, statement) -> Notification:
         send_coach_message(
             user.username, words, f"{site}/app/?notification={notification.id}"
         )
-    db.session.commit()
     return notification
 
 

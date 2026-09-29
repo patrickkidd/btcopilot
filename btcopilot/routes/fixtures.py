@@ -540,11 +540,25 @@ def long_name() -> DiagramData:
     return three_over_forty()
 
 
-# A family's thread over its sittings: (days ago, summary, what was said). The
-# summaries are the hostile ones a divider has to hold: none, empty, sixty
+# A family's thread over its sittings: (how long ago it ended, summary, what was
+# said). The summaries are the hostile ones a divider has to hold: none, empty, sixty
 # characters, and unicode.
 SIXTY = "Why the Sunday calls to Mum stopped after the funeral in May"
 UNICODE = "Zoë, 祖母 and the move to Łódź 🏠"
+
+
+DAY = datetime.timedelta(days=1)
+
+
+def _at(days: int, hour: int, minute: int, lines: int) -> datetime.timedelta:
+    """How long ago a sitting of `lines` lines ends so that it starts at this
+    clock time `days` ago, in the zone the fixtures are installed in, which is
+    the zone the browser reading them runs in."""
+    now = datetime.datetime.now().astimezone()
+    start = (now - days * DAY).replace(
+        hour=hour, minute=minute, second=0, microsecond=0
+    )
+    return now - start - datetime.timedelta(seconds=lines)
 
 
 def _sitting(topic: str, lines: int = 6) -> list[tuple[str, str]]:
@@ -559,20 +573,25 @@ def _sitting(topic: str, lines: int = 6) -> list[tuple[str, str]]:
 
 
 SITTINGS = {
-    "sitting": [(0, "Talking about Mum's move to the coast", _sitting("Mum's move"))],
+    "sitting": [(0 * DAY, "Talking about Mum's move to the coast", _sitting("Mum's move"))],
     "sittings": [
-        (240, "How the house sale started the arguments", _sitting("the house sale")),
-        (218, "Dad's drinking after he retired", _sitting("Dad's drinking")),
-        (190, None, _sitting("the wedding")),
-        (163, SIXTY, _sitting("the Sunday calls")),
-        (131, "", _sitting("my brother's job")),
-        (104, UNICODE, _sitting("Zoë and 祖母's move to Łódź")),
-        (80, "The summer at the lake house", _sitting("the lake house")),
-        (55, "Mum's diagnosis and who was told", _sitting("the diagnosis")),
-        (33, "Christmas without Dad", _sitting("Christmas")),
-        (14, "My sister taking over the care", _sitting("the care")),
-        (1, "What changed after the hospital", _sitting("the hospital", 2)),
-        (0, "Planning the visit home", _sitting("the visit home", 2)),
+        (240 * DAY, "How the house sale started the arguments", _sitting("the house sale")),
+        (218 * DAY, "Dad's drinking after he retired", _sitting("Dad's drinking")),
+        (190 * DAY, None, _sitting("the wedding")),
+        (163 * DAY, SIXTY, _sitting("the Sunday calls")),
+        (131 * DAY, "", _sitting("my brother's job")),
+        (104 * DAY, UNICODE, _sitting("Zoë and 祖母's move to Łódź")),
+        (80 * DAY, "The summer at the lake house", _sitting("the lake house")),
+        (55 * DAY, "Mum's diagnosis and who was told", _sitting("the diagnosis")),
+        (33 * DAY, "Christmas without Dad", _sitting("Christmas")),
+        (14 * DAY, "My sister taking over the care", _sitting("the care")),
+        (1 * DAY, "What changed after the hospital", _sitting("the hospital", 2)),
+        (0 * DAY, "Planning the visit home", _sitting("the visit home", 2)),
+    ],
+    # two sittings on one day, far from midnight either side
+    "sameday": [
+        (_at(3, 9, 40, 2), "The morning call", _sitting("the morning call", 2)),
+        (_at(3, 21, 40, 2), "The evening call", _sitting("the evening call", 2)),
     ],
 }
 
@@ -591,6 +610,7 @@ FIXTURES = {
     "whitlock": (whitlock, WHITLOCK_CHAT),
     "sitting": (one, None),
     "sittings": (one, None),
+    "sameday": (one, None),
 }
 
 # the diagram name each fixture's record carries, when it is not the default
@@ -661,8 +681,8 @@ def install(key: str):
 
     if chat:
         _stamp_coded_in(diagram, _replay(user, diagram, data, chat))
-    for days, summary, said in SITTINGS.get(key, []):
-        _replay(user, diagram, data, said, datetime.timedelta(days=days), summary)
+    for ago, summary, said in SITTINGS.get(key, []):
+        _replay(user, diagram, data, said, ago, summary)
     return user
 
 

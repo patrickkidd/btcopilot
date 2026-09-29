@@ -20,14 +20,6 @@ SAID = "[[person:1|Your mother]] called on Sunday. What did she want?"
 HOOK = "Your mother called on Sunday."
 
 
-@pytest.fixture(autouse=True)
-def keys(flask_app):
-    public, private = push.keypair()
-    flask_app.config["VAPID_PUBLIC_KEY"] = public
-    flask_app.config["VAPID_PRIVATE_KEY"] = private
-    flask_app.config["VAPID_SUBJECT"] = "mailto:test@example.com"
-
-
 @pytest.fixture
 def statement(discussion):
     said = discussion.statements[1]

@@ -21,5 +21,6 @@ def proactive_group():
 @rows_option
 def proactive_run(dry_run):
     """Write and send at most one message per person, within their budget. The
-    words come from the model even on a dry run."""
+    words come from the model even on a dry run. Each person nothing went to
+    gets the reason instead."""
     return proactive.run(dry_run=dry_run)

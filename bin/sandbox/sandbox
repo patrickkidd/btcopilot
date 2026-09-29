@@ -242,6 +242,14 @@ cmd_up() {
   # A web push key pair made for this sandbox alone, kept across restarts so a
   # browser that subscribed stays subscribed.
   [ -f "$D/vapid.sh" ] || (cd "$REPO" && "$PY" -m btcopilot.push | sed 's/^/export /') > "$D/vapid.sh"
+  # Who the push services write to about this sandbox's pushes: whoever runs
+  # it, so no one else's address is in the repo.
+  if ! grep -q '^export FLASK_VAPID_SUBJECT=' "$D/vapid.sh"; then
+    local owner
+    owner=$(git -C "$REPO" config user.email || true)
+    [ -n "$owner" ] || die "set git config user.email: it is the address push services write to about this sandbox"
+    echo "export FLASK_VAPID_SUBJECT=mailto:$owner" >> "$D/vapid.sh"
+  fi
   echo ". $D/vapid.sh" >> "$D/env.sh"
   local keyless
   if ! keyless=$(cd "$REPO" && "$PY" -m btcopilot.promptdir); then

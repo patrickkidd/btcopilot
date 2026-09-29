@@ -2,8 +2,10 @@ import datetime
 from unittest.mock import patch
 
 import pytest
+from pywebpush import WebPushException
 
 from btcopilot import proactive, tuning
+from btcopilot.proactive import Reason
 from btcopilot.tests.conftest import csrf_token
 from btcopilot.extensions import db
 from btcopilot.models import (
@@ -111,10 +113,14 @@ def _counts() -> list[ObservationKind]:
     return sorted(o.kind for o in Observation.query)
 
 
+def _why(rows: list[dict]) -> list[str | None]:
+    return [row["reason"] for row in rows]
+
+
 def test_a_pattern_becomes_one_coach_message_then_a_notification(family, sent):
     # R-0004
     send, model = sent
-    assert proactive.run(now=T0.replace(hour=11)) == []
+    assert _why(proactive.run(now=T0.replace(hour=11))) == [Reason.Night]
     said = proactive.run(now=T0)
     assert said == [
         {
@@ -122,6 +128,7 @@ def test_a_pattern_becomes_one_coach_message_then_a_notification(family, sent):
             "trigger": Trigger.Correlation.value,
             "text": WORDS,
             "refused": False,
+            "reason": None,
         }
     ]
     message = ProactiveMessage.query.one()
@@ -139,21 +146,41 @@ def test_a_pattern_becomes_one_coach_message_then_a_notification(family, sent):
         < prompt.index("20 2000-03-01")
     )
 
-    assert proactive.run(now=T0 + 30 * DAY) == []
+    assert _why(proactive.run(now=T0 + 30 * DAY)) == [Reason.Quiet]
     assert model.call_count == 1
 
 
-def test_words_out_of_shape_are_kept_unsent_and_never_asked_for_again(family, sent):
+def test_words_out_of_shape_stay_unsent_and_are_tried_twice_more_then_never(
+    family, sent
+):
     # R-0004
     send, model = sent
     model.return_value = "The breakup came first. Then the depression. Why?"
-    said = proactive.run(now=T0)
-    assert [s["refused"] for s in said] == [True]
+    for day in range(proactive.TRIES):
+        said = proactive.run(now=T0 + day * DAY)
+        assert [s["refused"] for s in said] == [True]
     assert send.call_count == 0
-    assert _counts() == [ObservationKind.ProactiveRefused]
+    assert ProactiveMessage.query.one().sent_at is None
+    assert _counts() == [ObservationKind.ProactiveRefused] * proactive.TRIES
 
-    assert proactive.run(now=T0 + 30 * DAY) == []
-    assert model.call_count == 1
+    assert _why(proactive.run(now=T0 + 30 * DAY)) == [Reason.Quiet]
+    assert model.call_count == proactive.TRIES
+
+
+def test_a_send_that_raises_keeps_nothing_and_the_next_run_sends(family, sent):
+    # R-0004
+    send, _ = sent
+    send.side_effect = WebPushException("Push failed: 503")
+    with pytest.raises(WebPushException):
+        proactive.run(now=T0)
+    # the run's process ends there, and its open transaction with it
+    db.session.rollback()
+    assert Statement.query.count() == 0
+    assert ProactiveMessage.query.count() == 0
+
+    send.side_effect = None
+    proactive.run(now=T0)
+    assert ProactiveMessage.query.one().sent_at == T0
 
 
 def test_never_sends_nothing_unasked_but_a_follow_up_they_asked_for_goes(family, sent):
@@ -161,7 +188,7 @@ def test_never_sends_nothing_unasked_but_a_follow_up_they_asked_for_goes(family,
     send, model = sent
     family.set_prefs(**{PrefKey.Proactive.value: Proactive.Never})
     db.session.commit()
-    assert proactive.run(now=T0) == []
+    assert _why(proactive.run(now=T0)) == [Reason.Off]
 
     proactive.ask_later(
         family.id, family.free_diagram_id, T0.date(), "How did the talk with Ann go?"
@@ -189,7 +216,7 @@ def test_a_follow_up_is_never_sent_again_after_its_sitting_is_deleted(
     assert deleted.status_code == 204
     assert ProactiveMessage.query.one().statement_id is None
 
-    assert proactive.run(now=T0 + 8 * DAY) == []
+    assert _why(proactive.run(now=T0 + 8 * DAY)) == [Reason.Off]
     assert send.call_count == 1
 
 
@@ -207,7 +234,7 @@ def test_the_coach_sets_a_question_for_later_and_it_goes_on_that_day(family, sen
     db.session.commit()
     due = ProactiveMessage.query.one().due_at
 
-    assert proactive.run(now=due - datetime.timedelta(hours=1)) == []
+    assert _why(proactive.run(now=due - datetime.timedelta(hours=1))) == [Reason.Night]
     said = proactive.run(now=due + datetime.timedelta(hours=3))
     assert [s["text"] for s in said] == ["How did the talk with Ann go?"]
 
@@ -222,7 +249,7 @@ def test_rarely_waits_a_month_after_the_last_unasked_message(family, sent):
     family.free_diagram.set_diagram_data(data)
     db.session.commit()
 
-    assert proactive.run(now=T0 + 20 * DAY) == []
+    assert _why(proactive.run(now=T0 + 20 * DAY)) == [Reason.Budget]
     said = proactive.run(now=T0 + 31 * DAY)
     assert [m.key for m in ProactiveMessage.query] == ["1:symptom", "1:anxiety"]
     assert len(said) == 1
@@ -236,9 +263,9 @@ def test_two_ignored_in_a_row_stop_their_kind_until_a_reply(family, sent):
     db.session.commit()
 
     assert [s["text"] for s in proactive.run(now=T0)] == ["First?"]
-    assert proactive.run(now=T0 + 3 * DAY) == []
+    assert _why(proactive.run(now=T0 + 3 * DAY)) == [Reason.Waiting]
     assert [s["text"] for s in proactive.run(now=T0 + 8 * DAY)] == ["Second?"]
-    assert proactive.run(now=T0 + 16 * DAY) == []
+    assert _why(proactive.run(now=T0 + 16 * DAY)) == [Reason.Ignored]
     _reply(family, T0 + 17 * DAY)
     assert [s["text"] for s in proactive.run(now=T0 + 18 * DAY)] == ["Third?"]
 

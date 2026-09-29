@@ -105,6 +105,7 @@ export const KEYS = [
   "whitlock",
   "sitting",
   "sittings",
+  "sameday",
 ] as const;
 export type Key = (typeof KEYS)[number];
 
