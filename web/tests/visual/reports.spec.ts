@@ -328,3 +328,29 @@ test.describe("the page breaking", () => {
     await expect(sheet(page)).toBeHidden();
   });
 });
+
+test.describe("a reply the page could not draw", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  // R-0056, R-0182
+  test("stops following the turn, warns in the thread and reports the error with the turn", async ({ page }) => {
+    await settle(page);
+    const sent = posted(page);
+    await mockTurn(page, {
+      statement: "Here is what happened after he left.",
+      statement_id: 9301,
+      did: [{ type: "view", view: null }],
+    });
+    await say(page, "My dad moved out.");
+
+    await expect(heading(page)).toHaveText("Something went wrong");
+    await expect(sheet(page).locator(".rp-row").first().locator(".rp-v")).toContainText("TypeError");
+    await expect(page.locator(".sys.warn")).toContainText("This reply could not be shown");
+    // nothing after the step that broke is drawn
+    await expect(page.locator('.bub.coach[data-statement="9301"]')).toHaveCount(0);
+    await sheet(page).getByRole("button", { name: "Send the report" }).click();
+    await expect(heading(page)).toHaveText("Your report was sent");
+    expect(sent[0].postDataJSON()).toMatchObject({ kind: "bug", source: "page", turn_id: "t1" });
+    expect(sent[0].postDataJSON().frames[0]).toContain("/app/static/web/");
+  });
+});

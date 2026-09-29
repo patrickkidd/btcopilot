@@ -691,10 +691,11 @@ reports.always = window.BOOTSTRAP.user?.prefs.bug_reports === BugReports.Always;
 let newest: number | null = window.BOOTSTRAP.statements.at(-1)?.id ?? null;
 
 /** An error on the page, raised only when it is the app's own; the browser
- * logs every one to the console either way. */
-const pageBroke = (thrown: unknown, said: string) => {
+ * logs every one to the console either way. One that broke drawing a turn
+ * names the turn. */
+const pageBroke = (thrown: unknown, said: string, turnId?: string) => {
   const fault = faults.fault(thrown, said);
-  if (fault) reports.page(fault, newest);
+  if (fault) reports.page(fault, newest, turnId);
 };
 window.addEventListener("error", (e) => pageBroke(e.error, e.message));
 window.addEventListener("unhandledrejection", (e) => pageBroke(e.reason, String(e.reason)));
@@ -1128,6 +1129,9 @@ async function begin(
  * a reload, or coming back to the app — reads it from its first event and
  * builds the same bubble. Nothing is ever shown twice: the bubble is built
  * again, not added to. */
+/** What the thread says when the page could not draw a reply. */
+const UNDRAWN = "This reply could not be shown";
+
 let watching: EventSource | null = null;
 let onTurn: string | null = null;
 
@@ -1158,10 +1162,21 @@ function follow(turnId: string): void {
     return bubble;
   };
   // The events are drawn in the order they happened, and re-reading the record
-  // takes a moment, so each one waits for the one before it.
+  // takes a moment, so each one waits for the one before it. One that breaks
+  // stops the page following the turn: nothing after it is drawn, the thread
+  // warns, and trying again reads the thread back from the server.
   let queue: Promise<void> = Promise.resolve();
+  let broken = false;
   const step = (work: () => Promise<void> | void) => {
-    queue = queue.then(work).catch((error) => console.warn(error));
+    queue = queue
+      .then(() => (broken ? undefined : work()))
+      .catch((error) => {
+        broken = true;
+        stopFollowing();
+        chat.busy(false);
+        chat.warn(UNDRAWN, () => void reload());
+        pageBroke(error, String(error), turnId);
+      });
   };
 
   const take = feed({
