@@ -22,8 +22,8 @@ the user's sessions on the family, its latest notes as labelled lines at the hea
 message, and a map listing each event's date, kind and people. Older words it finds with the
 search tool.
 
-**Known gap**: the sentence over the map still says it shows "how many events each person has";
-the map now lists every event too. Left as it is, since no other wording change was approved.
+**Map sentence**: the sentence over the map in both prompts now says it lists every event with
+its id, date, kind and people; the private one no longer counts events per decade.
 
 ---
 
