@@ -421,10 +421,15 @@ export const sessionTurns = (discussionId: number) =>
 
 /** Putting a conversation on the agenda: the cut ends on the turn tapped, and
  * starts where the last cut left off. */
-export const putOnAgenda = (discussionId: number, endStatementId: number) =>
+export const putOnAgenda = (
+  discussionId: number,
+  endStatementId: number,
+  meetingDate: string | null,
+) =>
   ask<Cut>("POST", "/cuts", {
     discussion_id: discussionId,
     end_statement_id: endStatementId,
+    meeting_date: meetingDate,
   });
 
 export const moveCut = (cutId: number, endStatementId: number) =>
@@ -442,7 +447,8 @@ export const offAgenda = (cutId: number) =>
   ask<{ id: number }>("DELETE", `/cuts/${cutId}`);
 
 /** One line per coder: not started, coding, done or voted (R-0258). */
-export const coders = () => ask<CoderLine[]>("GET", "/coders");
+export const coders = (cutId?: number) =>
+  ask<CoderLine[]>("GET", cutId === undefined ? "/coders" : `/coders?cut_id=${cutId}`);
 
 export const nudge = () =>
   ask<{ nudged: number[]; nudged_at: string }>("POST", "/nudges", {});

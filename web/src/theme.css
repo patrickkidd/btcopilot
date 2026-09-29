@@ -1561,6 +1561,7 @@ button { font-family: inherit; }
   cursor: pointer;
 }
 .fs-act.ren { color: var(--move-text); }
+.fs-act.del { color: var(--remove); }
 .fs-act:active { background: var(--tint); }
 
 .fs-hint {
@@ -1799,6 +1800,10 @@ button { font-family: inherit; }
 }
 .sn-pane.in { transform: none; }
 .sn-pane.under { transform: translateX(-28%); }
+/* A screen of the app's own on the stack scrolls inside itself, so its page
+   is only the frame it fills. */
+.sn-pane.host { display: flex; flex-direction: column; overflow: hidden; }
+.sn-pane.host > iframe { flex: 1; width: 100%; border: none; background: var(--bg); }
 .sn-grp {
   margin: 0;
   background: var(--panel);

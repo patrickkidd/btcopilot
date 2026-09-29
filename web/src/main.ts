@@ -17,7 +17,7 @@ import { Rules } from "./rules";
 import { Sessions } from "./sessions";
 import { sessionTitle } from "./search";
 import { Thread, divider } from "./thread";
-import { Page, Settings } from "./settings";
+import { Page, Settings, type Sub } from "./settings";
 import { Notices } from "./notices";
 import { Strip } from "./strip";
 import { aimedEvents, chips, itemKind, Lead } from "./chips";
@@ -100,15 +100,11 @@ declare global {
 
 /** Which screens the coding title row belongs to. */
 const CODING_SCREENS = [
-  Screen.Task,
   Screen.Coding,
   Screen.Ballot,
   Screen.Rules,
-  Screen.Cut,
-  Screen.Agenda,
   Screen.Meeting,
   Screen.Result,
-  Screen.Pairs,
 ];
 
 document.querySelectorAll(".backbtn").forEach((b) => (b.innerHTML = BACK));
@@ -350,11 +346,27 @@ const sessions = new Sessions(
 /** ── Coding ───────────────────────────────────────────────────────────────
  * A coder is given one task at a time: read one conversation up to the cut
  * Patrick put on the agenda, and say what each line tells you happened
- * (R-0265, R-0267). Done is in the title row, never in the composer (R-0271). */
+ * (R-0265, R-0267). Done is in the title row, never in the composer (R-0271).
+ *
+ * The task card, the agenda and what hangs off it, and the replies picked
+ * blind open on the account view's stack like its own pages, and leave by its
+ * back chevron to whatever opened them. */
+
+const TASK: Sub = { title: "Your task", screen: $("task-screen"), name: Screen.Task };
+const AGENDA: Sub = { title: "Next meeting", screen: $("agenda-screen"), name: Screen.Agenda };
+const PICK: Sub = { title: "Pick a session", screen: $("pick-screen") };
+const MEET: Sub = { title: "Meeting", screen: $("meet-screen") };
+const CUT: Sub = { title: "", screen: $("cut-screen"), name: Screen.Cut };
+const PAIRS: Sub = {
+  title: "Better replies",
+  screen: $("pairs-screen"),
+  name: Screen.Pairs,
+  wide: true,
+};
 
 const oneTask = new OneTask($("task-body"), {
   onStart: (task) => void startTask(task),
-  onResult: (cutId) => void openResult(cutId),
+  onResult: (cutId) => void openResult(cutId, openTask),
 });
 
 const rules = new Rules($("rules-body"));
@@ -380,13 +392,19 @@ const coding = new Coding(
   },
 );
 
+/** The one task card read again, titled for the meeting it is for. */
+async function readTask(): Promise<void> {
+  voting = null;
+  const found = await oneTask.load();
+  TASK.title = beforeMeeting(found.task);
+}
+
 /** The one task card, which is what Done returns to and what a coder sees
  * first. */
 async function openTask(): Promise<void> {
-  voting = null;
-  const found = await oneTask.load();
-  $("title").textContent = beforeMeeting(found.task);
-  screen(Screen.Task);
+  await readTask();
+  screen(Screen.Chat);
+  await settings.show(TASK);
 }
 
 /** Starting a task is making your own coding of that cut, then opening the
@@ -444,23 +462,26 @@ async function openLine(statementId: number): Promise<void> {
  * and the agenda itself (R-0258, R-0267). Nobody but Patrick sees these. */
 
 const placing = new Cut($("cut-chat"), $("cut-bar"), {
-  onPlaced: () => void openAgenda(),
+  onPlaced: () =>
+    void agenda.load().then(() => settings.popTo(AGENDA)),
   onTitle: (title) => {
-    setTitle(title);
+    CUT.title = title;
   },
 });
 
-const agenda = new Agenda($("agenda-body"), {
+const agenda = new Agenda($("agenda-body"), $("pick-body"), $("meet-body"), {
+  onPick: () => settings.push(PICK),
   onPlace: (discussionId) => void placeCut(discussionId),
-  onMeeting: (cutId) => void openMeeting(cutId),
-  onResult: (cutId) => void openResult(cutId),
-  onTitle: (title) => {
-    setTitle(title);
+  onMeeting: (title) => {
+    MEET.title = title;
+    settings.push(MEET);
   },
+  onRatify: (cutId) => void openMeeting(cutId),
+  onResult: (cutId) => void openResult(cutId, openAgenda),
 });
 
 /** The meeting: the room decides what the vote left open and ratifies the cut
- * (R-0250, R-0257). Patrick's screen, reached from the agenda. */
+ * (R-0250, R-0257). Patrick's screen, reached from the meeting's page. */
 const meeting = new Meeting(
   $("meeting-stats"),
   $("meeting-view"),
@@ -473,7 +494,7 @@ const meeting = new Meeting(
     onTitle: (title) => {
       setTitle(title);
     },
-    onRatified: (cutId) => void openResult(cutId),
+    onRatified: (cutId) => void openResult(cutId, openAgenda),
   },
 );
 
@@ -490,35 +511,45 @@ async function openMeeting(cutId: number): Promise<void> {
   screen(Screen.Meeting);
 }
 
-async function openResult(cutId: number): Promise<void> {
+/** Where the result's back arrow goes: whatever opened it. */
+let resultBack = openTask;
+
+async function openResult(cutId: number, back: () => Promise<void>): Promise<void> {
+  resultBack = back;
   await result.open(cutId);
   screen(Screen.Result);
 }
 
 async function placeCut(discussionId: number): Promise<void> {
-  await placing.open(discussionId);
-  screen(Screen.Cut);
+  await placing.open(discussionId, agenda.nextDate());
+  settings.push(CUT);
 }
 
+/** The agenda from outside the stack: a notice, or back from a result. */
 async function openAgenda(): Promise<void> {
   await agenda.load();
-  screen(Screen.Agenda);
+  screen(Screen.Chat);
+  await settings.show(AGENDA);
+}
+
+/** Back from the room to the page of the meeting it was run from. */
+async function backToMeeting(): Promise<void> {
+  await agenda.load();
+  MEET.title = await agenda.meet(agenda.meeting);
+  screen(Screen.Chat);
+  await settings.show(AGENDA, MEET);
 }
 
 /** Two replies to the same words, picked blind (R-0599). Patrick's. */
-const pairs = new Pairs($("pairs-body"), { onTitle: (title) => setTitle(title) });
+const pairs = new Pairs($("pairs-body"));
 
-async function openPairs(): Promise<void> {
-  await pairs.load();
-  screen(Screen.Pairs);
-}
-
-/** Where the guidelines were opened from, so closing them goes back there:
- * the coding screen mid-task, the one task card between meetings. */
-let readingFrom = Screen.Coding;
+/** Where the guidelines go back to when closed: the coding screen mid-task,
+ * the one task card between meetings. */
+let rulesBack = () => screen(Screen.Coding);
 
 async function openRules(): Promise<void> {
-  readingFrom = here;
+  rulesBack =
+    here === Screen.Coding ? () => screen(Screen.Coding) : () => void openTask();
   await rules.load();
   screen(Screen.Rules);
 }
@@ -531,7 +562,7 @@ $("coding-info").addEventListener("click", () => {
   track.tap(Feature.RulesOpen);
   void openRules();
 });
-$("rules-close").addEventListener("click", () => screen(readingFrom));
+$("rules-close").addEventListener("click", () => rulesBack());
 $("coding-back").addEventListener("click", () => {
   track.tap(Feature.Back);
   // Reading the transcript is a step out of the ballot, so it steps back into
@@ -539,17 +570,8 @@ $("coding-back").addEventListener("click", () => {
   if (here === Screen.Coding && voting)
     void openBallot(voting.cutId, voting.codingId, voting.itemId);
   else if (here === Screen.Coding || here === Screen.Ballot) void openTask();
-  else if (
-    here === Screen.Cut ||
-    here === Screen.Meeting ||
-    (here === Screen.Agenda && agenda.picking)
-  )
-    void openAgenda();
-  else if (here === Screen.Result) void openTask();
-  else {
-    $("title").textContent = familyTitle;
-    screen(Screen.Chat);
-  }
+  else if (here === Screen.Meeting) void backToMeeting();
+  else if (here === Screen.Result) void resultBack();
 });
 
 /** Another family is another record and another set of sessions, so the chat,
@@ -580,40 +602,45 @@ $("menu-title").textContent = familyTitle;
  * page are two doors onto the same value. */
 const speak = $("speak") as HTMLInputElement;
 
+/** Which of the app's own screens on the account view's stack was last
+ * counted, so the product events see it open and close like any screen. */
+let stacked: Screen | null = null;
+
 const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
-  onTitle: (title) => {
+  onTitle: (title, sub) => {
     // The title row belongs to whatever is on top of it, so the chat's own
     // controls step aside while the settings stack is up.
-    $("title").textContent = title ?? familyTitle;
+    if (title === null) $("title").textContent = familyTitle;
+    else setTitle(title);
     $("account").hidden = title !== null;
+    // the guidelines are read from the task card too (R-0275, R-0278)
+    $("coding-info").hidden = sub !== TASK && here !== Screen.Coding;
+    widen(here, sub);
+    const on = sub?.name ?? null;
+    if (on !== stacked) track.screen(on ?? here);
+    stacked = on;
   },
   onPrefs: (prefs) => {
     speak.checked = prefs.speak;
   },
   onDiagram: (diagram, how) => onDiagram(diagram, how),
-  onTask: () => void openTask(),
-  onAgenda: () => void openAgenda(),
-  onPairs: () => void openPairs(),
+  onTask: () => void readTask().then(() => settings.push(TASK)),
+  onAgenda: () => void agenda.load().then(() => settings.push(AGENDA)),
+  onPairs: () => void pairs.load().then(() => settings.push(PAIRS)),
   notices: () => notices.list,
   // one that points nowhere is only counted read, which its row then shows
   onNotice: async (one) => {
     await notices.open(one);
-    if (!one.link) await settings.show(Page.Root);
+    if (!one.link) await settings.show();
   },
 });
 
 /** The screen each notice points to (R-0611). */
 const GO: Record<Link, () => void> = {
-  [Link.Account]: () => void settings.show(Page.Root),
+  [Link.Account]: () => void settings.show(),
   [Link.Coach]: () => void settings.show(Page.Coach),
-  [Link.Task]: () => {
-    settings.close();
-    void openTask();
-  },
-  [Link.Agenda]: () => {
-    settings.close();
-    void openAgenda();
-  },
+  [Link.Task]: () => void openTask(),
+  [Link.Agenda]: () => void openAgenda(),
 };
 
 const go = (link: Link) => GO[link]();
@@ -715,7 +742,14 @@ function showPrompt(kind?: SessionKind): void {
 /** The newest page of the family's thread in place of what is on screen, and
  * the picture back where its last coach message left it. */
 async function reload(): Promise<void> {
-  const page = await api.thread();
+  redraw(await api.thread());
+}
+
+/** The newest statement the thread on screen holds. */
+let newest: number | null = window.BOOTSTRAP.statements.at(-1)?.id ?? null;
+
+function redraw(page: api.Said[]): void {
+  newest = page.at(-1)?.id ?? null;
   chat.clear();
   addStatements(page, true);
   thread.start(page);
@@ -1031,9 +1065,6 @@ async function begin(
  * again, not added to. */
 let watching: EventSource | null = null;
 let onTurn: string | null = null;
-/** The turn the page believes is still running, which is how a page coming
- * back finds out it has already finished and reads the thread again. */
-let awaiting: string | null = null;
 
 function follow(turnId: string): void {
   if (onTurn === turnId) return;
@@ -1043,7 +1074,6 @@ function follow(turnId: string): void {
   // the line draws it (R-0539)
   picture.untouch();
   onTurn = turnId;
-  awaiting = turnId;
   inFlight = true;
   chat.busy(true);
 
@@ -1093,9 +1123,9 @@ function follow(turnId: string): void {
       step(async () => {
         const said = opened();
         said.stamp(reply.statement_id);
+        newest = reply.statement_id;
         if (speak.checked) speech.say(reply.statement);
         said.settle(reply.statement, (chip) => aim(chip));
-        awaiting = null;
         stopFollowing();
         await load();
         void refreshKnown();
@@ -1106,7 +1136,6 @@ function follow(turnId: string): void {
       }),
     failed: (message) =>
       step(() => {
-        awaiting = null;
         stopFollowing();
         chat.busy(false);
         // What it did stays; the words it had begun are not kept, so they go.
@@ -1118,7 +1147,6 @@ function follow(turnId: string): void {
       }),
     refused: (message) =>
       step(() => {
-        awaiting = null;
         stopFollowing();
         const said = opened();
         said.reset();
@@ -1146,16 +1174,30 @@ function stopFollowing(): void {
 /** A page that has just loaded, or come back to the front, attaches to the
  * turn the session says is running. */
 async function reattach(): Promise<void> {
-  if (session === null || watching) return;
-  const { turn } = await api.session(session);
-  if (turn) follow(turn);
-  else if (awaiting) {
-    // It finished while the page was away: the thread is read again, which is
-    // what a reload would have shown.
-    awaiting = null;
-    await reload();
+  if (watching) return;
+  if (session !== null) {
+    const { turn } = await api.session(session);
+    if (turn) return follow(turn);
   }
+  // A turn that finished while the page was away is read in with the rest.
+  await catchUp();
 }
+
+const CATCH_UP_MS = 60_000;
+
+/** Words written from outside the page — a coach message sent first — are
+ * read in when the page comes back, after a notification is tapped, and once
+ * a minute while it is in front: the thread is drawn again only when its
+ * newest statement is not the newest on screen. */
+async function catchUp(): Promise<void> {
+  if (inFlight) return;
+  const page = await api.thread();
+  if (!inFlight && (page.at(-1)?.id ?? null) !== newest) redraw(page);
+}
+
+window.setInterval(() => {
+  if (document.visibilityState === "visible") void catchUp();
+}, CATCH_UP_MS);
 
 /** The picture where the last coach message left it. A play-by-play's
  * cluster chip is there to play it again, so it aims nothing on the way back. */
@@ -1197,16 +1239,15 @@ function crumb(): void {
 /** The list is full screen with its own back button, so it takes the title row
  * over rather than stacking a second bar under it (ruling 2026-09-03 05:53). */
 function screen(which: Screen): void {
+  // the account view's stack is over the chat, and every other screen is
+  // opened instead of it
+  if (which !== Screen.Chat) settings.close();
   if (which !== here) track.screen(which);
   // The list comes up over the chat rather than replacing it, so the chat is
   // still there underneath while the list travels (R-0345).
   $("chat-split").hidden = which !== Screen.Chat && which !== Screen.Menu;
   slideOver($("menu-screen"), which === Screen.Menu);
-  $("task-screen").hidden = which !== Screen.Task;
   $("ballot-screen").hidden = which !== Screen.Ballot;
-  $("cut-screen").hidden = which !== Screen.Cut;
-  $("agenda-screen").hidden = which !== Screen.Agenda;
-  $("pairs-screen").hidden = which !== Screen.Pairs;
   $("meeting-screen").hidden = which !== Screen.Meeting;
   $("result-screen").hidden = which !== Screen.Result;
   $("coding-screen").hidden = which !== Screen.Coding;
@@ -1214,17 +1255,7 @@ function screen(which: Screen): void {
   // The list covers the title row rather than taking its place: it is over
   // everything, with its own back arrow.
   document.querySelector<HTMLElement>(".titlerow")!.hidden = which === Screen.Rules;
-  // The app is a phone everywhere else; it widens only where the drawer
-  // stands beside the thread — the coding screen, and the chat screen for a
-  // professional on a wide window.
-  document
-    .querySelector<HTMLElement>(".app")!
-    .classList.toggle(
-      "wide",
-      which === Screen.Coding ||
-        which === Screen.Pairs ||
-        (which === Screen.Chat && pinned()),
-    );
+  widen(which);
   // Done and the guidelines belong to the coding screen; the back arrow also
   // stands on the one task card, which is where Done returns to.
   // A submitted coding is read, not added to: no Done and nothing to type
@@ -1235,7 +1266,7 @@ function screen(which: Screen): void {
   // The guidelines are read from the (i) at the top of the coding screen, and
   // from the one task card too, so they are still reachable in the window after
   // a meeting when nothing is on the agenda (R-0275, R-0278).
-  $("coding-info").hidden = which !== Screen.Coding && which !== Screen.Task;
+  $("coding-info").hidden = which !== Screen.Coding;
   $("coding-back").hidden = !CODING_SCREENS.includes(which);
   $("account").hidden = which === Screen.Rules;
   // The sheet's door stands in the chat's own input bar, so it is only on the
@@ -1243,6 +1274,18 @@ function screen(which: Screen): void {
   // carries the back arrow the frames draw instead.
   $("sessions-open").hidden = which !== Screen.Chat || !sessions.door;
   here = which;
+}
+
+/** The app is a phone everywhere else; it widens only where something stands
+ * beside the thread — the coding screen, the chat screen for a professional
+ * on a wide window — and where two replies stand side by side. */
+function widen(which: Screen, sub?: Sub): void {
+  document
+    .querySelector<HTMLElement>(".app")!
+    .classList.toggle(
+      "wide",
+      which === Screen.Coding || (which === Screen.Chat && pinned()) || !!sub?.wide,
+    );
 }
 
 /** Which screen is up, so the title row and the back arrow say the same. */
@@ -1400,7 +1443,10 @@ void load().then(async () => {
   leftAt(said);
 }).then(() =>
   // a task or notice opened from its push no longer holds the strip or the mark
-  landing(traceTo, (link) => void notices.refresh().then(() => go(link))),
+  landing(
+    (where) => catchUp().then(() => traceTo(where)),
+    (link) => void notices.refresh().then(() => go(link)),
+  ),
 );
 
 // The dev server too: push needs the worker, and the worker asks the network

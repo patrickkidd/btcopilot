@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { flask, stateFor } from "./setup";
+import { flask, shell, stateFor, username } from "./setup";
 
 /** Notices against the fixture that holds one unread notice, one opened four
  * days ago, and an unread coach message newer than both. Each test puts the
@@ -126,7 +126,7 @@ test("a 60-character title and a 100-character body take two lines, each cut wit
 });
 
 // R-0017
-test("the strip's way in opens the screen the notice points to and clears the mark on the account button", async ({
+test("Open on a notice pointing at the coach settings lands on the coach settings page and clears the mark on the account button", async ({
   page,
 }) => {
   await arrive(page);
@@ -140,8 +140,34 @@ test("the strip's way in opens the screen the notice points to and clears the ma
   const put = opened(page);
   await strip(page).locator(".stepbtn").click();
   expect((await put).ok()).toBe(true);
-  await expect(page.locator('.sn-pane.in[data-page="root"]')).toBeVisible();
+  await expect(page.locator('.sn-pane.in[data-page="coach"]')).toBeVisible();
+  await expect(page.locator("#title")).toHaveText("Coach");
   await expect(rows.locator(".sn-unread")).toHaveCount(0);
   await expect(strip(page)).toBeHidden();
   await expect(account(page)).not.toHaveClass(/\bunread\b/);
+});
+
+// R-0606
+test("a coach message written from outside the page appears in the thread when the page comes back to the front", async ({
+  page,
+}) => {
+  const said = "Was that the first time she called on a Sunday?";
+  await arrive(page);
+  await expect(page.locator("#chat")).not.toContainText(said);
+  shell(
+    [
+      "from btcopilot.extensions import db",
+      "from btcopilot.models import Statement, User",
+      "from btcopilot.routes import current_session",
+      `at = current_session(User.query.filter_by(username="${username("notice")}").one())`,
+      `db.session.add(Statement(discussion_id=at.id, speaker_id=at.chat_ai_speaker_id, text="${said}", order=len(at.statements)))`,
+      "db.session.commit()",
+      "",
+    ].join("\n"),
+  );
+  const read = page.waitForResponse((r) => r.url().endsWith("/app/statements"));
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  expect((await read).ok()).toBe(true);
+  await expect(page.locator("#chat .bub").last()).toContainText(said);
+  await expect(strip(page).locator(".strip-t")).not.toHaveText(said);
 });

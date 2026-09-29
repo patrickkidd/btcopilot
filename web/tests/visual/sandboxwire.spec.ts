@@ -21,6 +21,7 @@ async function meeting(page: Page): Promise<void> {
   await page.waitForTimeout(1200);
   if (!(await page.locator("#meeting-screen").isVisible())) {
     await page.locator(".tb-meet").first().click();
+    await page.locator(".tb-run").first().click();
     await page.waitForTimeout(1500);
   }
   await expect(page.locator("#meeting-screen")).toBeVisible();

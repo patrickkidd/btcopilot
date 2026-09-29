@@ -71,6 +71,7 @@ What it is for: talking to the coach, which is how everything else in the app ge
 - A notice from the app, or a coding task waiting for you, shows as a small card above the message box: its title on one line, the body on the line under it, each cut short with an ellipsis when it does not fit, Open when it points to a screen, and a cross; the card is never more than two lines. It is never in the thread and never covers the page. [built] {R-0611}
 - One shows at a time, the newest. It stays there until you tap Open, which goes to the screen it points to, or the cross, which puts it away; either way it is counted read and does not come back. [built] {R-0611}
 - A coach message never shows there, because it is already in the thread. [built] {R-0606, R-0611}
+- A coach message written while the app was open elsewhere, or away, appears in the thread when you come back to the app, when you tap its notification, and within a minute while the app is in front; the thread is only drawn again when something new is in it. [built] {R-0606}
 - Admins and auditors see a small circled (i) at the top right of a coach reply; tapping it opens the coach's own notes for that turn in a panel that grows out of the bubble and shrinks back into it. Nobody else sees the notes. [built] {R-0520, R-0522, R-0529}
 
 ## The picture at rest
@@ -309,6 +310,7 @@ What it is for: your past conversations.
 - The list is drawn on the notes-list precedent: a small uppercase grey heading per period — today, yesterday, previous 7 days, previous 30 days, then the month — over a rounded group of rows; no clock column, no badges, no pencil. [built] {R-0347}
 - Each row is a bold title with the day small at its right (left out under today and yesterday), then two lines of the first thing the client said, so a session can be told apart without opening it. A session nobody titled is named by its first six words, or "New session". [built] {R-0347}
 - A "⋯" at the row's right opens the same rename and delete actions as the swipe. [built] {R-0347}
+- Rename is green and Delete is red, in the app's own colours for adding and removing. [built]
 - The coach titles a session after the first exchange, and you can rename it by hand. [built]
 - A session you renamed by hand is not marked; the coach simply never overwrites it. [built] {R-0347}
 - Emptying a rename puts the coach's own title back and says so. [built]
@@ -339,7 +341,7 @@ What it is for: you, your families, your plan, and signing out.
 - The account page is a list where each row opens its own page with a back arrow, like the phone's own settings. [built]
 - The top of it shows your name, your email and your plan. [built]
 - While a notice is unread, the account mark carries a small amber dot, the amber of the coach's question; the dot goes when none is unread. [built] {R-0611}
-- Under your name, a Notices section lists every notice you have been sent, newest first, each with its day and its first line; an unread one has the same amber dot before it. Tapping one opens the screen it points to and counts it read. There is no section until a notice has been sent. [built] {R-0611}
+- Under your name, a Notices section lists every notice you have been sent, newest first, each with its day and its first line; an unread one has the same amber dot before it. Tapping one opens the screen it points to and counts it read; one that points to the account page itself, or nowhere, has no arrow and a tap only counts it read. There is no section until a notice has been sent. [built] {R-0611}
 - Your profile page holds your first name, last name and birthdate. [built]
 - There is a row for whether the coach speaks its replies out loud. [built]
 - The same speaking switch appears once in the chat as a named shortcut, writing the same setting. [built]
@@ -353,8 +355,9 @@ What it is for: you, your families, your plan, and signing out.
 - Tapping a family opens it, and one is open at a time. [built] {R-0175}
 - A search box appears in that list once you have six or more families. [built]
 - Licences and the plan are listed; nothing on that page implies a price yet. [built]
-- Auditors and admins see a Coding section above Sign out: Your coding task, which opens the one task card; Next meeting, for admins only, which opens the agenda; and Concept pages, which opens the concept pages in a tab of their own. [built] {R-0265, R-0259, R-0541, R-0567}
-- Admins also see a Quality section with one row, Better reply, over the line "Pick the better of two coach replies"; it opens the screen where two coach replies to the same words are picked blind. [built] {R-0599}
+- Auditors and admins see a Coding section above Sign out: Your coding task, which opens the one task card; Next meeting, for admins only, which opens the agenda; and Literature review, which opens the concept pages. [built] {R-0265, R-0259, R-0541, R-0567}
+- Admins also see a Quality section with one row, Better replies, over the line "Pick the better of two coach replies"; it opens the screen where two coach replies to the same words are picked blind, titled Better replies. [built] {R-0599}
+- Each of those opens as a page of the account view, sliding in over it the way Coach, Appearance and Plan do, and the back arrow at the top left returns to the account view. [built] {R-0259, R-0265}
 - A plain subscriber or a professional sees neither section. [built] {R-0311}
 - Sign out sits alone at the bottom and signs you out immediately, with no confirmation step. [built]
 - Every icon button in the app is the same size: a forty-four point target with a forty point mark inside it. [built] {R-0234}
@@ -482,7 +485,8 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 @frame review#f10 | Patrick's screen: the date, what is on the agenda, who is done, the button that opens the vote, and the agenda that fills itself.
 
 - Patrick puts a conversation on the agenda from the meeting page, never from a session: "Put a session on the agenda" lists every session on every family, newest first, each with its family, its day and how many statements it holds, and a search box finds sessions by words said in them, showing the line that carries them. [built] {R-0267}
-- Tapping one opens it to place the cut, and placing the cut, or the back button, returns to the agenda. [built] {R-0267}
+- Tapping one opens it to place the cut, and placing the cut returns to the agenda. Each is a page over the one it was opened from: the list over the agenda, the cut over the list or over the agenda, and the back arrow steps back one page. [built] {R-0267}
+- A newly placed cut joins the next meeting: the soonest meeting date on the agenda, or no date while none has one. [built] {R-0267}
 - That opens the conversation so he can place the cut: the point everyone codes up to. [drawn] {R-0267}
 - The cut starts at the last turn, and tapping any line moves it there. [drawn] {R-0267}
 - The cut can never be moved back past the last point that was already ratified. [drawn] {R-0267}
@@ -490,6 +494,8 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 - A cut placed at the end of a finished conversation or recording takes in the whole thing, so a whole transcript is not a different kind of task. [drawn] {R-0267}
 - Anything that changed since the last cut is coded again. [drawn] {R-0267}
 - The agenda screen is the whole of Patrick's administration: the meeting date, what is on the agenda, and who is done. [drawn] {R-0259, R-0267}
+- One meeting date is one meeting: the agenda shows each date once, its cuts under it, and, once the vote is open, one "run the meeting" button for it. A new date on a meeting moves all of its cuts. [built] {R-0250, R-0258}
+- "run the meeting" opens that meeting's page: each cut with who has submitted a coding of it and who has not; a cut nobody has submitted says "No coder has submitted yet" under it, and a cut someone has submitted opens the room on it. [built] {R-0250, R-0258}
 - Each coder's state is shown as not started, coding, done or voted, with a count of who is closed out. [drawn] {R-0258}
 - One control nudges the people who are not done. [drawn] {R-0258}
 - Taking a conversation off the agenda is one tap, before anyone has started. [drawn]

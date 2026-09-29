@@ -1,6 +1,6 @@
 import * as api from "./api";
-import { Feature, tap } from "./track";
-import { $, el, esc, isAdmin, isCoder } from "./dom";
+import { Feature, tap, type Screen } from "./track";
+import { $, el, esc, isAdmin, isCoder, type Title } from "./dom";
 import { INDEX_URL } from "./concepts";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
@@ -10,6 +10,7 @@ import { addPasskey, available, deviceWords } from "./passkey";
 import { subscribe } from "./push";
 import { PRO, RECORD, RECORDS, Records } from "./pro";
 import {
+  Link,
   Mode,
   Proactive,
   Theme,
@@ -41,6 +42,7 @@ const PROACTIVE_HINT: Record<Proactive, string> = {
   [Proactive.Weekly]: writesFirst("week"),
 };
 const SEARCH_AT = 6;
+const LITERATURE = "Literature review";
 
 const SILHOUETTE =
   `<svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true">` +
@@ -56,15 +58,28 @@ export enum Page {
   Plan = "plan",
 }
 
+/** A screen of the app's own that opens on this stack like one of its pages
+ * and leaves by the same back chevron, to whatever it was opened from. */
+export interface Sub {
+  title: string | Title;
+  screen: HTMLElement;
+  /** Counted as a screen of its own in the product events. */
+  name?: Screen;
+  /** The app widens under it, as it does for two replies side by side. */
+  wide?: boolean;
+}
+
+type Pane = Page | Sub;
+
 interface Built {
-  title: string;
+  title: string | Title;
   pane: HTMLElement;
 }
 
 export interface SettingsHandlers {
   /** The title row shows the current pane's title, and the family name again
-   * when the stack closes. */
-  onTitle(title: string | null): void;
+   * when the stack closes; a screen of the app's own on top comes with it. */
+  onTitle(title: string | Title | null, sub?: Sub): void;
   /** Every read or write of the preferences, so a value with a shortcut
    * elsewhere on screen shows the same thing. */
   onPrefs(prefs: Preferences): void;
@@ -113,13 +128,15 @@ async function offerPush(): Promise<void> {
 }
 
 export class Settings {
-  private stack: { page: Page; title: string; pane: HTMLElement }[] = [];
+  private stack: { page: Pane; title: string | Title; pane: HTMLElement }[] = [];
   private open = false;
   private prefs: Preferences | null = null;
   private account: Account | null = null;
   private passkeys: Passkey[] = [];
   private canPasskey = false;
   private host = el("div", "sn-stack");
+  /** The concept pages, read on this stack like any page of it. */
+  private literature: Sub = { title: LITERATURE, screen: el("iframe") };
 
   constructor(
     private avatar: HTMLElement,
@@ -129,6 +146,10 @@ export class Settings {
   ) {
     this.host.hidden = true;
     overlay.append(this.host);
+    const frame = this.literature.screen as HTMLIFrameElement;
+    frame.id = "literature";
+    frame.title = LITERATURE;
+    frame.src = INDEX_URL;
     this.back.hidden = true;
     this.avatar.addEventListener("click", () => {
       tap(Feature.OpenSettings);
@@ -173,12 +194,22 @@ export class Settings {
     return name.trim().charAt(0).toUpperCase();
   }
 
-  /** The account view at one of its pages, which is where a notice points:
-   * opened on it, or drawn again where it stands with what just changed. */
-  async show(page: Page): Promise<void> {
-    if (this.open) this.replaceTop();
-    else await this.raise();
-    if (page !== Page.Root && this.stack.at(-1)?.page !== page) this.push(page);
+  /** The account view with these pushed on its root in order, which is where
+   * a notice points and where a screen of the app's own is opened from
+   * outside the stack: opened on them, or back at its root, drawn again with
+   * what just changed, and on from there. */
+  async show(...path: Pane[]): Promise<void> {
+    if (this.open) {
+      for (const entry of this.stack.splice(1)) entry.pane.remove();
+      this.stack[0].pane.classList.remove("under");
+      this.replaceTop();
+    } else await this.raise();
+    for (const page of path) this.push(page);
+  }
+
+  /** Down the stack to a screen on it, the way its back chevron goes. */
+  popTo(sub: Sub): void {
+    while (this.stack.length > 1 && this.stack.at(-1)!.page !== sub) this.pop();
   }
 
   private async raise(): Promise<void> {
@@ -197,19 +228,26 @@ export class Settings {
     if (!first) window.setTimeout(() => void this.load(), PANE_MS);
   }
 
-  private push(page: Page): void {
+  /** A page, or a screen of the app's own, slid in on top. */
+  push(page: Pane): void {
     const under = this.stack[this.stack.length - 1];
     const { title, pane } = this.build(page);
     pane.classList.add("sn-pane");
-    pane.dataset.page = page;
+    pane.dataset.page = typeof page === "string" ? page : page.screen.id;
     this.host.append(pane);
-    dragScroll(pane);
+    // a screen of the app's own scrolls inside itself
+    if (typeof page === "string") dragScroll(pane);
     void pane.offsetWidth;
     pane.classList.add("in");
     if (under) under.pane.classList.add("under");
     this.stack.push({ page, title, pane });
-    this.handlers.onTitle(title);
+    this.top();
     this.back.hidden = false;
+  }
+
+  private top(): void {
+    const { title, page } = this.stack[this.stack.length - 1];
+    this.handlers.onTitle(title, typeof page === "string" ? undefined : page);
   }
 
   private pop(): void {
@@ -222,9 +260,8 @@ export class Settings {
     }
     top.pane.classList.remove("in");
     window.setTimeout(() => top.pane.remove(), PANE_MS);
-    const under = this.stack[this.stack.length - 1];
-    under.pane.classList.remove("under");
-    this.handlers.onTitle(under.title);
+    this.stack[this.stack.length - 1].pane.classList.remove("under");
+    this.top();
   }
 
   close(): void {
@@ -246,17 +283,18 @@ export class Settings {
   }
 
   /** Re-draw the pane on top in place, so a value written on it shows at once
-   * without the pane sliding again. */
+   * without the pane sliding again. A screen of the app's own draws itself. */
   private replaceTop(): void {
-    const top = this.stack.pop();
-    if (!top) return;
+    const top = this.stack.at(-1);
+    if (!top || typeof top.page !== "string") return;
+    this.stack.pop();
     top.pane.remove();
     const { title, pane } = this.build(top.page);
     pane.classList.add("sn-pane", "in");
     pane.dataset.page = top.page;
     this.host.append(pane);
     this.stack.push({ page: top.page, title, pane });
-    this.handlers.onTitle(title);
+    this.top();
   }
 
   private async write(body: Partial<Preferences>): Promise<void> {
@@ -293,11 +331,10 @@ export class Settings {
     return this.tapRow(label, value, () => this.push(page));
   }
 
-  /** A row that leaves the account view for a screen of its own. */
+  /** A row that opens a screen of the app's own on this stack. */
   private screenRow(label: string, feature: Feature, go: () => void): HTMLElement {
     return this.tapRow(label, "", () => {
       tap(feature);
-      this.close();
       go();
     });
   }
@@ -390,7 +427,13 @@ export class Settings {
 
   // ---- the pages ----
 
-  private build(page: Page): Built {
+  private build(page: Pane): Built {
+    if (typeof page !== "string") {
+      const pane = el("div", "host");
+      page.screen.hidden = false;
+      pane.append(page.screen);
+      return { title: page.title, pane };
+    }
     const prefs = this.prefs!;
     const account = this.account!;
     if (page === Page.Root) return this.root(prefs, account);
@@ -445,7 +488,7 @@ export class Settings {
 
     // Coding and its meeting are for coders, and the meeting and the replies
     // picked blind are Patrick's; none of it hangs on the family the app is
-    // on. The concept pages open in a tab of their own (R-0567).
+    // on. Each opens on this stack, the concept pages too (R-0567).
     const admin = isAdmin();
     if (isCoder())
       pane.append(
@@ -455,9 +498,7 @@ export class Settings {
             ...(admin
               ? [this.screenRow("Next meeting", Feature.AgendaOpen, () => this.handlers.onAgenda())]
               : []),
-            this.tapRow("Concept pages", "", () =>
-              window.open(INDEX_URL, "_blank", "noopener"),
-            ),
+            this.tapRow(LITERATURE, "", () => this.push(this.literature)),
           ],
           "Coding",
         ),
@@ -465,7 +506,7 @@ export class Settings {
     if (admin)
       pane.append(
         this.group(
-          [this.screenRow("Better reply", Feature.PairsOpen, () => this.handlers.onPairs())],
+          [this.screenRow("Better replies", Feature.PairsOpen, () => this.handlers.onPairs())],
           "Quality",
         ),
         el("div", "sn-hint", "Pick the better of two coach replies"),
@@ -486,10 +527,11 @@ export class Settings {
   }
 
   /** A notice: unread ones carry the account button's mark, and a tap opens
-   * where it points, or only counts it read when it points nowhere. */
+   * where it points, or only counts it read when it points nowhere or here. */
   private noticeRow(one: Delivery): HTMLElement {
     const unread = one.opened_at === null;
-    const row = el("div", `sn-row${one.link || unread ? " push" : ""}`);
+    const goes = one.link !== null && one.link !== Link.Account;
+    const row = el("div", `sn-row${goes || unread ? " push" : ""}`);
     if (unread) row.append(el("span", "sn-unread"));
     const main = el("div", "sn-m");
     const when = shortDate(new Date(one.created_at), new Date());
@@ -498,8 +540,8 @@ export class Settings {
       el("div", "sn-s", esc(`${when} · ${one.body}`)),
     );
     row.append(main);
-    if (one.link) row.append(el("div", "sn-chev", "›"));
-    if (one.link || unread)
+    if (goes) row.append(el("div", "sn-chev", "›"));
+    if (goes || unread)
       row.addEventListener("click", () => this.handlers.onNotice(one));
     return row;
   }

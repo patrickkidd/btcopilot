@@ -612,7 +612,7 @@ NOTICES = (
     (
         "Coach messages can now come weekly",
         "Choose how often under Coach messages on your account page.",
-        NoticeLink.Account,
+        NoticeLink.CoachSettings,
         0,
         False,
     ),

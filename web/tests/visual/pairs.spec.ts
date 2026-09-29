@@ -88,9 +88,10 @@ test("two replies are picked blind and the page moves on", async ({ page }, info
 
   await page.goto("/app/");
   await page.locator("#account").click();
-  await tap(page, page.locator(".sn-pane.in .sn-row", { hasText: "Better reply" }));
+  await tap(page, page.locator(".sn-pane.in .sn-row", { hasText: "Better replies" }));
   await expect(page.locator("#pairs-screen .pr-card")).toHaveCount(2);
-  await expect(page.locator(".sn-pane.in")).toHaveCount(0);
+  await expect(page.locator(".sn-pane.in:not(.under)")).toHaveAttribute("data-page", "pairs-screen");
+  await expect(page.locator("#title")).toHaveText("Better replies");
   expect(await layout(page)).toEqual({ outside: 0, sideways: false, named: false });
   await expect(page.locator("#pairs-body .plnote")).toHaveText("2 left to pick");
   await page.screenshot({ path: info.outputPath(`pairs-${info.project.name}.png`) });

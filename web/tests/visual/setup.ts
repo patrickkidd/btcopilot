@@ -115,6 +115,16 @@ export const stateFor = (key: Key) => join(AUTH, `${key}.json`);
 /** The server's own command line, run the way FIXTURE_CMD runs the fixture
  * installer: `uv run flask` here, `python -m flask` on CI. */
 export function flask(...args: string[]): string {
+  return run(args);
+}
+
+/** Python run in the sandbox's own app, as `flask shell` reads it, one
+ * statement a line: how a spec writes what only the server writes. */
+export function shell(code: string): string {
+  return run(["shell"], code);
+}
+
+function run(args: string[], input?: string): string {
   const [bin, ...before] = (process.env.FIXTURE_CMD ?? "uv run flask app fixtures")
     .split(" ")
     .slice(0, -2);
@@ -122,6 +132,7 @@ export function flask(...args: string[]): string {
     cwd: process.env.FIXTURE_CWD ?? resolve(".."),
     encoding: "utf8",
     env: process.env,
+    input,
   });
 }
 

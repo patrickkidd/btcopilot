@@ -8,10 +8,6 @@ import { PickChoice, Who, type ModelPicks, type Pair } from "./types";
  * once, and no model named until Patrick has picked left, right or a tie with
  * a one-line note (R-0599). Under it, each model's picks so far. */
 
-export interface PairsHandlers {
-  onTitle(title: string): void;
-}
-
 const NOTE_CAP = 200;
 /** Where the app widens and the two replies stand side by side (theme.css). */
 const WIDE = "(min-width: 840px)";
@@ -25,16 +21,12 @@ export class Pairs {
   private waiting: Pair[] = [];
   private picks: ModelPicks[] = [];
 
-  constructor(
-    private body: HTMLElement,
-    private handlers: PairsHandlers,
-  ) {
+  constructor(private body: HTMLElement) {
     this.body.addEventListener("click", (e) => void this.onClick(e));
   }
 
   async load(): Promise<void> {
     [this.waiting, this.picks] = await Promise.all([api.pairs(), api.modelPicks()]);
-    this.handlers.onTitle("Compare replies");
     this.render();
   }
 

@@ -144,6 +144,7 @@ test.describe(() => {
     await page.locator(".sn-pane.in .sn-row", { hasText: "Next meeting" }).click();
     await page.waitForTimeout(1600);
     await page.locator(".tb-meet").first().click();
+    await page.locator(".tb-run").first().click();
     await page.waitForTimeout(2200);
     check(await visible("#meeting-screen"), "the meeting opens");
     const key = await text("#meeting-stats .mkey");

@@ -33,6 +33,7 @@ test.describe(() => {
     await page.waitForTimeout(1200);
     if (!(await visible("#meeting-screen"))) {
       await page.locator(".tb-meet").first().click();
+      await page.locator(".tb-run").first().click();
       await page.waitForTimeout(1500);
     }
     check(await visible("#meeting-screen"), "the meeting opens");

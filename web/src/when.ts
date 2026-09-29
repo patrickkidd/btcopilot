@@ -55,13 +55,6 @@ export function rowDate(d: Date, now: Date): string {
   return d.getFullYear() === now.getFullYear() ? date : `${date}, ${d.getFullYear()}`;
 }
 
-/** The next meeting, as the agenda screen's own title names it. */
-export function meetingTitle(date: string | null): string {
-  if (!date) return "Next meeting";
-  const d = new Date(`${date}T00:00:00`);
-  return `Next meeting · ${WD[d.getDay()].slice(0, 3)}, ${MON[d.getMonth()]} ${d.getDate()}`;
-}
-
 /** A stored timestamp said as a bare day, the way a row names one: "Sep 15". */
 export function dayText(value: string): string {
   const d = new Date(value);

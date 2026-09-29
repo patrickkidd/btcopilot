@@ -1,6 +1,7 @@
 {
   "name": "Family Diagram",
   "short_name": "Family Diagram",
+  "id": "/app/",
   "start_url": "/app/",
   "scope": "/app/",
   "display": "standalone",
