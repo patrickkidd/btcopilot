@@ -1951,3 +1951,7 @@ on the public concept pages (about 125 quote lines); four verifier gaps (the not
 12px past its header row, the (i) button and a tool line overhanging the bubble by 5 to 7px, the
 hand-edit bad-date message showing a field name, the quality replay command writing to a tracked
 ledger file); and a unit test for the calibration cap and the per-call ledger code.
+
+## 2026-09-29 — the landing page for familydiagram.com
+
+Built on branch `landing-page`, not deployed: the page at `/`, where someone already invited can have a sign-in link emailed and anyone else can ask to join the beta, both forms behind Turnstile, with the Alaska Family Systems logo, its blue-purple colours and a copyright line carrying the year of the visit [R-0601].

@@ -51,7 +51,11 @@ def missing() -> str | None:
 def decrypt(path: Path) -> str:
     """sops's own default key path on macOS is under ~/Library, so the key file
     this module resolves is handed to it."""
-    env = os.environ | {"SOPS_AGE_KEY_FILE": str(keyfile())}
+    env = dict(os.environ)
+    # Only a file that exists is named: naming a missing one makes sops fail
+    # even when SOPS_AGE_KEY holds the key, as it does in a cloud session.
+    if keyfile().is_file():
+        env["SOPS_AGE_KEY_FILE"] = str(keyfile())
     done = subprocess.run(
         ["sops", "-d", str(path)], capture_output=True, text=True, check=True, env=env
     )

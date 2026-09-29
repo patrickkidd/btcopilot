@@ -1962,3 +1962,12 @@ rulings) is applied only on Patrick's approval; no ruling was touched.
 The Pro app's update feeds (`appcast_*.xml`) live on the legacy box; familydiagram.com only
 forwards `/appcast_*.xml` to it, so installed apps keep their feed address [R-0600]. The Pro
 release job uploads the feeds to database.familydiagram.com (familydiagram PR #153).
+
+## 2026-09-29: The landing page's captcha is Cloudflare Turnstile, and beta requests are email only
+
+Patrick asked for the familydiagram.com landing page with a request form secured by a good
+captcha [R-0601]. Turnstile was chosen because it is free, asks visitors to solve no image
+puzzles, and has documented test keys that always pass, so a development server and the
+browser check run without a widget of their own. It guards both forms, since both send email.
+A request to join the beta is emailed to Patrick and not stored: a table for it would be new
+schema, which needs his yes first [R-0581].

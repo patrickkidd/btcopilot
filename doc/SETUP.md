@@ -72,7 +72,8 @@ export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt   # in your shell profile, 
 key it prints, and wait for him to add it as a recipient.
 
 **Claude Code cloud:** put the key file's text in the environment's settings as `SOPS_AGE_KEY`.
-Anyone using that environment can read it.
+Anyone using that environment can read it. No key file is needed there: the app, the tests and
+the oracle guards hand the key to sops from that variable.
 
 `SOPS_AGE_KEY_FILE` is only needed for the `sops` command itself (git diffs of the encrypted
 files, editing a ruling), whose own default on macOS is under `~/Library`.

@@ -28,3 +28,11 @@ def test_the_update_feeds_are_forwarded_to_the_legacy_box():
     assert feeds
     assert "reverse_proxy https://database.familydiagram.com" in feeds.group(1)
     assert "header_up Host familydiagram.com" in feeds.group(1)
+
+
+def test_the_bare_address_is_the_landing_page():
+    # R-0601
+    landing = re.search(r"^    handle / \{\n(.*?)^    \}", SITE, re.M | re.S)
+    assert landing
+    assert landing.group(1).strip() == "reverse_proxy fd-app:8888"
+    assert landing.start() < re.search(r"^    handle \{", SITE, re.M).start()

@@ -1,7 +1,7 @@
-# familydiagram.com on the app box. /app is the app (R-0356); everything else
-# keeps redirecting to alaskafamilysystems.com as the old box did, until a
-# product homepage exists. The desktop update feeds live on the legacy box and
-# are forwarded because shipped apps have this address built in.
+# familydiagram.com on the app box. / is the landing page (R-0601) and /app is
+# the app (R-0356); everything else keeps redirecting to alaskafamilysystems.com
+# as the old box did. The desktop update feeds live on the legacy box and are
+# forwarded because shipped apps have this address built in.
 familydiagram.com {
     encode gzip
     redir /app /app/ 302
@@ -24,6 +24,10 @@ familydiagram.com {
         reverse_proxy fd-app:8888 {
             flush_interval -1
         }
+    }
+    # The bare address only; every other path still redirects below.
+    handle / {
+        reverse_proxy fd-app:8888
     }
     handle {
         redir https://alaskafamilysystems.com/family-diagram{uri} 301

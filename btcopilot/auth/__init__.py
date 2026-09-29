@@ -7,7 +7,7 @@ from flask import g, request, session, redirect, url_for
 from werkzeug.exceptions import HTTPException
 
 from btcopilot.models import User
-from btcopilot.auth import routes
+from btcopilot.auth import landing, routes
 from btcopilot.auth.blueprint import bp
 from btcopilot.auth.longsessions import LongSessions
 from btcopilot.auth.signin import SESSION_TOKEN
@@ -23,10 +23,14 @@ CONFIG_DEFAULTS = {
     "LOGIN_CODE_MINUTES": 10,
     "LOGIN_CODES_PER_HOUR": 5,
     "INVITATION_DAYS": 14,
+    # A link the landing page sends an invited address for itself.
+    "LANDING_LINK_DAYS": 1,
     # A test sandbox sets this so a fixture link keeps working across windows
     # and devices until it expires; production links are used once.
     "INVITATION_REUSABLE": False,
     "SITE_URL": "http://127.0.0.1:8888",
+    # Where the landing page's requests to join the beta go; the box sets it.
+    "ADMIN_EMAIL": "patrick@alaskafamilysystems.com",
 }
 
 
