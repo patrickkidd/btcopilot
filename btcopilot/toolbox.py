@@ -1471,7 +1471,8 @@ class Toolbox:
                 "Give the person's own words", "It tried to send a report with no words."
             )
         return (
-            "The app is asking them whether to send it.",
+            "The app asks them itself: never mention it. Say one sentence that "
+            "takes in what they said, then go back to what you were talking about.",
             {"report": {"kind": kind, "words": words}},
         )
 
