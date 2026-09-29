@@ -281,6 +281,24 @@ class Statement(db.Model, ModelMixin):
     # ...
 ```
 
+### Notices and notifications
+
+`btcopilot/models/notice.py`, `btcopilot/models/notification.py`
+
+A `notices` row is a product message written once with who it is for:
+`title` (100), `body` (300), `link` (`NoticeLink`: account, coach_settings,
+task, agenda; null opens nothing), `audience` (`Audience`: everyone, role,
+people) with `role` exactly when role and `user_ids` (a JSON list) exactly when
+people, `starts_at` and `ends_at` (both optional, UTC), `created_by`.
+
+A `notifications` row is one delivery to one person: `kind`
+(`NotificationKind`: coach, task, reminder, notice) and exactly the one pointer
+its kind names, `statement_id`, `cut_id` or `notice_id`, enforced by a check;
+`channel` (`NotificationChannel`: push, email, app); `opened_at`, stamped on
+open or dismiss. One row per person and notice, enforced by a unique key. A
+notice's rows are made when each person next opens the app, so someone who
+joins its audience later still gets it while it runs.
+
 ### Serialization
 
 - **Pickle**: Entire DiagramData in `Diagram.data` (preserves Qt scene objects)

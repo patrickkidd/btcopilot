@@ -19,4 +19,5 @@ from .observationreject import ObservationReject
 from .proactivemessage import ProactiveMessage, Trigger
 from .qualityrun import QualityRun, QualityKind
 from .pushsubscription import PushSubscription
+from .notice import Audience, Notice, NoticeLink
 from .notification import Notification, NotificationChannel, NotificationKind

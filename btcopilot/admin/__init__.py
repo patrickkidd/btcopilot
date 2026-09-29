@@ -10,6 +10,7 @@ from btcopilot.admin.diagrams import diagrams
 from btcopilot.admin.guard import run
 from btcopilot.admin.imports import imports
 from btcopilot.admin.licences import licences
+from btcopilot.admin.notices import notice_group
 from btcopilot.admin.observations import observations
 from btcopilot.admin.proactive import proactive_group
 from btcopilot.admin.quality import quality
@@ -31,6 +32,7 @@ for group in (
     licences,
     diagrams,
     observations,
+    notice_group,
     proactive_group,
     quality,
     questions_group,

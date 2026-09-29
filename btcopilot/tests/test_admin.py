@@ -209,7 +209,7 @@ def test_db_upgrade_builds_the_chain_from_empty(flask_app, tmp_path):
 READS = {
     "users list", "users show", "licences list", "licences plans", "diagrams list",
     "diagrams show", "diagrams export", "observations list", "observations queue",
-    "imports dry-run",
+    "imports dry-run", "notice list",
     "token-cap show", "coach-model show",
     "review agenda", "review cuts", "review codings", "review nudge show",
     "db current", "skill", "run",

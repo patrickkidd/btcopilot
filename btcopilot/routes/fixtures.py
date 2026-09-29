@@ -19,9 +19,15 @@ from btcopilot.extensions import db
 from btcopilot.case import Case, Snapshot
 from btcopilot.models import (
     AccessRight,
+    Audience,
     Change,
     Interaction,
     ModelCall,
+    Notice,
+    NoticeLink,
+    Notification,
+    NotificationChannel,
+    NotificationKind,
     Observation,
     ProductEvent,
     Statement,
@@ -595,6 +601,23 @@ SITTINGS = {
     ],
 }
 
+NOTICE_CHAT = [
+    ("user", "my mother called on Sunday"),
+    ("coach", "What did she want when she called?"),
+]
+
+# (title, body, link, days ago, opened)
+NOTICES = (
+    ("Welcome to the app", "Your family's record is in the list.", None, 4, True),
+    (
+        "Coach messages can now come weekly",
+        "Choose how often under Coach messages on your account page.",
+        NoticeLink.Account,
+        0,
+        False,
+    ),
+)
+
 # key -> (builder, chat, diagram name)
 FIXTURES = {
     "empty": (empty, None),
@@ -611,6 +634,7 @@ FIXTURES = {
     "sitting": (one, None),
     "sittings": (one, None),
     "sameday": (one, None),
+    "notice": (one, NOTICE_CHAT),
 }
 
 # the diagram name each fixture's record carries, when it is not the default
@@ -648,6 +672,10 @@ def install(key: str):
         user = User(username=name, status="confirmed", password="x")
         db.session.add(user)
         db.session.flush()
+    Notification.query.filter_by(user_id=user.id).delete()
+    for notice in Notice.query.filter_by(audience=Audience.People):
+        if notice.user_ids == [user.id]:
+            db.session.delete(notice)
     for old in Diagram.query.filter_by(user_id=user.id).all():
         for discussion in old.discussions:
             drop_cuts(discussion.id)
@@ -680,10 +708,53 @@ def install(key: str):
     db.session.commit()
 
     if chat:
-        _stamp_coded_in(diagram, _replay(user, diagram, data, chat))
+        discussion = _replay(user, diagram, data, chat)
+        _stamp_coded_in(diagram, discussion)
+        if key == "notice":
+            _notify(user, discussion)
     for ago, summary, said in SITTINGS.get(key, []):
         _replay(user, diagram, data, said, ago, summary)
     return user
+
+
+def _notify(user, discussion):
+    """Notices meant for this one person, one opened days ago and one not,
+    and an unread push to the coach's reply, which is no notice."""
+    now = datetime.datetime.utcnow()
+    for title, body, link, ago, opened in NOTICES:
+        sent = now - ago * DAY - datetime.timedelta(minutes=5)
+        notice = Notice(
+            title=title,
+            body=body,
+            link=link,
+            audience=Audience.People,
+            user_ids=[user.id],
+            created_at=sent,
+        )
+        db.session.add(notice)
+        db.session.flush()
+        db.session.add(
+            Notification(
+                user_id=user.id,
+                kind=NotificationKind.Notice,
+                notice_id=notice.id,
+                channel=NotificationChannel.App,
+                created_at=sent,
+                opened_at=sent + datetime.timedelta(minutes=1) if opened else None,
+            )
+        )
+    reply = next(
+        s for s in discussion.statements if s.speaker_id == discussion.chat_ai_speaker_id
+    )
+    db.session.add(
+        Notification(
+            user_id=user.id,
+            kind=NotificationKind.Coach,
+            statement_id=reply.id,
+            channel=NotificationChannel.Push,
+        )
+    )
+    db.session.commit()
 
 
 def _replay(user, diagram, data, chat, ago=datetime.timedelta(0), summary=None):

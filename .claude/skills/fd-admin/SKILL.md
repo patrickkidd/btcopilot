@@ -192,6 +192,34 @@ Changes something: needs `--yes`.
 | `key` | required |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin notice`
+
+Product notices shown in the app, to everyone, a role, or named people.
+
+### `flask admin notice list`
+
+Every notice, newest first: who it is for, how many that is now, and how many got it and opened it.
+
+| Argument | What it is |
+|---|---|
+| `--json` | Print JSON, not a table. |
+
+### `flask admin notice send`
+
+Keep a notice. Each person it is for gets it the next time they open the app: a push when they have one, else an email when their role gets email, and in the app's own list either way. Prints the notice and how many people it is for now.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--to` | everyone, a role (subscriber, auditor, admin), or email addresses joined by commas. |
+| `--title` | The heading, and the words of the push. |
+| `--body` | One or two short sentences. |
+| `--link` | The screen a tap opens; left out, it opens nothing. |
+| `--until` | The last day, in UTC, that it reaches anyone new; left out, it runs on. |
+| `--by` | The email of the admin sending it. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin observations`
 
 What shows the coach or the app needing tuning.

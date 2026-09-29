@@ -40,6 +40,7 @@ TABLES = frozenset(
         "login_codes",
         "model_calls",
         "model_picks",
+        "notices",
         "notifications",
         "observation_rejects",
         "observations",

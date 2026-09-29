@@ -1,5 +1,6 @@
-"""Where a browser is reached for web push, and the pointers sent to a coach
-message, each stamped when its person opens it."""
+"""Where a browser is reached for web push, and each person's notifications:
+coach messages, coding tasks and product notices, each stamped when its person
+opens or dismisses it."""
 
 import datetime
 
@@ -9,7 +10,14 @@ from flask import abort, current_app, jsonify, request
 from btcopilot import auth, push
 from btcopilot.discussions import utc_iso
 from btcopilot.extensions import db
-from btcopilot.models import Notification, PushSubscription, Statement, User
+from btcopilot.models import (
+    NoticeLink,
+    Notification,
+    NotificationKind,
+    PushSubscription,
+    Statement,
+    User,
+)
 from btcopilot.routes import bp
 
 
@@ -43,10 +51,54 @@ def create_push_subscription():
     return jsonify({"id": row.id, "endpoint": row.endpoint}), 201
 
 
+# The screen a row that is no notice opens; a coach message opens its thread.
+LINKS = {
+    NotificationKind.Task: NoticeLink.Task,
+    NotificationKind.Reminder: NoticeLink.Task,
+}
+
+
+def row(notification: Notification) -> dict:
+    notice = notification.notice
+    statement = notification.statement
+    link = notice.link if notice else LINKS.get(notification.kind)
+    return {
+        "id": notification.id,
+        "kind": notification.kind.value,
+        "channel": notification.channel.value,
+        "title": notice.title if notice else push.SUBJECT[notification.kind],
+        "body": notice.body if notice else None,
+        "link": link.value if link else None,
+        "statement_id": notification.statement_id,
+        "discussion_id": statement.discussion_id if statement else None,
+        "cut_id": notification.cut_id,
+        "created_at": utc_iso(notification.created_at),
+        "opened_at": (
+            utc_iso(notification.opened_at) if notification.opened_at else None
+        ),
+    }
+
+
+@bp.route("/notifications", methods=["GET"])
+def notifications():
+    """Opening the app is when each running notice meant for this person
+    becomes their own row, and is sent. Unread rows of every kind, newest
+    first; ?all=true adds the opened ones."""
+    user = auth.current_user()
+    push.notices(user)
+    db.session.commit()
+    query = Notification.query.filter_by(user_id=user.id)
+    if request.args.get("all") != "true":
+        query = query.filter(Notification.opened_at.is_(None))
+    query = query.order_by(Notification.created_at.desc(), Notification.id.desc())
+    return jsonify([row(notification) for notification in query])
+
+
 @bp.route("/notifications/<int:notification_id>", methods=["PATCH"])
 def update_notification(notification_id: int):
-    """The first open counts; the answer says where the app opens: the thread
-    at a coach message, or the task card for a cut."""
+    """Opening and dismissing are one stamp, and the first counts; the answer
+    is the row, saying where the app opens: the thread at a coach message, the
+    task card for a cut, or a notice's link."""
     notification = db.session.get(Notification, notification_id)
     if notification is None or notification.user_id != auth.current_user().id:
         abort(404)
@@ -54,18 +106,7 @@ def update_notification(notification_id: int):
         raise ValueError('a notification only takes {"opened": true}')
     notification.opened_at = notification.opened_at or datetime.datetime.utcnow()
     db.session.commit()
-    statement = notification.statement
-    return jsonify(
-        {
-            "id": notification.id,
-            "kind": notification.kind.value,
-            "channel": notification.channel.value,
-            "statement_id": notification.statement_id,
-            "discussion_id": statement.discussion_id if statement else None,
-            "cut_id": notification.cut_id,
-            "opened_at": utc_iso(notification.opened_at),
-        }
-    )
+    return jsonify(row(notification))
 
 
 @bp.cli.command("notify")

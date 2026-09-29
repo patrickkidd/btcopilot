@@ -62,6 +62,28 @@ an unknown key or a bad value is a 400.
 Patrick sets the numbers), `diagrams` (`id`, `name`, `last_activity`, `free`),
 `licenses` (`id`, `policy`, `status`). Sign out is the existing auth route.
 
+## Notifications
+
+| | |
+|---|---|
+| `GET /notifications` | the signed-in person's unread rows of every kind, newest first, as a bare array; `?all=true` adds the opened ones. Each call first makes a row for every running notice meant for them that they have none for, and sends it (below) |
+| `PATCH /notifications/<id>` | `{"opened": true}` only, for opening and for dismissing alike; the first stamp counts; answers the row |
+| `GET /push-subscriptions`, `POST /push-subscriptions` | the server's public key with this person's browsers; a browser's own subscription, 201 |
+
+A row reads `{id, kind, channel, title, body, link, statement_id,
+discussion_id, cut_id, created_at, opened_at}`. `kind` is `coach`, `task`,
+`reminder` or `notice`. `channel` is `push`, `email`, or `app` for a notice sent
+nowhere but this list. A notice carries its own `title`, `body` and `link`; any
+other kind carries the push's title, a null body, and the link `task` for a task
+or reminder, null for a coach message, which opens its thread at
+`statement_id`. `link` is `account`, `coach_settings`, `task`, `agenda` or null.
+
+A new notice row is sent as it is made: a push to every browser the person
+subscribed, with the notice's title as its words under the kind `notice`, which
+is its own tag, so it neither replaces nor waits on a coach message; with no
+browser left, an email only to an auditor or an admin; otherwise nothing leaves
+the app. `flask admin notice send` writes a notice; see the admin skill file.
+
 ## Events
 
 `POST /events`, `PATCH /events/<id>`, `DELETE /events/<id>` (204). The body
