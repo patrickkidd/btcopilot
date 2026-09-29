@@ -109,7 +109,7 @@ def _people() -> list[User]:
         user_id
         for (user_id,) in db.session.query(ProactiveMessage.user_id).filter(
             ProactiveMessage.trigger == Trigger.FollowUp,
-            ProactiveMessage.statement_id.is_(None),
+            ProactiveMessage.sent_at.is_(None),
         )
     }
     return [
@@ -121,19 +121,16 @@ def _people() -> list[User]:
 
 def _sent(user: User) -> list[ProactiveMessage]:
     return (
-        ProactiveMessage.query.join(Statement)
-        .filter(ProactiveMessage.user_id == user.id)
-        .order_by(Statement.created_at)
+        ProactiveMessage.query.filter(
+            ProactiveMessage.user_id == user.id, ProactiveMessage.sent_at.isnot(None)
+        )
+        .order_by(ProactiveMessage.sent_at)
         .all()
     )
 
 
-def _at(message: ProactiveMessage) -> datetime.datetime:
-    return message.statement.created_at
-
-
 def _ignored(message: ProactiveMessage, now: datetime.datetime) -> bool:
-    return message.replied_at is None and now - _at(message) > IGNORED_AFTER
+    return message.replied_at is None and now - message.sent_at > IGNORED_AFTER
 
 
 def _pick(
@@ -151,7 +148,7 @@ def _pick(
             ProactiveMessage.query.filter(
                 ProactiveMessage.user_id == user.id,
                 ProactiveMessage.trigger == Trigger.FollowUp,
-                ProactiveMessage.statement_id.is_(None),
+                ProactiveMessage.sent_at.is_(None),
                 ProactiveMessage.due_at <= now,
             )
             .order_by(ProactiveMessage.due_at)
@@ -174,7 +171,7 @@ def _allowed(user: User, sent: list[ProactiveMessage], now) -> bool:
     if setting is Proactive.Never:
         return False
     unasked = [m for m in sent if m.trigger is not Trigger.FollowUp]
-    return not unasked or now - _at(unasked[-1]) >= BUDGET[setting]
+    return not unasked or now - unasked[-1].sent_at >= BUDGET[setting]
 
 
 def _pattern(user: User) -> correlation.Firing | None:
@@ -267,6 +264,7 @@ def _send(user: User, message: ProactiveMessage, text: str, now):
     db.session.add(statement)
     sync_chat_speakers(discussion)
     message.statement = statement
+    message.sent_at = now
     db.session.add(message)
     db.session.flush()
     _count(message, ObservationKind.ProactiveSent)
@@ -280,9 +278,12 @@ def _answers(user: User, now: datetime.datetime):
     for message in _sent(user):
         if message.replied_at is None:
             message.replied_at = _reply(user, message)
-        if now - _at(message) > COUNTED_FOR:
+        if now - message.sent_at > COUNTED_FOR:
             continue
-        if message.replied_at and message.replied_at - _at(message) <= REPLIED_WITHIN:
+        if (
+            message.replied_at
+            and message.replied_at - message.sent_at <= REPLIED_WITHIN
+        ):
             _count(message, ObservationKind.ProactiveReplied)
         if _opened(message):
             _count(message, ObservationKind.ProactiveOpened)
@@ -299,7 +300,7 @@ def _reply(user: User, message: ProactiveMessage) -> datetime.datetime | None:
     ]
     first = (
         Statement.query.filter(
-            Statement.speaker_id.in_(voices), Statement.created_at > _at(message)
+            Statement.speaker_id.in_(voices), Statement.created_at > message.sent_at
         )
         .order_by(Statement.created_at)
         .first()
@@ -318,13 +319,13 @@ def _opened(message: ProactiveMessage) -> bool:
 
 
 def _returned(user: User, message: ProactiveMessage) -> bool:
-    until = _at(message) + RETURNED_WITHIN
+    until = message.sent_at + RETURNED_WITHIN
     if message.replied_at and message.replied_at <= until:
         return True
     return (
         ProductEvent.query.filter(
             ProductEvent.user_id == user.id,
-            ProductEvent.created_at > _at(message),
+            ProductEvent.created_at > message.sent_at,
             ProductEvent.created_at <= until,
         ).first()
         is not None

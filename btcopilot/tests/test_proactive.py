@@ -4,6 +4,7 @@ from unittest.mock import patch
 import pytest
 
 from btcopilot import proactive, tuning
+from btcopilot.tests.conftest import csrf_token
 from btcopilot.extensions import db
 from btcopilot.models import (
     Discussion,
@@ -125,7 +126,7 @@ def test_a_pattern_becomes_one_coach_message_then_a_notification(family, sent):
     ]
     message = ProactiveMessage.query.one()
     statement = db.session.get(Statement, message.statement_id)
-    assert (message.key, message.statement.created_at) == ("1:symptom", T0)
+    assert (message.key, message.sent_at) == ("1:symptom", T0)
     assert statement.text == WORDS
     assert statement.speaker_id == statement.discussion.chat_ai_speaker_id
     assert send.call_args.args == (family, statement)
@@ -169,6 +170,26 @@ def test_never_sends_nothing_unasked_but_a_follow_up_they_asked_for_goes(family,
     said = proactive.run(now=T0 + DAY)
     assert [s["text"] for s in said] == ["How did the talk with Ann go?"]
     assert model.call_count == 0
+    assert send.call_count == 1
+
+
+def test_a_follow_up_is_never_sent_again_after_its_sitting_is_deleted(
+    family, sent, web, foreign_keys
+):
+    # R-0004
+    send, _ = sent
+    family.set_prefs(**{PrefKey.Proactive.value: Proactive.Never})
+    proactive.ask_later(family.id, family.free_diagram_id, T0.date(), "And Ann?")
+    db.session.commit()
+    proactive.run(now=T0)
+    sitting = ProactiveMessage.query.one().statement.discussion_id
+    deleted = web.delete(
+        f"/app/sessions/{sitting}", headers={"X-CSRFToken": csrf_token(web)}
+    )
+    assert deleted.status_code == 204
+    assert ProactiveMessage.query.one().statement_id is None
+
+    assert proactive.run(now=T0 + 8 * DAY) == []
     assert send.call_count == 1
 
 

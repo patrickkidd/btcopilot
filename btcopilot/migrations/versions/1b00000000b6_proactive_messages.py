@@ -1,7 +1,7 @@
 """The coach may write first: when the record makes a pattern visible, or when
 the person agreed to be asked something later. Each such message is kept with
-what triggered it, so a pattern is written once, and with when it was
-answered, so ignored ones hold back the next. An edit the coach makes to
+what triggered it, so a pattern is written once, and with when it was sent
+and answered, so ignored ones hold back the next and none is sent twice. An edit the coach makes to
 something the record held from an earlier turn is observed as well.
 
 Revision ID: 1b00000000b6
@@ -37,6 +37,7 @@ def upgrade():
         sa.Column("question", sa.Text(), nullable=True),
         sa.Column("due_at", sa.DateTime(), nullable=True),
         sa.Column("statement_id", sa.Integer(), nullable=True),
+        sa.Column("sent_at", sa.DateTime(), nullable=True),
         sa.Column("replied_at", sa.DateTime(), nullable=True),
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
