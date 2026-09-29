@@ -16,6 +16,9 @@ from btcopilot.models import (
 from btcopilot import turnlog
 
 PREVIEW_CHARS = 120
+# Nobody opens or closes a sitting by hand. Words
+# that come after the family has been quiet this long start the next sitting.
+SITTING_GAP = datetime.timedelta(hours=12)
 
 
 def utc_iso(when: datetime.datetime) -> str:
@@ -69,12 +72,19 @@ def session_payload(discussion: Discussion) -> dict:
     }
 
 
-def create_discussion(data: dict, diagram: Diagram | None = None) -> Discussion:
-    """A caller that knows which diagram the session belongs on says so; the
-    personal app's own routes do not, and get the free one."""
-    user = auth.current_user()
+def chats(user, diagram_id: int):
+    """The user's sessions on one family. A discussion missing either chat
+    speaker id is not one: its speakers are not the two chat roles, so every
+    line would render as the user's."""
+    return Discussion.query.filter_by(user_id=user.id, diagram_id=diagram_id).filter(
+        Discussion.chat_user_speaker_id.isnot(None),
+        Discussion.chat_ai_speaker_id.isnot(None),
+    )
 
-    # Ensure user has a free_diagram
+
+def family(user, diagram: Diagram | None) -> Diagram:
+    """A caller that knows which diagram the session belongs on says so; the
+    personal app's own routes do not, and get the free one, made on first use."""
     diagram = diagram or user.free_diagram
     if diagram is None:
         diagram = Diagram(
@@ -85,10 +95,29 @@ def create_discussion(data: dict, diagram: Diagram | None = None) -> Discussion:
         db.session.add(diagram)
         db.session.flush()
         user.free_diagram_id = diagram.id
+    return diagram
 
-    discussion = open_session(user, diagram)
+
+def create_discussion(data: dict, diagram: Diagram | None = None) -> Discussion:
+    user = auth.current_user()
+    discussion = open_session(user, family(user, diagram))
     db.session.commit()
     return discussion
+
+
+def sitting(user, diagram: Diagram) -> Discussion:
+    """The sitting the next words on this family go into, from either speaker:
+    the one last spoken in, until the family has been quiet for SITTING_GAP;
+    then a new one, which the coach opens with nothing. One nobody has spoken
+    in yet, such as a note just made, is still waiting for its first words.
+    Flushed, not committed: the words that start it commit it."""
+    last = max(chats(user, diagram.id), key=lambda d: (last_activity(d), d.id), default=None)
+    if last and (
+        not last.statements
+        or datetime.datetime.utcnow() - last_activity(last) <= SITTING_GAP
+    ):
+        return last
+    return open_session(user, diagram)
 
 
 def open_session(user, diagram: Diagram) -> Discussion:

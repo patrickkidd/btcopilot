@@ -119,8 +119,8 @@ test.describe(() => {
     check(await visible(".fs-sheet"), "a button beside the input opens the sessions sheet");
     const sheet = (await text(".fs-sheet")).replace(/\s+/g, " ");
     say(`sheet: ${sheet.slice(0, 240)}`);
-    check(await visible(".fs-search"), "sessions are searchable");
-    check(await visible(".fs-new"), "a button at the foot starts a new session");
+    check(await visible(".fs-note"), "a professional's sheet starts a note");
+    check(!(await visible(".fs-body .row")), "the sheet lists no conversation to open");
     await gates("the sessions sheet");
     await shot("5-sessions");
     // If the sheet never rose the scrim is not there to tap; the walk says so

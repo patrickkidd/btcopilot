@@ -15,6 +15,7 @@ import click
 
 from btcopilot import diagramjson, playturn
 from btcopilot.discussions import open_session
+from btcopilot.extensions import db
 from btcopilot.case import Case, Snapshot
 from btcopilot.models import (
     AccessRight,
@@ -23,6 +24,7 @@ from btcopilot.models import (
     ModelCall,
     Observation,
     ProductEvent,
+    Statement,
     StatementKind,
 )
 from btcopilot.review.models import Coding, Cut, Item, Note, Vote
@@ -538,6 +540,42 @@ def long_name() -> DiagramData:
     return three_over_forty()
 
 
+# A family's thread over its sittings: (days ago, summary, what was said). The
+# summaries are the hostile ones a divider has to hold: none, empty, sixty
+# characters, and unicode.
+SIXTY = "Why the Sunday calls to Mum stopped after the funeral in May"
+UNICODE = "Zoë, 祖母 and the move to Łódź 🏠"
+
+
+def _sitting(topic: str, lines: int = 6) -> list[tuple[str, str]]:
+    return [
+        ("user", f"I keep coming back to {topic}."),
+        ("coach", f"What happened first, with {topic}?"),
+        ("user", "It started before anyone said anything about it."),
+        ("coach", "Who noticed first?"),
+        ("user", "My sister, I think. She always does."),
+        ("coach", "And what did she do then?"),
+    ][:lines]
+
+
+SITTINGS = {
+    "sitting": [(0, "Talking about Mum's move to the coast", _sitting("Mum's move"))],
+    "sittings": [
+        (240, "How the house sale started the arguments", _sitting("the house sale")),
+        (218, "Dad's drinking after he retired", _sitting("Dad's drinking")),
+        (190, None, _sitting("the wedding")),
+        (163, SIXTY, _sitting("the Sunday calls")),
+        (131, "", _sitting("my brother's job")),
+        (104, UNICODE, _sitting("Zoë and 祖母's move to Łódź")),
+        (80, "The summer at the lake house", _sitting("the lake house")),
+        (55, "Mum's diagnosis and who was told", _sitting("the diagnosis")),
+        (33, "Christmas without Dad", _sitting("Christmas")),
+        (14, "My sister taking over the care", _sitting("the care")),
+        (1, "What changed after the hospital", _sitting("the hospital", 2)),
+        (0, "Planning the visit home", _sitting("the visit home", 2)),
+    ],
+}
+
 # key -> (builder, chat, diagram name)
 FIXTURES = {
     "empty": (empty, None),
@@ -551,6 +589,8 @@ FIXTURES = {
     "longname": (long_name, None),
     "editable": (editable, None),
     "whitlock": (whitlock, WHITLOCK_CHAT),
+    "sitting": (one, None),
+    "sittings": (one, None),
 }
 
 # the diagram name each fixture's record carries, when it is not the default
@@ -579,8 +619,6 @@ def drop_cuts(discussion_id: int):
 
 def install(key: str):
     """Make the fixture user, replace their diagram, and replay their chat."""
-    from btcopilot.extensions import db
-    from btcopilot.models import Statement
     from btcopilot.models import Diagram, User
 
     builder, chat = FIXTURES[key]
@@ -622,39 +660,48 @@ def install(key: str):
     db.session.commit()
 
     if chat:
-        discussion = open_session(user, diagram)
-        # a kept play is marked as told from the record as it stands, so it
-        # opens with no call; worked out here, not at import, as it reads the
-        # private play prompt
-        kept = any(extra and "told_case" in extra[0] for _, _, *extra in chat)
-        told = playturn.digests(data, build_timeline(data)) if kept else {}
-        for order, (role, text, *extra) in enumerate(chat):
-            said = extra[0] if extra else {}
-            db.session.add(
-                Statement(
-                    discussion_id=discussion.id,
-                    speaker_id=(
-                        discussion.chat_ai_speaker_id
-                        if role == "coach"
-                        else discussion.chat_user_speaker_id
-                    ),
-                    text=text,
-                    order=order,
-                    digest=told[said["cluster_id"]] if "told_case" in said else None,
-                    **said,
-                )
-            )
-        db.session.commit()
-        _stamp_coded_in(diagram, discussion)
+        _stamp_coded_in(diagram, _replay(user, diagram, data, chat))
+    for days, summary, said in SITTINGS.get(key, []):
+        _replay(user, diagram, data, said, datetime.timedelta(days=days), summary)
     return user
+
+
+def _replay(user, diagram, data, chat, ago=datetime.timedelta(0), summary=None):
+    """One sitting of the fixture's thread, said `ago`, a second a line."""
+    discussion = open_session(user, diagram)
+    discussion.summary = summary
+    ended = datetime.datetime.utcnow() - ago
+    discussion.created_at = ended - datetime.timedelta(seconds=len(chat))
+    # a kept play is marked as told from the record as it stands, so it
+    # opens with no call; worked out here, not at import, as it reads the
+    # private play prompt
+    kept = any(extra and "told_case" in extra[0] for _, _, *extra in chat)
+    told = playturn.digests(data, build_timeline(data)) if kept else {}
+    for order, (role, text, *extra) in enumerate(chat):
+        said = extra[0] if extra else {}
+        db.session.add(
+            Statement(
+                discussion_id=discussion.id,
+                speaker_id=(
+                    discussion.chat_ai_speaker_id
+                    if role == "coach"
+                    else discussion.chat_user_speaker_id
+                ),
+                text=text,
+                order=order,
+                created_at=ended - datetime.timedelta(seconds=len(chat) - order),
+                digest=told[said["cluster_id"]] if "told_case" in said else None,
+                **said,
+            )
+        )
+    db.session.commit()
+    return discussion
 
 
 def _stamp_coded_in(diagram, discussion):
     """A real record remembers which words coded each moment, so the fixtures
     do too: every event is stamped against this discussion's first coach
     statement. Without it there is nothing for traceability to point at."""
-    from btcopilot.extensions import db
-
     coach_said = next(
         (s for s in discussion.statements if s.speaker_id == discussion.chat_ai_speaker_id),
         None,

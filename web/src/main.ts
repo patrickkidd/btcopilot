@@ -1,7 +1,7 @@
 import "./telemetry";
 import "./theme.css";
 import * as api from "./api";
-import { Chat, wait, type LiveBubble } from "./chat";
+import { Chat, type LiveBubble } from "./chat";
 import { Picture, Target, Via, type Tap } from "./picture";
 import { Menu, Tab } from "./menu";
 import { Questions } from "./questions";
@@ -15,7 +15,8 @@ import { ResultScreen } from "./result";
 import { CODER, OneTask, beforeMeeting, coder, wayIn } from "./task";
 import { Rules } from "./rules";
 import { Sessions } from "./sessions";
-import { sessionTitle, summaryOf } from "./search";
+import { sessionTitle } from "./search";
+import { Thread, divider } from "./thread";
 import { Settings } from "./settings";
 import { aimedEvents, chips, itemKind, Lead } from "./chips";
 import { feed } from "./turn";
@@ -87,7 +88,7 @@ declare global {
       } | null;
       diagram: { id: number; name: string } | null;
       session: { id: number; turn: string | null } | null;
-      statements: Statement[];
+      statements: api.Said[];
       version: string;
     };
   }
@@ -110,8 +111,13 @@ document.querySelectorAll(".backbtn").forEach((b) => (b.innerHTML = BACK));
 
 let timeline: Timeline = emptyTimeline();
 let pic: PicState = REST;
+/** The sitting the coach is in, or was last: the one a page coming back asks
+ * about a turn still running. */
 let session: number | null = window.BOOTSTRAP.session?.id ?? null;
-/** The sessions as the sheet last read them, for naming the one that coded a
+/** The sitting the newest words on screen belong to, so words that land in
+ * another one get the line between them. */
+let lastSitting: number | null = window.BOOTSTRAP.statements.at(-1)?.session_id ?? null;
+/** The family's sittings, newest first, for naming the one that coded a
  * moment. */
 let known: Session[] = [];
 
@@ -121,10 +127,6 @@ function tapped(kind: InteractionKind, item: ItemKind, id: string | null = null)
   const diagram = window.BOOTSTRAP.diagram;
   if (diagram) void api.record(diagram.id, kind, item, id);
 }
-
-/** How long the thread takes to fade out for the session taking its place, the
- * same 150ms the stylesheet transitions it over. */
-const FADE_MS = 150;
 
 const picture = new Picture(
   $("view"),
@@ -322,25 +324,22 @@ const questions = new Questions($("menu-body"), {
 });
 menu.questions = questions;
 
-/** The session door beside the message box. The sheet lists every session and a
- * tap swaps the chat to it (family-sections, the owner's pick). */
+/** The sheet beside the message box, for the few who have work in it: a
+ * professional's notes and recordings, a coder's task, and Patrick's agenda.
+ * Nobody opens, starts or switches a conversation there; the family has one
+ * thread. */
 const sessions = new Sessions(
   $("sessions-open"),
   $("overlay"),
   $("chat-screen"),
   $("inbar"),
   {
-    onPick: (picked) => {
-      session = picked.id;
-      void openSession(picked.id, picked.kind);
+    onMade: (made) => {
+      session = made.id;
+      void reload().then(() => {
+        if (!made.message_count) showPrompt(made.kind);
+      });
     },
-    onList: (list) => {
-      known = list;
-      actions();
-      // the list says what kind of session the empty one is
-      if ($("chat").querySelector(".cta")) showPrompt();
-    },
-    onDiagram: (diagram, how) => onDiagram(diagram, how),
     onTask: () => void openTask(),
     onAgenda: (picked) => void placeCut(picked.id),
     onAgendaScreen: () => void openAgenda(),
@@ -561,10 +560,7 @@ function onDiagram(diagram: Diagram, how = { switched: true }): void {
   if ($("settings-back").hidden) $("title").textContent = familyTitle;
   if (!how.switched) return;
   session = null;
-  chat.clear();
-  picture.clear();
-  pic = REST;
-  void load();
+  void load().then(reload);
 }
 
 /** The title row shows the current view's title, and the family's name again
@@ -590,10 +586,7 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
   onPrefs: (prefs) => {
     speak.checked = prefs.speak;
   },
-  onDiagram: (diagram, how) => {
-    onDiagram(diagram, how);
-    if (how.switched) void sessions.load(null);
-  },
+  onDiagram: (diagram, how) => onDiagram(diagram, how),
 });
 
 speak.addEventListener("change", () => {
@@ -609,12 +602,13 @@ for (const id of ["chat", "menu-body"]) dragScroll($(id));
 let stopped: { turn: string; bubble: HTMLElement } | null = null;
 
 /** The stored messages back on the thread, each coach reply under the lines
- * of what it did (R-0478). A play-by-play keeps its told case, so a tap on it
- * opens it again a week later. A turn that failed shows what it
- * did before it stopped, and as the last message it can be picked up again
- * (R-0477). */
-function addStatements(statements: Statement[]): void {
+ * of what it did (R-0478), and a line where each sitting starts. A
+ * play-by-play keeps its told case, so a tap on it opens it again a week
+ * later. A turn that failed shows what it did before it stopped, and on the
+ * newest page, as the last message, it can be picked up again (R-0477). */
+function addStatements(statements: api.Said[], newest = false): void {
   for (const statement of statements) {
+    if (statement.sitting) $("chat").append(divider(statement.sitting));
     const coach = statement.role === Role.Coach;
     if (statement.case && statement.id !== null)
       cases.set(statement.id, { case: statement.case, digest: statement.digest });
@@ -629,18 +623,39 @@ function addStatements(statements: Statement[]): void {
       coach ? lines : [],
       coach && notes ? (notes.args as unknown as Notes) : null,
     );
-    if (statement.unfinished && lines.length)
-      stopped = {
-        turn: statement.turn_id!,
-        bubble: chat.add(Role.Coach, "", ChipTone.Data, null, null, lines),
-      };
+    if (statement.unfinished && lines.length) {
+      const bubble = chat.add(Role.Coach, "", ChipTone.Data, null, null, lines);
+      if (newest) stopped = { turn: statement.turn_id!, bubble };
+    }
   }
   const last = statements.at(-1);
-  if (last?.unfinished) chat.warn(last.failure!, () => void resume(last.turn_id!));
+  if (newest && last?.unfinished)
+    chat.warn(last.failure!, () => void resume(last.turn_id!));
 }
 
-/** Opening a session replaces the thread with its statements and puts the
- * picture back where that session's last coach message left it. */
+const thread = new Thread($("chat"), (page) => addStatements(page));
+
+/** Words that went into another sitting than the newest on screen start it:
+ * the line goes in above them, dated now, and takes the sitting's summary
+ * once the coach has written one. */
+function sat(sittingId: number, words: Element | null): void {
+  if (sittingId === lastSitting) return;
+  lastSitting = sittingId;
+  words?.before(
+    divider({ id: sittingId, started: new Date().toISOString(), summary: null }),
+  );
+}
+
+/** The family's sittings read again: what names the session that coded a
+ * moment, and the summary a new sitting's line was waiting for. */
+async function refreshKnown(): Promise<void> {
+  known = await api.sessionIndex();
+  for (const one of known) thread.summarize(one.id, one.summary);
+  actions();
+  // the list says what kind of session the empty one is
+  if ($("chat").querySelector(".cta")) showPrompt();
+}
+
 /** The empty session's call to action, worded for what the session is: a
  * note is the clinician writing up a session after the fact, a professional's
  * session is about a case, and a personal session is about your own family
@@ -664,26 +679,21 @@ function showPrompt(kind?: SessionKind): void {
     ]);
 }
 
-async function openSession(id: number, kind?: SessionKind): Promise<void> {
-  const { statements } = await api.session(id);
-  // One thread fades out before the next one takes its place, so the swap does
-  // not read as words rewriting themselves.
-  const thread = $("chat");
-  thread.style.opacity = "0";
-  await wait(FADE_MS);
+/** The newest page of the family's thread in place of what is on screen, and
+ * the picture back where its last coach message left it. */
+async function reload(): Promise<void> {
+  const page = await api.thread();
   chat.clear();
-  addStatements(statements);
-  if (!statements.length) showPrompt(kind);
+  addStatements(page, true);
+  thread.start(page);
+  lastSitting = page.at(-1)?.session_id ?? null;
+  session ??= lastSitting;
+  if (!page.length) showPrompt();
   picture.clear();
   pic = REST;
-  // Picking up an older thread says so, so the words above the composer are
-  // not mistaken for the ones just written.
-  const picked = known.find((s) => s.id === id);
-  if (picked && statements.length)
-    chat.system(`Resumed · ${sessionTitle(picked)} — ${summaryOf(picked)}`);
-  leftAt(statements);
-  thread.style.opacity = "";
+  leftAt(page);
   chat.toEnd();
+  void refreshKnown();
 }
 
 /** The coach pointing: the moments its words name become the spotlight, and
@@ -762,10 +772,7 @@ function codedIn(eventId: number): { label: string; where: CodedIn } | null {
  * on screen, then the bubble itself, outlined while it settles. */
 async function traceTo(where: CodedIn, ask = false): Promise<void> {
   if (where.statement_id === null) return;
-  if (where.discussion_id !== session) {
-    session = where.discussion_id;
-    await openSession(where.discussion_id);
-  }
+  await thread.reach(where.statement_id);
   if (!chat.trace(where.statement_id, ask)) toast("Those words are no longer here");
 }
 
@@ -900,8 +907,13 @@ async function explain(clusterId: string): Promise<void> {
   chat.settled();
   // a kept play already on the thread opens again; it is not said twice
   const id = reply.statement_id;
-  if (id === null || !cases.has(id))
-    chat.add(Role.Coach, reply.statement, ChipTone.Data, id, reply.cluster_id);
+  if (id === null || !cases.has(id)) {
+    const told = chat.add(Role.Coach, reply.statement, ChipTone.Data, id, reply.cluster_id);
+    // a play told after a quiet spell starts the family's next sitting
+    void refreshKnown().then(() => {
+      if (known.length) sat(known[0].id, told);
+    });
+  }
   if (id !== null) cases.set(id, { case: reply.case, digest: reply.digest });
   pbp.open(timeline, reply.case, id);
 }
@@ -944,8 +956,10 @@ function post(statement: string): void {
 }
 
 async function deliver(statement: string): Promise<void> {
-  const started = await begin(() => api.say(statement, session), () => void deliver(statement));
-  if (started) follow(started.turn_id);
+  const started = await begin(() => api.say(statement), () => void deliver(statement));
+  if (!started) return;
+  sat(started.discussion_id, [...$("chat").querySelectorAll(".bub.user")].at(-1) ?? null);
+  follow(started.turn_id);
 }
 
 /** Try a failed turn again: the same turn goes on, and the words are not sent
@@ -1051,7 +1065,7 @@ function follow(turnId: string): void {
         awaiting = null;
         stopFollowing();
         await load();
-        void sessions.load(session);
+        void refreshKnown();
         // What the message named stays lit after it is written: the spotlight
         // is the resting state of the picture, not a flourish while it types.
         spotlightFrom(reply.statement);
@@ -1105,7 +1119,7 @@ async function reattach(): Promise<void> {
     // It finished while the page was away: the thread is read again, which is
     // what a reload would have shown.
     awaiting = null;
-    await openSession(session);
+    await reload();
   }
 }
 
@@ -1190,9 +1204,10 @@ function screen(which: Screen): void {
   $("coding-info").hidden = which !== Screen.Coding && which !== Screen.Task;
   $("coding-back").hidden = !CODING_SCREENS.includes(which);
   $("account").hidden = which === Screen.Rules;
-  // The sessions door stands in the chat's own input bar, so it is only on the
-  // chat; every other screen carries the back arrow the frames draw instead.
-  $("sessions-open").hidden = which !== Screen.Chat;
+  // The sheet's door stands in the chat's own input bar, so it is only on the
+  // chat, and only for those with something in the sheet; every other screen
+  // carries the back arrow the frames draw instead.
+  $("sessions-open").hidden = which !== Screen.Chat || !sessions.door;
   here = which;
 }
 
@@ -1305,10 +1320,11 @@ menu.onTab = onTab;
 
 pinDrawer();
 
-addStatements(window.BOOTSTRAP.statements);
+addStatements(window.BOOTSTRAP.statements, true);
+thread.start(window.BOOTSTRAP.statements);
 chat.toEnd();
 
-void sessions.load(session);
+void refreshKnown();
 void settings.load();
 
 // A turn the coach is still running when the page opens is drawn from its first

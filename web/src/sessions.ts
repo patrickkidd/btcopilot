@@ -5,15 +5,16 @@ import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { meetingTitle, periodLabel, rowDate } from "./when";
 import { matching, sessionTitle, type Family } from "./search";
-import { SessionKind, type Diagram, type Session } from "./types";
+import { SessionKind, type Session } from "./types";
 import { PRO } from "./pro";
+import { CODER } from "./task";
 import { Recording } from "./recording";
 import { Swipe } from "./swipe";
 
-/** The session door: the button beside the message box, and the searchable
- * bottom sheet it raises. The sessions of the family the app is on, newest
- * first under a heading per day; the family itself is chosen on the account
- * page, never here. */
+/** The sheet beside the message box, and the button that raises it, for those
+ * with work in it: a professional's notes and recordings, a coder's task, and
+ * Patrick's agenda, which alone lists conversations, to put one on it. Nobody
+ * opens or starts a conversation here; the family has one thread. */
 
 const TITLE_CAP = 120;
 const DAY_HEADINGS = new Set(["Today", "Yesterday"]);
@@ -24,13 +25,8 @@ const CLOSE_DRAG = 90;
 const PRESS_MS = 500;
 
 export interface SessionsHandlers {
-  /** Open a session: the chat swaps to its statements. */
-  onPick(session: Session): void;
-  /** The app moved to another family. */
-  onDiagram(diagram: Diagram, how: { switched: boolean }): void;
-  /** The sessions as last read, so an event tracing back to the one that coded
-   * it can name it. */
-  onList(sessions: Session[]): void;
+  /** A professional's new note or recording, which joins the thread. */
+  onMade(session: Session): void;
   /** The coder's one task, reached from the foot of the sheet (R-0265). */
   onTask(): void;
   /** Patrick putting a conversation on the agenda: it opens so he can place
@@ -45,15 +41,14 @@ export interface SessionsHandlers {
 
 export class Sessions {
   private families: Family[] = [];
-  private current: number | null = null;
   private filter = "";
   private open = false;
   private drag: { kind: "open" | "close"; y0: number; dy: number } | null = null;
-  /** Only Patrick puts a conversation on the agenda, so only he is offered it. */
+  /** Only Patrick puts a conversation on the agenda, so only he is offered it,
+   * and only he sees the list it is put from. */
   private admin = isAdmin();
-  /** Raised from the agenda, a tapped row goes on the agenda instead of
-   * opening in the chat (R-0267). */
-  private adding = false;
+  /** Whether the sheet holds anything for this reader, and so has a door. */
+  readonly door = this.admin || PRO || CODER;
 
   private scrim = el("div", "fs-scrim");
   private sheet = el(
@@ -65,7 +60,7 @@ export class Sessions {
               aria-label="Search sessions">
      </div>
      <div class="fs-body"></div>
-     <div class="fs-foot"><button class="fs-new" type="button"></button>
+     <div class="fs-foot">
        <button class="fs-new fs-upload" type="button" hidden>Upload a recording</button>
        <button class="fs-new fs-note" type="button" hidden>+ new note</button>
        <button class="fs-task" type="button" hidden></button>
@@ -78,7 +73,6 @@ export class Sessions {
    * the long press. */
   private swipe: Swipe;
   private search: HTMLInputElement;
-  private newButton: HTMLButtonElement;
   private uploadButton: HTMLButtonElement;
   private noteButton: HTMLButtonElement;
   private taskButton: HTMLButtonElement;
@@ -110,7 +104,7 @@ export class Sessions {
       wide: this.admin,
     }));
     this.search = this.sheet.querySelector<HTMLInputElement>(".fs-search input")!;
-    this.newButton = this.sheet.querySelector<HTMLButtonElement>(".fs-new")!;
+    this.search.parentElement!.hidden = this.body.hidden = !this.admin;
     this.uploadButton = this.sheet.querySelector<HTMLButtonElement>(".fs-upload")!;
     this.noteButton = this.sheet.querySelector<HTMLButtonElement>(".fs-note")!;
     this.taskButton = this.sheet.querySelector<HTMLButtonElement>(".fs-task")!;
@@ -121,17 +115,13 @@ export class Sessions {
     if (this.admin) void this.nameAgenda();
     this.uploadButton.hidden = !PRO;
     this.noteButton.hidden = !PRO;
-    this.recording = new Recording(this.overlay, (made) => {
-      this.current = made.id;
-      this.handlers.onPick(made);
-    });
+    this.recording = new Recording(this.overlay, (made) => this.handlers.onMade(made));
     this.wire();
     dragScroll(this.body);
   }
 
   /** Raise the sheet from the agenda to put another conversation on it. */
   show(): void {
-    this.adding = true;
     void this.raise(false);
   }
 
@@ -141,10 +131,9 @@ export class Sessions {
     this.taskButton.textContent = label ?? "";
   }
 
-  /** The record the sheet lists, re-read whenever the chat has moved on. The
-   * family the app is on comes first; the rest follow by recency. */
-  async load(currentId: number | null): Promise<void> {
-    this.current = currentId;
+  /** The conversations Patrick can put on the agenda, read as the sheet
+   * rises. The family the app is on comes first; the rest follow by recency. */
+  private async load(): Promise<void> {
     const diagrams = await api.diagrams();
     const lists = await Promise.all(
       diagrams.map((diagram) => api.sessionIndex(diagram.id)),
@@ -156,7 +145,6 @@ export class Sessions {
     // the reader's thumb because a reply landed (ratified behaviour). New
     // sessions join at the end of their family until the sheet is closed.
     this.families = this.open ? fresh.map((f) => this.held(f)) : fresh;
-    this.handlers.onList(this.families.flatMap((f) => f.sessions));
     if (this.open) this.render();
   }
 
@@ -207,10 +195,6 @@ export class Sessions {
       this.filter = this.search.value;
       this.render();
     });
-    this.newButton.addEventListener("click", () => {
-      tap(Feature.SessionNew);
-      void this.start();
-    });
     // One sheet is up at a time: the upload sheet takes the sessions sheet's
     // place rather than standing on top of it.
     this.uploadButton.addEventListener("click", () => {
@@ -220,7 +204,7 @@ export class Sessions {
     });
     this.noteButton.addEventListener("click", () => {
       tap(Feature.NoteNew);
-      void this.start(SessionKind.Note);
+      void this.note();
     });
     this.taskButton.addEventListener("click", () => {
       tap(Feature.TaskOpen);
@@ -270,13 +254,8 @@ export class Sessions {
       this.swipe.open(row, false);
       return;
     }
-    if (this.adding) {
-      tap(Feature.SessionToAgenda);
-      this.openAgenda(row);
-      return;
-    }
-    tap(Feature.SessionOpen);
-    this.pick(row);
+    tap(Feature.SessionToAgenda);
+    this.openAgenda(row);
   }
 
   /** Patrick's swipe action: the conversation opens so he can place the cut
@@ -292,8 +271,7 @@ export class Sessions {
     const session = this.find(Number(row.dataset.id));
     if (!session) return;
     await api.deleteSession(session.id);
-    if (this.current === session.id) this.current = null;
-    await this.load(this.current);
+    await this.load();
     this.render();
   }
 
@@ -317,7 +295,7 @@ export class Sessions {
     this.inbar.addEventListener(
       "pointerdown",
       (e) => {
-        if (this.open) return;
+        if (this.open || !this.door) return;
         this.drag = { kind: "open", y0: at(e as PointerEvent), dy: 0 };
       },
       true,
@@ -351,8 +329,10 @@ export class Sessions {
   private async raise(viaDrag: boolean): Promise<void> {
     if (this.open) return;
     this.open = true;
-    await this.load(this.current);
-    this.render();
+    if (this.admin) {
+      await this.load();
+      this.render();
+    }
     this.body.scrollTop = 0;
     this.scrim.hidden = false;
     this.sheet.hidden = false;
@@ -361,13 +341,12 @@ export class Sessions {
     this.sheet.classList.add("in");
     this.screen.style.transformOrigin = "50% 0";
     this.screen.style.transform = "scale(.96)";
-    if (!viaDrag) this.search.focus({ preventScroll: true });
+    if (!viaDrag && this.admin) this.search.focus({ preventScroll: true });
   }
 
   private lower(): void {
     if (!this.open) return;
     this.open = false;
-    this.adding = false;
     this.swipe.close();
     this.drag = null;
     this.sheet.style.transition = "";
@@ -384,7 +363,6 @@ export class Sessions {
 
   private render(): void {
     const home = this.home();
-    this.newButton.textContent = `New session with ${home?.diagram.name ?? "your family"}`;
     const now = new Date();
     const searching = !!this.filter.trim();
     const rows = home ? matching(home, this.filter).rows : [];
@@ -416,9 +394,6 @@ export class Sessions {
     this.body.scrollTop = top;
   }
 
-  /** A row the way a notes or messages list draws one: the title, then one
-   * grey line with the day and the first thing the client said. A recording
-   * or a note says which it is in that line. */
   /** A row the way a messages list draws one: the title with the day small
    * at its right, then two lines of what the client first said. */
   private rowHtml(session: Session, now: Date, period: string): string {
@@ -427,7 +402,7 @@ export class Sessions {
     const day = DAY_HEADINGS.has(period) ? "" : rowDate(when, now);
     const said = session.preview ?? (session.kind === SessionKind.Chat ? "Nothing said yet" : `A ${session.kind} with nothing in it yet`);
     return (
-      `<div class="row${session.id === this.current ? " cur" : ""}" data-id="${session.id}">` +
+      `<div class="row" data-id="${session.id}">` +
       `<div class="rmain">` +
       `<div class="rhead"><div class="r1 rtitle">${esc(sessionTitle(session))}</div>` +
       `<div class="rday">${esc(day)}</div></div>` +
@@ -438,34 +413,18 @@ export class Sessions {
     );
   }
 
-  private pick(row: HTMLElement): void {
-    const session = this.find(Number(row.dataset.id));
-    if (!session) return;
-    row.classList.add("tint");
+  /** A professional's note is a session of its own (R-0281), on the family
+   * the app is on. A second one is refused while the last is still empty: two
+   * empty notes say nothing the first does not. */
+  private async note(): Promise<void> {
+    const [last] = await api.sessionIndex();
     this.lower();
-    this.current = session.id;
-    this.handlers.onPick(session);
-  }
-
-  /** A new session is refused while the one you are in has nothing in it: two
-   * empty sessions say nothing the first one does not. It starts on the family
-   * the app is on, because that is the diagram the coach writes to. */
-  private async start(kind: SessionKind = SessionKind.Chat): Promise<void> {
-    const home = this.home();
-    const current = this.current === null ? undefined : this.find(this.current);
-    // two empty sessions of one kind say nothing the first does not; a note
-    // beside an empty session is a different thing and is allowed
-    if (current && current.kind === kind && current.message_count === 0) {
-      this.lower();
+    if (last?.kind === SessionKind.Note && last.message_count === 0) {
       toast("Still empty — say something first");
       $("composer").focus({ preventScroll: true });
       return;
     }
-    const session = await api.newSession(kind);
-    if (home) home.sessions = [session, ...home.sessions];
-    this.current = session.id;
-    this.lower();
-    this.handlers.onPick(session);
+    this.handlers.onMade(await api.newSession(SessionKind.Note));
   }
 
   private rename(row: HTMLElement): void {

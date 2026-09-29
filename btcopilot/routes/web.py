@@ -10,7 +10,7 @@ from btcopilot import auth
 from btcopilot.routes import bp, current_session, diagram
 from btcopilot.routes.diagrams import readable
 from btcopilot.discussions import session_payload
-from btcopilot.routes.sessions import statements_payload
+from btcopilot.routes.sessions import thread
 from btcopilot import playturn, questions, record
 from btcopilot.licence import professional
 from btcopilot.timeline import build_timeline
@@ -45,7 +45,7 @@ def _page() -> str:
             "prefs": user.prefs(),
         },
         "session": session_payload(discussion) if discussion else None,
-        "statements": statements_payload(discussion, user) if discussion else [],
+        "statements": thread(user),
         "diagram": (
             {"id": in_use.id, "name": in_use.name} if in_use else None
         ),

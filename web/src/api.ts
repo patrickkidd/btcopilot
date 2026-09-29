@@ -94,7 +94,7 @@ export function whatFailed(error: unknown, words = instruction): string {
   return words(failed.said) || "That did not go in";
 }
 
-async function call<T>(method: string, path: string, body?: unknown, patience?: number): Promise<T> {
+export async function call<T>(method: string, path: string, body?: unknown, patience?: number): Promise<T> {
   return send(method, ROOT + path, body, false, patience);
 }
 
@@ -148,11 +148,25 @@ export const timeline = (diagramId?: number) =>
   );
 
 /** One agent-loop turn. The send is short: it stores the words and hands the
- * turn to the coach, which answers on the turn's own stream. */
-export const say = (statement: string, sessionId: number | null) =>
-  sessionId === null
-    ? call<Started>("POST", "/chat", { statement })
-    : call<Started>("POST", `/sessions/${sessionId}/statements`, { statement });
+ * turn to the coach, which answers on the turn's own stream. The server puts
+ * them in the sitting they belong to. */
+export const say = (statement: string) => call<Started>("POST", "/chat", { statement });
+
+/** Where one sitting starts, carried by its first words. */
+export interface Sitting {
+  id: number;
+  started: string;
+  summary: string | null;
+}
+
+/** A statement as the thread reads it: which sitting it is in, and on a
+ * sitting's first words, the sitting itself. */
+export type Said = Statement & { session_id: number; sitting: Sitting | null };
+
+/** The family's one thread, newest page first; `before` reads the page of
+ * words just older than that statement. */
+export const thread = (before?: number) =>
+  call<Said[]>("GET", before === undefined ? "/statements" : `/statements?before=${before}`);
 
 /** Pick a failed turn up where it stopped, on the same turn: nothing new is
  * said (R-0477). */

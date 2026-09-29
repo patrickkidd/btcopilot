@@ -781,8 +781,6 @@ button { font-family: inherit; }
   gap: 10px;
   padding: 14px 12px;
   background: var(--bg);
-  /* the thread fades out and back as another session takes its place */
-  transition: opacity 0.15s;
   touch-action: pan-y;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -1609,16 +1607,6 @@ button { font-family: inherit; }
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.row.cur { position: relative; }
-.row.cur::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--data);
-}
 .row .untitled { color: var(--faint); }
 /* a title someone gave by hand, so the coach's own titles read apart from it */
 /* a session that is not a chat says which kind it is, because the list mixes
@@ -2255,6 +2243,45 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 /* A line the app says rather than either speaker: what just happened to the
    thread. The mockup's 10.5px is below the binding 13px floor, so it is set at
    the floor. */
+/* Where one sitting of the family's thread ends and the next begins: the day
+   between two hairlines, and what the sitting was about under it. Quieter
+   than any bubble, so the thread still reads as one conversation. */
+.sitting {
+  flex: none;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 10px 0 4px;
+  color: var(--faint);
+}
+.sitting:first-child { margin-top: 0; }
+.sit-day {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 500 12px/1.3 var(--mono);
+  white-space: nowrap;
+}
+.sit-day::before,
+.sit-day::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--line);
+}
+.sit-sum {
+  max-width: 88%;
+  font: 400 13px/1.35 var(--sans);
+  text-align: center;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
 .sys {
   align-self: center;
   max-width: 92%;

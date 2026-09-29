@@ -10,8 +10,11 @@ from btcopilot import record
 from btcopilot.models import Author, Discussion
 from btcopilot.models import Diagram
 from btcopilot.discussions import (  # noqa: F401  routes import them from here
+    chats,
     create_discussion,
+    family,
     last_activity,
+    sitting,
     utc_iso,
 )
 from btcopilot.review.freeze import frozen
@@ -63,31 +66,19 @@ def _inject_globals():
 
 
 def user_sessions(user, diagram_id: int | None = None) -> list[Discussion]:
-    """The user's sessions on one diagram, most recently active first — which
-    makes the session they last spoke in the one they return to. Without a
-    diagram it is the one the app is on.
-
-    A discussion imported from a recording has no chat speaker ids and is not
-    a session the chat app can open: its speakers are Subject/Expert, not the
-    two chat roles, so every line would render as the user's."""
-    found = (
-        Discussion.query.filter_by(
-            user_id=user.id, diagram_id=diagram_id or user.diagram_in_use()
-        )
-        .filter(
-            Discussion.chat_user_speaker_id.isnot(None),
-            Discussion.chat_ai_speaker_id.isnot(None),
-        )
-        .all()
-    )
+    """The user's sessions on one diagram, most recently active first. Without
+    a diagram it is the one the app is on."""
+    found = chats(user, diagram_id or user.diagram_in_use()).all()
     return sorted(found, key=lambda d: (last_activity(d), d.id), reverse=True)
 
 
 def current_session(user, create: bool = False) -> Discussion | None:
+    """The sitting last spoken in; with `create`, the one the next words go
+    into, which is a new sitting once the family has been quiet a while."""
+    if create:
+        return sitting(user, family(user, writable_diagram()))
     found = user_sessions(user)
-    if found:
-        return found[0]
-    return create_discussion({}, writable_diagram()) if create else None
+    return found[0] if found else None
 
 
 def owned_session(session_id: int) -> Discussion:

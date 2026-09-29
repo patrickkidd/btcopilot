@@ -1,8 +1,9 @@
-"""Sessions are Discussions. One list, one resource per session, and one way
-to add a statement to a session — the /chat form posts into whichever session
-the user last spoke in."""
+"""Sessions are Discussions, and each is one sitting of the family's thread.
+The page reads the thread across them from /statements and posts to /chat,
+which puts the words in the sitting they belong to."""
 
 from flask import abort, jsonify, request
+from sqlalchemy import func, tuple_
 
 from btcopilot import auth
 from btcopilot.routes import (
@@ -16,29 +17,34 @@ from btcopilot.routes import (
 from btcopilot.routes.diagrams import readable
 from btcopilot.extensions import db
 from btcopilot.licence import require_professional
-from btcopilot.models import Discussion, DiscussionKind, StatementKind
+from btcopilot.models import Discussion, DiscussionKind, Statement, StatementKind
 from btcopilot.discussions import (
+    chats,
     create_discussion,
     session_payload,
     sync_chat_speakers,
+    utc_iso,
 )
 from btcopilot import toolnames, turns, turnstore
 from btcopilot.turnlog import TurnEventKind
 
+THREAD_PAGE = 50
 
-def statements_payload(discussion: Discussion, user) -> list[dict]:
+
+def statements_payload(statements: list[Statement], user) -> list[dict]:
     """Each message with the tool calls of its turn: a coach reply carries the
     calls that led to it, and the words of a turn that never answered carry the
     calls it made before it failed, marked unfinished with why it stopped."""
-    kept = turnstore.kept({s.turn_id for s in discussion.statements if s.turn_id})
+    kept = turnstore.kept({s.turn_id for s in statements if s.turn_id})
     out = []
-    for s in discussion.statements:
-        coach = s.speaker_id == discussion.chat_ai_speaker_id
+    for s in statements:
+        coach = s.speaker_id == s.discussion.chat_ai_speaker_id
         events = kept.get(s.turn_id, []) if s.turn_id else []
         unfinished = not coach and turnstore.failed(events)
         out.append(
             {
                 "id": s.id,
+                "session_id": s.discussion_id,
                 "role": "coach" if coach else "user",
                 "text": s.text,
                 "kind": (s.kind or StatementKind.Turn).value,
@@ -76,6 +82,49 @@ def statements_payload(discussion: Discussion, user) -> list[dict]:
     return out
 
 
+def thread(user, before: int | None = None) -> list[dict]:
+    """The words of every sitting on the family the app is on, as one thread:
+    sittings in the order they started, THREAD_PAGE statements at a time back
+    from the statement `before`. A sitting's first words carry the sitting —
+    its id, when it started and its summary — which is where the page draws
+    the line between one sitting and the next."""
+    start = (
+        db.session.query(
+            Statement.discussion_id,
+            func.min(Statement.created_at).label("at"),
+            func.min(Statement.id).label("first"),
+        )
+        .filter(
+            Statement.discussion_id.in_(
+                chats(user, user.diagram_in_use()).with_entities(Discussion.id)
+            )
+        )
+        .group_by(Statement.discussion_id)
+        .subquery()
+    )
+    key = (start.c.at, Statement.discussion_id, Statement.id)
+    found = Statement.query.join(start, start.c.discussion_id == Statement.discussion_id)
+    if before is not None:
+        edge = found.filter(Statement.id == before).with_entities(*key).one_or_none()
+        if edge is None:
+            abort(404)
+        found = found.filter(tuple_(*key) < tuple_(*edge))
+    rows = (
+        found.add_columns(start.c.at, start.c.first)
+        .order_by(*(k.desc() for k in key))
+        .limit(THREAD_PAGE)
+        .all()[::-1]
+    )
+    out = statements_payload([s for s, _, _ in rows], user)
+    for said, (s, at, first) in zip(out, rows):
+        said["sitting"] = (
+            {"id": s.discussion_id, "started": utc_iso(at), "summary": s.discussion.summary}
+            if s.id == first
+            else None
+        )
+    return out
+
+
 def _start(discussion: Discussion, statement: str):
     """The words are stored and the turn is handed to the worker, which answers
     at its own pace. The page follows it on /turns/<id>/events; nothing waits
@@ -99,6 +148,13 @@ def _statement_text() -> str:
 def chat():
     statement = _statement_text()
     return _start(current_session(auth.current_user(), create=True), statement)
+
+
+@bp.route("/statements")
+def statement_index():
+    """The thread, a page at a time: `?before=<statement id>` reads the page
+    of words just older than that one."""
+    return jsonify(thread(auth.current_user(), request.args.get("before", type=int)))
 
 
 @bp.route("/sessions")
@@ -138,7 +194,9 @@ def session_create():
 def session_get(session_id: int):
     discussion = owned_session(session_id)
     payload = session_payload(discussion)
-    payload["statements"] = statements_payload(discussion, auth.current_user())
+    payload["statements"] = statements_payload(
+        discussion.statements, auth.current_user()
+    )
     return jsonify(payload)
 
 

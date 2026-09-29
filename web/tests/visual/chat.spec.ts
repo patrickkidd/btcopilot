@@ -262,22 +262,23 @@ test.describe("an empty session", () => {
     const chatHelp = await help(page).innerText();
     // only a professional may start a note, which no fixture holds, so the
     // server's answer is the one a professional would get
-    const NOTE = 99001;
-    await page.route(/\/app\/sessions$/, (route) =>
-      route.request().method() === "POST"
-        ? route.fulfill({
-            status: 201,
-            json: {
-              id: NOTE, title: null, kind: "note", date: null, title_set_by_user: false,
-              summary: null, preview: null, last_activity: new Date().toISOString(),
-              message_count: 0, turn: null,
-            },
-          })
-        : route.fallback(),
-    );
-    await page.route(new RegExp(`/app/sessions/${NOTE}$`), (route) =>
-      route.fulfill({ json: { id: NOTE, kind: "note", statements: [] } }),
-    );
+    const note = {
+      id: 99001, title: null, kind: "note", date: null, title_set_by_user: false,
+      summary: null, preview: null, last_activity: new Date().toISOString(),
+      message_count: 0, turn: null,
+    };
+    // once made, the note heads the family's sessions, as the server lists it
+    let made = false;
+    await page.route(/\/app\/sessions$/, async (route) => {
+      if (route.request().method() === "POST") {
+        made = true;
+        return route.fulfill({ status: 201, json: note });
+      }
+      const real = await (await route.fetch()).json();
+      return route.fulfill({ json: made ? [note, ...real] : real });
+    });
+    // the door, like the note button, shows only for a professional
+    await page.locator("#sessions-open").evaluate((b) => ((b as HTMLElement).hidden = false));
     await page.locator("#sessions-open").click();
     await expect(page.locator("#sessions-sheet")).toBeVisible();
     // the note button shows only for a professional licence, which no fixture holds

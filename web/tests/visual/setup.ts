@@ -103,6 +103,8 @@ export const KEYS = [
   "longname",
   "editable",
   "whitlock",
+  "sitting",
+  "sittings",
 ] as const;
 export type Key = (typeof KEYS)[number];
 

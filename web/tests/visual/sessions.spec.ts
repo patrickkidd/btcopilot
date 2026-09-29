@@ -1,13 +1,15 @@
 import { expect, test, type Page } from "@playwright/test";
 import { colours } from "./gate";
-import { EXACT, stateFor } from "./setup";
+import { stateFor } from "./setup";
 
-/** The session door: the button beside the message box and the family-sections
- * sheet it raises. */
+/** The sheet's door beside the message box, and the sheet it raises. Only a
+ * professional, a coder or Patrick has one, and no fixture is any of them, so
+ * the door is shown here the way their bootstrap shows it. */
 
 const settle = async (page: Page) => {
   await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
+  await page.locator("#sessions-open").evaluate((b) => ((b as HTMLElement).hidden = false));
   await page.waitForTimeout(600);
 };
 
@@ -37,14 +39,14 @@ const closes = async (page: Page, sheet: string, scrim: string, open: () => Prom
   const { light, dark } = await colours(page, x);
   expect(light.drawn).toBe(light.token);
   expect(dark.drawn).toBe(dark.token);
-  const [b, p, f] = [
-    (await x.boundingBox())!,
-    (await page.locator(sheet).boundingBox())!,
-    (await page.locator(`${sheet} .fs-search input`).boundingBox())!,
-  ];
+  const [b, p] = [(await x.boundingBox())!, (await page.locator(sheet).boundingBox())!];
   expect(p.x + p.width - (b.x + b.width)).toBeLessThanOrEqual(8);
-  expect(Math.abs(b.y + b.height / 2 - (f.y + f.height / 2))).toBeLessThanOrEqual(4);
-  expect(f.x + f.width).toBeLessThanOrEqual(b.x);
+  // beside the search field, on a sheet that has one
+  const f = await page.locator(`${sheet} .fs-search input`).boundingBox();
+  if (f) {
+    expect(Math.abs(b.y + b.height / 2 - (f.y + f.height / 2))).toBeLessThanOrEqual(4);
+    expect(f.x + f.width).toBeLessThanOrEqual(b.x);
+  }
   await x.click();
   expect(await shown(page)).toEqual(byScrim);
 };
@@ -117,10 +119,8 @@ test.describe("the sessions sheet", () => {
     await expect(button.locator("svg")).toBeVisible();
   });
 
-  // R-0347, R-0095
-  test("it opens to 92% of the frame with a grabber and a search field", async ({
-    page,
-  }) => {
+  // R-0095
+  test("it opens to 92% of the frame with a grabber", async ({ page }) => {
     await settle(page);
     await openSheet(page);
     const frame = (await page.locator(".app").boundingBox())!;
@@ -128,41 +128,15 @@ test.describe("the sessions sheet", () => {
     expect(Math.round(sheet.height)).toBe(Math.round(frame.height * 0.92));
     // the page holds several sheets of this class; only this one is the sessions'
     await expect(page.locator("#sessions-sheet .fs-grab")).toBeVisible();
-    // R-0347: the sheet lists only this family's sessions, so it searches sessions
-    await expect(page.locator("#sessions-sheet .fs-search input")).toHaveAttribute(
-      "placeholder",
-      "Search sessions",
-    );
-    const field = (await page.locator("#sessions-sheet .fs-search input").boundingBox())!;
-    expect(Math.round(field.height)).toBe(44);
   });
 
-  // R-0347
-  test("it lists the sessions under a day heading, and marks the current one", async ({
-    page,
-  }) => {
+  // R-0055
+  test("it lists no conversation to open and offers none to start", async ({ page }) => {
     await settle(page);
     await openSheet(page);
-    await expect(page.locator("#sessions-sheet .fs-body .ghead").first()).not.toBeEmpty();
-    await expect(page.locator("#sessions-sheet .fs-body .row").first()).toBeVisible();
-    await expect(page.locator("#sessions-sheet .fs-body .row.cur")).toHaveCount(1);
-    // the foot also carries the upload and note buttons of the same class
-    await expect(page.locator("#sessions-sheet .fs-new").first()).toContainText(
-      "New session with",
-    );
-    // the days and titles follow the day the fixtures were installed
-    await expect(page.locator("#sessions-sheet")).toHaveScreenshot("sessions-sheet.png", {
-      ...EXACT,
-      mask: [page.locator("#sessions-sheet .ghead, #sessions-sheet .rday, #sessions-sheet .rtitle")],
-    });
-  });
-
-  // R-0347
-  test("a search that matches nothing says so, in those words", async ({ page }) => {
-    await settle(page);
-    await openSheet(page);
-    await page.locator("#sessions-sheet .fs-search input").fill("zzzzz-no-such-session");
-    await expect(page.locator(".fs-hint")).toHaveText("No sessions match");
+    await expect(page.locator("#sessions-sheet .fs-search")).toBeHidden();
+    await expect(page.locator("#sessions-sheet .row")).toHaveCount(0);
+    expect(await page.locator("#sessions-sheet").innerText()).not.toMatch(/new session/i);
   });
 
   // R-0095
@@ -260,55 +234,5 @@ test.describe("uploading a recording", () => {
     const warning = page.locator(".cf-p");
     await expect(warning.first()).toContainText("costs Alaska Family Systems money");
     await expect(warning.last()).toContainText("patrick@alaskafamilysystems.com");
-  });
-});
-
-test.describe("the rows of the sessions sheet", () => {
-  test.use({ storageState: stateFor("hostile") });
-
-  const rows = (page: Page) =>
-    page.locator("#sessions-sheet .fs-body .row").evaluateAll((all) =>
-      all.map((r) => {
-        const box = r.getBoundingClientRect();
-        const style = getComputedStyle(r);
-        const behind = [getComputedStyle(r, "::before"), getComputedStyle(r, "::after")];
-        return {
-          top: box.top,
-          bottom: box.bottom,
-          left: Math.round(box.left),
-          width: Math.round(box.width),
-          transform: style.transform,
-          cards: behind.filter((b) => b.content !== "none" && b.boxShadow !== "none").length,
-        };
-      }),
-    );
-
-  // R-0096
-  test("are a plain list: one column, none laid over another", async ({ page }) => {
-    // every fixture holds one session, so the list is given three of it
-    await page.route(/\/app\/sessions(\?.*)?$/, async (route) => {
-      if (route.request().method() !== "GET") return route.continue();
-      const real = await (await route.fetch()).json();
-      const more = real.flatMap((s: { id: number }) =>
-        [0, 1, 2].map((i) => ({ ...s, id: s.id + i * 100000 })),
-      );
-      await route.fulfill({ json: more });
-    });
-    await settle(page);
-    await openSheet(page);
-    await expect(page.locator("#sessions-sheet .fs-body .row")).toHaveCount(3);
-    const all = await rows(page);
-    expect(all.length).toBeGreaterThan(0);
-    expect(new Set(all.map((r) => `${r.left} ${r.width}`)).size).toBe(1);
-    all.slice(1).forEach((r, i) => expect(r.top).toBeGreaterThanOrEqual(all[i].bottom - 1));
-  });
-
-  // R-0096
-  test("are not dressed as stacked cards: no offset, tilt or card behind", async ({ page }) => {
-    await settle(page);
-    await openSheet(page);
-    const all = await rows(page);
-    expect(all.length).toBeGreaterThan(0);
-    expect(all.filter((r) => r.transform !== "none" || r.cards)).toEqual([]);
   });
 });

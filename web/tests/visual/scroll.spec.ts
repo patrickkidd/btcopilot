@@ -68,16 +68,4 @@ test.describe("scrolling the thread", () => {
         await page.locator("#chat").evaluate((n) => n.scrollTop),
       ).toBeGreaterThan(0);
   });
-
-  // R-0104
-  test("a mouse drag scrolls the sessions sheet", async ({ page }) => {
-    await settle(page);
-    await page.locator("#sessions-open").click();
-    await expect(page.locator("#sessions-sheet .fs-body .row").first()).toBeVisible();
-    await page.waitForTimeout(400);
-    const contained = await page
-      .locator("#sessions-sheet .fs-body")
-      .evaluate((node) => getComputedStyle(node).overscrollBehaviorY);
-    expect(contained).toBe("contain");
-  });
 });
