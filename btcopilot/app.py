@@ -48,6 +48,9 @@ def create_app(config: dict = None, **kwargs):
         THEORY_REPO="patrickkidd/btcopilot-sources",
         THEORY_REF="master",
         THEORY_PATH="theory/CONCEPTS",
+        # Web push signs with FLASK_VAPID_PRIVATE_KEY and hands browsers
+        # FLASK_VAPID_PUBLIC_KEY (python -m btcopilot.push makes a pair).
+        VAPID_SUBJECT="mailto:info@alaskafamilysystems.com",
     )
 
     if config and config.get("CONFIG"):

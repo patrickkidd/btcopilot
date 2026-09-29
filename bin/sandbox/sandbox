@@ -239,6 +239,10 @@ cmd_up() {
   PY=${SANDBOX_PYTHON:-$REPO/.venv/bin/python}
   for port in "$PORT" "$PG_PORT" "$REDIS_PORT" ${DEV:+"$DEV"}; do free "$port"; done
   [ -x "$PY" ] || (cd "$REPO" && uv sync --extra app --extra test)
+  # A web push key pair made for this sandbox alone, kept across restarts so a
+  # browser that subscribed stays subscribed.
+  [ -f "$D/vapid.sh" ] || (cd "$REPO" && "$PY" -m btcopilot.push | sed 's/^/export /') > "$D/vapid.sh"
+  echo ". $D/vapid.sh" >> "$D/env.sh"
   local keyless
   if ! keyless=$(cd "$REPO" && "$PY" -m btcopilot.promptdir); then
     echo "sandbox: $keyless" >&2

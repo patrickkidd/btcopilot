@@ -48,3 +48,7 @@ def send_login_code(email: str, code: str, minutes: int):
         "Your Family Diagram sign-in code",
         f"Your sign-in code is {code}. It expires in {minutes} minutes.\n",
     )
+
+
+def send_coach_message(email: str, words: str, url: str):
+    _deliver(email, "The coach wrote to you", f"{words}\n\n{url}\n")

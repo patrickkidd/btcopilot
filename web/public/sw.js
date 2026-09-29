@@ -47,3 +47,36 @@ self.addEventListener("fetch", (e) => {
       ),
   );
 });
+
+// A push is only a pointer to a coach message already in the thread. Every
+// one carries the same tag, so the lock screen holds one at a time and the
+// newest replaces the unread one (btcopilot/push.py TAG).
+const TAG = "coach";
+
+self.addEventListener("push", (e) => {
+  const { id, body } = e.data.json();
+  e.waitUntil(
+    self.registration.showNotification("Coach", {
+      body,
+      tag: TAG,
+      renotify: true,
+      icon: "/app/static/web/apple-touch-icon.png",
+      data: { id },
+    }),
+  );
+});
+
+/** The app already open is told which message to show, so a draft in it
+ * survives; otherwise the tap opens the app on that message. */
+function arrive(id) {
+  return self.clients.matchAll({ type: "window" }).then(([app]) => {
+    if (!app) return self.clients.openWindow(`/app/?notification=${id}`);
+    app.postMessage({ notification: id });
+    return app.focus();
+  });
+}
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(arrive(e.notification.data.id));
+});

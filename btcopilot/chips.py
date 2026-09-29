@@ -85,13 +85,17 @@ def _ids(data: DiagramData, kind: ChipKind) -> set[str]:
 _CLOSING = re.compile(r"[^.?!]*\?\s*$")
 
 
+def plain(text: str) -> str:
+    """The words as a reader sees them, each chip as its label."""
+    return TOKEN.sub(lambda m: m.group(3) or "", text)
+
+
 def asked(statement: Statement) -> str | None:
     """The question a coach message ends on: a play's own, or the reply's last
     sentence when it is a question."""
     if statement.told_case:
         return statement.told_case["question"]
-    plain = TOKEN.sub(lambda m: m.group(3) or "", statement.text or "")
-    closing = _CLOSING.search(plain)
+    closing = _CLOSING.search(plain(statement.text or ""))
     return closing.group(0).strip() if closing else None
 
 

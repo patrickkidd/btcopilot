@@ -44,6 +44,7 @@ import { PRO, WIDE } from "./pro";
 import { shortDate } from "./when";
 import * as speech from "./speech";
 import { NOTES_TOOL, type Notes } from "./notes";
+import { landing } from "./push";
 import * as track from "./track";
 import { Feature, Screen } from "./track";
 import {
@@ -1343,7 +1344,7 @@ void load().then(async () => {
   }
   // Coming back a week later, the picture is where the last message left it.
   leftAt(said);
-});
+}).then(() => landing(traceTo));
 
 // Never while developing: the worker answers a reload out of its own cache,
 // so a saved edit would never reach the page.

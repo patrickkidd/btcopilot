@@ -7,6 +7,7 @@ import { toast } from "./toast";
 import { identify } from "./telemetry";
 import { shortDate } from "./when";
 import { addPasskey, available, deviceWords } from "./passkey";
+import { subscribe } from "./push";
 import { PRO, RECORD, RECORDS, Records } from "./pro";
 import {
   Mode,
@@ -78,6 +79,12 @@ function diagramSub(diagram: Diagram, now: Date): string {
     ? shortDate(new Date(diagram.last_activity), now)
     : "nothing on it yet";
   return `${count} · ${when}${diagram.current ? " · in use" : ""}`;
+}
+
+/** Asked for inside the tap that lets the coach message first. A browser that
+ * cannot be reached by push gets email instead, and the reader is told so. */
+async function offerPush(): Promise<void> {
+  if (!(await subscribe())) toast("The coach will email you instead");
 }
 
 export class Settings {
@@ -522,7 +529,10 @@ export class Settings {
           "messages first",
           [Proactive.Never, Proactive.Rarely, Proactive.Weekly],
           prefs.proactive,
-          (proactive) => void this.write({ proactive }),
+          (proactive) => {
+            if (proactive !== Proactive.Never) void offerPush();
+            void this.write({ proactive });
+          },
         ),
       ]),
       el(
