@@ -1,5 +1,6 @@
-"""The coach's own notes each turn: kept on the thread, read back next turn,
-and seen only by admins and auditors (R-0520).
+"""The coach's own notes each turn: kept on the thread, read back next turn
+from the stored call in whichever session, and seen only by admins and auditors
+(R-0520).
 
 Invented names only.
 """
@@ -9,6 +10,7 @@ import json
 import pytest
 
 import btcopilot
+from btcopilot.discussions import open_session
 from btcopilot.extensions import db
 from btcopilot.models import TurnEvent
 from btcopilot.schema import Person, asdict
@@ -77,24 +79,30 @@ def test_the_notes_tool_asks_for_every_field():
     assert schema["input_schema"]["properties"]["register"]["enum"] == [r.value for r in Register]
 
 
-def test_the_notes_are_kept_and_read_back_next_turn(web, family, monkeypatch):
+def test_the_notes_are_kept_and_read_back_next_turn_in_another_session(
+    web, family, monkeypatch, test_user
+):
     # R-0520
     body = noted(web, monkeypatch, btcopilot.ROLE_SUBSCRIBER)
     kept = [e.payload for e in TurnEvent.query.filter_by(turn_id=body["turn_id"])]
     assert any(e.get("name") == ToolName.CoachNotes and e["args"] == NOTES for e in kept)
     assert family.get_diagram_data().people == [asdict(Person(id=1, name="Wren"))]
 
+    later = open_session(test_user, family)
+    db.session.commit()
     next_turn = coach(monkeypatch, Model(said("And your father?")))
-    post(web, "She moved away.")
-    uses = [
-        block
-        for message in next_turn.histories[0]
-        if isinstance(message["content"], list)
-        for block in message["content"]
-        if block.get("type") == "tool_use"
-    ]
-    assert uses[0]["name"] == ToolName.CoachNotes
-    assert uses[0]["input"] == NOTES
+    web.post(
+        f"/app/sessions/{later.id}/statements",
+        json={"statement": "She moved away."},
+        headers={"X-CSRFToken": csrf_token(web)},
+    )
+    history = next_turn.histories[0]
+    assert "tool_use" not in str(history)
+    newest = history[-1]["content"][0]["text"]
+    assert "YOUR NOTES FROM YOUR LAST TURN, written " in newest
+    assert "lane: the mother's side" in newest.splitlines()
+    plateau = "plateau: reached=False, biggest_gap=the father's parents"
+    assert plateau in newest.splitlines()
 
 
 def test_a_subscriber_never_receives_the_notes(web, family, monkeypatch):

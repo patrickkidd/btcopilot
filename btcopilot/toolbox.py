@@ -10,6 +10,9 @@ the call fails with words the model can act on [Oracle: R-0075].
 import datetime
 import enum
 import logging
+import re
+
+from sqlalchemy import or_
 
 from btcopilot import clusters, prompts, record, views
 from btcopilot.models import Author, Change, Discussion, Statement
@@ -66,6 +69,7 @@ class ToolName(enum.StrEnum):
     SetImpression = "set_impression"
     ReadImpressions = "read_impressions"
     CoachNotes = "coach_notes"
+    SearchChat = "search_chat"
 
 
 class Register(enum.StrEnum):
@@ -92,7 +96,14 @@ READS = (
     ToolName.ReadImpressions,
 )
 
+# Tools that change nothing, whose answers are not kept with the turn: the
+# record may have moved since, and the chat can be searched again.
+LOOKUPS = (*READS, ToolName.SearchChat)
+
 CHANGES_SHOWN = 10
+SEARCH_SHOWN = 8
+# How much of a long message a search hit shows, around where it matched.
+SEARCH_CUT = 300
 
 # The kinds of thing a remove call can name. A question is closed instead.
 REMOVABLE = {kind.value: kind for kind in ITEM_COLLECTIONS if kind is not ItemKind.Question}
@@ -535,6 +546,35 @@ def schemas() -> list[dict]:
             },
         },
         {
+            "name": ToolName.SearchChat.value,
+            "description": (
+                "Search what the person and you have said in every one of their "
+                "sessions on this family, newest first: by words, by a person in "
+                "the record, or by the days it was said. Each hit is the message's "
+                "id, the day, who said it, and its words cut short around the "
+                "match.\n\n"
+                + prompts.files().fragment("search_chat")
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "words": {
+                        "type": "string",
+                        "description": (
+                            "Words the message must all use; each matches the "
+                            "start of a word."
+                        ),
+                    },
+                    "person": {
+                        "type": "integer",
+                        "description": "A person's id: messages using their first name.",
+                    },
+                    "start": {"type": "string", "description": "Said on or after: YYYY-MM-DD"},
+                    "end": {"type": "string", "description": "Said on or before: YYYY-MM-DD"},
+                },
+            },
+        },
+        {
             "name": ToolName.CoachNotes.value,
             "description": (
                 "Your own notes for this turn, a short phrase each. They change "
@@ -589,6 +629,33 @@ def said_label(statement: Statement) -> str:
         else "The coach"
     )
     return f"{who} said, {statement.created_at.day} {statement.created_at:%b}"
+
+
+def _day(value: str) -> datetime.date:
+    try:
+        return datetime.date.fromisoformat(str(value))
+    except ValueError:
+        raise ToolError(
+            f"{value} is not a date: use YYYY-MM-DD", "A date could not be read."
+        )
+
+
+def _hit(statement: Statement, starts: list[re.Pattern]) -> str:
+    """One message a search found: its id, the day, who said it, and its
+    words, cut around the first match when they run long."""
+    who = (
+        "coach"
+        if statement.speaker_id == statement.discussion.chat_ai_speaker_id
+        else "user"
+    )
+    text = statement.text
+    if len(text) > SEARCH_CUT:
+        at = min((m.start() for s in starts if (m := s.search(text))), default=0)
+        begin = max(0, at - SEARCH_CUT // 3)
+        cut = text[begin : begin + SEARCH_CUT]
+        after = "…" if begin + SEARCH_CUT < len(text) else ""
+        text = ("…" if begin else "") + cut + after
+    return f"{statement.id} {statement.created_at.date().isoformat()} {who}: {text}"
 
 
 class ToolError(Exception):
@@ -692,6 +759,49 @@ class Toolbox:
 
     def _coach_notes(self, args: dict) -> tuple[str, None]:
         return "Kept.", None
+
+    def _search_chat(self, args: dict) -> tuple[str, None]:
+        terms = (args.get("words") or "").split()
+        if args.get("person") is not None:
+            person = self._find_person(args["person"])
+            if not person.get("name"):
+                raise ToolError(
+                    f"Person {args['person']} has no name to search for",
+                    "It searched the chat for someone with no name.",
+                )
+            terms.append(person["name"])
+        if not (terms or args.get("start") or args.get("end")):
+            raise ToolError(
+                "Search by words, a person, or the days it was said",
+                "It searched the chat for nothing.",
+            )
+        found = Statement.query.join(Discussion).filter(
+            Discussion.diagram_id == self.diagram_id,
+            Discussion.user_id == self.user_id,
+            or_(Statement.turn_id.is_(None), Statement.turn_id != self.turn_id),
+            or_(
+                Statement.speaker_id == Discussion.chat_user_speaker_id,
+                Statement.speaker_id == Discussion.chat_ai_speaker_id,
+            ),
+            *(Statement.text.icontains(term, autoescape=True) for term in terms),
+        )
+        if args.get("start"):
+            found = found.filter(Statement.created_at >= _day(args["start"]))
+        if args.get("end"):
+            found = found.filter(
+                Statement.created_at < _day(args["end"]) + datetime.timedelta(days=1)
+            )
+        starts = [re.compile(rf"\b{re.escape(term)}", re.I) for term in terms]
+        hits = [
+            s
+            for s in found.order_by(Statement.created_at.desc(), Statement.id.desc())
+            if all(start.search(s.text) for start in starts)
+        ]
+        lines = [_hit(s, starts) for s in hits[:SEARCH_SHOWN]]
+        if len(hits) > SEARCH_SHOWN:
+            more = len(hits) - SEARCH_SHOWN
+            lines.append(f"{more} older ones matched too; narrow the days to see them.")
+        return "\n".join(lines) or "Nothing said matches.", None
 
     # ── READ ────────────────────────────────────────────────────────────────
 

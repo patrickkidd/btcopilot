@@ -15,6 +15,7 @@ import uuid
 from typing import Callable
 
 from opentelemetry import trace
+from sqlalchemy import or_
 
 from btcopilot.extensions import ai_log, db
 from btcopilot import chips, clusters, profile, recordtext, turnstore
@@ -28,10 +29,11 @@ from btcopilot.models import (
     Statement,
     StatementKind,
     TokenMeter,
+    TurnEvent,
 )
 from btcopilot.prompts import agent_prompt, note_register, onboarding
 from btcopilot.interactions import recent
-from btcopilot.toolbox import READS, ToolError, Toolbox, schemas
+from btcopilot.toolbox import LOOKUPS, ToolError, ToolName, Toolbox, schemas
 from btcopilot.toolnames import toolcall
 from btcopilot.turnlog import TurnEventKind
 from btcopilot.schema import DiagramData, ItemKind
@@ -41,6 +43,9 @@ _tracer = trace.get_tracer(__name__)
 
 MAX_STEPS = 20
 RECENT_INTERACTIONS = 50
+# The family's latest words, from every one of the user's sessions on it, that
+# the coach reads back each turn; older ones it finds with the chat search.
+RECENT_STATEMENTS = 20
 
 # What the coach is told when it has used every step and is still working. The
 # turn has to end in words, so the last call is made with no tools at all.
@@ -72,11 +77,6 @@ SHORTEN = (
 # the same for every call in the turn and the wire keeps it. The
 # coach_story_shape fragment in its system prompt says what to do with them.
 STORY = "**What changed in the story since last time**\n\n{sentences}"
-
-
-# What a past turn's read answers are replaced with in the history: the record
-# may have moved since, and the map and the read tools are how the coach sees it.
-NOT_KEPT = "What this read returned is not kept. Read again if you need it."
 
 
 NARRATE = (
@@ -303,6 +303,10 @@ class CoachTurn:
             ),
             today=datetime.date.today().isoformat(),
         )
+        last = last_notes(self.discussion)
+        if last:
+            notes = recordtext.notes(last.payload["args"], last.created_at)
+            tail = f"{tail}\n\n{notes}"
         if note:
             tail = f"{tail}\n\n{note_register()}"
         gaps = profile.missing(data)
@@ -338,12 +342,12 @@ class CoachTurn:
                 asked["refusal"] = refusal
                 # a read changes nothing, so which events it read rides on the
                 # call itself, for the page to grey them (R-0540)
-                if call.name in READS and event:
+                if call.name in LOOKUPS and event:
                     asked.update(event)
                 self._note(events, asked)
                 # Kept after the page was told, so only the database holds what
                 # it answered; a read's answer is too long to keep and goes stale.
-                if call.name not in READS:
+                if call.name not in LOOKUPS:
                     asked["result"] = text
                 results.append(
                     {
@@ -353,7 +357,7 @@ class CoachTurn:
                         "is_error": refusal is not None,
                     }
                 )
-                if event and call.name not in READS:
+                if event and call.name not in LOOKUPS:
                     kind = (
                         TurnEventKind.View
                         if "view" in event
@@ -517,29 +521,17 @@ class CoachTurn:
                 return stop.value
 
     def _history(self, tail: str) -> list[dict]:
-        """The chat so far, then the record and the day, then the new message
-        and what its chips point at. Each past coach reply comes with the tool
-        calls its turn made, so the coach knows what it has already done to the
-        record. The chat is marked where it stood before this message and
-        before the last one: what this turn writes to the wire, the next reads."""
-        prior = sorted(
-            [s for s in self.discussion.statements if s.text],
-            key=lambda s: (s.order or 0, s.id or 0),
-        )[:-1]
-        did = turnstore.kept(
-            {
-                s.turn_id
-                for s in prior
-                if s.turn_id and s.speaker_id == self.discussion.chat_ai_speaker_id
-            }
-        )
+        """The family's latest words from the user's sessions on it, then the
+        record, the coach's last notes and the day, then the new message and
+        what its chips point at. No past tool call is given back: what the
+        coach did is in the record, and the map is how it sees it (R-0481). The
+        chat is marked where it stood before this message and before the last
+        one: what this turn writes to the wire, the next reads."""
         messages = []
         ends = []
-        for s in prior:
-            coach = s.speaker_id == self.discussion.chat_ai_speaker_id
-            if coach:
-                _say(messages, *_calls(s.turn_id, did.get(s.turn_id, [])))
-            else:
+        for s in self._recent():
+            coach = s.speaker_id == s.discussion.chat_ai_speaker_id
+            if not coach:
                 ends.append(_settled(messages))
             _say(messages, ("assistant" if coach else "user", s.text))
         if messages and messages[0]["role"] == "assistant":
@@ -555,34 +547,43 @@ class CoachTurn:
         _say(messages, ("user", _blocks(tail) + _blocks(spoken)))
         return messages
 
+    def _recent(self) -> list[Statement]:
+        """The family's last words before this message, oldest first: the
+        person's and the coach's, in any of this user's sessions on it. Another
+        user's sessions on the same family are theirs alone."""
+        latest = (
+            Statement.query.join(Discussion)
+            .filter(
+                Discussion.diagram_id == self.diagram.id,
+                Discussion.user_id == self.discussion.user_id,
+                Statement.text.isnot(None),
+                Statement.text != "",
+                or_(Statement.turn_id.is_(None), Statement.turn_id != self.turn_id),
+                or_(
+                    Statement.speaker_id == Discussion.chat_user_speaker_id,
+                    Statement.speaker_id == Discussion.chat_ai_speaker_id,
+                ),
+            )
+            .order_by(Statement.created_at.desc(), Statement.id.desc())
+            .limit(RECENT_STATEMENTS)
+        )
+        return latest.all()[::-1]
 
-def _calls(turn_id: str, events: list[dict]) -> list[tuple[str, list[dict]]]:
-    """A past turn's tool calls as the model made them, and what each answered."""
-    asked = [e for e in events if e["type"] == TurnEventKind.ToolCall.value]
-    if not asked:
-        return []
-    ids = [f"past_{turn_id}_{i}" for i in range(len(asked))]
-    return [
-        (
-            "assistant",
-            [
-                {"type": "tool_use", "id": id, "name": e["name"], "input": e["args"]}
-                for id, e in zip(ids, asked)
-            ],
-        ),
-        (
-            "user",
-            [
-                {
-                    "type": "tool_result",
-                    "tool_use_id": id,
-                    "content": e.get("result") or NOT_KEPT,
-                    "is_error": bool(e.get("refusal")),
-                }
-                for id, e in zip(ids, asked)
-            ],
-        ),
-    ]
+
+def last_notes(discussion: Discussion) -> TurnEvent | None:
+    """The coach's latest notes on this family, from whichever of this user's
+    sessions on it."""
+    return (
+        TurnEvent.query.join(Discussion, Discussion.id == TurnEvent.discussion_id)
+        .filter(
+            Discussion.diagram_id == discussion.diagram_id,
+            Discussion.user_id == discussion.user_id,
+            TurnEvent.kind == TurnEventKind.ToolCall.value,
+            TurnEvent.payload["name"].as_string() == ToolName.CoachNotes.value,
+        )
+        .order_by(TurnEvent.id.desc())
+        .first()
+    )
 
 
 def _say(messages: list[dict], *said: tuple[str, str | list[dict]]) -> None:

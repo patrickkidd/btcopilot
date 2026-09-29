@@ -1,5 +1,6 @@
-"""Every coach turn's tool calls are kept, shown on the thread in every session,
-given back to the coach, and a failed turn goes on from where it stopped.
+"""Every coach turn's tool calls are kept and shown on the thread in every
+session, a failed turn goes on from where it stopped, and the coach is given the
+family's latest words from every session rather than its past tool calls.
 
 Invented names only.
 """
@@ -10,7 +11,7 @@ from mock import patch
 from btcopilot.extensions import db
 from btcopilot import record, turnlog, turns
 from btcopilot.coachmodel import CACHE
-from btcopilot.coachturn import NOT_KEPT
+from btcopilot.discussions import open_session
 from btcopilot.models import Author, Change, Discussion, Statement, TurnEvent
 from btcopilot.schema import ItemKind, Person, asdict
 from btcopilot.toolbox import ToolName
@@ -71,6 +72,19 @@ def post(web, token, statement="My sister is Nell."):
     return web.post(
         "/app/chat", json={"statement": statement}, headers={"X-CSRFToken": token}
     )
+
+
+def say_in(web, token, discussion_id: int, statement: str):
+    return web.post(
+        f"/app/sessions/{discussion_id}/statements",
+        json={"statement": statement},
+        headers={"X-CSRFToken": token},
+    )
+
+
+def words(message: dict) -> str:
+    content = message["content"]
+    return content if isinstance(content, str) else " ".join(b["text"] for b in content)
 
 
 def resume(web, token, turn_id):
@@ -235,10 +249,10 @@ def test_another_users_failed_turn_is_not_found(
     assert resume(web, token, body["turn_id"]).status_code == 404
 
 
-def test_the_coach_is_given_the_tool_calls_its_earlier_turns_made(
+def test_the_coach_is_given_the_words_but_none_of_its_earlier_tool_calls(
     web, token, family, monkeypatch
 ):
-    # R-0479
+    # R-0481
     coach(
         monkeypatch,
         Model(
@@ -252,20 +266,44 @@ def test_the_coach_is_given_the_tool_calls_its_earlier_turns_made(
     post(web, token, "My brother is Ash.")
 
     history = second.histories[0]
-    assert [m["role"] for m in history] == [
-        "user",
-        "assistant",
-        "user",
-        "assistant",
-        "user",
-    ]
-    asked, answered = history[1]["content"], history[2]["content"]
-    assert [b["name"] for b in asked] == ["read_people", "edit_person"]
-    assert [b["content"] for b in answered] == [NOT_KEPT, "Added person 2."]
-    assert [b["tool_use_id"] for b in answered] == [b["id"] for b in asked]
-    assert history[3]["content"] == [
+    assert [m["role"] for m in history] == ["user", "assistant", "user"]
+    assert history[1]["content"] == [
         {"type": "text", "text": "Nell is in.", "cache_control": CACHE}
     ]
+    assert "tool_use" not in str(history)
+
+
+def test_the_latest_words_come_from_every_one_of_the_users_sessions_on_the_family(
+    web, token, family, monkeypatch, test_user, test_user_2
+):
+    # R-0520
+    monkeypatch.setattr("btcopilot.coachturn.RECENT_STATEMENTS", 3)
+    coach(monkeypatch, Model(said("Who is Nell?")))
+    post(web, token)
+    later = open_session(test_user, family)
+    theirs = open_session(test_user_2, family)
+    db.session.add(
+        Statement(
+            discussion_id=theirs.id,
+            text="Words from someone else's session.",
+            speaker_id=theirs.chat_user_speaker_id,
+            order=0,
+        )
+    )
+    db.session.commit()
+    coach(monkeypatch, Model(said("How old is Ash?")))
+    say_in(web, token, later.id, "My brother is Ash.")
+    third = coach(monkeypatch, Model(said("Ten, then.")))
+    say_in(web, token, later.id, "He is ten.")
+
+    history = third.histories[0]
+    assert [words(m) for m in history[:-1]] == [
+        "Hello",
+        "Who is Nell?",
+        "My brother is Ash.",
+        "How old is Ash?",
+    ]
+    assert words(history[-1]).endswith("He is ten.")
 
 
 def test_a_turns_events_are_kept_in_order_and_end_in_how_it_ended(
