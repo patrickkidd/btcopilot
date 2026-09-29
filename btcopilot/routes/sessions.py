@@ -12,18 +12,23 @@ from btcopilot.routes import (
     current_session,
     owned_session,
     require_write_access,
-    user_sessions,
     writable_diagram,
 )
 from btcopilot.routes.diagrams import readable
 from btcopilot.extensions import db
 from btcopilot.licence import require_professional
-from btcopilot.models import Discussion, DiscussionKind, Statement, StatementKind
+from btcopilot.models import (
+    Diagram,
+    Discussion,
+    DiscussionKind,
+    Statement,
+    StatementKind,
+)
 from btcopilot.discussions import (
     all_sessions,
     chats,
     create_discussion,
-    newest,
+    listed,
     session_payload,
     sync_chat_speakers,
     utc_iso,
@@ -188,22 +193,27 @@ def session_index():
         abort(403)
     if asked is not None and asked not in {d.id for d in readable(user)}:
         abort(404)
-    found = newest(all_sessions()) if every else user_sessions(user, asked)
+    found = all_sessions() if every else chats(user, asked or user.diagram_in_use())
     terms = request.args.get("words", "").split()
     lines = {}
     if terms:
-        ids = [d.id for d in found]
-        for s in said_with(said_in(Discussion.id.in_(ids)), terms):
+        ids = Discussion.id.in_(found.with_entities(Discussion.id))
+        for s in said_with(said_in(ids), terms):
             lines.setdefault(
                 s.discussion_id, excerpt(chips.plain(s.text), terms, MATCH_CUT)
             )
-        found = [d for d in found if d.id in lines]
+        found = found.filter(Discussion.id.in_(list(lines)))
+    families = (
+        dict(found.join(Diagram).with_entities(Discussion.id, Diagram.name))
+        if every
+        else {}
+    )
     return jsonify(
         [
-            session_payload(d)
-            | ({"family": d.diagram.name} if every else {})
-            | ({"match": lines[d.id]} if terms else {})
-            for d in found
+            one
+            | ({"family": families[one["id"]]} if every else {})
+            | ({"match": lines[one["id"]]} if terms else {})
+            for one in listed(found)
         ]
     )
 

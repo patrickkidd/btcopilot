@@ -3,7 +3,13 @@ of sessions."""
 
 import btcopilot
 from btcopilot import diagramjson
-from btcopilot.discussions import open_session
+from btcopilot.discussions import (
+    all_sessions,
+    listed,
+    newest,
+    open_session,
+    session_payload,
+)
 from btcopilot.extensions import db
 from btcopilot.models import Diagram, Discussion, Statement
 
@@ -47,6 +53,25 @@ def test_an_admin_finds_a_session_on_any_family_by_what_was_said(
     found = web.get("/app/sessions?all=true&words=job").get_json()
     assert [(s["id"], s["match"]) for s in found] == [
         (other.id, "My brother lost his job.")
+    ]
+
+
+def test_a_list_of_sessions_reads_each_row_as_the_session_itself_does(test_user):
+    # R-0267
+    quiet = open_session(test_user, test_user.free_diagram)
+    told = open_session(test_user, test_user.free_diagram)
+    for speaker, text in [
+        (told.chat_ai_speaker_id, "Hello."),
+        (told.chat_user_speaker_id, "We went to the lake."),
+        (told.chat_user_speaker_id, "x" * 200),
+    ]:
+        db.session.add(Statement(discussion_id=told.id, speaker_id=speaker, text=text))
+    db.session.commit()
+    rows = listed(all_sessions())
+    assert rows == [session_payload(d) for d in newest(all_sessions())]
+    assert [(r["id"], r["message_count"], r["preview"]) for r in rows] == [
+        (told.id, 3, "We went to the lake."),
+        (quiet.id, 0, None),
     ]
 
 
