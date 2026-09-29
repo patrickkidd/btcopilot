@@ -1,5 +1,5 @@
 /// <reference types="vitest" />
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync } from "node:fs";
 import { request as ask } from "node:http";
 import { defineConfig, type Plugin, type ProxyOptions } from "vite";
 import { parse } from "./src/place";
@@ -8,6 +8,12 @@ import { parse } from "./src/place";
 // built index.html as the page, so the files keep Vite's hashed names: a new
 // release is never answered from a cached file of the same name.
 const BASE = "/app/static/web/";
+
+/** Where the build keeps the bundle's source maps, one folder per release,
+ * outside the folder the server serves: a stack from a bug report is read
+ * against them, and nobody else ever fetches them. The release workflow names
+ * the release and keeps its folder with the run. */
+const MAPS = new URL(`./sourcemaps/${process.env.RELEASE ?? "local"}/`, import.meta.url).pathname;
 
 /** The sandbox this dev server borrows its server from. */
 const FLASK = process.env.FLASK_URL ?? "http://127.0.0.1:8890";
@@ -144,6 +150,16 @@ export default defineConfig({
       },
     },
     {
+      name: "fd-source-maps",
+      apply: "build",
+      writeBundle({ dir }, bundle) {
+        rmSync(MAPS, { recursive: true, force: true });
+        mkdirSync(MAPS, { recursive: true });
+        for (const file of Object.keys(bundle).filter((name) => name.endsWith(".map")))
+          renameSync(`${dir}/${file}`, `${MAPS}${file.split("/").pop()}`);
+      },
+    },
+    {
       // iOS only offers to install the dev CA when it arrives as a certificate.
       name: "dev-ca-type",
       configureServer(server) {
@@ -158,6 +174,8 @@ export default defineConfig({
   build: {
     outDir: "../btcopilot/static/web",
     emptyOutDir: true,
+    // made, but never named in the bundle, and moved out of what is served
+    sourcemap: "hidden",
   },
   server: {
     host: "0.0.0.0",
