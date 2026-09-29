@@ -148,9 +148,9 @@ def test_the_command_reads_everyone_a_role_or_addresses(
         ("auditor", 1),
         ("everyone", 2),
     ]
-    refused = send("nobody@example.com")
+    refused = send("nobody@x.com")
     assert refused.exit_code != 0
-    assert "no account for nobody@example.com" in refused.output
+    assert "no account for nobody@x.com" in refused.output
 
 
 def test_the_notice_fixture_reinstalls_and_reaches_no_other_fixture(
