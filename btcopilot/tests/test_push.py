@@ -10,6 +10,8 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from pywebpush import WebPushException
 
 from btcopilot import extensions, push
+from btcopilot.auth.signin import SESSION_TOKEN
+from btcopilot.auth.websession import WebSession
 from btcopilot.extensions import db
 from btcopilot.models import Notification, NotificationChannel, PushSubscription
 from btcopilot.tests.conftest import csrf_token
@@ -23,6 +25,7 @@ def keys(flask_app):
     public, private = push.keypair()
     flask_app.config["VAPID_PUBLIC_KEY"] = public
     flask_app.config["VAPID_PRIVATE_KEY"] = private
+    flask_app.config["VAPID_SUBJECT"] = "mailto:test@example.com"
 
 
 @pytest.fixture
@@ -139,6 +142,9 @@ def test_no_subscription_sends_one_email_with_a_link(
 
 def test_a_browser_subscribes_once_per_endpoint(web, test_user):
     # R-0055
+    # Signed in the way a browser is, so each request loads its user afresh.
+    with web.session_transaction() as cookie:
+        cookie[SESSION_TOKEN] = WebSession.start(test_user, 1, "").token
     assert (
         web.get("/app/push-subscriptions").json["key"]
         == web.application.config["VAPID_PUBLIC_KEY"]

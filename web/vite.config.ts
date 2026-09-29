@@ -120,6 +120,19 @@ export default defineConfig({
   plugins: [
     page(),
     {
+      // The worker from this repo at the path the server gives it, where its
+      // scope covers the app, rather than from the last build.
+      name: "fd-dev-worker",
+      apply: "serve",
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if ((req.url ?? "").split("?")[0] !== "/app/sw.js") return next();
+          res.setHeader("Content-Type", "text/javascript");
+          res.end(readFileSync(new URL("./public/sw.js", import.meta.url)));
+        });
+      },
+    },
+    {
       // iOS only offers to install the dev CA when it arrives as a certificate.
       name: "dev-ca-type",
       configureServer(server) {

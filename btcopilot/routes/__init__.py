@@ -1,4 +1,5 @@
 import logging
+import re
 import uuid
 
 from flask import Blueprint, abort, request
@@ -32,11 +33,24 @@ bp = Blueprint(
 )
 
 
+# What a browser fetches without its cookie: the service worker, the manifest,
+# the icons the manifest names, and the icon iOS puts on the home screen.
+PUBLIC = {"app.service_worker", "app.manifest", "app.apple_touch_icon"}
+PUBLIC_STATIC = re.compile(r"web/icon-\w+\.png")
+
+
+def public() -> bool:
+    if request.endpoint == "app.static":
+        return bool(PUBLIC_STATIC.fullmatch(request.view_args["filename"]))
+    return request.endpoint in PUBLIC
+
+
 @bp.before_request
 def _authenticate():
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
         csrf.protect()
-    auth.authenticate_web()
+    if not public():
+        auth.authenticate_web()
 
 
 @bp.errorhandler(CSRFError)

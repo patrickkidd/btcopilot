@@ -1360,9 +1360,9 @@ void load().then(async () => {
   leftAt(said);
 }).then(() => landing(traceTo));
 
-// Never while developing: the worker answers a reload out of its own cache,
-// so a saved edit would never reach the page.
-if (import.meta.env.PROD && "serviceWorker" in navigator)
+// The dev server too: push needs the worker, and the worker asks the network
+// first, so a saved edit still reaches the page.
+if ("serviceWorker" in navigator)
   window.addEventListener("load", () =>
     navigator.serviceWorker.register(
       `/app/sw.js?release=${encodeURIComponent(window.BOOTSTRAP.version)}`,

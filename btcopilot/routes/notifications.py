@@ -31,13 +31,14 @@ def create_push_subscription():
     """A browser's own subscription as it serializes it; one it already sent
     moves to whoever is signed in on it now."""
     data = request.get_json()
-    row = PushSubscription.query.filter_by(endpoint=data["endpoint"]).first()
-    if row is None:
-        row = PushSubscription(endpoint=data["endpoint"])
-        db.session.add(row)
+    row = PushSubscription.query.filter_by(
+        endpoint=data["endpoint"]
+    ).first() or PushSubscription(endpoint=data["endpoint"])
     row.user_id = auth.current_user().id
     row.p256dh = data["keys"]["p256dh"]
     row.auth = data["keys"]["auth"]
+    # added only once whole: reading the user may flush the session
+    db.session.add(row)
     db.session.commit()
     return jsonify({"id": row.id, "endpoint": row.endpoint}), 201
 
