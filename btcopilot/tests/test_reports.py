@@ -1,114 +1,87 @@
 import pytest
 
-from btcopilot import tuning
-from btcopilot.extensions import db
-from btcopilot.models import Observation, ObservationKind
-from btcopilot.tests.conftest import csrf_token
+from btcopilot import reports
+from btcopilot.models import Report, ReportKind, ReportSource, ReportStatus
 
-BUG = {
+PAGE_BUG = {
     "kind": "bug",
-    "turn_id": "t1",
-    "text": "My dad moved out.",
-    "error": "The server broke on that one",
-    "version": "2.0.0",
+    "status": "sent",
+    "source": "page",
+    "release": "3.2026.9.29.1",
+    "address": "/app/people/4",
+    "statement_id": 9100,
+    "error": "TypeError: x is undefined",
+    "frames": ["https://familydiagram.com/app/static/web/assets/index-B26jI9NK.js:1:52301"],
 }
 
 
-def post(web, body):
-    return web.post("/app/observations", json=body, headers={"X-CSRFToken": csrf_token(web)})
+def post(client, body):
+    return client.post("/app/reports", json=body)
 
 
-def test_a_sent_bug_is_one_observation_on_the_diagram_the_app_is_on(web, test_user):
+def test_a_bug_from_the_page_is_one_row_for_the_person_and_the_diagram_the_app_is_on(web, test_user):
     # R-0056
-    response = post(web, BUG)
+    response = post(web, PAGE_BUG)
     assert response.status_code == 201
-    row = Observation.query.one()
-    assert (row.diagram_id, row.turn_id, row.kind) == (
+    row = Report.query.one()
+    assert (row.kind, row.status, row.source, row.user_id, row.diagram_id, row.count) == (
+        ReportKind.Bug,
+        ReportStatus.Sent,
+        ReportSource.Page,
+        test_user.id,
         test_user.free_diagram_id,
-        "t1",
-        ObservationKind.Bug,
+        1,
     )
-    assert row.detail == {k: BUG[k] for k in ("text", "error", "version")}
+    assert (row.release, row.address, row.statement_id, row.error, row.frames) == (
+        "3.2026.9.29.1",
+        "/app/people/4",
+        9100,
+        "TypeError: x is undefined",
+        PAGE_BUG["frames"],
+    )
 
 
-def test_a_request_the_server_broke_on_keeps_its_endpoint_status_and_id(web):
+def test_a_signed_out_page_reports_without_a_person_or_a_csrf_token(flask_app):
     # R-0056
-    failure = {
-        "kind": "bug",
-        "turn_id": "",
-        "status": 500,
-        "method": "GET",
-        "path": "/app/sessions/:id",
-        "request_id": "9f2c",
-        "version": "2.0.0",
-    }
-    response = post(web, failure)
+    response = post(flask_app.test_client(), dict(PAGE_BUG, source="worker"))
     assert response.status_code == 201
-    row = Observation.query.one()
-    assert (row.turn_id, row.detail) == ("", {k: failure[k] for k in failure if k not in ("kind", "turn_id")})
+    row = Report.query.one()
+    assert (row.user_id, row.diagram_id, row.source) == (None, None, ReportSource.Worker)
 
 
-def test_an_error_on_the_page_keeps_the_screen_and_statement_never_the_words(web):
+def test_sent_feedback_keeps_the_words(web):
     # R-0056
-    fault = {
-        "kind": "bug",
-        "turn_id": "",
-        "error": "TypeError: x is undefined",
-        "frame": "https://familydiagram.com/app/static/web/assets/index-B26jI9NK.js:1:52301",
-        "address": "/app/people/4",
-        "statement_id": 9100,
-        "version": "2.0.0",
-    }
-    response = post(web, fault)
+    response = post(
+        web,
+        {"kind": "feedback", "status": "sent", "release": "r", "turn_id": "t2", "words": "Bigger dots."},
+    )
     assert response.status_code == 201
-    assert Observation.query.one().detail == {
-        k: fault[k] for k in ("error", "frame", "address", "statement_id", "version")
-    }
-    response = post(web, dict(fault, text="My dad moved out."))
-    assert response.status_code == 400
-
-
-def test_the_coach_can_offer_the_persons_words_as_a_bug(web):
-    # R-0056
-    response = post(web, {"kind": "bug", "turn_id": "t3", "text": "The picture froze."})
-    assert response.status_code == 201
-    assert Observation.query.one().detail == {"text": "The picture froze."}
-
-
-def test_sent_feedback_keeps_only_the_words(web):
-    # R-0056
-    response = post(web, {"kind": "feedback", "turn_id": "t2", "text": "Bigger dots."})
-    assert response.status_code == 201
-    assert Observation.query.one().detail == {"text": "Bigger dots."}
+    row = Report.query.one()
+    assert (row.kind, row.words, row.turn_id, row.source) == (ReportKind.Feedback, "Bigger dots.", "t2", None)
 
 
 @pytest.mark.parametrize(
     "body",
     [
-        dict(BUG, kind="turn_failed"),
-        dict(BUG, kind="nothing"),
-        {"kind": "feedback", "turn_id": "t2", "text": "Bigger dots.", "error": "x"},
-        dict(BUG, status=500),
+        dict(PAGE_BUG, kind="turn_failed"),
+        dict(PAGE_BUG, source="server"),
+        dict(PAGE_BUG, text="My dad moved out."),
+        {k: v for k, v in PAGE_BUG.items() if k != "error"},
+        {"kind": "feedback", "status": "sent", "release": "r", "words": "a", "error": "x"},
+        {"kind": "feedback", "status": "sent", "release": "r"},
     ],
 )
 def test_only_a_report_of_its_own_fields_is_taken(web, body):
     # R-0056
     response = post(web, body)
     assert response.status_code == 400
-    assert Observation.query.count() == 0
+    assert Report.query.count() == 0
 
 
-def test_reports_stay_out_of_the_queue_patrick_rules_on(test_user):
-    # R-0517
-    for kind, detail in (
-        (ObservationKind.Bug, {"text": "a", "error": "b", "version": "c"}),
-        (ObservationKind.Feedback, {"text": "a"}),
-        (ObservationKind.ToolRefused, {"reason": "show: No people were named."}),
-    ):
-        db.session.add(
-            Observation(
-                diagram_id=test_user.free_diagram_id, turn_id="t1", kind=kind, detail=detail
-            )
-        )
-    db.session.commit()
-    assert [g["kind"] for g in tuning.queue()] == [ObservationKind.ToolRefused.value]
+def test_one_sender_is_held_to_a_few_reports_an_hour(flask_app, web):
+    # R-0056
+    for _ in range(reports.LIMIT):
+        assert post(web, PAGE_BUG).status_code == 201
+    assert post(web, PAGE_BUG).status_code == 429
+    # a signed-out page elsewhere is its own sender
+    assert post(flask_app.test_client(), PAGE_BUG).status_code == 201

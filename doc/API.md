@@ -60,20 +60,20 @@ in …" reads. Events never traced are absent.
 
 ## Reports
 
-`POST /observations` — a bug or feedback the person chose to send, stored as one
-row in the observations table on the diagram the app is on. `kind` is `bug` or
-`feedback`; `turn_id` is the turn it came from, empty when there is none. It
-carries one of these sets of fields: `text`, the person's words the coach offered
-to send (either kind); for a bug, `text`, `error` and `version`, or, for a request
-the server broke on, `status`, `method`, `path` (every id in it replaced by
-`:id`), `request_id` (the `X-Request-Id` its answer carried) and `version`, never
-the server's own words; or, for an error on the page, `error` (its name and
-message), `frame` (the first frame of its stack in the app's own scripts, null
-when it names none), `address` (the screen), `statement_id` (the newest statement
-on screen, never the person's words) and `version`. The page reports a request only when the server itself
-answered 500 or above: never no answer, a refusal, a proxy's error page, or this
-route. Any other kind or set of fields is a 400; answers `{"id"}` with 201.
-Reports stay out of the queue Patrick accepts or rejects.
+`POST /reports` — a bug or feedback from the page or its service worker, one row
+in the reports table. It is open to a signed-out page and the worker, so it takes
+no CSRF token; one sender (the person, or a signed-out page's address) gets 20 an
+hour, then 429. `kind` is `bug` or `feedback`, `status` is `sent` or `declined`,
+`release` is the app's version; `address` (the screen), `turn_id` and
+`statement_id` (never the person's words) are optional. Feedback carries `words`
+when sent and none when declined. A bug carries `source` (`page` or `worker`;
+only the server writes `server`) and `error` (its name and message), with
+`frames` (the stack's frames in the app's own scripts), `request_id` (the
+`X-Request-Id` of an answer of 500 or above the server itself gave, never its
+words) and `count`; or, offered by the coach, the person's `words`. The page
+reports a request only when the server itself answered 500 or above: never no
+answer, a refusal, a proxy's error page, or this route. Any other field is a
+400; answers `{"id"}` with 201.
 
 ## Account
 

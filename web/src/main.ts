@@ -686,10 +686,6 @@ const reports = new Reports(
 );
 reports.always = window.BOOTSTRAP.user?.prefs.bug_reports === BugReports.Always;
 
-/** The person's last words in the thread, which a bug report carries. */
-const lastSaid = () =>
-  [...$("chat").querySelectorAll(".bub.user")].at(-1)?.textContent ?? "";
-
 /** The newest statement the thread on screen holds, which an error on the
  * page is reported against. */
 let newest: number | null = window.BOOTSTRAP.statements.at(-1)?.id ?? null;
@@ -1215,7 +1211,7 @@ function follow(turnId: string): void {
           stopped = { turn: turnId, bubble: bubble.bubble };
         }
         chat.warn(message, () => void resume(turnId));
-        reports.bug(message, lastSaid(), turnId);
+        reports.bug(message, turnId);
       }),
     refused: (message) =>
       step(() => {

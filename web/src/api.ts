@@ -57,7 +57,7 @@ const PATIENCE_MS = 60_000;
 export const PLAY_WAIT_S = 390;
 
 /** Where a report goes, which never reports itself. */
-const REPORTS = `${ROOT}/observations`;
+const REPORTS = `${ROOT}/reports`;
 /** The header only this server's own answers carry: a proxy's error page, or
  * the dev server's when the server is down, has none. */
 const REQUEST_ID = "X-Request-Id";
@@ -333,7 +333,7 @@ export const renameSession = (id: number, title: string) =>
   call<Session>("PATCH", `/sessions/${id}`, { title });
 
 /** A bug or feedback the person chose to send (R-0056). */
-export const report = (body: Report) => call<{ id: number }>("POST", "/observations", body);
+export const report = (body: Report) => call<{ id: number }>("POST", "/reports", body);
 
 export const preferences = () => call<Preferences>("GET", "/preferences");
 

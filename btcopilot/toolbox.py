@@ -15,7 +15,7 @@ import re
 from sqlalchemy import or_
 
 from btcopilot import clusters, place, proactive, prompts, record, views
-from btcopilot.models import REPORTS, Author, Change, Discussion, Statement
+from btcopilot.models import Author, Change, Discussion, ReportKind, Statement
 from btcopilot.recordtext import (
     change_line,
     date_text,
@@ -630,7 +630,7 @@ def schemas() -> list[dict]:
                 "properties": {
                     "kind": {
                         "type": "string",
-                        "enum": [kind.value for kind in REPORTS],
+                        "enum": [kind.value for kind in ReportKind],
                         "description": (
                             "bug: something in the app does not work; feedback: "
                             "something they want changed, dislike, or wish it did."
@@ -1460,9 +1460,9 @@ class Toolbox:
         """The page asks the person whether to send their words; nothing is
         kept unless they do (R-0056)."""
         kind = args.get("kind")
-        if kind not in REPORTS:
+        if kind not in list(ReportKind):
             raise ToolError(
-                f"{kind!r} is not one of the kinds of report: {', '.join(REPORTS)}",
+                f"{kind!r} is not one of the kinds of report: {', '.join(ReportKind)}",
                 "It tried to send a report of a kind the app does not have.",
             )
         words = (args.get("words") or "").strip()

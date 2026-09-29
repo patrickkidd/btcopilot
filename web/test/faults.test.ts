@@ -18,7 +18,7 @@ it("ignores an error thrown by a browser extension", () => {
 });
 
 // R-0056
-it("keeps an error thrown by the app's own bundle, by its name, message and first own frame", () => {
+it("keeps an error thrown by the app's own bundle with only its own frames, raised by its name, message and first own frame", () => {
   const error = thrown(
     "x is undefined",
     "inject (chrome-extension://abcdef/content.js:4:11)",
@@ -28,7 +28,7 @@ it("keeps an error thrown by the app's own bundle, by its name, message and firs
   expect(new Faults(ORIGIN).fault(error, `Uncaught ${error}`)).toEqual({
     signature: `TypeError: x is undefined\n${BUNDLE}:1:52301`,
     error: "TypeError: x is undefined",
-    frame: `${BUNDLE}:1:52301`,
+    frames: [`${BUNDLE}:1:52301`, `${BUNDLE}:1:90`],
   });
 });
 
@@ -40,7 +40,7 @@ it("keeps an error naming no script, and drops one whose every frame is another 
   expect(faults.fault(refused, refused.message)).toEqual({
     signature: "NotAllowedError: The operation either timed out or was not allowed.\n",
     error: "NotAllowedError: The operation either timed out or was not allowed.",
-    frame: null,
+    frames: [],
   });
   expect(faults.fault("not-allowed", "not-allowed")?.error).toBe("not-allowed");
   const elsewhere = thrown("x is undefined", "draw (https://cdn.example.com/app/static/web/a.js:1:2)");

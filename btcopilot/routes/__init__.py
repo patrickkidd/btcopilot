@@ -35,8 +35,11 @@ bp = Blueprint(
 
 
 # What a browser fetches without its cookie: the service worker, the manifest,
-# the icons the manifest names, and the icon iOS puts on the home screen.
-PUBLIC = {"app.service_worker", "app.manifest", "app.apple_touch_icon"}
+# the icons the manifest names, and the icon iOS puts on the home screen; and
+# where a bug is reported from a signed-out page or the worker, which carry no
+# CSRF token.
+PUBLIC = {"app.service_worker", "app.manifest", "app.apple_touch_icon", "app.create_report"}
+UNGUARDED = {"app.create_report"}
 PUBLIC_STATIC = re.compile(r"web/icon-\w+\.png")
 
 
@@ -48,7 +51,7 @@ def public() -> bool:
 
 @bp.before_request
 def _authenticate():
-    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+    if request.method in ("POST", "PUT", "PATCH", "DELETE") and request.endpoint not in UNGUARDED:
         csrf.protect()
     if not public():
         auth.authenticate_web()
@@ -175,13 +178,13 @@ from btcopilot.routes import (  # noqa: E402  bp must exist first
     fixtures,
     interactions,
     notifications,
-    observations,
     pairbonds,
     productevents,
     people,
     play,
     questions,
     recordings,
+    reports,
     sessions,
     settings,
     theory,
@@ -197,4 +200,6 @@ def init_app(app):
         path=app.config["THEORY_PATH"],
         token=app.config.get("THEORY_GITHUB_TOKEN"),
     )
+    # the reports each sender made in the last hour
+    app.extensions["reports"] = {}
     app.register_blueprint(bp)

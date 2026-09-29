@@ -22,13 +22,13 @@ const PACKAGES = "/node_modules/";
 const FRAME = /[a-z][a-z0-9+.-]*:\/\/[^\s()]+?:\d+:\d+/g;
 
 /** An error on the page as it is reported: its name and message, and the
- * first frame of its stack in the app's own scripts, which a stack with no
- * frames at all has none of. */
+ * frames of its stack in the app's own scripts, which a stack with no frames
+ * at all has none of. */
 export interface Fault {
-  /** What it is raised once by. */
+  /** What it is raised once by: the error and its first frame of ours. */
   signature: string;
   error: string;
-  frame: string | null;
+  frames: string[];
 }
 
 /** Which errors on the page raise the bug sheet (R-0056): one thrown from the
@@ -53,10 +53,10 @@ export class Faults {
     if (this.leaving || NOISE.some((noise) => [name, message, said].includes(noise))) return null;
     if (thrown instanceof Failed) return null;
     const frames = (thrown instanceof Error && thrown.stack?.match(FRAME)) || [];
-    const frame = frames.find((one) => this.ours(one)) ?? null;
-    if (frames.length && frame === null) return null;
+    const ours = frames.filter((one) => this.ours(one));
+    if (frames.length && !ours.length) return null;
     const error = name ? `${name}: ${message}` : message;
-    return { signature: `${error}\n${frame ?? ""}`, error, frame };
+    return { signature: `${error}\n${ours[0] ?? ""}`, error, frames: ours };
   }
 
   /** True the first time this key comes up on the page; every time is counted. */

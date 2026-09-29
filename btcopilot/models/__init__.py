@@ -14,10 +14,11 @@ from .modelcall import ModelCall
 from .shadowturn import ShadowTurn
 from .productevent import ProductEvent
 from .turnevent import TurnEvent
-from .observation import REPORTS, Observation, ObservationKind
+from .observation import Observation, ObservationKind
 from .observationreject import ObservationReject
 from .proactivemessage import ProactiveMessage, Trigger
 from .qualityrun import QualityRun, QualityKind
 from .pushsubscription import PushSubscription
 from .notice import Audience, Notice, NoticeLink
 from .notification import Notification, NotificationChannel, NotificationKind
+from .report import Report, ReportKind, ReportSource, ReportStatus

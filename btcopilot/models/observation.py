@@ -30,13 +30,6 @@ class ObservationKind(enum.StrEnum):
     ProactiveReturned = "proactive_returned"
     # The words for a message the coach writes first broke its shape.
     ProactiveRefused = "proactive_refused"
-    # What a person sent from the app: a turn or the page that broke, or what
-    # they want changed in it [Oracle: R-0056].
-    Bug = "bug"
-    Feedback = "feedback"
-
-
-REPORTS = (ObservationKind.Bug, ObservationKind.Feedback)
 
 
 class Observation(db.Model, ModelMixin):

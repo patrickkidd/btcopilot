@@ -3,7 +3,7 @@ import { esc } from "./dom";
 import { dragScroll } from "./drag";
 import type { Fault, Faults } from "./faults";
 import { Sheet } from "./sheet";
-import { ReportKind, type Report, type RequestFailure } from "./types";
+import { ReportKind, ReportSource, ReportStatus, type Report, type RequestFailure } from "./types";
 
 /** What the person sends from the app (R-0056): a bug when a coach turn or
  * the page breaks, and feedback when the coach heard them say something about
@@ -67,51 +67,54 @@ export class Reports {
     });
   }
 
-  /** A turn broke with this error, after these words of the person's; the
-   * same error is raised once. */
-  bug(error: string, text: string, turnId: string): void {
-    const version = window.BOOTSTRAP.version;
-    this.broke(error, { kind: ReportKind.Bug, turn_id: turnId, text, error, version }, [
-      ["Your last message", text],
+  /** A turn broke with this error; the same error is raised once. */
+  bug(error: string, turnId: string): void {
+    this.broke(error, { ...this.caught(), turn_id: turnId, error }, [
       ["The error", error],
-      ["The app version", version],
+      ["The app version", window.BOOTSTRAP.version],
     ]);
   }
 
   /** The page broke, raised once per error: it names the screen and the
    * newest statement on it, never the person's words, and the turn being
    * drawn if one was. */
-  page(fault: Fault, statementId: number | null, turnId = ""): void {
-    const version = window.BOOTSTRAP.version;
-    const address = location.pathname;
-    this.broke(
-      fault.signature,
-      { kind: ReportKind.Bug, turn_id: turnId, error: fault.error, frame: fault.frame, address, statement_id: statementId, version },
-      [
-        ["The error", fault.error],
-        ["Where it broke", fault.frame ?? ""],
-        ["The screen", address],
-        ["The newest message", statementId === null ? "" : `Number ${statementId}, not its words`],
-        ["The app version", version],
-      ],
-    );
+  page(fault: Fault, statementId: number | null, turnId?: string): void {
+    const report = { ...this.caught(), turn_id: turnId, statement_id: statementId, error: fault.error, frames: fault.frames };
+    this.broke(fault.signature, report, [
+      ["The error", fault.error],
+      ["Where it broke", fault.frames[0] ?? ""],
+      ["The screen", report.address],
+      ["The newest message", statementId === null ? "" : `Number ${statementId}, not its words`],
+      ["The app version", report.release],
+    ]);
   }
 
   /** The server broke on a request, raised once per endpoint. */
-  request(failure: RequestFailure): void {
-    const version = window.BOOTSTRAP.version;
-    this.broke(`${failure.method} ${failure.path}`, { kind: ReportKind.Bug, turn_id: "", ...failure, version }, [
-      ["The request", `${failure.method} ${failure.path}`],
-      ["The server's answer", String(failure.status)],
-      ["The request's id", failure.request_id],
-      ["The app version", version],
+  request({ status, method, path, request_id }: RequestFailure): void {
+    this.broke(`${method} ${path}`, { ...this.caught(), error: `${status} ${method} ${path}`, request_id }, [
+      ["The request", `${method} ${path}`],
+      ["The server's answer", String(status)],
+      ["The request's id", request_id],
+      ["The app version", window.BOOTSTRAP.version],
     ]);
   }
 
   /** The coach heard the person say this about the app. */
   offer(kind: ReportKind, words: string, turnId: string): void {
     if (this.once(`${turnId}:${words}`)) return;
-    this.queue({ report: { kind, turn_id: turnId, text: words }, list: [["", words]], broke: false });
+    const report = { ...this.sent(kind), turn_id: turnId, words };
+    if (kind === ReportKind.Bug) report.source = ReportSource.Page;
+    this.queue({ report, list: [["", words]], broke: false });
+  }
+
+  /** What every report from this page carries. */
+  private sent(kind: ReportKind): Report {
+    return { kind, status: ReportStatus.Sent, release: window.BOOTSTRAP.version, address: location.pathname };
+  }
+
+  /** What a bug this page caught carries. */
+  private caught(): Report {
+    return { ...this.sent(ReportKind.Bug), source: ReportSource.Page };
   }
 
   private broke(key: string, report: Report, list: List): void {

@@ -532,15 +532,28 @@ export enum BugReports {
   Always = "always",
 }
 
-/** What the person can send from the app (R-0056). Mirrors the report kinds
- * of `ObservationKind` on the server. */
+/** What the person can send from the app (R-0056). Mirrors `ReportKind` on
+ * the server. */
 export enum ReportKind {
   Bug = "bug",
   Feedback = "feedback",
 }
 
-/** A request the server broke on, as a report names it: never the server's
- * own words, which can quote the record. */
+/** Mirrors `ReportStatus` on the server. */
+export enum ReportStatus {
+  Sent = "sent",
+  Declined = "declined",
+}
+
+/** Where a bug was caught. Mirrors the page's and the worker's
+ * `ReportSource` on the server, which also has its own. */
+export enum ReportSource {
+  Page = "page",
+  Worker = "worker",
+}
+
+/** A request the server broke on, as the call helper names it: never the
+ * server's own words, which can quote the record. */
 export interface RequestFailure {
   status: number;
   method: string;
@@ -550,25 +563,24 @@ export interface RequestFailure {
   request_id: string;
 }
 
-/** A report as it is sent: the person's own words about the app, which the
- * coach offered to send; or a bug, a request the server broke on, or what
- * broke on the page or in a turn. */
-export type Report =
-  | { kind: ReportKind; turn_id: string; text: string }
-  | ({ kind: ReportKind.Bug; turn_id: ""; version: string } & RequestFailure)
-  | {
-      kind: ReportKind.Bug;
-      /** The turn being drawn when the page broke, if one was. */
-      turn_id: string;
-      error: string;
-      frame: string | null;
-      /** The screen the page was on. */
-      address: string;
-      /** The newest statement on screen, never the person's words. */
-      statement_id: number | null;
-      version: string;
-    }
-  | { kind: ReportKind.Bug; turn_id: string; text: string; error: string; version: string };
+/** A report as it is sent: one row of the reports table. */
+export interface Report {
+  kind: ReportKind;
+  status: ReportStatus;
+  release: string;
+  /** The screen the page was on. */
+  address: string;
+  turn_id?: string;
+  /** The newest statement on screen, never the person's words. */
+  statement_id?: number | null;
+  source?: ReportSource;
+  error?: string;
+  /** The error's stack, only the frames in the app's own scripts. */
+  frames?: string[];
+  request_id?: string;
+  /** The person's own words, which the coach offered to send. */
+  words?: string;
+}
 
 export interface Preferences {
   speak: boolean;

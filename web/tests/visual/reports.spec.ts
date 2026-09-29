@@ -10,7 +10,7 @@ import { mockTurn, SEND, STREAM } from "./turn";
 const SENT_MS = 10_000;
 /** How long the sheet takes to go down, after which it is hidden. */
 const LOWER_MS = 280;
-const REPORTS = "**/app/observations";
+const REPORTS = "**/app/reports";
 
 /** The card saying the report was sent goes, and then the sheet is down; run
  * through rather than jumped, so the lowering the card's going schedules
@@ -37,7 +37,7 @@ const thread = (page: Page) => page.locator("#chat").innerHTML();
 const posted = (page: Page) => {
   const sent: Request[] = [];
   page.on("request", (r) => {
-    if (r.method() === "POST" && r.url().endsWith("/app/observations")) sent.push(r);
+    if (r.method() === "POST" && r.url().endsWith("/app/reports")) sent.push(r);
   });
   return sent;
 };
@@ -87,9 +87,9 @@ test.describe("a coach turn that breaks", () => {
     await expect(page.locator(".sys.warn")).toBeVisible();
     expect(await page.locator("#chat").evaluate((chat) => chat.closest("[inert]") !== null)).toBe(true);
     const rows = sheet(page).locator(".rp-row");
-    await expect(rows.locator(".rp-l")).toHaveText(["Your last message", "The error", "The app version"]);
+    await expect(rows.locator(".rp-l")).toHaveText(["The error", "The app version"]);
     const version = await page.evaluate(() => window.BOOTSTRAP.version);
-    await expect(rows.locator(".rp-v")).toHaveText(["My dad moved out.", "The coach could not answer", version]);
+    await expect(rows.locator(".rp-v")).toHaveText(["The coach could not answer", version]);
     await expect(sheet(page).getByRole("button", { name: "Don't send" })).toBeDisabled();
     await expect(sheet(page).getByText("Disabled during the beta")).toBeVisible();
     const before = await thread(page);
@@ -100,10 +100,12 @@ test.describe("a coach turn that breaks", () => {
     expect(sent).toHaveLength(1);
     expect(sent[0].postDataJSON()).toEqual({
       kind: "bug",
+      status: "sent",
+      source: "page",
+      release: version,
+      address: new URL(page.url()).pathname,
       turn_id: "broke1",
-      text: "My dad moved out.",
       error: "The coach could not answer",
-      version,
     });
     expect((await sent[0].response())!.status()).toBe(201);
 
@@ -185,7 +187,14 @@ test.describe("what the person says about the app", () => {
     await sheet(page).getByRole("button", { name: "Send the report" }).click();
     await expect(heading(page)).toHaveText("Your report was sent");
     expect(sent).toHaveLength(1);
-    expect(sent[0].postDataJSON()).toEqual({ kind: "feedback", turn_id: "t1", text: WORDS });
+    expect(sent[0].postDataJSON()).toEqual({
+      kind: "feedback",
+      status: "sent",
+      release: await page.evaluate(() => window.BOOTSTRAP.version),
+      address: new URL(page.url()).pathname,
+      turn_id: "t1",
+      words: WORDS,
+    });
     expect((await sent[0].response())!.status()).toBe(201);
     await sheet(page).getByRole("button", { name: "OK" }).click();
     await expect(sheet(page)).toBeHidden();
@@ -247,12 +256,12 @@ test.describe("the server breaking", () => {
     expect(sent).toHaveLength(1);
     expect(sent[0].postDataJSON()).toEqual({
       kind: "bug",
-      turn_id: "",
-      status: 500,
-      method: "GET",
-      path: "/app/statements",
+      status: "sent",
+      source: "page",
+      release: version,
+      address: new URL(page.url()).pathname,
+      error: "500 GET /app/statements",
       request_id: "5d1c0ffee",
-      version,
     });
     expect((await sent[0].response())!.status()).toBe(201);
     await sheet(page).getByRole("button", { name: "OK" }).click();
@@ -310,12 +319,13 @@ test.describe("the page breaking", () => {
     await expect(heading(page)).toHaveText("Your report was sent");
     expect(sent[0].postDataJSON()).toEqual({
       kind: "bug",
-      turn_id: "",
-      error: "TypeError: x is undefined",
-      frame,
+      status: "sent",
+      source: "page",
+      release: version,
       address: here.pathname,
       statement_id: newest,
-      version,
+      error: "TypeError: x is undefined",
+      frames: [frame],
     });
     expect((await sent[0].response())!.status()).toBe(201);
     await sheet(page).getByRole("button", { name: "OK" }).click();

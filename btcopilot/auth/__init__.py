@@ -81,7 +81,8 @@ def _web_session_ok() -> bool:
     return True
 
 
-def authenticate_web() -> User | None:
+def signed_in() -> User | None:
+    """The person the request comes from, or None from a signed-out page."""
     user_id = session.get("user_id")
     autologin = current_app.config["DEV_AUTOLOGIN"]
     if not user_id and autologin:
@@ -95,7 +96,13 @@ def authenticate_web() -> User | None:
         else:
             # Invalid session - clear it
             session.clear()
+    return None
 
+
+def authenticate_web() -> User:
+    user = signed_in()
+    if user:
+        return user
     redirect_response = redirect(login_url())
     # Create a proper HTTP exception with the redirect response
     exception = HTTPException()

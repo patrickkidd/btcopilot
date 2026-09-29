@@ -12,7 +12,6 @@ import re
 
 from btcopilot.extensions import db
 from btcopilot.models import (
-    REPORTS,
     Diagram,
     Observation,
     ObservationKind,
@@ -28,8 +27,6 @@ MEASURES = (
     ObservationKind.ProactiveReplied,
     ObservationKind.ProactiveReturned,
 )
-# What people sent from the app stays out of the queue for now.
-UNQUEUED = (*MEASURES, *REPORTS)
 TEST_ACCOUNTS = "claude-test%"
 QUOTED = re.compile(r"(?<!\w)'[^']*'(?!\w)")
 IDS = re.compile(r"\b[0-9a-f]{8,}\b|\d+")
@@ -49,7 +46,7 @@ def groups() -> dict[str, dict]:
     rows = (
         Observation.query.join(Diagram, Diagram.id == Observation.diagram_id)
         .join(User, User.id == Diagram.user_id)
-        .filter(User.username.notlike(TEST_ACCOUNTS), Observation.kind.notin_(UNQUEUED))
+        .filter(User.username.notlike(TEST_ACCOUNTS), Observation.kind.notin_(MEASURES))
         .order_by(Observation.created_at)
     )
     for row in rows:
