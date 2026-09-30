@@ -91,3 +91,8 @@ def test_a_local_url_sends_gemini_extraction_to_the_local_model(anthropic_env):
     anthropic_env.setattr(llmutil, "claude_structured", claude_structured)
     llmutil.gemini_structured_sync("prompt", Named)
     assert asked == [llmutil.EXTRACTION_MODEL]
+
+
+def test_sonnet_5_5_costs_what_sonnet_5_costs():
+    # R-0405
+    assert price("claude-sonnet-5-5") == price("claude-sonnet-5")
