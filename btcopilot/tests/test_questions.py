@@ -82,6 +82,7 @@ def test_a_question_is_added_whole_in_one_change_row(family):
         "outcome": None,
         "item_kind": "person",
         "item_id": "1",
+        "fact": None,
         "session_id": 7,
         "asked_at": TODAY,
     }

@@ -11,7 +11,7 @@ import uuid
 
 from btcopilot import extensions
 from btcopilot.extensions import db
-from btcopilot import chips, observer, shadow, turnlog, turnstore
+from btcopilot import chips, coverage, observer, shadow, turnlog, turnstore
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
 from btcopilot.coachmodel import Refusal, model_for
@@ -123,6 +123,7 @@ def run(
         [] if resume else setting.read(SettingKey.ShadowModel, discussion.user_id, [])
     )
     before = discussion.diagram.data
+    covered = coverage.counts(record_of(discussion))
     turn = CoachTurn(
         discussion,
         said.text,
@@ -168,7 +169,13 @@ def run(
         turnlog.clear(discussion_id)
         turnlog.append(turn_id, failed)
         raise
-    _keep(turn, turnstore.done(reply["statement_id"]))
+    _keep(
+        turn,
+        turnstore.done(
+            reply["statement_id"],
+            {"before": covered, "after": coverage.counts(turn.data)},
+        ),
+    )
     reply["kind"] = StatementKind.Turn.value
     reply["discussion_id"] = discussion_id
     turnlog.clear(discussion_id)

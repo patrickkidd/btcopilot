@@ -37,6 +37,7 @@ from btcopilot.schema import (
     DiagramData,
     EventKind,
     EvidenceKind,
+    Fact,
     ItemKind,
     PersonKind,
     QuestionKind,
@@ -436,6 +437,14 @@ def schemas(coder: bool = False) -> list[dict]:
                         "description": "What the question is about, with item_id; or neither.",
                     },
                     "item_id": {"type": "string"},
+                    "fact": {
+                        "type": "string",
+                        "enum": _values(Fact),
+                        "description": (
+                            "On a fact question about a person or a couple: the "
+                            "item of the family's basic data it asks about."
+                        ),
+                    },
                     "asked_in": ASKED_IN,
                 },
                 "required": ["text", "kind", "state"],
@@ -1372,6 +1381,7 @@ class Toolbox:
                 "kind": choice(QuestionKind, args["kind"], "question kinds").value,
                 "item_kind": args.get("item_kind"),
                 "item_id": args.get("item_id"),
+                "fact": args.get("fact") and choice(Fact, args["fact"], "facts").value,
             },
         )
 

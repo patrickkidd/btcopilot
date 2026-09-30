@@ -477,6 +477,42 @@ class QuestionOutcome(enum.StrEnum):
 DECLINED = (QuestionOutcome.DeclinedByUser, QuestionOutcome.DeclinedInChat)
 
 
+class Fact(enum.StrEnum):
+    """An item of the basic data a family evaluation gathers (Kerr, Family
+    Evaluation ch. 10; Bowen, FTiCP ch. 9), on one person or one couple. A fact
+    question names the one it asks about."""
+
+    Name = "name"
+    BirthDate = "birth_date"
+    Alive = "alive"
+    DeathDate = "death_date"
+    CauseOfDeath = "cause_of_death"
+    Schooling = "schooling"
+    Work = "work"
+    Health = "health"
+    Marriages = "marriages"
+    Places = "places"
+    Contact = "contact"
+    LifeCourse = "life_course"
+    Order = "order"
+    Sex = "sex"
+    # Who someone's parents are, so the generation above can be asked about.
+    Parents = "parents"
+    # On a couple: how many children they had.
+    Children = "children"
+    # On the person's own couple: when and how the two met.
+    Met = "met"
+    # On the person: the nuclear family's periods of major stress.
+    Stress = "stress"
+
+
+class FactState(enum.StrEnum):
+    Known = "known"
+    SaidUnknown = "said_unknown"
+    Declined = "declined"
+    NotAsked = "not_asked"
+
+
 class Pushback(enum.StrEnum):
     Partly = "partly"
 

@@ -213,6 +213,38 @@ class RelationshipKind(enum.Enum):
     Cutoff = "cutoff"
 ```
 
+### Fact and FactState (the basic data's checklist)
+
+The items of the basic data a family evaluation gathers, each on one person or
+one couple; the checklist itself is never stored but worked out from the record
+by `btcopilot/coverage.py` (see [COVERAGE.md](../COVERAGE.md)).
+
+```python
+class Fact(enum.StrEnum):
+    # on a person
+    Name, BirthDate, Alive, DeathDate, CauseOfDeath, Schooling, Work, Health,
+    Marriages, Places, Contact, LifeCourse, Order, Sex, Parents, Stress
+    # on a couple
+    Children, Met
+
+class FactState(enum.StrEnum):
+    Known = "known"
+    SaidUnknown = "said_unknown"
+    Declined = "declined"
+    NotAsked = "not_asked"
+```
+
+A question in `DiagramData.questions` carries `fact`, a `Fact` value or null.
+Only a fact question linked to a person or a couple (`item_kind` person or
+pair_bond) may name one. Closed as `fact` or `answered` it makes the item known,
+as `unknown` said unknown, as `declined_by_user` or `declined_in_chat`
+declined; one let go says nothing. Removing the person or couple drops the
+link and the `fact` together.
+
+Each coach turn's done row in `turn_events` carries
+`coverage: {before: counts, after: counts}`, where counts is
+`{required, known, said_unknown, declined, not_asked}`.
+
 ---
 
 ## Validation & Constraints

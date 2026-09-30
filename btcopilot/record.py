@@ -25,6 +25,7 @@ from btcopilot.schema import (
     DateCertainty,
     EventKind,
     EvidenceKind,
+    Fact,
     ItemKind,
     PersonKind,
     Pushback,
@@ -354,6 +355,8 @@ def _remove(data: dict, kind: ItemKind, item_id) -> list[dict]:
         fields = {}
         if question.get("item_kind") == kind.value and str(question.get("item_id")) == str(item_id):
             fields = {"item_kind": None, "item_id": None}
+            if question.get("fact") is not None:
+                fields["fact"] = None
             if question["state"] != QuestionState.Resolved:
                 fields.update(state=QuestionState.Resolved.value, outcome=QuestionOutcome.LetGo.value)
         kept = [
@@ -1085,6 +1088,7 @@ def _lost(data: dict, deltas: list[dict]) -> set[tuple]:
 
 
 QUESTION_LINKS = (ItemKind.Person, ItemKind.PairBond, ItemKind.Event, ItemKind.Cluster)
+FACT_LINKS = (ItemKind.Person, ItemKind.PairBond)
 
 
 @dataclass(frozen=True)
@@ -1213,6 +1217,7 @@ def _questions(data: dict, deltas: list[dict], author: Author):
             _rests(data, question, question_id, added)
         else:
             _linked(data, question, question_id)
+            _names(question, question_id)
         for other in questions:
             if (
                 str(other.get("id")) == question_id
@@ -1242,6 +1247,20 @@ def _linked(data: dict, question: dict, question_id: str):
         raise Invalid(
             f"question {question_id} is about {link[0]} {link[1]}, which is not in the record",
             GONE,
+        )
+
+
+def _names(question: dict, question_id: str):
+    """A fact question may name the item of the basic data it asks about, on
+    the person or the couple it is linked to."""
+    if question.get("fact") is None:
+        return
+    Fact(question["fact"])
+    if question["kind"] != QuestionKind.Fact or question.get("item_kind") not in FACT_LINKS:
+        raise Invalid(
+            f"question {question_id} names {question['fact']}: only a fact question "
+            "about a person or a couple names what it asks",
+            "It named what the question asks on something that cannot hold it.",
         )
 
 
