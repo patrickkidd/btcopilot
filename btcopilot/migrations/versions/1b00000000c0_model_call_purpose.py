@@ -30,14 +30,22 @@ def upgrade():
     PURPOSE.create(op.get_bind(), checkfirst=True)
     with op.batch_alter_table("model_calls", schema=None) as batch_op:
         batch_op.add_column(sa.Column("purpose", PURPOSE, nullable=True))
-    op.execute("""
-        UPDATE model_calls SET purpose = CASE
-            WHEN turn_id LIKE 'shadow-%' THEN 'shadow'::purpose
-            WHEN turn_id LIKE 'backfill:%' OR turn_id LIKE 'impression-backfill:%'
-                THEN 'backfill'::purpose
-            ELSE 'coach'::purpose
-        END
-        """)
+    calls = sa.table("model_calls", sa.column("purpose", PURPOSE), sa.column("turn_id", sa.String))
+    op.execute(
+        calls.update().values(
+            purpose=sa.case(
+                (calls.c.turn_id.like("shadow-%"), sa.cast("shadow", PURPOSE)),
+                (
+                    sa.or_(
+                        calls.c.turn_id.like("backfill:%"),
+                        calls.c.turn_id.like("impression-backfill:%"),
+                    ),
+                    sa.cast("backfill", PURPOSE),
+                ),
+                else_=sa.cast("coach", PURPOSE),
+            )
+        )
+    )
     with op.batch_alter_table("model_calls", schema=None) as batch_op:
         batch_op.alter_column("purpose", nullable=False)
 
