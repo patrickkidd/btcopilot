@@ -214,6 +214,7 @@ rulings and the oracle SPEC. The encrypted rulings store and prompts in this rep
 | Drawability — when the timeline picture may draw vs must ask | [doc/DRAWABILITY.md](doc/DRAWABILITY.md) |
 | Diagram rendering | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md), [doc/FRAGMENT_CONVENTIONS.md](doc/FRAGMENT_CONVENTIONS.md) |
 | Tests and known defects | [doc/TEST_STRATEGY.md](doc/TEST_STRATEGY.md), [doc/KNOWN_DEFECTS.md](doc/KNOWN_DEFECTS.md) |
+| Feedback loops | [doc/FEEDBACK_LOOPS.md](doc/FEEDBACK_LOOPS.md) — every signal, what closes it, the number that proves it; checked on demand by `/product-owner` |
 | Box and release | [doc/PLATFORM_BUILD.md](doc/PLATFORM_BUILD.md), [deploy/README.md](deploy/README.md) |
 | Prompt engineering decisions | [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) |
 | Bowen theory | [CONTEXT.md](CONTEXT.md), [doc/specs/BOWEN_THEORY.md](doc/specs/BOWEN_THEORY.md) |
