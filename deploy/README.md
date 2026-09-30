@@ -136,6 +136,7 @@ The quality dashboard, `fd-quality`, is kept in `grafana/fd-quality.json` and pu
 with `POST /api/dashboards/db` (`{"dashboard": ..., "overwrite": true}`) on the service account
 token `GRAFANA_SA_TOKEN`. Its recorded-run panels read `quality_runs`, which every release fills
 with `flask admin quality load` (see `quality/evals/README.md`).
+The features dashboard, `fd-features` (what people use, and what the coach and the app sent and what came back), is kept in `grafana/fd-features.json` and put the same way: the release's "Push the dashboards" step (`bin/grafanapush.py`) puts every file in `grafana/`.
 
 The desktop app's update feeds live on the legacy box and are forwarded because shipped apps have this address built in.
 

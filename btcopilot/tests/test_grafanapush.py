@@ -49,3 +49,17 @@ def test_the_release_pushes_the_dashboards_after_the_deploy():
     assert names.index("Pull the image and run the chain") < names.index("Push the dashboards")
     assert push["run"] == "python bin/grafanapush.py"
     assert push["env"]["GRAFANA_SA_TOKEN"] == "${{ secrets.GRAFANA_SA_TOKEN }}"
+
+
+def test_the_features_dashboard_carries_a_panel_for_each_loop():
+    # R-0077, R-0517
+    dashboard = json.loads((grafanapush.DASHBOARDS / "fd-features.json").read_text())
+    titles = {panel["title"] for panel in dashboard["panels"]}
+    assert (dashboard["uid"], "id" in dashboard) == ("fd-features", False)
+    assert {
+        "Feature use a day",
+        "Messages the coach wrote first, by the week they were sent",
+        "Bug reports and feedback the coach offered to send, per week",
+        "Notices: how many people each was sent to, and how many opened it",
+        "Coach edits to things an earlier sitting put down, per week",
+    } <= titles

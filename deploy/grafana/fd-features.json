@@ -1,0 +1,1324 @@
+{
+  "uid": "fd-features",
+  "title": "Features: what people use",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "1m",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "ffz1wy7unkdfke"
+        },
+        "definition": "select username from users where username not like 'claude-test%' order by 1",
+        "hide": 0,
+        "includeAll": true,
+        "label": "People",
+        "multi": true,
+        "name": "people",
+        "options": [],
+        "query": "select username from users where username not like 'claude-test%' order by 1",
+        "refresh": 1,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "claude-test",
+          "value": "claude-test"
+        },
+        "hide": 0,
+        "label": "Exclude (regex)",
+        "name": "exclude",
+        "query": "claude-test",
+        "type": "textbox"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(distinct pe.user_id) as value from product_events pe join users u on u.id=pe.user_id where u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and $__timeFilter(pe.client_at)",
+          "refId": "A"
+        }
+      ],
+      "title": "People active",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(distinct pe.session_id) as value from product_events pe join users u on u.id=pe.user_id where u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and $__timeFilter(pe.client_at)",
+          "refId": "A"
+        }
+      ],
+      "title": "Sessions",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as value from product_events pe join users u on u.id=pe.user_id where pe.name <> 'screen_open' and u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and $__timeFilter(pe.client_at)",
+          "refId": "A"
+        }
+      ],
+      "title": "Taps",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as value from product_events pe join users u on u.id=pe.user_id where pe.name = 'screen_open' and u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and $__timeFilter(pe.client_at)",
+          "refId": "A"
+        }
+      ],
+      "title": "Screens opened",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {},
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": 5,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select pe.name as metric, count(*) as value from product_events pe join users u on u.id=pe.user_id where pe.name <> 'screen_open' and u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and $__timeFilter(pe.client_at) group by 1 order by value desc",
+          "refId": "A"
+        }
+      ],
+      "title": "Features by use",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "uses"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select u.username as person, pe.name as feature, count(*) as uses from product_events pe join users u on u.id=pe.user_id where pe.name <> 'screen_open' and u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and $__timeFilter(pe.client_at) group by 1,2 order by uses desc",
+          "refId": "A"
+        }
+      ],
+      "title": "Features by person",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "with top as (select pe.name from product_events pe join users u on u.id=pe.user_id where pe.name <> 'screen_open' and u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and $__timeFilter(pe.client_at) group by pe.name order by count(*) desc limit 12) select $__timeGroupAlias(pe.client_at,'1d'), case when pe.name in (select name from top) then pe.name else 'other' end as metric, count(*) as value from product_events pe join users u on u.id=pe.user_id where pe.name <> 'screen_open' and u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and $__timeFilter(pe.client_at) group by 1,2 order by 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Feature use a day",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(pe.client_at,'1d'), pe.screen as metric, count(*) as value from product_events pe join users u on u.id=pe.user_id where pe.name = 'screen_open' and u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and $__timeFilter(pe.client_at) group by 1,2 order by 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Screens opened a day",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "id": 9,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select u.username as person, pe.name as feature, min(pe.client_at) as first_time from product_events pe join users u on u.id=pe.user_id where pe.name <> 'screen_open' and u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and $__timeFilter(pe.client_at) group by 1,2 order by 1,2",
+          "refId": "A"
+        }
+      ],
+      "title": "First use of each feature, by person",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "days_active"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "taps"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 44
+      },
+      "id": 10,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select u.username as person, count(distinct pe.client_at::date) as days_active, min(pe.client_at::date) as first_day, max(pe.client_at::date) as last_day, count(*) filter (where pe.name <> 'screen_open') as taps from product_events pe join users u on u.id=pe.user_id where u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and $__timeFilter(pe.client_at) group by 1 order by taps desc",
+          "refId": "A"
+        }
+      ],
+      "title": "Days active, by person",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_minutes"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 52
+      },
+      "id": 11,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with first_session as (select pe.user_id, pe.session_id, min(pe.client_at) as session_start, row_number() over (partition by pe.user_id order by min(pe.client_at)) as rn from product_events pe group by pe.user_id, pe.session_id), fs as (select user_id, session_id from first_session where rn = 1) select u.username as person, string_agg(pe.screen, ' -> ' order by pe.client_at) filter (where pe.name = 'screen_open') as path, extract(epoch from (max(pe.client_at) - min(pe.client_at)))/60.0 as session_minutes from product_events pe join fs on fs.user_id = pe.user_id and fs.session_id = pe.session_id join users u on u.id = pe.user_id where u.username in (${people:sqlstring}) and u.username !~ '${exclude}' group by u.username order by u.username",
+          "refId": "A"
+        }
+      ],
+      "title": "First session path",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cost"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "taps"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cost_per_tap"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 60
+      },
+      "id": 12,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with cost as (select mc.user_id, sum(mc.cost_usd) as cost from model_calls mc where $__timeFilter(mc.created_at) group by mc.user_id), taps as (select pe.user_id, count(*) as taps from product_events pe where pe.name <> 'screen_open' and $__timeFilter(pe.client_at) group by pe.user_id) select u.username as person, coalesce(cost.cost,0) as cost, coalesce(taps.taps,0) as taps, case when coalesce(taps.taps,0) = 0 then null else coalesce(cost.cost,0)/taps.taps end as cost_per_tap from users u left join cost on cost.user_id = u.id left join taps on taps.user_id = u.id where u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and (coalesce(cost.cost,0) > 0 or coalesce(taps.taps,0) > 0) order by cost desc",
+          "refId": "A"
+        }
+      ],
+      "title": "Cost per person per feature share",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {},
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 68
+      },
+      "id": 13,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select coalesce(elem->>'item_kind','unknown') as metric, count(*) as value from diagram_changes dc join users u on u.id = dc.user_id cross join lateral jsonb_array_elements(dc.deltas) as elem where u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and $__timeFilter(dc.created_at) group by 1 order by value desc",
+          "refId": "A"
+        }
+      ],
+      "title": "Coach edits by kind",
+      "type": "barchart"
+    },
+    {
+      "id": 14,
+      "type": "row",
+      "title": "What the coach and the app sent, and what came back",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 76
+      },
+      "panels": []
+    },
+    {
+      "id": 15,
+      "type": "barchart",
+      "title": "Messages the coach wrote first, by the week they were sent",
+      "description": "Each message is counted in the week it was sent, with what followed it: its notification opened, an answer within two days, the person back in the app within a week.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 77
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#3987e5"
+          },
+          "custom": {
+            "axisLabel": "messages",
+            "fillOpacity": 100,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "axisSoftMax": 4
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "sent"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "opened"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d95926"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "answered within 2 days"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#199e70"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "back in the app within a week"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#c98500"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "auto",
+        "barRadius": 0.1,
+        "barWidth": 0.9,
+        "groupWidth": 0.7,
+        "showValue": "never",
+        "stacking": "none",
+        "xTickLabelRotation": 0,
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with w as (select generate_series(date_trunc('week', $__timeFrom()::timestamptz at time zone 'UTC'), $__timeTo()::timestamptz at time zone 'UTC', interval '1 week') as week), m as (select o.turn_id, date_trunc('week', o.created_at) as week from observations o join diagrams dg on dg.id = o.diagram_id join users u on u.id = dg.user_id where not dg.scratch and u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and o.kind = 'proactive_sent' and $__timeFilter(o.created_at)) select to_char(w.week, 'Mon DD') as \"week of\", count(o.id) filter (where o.kind = 'proactive_sent') as \"sent\", count(o.id) filter (where o.kind = 'proactive_opened') as \"opened\", count(o.id) filter (where o.kind = 'proactive_replied') as \"answered within 2 days\", count(o.id) filter (where o.kind = 'proactive_returned') as \"back in the app within a week\" from w left join m on m.week = w.week left join observations o on o.turn_id = m.turn_id group by w.week order by w.week",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "type": "barchart",
+      "title": "Bug reports and feedback the coach offered to send, per week",
+      "description": "Each offer the person answered: sent, or declined.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 77
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#3987e5"
+          },
+          "custom": {
+            "axisLabel": "offers",
+            "fillOpacity": 100,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "axisSoftMax": 4
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bug reports sent"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bug reports declined"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d95926"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "feedback sent"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#199e70"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "feedback declined"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#c98500"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "auto",
+        "barRadius": 0.1,
+        "barWidth": 0.9,
+        "groupWidth": 0.7,
+        "showValue": "never",
+        "stacking": "none",
+        "xTickLabelRotation": 0,
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with w as (select generate_series(date_trunc('week', $__timeFrom()::timestamptz at time zone 'UTC'), $__timeTo()::timestamptz at time zone 'UTC', interval '1 week') as week), r as (select r.* from reports r join users u on u.id = r.user_id where u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and $__timeFilter(r.created_at)) select to_char(w.week, 'Mon DD') as \"week of\", count(r.id) filter (where r.kind = 'bug' and r.status = 'sent') as \"bug reports sent\", count(r.id) filter (where r.kind = 'bug' and r.status = 'declined') as \"bug reports declined\", count(r.id) filter (where r.kind = 'feedback' and r.status = 'sent') as \"feedback sent\", count(r.id) filter (where r.kind = 'feedback' and r.status = 'declined') as \"feedback declined\" from w left join r on date_trunc('week', r.created_at) = w.week group by w.week order by w.week",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "type": "barchart",
+      "title": "Notices: how many people each was sent to, and how many opened it",
+      "description": "One pair of bars per notice, counting the people who got it in the chosen time range.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 86
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#3987e5"
+          },
+          "custom": {
+            "axisLabel": "people",
+            "fillOpacity": 100,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "axisSoftMax": 4
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "sent to"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "opened by"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d95926"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "horizontal",
+        "barRadius": 0.1,
+        "barWidth": 0.9,
+        "groupWidth": 0.7,
+        "showValue": "auto",
+        "stacking": "none",
+        "xTickLabelRotation": 0,
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select n.title as \"notice\", count(nt.id) as \"sent to\", count(nt.opened_at) as \"opened by\" from notifications nt join notices n on n.id = nt.notice_id join users u on u.id = nt.user_id where nt.kind = 'notice' and u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and $__timeFilter(nt.created_at) group by n.id, n.title order by n.id",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "type": "barchart",
+      "title": "Coach edits to things an earlier sitting put down, per week",
+      "description": "Edit calls the coach made on people, events or pair-bonds that were already there when the sitting began.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 86
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#3987e5"
+          },
+          "custom": {
+            "axisLabel": "edits",
+            "fillOpacity": 100,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "axisSoftMax": 4
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "edits"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "auto",
+        "barRadius": 0.1,
+        "barWidth": 0.9,
+        "groupWidth": 0.7,
+        "showValue": "never",
+        "stacking": "none",
+        "xTickLabelRotation": 0,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with w as (select generate_series(date_trunc('week', $__timeFrom()::timestamptz at time zone 'UTC'), $__timeTo()::timestamptz at time zone 'UTC', interval '1 week') as week), e as (select o.created_at, (o.detail->>'count')::int as edits from observations o join diagrams dg on dg.id = o.diagram_id join users u on u.id = dg.user_id where not dg.scratch and u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and o.kind = 'earlier_edit' and $__timeFilter(o.created_at)) select to_char(w.week, 'Mon DD') as \"week of\", coalesce(sum(e.edits), 0) as \"edits\" from w left join e on date_trunc('week', e.created_at) = w.week group by w.week order by w.week",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}
