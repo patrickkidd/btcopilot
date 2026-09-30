@@ -38,9 +38,8 @@ bp = Blueprint(
 
 # What a browser fetches without its cookie: the service worker, the manifest,
 # the icons the manifest names, and the icon iOS puts on the home screen; and
-# where a bug is reported from a signed-out page or the worker, which carry no
-# CSRF token, so the browser's word that the post came from this site stands in
-# for one.
+# where a report is posted, which takes no CSRF token, so the browser's word
+# that the post came from this site stands in for one.
 PUBLIC = {"app.service_worker", "app.manifest", "app.apple_touch_icon", "app.create_report"}
 TOKENLESS = {"app.create_report"}
 PUBLIC_STATIC = re.compile(r"web/icon-\w+\.png")

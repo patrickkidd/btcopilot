@@ -68,8 +68,8 @@ class UserDataFilter(logging.Filter):
 
 class RequestIdFilter(logging.Filter):
     """Every line logged while a request is served names that request: the id
-    its response carries, which the page reports when the server broke on it
-    [Oracle: R-0056]. A line outside a served request has none."""
+    its response carries, so an answer is found in the logs [Oracle: R-0056].
+    A line outside a served request has none."""
 
     def filter(self, record):
         record.request_id = g.get("request_id", "-") if has_request_context() else "-"
