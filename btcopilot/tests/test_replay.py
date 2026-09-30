@@ -2,10 +2,10 @@ import json
 
 import pytest
 
-from btcopilot.coachmodel import CoachModel, ModelTurn, Spent, ToolCall
+from btcopilot.coachmodel import CoachModel, ModelTurn, Spent, ToolCall, marked_ends
 from btcopilot.llmutil import Served
 from btcopilot.quality import Source
-from btcopilot.tests.live import answer
+from btcopilot.tests.live import answer, subscription
 from btcopilot.tests.live.replay import Miss, Mode, Replay
 
 MESSAGES = [{"role": "user", "content": "My brother moved away last spring."}]
@@ -143,3 +143,29 @@ def test_a_subscription_answer_replays_where_replay_only_finds_it(tmp_path):
     assert turn.calls == [ToolCall("t1", "add_event", {"kind": "moved"})]
     assert turn.spent == Spent()
     assert replay.subscribed
+
+
+def test_a_subscription_replay_sends_none_of_the_apps_cache_marks(tmp_path):
+    # R-0568
+    chat = marked_ends(
+        [
+            {"role": "user", "content": "My brother moved away last spring."},
+            {
+                "role": "assistant",
+                "content": [
+                    {"type": "text", "text": "When did he leave?"},
+                    {"type": "tool_use", "id": "t1", "name": "add_event", "input": {}},
+                ],
+            },
+            {
+                "role": "user",
+                "content": [{"type": "tool_result", "tool_use_id": "t1", "content": "ok"}],
+            },
+            {"role": "user", "content": [{"type": "text", "text": "In April."}]},
+        ],
+        [2, 3],
+    )
+    assert "cache_control" in json.dumps(chat)
+    lines = subscription.transcript(chat, "s1", tmp_path)
+    assert "cache_control" not in json.dumps([line["message"] for line in lines])
+    assert lines[1]["message"]["content"][1]["name"] == "mcp__coach__add_event"
