@@ -19,13 +19,8 @@ function worker(release: string, held: string[] = [], windows: ReturnType<typeof
   };
   const shown = vi.fn(async (_title: string, _options: NotificationOptions) => undefined);
   const openWindow = vi.fn(async (_url: string) => undefined);
-  const fetch = vi.fn(async (_url: string, _init: RequestInit) => new Response(null, { status: 201 }));
   runInNewContext(SOURCE, {
     URL,
-    Error,
-    JSON,
-    fetch,
-    console,
     caches,
     self: {
       location: { href: `https://familydiagram.com/app/sw.js?release=${release}` },
@@ -40,7 +35,7 @@ function worker(release: string, held: string[] = [], windows: ReturnType<typeof
     on[kind]({ ...event, waitUntil: (work: Promise<unknown>) => (done = work) });
     return done;
   };
-  return { fire, on, fetch, caches, shown, openWindow };
+  return { fire, caches, shown, openWindow };
 }
 
 const tap = (id: number) => ({ notification: { data: { id }, close: vi.fn() } });
@@ -89,46 +84,5 @@ describe("a coach notification", () => {
     expect(open.postMessage.mock.calls).toEqual([[{ notification: 7 }]]);
     expect(open.focus).toHaveBeenCalled();
     expect(openWindow).not.toHaveBeenCalled();
-  });
-});
-
-describe("an error in the worker", () => {
-  // R-0056
-  it("is reported as it happens with no sheet, with only the worker's own frames", async () => {
-    const { on, fetch } = worker("3.2026.9.29.1");
-    const error = new TypeError("json is not a function");
-    error.stack = [
-      "TypeError: json is not a function",
-      "    at https://familydiagram.com/app/sw.js?release=3.2026.9.29.1:61:31",
-      "    at chrome-extension://abcdef/inject.js:4:11",
-    ].join("\n");
-    on.error({ error, message: error.message });
-    on.unhandledrejection({ reason: "the cache is full" });
-    expect(fetch.mock.calls.map(([url, init]) => [url, JSON.parse(init.body as string)])).toEqual([
-      [
-        "/app/reports",
-        {
-          kind: "bug",
-          status: "sent",
-          source: "worker",
-          release: "3.2026.9.29.1",
-          address: "/app/sw.js",
-          error: "TypeError: json is not a function",
-          frames: ["https://familydiagram.com/app/sw.js?release=3.2026.9.29.1:61:31"],
-        },
-      ],
-      [
-        "/app/reports",
-        {
-          kind: "bug",
-          status: "sent",
-          source: "worker",
-          release: "3.2026.9.29.1",
-          address: "/app/sw.js",
-          error: "the cache is full",
-          frames: [],
-        },
-      ],
-    ]);
   });
 });

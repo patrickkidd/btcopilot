@@ -545,24 +545,6 @@ export enum ReportStatus {
   Declined = "declined",
 }
 
-/** Where a bug was caught. Mirrors the page's and the worker's
- * `ReportSource` on the server, which also has its own. */
-export enum ReportSource {
-  Page = "page",
-  Worker = "worker",
-}
-
-/** A request the server broke on, as the call helper names it: never the
- * server's own words, which can quote the record. */
-export interface RequestFailure {
-  status: number;
-  method: string;
-  /** The address with every id in it replaced. */
-  path: string;
-  /** The id the server's answer carried, which its log lines name. */
-  request_id: string;
-}
-
 /** A report as it is sent: one row of the reports table. */
 export interface Report {
   kind: ReportKind;
@@ -570,17 +552,10 @@ export interface Report {
   release: string;
   /** The screen the page was on. */
   address: string;
-  turn_id?: string;
-  /** The newest statement on screen, never the person's words. */
-  statement_id?: number | null;
-  source?: ReportSource;
-  error?: string;
-  /** The error's stack, only the frames in the app's own scripts. */
-  frames?: string[];
-  request_id?: string;
-  /** How many times it happened, when more than once. */
-  count?: number;
-  /** The person's own words, which the coach offered to send. */
+  turn_id: string;
+  /** The coach's reply that offered it. */
+  statement_id: number;
+  /** The words the coach offered to send; none once turned down. */
   words?: string;
 }
 

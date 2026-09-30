@@ -4,38 +4,10 @@
 // page loads them rather than named here. The page registers the worker with
 // the release it was served with, so each release has its own cache and the
 // worker for a new one deletes the last one's on activation.
-const HERE = new URL(self.location.href);
-const RELEASE = HERE.searchParams.get("release");
+const RELEASE = new URL(self.location.href).searchParams.get("release");
 if (!RELEASE) throw new Error("the worker was registered without its release");
 const CACHE = `familydiagram-${RELEASE}`;
 const SHELL = ["/app/", "/app/manifest.webmanifest"];
-
-// An error in the worker is reported as it happens, with no sheet: the worker
-// has no screen to raise one on (R-0056). Only the frames of its stack in the
-// worker itself go with it. A report that cannot be sent is only logged, since
-// reporting that would report again.
-const FRAME = /[a-z][a-z0-9+.-]*:\/\/[^\s()]+?:\d+:\d+/g;
-
-function report(thrown) {
-  const error = thrown instanceof Error ? `${thrown.name}: ${thrown.message}` : String(thrown);
-  const frames = ((thrown instanceof Error && thrown.stack) || "").match(FRAME) || [];
-  return fetch("/app/reports", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      kind: "bug",
-      status: "sent",
-      source: "worker",
-      release: RELEASE,
-      address: HERE.pathname,
-      error,
-      frames: frames.filter((frame) => frame.startsWith(HERE.origin + HERE.pathname)),
-    }),
-  }).catch((failed) => console.warn("the worker's report was not sent", failed));
-}
-
-self.addEventListener("error", (e) => report(e.error ?? e.message));
-self.addEventListener("unhandledrejection", (e) => report(e.reason));
 
 self.addEventListener("install", (e) => {
   e.waitUntil(

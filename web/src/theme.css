@@ -2636,13 +2636,9 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   touch-action: pan-y;
   overscroll-behavior: contain;
 }
-.rp-row { padding: 8px 0; border-bottom: 1px solid var(--line); }
-.rp-row:last-child { border-bottom: 0; }
-.rp-l { font: 400 15px/1.3 var(--sans); color: var(--faint); }
 .rp-v { font: 400 17px/1.4 var(--sans); color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
 .rp .cf-go:active, .rp .cf-no:not(:disabled):active { opacity: 0.55; }
 .rp .cf-no:disabled { color: var(--faint); cursor: default; }
-.rp-note { margin-top: -8px; text-align: center; font: 400 13px/1.3 var(--sans); color: var(--faint); }
 
 /* a turn above the last agreed line, tapped: one faint line, no outline */
 .abv {

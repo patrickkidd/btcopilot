@@ -24,7 +24,6 @@ import { aimedEvents, chips, itemKind, Lead } from "./chips";
 import { feed } from "./turn";
 import { Release } from "./release";
 import { Reports } from "./report";
-import { Faults } from "./faults";
 import { toolLine } from "./tools";
 import {
   CHIP_KIND,
@@ -674,35 +673,15 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
   onNotice: (one) => notices.open(one, beyond(one.link) !== null),
 });
 
-/** A coach turn or the page that broke, or what the coach heard the person
- * say about the app, offered to be sent as a report (R-0056). */
-const faults = new Faults(location.origin);
-const reports = new Reports(
-  $("overlay").parentElement!,
-  () => settings.set({ bug_reports: BugReports.Always }),
-  faults,
-  () => chat.draft() !== "",
+/** What the coach heard the person say about the app, or saw it misread,
+ * offered to be sent as a report (R-0056). */
+const reports = new Reports($("overlay").parentElement!, () =>
+  settings.set({ bug_reports: BugReports.Always }),
 );
 reports.always = window.BOOTSTRAP.user?.prefs.bug_reports === BugReports.Always;
 
-/** The newest statement the thread on screen holds, which an error on the
- * page is reported against. */
+/** The newest statement the thread on screen holds. */
 let newest: number | null = window.BOOTSTRAP.statements.at(-1)?.id ?? null;
-
-/** An error on the page, raised only when it is the app's own; the browser
- * logs every one to the console either way. One that broke drawing a turn
- * names the turn. */
-const pageBroke = (thrown: unknown, said: string, turnId?: string) => {
-  const fault = faults.fault(thrown, said);
-  if (fault) reports.page(fault, newest, turnId);
-};
-window.addEventListener("error", (e) => pageBroke(e.error, e.message));
-window.addEventListener("unhandledrejection", (e) => pageBroke(e.reason, String(e.reason)));
-window.addEventListener("pagehide", () => (faults.leaving = true));
-// a page kept by the browser and shown again is not going away
-window.addEventListener("pageshow", () => (faults.leaving = false));
-
-api.onBroke((failure) => reports.request(failure));
 
 /** A notice goes to the screen it names or the address it carries (R-0611). */
 const notices = new Notices(new Strip($("speakrow")), $("account"), (link) =>
@@ -1076,7 +1055,6 @@ async function send(): Promise<void> {
   if (!statement || inFlight) return;
   await questions.sending(statement);
   chat.resetDraft();
-  reports.resume();
   post(statement);
 }
 
@@ -1164,7 +1142,8 @@ function follow(turnId: string): void {
   // The events are drawn in the order they happened, and re-reading the record
   // takes a moment, so each one waits for the one before it. One that breaks
   // stops the page following the turn: nothing after it is drawn, the thread
-  // warns, and trying again reads the thread back from the server.
+  // warns, and trying again reads the thread back from the server. The error
+  // goes on to the page's own error handler, which Grafana hears.
   let queue: Promise<void> = Promise.resolve();
   let broken = false;
   /** What the person said about the app, which the coach offered to send. */
@@ -1177,7 +1156,7 @@ function follow(turnId: string): void {
         stopFollowing();
         chat.busy(false);
         chat.warn(UNDRAWN, () => void reload());
-        pageBroke(error, String(error), turnId);
+        reportError(error);
       });
   };
 
@@ -1231,7 +1210,6 @@ function follow(turnId: string): void {
           stopped = { turn: turnId, bubble: bubble.bubble };
         }
         chat.warn(message, () => void resume(turnId));
-        reports.turn(message, turnId);
       }),
     refused: (message) =>
       step(() => {
@@ -1284,8 +1262,7 @@ async function catchUp(): Promise<void> {
 }
 
 window.setInterval(() => {
-  // a phone that lost its signal is not a bug; the server breaking on it is
-  // raised by the call itself
+  // a phone that lost its signal, or the server breaking on it, is only logged
   if (document.visibilityState === "visible")
     void catchUp().catch((error) => {
       if (!(error instanceof api.Failed)) throw error;
@@ -1415,9 +1392,6 @@ $("info").addEventListener("click", () => {
 // With a real keyboard Return sends; a new line is Shift- or Alt-Return, and
 // on a touch screen Return, so a message can have paragraphs (R-0368). The
 // break is a plain newline so the draft keeps it.
-$("composer").addEventListener("input", () => {
-  if (chat.draft() === "") reports.resume();
-});
 $("composer").addEventListener("keydown", (e) => {
   const key = e as KeyboardEvent;
   const act = returnKey(key, touch());
@@ -1868,17 +1842,13 @@ void load().then(async () => {
   .then(() => landing(land));
 
 // The dev server too: push needs the worker, and the worker asks the network
-// first, so a saved edit still reaches the page. A worker that will not start
-// is a bug, unless the phone is offline.
+// first, so a saved edit still reaches the page.
 if ("serviceWorker" in navigator)
   window.addEventListener("load", () =>
-    navigator.serviceWorker
-      .register(`/app/sw.js?release=${encodeURIComponent(window.BOOTSTRAP.version)}`, {
-        scope: "/app/",
-      })
-      .catch((error) => {
-        if (navigator.onLine) pageBroke(error, String(error));
-      }),
+    navigator.serviceWorker.register(
+      `/app/sw.js?release=${encodeURIComponent(window.BOOTSTRAP.version)}`,
+      { scope: "/app/" },
+    ),
   );
 
 // A coder opens on their one task rather than on the chat (R-0265, frame f1),

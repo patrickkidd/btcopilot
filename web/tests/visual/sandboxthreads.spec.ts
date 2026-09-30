@@ -72,12 +72,6 @@ test.describe(() => {
       const r = await resumed;
       const changedNow = (await thread(page)).html !== before.html;
       await page.waitForSelector("#chat button.retry", { timeout: 30_000 });
-      // the turn breaking again raises the bug sheet, once for the same error (R-0056)
-      if (round === 1) {
-        const sheet = page.locator(".fs-sheet.rp");
-        await sheet.getByRole("button", { name: "Send the report" }).click();
-        await sheet.getByRole("button", { name: "OK" }).click();
-      }
       await page.waitForTimeout(800);
       const after = await thread(page);
       const fresh = await page.evaluate(
