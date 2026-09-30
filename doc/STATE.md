@@ -23,15 +23,20 @@ The older handover files in the private corpus stay as they were, for the record
 
 FD-366 is the follow-on ticket (child of epic FD-362): the coverage checklist per Kerr chapter 10 with four states, prose quality by Patrick's picks, the conversational regression test, and the shadow spend category. FD-365 is frozen for review and merge as of 2026-09-30; new work goes on branch FD-366 from the FD-365 head, and the deploy lock moves to FD-366 when Patrick says so.
 
-**Start here for FD-366 (2026-09-30):**
+**Start here for FD-366 (2026-09-30).** FD-365 is merged and production runs release 3.2026.9.30.4. Move the deploy lock to FD-366 with `uv run bin/deploy-lock set FD-366` from this worktree.
 
-1. PR #142 (FD-365) is merged to master. Production runs release 3.2026.9.30.4. The deploy lock moves to FD-366 with `uv run bin/deploy-lock set FD-366` from this worktree; Patrick does this.
-2. Jira FD-366 holds the scope; draft PR #145 is this branch's PR.
-3. Queued rulings R-0603 to R-0618 sit in the private corpus file RULINGS_TO_APPEND_2026-09-29.md for Patrick's key; tests cite existing ids until then; a builder that changes a citation rebuilds the rulings index (bin/oracleindex.py) in the same commit.
-4. Decisions Patrick still owes: the two other parts of R-0485 (history means everything before the first coaching session; the coach may set a plateau flag) — the recommendation is drop the first, keep the second redefined as an expiring hypothesis that lowers ranking pressure and never closes an item; whether a complaint about the coach's dates counts as a bug the coach should offer; whether to build the shadow backfill (3 to 5 hours, about $9); the shadow spend of about $25 a month on his account, keep or stop.
-5. The theory corpus (sources repo, commit 8aaf482) now holds the required-data checklist with four states in REFERENCE.md section 6f and notes/basic-data.md; the public edition of the changed concept page is owed to this branch; REFERENCE.md needs a trim pass toward 7,000 words.
-6. First builds in order: the shadow spend category on the model-calls table and the cost panels; the public edition export; the coverage checklist and its panels; then the conversational regression test and the coverage-efficiency experiment.
-7. Patrick's test stack is `walk` on ports 8897 and 8898 at https://turin.humboldt-mine.ts.net:8898 (its data kept, currently down); the walk artifact is https://claude.ai/artifact/Mc212ud3zs2DyEcGnSaraQ; the feedback loops page is https://claude.ai/artifact/NempKMKmD2frcZy34fPb9A.
+Build, in this order:
+1. Shadow token spend as its own category on the cost dashboard.
+2. The coverage checklist: every fact the family evaluation needs, per relative, each one known, said unknown, declined, or not asked; the coach reads the next unasked items each turn; coverage panels on the features dashboard.
+3. The conversational regression test on Patrick's thread.
+
+Decided 2026-09-30 (relayed from the FD-365 session, to confirm with Patrick): drop R-0485's "history means everything before the first coaching session", so history is everything up to now; keep its plateau flag redefined as the coach's expiring hypothesis that asking about gaps is yielding little right now, which lowers the checklist's ranking pressure and never closes an item or hides the not-asked list.
+
+Patrick still decides: whether a complaint about the coach's dates is a bug the coach offers; whether to build the shadow backfill; keep or stop the shadow spend, about $25 a month.
+
+Patrick's key: append the queued rulings from the private corpus queue file.
+
+8. Queued 2026-09-30 (R-0619 in the queue file): the coach-started email as sent ("The coach wrote to you") fails Patrick's test — no reason given for the message, out-of-context body, over-read of a tiny sample, no conclusion or action. Owed: a design pass with drawn options for the subject line and body, framed like an unexpected phone call from the coach, short, one interesting point with something to chat about; no further proactive email until Patrick picks. Ties to theory open question 36.
 
 ## The product (ruled)
 

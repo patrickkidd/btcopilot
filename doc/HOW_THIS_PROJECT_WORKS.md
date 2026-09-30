@@ -58,6 +58,7 @@ makes that possible. So:
 - Parallel builders each get their own worktree and branch: the harness moves every sub-agent's
   working directory when any one of them switches worktree, so builders in separate worktrees
   running at the same time can collide. Guard every commit with a branch check first.
+- One migration per PR: squash a branch's migrations into a single revision on top of master's head before the PR is ready, and reset any sandbox database that ran the intermediate ones [Oracle: R-0622].
 
 ## Running tests: `bin/t`, and nothing else, while you build
 
