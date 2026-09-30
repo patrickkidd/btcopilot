@@ -28,6 +28,7 @@ const signIn = (admin: boolean) => {
     session: null,
     statements: [],
     version: "3.0.0",
+    beta: true,
   };
 };
 

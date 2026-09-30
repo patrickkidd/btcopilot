@@ -1,5 +1,6 @@
 import pytest
 
+import btcopilot
 from btcopilot import reports, toolbox
 from btcopilot.models import Report, ReportKind, ReportStatus
 from btcopilot.toolbox import ToolName
@@ -75,6 +76,15 @@ def test_feedback_the_person_turned_down_keeps_where_it_was_and_no_words(web):
     row = Report.query.one()
     assert (row.status, row.turn_id, row.statement_id, row.words) == (ReportStatus.Declined, "t2", 9202, None)
     assert post(web, dict(declined, words="Bigger dots.")).status_code == 400
+
+
+def test_a_bug_is_never_turned_down_during_the_beta(web, monkeypatch):
+    # R-0613
+    declined = {"kind": "bug", "status": "declined", "release": "r", "turn_id": "t1", "statement_id": 9100}
+    assert post(web, declined).status_code == 400
+    assert Report.query.count() == 0
+    monkeypatch.setattr(btcopilot, "BETA", False)
+    assert post(web, declined).status_code == 201
 
 
 @pytest.mark.parametrize(

@@ -8,6 +8,7 @@ from collections import deque
 
 from flask import current_app, request
 
+import btcopilot
 from btcopilot.extensions import db
 from btcopilot.models import Diagram, Report, ReportKind, ReportStatus, User
 
@@ -52,6 +53,8 @@ def take(body: dict, user: User | None, diagram: Diagram | None) -> Report:
     # what the person turned down keeps only where it was
     if (status is ReportStatus.Sent) != bool(body.get("words")):
         raise ValueError("A report sent carries the words the coach offered; one declined, none")
+    if btcopilot.BETA and kind is ReportKind.Bug and status is ReportStatus.Declined:
+        raise ValueError("A bug cannot be turned down during the beta")
     row = Report(
         kind=kind,
         status=status,

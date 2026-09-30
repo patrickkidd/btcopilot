@@ -142,7 +142,7 @@ mark carries an amber dot while one is unread.
 
 **Bug reports and feedback.** A sheet slides up from the bottom only when the coach offers one
 from the conversation [queued R-0613]: "Send this as a bug report?" with Send the report, Always
-send and Not a bug, or "Send this as feedback?" with Send the report and Not feedback. It is
+send and Don't send (disabled during the beta), or "Send this as feedback?" with Send the report and Not feedback. It is
 modal, never touches the thread, and after Send turns into "Your report was sent" with OK,
 closing by itself after ten seconds. Each answer is one row in the new `reports` table, status
 sent (with the words) or declined (without them). The coach page has a "Bug reports" setting:
@@ -641,9 +641,10 @@ Left from 2026-09-29 and 30:
 7. Two builder changes nobody asked for, for his yes or a revert: search results show chips as
    words; the Concept pages row moved into the Coding section and is now titled "Auditor's
    Coding Guide".
-8. The bug sheet does not force sending in the beta: "Not a bug" is a live button that writes a
-   declined row, where the queued R-0613 says a not-send button is disabled in the beta and the
-   person never decides what is a bug.
+8. The bug sheet's forced send in the beta is on branch FD-365, not deployed: "Don't send" is
+   drawn disabled with "Disabled during the beta" under it, and the server refuses a declined bug
+   with a 400; one constant on the server turns the beta off. The feedback sheet keeps a live
+   "Not feedback".
 9. The memory change and the notes field's new word shipped with no eval run.
 10. Every session in the meeting's "Put a session on the agenda" list is named "Free Diagram".
 11. The coding screen's title is clipped.

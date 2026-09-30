@@ -98,6 +98,8 @@ declare global {
       session: { id: number; turn: string | null } | null;
       statements: api.Said[];
       version: string;
+      /** The beta's forced sending of bugs (R-0613). */
+      beta: boolean;
     };
   }
 }

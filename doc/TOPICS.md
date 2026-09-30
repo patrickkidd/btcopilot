@@ -819,9 +819,9 @@ production yet.
 **Decided:** a modal sheet from the bottom, only from the coach's offers, never touching the
 thread; one row per answer in the `reports` table, sent or declined; errors in the code are
 Grafana's (Faro and Alloy), never a report [queued R-0613].
-**Open:** (1) [build] the beta's forced send is not built: "Not a bug" is live; (2) [build] the
-report route's limit is held in server memory; (3) [verify] a real turn on production offering a
-report.
+**Open:** (1) [deploy] the beta's forced send, "Don't send" disabled on the bug sheet and a declined
+bug refused by the server, is on branch FD-365, not deployed; (2) [build] the report route's limit
+is held in server memory; (3) [verify] a real turn on production offering a report.
 **Lives in:** doc/API.md (Reports); doc/SCREENS.md (Bug reports and feedback); doc/KNOWN_DEFECTS.md;
 doc/FEEDBACK_LOOPS.md row 8.
 **Next action:** disable the bug sheet's not-send button for the beta.

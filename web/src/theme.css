@@ -2639,6 +2639,8 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .rp-v { font: 400 17px/1.4 var(--sans); color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
 .rp .cf-go:active, .rp .cf-no:not(:disabled):active { opacity: 0.55; }
 .rp .cf-no:disabled { color: var(--faint); cursor: default; }
+/* why the bug sheet's Don't send is off, just under it (R-0613) */
+.rp-why { margin: -8px 0 0; text-align: center; font: 400 13px/1.3 var(--sans); color: var(--faint); }
 
 /* a turn above the last agreed line, tapped: one faint line, no outline */
 .abv {

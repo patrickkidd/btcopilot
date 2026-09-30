@@ -18,6 +18,10 @@ export const SENT_MS = 10_000;
  * or declined, trimmed and case-folded: the same words are never offered
  * twice a sitting, even across a reload. */
 const OFFERED = "reports.offered";
+/** The beta: a bug is sent or always sent, never turned down, and its Don't
+ * send is drawn disabled (R-0613). The server's switch, which also refuses a
+ * bug turned down. */
+const BETA = window.BOOTSTRAP.beta;
 
 enum Act {
   Send = "send",
@@ -26,8 +30,9 @@ enum Act {
   Ok = "ok",
 }
 
-const button = (act: Act, words: string, primary = false) =>
-  `<button class="${primary ? "cf-go" : "cf-no"}" type="button" data-act="${act}">${words}</button>`;
+const button = (act: Act, words: string, primary = false, disabled = false) =>
+  `<button class="${primary ? "cf-go" : "cf-no"}" type="button" data-act="${act}"` +
+  `${disabled ? ' disabled aria-describedby="rp-why"' : ""}>${words}</button>`;
 
 const HEADING = {
   [ReportKind.Bug]: "Send this as a bug report?",
@@ -35,7 +40,7 @@ const HEADING = {
 };
 
 const DECLINE = {
-  [ReportKind.Bug]: "Not a bug",
+  [ReportKind.Bug]: "Don't send",
   [ReportKind.Feedback]: "Not feedback",
 };
 
@@ -88,13 +93,15 @@ export class Reports {
 
   private raise(report: Report): void {
     this.at = report;
+    const forced = BETA && report.kind === ReportKind.Bug;
     this.sheet.show(
       `<div class="cf-t">${HEADING[report.kind]}</div>` +
         `<div class="rp-list"><div class="rp-v">${esc(report.words!)}</div></div>` +
         `<div class="cf-btns">` +
         button(Act.Send, "Send the report", true) +
         (report.kind === ReportKind.Bug ? button(Act.Always, "Always send") : "") +
-        button(Act.Not, DECLINE[report.kind]) +
+        button(Act.Not, DECLINE[report.kind], false, forced) +
+        (forced ? `<p class="rp-why" id="rp-why">Disabled during the beta</p>` : "") +
         `</div>`,
     );
     dragScroll(this.sheet.panel.querySelector<HTMLElement>(".rp-list")!);

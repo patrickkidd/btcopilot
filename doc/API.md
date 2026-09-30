@@ -67,7 +67,8 @@ person, or a signed-out page's address) gets 20 an hour, then 429. `kind` is
 `bug` or `feedback`, `status` is `sent` or `declined`, `release` is the app's
 version; `address` (the screen), `turn_id` and `statement_id` (the coach's
 reply that offered it) are optional. A report sent carries the offered `words`;
-one declined, none. Any other field is a 400; answers `{"id"}` with 201. An
+one declined, none. During the beta a declined bug is a 400. Any other field is a
+400; answers `{"id"}` with 201. An
 error in the page or the server is never a report: those go to Grafana (Faro
 on the page, Alloy for the server's logs), and every answer's `X-Request-Id`
 names the server's log lines for that request.

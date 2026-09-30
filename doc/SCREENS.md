@@ -451,15 +451,16 @@ What it is for: knowing what happened when a message does not go through.
 
 What it is for: telling the people who make the app that something did not work for you, or what you want changed, without leaving the conversation.
 
-- When you tell the coach the app or the coach went wrong (something did not work or did not update, the coach keeps repeating itself or misunderstood you, you correct the same thing in your record a second time, or you are frustrated with the app), the coach answers in one sentence and goes back to the conversation; once its reply is done, a sheet slides up from the bottom headed "Send this as a bug report?" with your words and the buttons "Send the report", "Always send" and "Not a bug". The coach may also offer one about its own mistake when it sees it misread your record; then the words are its own. [built] {R-0056}
-- When you tell the coach something you wish for or dislike about the app, the same sheet is headed "Send this as feedback?" with your own words and the buttons "Send the report" and "Not feedback". [built] {R-0056}
+- When you tell the coach the app or the coach went wrong (something did not work or did not update, the coach keeps repeating itself or misunderstood you, you correct the same thing in your record a second time, or you are frustrated with the app), the coach answers in one sentence and goes back to the conversation; once its reply is done, a sheet slides up from the bottom headed "Send this as a bug report?" with your words and the buttons "Send the report", "Always send" and "Don't send". The coach may also offer one about its own mistake when it sees it misread your record; then the words are its own. [built] {R-0056}
+- During the beta, "Don't send" on the bug sheet is drawn faint and cannot be tapped, with the line "Disabled during the beta" under it: you choose between sending this once and always sending, never whether it is a bug, and a bug is never turned down. [built] {R-0613}
+- When you tell the coach something you wish for or dislike about the app, the same sheet is headed "Send this as feedback?" with your own words and the buttons "Send the report" and "Not feedback". "Not feedback" stays live in the beta, for when the coach took something you said to it as feedback about the app. [built] {R-0056, R-0613}
 - The sheet is always in full, never folded, and takes the focus itself, not a button. It comes up for each new thing you say, but never twice in one sitting for the same words (ignoring case and spaces at either end), whether you sent them or turned them down; this phone remembers them across a reload. [built] {R-0056}
 - An error in the app's code never raises a sheet: the amber warning in the thread says what went wrong, and the error goes to Grafana. [built] {R-0056, R-0182}
 - The sheet is modal: the thread behind it is dimmed and cannot be tapped until you answer it, and nothing is ever added to the thread. [built] {R-0056}
 - The sheet and the card after it are as wide as a phone and at most 480 wide on a wider screen, centred at the bottom. [built] {R-0056}
 - After Send, the sheet turns in place into "Your report was sent" with an OK button; it closes on OK or by itself after ten seconds. If the report cannot be sent, the same card says so and why. [built] {R-0056}
 - "Always send" is kept in your settings: from then on a bug the coach offers is sent with no sheet and no card at all. Feedback still asks. [built] {R-0056}
-- A report is one row in the reports table: sent, it keeps the words; turned down, only the turn and the message it came from. [built] {R-0056}
+- A report is one row in the reports table: sent, it keeps the words; turned down, only the turn and the message it came from. During the beta only feedback is ever turned down. [built] {R-0056, R-0613}
 
 ## On a desktop (Pro)
 

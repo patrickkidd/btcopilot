@@ -5,6 +5,10 @@ import importlib.metadata
 
 IS_TEST = "pytest" in sys.modules
 
+# The beta: a button that turns down sending a bug is drawn disabled, and the
+# server refuses a bug turned down [Oracle: R-0613].
+BETA = True
+
 ACCESS_READ_ONLY = "ro"
 ACCESS_READ_WRITE = "rw"
 

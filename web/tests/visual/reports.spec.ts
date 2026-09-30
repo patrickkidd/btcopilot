@@ -79,7 +79,7 @@ test.describe("what the person says about the app", () => {
       ],
     });
 
-  // R-0056
+  // R-0056, R-0613
   test("raises the feedback sheet, and Not feedback puts it away and sends where it was, never the words", async ({
     page,
   }) => {
@@ -194,8 +194,10 @@ test.describe("a bug the coach offers", () => {
       ],
     });
 
-  // R-0056
-  test("asks with the words, and after Always send goes with no sheet and no card", async ({ page }) => {
+  // R-0056, R-0613
+  test("asks with the words and cannot be turned down in the beta, and after Always send goes with no sheet and no card", async ({
+    page,
+  }) => {
     await settle(page);
     const sent = posted(page);
     const FIRST = "The picture did not update after I told you about my sister.";
@@ -204,7 +206,17 @@ test.describe("a bug the coach offers", () => {
 
     await expect(heading(page)).toHaveText("Send this as a bug report?");
     await expect(sheet(page).locator(".rp-v")).toHaveText(FIRST);
-    await expect(sheet(page).getByRole("button")).toHaveText(["Send the report", "Always send", "Not a bug"]);
+    await expect(sheet(page).getByRole("button")).toHaveText(["Send the report", "Always send", "Don't send"]);
+    const not = sheet(page).getByRole("button", { name: "Don't send" });
+    await expect(not).toBeDisabled();
+    await expect(not).toHaveAccessibleDescription("Disabled during the beta");
+    await expect(sheet(page).locator(".rp-why")).toBeVisible();
+    // tapped anyway, it does nothing: the sheet stays and nothing is written
+    await not.click({ force: true });
+    await page.waitForTimeout(400);
+    await expect(heading(page)).toHaveText("Send this as a bug report?");
+    expect(sent).toHaveLength(0);
+
     await sheet(page).getByRole("button", { name: "Always send" }).click();
     await expect(sheet(page)).toBeHidden();
 

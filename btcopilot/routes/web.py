@@ -50,6 +50,7 @@ def _page() -> str:
             {"id": in_use.id, "name": in_use.name} if in_use else None
         ),
         "version": btcopilot.__version__,
+        "beta": btcopilot.BETA,
     }
     head = (
         f'<meta name="csrf-token" content="{escape(generate_csrf())}">'
