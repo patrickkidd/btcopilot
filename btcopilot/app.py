@@ -24,7 +24,7 @@ def create_app(config: dict = None, **kwargs):
     from btcopilot import auth, extensions, routes
     from btcopilot.review import routes as review_routes
     from btcopilot import admin
-    from btcopilot.auth import signin
+    from btcopilot.auth import landing, signin
     from btcopilot.routes.web import FRESH
 
     # Flask CLI may pass script_info as a kwarg, we ignore it
@@ -188,11 +188,14 @@ def create_app(config: dict = None, **kwargs):
     def version():
         return jsonify(version=btcopilot.__version__), FRESH
 
+    # A visitor gets the landing page (R-0601); someone signed in goes
+    # straight back to the app.
     @app.route("/")
     def root():
-        if signin.current_web_session():
+        web_session = signin.current_web_session()
+        if web_session and web_session.live():
             return redirect(app.config["APP_HOME"])
-        return redirect(url_for("auth.login"))
+        return landing.page()
 
     _log.debug("btcopilot.create_app() complete")
     return app

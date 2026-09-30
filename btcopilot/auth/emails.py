@@ -20,7 +20,7 @@ AUDITOR = (
 )
 
 
-def _deliver(recipient: str, subject: str, body: str):
+def _deliver(recipient: str, subject: str, body: str, reply_to: str | None = None):
     """A development server with no mail server configured writes the link or
     the code to the log instead, so a sandbox can be driven without one."""
     config = current_app.config
@@ -31,6 +31,7 @@ def _deliver(recipient: str, subject: str, body: str):
         subject,
         recipients=[recipient],
         sender=current_app.config["MAIL_DEFAULT_SENDER"],
+        reply_to=reply_to,
     )
     message.body = body
     extensions.mail.send(message)
@@ -83,3 +84,22 @@ def send_login_code(email: str, code: str, minutes: int):
 
 def send_notification(email: str, subject: str, words: str, url: str):
     _deliver(email, subject, f"{words}\n\n{url}\n")
+
+
+def send_signin_link(email: str, url: str):
+    _deliver(
+        email,
+        "Your Family Diagram sign-in link",
+        f"Open this link to sign in. It works once, lasts one day and needs no "
+        f"password.\n\n{url}\n",
+    )
+
+
+def send_beta_request(name: str, email: str, words: str):
+    _deliver(
+        current_app.config["ADMIN_EMAIL"],
+        f"Family Diagram beta request from {name}",
+        f"Name: {name}\nEmail: {email}\n\nA few words about them and their "
+        f"interest:\n{words or '(none given)'}\n",
+        reply_to=email,
+    )

@@ -10,6 +10,21 @@ Updated: 2026-09-29
 
 ---
 
+## Landing page
+
+What it is for: the first thing a visitor to familydiagram.com sees; someone already signed in goes straight to the app. [Oracle: R-0601]
+
+- The Alaska Family Systems logo at the top, linking to alaskafamilysystems.com; under it, "Version 3" and the name Family Diagram. In dark mode the logo sits on a light rounded panel so its purple words stay readable. [built]
+- The page takes its colours from the logo: purple buttons and links, a thin blue-to-purple band across the top, a faintly cool white ground with dark indigo words in light mode, and a deep indigo ground in dark mode. The logo is also the browser tab's icon. [built]
+- One paragraph, in Patrick's words: "An AI coach that keeps the story of your life. Tell it what happened, year by year; the record builds with every conversation, and it gets smarter at seeing patterns in the moments that matter." [built] {R-0602}
+- One line says beta access is by direct invitation only. [built]
+- "Already invited?": you type your email and tap Send my link. If the address was ever invited, or already has an account, a sign-in link good for one day is emailed to it; the page says the same words whether or not it was. At most five links an hour per address; past that nothing is sent and the page still says the same words. [built]
+- "Not invited yet?": your name, your email and, if you like, a few words about you and your interest (up to 2,000 characters), then Ask to join. A name or email split over two lines, or an email without exactly one @ or with a space in it, is refused in plain words. The request is emailed to Patrick with your address as the one to reply to; nothing is kept in the database. [built]
+- Both forms carry Cloudflare's Turnstile check that you are a person, because both send email; a failed check sends nothing and asks you to try again. [built]
+- The settings are two keys from a Turnstile widget made in the Cloudflare dashboard, `FLASK_TURNSTILE_SITE_KEY` and `FLASK_TURNSTILE_SECRET_KEY`, in the box's secrets file. Without them the page still shows but both buttons are greyed out and say the form is not available right now; a development server with neither key uses Cloudflare's test keys, which always pass. [built]
+- A tapped button greys out at once, so a second tap cannot send a second email. [built]
+- At the bottom: "©", the current year and "Alaska Family Systems", and nothing else. The year is the year of the visit, never typed into the page. [built]
+
 ## Signing in
 
 @frame built#f1 | Signed out: the app name, the address you are signing in as, and one button.

@@ -7,7 +7,7 @@ from werkzeug.exceptions import HTTPException
 
 from btcopilot.config import Config
 from btcopilot.models import User
-from btcopilot.auth import routes
+from btcopilot.auth import landing, routes
 from btcopilot.auth.blueprint import bp
 from btcopilot.auth.longsessions import LongSessions
 from btcopilot.auth.signin import SESSION_TOKEN, sign_in
@@ -23,6 +23,8 @@ CONFIG_DEFAULTS = {
     "LOGIN_CODE_MINUTES": 10,
     "LOGIN_CODES_PER_HOUR": 5,
     "INVITATION_DAYS": 14,
+    # A link the landing page sends an invited address for itself.
+    "LANDING_LINK_DAYS": 1,
     # A test sandbox sets this so a fixture link keeps working across windows
     # and devices until it expires; production links are used once.
     "INVITATION_REUSABLE": False,
@@ -30,6 +32,8 @@ CONFIG_DEFAULTS = {
     # A development stack may name one account that every request without a
     # session is signed in as, so a home-screen app needs no code.
     "DEV_AUTOLOGIN": None,
+    # Where the landing page's requests to join the beta go; the box sets it.
+    "ADMIN_EMAIL": "patrick@alaskafamilysystems.com",
 }
 
 
