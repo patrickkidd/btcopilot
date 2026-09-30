@@ -140,11 +140,8 @@ def _values(cls) -> list[str]:
     return [member.value for member in cls]
 
 
-def _enum_param(cls, description: str = "") -> dict:
-    param = {"type": "string", "enum": _values(cls)}
-    if description:
-        param["description"] = description
-    return param
+def _enum_param(cls, description: str) -> dict:
+    return {"type": "string", "enum": _values(cls), "description": description}
 
 
 CERTAINTY = (
@@ -154,12 +151,19 @@ CERTAINTY = (
 
 ASKED_IN = {
     "type": "integer",
-    "description": "Only when told to: the past session's coach message number that said it.",
+    "description": (
+        "Only when told to: the number of the coach message in a past session "
+        "that said it."
+    ),
 }
 
 VERSION = {
     "type": "integer",
-    "description": "From your last read or the map; needed to change or remove, not to add.",
+    "description": (
+        "The record version your last look at this item showed: the number at "
+        "the end of every read, or on the map. Needed to change or remove "
+        "something already in the record; not needed to add."
+    ),
 }
 
 
@@ -171,14 +175,16 @@ def schemas() -> list[dict]:
     return [
         {
             "name": ToolName.ReadPeople.value,
-            "description": "Everyone in the record: ids, names, parents.",
+            "description": "Everyone in the record, with their ids, names and parents.",
             "input_schema": {"type": "object", "properties": {}},
         },
         {
             "name": ToolName.ReadEvents.value,
             "description": (
-                "Events in date order; no filter returns all. words: what the "
-                "user said each came from; notes: notes in full."
+                "Events in the record, in date order. Narrow by ids, a date span, "
+                "one person, or one cluster; with no filter it returns everything. "
+                "Ask for the words to see what the user said that each event came "
+                "from, and for the notes to see them in full."
             ),
             "input_schema": {
                 "type": "object",
@@ -201,7 +207,7 @@ def schemas() -> list[dict]:
                 "properties": {
                     "event": {
                         "type": "integer",
-                        "description": "Left out: every event with notes.",
+                        "description": "One event's id; leave it out for every event that has notes.",
                     },
                 },
             },
@@ -209,14 +215,15 @@ def schemas() -> list[dict]:
         {
             "name": ToolName.ReadChanges.value,
             "description": (
-                "Latest record changes, newest first: version, who, what it set."
+                "The latest changes to the record, newest first: the version each "
+                "made, who made it, and what it set."
             ),
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "limit": {
                         "type": "integer",
-                        "description": f"Default {CHANGES_SHOWN}.",
+                        "description": f"How many; {CHANGES_SHOWN} if left out.",
                     },
                 },
             },
@@ -224,7 +231,8 @@ def schemas() -> list[dict]:
         {
             "name": ToolName.EditPerson.value,
             "description": (
-"Add a person, or change one by id."
+                "Add a person, or change one. Give id to change an existing person; "
+                "leave it out to add one."
             ),
             "input_schema": {
                 "type": "object",
@@ -233,7 +241,7 @@ def schemas() -> list[dict]:
                     "version": VERSION,
                     "name": {"type": "string"},
                     "last_name": {"type": "string"},
-                    "gender": _enum_param(PersonKind),
+                    "gender": _enum_param(PersonKind, "The person's gender."),
                     "parents": {
                         "type": "integer",
                         "description": means[prompts.ToolText.Parents],
@@ -243,7 +251,7 @@ def schemas() -> list[dict]:
         },
         {
             "name": ToolName.EditPairBond.value,
-            "description": "Add or change a bond between two people.",
+            "description": "Add or change the bond between two people.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -264,7 +272,8 @@ def schemas() -> list[dict]:
         {
             "name": ToolName.EditEvent.value,
             "description": (
-"Add an event, or change one by id."
+                "Add an event, or change one. Give id to change an existing event; "
+                "leave it out to add one."
             ),
             "input_schema": {
                 "type": "object",
@@ -279,7 +288,10 @@ def schemas() -> list[dict]:
                     },
                     "date_certainty": _enum_param(
                         DateCertainty,
-                        "Needed with a new event or date; left out otherwise, it stays.",
+                        f"How sure the date is: {CERTAINTY}. Needed on a new event "
+                        "and on any change to its date; left out on another change "
+                        "it stays as it is. Never leave the date itself out: a vague "
+                        "date beats none.",
                     ),
                     "description": {
                         "type": "string",
@@ -333,8 +345,9 @@ def schemas() -> list[dict]:
         {
             "name": ToolName.EditCluster.value,
             "description": (
-                f"Group at least {MIN_CLUSTER_EVENTS} events already in the record "
-                "into a named cluster, or rename one."
+                "Group events into a named cluster, or rename one. A cluster holds "
+                f"at least {MIN_CLUSTER_EVENTS} events. You may group and name; you "
+                "may never name an event that is not in the record."
             ),
             "input_schema": {
                 "type": "object",
@@ -345,7 +358,7 @@ def schemas() -> list[dict]:
                     "summary": {"type": "string"},
                     "reason": {
                         "type": "string",
-                        "description": "One sentence: why they belong together.",
+                        "description": "One sentence: why these events belong together.",
                     },
                     "event_ids": {"type": "array", "items": {"type": "integer"}},
                 },
@@ -357,7 +370,7 @@ def schemas() -> list[dict]:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "item_kind": _enum_param(ItemKind),
+                    "item_kind": _enum_param(ItemKind, "What kind of item to remove."),
                     "item_id": {"type": "string"},
                     "version": VERSION,
                 },
@@ -367,22 +380,23 @@ def schemas() -> list[dict]:
         {
             "name": ToolName.Undo.value,
             "description": (
-                "Put back what the last turn changed, when the user says undo or "
-                "that you got it wrong."
+                "Put back what the last turn changed. Use it when the user says to "
+                "undo, or that you got it wrong and should reverse it."
             ),
             "input_schema": {"type": "object", "properties": {}},
         },
         {
             "name": ToolName.AddQuestion.value,
             "description": (
-"Keep a question: asked if this reply asks it, held for later."
+                "Keep a question in the record: asked when you ask it in this "
+                "reply, held when you keep it to ask later."
             ),
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "text": {
                         "type": "string",
-                        "description": "Word for word, as the person reads it.",
+                        "description": "The question word for word, as the person reads it.",
                     },
                     "kind": {
                         "type": "string",
@@ -396,7 +410,7 @@ def schemas() -> list[dict]:
                     "item_kind": {
                         "type": "string",
                         "enum": [kind.value for kind in record.QUESTION_LINKS],
-                        "description": "What it is about, with item_id; or neither.",
+                        "description": "What the question is about, with item_id; or neither.",
                     },
                     "item_id": {"type": "string"},
                     "asked_in": ASKED_IN,
@@ -428,8 +442,8 @@ def schemas() -> list[dict]:
         {
             "name": ToolName.ReadQuestions.value,
             "description": (
-                "Kept questions, open and declined; closed adds the closed ones and "
-                "how each ended."
+                "The questions kept in the record: the open ones and the ones the "
+                "person declined; with closed, every closed one and how it ended."
             ),
             "input_schema": {
                 "type": "object",
@@ -439,8 +453,8 @@ def schemas() -> list[dict]:
         {
             "name": ToolName.AddImpression.value,
             "description": (
-                "Keep an impression: raised if this reply says it (call before "
-                "saying it), held for later."
+                "Keep an impression in the record: raised when you say it in this "
+                "reply, held when you keep it for later. Raise it before you say it."
             ),
             "input_schema": {
                 "type": "object",
@@ -454,12 +468,12 @@ def schemas() -> list[dict]:
                         "items": {
                             "type": "object",
                             "properties": {
-                                "kind": _enum_param(EvidenceKind),
+                                "kind": _enum_param(EvidenceKind, "What it rests on."),
                                 "id": {"type": "string"},
                             },
                             "required": ["kind", "id"],
                         },
-                        "description": "What it rests on; at least one.",
+                        "description": "What it rests on: at least one.",
                     },
                     "state": {
                         "type": "string",
@@ -473,8 +487,8 @@ def schemas() -> list[dict]:
         {
             "name": ToolName.SetImpression.value,
             "description": (
-                "Raise a held impression, or close one: revised when raising new "
-                "words, let go when dropping it."
+                "Raise a kept impression, or close one: revised when you raise new "
+                "words for it, let go when you drop it."
             ),
             "input_schema": {
                 "type": "object",
@@ -497,8 +511,8 @@ def schemas() -> list[dict]:
         {
             "name": ToolName.ReadImpressions.value,
             "description": (
-                "Kept impressions: raised, held, and said not to fit; closed adds "
-                "the closed ones and how each ended."
+                "The impressions kept in the record: raised, held, and the ones the "
+                "person said don't fit; with closed, every closed one and how it ended."
             ),
             "input_schema": {
                 "type": "object",
@@ -508,16 +522,17 @@ def schemas() -> list[dict]:
         {
             "name": ToolName.Show.value,
             "description": (
-"Aim the picture at record items; every id must exist."
+                "Aim the picture at something in the record. Every id must be one "
+                "the record holds."
             ),
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "kind": _enum_param(views.ViewKind),
+                    "kind": _enum_param(views.ViewKind, "Which view to draw."),
                     "persons": {
                         "type": "array",
                         "items": {"type": "integer"},
-                        "description": "triangle: three people.",
+                        "description": "triangle: exactly three people.",
                     },
                     "start": {"type": "string", "description": "span: YYYY-MM-DD"},
                     "end": {"type": "string", "description": "span: YYYY-MM-DD"},
@@ -526,7 +541,7 @@ def schemas() -> list[dict]:
                     "events": {
                         "type": "array",
                         "items": {"type": "integer"},
-                        "description": "sequence: in stepping order.",
+                        "description": "sequence: the events in the order to step.",
                     },
                     "cluster": {"type": "string", "description": "cluster: its id."},
                 },
@@ -536,8 +551,11 @@ def schemas() -> list[dict]:
         {
             "name": ToolName.SearchChat.value,
             "description": (
-                "Search both sides of every session on this family, newest first. "
-                "A hit: message id, day, speaker, words cut around the match.\n\n"
+                "Search what the person and you have said in every one of their "
+                "sessions on this family, newest first: by words, by a person in "
+                "the record, or by the days it was said. Each hit is the message's "
+                "id, the day, who said it, and its words cut short around the "
+                "match.\n\n"
                 + prompts.files().fragment("search_chat")
             ),
             "input_schema": {
@@ -545,28 +563,31 @@ def schemas() -> list[dict]:
                 "properties": {
                     "words": {
                         "type": "string",
-                        "description": "All must appear; each matches a word start.",
+                        "description": (
+                            "Words the message must all use; each matches the "
+                            "start of a word."
+                        ),
                     },
                     "person": {
                         "type": "integer",
-                        "description": "Messages using this person's first name.",
+                        "description": "A person's id: messages using their first name.",
                     },
-                    "start": {"type": "string", "description": "On or after: YYYY-MM-DD"},
-                    "end": {"type": "string", "description": "On or before: YYYY-MM-DD"},
+                    "start": {"type": "string", "description": "Said on or after: YYYY-MM-DD"},
+                    "end": {"type": "string", "description": "Said on or before: YYYY-MM-DD"},
                 },
             },
         },
         {
             "name": ToolName.FollowUp.value,
             "description": (
-                "Ask the person something on a later day: it is written into their "
-                "chat then, and they are told.\n\n"
+                "Ask the person something on a later day: on that day your "
+                "question is written into their chat and they are told of it.\n\n"
                 + prompts.files().fragment("follow_up")
             ),
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "when": {"type": "string", "description": "YYYY-MM-DD, after today."},
+                    "when": {"type": "string", "description": "The day: YYYY-MM-DD, after today."},
                     "question": {"type": "string"},
                 },
                 "required": ["when", "question"],
@@ -575,8 +596,9 @@ def schemas() -> list[dict]:
         {
             "name": ToolName.Navigate.value,
             "description": (
-                "Move the person's app to a place while you speak; the reply "
-                "carries a button back there.\n\n"
+                "Move the person's app to a place in it while you speak: a screen, "
+                "a list, a setting, or something in the record. Your reply carries "
+                "a button that goes there again.\n\n"
                 + prompts.files().fragment("navigate")
             ),
             "input_schema": {
@@ -585,9 +607,9 @@ def schemas() -> list[dict]:
                     "address": {
                         "type": "string",
                         "description": (
-                            "One of: "
+                            "The place, one of: "
                             + ", ".join(place.APP + p.value for p in place.Place)
-                            + ". :n a number, :key a cluster id, :day a "
+                            + ". :n is a number, :key a cluster's id, :day a "
                             "meeting's YYYY-MM-DD."
                         ),
                     },
@@ -598,9 +620,9 @@ def schemas() -> list[dict]:
         {
             "name": ToolName.Report.value,
             "description": (
-                "Offer to send what the person said about the app, or your "
-                "misreading, to its makers; the app sends it only if they say "
-                "yes.\n\n"
+                "Offer to send what the person said about the app, or what you "
+                "misread, to the people who make it: the app asks them whether "
+                "to send it, and nothing is sent unless they say so.\n\n"
                 + prompts.files().fragment("report")
             ),
             "input_schema": {
@@ -610,13 +632,17 @@ def schemas() -> list[dict]:
                         "type": "string",
                         "enum": [kind.value for kind in ReportKind],
                         "description": (
-                            "bug: the app or you behaved wrongly to them; "
-                            "feedback: a wish or dislike about the app."
+                            "bug: the app or you behaved wrongly as they "
+                            "experienced it; feedback: a wish or a dislike about "
+                            "the app."
                         ),
                     },
                     "words": {
                         "type": "string",
-                        "description": "Their own words; yours for a bug about your misreading.",
+                        "description": (
+                            "The person's own words, as they said them; for a "
+                            "bug about your own misreading, yours."
+                        ),
                     },
                 },
                 "required": ["kind", "words"],
@@ -625,26 +651,31 @@ def schemas() -> list[dict]:
         {
             "name": ToolName.CoachNotes.value,
             "description": (
-"Your private notes for this turn."
+                "Your own notes for this turn, a short phrase each. They change "
+                "nothing in the record and the person never sees them; next turn "
+                "you read them back."
             ),
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "register": _enum_param(
                         Register,
-                        "Judged by the question your reply asks. Coaching is the "
-                        "default: talk of the person's dilemma, feelings, patterns and "
-                        "plans. Evaluation is the exception: the question asks a missing "
-                        "basic family fact (a name, age, date, place, marriage, death or "
-                        "move), even if it also asks how things were. Without such a "
-                        "fact it is coaching, even when it asks how something felt or "
-                        "what happened next, or names a family member or a year.",
+                        "What kind of talk this turn is, judged by the question your "
+                        "reply asks. Coaching is the default: the ongoing conversation "
+                        "about the person's dilemma, feelings, patterns and what they "
+                        "will do. Evaluation is the exception: the question asks for a "
+                        "missing basic fact about the family, such as a person's name "
+                        "or age, a date, a place, a marriage, a death or a move, even "
+                        "when it also asks how things were. A question with no such "
+                        "fact in it is coaching, including how something felt or what "
+                        "happened next in the person's life, even when it names a "
+                        "family member or a year.",
                     ),
                     "lane": {"type": "string"},
                     "why": {"type": "string", "description": "Why this question now."},
                     "holding": {
                         "type": "string",
-                        "description": "Noticed, held for later.",
+                        "description": "What you noticed and are holding for later.",
                     },
                     "plateau": {
                         "type": "object",
@@ -656,10 +687,10 @@ def schemas() -> list[dict]:
                     },
                     "hunch": {
                         "type": "string",
-                        "description": "A link you are testing but have not said.",
+                        "description": 'A link you are testing but have not said, or "none yet".',
                     },
                     "person": {"type": "string", "description": "How the person seems."},
-                    "variable": _enum_param(Variable, "The one this turn is on."),
+                    "variable": _enum_param(Variable, "The variable this turn is on."),
                 },
                 "required": [
                     "register",
