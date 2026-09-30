@@ -35,7 +35,7 @@ shift — one or two brain-rearranging correlations per user, not a dataset. Cov
 serves exactly two things: better coach questions, and the timeline's own
 correlations.
 
-No modes: one agent; coaching, app-help (manual tool), corrections, and journaling
+No modes: one agent; coaching, app-help (manual tool), corrections, and evaluation
 are registers routed from context, never user-visible switches. Lanes are queries
 over the existing schema, not entities (a person-variable lane; a household lane =
 pair-bond + members' events; "sleep" is a label from descriptions — symptom lanes are

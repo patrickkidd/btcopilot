@@ -411,7 +411,7 @@ Pane A of `playbyplay_ab.html` is the fidelity standard. Pane B, an app-generate
 | Edit-summary line | `.did` one line per edit, mono 13px `--faint`, with a 6px `--move` dot bullet | — | theme.css:314-331 | UNMARKED OPTION (built, new) |
 | First-run greeting | "I'm here whenever you want to think out loud about your family. Tell me who is on your mind." | Typed after a 300ms wait when there are no prior statements | web/src/main.ts:290-294 | UNMARKED OPTION (built copy) |
 | Empty chat copy, FD-360 | "Say hello — the picture above fills in as you talk." | — | FD-360 index.html:98-100 | SUPERSEDED |
-| No modes | one agent. Coaching, app help, corrections and journaling all route from context, never from a user-visible switch | — | R-0015; STATE.md:26-27 | RULED |
+| No modes | one agent. Coaching, app help, corrections and evaluation all route from context, never from a user-visible switch | — | R-0015 (R-0615, queued); STATE.md:26-27 | RULED |
 | Conversation drives everything | the UI is secondary; it fills gaps proactively, or the coach aims it via an inline chip | — | R-0001 | RULED |
 | Demo chat timing | next bubble after 1500ms if the previous sender was the coach, 900ms if the user; sends within 1200ms of the last are ignored | Demo playback only | coach-screen.html | UNMARKED OPTION (demo mechanism) |
 
