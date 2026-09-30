@@ -1854,11 +1854,9 @@ void load().then(async () => {
 // The dev server too: push needs the worker, and the worker asks the network
 // first, so a saved edit still reaches the page.
 if ("serviceWorker" in navigator)
-  window.addEventListener("load", () =>
-    navigator.serviceWorker.register(
-      `/app/sw.js?release=${encodeURIComponent(window.BOOTSTRAP.version)}`,
-      { scope: "/app/" },
-    ),
+  void navigator.serviceWorker.register(
+    `/app/sw.js?release=${encodeURIComponent(window.BOOTSTRAP.version)}`,
+    { scope: "/app/" },
   );
 
 // A coder opens on their one task rather than on the chat (R-0265, frame f1),
