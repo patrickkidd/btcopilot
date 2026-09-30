@@ -2,9 +2,33 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-09-30 (fixed coaching text cached ahead of the record)
+**Last Updated**: 2026-09-30 (the coach reads what is still unknown of the basic data)
 
 ---
+
+## FD-366 — the coach reads what is still unknown of the basic data (2026-09-30)
+
+**Change**: each coach turn's per-turn part (after the chat, beside the record's map) gains a
+block headed WHAT IS STILL UNKNOWN, rendered from the coverage checklist (doc/COVERAGE.md): the
+nearest eight unasked items in Kerr's loose order, at most three per person or couple, grouped by
+person with id, name and relation; every item said unknown; coverage and resolution as fractions.
+Under the coach's plateau note the list is cut to three for up to five turns, ended early by a new
+person or event; the block's own line says so. Two sentences after the block (private and
+public agent prompt) say it is what is still unknown, for the coach's judgement, never a script,
+and that a fact said unknown is evidence toward a hypothesis about cutoff in the parents'
+generation, not a stop. No other behaviour rule is added; when to ask stays Patrick's to word.
+
+**Removed**: the static "Required Data Checklist" section of the private coaching flow (1,020
+characters). It was loaded: the flow file is included in the coach's prompt, in the cached part,
+so the coach read a fixed intake list every turn; the block replaces it. Also removed: the
+sentence after the record's map pointing at "Still outstanding" items, which no longer exist in
+the map (132 characters per turn).
+
+**Size**: about 480 characters more per turn in the uncached part (the two sentences, 318; the
+block, about 290 for a family of four; less the 132 removed); the cached part is 1,020 shorter,
+written to the cache once.
+
+**Behaviour**: unmeasured; no real model calls. [R-0006, R-0520]
 
 ## FD-366 — the fixed coaching text is cached ahead of the record (2026-09-30)
 

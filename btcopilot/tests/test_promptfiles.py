@@ -22,6 +22,7 @@ REAL_PRIVATE = REPO / "private" / "prompts"
 
 RECORD = "RECORD-SENTINEL\nsecond line"
 INTERACTIONS = "INTERACTIONS-SENTINEL"
+COVERAGE = "COVERAGE-SENTINEL"
 TRANSCRIPT = "TRANSCRIPT-SENTINEL\n41 coach: Who were your father's brothers and sisters?"
 
 
@@ -34,6 +35,9 @@ def rendered(module, names) -> dict:
     out["get_agent_prompt/record"] = module.get_agent_prompt(record=RECORD)
     out["get_agent_prompt/both"] = module.get_agent_prompt(
         record=RECORD, interactions=INTERACTIONS
+    )
+    out["get_agent_prompt/coverage"] = module.get_agent_prompt(
+        record=RECORD, coverage=COVERAGE
     )
     out["question_backfill"] = module.question_backfill(
         map=RECORD, transcript=TRANSCRIPT

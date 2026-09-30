@@ -9,8 +9,19 @@ import pytest
 from btcopilot import coverage, record
 from btcopilot.extensions import db
 from btcopilot.models import Author, TurnEvent
-from btcopilot.schema import DiagramData, Fact, FactState, ItemKind
-from btcopilot.tests.conftest import Model, calling, said, version
+from btcopilot.modelturn import ModelTurn
+from btcopilot.schema import (
+    DiagramData,
+    Fact,
+    FactState,
+    ItemKind,
+    PairBond,
+    Person,
+    PersonKind,
+    asdict,
+)
+from btcopilot.tests.conftest import Model, called, calling, said, version
+from btcopilot.tests.test_coachnotes import NOTES
 from btcopilot.tests.test_turnhistory import coach, family, post, titles  # noqa: F401
 from btcopilot.tests.test_turns import token  # noqa: F401
 from btcopilot.toolbox import ToolName
@@ -40,6 +51,19 @@ def counts(required, known, unknown=0, declined=0) -> dict:
     }
 
 
+RESOLVED = (
+    "Coverage: {known} of {required} known. Resolved: {resolved} of {required} "
+    "known, said unknown or declined."
+)
+
+
+def shown(model: Model) -> str:
+    """The block of what is still unknown in the prompt the coach was sent."""
+    prompt = model.systems[0]
+    start = prompt.index(coverage.HEAD)
+    return prompt[start : prompt.index("\n\n", start)]
+
+
 def data_of(diagram) -> DiagramData:
     db.session.expire_all()
     return diagram.get_diagram_data()
@@ -49,7 +73,7 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     web, token, family, monkeypatch
 ):
     # R-0006
-    coach(
+    model = coach(
         monkeypatch,
         Model(
             calling(
@@ -69,6 +93,13 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
         ),
     )
     first = post(web, token, "I want to talk about my family.").get_json()
+    assert shown(model) == "\n".join(
+        [
+            coverage.HEAD,
+            "1 Wren (the person): birth date, alive or not, schooling",
+            RESOLVED.format(known=1, resolved=1, required=13),
+        ]
+    )
 
     data = data_of(family)
     assert coverage.required(data) == [
@@ -86,7 +117,7 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     assert done(first["turn_id"]) == {"before": counts(13, 1), "after": counts(13, 1)}
 
     at = version(family)
-    coach(
+    model = coach(
         monkeypatch,
         Model(
             calling(
@@ -119,6 +150,14 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
         token,
         "I don't know when I was born. My parents are Ada and Tom; my sister is Nell.",
     ).get_json()
+    # the question is still open, so the birth date is still not asked
+    assert shown(model) == "\n".join(
+        [
+            coverage.HEAD,
+            "1 Wren (the person): birth date, alive or not, schooling",
+            RESOLVED.format(known=1, resolved=1, required=13),
+        ]
+    )
 
     data = data_of(family)
     asked = next(q for q in data.questions if q["id"] == "q1")
@@ -141,7 +180,7 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     }
 
     at = version(family)
-    coach(
+    model = coach(
         monkeypatch,
         Model(
             calling(
@@ -162,6 +201,18 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
         ),
     )
     third = post(web, token, "I met Sam in 2012.").get_json()
+    # at most three on one person, so the list reaches the parents; the birth
+    # date said unknown is listed apart
+    assert shown(model) == "\n".join(
+        [
+            coverage.HEAD,
+            "1 Wren (the person): alive or not, schooling, work",
+            "2 Ada (mother): birth date, alive or not, schooling",
+            "3 Tom (father): birth date, alive or not",
+            "Said unknown: 1 Wren (the person): birth date",
+            RESOLVED.format(known=9, resolved=10, required=49),
+        ]
+    )
 
     found = coverage.states(data_of(family))
     assert found[(Fact.Met, ItemKind.PairBond, BOND)] is FactState.Known
@@ -266,3 +317,79 @@ def test_only_a_fact_question_about_a_person_or_couple_names_its_item(family):
             author=Author.Coach,
             turn_id="t1",
         )
+
+
+def parents(data: DiagramData) -> DiagramData:
+    """The family after the second turn: Wren, her parents and her sister."""
+    data.people[0]["parents"] = HOME
+    data.people += [
+        asdict(Person(id=ADA, name="Ada", gender=PersonKind.Female)),
+        asdict(Person(id=TOM, name="Tom", gender=PersonKind.Male)),
+        asdict(Person(id=NELL, name="Nell", gender=PersonKind.Female, parents=HOME)),
+    ]
+    data.pair_bonds = [asdict(PairBond(id=HOME, person_a=ADA, person_b=TOM))]
+    return data
+
+
+def test_under_a_plateau_the_list_is_cut_to_the_nearest_few(family):
+    # R-0006, R-0520
+    data = parents(family.get_diagram_data())
+    full = coverage.block(data).splitlines()
+    assert len(full) == 5
+    assert coverage.block(data, plateau=2).splitlines() == [
+        coverage.HEAD,
+        "Your plateau note holds, turn 2 of 5: the nearest 3 only.",
+        "1 Wren (the person): birth date, alive or not, schooling",
+        full[-1],
+    ]
+
+
+def plateaued(reached: bool) -> ModelTurn:
+    return called(
+        ToolName.CoachNotes,
+        **{**NOTES, "plateau": {"reached": reached, "biggest_gap": "the parents"}},
+    )
+
+
+def held(model: Model) -> str:
+    return shown(model).splitlines()[1]
+
+
+def test_a_plateau_note_lapses_after_five_turns(web, token, family, monkeypatch):
+    # R-0006, R-0520
+    seen = []
+    for _ in range(coverage.PLATEAU_TURNS + 2):
+        model = coach(monkeypatch, Model(plateaued(True), said("Go on.")))
+        post(web, token, "Go on.")
+        seen.append(held(model))
+    assert seen[1:-1] == [
+        f"Your plateau note holds, turn {turn} of 5: the nearest 3 only."
+        for turn in range(1, coverage.PLATEAU_TURNS + 1)
+    ]
+    assert (
+        seen[0]
+        == seen[-1]
+        == "1 Wren (the person): birth date, alive or not, schooling"
+    )
+
+
+def test_a_new_person_ends_the_plateau(web, token, family, monkeypatch):
+    # R-0006, R-0520
+    coach(monkeypatch, Model(plateaued(True), said("Go on.")))
+    post(web, token, "Go on.")
+    model = coach(
+        monkeypatch,
+        Model(
+            calling(
+                (ToolName.CoachNotes, plateaued(True).calls[0].args),
+                (ToolName.EditPerson, {"name": "Nell", "gender": "female"}),
+            ),
+            said("Nell."),
+        ),
+    )
+    post(web, token, "My sister is Nell.")
+    assert held(model).startswith("Your plateau note holds, turn 1 of 5")
+
+    model = coach(monkeypatch, Model(plateaued(True), said("Go on.")))
+    post(web, token, "Go on.")
+    assert not held(model).startswith("Your plateau note holds")

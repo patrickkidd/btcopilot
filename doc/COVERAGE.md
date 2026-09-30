@@ -72,3 +72,28 @@ a fact question that names an item.
 - **Yield**: over the last N coach turns, items that became known, divided by
   the evaluation questions asked in those turns.
 - **Ask density**: evaluation questions asked per coach turn.
+
+## What the coach reads each turn
+
+Each coach turn's prompt carries a block headed WHAT IS STILL UNKNOWN, rendered
+by `coverage.block` beside the record's map, after the chat, so it never
+breaks the cached coaching text. Two sentences under it say it is what is
+still unknown, for the coach's judgement, never a script, and that a fact said
+unknown is evidence about cutoff in the parents' generation, not a stop.
+
+- **The nearest unasked items**: the first eight not asked, in the checklist's
+  order, at most three on one person or couple so the list reaches past the
+  first person with many gaps; one line per person or couple, with the id,
+  the name and what they are to the person ("2 Ada (mother): birth date,
+  alive or not, schooling").
+- **Said unknown**: every item said unknown, on one line, as evidence.
+- **One line of fractions**: coverage (known over required) and resolution
+  (known, said unknown or declined over required).
+
+**The plateau.** When the coach's notes say the plateau is reached, the list
+is cut to the nearest three and a line says which turn of the plateau it is.
+The plateau starts at the first of the coach's unbroken notes saying it is
+reached and lapses after five turns (the corpus sets no number), or as soon as
+a person or event is added after the turn that started it; the coach can set it
+again. The block's own line says so; the prompt has no sentence about it. It
+never closes an item, and the said-unknown list and the fractions stay.

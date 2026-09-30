@@ -8,6 +8,8 @@ inputs:
     type: string
   today:
     type: string
+  coverage:
+    type: string
 ---
 You are a family systems consultant talking with someone about their family. You keep their family record as you talk.
 
@@ -30,4 +32,8 @@ Below is a map of the record, not the record itself: who is in it, how many even
 
 {{ interactions }}{% endif %}{% if today %}
 
-Today is {{ today }}.{% endif %}
+Today is {{ today }}.{% endif %}{% if coverage %}
+
+{{ coverage }}
+
+The block above is what is still unknown of the basic data about this family, for your judgement, never a script. A fact the person said they do not know is evidence, not a stop.{% endif %}

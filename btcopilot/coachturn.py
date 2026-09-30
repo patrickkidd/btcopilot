@@ -9,6 +9,7 @@ page can move the picture with the same reply it types out.
 """
 
 import datetime
+import itertools
 import logging
 import uuid
 from typing import Callable
@@ -16,7 +17,7 @@ from typing import Callable
 from opentelemetry import trace
 
 from btcopilot.extensions import ai_log, db
-from btcopilot import chips, clusters, profile, recordtext, turnstore
+from btcopilot import chips, clusters, coverage, profile, recordtext, turnstore
 from btcopilot.coachmodel import CoachModel, marked_ends
 from btcopilot.metered import Metered
 from btcopilot.models import (
@@ -288,6 +289,7 @@ class CoachTurn:
                 recent(self.diagram.id, RECENT_INTERACTIONS)
             ),
             today=datetime.date.today().isoformat(),
+            coverage=coverage.block(data, plateau(answered, self.diagram.id)),
         )
         last = last_notes(answered)
         if last:
@@ -549,22 +551,70 @@ def _recent(said: Statement) -> list[Statement]:
     return before.order_by(Statement.created_at, Statement.id).offset(start).all()
 
 
-def last_notes(said: Statement) -> TurnEvent | None:
-    """The coach's latest notes before these words, from whichever of that
-    user's sessions on the family."""
+def _family(said: Statement):
+    """The turn rows before these words, from any of that user's sessions on
+    the family."""
     family = said.discussion
+    return TurnEvent.query.join(
+        Discussion, Discussion.id == TurnEvent.discussion_id
+    ).filter(
+        Discussion.diagram_id == family.diagram_id,
+        Discussion.user_id == family.user_id,
+        TurnEvent.created_at < said.created_at,
+    )
+
+
+def _notes(said: Statement):
+    """The coach's notes before these words, newest first."""
     return (
-        TurnEvent.query.join(Discussion, Discussion.id == TurnEvent.discussion_id)
+        _family(said)
         .filter(
-            Discussion.diagram_id == family.diagram_id,
-            Discussion.user_id == family.user_id,
-            TurnEvent.created_at < said.created_at,
             TurnEvent.kind == TurnEventKind.ToolCall.value,
             TurnEvent.payload["name"].as_string() == ToolName.CoachNotes.value,
         )
         .order_by(TurnEvent.id.desc())
-        .first()
     )
+
+
+def last_notes(said: Statement) -> TurnEvent | None:
+    """The coach's latest notes before these words, from whichever of that
+    user's sessions on the family."""
+    return _notes(said).first()
+
+
+def plateau(said: Statement, diagram_id: int) -> int | None:
+    """The turn the coach's plateau note is on while it holds. It starts at
+    the first of the coach's unbroken notes saying the plateau is reached and
+    lapses after PLATEAU_TURNS turns, or once a person or event is added."""
+    run = list(
+        itertools.takewhile(
+            lambda row: row.payload["args"]["plateau"]["reached"],
+            _notes(said).limit(coverage.PLATEAU_TURNS + 1),
+        )
+    )
+    if not run or len(run) > coverage.PLATEAU_TURNS:
+        return None
+    start = run[-1]
+    turns = (
+        _family(said)
+        .filter(
+            TurnEvent.kind == TurnEventKind.Done.value,
+            TurnEvent.created_at > start.created_at,
+        )
+        .count()
+    )
+    added = any(
+        delta["field"] is None
+        and delta["before"] is None
+        and ItemKind(delta["item_kind"]) in (ItemKind.Person, ItemKind.Event)
+        for change in Change.query.filter(
+            Change.diagram_id == diagram_id,
+            Change.created_at > start.created_at,
+            Change.turn_id != start.turn_id,
+        )
+        for delta in change.deltas
+    )
+    return None if added or turns > coverage.PLATEAU_TURNS else turns
 
 
 def _say(messages: list[dict], *said: tuple[str, str | list[dict]]) -> None:

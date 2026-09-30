@@ -68,6 +68,53 @@ YEARS_TOGETHER = 5
 PARTNER_FAMILY = 2
 ATTACHED = 2
 
+# What each relative is to the person: for a woman, a man, anyone else.
+SELF = ("the person",) * 3
+PARTNER = ("partner",) * 3
+CHILD = ("daughter", "son", "child")
+PARENT = ("mother", "father", "parent")
+STEP = ("step-parent",) * 3
+SIB = ("sister", "brother", "sibling")
+NIECE = ("niece", "nephew", "niece or nephew")
+IN_LAW = ("partner's mother", "partner's father", "partner's parent")
+PARTNER_SIB = ("partner's sister", "partner's brother", "partner's sibling")
+GRAND = ("grandmother", "grandfather", "grandparent")
+AUNT_ROLE = ("aunt", "uncle", "aunt or uncle")
+COUSIN_ROLE = ("cousin",) * 3
+GREAT_ROLE = ("great-grandmother", "great-grandfather", "great-grandparent")
+
+WORDS = {
+    Fact.Name: "name",
+    Fact.BirthDate: "birth date",
+    Fact.Alive: "alive or not",
+    Fact.DeathDate: "death date",
+    Fact.CauseOfDeath: "cause of death",
+    Fact.Schooling: "schooling",
+    Fact.Work: "work",
+    Fact.Health: "health",
+    Fact.Marriages: "marriages with dates",
+    Fact.Places: "where they lived",
+    Fact.Contact: "contact with the family",
+    Fact.LifeCourse: "how life went",
+    Fact.Order: "birth order",
+    Fact.Sex: "sex",
+    Fact.Parents: "who their parents are",
+    Fact.Children: "how many children",
+    Fact.Met: "when they met",
+    Fact.Stress: "periods of major stress",
+}
+
+# How many unasked items the coach's summary lists, and how many while its
+# plateau note is in force, and for how many turns that note holds unless a
+# new person or event comes first. The corpus sets no number of turns.
+LEAD = 8
+PLATEAU_LEAD = 3
+# At most this many for one person or couple, so the list reaches past the
+# first person with many gaps.
+EACH = 3
+PLATEAU_TURNS = 5
+HEAD = "WHAT IS STILL UNKNOWN"
+
 UNNAMED = ("", profile.PLACEHOLDER_NAME, DEFAULT_SUBJECT_NAME)
 ANSWERS = {
     QuestionOutcome.Fact: FactState.Known,
@@ -85,85 +132,92 @@ def required(data: DiagramData) -> list[Item]:
     family, parents and siblings, the partner's side, grandparents, aunts and
     uncles, cousins, great-grandparents. A relative placed once keeps the
     depth of the first place."""
+    return list(_walk(data))
+
+
+def _walk(data: DiagramData) -> dict[Item, str]:
+    """The required items, each with what its person or couple is to the
+    person, in the order `required` gives."""
     own = profile.own(data)
     if own is None:
-        return []
-    items: dict[Item, None] = {}
+        return {}
+    items: dict[Item, str] = {}
     placed: set[int] = set()
 
-    def person(pid: int, depth: tuple, *extra: Fact):
+    def person(pid: int, role: tuple, depth: tuple, *extra: Fact):
         if pid in placed:
             return
         placed.add(pid)
         always, dead = depth
+        word = _role(data, pid, role)
         for fact in (*always, *(dead if _death(data, pid) else ()), *extra):
-            items.setdefault((fact, ItemKind.Person, pid))
+            items.setdefault((fact, ItemKind.Person, pid), word)
 
-    def couple(bid: int | None, *facts: Fact):
+    def couple(bid: int | None, role: str, *facts: Fact):
         # a person whose parents are not in the record has no parents' couple
         if bid is None:
             return
         for fact in facts:
-            items.setdefault((fact, ItemKind.PairBond, bid))
+            items.setdefault((fact, ItemKind.PairBond, bid), role)
 
     me = own["id"]
-    person(me, SIBLING, Fact.Parents, Fact.Stress)
+    person(me, SELF, SIBLING, Fact.Parents, Fact.Stress)
     mine = _couples(data, me)
     for bid in mine:
-        person(_other(data, bid, me), SIBLING, Fact.Parents)
-        couple(bid, Fact.Met, Fact.Children)
+        person(_other(data, bid, me), PARTNER, SIBLING, Fact.Parents)
+        couple(bid, "the person and partner", Fact.Met, Fact.Children)
     for bid in mine:
         for kid in _children(data, bid):
-            person(kid, SIBLING)
+            person(kid, CHILD, SIBLING)
 
     home = _parents(data, me)
     parents = _partners(data, home)
     for pid in parents:
-        person(pid, SIBLING, Fact.Parents)
-    couple(home, Fact.Children)
+        person(pid, PARENT, SIBLING, Fact.Parents)
+    couple(home, "parents", Fact.Children)
     for pid in parents:
         for bid in _couples(data, pid):
-            person(_other(data, bid, pid), FULL)
-            couple(bid, Fact.Children)
+            person(_other(data, bid, pid), STEP, FULL)
+            couple(bid, "a parent's couple", Fact.Children)
     siblings = _siblings(data, me)
     for pid in siblings:
-        person(pid, SIBLING)
+        person(pid, SIB, SIBLING)
     for pid in siblings:
         for bid in _couples(data, pid):
-            couple(bid, Fact.Children)
+            couple(bid, "a sibling's couple", Fact.Children)
             for kid in _children(data, bid):
-                person(kid, COUSIN)
+                person(kid, NIECE, COUSIN)
 
     for bid in mine:
         partner = _other(data, bid, me)
         theirs = _parents(data, partner)
         close = _attached(data, bid, partner)
         for pid in _partners(data, theirs):
-            person(pid, FULL if close else FLOOR)
-        couple(theirs, Fact.Children)
+            person(pid, IN_LAW, FULL if close else FLOOR)
+        couple(theirs, "partner's parents", Fact.Children)
         for pid in _siblings(data, partner):
-            person(pid, SIBLING if close else FLOOR)
+            person(pid, PARTNER_SIB, SIBLING if close else FLOOR)
 
     grand = [_parents(data, pid) for pid in parents]
     for bid in grand:
         for pid in _partners(data, bid):
-            person(pid, FULL)
-        couple(bid, Fact.Children)
+            person(pid, GRAND, FULL)
+        couple(bid, "grandparents", Fact.Children)
     aunts = [pid for bid in grand for pid in _children(data, bid) if pid not in parents]
     for pid in aunts:
-        person(pid, AUNT)
+        person(pid, AUNT_ROLE, AUNT)
         for bid in _couples(data, pid):
-            couple(bid, Fact.Children)
+            couple(bid, "an aunt's or uncle's couple", Fact.Children)
     for pid in aunts:
         for bid in _couples(data, pid):
             for kid in _children(data, bid):
-                person(kid, COUSIN)
+                person(kid, COUSIN_ROLE, COUSIN)
 
     for bid in grand:
         for pid in _partners(data, bid):
             for great in _partners(data, _parents(data, pid)):
-                person(great, GREAT)
-    return list(items)
+                person(great, GREAT_ROLE, GREAT)
+    return items
 
 
 def states(data: DiagramData) -> dict[Item, FactState]:
@@ -184,6 +238,73 @@ def states(data: DiagramData) -> dict[Item, FactState]:
 def counts(data: DiagramData) -> dict[str, int]:
     found = list(states(data).values())
     return {"required": len(found), **{s.value: found.count(s) for s in FactState}}
+
+
+def block(data: DiagramData, plateau: int | None = None) -> str:
+    """The next unasked items in Kerr's loose order, grouped by whom they are
+    about, the items said unknown, and coverage and resolution as fractions.
+    `plateau` is the turn of the coach's plateau note still in force, which
+    cuts the list to the nearest few. Empty when nothing is required."""
+    roles = _walk(data)
+    if not roles:
+        return ""
+    found = states(data)
+    gaps = [i for i in roles if found[i] is FactState.NotAsked]
+    lead = LEAD if plateau is None else PLATEAU_LEAD
+    unknown = [i for i in roles if found[i] is FactState.SaidUnknown]
+    known = sum(s is FactState.Known for s in found.values())
+    lines = [HEAD]
+    if plateau is not None:
+        lines.append(
+            f"Your plateau note holds, turn {plateau} of {PLATEAU_TURNS}: "
+            f"the nearest {PLATEAU_LEAD} only."
+        )
+    lines += _grouped(data, _nearest(gaps, lead), roles)
+    if unknown:
+        lines.append("Said unknown: " + "; ".join(_grouped(data, unknown, roles)))
+    lines.append(
+        f"Coverage: {known} of {len(found)} known. Resolved: "
+        f"{len(found) - len(gaps)} of {len(found)} known, said unknown or declined."
+    )
+    return "\n".join(lines)
+
+
+def _nearest(gaps: list[Item], lead: int) -> list[Item]:
+    """The first `lead` gaps, at most EACH of them on one person or couple."""
+    out, per = [], {}
+    for item in gaps:
+        per[item[1:]] = per.get(item[1:], 0) + 1
+        if per[item[1:]] <= EACH:
+            out.append(item)
+    return out[:lead]
+
+
+def _grouped(data: DiagramData, items: list[Item], roles: dict) -> list[str]:
+    """One line per person or couple, in the order the items come."""
+    groups: dict[str, list[str]] = {}
+    for item in items:
+        fact, kind, iid = item
+        groups.setdefault(_label(data, kind, iid, roles[item]), []).append(WORDS[fact])
+    return [f"{label}: {', '.join(words)}" for label, words in groups.items()]
+
+
+def _label(data: DiagramData, kind: ItemKind, iid: int, role: str) -> str:
+    if kind is ItemKind.PairBond:
+        names = " and ".join(_name(data, pid) for pid in _partners(data, iid))
+        return f"couple {iid}, {names} ({role})"
+    return f"{iid} {_name(data, iid)} ({role})"
+
+
+def _name(data: DiagramData, pid: int) -> str:
+    name = _person(data, pid).get("name") or ""
+    return "unnamed" if name in UNNAMED else name
+
+
+def _role(data: DiagramData, pid: int, role: tuple) -> str:
+    woman, man, anyone = role
+    return {PersonKind.Female: woman, PersonKind.Male: man}.get(
+        _person(data, pid).get("gender"), anyone
+    )
 
 
 def _answers(data: DiagramData) -> dict[Item, FactState]:

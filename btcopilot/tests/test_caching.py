@@ -13,7 +13,7 @@ import pytest
 from mock import patch
 
 from btcopilot.llmutil import FALLBACK_BETA
-from btcopilot import prompts
+from btcopilot import coverage, prompts
 from btcopilot.coachmodel import (
     CACHE,
     COACH_EFFORT,
@@ -25,6 +25,7 @@ from btcopilot.coachturn import CoachTurn
 from btcopilot.extensions import db
 from btcopilot.models import ModelCall, Purpose, Speaker, SpeakerType
 from btcopilot.pricing import cost
+from btcopilot.schema import Person, asdict
 from btcopilot.tests.conftest import wrote
 from btcopilot.toolbox import ToolName
 
@@ -203,16 +204,29 @@ def test_the_fixed_coaching_text_is_kept_ahead_of_the_record(
 ):
     # R-0392, R-0595
     ones = prompts.agent_prompt(
-        record="Marcus, 40", interactions="looked at 3", today="2026-09-30"
+        record="Marcus, 40",
+        interactions="looked at 3",
+        today="2026-09-30",
+        coverage="Marcus: birth date",
     )
     others = prompts.agent_prompt(
-        record="Nell, 12", interactions="looked at 5", today="2027-01-02"
+        record="Nell, 12",
+        interactions="looked at 5",
+        today="2027-01-02",
+        coverage="Nell: work",
     )
     fixed_left = set(paragraphs(ones[1])) & set(paragraphs(others[1]))
     # Only the record's own heading, the paragraph that reads the record above
-    # it, and the words around the interactions stay after the chat.
+    # it, the one that reads what is still unknown, and the words around the
+    # interactions stay after the chat.
     assert sum(len(p) for p in fixed_left) < 1500
+    assert "Marcus: birth date" in ones[1]
+    assert ones[0] == others[0]
 
+    data = discussion.diagram.get_diagram_data()
+    data.people = [asdict(Person(id=1, name="Wren"))]
+    discussion.diagram.set_diagram_data(data)
+    db.session.commit()
     monkeypatch.setattr(
         "btcopilot.metered.response_text_sync",
         lambda *a, **k: wrote("A session title"),
@@ -223,6 +237,10 @@ def test_the_fixed_coaching_text_is_kept_ahead_of_the_record(
         {"type": "text", "text": ones[0], "cache_control": CACHE}
     ]
     assert "hi" in wire.sent["messages"][-1]["content"][-1]["text"]
+    assert any(
+        coverage.HEAD in block["text"] for block in wire.sent["messages"][-1]["content"]
+    )
+    assert coverage.HEAD not in ones[0]
 
 
 def test_the_coach_asks_for_its_effort_and_no_sampling(wire):
