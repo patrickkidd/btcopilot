@@ -97,8 +97,8 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     assert shown(model) == "\n".join(
         [
             coverage.HEAD,
-            "1 Wren (the person): birth date, alive or not, schooling",
-            RESOLVED.format(known=1, resolved=1, required=13),
+            "1 Wren (the person): birth date, schooling, work",
+            RESOLVED.format(known=2, resolved=2, required=13),
         ]
     )
 
@@ -115,9 +115,11 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
         coverage.states(data)[(Fact.BirthDate, ItemKind.Person, ME)]
         is FactState.Asked
     )
+    # the person chatting is alive
+    assert coverage.states(data)[(Fact.Alive, ItemKind.Person, ME)] is FactState.Known
     assert done(first["turn_id"]) == {
-        "before": counts(13, 1),
-        "after": counts(13, 1, asked=1),
+        "before": counts(13, 2),
+        "after": counts(13, 2, asked=1),
     }
 
     at = version(family)
@@ -158,8 +160,8 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     assert shown(model) == "\n".join(
         [
             coverage.HEAD,
-            "1 Wren (the person): alive or not, schooling, work",
-            RESOLVED.format(known=1, resolved=1, required=13),
+            "1 Wren (the person): schooling, work, health",
+            RESOLVED.format(known=2, resolved=2, required=13),
         ]
     )
 
@@ -179,8 +181,8 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     # the person, each parent with who their parents are, the parents'
     # number of children, the sister
     assert done(second["turn_id"]) == {
-        "before": counts(13, 1, asked=1),
-        "after": counts(49, 9, 1),
+        "before": counts(13, 2, asked=1),
+        "after": counts(49, 10, 1),
     }
 
     at = version(family)
@@ -210,11 +212,11 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     assert shown(model) == "\n".join(
         [
             coverage.HEAD,
-            "1 Wren (the person): alive or not, schooling, work",
+            "1 Wren (the person): schooling, work, health",
             "2 Ada (mother): birth date, alive or not, schooling",
             "3 Tom (father): birth date, alive or not",
             "Said unknown: 1 Wren (the person): birth date",
-            RESOLVED.format(known=9, resolved=10, required=49),
+            RESOLVED.format(known=10, resolved=11, required=49),
         ]
     )
 
@@ -224,8 +226,8 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     assert found[(Fact.Parents, ItemKind.Person, SAM)] is FactState.NotAsked
     # Sam with who his parents are, and when they met and how many children
     assert done(third["turn_id"]) == {
-        "before": counts(49, 9, 1),
-        "after": counts(63, 14, 1),
+        "before": counts(49, 10, 1),
+        "after": counts(63, 15, 1),
     }
 
 
@@ -343,7 +345,7 @@ def test_under_a_plateau_the_list_is_cut_to_the_nearest_few(family):
     assert coverage.block(data, plateau=2).splitlines() == [
         coverage.HEAD,
         "Your plateau note holds, turn 2 of 5: the nearest 3 only.",
-        "1 Wren (the person): birth date, alive or not, schooling",
+        "1 Wren (the person): birth date, schooling, work",
         full[-1],
     ]
 
@@ -373,7 +375,7 @@ def test_a_plateau_note_lapses_after_five_turns(web, token, family, monkeypatch)
     assert (
         seen[0]
         == seen[-1]
-        == "1 Wren (the person): birth date, alive or not, schooling"
+        == "1 Wren (the person): birth date, schooling, work"
     )
 
 

@@ -195,7 +195,7 @@ def rewind(data: dict, deltas: list[dict]):
         if d["field"] is not None and d["item_kind"] != ItemKind.Diagram.value
     }:
         item = _find(data, kind, item_id)
-        if all(value is None for field, value in item.items() if field != "id"):
+        if all(value in (None, []) for field, value in item.items() if field != "id"):
             _collection(data, kind).remove(item)
 
 

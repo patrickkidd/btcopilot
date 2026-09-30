@@ -342,7 +342,7 @@ def _recorded(data: DiagramData, item: Item, answers: dict) -> bool:
                 for e in data.events
             )
         case Fact.Alive:
-            return _death(data, iid) is not None
+            return iid == profile.own(data)["id"] or _death(data, iid) is not None
         case Fact.DeathDate:
             return _dated(_death(data, iid))
         case Fact.CauseOfDeath:

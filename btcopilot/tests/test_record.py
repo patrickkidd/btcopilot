@@ -872,3 +872,21 @@ def test_taking_back_targets_set_on_an_event_leaves_an_empty_list(subscriber):
     data = diagramjson.loads(diagram.data)
     record.rewind(data, change.deltas)
     assert from_dict(Event, data["events"][0]).relationshipTargets == []
+
+
+def test_taking_back_an_event_made_by_field_sets_then_given_targets_removes_it():
+    # R-0596, R-0084
+    """Production FD-366: rewinding Patrick's record left event 66 holding only
+    an empty target list and no kind, and coverage failed reading it."""
+    made = [
+        {"item_kind": "event", "item_id": 66, "field": field, "before": None, "after": after}
+        for field, after in (("kind", "noted"), ("person", 1), ("description", "told Lou"))
+    ]
+    targeted = [
+        {"item_kind": "event", "item_id": 66, "field": "kind", "before": "noted", "after": "shift"},
+        {"item_kind": "event", "item_id": 66, "field": "relationshipTargets", "before": [], "after": [2]},
+    ]
+    data = {"events": [{"id": 66, "kind": "shift", "person": 1, "description": "told Lou", "relationshipTargets": [2]}]}
+    record.rewind(data, targeted)
+    record.rewind(data, made)
+    assert data["events"] == []
