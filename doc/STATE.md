@@ -1882,6 +1882,21 @@ You rule keep, change, or undo on each.
    - Why it matters: It is the command that spends money, and its safety depends on you liking preview by default.
    - You decide: Keep or change.
 
+26. **Letting the coach write its words to the person in the same model call as its last record edits**
+   - Done: Today the turn loop throws away words written beside a tool call, and the prompt tells the coach to ask its question only after its tool calls come back (R-0482, because 3 of 75 turns ended with no reply). Doing it in one call would save about $0.027 per turn, the separate closing call, which is 26% of calls. The turn loop would have to change. The prompt variant is drafted and ready to measure.
+   - Why it matters: It changes how tools interact with the coach's words, so it needs his ruling.
+   - You decide: Whether the loop may keep words written beside tool calls.
+
+27. **Trying two outside models as shadows**
+   - Done: GPT-6.1 Sol costs about $0.18 to $0.21 a turn, needs an OpenAI key and a new client, and health-data terms apply only after OpenAI approval. Muse Spark 1.1 from Meta costs about $0.11 a turn, needs a Meta key, and is reachable through the existing Anthropic-format client with a small routing change. No training, retention or health-data terms were found for it.
+   - Why it matters: Clinical text would leave the current providers.
+   - You decide: Which keys to create, and whether clinical text may go to either.
+
+28. **The queued measurement spend**
+   - Done: Replay his 13 turns on Opus 5.5 three ways: the current prompt at medium thinking as the baseline on the new layout, low thinking, and the batch-edits prompt variant. About $2.50 a run, $7.50 total. Plus one run on Gemini 3.1 Pro Preview through the existing Google client, about $2.50. The free routes cannot show it: the subscription replay gives no thinking control and the local model is not Opus.
+   - Why it matters: Whether low thinking or the batch-edits prompt saves money without hurting replies cannot be judged without it.
+   - You decide: Answer "go" or a number.
+
 ### B. Defects and unproven things
 
 You rule fix now, later, or accept.
@@ -1947,6 +1962,31 @@ You rule fix now, later, or accept.
    - Why it matters: A wrong rate would misstate shadow spend.
    - You decide: Nothing.
 
+29. **The fixed coaching text is now cached ahead of the record**
+   - Fixed 2026-09-30: The fixed coaching text (about 3,700 tokens) is cached ahead of the record instead of rewritten every turn. The part rewritten each turn fell from about 13,900 to about 1,100 characters plus the record. Behaviour unmeasured, by Patrick's instruction.
+   - Why it matters: Nothing open.
+   - You decide: Nothing.
+
+30. **The coach's tool definitions were shortened**
+   - Fixed 2026-09-30: They were cut from 22,989 to 15,259 characters (about 2,270 tokens), keeping every rule stated nowhere else. Rules that only the record-editing tools carried now sit in the scribe's prompt. About $0.007 per turn.
+   - Why it matters: Nothing open.
+   - You decide: Nothing.
+
+31. **The cache-hit panel shows dollars by kind**
+   - Fixed 2026-09-30: For coach calls it now shows dollars for cache write, cache read, output and uncached input, the gauge the cost follows.
+   - Why it matters: Nothing open.
+   - You decide: Nothing.
+
+32. **Re-asks inside a turn are not worth a change**
+   - Fixed 2026-09-30: Re-asks (shorter labels, sentences instead of chips, words after a silent stop) fired five times in two weeks and never since 23 Sep.
+   - Why it matters: Nothing open.
+   - You decide: Nothing.
+
+33. **The replay tool can vary thinking, prompt and turn count**
+   - Fixed 2026-09-30: It can run one person's turns under a thinking level, an alternative prompt file, or a turn cap, and prints cost and score. A "gemini-pro" alias for Gemini 3.1 Pro Preview exists, with its own price row.
+   - Why it matters: Nothing open.
+   - You decide: Nothing.
+
 ### C. Housekeeping
 
 21. **Queued rulings wait for your key**
@@ -1965,7 +2005,7 @@ You rule fix now, later, or accept.
    - You decide: Decide when the design pass happens.
 
 24. **Parts of the ticket are still unbuilt**
-   - Done: Not built: the coverage checklist and its panels, the conversational regression test, the coverage-efficiency experiment, and the pick-notes rubric.
+   - Done: Not built: the coverage checklist and its panels, the conversational regression test, the coverage-efficiency experiment, and the pick-notes rubric. Also unbuilt: the low thinking setting and the batch-edits prompt, both waiting on the measurement in item 28.
    - Why it matters: The ticket's acceptance criteria are not met without them.
    - You decide: Decide the order, or drop any.
 
