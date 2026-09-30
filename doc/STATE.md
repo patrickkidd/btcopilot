@@ -21,6 +21,8 @@ names another session [R-0530]. The flush revises this file and appends to HISTO
 the whole handover.
 The older handover files in the private corpus stay as they were, for the record only.
 
+FD-366 is the follow-on ticket (child of epic FD-362): the coverage checklist per Kerr chapter 10 with four states, prose quality by Patrick's picks, the conversational regression test, and the shadow spend category. FD-365 is frozen for review and merge as of 2026-09-30; new work goes on branch FD-366 from the FD-365 head, and the deploy lock moves to FD-366 when Patrick says so.
+
 ## The product (ruled)
 
 **"A coach who never forgets your family."** You talk to it (voice or text) the way
