@@ -314,7 +314,7 @@ Changes something: needs `--yes`.
 
 ### `flask admin quality replay-person <user_id> <model>`
 
-Replay the words of every live coach turn one person took, oldest first, on MODEL onto one scratch record, score it against their record, and append one ledger line.
+Replay the words of the live coach turns one person took, oldest first, on MODEL onto one scratch record that starts as their record stood before the first, score it against their record as it stood after the last, and append one ledger line. A key the ledger already holds is not run again.
 
 Changes something: needs `--yes`.
 
@@ -322,7 +322,9 @@ Changes something: needs `--yes`.
 |---|---|
 | `user_id` | required |
 | `model` | required |
-| `--reference` | The diagram to score against; the person's own record when left out. |
+| `--reference` | The diagram to score against; the person's record as it stood after the last replayed turn when left out. |
+| `--key` | Print the key and stop. |
+| `--again` | Run a key the ledger already holds. |
 | `--cap` | Dollars; no turn starts past it. |
 | `--thinking` | How hard the coach thinks, for this replay only. |
 | `--prompt-file` | A plain prompty file that replaces the coach's main prompt for this replay only. |
