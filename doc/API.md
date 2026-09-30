@@ -60,24 +60,17 @@ in …" reads. Events never traced are absent.
 
 ## Reports
 
-`POST /reports` — a bug or feedback from the page or its service worker, one row
-in the reports table. It is open to a signed-out page and the worker, so it takes
-no CSRF token; one sender (the person, or a signed-out page's address) gets 20 an
-hour, then 429. `kind` is `bug` or `feedback`, `status` is `sent` or `declined`,
-`release` is the app's version; `address` (the screen), `turn_id` and
-`statement_id` (never the person's words) are optional. A report sent carries
-`error` or `words`; one declined (the coach's offer turned down), neither. A bug
-carries `source` (`page` or `worker`; only the server writes `server`) and
-`error` (its name and message), with `frames` (the stack's frames in the app's
-own scripts), `request_id` (the `X-Request-Id` of an answer of 500 or above the
-server itself gave, never its words) and `count` (repeats the page held back);
-or, offered by the coach, the person's `words`. The server computes the
-signature and adds the same fault for the same person, release and day to one
-row's count. The page reports a request only when the server itself answered
-500 or above: never no answer, a refusal, a proxy's error page, or this route;
-the server's 500 handler already wrote that request's row, which a report
-naming its `request_id` answers with. Any other field is a 400; answers
-`{"id"}` with 201.
+`POST /reports` — a bug or feedback the coach offered from the conversation and
+the person answered on the page, one row in the reports table. It takes no CSRF
+token, so only a post from this site is taken (403 otherwise); one sender (the
+person, or a signed-out page's address) gets 20 an hour, then 429. `kind` is
+`bug` or `feedback`, `status` is `sent` or `declined`, `release` is the app's
+version; `address` (the screen), `turn_id` and `statement_id` (the coach's
+reply that offered it) are optional. A report sent carries the offered `words`;
+one declined, none. Any other field is a 400; answers `{"id"}` with 201. An
+error in the page or the server is never a report: those go to Grafana (Faro
+on the page, Alloy for the server's logs), and every answer's `X-Request-Id`
+names the server's log lines for that request.
 
 ## Account
 

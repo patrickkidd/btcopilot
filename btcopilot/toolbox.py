@@ -620,9 +620,9 @@ def schemas() -> list[dict]:
         {
             "name": ToolName.Report.value,
             "description": (
-                "Offer to send what the person said about the app to the people "
-                "who make it: the app asks them whether to send it, and nothing "
-                "is sent unless they say so.\n\n"
+                "Offer to send what the person said about the app, or what you "
+                "misread, to the people who make it: the app asks them whether "
+                "to send it, and nothing is sent unless they say so.\n\n"
                 + prompts.files().fragment("report")
             ),
             "input_schema": {
@@ -632,13 +632,17 @@ def schemas() -> list[dict]:
                         "type": "string",
                         "enum": [kind.value for kind in ReportKind],
                         "description": (
-                            "bug: something in the app does not work; feedback: "
-                            "something they want changed, dislike, or wish it did."
+                            "bug: the app or you behaved wrongly as they "
+                            "experienced it; feedback: a wish or a dislike about "
+                            "the app."
                         ),
                     },
                     "words": {
                         "type": "string",
-                        "description": "The person's own words, as they said them.",
+                        "description": (
+                            "The person's own words, as they said them; for a "
+                            "bug about your own misreading, yours."
+                        ),
                     },
                 },
                 "required": ["kind", "words"],
