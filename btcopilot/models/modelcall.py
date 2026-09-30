@@ -20,17 +20,22 @@ class Purpose(enum.StrEnum):
     Summary = "summary"
     Cluster = "cluster"
     Scribe = "scribe"
+    Ratify = "ratify"
+    Judge = "judge"
+    Transcribe = "transcribe"
 
 
 class ModelCall(db.Model, ModelMixin):
     """One call to the model: who it was for, what it spent and what it cost.
     `model` is the model that answered; `fallback` is every hop the fallbacks
-    made to get there, or null when the requested model answered."""
+    made to get there, or null when the requested model answered. `diagram_id`
+    is null for a call about no record: ratifying a cut, judging a thread,
+    transcribing a recording."""
 
     __tablename__ = "model_calls"
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    diagram_id = Column(Integer, ForeignKey("diagrams.id"), nullable=False)
+    diagram_id = Column(Integer, ForeignKey("diagrams.id"), nullable=True)
     turn_id = Column(String(64), nullable=False, index=True)
     purpose = Column(
         Enum(Purpose, values_callable=lambda e: [x.value for x in e]), nullable=False

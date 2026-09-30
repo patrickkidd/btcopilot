@@ -1,6 +1,7 @@
 """Each model call says what it was for, so shadow spend is its own category
 and is kept out of the cost panels for the people the coach talks to. Rows
-from before the column are read from their turn id.
+from before the column are read from their turn id. A call about no record
+(ratifying a cut, judging a thread, transcribing a recording) has no diagram.
 
 Revision ID: 1b00000000c0
 Revises: 1b00000000bf
@@ -24,11 +25,14 @@ PURPOSE = sa.Enum(
     "summary",
     "cluster",
     "scribe",
+    "ratify",
+    "judge",
+    "transcribe",
     name="purpose",
 )
-# Production ran this revision before these two were in the list; its type
-# gains them here on the next rollout.
-ADDED = ("cluster", "scribe")
+# Production ran this revision before these were in the list; its type gains
+# them here, and its diagram column drops NOT NULL, on the next rollout.
+ADDED = ("cluster", "scribe", "ratify", "judge", "transcribe")
 
 
 def upgrade():
@@ -39,6 +43,7 @@ def upgrade():
             op.execute(f"ALTER TYPE purpose ADD VALUE IF NOT EXISTS '{value}'")
     with op.batch_alter_table("model_calls", schema=None) as batch_op:
         batch_op.add_column(sa.Column("purpose", PURPOSE, nullable=True))
+        batch_op.alter_column("diagram_id", existing_type=sa.Integer(), nullable=True)
     calls = sa.table(
         "model_calls", sa.column("purpose", PURPOSE), sa.column("turn_id", sa.String)
     )

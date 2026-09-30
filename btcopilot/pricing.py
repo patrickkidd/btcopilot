@@ -1,4 +1,5 @@
-"""What a model call costs, in US dollars per million tokens."""
+"""What a model call costs, in US dollars per million tokens, or per hour of
+audio for a transcription."""
 
 from dataclasses import dataclass
 from decimal import Decimal
@@ -49,7 +50,7 @@ PRICES = {
     "gemini-2.5-flash": Price(
         Decimal("0.30"), Decimal("2.50"), Decimal(0), Decimal("0.03")
     ),
-    # Not read off Google's page with the rest: the launch rate as remembered.
+    # ai.google.dev/gemini-api/docs/pricing, read 2026-09-30 (text rates).
     "gemini-3.1-flash-lite": Price(
         Decimal("0.25"), Decimal("1.50"), Decimal(0), Decimal("0.025")
     ),
@@ -57,6 +58,19 @@ PRICES = {
         Decimal("0.10"), Decimal("0.40"), Decimal(0), Decimal("0.01")
     ),
 }
+
+
+# AssemblyAI's pre-recorded rates, assemblyai.com/pricing, read 2026-09-30:
+# universal-3-5-pro $0.21 and universal-2 $0.15 an hour, each with the standard
+# speaker labels every request asks for (+$0.02 an hour).
+HOURLY = {
+    "universal-3-5-pro": Decimal("0.23"),
+    "universal-2": Decimal("0.17"),
+}
+
+
+def heard(model: str, seconds: float) -> Decimal:
+    return HOURLY[model] * Decimal(str(seconds)) / 3600
 
 
 def price(model: str) -> Price:

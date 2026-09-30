@@ -3,15 +3,19 @@ import datetime
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
 from btcopilot.extensions import db
-from btcopilot.models import Author, Change
+from btcopilot.models import Author, Change, ModelCall, Purpose
 from mock import patch
 
-from btcopilot.review import export, ruledraft, snapshot
+from btcopilot.review import adapter, divergence, export, ruledraft, snapshot
 from btcopilot.review.adapter import initials
 from btcopilot.models import User
 from btcopilot.review.freeze import frozen
 from btcopilot.review.models import Coding, Cut, Item, ReviewStatus, Rule, RuleSource
+from btcopilot.tests.conftest import Model, said
 from btcopilot.tests.review.conftest import coded, person, shift
+
+# The real drafter, from before the autouse fixture stands it down.
+DRAFT = ruledraft.draft
 
 
 def test_cut_starts_after_the_previous_one(patrick, session, turns, cut):
@@ -183,7 +187,9 @@ def test_one_vote_per_coder_per_item(patrick, coder, test_user, test_user_2, cut
     assert votes[0]["choice"] == "drop"
 
 
-def test_a_coder_reads_only_their_own_votes(patrick, coder, test_user, test_user_2, cut):
+def test_a_coder_reads_only_their_own_votes(
+    patrick, coder, test_user, test_user_2, cut
+):
     # R-0252
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
@@ -235,7 +241,10 @@ def test_ratifying_writes_the_ground_truth_export(
     )
     patrick.patch(
         f"/review/items/{agreed.id}",
-        json={"choice": "keep", "value": {"coding_id": agreed.opinions[0]["coding_id"]}},
+        json={
+            "choice": "keep",
+            "value": {"coding_id": agreed.opinions[0]["coding_id"]},
+        },
     )
     decide_everything(patrick, db.session.get(Cut, cut.id))
     patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
@@ -268,17 +277,46 @@ def test_the_coachs_draft_lands_as_ai_rules(patrick, test_user, test_user_2, cut
     with patch.object(
         ruledraft, "draft", return_value={1: "Date a shift by its start"}
     ):
-        ruledraft.draft_for(db.session.get(Cut, cut.id))
+        ruledraft.draft_for(db.session.get(Cut, cut.id), patrick.user.id)
     db.session.commit()
     drafted = Rule.query.filter_by(drafted_by=RuleSource.Ai).all()
     assert [r.text for r in drafted] == ["Date a shift by its start"]
 
 
+def test_the_rule_draft_is_charged_to_the_admin_who_ratified(
+    patrick, test_user, test_user_2, cut
+):
+    # R-0259, R-0388
+    two_codings(test_user, test_user_2, cut)
+    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    item = Item.query.filter_by(cut_id=cut.id, item_kind="event").first()
+    item.status = ReviewStatus.Decided
+    db.session.commit()
+
+    with (
+        patch.object(ruledraft, "draft", DRAFT),
+        patch.object(adapter, "coach_model", return_value=Model(said("[1] A rule"))),
+    ):
+        ruledraft.draft_for(db.session.get(Cut, cut.id), patrick.user.id)
+    rows = ModelCall.query.filter_by(purpose=Purpose.Ratify).all()
+    assert [(r.user_id, r.diagram_id, r.turn_id) for r in rows] == [
+        (patrick.user.id, None, f"ratify:{cut.id}")
+    ]
+
+
+def test_the_divergence_reasons_are_charged_to_the_admin_who_ratified(patrick, cut):
+    # R-0254, R-0388
+    found = [{"label": "a move", "room": "1971", "coach": "1972", "reason": None}]
+    with patch.object(adapter, "coach_model", return_value=Model(said("[1] Misheard"))):
+        divergence.reasons(found, cut, patrick.user.id)
+    assert found[0]["reason"] == "Misheard"
+    rows = ModelCall.query.filter_by(purpose=Purpose.Ratify).all()
+    assert [(r.user_id, r.diagram_id) for r in rows] == [(patrick.user.id, None)]
+
+
 def test_patrick_flags_a_rule_and_the_same_tap_takes_the_flag_off(patrick):
     # R-0346
-    made = patrick.post(
-        "/review/rules", json={"text": "Date a shift by when it began"}
-    )
+    made = patrick.post("/review/rules", json={"text": "Date a shift by when it began"})
     rule_id = made.get_json()["id"]
 
     on = patrick.patch(
@@ -637,5 +675,3 @@ def test_a_coder_without_a_name_is_still_shown_as_initials(flask_app):
     assert initials(User(username="ballot1@fd362-fixture.invalid")) == "B1."
     assert initials(User(username="ballot3@fd362-fixture.invalid")) == "B3."
     assert initials(User(username="patrickkidd+beta@gmail.com")) == "P.B."
-
-

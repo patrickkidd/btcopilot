@@ -26,8 +26,15 @@ line with its number in square brackets and write nothing else.
 {rows}"""
 
 #: What two readings of the same moment can differ by, in the order they read.
-TELLING = ("dateTime", "kind", "description", "symptom", "anxiety", "functioning",
-           "relationship")
+TELLING = (
+    "dateTime",
+    "kind",
+    "description",
+    "symptom",
+    "anxiety",
+    "functioning",
+    "relationship",
+)
 
 
 def rows(cut) -> list[dict]:
@@ -89,7 +96,19 @@ def _label(mine: dict, room: dict | None) -> str:
     return str(source.get("description") or source.get("kind") or "an item")
 
 
-def reasons(found: list[dict], model=None) -> list[dict]:
+def ratifying(cut, user_id: int, model=None) -> adapter.Metered:
+    """The coach as asked on ratifying a cut, charged to the admin who
+    ratified it; a cut has no record of its own."""
+    return adapter.Metered(
+        user_id,
+        None,
+        f"ratify:{cut.id}",
+        adapter.Purpose.Ratify,
+        model=adapter.coach_model(model),
+    )
+
+
+def reasons(found: list[dict], cut, user_id: int, model=None) -> list[dict]:
     """The coach's own reason beside each row, asked for in one go."""
     if not found:
         return found
@@ -99,7 +118,7 @@ def reasons(found: list[dict], model=None) -> list[dict]:
     ]
     try:
         said = "".join(
-            adapter.coach_model(model).turn(
+            ratifying(cut, user_id, model).turn(
                 "",
                 [{"role": "user", "content": PROMPT.format(rows="\n".join(lines))}],
                 [],

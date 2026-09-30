@@ -32,7 +32,7 @@ def decided_items(cut) -> list[Item]:
     return Item.query.filter_by(cut_id=cut.id, status=ReviewStatus.Decided).all()
 
 
-def draft(items: list[Item], model=None) -> dict[int, str]:
+def draft(items: list[Item], cut, user_id: int, model=None) -> dict[int, str]:
     """Rule texts the coach proposes, each against the decision it came from."""
     if not items:
         return {}
@@ -44,7 +44,7 @@ def draft(items: list[Item], model=None) -> dict[int, str]:
     ]
     try:
         said = "".join(
-            adapter.coach_model(model).turn(
+            divergence.ratifying(cut, user_id, model).turn(
                 "",
                 [
                     {
@@ -90,7 +90,7 @@ def _label(item: Item) -> str:
     return str(first.get("description") or first.get("name") or item.item_kind.value)
 
 
-def draft_for(cut, model=None) -> list[Rule]:
+def draft_for(cut, user_id: int, model=None) -> list[Rule]:
     items = decided_items(cut)
     rules = [
         Rule(
@@ -102,7 +102,7 @@ def draft_for(cut, model=None) -> list[Rule]:
             # on the result screen (R-0259).
             ratified_at=adapter.utcnow(),
         )
-        for index, text in sorted(draft(items, model=model).items())
+        for index, text in sorted(draft(items, cut, user_id, model=model).items())
     ]
     db.session.add_all(rules)
     db.session.flush()

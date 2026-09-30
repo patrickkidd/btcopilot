@@ -3,12 +3,19 @@ here is refused as not-found without the licence, because a reader who does not
 have it is never told the surface exists (R-0237, R-0285)."""
 
 import io
+from decimal import Decimal
 
 import pytest
 
 from btcopilot.extensions import db
 from btcopilot.coachturn import CoachTurn
-from btcopilot.models import Discussion, DiscussionKind, Purpose, SpeakerType
+from btcopilot.models import (
+    Discussion,
+    DiscussionKind,
+    ModelCall,
+    Purpose,
+    SpeakerType,
+)
 from btcopilot.prompts import note_register
 from btcopilot.schema import Person, PersonKind, asdict
 from btcopilot.tests.conftest import Model, csrf_token, said
@@ -241,7 +248,9 @@ def test_the_audio_is_sent_on_from_this_server_and_the_key_stays_here(pro, monke
 
     def post(url, headers, data=None, json=None):
         sent[url] = (headers["authorization"], data.read() if data else json)
-        return Answer({"upload_url": "u://1"} if url.endswith("/upload") else {"id": "t1"})
+        return Answer(
+            {"upload_url": "u://1"} if url.endswith("/upload") else {"id": "t1"}
+        )
 
     monkeypatch.setattr(transcription.requests, "post", post)
     started = pro.post(
@@ -259,8 +268,40 @@ def test_the_audio_is_sent_on_from_this_server_and_the_key_stays_here(pro, monke
 def test_a_finished_transcript_is_read_back_through_this_server(pro, monkeypatch):
     # R-0348
     monkeypatch.setenv("ASSEMBLYAI_API_KEY", "secret")
-    done = Answer({"status": "completed", "utterances": UTTERANCES})
+    done = Answer(
+        {
+            "status": "completed",
+            "utterances": UTTERANCES,
+            "speech_model_used": "universal-3-5-pro",
+            "audio_duration": 1800,
+        }
+    )
     monkeypatch.setattr(transcription.requests, "get", lambda url, headers: done)
     read = pro.get("/app/transcriptions/t1").get_json()
     assert read["status"] == "completed"
-    assert [u["speaker"] for u in read["utterances"]] == [u["speaker"] for u in UTTERANCES]
+    assert [u["speaker"] for u in read["utterances"]] == [
+        u["speaker"] for u in UTTERANCES
+    ]
+
+
+def test_a_finished_transcript_is_charged_once_by_its_length(
+    pro, test_user, monkeypatch
+):
+    # R-0348, R-0388
+    monkeypatch.setenv("ASSEMBLYAI_API_KEY", "secret")
+    done = Answer(
+        {
+            "status": "completed",
+            "utterances": UTTERANCES,
+            "speech_model_used": "universal-3-5-pro",
+            "audio_duration": 1800,
+        }
+    )
+    monkeypatch.setattr(transcription.requests, "get", lambda url, headers: done)
+    pro.get("/app/transcriptions/t1")
+    pro.get("/app/transcriptions/t1")
+    rows = ModelCall.query.filter_by(purpose=Purpose.Transcribe).all()
+    assert [
+        (r.user_id, r.diagram_id, r.turn_id, r.model, r.input_tokens, r.cost_usd)
+        for r in rows
+    ] == [(test_user.id, None, "t1", "universal-3-5-pro", 0, Decimal("0.115"))]

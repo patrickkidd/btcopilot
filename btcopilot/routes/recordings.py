@@ -7,7 +7,7 @@ import datetime
 
 from flask import jsonify, request
 
-from btcopilot import transcription
+from btcopilot import auth, transcription
 from btcopilot.discussions import (
     create_recording,
     session_payload,
@@ -32,7 +32,7 @@ def transcription_start():
 @bp.route("/transcriptions/<transcript_id>")
 def transcription_status(transcript_id: str):
     require_professional()
-    return jsonify(transcription.status(transcript_id))
+    return jsonify(transcription.status(transcript_id, auth.current_user().id))
 
 
 @bp.route("/recordings/voices", methods=["POST"])

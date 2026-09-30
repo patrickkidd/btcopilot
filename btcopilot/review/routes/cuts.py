@@ -140,8 +140,8 @@ def cut_patch(cut_id: int):
         decision.confirm_agreed(cut, user)
         snapshot.recompute(cut, snapshot.AgreementPhase.Ratified)
         export.write(cut)
-        ruledraft.draft_for(cut)
-        cut.audit = divergence.reasons(divergence.rows(cut))
+        ruledraft.draft_for(cut, user.id)
+        cut.audit = divergence.reasons(divergence.rows(cut), cut, user.id)
 
     db.session.commit()
     return jsonify(payload(cut))
