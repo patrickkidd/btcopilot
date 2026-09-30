@@ -26,5 +26,9 @@ def test_every_kind_is_in_the_ledger():
 
 def test_every_panel_is_in_the_ledger():
     # R-0578, R-0517
-    found = [t for path in sorted(DASHBOARDS.glob("*.json")) for t in titles(json.loads(path.read_text())["panels"])]
+    found = [
+        t
+        for path in sorted(DASHBOARDS.glob("*.json"))
+        for t in titles(json.loads(path.read_text())["panels"])
+    ]
     assert [t for t in found if f'"{t}"' not in LEDGER] == []
