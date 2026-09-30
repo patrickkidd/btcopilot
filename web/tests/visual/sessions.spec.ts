@@ -237,15 +237,50 @@ test.describe("uploading a recording", () => {
   });
 });
 
-/** Patrick's search reads what was said in each session, not only its title
+/** Only Patrick sees a family's sessions listed, twelve of them on this
+ * fixture. His search reads what was said in each session, not only its title
  * and summary: a word said only inside one session finds that session, with
  * the line that carries it under its title. */
-test.describe("searching the sessions", () => {
+test.describe("the sessions Patrick sees listed", () => {
   test.use({ storageState: stateFor("sittings") });
   const roles = (...names: string[]) =>
     flask("admin", "run", "--", "users", "roles", username("sittings"), ...names, "--yes");
   test.beforeAll(() => roles("admin", "subscriber"));
   test.afterAll(() => roles("subscriber"));
+
+  const rows = async (page: Page) => {
+    await page.goto("/app/");
+    await openSheet(page);
+    await expect(page.locator("#sessions-sheet .fs-body .row")).toHaveCount(12);
+    return page.locator("#sessions-sheet .fs-body .row").evaluateAll((all) =>
+      all.map((r) => {
+        const box = r.getBoundingClientRect();
+        const style = getComputedStyle(r);
+        const behind = [getComputedStyle(r, "::before"), getComputedStyle(r, "::after")];
+        return {
+          top: box.top,
+          bottom: box.bottom,
+          left: Math.round(box.left),
+          width: Math.round(box.width),
+          transform: style.transform,
+          cards: behind.filter((b) => b.content !== "none" && b.boxShadow !== "none").length,
+        };
+      }),
+    );
+  };
+
+  // R-0096
+  test("are a plain list: one column, none laid over another", async ({ page }) => {
+    const all = await rows(page);
+    expect(new Set(all.map((r) => `${r.left} ${r.width}`)).size).toBe(1);
+    all.slice(1).forEach((r, i) => expect(r.top).toBeGreaterThanOrEqual(all[i].bottom - 1));
+  });
+
+  // R-0096
+  test("are not dressed as stacked cards: no offset, tilt or card behind", async ({ page }) => {
+    const all = await rows(page);
+    expect(all.filter((r) => r.transform !== "none" || r.cards)).toEqual([]);
+  });
 
   // R-0259, R-0267
   test("holds no way to coding, the meeting or the replies, and a row only renames or deletes", async ({

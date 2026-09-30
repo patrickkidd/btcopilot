@@ -26,9 +26,13 @@ const list = async (page: Page) => {
   return page.locator('.sn-pane.in[data-page="notices"] .sn-row');
 };
 
+/** The page's next read of every notification, opened or not. */
+const all = (page: Page) =>
+  page.waitForResponse((r) => r.url().endsWith("/app/notifications?all=true"));
+
 /** The app, once it has read the reader's notifications. */
 async function arrive(page: Page): Promise<void> {
-  const read = page.waitForResponse((r) => r.url().endsWith("/app/notifications?all=true"));
+  const read = all(page);
   await page.goto("/app/");
   expect((await read).ok()).toBe(true);
 }
@@ -52,9 +56,15 @@ test("a coach message never takes the strip: the notice under it does, and once 
   await expect(strip(page).locator(".strip-t")).toHaveText(NEW);
 
   await unfold(page);
+  // the cross counts the notice opened, then reads the notifications again; the
+  // reload waits for both, or it drops the old page's read under the new one
+  const put = opened(page);
+  const reread = all(page);
   await strip(page).locator(".cardx").click();
+  expect((await put).ok()).toBe(true);
+  expect((await reread).ok()).toBe(true);
   await expect(strip(page)).toBeHidden();
-  const read = page.waitForResponse((r) => r.url().endsWith("/app/notifications?all=true"));
+  const read = all(page);
   await page.reload();
   const unread = ((await (await read).json()) as { kind: string; opened_at: string | null }[])
     .filter((one) => one.opened_at === null)
