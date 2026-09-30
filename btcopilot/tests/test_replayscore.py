@@ -6,12 +6,13 @@ import json
 
 import pytest
 
-from btcopilot import diagramjson, ledger, prompts, replayscore
+from btcopilot import diagramjson, ledger, prompts, record, replayscore
 from btcopilot.admin import admin
 from btcopilot.admin.quality import PRODUCTION
 from btcopilot.coachmodel import Spent, model_for
 from btcopilot.extensions import db
 from btcopilot.models import (
+    Author,
     Diagram,
     ModelCall,
     Purpose,
@@ -19,7 +20,9 @@ from btcopilot.models import (
     StatementKind,
     TokenMeter,
 )
+from btcopilot.review import adapter
 from btcopilot.routes.diagrams import readable
+from btcopilot.schema import ItemKind
 from btcopilot.toolbox import ToolName
 from btcopilot.tests.conftest import Model, called, said
 
@@ -231,3 +234,90 @@ def test_turns_caps_a_persons_replay_and_pairs_the_turn_ids(
     assert "1 turns" in result.output
     assert "live2 -> " in result.output
     assert "live3" not in result.output
+
+
+def _added(diagram_id, user_id, person_id, name, turn_id):
+    record.apply(
+        diagram_id,
+        [
+            {
+                "item_kind": ItemKind.Person,
+                "item_id": person_id,
+                "field": field,
+                "after": value,
+            }
+            for field, value in (("name", name), ("last_name", "Hale"))
+        ],
+        author=Author.Coach,
+        turn_id=turn_id,
+        user_id=user_id,
+    )
+
+
+@pytest.fixture
+def lived(discussion, test_user):
+    """An older reply with no turn id that added Nell, then three live turns
+    that each added one sibling."""
+    _added(discussion.diagram_id, test_user.id, 1, "Nell", "before-turn-ids")
+    subject = discussion.speakers[0]
+    for order, name in ((2, "Wren"), (3, "Ada"), (4, "Bo")):
+        db.session.add(
+            Statement(
+                discussion_id=discussion.id,
+                speaker_id=subject.id,
+                text=f"My brother {name}.",
+                order=order,
+                kind=StatementKind.Turn,
+                turn_id=f"live{order}",
+            )
+        )
+        db.session.commit()
+        _added(discussion.diagram_id, test_user.id, order, name, f"live{order}")
+    return discussion
+
+
+def _person(flask_app, test_user, *extra):
+    return flask_app.test_cli_runner().invoke(
+        admin,
+        ["quality", "replay-person", str(test_user.id), "sonnet-5", "--turns", "2"]
+        + list(extra),
+    )
+
+
+def test_a_replay_starts_before_its_first_turn_and_is_scored_after_its_last(
+    flask_app, lived, test_user, path, monkeypatch
+):
+    # R-0597
+    model = Model(
+        called(ToolName.EditPerson, name="Wren", last_name="Hale"),
+        said("Noted."),
+        called(ToolName.EditPerson, name="Ada", last_name="Hale"),
+        said("Noted."),
+    )
+    monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
+    result = _person(flask_app, test_user)
+    assert result.exit_code == 0, result.output
+    assert "turns live2..live3 (2)" in result.output
+    line = json.loads(path.read_text())
+    assert line["scores"]["people"] == 1.0
+    assert line["case"] in result.output
+    scratch = db.session.get(Diagram, line["scratch_diagram_id"])
+    assert [p["name"] for p in adapter.record_of(scratch)["people"]] == [
+        "Nell",
+        "Wren",
+        "Ada",
+    ]
+
+
+def test_a_kept_key_is_not_run_again_without_again(
+    flask_app, lived, test_user, path, monkeypatch
+):
+    # R-0597
+    model = Model(said("Noted."), said("Noted."), said("Noted."), said("Noted."))
+    monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
+    assert _person(flask_app, test_user).exit_code == 0
+    result = _person(flask_app, test_user)
+    assert result.exit_code != 0
+    assert len(path.read_text().splitlines()) == 1
+    assert _person(flask_app, test_user, "--again").exit_code == 0
+    assert len(path.read_text().splitlines()) == 2

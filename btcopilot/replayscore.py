@@ -5,6 +5,8 @@ eval ledger [Oracle: R-0597]."""
 
 import contextlib
 import datetime
+import hashlib
+import json
 import shutil
 import subprocess
 import tempfile
@@ -15,7 +17,7 @@ from pathlib import Path
 
 from sqlalchemy import func
 
-from btcopilot import ledger, prompts
+from btcopilot import ledger, prompts, shadow
 from btcopilot.coachmodel import COACH_EFFORT, model_for
 from btcopilot.extensions import db
 from btcopilot.llmutil import resolve_model
@@ -56,10 +58,14 @@ def replay(
     thinking: str = COACH_EFFORT,
     prompt: Path | None = None,
     statements: list[Statement] | None = None,
+    start: bytes | None = None,
+    expected: dict | None = None,
+    key: str | None = None,
 ) -> dict:
     """The ledger line the replay appended, plus the model calls it made and
     each replayed turn's id beside the id of the turn it replays. Without
-    `statements` the whole discussion is replayed."""
+    `statements` the whole discussion is replayed; it starts from `start`, or
+    an empty record, and is scored against `expected`, or the reference."""
     started = time.monotonic()
     model = model_for(requested, thinking)
     diagram = adapter.coding_diagram(
@@ -67,6 +73,8 @@ def replay(
         f"Replay of session {discussion.id} on {requested}",
         scratch=True,
     )
+    if start is not None:
+        diagram.data = start
     db.session.commit()
     if statements is None:
         statements = sorted(discussion.statements, key=lambda s: (s.order or 0, s.id))
@@ -75,7 +83,9 @@ def replay(
             diagram, discussion, statements, model=model, cap=cap
         )
     mine = adapter.record_of(diagram)
-    scores = compare(mine, adapter.record_of(reference))
+    scores = compare(
+        mine, adapter.record_of(reference) if expected is None else expected
+    )
     calls = ModelCall.query.filter_by(diagram_id=diagram.id).all()
     served = Counter(call.model for call in calls).most_common(1)
     row = {
@@ -88,7 +98,7 @@ def replay(
         "reference_diagram_id": reference.id,
         "scratch_diagram_id": diagram.id,
         "scratch_discussion_id": copy.id,
-        "case": None,
+        "case": key,
         "outcome": None,
         "turns": len(replies),
         "scores": {name: scores[name] for name in SCORES},
@@ -132,6 +142,32 @@ def turned(user_id: int, limit: int | None = None) -> list[Statement]:
         .order_by(Statement.id)
         .limit(limit)
         .all()
+    )
+
+
+def anchor(diagram: Diagram, said: Statement | None) -> tuple[bytes, int]:
+    """The record and its version as they stood before the turn these words
+    started, or as they stand now without words."""
+    if said is None:
+        return diagram.data, diagram.version
+    taken = shadow.rewound(said)
+    version = taken[-1].version - 1 if taken else diagram.version
+    return shadow.rebuilt(said), version
+
+
+def prompt_version(path: Path | None) -> str:
+    with agent_prompt_from(path):
+        return hashlib.sha256(prompts.get_agent_prompt().encode()).hexdigest()[:12]
+
+
+def kept(key: str) -> bool:
+    """Whether the ledger already holds a replay under this key."""
+    if not ledger.PATH.exists():
+        return False
+    rows = (json.loads(line) for line in ledger.PATH.read_text().splitlines())
+    return any(
+        row["kind"] == ledger.LedgerKind.Replay.value and row["case"] == key
+        for row in rows
     )
 
 

@@ -70,11 +70,11 @@ def _queue(
     enqueue(row.id)
 
 
-def rebuilt(said: Statement) -> bytes:
-    """The record as it stood before the turn these words started: today's
-    record with that turn's changes and every change after it taken back off,
-    newest first, whoever made them. Row ids give the order; turn ids carry
-    none."""
+def rewound(said: Statement) -> list[Change]:
+    """The changes taken back off today's record to reach the record as it
+    stood before the turn these words started: that turn's and every change
+    after it, newest first, whoever made them. Row ids give the order; turn
+    ids carry none."""
     diagram = said.discussion.diagram
     first = (
         select(func.min(Change.id))
@@ -84,10 +84,17 @@ def rebuilt(said: Statement) -> bytes:
         )
         .scalar_subquery()
     )
-    data = diagramjson.loads(diagram.data)
-    for change in Change.query.filter(
-        Change.diagram_id == diagram.id, Change.id >= first
-    ).order_by(Change.id.desc()):
+    return (
+        Change.query.filter(Change.diagram_id == diagram.id, Change.id >= first)
+        .order_by(Change.id.desc())
+        .all()
+    )
+
+
+def rebuilt(said: Statement) -> bytes:
+    """The record as it stood before the turn these words started."""
+    data = diagramjson.loads(said.discussion.diagram.data)
+    for change in rewound(said):
         record.rewind(data, change.deltas)
     return diagramjson.dumps(data)
 

@@ -7,11 +7,13 @@ from pathlib import Path
 import click
 from flask import current_app
 
+from btcopilot import diagramjson
 from btcopilot import quality as runs
 from btcopilot import replayscore
 from btcopilot.admin.guard import writes
 from btcopilot.coachmodel import COACH_EFFORT
 from btcopilot.extensions import db
+from btcopilot.llmutil import resolve_model
 from btcopilot.models import Diagram, Discussion, User
 from btcopilot.review.adapter import spoken
 
@@ -151,23 +153,58 @@ def quality_replay(
     "--reference",
     "reference_diagram_id",
     type=int,
-    help="The diagram to score against; the person's own record when left out.",
+    help="The diagram to score against; the person's record as it stood after "
+    "the last replayed turn when left out.",
 )
+@click.option("--key", "show_key", is_flag=True, help="Print the key and stop.")
+@click.option("--again", is_flag=True, help="Run a key the ledger already holds.")
 @replay_options
 def quality_replay_person(
-    user_id, model, reference_diagram_id, cap, thinking, prompt_file, turns, production
+    user_id,
+    model,
+    reference_diagram_id,
+    show_key,
+    again,
+    cap,
+    thinking,
+    prompt_file,
+    turns,
+    production,
 ):
-    """Replay the words of every live coach turn one person took, oldest
-    first, on MODEL onto one scratch record, score it against their record, and
-    append one ledger line."""
+    """Replay the words of the live coach turns one person took, oldest first,
+    on MODEL onto one scratch record that starts as their record stood before
+    the first, score it against their record as it stood after the last, and
+    append one ledger line. A key the ledger already holds is not run again."""
     _allowed(production)
     user = db.session.get(User, user_id)
     if user is None:
         raise click.UsageError("no such user")
-    reference = db.session.get(Diagram, reference_diagram_id or user.diagram_in_use())
-    statements = replayscore.turned(user.id, turns)
-    if reference is None or not statements:
-        raise click.UsageError("no reference diagram or no turns with a turn id")
+    every = replayscore.turned(user.id)
+    statements = every[:turns]
+    if not statements:
+        raise click.UsageError("no turns with a turn id")
+    diagram = statements[0].discussion.diagram
+    if {s.discussion.diagram_id for s in statements} != {diagram.id}:
+        raise click.UsageError("the turns lie on more than one record")
+    following = every[len(statements)] if len(every) > len(statements) else None
+    if following is not None and following.discussion.diagram_id != diagram.id:
+        following = None
+    start, before = replayscore.anchor(diagram, statements[0])
+    end, after = replayscore.anchor(diagram, following)
+    reference = db.session.get(Diagram, reference_diagram_id or diagram.id)
+    if reference is None:
+        raise click.UsageError("no such reference diagram")
+    key = (
+        f"person {user.id} turns {statements[0].turn_id}..{statements[-1].turn_id} "
+        f"({len(statements)}) record v{before}..v{after} "
+        f"prompt {replayscore.prompt_version(prompt_file)} "
+        f"model {resolve_model(model)} thinking {thinking}"
+    )
+    click.echo(f"key: {key}")
+    if show_key:
+        return
+    if replayscore.kept(key) and not again:
+        raise click.UsageError("the ledger already holds this key; --again runs it")
     _report(
         replayscore.replay(
             statements[0].discussion,
@@ -177,5 +214,8 @@ def quality_replay_person(
             thinking=thinking,
             prompt=prompt_file,
             statements=statements,
+            start=start,
+            expected=None if reference_diagram_id else diagramjson.loads(end),
+            key=key,
         )
     )
