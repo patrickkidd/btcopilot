@@ -15,6 +15,7 @@ from btcopilot.admin.observations import observations
 from btcopilot.admin.proactive import proactive_group
 from btcopilot.admin.quality import quality
 from btcopilot.admin.questions import impressions_group, questions_group
+from btcopilot.admin.reports import report_group
 from btcopilot.admin.review import review
 from btcopilot.admin.skill import write_skill
 from btcopilot.admin.tokens import token_cap
@@ -37,6 +38,7 @@ for group in (
     quality,
     questions_group,
     impressions_group,
+    report_group,
     imports,
     token_cap,
     coach_model,

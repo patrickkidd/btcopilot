@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page } from "@playwright/test";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import {
   closeSync,
   mkdirSync,
@@ -124,12 +124,20 @@ export function shell(code: string): string {
   return run(["shell"], code);
 }
 
+/** The same, left running: for a command that waits on the page. */
+export function flaskRunning(...args: string[]): ChildProcess {
+  const [bin, ...before] = cli();
+  return spawn(bin, [...before, ...args], { cwd: CLI_CWD, env: process.env });
+}
+
+const CLI_CWD = process.env.FIXTURE_CWD ?? resolve("..");
+
+const cli = () => (process.env.FIXTURE_CMD ?? "uv run flask app fixtures").split(" ").slice(0, -2);
+
 function run(args: string[], input?: string): string {
-  const [bin, ...before] = (process.env.FIXTURE_CMD ?? "uv run flask app fixtures")
-    .split(" ")
-    .slice(0, -2);
+  const [bin, ...before] = cli();
   return execFileSync(bin, [...before, ...args], {
-    cwd: process.env.FIXTURE_CWD ?? resolve(".."),
+    cwd: CLI_CWD,
     encoding: "utf8",
     env: process.env,
     input,

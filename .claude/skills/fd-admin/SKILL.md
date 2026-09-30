@@ -311,6 +311,23 @@ Changes something: needs `--yes`.
 | `--diagram` | Only this record. |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin report`
+
+The report sheet in a person's app, raised by hand in development.
+
+### `flask admin report offer <email> <words>`
+
+Offer to send WORDS from the person's app, as the coach's report tool does: the offer goes on their next coach turn, or the one running now, and the sheet comes up once that reply is done, at most once a sitting on a device. Never on production.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `email` | required |
+| `words` | required |
+| `--kind` | Which sheet: feedback, or a bug report. |
+| `--wait` | Seconds to wait for the person's next message. |
+
 ### `flask admin review`
 
 The coding meeting.
