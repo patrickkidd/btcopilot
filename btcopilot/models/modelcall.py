@@ -18,6 +18,8 @@ class Purpose(enum.StrEnum):
     Play = "play"
     Backfill = "backfill"
     Summary = "summary"
+    Cluster = "cluster"
+    Scribe = "scribe"
 
 
 class ModelCall(db.Model, ModelMixin):

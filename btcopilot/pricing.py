@@ -49,6 +49,10 @@ PRICES = {
     "gemini-2.5-flash": Price(
         Decimal("0.30"), Decimal("2.50"), Decimal(0), Decimal("0.03")
     ),
+    # Not read off Google's page with the rest: the launch rate as remembered.
+    "gemini-3.1-flash-lite": Price(
+        Decimal("0.25"), Decimal("1.50"), Decimal(0), Decimal("0.025")
+    ),
     "gemini-2.5-flash-lite": Price(
         Decimal("0.10"), Decimal("0.40"), Decimal(0), Decimal("0.01")
     ),

@@ -19,6 +19,7 @@ from btcopilot import observer, proactive, prompts, push, record, turnstore
 from btcopilot.record import Invalid
 from btcopilot.coachmodel import COACH_EFFORT, CoachModel
 from btcopilot.coachturn import CoachTurn
+from btcopilot.metered import Metered
 from btcopilot.models import (
     Author,
     Change,
@@ -38,7 +39,9 @@ from btcopilot.schema import PDP, Event, ItemKind, PairBond, Person, from_dict
 __all__ = [
     "Author",
     "Change",
+    "Metered",
     "ModelCall",
+    "Purpose",
     "schemas",
     "ToolError",
     "Toolbox",

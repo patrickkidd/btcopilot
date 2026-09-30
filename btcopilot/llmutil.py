@@ -357,6 +357,13 @@ class Text:
     served: Served
 
 
+@dataclass
+class Parsed:
+    value: object
+    spent: Spent
+    served: Served
+
+
 def served(message, label: str) -> Served:
     """Read the fallbacks off a response and log one line per hop. The SDK this
     app pins does not type the fallback block, so its ends arrive as dicts."""
@@ -606,7 +613,11 @@ async def gemini_structured(prompt, response_format, large=False, model=None):
     data = json.loads(response.text)
     result = from_dict(response_format, data)
     _log.debug(f"gemini_structured(): --> {result}")
-    return result
+    return Parsed(
+        result,
+        gemini_spent(response.usage_metadata),
+        Served(model=response.model_version),
+    )
 
 
 def gemini_structured_sync(prompt, response_format, large=False):
@@ -664,7 +675,9 @@ async def claude_structured(prompt, response_format, model):
     data = json.loads(text)
     result = from_dict(response_format, data)
     _log.debug(f"claude_structured(): --> {result}")
-    return result
+    return Parsed(
+        result, claude_spent(response.usage), served(response, f"claude_structured {model}")
+    )
 
 
 async def gemini_text(prompt=None, **kwargs):

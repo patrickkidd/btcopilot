@@ -16,7 +16,8 @@ from btcopilot.clusters import (
     sync,
 )
 from btcopilot.coachturn import CoachTurn
-from btcopilot.models import Author, Change, Purpose
+from btcopilot.llmutil import Parsed, Served, Spent
+from btcopilot.models import Author, Change, ModelCall, Purpose
 from btcopilot.prompts import get_agent_prompt
 from btcopilot.turnlog import TurnEventKind
 from btcopilot.toolbox import ToolError, Toolbox, ToolName
@@ -92,6 +93,12 @@ def detects(*groups: tuple, changes: tuple[str, ...] = ()):
     return patch(
         "btcopilot.clusters.detect_clusters",
         return_value=ClusterResult(clusters=made, changes=list(changes)),
+    )
+
+
+def parsed(response: ClusterListResponse) -> Parsed:
+    return Parsed(
+        response, Spent(input=900, output=60), Served("gemini-3.1-flash-lite")
     )
 
 
@@ -190,7 +197,7 @@ def test_a_grouping_the_user_made_survives_regrouping(discussion, family):
     db.session.commit()
 
     with detects(("Everything at once", [10, 11, 12, 13, 14, 15])):
-        sync(family.id, turn_id="t1")
+        sync(family.id, turn_id="t1", user_id=family.user_id)
 
     stored = clusters_of(family)
     theirs = stored["c1"]
@@ -225,7 +232,7 @@ def test_events_left_over_by_a_split_are_dots_not_a_cluster(discussion, family):
     db.session.commit()
 
     with detects(("The hard spring", [10, 11, 12]), ("The winter after", [13, 14, 15])):
-        sync(family.id, turn_id="t1")
+        sync(family.id, turn_id="t1", user_id=family.user_id)
 
     stored = clusters_of(family)
     assert stored["c1"]["eventIds"] == [11, 12]
@@ -240,7 +247,7 @@ def test_a_grouping_under_the_minimum_is_never_stored(discussion, family):
     of an older version — the record refuses it rather than storing a pair."""
     with detects(("The hard spring", [10, 11])):
         with pytest.raises(ClusterError, match="fewer than 3"):
-            sync(family.id, turn_id="t1")
+            sync(family.id, turn_id="t1", user_id=family.user_id)
 
     assert clusters_of(family) == {}
     assert not family.get_diagram_data().clusterCacheKey
@@ -374,7 +381,7 @@ def test_a_grouping_of_unknown_provenance_is_left_alone(discussion, family):
     db.session.commit()
 
     with detects(("Everything at once", [10, 11, 12, 13, 14, 15])):
-        sync(family.id, turn_id="t1")
+        sync(family.id, turn_id="t1", user_id=family.user_id)
 
     stored = clusters_of(family)
     assert stored["c1"]["eventIds"] == [10, 11, 12]
@@ -397,7 +404,7 @@ def test_the_grouping_keeps_the_id_the_model_handed_back(family):
     """The model says which stored grouping each one it returns is, so what the
     coach already pointed at still resolves after the line is regrouped."""
     with detects(("The hard spring", [10, 11, 12])):
-        sync(family.id, turn_id="t1")
+        sync(family.id, turn_id="t1", user_id=family.user_id)
     first = next(iter(clusters_of(family)))
 
     data = family.get_diagram_data()
@@ -406,7 +413,7 @@ def test_the_grouping_keeps_the_id_the_model_handed_back(family):
     db.session.commit()
 
     with detects((first, "The hard spring", [10, 11, 12, 13])):
-        sync(family.id, turn_id="t2")
+        sync(family.id, turn_id="t2", user_id=family.user_id)
     assert list(clusters_of(family)) == [first]
     assert clusters_of(family)[first]["eventIds"] == [10, 11, 12, 13]
 
@@ -414,16 +421,16 @@ def test_the_grouping_keeps_the_id_the_model_handed_back(family):
 def test_the_same_events_are_not_regrouped_twice(family):
     # R-0208
     with detects(("The hard spring", [10, 11, 12])):
-        sync(family.id, turn_id="t1")
+        sync(family.id, turn_id="t1", user_id=family.user_id)
     with detects(("Something else", [13, 14, 15])) as detect:
-        assert sync(family.id, turn_id="t2") is None
+        assert sync(family.id, turn_id="t2", user_id=family.user_id) is None
     detect.assert_not_called()
 
 
 def test_a_chip_to_a_stored_cluster_resolves_and_the_picture_can_aim_at_it(family):
     # R-0085, R-0373
     with detects(("The hard spring", [10, 11, 12, 13])):
-        sync(family.id, turn_id="t1")
+        sync(family.id, turn_id="t1", user_id=family.user_id)
     data = family.get_diagram_data()
     cluster_id = next(iter(clusters_of(family)))
 
@@ -440,7 +447,7 @@ def test_a_chip_to_a_stored_cluster_resolves_and_the_picture_can_aim_at_it(famil
 def test_the_play_endpoint_resolves_a_stored_cluster(web, test_user, family):
     # R-0078
     with detects(("The hard spring", [10, 11, 12, 13])):
-        sync(family.id, turn_id="t1")
+        sync(family.id, turn_id="t1", user_id=family.user_id)
     cluster_id = next(iter(clusters_of(family)))
     token = csrf_token(web)
 
@@ -581,8 +588,8 @@ def test_a_grouping_that_fails_its_checks_twice_keeps_the_groups_and_the_turn_re
         clusters=[ModelCluster(eventIds=[10, 11, 12], name="Part", reason="r")]
     )
     with patch(
-        "btcopilot.clusters.gemini_structured_sync",
-        side_effect=[invents, drops],
+        "btcopilot.metered.gemini_structured_sync",
+        side_effect=[parsed(invents), parsed(drops)],
     ):
         reply = CoachTurn(
             discussion,
@@ -604,3 +611,22 @@ def test_a_grouping_that_fails_its_checks_twice_keeps_the_groups_and_the_turn_re
     assert reply["statement"] == "I put that down."
     assert clusters_of(family) == kept
     assert "kept its clusters" in caplog.text
+
+
+def test_regrouping_writes_a_ledger_row_for_the_person_and_their_family(family):
+    # R-0388
+    grouped = ClusterListResponse(
+        clusters=[
+            ModelCluster(
+                eventIds=[10, 11, 12, 13, 14, 15], name="A hard year", reason="r"
+            )
+        ]
+    )
+    with patch(
+        "btcopilot.metered.gemini_structured_sync", return_value=parsed(grouped)
+    ):
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    rows = ModelCall.query.filter_by(purpose=Purpose.Cluster).all()
+    assert [(r.user_id, r.diagram_id, r.turn_id, r.input_tokens) for r in rows] == [
+        (family.user_id, family.id, "t1", 900)
+    ]

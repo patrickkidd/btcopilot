@@ -22,15 +22,26 @@ PURPOSE = sa.Enum(
     "play",
     "backfill",
     "summary",
+    "cluster",
+    "scribe",
     name="purpose",
 )
+# Production ran this revision before these two were in the list; its type
+# gains them here on the next rollout.
+ADDED = ("cluster", "scribe")
 
 
 def upgrade():
-    PURPOSE.create(op.get_bind(), checkfirst=True)
+    bind = op.get_bind()
+    PURPOSE.create(bind, checkfirst=True)
+    if bind.dialect.name == "postgresql":
+        for value in ADDED:
+            op.execute(f"ALTER TYPE purpose ADD VALUE IF NOT EXISTS '{value}'")
     with op.batch_alter_table("model_calls", schema=None) as batch_op:
         batch_op.add_column(sa.Column("purpose", PURPOSE, nullable=True))
-    calls = sa.table("model_calls", sa.column("purpose", PURPOSE), sa.column("turn_id", sa.String))
+    calls = sa.table(
+        "model_calls", sa.column("purpose", PURPOSE), sa.column("turn_id", sa.String)
+    )
     op.execute(
         calls.update().values(
             purpose=sa.case(

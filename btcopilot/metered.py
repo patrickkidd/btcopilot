@@ -3,7 +3,7 @@ import time
 from sqlalchemy.orm import Session
 
 from btcopilot.extensions import db
-from btcopilot.llmutil import Served, Spent, response_text_sync
+from btcopilot.llmutil import Served, Spent, gemini_structured_sync, response_text_sync
 from btcopilot.models.modelcall import ModelCall, Purpose
 from btcopilot.pricing import cost
 
@@ -11,7 +11,8 @@ from btcopilot.pricing import cost
 class Metered:
     """The model with every call's tokens summed, so one turn charges one meter
     row, and each call written down with its cost. With no model, only plain
-    text calls are made, on the response model."""
+    text calls are made, on the response model, and structured calls, on the
+    extraction model."""
 
     def __init__(
         self,
@@ -39,6 +40,12 @@ class Metered:
         said = response_text_sync(prompt)
         self._write(said.served, said.spent, started, 0)
         return said.words
+
+    def structured(self, prompt: str, response_format):
+        started = time.monotonic()
+        parsed = gemini_structured_sync(prompt, response_format)
+        self._write(parsed.served, parsed.spent, started, 0)
+        return parsed.value
 
     def _write(self, served: Served, spent: Spent, started: float, tool_calls: int):
         self.spent.add(spent)

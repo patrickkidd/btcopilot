@@ -8,10 +8,13 @@ from mock import patch
 
 from btcopilot import prompts
 from btcopilot.coachmodel import ModelTurn, ToolCall
-from btcopilot.models import Change
+from btcopilot.llmutil import Served
+from btcopilot.models import Change, ModelCall, Purpose
 from btcopilot.review import adapter
 from btcopilot.review.scribe import written
 from btcopilot.tests.review.conftest import coded, person
+
+HAIKU = Served("claude-haiku-4-5")
 
 
 class Scripted:
@@ -22,16 +25,16 @@ class Scripted:
         self.steps = list(steps)
         self.said = said
 
-    def turn(self, system, messages, tools):
+    def turn(self, system, messages, tools, turn_id=""):
         if False:
             yield
         if not self.steps:
-            return ModelTurn(text=self.said)
+            return ModelTurn(text=self.said, served=HAIKU)
         calls = [
             ToolCall(id=f"call-{i}", name=name, args=self._filled(args, messages))
             for i, (name, args) in enumerate(self.steps.pop(0))
         ]
-        return ModelTurn(calls=calls, blocks=[])
+        return ModelTurn(calls=calls, blocks=[], served=HAIKU)
 
     def _filled(self, args, messages) -> dict:
         return {
@@ -77,6 +80,19 @@ def test_adds_the_person_the_coder_names(coder, cut, turns):
     changes = Change.query.filter_by(diagram_id=coding.diagram_id).all()
     assert [c.statement_id for c in changes] == [turns[0].id] * len(changes)
     assert len(changes) == 2
+
+
+def test_each_scribe_call_writes_a_ledger_row_for_the_coder_and_their_record(
+    coder, cut, turns
+):
+    # R-0270, R-0388
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted([("edit_person", {"name": "James Cooper"})], said="Added him.")
+    scribe(coder, coding, turns[0], model, "James Cooper came to stay")
+    rows = ModelCall.query.filter_by(purpose=Purpose.Scribe).all()
+    assert [(r.user_id, r.diagram_id, r.model) for r in rows] == [
+        (coder.user.id, coding.diagram_id, "claude-haiku-4-5")
+    ] * 2
 
 
 def test_the_coders_words_stay_in_the_thread(coder, cut, turns):
@@ -131,7 +147,7 @@ def test_two_things_said_about_one_turn_keep_their_own_lines(coder, cut, turns):
 class Never:
     """A model the scribe must not reach."""
 
-    def turn(self, system, messages, tools):
+    def turn(self, system, messages, tools, turn_id=""):
         raise AssertionError("the scribe called the model")
         yield
 
@@ -142,14 +158,14 @@ class Endless:
     def __init__(self):
         self.step = 0
 
-    def turn(self, system, messages, tools):
+    def turn(self, system, messages, tools, turn_id=""):
         if False:
             yield
         self.step += 1
         call = ToolCall(
             id=f"call-{self.step}", name="edit_person", args={"name": f"Person {self.step}"}
         )
-        return ModelTurn(calls=[call], blocks=[])
+        return ModelTurn(calls=[call], blocks=[], served=HAIKU)
 
 
 def test_says_so_when_it_runs_out_of_steps(coder, cut, turns):
@@ -172,11 +188,11 @@ class Heard:
     def __init__(self):
         self.system = ""
 
-    def turn(self, system, messages, tools):
+    def turn(self, system, messages, tools, turn_id=""):
         if False:
             yield
         self.system = system
-        return ModelTurn(text="which one?")
+        return ModelTurn(text="which one?", served=HAIKU)
 
 
 def test_a_private_file_replaces_the_scribe_prompt(coder, cut, turns, tmp_path):

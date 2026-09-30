@@ -14,9 +14,9 @@ import logging
 from dataclasses import dataclass, field
 
 from btcopilot.extensions import db
-from btcopilot.llmutil import gemini_structured_sync
+from btcopilot.metered import Metered
 from btcopilot import record
-from btcopilot.models import Author, Change
+from btcopilot.models import Author, Change, Purpose
 from btcopilot import prompts
 from btcopilot.models import Diagram
 from btcopilot.schema import (
@@ -222,7 +222,8 @@ def candidates(data: DiagramData) -> list[Candidate]:
             when,
             marked_ids,
         )
-        if len(ids) >= MIN_CLUSTER_EVENTS and any(event_id in marked_ids for event_id in ids)
+        if len(ids) >= MIN_CLUSTER_EVENTS
+        and any(event_id in marked_ids for event_id in ids)
     ]
     return sorted(kept, key=lambda c: (c.startDate, c.eventIds[0]))
 
@@ -389,7 +390,8 @@ def _stored(data: DiagramData) -> list[dict]:
     ]
 
 
-def detect_clusters(data: DiagramData) -> ClusterResult:
+def detect_clusters(data: DiagramData, ask) -> ClusterResult:
+    """`ask` takes the prompt and returns the model's ClusterListResponse."""
     cache_key = compute_cache_key(_dated(data))
     cands = candidates(data)
     if not cands:
@@ -408,16 +410,11 @@ def detect_clusters(data: DiagramData) -> ClusterResult:
         f"{len(cands)} proposed"
     )
     try:
-        named = _check(
-            gemini_structured_sync(prompt, ClusterListResponse), cands, free, mine
-        )
+        named = _check(ask(prompt), cands, free, mine)
     except ClusterError as rejected:
         _log.warning(f"Grouping sent back: {rejected}")
         named = _check(
-            gemini_structured_sync(
-                prompt + prompts.CLUSTER_REJECTED.format(why=rejected),
-                ClusterListResponse,
-            ),
+            ask(prompt + prompts.CLUSTER_REJECTED.format(why=rejected)),
             cands,
             free,
             mine,
@@ -560,7 +557,7 @@ def sync(
     diagram_id: int,
     *,
     turn_id: str,
-    user_id: int | None = None,
+    user_id: int,
     session_id: int | None = None,
 ) -> Regroup | None:
     """Re-group the record's events and store the grouping.
@@ -584,7 +581,10 @@ def sync(
         return None
 
     dates = {e.id: e.dateTime for e in events if e.dateTime}
-    result = detect_clusters(data)
+    metered = Metered(user_id, diagram_id, turn_id, Purpose.Cluster)
+    result = detect_clusters(
+        data, lambda prompt: metered.structured(prompt, ClusterListResponse)
+    )
     deltas = _deltas(data.clusters, result.clusters, dates)
     deltas.append(
         {
