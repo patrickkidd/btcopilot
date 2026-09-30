@@ -23,7 +23,7 @@ The older handover files in the private corpus stay as they were, for the record
 
 FD-366 is the follow-on ticket (child of epic FD-362): the coverage checklist per Kerr chapter 10 with four states, prose quality by Patrick's picks, the conversational regression test, and the shadow spend category. FD-365 is frozen for review and merge as of 2026-09-30; new work goes on branch FD-366 from the FD-365 head, and the deploy lock moves to FD-366 when Patrick says so.
 
-**Start here for FD-366 (2026-09-30).** FD-365 is merged and production runs release 3.2026.9.30.4. Move the deploy lock to FD-366 with `uv run bin/deploy-lock set FD-366` from this worktree.
+**Start here for FD-366 (2026-09-30).** FD-365 is merged and production runs release 3.2026.9.30.4. Move the deploy lock to FD-366 with `uv run bin/deploy-lock set FD-366` from this worktree. Claude does this when Patrick says so (R-0623).
 
 Build, in this order:
 1. Shadow token spend as its own category on the cost dashboard.
