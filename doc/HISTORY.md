@@ -1971,36 +1971,36 @@ landing page merge. PR #142 stays the ticket's PR, open. The deploy lock is on F
 
 **Sittings and memory.** Each family has one thread; a new sitting starts after 12 quiet hours,
 marked by a light date line, and the session list and New session button are gone [queued
-R-0602, R-0603]. The coach no longer replays its past tool calls: it reads its last notes from
+R-0604, R-0605]. The coach no longer replays its past tool calls: it reads its last notes from
 the database, the last 20 to 29 statements (stepping by 10), and a map of every event, finds
-duplicates from the record alone [queued R-0604], searches past chat for older words [queued
-R-0605], and keeps questions for later with a follow-up tool, "ask later".
+duplicates from the record alone [queued R-0606], searches past chat for older words [queued
+R-0607], and keeps questions for later with a follow-up tool, "ask later".
 
 **The coach writes first** on two triggers only, an agreed follow-up or a pattern in the record
 reaching two occurrences of a symptom after a relationship ended, never an anniversary [queued
-R-0606, R-0607]; unasked messages are off by default, at most one a week or a month, worded as a
+R-0608, R-0609]; unasked messages are off by default, at most one a week or a month, worded as a
 maximum; two ignored stop that kind; one outstanding at a time. A 15-minute scheduled run on a
 new scheduler service, fd-beat, picks who gets one. The message goes as one web push at a time
 with email when no browser is subscribed, and the home-screen app shows the Family Diagram icon.
 
 **Notices** live in two tables, `notices` and `notifications`, sent with `flask admin notice
 send`; in the app a card above the message box and a Notices page in the account view [queued
-R-0611]. **Auditor onboarding**: a task notice and a reminder, two sentences in the invite
+R-0613]. **Auditor onboarding**: a task notice and a reminder, two sentences in the invite
 emails, "How this works" on the task card, and a hint on the first line of the coding screen
-[queued R-0612].
+[queued R-0614].
 
 **Bug reports and feedback** come only from the coach's offers, as a sheet from the bottom that
 never touches the thread, one row each in a new `reports` table, sent or declined, with a "Bug
-reports" setting [queued R-0613]. An exception reporter was built and removed the same night,
+reports" setting [queued R-0615]. An exception reporter was built and removed the same night,
 because Grafana Faro and Alloy already hold every error. Every server answer carries a request
 id; source maps are kept hidden, 90 days, with the release run.
 
 **In-app addresses**: every view and object has an address under /app/, the back button steps
 back, drawer rows are rung when an address names them, and the coach has a navigate tool
-[queued R-0614]. **The account view** gained a Coding section (Your coding task, Next meeting,
+[queued R-0616]. **The account view** gained a Coding section (Your coding task, Next meeting,
 "Auditor's Coding Guide") and a Quality section ("Better replies"); a cut starts from the meeting
-[queued R-0609, R-0610, R-0601]. Also: the "Questions" tab, a red Delete, Return sends only on a
-real keyboard [queued R-0608], the coach's notes say evaluation, not journaling [queued R-0615],
+[queued R-0611, R-0612, R-0603]. Also: the "Questions" tab, a red Delete, Return sends only on a
+real keyboard [queued R-0610], the coach's notes say evaluation, not journaling [queued R-0617],
 and a development-only one-tap sign-in with FLASK_DEV_AUTOLOGIN.
 
 **After the last release, pushed but not released:** the features dashboard in the repo with four

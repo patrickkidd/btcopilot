@@ -32,7 +32,7 @@ reads its last notes. When to search the chat is `btcopilot/prompty/fragments/se
 read into the search tool's description rather than the system prompt, as the follow-up tool's
 paragraph is. No other wording changed; both sets of goldens are regenerated.
 
-**Why** [R-0520, R-0481; queued R-0603, R-0604, R-0605]: the coach no longer gets its past tool
+**Why** [R-0520, R-0481; queued R-0605, R-0606, R-0607]: the coach no longer gets its past tool
 calls back in the chat, so the thread cannot grow without end. It gets the last 20 statements from
 the user's sessions on the family, its latest notes as labelled lines at the head of the newest
 message, and a map listing each event's date, kind and people. Older words it finds with the

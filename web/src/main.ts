@@ -98,7 +98,7 @@ declare global {
       session: { id: number; turn: string | null } | null;
       statements: api.Said[];
       version: string;
-      /** The beta's forced sending of bugs (R-0613). */
+      /** The beta's forced sending of bugs (R-0615). */
       beta: boolean;
     };
   }
@@ -685,7 +685,7 @@ reports.always = window.BOOTSTRAP.user?.prefs.bug_reports === BugReports.Always;
 /** The newest statement the thread on screen holds. */
 let newest: number | null = window.BOOTSTRAP.statements.at(-1)?.id ?? null;
 
-/** A notice goes to the screen it names or the address it carries (R-0611). */
+/** A notice goes to the screen it names or the address it carries (R-0613). */
 const notices = new Notices(new Strip($("speakrow")), $("account"), (link) =>
   void navigate(linked(link)),
 );

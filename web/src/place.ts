@@ -113,7 +113,7 @@ export function settled(path: string): string | null {
  * reply naming five things is not five presses of back. */
 export const PICTURE = new Set([Place.Chat, Place.Message, Place.Cluster, Place.Event]);
 
-/** The fixed screens a notice names, by the place each one is (R-0611). */
+/** The fixed screens a notice names, by the place each one is (R-0613). */
 const LINKED: Record<Link, Place> = {
   [Link.Account]: Place.Account,
   [Link.Coach]: Place.Coach,

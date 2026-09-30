@@ -31,5 +31,5 @@ Each needs a test that fails before its fix, citing its ruling once the queued i
 | R-0267 | Every session in the meeting's "Put a session on the agenda" list is named "Free Diagram". | each session named by its family |
 | — | The coding screen's title is clipped. | |
 | — | The reports route's limit of 20 an hour per sender is held in the server's memory, so every restart resets it. | |
-| R-0611 (queued) | Someone who joins a notice's audience after it was sent gets it in the app only, never by push or email, so a pricing notice sent by email misses them. | |
+| R-0613 (queued) | Someone who joins a notice's audience after it was sent gets it in the app only, never by push or email, so a pricing notice sent by email misses them. | |
 | R-0096 | The sessions sheet's plain-list ruling lost its only citing test when the session list was removed. | a test, or a supersession |

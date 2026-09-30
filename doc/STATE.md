@@ -95,22 +95,22 @@ ledger, the product-owner skill and its first run. What production now does, by 
 
 **Sittings.** Each family has one chat thread. A new sitting starts by itself once the family
 has been quiet 12 hours, and a light line with the day marks where it starts (with the time as
-well when the sitting before it started the same day) [queued R-0602]. The list of sessions to
+well when the sitting before it started the same day) [queued R-0604]. The list of sessions to
 open and the New session button are gone for everyone: nobody opens, starts or switches a
-session, and the person never manages what the coach remembers [queued R-0603]. A sitting's
+session, and the person never manages what the coach remembers [queued R-0605]. A sitting's
 summary stays in the database for the agenda and review and is not sent to the thread.
 
 **The coach's memory.** The coach no longer gets its past tool calls back, so the thread cannot
 grow without end. Each turn it reads its last notes from the database, the family's last 20 to
 29 statements from every sitting (the window steps by 10, so the cached part of the prompt stays
 the same until the next step), and a map listing each event's id, date, kind and people. It
-finds duplicates from the record alone [queued R-0604] and finds older words with a search over
-past chat [queued R-0605]. A follow-up tool, "ask later", keeps a question for a later day that
+finds duplicates from the record alone [queued R-0606] and finds older words with a search over
+past chat [queued R-0607]. A follow-up tool, "ask later", keeps a question for a later day that
 the person agreed to. A coach turn whose edits change items an earlier sitting made writes an
 observations row for tuning. No eval has run on this change yet (PROMPT_ENGINEERING_LOG.md).
 
 **The coach writes first.** A message the coach writes first is one coach message in the thread,
-then a notification, with only one outstanding at a time [queued R-0606]. It has two triggers: a
+then a notification, with only one outstanding at a time [queued R-0608]. It has two triggers: a
 question for later the person agreed to, and a pattern in their own record that has just reached
 two occurrences, a symptom or anxiety going up, or functioning going down, within 60 days after
 a relationship ended or they moved away from it. Never an anniversary of a hard event [queued
@@ -130,7 +130,7 @@ that message and stamps it opened. Push sends no Topic header, which Apple refus
 added to a home screen shows the Family Diagram icon, drawn from the iOS app's own icon. The app
 refuses to start without its push keys, and it runs on the box.
 
-**Notices.** Two tables [queued R-0611]: `notices` holds a message once with who it is for
+**Notices.** Two tables [queued R-0613]: `notices` holds a message once with who it is for
 (everyone, a role, or named people); `notifications` holds one row per delivery to one person,
 of kind coach, task, reminder or notice. `flask admin notice send` sends a notice at once: a push
 to whoever subscribed a browser, an email only with `--email`, otherwise a row in the app's
@@ -141,7 +141,7 @@ and a cross under it. The account view has a Notices page with the unread count,
 mark carries an amber dot while one is unread.
 
 **Bug reports and feedback.** A sheet slides up from the bottom only when the coach offers one
-from the conversation [queued R-0613]: "Send this as a bug report?" with Send the report, Always
+from the conversation [queued R-0615]: "Send this as a bug report?" with Send the report, Always
 send and Don't send (disabled during the beta), or "Send this as feedback?" with Send the report and Not feedback. It is
 modal, never touches the thread, and after Send turns into "Your report was sent" with OK,
 closing by itself after ten seconds. Each answer is one row in the new `reports` table, status
@@ -152,7 +152,7 @@ page) and Alloy (the server's logs) already hold every error; a migration delete
 had written. Every server answer now carries an `X-Request-Id` naming its log lines, and source
 maps are built hidden, never served, and kept 90 days with the release run.
 
-**In-app addresses.** Every view and object has an address under /app/ [queued R-0614]: the
+**In-app addresses.** Every view and object has an address under /app/ [queued R-0616]: the
 address bar follows the app, the browser's back button steps back, and an address naming a
 message, session, notice, cut or snapshot scrolls it into view in its drawer and rings it. The
 coach has a navigate tool: asked for help with the app, it takes the app there, and its reply
@@ -163,11 +163,11 @@ address table is in SCREENS.md.
 sessions sheet to a Coding section of the account view for auditors and admins, Next meeting
 for admins only, with the literature review row now titled "Auditor's Coding Guide" [queued
 R-0609, R-0601]. Admins have a Quality section with one row, "Better replies", the page formerly
-called Compare replies [queued R-0610]. Each opens as a page of the account view. A cut starts
+called Compare replies [queued R-0612]. Each opens as a page of the account view. A cut starts
 from the meeting page, never from a session: "Put a session on the agenda" lists every session on
 every family, searchable by words said in them. One meeting date is one meeting.
 
-**Auditor onboarding** [queued R-0612]. A coder gets a task notice when Patrick gives a cut a
+**Auditor onboarding** [queued R-0614]. A coder gets a task notice when Patrick gives a cut a
 meeting date, and one reminder two days before the meeting if not submitted. The invitation and
 sign-in code emails say what the work is in two sentences; the task card shows four numbered
 lines under "How this works" until "Got it"; the first line tapped in the coding screen says to
@@ -181,8 +181,8 @@ proves production has no such route.
 **Smaller changes.** The lists drawer's third tab is "Questions", not "From the coach". In the
 sessions sheet Rename is green and Delete red. With a real keyboard Return sends and Shift- or
 Alt-Return makes a new line; on a touch screen Return makes a new line and only the send button
-sends [queued R-0608]. The new-event and new-person forms slide up full screen. The coach's notes
-field "What it's doing" says evaluation, not journaling [queued R-0615]; notes already stored
+sends [queued R-0610]. The new-event and new-person forms slide up full screen. The coach's notes
+field "What it's doing" says evaluation, not journaling [queued R-0617]; notes already stored
 keep their old word.
 
 **The landing page** (PR #143) is live since 3.2026.9.29.5: familydiagram.com/ serves it, both
@@ -632,7 +632,7 @@ container comes back up.
 5. Ten live cases have no saved answers; the subscription run has re-answered some of them.
 
 Left from 2026-09-29 and 30:
-6. 15 queued rulings, R-0601 to R-0615, in the private corpus's
+6. 15 queued rulings, R-0603 to R-0617, in the private corpus's
    RULINGS_TO_APPEND_2026-09-29.md, wait for Patrick to append them to the store with his key.
    Until then tests cite existing ids, and are re-cited after. The landing page's entries in
    HISTORY.md, decisions/log.md and SCREENS.md cite R-0601 and R-0602 from before the queue was

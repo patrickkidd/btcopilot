@@ -101,7 +101,7 @@ export interface SettingsHandlers {
   onAgenda(): void;
   /** Two replies to the same words, picked blind (R-0599). */
   onPairs(): void;
-  /** Every notice sent to this person, newest first (R-0611). */
+  /** Every notice sent to this person, newest first (R-0613). */
   notices(): Delivery[];
   /** A notice tapped in the list: counted opened, then where it points when
    * there is more to see there. */
@@ -559,7 +559,7 @@ export class Settings {
     return { title: "Account", pane };
   }
 
-  /** Every notice sent to this person, newest first (R-0611). */
+  /** Every notice sent to this person, newest first (R-0613). */
   private notices(): Built {
     const pane = el("div");
     const rows = this.handlers.notices().map((one) => this.noticeRow(one));

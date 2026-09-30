@@ -11,7 +11,7 @@ export interface Call {
 }
 
 /** One call to the reader at a time, in a strip above the message box: never
- * in the thread and never over the page (R-0611). Notices, the bug-report card
+ * in the thread and never over the page (R-0613). Notices, the bug-report card
  * and the auditor's task all come through this one. Folded, it is two lines
  * and a mark that it opens; its buttons come only with the whole text, so it
  * is read before it is acted on (Patrick, 2026-09-29). */

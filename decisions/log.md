@@ -1974,37 +1974,37 @@ schema, which needs his yes first [R-0581].
 
 ## 2026-09-29: FD-365 — sittings run in one thread with a light divider, and the person never manages the coach's memory
 
-Patrick [R-0602, R-0603, both queued]. Each family has one chat thread; a new sitting starts by
+Patrick [R-0604, R-0605, both queued]. Each family has one chat thread; a new sitting starts by
 itself after 12 quiet hours and is marked by a light date line. The session list and the New
 session button are deleted. The record is the memory, and every sitting has access to it.
 
 ## 2026-09-29: FD-365 — the coach removes duplicates from the record alone
 
-Patrick [R-0604, queued; supersedes the past-tool-calls part of R-0481]. The coach no longer gets
+Patrick [R-0606, queued; supersedes the past-tool-calls part of R-0481]. The coach no longer gets
 its past tool calls back; it reads the record, its last notes and the last 20 to 29 statements.
 
 ## 2026-09-29: FD-365 — the coach can always search past chat
 
-Patrick [R-0605, queued]. A search tool over the family's past chat, by words, person or days.
+Patrick [R-0607, queued]. A search tool over the family's past chat, by words, person or days.
 He added that it needs good indexing so the coach knows what to search; whether this search meets
 that is not yet evaluated.
 
 ## 2026-09-29: FD-365 — every notification is first a coach message, and the budget reads as a maximum
 
-Patrick [R-0606, queued]. A notification points at a coach message already in the thread; one is
+Patrick [R-0608, queued]. A notification points at a coach message already in the thread; one is
 outstanding at a time; unasked messages are at most one a week unless the person asked for a
 follow-up; an ignored one throttles itself. The setting's words read as a maximum, never a
 schedule (his wording note of 2026-09-29).
 
 ## 2026-09-29: FD-365 — no anniversaries of hard events
 
-Patrick [R-0607, queued]. The coach does not message on the anniversary of a hard event; it is not
+Patrick [R-0609, queued]. The coach does not message on the anniversary of a hard event; it is not
 about digging things up. Whether and when the coach may message unprompted stays an open theory
 question.
 
 ## 2026-09-29: FD-365 — two tables for notices, and the in-app notice sits outside the thread
 
-Patrick [R-0611, queued]. `notices` holds a message and its audience once; `notifications` holds
+Patrick [R-0613, queued]. `notices` holds a message and its audience once; `notifications` holds
 one row per delivery to one person, made when the person next opens the app. An in-app notice
 shows once as a card above the message box, never a modal and never in the thread, then lives in
 the account view's Notices list with an unread mark on the account button. A command on the box
@@ -2012,30 +2012,30 @@ sends a notice; pricing changes also go by email.
 
 ## 2026-09-29: FD-365 — the app onboards auditors itself, with notices
 
-Patrick [R-0612, queued]. Auditors are told what to do and how by the app, not by Patrick: a task
+Patrick [R-0614, queued]. Auditors are told what to do and how by the app, not by Patrick: a task
 notice when a cut gets a meeting date, a reminder before the meeting, two sentences in the invite
 emails, "How this works" on the task card, and a hint on the first line of the coding screen.
 
 ## 2026-09-29: FD-365 — Return sends on a Mac keyboard, and makes a new line on iOS
 
-Patrick [R-0608, queued; supersedes R-0368]. With a real keyboard Return sends and Shift- or
+Patrick [R-0610, queued; supersedes R-0368]. With a real keyboard Return sends and Shift- or
 Alt-Return makes a new line; on a touch screen Return makes a new line and only the send button
 sends.
 
 ## 2026-09-29: FD-365 — coding moves to the account view, and a cut starts from the meeting
 
-Patrick [R-0609, queued]. "Your coding task" and "Next meeting" leave the sessions sheet, which is
+Patrick [R-0611, queued]. "Your coding task" and "Next meeting" leave the sessions sheet, which is
 about one family's file, for a Coding section of the account view. A cut starts from the meeting,
 never from a session.
 
 ## 2026-09-29: FD-365 — Compare replies goes under an admin-only Quality section as "Better replies"
 
-Patrick [R-0610, queued]. He asked for an admin-only Quality section and a better name than
+Patrick [R-0612, queued]. He asked for an admin-only Quality section and a better name than
 "coding replies"; the page is now "Better replies".
 
 ## 2026-09-29: FD-365 — bug and feedback sheets from the bottom, forced send in the beta, no exception reporter
 
-Patrick [R-0613, queued]. A bug report or feedback is a modal sheet from the bottom that never
+Patrick [R-0615, queued]. A bug report or feedback is a modal sheet from the bottom that never
 touches the thread, then a "sent" card with OK that closes after ten seconds. Feedback the coach
 detects comes up the same way with a way to dismiss a misreading. The person decides whether to
 send, not whether it is a bug; in the beta the not-send button is disabled while both Send and
@@ -2046,20 +2046,20 @@ built yet (STATE.md, "Next PR").
 
 ## 2026-09-29: FD-365 — every view and object in the app has an address
 
-Patrick [R-0614, queued]. So the coach can help with settings, coding, sittings, chat or finding a
+Patrick [R-0616, queued]. So the coach can help with settings, coding, sittings, chat or finding a
 cluster, every view and object is addressable; an address can open a drawer and ring the item in
 it. The coach takes the app there with a navigate tool.
 
 ## 2026-09-29: FD-365 — the coach's notes say evaluation, not journaling
 
-Patrick [R-0615, queued; supersedes the journaling value in R-0535 and the word in R-0015's list].
+Patrick [R-0617, queued; supersedes the journaling value in R-0535 and the word in R-0015's list].
 The coach's notes field records what the coach heard and learned; its "What it's doing" values are
 evaluation (covering the basic family history an evaluation needs, after Kerr's chapter 10) and
 coaching (ongoing conversation outside that aim), with record correction and app help unchanged.
 
 ## 2026-09-29: FD-365 — the literature review has its own row in the account view for auditors and admins
 
-Patrick [R-0601, queued]. The row is shown only to roles allowed to see the private literature
+Patrick [R-0603, queued]. The row is shown only to roles allowed to see the private literature
 review. A builder later moved it into the Coding section and titled it "Auditor's Coding Guide",
 which he did not ask for and has not ruled on.
 

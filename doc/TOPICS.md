@@ -802,8 +802,8 @@ collects whether anyone felt a shift, the goal's own test.
 **Status:** deployed in 3.2026.9.30.1.
 **Decided:** two tables, `notices` (the message and its audience, once) and `notifications` (one
 row per delivery); an in-app notice is a card above the message box, never in the thread, then a
-Notices page in the account view [queued R-0611]; every notification is first a coach message
-when it comes from the coach [queued R-0606]; auditors get task notices and reminders [queued
+Notices page in the account view [queued R-0613]; every notification is first a coach message
+when it comes from the coach [queued R-0608]; auditors get task notices and reminders [queued
 R-0612].
 **Open:** (1) [build] someone who joins an audience after a notice was sent gets it in the app
 only; (2) [waiting] the queued rulings wait for his key.
@@ -818,7 +818,7 @@ list`; doc/FEEDBACK_LOOPS.md row 9.
 production yet.
 **Decided:** a modal sheet from the bottom, only from the coach's offers, never touching the
 thread; one row per answer in the `reports` table, sent or declined; errors in the code are
-Grafana's (Faro and Alloy), never a report [queued R-0613].
+Grafana's (Faro and Alloy), never a report [queued R-0615].
 **Open:** (1) [deploy] the beta's forced send, "Don't send" disabled on the bug sheet and a declined
 bug refused by the server, is on branch FD-365, not deployed; (2) [build] the report route's limit
 is held in server memory; (3) [verify] a real turn on production offering a report.
@@ -831,7 +831,7 @@ doc/FEEDBACK_LOOPS.md row 8.
 
 **Status:** deployed in 3.2026.9.30.1.
 **Decided:** every view and object is addressable so the coach can help with any feature; an
-address opens its drawer and rings the item [queued R-0614].
+address opens its drawer and rings the item [queued R-0616].
 **Open:** (1) [verify] his walk of the addresses and the back button on his phone.
 **Lives in:** doc/SCREENS.md (Addresses).
 **Next action:** his walk on the `walk` stack.

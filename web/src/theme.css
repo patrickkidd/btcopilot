@@ -1756,7 +1756,7 @@ button { font-family: inherit; }
 .avatar svg { width: 24px; height: 24px; display: block; }
 .avatar:active { color: var(--data-press); }
 /* A notice is unread: the amber of the coach's question chips, on the ring of
-   the account button and before the notice's row (R-0611). */
+   the account button and before the notice's row (R-0613). */
 .avatar.unread::after, .sn-unread {
   content: "";
   flex: none;
@@ -2322,7 +2322,7 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .sys.warn .chip.retry { flex: none; margin: 0; }
 
 /* One call to the reader above the message box, never in the thread and never
-   over the page (R-0611): a card of two lines at most, the way in as the step
+   over the page (R-0613): a card of two lines at most, the way in as the step
    pill, and the app's close cross. It stands on the thread's own ground. */
 .strip { flex: none; padding: 0 16px 8px; background: var(--bg); }
 .strip-c {
@@ -2639,7 +2639,7 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .rp-v { font: 400 17px/1.4 var(--sans); color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
 .rp .cf-go:active, .rp .cf-no:not(:disabled):active { opacity: 0.55; }
 .rp .cf-no:disabled { color: var(--faint); cursor: default; }
-/* why the bug sheet's Don't send is off, just under it (R-0613) */
+/* why the bug sheet's Don't send is off, just under it (R-0615) */
 .rp-why { margin: -8px 0 0; text-align: center; font: 400 13px/1.3 var(--sans); color: var(--faint); }
 
 /* a turn above the last agreed line, tapped: one faint line, no outline */

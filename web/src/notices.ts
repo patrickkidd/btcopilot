@@ -4,13 +4,13 @@ import { beyond } from "./place";
 import { NotificationKind, type Delivery } from "./types";
 
 /** The newest unread notification the thread does not already show: a coach
- * message is in the thread, so it never takes the strip (R-0606, R-0611). */
+ * message is in the thread, so it never takes the strip (R-0608, R-0613). */
 export const newest = (unread: Delivery[]): Delivery | null =>
   unread.find((one) => one.kind !== NotificationKind.Coach) ?? null;
 
 /** The reader's notifications: one strip at a time for the newest unread, a
  * mark on the account button while a notice is unread, and every notice for
- * the account view's Notices (R-0611). */
+ * the account view's Notices (R-0613). */
 export class Notices {
   /** Every notice, opened or not, newest first. */
   list: Delivery[] = [];

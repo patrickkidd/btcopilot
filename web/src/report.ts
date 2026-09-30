@@ -19,7 +19,7 @@ export const SENT_MS = 10_000;
  * twice a sitting, even across a reload. */
 const OFFERED = "reports.offered";
 /** The beta: a bug is sent or always sent, never turned down, and its Don't
- * send is drawn disabled (R-0613). The server's switch, which also refuses a
+ * send is drawn disabled (R-0615). The server's switch, which also refuses a
  * bug turned down. */
 const BETA = window.BOOTSTRAP.beta;
 
