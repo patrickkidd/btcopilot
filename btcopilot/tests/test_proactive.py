@@ -355,8 +355,10 @@ def test_the_loop_counts_stay_out_of_the_queue_patrick_rules_on(family, sent):
 
 def test_a_dry_run_keeps_and_sends_nothing(family, sent):
     # R-0004
-    send, _ = sent
-    assert [s["text"] for s in proactive.run(now=T0, dry_run=True)] == [WORDS]
+    send, model = sent
+    said = proactive.run(now=T0, dry_run=True)
+    assert [s["text"] for s in said] == ["would write about 1:symptom"]
+    assert model.call_count == 0
     assert ProactiveMessage.query.count() == 0
     assert Statement.query.count() == 0
     assert send.call_count == 0

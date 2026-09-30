@@ -260,13 +260,13 @@ Messages the coach writes before the person does.
 
 ### `flask admin proactive run`
 
-Write and send at most one message per person, within their budget. The words come from the model even on a dry run. Each person nothing went to gets the reason instead. Then each coder's reminder that is due, a row each, outside that budget.
+Write and send at most one message per person, within their budget. Each person nothing went to gets the reason instead. Then each coder's reminder that is due, a row each, outside that budget.
 
 Changes something: needs `--yes`.
 
 | Argument | What it is |
 |---|---|
-| `--dry-run` | Print what would be sent; keep and send nothing. |
+| `--dry-run` | Print what would be sent; keep and send nothing, and make no model call. |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin quality`

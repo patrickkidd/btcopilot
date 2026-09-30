@@ -101,8 +101,8 @@ def ask_later(user_id: int, diagram_id: int, when: datetime.date, question: str)
 def run(now: datetime.datetime | None = None, dry_run: bool = False) -> list[dict]:
     """At most one message per person per run, and only in the day. Each
     person gets a row: the words written, or the reason none were. A dry run
-    keeps nothing and sends nothing, but the words are still asked of the
-    model."""
+    keeps nothing and sends nothing, and stops before the model: a pattern
+    becomes a row saying the words would be written about it."""
     now = now or datetime.datetime.utcnow()
     rows = []
     day = daytime(now)
@@ -114,24 +114,20 @@ def run(now: datetime.datetime | None = None, dry_run: bool = False) -> list[dic
             _answers(user, now)
             found = _pick(user, now) if day else Reason.Night
         if isinstance(found, Reason):
+            rows.append(_row(user, reason=found.value))
+            continue
+        if dry_run and isinstance(found, correlation.Firing):
             rows.append(
-                {
-                    "email": user.username,
-                    "trigger": None,
-                    "text": None,
-                    "refused": None,
-                    "reason": found.value,
-                }
+                _row(
+                    user,
+                    Trigger.Correlation,
+                    f"would write about {found.key}",
+                    refused=False,
+                )
             )
             continue
         message, text, refused = _compose(user, found)
-        row = {
-            "email": user.username,
-            "trigger": message.trigger.value,
-            "text": text,
-            "refused": refused,
-            "reason": None,
-        }
+        row = _row(user, message.trigger, text, refused)
         rows.append(row)
         if dry_run or refused:
             continue
@@ -149,6 +145,22 @@ def run(now: datetime.datetime | None = None, dry_run: bool = False) -> list[dic
     else:
         db.session.commit()
     return rows
+
+
+def _row(
+    user: User,
+    trigger: Trigger | None = None,
+    text: str | None = None,
+    refused: bool | None = None,
+    reason: str | None = None,
+) -> dict:
+    return {
+        "email": user.username,
+        "trigger": trigger.value if trigger else None,
+        "text": text,
+        "refused": refused,
+        "reason": reason,
+    }
 
 
 def _utc(moment: datetime.datetime) -> datetime.datetime:

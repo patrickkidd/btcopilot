@@ -16,12 +16,13 @@ def proactive_group():
 @writes
 @proactive_group.command("run")
 @click.option(
-    "--dry-run", is_flag=True, help="Print what would be sent; keep and send nothing."
+    "--dry-run",
+    is_flag=True,
+    help="Print what would be sent; keep and send nothing, and make no model call.",
 )
 @rows_option
 def proactive_run(dry_run):
-    """Write and send at most one message per person, within their budget. The
-    words come from the model even on a dry run. Each person nothing went to
-    gets the reason instead. Then each coder's reminder that is due, a row
-    each, outside that budget."""
+    """Write and send at most one message per person, within their budget. Each
+    person nothing went to gets the reason instead. Then each coder's reminder
+    that is due, a row each, outside that budget."""
     return reminders.run(dry_run=dry_run)
