@@ -72,13 +72,40 @@ def test_notes_are_read_by_tool_not_shown_in_the_record(subscriber):
     assert "Tulsa" not in record and "quiet" not in record
     assert record.count("(has notes)") == 2
     tools = Toolbox(diagram.id, "t2")
-    one, _ = tools.call(ToolName.ReadNotes.value, {"event": first["id"]})
-    assert one.splitlines()[0] == f"{first['id']}: Took the job in Tulsa"
-    every, _ = tools.call(ToolName.ReadNotes.value, {})
-    assert every.splitlines()[:2] == [
-        f"{first['id']}: Took the job in Tulsa",
-        f"{second['id']}: \"Finally some quiet\"",
+    one, _ = tools.call(
+        ToolName.ReadEvents.value, {"ids": [first["id"]], "fields": ["notes"]}
+    )
+    assert one.splitlines()[1] == "  notes: Took the job in Tulsa"
+    every, _ = tools.call(ToolName.ReadEvents.value, {"fields": ["notes"]})
+    assert [line for line in every.splitlines() if "notes:" in line] == [
+        "  notes: Took the job in Tulsa",
+        '  notes: "Finally some quiet"',
     ]
+
+
+def test_a_wrong_field_is_cleared_and_the_rest_stays(subscriber):
+    # R-0533
+    diagram = _diagram(subscriber.user)
+    added = _event(
+        diagram, kind="shift", date="2019-03-01", person=1, description="Stopped calling",
+        anxiety="up", relationship="distance", relationship_targets=[2],
+        location="Tulsa", end_date="2019-06-01",
+    )
+    changed = _event(
+        diagram, id=added["id"],
+        clear=["location", "end_date", "relationship", "relationship_targets"],
+    )
+    assert [changed.get(k) for k in ("location", "endDateTime", "relationship")] == [None] * 3
+    assert changed["anxiety"] == "up"
+    assert changed["description"] == "Stopped calling"
+
+
+def test_a_field_both_set_and_cleared_is_refused(subscriber):
+    # R-0533
+    diagram = _diagram(subscriber.user)
+    added = _event(diagram, kind="noted", date="2019-03-01", person=1, description="Moved")
+    with pytest.raises(ToolError, match="both set and cleared"):
+        _event(diagram, id=added["id"], location="Tulsa", clear=["location"])
 
 
 def test_two_same_day_shifts_on_one_person_land_when_the_variables_differ(subscriber):

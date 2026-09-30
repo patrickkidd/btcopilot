@@ -53,7 +53,6 @@ SHIFTS = ("anxiety", "symptom", "functioning")
 class ToolName(enum.StrEnum):
     ReadPeople = "read_people"
     ReadEvents = "read_events"
-    ReadNotes = "read_notes"
     ReadChanges = "read_changes"
     EditPerson = "edit_person"
     EditPairBond = "edit_pair_bond"
@@ -82,6 +81,12 @@ class Register(enum.StrEnum):
     Evaluation = "evaluation"
 
 
+class ReadField(enum.StrEnum):
+    Words = "words"
+    Notes = "notes"
+    Location = "location"
+
+
 class Variable(enum.StrEnum):
     Symptom = "symptom"
     Anxiety = "anxiety"
@@ -93,7 +98,6 @@ class Variable(enum.StrEnum):
 READS = (
     ToolName.ReadPeople,
     ToolName.ReadEvents,
-    ToolName.ReadNotes,
     ToolName.ReadChanges,
     ToolName.ReadQuestions,
     ToolName.ReadImpressions,
@@ -144,6 +148,24 @@ def _enum_param(cls, description: str) -> dict:
     return {"type": "string", "enum": _values(cls), "description": description}
 
 
+# The event fields an edit may empty, by the name the tool gives them. Kind,
+# date and date_certainty stay: every event has them.
+CLEARABLE = {
+    "end_date": "endDateTime",
+    "description": "description",
+    "notes": "notes",
+    "location": "location",
+    "person": "person",
+    "spouse": "spouse",
+    "child": "child",
+    "anxiety": "anxiety",
+    "symptom": "symptom",
+    "functioning": "functioning",
+    "relationship": "relationship",
+    "relationship_targets": "relationshipTargets",
+    "relationship_triangles": "relationshipTriangles",
+}
+
 CERTAINTY = (
     "certain for an exact day, approximate for a month or a year only, unknown "
     'for "sometime around" or any hedge'
@@ -182,9 +204,7 @@ def schemas() -> list[dict]:
             "name": ToolName.ReadEvents.value,
             "description": (
                 "Events in the record, in date order. Narrow by ids, a date span, "
-                "one person, or one cluster; with no filter it returns everything. "
-                "Ask for the words to see what the user said that each event came "
-                "from, and for the notes to see them in full."
+                "one person, or one cluster; with no filter it returns everything."
             ),
             "input_schema": {
                 "type": "object",
@@ -194,20 +214,10 @@ def schemas() -> list[dict]:
                     "end": {"type": "string", "description": "YYYY-MM-DD"},
                     "person": {"type": "integer"},
                     "cluster": {"type": "string"},
-                    "words": {"type": "boolean"},
-                    "notes": {"type": "boolean"},
-                },
-            },
-        },
-        {
-            "name": ToolName.ReadNotes.value,
-            "description": means[prompts.ToolText.ReadNotes],
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "event": {
-                        "type": "integer",
-                        "description": "One event's id; leave it out for every event that has notes.",
+                    "fields": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": _values(ReadField)},
+                        "description": means[prompts.ToolText.Fields],
                     },
                 },
             },
@@ -241,7 +251,7 @@ def schemas() -> list[dict]:
                     "version": VERSION,
                     "name": {"type": "string"},
                     "last_name": {"type": "string"},
-                    "gender": _enum_param(PersonKind, "The person's gender."),
+                    "gender": {"type": "string", "enum": _values(PersonKind)},
                     "parents": {
                         "type": "integer",
                         "description": means[prompts.ToolText.Parents],
@@ -273,7 +283,9 @@ def schemas() -> list[dict]:
             "name": ToolName.EditEvent.value,
             "description": (
                 "Add an event, or change one. Give id to change an existing event; "
-                "leave it out to add one."
+                "leave it out to add one. Only a shift carries a variable or a "
+                "relationship, and a shift always says in its description what "
+                "happened. No one is both a target and a third person of one move."
             ),
             "input_schema": {
                 "type": "object",
@@ -339,6 +351,15 @@ def schemas() -> list[dict]:
                         "items": {"type": "integer"},
                         "description": means[prompts.ToolText.RelationshipTriangles],
                     },
+                    "clear": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": list(CLEARABLE)},
+                        "description": (
+                            "Fields to empty on an existing event when what is "
+                            "there is wrong. Clearing relationship needs its targets "
+                            "and triangles cleared too."
+                        ),
+                    },
                 },
             },
         },
@@ -370,7 +391,7 @@ def schemas() -> list[dict]:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "item_kind": _enum_param(ItemKind, "What kind of item to remove."),
+                    "item_kind": {"type": "string", "enum": _values(ItemKind)},
                     "item_id": {"type": "string"},
                     "version": VERSION,
                 },
@@ -468,7 +489,7 @@ def schemas() -> list[dict]:
                         "items": {
                             "type": "object",
                             "properties": {
-                                "kind": _enum_param(EvidenceKind, "What it rests on."),
+                                "kind": {"type": "string", "enum": _values(EvidenceKind)},
                                 "id": {"type": "string"},
                             },
                             "required": ["kind", "id"],
@@ -528,7 +549,7 @@ def schemas() -> list[dict]:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "kind": _enum_param(views.ViewKind, "Which view to draw."),
+                    "kind": {"type": "string", "enum": _values(views.ViewKind)},
                     "persons": {
                         "type": "array",
                         "items": {"type": "integer"},
@@ -972,13 +993,17 @@ class Toolbox:
                 e for e in events if (date_text(e.get("dateTime")) or "") <= args["end"]
             ]
         events.sort(key=lambda e: (date_text(e.get("dateTime")) or "", e["id"]))
-        words = self._words({e["id"] for e in events}) if args.get("words") else {}
+        fields = {choice(ReadField, f, "fields") for f in args.get("fields") or []}
+        words = self._words({e["id"] for e in events}) if ReadField.Words in fields else {}
         lines = []
         for e in events:
-            lines.append(event_line(e))
+            line = event_line(e)
+            if ReadField.Location in fields and e.get("location"):
+                line += f' location="{e["location"]}"'
+            lines.append(line)
             if e["id"] in words:
                 lines.append(f"  words: {words[e['id']]}")
-            if args.get("notes") and e.get("notes"):
+            if ReadField.Notes in fields and e.get("notes"):
                 lines.append(f"  notes: {e['notes']}")
         return ("\n".join(lines) or "No events.", {"read": [e["id"] for e in events]})
 
@@ -999,15 +1024,6 @@ class Toolbox:
             )
         }
         return {event: said[turn] for event, turn in turns.items() if turn in said}
-
-    def _read_notes(self, args: dict) -> tuple[str, dict]:
-        data = self.data
-        events = [e for e in data.events if isinstance(e, dict) and e.get("notes")]
-        if args.get("event") is not None:
-            wanted = self._event(data, args["event"])
-            events = [e for e in data.events if e.get("id") == wanted]
-        lines = [f"{e['id']}: {e.get('notes') or 'no notes'}" for e in events]
-        return ("\n".join(lines) or "No event has notes.", {"read": [e["id"] for e in events]})
 
     def _read_questions(self, args: dict) -> tuple[str, None]:
         return self._read_notes_of(record.QUESTION, args), None
@@ -1154,6 +1170,24 @@ class Toolbox:
             spouse = self._other_parent(fields["child"], fields["person"])
             if spouse is not None:
                 fields["spouse"] = spouse
+        cleared = args.get("clear") or []
+        if cleared and new:
+            raise ToolError(
+                "Only an event already in the record has fields to clear",
+                "A new event has nothing to clear.",
+            )
+        for arg in cleared:
+            key = CLEARABLE.get(arg)
+            if key is None:
+                raise ToolError(
+                    f"{arg} cannot be cleared: clear one of {', '.join(CLEARABLE)}",
+                    "That field cannot be emptied.",
+                )
+            if key in fields:
+                raise ToolError(
+                    f"{arg} is both set and cleared: do one", "It both set and cleared a field."
+                )
+            fields[key] = [] if key in dict(record.MOVE_LINKS) else None
         self._couple({**was, **fields})
         text, patch = self._write(ItemKind.Event, args.get("id"), fields)
         event_id = patch["deltas"][0]["item_id"]

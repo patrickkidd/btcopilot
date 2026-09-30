@@ -1140,3 +1140,18 @@ remembered episodes each reported on its own, never a series or a trend. An
 impression the user said doesn't fit is not raised again in those words; one
 they said fits partly is revised or let go. Not yet measured live: model calls
 are unavailable. [R-0482, R-0485]
+
+### September 2026: Tool text stated once (FD-366)
+
+**Change**: what each event field means is now written only on the coach's
+edit_event fields; the record rules in the private coach prompt point there and
+keep the theory, the worked examples, the provisional rules and the rulings.
+Defined-self is one sentence, on the relationship field, in the theory corpus's
+wording: the action a person takes to define themselves in relation to others.
+read_notes is gone: read_events takes a list of extra fields (the user's words,
+the notes, the location), and the rule to read the notes before adding to them
+moved to edit_event's notes field. edit_event can empty a field with a list of
+fields to clear, and its text names three rules the record enforces: only a shift
+carries a variable or a move, a shift says in words what happened, and no one is
+both a target and a third person. Not yet measured live: no model calls were made.
+[R-0446, R-0480, R-0533]

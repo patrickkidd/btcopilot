@@ -12,6 +12,7 @@ import { ChipKind, ChipTone, QuestionOutcome, QuestionState, type ToolCall, View
 export enum ToolName {
   ReadPeople = "read_people",
   ReadEvents = "read_events",
+  // Folded into read_events; kept so turns stored before still say what they read.
   ReadNotes = "read_notes",
   ReadChanges = "read_changes",
   EditPerson = "edit_person",

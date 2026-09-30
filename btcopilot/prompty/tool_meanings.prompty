@@ -3,11 +3,11 @@ name: tool_meanings
 description: What each tool parameter means to the model.
 meanings:
   kind: |-
-    Which kind of event this is. Use noted for anything worth writing down that is not a birth, adoption, marriage, bonding, separation, divorce, death or shift — a move, a new job, finishing a course. A noted event must say what happened in its description.
+    Which kind of event this is. Use noted for anything worth writing down that no other kind covers — a move, a new job, finishing a course. A noted event must say what happened in its description.
   description: |-
     What happened, with no names of the people this event links: the person, spouse, child and targets are said by their fields.
   notes: |-
-    Free text kept on the event beside its description. Changing it replaces what is there, so write the whole text.
+    Free text kept on the event beside its description. Changing it replaces what is there, so read it first and write the whole text.
   end_date: |-
     YYYY-MM-DD. When the event ended, given only when an end date is known; date is when it began.
   location: |-
@@ -36,6 +36,6 @@ meanings:
     The other side. Leave it out only when nobody named them: the record then adds them as a generically named person, because a bond with one side is not a bond.
   parents: |-
     The id of the pair bond this person was born into. Children are the offspring of a bond, so the two parents must have one first.
-  read_notes: |-
-    The notes kept on events. The record only says which events have notes, so read them before changing an event's notes, since a change replaces the whole text, and whenever what was said there matters to the conversation.
+  fields: |-
+    What to add to each event: words, what the user said that it came from; notes, in full, since the record only says which events have notes, whenever what was said there matters to the conversation; location, where it happened.
 ---

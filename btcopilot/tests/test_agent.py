@@ -834,7 +834,7 @@ def _with_notes(diagram):
     db.session.commit()
 
 
-def test_the_notes_stay_out_of_every_call_and_the_tool_to_read_them_is_offered(
+def test_the_notes_stay_out_of_every_call_and_the_read_that_shows_them_is_offered(
     discussion, family
 ):
     # R-0446
@@ -845,17 +845,20 @@ def test_the_notes_stay_out_of_every_call_and_the_tool_to_read_them_is_offered(
     assert "(has notes)" in str(model.histories[1][-1])
     for system, history in zip(model.systems, model.histories):
         assert QUOTE not in system + str(history)
-    assert all(ToolName.ReadNotes.value in offered for offered in model.offered)
+    assert all(ToolName.ReadEvents.value in offered for offered in model.offered)
 
 
 def test_the_coach_reads_an_events_notes_when_it_asks_for_them(discussion, family):
     # R-0446
     _with_notes(family)
-    model = Model(called(ToolName.ReadNotes, event=10), said("What happened next?"))
+    model = Model(
+        called(ToolName.ReadEvents, ids=[10], fields=["notes"]),
+        said("What happened next?"),
+    )
     run(discussion, "What did he say about the house?", model)
     answer = model.histories[-1][-1]["content"][-1]
     assert answer["type"] == "tool_result"
-    assert answer["content"].splitlines()[0] == f"10: {QUOTE}"
+    assert answer["content"].splitlines()[1] == f"  notes: {QUOTE}"
 
 
 def test_the_coach_is_told_to_end_its_reply_with_a_question():
@@ -930,7 +933,7 @@ def test_a_read_tells_the_page_which_events_it_read(discussion, family):
         "Tell me about when he moved out.",
         Model(
             called(ToolName.ReadEvents, cluster="c1"),
-            called(ToolName.ReadNotes, event=10),
+            called(ToolName.ReadEvents, ids=[10], fields=["notes"]),
             called(ToolName.ReadPeople),
             said("What happened next?"),
         ),

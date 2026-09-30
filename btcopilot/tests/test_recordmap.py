@@ -96,6 +96,7 @@ def test_the_coach_reads_chosen_events_with_the_words_they_came_from(
                 date_certainty="certain",
                 description="left",
                 notes="He took the car",
+                location="Tulsa",
             ),
             said("I put that down."),
         ),
@@ -117,10 +118,10 @@ def test_the_coach_reads_chosen_events_with_the_words_they_came_from(
 
     tools = Toolbox(family.id, "t3")
     text, _ = tools.call(
-        ToolName.ReadEvents.value, {"ids": [4], "words": True, "notes": True}
+        ToolName.ReadEvents.value, {"ids": [4], "fields": ["words", "notes", "location"]}
     )
     assert text.splitlines()[:3] == [
-        '4 1995-06-01 [noted] person=2 "left" (has notes)',
+        '4 1995-06-01 [noted] person=2 "left" (has notes) location="Tulsa"',
         "  words: My dad left in 1994.",
         "  notes: He took the car",
     ]

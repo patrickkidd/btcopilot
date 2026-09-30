@@ -40,7 +40,7 @@ UNI = record(
 )
 SMALL = record([_person(1, "Ada", primary=True)], [_event(10, "2014-03-02", "Moved out")])
 
-MANY = [call("read_people"), call("read_events", ids=[10, 11], words=True), call("read_notes"), call("read_changes")]
+MANY = [call("read_people"), call("read_events", ids=[10, 11], fields=["words"]), call("read_notes"), call("read_changes")]
 MANY += [call("edit_person", name=f"Cousin {i}") for i in range(1, 11)]
 MANY += [call("edit_event", id=10, description="Changed wording"), call("remove", item_kind="event", item_id=11), call("undo"), call("show", refusal="No people were named.", kind="triangle")]
 MANY += [call("edit_event", description=f"Event number {i}", date=f"19{70+i}-01-01") for i in range(1, 7)]

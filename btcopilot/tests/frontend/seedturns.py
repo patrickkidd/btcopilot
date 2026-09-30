@@ -74,7 +74,7 @@ with app.app_context():
     failed = Toolbox(diagram.id, "t-failed", user_id=user.id, session_id=str(discussion.id),
                      statement_id=rows[2].id)
     events = run(failed, [
-        ("read_notes", {}),
+        ("read_events", {"fields": ["notes"]}),
         ("edit_event", {"kind": "noted", "description": "Drinking got worse", "date": "1996-01-01", "date_certainty": "certain"}),
     ])
     keep(discussion, "t-failed", events + [{"type": "failed", "message": "The coach did not finish that turn."}])
