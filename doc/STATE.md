@@ -1823,3 +1823,138 @@ That build is done and reviewed; where it stands is at the head of this file.
 - Read this file first. Read HISTORY only for a specific fact.
 
 Pinned, not active: the corpus/subset sessions in [NEXT_SESSIONS.md](archive/2026-09-NEXT_SESSIONS.md).
+
+## Open issues from 2026-09-30
+
+FD-366 session. Each item: what was done, why it matters, what you decide.
+
+### A. Architecture and tool choices made without your ruling
+
+You rule keep, change, or undo on each.
+
+1. **A new column on the model-calls table naming why each call was made**
+   - Done: Every row in the model-calls table now has a required purpose from a fixed list: coach, shadow, proactive, replay, play, backfill, summary. Each place that makes a call fills it in. The migration labelled old rows from their turn id.
+   - Why it matters: It changes a production table and every call site, and the fixed list is now what all cost panels group by.
+   - You decide: Keep, change the list, or undo.
+
+2. **The plain text model call now returns token counts and the answering model, and always writes a row**
+   - Done: The plain text call (used for proactive messages, session titles and summaries) used to return only text. It now returns token counts and the model that answered, and every such call writes a model-calls row. The metering code moved into its own module.
+   - Why it matters: It changes the return shape that other code depends on, and it is the reason spend for these calls is now visible at all.
+   - You decide: Keep, change, or undo.
+
+3. **Shadow turns run through a background job queue**
+   - Done: Shadow turns and the backfill are queued as background jobs on a dedicated shadow queue, with its own worker container on the box. You told me you did not know background workers existed.
+   - Why it matters: It adds a new running part to production, and how background work is designed is a decision you have not made.
+   - You decide: Rule on whether background workers belong in the app at all, and if so how they are designed. Otherwise undo and run shadow turns another way.
+
+4. **Tests run on SQLite while production runs Postgres**
+   - Done: The purpose migration was first written with Postgres-only casts and failed the tests. It was then rewritten to go through the database layer so it runs on both. You want tests to stay on SQLite.
+   - Why it matters: Anything Postgres-only (enum types, JSON casts) can pass here and break there, or the other way round.
+   - You decide: Rule how Postgres-only features are handled when tests run on SQLite.
+
+5. **The change-history writer records an empty list instead of null when a list field was absent before an edit**
+   - Done: Taking back a later edit now leaves an empty list, not null. Five stored production rows were corrected by hand to match, with your approval.
+   - Why it matters: It changes what the history table holds for every future edit of a list field.
+   - You decide: Keep or change.
+
+6. **The shadow backfill rebuilds the record before a past turn by rewinding the change history**
+   - Done: It starts from today's record and undoes change-history rows newest first, including edits made by other authors after that turn.
+   - Why it matters: The rebuilt record may differ from what the coach really saw at that moment, so the backfilled shadow answers may be judged against the wrong facts.
+   - You decide: Keep, restrict to the same author, or undo.
+
+7. **The Gemini client on the box uses the developer endpoint with the API key**
+   - Done: One line was added to the box environment file. The compose file still passes a service-account path that points to an empty file.
+   - Why it matters: Production depends on a hand-edited box setting that is not in the repository, and the leftover service-account path is misleading.
+   - You decide: Keep, and whether the leftover path is removed.
+
+8. **Grafana panels were re-cut by purpose**
+   - Done: Real-spend panels exclude shadow. A new panel, Cost a day by purpose, was added. The quality dashboard's per-turn panels now count coach calls only, so play-by-play and backfill calls are excluded there too.
+   - Why it matters: The numbers you have watched before will look different, and you did not choose that cut.
+   - You decide: Keep or change which purposes each panel counts.
+
+9. **The splash screen loads the app through a small boot file**
+   - Done: The app script is loaded by a small boot file with a dynamic import so the stylesheet arrives before the app runs. The offline worker is now registered from the app script instead of on the page-load event.
+   - Why it matters: It changes how the app starts, and offline registration timing changed with it.
+   - You decide: Keep or undo.
+
+10. **The shape of the backfill admin command**
+   - Done: Run without a flag it only previews. With the flag it runs. The cost estimate is priced from the real turns' token counts.
+   - Why it matters: It is the command that spends money, and its safety depends on you liking preview by default.
+   - You decide: Keep or change.
+
+### B. Defects and unproven things
+
+You rule fix now, later, or accept.
+
+11. **The rewritten purpose migration has not been run on Postgres**
+   - Done: Production already carries the column from the earlier version of the migration, so the rewrite has only run on SQLite.
+   - Why it matters: A fresh Postgres database built from the migrations could fail or differ from production.
+   - You decide: Decide whether to have it run on a scratch Postgres database before the next migration.
+
+12. **The fallback column on model calls reads as set on every row**
+   - Done: It shows 100% while the real rate is 0%. This is a bug in how it is stored.
+   - Why it matters: Any panel or question about fallbacks reads wrong.
+   - You decide: Decide whether to fix it now.
+
+13. **Cluster regrouping model calls are not recorded at all**
+   - Done: They never write a row in the model-calls table.
+   - Why it matters: Their cost is invisible in spend panels.
+   - You decide: Decide whether to record them and under which purpose.
+
+14. **The coach eval judge and the synthetic-client helpers are changed but not run**
+   - Done: They were updated for the new text-call return shape. They make real model calls, so they were not run.
+   - Why it matters: They may be broken and nobody would know until a run.
+   - You decide: Decide whether to spend on one run, or check them another way first.
+
+15. **Production ran the previous image for about 15 minutes on 2026-09-30**
+   - Done: The database carried the new migration while the app ran the old image, because a bare container restart dropped the image tag. No real turns fell in the window. The deploy README now says restarts must carry the tag.
+   - Why it matters: It can happen again if someone restarts without the tag.
+   - You decide: Decide whether a guard against it is worth building.
+
+16. **45% of coach turns start more than 5 minutes after the previous one and miss the prompt cache**
+   - Done: Keeping the cache alive would conflict with R-0595.
+   - Why it matters: Those turns cost more than cached ones.
+   - You decide: Rule whether R-0595 yields, or the cost stays.
+
+17. **14 older coach replies on your account have no turn id**
+   - Done: The backfill skipped them.
+   - Why it matters: They have no shadow answers to compare.
+   - You decide: Decide whether to leave them out or link them by hand.
+
+18. **The theory reference page is over its length limit**
+   - Done: It is 9,292 words against a 7,000 target and a 9,000 cap. One citation there points at line 93 of Bowen's chapter 9 in the source, where the text now sits at line 95.
+   - Why it matters: It breaks the cap you set, and the citation is stale.
+   - You decide: Decide whether to cut it now or later.
+
+19. **Sub-agents could not enter the FD-366 worktree**
+   - Done: The tool refused with a message that it belongs to another repository. Builders worked by absolute path.
+   - Why it matters: Any rule that relies on entering the worktree does not hold for sub-agents.
+   - You decide: Decide whether this is accepted or worth fixing.
+
+20. **Tailscale on the Mac was stopped**
+   - Done: That broke the phone link to the test stack.
+   - Why it matters: Your phone walks fail until it is running again.
+   - You decide: Turn it back on before the next walk.
+
+### C. Housekeeping
+
+21. **Queued rulings wait for your key**
+   - Done: R-0619, R-0622, R-0623 and R-0624 and the note that R-0618 supersedes an earlier ruling are queued. R-0620 and R-0621 were demoted to decisions.
+   - Why it matters: The rulings store does not yet say what you said.
+   - You decide: Provide the key so they are written, and confirm the two demotions.
+
+22. **26 shadow answers on your account await your picks**
+   - Done: They are in Better replies.
+   - Why it matters: Shadow quality cannot be judged until you pick.
+   - You decide: Pick when you have time.
+
+23. **The coach-started email needs a design pass**
+   - Done: Nothing more should go out before it gets one.
+   - Why it matters: Another send would repeat the unreviewed design.
+   - You decide: Decide when the design pass happens.
+
+24. **Parts of the ticket are still unbuilt**
+   - Done: Not built: the coverage checklist and its panels, the conversational regression test, the coverage-efficiency experiment, and the pick-notes rubric.
+   - Why it matters: The ticket's acceptance criteria are not met without them.
+   - You decide: Decide the order, or drop any.
+
