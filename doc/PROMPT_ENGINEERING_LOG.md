@@ -2,7 +2,13 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-09-29 (the coach's notes say evaluation, not journaling)
+**Last Updated**: 2026-09-29 ("What it's doing" defaults to coaching)
+
+---
+
+## Sittings — "What it's doing" defaults to coaching (2026-09-29)
+
+2026-09-29: the field's description now makes coaching the default and evaluation the exception, a question that asks for a missing basic fact about the family (a name, an age, a date, a place, a marriage, a death, a move), even alongside a question about how things were. Replayed on the Claude Code subscription ($0) over Patrick's first 15 statements of session 1 on diagram 1: before, evaluation 15 and coaching 0, though 2 of those questions were coaching ones (30 of 30 evaluation over 30 statements); first rewording, evaluation 7, coaching 6, record correction 2, with three questions that asked about feelings and also for parents' names or a partner's age labelled coaching; final wording, evaluation 9 and coaching 6, every question asking for a missing fact labelled evaluation and every question about feelings, patterns or what happened next labelled coaching. One run each. [R-0535]
 
 ---
 

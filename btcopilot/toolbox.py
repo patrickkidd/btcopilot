@@ -660,10 +660,16 @@ def schemas() -> list[dict]:
                 "properties": {
                     "register": _enum_param(
                         Register,
-                        "What kind of talk this turn is. Evaluation is a turn whose "
-                        "question aims at covering the basic family history an "
-                        "evaluation needs. Coaching is ongoing conversation outside "
-                        "that aim.",
+                        "What kind of talk this turn is, judged by the question your "
+                        "reply asks. Coaching is the default: the ongoing conversation "
+                        "about the person's dilemma, feelings, patterns and what they "
+                        "will do. Evaluation is the exception: the question asks for a "
+                        "missing basic fact about the family, such as a person's name "
+                        "or age, a date, a place, a marriage, a death or a move, even "
+                        "when it also asks how things were. A question with no such "
+                        "fact in it is coaching, including how something felt or what "
+                        "happened next in the person's life, even when it names a "
+                        "family member or a year.",
                     ),
                     "lane": {"type": "string"},
                     "why": {"type": "string", "description": "Why this question now."},
