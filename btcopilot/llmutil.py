@@ -7,6 +7,7 @@ import logging
 from dataclasses import dataclass, field, fields, MISSING
 from typing import get_origin, get_args, Union
 
+import openai
 from google import genai
 from google.genai import types
 from google.genai.errors import ClientError, ServerError
@@ -49,6 +50,7 @@ MODEL_ALIASES = {
     "claude-opus-5-5": "claude-opus-5-5",
     "claude-opus-5": "claude-opus-5",
     "claude-opus-4-8": "claude-opus-4-8",
+    "gpt": "gpt-6.1-sol",
 }
 
 DEFAULT_RESPONSE_MODEL_ALIAS = "opus-5.5"
@@ -61,6 +63,10 @@ def resolve_model(alias: str | None) -> str:
 
 def is_gemini(model: str) -> bool:
     return model.startswith("gemini-")
+
+
+def is_openai(model: str) -> bool:
+    return model.startswith("gpt-")
 
 
 def _is_claude_model(model: str) -> bool:
@@ -258,6 +264,14 @@ def gemini_client(timeout: float | None = None) -> genai.Client:
     )
 
 
+def openai_client(timeout: float | None = None) -> openai.OpenAI:
+    """No timeout, in seconds, is the OpenAI default."""
+    return openai.OpenAI(
+        api_key=os.environ["OPENAI_API_KEY"],
+        **({"timeout": timeout} if timeout else {}),
+    )
+
+
 # --- Anthropic client ---
 
 
@@ -346,6 +360,19 @@ def gemini_spent(usage: types.GenerateContentResponseUsageMetadata) -> Spent:
     return Spent(
         input=usage.prompt_token_count - cached,
         output=(usage.candidates_token_count or 0) + (usage.thoughts_token_count or 0),
+        cache_read=cached,
+    )
+
+
+def openai_spent(usage) -> Spent:
+    """OpenAI's input count holds the cached and cache-written tokens, and
+    its output count holds the reasoning."""
+    cached = usage.input_tokens_details.cached_tokens
+    written = usage.input_tokens_details.cache_write_tokens
+    return Spent(
+        input=usage.input_tokens - cached - written,
+        output=usage.output_tokens,
+        cache_creation=written,
         cache_read=cached,
     )
 

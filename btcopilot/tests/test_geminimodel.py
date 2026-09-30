@@ -203,7 +203,7 @@ def test_a_signature_survives_the_record_as_text():
 def test_the_price_computes_from_gemini_usage():
     # R-0598
     used = gemini_spent(usage(prompt=1000, cached=400, out=100, thought=50))
-    assert used == Spent(input=600, output=150, cache_creation=0, cache_read=400)
+    assert vars(used) == vars(Spent(input=600, output=150, cache_read=400))
     assert cost(FLASH, used) == Decimal("0.0010425")
 
 

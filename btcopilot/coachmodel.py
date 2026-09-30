@@ -10,11 +10,13 @@ import anthropic
 from opentelemetry import trace
 
 from btcopilot.geminimodel import GeminiModel
+from btcopilot.openaimodel import OpenAIModel
 from btcopilot.llmutil import (
     anthropic_args,
     claude_spent,
     fallback_args,
     is_gemini,
+    is_openai,
     local_model,
     resolve_model,
     served,
@@ -202,13 +204,15 @@ def model_for(
     name: str | None = None,
     effort: str | None = COACH_EFFORT,
     timeout: float | None = None,
-) -> CoachModel | GeminiModel:
+) -> CoachModel | GeminiModel | OpenAIModel:
     """The coach model an alias names: none is the default, an unknown one
     raises KeyError. Haiku 4.5 rejects the effort setting, so it gets none. The
-    local server answers every name, Gemini's included."""
+    local server answers every name, Gemini's and OpenAI's included."""
     model = resolve_model(name)
     if is_gemini(model) and not local_model():
         return GeminiModel(model, effort, timeout)
+    if is_openai(model) and not local_model():
+        return OpenAIModel(model, effort, timeout)
     if model.startswith(HAIKU):
         effort = None
     return CoachModel(name, effort, timeout)

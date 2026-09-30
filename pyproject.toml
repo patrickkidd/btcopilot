@@ -47,6 +47,7 @@ app = [
     "pyqt5-qt5==5.15.2",
     "anthropic>=0.97,<1",
     "google-genai",
+    "openai>=3.22.1",
     "rapidfuzz>=3.0.0",
     "markdown-it-py",
     "requests",

@@ -57,6 +57,11 @@ PRICES = {
     "gemini-2.5-flash-lite": Price(
         Decimal("0.10"), Decimal("0.40"), Decimal(0), Decimal("0.01")
     ),
+    # developers.openai.com/api/docs/pricing, read 2026-09-30. Cache writes
+    # are 1.25x the input rate, developers.openai.com/api/docs/guides/prompt-caching.
+    "gpt-6.1-sol": Price(
+        Decimal("2.00"), Decimal("10.00"), Decimal("2.50"), Decimal("0.10")
+    ),
 }
 
 
