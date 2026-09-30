@@ -79,7 +79,7 @@ def test_feedback_the_person_turned_down_keeps_where_it_was_and_no_words(web):
 
 
 def test_a_bug_is_never_turned_down_during_the_beta(web, monkeypatch):
-    # R-0613
+    # R-0056
     declined = {"kind": "bug", "status": "declined", "release": "r", "turn_id": "t1", "statement_id": 9100}
     assert post(web, declined).status_code == 400
     assert Report.query.count() == 0

@@ -60,7 +60,7 @@ describe("the addresses of the app", () => {
     expect(linked("/app/account/notices")).toBe("/app/account/notices");
   });
 
-  // R-0611
+  // R-0055
   it("names where a notice's link goes, and nothing for the account view or its Notices, which hold the notice already", () => {
     expect(beyond(Link.Coach)).toBe("Coach settings");
     expect(beyond(address(Place.Literature))).toBe("Auditor's Coding Guide");

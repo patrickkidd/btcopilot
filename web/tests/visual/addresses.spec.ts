@@ -141,7 +141,7 @@ test.describe("the account view's Notices", () => {
     flask("app", "fixtures", "notice");
   });
 
-  // R-0055, R-0611
+  // R-0055
   test("open as their own page from the Notices row on the account view and from their address", async ({
     page,
   }) => {

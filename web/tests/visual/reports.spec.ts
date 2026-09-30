@@ -79,7 +79,7 @@ test.describe("what the person says about the app", () => {
       ],
     });
 
-  // R-0056, R-0613
+  // R-0056
   test("raises the feedback sheet, and Not feedback puts it away and sends where it was, never the words", async ({
     page,
   }) => {
@@ -194,7 +194,7 @@ test.describe("a bug the coach offers", () => {
       ],
     });
 
-  // R-0056, R-0613
+  // R-0056
   test("asks with the words and cannot be turned down in the beta, and after Always send goes with no sheet and no card", async ({
     page,
   }) => {

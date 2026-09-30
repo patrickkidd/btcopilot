@@ -219,7 +219,7 @@ test("Open Coach settings on a notice pointing at the coach settings lands on th
   await expect(account(page)).not.toHaveClass(/\bunread\b/);
 });
 
-// R-0611
+// R-0017
 test("a notice pointing at the account view has no Open, and its row in the Notices has no arrow and a tap only counts it read, in place", async ({
   page,
 }) => {
