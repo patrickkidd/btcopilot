@@ -7,7 +7,9 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonTracebackLexer
 import smtplib
+import sys
 
+from celery import current_task
 from flask import has_request_context, request
 
 import btcopilot
@@ -16,8 +18,15 @@ import btcopilot
 class ColorfulSMTPHandler(SMTPHandler):
 
     def origin(self):
-        host = request.host if has_request_context() else "no request"
-        return f"{host} {btcopilot.__version__}"
+        return f"{self.source()} {btcopilot.__version__}"
+
+    def source(self):
+        if has_request_context():
+            return f"{request.host}{request.path}"
+        if current_task:
+            return f"worker {current_task.name}"
+        args = " ".join(sys.argv[1:])
+        return f"command {args}" if args else "shell"
 
     def getSubject(self, record):
         return f"[{self.origin()}] " + record.getMessage()
