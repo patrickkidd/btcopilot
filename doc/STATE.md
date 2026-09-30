@@ -1886,25 +1886,10 @@ You rule keep, change, or undo on each.
 
 You rule fix now, later, or accept.
 
-11. **The rewritten purpose migration has not been run on Postgres**
-   - Done: Production already carries the column from the earlier version of the migration, so the rewrite has only run on SQLite.
-   - Why it matters: A fresh Postgres database built from the migrations could fail or differ from production.
-   - You decide: Decide whether to have it run on a scratch Postgres database before the next migration.
-
-12. **The fallback column on model calls reads as set on every row**
-   - Done: It shows 100% while the real rate is 0%. This is a bug in how it is stored.
-   - Why it matters: Any panel or question about fallbacks reads wrong.
-   - You decide: Decide whether to fix it now.
-
 13. **Cluster regrouping model calls are not recorded at all**
    - Done: They never write a row in the model-calls table.
    - Why it matters: Their cost is invisible in spend panels.
    - You decide: Decide whether to record them and under which purpose.
-
-14. **The coach eval judge and the synthetic-client helpers are changed but not run**
-   - Done: They were updated for the new text-call return shape. They make real model calls, so they were not run.
-   - Why it matters: They may be broken and nobody would know until a run.
-   - You decide: Decide whether to spend on one run, or check them another way first.
 
 15. **Production ran the previous image for about 15 minutes on 2026-09-30**
    - Done: The database carried the new migration while the app ran the old image, because a bare container restart dropped the image tag. No real turns fell in the window. The deploy README now says restarts must carry the tag.
@@ -1921,20 +1906,46 @@ You rule fix now, later, or accept.
    - Why it matters: They have no shadow answers to compare.
    - You decide: Decide whether to leave them out or link them by hand.
 
+20. **Tailscale on the Mac was stopped**
+   - Done: That broke the phone link to the test stack.
+   - Why it matters: Your phone walks fail until it is running again.
+   - You decide: Turn it back on before the next walk.
+
+11. **The rewritten purpose migration has not been run on Postgres**
+   - Fixed 2026-09-30: The migration was proven on a fresh Postgres database from empty, and old rows were relabelled correctly.
+   - Done: Production already carries the column from the earlier version of the migration, so the rewrite has only run on SQLite.
+   - Why it matters: A fresh Postgres database built from the migrations could fail or differ from production.
+   - You decide: Decide whether to have it run on a scratch Postgres database before the next migration.
+
+12. **The fallback column on model calls reads as set on every row**
+   - Fixed 2026-09-30: Fixed on the branch. The column stored a JSON null instead of an empty value. Old production rows need a one-off correction on the next deploy, which Patrick approves.
+   - Done: It shows 100% while the real rate is 0%. This is a bug in how it is stored.
+   - Why it matters: Any panel or question about fallbacks reads wrong.
+   - You decide: Decide whether to fix it now.
+
+14. **The coach eval judge and the synthetic-client helpers are changed but not run**
+   - Fixed 2026-09-30: Fake-model tests now cover the judge and the simulated client reading the metered text reply. The persona generator and quality scorer still lack one.
+   - Done: They were updated for the new text-call return shape. They make real model calls, so they were not run.
+   - Why it matters: They may be broken and nobody would know until a run.
+   - You decide: Decide whether to spend on one run, or check them another way first.
+
 18. **The theory reference page is over its length limit**
+   - Fixed 2026-09-30: The reference is at 7,459 corpus words (8,053 plain count). Remaining passages are all tripwires, open items, principles or the source index. The citation is corrected. Sources commit 739ec3c.
    - Done: It is 9,292 words against a 7,000 target and a 9,000 cap. One citation there points at line 93 of Bowen's chapter 9 in the source, where the text now sits at line 95.
    - Why it matters: It breaks the cap you set, and the citation is stale.
    - You decide: Decide whether to cut it now or later.
 
 19. **Sub-agents could not enter the FD-366 worktree**
+   - Fixed 2026-09-30: Cause found: this session runs from the sources repo, so the worktree tool treats the app repo's worktrees as foreign. Sessions on app tickets start in the app clone. No code change.
    - Done: The tool refused with a message that it belongs to another repository. Builders worked by absolute path.
    - Why it matters: Any rule that relies on entering the worktree does not hold for sub-agents.
    - You decide: Decide whether this is accepted or worth fixing.
 
-20. **Tailscale on the Mac was stopped**
-   - Done: That broke the phone link to the test stack.
-   - Why it matters: Your phone walks fail until it is running again.
-   - You decide: Turn it back on before the next walk.
+25. **The shadow "sonnet" alias resolves to Sonnet 5.5**
+   - Fixed 2026-09-30: The shadow "sonnet" alias is Sonnet 5.5, priced at the same rates as Sonnet 5 per the price sheet. Verified against 60 production calls with $0 difference. A test pins it.
+   - Done: The alias points at Sonnet 5.5, which the price sheet prices the same as Sonnet 5.
+   - Why it matters: A wrong rate would misstate shadow spend.
+   - You decide: Nothing.
 
 ### C. Housekeeping
 
