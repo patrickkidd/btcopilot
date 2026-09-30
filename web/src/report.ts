@@ -13,8 +13,9 @@ import { ReportKind, ReportSource, ReportStatus, type Report, type RequestFailur
 
 /** How long the card saying the report was sent stays up. */
 export const SENT_MS = 10_000;
-/** The sitting the coach last offered to send the person's words in: one
- * offer a sitting, even across a reload. */
+/** The words the coach offered to send in the person's latest sitting, sent
+ * or declined, trimmed and case-folded: the same words are never offered
+ * twice a sitting, even across a reload. */
 const OFFERED = "reports.offered";
 /** At most this many bug sheets come up on one page load. */
 export const SHEETS = 3;
@@ -131,10 +132,13 @@ export class Reports {
   }
 
   /** The coach heard the person say this about the app, in the reply now
-   * done; it is offered once a sitting. */
+   * done; words already offered in this sitting are not offered again. */
   offer(kind: ReportKind, words: string, turnId: string, statementId: number, sitting: number): void {
-    if (Number(window.localStorage.getItem(OFFERED)) === sitting) return;
-    window.localStorage.setItem(OFFERED, String(sitting));
+    const said = words.trim().toLowerCase();
+    const kept = JSON.parse(window.localStorage.getItem(OFFERED) ?? "null") as { sitting: number; words: string[] } | null;
+    const offered = kept?.sitting === sitting ? kept.words : [];
+    if (offered.includes(said)) return;
+    window.localStorage.setItem(OFFERED, JSON.stringify({ sitting, words: [...offered, said] }));
     const report = { ...this.common(kind), turn_id: turnId, statement_id: statementId, words };
     if (kind === ReportKind.Bug) report.source = ReportSource.Page;
     this.queue({ report, list: [["", words]], broke: false, key: null });

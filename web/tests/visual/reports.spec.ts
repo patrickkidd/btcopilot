@@ -161,13 +161,13 @@ test.describe("what the person says about the app", () => {
   test.use({ storageState: stateFor("moves") });
 
   const WORDS = "I wish the picture had bigger names on it.";
-  const offered = (page: Page, id: number) =>
+  const offered = (page: Page, id: number, words = WORDS) =>
     mockTurn(page, {
       statement: "I will pass that on. What happened after he left?",
       statement_id: id,
       did: [
-        { type: "tool_call", name: "report", args: { kind: "feedback", words: WORDS }, names: {}, refusal: null },
-        { type: "report", report: { kind: "feedback", words: WORDS } },
+        { type: "tool_call", name: "report", args: { kind: "feedback", words }, names: {}, refusal: null },
+        { type: "report", report: { kind: "feedback", words } },
       ],
     });
 
@@ -203,7 +203,7 @@ test.describe("what the person says about the app", () => {
   });
 
   // R-0056
-  test("comes up once the reply is done, and once a sitting", async ({ page }) => {
+  test("comes up once the reply is done, and never twice a sitting for the same words", async ({ page }) => {
     await settle(page);
     await mockTurn(page, {
       statement: "I will pass that on. What happened after he left?",
@@ -223,11 +223,18 @@ test.describe("what the person says about the app", () => {
     await expect(sheet(page)).toBeHidden();
 
     await page.unrouteAll({ behavior: "wait" });
-    await offered(page, 9204);
-    await say(page, "And the dots are too small.");
+    await offered(page, 9204, `  ${WORDS.toUpperCase()} `);
+    await say(page, "Really, the names are too small.");
     await expect(page.locator('.bub.coach[data-statement="9204"]')).toBeVisible();
     await page.waitForTimeout(400);
     await expect(sheet(page)).toBeHidden();
+
+    const DOTS = "And the dots are too small.";
+    await page.unrouteAll({ behavior: "wait" });
+    await offered(page, 9205, DOTS);
+    await say(page, DOTS);
+    await expect(heading(page)).toHaveText("Send this as feedback?");
+    await expect(sheet(page).locator(".rp-v")).toHaveText(DOTS);
   });
 
   // R-0056
