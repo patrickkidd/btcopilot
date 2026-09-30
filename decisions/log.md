@@ -2071,3 +2071,10 @@ has one row per loop, and a test fails when a signal has no row. The `/product-o
 only when he invokes it, never on a schedule: it reads every loop's numbers read-only and one
 Fable call ranks at most five recommendations toward product-market fit. Its ledger changes are
 proposed for his yes, never applied.
+
+## 2026-09-29: FD-365 — each live turn of Patrick's runs again on two shadow models, the latest Gemini Flash and the latest Sonnet
+
+Patrick [R-0596, R-0599]. So that Better replies fills with pairs, his account's shadow setting is
+now a list: each live turn starts one shadow turn per listed model, stored one row per real turn
+and model, and each shadow pairs with the real reply. The alias `sonnet` names Claude Sonnet 5.5;
+`gemini-flash` names Gemini 3.8 Flash. `flask admin coach-model shadow <email> off` stops them.

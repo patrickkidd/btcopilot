@@ -1,4 +1,4 @@
-"""A real turn run again on a second model, for comparison only [R-0596].
+"""A real turn run again on each shadow model, for comparison only [R-0596].
 
 The shadow gets the same words, the chat as it stood and a copy of the record
 as the real turn found it. It writes onto a scratch record that is thrown away
@@ -42,31 +42,30 @@ SCRATCH_ROWS = (AccessRight, Change, Interaction, Observation, ProductEvent)
 
 def start(turn: CoachTurn, statement_id: int, model: str, before: bytes | None):
     """Keep the record as the real turn found it and hand the shadow over."""
-    db.session.add(
-        ShadowTurn(
-            turn_id=turn.turn_id,
-            user_id=turn.discussion.user_id,
-            diagram_id=turn.diagram.id,
-            discussion_id=turn.discussion.id,
-            statement_id=statement_id,
-            model=model,
-            snapshot=diagramjson.store(before).decode("utf-8"),
-        )
+    row = ShadowTurn(
+        turn_id=turn.turn_id,
+        user_id=turn.discussion.user_id,
+        diagram_id=turn.diagram.id,
+        discussion_id=turn.discussion.id,
+        statement_id=statement_id,
+        model=model,
+        snapshot=diagramjson.store(before).decode("utf-8"),
     )
+    db.session.add(row)
     db.session.commit()
-    enqueue(turn.turn_id)
+    enqueue(row.id)
 
 
-def enqueue(turn_id: str) -> None:
-    extensions.celery.send_task(TASK, args=[turn_id])
+def enqueue(row_id: int) -> None:
+    extensions.celery.send_task(TASK, args=[row_id])
 
 
-def run(turn_id: str) -> None:
-    row = ShadowTurn.query.filter_by(turn_id=turn_id).one()
+def run(row_id: int) -> None:
+    row = ShadowTurn.query.filter_by(id=row_id).one()
     said = db.session.get(Statement, row.statement_id)
     diagram = Diagram(
         user_id=row.user_id,
-        name=f"shadow {turn_id}",
+        name=f"shadow {row_id}",
         data=row.snapshot.encode("utf-8"),
         scratch=True,
     )
@@ -75,7 +74,7 @@ def run(turn_id: str) -> None:
     copy = _copy(said, diagram)
     _interactions(row, diagram)
     db.session.commit()
-    shadow_id = f"shadow-{turn_id}"
+    shadow_id = f"shadow-{row_id}"
     started = time.monotonic()
     try:
         turn = CoachTurn(
@@ -115,7 +114,7 @@ def run(turn_id: str) -> None:
         _drop(diagram, copy)
         row.snapshot = None
         db.session.commit()
-        _log.info(f"coach_shadow {turn_id} on {row.model}: {row.cost_usd} USD")
+        _log.info(f"coach_shadow {row.turn_id} on {row.model}: {row.cost_usd} USD")
 
 
 def _copy(said: Statement, diagram: Diagram) -> Discussion:

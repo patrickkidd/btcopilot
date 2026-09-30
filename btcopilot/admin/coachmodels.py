@@ -1,4 +1,4 @@
-"""Which model coaches one person, and which model runs each of their turns
+"""Which model coaches one person, and which models run each of their turns
 again for comparison only [R-0596]. With none set a person gets the default
 model and no second run."""
 
@@ -22,7 +22,7 @@ class Unset(enum.StrEnum):
 
 @click.group("coach-model")
 def coach_model():
-    """The coach model and the shadow model of one person."""
+    """The coach model and the shadow models of one person."""
 
 
 def _row(user: User) -> dict:
@@ -33,16 +33,25 @@ def _row(user: User) -> dict:
     }
 
 
-def _put(key: SettingKey, email: str, alias: str, unset: Unset) -> None:
-    user = find_user(email)
-    if alias == unset:
-        setting.clear(key, user.id)
+def _known(aliases: tuple[str, ...], unset: Unset) -> None:
+    """Every alias names a model, or the word that clears the setting stands alone."""
+    if aliases == (unset,):
         return
-    if alias not in MODEL_ALIASES:
+    unknown = [alias for alias in aliases if alias not in MODEL_ALIASES]
+    if unknown:
         raise click.ClickException(
-            f"unknown model {alias}; one of {', '.join(MODEL_ALIASES)} or {unset}"
+            f"unknown model {', '.join(unknown)}; "
+            f"one of {', '.join(MODEL_ALIASES)}, or {unset} alone"
         )
-    setting.write(key, alias, user.id)
+
+
+def _put(key: SettingKey, email: str, value, unset: Unset) -> list[dict]:
+    user = find_user(email)
+    if value in (unset, [unset]):
+        setting.clear(key, user.id)
+    else:
+        setting.write(key, value, user.id)
+    return [_row(user)]
 
 
 @coach_model.command("show")
@@ -73,17 +82,17 @@ def coach_model_show(email):
 @rows_option
 def coach_model_set(email, alias):
     """Coach this person on a model alias, or on the default with the word default."""
-    _put(SettingKey.CoachModel, email, alias, Unset.Default)
-    return [_row(find_user(email))]
+    _known((alias,), Unset.Default)
+    return _put(SettingKey.CoachModel, email, alias, Unset.Default)
 
 
 @writes
 @coach_model.command("shadow")
 @click.argument("email")
-@click.argument("alias")
+@click.argument("aliases", nargs=-1, required=True)
 @rows_option
-def coach_model_shadow(email, alias):
-    """Run each of this person's turns again on a model alias, never shown to
-    them and never charged to them; the word off stops it."""
-    _put(SettingKey.ShadowModel, email, alias, Unset.Off)
-    return [_row(find_user(email))]
+def coach_model_shadow(email, aliases):
+    """Run each of this person's turns again on each model alias given, never
+    shown to them and never charged to them; the word off alone stops it."""
+    _known(aliases, Unset.Off)
+    return _put(SettingKey.ShadowModel, email, list(aliases), Unset.Off)

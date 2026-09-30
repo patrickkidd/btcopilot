@@ -43,6 +43,7 @@ MODEL_ALIASES = {
     "gemini-3.6-flash": "gemini-3.6-flash",
     "gemini-2.5-flash": "gemini-2.5-flash",
     "haiku-4.5": "claude-haiku-4-5-20251001",
+    "sonnet": "claude-sonnet-5-5",
     "sonnet-5": "claude-sonnet-5",
     "claude-opus-5-5": "claude-opus-5-5",
     "claude-opus-5": "claude-opus-5",

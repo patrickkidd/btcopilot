@@ -28,7 +28,7 @@ not edit it by hand; change the commands and generate it again.
 
 ### `flask admin coach-model`
 
-The coach model and the shadow model of one person.
+The coach model and the shadow models of one person.
 
 ### `flask admin coach-model set <email> <alias>`
 
@@ -42,16 +42,16 @@ Changes something: needs `--yes`.
 | `alias` | required |
 | `--json` | Print JSON, not a table. |
 
-### `flask admin coach-model shadow <email> <alias>`
+### `flask admin coach-model shadow <email> <aliases>`
 
-Run each of this person's turns again on a model alias, never shown to them and never charged to them; the word off stops it.
+Run each of this person's turns again on each model alias given, never shown to them and never charged to them; the word off alone stops it.
 
 Changes something: needs `--yes`.
 
 | Argument | What it is |
 |---|---|
 | `email` | required |
-| `alias` | required |
+| `aliases` | required |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin coach-model show [email]`

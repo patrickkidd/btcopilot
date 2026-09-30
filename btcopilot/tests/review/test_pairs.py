@@ -56,7 +56,9 @@ def statements(discussion: Discussion) -> list[Statement]:
     return sorted(discussion.statements, key=lambda s: s.order)
 
 
-def shadow(user, diagram, discussion: Discussion, turn=0, text=REPLY) -> ShadowTurn:
+def shadow(
+    user, diagram, discussion: Discussion, turn=0, text=REPLY, model=SHADOW
+) -> ShadowTurn:
     said, real = statements(discussion)[2 * turn : 2 * turn + 2]
     db.session.add(
         ModelCall(
@@ -79,7 +81,7 @@ def shadow(user, diagram, discussion: Discussion, turn=0, text=REPLY) -> ShadowT
         diagram_id=diagram.id,
         discussion_id=discussion.id,
         statement_id=said.id,
-        model=SHADOW,
+        model=model,
         text=text,
     )
     db.session.add(row)
@@ -103,6 +105,19 @@ def test_a_pair_names_no_model_and_its_sides_vary(patrick, test_user, case):
     assert REAL not in served and SHADOW not in served
     assert {pair["left"] for pair in pairs} == {"When was that?", REPLY}
     assert pairs[0]["context"] == [{"who": "user", "text": "My aunt moved away."}]
+
+
+def test_each_shadow_of_a_turn_pairs_with_the_real_reply(patrick, test_user, case):
+    # R-0596, R-0599
+    discussion = chat(test_user, case, ["My aunt moved away.", "When was that?"])
+    shadow(test_user, case, discussion)
+    shadow(test_user, case, discussion, text="Which spring?", model="sonnet")
+    pairs = patrick.get("/review/pairs").json
+    assert len(pairs) == 2
+    assert {frozenset((pair["left"], pair["right"])) for pair in pairs} == {
+        frozenset(("When was that?", REPLY)),
+        frozenset(("When was that?", "Which spring?")),
+    }
 
 
 def test_a_pair_keeps_its_sides_once_served(patrick, test_user, case):

@@ -118,8 +118,8 @@ def run(
     said = db.session.get(Statement, statement_id)
     # a resumed turn's record already holds its first attempt's edits, so it
     # has no clean copy to run a shadow on
-    shadowed = (
-        None if resume else setting.read(SettingKey.ShadowModel, discussion.user_id)
+    shadows = (
+        [] if resume else setting.read(SettingKey.ShadowModel, discussion.user_id, [])
     )
     before = discussion.diagram.data
     turn = CoachTurn(
@@ -173,8 +173,8 @@ def run(
     turnlog.clear(discussion_id)
     reply["session"] = session_payload(discussion)
     turnlog.append(turn_id, dict(reply, type=TurnEventKind.Done.value))
-    if shadowed:
-        shadow.start(turn, statement_id, shadowed, before)
+    for model in shadows:
+        shadow.start(turn, statement_id, model, before)
     return reply
 
 

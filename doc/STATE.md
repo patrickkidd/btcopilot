@@ -745,8 +745,8 @@ record, from the record; the wider live eval is the end-of-batch API run. Real m
 proving this: $1.96.
 
 **Same batch — model comparison plumbing, Patrick as the only oracle on which model is better.**
-A per-user coach model and shadow model live in the per-user settings table, set by `flask admin
-coach-model show/set/shadow`. A shadow turn runs a candidate model on the real turn's input on a
+A per-user coach model and list of shadow models live in the per-user settings table, set by `flask admin
+coach-model show/set/shadow`. A shadow turn runs each candidate model on the real turn's input on a
 separate Celery queue, with a new fd-shadow worker service, stored in a new shadow_turns table
 on a scratch diagram flagged scratch, never shown to the user and excluded from the user's
 diagram list [R-0596]. `flask admin quality replay <discussion> <model> <reference_diagram>
