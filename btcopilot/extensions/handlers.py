@@ -8,11 +8,22 @@ from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonTracebackLexer
 import smtplib
 
+from flask import has_request_context, request
+
+import btcopilot
+
 
 class ColorfulSMTPHandler(SMTPHandler):
 
-    def getSubject(self, record):    
-        return '[Family Diagram Server] ' + getattr(record, 'message', '')
+    def origin(self):
+        host = request.host if has_request_context() else "no request"
+        return f"{host} {btcopilot.__version__}"
+
+    def getSubject(self, record):
+        return f"[{self.origin()}] " + record.getMessage()
+
+    def format(self, record):
+        return f"Server: {self.origin()}\n" + super().format(record)
 
     def emit(self, record):
         try:
