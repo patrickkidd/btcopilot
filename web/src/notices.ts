@@ -1,5 +1,6 @@
 import * as api from "./api";
 import { Strip } from "./strip";
+import { beyond } from "./place";
 import { NotificationKind, type Delivery } from "./types";
 
 /** The newest unread notification the thread does not already show: a coach
@@ -9,7 +10,7 @@ export const newest = (unread: Delivery[]): Delivery | null =>
 
 /** The reader's notifications: one strip at a time for the newest unread, a
  * mark on the account button while a notice is unread, and every notice for
- * the account page's list (R-0611). */
+ * the account view's Notices (R-0611). */
 export class Notices {
   /** Every notice, opened or not, newest first. */
   list: Delivery[] = [];
@@ -31,10 +32,11 @@ export class Notices {
     );
     const top = newest(unread);
     if (!top) return this.strip.hide();
+    const where = beyond(top.link);
     this.strip.show({
       title: top.title,
       body: top.body,
-      open: top.link ? { label: "Open", tap: () => void this.open(top) } : null,
+      open: where ? { label: `Open ${where}`, tap: () => void this.open(top) } : null,
       dismiss: () => void this.open(top, false),
     });
   }

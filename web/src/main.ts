@@ -17,7 +17,7 @@ import { Rules } from "./rules";
 import { Sessions } from "./sessions";
 import { sessionTitle } from "./search";
 import { Thread, divider } from "./thread";
-import { NOTICES, Page, Settings, type Sub } from "./settings";
+import { Page, Settings, type Sub } from "./settings";
 import { Notices } from "./notices";
 import { Strip } from "./strip";
 import { aimedEvents, chips, itemKind, Lead } from "./chips";
@@ -37,7 +37,7 @@ import {
   type Sel,
 } from "./caption";
 import { $, CLUSTER, pathRow, setTitle, slideOver } from "./dom";
-import { address, linked, parse, PICTURE, Place, settled, UNDATED } from "./place";
+import { address, beyond, linked, parse, PICTURE, Place, settled, UNDATED } from "./place";
 import { Return, returnKey, touch } from "./keyboard";
 import { Drawer } from "./drawer";
 import { among, untold } from "./snapshots";
@@ -670,11 +670,8 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
   onAgenda: () => void agenda.load().then(() => settings.push(AGENDA)),
   onPairs: () => void pairs.load().then(() => settings.push(PAIRS)),
   notices: () => notices.list,
-  // one that points nowhere is only counted read, which its row then shows
-  onNotice: async (one) => {
-    await notices.open(one);
-    if (!one.link) await settings.show();
-  },
+  // one with nothing more to see is only counted read, which its row then shows
+  onNotice: (one) => notices.open(one, beyond(one.link) !== null),
 });
 
 /** A coach turn or the page that broke, or what the coach heard the person
@@ -1520,6 +1517,7 @@ const PAGES: Record<Page, Place> = {
   [Page.Appearance]: Place.Appearance,
   [Page.Diagrams]: Place.Diagrams,
   [Page.Plan]: Place.Plan,
+  [Page.Notices]: Place.Notices,
 };
 
 const LISTS: Record<Tab, Place> = {
@@ -1605,13 +1603,14 @@ async function toAccount(...path: (Page | Sub)[]): Promise<void> {
   await settings.show(...path);
 }
 
-/** The account view's root with what is new in its Notices, and one item on
- * it lit. */
-async function toNotices(selector: string): Promise<void> {
+/** The account view's Notices with what is new in them, and one notice on
+ * it lit when one is named. */
+async function toNotices(id?: string): Promise<void> {
   uncover(Keep.Account);
   await notices.refresh();
-  await settings.show();
-  if (!(await settings.light(selector))) toast("That notice is not in the list");
+  await settings.show(Page.Notices);
+  if (id && !(await settings.light(`[data-notice="${id}"]`)))
+    toast("That notice is not in the list");
 }
 
 /** One of the lists, full screen on a phone and beside the thread when the
@@ -1679,8 +1678,8 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
     await settings.show();
   },
   [Place.Profile]: () => toAccount(Page.Profile),
-  [Place.Notices]: () => toNotices(`[data-group="${NOTICES}"]`),
-  [Place.Notice]: ([id]) => toNotices(`[data-notice="${id}"]`),
+  [Place.Notices]: () => toNotices(),
+  [Place.Notice]: ([id]) => toNotices(id),
   [Place.Coach]: () => toAccount(Page.Coach),
   [Place.Appearance]: () => toAccount(Page.Appearance),
   [Place.Diagrams]: () => toAccount(Page.Diagrams),

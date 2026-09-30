@@ -75,7 +75,7 @@ WORDS = {
     Place.MeetingDay: "the meeting",
     Place.MeetingCut: "the meeting",
     Place.Pairs: "better replies",
-    Place.Literature: "the literature review",
+    Place.Literature: "the Auditor's Coding Guide",
     Place.Cut: "the cut",
     Place.NewEvent: "a new event",
     Place.NewPerson: "a new person",

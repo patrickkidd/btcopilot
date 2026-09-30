@@ -96,8 +96,7 @@ export function parse(path: string): Spot | null {
 const SETTLES: Partial<Record<Place, (args: string[]) => Spot>> = {
   [Place.Message]: () => ({ place: Place.Chat, args: [] }),
   [Place.Session]: () => ({ place: Place.Sessions, args: [] }),
-  [Place.Notices]: () => ({ place: Place.Account, args: [] }),
-  [Place.Notice]: () => ({ place: Place.Account, args: [] }),
+  [Place.Notice]: () => ({ place: Place.Notices, args: [] }),
   [Place.MeetingCut]: ([day]) => ({ place: Place.MeetingDay, args: [day] }),
   [Place.PlayStep]: ([statement]) => ({ place: Place.Play, args: [statement] }),
 };
@@ -126,3 +125,56 @@ const LINKED: Record<Link, Place> = {
  * in the app. */
 export const linked = (link: string): string =>
   link.startsWith(APP) ? link : address(LINKED[link as Link]);
+
+/** Each place by the name a button that opens it gives it. */
+export const NAMES: Record<Place, string> = {
+  [Place.Chat]: "Chat",
+  [Place.Message]: "Message",
+  [Place.Sessions]: "Sessions",
+  [Place.Session]: "Session",
+  [Place.Account]: "Account",
+  [Place.Profile]: "Profile",
+  [Place.Notices]: "Notices",
+  [Place.Notice]: "Notices",
+  [Place.Coach]: "Coach settings",
+  [Place.Appearance]: "Appearance",
+  [Place.Diagrams]: "Your diagrams",
+  [Place.Plan]: "Plan and licenses",
+  [Place.Task]: "Your coding task",
+  [Place.Agenda]: "Next meeting",
+  [Place.Pick]: "Pick a session",
+  [Place.MeetingDay]: "Meeting",
+  [Place.MeetingCut]: "Meeting",
+  [Place.Pairs]: "Better replies",
+  [Place.Literature]: "Auditor's Coding Guide",
+  [Place.Cut]: "Next meeting",
+  [Place.Cluster]: "Cluster",
+  [Place.NewEvent]: "New event",
+  [Place.Event]: "Event",
+  [Place.EventEditor]: "Event",
+  [Place.NewPerson]: "New person",
+  [Place.Person]: "Person",
+  [Place.Events]: "Events",
+  [Place.People]: "People",
+  [Place.Questions]: "Questions",
+  [Place.Play]: "Play-by-play",
+  [Place.PlayStep]: "Play-by-play",
+  [Place.Coding]: "Coding",
+  [Place.Vote]: "Vote",
+  [Place.Meeting]: "Meeting",
+  [Place.Result]: "Result",
+  [Place.Guidelines]: "Guidelines",
+};
+
+/** The account view and its Notices hold the notice already, so a link to
+ * them shows nothing more than the notice's own words. */
+const HOLDS = new Set([Place.Account, Place.Notices, Place.Notice]);
+
+/** The name of where a notice's link takes the reader, or null when there is
+ * nothing more to see there (Patrick, 2026-09-29). */
+export function beyond(link: string | null): string | null {
+  if (link === null) return null;
+  const spot = parse(linked(link));
+  if (!spot) throw new Error(`${link} is no address in the app`);
+  return HOLDS.has(spot.place) ? null : NAMES[spot.place];
+}

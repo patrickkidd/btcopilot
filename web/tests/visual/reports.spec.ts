@@ -32,6 +32,20 @@ const say = async (page: Page, words: string) => {
 const sheet = (page: Page) => page.locator(".fs-sheet.rp");
 const heading = (page: Page) => sheet(page).locator(".cf-t");
 const thread = (page: Page) => page.locator("#chat").innerHTML();
+/** The widest the sheet grows on a wide screen. */
+const WIDEST = 480;
+
+/** As wide as the page on a phone, and on a wide screen no wider than
+ * WIDEST and centred at the bottom. */
+const fits = async (page: Page) => {
+  const at = await sheet(page).evaluate((s) => {
+    const r = s.getBoundingClientRect();
+    const host = s.parentElement!.getBoundingClientRect();
+    return { width: r.width, host: host.width, left: r.left - host.left, right: host.right - r.right };
+  });
+  expect(at.width).toBeCloseTo(Math.min(WIDEST, at.host), 0);
+  expect(at.left).toBeCloseTo(at.right, 0);
+};
 
 /** Every report the page sends. */
 const posted = (page: Page) => {
@@ -86,13 +100,14 @@ test.describe("a coach turn that breaks", () => {
   test.use({ storageState: stateFor("moves") });
 
   // R-0056, R-0182
-  test("raises the bug sheet over the thread, which Send turns into the card saying it was sent, posting nothing more", async ({ page }) => {
+  test("raises the bug sheet over the thread, which Send turns into the card saying it was sent, posting nothing more, each no wider than 480 on a wide screen", async ({ page }) => {
     await settle(page);
     const sent = posted(page);
     await breaks(page, "The coach could not answer");
     await say(page, "My dad moved out.");
 
     await expect(heading(page)).toHaveText("Something went wrong");
+    await fits(page);
     // the thread keeps its own warning, and nothing behind the sheet answers
     await expect(page.locator(".sys.warn")).toBeVisible();
     expect(await page.locator("#chat").evaluate((chat) => chat.closest("[inert]") !== null)).toBe(true);
@@ -107,6 +122,7 @@ test.describe("a coach turn that breaks", () => {
     await sheet(page).getByRole("button", { name: "Send the report" }).click();
     await expect(heading(page)).toHaveText("Your report was sent");
     await expect(sheet(page).getByRole("button", { name: "OK" })).toBeVisible();
+    await fits(page);
     // the server kept the failure under the turn when it happened
     expect(sent).toHaveLength(0);
 
@@ -165,6 +181,7 @@ test.describe("what the person says about the app", () => {
     await say(page, WORDS);
 
     await expect(heading(page)).toHaveText("Send this as feedback?");
+    await fits(page);
     await expect(sheet(page).locator(".rp-v")).toHaveText(WORDS);
     await expect(sheet(page).getByRole("button")).toHaveText(["Send the report", "Not feedback"]);
     await expect(page.locator('.bub.coach[data-statement="9201"]')).toContainText("What happened after he left?");

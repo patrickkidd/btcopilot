@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { address, APP, linked, parse, Place, settled, UNDATED } from "../src/place";
+import { address, APP, beyond, linked, parse, Place, settled, UNDATED } from "../src/place";
 import { Link } from "../src/types";
 
 /** A value for each kind of slot, so every place can be written out. */
@@ -51,11 +51,20 @@ describe("the addresses of the app", () => {
       address(Place.MeetingDay, "2026-10-06"),
     );
     expect(settled(address(Place.Coach))).toBe(address(Place.Coach));
+    expect(settled(address(Place.Notice, 4))).toBe(address(Place.Notices));
   });
 
   // R-0055
   it("takes a notice's link as a fixed screen's name or an address", () => {
     expect(linked(Link.Coach)).toBe(address(Place.Coach));
     expect(linked("/app/account/notices")).toBe("/app/account/notices");
+  });
+
+  // R-0611
+  it("names where a notice's link goes, and nothing for the account view or its Notices, which hold the notice already", () => {
+    expect(beyond(Link.Coach)).toBe("Coach settings");
+    expect(beyond(address(Place.Literature))).toBe("Auditor's Coding Guide");
+    for (const link of [null, Link.Account, address(Place.Notices), address(Place.Notice, 4)])
+      expect(beyond(link)).toBeNull();
   });
 });

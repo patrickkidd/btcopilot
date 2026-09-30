@@ -29,7 +29,7 @@
   </head>
   <body>
     <main>
-      <nav><a href="{{ url_for('app.theory_index') }}">Concept pages</a></nav>
+      <nav><a href="{{ url_for('app.theory_index') }}">{{ guide }}</a></nav>
       {% if error %}
         <h1>{{ title }}</h1>
         <p class="error">{{ error }}</p>

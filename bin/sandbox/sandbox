@@ -125,6 +125,15 @@ keys() {
   export ANTHROPIC_API_KEY GOOGLE_GEMINI_API_KEY
 }
 
+# The coding guide's pages are read from GitHub with a token that, like the
+# keys, reaches the server only, never a file (FD-364).
+guide() {
+  [ -f "$DOTENV" ] || die "the coding guide reads its token from $DOTENV, which is missing"
+  FLASK_THEORY_GITHUB_TOKEN=$(grep '^GITHUB_FD_THEORY_TOKEN=' "$DOTENV" | cut -d= -f2-)
+  [ -n "$FLASK_THEORY_GITHUB_TOKEN" ] || die "no GITHUB_FD_THEORY_TOKEN in $DOTENV"
+  export FLASK_THEORY_GITHUB_TOKEN
+}
+
 flask_() { (. "$D/env.sh" && cd "$REPO" && "$PY" -m flask "$@"); }
 
 start_db() {
@@ -167,6 +176,7 @@ start_app() {
   (
     . "$D/env.sh"
     keys
+    guide
     cd "$REPO"
     nohup "$PY" -m flask run -h 127.0.0.1 -p "$PORT" --no-reload >> "$D/flask.log" 2>&1 &
     echo $! > "$D/flask.pid"

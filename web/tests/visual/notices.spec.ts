@@ -16,6 +16,15 @@ const strip = (page: Page) => page.locator(".strip");
 /** Folded, the card holds no buttons: a tap on it shows them under the words. */
 const unfold = (page: Page) => strip(page).locator(".strip-m").click();
 const account = (page: Page) => page.locator("#account");
+/** The Notices row on the account view, which carries the unread count. */
+const noticesRow = (page: Page) =>
+  page.locator('.sn-pane[data-page="root"] .sn-row', { hasText: "Notices" });
+/** The account view's Notices, opened from its row on the account view. */
+const list = async (page: Page) => {
+  await account(page).click();
+  await noticesRow(page).click();
+  return page.locator('.sn-pane.in[data-page="notices"] .sn-row');
+};
 
 /** The app, once it has read the reader's notifications. */
 async function arrive(page: Page): Promise<void> {
@@ -55,7 +64,7 @@ test("a coach message never takes the strip: the notice under it does, and once 
 });
 
 // R-0017
-test("a notice shows once in a strip above the message box, the cross counts it opened, and it lives on in the account's list", async ({
+test("a notice shows once in a strip above the message box, the cross counts it opened, and it lives on in the account view's Notices", async ({
   page,
 }) => {
   await arrive(page);
@@ -77,8 +86,7 @@ test("a notice shows once in a strip above the message box, the cross counts it 
 
   await arrive(page);
   await expect(strip(page)).toBeHidden();
-  await account(page).click();
-  const rows = page.locator('.sn-pane[data-page="root"] .sn-grp').filter({ hasText: OLD }).locator(".sn-row");
+  const rows = await list(page);
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(0)).toContainText(NEW);
   await expect(rows.nth(1)).toContainText(OLD);
@@ -187,25 +195,52 @@ test("a 160-character body folds to two lines, a tap shows all of it and then Op
 });
 
 // R-0017
-test("Open on a notice pointing at the coach settings lands on the coach settings page and clears the mark on the account button", async ({
+test("Open Coach settings on a notice pointing at the coach settings lands on the coach settings page and clears the mark on the account button", async ({
   page,
 }) => {
   await arrive(page);
-  await account(page).click();
-  const rows = page.locator('.sn-pane[data-page="root"] .sn-grp').filter({ hasText: OLD }).locator(".sn-row");
+  const rows = await list(page);
+  await expect(noticesRow(page).locator(".sn-val")).toHaveText("1");
   await expect(rows.nth(0).locator(".sn-unread")).toHaveCount(1);
+  await expect(rows.nth(0).locator(".sn-chev")).toHaveCount(1);
   await expect(rows.nth(1).locator(".sn-unread")).toHaveCount(0);
+  await page.locator("#settings-back").click();
   await page.locator("#settings-back").click();
   await expect(page.locator(".sn-pane")).toHaveCount(0);
 
   const put = opened(page);
   await unfold(page);
-  await strip(page).locator(".stepbtn").click();
+  await strip(page).getByRole("button", { name: "Open Coach settings" }).click();
   expect((await put).ok()).toBe(true);
   await expect(page.locator('.sn-pane.in[data-page="coach"]')).toBeVisible();
   await expect(page.locator("#title")).toHaveText("Coach");
-  await expect(rows.locator(".sn-unread")).toHaveCount(0);
+  await expect(noticesRow(page).locator(".sn-val")).toHaveText("");
   await expect(strip(page)).toBeHidden();
+  await expect(account(page)).not.toHaveClass(/\bunread\b/);
+});
+
+// R-0611
+test("a notice pointing at the account view has no Open, and its row in the Notices has no arrow and a tap only counts it read, in place", async ({
+  page,
+}) => {
+  await page.route("**/app/notifications?all=true", async (route) => {
+    const res = await route.fetch();
+    const rows = (await res.json()) as { title: string; link: string | null }[];
+    for (const one of rows) if (one.title === NEW) one.link = "account";
+    await route.fulfill({ response: res, json: rows });
+  });
+  await arrive(page);
+  await unfold(page);
+  await expect(strip(page).locator(".cardx")).toBeVisible();
+  await expect(strip(page).locator(".stepbtn")).toHaveCount(0);
+
+  const rows = await list(page);
+  await expect(rows.locator(".sn-chev")).toHaveCount(0);
+  const put = opened(page);
+  await rows.nth(0).click();
+  expect((await put).ok()).toBe(true);
+  await expect(page.locator('.sn-pane.in[data-page="notices"]')).toBeVisible();
+  await expect(rows.locator(".sn-unread")).toHaveCount(0);
   await expect(account(page)).not.toHaveClass(/\bunread\b/);
 });
 

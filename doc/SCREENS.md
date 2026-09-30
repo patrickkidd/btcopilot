@@ -68,7 +68,7 @@ What it is for: talking to the coach, which is how everything else in the app ge
 - In each of those lines, the name of the thing it touched is in italics, set apart from the verb, as in "Changed *Dad's move*: date 1990". [built] {R-0528}
 - Under each coach reply that has words there is a thin, line-drawn play button, as in the Claude Code mobile app; tap it to hear that reply, tap again to stop. [built] {R-0521}
 - On an iPhone, a long message in the message box scrolls without its lines drawing over each other. [built]
-- A notice from the app, or a coding task waiting for you, shows as a small card above the message box. Folded, it is two lines and a small mark that it opens: its title on one line and the body on the line under it, each cut short with an ellipsis when it does not fit, with no buttons. A tap on the card shows the whole title and body in place, with bold, italics, links and line breaks, and then, under them, Open when it points to a screen and a cross, so it is read before it is acted on; a tap on the words folds it again, and unfolding does not count it read. It is never in the thread and never covers the page. [built] {R-0611}
+- A notice from the app, or a coding task waiting for you, shows as a small card above the message box. Folded, it is two lines and a small mark that it opens: its title on one line and the body on the line under it, each cut short with an ellipsis when it does not fit, with no buttons. A tap on the card shows the whole title and body in place, with bold, italics, links and line breaks, and then, under them, Open with the name of where it goes ("Open Coach settings") when it points somewhere with more to see, and a cross; one pointing at the account view, its Notices or nowhere has only the cross, so it is read before it is acted on; a tap on the words folds it again, and unfolding does not count it read. It is never in the thread and never covers the page. [built] {R-0611}
 - One shows at a time, the newest. It stays there until you tap Open, which goes to the screen it points to, or the cross, which puts it away; either way it is counted read and does not come back. [built] {R-0611}
 - A coach message never shows there, because it is already in the thread. [built] {R-0606, R-0611}
 - A tap on a notification lands where it points from wherever the app is: the sessions drawer, the play-by-play drawer, the new-event form, the account view and any other screen are put away, then the thread scrolls to its message and lights it; a task or notice instead opens the account view at its root and the page it names. [built] {R-0055}
@@ -342,7 +342,7 @@ What it is for: you, your families, your plan, and signing out.
 - The account page is a list where each row opens its own page with a back arrow, like the phone's own settings. [built]
 - The top of it shows your name, your email and your plan. [built]
 - While a notice is unread, the account mark carries a small amber dot, the amber of the coach's question; the dot goes when none is unread. [built] {R-0611}
-- Under your name, a Notices section lists every notice you have been sent, newest first, each with its day and its first line; an unread one has the same amber dot before it. Tapping one opens the screen it points to and counts it read; one that points to the account page itself, or nowhere, has no arrow and a tap only counts it read. There is no section until a notice has been sent. [built] {R-0611}
+- Under your name, one row, Notices, with the number unread as its figure, opens the Notices page: every notice you have been sent, newest first, each with its day and its first line; an unread one has the same amber dot before it. Tapping one opens the screen it points to and counts it read; one that points to the account view, its Notices, or nowhere has no arrow and a tap only counts it read, in place. There is no row until a notice has been sent. [built] {R-0611}
 - Your profile page holds your first name, last name and birthdate. [built]
 - There is a row for whether the coach speaks its replies out loud. [built]
 - The same speaking switch appears once in the chat as a named shortcut, writing the same setting. [built]
@@ -357,7 +357,7 @@ What it is for: you, your families, your plan, and signing out.
 - Tapping a family opens it, and one is open at a time. [built] {R-0175}
 - A search box appears in that list once you have six or more families. [built]
 - Licences and the plan are listed; nothing on that page implies a price yet. [built]
-- Auditors and admins see a Coding section above Sign out: Your coding task, which opens the one task card; Next meeting, for admins only, which opens the agenda; and Literature review, which opens the concept pages. [built] {R-0265, R-0259, R-0541, R-0567}
+- Auditors and admins see a Coding section above Sign out: Your coding task, which opens the one task card; Next meeting, for admins only, which opens the agenda; and Auditor's Coding Guide, which opens the concept pages on a page of its own. [built] {R-0265, R-0259, R-0541, R-0567}
 - Admins also see a Quality section with one row, Better replies, over the line "Pick the better of two coach replies"; it opens the screen where two coach replies to the same words are picked blind, titled Better replies. [built] {R-0599}
 - Each of those opens as a page of the account view, sliding in over it the way Coach, Appearance and Plan do, and the back arrow at the top left returns to the account view. [built] {R-0259, R-0265}
 - A plain subscriber or a professional sees neither section. [built] {R-0311}
@@ -394,15 +394,15 @@ What it is for: every screen and everything on it has its own web address, so th
 | `/app/sessions/<session>` | the sessions drawer, with that session's row ringed |
 | `/app/account` | the account view |
 | `/app/account/profile`, `coach`, `appearance`, `diagrams`, `plan` | that page of the account view |
-| `/app/account/notices` | the account view, with its Notices ringed |
-| `/app/account/notices/<notice>` | the account view, with that notice ringed |
+| `/app/account/notices` | the account view's Notices page |
+| `/app/account/notices/<notice>` | the Notices page, with that notice ringed |
 | `/app/account/coding-task` | your coding task |
 | `/app/account/meeting` | Next meeting |
 | `/app/account/meeting/sessions` | Pick a session, over Next meeting |
 | `/app/account/meeting/<day>` | the page of the meeting on that day (`undated` for the one with no day) |
 | `/app/account/meeting/<day>/<cut>` | that meeting's page, with that cut ringed |
 | `/app/account/better-replies` | Better replies |
-| `/app/account/literature-review` | Literature review |
+| `/app/account/literature-review` | Auditor's Coding Guide |
 | `/app/cut/<session>` | the cut screen for that session, over Next meeting |
 | `/app/cluster/<cluster>` | that cluster opened on the picture |
 | `/app/event/<event>` | that event picked on the picture |
@@ -443,6 +443,7 @@ What it is for: telling the people who make the app that something broke, or wha
 - The same error comes up once a page; one this phone already sent in this release is only counted after a reload, and the count goes to the server as the page closes. At most three sheets come up on one page load. A bug waits while you are typing, and comes up once the message box is empty. [built] {R-0056}
 - When you tell the coach something about the app itself, the coach answers in one sentence and goes back to the conversation; once its reply is done, the same sheet slides up headed "Send this as feedback?" with your own words and the buttons "Send the report" and "Not feedback". It comes up at most once a sitting. [built] {R-0056}
 - The sheet is modal: the thread behind it is dimmed and cannot be tapped until you answer it, and nothing is ever added to the thread. [built] {R-0056}
+- The sheet and the card after it are as wide as a phone and at most 480 wide on a wider screen, centred at the bottom. [built] {R-0056}
 - After Send, the sheet turns in place into "Your report was sent" with an OK button; it closes on OK or by itself after ten seconds. If the report cannot be sent, the same card says so and why. [built] {R-0056}
 - "Always send" is kept in your settings: from then on a bug is sent with no sheet and no card at all. Feedback still asks. [built] {R-0056}
 - A report is one row in the reports table: sent feedback keeps your words, "Not feedback" keeps only the turn and the message it came from. [built] {R-0056}

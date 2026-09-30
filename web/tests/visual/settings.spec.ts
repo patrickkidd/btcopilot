@@ -600,12 +600,12 @@ test.describe("the coding and quality sections", () => {
   });
 });
 
-test.describe("the literature review row", () => {
+test.describe("the Auditor's Coding Guide row", () => {
   test.use({ storageState: stateFor("empty") });
   const roles = (...names: string[]) =>
     flask("admin", "run", "--", "users", "roles", username("empty"), ...names, "--yes");
   const row = (page: Page) =>
-    page.locator(".sn-pane.in .sn-row.push", { hasText: "Literature review" });
+    page.locator(".sn-pane.in .sn-row.push", { hasText: "Auditor's Coding Guide" });
   test.afterAll(() => roles("subscriber"));
 
   // R-0541, R-0567
@@ -619,9 +619,9 @@ test.describe("the literature review row", () => {
       await expect(row(page)).toHaveCount(1);
     }
     await row(page).click();
-    const frame = page.locator('.sn-pane.in iframe[title="Literature review"]');
+    const frame = page.locator('.sn-pane.in iframe[title="Auditor\'s Coding Guide"]');
     await expect(frame).toBeVisible();
-    await expect(page.locator("#title")).toHaveText("Literature review");
+    await expect(page.locator("#title")).toHaveText("Auditor's Coding Guide");
     expect(await frame.getAttribute("src")).toBe("/app/theory");
     await page.locator("#settings-back").click();
     await expect(page.locator(".sn-pane.in")).toHaveAttribute("data-page", "root");

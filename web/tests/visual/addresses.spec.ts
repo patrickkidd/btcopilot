@@ -134,38 +134,30 @@ test.describe("the sessions drawer, as Patrick", () => {
   });
 });
 
-test.describe("a notice pointing at an address", () => {
+test.describe("the account view's Notices", () => {
   test.use({ storageState: stateFor("notice") });
 
   test.beforeEach(() => {
     flask("app", "fixtures", "notice");
   });
 
-  // R-0055
-  test("a notice whose link is the Notices address opens the account view with its Notices lit", async ({
+  // R-0055, R-0611
+  test("open as their own page from the Notices row on the account view and from their address", async ({
     page,
   }) => {
-    shell(
-      [
-        "from btcopilot.extensions import db",
-        "from btcopilot.models import Audience, Notice, Notification, NotificationChannel, NotificationKind, User",
-        `user = User.query.filter_by(username="${username("notice")}").one()`,
-        'notice = Notice(title="Your notices", body="All of them, in one place.", link="/app/account/notices", audience=Audience.People, user_ids=[user.id])',
-        "db.session.add(notice)",
-        "db.session.flush()",
-        "db.session.add(Notification(user_id=user.id, kind=NotificationKind.Notice, notice_id=notice.id, channel=NotificationChannel.App))",
-        "db.session.commit()",
-        "",
-      ].join("\n"),
-    );
     await page.goto("/app/");
-    const strip = page.locator(".strip");
-    await expect(strip.locator(".strip-t")).toHaveText("Your notices");
-    await strip.locator(".strip-m").click();
-    await strip.getByRole("button", { name: "Open" }).click();
-
-    await expect(pane(page, "root")).toBeVisible();
-    await expect(pane(page, "root").locator('[data-group="notices"].traced')).toBeVisible();
+    await page.locator("#account").click();
+    await expect(pane(page, "root").locator(".sn-row", { hasText: "Coach messages can now come weekly" })).toHaveCount(0);
+    await row(page, "Notices").click();
+    await expect(pane(page, "notices").locator(".sn-row")).toHaveCount(2);
+    await expect(title(page)).toHaveText("Notices");
     await expect(page).toHaveURL(/\/app\/account\/notices$/);
+
+    await page.goto("/app/account/notices");
+    await expect(pane(page, "notices").locator(".sn-row")).toHaveCount(2);
+    await expect(title(page)).toHaveText("Notices");
+    await page.locator("#settings-back").click();
+    await expect(pane(page, "root")).toBeVisible();
+    await expect(page).toHaveURL(/\/app\/account$/);
   });
 });

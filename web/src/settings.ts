@@ -10,7 +10,7 @@ import { markup } from "./markup";
 import { addPasskey, available, deviceWords } from "./passkey";
 import { subscribe } from "./push";
 import { PRO, RECORD, RECORDS, Records } from "./pro";
-import { address, linked, Place } from "./place";
+import { address, beyond, NAMES, Place } from "./place";
 import {
   BugReports,
   Mode,
@@ -48,9 +48,7 @@ const PROACTIVE_HINT: Record<Proactive, string> = {
   [Proactive.Weekly]: writesFirst("week"),
 };
 const SEARCH_AT = 6;
-const LITERATURE = "Literature review";
-/** The Notices group on the root, which an address can light. */
-export const NOTICES = "notices";
+const GUIDE = NAMES[Place.Literature];
 
 const SILHOUETTE =
   `<svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true">` +
@@ -64,6 +62,7 @@ export enum Page {
   Appearance = "appearance",
   Diagrams = "diagrams",
   Plan = "plan",
+  Notices = "notices",
 }
 
 /** A screen of the app's own that opens on this stack like one of its pages
@@ -104,8 +103,9 @@ export interface SettingsHandlers {
   onPairs(): void;
   /** Every notice sent to this person, newest first (R-0611). */
   notices(): Delivery[];
-  /** A notice tapped in the list: counted opened, then where it points. */
-  onNotice(one: Delivery): void;
+  /** A notice tapped in the list: counted opened, then where it points when
+   * there is more to see there. */
+  onNotice(one: Delivery): Promise<void>;
 }
 
 /** A stored user agent is unreadable, so the row names the phone it came from. */
@@ -145,7 +145,7 @@ export class Settings {
   private passkeys: Passkey[] = [];
   private canPasskey = false;
   private host = el("div", "sn-stack");
-  /** The concept pages, read on this stack like any page of it. */
+  /** The auditor's coding guide, read on this stack like any page of it. */
   readonly literature: Sub;
   /** The account read again once the view has slid in, which draws its top
    * page again; a light waits for it, so it is not drawn away. */
@@ -161,9 +161,9 @@ export class Settings {
     overlay.append(this.host);
     const frame = el("iframe");
     frame.id = "literature";
-    frame.title = LITERATURE;
+    frame.title = GUIDE;
     frame.src = INDEX_URL;
-    this.literature = { title: LITERATURE, screen: frame, at: address(Place.Literature) };
+    this.literature = { title: GUIDE, screen: frame, at: address(Place.Literature) };
     this.back.hidden = true;
     this.avatar.addEventListener("click", () => {
       tap(Feature.OpenSettings);
@@ -472,6 +472,7 @@ export class Settings {
     if (page === Page.Coach) return this.coach(prefs);
     if (page === Page.Appearance) return this.appearance(prefs);
     if (page === Page.Diagrams) return this.diagrams(account);
+    if (page === Page.Notices) return this.notices();
     return this.plan(account);
   }
 
@@ -495,11 +496,9 @@ export class Settings {
     pane.append(first);
 
     const notices = this.handlers.notices();
-    if (notices.length) {
-      const list = this.group(notices.map((one) => this.noticeRow(one)), "Notices");
-      list.dataset.group = NOTICES;
-      pane.append(list);
-    }
+    const unread = notices.filter((one) => one.opened_at === null).length;
+    if (notices.length)
+      pane.append(this.group([this.pushRow("Notices", unread ? String(unread) : "", Page.Notices)]));
 
     pane.append(
       this.group([
@@ -522,7 +521,7 @@ export class Settings {
 
     // Coding and its meeting are for coders, and the meeting and the replies
     // picked blind are Patrick's; none of it hangs on the family the app is
-    // on. Each opens on this stack, the concept pages too (R-0567).
+    // on. Each opens on this stack, the coding guide too (R-0567).
     const admin = isAdmin();
     if (isCoder())
       pane.append(
@@ -532,7 +531,7 @@ export class Settings {
             ...(admin
               ? [this.screenRow("Next meeting", Feature.AgendaOpen, () => this.handlers.onAgenda())]
               : []),
-            this.tapRow(LITERATURE, "", () => this.push(this.literature)),
+            this.tapRow(GUIDE, "", () => this.push(this.literature)),
           ],
           "Coding",
         ),
@@ -560,11 +559,20 @@ export class Settings {
     return { title: "Account", pane };
   }
 
+  /** Every notice sent to this person, newest first (R-0611). */
+  private notices(): Built {
+    const pane = el("div");
+    const rows = this.handlers.notices().map((one) => this.noticeRow(one));
+    pane.append(rows.length ? this.group(rows) : el("div", "sn-hint", "No notices yet."));
+    return { title: "Notices", pane };
+  }
+
   /** A notice: unread ones carry the account button's mark, and a tap opens
-   * where it points, or only counts it read when it points nowhere or here. */
+   * where it points, or only counts it read, in place, when there is nothing
+   * more to see there. */
   private noticeRow(one: Delivery): HTMLElement {
     const unread = one.opened_at === null;
-    const goes = one.link !== null && linked(one.link) !== address(Place.Account);
+    const goes = beyond(one.link) !== null;
     const row = el("div", `sn-row${goes || unread ? " push" : ""}`);
     row.dataset.notice = String(one.id);
     if (unread) row.append(el("span", "sn-unread"));
@@ -578,7 +586,10 @@ export class Settings {
     if (goes) row.append(el("div", "sn-chev", "›"));
     if (goes || unread)
       row.addEventListener("click", (e) => {
-        if (!(e.target as Element).closest("a")) this.handlers.onNotice(one);
+        if ((e.target as Element).closest("a")) return;
+        void this.handlers.onNotice(one).then(() => {
+          if (!goes) this.replaceTop();
+        });
       });
     return row;
   }
