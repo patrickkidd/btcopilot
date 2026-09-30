@@ -6,12 +6,19 @@ import json
 
 import pytest
 
-from btcopilot import diagramjson, ledger, replayscore
+from btcopilot import diagramjson, ledger, prompts, replayscore
 from btcopilot.admin import admin
 from btcopilot.admin.quality import PRODUCTION
-from btcopilot.coachmodel import Spent
+from btcopilot.coachmodel import Spent, model_for
 from btcopilot.extensions import db
-from btcopilot.models import Diagram, ModelCall, Purpose, TokenMeter
+from btcopilot.models import (
+    Diagram,
+    ModelCall,
+    Purpose,
+    Statement,
+    StatementKind,
+    TokenMeter,
+)
 from btcopilot.routes.diagrams import readable
 from btcopilot.toolbox import ToolName
 from btcopilot.tests.conftest import Model, called, said
@@ -49,8 +56,41 @@ def coach(monkeypatch):
         called(ToolName.EditEvent, kind="noted", person=1, date_certainty="certain"),
         said("Nell is in."),
     )
-    monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name: model)
+    monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
     return model
+
+
+@pytest.fixture
+def efforts(monkeypatch):
+    """The thinking level each replay's real coach model was built with; the
+    scripted coach answers in its place."""
+    built = []
+    model = Model(said("Noted."))
+
+    def made(name, effort):
+        built.append(model_for(name, effort).effort)
+        return model
+
+    monkeypatch.setattr("btcopilot.replayscore.model_for", made)
+    return built
+
+
+PROMPT = """---
+name: agent
+inputs:
+  committed_state:
+    type: string
+  interactions:
+    type: string
+  today:
+    type: string
+---
+You coach Brother Cadfael about his herb garden.
+
+{{ committed_state }}
+{{ interactions }}
+{{ today }}
+"""
 
 
 def test_a_refused_call_and_a_person_added_twice_are_counted(
@@ -135,3 +175,59 @@ def test_the_command_refuses_production(flask_app, discussion, reference, coach)
     )
     assert result.exit_code != 0
     assert Diagram.query.count() == 2
+
+
+def test_the_thinking_level_reaches_the_coach_model(
+    flask_app, discussion, reference, efforts
+):
+    # R-0597
+    result = flask_app.test_cli_runner().invoke(
+        admin,
+        ["quality", "replay", str(discussion.id), "sonnet-5", str(reference.id)]
+        + ["--thinking", "low"],
+    )
+    assert result.exit_code == 0, result.output
+    assert efforts == ["low"]
+
+
+def test_a_prompt_file_replaces_the_coach_prompt_for_the_replay_only(
+    discussion, reference, tmp_path, monkeypatch
+):
+    # R-0597
+    path = tmp_path / "agent.prompty"
+    path.write_text(PROMPT)
+    model = Model(said("Noted."))
+    monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
+    replayscore.replay(discussion, "sonnet-5", reference, prompt=path)
+    assert model.systems[0].startswith("You coach Brother Cadfael")
+    assert "Cadfael" not in prompts.get_agent_prompt()
+
+
+def test_turns_caps_a_persons_replay_and_pairs_the_turn_ids(
+    flask_app, discussion, reference, test_user, monkeypatch
+):
+    # R-0597
+    subject = discussion.speakers[0]
+    for order, words in ((2, "My sister Nell moved."), (3, "Then she wed.")):
+        db.session.add(
+            Statement(
+                discussion_id=discussion.id,
+                speaker_id=subject.id,
+                text=words,
+                order=order,
+                kind=StatementKind.Turn,
+                turn_id=f"live{order}",
+            )
+        )
+    db.session.commit()
+    model = Model(said("Noted."))
+    monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
+    result = flask_app.test_cli_runner().invoke(
+        admin,
+        ["quality", "replay-person", str(test_user.id), "sonnet-5"]
+        + ["--reference", str(reference.id), "--turns", "1"],
+    )
+    assert result.exit_code == 0, result.output
+    assert "1 turns" in result.output
+    assert "live2 -> " in result.output
+    assert "live3" not in result.output

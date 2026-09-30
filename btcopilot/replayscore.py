@@ -3,8 +3,11 @@ record Patrick ratified or corrected, never against another model's record,
 with the mistakes the watcher looks for counted. Each replay is one line in the
 eval ledger [Oracle: R-0597]."""
 
+import contextlib
 import datetime
+import shutil
 import subprocess
+import tempfile
 import time
 from collections import Counter
 from decimal import Decimal
@@ -12,8 +15,8 @@ from pathlib import Path
 
 from sqlalchemy import func
 
-from btcopilot import ledger
-from btcopilot.coachmodel import model_for
+from btcopilot import ledger, prompts
+from btcopilot.coachmodel import COACH_EFFORT, model_for
 from btcopilot.extensions import db
 from btcopilot.llmutil import resolve_model
 from btcopilot.matching import parse_date_flexible
@@ -23,8 +26,13 @@ from btcopilot.models import (
     ModelCall,
     Observation,
     ObservationKind,
+    Speaker,
+    SpeakerType,
+    Statement,
+    StatementKind,
 )
 from btcopilot.models.qualityrun import Source
+from btcopilot.promptdir import PromptDir
 from btcopilot.review import adapter
 from btcopilot.review.coachscore import compare
 from btcopilot.schema import DateCertainty
@@ -45,20 +53,27 @@ def replay(
     requested: str,
     reference: Diagram,
     cap: Decimal | None = None,
+    thinking: str = COACH_EFFORT,
+    prompt: Path | None = None,
+    statements: list[Statement] | None = None,
 ) -> dict:
-    """The ledger line the replay appended."""
+    """The ledger line the replay appended, plus the model calls it made and
+    each replayed turn's id beside the id of the turn it replays. Without
+    `statements` the whole discussion is replayed."""
     started = time.monotonic()
-    model = model_for(requested)
+    model = model_for(requested, thinking)
     diagram = adapter.coding_diagram(
         discussion.user,
         f"Replay of session {discussion.id} on {requested}",
         scratch=True,
     )
     db.session.commit()
-    statements = sorted(discussion.statements, key=lambda s: (s.order or 0, s.id))
-    copy, replies = adapter.replay_into(
-        diagram, discussion, statements, model=model, cap=cap
-    )
+    if statements is None:
+        statements = sorted(discussion.statements, key=lambda s: (s.order or 0, s.id))
+    with agent_prompt_from(prompt):
+        copy, replies = adapter.replay_into(
+            diagram, discussion, statements, model=model, cap=cap
+        )
     mine = adapter.record_of(diagram)
     scores = compare(mine, adapter.record_of(reference))
     calls = ModelCall.query.filter_by(diagram_id=diagram.id).all()
@@ -89,7 +104,55 @@ def replay(
         "source": Source.Api.value,
     }
     ledger.append(row, ledger.PATH)
-    return row
+    return {
+        **row,
+        "calls": len(calls),
+        "pairs": [
+            (said.turn_id, reply["turn_id"])
+            for said, reply in zip(adapter.spoken(statements), replies)
+        ],
+    }
+
+
+def turned(user_id: int, limit: int | None = None) -> list[Statement]:
+    """The person's own words that started a live coach turn, oldest first,
+    leaving out the words of earlier replays."""
+    return (
+        Statement.query.join(Discussion, Statement.discussion_id == Discussion.id)
+        .join(Diagram, Discussion.diagram_id == Diagram.id)
+        .join(Speaker, Statement.speaker_id == Speaker.id)
+        .filter(
+            Discussion.user_id == user_id,
+            Diagram.scratch.is_(False),
+            Speaker.type == SpeakerType.Subject,
+            Statement.kind == StatementKind.Turn,
+            Statement.turn_id.isnot(None),
+            Statement.text.isnot(None),
+        )
+        .order_by(Statement.id)
+        .limit(limit)
+        .all()
+    )
+
+
+@contextlib.contextmanager
+def agent_prompt_from(path: Path | None):
+    """The coach's main prompt read from `path` for the length of the block,
+    its fragments and every other prompt still read from the usual places."""
+    if path is None:
+        yield
+        return
+    usual = prompts.files
+    with tempfile.TemporaryDirectory() as tmp:
+        shutil.copy(path, Path(tmp) / "agent.prompty")
+        chosen = PromptDir([Path(tmp), *usual().dirs])
+        prompts.files = lambda: chosen
+        prompts._agent_fixed.cache_clear()
+        try:
+            yield
+        finally:
+            prompts.files = usual
+            prompts._agent_fixed.cache_clear()
 
 
 def faults(diagram_id: int, data: dict) -> dict:

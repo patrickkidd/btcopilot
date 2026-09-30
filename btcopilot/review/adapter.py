@@ -308,11 +308,7 @@ def replay_into(
     copy.chat_ai_speaker_id = copy.speakers[1].id
     db.session.commit()
 
-    said = [
-        s.text
-        for s in statements
-        if s.text and s.speaker and s.speaker.type == SpeakerType.Subject
-    ]
+    said = [s.text for s in spoken(statements)]
     session_id = f"review-replay-{discussion.id}"
     replies = []
     for text in said:
@@ -336,6 +332,15 @@ def replay_into(
         db.session.commit()
         replies.append(reply)
     return copy, replies
+
+
+def spoken(statements) -> list[Statement]:
+    """The person's words among a cut's statements, each one coach turn."""
+    return [
+        s
+        for s in statements
+        if s.text and s.speaker and s.speaker.type == SpeakerType.Subject
+    ]
 
 
 def spent(diagram_id: int) -> Decimal:
