@@ -151,8 +151,14 @@ def anchor(diagram: Diagram, said: Statement | None) -> tuple[bytes, int]:
     if said is None:
         return diagram.data, diagram.version
     taken = shadow.rewound(said)
-    version = taken[-1].version - 1 if taken else diagram.version
-    return shadow.rebuilt(said), version
+    if not taken:
+        return shadow.rebuilt(said), diagram.version
+    oldest = taken[-1]
+    if oldest.version is None:
+        raise ValueError(
+            f"diagram_changes row {oldest.id} on diagram {diagram.id} has no version"
+        )
+    return shadow.rebuilt(said), oldest.version - 1
 
 
 def prompt_version(path: Path | None) -> str:

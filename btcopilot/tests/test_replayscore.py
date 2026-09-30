@@ -13,6 +13,7 @@ from btcopilot.coachmodel import Spent, model_for
 from btcopilot.extensions import db
 from btcopilot.models import (
     Author,
+    Change,
     Diagram,
     ModelCall,
     Purpose,
@@ -307,6 +308,18 @@ def test_a_replay_starts_before_its_first_turn_and_is_scored_after_its_last(
         "Wren",
         "Ada",
     ]
+
+
+def test_an_anchor_on_a_change_without_a_version_names_the_row(lived, test_user):
+    # R-0597
+    change = Change.query.filter_by(diagram_id=lived.diagram_id, turn_id="live2").one()
+    change.version = None
+    db.session.commit()
+    words = Statement.query.filter_by(turn_id="live2").one()
+    with pytest.raises(
+        ValueError, match=f"row {change.id} on diagram {lived.diagram_id}"
+    ):
+        replayscore.anchor(lived.diagram, words)
 
 
 def test_a_kept_key_is_not_run_again_without_again(
