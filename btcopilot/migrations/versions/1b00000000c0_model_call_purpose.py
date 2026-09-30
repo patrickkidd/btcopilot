@@ -32,10 +32,10 @@ def upgrade():
         batch_op.add_column(sa.Column("purpose", PURPOSE, nullable=True))
     op.execute("""
         UPDATE model_calls SET purpose = CASE
-            WHEN turn_id LIKE 'shadow-%' THEN 'shadow'
+            WHEN turn_id LIKE 'shadow-%' THEN 'shadow'::purpose
             WHEN turn_id LIKE 'backfill:%' OR turn_id LIKE 'impression-backfill:%'
-                THEN 'backfill'
-            ELSE 'coach'
+                THEN 'backfill'::purpose
+            ELSE 'coach'::purpose
         END
         """)
     with op.batch_alter_table("model_calls", schema=None) as batch_op:
