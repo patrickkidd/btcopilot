@@ -33,7 +33,7 @@ The main off-theory trap: reading the overfunctioner as the strong, healthy one,
 5. **Functioning up, functioning down, or not a functioning code?** UNDECIDED between three options (OPEN_QUESTIONS 9): (a) up, since Kerr defines overfunctioning as functional level above basic level (RF10); (b) down, which the old review assumed without a source, and which Patrick's 2017 paper leans toward (RF39); (c) neither: it is a relationship move, and functioning is coded only from its own evidence. Section 2d lists what each author wrote.
 6. **Who is "the adaptive one"?** UNDECIDED (OPEN_QUESTIONS 10) between (a) whoever gives in to keep harmony, over or under; (b) the overfunctioner; (c) retire the word and code the moves. Bowen and Kerr's chapter 3 use it for the underfunctioner (RF41, RF44); Kerr's chapter 2 has the overfunctioner absorbing (RF46). Section 2e.
 7. **Every coding rule here is provisional.** Ruling R-0511 (coding rules are provisional while ground truth is rebuilt) — see the private edition. Ground truth comes from the IRR group (R-0509).
-8. **A reading from theory stays apart from the facts.** RULED 2026-09-26. Ruling OPEN_QUESTIONS 5 (facts and theory-based readings are kept in separate layers) — see the private edition. Which side moved first, and whether a move was automatic, are readings; the dated moves are the facts.
+8. **A reading from theory stays apart from the facts.** RULED 2026-09-26. See the private corpus for the app's decision on this point (2026-09-26). (OPEN_QUESTIONS 5). Which side moved first, and whether a move was automatic, are readings; the dated moves are the facts.
 
 ### Coders' group (IRR)
 
