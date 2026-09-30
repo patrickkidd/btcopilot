@@ -26,7 +26,7 @@ _log = logging.getLogger(__name__)
 _tracer = trace.get_tracer(__name__)
 
 # How hard the coach thinks before it speaks. Medium keeps the first word quick.
-COACH_EFFORT = "medium"
+COACH_EFFORT = "low"
 HAIKU = "claude-haiku-4-5"
 
 # What the wire keeps between calls. The wire reads tools, then the system

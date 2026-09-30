@@ -1155,3 +1155,9 @@ fields to clear, and its text names three rules the record enforces: only a shif
 carries a variable or a move, a shift says in words what happened, and no one is
 both a target and a third person. Not yet measured live: no model calls were made.
 [R-0446, R-0480, R-0533]
+
+### September 2026: The coach thinks at low effort (FD-366)
+
+**Change** (2026-09-30): the coach's thinking effort is low, down from medium. The replay's thinking option still overrides it.
+**Measured** on eight of Patrick's turns, one pass each: low cost $0.051 a turn against $0.071 at medium (28% cheaper). Events scored higher at low (0.75 against 0.55). The four variables scored lower at low (0.49 against 0.60).
+**Decision**: Patrick chose low and queued the question of giving the variables more thinking (open question 40 in the theory corpus).
