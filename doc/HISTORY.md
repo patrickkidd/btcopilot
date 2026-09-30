@@ -1955,3 +1955,62 @@ ledger file); and a unit test for the calibration cap and the per-call ledger co
 ## 2026-09-29 — the landing page for familydiagram.com
 
 Built on branch `landing-page`, not deployed: the page at `/`, where someone already invited can have a sign-in link emailed and anyone else can ask to join the beta, both forms behind Turnstile, with the Alaska Family Systems logo, its blue-purple colours and a copyright line carrying the year of the visit [R-0601].
+
+## 2026-09-29/30 — FD-365: sittings, the coach's memory, the coach writing first, notices, reports, in-app addresses, the feedback loops ledger
+<!-- session: session_01Bg944G2Rq2ZbFeArJQ6CSf · flushed: 2026-09-30T03:05:00Z -->
+
+Seven releases from branch FD-365, each after a database backup on the box:
+3.2026.9.29.1 (one drawn back chevron and one step pill everywhere, the (i) and the notes cross
+inside their boxes), 3.2026.9.29.2 (the ask button hidden for now), 3.2026.9.29.3 (the literature
+review row for auditors and admins), 3.2026.9.29.5 (the landing page, PR #143, merged to master
+and into FD-365, with the two Turnstile keys put on the box first), 3.2026.9.30.1 (the sittings
+work, PR #144, merged into FD-365 rather than master; database at 1b00000000bd) and
+3.2026.9.30.2 (the scheduler service's own health check, and a dry run of the coach's first
+messages that stops before the model). 3.2026.9.29.4 is the tag the build on master gave the
+landing page merge. PR #142 stays the ticket's PR, open. The deploy lock is on FD-365.
+
+**Sittings and memory.** Each family has one thread; a new sitting starts after 12 quiet hours,
+marked by a light date line, and the session list and New session button are gone [queued
+R-0602, R-0603]. The coach no longer replays its past tool calls: it reads its last notes from
+the database, the last 20 to 29 statements (stepping by 10), and a map of every event, finds
+duplicates from the record alone [queued R-0604], searches past chat for older words [queued
+R-0605], and keeps questions for later with a follow-up tool, "ask later".
+
+**The coach writes first** on two triggers only, an agreed follow-up or a pattern in the record
+reaching two occurrences of a symptom after a relationship ended, never an anniversary [queued
+R-0606, R-0607]; unasked messages are off by default, at most one a week or a month, worded as a
+maximum; two ignored stop that kind; one outstanding at a time. A 15-minute scheduled run on a
+new scheduler service, fd-beat, picks who gets one. The message goes as one web push at a time
+with email when no browser is subscribed, and the home-screen app shows the Family Diagram icon.
+
+**Notices** live in two tables, `notices` and `notifications`, sent with `flask admin notice
+send`; in the app a card above the message box and a Notices page in the account view [queued
+R-0611]. **Auditor onboarding**: a task notice and a reminder, two sentences in the invite
+emails, "How this works" on the task card, and a hint on the first line of the coding screen
+[queued R-0612].
+
+**Bug reports and feedback** come only from the coach's offers, as a sheet from the bottom that
+never touches the thread, one row each in a new `reports` table, sent or declined, with a "Bug
+reports" setting [queued R-0613]. An exception reporter was built and removed the same night,
+because Grafana Faro and Alloy already hold every error. Every server answer carries a request
+id; source maps are kept hidden, 90 days, with the release run.
+
+**In-app addresses**: every view and object has an address under /app/, the back button steps
+back, drawer rows are rung when an address names them, and the coach has a navigate tool
+[queued R-0614]. **The account view** gained a Coding section (Your coding task, Next meeting,
+"Auditor's Coding Guide") and a Quality section ("Better replies"); a cut starts from the meeting
+[queued R-0609, R-0610, R-0601]. Also: the "Questions" tab, a red Delete, Return sends only on a
+real keyboard [queued R-0608], the coach's notes say evaluation, not journaling [queued R-0615],
+and a development-only one-tap sign-in with FLASK_DEV_AUTOLOGIN.
+
+**After the last release, pushed but not released:** the features dashboard in the repo with four
+new panels; doc/FEEDBACK_LOOPS.md, one row per feedback loop with a test that fails when a signal
+has no row; and the `/product-owner` skill, on demand only, with one Fable assessment, and its
+first run in doc/log/product-owner/2026-09-30.md.
+
+**Learned about the sandbox:** Patrick's walks run on the `walk` stack at
+turin.humboldt-mine.ts.net:8898 through Tailscale, restarted with the start lines in its
+reset.sh, and its database is never reset mid-walk; the local model there cannot show the coach's judgement. The rules are in
+HOW_THIS_PROJECT_WORKS.md. The box answers ssh only as root.
+
+**Open**: the 15 queued rulings wait for Patrick's key; the list is STATE.md's "Next PR".
