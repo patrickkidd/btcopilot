@@ -297,7 +297,7 @@ Changes something: needs `--yes`.
 
 ### `flask admin quality replay <discussion_id> <model> <reference_diagram_id>`
 
-Replay a session's words on MODEL onto a scratch record, score it against the record Patrick corrected, and append one ledger line. Never on the box: it spends on the model and writes scratch records.
+Replay a session's words on MODEL onto a scratch record, score it against the record Patrick corrected, and append one ledger line. It spends on the model and writes scratch records.
 
 Changes something: needs `--yes`.
 
@@ -307,6 +307,27 @@ Changes something: needs `--yes`.
 | `model` | required |
 | `reference_diagram_id` | required |
 | `--cap` | Dollars; no turn starts past it. |
+| `--thinking` | How hard the coach thinks, for this replay only. |
+| `--prompt-file` | A plain prompty file that replaces the coach's main prompt for this replay only. |
+| `--turns` | At most this many turns. |
+| `--production` | Run on the production database: Patrick agreed the spend. |
+
+### `flask admin quality replay-person <user_id> <model>`
+
+Replay the words of every live coach turn one person took, oldest first, on MODEL onto one scratch record, score it against their record, and append one ledger line.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `user_id` | required |
+| `model` | required |
+| `--reference` | The diagram to score against; the person's own record when left out. |
+| `--cap` | Dollars; no turn starts past it. |
+| `--thinking` | How hard the coach thinks, for this replay only. |
+| `--prompt-file` | A plain prompty file that replaces the coach's main prompt for this replay only. |
+| `--turns` | At most this many turns. |
+| `--production` | Run on the production database: Patrick agreed the spend. |
 
 ### `flask admin questions`
 
