@@ -1412,6 +1412,20 @@ $("composer").addEventListener("keydown", (e) => {
   let next = br.nextSibling;
   while (next instanceof Text && next.data === "") next = next.nextSibling;
   if (!next) br.after(document.createTextNode("\n"));
+  // No browser scrolls a box to a caret a script put there, so the new line
+  // would open below the box's bottom edge once the box is full (FD-366).
+  const composer = e.currentTarget as HTMLElement;
+  const style = getComputedStyle(composer);
+  // a mark one line tall, set to the line's top, covers the whole new line
+  const mark = document.createElement("span");
+  mark.style.cssText = `display:inline-block;vertical-align:top;height:${style.lineHeight}`;
+  br.after(mark);
+  const below =
+    mark.getBoundingClientRect().bottom -
+    composer.getBoundingClientRect().bottom +
+    parseFloat(style.paddingBottom);
+  mark.remove();
+  if (below > 0) composer.scrollTop += Math.ceil(below);
   range.setStartAfter(br);
   range.collapse(true);
   selection.removeAllRanges();
