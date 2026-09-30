@@ -24,6 +24,7 @@ from btcopilot.models import (
     Change,
     Discussion,
     ModelCall,
+    Observation,
     Speaker,
     SpeakerType,
     Statement,
@@ -253,6 +254,65 @@ def test_show_stores_the_view_on_the_coach_statement(discussion, family):
     span = {"kind": "span", "start": "1994-01-01", "end": "1995-01-01"}
     assert event(reply, EventKind.View)["view"] == span
     assert reply["views"] == [span]
+
+
+def test_navigate_moves_the_app_and_its_line_names_the_place(discussion, family):
+    # R-0055
+    reply = run(
+        discussion,
+        "Where is the year he left?",
+        Model(called(ToolName.Navigate, address="/app/cluster/c1"), said("It is open now.")),
+    )
+    assert event(reply, EventKind.Navigate)["address"] == "/app/cluster/c1"
+    call = event(reply, EventKind.ToolCall)
+    assert call["names"] == {"it": "the cluster The year he left"}
+    assert call["refusal"] is None
+
+
+@pytest.mark.parametrize(
+    "address, reason",
+    [("/app/cluster/c9", "No cluster c9"), ("/app/nowhere", "no address in the app")],
+)
+def test_navigate_to_a_place_the_app_or_the_record_lacks_is_refused(
+    discussion, family, address, reason
+):
+    # R-0055
+    model = Model(called(ToolName.Navigate, address=address), said("I cannot open that."))
+    reply = run(discussion, "Open it.", model)
+    assert EventKind.Navigate.value not in kinds(reply)
+    refused = model.histories[-1][-1]["content"][0]
+    assert refused["is_error"] is True
+    assert reason in refused["content"]
+
+
+def test_a_report_asks_the_page_and_keeps_no_observation(discussion, family):
+    # R-0056
+    words = "I wish the picture were bigger."
+    reply = run(
+        discussion,
+        words,
+        Model(called(ToolName.Report, kind="feedback", words=words), said("Good to know.")),
+    )
+    assert event(reply, EventKind.Report)["report"] == {"kind": "feedback", "words": words}
+    assert event(reply, EventKind.ToolCall)["names"] == {}
+    assert Observation.query.count() == 0
+
+
+@pytest.mark.parametrize(
+    "args, reason",
+    [
+        ({"kind": "turn_failed", "words": "It broke."}, "not one of the kinds of report"),
+        ({"kind": "bug", "words": " "}, "own words"),
+    ],
+)
+def test_a_report_of_no_kind_or_no_words_is_refused(discussion, family, args, reason):
+    # R-0056
+    model = Model(called(ToolName.Report, **args), said("Noted."))
+    reply = run(discussion, "The app keeps freezing.", model)
+    assert EventKind.Report.value not in kinds(reply)
+    refused = model.histories[-1][-1]["content"][0]
+    assert refused["is_error"] is True
+    assert reason in refused["content"]
 
 
 def test_the_coach_is_handed_a_map_of_the_record_and_what_the_user_pointed_at(

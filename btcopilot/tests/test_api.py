@@ -12,7 +12,7 @@ from btcopilot.models import Author, Change, Discussion, Interaction, Statement
 from btcopilot.models.interaction import InteractionKind
 from btcopilot.models import Diagram, License, Policy
 from btcopilot.models.license import LicenseStatus
-from btcopilot.models.preferences import ChatMode, PrefKey, Proactive, Spotlight, Theme
+from btcopilot.models.preferences import BugReports, ChatMode, PrefKey, Proactive, Spotlight, Theme
 from btcopilot.schema import (
     Cluster,
     DateCertainty,
@@ -27,11 +27,6 @@ from btcopilot.schema import (
 )
 from btcopilot.tests.conftest import csrf_token, replied, version
 from btcopilot.toolbox import ToolName, Toolbox
-
-
-@pytest.fixture(autouse=True)
-def no_auto_auth(monkeypatch):
-    monkeypatch.delenv("FLASK_AUTO_AUTH_USER", raising=False)
 
 
 @pytest.fixture
@@ -352,6 +347,9 @@ def test_preferences_defaults(web, test_user):
         PrefKey.Mode.value: ChatMode.Text.value,
         PrefKey.Theme.value: Theme.System.value,
         PrefKey.Spotlight.value: Spotlight.Unified.value,
+        PrefKey.HowItWorks.value: True,
+        PrefKey.LineHint.value: True,
+        PrefKey.BugReports.value: BugReports.Ask.value,
         "first_name": test_user.first_name,
         "last_name": test_user.last_name,
         "birthdate": None,

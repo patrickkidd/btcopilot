@@ -40,6 +40,9 @@ export interface CodingHandlers {
 /** The list button on the coding screen's own picture. */
 const LIST_ID = "coding-list";
 
+/** Under the first line a coder ever taps, once per person. */
+const LINE_HINT = "Type what this line tells you happened, then send.";
+
 const PLACEHOLDER = {
   none: "tap a line, then say what happened",
   picked: "say what this line tells you happened",
@@ -64,6 +67,7 @@ export class Coding {
   private picked: number | null = null;
   private drawer: Menu | null = null;
   private sending = false;
+  private hint = false;
   private picture: Picture;
   private pbp: Drawer;
   /** Wide enough for the drawer to stand beside the thread; narrower and it
@@ -117,7 +121,12 @@ export class Coding {
   /** Open one coding: its conversation, and the record it is being coded
    * onto. */
   async open(codingId: number, atStatement?: number): Promise<void> {
-    this.thread = await api.codingThread(codingId);
+    const [thread, prefs] = await Promise.all([
+      api.codingThread(codingId),
+      api.preferences(),
+    ]);
+    this.thread = thread;
+    this.hint = prefs.line_hint;
     this.picked = null;
     // The drawer edits the record this coding is of, never the coder's own
     // family, so it is built on that record's id (R-0267).
@@ -198,7 +207,7 @@ export class Coding {
     this.sheet.classList.add("in");
   }
 
-  private close(): void {
+  close(): void {
     this.scrim.classList.remove("in");
     this.sheet.classList.remove("in");
     window.setTimeout(() => {
@@ -281,6 +290,11 @@ export class Coding {
     }
     this.picked = turnId;
     this.paint();
+    if (this.hint) {
+      this.hint = false;
+      this.after(turnId, el("div", "abv", esc(LINE_HINT)), turnId);
+      void api.setPreferences({ line_hint: false });
+    }
   }
 
   private paint(): void {
@@ -340,6 +354,8 @@ export class Coding {
       return;
     }
     const turn = this.picked;
+    // the hint under the first line tapped has been followed
+    this.list.querySelector(".abv")?.remove();
     this.composer.innerHTML = "";
     const side = this.side(turn);
     this.after(turn, el("div", `bub said${side}`, esc(said)), turn);

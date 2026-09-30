@@ -1,19 +1,21 @@
 import * as api from "./api";
 import { Feature, tap } from "./track";
-import { $, closeX, el, esc, isAdmin } from "./dom";
+import { $, closeX, el, esc, flash, isAdmin } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
-import { meetingTitle, periodLabel, rowDate } from "./when";
+import { periodLabel, rowDate } from "./when";
 import { matching, sessionTitle, type Family } from "./search";
-import { SessionKind, type Diagram, type Session } from "./types";
+import { SessionKind, type Session } from "./types";
 import { PRO } from "./pro";
 import { Recording } from "./recording";
 import { Swipe } from "./swipe";
 
-/** The session door: the button beside the message box, and the searchable
- * bottom sheet it raises. The sessions of the family the app is on, newest
- * first under a heading per day; the family itself is chosen on the account
- * page, never here. */
+/** The sheet beside the message box, and the button that raises it, for those
+ * with work in it: a professional's notes and recordings, and for Patrick the
+ * family's conversations, to rename or delete one. Nobody opens or starts a
+ * conversation here; the family has one thread. Coding, the meeting and the
+ * replies picked blind are reached from the account view, since none of them
+ * hangs on the family the app is on. */
 
 const TITLE_CAP = 120;
 const DAY_HEADINGS = new Set(["Today", "Yesterday"]);
@@ -23,37 +25,31 @@ const OPEN_DRAG = 40;
 const CLOSE_DRAG = 90;
 const PRESS_MS = 500;
 
+/** When a session happened: a recording's own day, else when it was last
+ * spoken in. */
+export const sessionWhen = (session: Session): Date =>
+  new Date(session.date ? `${session.date}T12:00:00` : session.last_activity);
+
 export interface SessionsHandlers {
-  /** Open a session: the chat swaps to its statements. */
-  onPick(session: Session): void;
-  /** The app moved to another family. */
-  onDiagram(diagram: Diagram, how: { switched: boolean }): void;
-  /** The sessions as last read, so an event tracing back to the one that coded
-   * it can name it. */
-  onList(sessions: Session[]): void;
-  /** The coder's one task, reached from the foot of the sheet (R-0265). */
-  onTask(): void;
-  /** Patrick putting a conversation on the agenda: it opens so he can place
-   * the cut (R-0267). Admins only. */
-  onAgenda(session: Session): void;
-  /** The agenda itself, which is Patrick's whole administration (R-0259). */
-  onAgendaScreen(): void;
-  /** Two replies to the same words, picked blind (R-0599). Admins only. */
-  onPairs(): void;
+  /** A professional's new note or recording, which joins the thread. */
+  onMade(session: Session): void;
+  /** The drawer came up or went down, so the address says so. */
+  onMoved(): void;
 }
 
 
 export class Sessions {
   private families: Family[] = [];
-  private current: number | null = null;
   private filter = "";
+  /** On a search, each session where something said carries the words, and
+   * the newest line that does, which stands under its title. */
+  private lines = new Map<number, string>();
   private open = false;
   private drag: { kind: "open" | "close"; y0: number; dy: number } | null = null;
-  /** Only Patrick puts a conversation on the agenda, so only he is offered it. */
+  /** Only Patrick sees the family's conversations listed. */
   private admin = isAdmin();
-  /** Raised from the agenda, a tapped row goes on the agenda instead of
-   * opening in the chat (R-0267). */
-  private adding = false;
+  /** Whether the sheet holds anything for this reader, and so has a door. */
+  readonly door = this.admin || PRO;
 
   private scrim = el("div", "fs-scrim");
   private sheet = el(
@@ -65,12 +61,9 @@ export class Sessions {
               aria-label="Search sessions">
      </div>
      <div class="fs-body"></div>
-     <div class="fs-foot"><button class="fs-new" type="button"></button>
+     <div class="fs-foot">
        <button class="fs-new fs-upload" type="button" hidden>Upload a recording</button>
-       <button class="fs-new fs-note" type="button" hidden>+ new note</button>
-       <button class="fs-task" type="button" hidden></button>
-       <button class="fs-task fs-agenda" type="button" hidden>Next meeting</button>
-       <button class="fs-task fs-pairs" type="button" hidden>Compare replies</button></div>`,
+       <button class="fs-new fs-note" type="button" hidden>+ new note</button></div>`,
   );
 
   private body: HTMLElement;
@@ -78,12 +71,8 @@ export class Sessions {
    * the long press. */
   private swipe: Swipe;
   private search: HTMLInputElement;
-  private newButton: HTMLButtonElement;
   private uploadButton: HTMLButtonElement;
   private noteButton: HTMLButtonElement;
-  private taskButton: HTMLButtonElement;
-  private agendaButton: HTMLButtonElement;
-  private pairsButton: HTMLButtonElement;
   private recording: Recording;
 
   constructor(
@@ -102,61 +91,32 @@ export class Sessions {
     this.body = this.sheet.querySelector<HTMLElement>(".fs-body")!;
     this.swipe = new Swipe(this.body, ".row", () => ({
       html:
-        (this.admin
-          ? `<button class="fs-act tbl" type="button">Put on the agenda</button>`
-          : "") +
         `<button class="fs-act ren" type="button">Rename</button>` +
         `<button class="fs-act del" type="button">Delete</button>`,
-      wide: this.admin,
+      wide: false,
     }));
     this.search = this.sheet.querySelector<HTMLInputElement>(".fs-search input")!;
-    this.newButton = this.sheet.querySelector<HTMLButtonElement>(".fs-new")!;
+    this.search.parentElement!.hidden = this.body.hidden = !this.admin;
     this.uploadButton = this.sheet.querySelector<HTMLButtonElement>(".fs-upload")!;
     this.noteButton = this.sheet.querySelector<HTMLButtonElement>(".fs-note")!;
-    this.taskButton = this.sheet.querySelector<HTMLButtonElement>(".fs-task")!;
-    this.agendaButton = this.sheet.querySelector<HTMLButtonElement>(".fs-agenda")!;
-    this.agendaButton.hidden = !this.admin;
-    this.pairsButton = this.sheet.querySelector<HTMLButtonElement>(".fs-pairs")!;
-    this.pairsButton.hidden = !this.admin;
-    if (this.admin) void this.nameAgenda();
     this.uploadButton.hidden = !PRO;
     this.noteButton.hidden = !PRO;
-    this.recording = new Recording(this.overlay, (made) => {
-      this.current = made.id;
-      this.handlers.onPick(made);
-    });
+    this.recording = new Recording(this.overlay, (made) => this.handlers.onMade(made));
     this.wire();
     dragScroll(this.body);
   }
 
-  /** Raise the sheet from the agenda to put another conversation on it. */
-  show(): void {
-    this.adding = true;
-    void this.raise(false);
-  }
-
-  /** The way to the coding task, when the signed-in coder has one. */
-  task(label: string | null): void {
-    this.taskButton.hidden = label === null;
-    this.taskButton.textContent = label ?? "";
-  }
-
-  /** The record the sheet lists, re-read whenever the chat has moved on. The
-   * family the app is on comes first; the rest follow by recency. */
-  async load(currentId: number | null): Promise<void> {
-    this.current = currentId;
+  /** The conversations of the family the app is on, read as the sheet rises. */
+  private async load(): Promise<void> {
     const diagrams = await api.diagrams();
-    const lists = await Promise.all(
-      diagrams.map((diagram) => api.sessionIndex(diagram.id)),
-    );
-    const fresh = diagrams
-      .map((diagram, i) => ({ diagram, sessions: lists[i] }))
-      .sort((a, b) => Number(b.diagram.current) - Number(a.diagram.current));
+    const diagram = diagrams.find((d) => d.current) ?? diagrams[0];
+    const fresh = diagram
+      ? [{ diagram, sessions: await api.sessionIndex(diagram.id) }]
+      : [];
     // Newest first, except while the sheet is up: a list must not reorder under
     // the reader's thumb because a reply landed (ratified behaviour). New
     // sessions join at the end of their family until the sheet is closed.
     this.families = this.open ? fresh.map((f) => this.held(f)) : fresh;
-    this.handlers.onList(this.families.flatMap((f) => f.sessions));
     if (this.open) this.render();
   }
 
@@ -179,15 +139,6 @@ export class Sessions {
     return this.families.find((f) => f.diagram.current) ?? this.families[0];
   }
 
-  /** The way in to the agenda is named by the meeting it is for, the same words
-   * the agenda screen's own title carries. */
-  private async nameAgenda(): Promise<void> {
-    const cuts = await api.onAgenda();
-    this.agendaButton.textContent = meetingTitle(
-      cuts.find((cut) => cut.meeting_date)?.meeting_date ?? null,
-    );
-  }
-
   private find(id: number): Session | undefined {
     for (const family of this.families) {
       const found = family.sessions.find((s) => s.id === id);
@@ -199,18 +150,11 @@ export class Sessions {
   private wire(): void {
     this.button.addEventListener("click", () => {
       tap(Feature.OpenSessions);
-      void this.raise(false);
+      void this.raise(true);
     });
     this.scrim.addEventListener("click", () => this.lower());
     this.sheet.querySelector(".cardx")!.addEventListener("click", () => this.lower());
-    this.search.addEventListener("input", () => {
-      this.filter = this.search.value;
-      this.render();
-    });
-    this.newButton.addEventListener("click", () => {
-      tap(Feature.SessionNew);
-      void this.start();
-    });
+    this.search.addEventListener("input", () => void this.seek());
     // One sheet is up at a time: the upload sheet takes the sessions sheet's
     // place rather than standing on top of it.
     this.uploadButton.addEventListener("click", () => {
@@ -220,22 +164,7 @@ export class Sessions {
     });
     this.noteButton.addEventListener("click", () => {
       tap(Feature.NoteNew);
-      void this.start(SessionKind.Note);
-    });
-    this.taskButton.addEventListener("click", () => {
-      tap(Feature.TaskOpen);
-      this.lower();
-      this.handlers.onTask();
-    });
-    this.agendaButton.addEventListener("click", () => {
-      tap(Feature.AgendaOpen);
-      this.lower();
-      this.handlers.onAgendaScreen();
-    });
-    this.pairsButton.addEventListener("click", () => {
-      tap(Feature.PairsOpen);
-      this.lower();
-      this.handlers.onPairs();
+      void this.note();
     });
     this.body.addEventListener("click", (e) => this.onBodyClick(e));
     this.pressToRename();
@@ -248,11 +177,7 @@ export class Sessions {
     if (action) {
       e.stopPropagation();
       const row = action.closest<HTMLElement>(".row")!;
-      if (action.classList.contains("tbl")) {
-        tap(Feature.SessionToAgenda);
-        this.swipe.close();
-        this.openAgenda(row);
-      } else if (action.classList.contains("ren")) {
+      if (action.classList.contains("ren")) {
         tap(Feature.SessionRename);
         this.swipe.close();
         this.rename(row);
@@ -265,35 +190,14 @@ export class Sessions {
     // a tap anywhere else puts an open row's actions away rather than firing
     if (this.swipe.claims()) return;
     const row = target.closest<HTMLElement>(".row");
-    if (!row || row.querySelector("input.rename")) return;
-    if (target.closest(".rmore")) {
-      this.swipe.open(row, false);
-      return;
-    }
-    if (this.adding) {
-      tap(Feature.SessionToAgenda);
-      this.openAgenda(row);
-      return;
-    }
-    tap(Feature.SessionOpen);
-    this.pick(row);
-  }
-
-  /** Patrick's swipe action: the conversation opens so he can place the cut
-   * everyone will code up to. */
-  private openAgenda(row: HTMLElement): void {
-    const session = this.find(Number(row.dataset.id));
-    if (!session) return;
-    this.lower();
-    this.handlers.onAgenda(session);
+    if (row && target.closest(".rmore")) this.swipe.open(row, false);
   }
 
   private async remove(row: HTMLElement): Promise<void> {
     const session = this.find(Number(row.dataset.id));
     if (!session) return;
     await api.deleteSession(session.id);
-    if (this.current === session.id) this.current = null;
-    await this.load(this.current);
+    await this.load();
     this.render();
   }
 
@@ -317,7 +221,7 @@ export class Sessions {
     this.inbar.addEventListener(
       "pointerdown",
       (e) => {
-        if (this.open) return;
+        if (this.open || !this.door) return;
         this.drag = { kind: "open", y0: at(e as PointerEvent), dy: 0 };
       },
       true,
@@ -337,7 +241,7 @@ export class Sessions {
       this.drag = null;
       if (!drag) return;
       if (drag.kind === "open") {
-        if (drag.dy <= -OPEN_DRAG) void this.raise(true);
+        if (drag.dy <= -OPEN_DRAG) void this.raise(false);
         return;
       }
       this.sheet.style.transition = "";
@@ -348,11 +252,34 @@ export class Sessions {
     this.overlay.addEventListener("pointercancel", settle);
   }
 
-  private async raise(viaDrag: boolean): Promise<void> {
+  /** Whether the drawer is up. */
+  get up(): boolean {
+    return this.open;
+  }
+
+  /** The drawer up from wherever the app is, and one session's row in it lit,
+   * the way a message is lit in the thread (R-0055). */
+  async show(id: number | null): Promise<void> {
+    await this.raise(false);
+    if (id === null) return;
+    if (this.filter) {
+      this.search.value = this.filter = "";
+      this.render();
+    }
+    const row = this.body.querySelector<HTMLElement>(`.row[data-id="${id}"]`);
+    if (row) flash(row);
+    else toast("That session is not in the list");
+  }
+
+  /** Up on a tap of its door with the search ready to type in; a drag or an
+   * address brings it up without the keyboard. */
+  private async raise(focus: boolean): Promise<void> {
     if (this.open) return;
     this.open = true;
-    await this.load(this.current);
-    this.render();
+    if (this.admin) {
+      await this.load();
+      this.render();
+    }
     this.body.scrollTop = 0;
     this.scrim.hidden = false;
     this.sheet.hidden = false;
@@ -361,13 +288,20 @@ export class Sessions {
     this.sheet.classList.add("in");
     this.screen.style.transformOrigin = "50% 0";
     this.screen.style.transform = "scale(.96)";
-    if (!viaDrag) this.search.focus({ preventScroll: true });
+    if (focus && this.admin) this.search.focus({ preventScroll: true });
+    this.handlers.onMoved();
+  }
+
+  /** The sessions drawer and the upload panel it hands over to, both put away. */
+  close(): void {
+    this.lower();
+    this.recording.lower();
   }
 
   private lower(): void {
     if (!this.open) return;
     this.open = false;
-    this.adding = false;
+    this.handlers.onMoved();
     this.swipe.close();
     this.drag = null;
     this.sheet.style.transition = "";
@@ -382,12 +316,24 @@ export class Sessions {
     }, 280);
   }
 
+  /** The words typed, looked for in what was said as well as in the titles.
+   * The server reads what was said, with the coach's own search; an answer
+   * for words since typed over is dropped. */
+  private async seek(): Promise<void> {
+    const words = this.search.value;
+    const home = this.home();
+    const found = home && words.trim() ? await api.sessionSearch(home.diagram.id, words) : [];
+    if (words !== this.search.value) return;
+    this.filter = words;
+    this.lines = new Map(found.map((s) => [s.id, s.match!]));
+    this.render();
+  }
+
   private render(): void {
     const home = this.home();
-    this.newButton.textContent = `New session with ${home?.diagram.name ?? "your family"}`;
     const now = new Date();
     const searching = !!this.filter.trim();
-    const rows = home ? matching(home, this.filter).rows : [];
+    const rows = home ? matching(home, this.filter, new Set(this.lines.keys())).rows : [];
 
     let html = "";
     let period = "";
@@ -416,18 +362,15 @@ export class Sessions {
     this.body.scrollTop = top;
   }
 
-  /** A row the way a notes or messages list draws one: the title, then one
-   * grey line with the day and the first thing the client said. A recording
-   * or a note says which it is in that line. */
   /** A row the way a messages list draws one: the title with the day small
-   * at its right, then two lines of what the client first said. */
+   * at its right, then two lines of what the client first said, or on a
+   * search the line that carries the words. */
   private rowHtml(session: Session, now: Date, period: string): string {
-    const when = new Date(session.date ? `${session.date}T12:00:00` : session.last_activity);
     // inside Today and Yesterday the heading already says the day
-    const day = DAY_HEADINGS.has(period) ? "" : rowDate(when, now);
-    const said = session.preview ?? (session.kind === SessionKind.Chat ? "Nothing said yet" : `A ${session.kind} with nothing in it yet`);
+    const day = DAY_HEADINGS.has(period) ? "" : rowDate(sessionWhen(session), now);
+    const said = this.lines.get(session.id) ?? session.preview ?? (session.kind === SessionKind.Chat ? "Nothing said yet" : `A ${session.kind} with nothing in it yet`);
     return (
-      `<div class="row${session.id === this.current ? " cur" : ""}" data-id="${session.id}">` +
+      `<div class="row" data-id="${session.id}">` +
       `<div class="rmain">` +
       `<div class="rhead"><div class="r1 rtitle">${esc(sessionTitle(session))}</div>` +
       `<div class="rday">${esc(day)}</div></div>` +
@@ -438,34 +381,18 @@ export class Sessions {
     );
   }
 
-  private pick(row: HTMLElement): void {
-    const session = this.find(Number(row.dataset.id));
-    if (!session) return;
-    row.classList.add("tint");
+  /** A professional's note is a session of its own (R-0281), on the family
+   * the app is on. A second one is refused while the last is still empty: two
+   * empty notes say nothing the first does not. */
+  private async note(): Promise<void> {
+    const [last] = await api.sessionIndex();
     this.lower();
-    this.current = session.id;
-    this.handlers.onPick(session);
-  }
-
-  /** A new session is refused while the one you are in has nothing in it: two
-   * empty sessions say nothing the first one does not. It starts on the family
-   * the app is on, because that is the diagram the coach writes to. */
-  private async start(kind: SessionKind = SessionKind.Chat): Promise<void> {
-    const home = this.home();
-    const current = this.current === null ? undefined : this.find(this.current);
-    // two empty sessions of one kind say nothing the first does not; a note
-    // beside an empty session is a different thing and is allowed
-    if (current && current.kind === kind && current.message_count === 0) {
-      this.lower();
+    if (last?.kind === SessionKind.Note && last.message_count === 0) {
       toast("Still empty — say something first");
       $("composer").focus({ preventScroll: true });
       return;
     }
-    const session = await api.newSession(kind);
-    if (home) home.sessions = [session, ...home.sessions];
-    this.current = session.id;
-    this.lower();
-    this.handlers.onPick(session);
+    this.handlers.onMade(await api.newSession(SessionKind.Note));
   }
 
   private rename(row: HTMLElement): void {

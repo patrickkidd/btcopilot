@@ -1,12 +1,19 @@
 /// <reference types="vitest" />
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync } from "node:fs";
 import { request as ask } from "node:http";
 import { defineConfig, type Plugin, type ProxyOptions } from "vite";
+import { parse } from "./src/place";
 
 // Flask serves the bundle through the app blueprint's static folder and the
 // built index.html as the page, so the files keep Vite's hashed names: a new
 // release is never answered from a cached file of the same name.
 const BASE = "/app/static/web/";
+
+/** Where the build keeps the bundle's source maps, one folder per release,
+ * outside the folder the server serves: a stack from a bug report is read
+ * against them, and nobody else ever fetches them. The release workflow names
+ * the release and keeps its folder with the run. */
+const MAPS = new URL(`./sourcemaps/${process.env.RELEASE ?? "local"}/`, import.meta.url).pathname;
 
 /** The sandbox this dev server borrows its server from. */
 const FLASK = process.env.FLASK_URL ?? "http://127.0.0.1:8890";
@@ -84,10 +91,20 @@ function page(): Plugin {
   return {
     name: "fd-dev-page",
     apply: "serve",
+    // Vite's dev server puts its base in front of every root path in the page,
+    // the server's own among them, which the build leaves alone: the manifest
+    // and the touch icon go back to the addresses the built page has.
+    transformIndexHtml: {
+      order: "post",
+      handler: (html) => html.replaceAll(`"${BASE}app/`, `"/app/`),
+    },
     configureServer(server) {
       server.middlewares.use(async (request, response, next) => {
         const url = (request.url ?? "").split("?")[0];
-        if (url !== "/app/" && url !== "/app") return next();
+        // the page itself, and any address in the app opened as a page
+        // (R-0055), which the server would answer with the built page
+        const opened = request.headers["sec-fetch-dest"] === "document" && parse(url);
+        if (url !== "/app/" && url !== "/app" && !opened) return next();
         const from = await fromServer(request.headers);
         for (const cookie of from.cookies) response.appendHeader("Set-Cookie", cookie);
         if (from.status !== 200) {
@@ -120,6 +137,29 @@ export default defineConfig({
   plugins: [
     page(),
     {
+      // The worker from this repo at the path the server gives it, where its
+      // scope covers the app, rather than from the last build.
+      name: "fd-dev-worker",
+      apply: "serve",
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if ((req.url ?? "").split("?")[0] !== "/app/sw.js") return next();
+          res.setHeader("Content-Type", "text/javascript");
+          res.end(readFileSync(new URL("./public/sw.js", import.meta.url)));
+        });
+      },
+    },
+    {
+      name: "fd-source-maps",
+      apply: "build",
+      writeBundle({ dir }, bundle) {
+        rmSync(MAPS, { recursive: true, force: true });
+        mkdirSync(MAPS, { recursive: true });
+        for (const file of Object.keys(bundle).filter((name) => name.endsWith(".map")))
+          renameSync(`${dir}/${file}`, `${MAPS}${file.split("/").pop()}`);
+      },
+    },
+    {
       // iOS only offers to install the dev CA when it arrives as a certificate.
       name: "dev-ca-type",
       configureServer(server) {
@@ -134,6 +174,8 @@ export default defineConfig({
   build: {
     outDir: "../btcopilot/static/web",
     emptyOutDir: true,
+    // made, but never named in the bundle, and moved out of what is served
+    sourcemap: "hidden",
   },
   server: {
     host: "0.0.0.0",

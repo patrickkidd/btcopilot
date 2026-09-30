@@ -80,7 +80,7 @@ test.describe(() => {
     // a noted event added, then deleted
     const b2 = changes(d).length;
     await tap(page, page.locator("#menu-add"));
-    const ed = page.locator("#menu-body .editor").first();
+    const ed = page.locator("#add-sheet .editor");
     await tap(page, ed.locator('.segs[data-name=kind] .seg[data-value="noted"]'));
     await ed.locator("[data-name=description]").fill(`Added by hand ${info.project.name}`);
     const post = page.waitForResponse(
@@ -105,7 +105,7 @@ test.describe(() => {
     // a noted event with no words is stopped on the page
     const b5 = changes(d).length;
     await tap(page, page.locator("#menu-add"));
-    const e5 = page.locator("#menu-body .editor").first();
+    const e5 = page.locator("#add-sheet .editor");
     await tap(page, e5.locator('.segs[data-name=kind] .seg[data-value="noted"]'));
     await tap(page, e5.locator(".save"));
     await page.waitForTimeout(600);
@@ -120,7 +120,7 @@ test.describe(() => {
       if (r.method() === "POST" && /\/app\/events(\?|$)/.test(r.url())) posts.push(r.url());
     });
     await tap(page, page.locator("#menu-add"));
-    const e6 = page.locator("#menu-body .editor").first();
+    const e6 = page.locator("#add-sheet .editor");
     await tap(page, e6.locator('.segs[data-name=kind] .seg[data-value="shift"]'));
     await e6.locator("[data-name=description]").fill("Shift that moved nothing");
     await tap(page, e6.locator(".save"));
@@ -129,7 +129,7 @@ test.describe(() => {
     await page.screenshot({ path: info.outputPath("refused.png") });
     expect(posts.length).toBe(0);
     expect((await e6.locator(".refused").allInnerTexts()).join(" ")).toMatch(/shift needs/);
-    expect(await page.locator("#menu-body .editor").count()).toBe(1);
+    expect(await page.locator("#add-sheet .editor").count()).toBe(1);
     expect(bad.slice(n)).toEqual([]);
 
     // a refusal the server still sends is said in plain words, and goes the
@@ -151,7 +151,7 @@ test.describe(() => {
     ]);
     await e6.locator("[data-name=endDateTime]").fill("2021-01-01");
     expect(await e6.locator(".refused").count()).toBe(0);
-    expect(await page.locator("#menu-body .editor").count()).toBe(1);
+    expect(await page.locator("#add-sheet .editor").count()).toBe(1);
     expect(bad.slice(m).filter((b) => !b.startsWith("http 400"))).toEqual([]);
     expect(clean).toEqual([]);
     expect.soft(deadTaps, "every tap changes the page").toEqual([]);

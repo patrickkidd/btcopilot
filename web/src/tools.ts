@@ -1,6 +1,7 @@
 import { esc } from "./dom";
+import { pill } from "./chips";
 import { when } from "./rows";
-import { QuestionOutcome, QuestionState, type ToolCall, ViewKind } from "./types";
+import { ChipKind, ChipTone, QuestionOutcome, QuestionState, type ToolCall, ViewKind } from "./types";
 
 /** What a tool call says in plain words, as the one line the chat shows for it,
  * live and after a reload (R-0478). The line names what the call touched, by
@@ -26,6 +27,7 @@ export enum ToolName {
   AddImpression = "add_impression",
   SetImpression = "set_impression",
   ReadImpressions = "read_impressions",
+  Navigate = "navigate",
 }
 
 const FIELD = new Map([
@@ -59,8 +61,9 @@ const DATES = new Set(["date", "end_date"]);
 const LONG = new Set(["notes", "summary"]);
 
 /** A line is words and the names of what they act on, which are set apart
- * from the words around them. */
-type Part = string | { name: string };
+ * from the words around them. A name with a place is a chip that goes there,
+ * so a place the coach moved the app to can be gone to again (R-0055). */
+type Part = string | { name: string; place?: string };
 export type Line = Part[];
 
 const named = (name: string): Part => ({ name });
@@ -76,8 +79,14 @@ const list = (names: string[]): Line => join(names.map((name) => [named(name)]),
 export const text = (line: Line): string =>
   line.map((part) => (typeof part === "string" ? part : part.name)).join("");
 
-export const html = (line: Line): string =>
-  line.map((part) => (typeof part === "string" ? esc(part) : `<em>${esc(part.name)}</em>`)).join("");
+const part = (one: Part): string => {
+  if (typeof one === "string") return esc(one);
+  if (one.place === undefined) return `<em>${esc(one.name)}</em>`;
+  const chip = { kind: ChipKind.Place, target: one.place, label: one.name, tone: ChipTone.Data, bare: false };
+  return pill(chip, one.name);
+};
+
+export const html = (line: Line): string => line.map(part).join("");
 
 function said({ args, names }: ToolCall, arg: string): Line {
   const name = names[arg];
@@ -157,6 +166,7 @@ enum Verb {
   LetGo = "let go of",
   Note = "note",
   TakeBack = "take back",
+  Open = "open",
 }
 const DID = new Map([
   [Verb.Look, "Looked at"],
@@ -170,6 +180,7 @@ const DID = new Map([
   [Verb.LetGo, "Let go of"],
   [Verb.Note, "Noted"],
   [Verb.TakeBack, "Took back"],
+  [Verb.Open, "Opened"],
 ]);
 
 /** How a question the coach closed ended, said after its words; the
@@ -220,7 +231,7 @@ function kept(say: Kept, call: ToolCall): [Verb, Line] {
 }
 
 function told(tool: ToolName, call: ToolCall): [Verb, Line] {
-  const it = named(call.names.it as string);
+  const it = { name: call.names.it as string };
   switch (tool) {
     case ToolName.ReadPeople:
       return [Verb.Look, ["people"]];
@@ -249,6 +260,11 @@ function told(tool: ToolName, call: ToolCall): [Verb, Line] {
     case ToolName.AddImpression:
     case ToolName.SetImpression:
       return kept(IMPRESSION, call);
+    case ToolName.Navigate:
+      return [
+        Verb.Open,
+        [call.refusal ? it : { name: it.name, place: call.args.address as string }],
+      ];
     default:
       return call.args.id === undefined
         ? [Verb.Add, join([[it], ...added(call)], ", ")]

@@ -66,6 +66,16 @@ class UserDataFilter(logging.Filter):
         return True
 
 
+class RequestIdFilter(logging.Filter):
+    """Every line logged while a request is served names that request: the id
+    its response carries, which the page reports when the server broke on it
+    [Oracle: R-0056]. A line outside a served request has none."""
+
+    def filter(self, record):
+        record.request_id = g.get("request_id", "-") if has_request_context() else "-"
+        return True
+
+
 class DatadogJSONFormatter(logging.Formatter):
     """
     A simple JSON formatter that turns log records into JSON strings.
@@ -88,6 +98,7 @@ class DatadogJSONFormatter(logging.Formatter):
             "date": time_2_iso8601(record.created),
             "status": record.levelname,
             "message": record.getMessage(),
+            "request_id": record.request_id,
             "btcopilot": {
                 "version": __version__,
             },
@@ -178,23 +189,25 @@ def init_datadog(app):
         datadogHandler.setLevel(logging.DEBUG)
         datadogHandler.setFormatter(DatadogJSONFormatter())
         datadogHandler.addFilter(UserDataFilter())
+        datadogHandler.addFilter(RequestIdFilter())
         logger.addHandler(datadogHandler)
 
     if not has_console:
         console = logging.StreamHandler(sys.stdout)
         console.setLevel(logging.INFO)
+        console.addFilter(RequestIdFilter())
         if sys.stdout.isatty():
             import colorlog
 
             console.setFormatter(
                 colorlog.ColoredFormatter(
-                    "[%(asctime)s] %(log_color)s%(levelname)s%(reset)s in %(module)s: %(message)s"
+                    "[%(asctime)s] %(log_color)s%(levelname)s%(reset)s in %(module)s [%(request_id)s]: %(message)s"
                 )
             )
         else:
             console.setFormatter(
                 logging.Formatter(
-                    "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
+                    "[%(asctime)s] %(levelname)s in %(module)s [%(request_id)s]: %(message)s"
                 )
             )
         logger.addHandler(console)
@@ -299,8 +312,9 @@ def init_logging(app: Flask):
     global ai_log
 
     ai_handler = logging.FileHandler("ai_log.txt")
-    formatter = logging.Formatter("%(asctime)s - %(message)s")
+    formatter = logging.Formatter("%(asctime)s - %(request_id)s - %(message)s")
     ai_handler.setFormatter(formatter)
+    ai_handler.addFilter(RequestIdFilter())
     ai_log.addHandler(ai_handler)
     ai_log.propagate = False
 
@@ -323,8 +337,11 @@ def init_logging(app: Flask):
             ),
         )
         mail_handler.setLevel(logging.ERROR)
+        mail_handler.addFilter(RequestIdFilter())
         mail_handler.setFormatter(
-            logging.Formatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s")
+            logging.Formatter(
+                "[%(asctime)s] %(levelname)s in %(module)s [%(request_id)s]: %(message)s"
+            )
         )
         app.logger.addHandler(mail_handler)
 
@@ -364,10 +381,18 @@ def init_celery(app):
     # Register tasks only once
     if not hasattr(celery, "_tasks_registered"):
 
-        from btcopilot import shadow, turns
-        from btcopilot.review import tasks as review_tasks
+        from btcopilot import proactive, shadow, turns
+        from btcopilot.review import reminders, tasks as review_tasks
 
         celery.task(turns.run, name=turns.TASK)
+        # the coders' reminders ride the coach's run, one schedule for both
+        celery.task(reminders.run, name=proactive.TASK)
+        celery.conf.beat_schedule = {
+            proactive.TASK: {
+                "task": proactive.TASK,
+                "schedule": app.config["PROACTIVE_EVERY_S"],
+            }
+        }
         celery.task(shadow.run, name=shadow.TASK)
         # a shadow waits on its own worker, never ahead of a real turn
         celery.conf.task_routes = {shadow.TASK: {"queue": shadow.QUEUE}}

@@ -10,9 +10,12 @@ the call fails with words the model can act on [Oracle: R-0075].
 import datetime
 import enum
 import logging
+import re
 
-from btcopilot import clusters, prompts, record, views
-from btcopilot.models import Author, Change, Discussion, Statement
+from sqlalchemy import or_
+
+from btcopilot import clusters, place, proactive, prompts, record, views
+from btcopilot.models import Author, Change, Discussion, ReportKind, Statement
 from btcopilot.recordtext import (
     change_line,
     date_text,
@@ -66,6 +69,10 @@ class ToolName(enum.StrEnum):
     SetImpression = "set_impression"
     ReadImpressions = "read_impressions"
     CoachNotes = "coach_notes"
+    SearchChat = "search_chat"
+    FollowUp = "follow_up"
+    Navigate = "navigate"
+    Report = "report"
 
 
 class Register(enum.StrEnum):
@@ -92,7 +99,14 @@ READS = (
     ToolName.ReadImpressions,
 )
 
+# Tools that change nothing, whose answers are not kept with the turn: the
+# record may have moved since, and the chat can be searched again.
+LOOKUPS = (*READS, ToolName.SearchChat)
+
 CHANGES_SHOWN = 10
+SEARCH_SHOWN = 8
+# How much of a long message a search hit shows, around where it matched.
+SEARCH_CUT = 300
 
 # The kinds of thing a remove call can name. A question is closed instead.
 REMOVABLE = {kind.value: kind for kind in ITEM_COLLECTIONS if kind is not ItemKind.Question}
@@ -535,6 +549,102 @@ def schemas() -> list[dict]:
             },
         },
         {
+            "name": ToolName.SearchChat.value,
+            "description": (
+                "Search what the person and you have said in every one of their "
+                "sessions on this family, newest first: by words, by a person in "
+                "the record, or by the days it was said. Each hit is the message's "
+                "id, the day, who said it, and its words cut short around the "
+                "match.\n\n"
+                + prompts.files().fragment("search_chat")
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "words": {
+                        "type": "string",
+                        "description": (
+                            "Words the message must all use; each matches the "
+                            "start of a word."
+                        ),
+                    },
+                    "person": {
+                        "type": "integer",
+                        "description": "A person's id: messages using their first name.",
+                    },
+                    "start": {"type": "string", "description": "Said on or after: YYYY-MM-DD"},
+                    "end": {"type": "string", "description": "Said on or before: YYYY-MM-DD"},
+                },
+            },
+        },
+        {
+            "name": ToolName.FollowUp.value,
+            "description": (
+                "Ask the person something on a later day: on that day your "
+                "question is written into their chat and they are told of it.\n\n"
+                + prompts.files().fragment("follow_up")
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "when": {"type": "string", "description": "The day: YYYY-MM-DD, after today."},
+                    "question": {"type": "string"},
+                },
+                "required": ["when", "question"],
+            },
+        },
+        {
+            "name": ToolName.Navigate.value,
+            "description": (
+                "Move the person's app to a place in it while you speak: a screen, "
+                "a list, a setting, or something in the record. Your reply carries "
+                "a button that goes there again.\n\n"
+                + prompts.files().fragment("navigate")
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "address": {
+                        "type": "string",
+                        "description": (
+                            "The place, one of: "
+                            + ", ".join(place.APP + p.value for p in place.Place)
+                            + ". :n is a number, :key a cluster's id, :day a "
+                            "meeting's YYYY-MM-DD."
+                        ),
+                    },
+                },
+                "required": ["address"],
+            },
+        },
+        {
+            "name": ToolName.Report.value,
+            "description": (
+                "Offer to send what the person said about the app to the people "
+                "who make it: the app asks them whether to send it, and nothing "
+                "is sent unless they say so.\n\n"
+                + prompts.files().fragment("report")
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "enum": [kind.value for kind in ReportKind],
+                        "description": (
+                            "bug: something in the app does not work; feedback: "
+                            "something they want changed, dislike, or wish it did."
+                        ),
+                    },
+                    "words": {
+                        "type": "string",
+                        "description": "The person's own words, as they said them.",
+                    },
+                },
+                "required": ["kind", "words"],
+            },
+        },
+        {
             "name": ToolName.CoachNotes.value,
             "description": (
                 "Your own notes for this turn, a short phrase each. They change "
@@ -591,6 +701,82 @@ def said_label(statement: Statement) -> str:
     return f"{who} said, {statement.created_at.day} {statement.created_at:%b}"
 
 
+def said_in(*where):
+    """The person's and the coach's words in the sessions `where` picks."""
+    return Statement.query.join(Discussion).filter(
+        *where,
+        Statement.text.isnot(None),
+        Statement.text != "",
+        or_(
+            Statement.speaker_id == Discussion.chat_user_speaker_id,
+            Statement.speaker_id == Discussion.chat_ai_speaker_id,
+        ),
+    )
+
+
+def said_on(diagram_id: int, user_id: int):
+    """The person's and the coach's words in any of that user's sessions on one
+    family. Another user's sessions on the same family are theirs alone."""
+    return said_in(Discussion.diagram_id == diagram_id, Discussion.user_id == user_id)
+
+
+def said_before(said: Statement):
+    """The words before these, on the family they were said about."""
+    family = said.discussion
+    return said_on(family.diagram_id, family.user_id).filter(
+        Statement.created_at < said.created_at
+    )
+
+
+def _starts(terms: list[str]) -> list[re.Pattern]:
+    return [re.compile(rf"\b{re.escape(term)}", re.I) for term in terms]
+
+
+def said_with(found, terms: list[str]) -> list[Statement]:
+    """What in `found` carries every one of the words at the start of a word,
+    newest first."""
+    starts = _starts(terms)
+    found = found.filter(
+        *(Statement.text.icontains(term, autoescape=True) for term in terms)
+    )
+    return [
+        s
+        for s in found.order_by(Statement.created_at.desc(), Statement.id.desc())
+        if all(start.search(s.text) for start in starts)
+    ]
+
+
+def excerpt(text: str, terms: list[str], cut: int = SEARCH_CUT) -> str:
+    """Words a search found, cut around the first match when they run long."""
+    if len(text) <= cut:
+        return text
+    at = min((m.start() for s in _starts(terms) if (m := s.search(text))), default=0)
+    begin = max(0, at - cut // 3)
+    after = "…" if begin + cut < len(text) else ""
+    return ("…" if begin else "") + text[begin : begin + cut] + after
+
+
+def _day(value: str) -> datetime.date:
+    try:
+        return datetime.date.fromisoformat(str(value))
+    except ValueError:
+        raise ToolError(
+            f"{value} is not a date: use YYYY-MM-DD", "A date could not be read."
+        )
+
+
+def _hit(statement: Statement, terms: list[str]) -> str:
+    """One message a search found: its id, the day, who said it, and its
+    words."""
+    who = (
+        "coach"
+        if statement.speaker_id == statement.discussion.chat_ai_speaker_id
+        else "user"
+    )
+    day = statement.created_at.date().isoformat()
+    return f"{statement.id} {day} {who}: {excerpt(statement.text, terms)}"
+
+
 class ToolError(Exception):
     """A tool call the record refused. The model reads the reason and retries;
     `plain` says why to the person reading the thread, with no ids."""
@@ -627,6 +813,7 @@ class Toolbox:
         session_id: str | None = None,
         author: Author = Author.Coach,
         statement_id: int | None = None,
+        said: Statement | None = None,
     ):
         self.diagram_id = diagram_id
         self.turn_id = turn_id
@@ -634,6 +821,9 @@ class Toolbox:
         self.session_id = session_id
         self.author = author
         self.statement_id = statement_id
+        # The words the turn answers: the chat search reads what was said
+        # before them, on the family they were said about.
+        self.said = said
         self.deltas: list[dict] = []
         self.views: list[dict] = []
         # The record versions this turn's own writes made, undo included.
@@ -693,7 +883,53 @@ class Toolbox:
     def _coach_notes(self, args: dict) -> tuple[str, None]:
         return "Kept.", None
 
+    def _search_chat(self, args: dict) -> tuple[str, None]:
+        terms = (args.get("words") or "").split()
+        if args.get("person") is not None:
+            person = self._find_person(args["person"])
+            if not person.get("name"):
+                raise ToolError(
+                    f"Person {args['person']} has no name to search for",
+                    "It searched the chat for someone with no name.",
+                )
+            terms.append(person["name"])
+        if not (terms or args.get("start") or args.get("end")):
+            raise ToolError(
+                "Search by words, a person, or the days it was said",
+                "It searched the chat for nothing.",
+            )
+        found = said_before(self.said)
+        if args.get("start"):
+            found = found.filter(Statement.created_at >= _day(args["start"]))
+        if args.get("end"):
+            found = found.filter(
+                Statement.created_at < _day(args["end"]) + datetime.timedelta(days=1)
+            )
+        hits = said_with(found, terms)
+        lines = [_hit(s, terms) for s in hits[:SEARCH_SHOWN]]
+        if len(hits) > SEARCH_SHOWN:
+            more = len(hits) - SEARCH_SHOWN
+            lines.append(f"{more} older ones matched too; narrow the days to see them.")
+        return "\n".join(lines) or "Nothing said matches.", None
+
     # ── READ ────────────────────────────────────────────────────────────────
+
+    def _follow_up(self, args: dict) -> tuple[str, None]:
+        when = _day(args["when"])
+        if when <= datetime.date.today():
+            raise ToolError(
+                f"{when} is not after today; give a later day",
+                "It set a question to ask later for a day already here.",
+            )
+        question = args["question"].strip()
+        if not question.endswith("?"):
+            raise ToolError(
+                "Word it as the question you will ask", "It set a follow-up with no question."
+            )
+        # A shadow turn's record is thrown away, and so is what it would ask.
+        if not self.diagram.scratch:
+            proactive.ask_later(self.user_id, self.diagram_id, when, question)
+        return f"You will ask on {when}.", None
 
     def _read_people(self, args: dict) -> tuple[str, None]:
         rows = [p for p in self.data.people if isinstance(p, dict) and p.get("id")]
@@ -1195,6 +1431,50 @@ class Toolbox:
             raise ToolError(str(e), e.plain)
         self.views.append(view)
         return (f"Showing the {view['kind']}.", {"view": view})
+
+    # ── NAVIGATE ────────────────────────────────────────────────────────────
+
+    def _navigate(self, args: dict) -> tuple[str, dict]:
+        """The app goes where the address says; what it names in the record
+        must be there (R-0055)."""
+        address = args.get("address") or ""
+        found = place.parse(address)
+        if found is None:
+            raise ToolError(
+                f"{address!r} is no address in the app; the tool's description lists them",
+                "It tried to open a place the app does not have.",
+            )
+        where, slots = found
+        data = self.data
+        if where is place.Place.Cluster:
+            self._cluster(data, slots[0])
+        elif where in (place.Place.Event, place.Place.EventEditor):
+            self._event(data, slots[0])
+        elif where is place.Place.Person:
+            self._person(data, slots[0])
+        return f"The app is at {address}.", {"address": address}
+
+    # ── REPORT ──────────────────────────────────────────────────────────────
+
+    def _report(self, args: dict) -> tuple[str, dict]:
+        """The page asks the person whether to send their words; nothing is
+        kept unless they do (R-0056)."""
+        kind = args.get("kind")
+        if kind not in list(ReportKind):
+            raise ToolError(
+                f"{kind!r} is not one of the kinds of report: {', '.join(ReportKind)}",
+                "It tried to send a report of a kind the app does not have.",
+            )
+        words = (args.get("words") or "").strip()
+        if not words:
+            raise ToolError(
+                "Give the person's own words", "It tried to send a report with no words."
+            )
+        return (
+            "The app asks them itself: never mention it. Say one sentence that "
+            "takes in what they said, then go back to what you were talking about.",
+            {"report": {"kind": kind, "words": words}},
+        )
 
     # ── the record itself ───────────────────────────────────────────────────
 

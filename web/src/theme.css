@@ -781,8 +781,6 @@ button { font-family: inherit; }
   gap: 10px;
   padding: 14px 12px;
   background: var(--bg);
-  /* the thread fades out and back as another session takes its place */
-  transition: opacity 0.15s;
   touch-action: pan-y;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -990,10 +988,11 @@ button { font-family: inherit; }
   justify-content: space-between;
   color: var(--ink);
 }
-/* the app's close button, kept in the heading row where the notes' own sat;
-   the row reaches into the card's padding so the cross keeps the corner */
+/* the app's close button, kept in the heading row where the notes' own sat,
+   and in a full-screen form's top bar, below the phone's own status bar; the
+   notes' row reaches into the card's padding so the cross keeps the corner */
 .notes-head { margin-right: -12px; }
-.notes-head > .cardx { position: static; }
+.notes-head > .cardx, .ovbar > .cardx, .strip-c > .cardx { position: static; flex: none; }
 .notes-card dl { margin: 0; }
 .notes-card dt { color: var(--ink); }
 .notes-card dd { margin: 0 0 8px; overflow-wrap: anywhere; }
@@ -1187,7 +1186,7 @@ button { font-family: inherit; }
 .btn.link { border: none; color: var(--data); }
 /* the concept pages of the codes in view (FD-364) */
 .concepts { margin: 6px 0; font: 400 13px/1.5 var(--sans); color: var(--faint); overflow-wrap: anywhere; }
-.concepts a { color: var(--data); }
+.concepts a, .strip-s a, .sn-s a { color: var(--data); }
 .scroller {
   flex: 1;
   min-height: 0;
@@ -1562,6 +1561,7 @@ button { font-family: inherit; }
   cursor: pointer;
 }
 .fs-act.ren { color: var(--move-text); }
+.fs-act.del { color: var(--remove); }
 .fs-act:active { background: var(--tint); }
 
 .fs-hint {
@@ -1608,16 +1608,6 @@ button { font-family: inherit; }
   max-width: 44%;
   text-align: right;
   font-variant-numeric: tabular-nums;
-}
-.row.cur { position: relative; }
-.row.cur::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--data);
 }
 .row .untitled { color: var(--faint); }
 /* a title someone gave by hand, so the coach's own titles read apart from it */
@@ -1765,6 +1755,22 @@ button { font-family: inherit; }
 .avatar > * , .avatar svg { position: relative; }
 .avatar svg { width: 24px; height: 24px; display: block; }
 .avatar:active { color: var(--data-press); }
+/* A notice is unread: the amber of the coach's question chips, on the ring of
+   the account button and before the notice's row (R-0611). */
+.avatar.unread::after, .sn-unread {
+  content: "";
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ask);
+}
+.avatar.unread::after {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  box-shadow: 0 0 0 2px var(--bg);
+}
 
 /* The box the settings pages travel in has no ground of its own: what is
    already on screen stays there and the page slides in over it, rather than
@@ -1794,6 +1800,10 @@ button { font-family: inherit; }
 }
 .sn-pane.in { transform: none; }
 .sn-pane.under { transform: translateX(-28%); }
+/* A screen of the app's own on the stack scrolls inside itself, so its page
+   is only the frame it fills. */
+.sn-pane.host { display: flex; flex-direction: column; overflow: hidden; }
+.sn-pane.host > iframe { flex: 1; width: 100%; border: none; background: var(--bg); }
 .sn-grp {
   margin: 0;
   background: var(--panel);
@@ -1907,6 +1917,10 @@ button { font-family: inherit; }
   white-space: nowrap;
   cursor: pointer;
 }
+/* choices too long to stand beside their label take a line of their own */
+.sn-row.below { flex-wrap: wrap; }
+.sn-row.below .sn-seg { flex-basis: 100%; }
+.sn-row.below .sn-seg button { flex: 1; height: auto; white-space: normal; }
 .sn-seg button:first-child { border-radius: 4px 0 0 4px; margin-left: 0; }
 .sn-seg button:last-child { border-radius: 0 4px 4px 0; }
 .sn-seg button.on {
@@ -1957,6 +1971,7 @@ button { font-family: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.sn-s.sn-wrap { white-space: normal; }
 .sn-tick { flex: none; color: var(--data); font: 500 17px/1 var(--mono); }
 /* the diagram in use, marked the same way the current session is */
 .sn-row.cur { position: relative; }
@@ -2190,18 +2205,22 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   text-overflow: ellipsis;
   max-width: 60vw;
 }
-.bub.traced {
+/* The one light for whatever an address or a jump points at: a message, a
+   row in a drawer or a list (R-0055). A row fills its list's width, so its
+   ring is drawn just inside it, where the list cannot clip it. */
+.traced {
   outline: 2px solid var(--move);
   outline-offset: 2px;
   animation: tracefade 2.2s ease-out forwards;
 }
+.traced:not(.bub) { outline-offset: -2px; }
 @keyframes tracefade {
   0% { outline-color: var(--move); }
   70% { outline-color: var(--move); }
   100% { outline-color: transparent; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .bub.traced { animation: none; }
+  .traced { animation: none; }
 }
 
 /* while a mouse drag is scrolling, the surface is being moved, not read */
@@ -2255,6 +2274,29 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 /* A line the app says rather than either speaker: what just happened to the
    thread. The mockup's 10.5px is below the binding 13px floor, so it is set at
    the floor. */
+/* Where one sitting of the family's thread ends and the next begins: the day
+   between two hairlines, quieter than any bubble, so the thread still reads
+   as one conversation. */
+.sitting {
+  flex: none;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 4px;
+  /* a whole pixel tall, so the words below it land on whole pixels */
+  font: 500 12px/16px var(--mono);
+  color: var(--faint);
+  white-space: nowrap;
+}
+.sitting:first-child { margin-top: 0; }
+.sitting::before,
+.sitting::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--line);
+}
+
 .sys {
   align-self: center;
   max-width: 92%;
@@ -2278,6 +2320,50 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   overflow: visible;
 }
 .sys.warn .chip.retry { flex: none; margin: 0; }
+
+/* One call to the reader above the message box, never in the thread and never
+   over the page (R-0611): a card of two lines at most, the way in as the step
+   pill, and the app's close cross. It stands on the thread's own ground. */
+.strip { flex: none; padding: 0 16px 8px; background: var(--bg); }
+.strip-c {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 0 4px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  cursor: pointer;
+}
+.strip-m { flex: 1; min-width: 0; }
+.strip-t, .strip-s {
+  font: 600 15px/1.3 var(--sans);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.strip-s {
+  font-weight: 400;
+  color: var(--faint);
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+/* Folded, the card is its two lines and a mark that it opens. A tap unfolds
+   the whole title and body in place, scrolling inside the card past half the
+   screen, with Open and the cross under them; a tap on the words folds it. */
+.strip-more { transform: rotate(90deg); padding: 0 14px; }
+.strip:not(.open) .strip-c > .stepbtn, .strip:not(.open) .strip-c > .cardx,
+.strip.open .strip-more { display: none; }
+.strip.open .strip-c { justify-content: flex-end; }
+.strip.open .strip-m { flex-basis: 100%; padding-right: 14px; max-height: 50vh; overflow-y: auto; }
+.strip.open .strip-t { white-space: normal; }
+.strip.open .strip-s { display: block; -webkit-line-clamp: none; }
+.strip-c > .stepbtn { height: 44px; border-radius: 22px; }
 
 /* The home-screen card: shown once per device after signing in, over the chat
    rather than in front of it — tapping the ground behind it puts it away. */
@@ -2534,6 +2620,29 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   font: 500 15px var(--sans);
   cursor: pointer;
 }
+
+/* the report sheet (R-0056): over every other screen and sheet, the lists and
+   the account view included; what is sent scrolls when it runs long */
+.fs-scrim.rp, .fs-sheet.rp { z-index: 70; }
+/* on a wide screen a card at the bottom, not a band across the whole window */
+.fs-sheet.rp { max-height: 92%; max-width: 480px; margin: 0 auto; }
+/* the sheet takes the focus only so no key reaches what is behind it; it is
+   no control, so it draws no ring */
+.fs-sheet.rp:focus-visible { outline: none; }
+.rp-list {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+}
+.rp-row { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.rp-row:last-child { border-bottom: 0; }
+.rp-l { font: 400 15px/1.3 var(--sans); color: var(--faint); }
+.rp-v { font: 400 17px/1.4 var(--sans); color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+.rp .cf-go:active, .rp .cf-no:not(:disabled):active { opacity: 0.55; }
+.rp .cf-no:disabled { color: var(--faint); cursor: default; }
+.rp-note { margin-top: -8px; text-align: center; font: 400 13px/1.3 var(--sans); color: var(--faint); }
 
 /* a turn above the last agreed line, tapped: one faint line, no outline */
 .abv {

@@ -81,12 +81,14 @@ test.describe("the question that closes a reply", () => {
   });
 });
 
-test.describe("the message box", () => {
-  test.use({ storageState: stateFor("moves") });
+test.describe("the message box on a touch screen", () => {
+  test.use({ storageState: stateFor("moves"), hasTouch: true });
 
   /** Type two lines with Return between them; the bubbles there were before,
    * and what was POSTed meanwhile. */
   const twoLines = async (page: import("@playwright/test").Page) => {
+    // a phone that already answered the add-to-home-screen card
+    await page.addInitScript(() => localStorage.setItem("fd-home-screen-asked", String(Date.now())));
     await page.goto("/app/");
     await expect(page.locator(".bub").first()).toBeVisible();
     const bubbles = await page.locator(".bub").count();
@@ -262,22 +264,23 @@ test.describe("an empty session", () => {
     const chatHelp = await help(page).innerText();
     // only a professional may start a note, which no fixture holds, so the
     // server's answer is the one a professional would get
-    const NOTE = 99001;
-    await page.route(/\/app\/sessions$/, (route) =>
-      route.request().method() === "POST"
-        ? route.fulfill({
-            status: 201,
-            json: {
-              id: NOTE, title: null, kind: "note", date: null, title_set_by_user: false,
-              summary: null, preview: null, last_activity: new Date().toISOString(),
-              message_count: 0, turn: null,
-            },
-          })
-        : route.fallback(),
-    );
-    await page.route(new RegExp(`/app/sessions/${NOTE}$`), (route) =>
-      route.fulfill({ json: { id: NOTE, kind: "note", statements: [] } }),
-    );
+    const note = {
+      id: 99001, title: null, kind: "note", date: null, title_set_by_user: false,
+      summary: null, preview: null, last_activity: new Date().toISOString(),
+      message_count: 0, turn: null,
+    };
+    // once made, the note heads the family's sessions, as the server lists it
+    let made = false;
+    await page.route(/\/app\/sessions$/, async (route) => {
+      if (route.request().method() === "POST") {
+        made = true;
+        return route.fulfill({ status: 201, json: note });
+      }
+      const real = await (await route.fetch()).json();
+      return route.fulfill({ json: made ? [note, ...real] : real });
+    });
+    // the door, like the note button, shows only for a professional
+    await page.locator("#sessions-open").evaluate((b) => ((b as HTMLElement).hidden = false));
     await page.locator("#sessions-open").click();
     await expect(page.locator("#sessions-sheet")).toBeVisible();
     // the note button shows only for a professional licence, which no fixture holds

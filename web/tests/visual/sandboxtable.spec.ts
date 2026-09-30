@@ -17,20 +17,6 @@ test.describe(() => {
     const invite = need("table");
 
 
-    /** Swipe one session row left far enough to reveal its actions. */
-    const swipe = async (rowSel) => {
-      const box = await page.locator(rowSel).first().boundingBox();
-      const y = box.y + box.height / 2;
-      await page.mouse.move(box.x + box.width - 30, y);
-      await page.mouse.down();
-      for (const dx of [20, 50, 90, 130]) {
-        await page.mouse.move(box.x + box.width - 30 - dx, y);
-        await page.waitForTimeout(40);
-      }
-      await page.mouse.up();
-      await page.waitForTimeout(300);
-    };
-
     /** The sessions sheet lists only the case the app is on (R-0347), so the
      * walk switches to the case that holds the conversation first: the account
      * mark at the top right, the Cases row, then the case. */
@@ -70,20 +56,19 @@ test.describe(() => {
       );
     };
 
-    /** Open the sessions sheet and swipe the conversation the walk cuts. */
+    /** From the meeting page, the list of every family's sessions, and the
+     * conversation the walk cuts on it. */
     const openActions = async () => {
-      // The sessions button lives beside the message box, so the sheet is
-      // reached from the chat, not from a full-screen review screen.
-      if (!(await visible("#sessions-open"))) {
-        await page.locator("#coding-back").click();
-        await page.waitForTimeout(600);
+      if (!(await visible("#agenda-screen"))) {
+        await page.locator("#account").click();
+        await page.waitForTimeout(700);
+        await page.locator(".sn-pane.in .sn-row", { hasText: "Next meeting" }).click();
+        await page.waitForTimeout(1200);
       }
-      await page.locator("#sessions-open").click();
-      await page.waitForTimeout(700);
-      say(`sheet: ${(await text(".fs-sheet .fs-body")).replace(/\s+/g, " ").slice(0, 300)}`);
-      const row = '.fs-sheet .fs-body .row:has-text("The mine years")';
-      await swipe(row);
-      return row;
+      await page.locator(".tb-add").click();
+      await page.waitForTimeout(1200);
+      say(`list: ${(await text(".tb-found")).replace(/\s+/g, " ").slice(0, 300)}`);
+      return '.tb-pick:has-text("The mine years")';
     };
 
     // ── 1. the sessions sheet offers Patrick one more action ───────────────
@@ -92,16 +77,12 @@ test.describe(() => {
     say(`url after invite: ${page.url()}`);
     await switchCase("Marcus's side");
     const row = await openActions();
-    const acts = (await text(".fs-acts")).replace(/\s+/g, " ");
-    say(`swipe actions: "${acts}"`);
-    check(await visible(".fs-act.tbl"), "an admin's swipe offers Put on the agenda");
-    check(/Put on the agenda/.test(acts) && /Rename/.test(acts) && /Delete/.test(acts),
-      "the agenda action stands beside rename and delete");
-    await gates("sessions sheet");
-    await shot("1-swipe");
+    check(await visible(row), "the meeting page lists the conversation among every family's sessions");
+    await gates("every family's sessions");
+    await shot("1-list");
 
     // ── 2. placing the cut ────────────────────────────────────────────────
-    await page.locator(".fs-act.tbl").click();
+    await page.locator(row).first().click();
     await page.waitForTimeout(1200);
     check(await visible("#cut-screen"), "the conversation opened to place the cut");
     check(!(await visible("#chat-screen")), "the chat is not on screen");
@@ -169,8 +150,7 @@ test.describe(() => {
     await shot("5-off");
 
     // put it back, so the rest of the walk has it
-    await openActions();
-    await page.locator(".fs-act.tbl").click();
+    await page.locator(await openActions()).first().click();
     await page.waitForTimeout(1000);
     await page.locator(".ct-go").click();
     await page.waitForTimeout(1500);

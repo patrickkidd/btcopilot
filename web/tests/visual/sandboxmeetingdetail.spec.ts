@@ -26,13 +26,14 @@ test.describe(() => {
     if (await visible("#task-screen"))
       await page.locator("#task-screen .addbtn").first().click();
     else {
-      await page.locator("#sessions-open").click();
+      await page.locator("#account").click();
       await page.waitForTimeout(700);
-      await page.locator(".fs-task.fs-agenda").first().click();
+      await page.locator(".sn-pane.in .sn-row", { hasText: "Next meeting" }).click();
     }
     await page.waitForTimeout(1200);
     if (!(await visible("#meeting-screen"))) {
       await page.locator(".tb-meet").first().click();
+      await page.locator(".tb-run").first().click();
       await page.waitForTimeout(1500);
     }
     check(await visible("#meeting-screen"), "the meeting opens");

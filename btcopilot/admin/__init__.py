@@ -10,9 +10,12 @@ from btcopilot.admin.diagrams import diagrams
 from btcopilot.admin.guard import run
 from btcopilot.admin.imports import imports
 from btcopilot.admin.licences import licences
+from btcopilot.admin.notices import notice_group
 from btcopilot.admin.observations import observations
+from btcopilot.admin.proactive import proactive_group
 from btcopilot.admin.quality import quality
 from btcopilot.admin.questions import impressions_group, questions_group
+from btcopilot.admin.reports import report_group
 from btcopilot.admin.review import review
 from btcopilot.admin.skill import write_skill
 from btcopilot.admin.tokens import token_cap
@@ -30,9 +33,12 @@ for group in (
     licences,
     diagrams,
     observations,
+    notice_group,
+    proactive_group,
     quality,
     questions_group,
     impressions_group,
+    report_group,
     imports,
     token_cap,
     coach_model,

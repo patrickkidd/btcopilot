@@ -5,7 +5,7 @@
 # everything it writes in ~/btcopilot-sandbox/<name>/, outside every repo and
 # job folder, so several agents can run one each side by side.
 #
-#   sandbox up <name> <port> [--dev [port]] [--build] [--real] [--model M] [--open-prompts]
+#   sandbox up <name> <port> [--dev [port]] [--build] [--real] [--model M] [--open-prompts] [--autologin email]
 #   sandbox down <name> [--purge]     stop everything; --purge also deletes the data
 #   sandbox reset <name>              empty the database and put the fixtures back
 #   sandbox invite <name> <email>     a sign-in link (and the Mac's copy under --dev)
@@ -18,6 +18,9 @@
 # phone. --real puts the coach on Anthropic with the testing key from .env at
 # the main clone's root; ask Patrick before spending. Without a sops key, up
 # refuses to start unless --open-prompts says the open-source prompts will do.
+# --autologin signs every visitor with no session in as that account, so a
+# home-screen app needs no code; without it the sign-in page lists every
+# account to sign in as with one tap.
 # Readiness gives up after SANDBOX_WAIT seconds (default 120) and prints the
 # log tails. doc/SETUP.md lists what the machine needs.
 set -euo pipefail
@@ -106,6 +109,7 @@ export SANDBOX_URL=http://127.0.0.1:$PORT
 export FIXTURE_CMD="$REPO/.venv/bin/python -m flask app fixtures" FIXTURE_CWD=$REPO
 SETTINGS
   [ -z "$OPEN" ] || echo "export FD_OPEN_PROMPTS=1" >> "$D/env.sh"
+  [ -z "$AUTOLOGIN" ] || echo "export FLASK_DEV_AUTOLOGIN=$(printf %q "$AUTOLOGIN")" >> "$D/env.sh"
   if [ -z "$REAL" ]; then
     echo "export BTCOPILOT_LOCAL_URL=$OLLAMA BTCOPILOT_LOCAL_MODEL=$MODEL" >> "$D/env.sh"
   fi
@@ -119,6 +123,15 @@ keys() {
   GOOGLE_GEMINI_API_KEY=$(grep '^GOOGLE_GEMINI_API_KEY=' "$DOTENV" | cut -d= -f2-)
   [ -n "$ANTHROPIC_API_KEY" ] || die "no ANTHROPIC_TESTING_KEY in $DOTENV"
   export ANTHROPIC_API_KEY GOOGLE_GEMINI_API_KEY
+}
+
+# The coding guide's pages are read from GitHub with a token that, like the
+# keys, reaches the server only, never a file (FD-364).
+guide() {
+  [ -f "$DOTENV" ] || die "the coding guide reads its token from $DOTENV, which is missing"
+  FLASK_THEORY_GITHUB_TOKEN=$(grep '^GITHUB_FD_THEORY_TOKEN=' "$DOTENV" | cut -d= -f2-)
+  [ -n "$FLASK_THEORY_GITHUB_TOKEN" ] || die "no GITHUB_FD_THEORY_TOKEN in $DOTENV"
+  export FLASK_THEORY_GITHUB_TOKEN
 }
 
 flask_() { (. "$D/env.sh" && cd "$REPO" && "$PY" -m flask "$@"); }
@@ -163,6 +176,7 @@ start_app() {
   (
     . "$D/env.sh"
     keys
+    guide
     cd "$REPO"
     nohup "$PY" -m flask run -h 127.0.0.1 -p "$PORT" --no-reload >> "$D/flask.log" 2>&1 &
     echo $! > "$D/flask.pid"
@@ -217,7 +231,7 @@ cmd_up() {
   PORT=${2:-}
   [[ $PORT =~ ^[0-9]+$ ]] || usage
   shift 2
-  DEV= REAL= OPEN= MODEL=qwen3:8b
+  DEV= REAL= OPEN= AUTOLOGIN= MODEL=qwen3:8b
   local build=
   while [ $# -gt 0 ]; do
     case $1 in
@@ -226,6 +240,7 @@ cmd_up() {
       --real) REAL=1 ;;
       --open-prompts) OPEN=1 ;;
       --model) MODEL=$2; shift ;;
+      --autologin) AUTOLOGIN=${2:?--autologin takes an email}; shift ;;
       *) usage ;;
     esac
     shift
@@ -239,6 +254,18 @@ cmd_up() {
   PY=${SANDBOX_PYTHON:-$REPO/.venv/bin/python}
   for port in "$PORT" "$PG_PORT" "$REDIS_PORT" ${DEV:+"$DEV"}; do free "$port"; done
   [ -x "$PY" ] || (cd "$REPO" && uv sync --extra app --extra test)
+  # A web push key pair made for this sandbox alone, kept across restarts so a
+  # browser that subscribed stays subscribed.
+  [ -f "$D/vapid.sh" ] || (cd "$REPO" && "$PY" -m btcopilot.push | sed 's/^/export /') > "$D/vapid.sh"
+  # Who the push services write to about this sandbox's pushes: whoever runs
+  # it, so no one else's address is in the repo.
+  if ! grep -q '^export FLASK_VAPID_SUBJECT=' "$D/vapid.sh"; then
+    local owner
+    owner=$(git -C "$REPO" config user.email || true)
+    [ -n "$owner" ] || die "set git config user.email: it is the address push services write to about this sandbox"
+    echo "export FLASK_VAPID_SUBJECT=mailto:$owner" >> "$D/vapid.sh"
+  fi
+  echo ". $D/vapid.sh" >> "$D/env.sh"
   local keyless
   if ! keyless=$(cd "$REPO" && "$PY" -m btcopilot.promptdir); then
     echo "sandbox: $keyless" >&2

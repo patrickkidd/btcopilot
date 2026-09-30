@@ -388,6 +388,21 @@ def test_a_coder_who_pressed_done_reads_as_done(patrick, test_user_2, cut):
     assert not any(row["closed_out"] for row in rows)
 
 
+def test_the_meeting_page_reads_who_submitted_each_cut_apart(
+    patrick, test_user_2, session, turns, cut
+):
+    # R-0258
+    later = patrick.post(
+        "/review/cuts",
+        json={"discussion_id": session.id, "end_statement_id": turns[3].id},
+    ).get_json()
+    coded(test_user_2, cut, {})
+    one = patrick.get(f"/review/coders?cut_id={cut.id}").get_json()
+    assert {r["user_id"]: r["state"] for r in one}[test_user_2.id] == "done"
+    other = patrick.get(f"/review/coders?cut_id={later['id']}").get_json()
+    assert "done" not in {r["state"] for r in other}
+
+
 def test_the_coach_is_not_one_of_the_coders_the_agenda_waits_on(
     patrick, test_user_2, cut
 ):

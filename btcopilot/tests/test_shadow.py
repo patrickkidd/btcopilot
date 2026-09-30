@@ -6,6 +6,7 @@ from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
 from btcopilot.coachmodel import Spent
 from btcopilot.coachturn import CoachTurn, EmptyReply
+from btcopilot.discussions import open_session
 from btcopilot.extensions import db
 from btcopilot.models import (
     Change,
@@ -152,6 +153,38 @@ def test_a_shadow_turn_is_kept_apart_from_the_real_one(
     } == {diagram.id}
     assert TokenMeter.query.one().input_tokens == 10
     assert test_user.first_name == "Unit"
+
+
+def test_a_shadow_turn_reads_the_words_of_every_session_as_the_real_one_did(
+    web, token, test_user, monkeypatch
+):
+    # R-0596
+    real = coach(
+        monkeypatch,
+        "btcopilot.turns.model_for",
+        Model(said("Tell me about Nell."), said("How much older?")),
+    )
+    first = post(web, token, "My sister is Nell.")
+    later = open_session(
+        test_user, db.session.get(Discussion, first["discussion_id"]).diagram
+    )
+    db.session.commit()
+    candidate = coach(
+        monkeypatch, "btcopilot.shadow.model_for", Model(said("Older by how much?"))
+    )
+    setting.write(SettingKey.ShadowModel, "haiku-4.5", test_user.id)
+    with patch("btcopilot.shadow.enqueue", shadow.run):
+        web.post(
+            f"/app/sessions/{later.id}/statements",
+            json={"statement": "She is older."},
+            headers={"X-CSRFToken": token},
+        )
+
+    assert ShadowTurn.query.one().text == "Older by how much?"
+    shown, sent = candidate.histories[0], real.histories[1]
+    assert shown[:-1] == sent[:-1]
+    assert [m["role"] for m in shown] == ["user", "assistant", "user"]
+    assert shown[-1]["content"][-1] == sent[-1]["content"][-1]
 
 
 def test_a_broken_shadow_keeps_its_error_and_leaves_no_scratch(

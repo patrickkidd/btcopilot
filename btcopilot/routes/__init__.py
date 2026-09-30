@@ -1,17 +1,24 @@
+import enum
 import logging
+import re
 import uuid
 
 from flask import Blueprint, abort, request
 from flask_wtf.csrf import CSRFError, generate_csrf
 
 from btcopilot import auth
+from btcopilot.auth.signin import origin
 from btcopilot.extensions import csrf, db
 from btcopilot import record
 from btcopilot.models import Author, Discussion
 from btcopilot.models import Diagram
 from btcopilot.discussions import (  # noqa: F401  routes import them from here
+    chats,
     create_discussion,
+    family,
     last_activity,
+    newest,
+    sitting,
     utc_iso,
 )
 from btcopilot.review.freeze import frozen
@@ -29,11 +36,45 @@ bp = Blueprint(
 )
 
 
+# What a browser fetches without its cookie: the service worker, the manifest,
+# the icons the manifest names, and the icon iOS puts on the home screen; and
+# where a bug is reported from a signed-out page or the worker, which carry no
+# CSRF token, so the browser's word that the post came from this site stands in
+# for one.
+PUBLIC = {"app.service_worker", "app.manifest", "app.apple_touch_icon", "app.create_report"}
+TOKENLESS = {"app.create_report"}
+PUBLIC_STATIC = re.compile(r"web/icon-\w+\.png")
+
+
+class FetchSite(enum.StrEnum):
+    SameOrigin = "same-origin"
+    Typed = "none"
+
+
+def public() -> bool:
+    if request.endpoint == "app.static":
+        return bool(PUBLIC_STATIC.fullmatch(request.view_args["filename"]))
+    return request.endpoint in PUBLIC
+
+
 @bp.before_request
 def _authenticate():
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
-        csrf.protect()
-    auth.authenticate_web()
+        if request.endpoint in TOKENLESS:
+            _same_origin()
+        else:
+            csrf.protect()
+    if not public():
+        auth.authenticate_web()
+
+
+def _same_origin():
+    if (
+        request.headers.get("Sec-Fetch-Site") not in (FetchSite.SameOrigin, FetchSite.Typed)
+        and request.headers.get("Origin") != origin()
+    ):
+        _log.warning(f"Cross-site post to {request.path} from {request.remote_addr}")
+        abort(403)
 
 
 @bp.errorhandler(CSRFError)
@@ -63,31 +104,18 @@ def _inject_globals():
 
 
 def user_sessions(user, diagram_id: int | None = None) -> list[Discussion]:
-    """The user's sessions on one diagram, most recently active first — which
-    makes the session they last spoke in the one they return to. Without a
-    diagram it is the one the app is on.
-
-    A discussion imported from a recording has no chat speaker ids and is not
-    a session the chat app can open: its speakers are Subject/Expert, not the
-    two chat roles, so every line would render as the user's."""
-    found = (
-        Discussion.query.filter_by(
-            user_id=user.id, diagram_id=diagram_id or user.diagram_in_use()
-        )
-        .filter(
-            Discussion.chat_user_speaker_id.isnot(None),
-            Discussion.chat_ai_speaker_id.isnot(None),
-        )
-        .all()
-    )
-    return sorted(found, key=lambda d: (last_activity(d), d.id), reverse=True)
+    """The user's sessions on one diagram, most recently active first. Without
+    a diagram it is the one the app is on."""
+    return newest(chats(user, diagram_id or user.diagram_in_use()))
 
 
 def current_session(user, create: bool = False) -> Discussion | None:
+    """The sitting last spoken in; with `create`, the one the next words go
+    into, which is a new sitting once the family has been quiet a while."""
+    if create:
+        return sitting(user, family(user, writable_diagram()))
     found = user_sessions(user)
-    if found:
-        return found[0]
-    return create_discussion({}, writable_diagram()) if create else None
+    return found[0] if found else None
 
 
 def owned_session(session_id: int) -> Discussion:
@@ -169,12 +197,14 @@ from btcopilot.routes import (  # noqa: E402  bp must exist first
     events,
     fixtures,
     interactions,
+    notifications,
     pairbonds,
     productevents,
     people,
     play,
     questions,
     recordings,
+    reports,
     sessions,
     settings,
     theory,
@@ -190,4 +220,6 @@ def init_app(app):
         path=app.config["THEORY_PATH"],
         token=app.config.get("THEORY_GITHUB_TOKEN"),
     )
+    # the reports each sender made in the last hour
+    app.extensions["reports"] = {}
     app.register_blueprint(bp)

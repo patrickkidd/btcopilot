@@ -30,10 +30,13 @@ import type {
   PasskeyCreationOptions,
   Preferences,
   Started,
+  Report,
+  RequestFailure,
   Result,
   Session,
   SessionKind,
   Decision,
+  Delivery,
   Tally,
   Statement,
   Timeline,
@@ -52,6 +55,27 @@ const PATIENCE_MS = 60_000;
 /** How long the page waits for a play-by-play: the server's own longest answer
  * (btcopilot/playturn.py WAIT), so a slow model fails with the server's error. */
 export const PLAY_WAIT_S = 390;
+
+/** Where a report goes, which never reports itself. */
+const REPORTS = `${ROOT}/reports`;
+/** The header only this server's own answers carry: a proxy's error page, or
+ * the dev server's when the server is down, has none. */
+const REQUEST_ID = "X-Request-Id";
+
+/** A request as the endpoint it is, whichever row it names:
+ * `/app/sessions/12` is `/app/sessions/:id`. */
+export const endpoint = (path: string) => path.replace(/\/\d+(?=\/|$)/g, "/:id");
+
+/** Who hears that the server broke on a request. */
+type Broke = (failure: RequestFailure) => void;
+let broke: Broke | null = null;
+
+/** The server breaking on a request raises the bug sheet (R-0056): only an
+ * answer of 500 or above that the server itself gave, never no answer at all,
+ * a refusal, or a proxy's. */
+export const onBroke = (listener: Broke) => {
+  broke = listener;
+};
 
 function csrf(): string {
   return (
@@ -94,7 +118,7 @@ export function whatFailed(error: unknown, words = instruction): string {
   return words(failed.said) || "That did not go in";
 }
 
-async function call<T>(method: string, path: string, body?: unknown, patience?: number): Promise<T> {
+export async function call<T>(method: string, path: string, body?: unknown, patience?: number): Promise<T> {
   return send(method, ROOT + path, body, false, patience);
 }
 
@@ -129,8 +153,13 @@ async function send<T>(
     if (!(error instanceof TypeError || error instanceof DOMException)) throw error;
     throw new Failed(0, `${method} ${url}`, error.message);
   }
-  if (!response.ok)
+  if (!response.ok) {
+    const path = url.split("?")[0];
+    const id = response.headers.get(REQUEST_ID);
+    if (response.status >= 500 && id !== null && path !== REPORTS)
+      broke?.({ status: response.status, method, path: endpoint(path), request_id: id });
     throw new Failed(response.status, `${method} ${url}`, await response.text());
+  }
   // an empty answer left unread is logged by the browser as aborted
   if (response.status === 204) {
     await response.text();
@@ -148,11 +177,26 @@ export const timeline = (diagramId?: number) =>
   );
 
 /** One agent-loop turn. The send is short: it stores the words and hands the
- * turn to the coach, which answers on the turn's own stream. */
-export const say = (statement: string, sessionId: number | null) =>
-  sessionId === null
-    ? call<Started>("POST", "/chat", { statement })
-    : call<Started>("POST", `/sessions/${sessionId}/statements`, { statement });
+ * turn to the coach, which answers on the turn's own stream. The server puts
+ * them in the sitting they belong to. */
+export const say = (statement: string) => call<Started>("POST", "/chat", { statement });
+
+/** Where one sitting starts, carried by its first words, and when the
+ * sitting before it started; the family's first sitting has none before it. */
+export interface Sitting {
+  id: number;
+  started: string;
+  previous_started: string | null;
+}
+
+/** A statement as the thread reads it: which sitting it is in, and on a
+ * sitting's first words, the sitting itself. */
+export type Said = Statement & { session_id: number; sitting: Sitting | null };
+
+/** The family's one thread, newest page first; `before` reads the page of
+ * words just older than that statement. */
+export const thread = (before?: number) =>
+  call<Said[]>("GET", before === undefined ? "/statements" : `/statements?before=${before}`);
 
 /** Pick a failed turn up where it stopped, on the same turn: nothing new is
  * said (R-0477). */
@@ -264,10 +308,21 @@ export const saveQuestion = (
 /** Sessions, newest activity first. The server has no current-session pointer:
  * posting into a session is what makes it the one you come back to. */
 export const sessionIndex = (diagramId?: number) =>
+  call<Session[]>("GET", onDiagram("/sessions", diagramId));
+
+/** One family's sessions where something said carries every word, searched
+ * the way the coach searches the chat. */
+export const sessionSearch = (diagramId: number, words: string) =>
   call<Session[]>(
     "GET",
-    diagramId === undefined ? "/sessions" : `/sessions?diagram_id=${diagramId}`,
+    `${onDiagram("/sessions", diagramId)}&words=${encodeURIComponent(words)}`,
   );
+
+/** Every session on every family, each with its family's name, and on a
+ * search only those where something said carries every word. Patrick's, to put
+ * one on the agenda from the meeting page. */
+export const allSessions = (words: string) =>
+  call<Session[]>("GET", `/sessions?all=true&words=${encodeURIComponent(words)}`);
 
 export const newSession = (kind?: SessionKind) =>
   call<Session>("POST", "/sessions", kind ? { kind } : {});
@@ -277,12 +332,28 @@ export const deleteSession = (id: number) => call<void>("DELETE", `/sessions/${i
 export const renameSession = (id: number, title: string) =>
   call<Session>("PATCH", `/sessions/${id}`, { title });
 
+/** A bug or feedback the person chose to send (R-0056). */
+export const report = (body: Report) => call<{ id: number }>("POST", "/reports", body);
+
+/** A sent bug's repeats, added to its count as the page goes: with keepalive,
+ * as the product events are, so they still land as the page hides. */
+export const repeated = (body: Report) => send<{ id: number }>("POST", REPORTS, body, true);
+
 export const preferences = () => call<Preferences>("GET", "/preferences");
 
 export const setPreferences = (body: Partial<Preferences>) =>
   call<Preferences>("PATCH", "/preferences", body);
 
 export const account = () => call<Account>("GET", "/account");
+
+/** The signed-in person's notifications, newest first: the unread ones, or
+ * with `all` the opened ones too. */
+export const notifications = (all = false) =>
+  call<Delivery[]>("GET", `/notifications${all ? "?all=true" : ""}`);
+
+/** Opening and putting away are one stamp, and the first counts. */
+export const openNotification = (id: number) =>
+  call<Delivery>("PATCH", `/notifications/${id}`, { opened: true });
 
 /** Every diagram the user can open — owned and granted — most recently active
  * first, each with how many sessions sit on it. */
@@ -385,10 +456,15 @@ export const sessionTurns = (discussionId: number) =>
 
 /** Putting a conversation on the agenda: the cut ends on the turn tapped, and
  * starts where the last cut left off. */
-export const putOnAgenda = (discussionId: number, endStatementId: number) =>
+export const putOnAgenda = (
+  discussionId: number,
+  endStatementId: number,
+  meetingDate: string | null,
+) =>
   ask<Cut>("POST", "/cuts", {
     discussion_id: discussionId,
     end_statement_id: endStatementId,
+    meeting_date: meetingDate,
   });
 
 export const moveCut = (cutId: number, endStatementId: number) =>
@@ -406,7 +482,8 @@ export const offAgenda = (cutId: number) =>
   ask<{ id: number }>("DELETE", `/cuts/${cutId}`);
 
 /** One line per coder: not started, coding, done or voted (R-0258). */
-export const coders = () => ask<CoderLine[]>("GET", "/coders");
+export const coders = (cutId?: number) =>
+  ask<CoderLine[]>("GET", cutId === undefined ? "/coders" : `/coders?cut_id=${cutId}`);
 
 export const nudge = () =>
   ask<{ nudged: number[]; nudged_at: string }>("POST", "/nudges", {});

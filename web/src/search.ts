@@ -30,20 +30,24 @@ export const summaryOf = (session: Session) =>
   (session.message_count === 0 ? "just started" : "in progress");
 
 /** What one family shows for a search: the sessions whose name or summary
- * carry the words, and every session it has when the family's own name carries
- * them. A family whose name matches stays on screen even with no sessions on
- * it yet, which is the whole point of searching for the family. */
+ * carry the words, or where something said does (`said`, found by the
+ * server), and every session it has when the family's own name carries them.
+ * A family whose name matches stays on screen even with no sessions on it yet,
+ * which is the whole point of searching for the family. */
 export function matching(
   family: Family,
   query: string,
+  said: ReadonlySet<number> = new Set(),
 ): { rows: Session[]; byName: boolean } {
   const words = query.trim().toLowerCase();
   if (!words) return { rows: family.sessions, byName: false };
   if (family.diagram.name.toLowerCase().includes(words))
     return { rows: family.sessions, byName: true };
   return {
-    rows: family.sessions.filter((s) =>
-      `${sessionTitle(s)} ${summaryOf(s)}`.toLowerCase().includes(words),
+    rows: family.sessions.filter(
+      (s) =>
+        said.has(s.id) ||
+        `${sessionTitle(s)} ${summaryOf(s)}`.toLowerCase().includes(words),
     ),
     byName: false,
   };

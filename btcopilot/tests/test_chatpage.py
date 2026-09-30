@@ -21,11 +21,6 @@ from btcopilot.case import Tool
 from btcopilot.tests.conftest import Model, called, csrf_token, replied, said
 
 
-@pytest.fixture(autouse=True)
-def no_auto_auth(monkeypatch):
-    monkeypatch.delenv("FLASK_AUTO_AUTH_USER", raising=False)
-
-
 def test_health_reports_the_version(flask_app):
     # R-0419
     assert flask_app.test_client().get("/health").get_data(as_text=True) == btcopilot.__version__
@@ -155,12 +150,30 @@ def test_the_timeline_says_nothing_about_extraction(web, test_user):
     assert "extraction" not in web.get("/app/timeline").get_json()
 
 
-def test_pwa_files_are_served_from_the_app_root(web):
+def test_pwa_files_are_served_without_a_session(flask_app):
     # R-0226
-    """The service worker has to answer from /app/ or its scope cannot
-    cover the app."""
-    assert web.get("/app/sw.js").status_code == 200
-    assert web.get("/app/manifest.webmanifest").status_code == 200
+    """The service worker has to answer from /app/ or its scope cannot cover
+    the app, and a browser asks for the manifest and the iOS touch icon
+    without its cookie."""
+    served = {
+        "/app/sw.js": "text/javascript",
+        "/app/manifest.webmanifest": "application/manifest+json",
+        "/app/apple-touch-icon.png": "image/png",
+        "/app/static/web/icon-192.png": "image/png",
+        "/app/static/web/icon-512.png": "image/png",
+        "/app/static/web/icon-maskable.png": "image/png",
+    }
+    flask_app.test_client_class = flask.testing.FlaskClient
+    with flask_app.test_client() as client:
+        got = {path: client.get(path) for path in served}
+        assert {path: (r.status_code, r.mimetype) for path, r in got.items()} == {
+            path: (200, mimetype) for path, mimetype in served.items()
+        }
+        assert client.get("/app/static/web/index.html").status_code == 302
+        # an app added to a home screen opens the host it was added from
+        manifest = got["/app/manifest.webmanifest"].get_data(as_text=True)
+        assert "Family Diagram" in manifest
+        assert "://" not in manifest
 
 
 def test_a_tap_is_recorded_against_the_diagram(web, test_user):

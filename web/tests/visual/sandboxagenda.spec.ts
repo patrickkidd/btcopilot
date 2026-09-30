@@ -1,15 +1,16 @@
 import { expect, test } from "@playwright/test";
 import { need, sandboxOnly, walker } from "./sandbox";
 
-// Patrick putting one of his own conversations on the agenda from the agenda
-// screen: the sheet it raises picks the conversation to cut, never the chat.
-// INVITE_TABLE must be an admin who has at least one session with lines in it.
+// Patrick putting a conversation on the agenda from the agenda screen: the
+// list of every family's sessions it opens picks the conversation to cut,
+// never the chat. INVITE_TABLE must be an admin, and some session must have
+// lines in it.
 
 test.describe(() => {
   sandboxOnly("table");
 
   // R-0267, R-0346
-  test("a session picked from the agenda's sheet goes on the agenda", async ({ page }, info) => {
+  test("a session picked from the agenda's list goes on the agenda", async ({ page }, info) => {
     const { check, shot, gates, quiet } = walker(page, info);
     const stored: number[] = [];
     page.on("response", (r) => {
@@ -18,13 +19,12 @@ test.describe(() => {
     });
 
     await page.goto(need("table"), { waitUntil: "networkidle" });
-    await page.locator("#sessions-open").click();
-    await page.locator(".fs-agenda").click();
+    await page.locator("#account").click();
+    await page.locator(".sn-pane.in .sn-row", { hasText: "Next meeting" }).click();
     await expect(page.locator("#agenda-screen")).toBeVisible();
 
     await page.locator(".tb-add").click();
-    await expect(page.locator("#sessions-sheet")).toBeVisible();
-    await page.locator("#sessions-sheet .row").first().click();
+    await page.locator(".tb-pick").first().click();
     await expect(page.locator("#cut-screen")).toBeVisible();
     const session = await page.locator("#title").innerText();
     await gates("placing the cut");

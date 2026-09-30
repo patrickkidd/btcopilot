@@ -33,7 +33,7 @@ def family(test_user):
 
 
 def test_the_map_shows_who_and_when_but_not_what_happened():
-    # R-0479
+    # R-0479, R-0481
     data = DiagramData(
         people=[
             {"id": 1, "name": "Wren"},
@@ -65,7 +65,13 @@ def test_the_map_shows_who_and_when_but_not_what_happened():
     assert "3 Ash events=1" in lines
     assert "4 1+3 married" in lines
     assert 'c1 "Leaving" (user) 1994-2010 events=2' in lines
-    assert "1960s 1, 1990s 1, 2010s 1, undated 1" in lines
+    at = lines.index(recordtext.EVENTS)
+    assert lines[at + 1 : at + 5] == [
+        "8 undated [noted] person=1",
+        "5 1960-02-01 [birth] child=2",
+        "7 1994-06-01 [shift] person=1",
+        "6 2010-03-01 [death] person=2",
+    ]
     assert lines[-1] == "Record version 7."
     assert "moved out" not in text and "quiet" not in text
 

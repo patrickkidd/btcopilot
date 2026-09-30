@@ -109,6 +109,12 @@ jobs:
       - name: Build the web bundle
         run: npm --prefix web run build
 
+      - name: Make a push key pair for this run
+        # the app refuses to start without it; no push leaves the runner
+        run: |
+          python -m btcopilot.push >> "$GITHUB_ENV"
+          echo "FLASK_VAPID_SUBJECT=mailto:ci@fd362-fixture.invalid" >> "$GITHUB_ENV"
+
       - name: Create sandbox database
         run: |
           python -c "
@@ -197,6 +203,12 @@ jobs:
 
       - name: Build the web bundle
         run: npm --prefix web run build
+
+      - name: Make a push key pair for this run
+        # the app refuses to start without it; no push leaves the runner
+        run: |
+          python -m btcopilot.push >> "$GITHUB_ENV"
+          echo "FLASK_VAPID_SUBJECT=mailto:ci@fd362-fixture.invalid" >> "$GITHUB_ENV"
 
       - name: Create sandbox database
         run: |

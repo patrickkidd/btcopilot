@@ -1,6 +1,6 @@
 import "./drawer.css";
 import { askedChip, chipOf } from "./chips";
-import { CLUSTER, closeX, esc, pathRow, slideOver, stepBtn } from "./dom";
+import { CLUSTER, closeX, esc, flash, pathRow, slideOver, stepBtn } from "./dom";
 import { NAME, type Layout } from "./diagram";
 import { when, Told } from "./snapshots";
 import type { Case, Chip, Timeline } from "./types";
@@ -143,10 +143,34 @@ export class Drawer {
       `<div class="lv"><div class="wire"></div><div class="draw"></div><div class="scroll"></div></div>`;
     slideOver(this.panel, true);
     this.render();
+    this.onMoved?.();
   }
 
   close(): void {
     slideOver(this.panel, false);
+    this.onMoved?.();
+  }
+
+  /** Told when the drawer comes up or goes down, so the address says so. */
+  onMoved?: () => void;
+
+  /** The message whose telling is up, while the drawer is. */
+  at(): number | null {
+    return this.panel.classList.contains("in") ? this.statement : null;
+  }
+
+  /** One snapshot of the telling that is up, its caption lit the way a
+   * message is lit in the thread (R-0055). */
+  to(step: number): void {
+    if (!this.told) return;
+    this.i = Math.min(Math.max(step, 0), this.told.length - 1);
+    this.render();
+    flash(this.panel.querySelector<HTMLElement>(".cap")!);
+  }
+
+  /** Put away from outside, as its cross puts it away. */
+  leave(): void {
+    if (this.told && this.panel.classList.contains("in")) this.back(CLUSTER, this.told.eventIds);
   }
 
   private render(): void {

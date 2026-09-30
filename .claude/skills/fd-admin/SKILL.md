@@ -192,6 +192,35 @@ Changes something: needs `--yes`.
 | `key` | required |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin notice`
+
+Product notices shown in the app, to everyone, a role, or named people.
+
+### `flask admin notice list`
+
+Every notice, newest first: who it is for, how many that is now, and how many have it and opened it.
+
+| Argument | What it is |
+|---|---|
+| `--json` | Print JSON, not a table. |
+
+### `flask admin notice send`
+
+Keep a notice and send it now to everyone it is for: a push to whoever has one, else an email when --email is given, and in the app's own list either way. Whoever joins its audience later finds it in the app's list the next time they open the app. Prints the notice and how many people it was sent to.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--to` | everyone, a role (subscriber, auditor, admin), or email addresses joined by commas. |
+| `--title` | The heading, and the words of the push. |
+| `--body` | One or two short sentences. |
+| `--link` | The screen a tap opens: account, coach_settings, task, agenda, or any address in the app such as /app/account/notices; left out, it opens nothing. |
+| `--until` | The last day, in UTC, that it reaches anyone new; left out, it runs on. |
+| `--email` | Email everyone it is for who has no browser that takes a push. |
+| `--by` | The email of the admin sending it. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin observations`
 
 What shows the coach or the app needing tuning.
@@ -223,6 +252,21 @@ Changes something: needs `--yes`.
 | Argument | What it is |
 |---|---|
 | `key` | required |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin proactive`
+
+Messages the coach writes before the person does.
+
+### `flask admin proactive run`
+
+Write and send at most one message per person, within their budget. The words come from the model even on a dry run. Each person nothing went to gets the reason instead. Then each coder's reminder that is due, a row each, outside that budget.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--dry-run` | Print what would be sent; keep and send nothing. |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin quality`
@@ -266,6 +310,23 @@ Changes something: needs `--yes`.
 |---|---|
 | `--diagram` | Only this record. |
 | `--json` | Print JSON, not a table. |
+
+### `flask admin report`
+
+The report sheet in a person's app, raised by hand in development.
+
+### `flask admin report offer <email> <words>`
+
+Offer to send WORDS from the person's app, as the coach's report tool does: the offer goes on their next coach turn, or the one running now, and the sheet comes up once that reply is done, at most once a sitting on a device. Never on production.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `email` | required |
+| `words` | required |
+| `--kind` | Which sheet: feedback, or a bug report. |
+| `--wait` | Seconds to wait for the person's next message. |
 
 ### `flask admin review`
 

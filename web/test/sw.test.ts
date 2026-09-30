@@ -4,36 +4,131 @@ import { describe, expect, it, vi } from "vitest";
 
 const SOURCE = readFileSync(new URL("../public/sw.js", import.meta.url), "utf8");
 
+/** A window the browser has open, as the worker sees it. */
+function tab(url: string) {
+  return { url, postMessage: vi.fn(), focus: vi.fn(async () => undefined) };
+}
+
 /** The worker as the browser starts it for one release, with the caches the
- * phone already holds. */
-function worker(release: string, held: string[]) {
+ * phone already holds and the windows it has open. */
+function worker(release: string, held: string[] = [], windows: ReturnType<typeof tab>[] = []) {
   const on: Record<string, (e: unknown) => void> = {};
   const caches = {
     keys: async () => held,
     delete: vi.fn(async () => true),
   };
+  const shown = vi.fn(async (_title: string, _options: NotificationOptions) => undefined);
+  const openWindow = vi.fn(async (_url: string) => undefined);
+  const fetch = vi.fn(async (_url: string, _init: RequestInit) => new Response(null, { status: 201 }));
   runInNewContext(SOURCE, {
     URL,
+    Error,
+    JSON,
+    fetch,
+    console,
     caches,
     self: {
       location: { href: `https://familydiagram.com/app/sw.js?release=${release}` },
       addEventListener: (kind: string, run: (e: unknown) => void) => (on[kind] = run),
-      clients: { claim: async () => undefined },
+      registration: { showNotification: shown },
+      clients: { claim: async () => undefined, matchAll: async () => windows, openWindow },
     },
   });
-  return { on, caches };
+  /** One event, and the work it asked the browser to wait for. */
+  const fire = (kind: string, event: object) => {
+    let done: Promise<unknown> = Promise.resolve();
+    on[kind]({ ...event, waitUntil: (work: Promise<unknown>) => (done = work) });
+    return done;
+  };
+  return { fire, on, fetch, caches, shown, openWindow };
 }
+
+const tap = (id: number) => ({ notification: { data: { id }, close: vi.fn() } });
 
 describe("the offline copy of the app", () => {
   // R-0486
   it("keeps only the release it serves, deleting the last one's files", async () => {
-    const { on, caches } = worker("3.2026.9.28.1", [
+    const { fire, caches } = worker("3.2026.9.28.1", [
       "familydiagram-3.2026.9.27.1",
       "familydiagram-3.2026.9.28.1",
     ]);
-    let done: Promise<unknown> = Promise.resolve();
-    on.activate({ waitUntil: (work: Promise<unknown>) => (done = work) });
-    await done;
+    await fire("activate", {});
     expect(caches.delete.mock.calls).toEqual([["familydiagram-3.2026.9.27.1"]]);
+  });
+});
+
+describe("a coach notification", () => {
+  // R-0055
+  it("shows the push's words under its kind's tag, so kinds never replace each other", async () => {
+    const { fire, shown } = worker("1");
+    for (const [id, kind, body] of [
+      [7, "coach", "Your mother called."],
+      [8, "task", "A coding task is waiting for you."],
+      [9, "coach", "Sunday came up again."],
+    ] as const)
+      await fire("push", { data: { json: () => ({ id, kind, body }) } });
+    expect(shown.mock.calls.map(([title, o]) => [title, o.body, o.tag, o.data])).toEqual([
+      ["Coach", "Your mother called.", "coach", { id: 7 }],
+      ["Coding task", "A coding task is waiting for you.", "task", { id: 8 }],
+      ["Coach", "Sunday came up again.", "coach", { id: 9 }],
+    ]);
+  });
+
+  // R-0055
+  it("opens the app at the message it points to when the app is closed", async () => {
+    const { fire, openWindow } = worker("1");
+    await fire("notificationclick", tap(7));
+    expect(openWindow.mock.calls).toEqual([["/app/?notification=7"]]);
+  });
+
+  // R-0055
+  it("tells the open app which message to show, so a draft in it survives", async () => {
+    const open = tab("https://familydiagram.com/app/");
+    const { fire, openWindow } = worker("1", [], [open]);
+    await fire("notificationclick", tap(7));
+    expect(open.postMessage.mock.calls).toEqual([[{ notification: 7 }]]);
+    expect(open.focus).toHaveBeenCalled();
+    expect(openWindow).not.toHaveBeenCalled();
+  });
+});
+
+describe("an error in the worker", () => {
+  // R-0056
+  it("is reported as it happens with no sheet, with only the worker's own frames", async () => {
+    const { on, fetch } = worker("3.2026.9.29.1");
+    const error = new TypeError("json is not a function");
+    error.stack = [
+      "TypeError: json is not a function",
+      "    at https://familydiagram.com/app/sw.js?release=3.2026.9.29.1:61:31",
+      "    at chrome-extension://abcdef/inject.js:4:11",
+    ].join("\n");
+    on.error({ error, message: error.message });
+    on.unhandledrejection({ reason: "the cache is full" });
+    expect(fetch.mock.calls.map(([url, init]) => [url, JSON.parse(init.body as string)])).toEqual([
+      [
+        "/app/reports",
+        {
+          kind: "bug",
+          status: "sent",
+          source: "worker",
+          release: "3.2026.9.29.1",
+          address: "/app/sw.js",
+          error: "TypeError: json is not a function",
+          frames: ["https://familydiagram.com/app/sw.js?release=3.2026.9.29.1:61:31"],
+        },
+      ],
+      [
+        "/app/reports",
+        {
+          kind: "bug",
+          status: "sent",
+          source: "worker",
+          release: "3.2026.9.29.1",
+          address: "/app/sw.js",
+          error: "the cache is full",
+          frames: [],
+        },
+      ],
+    ]);
   });
 });
