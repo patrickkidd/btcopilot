@@ -60,6 +60,7 @@ class ToolText(enum.StrEnum):
     PersonB = "person_b"
     Parents = "parents"
     Fields = "fields"
+    Item = "item"
 
 
 class Role(enum.StrEnum):

@@ -12,6 +12,8 @@ meanings:
     YYYY-MM-DD. When the event ended, given only when an end date is known; date is when it began.
   location: |-
     Where it happened, when the conversation says where. On a noted event about a move it is the place they moved to.
+  item: |-
+    On a noted event that records someone's schooling, work, health or where they lived, which of those it is.
   person: |-
     The person the event is about. On a marriage, bonding, separation or divorce it is one of the two partners and spouse is the other. On a birth or adoption it is a parent, and is left out when the parents are not known — never the same id as child.
   spouse: |-

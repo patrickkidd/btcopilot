@@ -41,13 +41,14 @@ def done(turn_id: str) -> dict:
     )
 
 
-def counts(required, known, unknown=0, declined=0) -> dict:
+def counts(required, known, unknown=0, declined=0, asked=0) -> dict:
     return {
         "required": required,
         "known": known,
+        "asked": asked,
         "said_unknown": unknown,
         "declined": declined,
-        "not_asked": required - known - unknown - declined,
+        "not_asked": required - known - unknown - declined - asked,
     }
 
 
@@ -112,9 +113,12 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     ]
     assert (
         coverage.states(data)[(Fact.BirthDate, ItemKind.Person, ME)]
-        is FactState.NotAsked
+        is FactState.Asked
     )
-    assert done(first["turn_id"]) == {"before": counts(13, 1), "after": counts(13, 1)}
+    assert done(first["turn_id"]) == {
+        "before": counts(13, 1),
+        "after": counts(13, 1, asked=1),
+    }
 
     at = version(family)
     model = coach(
@@ -150,11 +154,11 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
         token,
         "I don't know when I was born. My parents are Ada and Tom; my sister is Nell.",
     ).get_json()
-    # the question is still open, so the birth date is still not asked
+    # the question is open, so the birth date is asked, not listed
     assert shown(model) == "\n".join(
         [
             coverage.HEAD,
-            "1 Wren (the person): birth date, alive or not, schooling",
+            "1 Wren (the person): alive or not, schooling, work",
             RESOLVED.format(known=1, resolved=1, required=13),
         ]
     )
@@ -175,7 +179,7 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     # the person, each parent with who their parents are, the parents'
     # number of children, the sister
     assert done(second["turn_id"]) == {
-        "before": counts(13, 1),
+        "before": counts(13, 1, asked=1),
         "after": counts(49, 9, 1),
     }
 
@@ -393,3 +397,64 @@ def test_a_new_person_ends_the_plateau(web, token, family, monkeypatch):
     model = coach(monkeypatch, Model(plateaued(True), said("Go on.")))
     post(web, token, "Go on.")
     assert not held(model).startswith("Your plateau note holds")
+
+
+def test_a_job_told_unasked_and_noted_as_work_counts_as_known(family):
+    # R-0006
+    data = family.get_diagram_data()
+    work = (Fact.Work, ItemKind.Person, ME)
+    assert coverage.states(data)[work] is FactState.NotAsked
+
+    data.events = [
+        {
+            "id": 2,
+            "kind": "noted",
+            "person": ME,
+            "description": "Started at the bakery",
+            "dateTime": "2019-03-01",
+            "item": "work",
+        }
+    ]
+    assert coverage.states(data)[work] is FactState.Known
+
+
+def test_only_a_noted_event_names_the_item_it_records(family):
+    # R-0006
+    bakery = {
+        "id": 2,
+        "kind": "noted",
+        "person": ME,
+        "description": "Started at the bakery",
+        "dateTime": "2019-03-01",
+        "dateCertainty": "certain",
+        "item": "work",
+    }
+    record.apply(
+        family.id,
+        [
+            {
+                "item_kind": ItemKind.Event.value,
+                "item_id": 2,
+                "field": None,
+                "before": None,
+                "after": bakery,
+            }
+        ],
+        author=Author.Coach,
+        turn_id="t1",
+    )
+    with pytest.raises(record.Invalid, match="only a noted event says"):
+        record.apply(
+            family.id,
+            [
+                {
+                    "item_kind": ItemKind.Event.value,
+                    "item_id": 2,
+                    "field": "kind",
+                    "before": "noted",
+                    "after": "death",
+                }
+            ],
+            author=Author.Coach,
+            turn_id="t2",
+        )

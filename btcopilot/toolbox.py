@@ -39,6 +39,7 @@ from btcopilot.schema import (
     EvidenceKind,
     Fact,
     ItemKind,
+    NotedFact,
     PersonKind,
     QuestionKind,
     QuestionOutcome,
@@ -157,6 +158,7 @@ CLEARABLE = {
     "description": "description",
     "notes": "notes",
     "location": "location",
+    "item": "item",
     "person": "person",
     "spouse": "spouse",
     "child": "child",
@@ -320,6 +322,7 @@ def schemas(coder: bool = False) -> list[dict]:
                         "type": "string",
                         "description": means[prompts.ToolText.Location],
                     },
+                    "item": _enum_param(NotedFact, means[prompts.ToolText.Item]),
                     "person": {
                         "type": "integer",
                         "description": means[prompts.ToolText.Person],
@@ -1161,6 +1164,8 @@ class Toolbox:
         for key in ("notes", "location"):
             if args.get(key):
                 fields[key] = args[key]
+        if args.get("item"):
+            fields["item"] = choice(NotedFact, args["item"], "noted items").value
         for key in ("person", "spouse", "child"):
             if args.get(key) is not None:
                 fields[key] = self._person(data, args[key])

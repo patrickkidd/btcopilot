@@ -27,6 +27,7 @@ from btcopilot.schema import (
     EvidenceKind,
     Fact,
     ItemKind,
+    NotedFact,
     PersonKind,
     Pushback,
     QuestionKind,
@@ -530,6 +531,7 @@ EVENT_SETS = (
     *((field, SHIFTS, "shift directions") for field in VARIABLES),
     ("relationship", RELATIONSHIPS, "relationships"),
     ("dateCertainty", {c.value for c in DateCertainty}, "date certainties"),
+    ("item", {f.value for f in NotedFact}, "items a noted event records"),
 )
 GENDERS = {kind.value for kind in PersonKind}
 
@@ -665,6 +667,13 @@ def _moves(data: dict, deltas: list[dict]):
                 "what moved as a shift of its own, dated to it",
                 "Only a shift carries symptom, anxiety, functioning or a "
                 "relationship: record that as a shift of its own.",
+            )
+        if event.get("item") is not None and kind != EventKind.Noted.value:
+            raise Invalid(
+                f"event {event_id} is a {kind} event: only a noted event says "
+                "which item of the basic data it records",
+                "Only a noted event says it records schooling, work, health or "
+                "where someone lived.",
             )
         for field in DATES:
             day = _day(event.get(field))

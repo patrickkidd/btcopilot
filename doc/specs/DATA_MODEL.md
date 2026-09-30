@@ -97,8 +97,14 @@ class Event:
     relationshipTargets: list[int] = field(default_factory=list)
     relationshipTriangles: list[int] = field(default_factory=list)
     functioning: VariableShift | None = None
+    item: NotedFact | None = None
     confidence: float | None = None
 ```
+
+`item` is set only on a noted event that records an item of the basic data
+about its `person`: one of `schooling`, `work`, `health`, `places` (where they
+lived). The record refuses it on any other kind. The coach sets it with
+`edit_event`; coverage then counts that item as known.
 
 ---
 
@@ -227,8 +233,12 @@ class Fact(enum.StrEnum):
     # on a couple
     Children, Met
 
+class NotedFact(enum.StrEnum):
+    Schooling, Work, Health, Places  # the same values as in Fact
+
 class FactState(enum.StrEnum):
     Known = "known"
+    Asked = "asked"
     SaidUnknown = "said_unknown"
     Declined = "declined"
     NotAsked = "not_asked"
@@ -236,14 +246,15 @@ class FactState(enum.StrEnum):
 
 A question in `DiagramData.questions` carries `fact`, a `Fact` value or null.
 Only a fact question linked to a person or a couple (`item_kind` person or
-pair_bond) may name one. Closed as `fact` or `answered` it makes the item known,
+pair_bond) may name one. Asked and not yet closed it makes the item asked.
+Closed as `fact` or `answered` it makes the item known,
 as `unknown` said unknown, as `declined_by_user` or `declined_in_chat`
-declined; one let go says nothing. Removing the person or couple drops the
+declined; one held or let go says nothing. The last such question wins. Removing the person or couple drops the
 link and the `fact` together.
 
 Each coach turn's done row in `turn_events` carries
 `coverage: {before: counts, after: counts}`, where counts is
-`{required, known, said_unknown, declined, not_asked}`.
+`{required, known, asked, said_unknown, declined, not_asked}`.
 
 ---
 

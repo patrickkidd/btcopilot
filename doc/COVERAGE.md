@@ -45,18 +45,21 @@ Anyone the record says has died also needs the death date and the cause of
 death; a great-grandparent needs only the death date, and cousins, siblings'
 children and the partner's family when not attached need neither.
 
-## The four states
+## The five states
 
 | State | From |
 |---|---|
-| Known | The record: a name; a dated birth; a death event (alive), its date and its description (cause); a shift with a symptom (health); a dated bond, marriage, separation or divorce (marriages); a noted event with a place (places lived); a man or woman (sex); a parents' couple (parents); every child of the parents with a dated birth, two or more of them or their number known (birth order); a dated bond or marriage on the couple (met); any cluster (periods of stress). Or a fact question naming the item, closed as a fact or answered. |
+| Known | The record: a name; a dated birth; a death event (alive), its date and its description (cause); a shift with a symptom, or a noted event naming health (health); a noted event naming schooling or work; a dated bond, marriage, separation or divorce (marriages); a noted event with a place, or naming places lived (places lived); a man or woman (sex); a parents' couple (parents); every child of the parents with a dated birth, two or more of them or their number known (birth order); a dated bond or marriage on the couple (met); any cluster (periods of stress). Or a fact question naming the item, closed as a fact or answered. |
+| Asked | A fact question naming the item, asked and not yet closed. |
 | Said unknown | A fact question naming the item, closed as unknown. |
 | Declined | A fact question naming the item, closed as declined, by the person or in the chat. |
-| Not asked | Required, not in the record, and no such closed question. A question still open, or let go, leaves its item not asked. |
+| Not asked | Required, not in the record, and no such question asked or closed. A question held for later, or let go, leaves its item not asked. |
 
-Schooling, work, contact, life course and how many children a couple had are
-known only from a closed question: the record has no field that says which of
-them a noted event is about.
+A noted event names which of schooling, work, health or where they lived it
+records in its `item` field, set by the coach when it records such a fact told
+unasked; that item is then known for the event's person. Contact, life course
+and how many children a couple had are known only from a closed question.
+When several questions name one item, the last one sets its state.
 
 A said unknown about parents or grandparents is one fact for a hypothesis about
 cutoff in the parents' generation, never a fact about the person.
@@ -64,7 +67,7 @@ cutoff in the parents' generation, never a fact about the person.
 ## The metrics
 
 Each coach turn's done row keeps the counts before and after the turn: items
-required, known, said unknown, declined and not asked. An evaluation question is
+required, known, asked, said unknown, declined and not asked. An evaluation question is
 a fact question that names an item.
 
 - **Coverage**: known over required.
@@ -85,7 +88,7 @@ unknown is evidence about cutoff in the parents' generation, not a stop.
   order, at most three on one person or couple so the list reaches past the
   first person with many gaps; one line per person or couple, with the id,
   the name and what they are to the person ("2 Ada (mother): birth date,
-  alive or not, schooling").
+  alive or not, schooling"). An item asked and still open is not listed.
 - **Said unknown**: every item said unknown, on one line, as evidence.
 - **One line of fractions**: coverage (known over required) and resolution
   (known, said unknown or declined over required).

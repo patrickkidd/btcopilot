@@ -222,8 +222,8 @@ def _walk(data: DiagramData) -> dict[Item, str]:
 
 def states(data: DiagramData) -> dict[Item, FactState]:
     """Known from the record, or from a closed fact question naming the item;
-    said unknown or declined only from such a question; otherwise not asked.
-    A question still open leaves its item not asked until it is closed."""
+    asked while such a question is open; said unknown or declined only from
+    such a question once closed; otherwise not asked."""
     answers = _answers(data)
     return {
         item: (
@@ -252,7 +252,11 @@ def block(data: DiagramData, plateau: int | None = None) -> str:
     gaps = [i for i in roles if found[i] is FactState.NotAsked]
     lead = LEAD if plateau is None else PLATEAU_LEAD
     unknown = [i for i in roles if found[i] is FactState.SaidUnknown]
-    known = sum(s is FactState.Known for s in found.values())
+    tally = list(found.values())
+    known = tally.count(FactState.Known)
+    resolved = (
+        known + tally.count(FactState.SaidUnknown) + tally.count(FactState.Declined)
+    )
     lines = [HEAD]
     if plateau is not None:
         lines.append(
@@ -264,7 +268,7 @@ def block(data: DiagramData, plateau: int | None = None) -> str:
         lines.append("Said unknown: " + "; ".join(_grouped(data, unknown, roles)))
     lines.append(
         f"Coverage: {known} of {len(found)} known. Resolved: "
-        f"{len(found) - len(gaps)} of {len(found)} known, said unknown or declined."
+        f"{resolved} of {len(found)} known, said unknown or declined."
     )
     return "\n".join(lines)
 
@@ -308,13 +312,18 @@ def _role(data: DiagramData, pid: int, role: tuple) -> str:
 
 
 def _answers(data: DiagramData) -> dict[Item, FactState]:
-    """The last closed question naming each item, by how it ended; one let go
-    says nothing about the item."""
+    """What the last fact question naming each item says of it: asked while
+    it is open, or how it was closed; one held or let go says nothing."""
     out = {}
     for q in data.questions:
-        if q.get("fact") is None or q["state"] != QuestionState.Resolved:
+        if q.get("fact") is None:
             continue
-        state = ANSWERS.get(QuestionOutcome(q["outcome"]))
+        if q["state"] == QuestionState.Asked:
+            state = FactState.Asked
+        elif q["state"] == QuestionState.Resolved:
+            state = ANSWERS.get(QuestionOutcome(q["outcome"]))
+        else:
+            state = None
         if state is not None:
             out[(Fact(q["fact"]), ItemKind(q["item_kind"]), int(q["item_id"]))] = state
     return out
@@ -338,8 +347,10 @@ def _recorded(data: DiagramData, item: Item, answers: dict) -> bool:
             return _dated(_death(data, iid))
         case Fact.CauseOfDeath:
             return bool(_death(data, iid)["description"])
+        case Fact.Schooling | Fact.Work:
+            return _noted(data, iid, fact)
         case Fact.Health:
-            return any(
+            return _noted(data, iid, fact) or any(
                 e["kind"] == EventKind.Shift.value
                 and e.get("person") == iid
                 and e.get("symptom")
@@ -353,7 +364,7 @@ def _recorded(data: DiagramData, item: Item, answers: dict) -> bool:
                 for e in data.events
             )
         case Fact.Places:
-            return any(
+            return _noted(data, iid, fact) or any(
                 e["kind"] == EventKind.Noted.value
                 and e.get("person") == iid
                 and e.get("location")
@@ -373,6 +384,16 @@ def _recorded(data: DiagramData, item: Item, answers: dict) -> bool:
         case Fact.Stress:
             return bool(data.clusters)
     return False
+
+
+def _noted(data: DiagramData, pid: int, fact: Fact) -> bool:
+    """A noted event on the person that says it records this item."""
+    return any(
+        e["kind"] == EventKind.Noted.value
+        and e.get("person") == pid
+        and e.get("item") == fact.value
+        for e in data.events
+    )
 
 
 def _ordered(data: DiagramData, pid: int, answers: dict) -> bool:
