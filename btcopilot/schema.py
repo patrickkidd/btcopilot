@@ -442,6 +442,12 @@ ITEM_COLLECTIONS = {
     ItemKind.Question: "questions",
 }
 
+# A list field left off an item reads as empty (from_dict's default), never null.
+LIST_FIELDS = {
+    kind: {f.name for f in fields(cls) if get_origin(f.type) is list}
+    for kind, cls in ((ItemKind.Event, Event), (ItemKind.Cluster, Cluster))
+}
+
 
 class QuestionKind(enum.StrEnum):
     Thought = "thought"

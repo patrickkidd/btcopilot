@@ -19,6 +19,7 @@ from btcopilot.prompts import Role
 from btcopilot.models import Diagram
 from btcopilot.schema import (
     ITEM_COLLECTIONS,
+    LIST_FIELDS,
     MIN_CLUSTER_EVENTS,
     DateCertainty,
     EventKind,
@@ -270,7 +271,14 @@ def _get(data: dict, delta: dict):
     kind = ItemKind(delta["item_kind"])
     if delta["field"] is None:
         return diagramjson.to_json(_find(data, kind, delta["item_id"]))
-    return diagramjson.to_json(_item(data, delta).get(delta["field"]))
+    return diagramjson.to_json(_held(_item(data, delta), delta))
+
+
+def _held(item: dict, delta: dict):
+    """A field's value as the log states it: a list field left off the item
+    is the empty list it reads as, so taking a later set back leaves a list."""
+    empty = [] if delta["field"] in LIST_FIELDS.get(ItemKind(delta["item_kind"]), ()) else None
+    return item.get(delta["field"], empty)
 
 
 def _apply(data: dict, delta: dict) -> list[dict]:
@@ -291,7 +299,7 @@ def _apply(data: dict, delta: dict) -> list[dict]:
 
 def _set(data: dict, delta: dict) -> dict:
     item = _item(data, delta)
-    before = diagramjson.to_json(item.get(delta["field"]))
+    before = diagramjson.to_json(_held(item, delta))
     item[delta["field"]] = diagramjson.from_json(delta["after"])
     return _delta(delta, before, delta["after"])
 
