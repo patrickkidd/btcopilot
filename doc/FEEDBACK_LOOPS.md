@@ -44,7 +44,7 @@ Panels that show the same people and messages: "People who chatted", "Messages f
 | 7 | Corrections by the person to the coach's record | diagram_changes rows written by the person on a record the coach built; "Doesn't fit" and dismissals in diagram_interactions. | Each correction is kept as a case an eval can run against, and the fix goes through the change log [R-0533]. Three case files since 09-26. A general policy and queue for record corrections is not built. | partial | Hand edits per week; correction cases with a passing eval. | "Coach edits by kind"; query 7; the correction cases in the private corpus |
 | 8 | Bug reports and feedback the coach offers | reports, kind `bug` or `feedback`, sent or declined, when the coach offers one and the person answers the sheet. Sent rows carry the person's words. Errors in the code are Grafana's, never a row. | Nobody yet. The route only takes posts and no admin command lists the rows; a panel counts them, and nobody reads it on a schedule. | partial | Sent and declined per week. | "Bug reports and feedback the coach offered to send, per week"; query 8 |
 | 9 | Product notices | notices, and a notifications row of kind `notice` for each person a notice reaches, with opened_at. | You decide the next notice. `flask admin notice list` prints how many got and opened each one. | partial | Opened ÷ got, per notice. | "Notices: how many people each was sent to, and how many opened it"; query 9 |
-| 10 | Which features people use | product_events: every screen a person opens and about sixty named taps. | What to cut or build next. Nobody reads it on a schedule. | partial | People active per week; days active per person. | "People active"; "Sessions"; "Taps"; "Screens opened"; "Features by use"; "Features by person"; "Feature use a day"; "Screens opened a day"; "First use of each feature, by person"; "Days active, by person"; "First session path"; "Cost per person per feature share"; the Features dashboard's section "What the coach and the app sent, and what came back"; query 10 |
+| 10 | Which features people use | product_events: every screen a person opens and about sixty named taps. | What to cut or build next. Nobody reads it on a schedule. | partial | People active per week; days active per person. | "People active"; "Sessions"; "Taps"; "Screens opened"; "Features by use"; "Features by person"; "Feature use a day"; "Screens opened a day"; "First use of each feature, by person"; "Days active, by person"; "First session path"; "Cost per person per feature share"; the Features dashboard's section "What the coach and the app sent, and what came back"; the Features dashboard's section "Coverage of the basic data": "Coverage curve, across all sittings", "Coverage curve, each sitting", "Coach turns to 50% coverage, by family"; query 10 |
 | 11 | Errors on the page and session replay | Grafana Faro on familydiagram.com: page errors in Grafana's logs with kind exception, and session replay with every element masked. | Someone opens Frontend Observability. You ruled that alerts wait until after the beta (09-22). | partial | Page errors and error groups per week; sessions with an error. Last known: 296 page errors in the 30 days to 09-29. | Query 11 |
 | 12 | Server logs and traces | Alloy sends container logs, host metrics and the coach turn traces to Grafana Cloud. Every request carries an id. | Read when something breaks. No alerting. | partial | Server error lines per day; failed traces per day. | "Memory available"; "Disk free on /"; "CPU busy"; "Load (1m)"; "Memory used by container"; "CPU by container"; "Errors and exceptions (last 6h)"; "Log lines a minute by container"; query 12 |
 | 13 | How much of the family evaluation is covered | The coach's own notes on each turn: whether the history has levelled off, its biggest gap, and whether the turn is evaluation or coaching. Stored with each coach turn's tool calls. | The three-generation coverage brainstorm, which you ruled waits for the frame session. Nothing counts the notes. | missing | None today. One candidate: the share of families with grandparents named. | None |
@@ -280,6 +280,25 @@ where u.username not like 'claude-test%' and pe.created_at > now() - interval '3
   and pe.name <> 'screen_open'
 group by 1 order by 2 desc limit 10;
 ```
+
+**Coverage of the basic data.** A section of the Features dashboard, read from
+the done row each coach turn leaves in turn_events, which carries the counts of
+the basic data's items before and after the turn (doc/COVERAGE.md). Real
+families only: scratch diagrams, synthetic sittings and the claude-test
+accounts are left out.
+
+- "Coverage curve, across all sittings": one line per family, the items known
+  after each coach turn as a share of the items required after it, against the
+  family's coach turns counted from its first.
+- "Coverage curve, each sitting": the same share, one line per sitting, with
+  the coach turns counted again from the start of each sitting.
+- "Coach turns to 50% coverage, by family": the first coach turn after which
+  half the required items were known; families that have not reached half are
+  left out.
+
+Next, not built: facts per evaluation question; coverage gained on coaching
+turns without an evaluation question; engagement after an evaluation question;
+ask density against return within a week.
 
 ### 11. Errors on the page and session replay
 

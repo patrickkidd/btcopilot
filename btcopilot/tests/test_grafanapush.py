@@ -62,4 +62,7 @@ def test_the_features_dashboard_carries_a_panel_for_each_loop():
         "Bug reports and feedback the coach offered to send, per week",
         "Notices: how many people each was sent to, and how many opened it",
         "Coach edits to things an earlier sitting put down, per week",
+        "Coverage curve, across all sittings",
+        "Coverage curve, each sitting",
+        "Coach turns to 50% coverage, by family",
     } <= titles

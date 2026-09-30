@@ -1319,6 +1319,305 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "id": 19,
+      "type": "row",
+      "title": "Coverage of the basic data",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 95
+      },
+      "panels": []
+    },
+    {
+      "id": 20,
+      "type": "xychart",
+      "title": "Coverage curve, across all sittings",
+      "description": "For each family, the basic data's items known after each coach turn as a share of the items required after it, against the family's coach turns counted from its first.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 96
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "show": "points+lines",
+            "pointSize": {
+              "fixed": 5
+            },
+            "lineWidth": 1,
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "coverage %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "known of required"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "coach turn"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "coach turns since the family's first"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "mapping": "auto",
+        "series": [
+          {}
+        ],
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "family"
+            ],
+            "keepFields": false,
+            "naming": {
+              "asLabels": false
+            }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with t as (select u.username || ' / ' || dg.id as family, d.id as sitting_id, te.created_at, (te.payload->'coverage'->'after'->>'known')::float as known, (te.payload->'coverage'->'after'->>'required')::float as required, row_number() over (partition by dg.id order by te.created_at, te.id) as turn, row_number() over (partition by d.id order by te.created_at, te.id) as sitting_turn, dense_rank() over (partition by dg.id order by d.id) as sitting from turn_events te join discussions d on d.id = te.discussion_id join diagrams dg on dg.id = d.diagram_id join users u on u.id = dg.user_id where te.kind = 'done' and te.payload->'coverage' is not null and not dg.scratch and not d.synthetic and u.username not like 'claude-test%' and u.username in (${people:sqlstring}) and u.username !~ '${exclude}') select t.family as \"family\", t.turn as \"coach turn\", round((100 * t.known / nullif(t.required, 0))::numeric, 1) as \"coverage %\" from t where $__timeFilter(t.created_at) order by 1, 2",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "type": "xychart",
+      "title": "Coverage curve, each sitting",
+      "description": "The same share, one line per sitting, with the coach turns counted again from the start of each sitting.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 96
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "show": "points+lines",
+            "pointSize": {
+              "fixed": 5
+            },
+            "lineWidth": 1,
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "coverage %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "known of required"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "coach turn in the sitting"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "coach turns in the sitting"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "mapping": "auto",
+        "series": [
+          {}
+        ],
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "family and sitting"
+            ],
+            "keepFields": false,
+            "naming": {
+              "asLabels": false
+            }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with t as (select u.username || ' / ' || dg.id as family, d.id as sitting_id, te.created_at, (te.payload->'coverage'->'after'->>'known')::float as known, (te.payload->'coverage'->'after'->>'required')::float as required, row_number() over (partition by dg.id order by te.created_at, te.id) as turn, row_number() over (partition by d.id order by te.created_at, te.id) as sitting_turn, dense_rank() over (partition by dg.id order by d.id) as sitting from turn_events te join discussions d on d.id = te.discussion_id join diagrams dg on dg.id = d.diagram_id join users u on u.id = dg.user_id where te.kind = 'done' and te.payload->'coverage' is not null and not dg.scratch and not d.synthetic and u.username not like 'claude-test%' and u.username in (${people:sqlstring}) and u.username !~ '${exclude}') select t.family || ' sitting ' || t.sitting as \"family and sitting\", t.sitting_turn as \"coach turn in the sitting\", round((100 * t.known / nullif(t.required, 0))::numeric, 1) as \"coverage %\" from t where $__timeFilter(t.created_at) order by 1, 2",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "type": "stat",
+      "title": "Coach turns to 50% coverage, by family",
+      "description": "For each family active in the range, the first coach turn after which half of the required items were known. Families that have not reached half are left out.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 105
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#3987e5"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^coach turns$/",
+          "values": true
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with t as (select u.username || ' / ' || dg.id as family, d.id as sitting_id, te.created_at, (te.payload->'coverage'->'after'->>'known')::float as known, (te.payload->'coverage'->'after'->>'required')::float as required, row_number() over (partition by dg.id order by te.created_at, te.id) as turn, row_number() over (partition by d.id order by te.created_at, te.id) as sitting_turn, dense_rank() over (partition by dg.id order by d.id) as sitting from turn_events te join discussions d on d.id = te.discussion_id join diagrams dg on dg.id = d.diagram_id join users u on u.id = dg.user_id where te.kind = 'done' and te.payload->'coverage' is not null and not dg.scratch and not d.synthetic and u.username not like 'claude-test%' and u.username in (${people:sqlstring}) and u.username !~ '${exclude}') select t.family, min(t.turn) filter (where t.required > 0 and t.known >= 0.5 * t.required) as \"coach turns\" from t group by t.family having bool_or($__timeFilter(t.created_at)) and min(t.turn) filter (where t.required > 0 and t.known >= 0.5 * t.required) is not null order by 2",
+          "refId": "A"
+        }
+      ]
     }
   ]
 }

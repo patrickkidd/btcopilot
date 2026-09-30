@@ -76,6 +76,30 @@ a fact question that names an item.
   the evaluation questions asked in those turns.
 - **Ask density**: evaluation questions asked per coach turn.
 
+## On the dashboard
+
+The Features dashboard's section "Coverage of the basic data" reads the counts
+after each coach turn, for real families only (scratch diagrams, synthetic
+sittings and the claude-test accounts left out). A family is a diagram; a
+sitting is a discussion.
+
+- **Coverage curve**, two panels: known over required after each coach turn,
+  one line per family against its coach turns counted from the first, and one
+  line per sitting against the coach turns counted from the start of that
+  sitting.
+- **Coach turns to 50% coverage**: per family, the first coach turn after which
+  half the required items were known, where reached.
+
+Next, not built:
+
+- Facts per evaluation question: items that became known per evaluation
+  question asked.
+- Free coverage on coaching turns: items that became known on turns labelled
+  coaching in the coach's notes, where no evaluation question was asked.
+- Engagement after an evaluation question: whether the person's next message
+  comes and how long it is.
+- Ask density against return within a week.
+
 ## What the coach reads each turn
 
 Each coach turn's prompt carries a block headed WHAT IS STILL UNKNOWN, rendered
