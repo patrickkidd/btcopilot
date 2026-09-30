@@ -86,6 +86,8 @@ before that deploy instead (`/root/backups/prod-<date>-pre-<sha>.dump`, `pg_rest
 into fd-postgres) and say so, since it loses every write since. The next dispatch from the
 branch puts the branch head back.
 
+A restart or recreate of any app container on the box always goes through the rollout script with the current tag. A bare `docker compose up -d` without `BTCOPILOT_TAG` falls back to an older image while the database already carries the newer migration. That happened on 2026-09-30 for about 15 minutes: release 3.2026.9.30.6 was rolled back to 3.2026.9.26.1 by an env-file change followed by a bare `up`.
+
 ## One time: the names move from "chat" to "familydiagram" (R-0472)
 
 The compose project, the Postgres role and the Postgres database were all named

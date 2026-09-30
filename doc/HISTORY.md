@@ -2014,3 +2014,7 @@ reset.sh, and its database is never reset mid-walk; the local model there cannot
 HOW_THIS_PROJECT_WORKS.md. The box answers ssh only as root.
 
 **Open**: the 15 queued rulings wait for Patrick's key; the list is STATE.md's "Next PR".
+
+## 2026-09-30 — production ran an older image for about 15 minutes
+
+An env-file change followed by a bare `docker compose up -d` without `BTCOPILOT_TAG` rolled release 3.2026.9.30.6 back to 3.2026.9.26.1 on the box while the database already carried the newer migration; box restarts now always go through the rollout with the current tag (deploy/README.md).
