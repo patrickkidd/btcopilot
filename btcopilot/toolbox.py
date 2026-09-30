@@ -140,15 +140,11 @@ def _values(cls) -> list[str]:
     return [member.value for member in cls]
 
 
-def _field(kind: str, description: str = "", **shape) -> dict:
-    param = {"type": kind, **shape}
+def _enum_param(cls, description: str = "") -> dict:
+    param = {"type": "string", "enum": _values(cls)}
     if description:
         param["description"] = description
     return param
-
-
-def _enum_param(cls, description: str = "") -> dict:
-    return _field("string", description, enum=_values(cls))
 
 
 CERTAINTY = (
@@ -238,7 +234,10 @@ def schemas() -> list[dict]:
                     "name": {"type": "string"},
                     "last_name": {"type": "string"},
                     "gender": _enum_param(PersonKind),
-                    "parents": _field("integer", means[prompts.ToolText.Parents]),
+                    "parents": {
+                        "type": "integer",
+                        "description": means[prompts.ToolText.Parents],
+                    },
                 },
             },
         },
@@ -250,8 +249,14 @@ def schemas() -> list[dict]:
                 "properties": {
                     "id": {"type": "integer"},
                     "version": VERSION,
-                    "person_a": _field("integer", means[prompts.ToolText.PersonA]),
-                    "person_b": _field("integer", means[prompts.ToolText.PersonB]),
+                    "person_a": {
+                        "type": "integer",
+                        "description": means[prompts.ToolText.PersonA],
+                    },
+                    "person_b": {
+                        "type": "integer",
+                        "description": means[prompts.ToolText.PersonB],
+                    },
                     "married": {"type": "boolean"},
                 },
             },
@@ -268,19 +273,38 @@ def schemas() -> list[dict]:
                     "version": VERSION,
                     "kind": _enum_param(EventKind, means[prompts.ToolText.EventKind]),
                     "date": {"type": "string", "description": "YYYY-MM-DD"},
-                    "end_date": _field("string", means[prompts.ToolText.EndDate]),
+                    "end_date": {
+                        "type": "string",
+                        "description": means[prompts.ToolText.EndDate],
+                    },
                     "date_certainty": _enum_param(
                         DateCertainty,
                         "Needed with a new event or date; left out otherwise, it stays.",
                     ),
-                    "description": _field(
-                        "string", means[prompts.ToolText.Description]
-                    ),
-                    "notes": _field("string", means[prompts.ToolText.Notes]),
-                    "location": _field("string", means[prompts.ToolText.Location]),
-                    "person": _field("integer", means[prompts.ToolText.Person]),
-                    "spouse": _field("integer", means[prompts.ToolText.Spouse]),
-                    "child": _field("integer", means[prompts.ToolText.Child]),
+                    "description": {
+                        "type": "string",
+                        "description": means[prompts.ToolText.Description],
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": means[prompts.ToolText.Notes],
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": means[prompts.ToolText.Location],
+                    },
+                    "person": {
+                        "type": "integer",
+                        "description": means[prompts.ToolText.Person],
+                    },
+                    "spouse": {
+                        "type": "integer",
+                        "description": means[prompts.ToolText.Spouse],
+                    },
+                    "child": {
+                        "type": "integer",
+                        "description": means[prompts.ToolText.Child],
+                    },
                     "anxiety": _enum_param(
                         VariableShift, means[prompts.ToolText.Anxiety]
                     ),
@@ -293,16 +317,16 @@ def schemas() -> list[dict]:
                     "relationship": _enum_param(
                         RelationshipKind, means[prompts.ToolText.Relationship]
                     ),
-                    "relationship_targets": _field(
-                        "array",
-                        means[prompts.ToolText.RelationshipTargets],
-                        items={"type": "integer"},
-                    ),
-                    "relationship_triangles": _field(
-                        "array",
-                        means[prompts.ToolText.RelationshipTriangles],
-                        items={"type": "integer"},
-                    ),
+                    "relationship_targets": {
+                        "type": "array",
+                        "items": {"type": "integer"},
+                        "description": means[prompts.ToolText.RelationshipTargets],
+                    },
+                    "relationship_triangles": {
+                        "type": "array",
+                        "items": {"type": "integer"},
+                        "description": means[prompts.ToolText.RelationshipTriangles],
+                    },
                 },
             },
         },
