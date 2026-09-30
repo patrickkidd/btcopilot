@@ -374,6 +374,7 @@ What it is for: you, your families, your plan, and signing out.
 - Licences and the plan are listed; nothing on that page implies a price yet. [built]
 - Auditors and admins see a Coding section above Sign out: Your coding task, which opens the one task card; Next meeting, for admins only, which opens the agenda; and Auditor's Coding Guide, which opens the concept pages on a page of its own. [built] {R-0265, R-0259, R-0541, R-0567}
 - Admins also see a Quality section with one row, Better replies, over the line "Pick the better of two coach replies"; it opens the screen where two coach replies to the same words are picked blind, titled Better replies. [built] {R-0599}
+- Better replies serves the pairs a conversation at a time, in the order the words were said, so a session reads as it happened; the conversation up to the words both replies answer stays above the two replies. [built] {R-0599}
 - Each of those opens as a page of the account view, sliding in over it the way Coach, Appearance and Plan do, and the back arrow at the top left returns to the account view. [built] {R-0259, R-0265}
 - A plain subscriber or a professional sees neither section. [built] {R-0311}
 - Sign out sits alone at the bottom and signs you out immediately, with no confirmation step. [built]
