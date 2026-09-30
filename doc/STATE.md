@@ -23,20 +23,14 @@ The older handover files in the private corpus stay as they were, for the record
 
 FD-366 is the follow-on ticket (child of epic FD-362): the coverage checklist per Kerr chapter 10 with four states, prose quality by Patrick's picks, the conversational regression test, and the shadow spend category. FD-365 is frozen for review and merge as of 2026-09-30; new work goes on branch FD-366 from the FD-365 head, and the deploy lock moves to FD-366 when Patrick says so.
 
-**Start here for FD-366 (2026-09-30).** FD-365 is merged and production runs release 3.2026.9.30.4. Move the deploy lock to FD-366 with `uv run bin/deploy-lock set FD-366` from this worktree. Claude does this when Patrick says so (R-0623).
-
-Build, in this order:
-1. Shadow token spend as its own category on the cost dashboard.
-2. The coverage checklist: every fact the family evaluation needs, per relative, each one known, said unknown, declined, or not asked; the coach reads the next unasked items each turn; coverage panels on the features dashboard.
-3. The conversational regression test on Patrick's thread.
-
-Decided 2026-09-30, confirmed (relayed from the FD-365 session): drop R-0485's "history means everything before the first coaching session", so history is everything up to now; keep its plateau flag redefined as the coach's expiring hypothesis that asking about gaps is yielding little right now, which lowers the checklist's ranking pressure and never closes an item or hides the not-asked list.
-
-Patrick still decides: whether to build the shadow backfill; keep or stop the shadow spend, about $25 a month.
-
-Patrick's key: append the queued rulings from the private corpus queue file.
-
-8. Queued 2026-09-30 (R-0619 in the queue file): the coach-started email as sent ("The coach wrote to you") fails Patrick's test — no reason given for the message, out-of-context body, over-read of a tiny sample, no conclusion or action. Owed: a design pass with drawn options for the subject line and body, framed like an unexpected phone call from the coach, short, one interesting point with something to chat about; no further proactive email until Patrick picks. Ties to theory open question 36.
+**Start here for FD-366 (end of 2026-09-30).** Production runs release 3.2026.9.30.12. The deploy lock is on FD-366 (`uv run bin/deploy-lock set FD-366`; Claude moves it when Patrick says so, R-0623).
+Live: the coach at low thinking, every model call metered by purpose (shadow kept out of real spend), shadow turns and backfill on a queue, the OpenAI client (GPT-6.1 alias gpt), coverage stages one to three (required items from the record, four states, the ranked unasked block in the coach's summary, the coverage curve on the features dashboard), the rewind fix for kindless events, the record-row lock fix.
+Patrick's sitting measures: whether replies at low thinking and with the coverage block read as well as before, judged by his picks in Better replies.
+Patrick's items: the A items on the open-issues page; the rulings queue waits for his key (R-0619, R-0622, R-0623, R-0624, the R-0618 note); the Sonnet and Flash picks in Better replies; the one-off correction of old fallback rows on production; a key for Muse Spark, and an OpenAI key on the box for live GPT shadows.
+Ours: the four remaining coverage panels, the conversational regression test on Patrick's thread, the coverage-efficiency experiment, the pick-notes rubric, the coach-started email design pass.
+Artifacts: cost page https://claude.ai/artifact/WMnou7A3UcZcUhAgZujQre ; open issues https://claude.ai/artifact/6V3sTBzxEz7WZKGZJNGe9s ; models https://claude.ai/artifact/2dHnrTjSaD2cTyzdjue5GL ; tools https://claude.ai/artifact/3sLhHczKGyWLLXmMw2DY8q ; coverage decisions https://claude.ai/artifact/TtrD5U4qYmut1bdb7jM4Yg
+Local measurement harness: /Users/patrick/btcopilot-sandbox/prodcopy (its README says how to replay turns against a copy of production data).
+Skills changed today and uncommitted in the sources repo: efficiency, token-optimization, theory.
 
 ## The product (ruled)
 
