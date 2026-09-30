@@ -7,7 +7,6 @@ import contextlib
 import datetime
 import hashlib
 import json
-import subprocess
 import time
 from collections import Counter
 from decimal import Decimal
@@ -15,6 +14,7 @@ from pathlib import Path
 
 from sqlalchemy import func
 
+import btcopilot
 from btcopilot import ledger, prompts, shadow
 from btcopilot.coachmodel import COACH_EFFORT, model_for
 from btcopilot.extensions import db
@@ -89,7 +89,7 @@ def replay(
     row = {
         "at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "kind": ledger.LedgerKind.Replay.value,
-        "git": _git(),
+        "git": btcopilot.__version__,
         "model": served[0][0] if served else resolve_model(requested),
         "requested": requested,
         "discussion_id": discussion.id,
@@ -123,24 +123,39 @@ def replay(
 
 
 def turned(user_id: int, limit: int | None = None) -> list[Statement]:
-    """The person's own words that started a live coach turn, oldest first,
-    leaving out the words of earlier replays."""
-    return (
+    """The words that started each live coach turn the person took, oldest
+    first, leaving out the words of earlier replays. A turn is a run of their
+    statements that a coach reply answered; a resent message repeats the run's
+    words, and the run's first statement anchors the turn because its changes
+    can predate the resend. Older turns carry their turn id on the reply, on
+    the first send or nowhere, so none is required."""
+    rows = (
         Statement.query.join(Discussion, Statement.discussion_id == Discussion.id)
         .join(Diagram, Discussion.diagram_id == Diagram.id)
         .join(Speaker, Statement.speaker_id == Speaker.id)
         .filter(
             Discussion.user_id == user_id,
             Diagram.scratch.is_(False),
-            Speaker.type == SpeakerType.Subject,
             Statement.kind == StatementKind.Turn,
-            Statement.turn_id.isnot(None),
             Statement.text.isnot(None),
         )
-        .order_by(Statement.id)
-        .limit(limit)
+        .order_by(Statement.discussion_id, Statement.order, Statement.id)
         .all()
     )
+    starts, run = [], []
+    for row in rows:
+        if run and row.discussion_id != run[0].discussion_id:
+            run = []
+        if row.speaker.type == SpeakerType.Subject:
+            run.append(row)
+        elif run:
+            if len({s.text for s in run}) > 1:
+                raise ValueError(
+                    f"statements {[s.id for s in run]} are one turn with different words"
+                )
+            starts.append(run[0])
+            run = []
+    return sorted(starts, key=lambda s: s.id)[:limit]
 
 
 def anchor(diagram: Diagram, said: Statement | None) -> tuple[bytes, int]:
@@ -214,12 +229,3 @@ def faults(diagram_id: int, data: dict) -> dict:
             1 for e in events if e.dateCertainty == DateCertainty.Unknown
         ),
     }
-
-
-def _git() -> str:
-    return subprocess.run(
-        ["git", "-C", str(Path(__file__).parent), "rev-parse", "HEAD"],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip()

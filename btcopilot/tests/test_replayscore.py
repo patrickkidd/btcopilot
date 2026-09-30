@@ -6,6 +6,8 @@ import json
 
 import pytest
 
+import btcopilot
+
 from btcopilot import diagramjson, ledger, prompts, record, replayscore
 from btcopilot.admin import admin
 from btcopilot.admin.quality import PRODUCTION
@@ -15,8 +17,11 @@ from btcopilot.models import (
     Author,
     Change,
     Diagram,
+    Discussion,
     ModelCall,
     Purpose,
+    Speaker,
+    SpeakerType,
     Statement,
     StatementKind,
     TokenMeter,
@@ -108,7 +113,9 @@ def test_a_refused_call_and_a_person_added_twice_are_counted(
     assert row["scores"]["people"] == 0.67
 
 
-def test_a_replay_asks_a_question_in_its_scratch_session(discussion, reference, monkeypatch):
+def test_a_replay_asks_a_question_in_its_scratch_session(
+    discussion, reference, monkeypatch
+):
     # R-0597
     model = Model(
         calling(
@@ -121,7 +128,9 @@ def test_a_replay_asks_a_question_in_its_scratch_session(discussion, reference, 
     )
     monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
     row = replayscore.replay(discussion, "sonnet-5", reference)
-    asked = db.session.get(Diagram, row["scratch_diagram_id"]).get_diagram_data().questions
+    asked = (
+        db.session.get(Diagram, row["scratch_diagram_id"]).get_diagram_data().questions
+    )
     assert [q["session_id"] for q in asked] == [row["scratch_discussion_id"]]
 
 
@@ -237,7 +246,9 @@ def test_a_prompt_dir_fragment_renders_into_the_usual_coach_prompt(
 ):
     # R-0597
     (tmp_path / "fragments").mkdir()
-    (tmp_path / "fragments" / "narration.md").write_text("Narrate as Brother Cadfael.\n")
+    (tmp_path / "fragments" / "narration.md").write_text(
+        "Narrate as Brother Cadfael.\n"
+    )
     model = Model(said("Noted."))
     monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
     replayscore.replay(discussion, "sonnet-5", reference, prompt=tmp_path)
@@ -245,34 +256,46 @@ def test_a_prompt_dir_fragment_renders_into_the_usual_coach_prompt(
     assert "Cadfael" not in prompts.get_agent_prompt()
 
 
+def _turn(discussion, order, words, turn_id=None, reply_id=None):
+    """The person's words at `order` and the coach's reply after them, or no
+    reply when `reply_id` is False."""
+    subject, expert = discussion.speakers
+    for speaker, text, stamp in (
+        (subject, words, turn_id),
+        (expert, "Noted.", reply_id),
+    ):
+        if speaker is expert and reply_id is False:
+            continue
+        db.session.add(
+            Statement(
+                discussion_id=discussion.id,
+                speaker_id=speaker.id,
+                text=text,
+                order=order if speaker is subject else order + 1,
+                kind=StatementKind.Turn,
+                turn_id=stamp,
+            )
+        )
+    db.session.commit()
+
+
 def test_turns_caps_a_persons_replay_and_pairs_the_turn_ids(
     flask_app, discussion, reference, test_user, monkeypatch
 ):
     # R-0597
-    subject = discussion.speakers[0]
-    for order, words in ((2, "My sister Nell moved."), (3, "Then she wed.")):
-        db.session.add(
-            Statement(
-                discussion_id=discussion.id,
-                speaker_id=subject.id,
-                text=words,
-                order=order,
-                kind=StatementKind.Turn,
-                turn_id=f"live{order}",
-            )
-        )
-    db.session.commit()
-    model = Model(said("Noted."))
+    _turn(discussion, 2, "My sister Nell moved.", "live2", "live2")
+    _turn(discussion, 4, "Then she wed.", "live4", "live4")
+    model = Model(said("Noted."), said("Noted."))
     monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
     result = flask_app.test_cli_runner().invoke(
         admin,
         ["quality", "replay-person", str(test_user.id), "sonnet-5"]
-        + ["--reference", str(reference.id), "--turns", "1"],
+        + ["--reference", str(reference.id), "--turns", "2"],
     )
     assert result.exit_code == 0, result.output
-    assert "1 turns" in result.output
+    assert "2 turns" in result.output
     assert "live2 -> " in result.output
-    assert "live3" not in result.output
+    assert "live4" not in result.output
 
 
 def _added(diagram_id, user_id, person_id, name, turn_id):
@@ -295,22 +318,11 @@ def _added(diagram_id, user_id, person_id, name, turn_id):
 
 @pytest.fixture
 def lived(discussion, test_user):
-    """An older reply with no turn id that added Nell, then three live turns
+    """An older turn with no turn id that added Nell, then three live turns
     that each added one sibling."""
     _added(discussion.diagram_id, test_user.id, 1, "Nell", "before-turn-ids")
-    subject = discussion.speakers[0]
-    for order, name in ((2, "Wren"), (3, "Ada"), (4, "Bo")):
-        db.session.add(
-            Statement(
-                discussion_id=discussion.id,
-                speaker_id=subject.id,
-                text=f"My brother {name}.",
-                order=order,
-                kind=StatementKind.Turn,
-                turn_id=f"live{order}",
-            )
-        )
-        db.session.commit()
+    for order, name in ((2, "Wren"), (4, "Ada"), (6, "Bo")):
+        _turn(discussion, order, f"My brother {name}.", f"live{order}", f"live{order}")
         _added(discussion.diagram_id, test_user.id, order, name, f"live{order}")
     return discussion
 
@@ -328,15 +340,16 @@ def test_a_replay_starts_before_its_first_turn_and_is_scored_after_its_last(
 ):
     # R-0597
     model = Model(
-        called(ToolName.EditPerson, name="Wren", last_name="Hale"),
+        called(ToolName.EditPerson, name="Nell", last_name="Hale"),
         said("Noted."),
-        called(ToolName.EditPerson, name="Ada", last_name="Hale"),
+        called(ToolName.EditPerson, name="Wren", last_name="Hale"),
         said("Noted."),
     )
     monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
     result = _person(flask_app, test_user)
     assert result.exit_code == 0, result.output
-    assert "turns live2..live3 (2)" in result.output
+    first, second = replayscore.turned(test_user.id, 2)
+    assert f"statements {first.id}..{second.id} (2)" in result.output
     line = json.loads(path.read_text())
     assert line["scores"]["people"] == 1.0
     assert line["case"] in result.output
@@ -344,7 +357,6 @@ def test_a_replay_starts_before_its_first_turn_and_is_scored_after_its_last(
     assert [p["name"] for p in adapter.record_of(scratch)["people"]] == [
         "Nell",
         "Wren",
-        "Ada",
     ]
 
 
@@ -353,7 +365,9 @@ def test_an_anchor_on_a_change_without_a_version_names_the_row(lived, test_user)
     change = Change.query.filter_by(diagram_id=lived.diagram_id, turn_id="live2").one()
     change.version = None
     db.session.commit()
-    words = Statement.query.filter_by(turn_id="live2").one()
+    words = Statement.query.filter_by(
+        turn_id="live2", speaker_id=lived.speakers[0].id
+    ).one()
     with pytest.raises(
         ValueError, match=f"row {change.id} on diagram {lived.diagram_id}"
     ):
@@ -372,3 +386,65 @@ def test_a_kept_key_is_not_run_again_without_again(
     assert len(path.read_text().splitlines()) == 1
     assert _person(flask_app, test_user, "--again").exit_code == 0
     assert len(path.read_text().splitlines()) == 2
+
+
+@pytest.fixture
+def thread(test_user):
+    """The old layout of a live thread: the first words sent twice, the turn id
+    on the first send only; the second turn's id on the reply alone; the third
+    stamped on both. Each turn added one person."""
+    thread = Discussion(
+        user_id=test_user.id,
+        diagram_id=test_user.free_diagram_id,
+        speakers=[
+            Speaker(name="Client", type=SpeakerType.Subject, person_id=1),
+            Speaker(name="Coach", type=SpeakerType.Expert),
+        ],
+    )
+    db.session.add(thread)
+    db.session.commit()
+    _turn(thread, 1, "My sister Nell sleeps badly.", "t1", False)
+    _added(thread.diagram_id, test_user.id, 1, "Nell", "t1")
+    _turn(thread, 2, "My sister Nell sleeps badly.")
+    _turn(thread, 4, "I am Wren Hale.", None, "t2")
+    _added(thread.diagram_id, test_user.id, 2, "Wren", "t2")
+    _turn(thread, 6, "Our brother is Ada.", "t3", "t3")
+    _added(thread.diagram_id, test_user.id, 3, "Ada", "t3")
+    return thread
+
+
+def test_a_replay_feeds_every_answered_turn_in_order_and_records_on_scratch(
+    flask_app, thread, test_user, path, monkeypatch
+):
+    # R-0597
+    assert [s.text for s in replayscore.turned(test_user.id)] == [
+        "My sister Nell sleeps badly.",
+        "I am Wren Hale.",
+        "Our brother is Ada.",
+    ]
+    model = Model(
+        called(ToolName.EditPerson, name="Nell", last_name="Hale"),
+        said("Nell is in."),
+        called(ToolName.EditPerson, name="Wren", last_name="Hale"),
+        said("Wren is in."),
+    )
+    monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
+    result = _person(flask_app, test_user)
+    assert result.exit_code == 0, result.output
+    assert "Nell" not in model.systems[0]
+    second = json.dumps(model.histories[2])
+    assert all(
+        words in second
+        for words in ("My sister Nell sleeps badly.", "Nell is in.", "I am Wren Hale.")
+    )
+    assert "Nell" in model.systems[2]
+    assert "Ada" not in second
+    line = json.loads(path.read_text())
+    assert line["scores"]["people"] == 1.0
+    assert line["git"] == btcopilot.__version__
+    scratch = db.session.get(Diagram, line["scratch_diagram_id"])
+    assert (
+        scratch.version
+        == 1 + Change.query.filter_by(diagram_id=scratch.id).count()
+        == 3
+    )

@@ -204,7 +204,7 @@ def quality_replay_person(
     if reference is None:
         raise click.UsageError("no such reference diagram")
     key = (
-        f"person {user.id} turns {statements[0].turn_id}..{statements[-1].turn_id} "
+        f"person {user.id} statements {statements[0].id}..{statements[-1].id} "
         f"({len(statements)}) record v{before}..v{after} "
         f"prompt {replayscore.prompt_version(prompt_dir)} "
         f"model {resolve_model(model)} thinking {thinking}"

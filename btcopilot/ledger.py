@@ -43,5 +43,6 @@ def append(row: dict, path: Path = PATH) -> None:
             f"unknown {sorted(row.keys() - FIELDS)}"
         )
     LedgerKind(row["kind"])
+    path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a") as f:
         f.write(json.dumps(row) + "\n")
