@@ -79,6 +79,16 @@ def test_the_notes_tool_asks_for_every_field():
     assert schema["input_schema"]["properties"]["register"]["enum"] == [r.value for r in Register]
 
 
+def test_the_notes_tool_says_evaluation_and_not_journaling():
+    # R-0535
+    schema = next(s for s in schemas() if s["name"] == ToolName.CoachNotes)
+    register = schema["input_schema"]["properties"]["register"]
+    assert "evaluation" in register["enum"]
+    assert "journaling" not in register["enum"]
+    assert "Evaluation is a turn" in register["description"]
+    assert "Coaching is ongoing conversation" in register["description"]
+
+
 def test_the_notes_are_kept_and_read_back_next_turn_in_another_session(
     web, family, monkeypatch, test_user
 ):

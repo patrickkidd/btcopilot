@@ -31,7 +31,6 @@ import type {
   Preferences,
   Started,
   Report,
-  RequestFailure,
   Result,
   Session,
   SessionKind,
@@ -55,27 +54,6 @@ const PATIENCE_MS = 60_000;
 /** How long the page waits for a play-by-play: the server's own longest answer
  * (btcopilot/playturn.py WAIT), so a slow model fails with the server's error. */
 export const PLAY_WAIT_S = 390;
-
-/** Where a report goes, which never reports itself. */
-const REPORTS = `${ROOT}/reports`;
-/** The header only this server's own answers carry: a proxy's error page, or
- * the dev server's when the server is down, has none. */
-const REQUEST_ID = "X-Request-Id";
-
-/** A request as the endpoint it is, whichever row it names:
- * `/app/sessions/12` is `/app/sessions/:id`. */
-export const endpoint = (path: string) => path.replace(/\/\d+(?=\/|$)/g, "/:id");
-
-/** Who hears that the server broke on a request. */
-type Broke = (failure: RequestFailure) => void;
-let broke: Broke | null = null;
-
-/** The server breaking on a request raises the bug sheet (R-0056): only an
- * answer of 500 or above that the server itself gave, never no answer at all,
- * a refusal, or a proxy's. */
-export const onBroke = (listener: Broke) => {
-  broke = listener;
-};
 
 function csrf(): string {
   return (
@@ -153,13 +131,8 @@ async function send<T>(
     if (!(error instanceof TypeError || error instanceof DOMException)) throw error;
     throw new Failed(0, `${method} ${url}`, error.message);
   }
-  if (!response.ok) {
-    const path = url.split("?")[0];
-    const id = response.headers.get(REQUEST_ID);
-    if (response.status >= 500 && id !== null && path !== REPORTS)
-      broke?.({ status: response.status, method, path: endpoint(path), request_id: id });
+  if (!response.ok)
     throw new Failed(response.status, `${method} ${url}`, await response.text());
-  }
   // an empty answer left unread is logged by the browser as aborted
   if (response.status === 204) {
     await response.text();
@@ -332,12 +305,8 @@ export const deleteSession = (id: number) => call<void>("DELETE", `/sessions/${i
 export const renameSession = (id: number, title: string) =>
   call<Session>("PATCH", `/sessions/${id}`, { title });
 
-/** A bug or feedback the person chose to send (R-0056). */
+/** A bug or feedback the coach offered and the person answered (R-0056). */
 export const report = (body: Report) => call<{ id: number }>("POST", "/reports", body);
-
-/** A sent bug's repeats, added to its count as the page goes: with keepalive,
- * as the product events are, so they still land as the page hides. */
-export const repeated = (body: Report) => send<{ id: number }>("POST", REPORTS, body, true);
 
 export const preferences = () => call<Preferences>("GET", "/preferences");
 

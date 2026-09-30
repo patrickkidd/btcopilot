@@ -1,6 +1,6 @@
-"""A bug or feedback from the app's page or its service worker, which also
-comes from a signed-out page and so carries no CSRF token; only a post from
-this site is taken [Oracle: R-0056]."""
+"""A bug or feedback the coach offered and the person answered on the page.
+It takes no CSRF token, so only a post from this site is taken
+[Oracle: R-0056]."""
 
 from flask import jsonify, request
 

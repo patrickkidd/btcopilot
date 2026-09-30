@@ -20,15 +20,6 @@ const say = async (page: Page, words: string) => {
 
 const warning = (page: Page) => page.locator(".sys.warn");
 
-/** The server breaking on the send raises the bug sheet over the thread,
- * which has to be answered before anything behind it can be tapped (R-0056). */
-const report = async (page: Page) => {
-  const sheet = page.locator(".fs-sheet.rp");
-  await sheet.getByRole("button", { name: "Send the report" }).click();
-  await sheet.getByRole("button", { name: "OK" }).click();
-  await expect(sheet).toBeHidden();
-};
-
 test.describe("a send that does not go through", () => {
   test.use({ storageState: stateFor("moves") });
 
@@ -46,8 +37,6 @@ test.describe("a send that does not go through", () => {
 
     await say(page, "My dad moved out.");
     await expect(warning(page)).toHaveText(/would not take that/);
-    // a refusal is not a bug
-    await expect(page.locator(".fs-sheet.rp")).toBeHidden();
     // the words the reader typed are still in the thread, and nothing is typing
     await expect(page.locator(".bub.user").last()).toHaveText("My dad moved out.");
     await expect(page.locator(".bub.typing")).toHaveCount(0);
@@ -72,7 +61,7 @@ test.describe("a send that does not go through", () => {
     await expect(page.locator(".bub.typing")).toHaveCount(0);
   });
 
-  // R-0182
+  // R-0182, R-0056
   test("goes when a later message lands, not only on the retry", async ({
     page,
   }) => {
@@ -86,13 +75,12 @@ test.describe("a send that does not go through", () => {
 
     await say(page, "My dad moved out.");
     await expect(warning(page)).toHaveText(/server broke/);
-    await report(page);
+    // an error is Grafana's, never a sheet over the thread
+    await expect(page.locator(".fs-sheet.rp")).toBeHidden();
 
-    // a second failure says the same thing in the same place, never a pile,
-    // and the same error raises no second report
+    // a second failure says the same thing in the same place, never a pile
     await say(page, "And my mum got ill.");
     await expect(warning(page)).toHaveCount(1);
-    await expect(page.locator(".fs-sheet.rp")).toBeHidden();
 
     // the reader says something else and it lands: the old warning is no
     // longer true, and goes without being tapped

@@ -9,7 +9,7 @@ export enum Register {
   Coaching = "coaching",
   Correction = "record correction",
   AppHelp = "app help",
-  Journaling = "journaling",
+  Evaluation = "evaluation",
 }
 
 export interface Notes {

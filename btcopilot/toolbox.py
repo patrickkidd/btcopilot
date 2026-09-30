@@ -79,7 +79,7 @@ class Register(enum.StrEnum):
     Coaching = "coaching"
     Correction = "record correction"
     AppHelp = "app help"
-    Journaling = "journaling"
+    Evaluation = "evaluation"
 
 
 class Variable(enum.StrEnum):
@@ -620,9 +620,9 @@ def schemas() -> list[dict]:
         {
             "name": ToolName.Report.value,
             "description": (
-                "Offer to send what the person said about the app to the people "
-                "who make it: the app asks them whether to send it, and nothing "
-                "is sent unless they say so.\n\n"
+                "Offer to send what the person said about the app, or what you "
+                "misread, to the people who make it: the app asks them whether "
+                "to send it, and nothing is sent unless they say so.\n\n"
                 + prompts.files().fragment("report")
             ),
             "input_schema": {
@@ -632,13 +632,17 @@ def schemas() -> list[dict]:
                         "type": "string",
                         "enum": [kind.value for kind in ReportKind],
                         "description": (
-                            "bug: something in the app does not work; feedback: "
-                            "something they want changed, dislike, or wish it did."
+                            "bug: the app or you behaved wrongly as they "
+                            "experienced it; feedback: a wish or a dislike about "
+                            "the app."
                         ),
                     },
                     "words": {
                         "type": "string",
-                        "description": "The person's own words, as they said them.",
+                        "description": (
+                            "The person's own words, as they said them; for a "
+                            "bug about your own misreading, yours."
+                        ),
                     },
                 },
                 "required": ["kind", "words"],
@@ -654,7 +658,13 @@ def schemas() -> list[dict]:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "register": _enum_param(Register, "What kind of talk this turn is."),
+                    "register": _enum_param(
+                        Register,
+                        "What kind of talk this turn is. Evaluation is a turn whose "
+                        "question aims at covering the basic family history an "
+                        "evaluation needs. Coaching is ongoing conversation outside "
+                        "that aim.",
+                    ),
                     "lane": {"type": "string"},
                     "why": {"type": "string", "description": "Why this question now."},
                     "holding": {
