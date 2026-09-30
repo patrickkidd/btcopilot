@@ -34,7 +34,7 @@ from btcopilot.models import (
     User,
 )
 from btcopilot.prompts import get_agent_prompt
-from btcopilot.toolbox import ToolName, schemas
+from btcopilot.toolbox import Toolbox, ToolName, schemas
 from btcopilot.schema import (
     Cluster,
     DateCertainty,
@@ -173,6 +173,18 @@ def test_a_turn_that_fails_before_the_coach_answers_stores_no_words(discussion, 
         run(discussion, "May of 1971", Down())
     db.session.rollback()
     assert len(discussion.statements) == before
+
+
+def test_a_turn_whose_tool_step_raises_keeps_its_model_calls(discussion, family, monkeypatch):
+    # R-0388
+    def broken(self, args):
+        raise RuntimeError("tool broke")
+
+    monkeypatch.setattr(Toolbox, "_read_people", broken)
+    with pytest.raises(RuntimeError):
+        run(discussion, "My aunt Nell.", Model(called(ToolName.ReadPeople), said("Noted.")))
+    db.session.rollback()
+    assert ModelCall.query.filter_by(purpose=Purpose.Coach).count() == 1
 
 
 def test_a_chip_the_record_cannot_resolve_never_reaches_the_transcript(

@@ -7,9 +7,7 @@ import contextlib
 import datetime
 import hashlib
 import json
-import shutil
 import subprocess
-import tempfile
 import time
 from collections import Counter
 from decimal import Decimal
@@ -178,23 +176,22 @@ def kept(key: str) -> bool:
 
 
 @contextlib.contextmanager
-def agent_prompt_from(path: Path | None):
-    """The coach's main prompt read from `path` for the length of the block,
-    its fragments and every other prompt still read from the usual places."""
-    if path is None:
+def agent_prompt_from(folder: Path | None):
+    """The prompts in `folder`, the coach's agent.prompty or any of its
+    fragments/, read in place of the usual ones for the length of the block;
+    whatever the folder does not hold is still read from the usual places."""
+    if folder is None:
         yield
         return
     usual = prompts.files
-    with tempfile.TemporaryDirectory() as tmp:
-        shutil.copy(path, Path(tmp) / "agent.prompty")
-        chosen = PromptDir([Path(tmp), *usual().dirs])
-        prompts.files = lambda: chosen
+    chosen = PromptDir([folder, *usual().dirs])
+    prompts.files = lambda: chosen
+    prompts._agent_fixed.cache_clear()
+    try:
+        yield
+    finally:
+        prompts.files = usual
         prompts._agent_fixed.cache_clear()
-        try:
-            yield
-        finally:
-            prompts.files = usual
-            prompts._agent_fixed.cache_clear()
 
 
 def faults(diagram_id: int, data: dict) -> dict:

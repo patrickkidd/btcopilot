@@ -853,7 +853,7 @@ class Toolbox:
         turn_id: str,
         *,
         user_id: int | None = None,
-        session_id: str | None = None,
+        session_id: int | None = None,
         author: Author = Author.Coach,
         statement_id: int | None = None,
         said: Statement | None = None,
@@ -1457,8 +1457,10 @@ class Toolbox:
         """The session a question is asked in and the day: this turn's, or the
         past coach message it was asked in."""
         if said is None:
+            if self.session_id is None:
+                raise ValueError(f"turn {self.turn_id} has no session to ask a question in")
             return {
-                "session_id": int(self.session_id),
+                "session_id": self.session_id,
                 "asked_at": datetime.datetime.utcnow().date().isoformat(),
             }
         return {

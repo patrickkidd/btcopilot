@@ -201,7 +201,6 @@ class CoachTurn:
         *,
         purpose: Purpose,
         model: CoachModel | None = None,
-        session_id: str | None = None,
         statement_id: int | None = None,
         sink: Callable[[dict], None] | None = None,
         turn_id: str | None = None,
@@ -222,7 +221,6 @@ class CoachTurn:
         # was told, less the words, plus each round of tool calls as sent.
         self.kept: list[dict] = []
         self.streamed = ""
-        self.session_id = session_id or str(discussion.id)
         self.turn_id = turn_id or uuid.uuid4().hex
         self.diagram = discussion.diagram
         self.model = Metered(
@@ -272,7 +270,7 @@ class CoachTurn:
             self.diagram.id,
             self.turn_id,
             user_id=self.discussion.user_id,
-            session_id=self.session_id,
+            session_id=self.discussion.id,
             said=answered,
         )
 
@@ -438,7 +436,7 @@ class CoachTurn:
                 self.diagram.id,
                 turn_id=self.turn_id,
                 user_id=self.discussion.user_id,
-                session_id=self.session_id,
+                session_id=self.discussion.id,
             )
         except clusters.ClusterError as rejected:
             _log.warning(

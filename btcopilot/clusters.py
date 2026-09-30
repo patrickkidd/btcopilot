@@ -561,7 +561,7 @@ def sync(
     *,
     turn_id: str,
     user_id: int | None = None,
-    session_id: str | None = None,
+    session_id: int | None = None,
 ) -> Regroup | None:
     """Re-group the record's events and store the grouping.
 

@@ -309,7 +309,6 @@ def replay_into(
     db.session.commit()
 
     said = [s.text for s in spoken(statements)]
-    session_id = f"review-replay-{discussion.id}"
     replies = []
     for text in said:
         if cap is not None and spent(diagram.id) >= cap:
@@ -319,7 +318,6 @@ def replay_into(
             text,
             purpose=Purpose.Replay,
             model=model,
-            session_id=session_id,
             scratch=True,
         )
         reply = turn.run()

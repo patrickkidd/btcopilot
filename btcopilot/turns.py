@@ -128,7 +128,6 @@ def run(
         said.text,
         purpose=Purpose.Coach,
         model=model_for(setting.read(SettingKey.CoachModel, discussion.user_id)),
-        session_id=str(discussion_id),
         statement_id=statement_id,
         turn_id=turn_id,
         sink=lambda event: written(turn_id, discussion_id, event),

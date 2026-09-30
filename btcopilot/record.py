@@ -95,7 +95,7 @@ def apply(
     author: Author,
     turn_id: str,
     user_id: int | None = None,
-    session_id: str | None = None,
+    session_id: int | None = None,
     statement_id: int | None = None,
 ) -> Change:
     """Set each delta's `after` on the record and log the command.
@@ -130,7 +130,7 @@ def undo(
     *,
     author: Author,
     user_id: int | None = None,
-    session_id: str | None = None,
+    session_id: int | None = None,
 ) -> Change:
     """Reverse every delta of `turn_id`, newest first, and log the reversal."""
     diagram = _lock(diagram_id)
@@ -1270,7 +1270,7 @@ def _commit(
         statement_id=statement_id,
         turn_id=turn_id,
         user_id=user_id,
-        session_id=session_id,
+        session_id=None if session_id is None else str(session_id),
         author=Author(author),
         deltas=deltas,
     )

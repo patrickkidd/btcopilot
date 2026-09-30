@@ -36,7 +36,7 @@ def clock():
 
 
 def box(diagram, turn="t1", author=Author.Coach) -> Toolbox:
-    return Toolbox(diagram.id, turn, session_id="7", author=author)
+    return Toolbox(diagram.id, turn, session_id=7, author=author)
 
 
 def add(toolbox, text=ASK, kind="fact", state="asked", **args):

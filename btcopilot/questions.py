@@ -133,7 +133,7 @@ def backfill(diagram: Diagram, discussion: Discussion, model, kind: Kind) -> int
         diagram.id,
         turn_id,
         user_id=discussion.user_id,
-        session_id=str(discussion.id),
+        session_id=discussion.id,
         author=Author.Coach,
         statement_id=last.id,
     )
@@ -184,7 +184,7 @@ def backfill(diagram: Diagram, discussion: Discussion, model, kind: Kind) -> int
         author=Author.Coach,
         turn_id=turn_id,
         user_id=discussion.user_id,
-        session_id=str(discussion.id),
+        session_id=discussion.id,
         statement_id=last.id,
     )
     return calls

@@ -25,7 +25,7 @@ from btcopilot.review import adapter
 from btcopilot.routes.diagrams import readable
 from btcopilot.schema import ItemKind
 from btcopilot.toolbox import ToolName
-from btcopilot.tests.conftest import Model, called, said
+from btcopilot.tests.conftest import Model, called, calling, said
 
 NELL = {"id": 1, "name": "Nell", "last_name": "Hale", "gender": "female"}
 
@@ -106,6 +106,23 @@ def test_a_refused_call_and_a_person_added_twice_are_counted(
     assert row["faults"]["duplicate_person"] == 1
     assert row["turns"] == 1
     assert row["scores"]["people"] == 0.67
+
+
+def test_a_replay_asks_a_question_in_its_scratch_session(discussion, reference, monkeypatch):
+    # R-0597
+    model = Model(
+        calling(
+            (
+                ToolName.AddQuestion,
+                {"text": "Who raised Nell?", "kind": "thought", "state": "asked"},
+            )
+        ),
+        said("Who raised Nell?"),
+    )
+    monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
+    row = replayscore.replay(discussion, "sonnet-5", reference)
+    asked = db.session.get(Diagram, row["scratch_diagram_id"]).get_diagram_data().questions
+    assert [q["session_id"] for q in asked] == [row["scratch_discussion_id"]]
 
 
 def test_a_replay_charges_no_one(discussion, reference, coach):
@@ -194,16 +211,37 @@ def test_the_thinking_level_reaches_the_coach_model(
     assert efforts == ["low"]
 
 
-def test_a_prompt_file_replaces_the_coach_prompt_for_the_replay_only(
+def test_a_replay_refuses_default_and_names_the_aliases(flask_app, test_user):
+    # R-0597
+    result = flask_app.test_cli_runner().invoke(
+        admin, ["quality", "replay-person", str(test_user.id), "default"]
+    )
+    assert result.exit_code == 2
+    assert "'opus-5.5'" in result.output
+
+
+def test_a_prompt_dir_replaces_the_coach_prompt_for_the_replay_only(
     discussion, reference, tmp_path, monkeypatch
 ):
     # R-0597
-    path = tmp_path / "agent.prompty"
-    path.write_text(PROMPT)
+    (tmp_path / "agent.prompty").write_text(PROMPT)
     model = Model(said("Noted."))
     monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
-    replayscore.replay(discussion, "sonnet-5", reference, prompt=path)
+    replayscore.replay(discussion, "sonnet-5", reference, prompt=tmp_path)
     assert model.systems[0].startswith("You coach Brother Cadfael")
+    assert "Cadfael" not in prompts.get_agent_prompt()
+
+
+def test_a_prompt_dir_fragment_renders_into_the_usual_coach_prompt(
+    discussion, reference, tmp_path, monkeypatch
+):
+    # R-0597
+    (tmp_path / "fragments").mkdir()
+    (tmp_path / "fragments" / "narration.md").write_text("Narrate as Brother Cadfael.\n")
+    model = Model(said("Noted."))
+    monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
+    replayscore.replay(discussion, "sonnet-5", reference, prompt=tmp_path)
+    assert "Narrate as Brother Cadfael." in model.systems[0]
     assert "Cadfael" not in prompts.get_agent_prompt()
 
 

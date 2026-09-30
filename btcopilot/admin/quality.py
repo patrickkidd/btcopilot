@@ -13,13 +13,16 @@ from btcopilot import replayscore
 from btcopilot.admin.guard import writes
 from btcopilot.coachmodel import COACH_EFFORT
 from btcopilot.extensions import db
-from btcopilot.llmutil import resolve_model
+from btcopilot.llmutil import DEFAULT_RESPONSE_MODEL_ALIAS, MODEL_ALIASES, resolve_model
 from btcopilot.models import Diagram, Discussion, User
 from btcopilot.review.adapter import spoken
 
 THINKING = ("low", "medium", "high")
 
 PRODUCTION = "production"
+MODEL_HELP = (
+    f"MODEL is a model alias; the coach's own is {DEFAULT_RESPONSE_MODEL_ALIAS}."
+)
 
 
 @click.group()
@@ -39,8 +42,8 @@ def quality_load(root):
 
 
 def replay_options(command):
-    """What both replays take: a spending cap, a thinking level, an
-    alternative main prompt, a cap on turns, and leave to run on the box."""
+    """What both replays take: a spending cap, a thinking level, alternative
+    prompt files, a cap on turns, and leave to run on the box."""
     for option in reversed(
         [
             click.option(
@@ -58,10 +61,11 @@ def replay_options(command):
                 help="How hard the coach thinks, for this replay only.",
             ),
             click.option(
-                "--prompt-file",
-                type=click.Path(exists=True, dir_okay=False, path_type=Path),
-                help="A plain prompty file that replaces the coach's main prompt "
-                "for this replay only.",
+                "--prompt-dir",
+                type=click.Path(exists=True, file_okay=False, path_type=Path),
+                help="A folder holding any of agent.prompty and fragments/*.md; "
+                "each file there replaces the same-named prompt for this replay "
+                "only, and the rest are read from the usual places.",
             ),
             click.option(
                 "--turns", type=click.IntRange(min=1), help="At most this many turns."
@@ -107,9 +111,14 @@ def _report(row: dict):
 
 
 @writes
-@quality.command("replay")
+@quality.command(
+    "replay",
+    help="Replay a session's words on MODEL onto a scratch record, score it "
+    "against the record Patrick corrected, and append one ledger line. It spends "
+    f"on the model and writes scratch records. {MODEL_HELP}",
+)
 @click.argument("discussion_id", type=int)
-@click.argument("model")
+@click.argument("model", type=click.Choice(sorted(MODEL_ALIASES)))
 @click.argument("reference_diagram_id", type=int)
 @replay_options
 def quality_replay(
@@ -118,13 +127,10 @@ def quality_replay(
     reference_diagram_id,
     cap,
     thinking,
-    prompt_file,
+    prompt_dir,
     turns,
     production,
 ):
-    """Replay a session's words on MODEL onto a scratch record, score it
-    against the record Patrick corrected, and append one ledger line. It spends
-    on the model and writes scratch records."""
     _allowed(production)
     discussion = db.session.get(Discussion, discussion_id)
     reference = db.session.get(Diagram, reference_diagram_id)
@@ -139,16 +145,23 @@ def quality_replay(
             reference,
             cap=cap,
             thinking=thinking,
-            prompt=prompt_file,
+            prompt=prompt_dir,
             statements=statements,
         )
     )
 
 
 @writes
-@quality.command("replay-person")
+@quality.command(
+    "replay-person",
+    help="Replay the words of the live coach turns one person took, oldest "
+    "first, on MODEL onto one scratch record that starts as their record stood "
+    "before the first, score it against their record as it stood after the "
+    "last, and append one ledger line. A key the ledger already holds is not "
+    f"run again. {MODEL_HELP}",
+)
 @click.argument("user_id", type=int)
-@click.argument("model")
+@click.argument("model", type=click.Choice(sorted(MODEL_ALIASES)))
 @click.option(
     "--reference",
     "reference_diagram_id",
@@ -167,14 +180,10 @@ def quality_replay_person(
     again,
     cap,
     thinking,
-    prompt_file,
+    prompt_dir,
     turns,
     production,
 ):
-    """Replay the words of the live coach turns one person took, oldest first,
-    on MODEL onto one scratch record that starts as their record stood before
-    the first, score it against their record as it stood after the last, and
-    append one ledger line. A key the ledger already holds is not run again."""
     _allowed(production)
     user = db.session.get(User, user_id)
     if user is None:
@@ -197,7 +206,7 @@ def quality_replay_person(
     key = (
         f"person {user.id} turns {statements[0].turn_id}..{statements[-1].turn_id} "
         f"({len(statements)}) record v{before}..v{after} "
-        f"prompt {replayscore.prompt_version(prompt_file)} "
+        f"prompt {replayscore.prompt_version(prompt_dir)} "
         f"model {resolve_model(model)} thinking {thinking}"
     )
     click.echo(f"key: {key}")
@@ -212,7 +221,7 @@ def quality_replay_person(
             reference,
             cap=cap,
             thinking=thinking,
-            prompt=prompt_file,
+            prompt=prompt_dir,
             statements=statements,
             start=start,
             expected=None if reference_diagram_id else diagramjson.loads(end),
