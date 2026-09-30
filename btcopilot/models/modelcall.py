@@ -34,7 +34,10 @@ class ModelCall(db.Model, ModelMixin):
         Enum(Purpose, values_callable=lambda e: [x.value for x in e]), nullable=False
     )
     model = Column(String(64), nullable=False)
-    fallback = Column(JSONB().with_variant(JSON(), "sqlite"), nullable=True)
+    fallback = Column(
+        JSONB(none_as_null=True).with_variant(JSON(none_as_null=True), "sqlite"),
+        nullable=True,
+    )
     input_tokens = Column(Integer, nullable=False)
     output_tokens = Column(Integer, nullable=False)
     cache_creation_tokens = Column(Integer, nullable=False)

@@ -290,12 +290,28 @@ def test_a_refused_call_answered_by_a_fallback_is_priced_and_logged_as_its(
         "hops": [{"from": "claude-opus-5-5", "to": "claude-opus-5", "category": "bio"}],
         "sticky": False,
     }
+    assert ModelCall.query.filter(ModelCall.fallback.isnot(None)).one() == row
     spent = Spent(input=120, output=30, cache_creation=4100, cache_read=8200)
     assert row.cost_usd == cost("claude-opus-5", spent).quantize(Decimal("0.000001"))
     assert row.cost_usd != cost("claude-opus-5-5", spent).quantize(Decimal("0.000001"))
     hop = [r for r in caplog.records if "took over" in r.message]
     assert len(hop) == 1
     assert "claude-opus-5-5 refused (bio), claude-opus-5 took over" in hop[0].message
+
+
+def test_a_call_the_requested_model_answered_stores_no_fallback(
+    wire, discussion, monkeypatch
+):
+    # R-0409, R-0410
+    monkeypatch.setattr(
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
+    )
+    wire.reply = Reply([Block(type="text", text="Go on.")])
+    CoachTurn(discussion, "hi", purpose=Purpose.Coach, model=CoachModel()).run()
+    assert ModelCall.query.filter(ModelCall.fallback.is_(None)).count() == (
+        ModelCall.query.count()
+    )
 
 
 def test_a_turn_served_by_an_earlier_fallback_is_marked_sticky(wire):
