@@ -32,7 +32,7 @@ Build, in this order:
 
 Decided 2026-09-30, confirmed (relayed from the FD-365 session): drop R-0485's "history means everything before the first coaching session", so history is everything up to now; keep its plateau flag redefined as the coach's expiring hypothesis that asking about gaps is yielding little right now, which lowers the checklist's ranking pressure and never closes an item or hides the not-asked list.
 
-Patrick still decides: whether a complaint about the coach's dates is a bug the coach offers; whether to build the shadow backfill; keep or stop the shadow spend, about $25 a month.
+Patrick still decides: whether to build the shadow backfill; keep or stop the shadow spend, about $25 a month.
 
 Patrick's key: append the queued rulings from the private corpus queue file.
 
