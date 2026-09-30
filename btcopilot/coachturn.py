@@ -10,7 +10,6 @@ page can move the picture with the same reply it types out.
 
 import datetime
 import logging
-import time
 import uuid
 from typing import Callable
 
@@ -18,13 +17,13 @@ from opentelemetry import trace
 
 from btcopilot.extensions import ai_log, db
 from btcopilot import chips, clusters, profile, recordtext, turnstore
-from btcopilot.pricing import cost
-from btcopilot.coachmodel import CoachModel, Spent, marked_ends
+from btcopilot.coachmodel import CoachModel, marked_ends
+from btcopilot.metered import Metered
 from btcopilot.models import (
     Change,
     Discussion,
     DiscussionKind,
-    ModelCall,
+    Purpose,
     Statement,
     StatementKind,
     TokenMeter,
@@ -192,40 +191,6 @@ def record_of(discussion: Discussion) -> DiagramData:
     )
 
 
-class Metered:
-    """The model with every call's tokens summed, so one turn charges one meter
-    row, and each call written down with its cost."""
-
-    def __init__(self, model, user_id: int, diagram_id: int, turn_id: str):
-        self.model = model
-        self.user_id = user_id
-        self.diagram_id = diagram_id
-        self.turn_id = turn_id
-        self.spent = Spent()
-
-    def turn(self, system, messages: list[dict], tools: list[dict], turn_id: str = ""):
-        started = time.monotonic()
-        turn = yield from self.model.turn(system, messages, tools, turn_id)
-        self.spent.add(turn.spent)
-        db.session.add(
-            ModelCall(
-                user_id=self.user_id,
-                diagram_id=self.diagram_id,
-                turn_id=self.turn_id,
-                model=turn.served.model,
-                fallback=turn.served.fallback,
-                input_tokens=turn.spent.input,
-                output_tokens=turn.spent.output,
-                cache_creation_tokens=turn.spent.cache_creation,
-                cache_read_tokens=turn.spent.cache_read,
-                cost_usd=cost(turn.served.model, turn.spent),
-                duration_ms=round((time.monotonic() - started) * 1000),
-                tool_calls=len(turn.calls),
-            )
-        )
-        return turn
-
-
 class CoachTurn:
     """One user message in, one coach statement and its edits out."""
 
@@ -234,6 +199,7 @@ class CoachTurn:
         discussion: Discussion,
         statement: str,
         *,
+        purpose: Purpose,
         model: CoachModel | None = None,
         session_id: str | None = None,
         statement_id: int | None = None,
@@ -260,7 +226,11 @@ class CoachTurn:
         self.turn_id = turn_id or uuid.uuid4().hex
         self.diagram = discussion.diagram
         self.model = Metered(
-            model or CoachModel(), discussion.user_id, self.diagram.id, self.turn_id
+            discussion.user_id,
+            self.diagram.id,
+            self.turn_id,
+            purpose,
+            model=model or CoachModel(),
         )
 
     @property
@@ -433,8 +403,11 @@ class CoachTurn:
             {"statement_id": coach_statement.id}
         )
         if self.discussion.title is None:
-            self.discussion.update_title()
-            self.discussion.update_summary()
+            summary = Metered(
+                self.discussion.user_id, self.diagram.id, self.turn_id, Purpose.Summary
+            )
+            self.discussion.update_title(summary)
+            self.discussion.update_summary(summary)
         if not self.scratch:
             profile.mirror(self.discussion.user, self.data)
             TokenMeter.charge(self.discussion.user_id, self.model.spent)

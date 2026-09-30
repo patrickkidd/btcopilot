@@ -6,17 +6,18 @@ import pytest
 
 from btcopilot import recordtext
 from btcopilot.coachturn import CoachTurn
+from btcopilot.models import Purpose
 from btcopilot.extensions import db
 from btcopilot.schema import DiagramData, Person, asdict
 from btcopilot.toolbox import ToolName, Toolbox
-from btcopilot.tests.conftest import Model, called, said, version
+from btcopilot.tests.conftest import Model, called, said, version, wrote
 
 
 @pytest.fixture(autouse=True)
 def titles(monkeypatch):
     monkeypatch.setattr(
-        "btcopilot.models.discussion.response_text_sync",
-        lambda *a, **k: "A session title",
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
     )
 
 
@@ -85,6 +86,7 @@ def test_the_coach_reads_chosen_events_with_the_words_they_came_from(
     CoachTurn(
         discussion,
         "My dad left in 1994.",
+        purpose=Purpose.Coach,
         model=Model(
             called(
                 ToolName.EditEvent,
@@ -101,6 +103,7 @@ def test_the_coach_reads_chosen_events_with_the_words_they_came_from(
     CoachTurn(
         discussion,
         "Actually it was 1995.",
+        purpose=Purpose.Coach,
         model=Model(
             called(
                 ToolName.EditEvent,

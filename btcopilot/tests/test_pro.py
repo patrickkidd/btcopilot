@@ -8,7 +8,7 @@ import pytest
 
 from btcopilot.extensions import db
 from btcopilot.coachturn import CoachTurn
-from btcopilot.models import Discussion, DiscussionKind, SpeakerType
+from btcopilot.models import Discussion, DiscussionKind, Purpose, SpeakerType
 from btcopilot.prompts import note_register
 from btcopilot.schema import Person, PersonKind, asdict
 from btcopilot.tests.conftest import Model, csrf_token, said
@@ -203,13 +203,23 @@ def test_a_note_tells_the_coach_who_it_is_talking_to(discussion):
     """A note is the clinician talking about the case after the fact, so the
     coach is told the register it is in; a chat is told nothing extra."""
     model = Model(said("Noted."))
-    CoachTurn(discussion, "she never says the word divorce", model=model).run()
+    CoachTurn(
+        discussion,
+        "she never says the word divorce",
+        purpose=Purpose.Coach,
+        model=model,
+    ).run()
     assert note_register() not in model.systems[0]
 
     discussion.kind = DiscussionKind.Note
     db.session.commit()
     model = Model(said("Noted."))
-    CoachTurn(discussion, "she never says the word divorce", model=model).run()
+    CoachTurn(
+        discussion,
+        "she never says the word divorce",
+        purpose=Purpose.Coach,
+        model=model,
+    ).run()
     assert note_register() in model.systems[0]
 
 

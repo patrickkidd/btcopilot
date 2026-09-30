@@ -10,10 +10,12 @@ from google.genai import types
 from btcopilot import llmutil
 from btcopilot.coachmodel import CoachModel, model_for
 from btcopilot.coachturn import CoachTurn, drain
-from btcopilot.geminimodel import UNSIGNED, GeminiModel, contents, spent
+from btcopilot.geminimodel import UNSIGNED, GeminiModel, contents
+from btcopilot.llmutil import gemini_spent
 from btcopilot.modelturn import Refusal, Spent
-from btcopilot.models import ModelCall
+from btcopilot.models import ModelCall, Purpose
 from btcopilot.pricing import cost
+from btcopilot.tests.conftest import wrote
 from btcopilot.tests.test_llmutil import anthropic_env  # noqa: F401
 from btcopilot.toolbox import ToolName
 
@@ -65,8 +67,8 @@ class Client:
 @pytest.fixture(autouse=True)
 def titles(monkeypatch):
     monkeypatch.setattr(
-        "btcopilot.models.discussion.response_text_sync",
-        lambda *a, **k: "A session title",
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
     )
 
 
@@ -101,14 +103,19 @@ def gemini(monkeypatch):
 def test_a_whole_tool_using_turn_runs_on_gemini(discussion, gemini):
     # R-0598
     reply = CoachTurn(
-        discussion, "My sister is Nell.", model=GeminiModel(FLASH, "medium")
+        discussion,
+        "My sister is Nell.",
+        purpose=Purpose.Coach,
+        model=GeminiModel(FLASH, "medium"),
     ).run()
     assert reply["statement"] == "I put Nell down."
 
     people = discussion.diagram.get_diagram_data().people
     assert "Nell" in [person["name"] for person in people]
 
-    calls = ModelCall.query.filter_by(diagram_id=discussion.diagram_id).all()
+    calls = ModelCall.query.filter_by(
+        diagram_id=discussion.diagram_id, purpose=Purpose.Coach
+    ).all()
     assert [call.model for call in calls] == [FLASH, FLASH]
     assert (calls[0].input_tokens, calls[0].output_tokens) == (1200, 100)
     assert (calls[1].input_tokens, calls[1].cache_read_tokens) == (300, 1000)
@@ -122,7 +129,12 @@ def test_the_second_call_sends_back_the_call_its_signature_and_its_answer(
     discussion, gemini
 ):
     # R-0598
-    CoachTurn(discussion, "My sister is Nell.", model=GeminiModel(FLASH)).run()
+    CoachTurn(
+        discussion,
+        "My sister is Nell.",
+        purpose=Purpose.Coach,
+        model=GeminiModel(FLASH),
+    ).run()
 
     asked, answered = gemini.sent[1]["contents"][-2:]
     assert asked.role == "model"
@@ -190,7 +202,7 @@ def test_a_signature_survives_the_record_as_text():
 
 def test_the_price_computes_from_gemini_usage():
     # R-0598
-    used = spent(usage(prompt=1000, cached=400, out=100, thought=50))
+    used = gemini_spent(usage(prompt=1000, cached=400, out=100, thought=50))
     assert used == Spent(input=600, output=150, cache_creation=0, cache_read=400)
     assert cost(FLASH, used) == Decimal("0.0010425")
 

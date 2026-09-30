@@ -25,6 +25,7 @@ from btcopilot.models import (
     Discussion,
     DiscussionKind,
     ModelCall,
+    Purpose,
     Speaker,
     SpeakerType,
     Statement,
@@ -317,7 +318,14 @@ def replay_into(
     for text in said:
         if cap is not None and spent(diagram.id) >= cap:
             break
-        turn = CoachTurn(copy, text, model=model, session_id=session_id, scratch=True)
+        turn = CoachTurn(
+            copy,
+            text,
+            purpose=Purpose.Replay,
+            model=model,
+            session_id=session_id,
+            scratch=True,
+        )
         reply = turn.run()
         turnstore.save(
             turn.turn_id,
@@ -333,7 +341,7 @@ def replay_into(
 def spent(diagram_id: int) -> Decimal:
     return (
         db.session.query(func.coalesce(func.sum(ModelCall.cost_usd), 0))
-        .filter(ModelCall.diagram_id == diagram_id)
+        .filter(ModelCall.diagram_id == diagram_id, ModelCall.purpose == Purpose.Replay)
         .scalar()
     )
 

@@ -18,7 +18,7 @@ from btcopilot.models import Discussion, Statement
 from btcopilot.toolbox import ToolName
 from btcopilot.turnlog import TurnEventKind
 from btcopilot.schema import Person, asdict
-from btcopilot.tests.conftest import Model, called, calling, csrf_token, said
+from btcopilot.tests.conftest import Model, called, calling, csrf_token, said, wrote
 
 
 @pytest.fixture(autouse=True)
@@ -26,8 +26,8 @@ def titles(monkeypatch):
     """Naming a session is its own model call; the turn is what is under test
     here."""
     monkeypatch.setattr(
-        "btcopilot.models.discussion.response_text_sync",
-        lambda *a, **k: "A session title",
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
     )
 
 

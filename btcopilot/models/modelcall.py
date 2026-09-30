@@ -1,8 +1,23 @@
-from sqlalchemy import JSON, Column, ForeignKey, Integer, Numeric, String
+import enum
+
+from sqlalchemy import JSON, Column, Enum, ForeignKey, Integer, Numeric, String
 from sqlalchemy.dialects.postgresql import JSONB
 
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
+
+
+class Purpose(enum.StrEnum):
+    """What a call was for, so shadow and replay spend is kept apart from what
+    the coach spends on the people it talks to."""
+
+    Coach = "coach"
+    Shadow = "shadow"
+    Proactive = "proactive"
+    Replay = "replay"
+    Play = "play"
+    Backfill = "backfill"
+    Summary = "summary"
 
 
 class ModelCall(db.Model, ModelMixin):
@@ -15,6 +30,9 @@ class ModelCall(db.Model, ModelMixin):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     diagram_id = Column(Integer, ForeignKey("diagrams.id"), nullable=False)
     turn_id = Column(String(64), nullable=False, index=True)
+    purpose = Column(
+        Enum(Purpose, values_callable=lambda e: [x.value for x in e]), nullable=False
+    )
     model = Column(String(64), nullable=False)
     fallback = Column(JSONB().with_variant(JSON(), "sqlite"), nullable=True)
     input_tokens = Column(Integer, nullable=False)

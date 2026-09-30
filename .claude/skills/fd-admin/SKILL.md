@@ -30,6 +30,18 @@ not edit it by hand; change the commands and generate it again.
 
 The coach model and the shadow models of one person.
 
+### `flask admin coach-model backfill <email> <aliases>`
+
+Run each of this person's past turns again on each model alias given, over the record as it stood before each turn. Makes model calls. Without --yes it prints, per model, the turns to run, the replies too old to run and what the run would cost, and writes nothing.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `email` | required |
+| `aliases` | required |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin coach-model set <email> <alias>`
 
 Coach this person on a model alias, or on the default with the word default.

@@ -316,6 +316,21 @@ or the server is never a row: it goes to Grafana. A coach turn that fails is
 kept as a `turn_failed` observation. The observations table no longer has the
 bug and feedback kinds.
 
+### Model calls
+
+`btcopilot/models/modelcall.py`, written only by `Metered` in
+`btcopilot/metered.py`
+
+A `model_calls` row is one call to the model: the person charged
+(`user_id`), the diagram, `turn_id`, `purpose` (`Purpose`: coach, a reply to
+the person; shadow, the same turn run again on a shadow model; replay, a
+session run again onto a scratch record; play, a play-by-play asked for in a
+session; backfill, questions and impressions added to an old session;
+proactive, a message the coach writes first; summary, the title and summary
+a session gets after its first reply), the model that answered and its
+fallback hops, four token counts, `cost_usd`, `duration_ms` and `tool_calls`.
+Every caller names the purpose; there is no default.
+
 ### Serialization
 
 - **Pickle**: Entire DiagramData in `Diagram.data` (preserves Qt scene objects)

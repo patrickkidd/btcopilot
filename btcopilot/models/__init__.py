@@ -10,7 +10,7 @@ from .syntheticpersona import SyntheticPersona
 from .change import Change, Author
 from .interaction import Interaction, InteractionKind
 from .tokenmeter import TokenMeter
-from .modelcall import ModelCall
+from .modelcall import ModelCall, Purpose
 from .shadowturn import ShadowTurn
 from .productevent import ProductEvent
 from .turnevent import TurnEvent

@@ -9,6 +9,7 @@ from btcopilot.extensions import db
 from btcopilot.models import (
     Discussion,
     ModelCall,
+    Purpose,
     ShadowTurn,
     Speaker,
     SpeakerType,
@@ -65,6 +66,7 @@ def shadow(
             user_id=user.id,
             diagram_id=diagram.id,
             turn_id=real.turn_id,
+            purpose=Purpose.Coach,
             model=REAL,
             input_tokens=10,
             output_tokens=5,

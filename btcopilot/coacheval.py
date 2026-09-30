@@ -135,7 +135,7 @@ def evaluate_coach(turns: list[tuple[str, str]], known_names: list[str]) -> Coac
             model="gemini-2.5-flash",
             temperature=0.0,
             max_output_tokens=4096,
-        )
+        ).words
         d = _parse_judge(raw)
         if d is not None:
             break

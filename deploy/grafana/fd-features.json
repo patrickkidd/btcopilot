@@ -805,7 +805,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "with cost as (select mc.user_id, sum(mc.cost_usd) as cost from model_calls mc where $__timeFilter(mc.created_at) group by mc.user_id), taps as (select pe.user_id, count(*) as taps from product_events pe where pe.name <> 'screen_open' and $__timeFilter(pe.client_at) group by pe.user_id) select u.username as person, coalesce(cost.cost,0) as cost, coalesce(taps.taps,0) as taps, case when coalesce(taps.taps,0) = 0 then null else coalesce(cost.cost,0)/taps.taps end as cost_per_tap from users u left join cost on cost.user_id = u.id left join taps on taps.user_id = u.id where u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and (coalesce(cost.cost,0) > 0 or coalesce(taps.taps,0) > 0) order by cost desc",
+          "rawSql": "with cost as (select mc.user_id, sum(mc.cost_usd) as cost from model_calls mc where mc.purpose <> 'shadow' and $__timeFilter(mc.created_at) group by mc.user_id), taps as (select pe.user_id, count(*) as taps from product_events pe where pe.name <> 'screen_open' and $__timeFilter(pe.client_at) group by pe.user_id) select u.username as person, coalesce(cost.cost,0) as cost, coalesce(taps.taps,0) as taps, case when coalesce(taps.taps,0) = 0 then null else coalesce(cost.cost,0)/taps.taps end as cost_per_tap from users u left join cost on cost.user_id = u.id left join taps on taps.user_id = u.id where u.username in (${people:sqlstring}) and u.username !~ '${exclude}' and (coalesce(cost.cost,0) > 0 or coalesce(taps.taps,0) > 0) order by cost desc",
           "refId": "A"
         }
       ],

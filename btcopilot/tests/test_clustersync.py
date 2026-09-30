@@ -16,7 +16,7 @@ from btcopilot.clusters import (
     sync,
 )
 from btcopilot.coachturn import CoachTurn
-from btcopilot.models import Author, Change
+from btcopilot.models import Author, Change, Purpose
 from btcopilot.prompts import get_agent_prompt
 from btcopilot.turnlog import TurnEventKind
 from btcopilot.toolbox import ToolError, Toolbox, ToolName
@@ -31,14 +31,14 @@ from btcopilot.schema import (
     Person,
     asdict,
 )
-from btcopilot.tests.conftest import Model, called, csrf_token, said, version
+from btcopilot.tests.conftest import Model, called, csrf_token, said, version, wrote
 
 
 @pytest.fixture(autouse=True)
 def titles(monkeypatch):
     monkeypatch.setattr(
-        "btcopilot.models.discussion.response_text_sync",
-        lambda *a, **k: "A session title",
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
     )
 
 
@@ -105,6 +105,7 @@ def test_a_turn_that_adds_an_event_stores_the_grouping(discussion, family):
         CoachTurn(
             discussion,
             "That winter she got sick too.",
+            purpose=Purpose.Coach,
             model=Model(
                 called(
                     ToolName.EditEvent,
@@ -132,7 +133,10 @@ def test_a_turn_that_changes_no_event_does_not_regroup(discussion, family):
     # R-0208
     with detects(("Never asked for", [10, 11, 12])) as detect:
         CoachTurn(
-            discussion, "Tell me about that.", model=Model(said("It was hard."))
+            discussion,
+            "Tell me about that.",
+            purpose=Purpose.Coach,
+            model=Model(said("It was hard.")),
         ).run()
     detect.assert_not_called()
     assert clusters_of(family) == {}
@@ -144,6 +148,7 @@ def test_the_grouping_is_written_by_the_coach_in_the_same_turn(discussion, famil
         reply = CoachTurn(
             discussion,
             "She got sick.",
+            purpose=Purpose.Coach,
             model=Model(
                 called(
                     ToolName.EditEvent,
@@ -473,7 +478,9 @@ def test_what_changed_is_in_the_tool_answer_before_the_coach_answers(
             ),
             said("Those look like one story to me now, not two."),
         )
-        reply = CoachTurn(discussion, "She got sick that summer.", model=model).run()
+        reply = CoachTurn(
+            discussion, "She got sick that summer.", purpose=Purpose.Coach, model=model
+        ).run()
 
     assert len(set(model.systems)) == 1
     assert MOVED not in model.systems[0]
@@ -498,7 +505,9 @@ def test_a_regroup_leaves_the_prompt_and_the_turn_so_far_untouched(discussion, f
             ),
             said("Those look like one story to me now, not two."),
         )
-        CoachTurn(discussion, "She got sick that summer.", model=model).run()
+        CoachTurn(
+            discussion, "She got sick that summer.", purpose=Purpose.Coach, model=model
+        ).run()
 
     first, second = model.systems
     assert second == first
@@ -514,6 +523,7 @@ def test_what_changed_goes_out_on_the_turn_for_nobody_to_draw(discussion, family
         reply = CoachTurn(
             discussion,
             "She got sick that summer.",
+            purpose=Purpose.Coach,
             model=Model(
                 called(
                     ToolName.EditEvent,
@@ -546,6 +556,7 @@ def test_a_grouping_that_fails_its_checks_twice_keeps_the_groups_and_the_turn_re
         CoachTurn(
             discussion,
             "She was anxious all that spring.",
+            purpose=Purpose.Coach,
             model=Model(
                 called(
                     ToolName.EditEvent,
@@ -576,6 +587,7 @@ def test_a_grouping_that_fails_its_checks_twice_keeps_the_groups_and_the_turn_re
         reply = CoachTurn(
             discussion,
             "That winter she got sick too.",
+            purpose=Purpose.Coach,
             model=Model(
                 called(
                     ToolName.EditEvent,

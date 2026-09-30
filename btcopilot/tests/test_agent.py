@@ -25,6 +25,7 @@ from btcopilot.models import (
     Discussion,
     ModelCall,
     Observation,
+    Purpose,
     Speaker,
     SpeakerType,
     Statement,
@@ -48,11 +49,12 @@ from btcopilot.tests.conftest import (
     calling,
     replied,
     said,
+    wrote,
 )
 
 
 def run(discussion, statement, model) -> dict:
-    return CoachTurn(discussion, statement, model=model).run()
+    return CoachTurn(discussion, statement, purpose=Purpose.Coach, model=model).run()
 
 
 def kinds(reply: dict) -> list[str]:
@@ -68,8 +70,8 @@ def titles(monkeypatch):
     """Naming a session is its own model call; the agent loop is what is under
     test here."""
     monkeypatch.setattr(
-        "btcopilot.models.discussion.response_text_sync",
-        lambda *a, **k: "A session title",
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
     )
 
 
@@ -750,7 +752,13 @@ def test_a_turn_writes_down_each_model_call_with_its_cost(discussion, family):
     second.spent = Spent(input=1100, output=40, cache_creation=0, cache_read=800)
     reply = run(discussion, "My aunt Nell.", Model(first, second))
 
-    calls = ModelCall.query.order_by(ModelCall.id).all()
+    named = ModelCall.query.filter_by(purpose=Purpose.Summary).all()
+    assert [(c.diagram_id, c.turn_id) for c in named] == [
+        (discussion.diagram_id, reply["turn_id"])
+    ] * 2
+    calls = (
+        ModelCall.query.filter_by(purpose=Purpose.Coach).order_by(ModelCall.id).all()
+    )
     rate = pricing.PRICES["claude-opus-5-5"]
     assert [
         (

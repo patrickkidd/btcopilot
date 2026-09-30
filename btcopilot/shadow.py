@@ -8,11 +8,15 @@ the real turn's row. The user never sees it and is never charged for it.
 
 import logging
 import time
+from decimal import Decimal
 
-from sqlalchemy import func
+from sqlalchemy import exists, func, or_, select
+from sqlalchemy.orm import aliased
 
-from btcopilot import diagramjson, extensions
+from btcopilot import diagramjson, extensions, record
 from btcopilot.coachmodel import model_for
+from btcopilot.llmutil import Spent, resolve_model
+from btcopilot.pricing import cost, price
 from btcopilot.coachturn import RECENT_INTERACTIONS, CoachTurn
 from btcopilot.extensions import db
 from btcopilot.models import (
@@ -24,9 +28,11 @@ from btcopilot.models import (
     ModelCall,
     Observation,
     ProductEvent,
+    Purpose,
     ShadowTurn,
     Speaker,
     Statement,
+    User,
 )
 from btcopilot.turnlog import TurnEventKind
 
@@ -42,18 +48,125 @@ SCRATCH_ROWS = (AccessRight, Change, Interaction, Observation, ProductEvent)
 
 def start(turn: CoachTurn, statement_id: int, model: str, before: bytes | None):
     """Keep the record as the real turn found it and hand the shadow over."""
+    _queue(
+        turn.turn_id, turn.discussion, statement_id, model, diagramjson.store(before)
+    )
+
+
+def _queue(
+    turn_id: str, discussion: Discussion, statement_id: int, model: str, snapshot: bytes
+) -> None:
     row = ShadowTurn(
-        turn_id=turn.turn_id,
-        user_id=turn.discussion.user_id,
-        diagram_id=turn.diagram.id,
-        discussion_id=turn.discussion.id,
+        turn_id=turn_id,
+        user_id=discussion.user_id,
+        diagram_id=discussion.diagram_id,
+        discussion_id=discussion.id,
         statement_id=statement_id,
         model=model,
-        snapshot=diagramjson.store(before).decode("utf-8"),
+        snapshot=snapshot.decode("utf-8"),
     )
     db.session.add(row)
     db.session.commit()
     enqueue(row.id)
+
+
+def rebuilt(said: Statement) -> bytes:
+    """The record as it stood before the turn these words started: today's
+    record with that turn's changes and every change after it taken back off,
+    newest first, whoever made them. Row ids give the order; turn ids carry
+    none."""
+    diagram = said.discussion.diagram
+    first = (
+        select(func.min(Change.id))
+        .where(
+            Change.diagram_id == diagram.id,
+            or_(Change.turn_id == said.turn_id, Change.created_at >= said.created_at),
+        )
+        .scalar_subquery()
+    )
+    data = diagramjson.loads(diagram.data)
+    for change in Change.query.filter(
+        Change.diagram_id == diagram.id, Change.id >= first
+    ).order_by(Change.id.desc()):
+        record.rewind(data, change.deltas)
+    return diagramjson.dumps(data)
+
+
+def _mine(user: User):
+    return (
+        Statement.query.join(Discussion, Statement.discussion_id == Discussion.id)
+        .join(Diagram, Discussion.diagram_id == Diagram.id)
+        .filter(Discussion.user_id == user.id, Diagram.scratch.is_(False))
+    )
+
+
+def pending(user: User, model: str) -> list[Statement]:
+    """The words that started each of this person's past coach turns that
+    ended in a reply and have not yet run on this model, oldest first."""
+    reply = aliased(Statement)
+    return (
+        _mine(user)
+        .filter(
+            Statement.speaker_id == Discussion.chat_user_speaker_id,
+            Statement.turn_id.isnot(None),
+            exists().where(
+                reply.turn_id == Statement.turn_id,
+                reply.speaker_id == Discussion.chat_ai_speaker_id,
+            ),
+            ~exists().where(
+                ShadowTurn.turn_id == Statement.turn_id, ShadowTurn.model == model
+            ),
+        )
+        .order_by(Statement.id)
+        .all()
+    )
+
+
+def untraced(user: User) -> int:
+    """Replies written before replies kept their turn id: no turn to run again."""
+    return (
+        _mine(user)
+        .filter(
+            Statement.speaker_id == Discussion.chat_ai_speaker_id,
+            Statement.turn_id.is_(None),
+        )
+        .count()
+    )
+
+
+def estimate(turns: list[Statement], model: str) -> tuple[Decimal, int]:
+    """What running these turns on the model would cost, priced from the real
+    turns' own token counts, and how many turns have no counts to price."""
+    counts = (
+        db.session.query(
+            func.sum(ModelCall.input_tokens),
+            func.sum(ModelCall.output_tokens),
+            func.sum(ModelCall.cache_creation_tokens),
+            func.sum(ModelCall.cache_read_tokens),
+            func.count(func.distinct(ModelCall.turn_id)),
+        )
+        .filter(
+            ModelCall.turn_id.in_([said.turn_id for said in turns]),
+            ModelCall.purpose == Purpose.Coach,
+        )
+        .one()
+    )
+    fresh, output, written, read, metered = (n or 0 for n in counts)
+    name = resolve_model(model)
+    # a model with no charge to write its cache reads those tokens as input
+    if not price(name).cache_write:
+        fresh, written = fresh + written, 0
+    spent = Spent(input=fresh, output=output, cache_creation=written, cache_read=read)
+    return cost(name, spent), len(turns) - metered
+
+
+def backfill(user: User, model: str) -> int:
+    """Run each of this person's past turns again on the model, over the record
+    as it stood before each one. Returns how many were handed over."""
+    turns = pending(user, model)
+    for said in turns:
+        _queue(said.turn_id, said.discussion, said.id, model, rebuilt(said))
+    return len(turns)
 
 
 def enqueue(row_id: int) -> None:
@@ -80,6 +193,7 @@ def run(row_id: int) -> None:
         turn = CoachTurn(
             copy,
             said.text,
+            purpose=Purpose.Shadow,
             model=model_for(row.model),
             statement_id=said.id,
             turn_id=shadow_id,

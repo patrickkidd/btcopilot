@@ -11,7 +11,7 @@ from btcopilot.admin import admin
 from btcopilot.admin.quality import PRODUCTION
 from btcopilot.coachmodel import Spent
 from btcopilot.extensions import db
-from btcopilot.models import Diagram, TokenMeter
+from btcopilot.models import Diagram, ModelCall, Purpose, TokenMeter
 from btcopilot.routes.diagrams import readable
 from btcopilot.toolbox import ToolName
 from btcopilot.tests.conftest import Model, called, said
@@ -66,8 +66,12 @@ def test_a_refused_call_and_a_person_added_twice_are_counted(
 
 def test_a_replay_charges_no_one(discussion, reference, coach):
     # R-0597
-    replayscore.replay(discussion, "sonnet-5", reference)
+    row = replayscore.replay(discussion, "sonnet-5", reference)
     assert TokenMeter.query.count() == 0
+    assert {
+        c.purpose
+        for c in ModelCall.query.filter_by(diagram_id=row["scratch_diagram_id"])
+    } == {Purpose.Replay}
 
 
 def test_the_replay_record_is_scratch_and_never_listed(

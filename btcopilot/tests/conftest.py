@@ -11,7 +11,7 @@ from mock import patch
 from sqlalchemy import text
 import btcopilot
 from btcopilot.extensions import db
-from btcopilot.llmutil import Served
+from btcopilot.llmutil import Served, Spent, Text
 from btcopilot.coachmodel import ModelTurn, ToolCall
 from btcopilot.coachturn import SPEAK
 from btcopilot.models import Diagram, Discussion, Statement, Speaker, SpeakerType
@@ -89,6 +89,10 @@ def said(text: str) -> ModelTurn:
     return ModelTurn(
         text=text, blocks=[{"type": "text", "text": text}], served=Served(SERVED)
     )
+
+
+def wrote(words: str) -> Text:
+    return Text(words, Spent(), Served(SERVED))
 
 
 def called(tool: ToolName, text: str = "", **args) -> ModelTurn:
@@ -204,8 +208,8 @@ def chat_flow(request):
             title = marker.kwargs.get("title", "A session title")
             stack.enter_context(
                 patch(
-                    "btcopilot.models.discussion.response_text_sync",
-                    return_value=title,
+                    "btcopilot.metered.response_text_sync",
+                    return_value=wrote(title),
                 )
             )
             ret = {

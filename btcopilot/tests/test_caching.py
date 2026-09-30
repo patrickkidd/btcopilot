@@ -23,8 +23,9 @@ from btcopilot.coachmodel import (
 )
 from btcopilot.coachturn import CoachTurn
 from btcopilot.extensions import db
-from btcopilot.models import ModelCall, Speaker, SpeakerType
+from btcopilot.models import ModelCall, Purpose, Speaker, SpeakerType
 from btcopilot.pricing import cost
+from btcopilot.tests.conftest import wrote
 from btcopilot.toolbox import ToolName
 
 TOOLS = [
@@ -276,14 +277,14 @@ def test_a_refused_call_answered_by_a_fallback_is_priced_and_logged_as_its(
 ):
     # R-0409, R-0410
     monkeypatch.setattr(
-        "btcopilot.models.discussion.response_text_sync",
-        lambda *a, **k: "A session title",
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
     )
     wire.reply = Reply(**FELL)
-    reply = CoachTurn(discussion, "hi", model=CoachModel()).run()
+    reply = CoachTurn(discussion, "hi", purpose=Purpose.Coach, model=CoachModel()).run()
     assert reply["statement"] == "Tell me more about that."
 
-    row = ModelCall.query.one()
+    row = ModelCall.query.filter_by(purpose=Purpose.Coach).one()
     assert row.model == "claude-opus-5"
     assert row.fallback == {
         "hops": [{"from": "claude-opus-5-5", "to": "claude-opus-5", "category": "bio"}],
@@ -367,8 +368,8 @@ def test_what_a_call_writes_to_the_wire_the_next_call_and_turn_read_back(
     db.session.commit()
     monkeypatch.setenv("ANTHROPIC_API_KEY", "not-a-key")
     monkeypatch.setattr(
-        "btcopilot.models.discussion.response_text_sync",
-        lambda *a, **k: "A session title",
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
     )
     nell = Block(
         type="tool_use", id="t1", name=ToolName.EditPerson.value, input={"name": "Nell"}
@@ -381,7 +382,9 @@ def test_what_a_call_writes_to_the_wire_the_next_call_and_turn_read_back(
     )
     with patch("btcopilot.coachmodel.anthropic.Anthropic", lambda **k: script):
         for words in ["My sister is Nell.", "She was kind.", "He left."]:
-            CoachTurn(discussion, words, model=CoachModel()).run()
+            CoachTurn(
+                discussion, words, purpose=Purpose.Coach, model=CoachModel()
+            ).run()
     first, second, third, fourth = [wire_order(sent) for sent in script.requests]
 
     blocks, marks = first

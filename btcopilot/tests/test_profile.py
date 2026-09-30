@@ -6,16 +6,17 @@ import pytest
 from btcopilot.extensions import db
 from btcopilot import profile
 from btcopilot.coachturn import CoachTurn
+from btcopilot.models import Purpose
 from btcopilot.toolbox import ToolName
 from btcopilot.schema import DateCertainty, EventKind
-from btcopilot.tests.conftest import Model, called, said, version
+from btcopilot.tests.conftest import Model, called, said, version, wrote
 
 
 @pytest.fixture(autouse=True)
 def titles(monkeypatch):
     monkeypatch.setattr(
-        "btcopilot.models.discussion.response_text_sync",
-        lambda *a, **k: "A session title",
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
     )
 
 
@@ -42,7 +43,9 @@ def test_an_empty_record_is_missing_all_three(test_user):
 def test_the_coach_is_told_what_to_get_first(discussion):
     # R-0360
     model = Model(said("What is your name?"))
-    CoachTurn(discussion, "I have not been sleeping", model=model).run()
+    CoachTurn(
+        discussion, "I have not been sleeping", purpose=Purpose.Coach, model=model
+    ).run()
     assert "FIRST, BEFORE ANYTHING ELSE" in model.systems[0]
     assert "first name, last name, birth date" in model.systems[0]
 
@@ -66,7 +69,9 @@ def test_a_complete_profile_lifts_the_gate_and_reaches_the_account(discussion, t
         ),
         said("Thank you, Wren. Now, the sleep."),
     )
-    CoachTurn(discussion, "Wren Hale, born 4 March 1980", model=model).run()
+    CoachTurn(
+        discussion, "Wren Hale, born 4 March 1980", purpose=Purpose.Coach, model=model
+    ).run()
 
     data = test_user.free_diagram.get_diagram_data()
     assert profile.missing(data) == []
@@ -74,5 +79,7 @@ def test_a_complete_profile_lifts_the_gate_and_reaches_the_account(discussion, t
     assert test_user.birthdate.isoformat() == "1980-03-04"
 
     model = Model(said("Tell me about the sleep."))
-    CoachTurn(discussion, "It started in college", model=model).run()
+    CoachTurn(
+        discussion, "It started in college", purpose=Purpose.Coach, model=model
+    ).run()
     assert "FIRST, BEFORE ANYTHING ELSE" not in model.systems[0]

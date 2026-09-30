@@ -22,6 +22,7 @@ from btcopilot.models import (
     Discussion,
     Observation,
     ObservationKind,
+    Purpose,
     Statement,
     StatementKind,
 )
@@ -125,6 +126,7 @@ def run(
     turn = CoachTurn(
         discussion,
         said.text,
+        purpose=Purpose.Coach,
         model=model_for(setting.read(SettingKey.CoachModel, discussion.user_id)),
         session_id=str(discussion_id),
         statement_id=statement_id,

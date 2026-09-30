@@ -12,6 +12,7 @@ from opentelemetry import trace
 from btcopilot.geminimodel import GeminiModel
 from btcopilot.llmutil import (
     anthropic_args,
+    claude_spent,
     fallback_args,
     is_gemini,
     local_model,
@@ -178,12 +179,7 @@ class CoachModel:
                         }
                     )
             used = message.usage
-            turn.spent = Spent(
-                input=used.input_tokens,
-                output=used.output_tokens,
-                cache_creation=used.cache_creation_input_tokens or 0,
-                cache_read=used.cache_read_input_tokens or 0,
-            )
+            turn.spent = claude_spent(used)
             _log.info(
                 f"Coach model {answered.model} turn {turn_id}: {len(turn.text)} chars, "
                 f"{len(turn.calls)} tool calls, {used.input_tokens} tokens in, "

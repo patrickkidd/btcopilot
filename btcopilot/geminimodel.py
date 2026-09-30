@@ -10,8 +10,8 @@ import uuid
 from google.genai import types
 from opentelemetry import trace
 
-from btcopilot.llmutil import Served, gemini_client
-from btcopilot.modelturn import MAX_TOKENS, ModelTurn, Refusal, Spent, ToolCall
+from btcopilot.llmutil import Served, gemini_client, gemini_spent
+from btcopilot.modelturn import MAX_TOKENS, ModelTurn, Refusal, ToolCall
 
 _log = logging.getLogger(__name__)
 _tracer = trace.get_tracer(__name__)
@@ -98,17 +98,6 @@ def declarations(tools: list[dict]) -> list[types.Tool]:
     ]
 
 
-def spent(usage: types.GenerateContentResponseUsageMetadata) -> Spent:
-    """Cached input is part of the prompt count and thinking is billed as
-    output. Gemini keeps its cache without charging to write it."""
-    cached = usage.cached_content_token_count or 0
-    return Spent(
-        input=usage.prompt_token_count - cached,
-        output=(usage.candidates_token_count or 0) + (usage.thoughts_token_count or 0),
-        cache_read=cached,
-    )
-
-
 def _parts(chunk: types.GenerateContentResponse) -> list[types.Part]:
     """A chunk that only closes the stream carries no content."""
     if not chunk.candidates or not chunk.candidates[0].content:
@@ -182,7 +171,7 @@ class GeminiModel:
             turn = ModelTurn(
                 text=text,
                 served=Served(model=last.model_version),
-                spent=spent(last.usage_metadata),
+                spent=gemini_spent(last.usage_metadata),
             )
             if text:
                 turn.blocks.append({"type": Block.Text.value, "text": text})
