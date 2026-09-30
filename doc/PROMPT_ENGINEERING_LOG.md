@@ -2,7 +2,23 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-09-28 (the coach's memory is the record, its last notes and a chat search)
+**Last Updated**: 2026-09-29 (the coach's notes say evaluation, not journaling)
+
+---
+
+## Sittings — the coach's notes say evaluation, not journaling (2026-09-29)
+
+**Not evaluated yet.** No real model calls were made.
+
+**Scope**: the "What it's doing" field of the coach's notes tool. Its fourth value, journaling, is
+now evaluation, and the field's description defines the two: evaluation is a turn whose question
+aims at covering the basic family history an evaluation needs; coaching is ongoing conversation
+outside that aim. Record correction and app help are unchanged. No prompt file named the values,
+so no prompt wording changed and the goldens stand.
+
+**Why** [R-0535; Patrick, 2026-09-29, not yet in the rulings store]: evaluation matches the
+family evaluation of Kerr's chapter 10. Notes already stored keep the word they were written
+with; the notes card shows a stored journaling as it is.
 
 ---
 

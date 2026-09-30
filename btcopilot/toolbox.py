@@ -79,7 +79,7 @@ class Register(enum.StrEnum):
     Coaching = "coaching"
     Correction = "record correction"
     AppHelp = "app help"
-    Journaling = "journaling"
+    Evaluation = "evaluation"
 
 
 class Variable(enum.StrEnum):
@@ -658,7 +658,13 @@ def schemas() -> list[dict]:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "register": _enum_param(Register, "What kind of talk this turn is."),
+                    "register": _enum_param(
+                        Register,
+                        "What kind of talk this turn is. Evaluation is a turn whose "
+                        "question aims at covering the basic family history an "
+                        "evaluation needs. Coaching is ongoing conversation outside "
+                        "that aim.",
+                    ),
                     "lane": {"type": "string"},
                     "why": {"type": "string", "description": "Why this question now."},
                     "holding": {
