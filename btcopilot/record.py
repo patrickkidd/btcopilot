@@ -6,6 +6,7 @@ never disagree with the record. `undo` replays a turn backwards with a
 compare-and-set on each value.
 """
 
+import contextlib
 import logging
 import re
 from dataclasses import dataclass
@@ -109,19 +110,19 @@ def apply(
     it back. A field set on an id the record does not hold makes the item, and
     is logged as one add holding the whole item, so undo takes it off.
     """
-    diagram = _lock(diagram_id)
-    data = diagramjson.loads(diagram.data)
-    applied = [d for delta in deltas for d in _apply(data, delta)]
-    return _commit(
-        diagram,
-        data,
-        compress(applied),
-        author,
-        turn_id,
-        user_id,
-        session_id,
-        statement_id,
-    )
+    with _locked(diagram_id) as diagram:
+        data = diagramjson.loads(diagram.data)
+        applied = [d for delta in deltas for d in _apply(data, delta)]
+        return _commit(
+            diagram,
+            data,
+            compress(applied),
+            author,
+            turn_id,
+            user_id,
+            session_id,
+            statement_id,
+        )
 
 
 def undo(
@@ -133,44 +134,44 @@ def undo(
     session_id: int | None = None,
 ) -> Change:
     """Reverse every delta of `turn_id`, newest first, and log the reversal."""
-    diagram = _lock(diagram_id)
-    changes = (
-        Change.query.filter_by(diagram_id=diagram_id, turn_id=turn_id)
-        .order_by(Change.id.desc())
-        .all()
-    )
-    if not changes:
-        raise ValueError(f"no changes for turn {turn_id} on diagram {diagram_id}")
+    with _locked(diagram_id) as diagram:
+        changes = (
+            Change.query.filter_by(diagram_id=diagram_id, turn_id=turn_id)
+            .order_by(Change.id.desc())
+            .all()
+        )
+        if not changes:
+            raise ValueError(f"no changes for turn {turn_id} on diagram {diagram_id}")
 
-    data = diagramjson.loads(diagram.data)
-    applied = []
-    for change in changes:
-        # A question is put back only where a removal closed it.
-        removal = any(_removes(delta) for delta in change.deltas)
-        for delta in reversed(change.deltas):
-            if delta["item_kind"] == ItemKind.Question.value and not removal:
-                continue
-            inverse = _inverse(delta)
-            actual = _get(data, inverse)
-            if actual != inverse["before"]:
-                raise Conflict(inverse, actual)
-            done = _apply(data, inverse)
-            # Taking off what the turn made would also take what hangs on it
-            # since, which the turn did not make.
-            if inverse["field"] is None and inverse["after"] is None and len(done) > 1:
-                raise Conflict(inverse, [f"{d['item_kind']} {d['item_id']}" for d in done[:-1]])
-            applied.extend(done)
-    return _commit(
-        diagram,
-        data,
-        compress(applied),
-        author,
-        f"undo:{turn_id}",
-        user_id,
-        session_id,
-        None,
-        undoing=True,
-    )
+        data = diagramjson.loads(diagram.data)
+        applied = []
+        for change in changes:
+            # A question is put back only where a removal closed it.
+            removal = any(_removes(delta) for delta in change.deltas)
+            for delta in reversed(change.deltas):
+                if delta["item_kind"] == ItemKind.Question.value and not removal:
+                    continue
+                inverse = _inverse(delta)
+                actual = _get(data, inverse)
+                if actual != inverse["before"]:
+                    raise Conflict(inverse, actual)
+                done = _apply(data, inverse)
+                # Taking off what the turn made would also take what hangs on it
+                # since, which the turn did not make.
+                if inverse["field"] is None and inverse["after"] is None and len(done) > 1:
+                    raise Conflict(inverse, [f"{d['item_kind']} {d['item_id']}" for d in done[:-1]])
+                applied.extend(done)
+        return _commit(
+            diagram,
+            data,
+            compress(applied),
+            author,
+            f"undo:{turn_id}",
+            user_id,
+            session_id,
+            None,
+            undoing=True,
+        )
 
 
 def rewind(data: dict, deltas: list[dict]):
@@ -224,6 +225,20 @@ def compress(deltas: list[dict]) -> list[dict]:
         if delta["field"] is None and out[-1]["before"] is None:
             made[key] = out[-1]
     return out
+
+
+@contextlib.contextmanager
+def _locked(diagram_id: int):
+    """The record's row, locked until the write commits. A write the record
+    refuses gives the lock back: the turn goes on after a refusal, and the
+    ledger row of its next model call is written on its own connection, which
+    would wait on this row for as long as the turn waits on it."""
+    savepoint = db.session.begin_nested()
+    try:
+        yield _lock(diagram_id)
+    except (Invalid, Conflict):
+        savepoint.rollback()
+        raise
 
 
 def _lock(diagram_id: int) -> Diagram:
