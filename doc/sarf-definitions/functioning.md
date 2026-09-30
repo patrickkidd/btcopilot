@@ -41,7 +41,7 @@ The main off-theory trap: reading functioning up off success or strength (weight
 13. **Overfunctioning: up, down, or no functioning code?** OPEN, for the IRR group. “Is overfunctioning a functioning-up shift, a functioning-down shift, or not a functioning code at all?” OPEN_QUESTIONS 9. Up: Kerr defines it as functioning above basic level (F19). Down: Patrick in 2017 (F30). Neither: a relationship move held up from both sides (F46, F81).
 14. **"The adaptive one."** OPEN. “In Kerr's books, is "the adaptive one" the overfunctioner or the one who gives in?” OPEN_QUESTIONS 10. Kerr uses it both ways (F51, F44).
 15. **A defined self.** OPEN, for the IRR group (R-0439). “What kind of thing is a defined self: a relationship move, a functioning shift, or a third kind?” OPEN_QUESTIONS 13. Section 2d gives what Bowen and Kerr wrote about taking a stand.
-16. **Functional facts.** OPEN. “Where do functional facts go (occupation, education, health, where someone lives)?” OPEN_QUESTIONS 19. Havstad called them markers of functioning with no place in the coding form (F86).
+16. **Functional facts.** OPEN. “Where do functional facts go (occupation, education, health, where someone lives)?” OPEN_QUESTIONS 19. Havstad called them markers of functioning with no place in the coding form (F86). Narrowed 2026-09-29: they are now basic data the coach must account for (REFERENCE section 6f); where they are stored stays open.
 
 ### Coders' group (IRR)
 
