@@ -49,6 +49,25 @@ class Place(enum.StrEnum):
     Guidelines = "guidelines"
 
 
+# The coder's and reviewer's screens: the coach offers and opens them only for
+# a person with that role (R-0626).
+CODER = frozenset(
+    {
+        Place.Task,
+        Place.Agenda,
+        Place.Pick,
+        Place.MeetingDay,
+        Place.MeetingCut,
+        Place.Literature,
+        Place.Cut,
+        Place.Coding,
+        Place.Vote,
+        Place.Meeting,
+        Place.Result,
+        Place.Guidelines,
+    }
+)
+
 SLOT = {
     ":n": re.compile(r"\d+"),
     ":key": re.compile(r"[\w.-]+"),

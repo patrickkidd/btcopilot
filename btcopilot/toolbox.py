@@ -14,6 +14,7 @@ import re
 
 from sqlalchemy import or_
 
+import btcopilot
 from btcopilot import clusters, place, proactive, prompts, record, views
 from btcopilot.models import Author, Change, Discussion, ReportKind, Statement
 from btcopilot.recordtext import (
@@ -27,7 +28,7 @@ from btcopilot.recordtext import (
     version_line,
 )
 from btcopilot.extensions import db
-from btcopilot.models import Diagram
+from btcopilot.models import Diagram, User
 from btcopilot.schema import (
     MIN_CLUSTER_EVENTS,
     ClusterSource,
@@ -189,8 +190,9 @@ VERSION = {
 }
 
 
-def schemas() -> list[dict]:
-    """The coach's tool schemas. What a field means clinically comes from
+def schemas(coder: bool = False) -> list[dict]:
+    """The coach's tool schemas; a coder's navigate also lists the coder's
+    screens (R-0626). What a field means clinically comes from
     `prompts.tool_meanings()`, which fdserver overrides (R-0305); everything
     here is the shape of the value, not what it means to a clinician."""
     means = prompts.tool_meanings()
@@ -629,7 +631,11 @@ def schemas() -> list[dict]:
                         "type": "string",
                         "description": (
                             "The place, one of: "
-                            + ", ".join(place.APP + p.value for p in place.Place)
+                            + ", ".join(
+                                place.APP + p.value
+                                for p in place.Place
+                                if coder or p not in place.CODER
+                            )
                             + ". :n is a number, :key a cluster's id, :day a "
                             "meeting's YYYY-MM-DD."
                         ),
@@ -865,6 +871,13 @@ class Toolbox:
         self.views: list[dict] = []
         # The record versions this turn's own writes made, undo included.
         self.versions: set[int] = set()
+
+    @property
+    def coder(self) -> bool:
+        """Admin counts: `has_role` gives an admin every role."""
+        return self.user_id is not None and db.session.get(
+            User, self.user_id
+        ).has_role(btcopilot.ROLE_AUDITOR)
 
     @property
     def diagram(self) -> Diagram:
@@ -1495,6 +1508,11 @@ class Toolbox:
                 "It tried to open a place the app does not have.",
             )
         where, slots = found
+        if where in place.CODER and not self.coder:
+            raise ToolError(
+                f"{address!r} is a coder's screen and this person is no coder",
+                "It tried to open a screen only coders see.",
+            )
         data = self.data
         if where is place.Place.Cluster:
             self._cluster(data, slots[0])

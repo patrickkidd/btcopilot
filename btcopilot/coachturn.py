@@ -308,7 +308,9 @@ class CoachTurn:
         silent = False
 
         for step in range(MAX_STEPS):
-            turn = self._say(system, messages, schemas(), stream=True)
+            turn = self._say(
+                system, messages, schemas(self.toolbox.coder), stream=True
+            )
             # A turn ends on words, never on a tool call. Text written before a
             # call is the model working out what to do and the user never sees
             # it, so only a step that calls nothing is the coach speaking.

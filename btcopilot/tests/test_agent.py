@@ -8,6 +8,7 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from btcopilot.extensions import db
+import btcopilot
 from btcopilot import chips, pricing, record, tracing
 from btcopilot.coachmodel import Spent
 from btcopilot.coachturn import (
@@ -30,9 +31,10 @@ from btcopilot.models import (
     SpeakerType,
     Statement,
     StatementKind,
+    User,
 )
 from btcopilot.prompts import get_agent_prompt
-from btcopilot.toolbox import ToolName
+from btcopilot.toolbox import ToolName, schemas
 from btcopilot.schema import (
     Cluster,
     DateCertainty,
@@ -285,6 +287,37 @@ def test_navigate_to_a_place_the_app_or_the_record_lacks_is_refused(
     refused = model.histories[-1][-1]["content"][0]
     assert refused["is_error"] is True
     assert reason in refused["content"]
+
+
+@pytest.mark.parametrize("coder", [False, True])
+def test_navigate_lists_coder_screens_only_for_a_coder(coder):
+    # R-0055
+    tool = next(s for s in schemas(coder) if s["name"] == ToolName.Navigate.value)
+    listed = tool["input_schema"]["properties"]["address"]["description"]
+    assert ("/app/vote/:n," in listed) is coder
+    assert ("/app/account/coding-task," in listed) is coder
+    assert "/app/account/profile," in listed
+
+
+def test_navigate_to_a_coder_screen_is_refused_for_a_person_without_the_role(
+    discussion, family
+):
+    # R-0055
+    model = Model(called(ToolName.Navigate, address="/app/coding/3"), said("I cannot open that."))
+    reply = run(discussion, "Open it.", model)
+    assert EventKind.Navigate.value not in kinds(reply)
+    refused = model.histories[-1][-1]["content"][0]
+    assert refused["is_error"] is True
+    assert "no coder" in refused["content"]
+
+
+def test_navigate_to_a_coder_screen_opens_for_a_coder(discussion, family):
+    # R-0055
+    db.session.get(User, discussion.user_id).roles = btcopilot.ROLE_AUDITOR
+    db.session.commit()
+    model = Model(called(ToolName.Navigate, address="/app/coding/3"), said("It is open now."))
+    reply = run(discussion, "Open it.", model)
+    assert event(reply, EventKind.Navigate)["address"] == "/app/coding/3"
 
 
 def test_a_report_asks_the_page_and_keeps_no_observation(discussion, family):

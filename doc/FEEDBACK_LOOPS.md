@@ -152,6 +152,8 @@ group by 1;
 
 ### 3. Cost per turn and dollars by kind
 
+The tool list differs by role (a coder's navigate also lists the coder's screens, R-0626), so a coder's and a non-coder's turns share no cached prefix: the tools head it.
+
 ```sql
 select count(distinct mc.turn_id) filter (where mc.created_at > now() - interval '7 days') as turns_7d,
        count(distinct mc.turn_id) as turns_30d,
