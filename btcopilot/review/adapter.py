@@ -15,7 +15,7 @@ from sqlalchemy import func
 import btcopilot
 from btcopilot import diagramjson
 from btcopilot.extensions import db
-from btcopilot import observer, prompts, record, turnstore
+from btcopilot import observer, proactive, prompts, push, record, turnstore
 from btcopilot.record import Invalid
 from btcopilot.coachmodel import COACH_EFFORT, CoachModel
 from btcopilot.coachturn import CoachTurn
@@ -31,7 +31,7 @@ from btcopilot.models import (
 )
 from btcopilot.recordtext import date_text, render
 from btcopilot.toolbox import EDITS, ToolError, Toolbox, schemas
-from btcopilot.models import Diagram, ShadowTurn, User
+from btcopilot.models import Diagram, Notification, NotificationKind, ShadowTurn, User
 from btcopilot.schema import PDP, Event, ItemKind, PairBond, Person, from_dict
 
 __all__ = [

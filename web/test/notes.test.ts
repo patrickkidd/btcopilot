@@ -27,6 +27,8 @@ function watch() {
     made: () => {},
     read: () => {},
     show: () => {},
+    go: () => {},
+    report: () => {},
     text: () => {},
     reset: () => {},
     done: () => {},
@@ -83,7 +85,7 @@ it("opens the notes from a circled i button drawn in outline, never a press and 
 it("says the chosen kind of talk as plain words, with every possible kind muted beneath", () => {
   const out = notesHtml({ ...notes, register: Register.AppHelp });
   expect(out).toContain(
-    '<dd>app help<div class="notes-possible">Possible: coaching, record correction, app help, journaling</div></dd>',
+    '<dd>app help<div class="notes-possible">Possible: coaching, record correction, app help, evaluation</div></dd>',
   );
   expect(out).not.toContain('class="reg');
 });

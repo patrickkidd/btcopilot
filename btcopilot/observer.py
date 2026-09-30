@@ -12,7 +12,8 @@ from btcopilot.extensions import db
 from btcopilot.models import Change, Discussion, Observation, ObservationKind, Statement
 from btcopilot.recordtext import date_text
 from btcopilot.schema import DiagramData, ItemKind
-from btcopilot.toolbox import READS, ToolName
+from btcopilot.toolbox import CHANGES, READS, ToolName
+from btcopilot.toolnames import SUBJECT
 from btcopilot.turnlog import TurnEventKind
 
 # An asked question is stored self-contained, so its words may reword the
@@ -31,6 +32,7 @@ WATCHED = (
     ObservationKind.QuestionUnsaid,
     ObservationKind.ToolRefused,
     ObservationKind.StepCap,
+    ObservationKind.EarlierEdit,
 )
 
 ADDS = (
@@ -72,6 +74,7 @@ def observe(diagram_id: int, turn_id: str, data: DiagramData) -> None:
         *_unsaid(diagram_id, turn_id, data),
         *_refused(kept),
         *_capped(kept),
+        *_earlier(diagram_id, turn_id, kept),
     ]
     for kind, detail in found:
         db.session.add(
@@ -194,3 +197,38 @@ def _capped(kept: list[dict]) -> list:
     last = len(since) - since[::-1].index(TurnEventKind.Failed.value)
     steps = since[last:].count(TurnEventKind.Step.value)
     return [(ObservationKind.StepCap, {"steps": steps})] if steps >= MAX_STEPS else []
+
+
+def _earlier(diagram_id: int, turn_id: str, kept: list[dict]) -> list:
+    """Edit calls on items made before this sitting began: how often the coach
+    goes back over what an earlier sitting put down, for tuning (R-0517)."""
+    sitting = Statement.query.filter_by(turn_id=turn_id).first().discussion
+    made = {
+        (delta["item_kind"], str(delta["item_id"]))
+        for change in Change.query.filter(
+            Change.diagram_id == diagram_id, Change.created_at >= sitting.created_at
+        )
+        for delta in change.deltas
+        if delta["field"] is None and delta["after"] is not None
+    }
+    calls = [
+        {"name": e["name"], "item": list(item)}
+        for e in kept
+        if e["type"] == TurnEventKind.ToolCall.value
+        and not e.get("refusal")
+        and (item := _item(e))
+        and item not in made
+    ]
+    if not calls:
+        return []
+    return [(ObservationKind.EarlierEdit, {"count": len(calls), "calls": calls})]
+
+
+def _item(call: dict) -> tuple | None:
+    """What an edit call changes, when it names something already there."""
+    args = call["args"]
+    if call["name"] == ToolName.Remove:
+        return args["item_kind"], str(args["item_id"])
+    if call["name"] in CHANGES and args.get("id") is not None:
+        return SUBJECT[call["name"]].value, str(args["id"])
+    return None

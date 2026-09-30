@@ -122,7 +122,15 @@ test.describe("the ask under the timeline", () => {
   test.use({ storageState: stateFor("moves") });
 
   // R-0586
+  test("is hidden for now", async ({ page }) => {
+    await settle(page);
+    await expect(page.locator("#caption #cap-play")).toBeAttached();
+    await expect(page.locator("#cap-chip")).toHaveCount(0);
+  });
+
+  // R-0586
   test("puts a teal chip in the message box after \"I want to ask about\"", async ({ page }) => {
+    test.fixme(true, "the ask chip is hidden for now (Patrick, 2026-09-29)");
     await settle(page);
     await page.locator("#cap-chip").click();
     const got = await drafted(page);

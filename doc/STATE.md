@@ -12,8 +12,13 @@ Ten-minute read by design.
 from the theory corpus and approved by Patrick 2026-09-27, replaced the old moves board; see
 "Where the build stands" below for what shipped and where it stands.
 
-**Handovers are retired (2026-09-26).** This file is where a session starts: "FD-363" alone
-starts one. The flush revises this file and appends to HISTORY, and that is the whole handover.
+**Handovers are retired (2026-09-26).** This file is where a session starts: "FD-365" alone
+starts one. FD-365 is the second fast-follow batch (Jira FD-365, branch `FD-365`, draft PR #142,
+child of epic FD-362); everything for this work goes into FD-365, with no new ticket (Patrick,
+2026-09-29). Its open scope is the "Next PR" list below. FD-363 is merged. The production deploy
+lock is on FD-365 (`uv run bin/deploy-lock show`, 2026-09-30) and stays there until Patrick
+names another session [R-0530]. The flush revises this file and appends to HISTORY, and that is
+the whole handover.
 The older handover files in the private corpus stay as they were, for the record only.
 
 ## The product (ruled)
@@ -77,8 +82,128 @@ supersedes the old hard-cutover plan.
 
 ## Where the build stands (live — revise, do not append)
 
-**PR #136 (branch `FD-362`) is merged to master; the fast-follow is branch `FD-363`, one batch
-PR [R-0484]. fdserver is out of this work (2026-09-16):**
+**Production today (2026-09-30): release 3.2026.9.30.2 from branch FD-365, commit 600da16,
+database at 1b00000000bd.** PR #142 stays the ticket's PR, open and unmerged. The sittings work
+was built on branch `sittings` as PR #144 and merged into FD-365, not master, on 2026-09-30. The
+landing page, PR #143, merged to master and was merged into FD-365. Releases dispatched from
+FD-365 on 2026-09-29 and 30: 3.2026.9.29.1 (one back chevron and one step pill everywhere),
+3.2026.9.29.2 (the ask button hidden for now), 3.2026.9.29.3 (the literature review row for
+auditors and admins), 3.2026.9.29.5 (the landing page), 3.2026.9.30.1 (PR #144) and
+3.2026.9.30.2. 3.2026.9.29.4 is the tag the build on master gave the landing page merge. Four
+commits after 600da16 are pushed and not on the box: the features dashboard, the feedback loops
+ledger, the product-owner skill and its first run. What production now does, by area:
+
+**Sittings.** Each family has one chat thread. A new sitting starts by itself once the family
+has been quiet 12 hours, and a light line with the day marks where it starts (with the time as
+well when the sitting before it started the same day) [queued R-0604]. The list of sessions to
+open and the New session button are gone for everyone: nobody opens, starts or switches a
+session, and the person never manages what the coach remembers [queued R-0605]. A sitting's
+summary stays in the database for the agenda and review and is not sent to the thread.
+
+**The coach's memory.** The coach no longer gets its past tool calls back, so the thread cannot
+grow without end. Each turn it reads its last notes from the database, the family's last 20 to
+29 statements from every sitting (the window steps by 10, so the cached part of the prompt stays
+the same until the next step), and a map listing each event's id, date, kind and people. It
+finds duplicates from the record alone [queued R-0606] and finds older words with a search over
+past chat [queued R-0607]. A follow-up tool, "ask later", keeps a question for a later day that
+the person agreed to. A coach turn whose edits change items an earlier sitting made writes an
+observations row for tuning. No eval has run on this change yet (PROMPT_ENGINEERING_LOG.md).
+
+**The coach writes first.** A message the coach writes first is one coach message in the thread,
+then a notification, with only one outstanding at a time [queued R-0608]. It has two triggers: a
+question for later the person agreed to, and a pattern in their own record that has just reached
+two occurrences, a symptom or anxiety going up, or functioning going down, within 60 days after
+a relationship ended or they moved away from it. Never an anniversary of a hard event [queued
+R-0607]. Unasked messages are off by default and at most one a week or one a month by the
+person's setting, worded as a maximum, never a schedule; a follow-up the person agreed to is
+outside that budget; two ignored in a row stop that kind until the person answers. Words that
+make one event the cause of another ("led to", "because") are refused and tried again on a later
+run. A scheduled run every 15 minutes picks who gets one, on a new scheduler service on the box,
+fd-beat, which has its own health check since 3.2026.9.30.2; `flask admin proactive run
+--dry-run` prints a row per person saying why nothing went, and stops before the model. How each
+message fared (sent, opened, replied, returned) is counted and kept out of Patrick's
+accept-or-reject queue.
+
+**Web push.** The coach's message reaches the person as one web push at a time, the newest
+replacing an unread one, or as one email when no browser is subscribed; a tap opens the thread at
+that message and stamps it opened. Push sends no Topic header, which Apple refused. The app
+added to a home screen shows the Family Diagram icon, drawn from the iOS app's own icon. The app
+refuses to start without its push keys, and it runs on the box.
+
+**Notices.** Two tables [queued R-0613]: `notices` holds a message once with who it is for
+(everyone, a role, or named people); `notifications` holds one row per delivery to one person,
+of kind coach, task, reminder or notice. `flask admin notice send` sends a notice at once: a push
+to whoever subscribed a browser, an email only with `--email`, otherwise a row in the app's
+list; `flask admin notice list` prints how many got and opened each. In the app the newest
+unread notice, or a waiting coding task, is one small card above the message box, never in the
+thread and never covering the page: folded to two lines, a tap unfolds the whole text with Open
+and a cross under it. The account view has a Notices page with the unread count, and the account
+mark carries an amber dot while one is unread.
+
+**Bug reports and feedback.** A sheet slides up from the bottom only when the coach offers one
+from the conversation [queued R-0615]: "Send this as a bug report?" with Send the report, Always
+send and Don't send (disabled during the beta), or "Send this as feedback?" with Send the report and Not feedback. It is
+modal, never touches the thread, and after Send turns into "Your report was sent" with OK,
+closing by itself after ten seconds. Each answer is one row in the new `reports` table, status
+sent (with the words) or declined (without them). The coach page has a "Bug reports" setting:
+ask me, or always send. An exception reporter, which raised the sheet and wrote rows for errors
+on the page and the server, was built and removed the same night, because Grafana Faro (the
+page) and Alloy (the server's logs) already hold every error; a migration deleted the rows it
+had written. Every server answer now carries an `X-Request-Id` naming its log lines, and source
+maps are built hidden, never served, and kept 90 days with the release run.
+
+**In-app addresses.** Every view and object has an address under /app/ [queued R-0616]: the
+address bar follows the app, the browser's back button steps back, and an address naming a
+message, session, notice, cut or snapshot scrolls it into view in its drawer and rings it. The
+coach has a navigate tool: asked for help with the app, it takes the app there, and its reply
+carries a chip such as "Opened the coach settings". A notice may point at any address. The
+address table is in SCREENS.md.
+
+**Coding and Quality in the account view.** "Your coding task" and "Next meeting" moved from the
+sessions sheet to a Coding section of the account view for auditors and admins, Next meeting
+for admins only, with the literature review row now titled "Auditor's Coding Guide" [queued
+R-0609, R-0601]. Admins have a Quality section with one row, "Better replies", the page formerly
+called Compare replies [queued R-0612]. Each opens as a page of the account view. A cut starts
+from the meeting page, never from a session: "Put a session on the agenda" lists every session on
+every family, searchable by words said in them. One meeting date is one meeting.
+
+**Auditor onboarding** [queued R-0614]. A coder gets a task notice when Patrick gives a cut a
+meeting date, and one reminder two days before the meeting if not submitted. The invitation and
+sign-in code emails say what the work is in two sentences; the task card shows four numbered
+lines under "How this works" until "Got it"; the first line tapped in the coding screen says to
+type what it tells you happened.
+
+**Development-only sign-in.** A development server lists every account on the sign-in page and
+one tap signs in as it; `FLASK_DEV_AUTOLOGIN` (`sandbox up --autologin <email>`) signs every
+request with no session in as one account. Neither exists under any other config, and a test
+proves production has no such route.
+
+**Smaller changes.** The lists drawer's third tab is "Questions", not "From the coach". In the
+sessions sheet Rename is green and Delete red. With a real keyboard Return sends and Shift- or
+Alt-Return makes a new line; on a touch screen Return makes a new line and only the send button
+sends [queued R-0610]. The new-event and new-person forms slide up full screen. The coach's notes
+field "What it's doing" says evaluation, not journaling [queued R-0617]; notes already stored
+keep their old word.
+
+**The landing page** (PR #143) is live since 3.2026.9.29.5: familydiagram.com/ serves it, both
+forms behind Cloudflare Turnstile with its two keys on the box. Patrick submits the first real
+form himself.
+
+**The feedback loops ledger, the features dashboard and `/product-owner` (in the repo, not in a
+release).** doc/FEEDBACK_LOOPS.md has one row per feedback loop, 23 rows, each with its signal,
+closing action, status, the number that proves it, and a query; a test fails when an
+observation kind, report kind, notification kind or dashboard panel has no row [R-0578]. The
+features dashboard is in the repo (deploy/grafana/fd-features.json) with four new panels: the
+coach's first messages, bug reports and feedback, notices, and coach edits to earlier sittings'
+items; every release puts it on Grafana, and no release has run since it was committed. The
+`/product-owner` skill runs only when Patrick asks: read-only readers pull each loop's numbers,
+one Sonnet judge writes a line per loop, and one Fable call ranks at most five recommendations
+toward product-market fit. Its first run is doc/log/product-owner/2026-09-30.md; its one
+recommendation is to talk to the 4 people who opened the app, 20 minutes each, and its proposed
+ledger diff awaits his yes.
+
+**PR #136 (branch `FD-362`) is merged to master, and so is FD-363 (PR #138); FD-365 is the
+current batch, one PR [R-0484]. fdserver is out of this work (2026-09-16):**
 the prompts and the rulings are encrypted files in this repo, the new box's deployment is
 `deploy/` here, and Patrick closed fdserver PR #30 unmerged. Nothing the chat app runs
 reads from fdserver. The beta build is real code against the real database, not a throwaway.
@@ -491,39 +616,50 @@ release when it comes back to the front" — its tests cite R-0486 until then.
 Open for the next session: the first tap right after a rollout can hit a 502 while the
 container comes back up.
 
-**Next PR, queued 2026-09-28:**
-1. Record-data corrections get a general policy and a queue, not one-at-a-time fixes. Patrick:
-   "We should not be going through all of these nitpicky data migration issues. They should be
-   queued up and flagged for sure but we should figure out a general policy and not do it one at
-   a time. And not in this PR." Queued under it: event 26 in diagram 1, a noted event carrying a
-   variable; the 8 births in diagram 11 naming an invented second parent, repair calls prepared
-   by the louann agent but not run; diagram 14's two events naming nobody, on which Patrick said
-   "Leave for now."
-2. Two control pairs still look different from each other: the back arrow (a text glyph in one
-   place, a drawn chevron in another) and step back/forward (plain buttons in one place, pills in
-   another). Patrick: "queue it for the next PR."
-3. Confirmed: a shift always needs a description. Patrick: "yes it needs a description, always."
-4. The coach prompt's defined-self wording is rewritten to Patrick's definition but held: the
-   eval built for it passes on the old prompt too, in a fresh session, because the 2026-09-22
-   fault came mid-conversation and the writer now refuses that data anyway. Next PR: a
-   multi-turn eval modelled on the logged conversation that fails on the old wording, then the
-   wording ships with one paid confirmation run (about 9 calls on claude-opus-5-5, $0.15 to
-   $0.40). The wording is saved in the private corpus at
-   prompts/2026-09-28-defined-self-wording.md.
-5. Ten live cases have no saved answers; the subscription run has now re-answered some of them,
-   and the rest still need answering.
-6. The picture does not shrink while the coach types. Patrick said no to that; no work follows.
-7. The rulings store audit lists await Patrick's approval, none applied: 18 candidate merges, 19
-   supersessions of which 5 conflict with each other, 115 rulings no test cites, and 7 rulings
-   that are bug reports. The audit file is in the private corpus.
-8. Whether Patrick's published papers may be quoted on the public concept pages: about 125 quote
-   lines are in question, and none are published until he decides.
-9. Four gaps a verifier found and nobody has fixed: the notes pop-out's × sits 12px past its
-   header row; the (i) button and a tool line overhang the bubble by 5 to 7px; the hand-edit
-   bad-date message shows a field name instead of plain words; the quality replay command writes
-   to a ledger file that is tracked in git.
-10. A unit test for the calibration cap and the per-call ledger code that the live suite's
-   subscription runner uses.
+**Next PR, as of 2026-09-30.** Open FD-365 items:
+1. Record-data corrections get a general policy and a queue, not one-at-a-time fixes, and not in
+   this PR (Patrick, 2026-09-28). Queued under it: event 26 in diagram 1, a noted event carrying
+   a variable; the 8 births in diagram 11 naming an invented second parent, repair calls prepared
+   but not run; diagram 14's two events naming nobody ("Leave for now").
+2. The defined-self wording is rewritten to Patrick's definition and held: it needs a multi-turn
+   eval, modelled on the logged conversation, that fails on the old wording, then one paid
+   confirmation run (about 9 calls on claude-opus-5-5, $0.15 to $0.40). The wording is in the
+   private corpus at prompts/2026-09-28-defined-self-wording.md.
+3. The rulings store audit lists await Patrick's approval, none applied: 18 candidate merges, 19
+   supersessions of which 5 conflict, 115 rulings no test cites, 7 rulings that are bug reports.
+4. Whether Patrick's published papers may be quoted on the public concept pages: about 125
+   quote lines, none published until he decides.
+5. Ten live cases have no saved answers; the subscription run has re-answered some of them.
+
+Left from 2026-09-29 and 30:
+6. 15 queued rulings, R-0603 to R-0617, in the private corpus's
+   RULINGS_TO_APPEND_2026-09-29.md, wait for Patrick to append them to the store with his key.
+   Until then tests cite existing ids, and are re-cited after. The landing page's entries in
+   HISTORY.md, decisions/log.md and SCREENS.md cite R-0601 and R-0602 from before the queue was
+   renumbered; in the queue those ids are now the literature review row and sittings, and no
+   queued ruling covers the landing page.
+7. Two builder changes nobody asked for, for his yes or a revert: search results show chips as
+   words; the Concept pages row moved into the Coding section and is now titled "Auditor's
+   Coding Guide".
+8. The bug sheet's forced send in the beta is on branch FD-365, not deployed: "Don't send" is
+   drawn disabled with "Disabled during the beta" under it, and the server refuses a declined bug
+   with a 400; one constant on the server turns the beta off. The feedback sheet keeps a live
+   "Not feedback".
+9. The memory change and the notes field's new word shipped with no eval run.
+10. Every session in the meeting's "Put a session on the agenda" list is named "Free Diagram".
+11. The coding screen's title is clipped.
+12. The reports route's limit of 20 an hour per sender is held in the server's memory, so every
+    restart resets it.
+13. Source maps are kept 90 days with each release run; after that an error from that release
+    cannot be traced to its source line.
+14. Someone who joins a notice's audience after it was sent gets it in the app only: no push, no
+    email, which matters for a pricing notice sent by email.
+15. The coach's report tool has not been exercised on production: no real turn there has offered
+    a report.
+16. R-0096 (the sessions sheet is a plain list) lost its only citing test when the session list
+    was removed; it needs a test or a supersession.
+17. The first `/product-owner` run's proposed ledger diff awaits his yes.
+18. The PR #144 description cites ruling ids from before the queue was renumbered.
 
 **The rulings store is restructured (deployed 2026-09-28).** It is split into topic files with a
 generated index and a hygiene guard; the ceiling is 300,000 bytes, so adding a ruling no longer
@@ -554,16 +690,6 @@ The post-deploy turn on the claude-test account proved the record-in-user-messag
 coach answered a birth year that existed only in the record, from the record. Spent: 8 paid API
 calls, $0.1563, on the live suite's one-time calibration (Patrick's approval, 2026-09-28); every
 other model call ran on the subscription or the local model.
-
-**The landing page for familydiagram.com is built on branch `landing-page`, not deployed
-[R-0601].** A visitor to `/` gets the page, with the Alaska Family Systems logo and the logo's
-blue-purple colours (someone signed in still goes to the app); its two
-forms send an invited address its sign-in link and email a request to join the beta to Patrick,
-both behind Cloudflare Turnstile, and Caddy now serves `/` from the app. Before it can go out,
-Patrick creates a Turnstile widget for familydiagram.com in the Cloudflare dashboard and puts its
-two keys in /etc/fd/secrets.env as `FLASK_TURNSTILE_SITE_KEY` and `FLASK_TURNSTILE_SECRET_KEY`;
-without them the forms refuse every post. The release deploy restarts Caddy itself when the
-Caddyfile changed.
 
 **The live suite now runs on the Claude Code subscription** with the coach's real system prompt
 and MCP tools (`bin/subscribe.py`) [R-0568]. Calibrated once against the API, the free path
@@ -619,8 +745,8 @@ record, from the record; the wider live eval is the end-of-batch API run. Real m
 proving this: $1.96.
 
 **Same batch — model comparison plumbing, Patrick as the only oracle on which model is better.**
-A per-user coach model and shadow model live in the per-user settings table, set by `flask admin
-coach-model show/set/shadow`. A shadow turn runs a candidate model on the real turn's input on a
+A per-user coach model and list of shadow models live in the per-user settings table, set by `flask admin
+coach-model show/set/shadow`. A shadow turn runs each candidate model on the real turn's input on a
 separate Celery queue, with a new fd-shadow worker service, stored in a new shadow_turns table
 on a scratch diagram flagged scratch, never shown to the user and excluded from the user's
 diagram list [R-0596]. `flask admin quality replay <discussion> <model> <reference_diagram>
@@ -982,6 +1108,8 @@ worker's events reach the page, and the coach runs on the local Ollama model (qw
 - **On this Mac, open `https://127.0.0.1:8891/app/`, not turin** — the name turin only
   resolves over the network, and with Tailscale off the Mac cannot look it up. On his phone,
   on his own wifi, turin works.
+- Patrick's own walks run on the `walk` stack at https://turin.humboldt-mine.ts.net:8898, not on
+  8891; HOW_THIS_PROJECT_WORKS.md holds its rules.
 - The FD-362 folder `/Users/patrick/worktrees/fd362-sandbox/` is kept for reference only. Its
   SQLite databases and the review-screen fixtures (the ballot, the votes, the coach replay)
   import modules the current code no longer has, so the table, ballot and meeting walks have no
@@ -1618,7 +1746,9 @@ Kept for when there are enough users to run one.
   It carries decision log entries, the brainstorm docs, DRAWABILITY.md, this package, the
   schema comparison and the converter in btcopilot, and the oracle store in fdserver.
   btcopilot #136 is merged; fdserver #30 was closed unmerged (#135 and #29 are closed
-  predecessors). The fast-follow is FD-363, one batch branch in btcopilot, **draft PR #138**.
+  predecessors). The first fast-follow, FD-363 (PR #138), is merged. The second is FD-365,
+  **draft PR #142**, with the sittings work (PR #144) and the landing page (PR #143) merged into
+  it; everything for this work goes into Jira FD-365, with no new ticket.
 
 ## Open security items (Patrick's calls, untouched)
 

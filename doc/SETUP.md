@@ -106,6 +106,7 @@ work; the file on Patrick's Mac also carries keys for his other projects.
 | `ASSEMBLYAI_API_KEY` | transcription | AssemblyAI dashboard |
 | `ANTHROPIC_PRODUCTION_KEY`, `GRAFANA_CLOUD_TOKEN`, `GRAFANA_PDC_TOKEN`, `GRAFANA_PG_PASSWORD` | the box's own secrets, kept for reference; production reads `/etc/fd/secrets.env` | the same consoles |
 | `FLASK_APP`, `FLASK_CONFIG` | local flask commands outside the sandbox | fixed values: `btcopilot.app:create_app` and `development` |
+| `FLASK_VAPID_PUBLIC_KEY`, `FLASK_VAPID_PRIVATE_KEY`, `FLASK_VAPID_SUBJECT` | needed by every local flask command outside the sandbox: the app refuses to start without them | `python -m btcopilot.push` prints the pair; the subject is `mailto:` and your own address |
 | `GROK_API_KEY`, `OPENAI_API_KEY`, `MINIMAX_API_KEY`, `TWINE_*`, `GITHUB_TOKEN`, `FD_BUILD_*` | not read by this repo; the desktop app's build and older experiments | — |
 
 The file holds multi-line values, so it cannot be `source`d; read one key with

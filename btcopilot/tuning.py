@@ -11,9 +11,22 @@ import hashlib
 import re
 
 from btcopilot.extensions import db
-from btcopilot.models import Diagram, Observation, ObservationReject, User
+from btcopilot.models import (
+    Diagram,
+    Observation,
+    ObservationKind,
+    ObservationReject,
+    User,
+)
 
 QUEUE = 10
+# How a message the coach wrote first fared: measurements, not findings to rule on.
+MEASURES = (
+    ObservationKind.ProactiveSent,
+    ObservationKind.ProactiveOpened,
+    ObservationKind.ProactiveReplied,
+    ObservationKind.ProactiveReturned,
+)
 TEST_ACCOUNTS = "claude-test%"
 QUOTED = re.compile(r"(?<!\w)'[^']*'(?!\w)")
 IDS = re.compile(r"\b[0-9a-f]{8,}\b|\d+")
@@ -33,7 +46,7 @@ def groups() -> dict[str, dict]:
     rows = (
         Observation.query.join(Diagram, Diagram.id == Observation.diagram_id)
         .join(User, User.id == Diagram.user_id)
-        .filter(User.username.notlike(TEST_ACCOUNTS))
+        .filter(User.username.notlike(TEST_ACCOUNTS), Observation.kind.notin_(MEASURES))
         .order_by(Observation.created_at)
     )
     for row in rows:

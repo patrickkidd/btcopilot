@@ -56,9 +56,10 @@ def statements(discussion: Discussion) -> list[Statement]:
     return sorted(discussion.statements, key=lambda s: s.order)
 
 
-def shadowed(user, diagram, text=REPLY) -> ShadowTurn:
-    discussion = chat(user, diagram, ["My aunt moved away.", "When was that?"])
-    said, real = statements(discussion)
+def shadow(
+    user, diagram, discussion: Discussion, turn=0, text=REPLY, model=SHADOW
+) -> ShadowTurn:
+    said, real = statements(discussion)[2 * turn : 2 * turn + 2]
     db.session.add(
         ModelCall(
             user_id=user.id,
@@ -80,12 +81,17 @@ def shadowed(user, diagram, text=REPLY) -> ShadowTurn:
         diagram_id=diagram.id,
         discussion_id=discussion.id,
         statement_id=said.id,
-        model=SHADOW,
+        model=model,
         text=text,
     )
     db.session.add(row)
     db.session.commit()
     return row
+
+
+def shadowed(user, diagram, text=REPLY) -> ShadowTurn:
+    discussion = chat(user, diagram, ["My aunt moved away.", "When was that?"])
+    return shadow(user, diagram, discussion, text=text)
 
 
 def test_a_pair_names_no_model_and_its_sides_vary(patrick, test_user, case):
@@ -99,6 +105,19 @@ def test_a_pair_names_no_model_and_its_sides_vary(patrick, test_user, case):
     assert REAL not in served and SHADOW not in served
     assert {pair["left"] for pair in pairs} == {"When was that?", REPLY}
     assert pairs[0]["context"] == [{"who": "user", "text": "My aunt moved away."}]
+
+
+def test_each_shadow_of_a_turn_pairs_with_the_real_reply(patrick, test_user, case):
+    # R-0596, R-0599
+    discussion = chat(test_user, case, ["My aunt moved away.", "When was that?"])
+    shadow(test_user, case, discussion)
+    shadow(test_user, case, discussion, text="Which spring?", model="sonnet")
+    pairs = patrick.get("/review/pairs").json
+    assert len(pairs) == 2
+    assert {frozenset((pair["left"], pair["right"])) for pair in pairs} == {
+        frozenset(("When was that?", REPLY)),
+        frozenset(("When was that?", "Which spring?")),
+    }
 
 
 def test_a_pair_keeps_its_sides_once_served(patrick, test_user, case):
@@ -124,6 +143,41 @@ def test_a_pick_reveals_the_models_and_counts_in_the_summary(patrick, test_user,
     assert patrick.get("/review/picks").json == [
         {"model": REAL, "won": 0, "lost": 1, "tied": 0},
         {"model": SHADOW, "won": 1, "lost": 0, "tied": 0},
+    ]
+
+
+def test_pairs_come_a_conversation_at_a_time_in_the_order_said(
+    patrick, test_user, case
+):
+    # R-0599
+    first = chat(test_user, case, ["a one", "coach", "a two", "coach"])
+    second = chat(test_user, case, ["b one", "coach", "b two", "coach"])
+    for discussion, turn in ((second, 1), (first, 1), (second, 0), (first, 0)):
+        shadow(test_user, case, discussion, turn)
+    pairs = patrick.get("/review/pairs").json
+    assert [pair["context"][-1]["text"] for pair in pairs] == [
+        "a one",
+        "a two",
+        "b one",
+        "b two",
+    ]
+
+
+def test_a_pick_keeps_what_was_judged_once_the_shadow_row_is_gone(
+    patrick, test_user, case
+):
+    # R-0599
+    row = shadowed(test_user, case)
+    served = patrick.get("/review/pairs").json
+    db.session.delete(row)
+    db.session.commit()
+    assert patrick.get("/review/pairs").json == served
+    patrick.put(f"/review/picks/{served[0]['id']}", json={"choice": PickChoice.Tie})
+    pick = Pick.query.one()
+    assert {pick.left_text, pick.right_text} == {"When was that?", REPLY}
+    assert patrick.get("/review/picks").json == [
+        {"model": REAL, "won": 0, "lost": 0, "tied": 1},
+        {"model": SHADOW, "won": 0, "lost": 0, "tied": 1},
     ]
 
 

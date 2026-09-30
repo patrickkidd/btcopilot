@@ -59,6 +59,7 @@ const KIND_WORD: Record<ChipKind, string> = {
   [ChipKind.Impression]: "this",
   [ChipKind.PairBond]: "them",
   [ChipKind.Message]: "this question",
+  [ChipKind.Place]: "there",
 };
 
 const ITEM_OF: Record<ChipKind, ItemKind> = {
@@ -70,8 +71,10 @@ const ITEM_OF: Record<ChipKind, ItemKind> = {
   // an impression is stored as a question of its own kind
   [ChipKind.Impression]: ItemKind.Question,
   [ChipKind.PairBond]: ItemKind.PairBond,
-  // a message is not an item of the record, as an offer is not
+  // a message is not an item of the record, as an offer is not, and nor is a
+  // place in the app
   [ChipKind.Message]: ItemKind.Diagram,
+  [ChipKind.Place]: ItemKind.Diagram,
 };
 
 const ASKING = new Set([ChipKind.Ask, ChipKind.Question, ChipKind.Message]);
@@ -138,6 +141,7 @@ export function aimedEvents(
     case ChipKind.Impression:
     case ChipKind.PairBond:
     case ChipKind.Message:
+    case ChipKind.Place:
       return [];
   }
 }

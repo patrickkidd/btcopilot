@@ -2,10 +2,16 @@
 # Makes a dev certificate authority and a certificate for the review sandbox
 # host, into the directory given (default web/certs, gitignored). Trust the CA
 # once on the phone; keep the directory so the trust survives restarts.
+# A Tailscale host (name.tailnet.ts.net) gets a public Let's Encrypt certificate
+# from `tailscale cert` instead, which every phone on the tailnet already
+# trusts; HTTPS must be enabled for the tailnet in the Tailscale admin console.
 #   web/devcerts.sh [dir] [host]
 set -e
 DIR="${1:-$(dirname "$0")/certs}"; HOST="${2:-turin.local}"
 mkdir -p "$DIR" && cd "$DIR"
+case $HOST in
+  *.ts.net) "${TAILSCALE:-/Applications/Tailscale.app/Contents/MacOS/Tailscale}" cert "$HOST"; exit ;;
+esac
 [ -f dev-ca.key ] || openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -keyout dev-ca.key -out dev-ca.crt \
   -subj "/CN=Family Diagram Dev CA" -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign,cRLSign"
 openssl req -newkey rsa:2048 -nodes -keyout "$HOST.key" -out "$HOST.csr" -subj "/CN=$HOST"

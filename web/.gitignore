@@ -3,3 +3,4 @@ test-results/
 playwright-report/
 tests/visual/.auth/
 tests/visual/.lock
+sourcemaps/

@@ -281,6 +281,41 @@ class Statement(db.Model, ModelMixin):
     # ...
 ```
 
+### Notices and notifications
+
+`btcopilot/models/notice.py`, `btcopilot/models/notification.py`
+
+A `notices` row is a product message written once with who it is for:
+`title` (100), `body` (300), `link` (`NoticeLink`: account, coach_settings,
+task, agenda; null opens nothing), `audience` (`Audience`: everyone, role,
+people) with `role` exactly when role and `user_ids` (a JSON list) exactly when
+people, `starts_at` and `ends_at` (both optional, UTC), `created_by`.
+
+A `notifications` row is one delivery to one person: `kind`
+(`NotificationKind`: coach, task, reminder, notice) and exactly the one pointer
+its kind names, `statement_id`, `cut_id` or `notice_id`, enforced by a check;
+`channel` (`NotificationChannel`: push, email, app); `opened_at`, stamped on
+open or dismiss. One row per person and notice, enforced by a unique key. A
+notice's rows are made and sent when it is sent; someone who joins its audience
+later gets a row, in the app only, when they next open it while it runs.
+
+### Reports
+
+`btcopilot/models/report.py`, written only through `btcopilot/reports.py`
+[Oracle: R-0056]
+
+A `reports` row is one bug or piece of feedback the coach offered from the
+conversation: `kind` (`ReportKind`: bug, the app or the coach behaving wrongly
+as the person experienced it; feedback, a wish or a dislike about the app),
+`status` (`ReportStatus`: sent, declined), and optionally the person
+(`user_id`), the diagram they were on (`diagram_id`), `turn_id` and
+`statement_id` (the coach's reply that offered it), then `release` (the app's
+version) and `address` (the screen). `words` holds the offered words when the
+person said yes; declined, a row keeps only where it was. An error in the page
+or the server is never a row: it goes to Grafana. A coach turn that fails is
+kept as a `turn_failed` observation. The observations table no longer has the
+bug and feedback kinds.
+
 ### Serialization
 
 - **Pickle**: Entire DiagramData in `Diagram.data` (preserves Qt scene objects)

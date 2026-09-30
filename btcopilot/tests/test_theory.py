@@ -114,11 +114,6 @@ def theory(flask_app, github):
     return github
 
 
-@pytest.fixture(autouse=True)
-def no_auto_auth(monkeypatch):
-    monkeypatch.delenv("FLASK_AUTO_AUTH_USER", raising=False)
-
-
 @pytest.fixture
 def coder(web):
     web.user.roles = btcopilot.ROLE_AUDITOR
@@ -223,7 +218,7 @@ def test_unreachable_pages_say_so_without_naming_the_source(flask_app, github, c
         response = coder.get("/app/theory")
     html = response.get_data(as_text=True)
     assert response.status_code == HTTPStatus.SERVICE_UNAVAILABLE
-    assert "The concept pages can&#39;t be loaded right now." in html
+    assert "The Auditor&#39;s Coding Guide can&#39;t be loaded right now." in html
     assert "btcopilot-sources" not in html
     assert "theory/CONCEPTS" not in html
     assert "TOKEN" not in html

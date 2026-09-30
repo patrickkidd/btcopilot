@@ -1,17 +1,23 @@
 import * as api from "./api";
-import { Feature, tap } from "./track";
-import { $, el, esc } from "./dom";
+import { Feature, tap, type Screen } from "./track";
+import { $, el, esc, flash, isAdmin, isCoder, type Title } from "./dom";
+import { INDEX_URL } from "./concepts";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { identify } from "./telemetry";
 import { shortDate } from "./when";
+import { markup } from "./markup";
 import { addPasskey, available, deviceWords } from "./passkey";
+import { subscribe } from "./push";
 import { PRO, RECORD, RECORDS, Records } from "./pro";
+import { address, beyond, NAMES, Place } from "./place";
 import {
+  BugReports,
   Mode,
   Proactive,
   Theme,
   type Account,
+  type Delivery,
   type Diagram,
   type Passkey,
   type Preferences,
@@ -23,37 +29,83 @@ import {
  * chat view is the one named shortcut, and it writes this same value. */
 
 const PANE_MS = 240;
+/** How often the coach may message first is a most, never a schedule: the
+ * choices say so, and the hint says what makes it write. */
+const PROACTIVE_CHOICE: Record<Proactive, string> = {
+  [Proactive.Never]: "never",
+  [Proactive.Rarely]: "at most monthly",
+  [Proactive.Weekly]: "at most weekly",
+};
+const writesFirst = (often: string) =>
+  `Never more than once a ${often}, and only when the coach notices a pattern in your family's events or follows up on something you agreed to.`;
+const BUG_REPORTS_CHOICE: Record<BugReports, string> = {
+  [BugReports.Ask]: "ask me",
+  [BugReports.Always]: "always send",
+};
+const PROACTIVE_HINT: Record<Proactive, string> = {
+  [Proactive.Never]: "The coach never messages first unless you ask it to.",
+  [Proactive.Rarely]: writesFirst("month"),
+  [Proactive.Weekly]: writesFirst("week"),
+};
 const SEARCH_AT = 6;
+const GUIDE = NAMES[Place.Literature];
 
 const SILHOUETTE =
   `<svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true">` +
   `<circle cx="11" cy="7.5" r="4" fill="currentColor"/>` +
   `<path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"/></svg>`;
 
-enum Page {
+export enum Page {
   Root = "root",
   Profile = "profile",
   Coach = "coach",
   Appearance = "appearance",
   Diagrams = "diagrams",
   Plan = "plan",
+  Notices = "notices",
 }
 
+/** A screen of the app's own that opens on this stack like one of its pages
+ * and leaves by the same back chevron, to whatever it was opened from. */
+export interface Sub {
+  title: string | Title;
+  screen: HTMLElement;
+  /** Counted as a screen of its own in the product events. */
+  name?: Screen;
+  /** The app widens under it, as it does for two replies side by side. */
+  wide?: boolean;
+  /** Its address while it is on top (R-0055). */
+  at?: string;
+}
+
+type Pane = Page | Sub;
+
 interface Built {
-  title: string;
+  title: string | Title;
   pane: HTMLElement;
 }
 
 export interface SettingsHandlers {
   /** The title row shows the current pane's title, and the family name again
-   * when the stack closes. */
-  onTitle(title: string | null): void;
+   * when the stack closes; a screen of the app's own on top comes with it. */
+  onTitle(title: string | Title | null, sub?: Sub): void;
   /** Every read or write of the preferences, so a value with a shortcut
    * elsewhere on screen shows the same thing. */
   onPrefs(prefs: Preferences): void;
   /** Which family the app is on. `switched` is false when this is simply the
    * family it opened on, and true when the reader moved it. */
   onDiagram(diagram: Diagram, how: { switched: boolean }): void;
+  /** The coder's one task (R-0265). */
+  onTask(): void;
+  /** The agenda, which is Patrick's whole administration (R-0259). */
+  onAgenda(): void;
+  /** Two replies to the same words, picked blind (R-0599). */
+  onPairs(): void;
+  /** Every notice sent to this person, newest first (R-0613). */
+  notices(): Delivery[];
+  /** A notice tapped in the list: counted opened, then where it points when
+   * there is more to see there. */
+  onNotice(one: Delivery): Promise<void>;
 }
 
 /** A stored user agent is unreadable, so the row names the phone it came from. */
@@ -79,14 +131,25 @@ function diagramSub(diagram: Diagram, now: Date): string {
   return `${count} · ${when}${diagram.current ? " · in use" : ""}`;
 }
 
+/** Asked for inside the tap that lets the coach message first. A browser that
+ * cannot be reached by push gets email instead, and the reader is told so. */
+async function offerPush(): Promise<void> {
+  if (!(await subscribe())) toast("The coach will email you instead");
+}
+
 export class Settings {
-  private stack: { page: Page; title: string; pane: HTMLElement }[] = [];
+  private stack: { page: Pane; title: string | Title; pane: HTMLElement }[] = [];
   private open = false;
   private prefs: Preferences | null = null;
   private account: Account | null = null;
   private passkeys: Passkey[] = [];
   private canPasskey = false;
   private host = el("div", "sn-stack");
+  /** The auditor's coding guide, read on this stack like any page of it. */
+  readonly literature: Sub;
+  /** The account read again once the view has slid in, which draws its top
+   * page again; a light waits for it, so it is not drawn away. */
+  private reloaded: Promise<void> = Promise.resolve();
 
   constructor(
     private avatar: HTMLElement,
@@ -96,6 +159,11 @@ export class Settings {
   ) {
     this.host.hidden = true;
     overlay.append(this.host);
+    const frame = el("iframe");
+    frame.id = "literature";
+    frame.title = GUIDE;
+    frame.src = INDEX_URL;
+    this.literature = { title: GUIDE, screen: frame, at: address(Place.Literature) };
     this.back.hidden = true;
     this.avatar.addEventListener("click", () => {
       tap(Feature.OpenSettings);
@@ -140,6 +208,24 @@ export class Settings {
     return name.trim().charAt(0).toUpperCase();
   }
 
+  /** The account view with these pushed on its root in order, which is where
+   * a notice points and where a screen of the app's own is opened from
+   * outside the stack: opened on them, or back at its root, drawn again with
+   * what just changed, and on from there. */
+  async show(...path: Pane[]): Promise<void> {
+    if (this.open) {
+      for (const entry of this.stack.splice(1)) entry.pane.remove();
+      this.stack[0].pane.classList.remove("under");
+      this.replaceTop();
+    } else await this.raise();
+    for (const page of path) this.push(page);
+  }
+
+  /** Down the stack to a screen on it, the way its back chevron goes. */
+  popTo(sub: Sub): void {
+    while (this.stack.length > 1 && this.stack.at(-1)!.page !== sub) this.pop();
+  }
+
   private async raise(): Promise<void> {
     if (this.open) return;
     // The account is already in hand from the load at start-up, so the view
@@ -153,22 +239,46 @@ export class Settings {
     this.push(Page.Root);
     // ...and the fresh account arrives after the page has landed: redrawing it
     // mid-slide replaces the pane that is moving and the slide stops dead.
-    if (!first) window.setTimeout(() => void this.load(), PANE_MS);
+    if (!first)
+      this.reloaded = new Promise((done) =>
+        window.setTimeout(() => void this.load().then(done), PANE_MS),
+      );
   }
 
-  private push(page: Page): void {
+  /** The page or screen on top, while the view is open. */
+  top(): Pane | null {
+    return this.open ? (this.stack.at(-1)?.page ?? null) : null;
+  }
+
+  /** Light one item on the page on top, the way a message is lit in the
+   * thread (R-0055). False when the page has no such item. */
+  async light(selector: string): Promise<boolean> {
+    await this.reloaded;
+    const item = this.stack.at(-1)?.pane.querySelector<HTMLElement>(selector);
+    if (item) flash(item);
+    return !!item;
+  }
+
+  /** A page, or a screen of the app's own, slid in on top. */
+  push(page: Pane): void {
     const under = this.stack[this.stack.length - 1];
     const { title, pane } = this.build(page);
     pane.classList.add("sn-pane");
-    pane.dataset.page = page;
+    pane.dataset.page = typeof page === "string" ? page : page.screen.id;
     this.host.append(pane);
-    dragScroll(pane);
+    // a screen of the app's own scrolls inside itself
+    if (typeof page === "string") dragScroll(pane);
     void pane.offsetWidth;
     pane.classList.add("in");
     if (under) under.pane.classList.add("under");
     this.stack.push({ page, title, pane });
-    this.handlers.onTitle(title);
+    this.retitle();
     this.back.hidden = false;
+  }
+
+  private retitle(): void {
+    const { title, page } = this.stack[this.stack.length - 1];
+    this.handlers.onTitle(title, typeof page === "string" ? undefined : page);
   }
 
   private pop(): void {
@@ -181,12 +291,12 @@ export class Settings {
     }
     top.pane.classList.remove("in");
     window.setTimeout(() => top.pane.remove(), PANE_MS);
-    const under = this.stack[this.stack.length - 1];
-    under.pane.classList.remove("under");
-    this.handlers.onTitle(under.title);
+    this.stack[this.stack.length - 1].pane.classList.remove("under");
+    this.retitle();
   }
 
-  private close(): void {
+  close(): void {
+    if (!this.open) return;
     this.open = false;
     this.back.hidden = true;
     this.handlers.onTitle(null);
@@ -204,17 +314,18 @@ export class Settings {
   }
 
   /** Re-draw the pane on top in place, so a value written on it shows at once
-   * without the pane sliding again. */
+   * without the pane sliding again. A screen of the app's own draws itself. */
   private replaceTop(): void {
-    const top = this.stack.pop();
-    if (!top) return;
+    const top = this.stack.at(-1);
+    if (!top || typeof top.page !== "string") return;
+    this.stack.pop();
     top.pane.remove();
     const { title, pane } = this.build(top.page);
     pane.classList.add("sn-pane", "in");
     pane.dataset.page = top.page;
     this.host.append(pane);
     this.stack.push({ page: top.page, title, pane });
-    this.handlers.onTitle(title);
+    this.retitle();
   }
 
   private async write(body: Partial<Preferences>): Promise<void> {
@@ -248,13 +359,25 @@ export class Settings {
   }
 
   private pushRow(label: string, value: string, page: Page): HTMLElement {
+    return this.tapRow(label, value, () => this.push(page));
+  }
+
+  /** A row that opens a screen of the app's own on this stack. */
+  private screenRow(label: string, feature: Feature, go: () => void): HTMLElement {
+    return this.tapRow(label, "", () => {
+      tap(feature);
+      go();
+    });
+  }
+
+  private tapRow(label: string, value: string, go: () => void): HTMLElement {
     const row = el("div", "sn-row push");
     row.append(
       el("div", "sn-lbl", esc(label)),
       el("div", "sn-val", esc(value)),
       el("div", "sn-chev", "›"),
     );
-    row.addEventListener("click", () => this.push(page));
+    row.addEventListener("click", go);
     return row;
   }
 
@@ -292,6 +415,7 @@ export class Settings {
     options: T[],
     current: T,
     pick: (value: T) => void,
+    words: (value: T) => string = (value) => value,
   ): HTMLElement {
     const row = el("div", "sn-row");
     const seg = el("div", "sn-seg");
@@ -299,7 +423,7 @@ export class Settings {
       const button = document.createElement("button");
       button.type = "button";
       button.className = option === current ? "on" : "";
-      button.textContent = option;
+      button.textContent = words(option);
       button.addEventListener("click", () => {
         tap(Feature.SettingChange);
         pick(option);
@@ -334,7 +458,13 @@ export class Settings {
 
   // ---- the pages ----
 
-  private build(page: Page): Built {
+  private build(page: Pane): Built {
+    if (typeof page !== "string") {
+      const pane = el("div", "host");
+      page.screen.hidden = false;
+      pane.append(page.screen);
+      return { title: page.title, pane };
+    }
     const prefs = this.prefs!;
     const account = this.account!;
     if (page === Page.Root) return this.root(prefs, account);
@@ -342,6 +472,7 @@ export class Settings {
     if (page === Page.Coach) return this.coach(prefs);
     if (page === Page.Appearance) return this.appearance(prefs);
     if (page === Page.Diagrams) return this.diagrams(account);
+    if (page === Page.Notices) return this.notices();
     return this.plan(account);
   }
 
@@ -364,6 +495,11 @@ export class Settings {
     first.append(cell);
     pane.append(first);
 
+    const notices = this.handlers.notices();
+    const unread = notices.filter((one) => one.opened_at === null).length;
+    if (notices.length)
+      pane.append(this.group([this.pushRow("Notices", unread ? String(unread) : "", Page.Notices)]));
+
     pane.append(
       this.group([
         this.pushRow("Coach", `speak ${prefs.speak ? "on" : "off"}`, Page.Coach),
@@ -383,6 +519,32 @@ export class Settings {
       ]),
     );
 
+    // Coding and its meeting are for coders, and the meeting and the replies
+    // picked blind are Patrick's; none of it hangs on the family the app is
+    // on. Each opens on this stack, the coding guide too (R-0567).
+    const admin = isAdmin();
+    if (isCoder())
+      pane.append(
+        this.group(
+          [
+            this.screenRow("Your coding task", Feature.TaskOpen, () => this.handlers.onTask()),
+            ...(admin
+              ? [this.screenRow("Next meeting", Feature.AgendaOpen, () => this.handlers.onAgenda())]
+              : []),
+            this.tapRow(GUIDE, "", () => this.push(this.literature)),
+          ],
+          "Coding",
+        ),
+      );
+    if (admin)
+      pane.append(
+        this.group(
+          [this.screenRow("Better replies", Feature.PairsOpen, () => this.handlers.onPairs())],
+          "Quality",
+        ),
+        el("div", "sn-hint", "Pick the better of two coach replies"),
+      );
+
     const out = document.createElement("button");
     out.type = "button";
     out.className = "sn-out";
@@ -395,6 +557,41 @@ export class Settings {
     last.append(out);
     pane.append(last, el("div", "sn-foot", "Family Diagram · beta"));
     return { title: "Account", pane };
+  }
+
+  /** Every notice sent to this person, newest first (R-0613). */
+  private notices(): Built {
+    const pane = el("div");
+    const rows = this.handlers.notices().map((one) => this.noticeRow(one));
+    pane.append(rows.length ? this.group(rows) : el("div", "sn-hint", "No notices yet."));
+    return { title: "Notices", pane };
+  }
+
+  /** A notice: unread ones carry the account button's mark, and a tap opens
+   * where it points, or only counts it read, in place, when there is nothing
+   * more to see there. */
+  private noticeRow(one: Delivery): HTMLElement {
+    const unread = one.opened_at === null;
+    const goes = beyond(one.link) !== null;
+    const row = el("div", `sn-row${goes || unread ? " push" : ""}`);
+    row.dataset.notice = String(one.id);
+    if (unread) row.append(el("span", "sn-unread"));
+    const main = el("div", "sn-m");
+    const when = shortDate(new Date(one.created_at), new Date());
+    main.append(
+      el("div", "sn-t", esc(one.title)),
+      el("div", "sn-s sn-wrap", `${esc(when)} · ${markup(one.body ?? "")}`),
+    );
+    row.append(main);
+    if (goes) row.append(el("div", "sn-chev", "›"));
+    if (goes || unread)
+      row.addEventListener("click", (e) => {
+        if ((e.target as Element).closest("a")) return;
+        void this.handlers.onNotice(one).then(() => {
+          if (!goes) this.replaceTop();
+        });
+      });
+    return row;
   }
 
   private profile(prefs: Preferences, account: Account): Built {
@@ -490,6 +687,18 @@ export class Settings {
 
   private coach(prefs: Preferences): Built {
     const pane = el("div");
+    const often = this.segRow(
+      "messages first",
+      [Proactive.Never, Proactive.Rarely, Proactive.Weekly],
+      prefs.proactive,
+      (proactive) => {
+        if (proactive !== Proactive.Never) void offerPush();
+        void this.write({ proactive });
+      },
+      (proactive) => PROACTIVE_CHOICE[proactive],
+    );
+    // the choices are too long to stand beside their label on a phone
+    often.classList.add("below");
     pane.append(
       this.group([
         this.switchRow(
@@ -503,18 +712,18 @@ export class Settings {
           prefs.mode,
           (mode) => void this.write({ mode }),
         ),
+        often,
+      ]),
+      el("div", "sn-hint", PROACTIVE_HINT[prefs.proactive]),
+      this.group([
         this.segRow(
-          "messages first",
-          [Proactive.Never, Proactive.Rarely, Proactive.Weekly],
-          prefs.proactive,
-          (proactive) => void this.write({ proactive }),
+          "Bug reports",
+          [BugReports.Ask, BugReports.Always],
+          prefs.bug_reports,
+          (bug_reports) => void this.write({ bug_reports }),
+          (choice) => BUG_REPORTS_CHOICE[choice],
         ),
       ]),
-      el(
-        "div",
-        "sn-hint",
-        "The coach never messages first unless you ask it to.",
-      ),
     );
     return { title: "Coach", pane };
   }

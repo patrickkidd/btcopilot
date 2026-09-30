@@ -115,14 +115,14 @@ test.describe("nothing moves when a chip is tapped", () => {
 
       await page.locator('.ss-hit[data-target="cluster"]').first().click();
       await page.waitForTimeout(400);
-      // a cluster open: ask about it, or have it explained
-      await expect(page.locator("#cap-chip")).not.toHaveClass(/dim/);
+      // a cluster open: have it explained; ask is hidden for now (Patrick, 2026-09-29)
+      await expect(page.locator("#cap-chip")).toHaveCount(0);
       await expect(page.locator("#cap-play")).not.toHaveClass(/dim/);
       await expect(page.locator("#cap-trace")).toHaveClass(/dim/);
       const open = await frame(page);
 
       await page.locator('.ss-hit[data-target="zone"]').first().click();
-      // a moment picked: ask about it, or go to where it was said
+      // a moment picked: go to where it was said
       await expect(page.locator("#cap-play")).toHaveClass(/dim/);
       await expect(page.locator("#cap-trace")).not.toHaveClass(/dim/);
       const picked = await frame(page);
@@ -138,8 +138,8 @@ test.describe("nothing moves when a chip is tapped", () => {
     }) => {
       await settle(page);
       await page.locator('.ss-hit[data-target="zone"]').first().click();
-      await expect(page.locator("#cap-chip")).toBeVisible();
-      // The three chips are 26 tall in the middle of the 44 band, on one line,
+      await expect(page.locator("#cap-play")).toBeVisible();
+      // The chips are 26 tall in the middle of the 44 band, on one line,
       // and each is as wide as its own word (picked plate F).
       const strip = await page.locator("#chat-screen .caption").evaluate((node) => ({
         height: Math.round(node.getBoundingClientRect().height),
@@ -155,8 +155,8 @@ test.describe("nothing moves when a chip is tapped", () => {
         ),
         fits: node.scrollWidth <= node.clientWidth,
       }));
-      // ask, explain and in chat, and the list button where one is drawn
-      const chips = [26, 26, 26];
+      // explain and in chat, and the list button where one is drawn
+      const chips = [26, 26];
       expect(strip.heights).toEqual((await pinned(page)) ? chips : [...chips, 44]);
       expect(strip.height).toBe(44);
       expect(strip.rows).toBe(1);
@@ -241,7 +241,7 @@ test.describe("a scrollbar appearing never shifts the page", () => {
     const before = await frame(page);
     await page.locator('#view .ss-hit[data-target="cluster"]').first().click();
     await page.locator('#view .ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator("#cap-chip")).toBeVisible();
+    await expect(page.locator("#cap-play")).toBeVisible();
     await page.waitForTimeout(300);
     const after = await frame(page);
     expect(after.chat).toEqual(before.chat);
@@ -450,8 +450,8 @@ test.describe("the row under the picture from one view to the next", () => {
 
     // what can be pressed follows what is on the picture
     expect(rest.live).toEqual([]);
-    expect(open.live).toEqual(["cap-chip", "cap-play"]);
-    expect(picked.live).toEqual(["cap-chip", "cap-trace"]);
+    expect(open.live).toEqual(["cap-play"]);
+    expect(picked.live).toEqual(["cap-trace"]);
     // and nothing above or around the row moves for it
     for (const now of [open.at, picked.at]) {
       expect(now.picture).toEqual(rest.at.picture);
@@ -491,14 +491,14 @@ test.describe("the button that opens the lists", () => {
   });
 
   // R-0221
-  test("stays at the right end after ask, explain and in chat", async ({ page }) => {
+  test("stays at the right end after explain and in chat", async ({ page }) => {
     await settle(page);
     test.skip(await pinned(page), NO_LIST);
     await page.locator('#view .ss-hit[data-target="cluster"]').first().click();
     await page.locator('#view .ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator("#cap-chip")).toBeVisible();
+    await expect(page.locator("#cap-play")).toBeVisible();
     const at = await place(page);
-    expect(at.order).toEqual(["cap-chip", "cap-play", "cap-trace", "menu-open"]);
+    expect(at.order).toEqual(["cap-play", "cap-trace", "menu-open"]);
     expect(at.inRow).toBe(true);
     expect(at.fromRight).toBeGreaterThanOrEqual(0);
     expect(at.fromRight).toBeLessThanOrEqual(16);

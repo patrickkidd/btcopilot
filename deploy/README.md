@@ -74,10 +74,10 @@ the tag `3.YYYY.M.D.N+g<sha7>` and its image the same with `-` for `+`. As root:
 
     cd /var/www/btcopilot && git fetch origin <sha> && git checkout --detach <sha> && cd deploy
     export BTCOPILOT_TAG=<image tag, e.g. 3.2026.9.28.1-gf66d603>
-    docker compose --env-file /etc/fd/secrets.env pull fd-app fd-worker fd-shadow
+    docker compose --env-file /etc/fd/secrets.env pull fd-app fd-worker fd-shadow fd-beat
     docker rollout --env-file /etc/fd/secrets.env fd-app
     docker rollout --env-file /etc/fd/secrets.env fd-worker
-    docker compose --env-file /etc/fd/secrets.env up -d fd-shadow
+    docker compose --env-file /etc/fd/secrets.env up -d fd-shadow fd-beat
     docker compose --env-file /etc/fd/secrets.env ps
 
 This holds only when the release being left added no migration: the database stays where it
@@ -136,6 +136,7 @@ The quality dashboard, `fd-quality`, is kept in `grafana/fd-quality.json` and pu
 with `POST /api/dashboards/db` (`{"dashboard": ..., "overwrite": true}`) on the service account
 token `GRAFANA_SA_TOKEN`. Its recorded-run panels read `quality_runs`, which every release fills
 with `flask admin quality load` (see `quality/evals/README.md`).
+The features dashboard, `fd-features` (what people use, and what the coach and the app sent and what came back), is kept in `grafana/fd-features.json` and put the same way: the release's "Push the dashboards" step (`bin/grafanapush.py`) puts every file in `grafana/`.
 
 The desktop app's update feeds live on the legacy box and are forwarded because shipped apps have this address built in.
 

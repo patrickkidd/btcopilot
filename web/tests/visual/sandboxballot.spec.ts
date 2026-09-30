@@ -186,11 +186,11 @@ test.describe(() => {
       await page.waitForTimeout(800);
       say(`voted on "${(await text("#title")).replace(/\s+/g, " ")}" takes=${takes}`);
       done = await text("#bl-next");
-      if (done.trim() === "done") break;
+      if (done.trim() === "Done") break;
       await page.locator("#bl-next").click();
       await page.waitForTimeout(800);
     }
-    check(done.trim() === "done", `the last screen says done ("${done}")`);
+    check(done.trim() === "Done", `the last screen says Done ("${done}")`);
     await page.locator("#bl-next").click();
     await page.waitForTimeout(1800);
     check(await visible("#task-screen"), "the ballot ends back on the one card");

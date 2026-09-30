@@ -14,6 +14,7 @@ from btcopilot.theorypages import Unavailable
 
 _log = logging.getLogger(__name__)
 _markdown = MarkdownIt("commonmark").enable("table")
+GUIDE = "Auditor's Coding Guide"
 LINK = re.compile(r"(?<!!)\[((?:[^\[\]\n]|\[[^\]\n]*\])*)\]\(([^)\s]+)\)")
 
 
@@ -39,6 +40,7 @@ def _render(text: str, names: list[str]):
     targets["README.md"] = url_for("app.theory_page", name="README")
     return render_template(
         "theory.html",
+        guide=GUIDE,
         title=re.match(r"# (.+)", text).group(1),
         body=Markup(_markdown.render(links(text, targets))),
     )
@@ -51,8 +53,9 @@ def _unavailable(e):
     return (
         render_template(
             "theory.html",
-            title="Concept pages",
-            error="The concept pages can't be loaded right now.",
+            guide=GUIDE,
+            title=GUIDE,
+            error=f"The {GUIDE} can't be loaded right now.",
         ),
         503,
     )

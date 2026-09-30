@@ -147,6 +147,31 @@ instantly; working without one wastes his time [Oracle: R-0227]. Every sandbox i
 the kit in the repo, `bin/sandbox/sandbox` (`up <name> <port> --dev` for his review on 8891);
 the commands are in the Sandbox section of CLAUDE.md.
 
+**Patrick's test stack is the `walk` stack (2026-09-29).** Patrick walks every build on one
+sandbox named `walk`, Flask on port 8897 and the dev server on 8898, so the app on his home
+screen keeps working from one PR to the next; it replaces 8891 for his walks. Its address is
+https://turin.humboldt-mine.ts.net:8898, reached through Tailscale with a Let's Encrypt
+certificate from `tailscale cert` (HTTPS is enabled on the tailnet). It was created with
+`bin/sandbox/sandbox up walk 8897 --dev 8898 --host turin.humboldt-mine.ts.net`.
+- The stack's `env.sh`, in `~/btcopilot-sandbox/walk/`, holds every setting a start needs: the
+  push keys and subject, the GitHub token for the coding guide, the site address. Every restart
+  uses the start lines in the stack's `reset.sh`, which source it; a start that does not source
+  it fails, since the app refuses to start without its push keys.
+- Migrations are applied to its database in place. The database is never reset mid-walk: it
+  holds his push subscription and his settings.
+- Sign-in on the stack is the development-only one-tap page.
+- The coach on the stack is the local model, which cannot show the coach's judgement: which
+  tools it calls, and when. Judgement is tested on the Claude Code subscription replay or on
+  production.
+- A walk is one serial list of at most about twelve steps, published as an artifact, each link
+  opening in a new tab with its plain address printed under it. The sittings walk:
+  https://claude.ai/artifact/Mc212ud3zs2DyEcGnSaraQ.
+
+**The box answers ssh only as root with the default key (2026-09-29):**
+`ssh -o User=root familydiagram`.
+
+**Jira: everything for this work goes into FD-365, with no new ticket (2026-09-29, Patrick).**
+
 **Test to the audience, not the artifact (2026-09-02).** A mockup he will look at once gets
 one load and one screenshot. A gallery he must judge across records gets a deterministic
 gate. Only code gets the full loop.

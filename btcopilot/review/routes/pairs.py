@@ -128,24 +128,39 @@ def blind(pick: Pick) -> dict:
         "id": pick.id,
         "source": pick.source,
         "context": _context(pick.left_ref["said"]),
-        "left": _text(pick.left_ref),
-        "right": _text(pick.right_ref),
+        "left": pick.left_text,
+        "right": pick.right_text,
     }
+
+
+def _thread(pick: Pick) -> tuple:
+    said = adapter.statement(pick.left_ref["said"])
+    return (said.discussion_id, said.order or 0, said.id, pick.id)
 
 
 @bp.route("/pairs")
 def pair_index():
-    """Every pair not yet picked. A pair seen for the first time gets its side
-    order here, at random, and keeps it."""
+    """Every pair not yet picked, a conversation at a time in the order it was
+    said. A pair seen for the first time gets its side order here, at random,
+    and keeps it, with the two replies' texts as served."""
     admin()
     served = {pair for (pair,) in db.session.query(Pick.pair)}
     for pair, source, one, other in itertools.chain(_shadows(), _replays()):
         if pair in served:
             continue
         left, right = (one, other) if random.random() < 0.5 else (other, one)
-        db.session.add(Pick(pair=pair, source=source, left_ref=left, right_ref=right))
+        db.session.add(
+            Pick(
+                pair=pair,
+                source=source,
+                left_ref=left,
+                right_ref=right,
+                left_text=_text(left),
+                right_text=_text(right),
+            )
+        )
     db.session.commit()
-    waiting = Pick.query.filter(Pick.choice.is_(None)).order_by(Pick.id)
+    waiting = sorted(Pick.query.filter(Pick.choice.is_(None)), key=_thread)
     return jsonify([blind(pick) for pick in waiting])
 
 

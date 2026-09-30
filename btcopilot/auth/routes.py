@@ -22,15 +22,19 @@ from btcopilot.auth.signin import (
     chat_home,
     current_web_session,
     ensure_user,
+    next_page,
+    origin,
     sign_in,
     sign_out,
 )
 from btcopilot.auth.websession import WebSession
+from btcopilot.config import Config
 from btcopilot.extensions import db
 from btcopilot.models import User
 
 REGISTER_CHALLENGE = "passkey_register_challenge"
 LOGIN_CHALLENGE = "passkey_login_challenge"
+DEV_LOGIN = "auth.dev_login"
 
 _log = logging.getLogger(__name__)
 
@@ -64,7 +68,7 @@ def invite(token):
 def login():
     if request.method == "GET":
         if _signed_in_user():
-            return redirect(chat_home())
+            return redirect(next_page())
         return render_template("auth/login.html")
 
     email = request.form.get("email", "").strip().lower()
@@ -115,7 +119,28 @@ def verify():
         )
     login_code.consume()
     sign_in(User.query.filter_by(username=email).first())
-    return redirect(chat_home())
+    return redirect(next_page())
+
+
+def dev_login():
+    sign_in(User.query.filter_by(username=request.form["email"]).one())
+    return redirect(next_page())
+
+
+@bp.record
+def _development(state):
+    """A development server sends no mail and a home-screen app cannot open an
+    invitation link, so there any account signs in with one tap. The route is
+    never made under any other config."""
+    if state.app.config["CONFIG"] == Config.Development:
+        state.add_url_rule("/login/dev", view_func=dev_login, methods=("POST",))
+
+
+@bp.context_processor
+def _dev_users():
+    if DEV_LOGIN not in current_app.view_functions:
+        return {}
+    return {"dev_users": User.query.order_by(User.username).all()}
 
 
 @bp.route("/logout", methods=("POST",))
@@ -185,10 +210,6 @@ def _rp_id() -> str:
     return current_app.config.get("RP_ID") or request.host.split(":")[0]
 
 
-def _rp_origin() -> str:
-    return current_app.config.get("RP_ORIGIN") or f"{request.scheme}://{request.host}"
-
-
 @bp.route("/passkeys")
 def passkeys():
     user = _signed_in_user()
@@ -237,7 +258,7 @@ def passkey_register():
             credential=request.get_json(),
             expected_challenge=base64url_to_bytes(challenge),
             expected_rp_id=_rp_id(),
-            expected_origin=_rp_origin(),
+            expected_origin=origin(),
         )
     except InvalidRegistrationResponse as e:
         _log.warning(f"Passkey registration refused for {user.username}: {e}")
@@ -280,7 +301,7 @@ def passkey_login():
             credential=credential,
             expected_challenge=base64url_to_bytes(challenge),
             expected_rp_id=_rp_id(),
-            expected_origin=_rp_origin(),
+            expected_origin=origin(),
             credential_public_key=passkey.public_key,
             credential_current_sign_count=passkey.sign_count,
         )
@@ -290,7 +311,7 @@ def passkey_login():
     user = passkey.user
     sign_in(user)
     passkey.used(verified.new_sign_count)
-    return jsonify({"ok": True, "next": chat_home()})
+    return jsonify({"ok": True, "next": next_page()})
 
 
 @bp.route("/passkeys/<int:passkey_id>/revoke", methods=("POST",))

@@ -15,14 +15,22 @@ import click
 
 from btcopilot import diagramjson, playturn
 from btcopilot.discussions import open_session
+from btcopilot.extensions import db
 from btcopilot.case import Case, Snapshot
 from btcopilot.models import (
     AccessRight,
+    Audience,
     Change,
     Interaction,
     ModelCall,
+    Notice,
+    NoticeLink,
+    Notification,
+    NotificationChannel,
+    NotificationKind,
     Observation,
     ProductEvent,
+    Statement,
     StatementKind,
 )
 from btcopilot.review.models import Coding, Cut, Item, Note, Vote
@@ -538,6 +546,78 @@ def long_name() -> DiagramData:
     return three_over_forty()
 
 
+# A family's thread over its sittings: (how long ago it ended, summary, what was
+# said). The summaries are the hostile ones a divider has to hold: none, empty, sixty
+# characters, and unicode.
+SIXTY = "Why the Sunday calls to Mum stopped after the funeral in May"
+UNICODE = "Zoë, 祖母 and the move to Łódź 🏠"
+
+
+DAY = datetime.timedelta(days=1)
+
+
+def _at(days: int, hour: int, minute: int, lines: int) -> datetime.timedelta:
+    """How long ago a sitting of `lines` lines ends so that it starts at this
+    clock time `days` ago, in the zone the fixtures are installed in, which is
+    the zone the browser reading them runs in."""
+    now = datetime.datetime.now().astimezone()
+    start = (now - days * DAY).replace(
+        hour=hour, minute=minute, second=0, microsecond=0
+    )
+    return now - start - datetime.timedelta(seconds=lines)
+
+
+def _sitting(topic: str, lines: int = 6) -> list[tuple[str, str]]:
+    return [
+        ("user", f"I keep coming back to {topic}."),
+        ("coach", f"What happened first, with {topic}?"),
+        ("user", "It started before anyone said anything about it."),
+        ("coach", "Who noticed first?"),
+        ("user", "My sister, I think. She always does."),
+        ("coach", "And what did she do then?"),
+    ][:lines]
+
+
+SITTINGS = {
+    "sitting": [(0 * DAY, "Talking about Mum's move to the coast", _sitting("Mum's move"))],
+    "sittings": [
+        (240 * DAY, "How the house sale started the arguments", _sitting("the house sale")),
+        (218 * DAY, "Dad's drinking after he retired", _sitting("Dad's drinking")),
+        (190 * DAY, None, _sitting("the wedding")),
+        (163 * DAY, SIXTY, _sitting("the Sunday calls")),
+        (131 * DAY, "", _sitting("my brother's job")),
+        (104 * DAY, UNICODE, _sitting("Zoë and 祖母's move to Łódź")),
+        (80 * DAY, "The summer at the lake house", _sitting("the lake house")),
+        (55 * DAY, "Mum's diagnosis and who was told", _sitting("the diagnosis")),
+        (33 * DAY, "Christmas without Dad", _sitting("Christmas")),
+        (14 * DAY, "My sister taking over the care", _sitting("the care")),
+        (1 * DAY, "What changed after the hospital", _sitting("the hospital", 2)),
+        (0 * DAY, "Planning the visit home", _sitting("the visit home", 2)),
+    ],
+    # two sittings on one day, far from midnight either side
+    "sameday": [
+        (_at(3, 9, 40, 2), "The morning call", _sitting("the morning call", 2)),
+        (_at(3, 21, 40, 2), "The evening call", _sitting("the evening call", 2)),
+    ],
+}
+
+NOTICE_CHAT = [
+    ("user", "my mother called on Sunday"),
+    ("coach", "What did she want when she called?"),
+]
+
+# (title, body, link, days ago, opened)
+NOTICES = (
+    ("Welcome to the app", "Your family's record is in the list.", None, 4, True),
+    (
+        "Coach messages can now come weekly",
+        "Choose how often under Coach messages on your account page.",
+        NoticeLink.CoachSettings,
+        0,
+        False,
+    ),
+)
+
 # key -> (builder, chat, diagram name)
 FIXTURES = {
     "empty": (empty, None),
@@ -551,6 +631,10 @@ FIXTURES = {
     "longname": (long_name, None),
     "editable": (editable, None),
     "whitlock": (whitlock, WHITLOCK_CHAT),
+    "sitting": (one, None),
+    "sittings": (one, None),
+    "sameday": (one, None),
+    "notice": (one, NOTICE_CHAT),
 }
 
 # the diagram name each fixture's record carries, when it is not the default
@@ -579,8 +663,6 @@ def drop_cuts(discussion_id: int):
 
 def install(key: str):
     """Make the fixture user, replace their diagram, and replay their chat."""
-    from btcopilot.extensions import db
-    from btcopilot.models import Statement
     from btcopilot.models import Diagram, User
 
     builder, chat = FIXTURES[key]
@@ -590,6 +672,10 @@ def install(key: str):
         user = User(username=name, status="confirmed", password="x")
         db.session.add(user)
         db.session.flush()
+    Notification.query.filter_by(user_id=user.id).delete()
+    for notice in Notice.query.filter_by(audience=Audience.People):
+        if notice.user_ids == [user.id]:
+            db.session.delete(notice)
     for old in Diagram.query.filter_by(user_id=user.id).all():
         for discussion in old.discussions:
             drop_cuts(discussion.id)
@@ -622,39 +708,91 @@ def install(key: str):
     db.session.commit()
 
     if chat:
-        discussion = open_session(user, diagram)
-        # a kept play is marked as told from the record as it stands, so it
-        # opens with no call; worked out here, not at import, as it reads the
-        # private play prompt
-        kept = any(extra and "told_case" in extra[0] for _, _, *extra in chat)
-        told = playturn.digests(data, build_timeline(data)) if kept else {}
-        for order, (role, text, *extra) in enumerate(chat):
-            said = extra[0] if extra else {}
-            db.session.add(
-                Statement(
-                    discussion_id=discussion.id,
-                    speaker_id=(
-                        discussion.chat_ai_speaker_id
-                        if role == "coach"
-                        else discussion.chat_user_speaker_id
-                    ),
-                    text=text,
-                    order=order,
-                    digest=told[said["cluster_id"]] if "told_case" in said else None,
-                    **said,
-                )
-            )
-        db.session.commit()
+        discussion = _replay(user, diagram, data, chat)
         _stamp_coded_in(diagram, discussion)
+        if key == "notice":
+            _notify(user, discussion)
+    for ago, summary, said in SITTINGS.get(key, []):
+        _replay(user, diagram, data, said, ago, summary)
     return user
+
+
+def _notify(user, discussion):
+    """Notices meant for this one person, one opened days ago and one not,
+    and an unread push to the coach's reply, which is no notice."""
+    now = datetime.datetime.utcnow()
+    for title, body, link, ago, opened in NOTICES:
+        sent = now - ago * DAY - datetime.timedelta(minutes=5)
+        notice = Notice(
+            title=title,
+            body=body,
+            link=link,
+            audience=Audience.People,
+            user_ids=[user.id],
+            created_at=sent,
+        )
+        db.session.add(notice)
+        db.session.flush()
+        db.session.add(
+            Notification(
+                user_id=user.id,
+                kind=NotificationKind.Notice,
+                notice_id=notice.id,
+                channel=NotificationChannel.App,
+                created_at=sent,
+                opened_at=sent + datetime.timedelta(minutes=1) if opened else None,
+            )
+        )
+    reply = next(
+        s for s in discussion.statements if s.speaker_id == discussion.chat_ai_speaker_id
+    )
+    db.session.add(
+        Notification(
+            user_id=user.id,
+            kind=NotificationKind.Coach,
+            statement_id=reply.id,
+            channel=NotificationChannel.Push,
+        )
+    )
+    db.session.commit()
+
+
+def _replay(user, diagram, data, chat, ago=datetime.timedelta(0), summary=None):
+    """One sitting of the fixture's thread, said `ago`, a second a line."""
+    discussion = open_session(user, diagram)
+    discussion.summary = summary
+    ended = datetime.datetime.utcnow() - ago
+    discussion.created_at = ended - datetime.timedelta(seconds=len(chat))
+    # a kept play is marked as told from the record as it stands, so it
+    # opens with no call; worked out here, not at import, as it reads the
+    # private play prompt
+    kept = any(extra and "told_case" in extra[0] for _, _, *extra in chat)
+    told = playturn.digests(data, build_timeline(data)) if kept else {}
+    for order, (role, text, *extra) in enumerate(chat):
+        said = extra[0] if extra else {}
+        db.session.add(
+            Statement(
+                discussion_id=discussion.id,
+                speaker_id=(
+                    discussion.chat_ai_speaker_id
+                    if role == "coach"
+                    else discussion.chat_user_speaker_id
+                ),
+                text=text,
+                order=order,
+                created_at=ended - datetime.timedelta(seconds=len(chat) - order),
+                digest=told[said["cluster_id"]] if "told_case" in said else None,
+                **said,
+            )
+        )
+    db.session.commit()
+    return discussion
 
 
 def _stamp_coded_in(diagram, discussion):
     """A real record remembers which words coded each moment, so the fixtures
     do too: every event is stamped against this discussion's first coach
     statement. Without it there is nothing for traceability to point at."""
-    from btcopilot.extensions import db
-
     coach_said = next(
         (s for s in discussion.statements if s.speaker_id == discussion.chat_ai_speaker_id),
         None,

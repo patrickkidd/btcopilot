@@ -33,11 +33,6 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      - name: Build the web bundle
-        run: |
-          npm --prefix web ci
-          npm --prefix web run build
-
       # 3.YYYY.M.D.N+g<sha7>: the commit's UTC date, N = 1 + the release tags
       # already carrying that date. The committed version stays 3.0.0.
       - name: Version
@@ -52,6 +47,23 @@ jobs:
           grep -q "^version = \"${version}\"$" pyproject.toml
           echo "version=${version}" >> "$GITHUB_OUTPUT"
           echo "tag=${version/+/-}" >> "$GITHUB_OUTPUT"
+
+      - name: Build the web bundle
+        env:
+          RELEASE: ${{ steps.version.outputs.version }}
+        run: |
+          npm --prefix web ci
+          npm --prefix web run build
+
+      # The bundle's source maps are never served; they are kept with this run,
+      # named for the release, to read a stack Grafana caught on the page against.
+      - name: Keep the source maps
+        uses: actions/upload-artifact@v4
+        with:
+          name: sourcemaps-${{ steps.version.outputs.tag }}
+          path: web/sourcemaps/${{ steps.version.outputs.version }}
+          retention-days: 90
+          if-no-files-found: error
 
       - name: Build the wheel
         run: python -m build --wheel

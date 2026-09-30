@@ -33,11 +33,14 @@ def system_text(system: str | list[str]) -> str:
     return system if isinstance(system, str) else "\n\n".join(p for p in system if p)
 
 
-def renamed(content, prefix: str):
+def sendable(content, prefix: str):
+    """The app's cache marks go: Claude Code sets its own, and the API
+    refuses more than four in all. They change the cost, not the answer."""
     if isinstance(content, str):
         return content
     blocks = []
     for block in content:
+        block = {k: v for k, v in block.items() if k != "cache_control"}
         if block["type"] == "tool_use":
             block = dict(block, name=prefix + block["name"])
         elif block["type"] in ("thinking", "redacted_thinking"):
@@ -63,7 +66,7 @@ def transcript(messages: list[dict], session: str, cwd: Path) -> list[dict]:
             "type": message["role"],
             "message": {
                 "role": message["role"],
-                "content": renamed(message["content"], PREFIX),
+                "content": sendable(message["content"], PREFIX),
             },
             "uuid": str(uuid.uuid4()),
             "timestamp": now,
@@ -207,7 +210,7 @@ def answer(request: dict, work: Path, base_url: str | None = None) -> dict:
                 "type": m["role"],
                 "message": {
                     "role": m["role"],
-                    "content": renamed(m["content"], PREFIX),
+                    "content": sendable(m["content"], PREFIX),
                 },
             }
         )

@@ -47,3 +47,41 @@ self.addEventListener("fetch", (e) => {
       ),
   );
 });
+
+// A push is only a pointer: to a coach message already in the thread, to a
+// coding task, or to a product notice. Its kind is its tag, so the lock screen holds one of each kind
+// and the newest of a kind replaces that kind's unread one.
+const TITLE = {
+  coach: "Coach",
+  task: "Coding task",
+  reminder: "Coding task",
+  notice: "Family Diagram",
+};
+
+self.addEventListener("push", (e) => {
+  const { id, kind, body } = e.data.json();
+  e.waitUntil(
+    self.registration.showNotification(TITLE[kind], {
+      body,
+      tag: kind,
+      renotify: true,
+      icon: "/app/static/web/apple-touch-icon.png",
+      data: { id },
+    }),
+  );
+});
+
+/** The app already open is told which message to show, so a draft in it
+ * survives; otherwise the tap opens the app on that message. */
+function arrive(id) {
+  return self.clients.matchAll({ type: "window" }).then(([app]) => {
+    if (!app) return self.clients.openWindow(`/app/?notification=${id}`);
+    app.postMessage({ notification: id });
+    return app.focus();
+  });
+}
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(arrive(e.notification.data.id));
+});

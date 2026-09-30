@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import JSON, Column, Enum, ForeignKey, Integer, String
+from sqlalchemy import JSON, Column, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 
 from btcopilot.extensions import db
@@ -30,7 +30,8 @@ class Pick(db.Model, ModelMixin):
     The row is made when the pair is first served, which fixes its random side
     order; `choice` stays null until he picks. `pair` names the two replies so
     a pair is served once. The refs hold the model names, which never leave
-    the server before the pick.
+    the server before the pick. The texts are the two replies as served, kept
+    here so a deleted replay or shadow row never loses what he judged.
     """
 
     __tablename__ = "model_picks"
@@ -39,6 +40,8 @@ class Pick(db.Model, ModelMixin):
     source = Column(_enum(PickSource), nullable=False)
     left_ref = Column(JSONB().with_variant(JSON(), "sqlite"), nullable=False)
     right_ref = Column(JSONB().with_variant(JSON(), "sqlite"), nullable=False)
+    left_text = Column(Text, nullable=False)
+    right_text = Column(Text, nullable=False)
     choice = Column(_enum(PickChoice), nullable=True)
     note = Column(String(NOTE_CAP), nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)

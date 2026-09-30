@@ -1,5 +1,6 @@
 import datetime
 import email.utils
+import html
 import re
 
 import flask
@@ -11,16 +12,23 @@ from itsdangerous import TimestampSigner
 from mock import patch
 from webauthn.helpers import bytes_to_base64url
 
+import btcopilot
 from btcopilot import extensions
+from btcopilot.auth.emails import AUDITOR
 from btcopilot.auth.invitation import Invitation
 from btcopilot.auth.logincode import LoginCode
 from btcopilot.auth.passkey import Passkey
+from btcopilot.auth.routes import DEV_LOGIN
 from btcopilot.auth.signin import SESSION_TOKEN
 from btcopilot.auth.websession import WebSession
+from btcopilot.config import Config
 from btcopilot.extensions import db
 from btcopilot.models import User
+from btcopilot.tests.fixtures import TEST_USER_ATTRS
 
 INVITED = "invited+unittest@gmail.com"
+DEVELOPMENT = {"CONFIG": Config.Development}
+WITHOUT_A_CODE = "Sign in without a code (development)"
 
 
 CSRF_SEED = "unittest-csrf-seed"
@@ -146,6 +154,35 @@ def test_code_signs_in_an_existing_user(flask_app, browser, test_user):
     assert browser.get("/app/me").get_json()["user"]["email"] == test_user.username
 
 
+def test_only_an_auditor_is_told_what_the_coding_is(browser, test_user):
+    # R-0078, R-0311
+    _, outbox = request_code(browser, test_user.username)
+    assert AUDITOR not in outbox[0].body
+
+    test_user.roles = btcopilot.ROLE_AUDITOR
+    db.session.commit()
+    _, outbox = request_code(browser, test_user.username)
+    assert AUDITOR in outbox[0].body
+
+
+def test_a_signed_out_tap_on_a_notification_lands_on_it_after_sign_in(
+    browser, test_user
+):
+    # R-0055
+    login = browser.get("/app/?notification=7").headers["Location"]
+    with extensions.mail.record_messages() as outbox:
+        page = browser.post(
+            login, data={"csrf_token": token(browser), "email": test_user.username}
+        )
+    verify = html.unescape(re.search(r'action="([^"]*verify[^"]*)"', page.text)[1])
+    code = re.search(r"\b(\d{6})\b", outbox[0].body)[1]
+    response = browser.post(
+        verify,
+        data={"csrf_token": token(browser), "email": test_user.username, "code": code},
+    )
+    assert response.headers["Location"] == "/app/?notification=7"
+
+
 def test_revoking_the_session_logs_out(flask_app, browser):
     # R-0099
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
@@ -243,3 +280,40 @@ def test_passkey_signs_the_user_in(flask_app, browser, monkeypatch):
     assert db.session.get(Passkey, passkey.id).sign_count == 1
 
 
+@pytest.mark.parametrize("flask_app", [DEVELOPMENT], indirect=True)
+def test_one_tap_signs_in_on_a_development_server(browser, test_user):
+    # R-0452
+    page = browser.get("/app/login").text
+    assert WITHOUT_A_CODE in page
+    assert test_user.username in page
+
+    response = browser.post(
+        "/app/login/dev",
+        data={"csrf_token": token(browser), "email": test_user.username},
+    )
+    assert response.headers["Location"] == "/app/"
+    assert browser.get("/app/me").get_json()["user"]["email"] == test_user.username
+
+
+@pytest.mark.parametrize("flask_app", [{"CONFIG": Config.Production}], indirect=True)
+def test_production_has_no_sign_in_without_a_code(flask_app, browser, test_user):
+    # R-0452
+    assert WITHOUT_A_CODE not in browser.get("/app/login").text
+    assert DEV_LOGIN not in flask_app.view_functions
+
+    browser.post(
+        "/app/login/dev",
+        data={"csrf_token": token(browser), "email": test_user.username},
+    )
+    assert browser.get("/app/me").get_json()["user"] is None
+
+
+@pytest.mark.parametrize(
+    "flask_app",
+    [DEVELOPMENT | {"DEV_AUTOLOGIN": TEST_USER_ATTRS["username"]}],
+    indirect=True,
+)
+def test_a_development_stack_can_sign_in_everyone_as_one_account(browser, test_user):
+    # R-0452
+    assert browser.get("/app/diagrams").status_code == 200
+    assert browser.get("/app/me").get_json()["user"]["email"] == test_user.username
