@@ -23,20 +23,19 @@
      app held out of sight until main.ts has drawn its first screen. The
      colours are the grounds and ink in theme.css. -->
 <style>
-#splash { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #f7f6f2; color: #26312f; font: 800 21px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.01em; transition: opacity 0.2s; }
+#splash { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f7f6f2; transition: opacity 0.2s; }
 #splash img { width: 72px; height: 72px; border-radius: 16px; animation: splash-breath 1.6s ease-in-out infinite alternate; }
 #splash.gone { opacity: 0; pointer-events: none; }
 #splash:not(.gone) ~ .app { visibility: hidden; }
 @keyframes splash-breath { to { opacity: 0.55; } }
 @media (prefers-reduced-motion: reduce) { #splash img { animation: none; } }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #splash { background: #171d1c; color: #e6e9e6; } }
-:root[data-theme="dark"] #splash { background: #171d1c; color: #e6e9e6; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #splash { background: #171d1c; } }
+:root[data-theme="dark"] #splash { background: #171d1c; }
 </style>
 </head>
 <body>
 <div id="splash">
   <img src="/app/static/web/icon-192.png" alt="">
-  <div>Family Diagram</div>
 </div>
 <div class="app">
   <div class="titlerow">
