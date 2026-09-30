@@ -194,6 +194,37 @@ def test_the_two_halves_of_the_coach_prompt_are_the_whole_prompt():
     assert fixed == prompts.agent_prompt(record="Someone else, 12")[0]
 
 
+def paragraphs(text: str) -> list[str]:
+    return [p.strip() for p in text.split("\n\n") if p.strip()]
+
+
+def test_the_fixed_coaching_text_is_kept_ahead_of_the_record(
+    wire, discussion, monkeypatch
+):
+    # R-0392, R-0595
+    ones = prompts.agent_prompt(
+        record="Marcus, 40", interactions="looked at 3", today="2026-09-30"
+    )
+    others = prompts.agent_prompt(
+        record="Nell, 12", interactions="looked at 5", today="2027-01-02"
+    )
+    fixed_left = set(paragraphs(ones[1])) & set(paragraphs(others[1]))
+    # Only the record's own heading, the paragraph that reads the record above
+    # it, and the words around the interactions stay after the chat.
+    assert sum(len(p) for p in fixed_left) < 1500
+
+    monkeypatch.setattr(
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
+    )
+    wire.reply = Reply([Block(type="text", text="Go on.")])
+    CoachTurn(discussion, "hi", purpose=Purpose.Coach, model=CoachModel()).run()
+    assert wire.sent["system"] == [
+        {"type": "text", "text": ones[0], "cache_control": CACHE}
+    ]
+    assert "hi" in wire.sent["messages"][-1]["content"][-1]["text"]
+
+
 def test_the_coach_asks_for_its_effort_and_no_sampling(wire):
     # R-0405
     sent = call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])

@@ -2,9 +2,30 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-09-29 ("What it's doing" defaults to coaching)
+**Last Updated**: 2026-09-30 (fixed coaching text cached ahead of the record)
 
 ---
+
+## FD-366 — the fixed coaching text is cached ahead of the record (2026-09-30)
+
+**Change**: layout only, no wording. The interview steps, the data checklist, the reply style
+and the examples (the rest of the private coaching flow after the record, and the Claude reply
+style) sat after the record, so they went into the new user message and were written to the
+prompt cache fresh every turn. The record's heading, the record, the date and the paragraph that
+reads "the block above" now come after all of that, just before what the person has been
+looking at; everything ahead of them is the cached system prompt. 12,771 characters (about 3,700
+tokens) move from the per-turn part into the cached part; every paragraph is byte-identical and
+the fixed paragraphs keep their order. Left after the chat though fixed: the record's heading
+and the paragraph that refers to the record above it (moving it would make "above" wrong), the
+words around what the person has been looking at (shown only when there is something), and the
+note register (note sessions only).
+
+**Expected saving**: on each coach call those ~3,700 tokens are read back from the cache at a
+tenth of the input price instead of written at 1.25 times it.
+
+**Behaviour**: unmeasured, by Patrick's instruction 2026-09-30 (same segments, new order, no
+measurement before shipping). The record now sits nearer the end of the prompt, after the
+coaching text, instead of in the middle of it. [R-0392, R-0595]
 
 ## Sittings — "What it's doing" defaults to coaching (2026-09-29)
 

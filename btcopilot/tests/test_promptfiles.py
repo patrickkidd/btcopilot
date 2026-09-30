@@ -88,6 +88,25 @@ def test_the_private_prompts_say_what_their_constants_said(monkeypatch):
         importlib.reload(prompts)
 
 
+def test_the_private_coach_prompt_keeps_every_paragraph_it_had(monkeypatch):
+    # R-0392
+    goldens = REAL_PRIVATE.parent / "goldens.json"
+    if not goldens.exists() or not key_present():
+        pytest.skip("the private prompts are not installed, or no key opens them")
+    monkeypatch.delenv("FD_PRIVATE_PROMPTS", raising=False)
+    module = importlib.reload(prompts)
+    try:
+        want = json.loads(read(goldens))
+        got = rendered(module, want)
+        for key in [k for k in want if k.startswith("get_agent_prompt/")]:
+            said = [p.strip() for p in want[key].split("\n\n")]
+            says = [p.strip() for p in got[key].split("\n\n")]
+            assert sorted(says) == sorted(said), key
+    finally:
+        monkeypatch.undo()
+        importlib.reload(prompts)
+
+
 def test_the_app_runs_whole_with_no_private_prompts(public):
     # R-0451
     assert public.get_agent_prompt(record="Marcus, 40")
