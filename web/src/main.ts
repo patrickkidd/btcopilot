@@ -1787,6 +1787,13 @@ async function land(one: Delivery): Promise<void> {
   await navigate(delivered(one));
 }
 
+/** The first screen is drawn: the splash fades off it and leaves the page. */
+function reveal(): void {
+  const splash = $("splash");
+  splash.addEventListener("transitionend", () => splash.remove(), { once: true });
+  splash.classList.add("gone");
+}
+
 /** Opened at an address, the app goes there once the record is in; opened at
  * the chat it is there already. */
 async function arrive(): Promise<void> {
@@ -1841,6 +1848,7 @@ void load().then(async () => {
   leftAt(said);
 })
   .then(arrive)
+  .then(reveal)
   .then(() => landing(land));
 
 // The dev server too: push needs the worker, and the worker asks the network
