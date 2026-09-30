@@ -37,6 +37,9 @@ PRICES = {
     # Google's paid-tier text rates, ai.google.dev/gemini-api/docs/pricing, read
     # 2026-09-28. The 3.6 to 3.8 Flash rates double on 2027-01-01. Gemini keeps
     # its cache without a write charge; thinking is billed as output.
+    "gemini-3.1-pro": Price(
+        Decimal("2.00"), Decimal("12.00"), Decimal(0), Decimal("0.20")
+    ),
     "gemini-3.8-flash": FLASH,
     "gemini-3.7-flash": FLASH,
     "gemini-3.6-flash": FLASH,

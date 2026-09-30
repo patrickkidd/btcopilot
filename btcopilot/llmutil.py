@@ -39,6 +39,7 @@ MODEL_ALIASES = {
     "opus-5.5": "claude-opus-5-5",
     "opus-4.6": "claude-opus-4-6",
     "gemini-flash": "gemini-3.8-flash",
+    "gemini-pro": "gemini-3.1-pro-preview",
     "gemini-3.8-flash": "gemini-3.8-flash",
     "gemini-3.6-flash": "gemini-3.6-flash",
     "gemini-2.5-flash": "gemini-2.5-flash",

@@ -1,5 +1,6 @@
 import importlib
 from dataclasses import dataclass
+from decimal import Decimal
 
 import pytest
 
@@ -96,3 +97,12 @@ def test_a_local_url_sends_gemini_extraction_to_the_local_model(anthropic_env):
 def test_sonnet_5_5_costs_what_sonnet_5_costs():
     # R-0405
     assert price("claude-sonnet-5-5") == price("claude-sonnet-5")
+
+
+def test_gemini_pro_is_3_1_pro_preview_with_its_own_price():
+    # R-0405
+    model = llmutil.resolve_model("gemini-pro")
+    assert model == "gemini-3.1-pro-preview"
+    assert llmutil.is_gemini(model)
+    rate = price(model)
+    assert (rate.input, rate.output, rate.cache_read) == (2, 12, Decimal("0.20"))
