@@ -25,10 +25,10 @@ from btcopilot.models import (
     StatementKind,
 )
 from btcopilot.discussions import (
-    all_sessions,
     chats,
     create_discussion,
     listed,
+    real_sessions,
     session_payload,
     sync_chat_speakers,
     utc_iso,
@@ -193,7 +193,7 @@ def session_index():
         abort(403)
     if asked is not None and asked not in {d.id for d in readable(user)}:
         abort(404)
-    found = all_sessions() if every else chats(user, asked or user.diagram_in_use())
+    found = real_sessions() if every else chats(user, asked or user.diagram_in_use())
     terms = request.args.get("words", "").split()
     lines = {}
     if terms:
@@ -204,7 +204,7 @@ def session_index():
             )
         found = found.filter(Discussion.id.in_(list(lines)))
     families = (
-        dict(found.join(Diagram).with_entities(Discussion.id, Diagram.name))
+        dict(found.with_entities(Discussion.id, Diagram.name))
         if every
         else {}
     )

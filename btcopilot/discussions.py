@@ -145,6 +145,12 @@ def all_sessions():
     )
 
 
+def real_sessions():
+    """Every session on every family that is not a throwaway copy (the replay
+    and shadow families are marked scratch)."""
+    return all_sessions().join(Diagram).filter(Diagram.scratch.is_(False))
+
+
 def chats(user, diagram_id: int):
     """The user's sessions on one family."""
     return all_sessions().filter_by(user_id=user.id, diagram_id=diagram_id)

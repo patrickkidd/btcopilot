@@ -75,6 +75,21 @@ def test_a_list_of_sessions_reads_each_row_as_the_session_itself_does(test_user)
     ]
 
 
+def test_the_list_of_every_familys_sessions_leaves_out_scratch_copies(web, test_user):
+    # R-0267
+    web.user.roles = btcopilot.ROLE_ADMIN
+    copy = Diagram(
+        user_id=test_user.id, name="Replay", data=diagramjson.dumps({}), scratch=True
+    )
+    db.session.add(copy)
+    db.session.flush()
+    real = said(test_user.free_diagram, test_user, "We went to the lake.")
+    said(copy, test_user, "A replayed line.")
+
+    listed = web.get("/app/sessions?all=true").get_json()
+    assert [s["id"] for s in listed] == [real.id]
+
+
 def test_only_an_admin_lists_every_familys_sessions(web):
     # R-0267
     assert web.get("/app/sessions?all=true").status_code == 403
