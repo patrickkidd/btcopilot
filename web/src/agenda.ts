@@ -220,12 +220,12 @@ export class Agenda {
       this.cuts.length > 0 &&
       this.cuts.every((cut) => cut.vote_opened_at !== null);
     this.body.innerHTML =
-      `<div class="sn-hd">On the agenda</div>` +
       (this.cuts.length
         ? this.meetings()
             .map(([day, cuts]) => this.meetingRows(day, cuts))
             .join("")
-        : `<div class="none">Nothing is on the agenda yet.</div>`) +
+        : `<div class="sn-hd">On the agenda</div>` +
+          `<div class="none">Nothing is on the agenda yet.</div>`) +
       `<button class="nudge tb-add" type="button">Put a session on the agenda</button>` +
       this.results() +
       `<div class="sn-hd">Coders</div>` +
@@ -243,12 +243,13 @@ export class Agenda {
       this.agendaBox();
   }
 
-  /** One meeting: its day once, its cuts under it, and once the vote is open
+  /** One meeting: its day as a field above the list, the cuts alone in the list, and once the vote is open
    * on them, the one way to run it (R-0250, R-0273). */
   private meetingRows(day: string | null, cuts: Cut[]): string {
     const open = cuts.some((cut) => cut.vote_opened_at !== null);
     return (
       this.dateRow(day) +
+      `<div class="sn-hd">On the agenda</div>` +
       cuts.map((cut) => this.cutRow(cut)).join("") +
       (open
         ? `<button class="nudge go tb-meet" type="button" data-day="${esc(day ?? "")}">` +

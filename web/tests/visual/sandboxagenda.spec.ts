@@ -35,6 +35,15 @@ test.describe(() => {
     await expect(page.locator("#agenda-screen")).toBeVisible();
     await expect(page.locator(".tb-cut .sn-t", { hasText: session })).toBeVisible();
     check(stored.join() === "201", `one new cut was stored (${stored.join(", ")})`);
+    await expect(page.locator(".tb-when").first()).toBeVisible();
+    check(
+      (await page.locator(".tb-when").first().evaluate((el) => el.nextElementSibling?.className)) === "sn-hd",
+      "the meeting date is a field above the list, not a row in it",
+    );
+    check(
+      (await page.locator(".tb-cut ~ .tb-when, .tb-cut .tb-when").count()) === 0,
+      "the list holds cuts only",
+    );
     await gates("the agenda");
     await shot("2-agenda");
 
