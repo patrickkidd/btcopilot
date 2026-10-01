@@ -1753,6 +1753,17 @@ Kept for when there are enough users to run one.
   so the switch reaches across repositories into familydiagram's scene code and its
   file-manager field lists.
 
+## FD-367 — Case page for presenting a case to peers
+
+Brainstormed 2026-10-01 beside FD-336. Mockup gallery, version 3: private artifact
+(https://claude.ai/artifact/KM74THMGmR13YG96yUwZPS). Patrick judged it the wrong shape: period cards
+with no top level, prose-heavy, no formulation line, no nuclear and extended split, no play-by-play.
+Theory research found the order a Bowen case is presented in: the people on the diagram, the symptom
+on a calendar, the nuclear family dated with a fix at each event, each extended side, the person's
+own part, the formulation last, then the effort to change. That order awaits Patrick's ruling before
+a redraw. Hand-off, research, gallery source: Jira FD-367
+(https://alaskafamilysystems.atlassian.net/browse/FD-367). Theory notes: btcopilot-sources PR FD-367.
+
 ## Jira / branches
 
 - FD-359 epic (chat-first web app) with FD-360 (built, draft PR #133) and FD-361

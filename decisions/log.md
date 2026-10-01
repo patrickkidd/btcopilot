@@ -2120,3 +2120,14 @@ default and runs with `--integration`, with its own CI step.
 Patrick [R-0677]. It is kept only to maintain the legacy app. Ticket worktrees for this project
 belong under the standalone clone; this session's worktree was made in the deprecated one by
 mistake.
+
+## 2026-10-01: FD-367 — the case page follows the sources' top-down order, pending Patrick's ruling
+
+No ruling yet; nothing is redrawn until Patrick rules. The page for presenting a case to peers
+follows the order the theory sources present a case in: the people on the diagram, the symptom on a
+calendar, the nuclear family dated with a fix at each event, each extended side, the person's own
+part, the formulation last, then the effort to change. The "Where there was a choice" box stays, in
+the only shape the sources allow: a dated move of the person's own, their part in it, one opening as
+a question, the facts under it, and a guess to reject. It never holds a plan or a level. A
+professional presenting a client's record gets their own header, their own reading box, and
+questions addressed to the professional.
