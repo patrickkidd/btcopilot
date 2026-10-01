@@ -685,8 +685,8 @@ def install(key: str):
             db.session.delete(discussion)
         if user.free_diagram_id == old.id:
             user.free_diagram_id = None
-        if user.current_diagram_id == old.id:
-            user.current_diagram_id = None
+        # an admin who opened this record holds it as theirs too
+        User.query.filter_by(current_diagram_id=old.id).update({"current_diagram_id": None})
         # what was done to the old record goes with it; the database will not
         # delete a diagram while rows still point at it
         for kept in DIAGRAM_ROWS:
