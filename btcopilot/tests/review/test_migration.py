@@ -12,7 +12,6 @@ from btcopilot.tests.repo import REPO
 
 REVISION = REPO / "btcopilot/migrations/versions/1b00000000aa_the_app_from_empty.py"
 CUTS = REPO / "btcopilot/migrations/versions/1b00000000c0_model_call_purpose.py"
-SHARES = REPO / "btcopilot/migrations/versions/1b00000000c1_admin_view_shares.py"
 
 RENAMED = {"diagram_changes", "diagram_interactions"}
 REVIEW = {
@@ -111,6 +110,6 @@ def test_an_admins_leftover_share_on_anothers_diagram_is_removed():
         ):
             conn.execute(sa.text(sql))
         with Operations.context(MigrationContext.configure(conn)):
-            revision(SHARES).upgrade()
+            revision(CUTS).admin_shares_removed()
         kept = conn.execute(sa.text("SELECT id FROM access_rights")).scalars().all()
     assert kept == [2, 3]

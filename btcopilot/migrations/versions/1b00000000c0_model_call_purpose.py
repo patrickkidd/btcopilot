@@ -8,6 +8,11 @@ sitting: it names the family, and each line names its own sitting. A cut
 already made names its sitting's family and keeps its two lines.
 Each replay pass is kept in its own table so a key is never paid for twice.
 
+An admin opening another person's diagram once wrote a read-write access right
+for himself on it. The opening is read-only now, but the right it left makes
+the app take the diagram for one shared with him, so every access right an
+admin holds on a diagram he does not own is deleted.
+
 Revision ID: 1b00000000c0
 Revises: 1b00000000bf
 """
@@ -76,6 +81,7 @@ def upgrade():
     with op.batch_alter_table("model_calls", schema=None) as batch_op:
         batch_op.alter_column("purpose", nullable=False)
     cuts_on_thread()
+    admin_shares_removed()
 
 
 def cuts_on_thread():
@@ -123,6 +129,16 @@ def cuts_on_thread():
     with op.batch_alter_table("replay_passes", schema=None) as batch_op:
         batch_op.create_index(batch_op.f("ix_replay_passes_id"), ["id"])
         batch_op.create_index(batch_op.f("ix_replay_passes_case"), ["case"])
+
+
+def admin_shares_removed():
+    op.execute(
+        "DELETE FROM access_rights WHERE EXISTS (SELECT 1 FROM users, diagrams"
+        " WHERE users.id = access_rights.user_id"
+        " AND diagrams.id = access_rights.diagram_id"
+        " AND diagrams.user_id != users.id"
+        " AND ',' || users.roles || ',' LIKE '%,admin,%')"
+    )
 
 
 def downgrade():
