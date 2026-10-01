@@ -1,4 +1,5 @@
 import * as api from "./api";
+import { store } from "./store";
 import type { Said } from "./api";
 import { el, esc, shift } from "./dom";
 import { clockTime, dayKey, periodLabel, rowDate } from "./when";
@@ -65,8 +66,11 @@ export class Thread {
     return item.getBoundingClientRect().top - this.list.getBoundingClientRect().top + this.list.scrollTop;
   }
 
+  /** A page still being read when another diagram opens is dropped. */
   private async readBack(): Promise<void> {
-    const page = await api.thread(this.oldest!);
+    const before = this.oldest!;
+    const page = await store.fetch((id, signal) => api.thread(id, before, signal));
+    if (!page) return;
     this.start(page);
     if (!page.length) return;
     const anchor = this.list.firstElementChild;

@@ -272,7 +272,7 @@ test("a coach message written from outside the page appears in the thread when t
       "",
     ].join("\n"),
   );
-  const read = page.waitForResponse((r) => r.url().endsWith("/app/statements"));
+  const read = page.waitForResponse((r) => /\/app\/statements\?diagram_id=\d+$/.test(r.url()));
   await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
   expect((await read).ok()).toBe(true);
   await expect(page.locator("#chat .bub").last()).toContainText(said);

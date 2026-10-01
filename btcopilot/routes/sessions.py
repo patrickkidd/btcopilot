@@ -8,8 +8,7 @@ from sqlalchemy import func, tuple_
 import btcopilot
 from btcopilot import auth
 from btcopilot.routes import (
-    Access,
-    access,
+    asked_diagram,
     bp,
     chatter,
     current_session,
@@ -17,7 +16,6 @@ from btcopilot.routes import (
     require_write_access,
     writable_diagram,
 )
-from btcopilot.routes.diagrams import readable
 from btcopilot.extensions import db
 from btcopilot.licence import require_professional
 from btcopilot.models import (
@@ -96,8 +94,8 @@ def statements_payload(statements: list[Statement], user) -> list[dict]:
     return out
 
 
-def thread(user, before: int | None = None) -> list[dict]:
-    """The words of every sitting on the family the app is on, as one thread:
+def thread(user, dia: Diagram | None, before: int | None = None) -> list[dict]:
+    """The words of every sitting on one family, as one thread:
     sittings in the order they started, THREAD_PAGE statements at a time back
     from the statement `before`. A sitting's first words carry the sitting —
     its id, when it started, and when the one before it started — which is
@@ -114,7 +112,7 @@ def thread(user, before: int | None = None) -> list[dict]:
         )
         .filter(
             Statement.discussion_id.in_(
-                chats(chatter(user), user.diagram_in_use()).with_entities(
+                chats(chatter(user, dia), dia.id if dia else None).with_entities(
                     Discussion.id
                 )
             )
@@ -178,15 +176,19 @@ def chat():
 def statement_index():
     """The thread, a page at a time: `?before=<statement id>` reads the page
     of words just older than that one."""
-    return jsonify(thread(auth.current_user(), request.args.get("before", type=int)))
+    return jsonify(
+        thread(
+            auth.current_user(), asked_diagram(), request.args.get("before", type=int)
+        )
+    )
 
 
 @bp.route("/sessions")
 def session_index():
-    """`?diagram_id=` lists another readable diagram's sessions, which is what
-    the sessions sheet needs to show a professional's families in one scroll.
-    An admin viewing another person's diagram reads that person's sessions on
-    it. A diagram the user cannot read is a 404, never a 403. `?all=true` is
+    """`?diagram_id=` names the diagram whose sessions are listed, which the
+    page always does. An admin viewing another person's diagram reads that
+    person's sessions on it. A diagram the user cannot open is a 404, never a
+    403. `?all=true` is
     Patrick's: every session on every family, whoever had it, each with its
     family's name, which is what the meeting page puts one on the agenda from.
     `?words=` keeps the sessions where something said carries every word, the
@@ -194,22 +196,13 @@ def session_index():
     words a reader sees."""
     user = auth.current_user()
     every = request.args.get("all") == "true"
-    asked = request.args.get("diagram_id", type=int)
     if every and not user.has_role(btcopilot.ROLE_ADMIN):
         abort(403)
-    dia = db.session.get(Diagram, asked) if asked is not None else None
-    if asked is not None and (
-        dia is None
-        or (
-            asked not in {d.id for d in readable(user)}
-            and access(dia, user) is not Access.AdminView
-        )
-    ):
-        abort(404)
     if every:
         found = real_sessions()
     else:
-        found = chats(chatter(user, dia), asked or user.diagram_in_use())
+        dia = asked_diagram()
+        found = chats(chatter(user, dia), dia.id if dia else None)
     terms = request.args.get("words", "").split()
     lines = {}
     if terms:

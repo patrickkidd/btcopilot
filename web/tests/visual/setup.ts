@@ -154,7 +154,7 @@ export async function tellWithoutModel(
   page: Page,
   only: (e: Record<string, unknown>) => boolean = () => true,
 ): Promise<void> {
-  await page.route(/\/app\/play$/, async (route) => {
+  await page.route(/\/app\/play(\?diagram_id=\d+)?$/, async (route) => {
     const cluster_id = (route.request().postDataJSON() as { cluster_id: string }).cluster_id;
     const timeline = await (await page.request.get("/app/timeline")).json();
     const cluster = timeline.clusters.find((c: { id: string }) => c.id === cluster_id);

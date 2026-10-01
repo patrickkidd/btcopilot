@@ -74,9 +74,9 @@ export class Menu {
   constructor(
     private body: HTMLElement,
     private reload: () => Promise<Timeline>,
-    /** The record being edited, when it is not the one the app is on: the
-     * coding screen edits the record its own coding is of. */
-    private diagramId?: number,
+    /** The record being edited: the diagram open, or on the coding screen the
+     * record its own coding is of. */
+    private diagramId: () => number | undefined,
     /** Where a tapped row opens the read-only detail card instead of the form:
      * the chat app's own drawer. The coding screen passes none, and keeps the
      * forms, since coders change the record they code by hand. */
@@ -308,7 +308,7 @@ export class Menu {
     return openPersonEditor(person, {
       done: () => this.done(),
       goToEvent: (eventId: number) => this.goTo(Tab.Events, eventId),
-      diagramId: this.diagramId,
+      diagramId: this.diagramId(),
       family: this.data,
     });
   }
@@ -343,7 +343,7 @@ export class Menu {
       this.data.people,
       () => this.done(),
       (personId) => this.goTo(Tab.People, personId),
-      this.diagramId,
+      this.diagramId(),
     );
   }
 }

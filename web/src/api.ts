@@ -97,8 +97,23 @@ export function whatFailed(error: unknown, words = instruction): string {
   return words(failed.said) || "That did not go in";
 }
 
-export async function call<T>(method: string, path: string, body?: unknown, patience?: number): Promise<T> {
-  return send(method, ROOT + path, body, false, patience);
+/** A request for a diagram that is no longer the one open: the page opened
+ * another before the answer came, so nothing is drawn from it. */
+export class Dropped extends Error {
+  constructor(readonly request: string) {
+    super(`dropped: ${request}`);
+    this.name = "Dropped";
+  }
+}
+
+export async function call<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  patience?: number,
+  signal?: AbortSignal,
+): Promise<T> {
+  return send(method, ROOT + path, body, false, patience, signal);
 }
 
 /** The same request against the review's own endpoints. */
@@ -112,10 +127,11 @@ async function send<T>(
   body?: unknown,
   keepalive = false,
   patience = PATIENCE_MS,
+  signal?: AbortSignal,
 ): Promise<T> {
-  let response: Response;
+  const waited = AbortSignal.timeout(patience);
   try {
-    response = await fetch(url, {
+    const response = await fetch(url, {
       method,
       keepalive,
       headers: {
@@ -123,37 +139,45 @@ async function send<T>(
         "X-CSRFToken": csrf(),
       },
       body: body === undefined ? undefined : JSON.stringify(body),
-      signal: AbortSignal.timeout(patience),
+      signal: signal ? AbortSignal.any([signal, waited]) : waited,
     });
+    if (!response.ok)
+      throw new Failed(response.status, `${method} ${url}`, await response.text());
+    // an empty answer left unread is logged by the browser as aborted
+    if (response.status === 204) {
+      await response.text();
+      return undefined as T;
+    }
+    return (await response.json()) as T;
   } catch (error) {
+    if (signal?.aborted) throw new Dropped(`${method} ${url}`);
     // Only a request that never got an answer: the network, or the wait above
     // running out. Anything else thrown here is a mistake in this code and has
     // to surface as itself rather than as the server being unreachable.
+    if (error instanceof Failed) throw error;
     if (!(error instanceof TypeError || error instanceof DOMException)) throw error;
     throw new Failed(0, `${method} ${url}`, error.message);
   }
-  if (!response.ok)
-    throw new Failed(response.status, `${method} ${url}`, await response.text());
-  // an empty answer left unread is logged by the browser as aborted
-  if (response.status === 204) {
-    await response.text();
-    return undefined as T;
-  }
-  return (await response.json()) as T;
 }
 
-/** The record the app is on, or another one the reader can open — which is how
- * the coding screen shows the record it is being coded onto. */
-export const timeline = (diagramId?: number) =>
-  call<Timeline>(
-    "GET",
-    diagramId === undefined ? "/timeline" : `/timeline?diagram_id=${diagramId}`,
-  );
+/** Which diagram a request is about: the one the page has open, or the one a
+ * coding is of. Every route that reads or writes a diagram takes the same
+ * query; a page that has no diagram yet names none, and the server uses the
+ * one the account is on. */
+const onDiagram = (path: string, diagramId?: number | null) =>
+  diagramId === undefined || diagramId === null
+    ? path
+    : `${path}${path.includes("?") ? "&" : "?"}diagram_id=${diagramId}`;
+
+/** The record of the diagram open, or of the one a coding is of. */
+export const timeline = (diagramId: number | null, signal?: AbortSignal) =>
+  call<Timeline>("GET", onDiagram("/timeline", diagramId), undefined, undefined, signal);
 
 /** One agent-loop turn. The send is short: it stores the words and hands the
  * turn to the coach, which answers on the turn's own stream. The server puts
  * them in the sitting they belong to. */
-export const say = (statement: string) => call<Started>("POST", "/chat", { statement });
+export const say = (diagramId: number | null, statement: string) =>
+  call<Started>("POST", onDiagram("/chat", diagramId), { statement });
 
 /** Where one sitting starts, carried by its first words, and when the
  * sitting before it started; the family's first sitting has none before it. */
@@ -169,8 +193,14 @@ export type Said = Statement & { session_id: number; sitting: Sitting | null };
 
 /** The family's one thread, newest page first; `before` reads the page of
  * words just older than that statement. */
-export const thread = (before?: number) =>
-  call<Said[]>("GET", before === undefined ? "/statements" : `/statements?before=${before}`);
+export const thread = (diagramId: number | null, before?: number, signal?: AbortSignal) =>
+  call<Said[]>(
+    "GET",
+    onDiagram(before === undefined ? "/statements" : `/statements?before=${before}`, diagramId),
+    undefined,
+    undefined,
+    signal,
+  );
 
 /** Pick a failed turn up where it stopped, on the same turn: nothing new is
  * said (R-0477). */
@@ -187,8 +217,14 @@ export const turnEvents = (turnId: string) =>
 export const version = () =>
   call<{ version: string }>("GET", "/version").then((answer) => answer.version);
 
-export const play = (clusterId: string) =>
-  call<PlayReply>("POST", "/play", { cluster_id: clusterId }, PLAY_WAIT_S * 1000);
+export const play = (diagramId: number | null, clusterId: string, signal?: AbortSignal) =>
+  call<PlayReply>(
+    "POST",
+    onDiagram("/play", diagramId),
+    { cluster_id: clusterId },
+    PLAY_WAIT_S * 1000,
+    signal,
+  );
 
 /** Every tap is learning data (R-0077), including the looks that send nothing.
  * A tap with no item in view is still about the record, so it is stored against
@@ -226,11 +262,6 @@ export const productEvents = (sessionId: string, events: ProductEvent[]) =>
 
 export const session = (id: number) =>
   call<Session & { statements: Statement[] }>("GET", `/sessions/${id}`);
-
-/** Which record a write lands on: the one the app is on, or the one a coding
- * is of. Every writing route takes the same query. */
-const onDiagram = (path: string, diagramId?: number) =>
-  diagramId === undefined ? path : `${path}?diagram_id=${diagramId}`;
 
 export const saveEvent = (
   id: number | null,
@@ -275,14 +306,15 @@ export const deletePairBond = (id: number, diagramId?: number) =>
 /** The reader's own change to a question or an impression: putting it away,
  * or pushing back on it. It stays in the record for the coach. */
 export const saveQuestion = (
+  diagramId: number | null,
   id: string,
   body: { state?: QuestionState; outcome?: QuestionOutcome; pushback?: Pushback },
-) => call<unknown>("PATCH", `/questions/${id}`, body);
+) => call<unknown>("PATCH", onDiagram(`/questions/${id}`, diagramId), body);
 
 /** Sessions, newest activity first. The server has no current-session pointer:
  * posting into a session is what makes it the one you come back to. */
-export const sessionIndex = (diagramId?: number) =>
-  call<Session[]>("GET", onDiagram("/sessions", diagramId));
+export const sessionIndex = (diagramId: number | null, signal?: AbortSignal) =>
+  call<Session[]>("GET", onDiagram("/sessions", diagramId), undefined, undefined, signal);
 
 /** One family's sessions where something said carries every word, searched
  * the way the coach searches the chat. */
@@ -298,8 +330,8 @@ export const sessionSearch = (diagramId: number, words: string) =>
 export const allSessions = (words: string) =>
   call<Session[]>("GET", `/sessions?all=true&words=${encodeURIComponent(words)}`);
 
-export const newSession = (kind?: SessionKind) =>
-  call<Session>("POST", "/sessions", kind ? { kind } : {});
+export const newSession = (diagramId: number | null, kind?: SessionKind) =>
+  call<Session>("POST", onDiagram("/sessions", diagramId), kind ? { kind } : {});
 
 export const deleteSession = (id: number) => call<void>("DELETE", `/sessions/${id}`);
 
@@ -336,8 +368,8 @@ export const users = (q: string) =>
 
 /** Put the app on one of the user's diagrams. Which one is free of charge is a
  * billing fact and is never written by switching. */
-export const selectDiagram = (id: number) =>
-  call<Diagram>("POST", `/diagrams/${id}/select`);
+export const selectDiagram = (id: number, signal?: AbortSignal) =>
+  call<Diagram>("POST", `/diagrams/${id}/select`, undefined, undefined, signal);
 
 /** A new case: an empty record the app is put on straight away (R-0243). */
 export const newDiagram = (name: string) =>
@@ -370,12 +402,12 @@ export const recordingVoices = (utterances: Utterance[]) =>
 
 /** The point of no return: the thread exists after this and the coach can read
  * it, so the voices are named before it is called. */
-export const newRecording = (body: {
+export const newRecording = (diagramId: number | null, body: {
   utterances: Utterance[];
   voices: Record<string, { type: string; name?: string; person_id?: number }>;
   title: string;
   date: string | null;
-}) => call<Session>("POST", "/recordings", body);
+}) => call<Session>("POST", onDiagram("/recordings", diagramId), body);
 
 /** The devices this account can sign in from without an emailed code. */
 export const passkeys = () =>

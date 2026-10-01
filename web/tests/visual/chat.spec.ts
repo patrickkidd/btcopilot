@@ -271,7 +271,7 @@ test.describe("an empty session", () => {
     };
     // once made, the note heads the family's sessions, as the server lists it
     let made = false;
-    await page.route(/\/app\/sessions$/, async (route) => {
+    await page.route(/\/app\/sessions(\?diagram_id=\d+)?$/, async (route) => {
       if (route.request().method() === "POST") {
         made = true;
         return route.fulfill({ status: 201, json: note });

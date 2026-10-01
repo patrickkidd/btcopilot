@@ -298,10 +298,15 @@ test.describe("your diagrams", () => {
   const OTHER = { id: 987654, name: "The other family" };
 
   /** The account as the server tells it, with a second diagram beside the
-   * fixture's own; which one is current follows the last select. */
+   * fixture's own; which one is current follows the last select. The second
+   * diagram is only in the page, so what is read by its id is the fixture's
+   * own record, thread and sittings. */
   const twoDiagrams = async (page: Page) => {
     let current: number | null = null;
     const selected: string[] = [];
+    await page.route(new RegExp(`\\?diagram_id=${OTHER.id}$`), async (route) =>
+      route.fulfill({ response: await route.fetch({ url: route.request().url().split("?")[0] }) }),
+    );
     await page.route(/\/app\/diagrams\/\d+\/select$/, async (route) => {
       selected.push(route.request().url());
       current = Number(route.request().url().match(/diagrams\/(\d+)/)![1]);

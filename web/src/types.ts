@@ -497,10 +497,9 @@ export interface Diagram {
   /** How many of this user's sessions sit on it. */
   session_count: number;
   last_activity: string | null;
-  /** The one that is free of charge, which is a billing fact. */
+  /** The one that is free of charge, which is a billing fact. Which one the
+   * page has open is the store's, never a field of the list (FD-366). */
   free: boolean;
-  /** The one the app is on. */
-  current: boolean;
   owned: boolean;
   access: Access;
   /** The full name of the person the diagram belongs to, or their email. */

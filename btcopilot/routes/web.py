@@ -7,8 +7,8 @@ from markupsafe import escape
 
 import btcopilot
 from btcopilot import auth
-from btcopilot.routes import bp, current_session, diagram
-from btcopilot.routes.diagrams import diagram_payload, readable
+from btcopilot.routes import asked_diagram, bp, current_session, diagram
+from btcopilot.routes.diagrams import diagram_payload
 from btcopilot.discussions import session_payload
 from btcopilot.routes.sessions import thread
 from btcopilot import place, playturn, questions, record
@@ -31,8 +31,8 @@ def _page() -> str:
     with open(path) as file:
         page = file.read()
     user = auth.current_user()
-    discussion = current_session(user)
     in_use = diagram()
+    discussion = current_session(user)
     bootstrap = {
         "user": {
             "first_name": user.first_name,
@@ -45,7 +45,7 @@ def _page() -> str:
             "prefs": user.prefs(),
         },
         "session": session_payload(discussion) if discussion else None,
-        "statements": thread(user),
+        "statements": thread(user, in_use),
         "diagram": diagram_payload(in_use, user) if in_use else None,
         "version": btcopilot.__version__,
         "beta": btcopilot.BETA,
@@ -55,14 +55,6 @@ def _page() -> str:
         f"<script>window.BOOTSTRAP={json.dumps(bootstrap)}</script>"
     )
     return page.replace("</head>", head + "</head>", 1)
-
-
-def _readable(diagram_id: int):
-    user = auth.current_user()
-    found = next((d for d in readable(user) if d.id == diagram_id), None)
-    if found is None:
-        abort(404)
-    return found
 
 
 # A home-screen app keeps the page it last loaded, so the page is asked for
@@ -117,11 +109,9 @@ def manifest():
 
 @bp.route("/timeline")
 def timeline():
-    """The record the app is on, or `?diagram_id=` for another one the reader
-    can open — which is how a coding shows its own record rather than the
-    reader's own family."""
-    asked = request.args.get("diagram_id", type=int)
-    in_use = _readable(asked) if asked else diagram()
+    """The record `?diagram_id=` names — the diagram the page has open, or the
+    record a coding is of — or without one the diagram the app is on."""
+    in_use = asked_diagram()
     data = in_use.get_diagram_data() if in_use else DiagramData()
     payload = build_timeline(data)
     # what a play of each cluster told now would be told from, so the page

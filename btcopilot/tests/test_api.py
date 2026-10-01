@@ -462,7 +462,7 @@ def test_read_only_grant_is_not_listed_or_writable(web, token, test_user, test_u
 @pytest.fixture
 def theirs(test_user_2):
     """Another person's diagram with a question on it and one sitting said in."""
-    asked = {"id": "q1", "text": "Who?", "kind": "fact", "state": "asked"}
+    asked = {"id": "q1", "text": "Who?", "kind": "fact", "state": "asked", "asked_at": None}
     diagram = Diagram(
         user_id=test_user_2.id,
         name="Their Family",
@@ -515,6 +515,33 @@ def test_an_admin_finds_a_person_by_name_and_opens_their_diagram_read_only(
     assert admin.get(f"/app/sessions/{sitting}").status_code == 200
     drawer = admin.get(f"/app/sessions?diagram_id={theirs.id}")
     assert [s["id"] for s in drawer.get_json()] == [sitting]
+
+
+def test_a_page_reads_the_diagram_it_names_whatever_the_account_is_on(
+    admin, test_user, theirs
+):
+    # R-0080
+    """The page names the diagram it has open on every read, so another tab
+    or phone moving the account elsewhere changes nothing it shows."""
+    assert test_user.current_diagram_id is None
+    q = {"diagram_id": theirs.id}
+    said = admin.get("/app/statements", query_string=q).get_json()
+    assert [s["text"] for s in said] == ["My mother moved in."]
+    sittings = admin.get("/app/sessions", query_string=q).get_json()
+    assert [s["id"] for s in sittings] == [said[0]["session_id"]]
+    assert admin.get(f"/app/sessions/{sittings[0]['id']}").status_code == 200
+    assert admin.get("/app/timeline", query_string=q).status_code == 200
+    assert admin.post(
+        "/app/chat?" + f"diagram_id={theirs.id}",
+        json={"statement": "hello"},
+        headers={"X-CSRFToken": csrf_token(admin)},
+    ).status_code == 403
+
+
+def test_a_diagram_the_caller_may_not_open_is_not_found_by_its_id(web, theirs):
+    # R-0080
+    for path in ("/app/statements", "/app/sessions", "/app/timeline"):
+        assert web.get(path, query_string={"diagram_id": theirs.id}).status_code == 404
 
 
 @pytest.mark.parametrize(
@@ -660,7 +687,7 @@ def test_a_named_record_takes_the_write_and_a_stranger_s_does_not(
     assert mine.get_diagram_data().events == []
 
     refused = post(web, token, f"/app/people?diagram_id={theirs.id}", {"name": "Nova"})
-    assert refused.status_code == 403
+    assert refused.status_code == 404
     assert theirs.get_diagram_data().people == []
 
 

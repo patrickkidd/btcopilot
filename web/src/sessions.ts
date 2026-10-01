@@ -5,7 +5,8 @@ import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { periodLabel, rowDate } from "./when";
 import { matching, sessionTitle, type Family } from "./search";
-import { Access, SessionKind, type Diagram, type Session } from "./types";
+import { SessionKind, type Session } from "./types";
+import { Part, store, type Opened } from "./store";
 import { PRO } from "./pro";
 import { Recording } from "./recording";
 import { Swipe } from "./swipe";
@@ -38,8 +39,6 @@ export interface SessionsHandlers {
   /** A session tapped: the drawer goes down and the thread goes to where that
    * session starts. */
   onPick(sitting: number): void;
-  /** The diagram the app is on, whose sessions the drawer lists. */
-  diagram(): Diagram | null;
 }
 
 
@@ -109,14 +108,26 @@ export class Sessions {
     this.recording = new Recording(this.overlay, (made) => this.handlers.onMade(made));
     this.wire();
     dragScroll(this.body);
+    // The sheet lists the sittings of the diagram open, from the store: it
+    // goes down when another diagram opens and never shows the one before.
+    store.watch({
+      reset: () => {
+        this.close();
+        this.families = [];
+      },
+      draw: (opened, parts) => {
+        if (parts.includes(Part.Sittings)) this.take(opened);
+      },
+    });
   }
 
-  /** The conversations of the family the app is on, read as the sheet rises. */
+  /** The conversations of the family open, read again as the sheet rises. */
   private async load(): Promise<void> {
-    const diagram = this.handlers.diagram();
-    const fresh = diagram
-      ? [{ diagram, sessions: await api.sessionIndex(diagram.id) }]
-      : [];
+    await store.refresh(Part.Sittings);
+  }
+
+  private take(opened: Opened): void {
+    const fresh = opened.diagram ? [{ diagram: opened.diagram, sessions: opened.sittings }] : [];
     // Newest first, except while the sheet is up: a list must not reorder under
     // the reader's thumb because a reply landed (ratified behaviour). New
     // sessions join at the end of their family until the sheet is closed.
@@ -138,9 +149,9 @@ export class Sessions {
     return { diagram: family.diagram, sessions: [...kept, ...byId.values()] };
   }
 
-  /** The family the app is on, which is the one a new session belongs to. */
+  /** The family open, which is the one a new session belongs to. */
   private home(): Family | undefined {
-    return this.families.find((f) => f.diagram.current) ?? this.families[0];
+    return this.families[0];
   }
 
   private find(id: number): Session | undefined {
@@ -215,7 +226,7 @@ export class Sessions {
     const cancel = () => window.clearTimeout(timer);
     this.body.addEventListener("pointerdown", (e) => {
       const row = (e.target as Element).closest<HTMLElement>(".row");
-      if (!row || this.handlers.diagram()?.access === Access.AdminView) return;
+      if (!row || store.readOnly()) return;
       timer = window.setTimeout(() => this.rename(row), PRESS_MS);
     });
     for (const kind of ["pointerup", "pointercancel", "pointermove"])
@@ -330,8 +341,11 @@ export class Sessions {
   private async seek(): Promise<void> {
     const words = this.search.value;
     const home = this.home();
-    const found = home && words.trim() ? await api.sessionSearch(home.diagram.id, words) : [];
-    if (words !== this.search.value) return;
+    const found =
+      home && words.trim()
+        ? await store.fetch(() => api.sessionSearch(home.diagram.id, words))
+        : [];
+    if (!found || words !== this.search.value) return;
     this.filter = words;
     this.lines = new Map(found.map((s) => [s.id, s.match!]));
     this.render();
@@ -393,14 +407,15 @@ export class Sessions {
    * the app is on. A second one is refused while the last is still empty: two
    * empty notes say nothing the first does not. */
   private async note(): Promise<void> {
-    const [last] = await api.sessionIndex();
+    await store.refresh(Part.Sittings);
+    const [last] = store.current().sittings;
     this.lower();
     if (last?.kind === SessionKind.Note && last.message_count === 0) {
       toast("Still empty — say something first");
       $("composer").focus({ preventScroll: true });
       return;
     }
-    this.handlers.onMade(await api.newSession(SessionKind.Note));
+    this.handlers.onMade(await api.newSession(store.id(), SessionKind.Note));
   }
 
   private rename(row: HTMLElement): void {

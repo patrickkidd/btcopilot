@@ -4,6 +4,7 @@ import { $, el, esc, flash, isAdmin, isCoder, type Title } from "./dom";
 import { INDEX_URL } from "./concepts";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
+import { store } from "./store";
 import { identify } from "./telemetry";
 import { shortDate } from "./when";
 import { markup } from "./markup";
@@ -93,9 +94,8 @@ export interface SettingsHandlers {
   /** Every read or write of the preferences, so a value with a shortcut
    * elsewhere on screen shows the same thing. */
   onPrefs(prefs: Preferences): void;
-  /** Which family the app is on. `switched` is false when this is simply the
-   * family it opened on, and true when the reader moved it. */
-  onDiagram(diagram: Diagram, how: { switched: boolean }): void;
+  /** Open a diagram: the page's one step for that (FD-366). */
+  onOpen(id: number): Promise<void>;
   /** The coder's one task (R-0265). */
   onTask(): void;
   /** The agenda, which is Patrick's whole administration (R-0259). */
@@ -122,14 +122,28 @@ function deviceLabel(userAgent: string): string {
   return "This device";
 }
 
-/** What a diagram row says under its name: how many sessions sit on it, when
- * that last happened, and whether it is the one in use. */
+/** What a diagram row says under its name: how many sessions sit on it, and
+ * when that last happened; whether it is the one in use is marked from the
+ * store. */
 function diagramSub(diagram: Diagram, now: Date): string {
   const count = `${diagram.session_count} session${diagram.session_count === 1 ? "" : "s"}`;
   const when = diagram.last_activity
     ? shortDate(new Date(diagram.last_activity), now)
     : "nothing on it yet";
-  return `${count} · ${when}${diagram.current ? " · in use" : ""}`;
+  return `${count} · ${when}`;
+}
+
+/** Every diagram row on the stack ticked from the store, and only the one
+ * open: the admin's search results with the rest, whenever they were read,
+ * so a stale tick cannot be drawn (FD-366). */
+function tick(host: HTMLElement): void {
+  const open = store.current().diagram?.id;
+  for (const row of host.querySelectorAll<HTMLElement>(".sn-row[data-diagram]")) {
+    const on = Number(row.dataset.diagram) === open;
+    row.classList.toggle("cur", on);
+    row.querySelector(".sn-tick")!.textContent = on ? "✓" : "";
+    row.querySelector<HTMLElement>(".sn-use")!.hidden = !on;
+  }
 }
 
 /** Asked for inside the tap that lets the coach message first. A browser that
@@ -171,6 +185,7 @@ export class Settings {
       void this.raise();
     });
     this.back.addEventListener("click", () => this.pop());
+    store.watch({ reset: () => {}, draw: () => tick(this.host) });
   }
 
   /** The avatar carries the initial of whatever name the account has. */
@@ -185,9 +200,6 @@ export class Settings {
     this.mark();
     this.applyTheme();
     this.handlers.onPrefs(this.prefs);
-    // The title row names the family the app is on, not a stock phrase.
-    const here = this.account?.diagrams.find((d) => d.current);
-    if (here) this.handlers.onDiagram(here, { switched: false });
     if (this.open) this.replaceTop();
   }
 
@@ -335,9 +347,6 @@ export class Settings {
     this.mark();
     this.applyTheme();
     this.handlers.onPrefs(this.prefs);
-    // The title row names the family the app is on, not a stock phrase.
-    const here = this.account?.diagrams.find((d) => d.current);
-    if (here) this.handlers.onDiagram(here, { switched: false });
     if (this.open) this.replaceTop();
   }
 
@@ -755,6 +764,7 @@ export class Settings {
     const box = el("div", "sn-grp");
     const now = new Date();
     for (const diagram of account.diagrams) box.append(this.diagramRow(diagram, now));
+    tick(box);
 
     if (PRO) box.append(this.newCaseRow());
 
@@ -792,19 +802,20 @@ export class Settings {
   private finding?: HTMLElement;
 
   private diagramRow(diagram: Diagram, now: Date): HTMLElement {
-    const row = el("div", `sn-row push${diagram.current ? " cur" : ""}`);
+    const row = el("div", "sn-row push");
     row.dataset.name = diagram.name.toLowerCase();
+    row.dataset.diagram = String(diagram.id);
     const main = el("div", "sn-m");
     main.append(
       el("div", "sn-t", esc(diagram.name)),
-      el("div", "sn-s", esc(diagramSub(diagram, now))),
+      el("div", "sn-s", `${esc(diagramSub(diagram, now))}<span class="sn-use"> · in use</span>`),
     );
-    row.append(main, el("span", "sn-tick", diagram.current ? "✓" : ""));
-    if (!diagram.current)
-      row.addEventListener("click", () => {
-        tap(Feature.FamilySwitch);
-        void this.switchTo(diagram);
-      });
+    row.append(main, el("span", "sn-tick"));
+    row.addEventListener("click", () => {
+      if (diagram.id === store.current().diagram?.id) return;
+      tap(Feature.FamilySwitch);
+      void this.switchTo(diagram);
+    });
     return row;
   }
 
@@ -853,6 +864,7 @@ export class Settings {
     const box = el("div", "sn-grp");
     const now = new Date();
     for (const diagram of diagrams) box.append(this.diagramRow(diagram, now));
+    tick(box);
     found.replaceChildren(
       el("div", "sn-hd", esc(person.name || person.username)),
       diagrams.length
@@ -886,20 +898,19 @@ export class Settings {
   private async addCase(name: string): Promise<void> {
     if (!name) return;
     const made = await api.newDiagram(name);
-    await this.load();
     this.close();
-    this.handlers.onDiagram(made, { switched: true });
+    await this.handlers.onOpen(made.id);
+    void this.load();
     toast(`Now on ${made.name}`);
   }
 
   /** Put the app on another family. Everything the app shows is about one
-   * diagram, so the whole surface is re-read afterwards. */
+   * diagram, so the whole surface is opened afresh; the list's counts are read
+   * again after. */
   private async switchTo(diagram: Diagram): Promise<void> {
-    const opened = await api.selectDiagram(diagram.id);
-    // closed first, so the page never re-draws with the search's old ticks
     this.close();
-    await this.load();
-    this.handlers.onDiagram(opened, { switched: true });
+    await this.handlers.onOpen(diagram.id);
+    void this.load();
     toast(`Now on ${diagram.name}`);
   }
 

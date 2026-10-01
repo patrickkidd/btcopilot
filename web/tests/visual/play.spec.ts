@@ -58,7 +58,7 @@ test.describe("the play-by-play drawer", () => {
 
   // R-0590, R-0576, R-0563
   test("the teal cluster chip of a play whose cluster has changed since tells it again through explain", async ({ page }) => {
-    await page.route(/\/app\/timeline$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
       const json = await (await route.fetch()).json();
       for (const cluster of json.clusters) cluster.digest = "changed since";
       await route.fulfill({ json });
@@ -70,7 +70,7 @@ test.describe("the play-by-play drawer", () => {
       return statements.find((s: { case: unknown }) => s.case);
     });
     const plays: string[] = [];
-    await page.route(/\/app\/play$/, (route) => {
+    await page.route(/\/app\/play(\?diagram_id=\d+)?$/, (route) => {
       plays.push(route.request().postData() ?? "");
       return route.fulfill({
         json: { statement: play.text, statement_id: play.id, kind: "play", cluster_id: play.cluster_id, case: play.case, digest: "changed since" },
@@ -184,7 +184,7 @@ test.describe("the play-by-play drawer", () => {
       return (await (await fetch(`/app/sessions/${sessions[0].id}`)).json()).statements;
     });
     const play = statements.find((s: { case: unknown }) => s.case);
-    await page.route(/\/app\/play$/, (route) =>
+    await page.route(/\/app\/play(\?diagram_id=\d+)?$/, (route) =>
       route.fulfill({
         json: { statement: play.text, statement_id: play.id, kind: "play", cluster_id: play.cluster_id, case: play.case },
       }),
@@ -234,7 +234,7 @@ test.describe("an event's words at the drawing's edge", () => {
 
   // R-0558, R-0551
   test("beside the rightmost person keep the family's margin from the drawing's side", async ({ page }) => {
-    await page.route(/\/app\/timeline$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       const e = tl.events.find((e: { description?: string }) => e.description?.startsWith("Took a room"));
       const right = tl.people.find((p: { name: string }) => p.name === "Delphine");
