@@ -993,7 +993,8 @@ export enum PickSource {
  * pick is one pair of them (R-0636). */
 export interface Shadows {
   replies: { key: string; text: string }[];
-  real_key: string;
+  /** Null when no shadow finished, and so nothing is to be voted on. */
+  real_key: string | null;
   picks: { id: number; left_key: string; right_key: string }[];
 }
 

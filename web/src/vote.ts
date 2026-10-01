@@ -86,8 +86,8 @@ export class Vote {
     // only a reply in a pick is voted on
     const picked = new Set(shadows.picks.flatMap((p) => [p.left_key, p.right_key]));
     this.replies = shadows.replies.filter((r) => picked.has(r.key));
-    this.realKey = shadows.real_key;
     if (this.replies.length < 2) return this.alone();
+    this.realKey = shadows.real_key!;
     this.open(shadows.picks);
   }
 
