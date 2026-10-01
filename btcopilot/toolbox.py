@@ -18,6 +18,7 @@ import btcopilot
 from btcopilot import clusters, place, proactive, prompts, record, views
 from btcopilot.models import Author, Change, Discussion, ReportKind, Statement
 from btcopilot.recordtext import (
+    bond_line,
     change_line,
     date_text,
     event_line,
@@ -62,6 +63,7 @@ class ToolName(enum.StrEnum):
     EditEvent = "edit_event"
     EditCluster = "edit_cluster"
     Remove = "remove"
+    MergePeople = "merge_people"
     Undo = "undo"
     Show = "show"
     AddQuestion = "add_question"
@@ -125,9 +127,12 @@ CHANGES = (
     ToolName.EditEvent,
     ToolName.EditCluster,
     ToolName.Remove,
+    ToolName.MergePeople,
     ToolName.SetQuestion,
     ToolName.SetImpression,
 )
+# The changes that only ever touch what is already there, so always name a version.
+EXISTING = (ToolName.Remove, ToolName.MergePeople)
 
 EDITS = (
     ToolName.EditPerson,
@@ -402,6 +407,34 @@ def schemas(coder: bool = False) -> list[dict]:
                     "version": VERSION,
                 },
                 "required": ["item_kind", "item_id", "version"],
+            },
+        },
+        {
+            "name": ToolName.MergePeople.value,
+            "description": (
+                "Join two people who are one person into one, as one change that "
+                "undo puts back whole. Returns what moved over and what was dropped."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "keep": {"type": "integer", "description": means[prompts.ToolText.Keep]},
+                    "drop": {"type": "integer", "description": means[prompts.ToolText.Drop]},
+                    "version": VERSION,
+                    "name": {
+                        "type": "string",
+                        "description": "The kept person's name after, when it changes.",
+                    },
+                    "take": {
+                        "type": "object",
+                        "properties": {
+                            fact: _enum_param(record.Side, "Whose it is.")
+                            for fact in _values(record.Kept)
+                        },
+                        "description": means[prompts.ToolText.Take],
+                    },
+                },
+                "required": ["keep", "drop", "version"],
             },
         },
         {
@@ -908,7 +941,7 @@ class Toolbox:
             tool = ToolName(name)
         except ValueError:
             raise ToolError(f"There is no tool called {name}", "There is no such tool.")
-        if tool in CHANGES and (tool is ToolName.Remove or args.get("id") is not None):
+        if tool in CHANGES and (tool in EXISTING or args.get("id") is not None):
             self._fresh(args.get("version"))
         text, event = getattr(self, f"_{tool.value}")(args)
         if tool in READS:
@@ -1326,6 +1359,53 @@ class Toolbox:
             [{"item_kind": kind.value, "item_id": item_id, "field": None, "after": None}]
         )
         return (f"Removed {kind.value} {item_id}.", self._patch(change))
+
+    def _merge_people(self, args: dict) -> tuple[str, dict]:
+        if not isinstance(args.get("take") or {}, dict):
+            raise ToolError(
+                "take names each differing fact with whose it is: {\"birth\": \"keep\"}",
+                "It did not say whose facts to keep.",
+            )
+        take = {
+            choice(record.Kept, fact, "facts to take").value: choice(record.Side, side, "sides").value
+            for fact, side in (args.get("take") or {}).items()
+        }
+        data = self.data
+        names = {p: person_line(self._find_person(args[p])) for p in ("keep", "drop")}
+        try:
+            change, merged = record.merge(
+                self.diagram_id,
+                args["keep"],
+                args["drop"],
+                take=take,
+                name=args.get("name"),
+                author=self.author,
+                turn_id=self.turn_id,
+                user_id=self.user_id,
+                session_id=self.session_id,
+                statement_id=self.statement_id,
+            )
+        except record.Invalid as e:
+            raise ToolError(str(e), e.plain)
+        self.deltas.extend(change.deltas)
+        self.versions.add(change.version)
+        lines = [f"Joined {names['drop']} into {names['keep']}."]
+        moved = [self._moved_line(data, kind, item_id) for kind, item_id in merged.moved]
+        if moved:
+            lines.append("Moved over: " + "; ".join(moved))
+        if merged.dropped:
+            lines.append("Dropped: " + "; ".join(merged.dropped))
+        return "\n".join(lines), self._patch(change)
+
+    def _moved_line(self, data: DiagramData, kind: ItemKind, item_id: str) -> str:
+        item = next(
+            i for i in getattr(data, ITEM_COLLECTIONS[kind]) if str(i.get("id")) == item_id
+        )
+        if kind is ItemKind.Event:
+            return f"event {event_line(item)}"
+        if kind is ItemKind.PairBond:
+            return f"pair bond {bond_line(item)}"
+        return f"{record.note(item).noun} {item_id}"
 
     def _undo(self, args: dict) -> tuple[str, dict]:
         previous = self._previous_turn()

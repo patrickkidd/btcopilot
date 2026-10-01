@@ -42,6 +42,9 @@
     "person_a": "One side of the bond. A bond is between two different people and there is one bond ever between any two of them.",
     "person_b": "The other side. Leave it out only when nobody named them: the record then adds them as a generically named person, because a bond with one side is not a bond.",
     "parents": "The id of the pair bond this person was born into. Children are the offspring of a bond, so the two parents must have one first.",
+    "keep": "On merge_people: the person who stays, the one whose record is fuller (named and dated) unless the person you are talking with says otherwise. Your question says which one stays.",
+    "drop": "On merge_people: the person joined into the one kept. Their events, pair-bonds, parent links, questions and impressions go to the kept person and they leave the record, only after the person said yes, they are one.",
+    "take": "On merge_people: for each fact the two records differ on — birth, death, gender, notes, parents — whose is right, keep or drop, as the person said. A fact only one of them has comes over without being named. A differing fact not named here makes the merge refuse, so ask which is right first.",
     "fields": "What to add to each event: words, what the user said that it came from; notes, in full, since the record only says which events have notes, whenever what was said there matters to the conversation; location, where it happened."
   },
   "generic_name": "Marcus's father",

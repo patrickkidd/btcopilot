@@ -297,6 +297,13 @@ class CoachTurn:
             tail = f"{tail}\n\n{notes}"
         if note:
             tail = f"{tail}\n\n{note_register()}"
+        pairs = recordtext.pairs(
+            data,
+            chips.plain(self.statement),
+            chips.people(self.statement, data, self.discussion.diagram_id),
+        )
+        if pairs:
+            tail = f"{tail}\n\n{pairs}"
         gaps = profile.missing(data)
         if gaps:
             tail = f"{tail}\n\n{onboarding(gaps, own['id'] if own else 1)}"

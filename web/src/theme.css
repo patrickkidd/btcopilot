@@ -1056,6 +1056,35 @@ button { font-family: inherit; }
 }
 .bub.user .chip { color: var(--onaccent); border-color: currentColor; }
 
+/* Two people the coach asks are one person, side by side, the whole card one
+   chip (M1): a name line and one wrapping line of facts each, shared facts
+   grey and the ones that differ amber, the yes riding on the top border so
+   it costs no line of its own. */
+.chip.merge {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  margin: 12px 0 2px;
+  padding: 0;
+  font: 400 12px/1.35 var(--mono);
+  color: var(--ink);
+}
+.chip.merge::before { inset: 0; }
+.chip.merge .half { padding: 8px 8px 6px; min-width: 0; }
+.chip.merge .half + .half { border-left: 1px solid var(--ask); }
+.chip.merge .nm { display: block; font-weight: 500; }
+.chip.merge .facts { color: var(--faint); }
+.chip.merge .differ { color: var(--ask-text); }
+.chip.merge .yes {
+  position: absolute;
+  top: -9px;
+  right: 8px;
+  padding: 0 4px;
+  font: 500 11px/16px var(--mono);
+  color: var(--ask-text);
+  background: var(--panel);
+}
+
 .inbar {
   flex: none;
   display: flex;

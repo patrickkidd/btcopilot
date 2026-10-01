@@ -17,6 +17,9 @@ export enum ChipKind {
   Message = "message",
   /** An address in the app, which a tap goes to (R-0055). */
   Place = "place",
+  /** Two people who may be one person, side by side: the kept id, then the
+   * dropped one. Tapped and sent, it is the reader's yes to joining them. */
+  Merge = "merge",
 }
 
 /** Teal is a reference to something the record holds; amber is the coach or the

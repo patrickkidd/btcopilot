@@ -20,6 +20,7 @@ export enum ToolName {
   EditEvent = "edit_event",
   EditCluster = "edit_cluster",
   Remove = "remove",
+  MergePeople = "merge_people",
   Undo = "undo",
   Show = "show",
   AddQuestion = "add_question",
@@ -168,6 +169,7 @@ enum Verb {
   Note = "note",
   TakeBack = "take back",
   Open = "open",
+  Join = "join",
 }
 const DID = new Map([
   [Verb.Look, "Looked at"],
@@ -182,6 +184,7 @@ const DID = new Map([
   [Verb.Note, "Noted"],
   [Verb.TakeBack, "Took back"],
   [Verb.Open, "Opened"],
+  [Verb.Join, "Joined"],
 ]);
 
 /** How a question the coach closed ended, said after its words; the
@@ -231,6 +234,19 @@ function kept(say: Kept, call: ToolCall): [Verb, Line] {
   return [Verb.Close, [call.refusal || !ended ? words : `${words}: ${ended}`]];
 }
 
+/** Who was joined into whom, what moved over and what was dropped (M2). */
+function joined({ names }: ToolCall): Line {
+  const moved = (names.moved ?? []) as string[];
+  const dropped = (names.dropped ?? []) as string[];
+  return [
+    named(names.drop as string),
+    " into ",
+    named(names.keep as string),
+    ...(moved.length ? ["; moved ", ...list(moved)] : []),
+    ...dropped.flatMap((words) => ["; ", words]),
+  ];
+}
+
 function told(tool: ToolName, call: ToolCall): [Verb, Line] {
   const it = { name: call.names.it as string };
   switch (tool) {
@@ -251,6 +267,8 @@ function told(tool: ToolName, call: ToolCall): [Verb, Line] {
       return [Verb.Remove, [it]];
     case ToolName.Undo:
       return [Verb.Put, ["that back"]];
+    case ToolName.MergePeople:
+      return [Verb.Join, joined(call)];
     case ToolName.ReadQuestions:
       return [Verb.Look, ["questions"]];
     case ToolName.AddQuestion:

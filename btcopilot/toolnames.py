@@ -45,6 +45,8 @@ ARGS = {
             "persons",
             "relationship_targets",
             "relationship_triangles",
+            "keep",
+            "drop",
         ),
         ItemKind.Person,
     ),
@@ -141,6 +143,25 @@ def where(data: DiagramData, address: str) -> str:
     return label(data, NAMED[at], slots[0]) if at in NAMED else place.WORDS[at]
 
 
+# What a merge line names of what it moved: a question's words may be held.
+MERGE_SHOWN = (ItemKind.Event, ItemKind.PairBond)
+
+
+def merged(data: DiagramData, args: dict) -> dict:
+    """What a merge moves over and drops, read off the record before it runs.
+    A merge the record will refuse names neither."""
+    people = {str(p.get("id")) for p in data.people}
+    keep, drop = str(args.get("keep")), str(args.get("drop"))
+    take = args.get("take") or {}
+    if keep == drop or not {keep, drop} <= people or not isinstance(take, dict):
+        return {}
+    plan = record.merging(record.collections(data), keep, drop, take, args.get("name"))
+    return {
+        "moved": [label(data, kind, i) for kind, i in plan.moved if kind in MERGE_SHOWN],
+        "dropped": plan.dropped,
+    }
+
+
 def names(data: DiagramData, tool: str, args: dict) -> dict:
     """What each id in the call's args is called, keyed by the arg, and what
     the call itself touches under `it`: the thing it changes or removes as the
@@ -158,6 +179,8 @@ def names(data: DiagramData, tool: str, args: dict) -> dict:
     }
     if args.get("evidence"):
         out["evidence"] = [evidence_label(data, one) for one in args["evidence"]]
+    if tool == ToolName.MergePeople:
+        out.update(merged(data, args))
     if tool == ToolName.Remove:
         kind = REMOVABLE.get(args.get("item_kind"))
         out["it"] = NO_KIND if kind is None else label(data, kind, args.get("item_id"))

@@ -23,6 +23,8 @@ export interface ChatHandlers {
   /** What a chip should read as. The coach may write a reference with no words
    * of its own, and a name out of the record beats a pronoun in a sentence. */
   label(chip: Chip): string;
+  /** The card that asks whether two people are one, drawn from the record. */
+  merge(chip: Chip): string;
 }
 
 /** The beat after a chip's sentence has been written, before the next chip
@@ -188,6 +190,12 @@ export class Chat {
     return pill(chip, this.handlers.label(chip));
   }
 
+  /** A chip as the coach's words carry it: two people asked about are their
+   * card, anything else its pill. */
+  private piece(chip: Chip): string {
+    return chip.kind === ChipKind.Merge ? this.handlers.merge(chip) : this.pill(chip);
+  }
+
   /** The thread is drawn before the record arrives, so a chip written with no
    * words of its own first says a stand-in word. Once the record is here it
    * says what the record calls the thing it names. */
@@ -205,10 +213,16 @@ export class Chat {
       button.title = full;
       button.textContent = face(kind, full);
     }
+    for (const card of this.list.querySelectorAll<HTMLElement>('.bub.coach button.chip[data-kind="merge"]'))
+      card.outerHTML = this.handlers.merge(chipOf(card));
   }
 
-  private render(pieces: Piece[]): string {
-    return pieces.map((p) => ("chip" in p ? this.pill(p.chip) : esc(p.text))).join("");
+  /** Words and chips; the coach's carry the card two people are asked
+   * about on, the reader's the pill they sent it back as. */
+  private render(pieces: Piece[], coach = true): string {
+    return pieces
+      .map((p) => ("chip" in p ? (coach ? this.piece(p.chip) : this.pill(p.chip)) : esc(p.text)))
+      .join("");
   }
 
   /** A whole reply as it stands when nothing is typing: the words, the closing
@@ -279,7 +293,7 @@ export class Chat {
         ? `<div class="who">Coach</div>` + this.written(tokenize(text, tone), statementId)
         : // Only the coach offers; the same chip sent back by the user is words
           // in their own sentence.
-          this.render(tokenize(text, tone)),
+          this.render(tokenize(text, tone), false),
     );
     bubble.querySelector(".who")?.after(...lines.map(did));
     if (notes) this.annotate(bubble, notes);
@@ -453,7 +467,7 @@ export class Chat {
         for (const piece of said) {
           if ("chip" in piece) {
             await release();
-            words.insertAdjacentHTML("beforeend", this.pill(piece.chip));
+            words.insertAdjacentHTML("beforeend", this.piece(piece.chip));
             (words.lastElementChild as HTMLElement).classList.add("lit");
             held = words.lastElementChild as HTMLElement;
             onChip(piece.chip);
@@ -485,7 +499,7 @@ export class Chat {
           bubble.append(after);
           for (const piece of tail) {
             if ("chip" in piece) {
-              after.insertAdjacentHTML("beforeend", this.pill(piece.chip));
+              after.insertAdjacentHTML("beforeend", this.piece(piece.chip));
               onChip(piece.chip);
             } else await write(after, piece.text, TICK_MS);
           }

@@ -30,6 +30,8 @@ enum Markup {
   PairBond = "pair_bond",
   /** The question a coach message ended on, answered by the reader. */
   Message = "message",
+  /** Two people the coach asks are one person. */
+  Merge = "merge",
 }
 
 const NARROWED: Record<Markup, ChipKind | null> = {
@@ -43,6 +45,7 @@ const NARROWED: Record<Markup, ChipKind | null> = {
   [Markup.Impression]: ChipKind.Impression,
   [Markup.PairBond]: ChipKind.PairBond,
   [Markup.Message]: ChipKind.Message,
+  [Markup.Merge]: ChipKind.Merge,
 };
 
 const TOKEN = new RegExp(
@@ -60,6 +63,7 @@ const KIND_WORD: Record<ChipKind, string> = {
   [ChipKind.PairBond]: "them",
   [ChipKind.Message]: "this question",
   [ChipKind.Place]: "there",
+  [ChipKind.Merge]: "same person",
 };
 
 const ITEM_OF: Record<ChipKind, ItemKind> = {
@@ -75,9 +79,11 @@ const ITEM_OF: Record<ChipKind, ItemKind> = {
   // place in the app
   [ChipKind.Message]: ItemKind.Diagram,
   [ChipKind.Place]: ItemKind.Diagram,
+  // two people, not one item: the card names both
+  [ChipKind.Merge]: ItemKind.Diagram,
 };
 
-const ASKING = new Set([ChipKind.Ask, ChipKind.Question, ChipKind.Message]);
+const ASKING = new Set([ChipKind.Ask, ChipKind.Question, ChipKind.Message, ChipKind.Merge]);
 
 export const itemKind = (kind: ChipKind): ItemKind => ITEM_OF[kind];
 
@@ -142,6 +148,7 @@ export function aimedEvents(
     case ChipKind.PairBond:
     case ChipKind.Message:
     case ChipKind.Place:
+    case ChipKind.Merge:
       return [];
   }
 }

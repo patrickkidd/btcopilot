@@ -9,13 +9,16 @@ why the interactions render separately.
 import datetime
 import json
 
-from btcopilot import diagramjson, record
+from btcopilot import diagramjson, matching, record
 from btcopilot.models import Change, Interaction
 from btcopilot.schema import (
     DECLINED,
     DiagramData,
     EventKind,
     ItemKind,
+    PairBond,
+    Person,
+    from_dict,
     QuestionOutcome,
     QuestionState,
     enum_val,
@@ -318,3 +321,45 @@ def notes(args: dict, written: datetime.datetime) -> str:
         for field, said in args.items()
     ]
     return _section(NOTES.format(day=written.date().isoformat()), lines)
+
+
+def _fuller(person: dict, events: list[dict]) -> tuple:
+    """Which of two records of one person is fuller: named, dated, then busier."""
+    return (
+        bool(person.get("last_name")),
+        _year(_life_event(person["id"], events, EventKind.Birth)) is not None,
+        sum(record.involves(e, person["id"]) for e in events),
+    )
+
+
+def pairs(data: DiagramData, words: str, named: set[str]) -> str:
+    """The pairs of people who may be one person written twice, when this
+    turn's words touch one of them: by a chip naming them or an event of
+    theirs, or by a word of their name. One line each, the fuller record first,
+    with the facts the two disagree on and the card that asks."""
+    people = _rows(data.people)
+    events = _rows(data.events)
+    said = set(matching.normalize_name_for_matching(words).split())
+    data_dict = record.collections(data)
+    lines = []
+    for a, b in matching.likely_same(
+        [from_dict(Person, p) for p in people], [from_dict(PairBond, x) for x in _rows(data.pair_bonds)]
+    ):
+        one, two = (next(p for p in people if p["id"] == x.id) for x in (a, b))
+        if any(record.generic_key(p) for p in (one, two)) or record.kin(data_dict, a.id, b.id):
+            continue
+        if not any(
+            str(p["id"]) in named or said & set(matching.full_name(x).split())
+            for p, x in ((one, a), (two, b))
+        ):
+            continue
+        keep, drop = sorted((one, two), key=lambda p: _fuller(p, events), reverse=True)
+        differ = record.differing(data_dict, keep["id"], drop["id"])
+        apart = "; ".join(f"{fact.value} {ours} and {theirs}" for fact, (ours, theirs) in differ.items())
+        lines.append(
+            f"Persons {person_line(keep, facts=_facts(keep, events))} and "
+            f"{person_line(drop, facts=_facts(drop, events))} may be one person"
+            + (f"; they differ on {apart}" if apart else "")
+            + f". Their card: [[merge:{keep['id']},{drop['id']}]]"
+        )
+    return "\n".join(lines)

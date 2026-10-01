@@ -25,6 +25,7 @@ import { feed } from "./turn";
 import { Release } from "./release";
 import { Reports } from "./report";
 import { toolLine } from "./tools";
+import { card } from "./merge";
 import {
   CHIP_KIND,
   PicEvent,
@@ -283,6 +284,7 @@ function chipTap(chip: Chip): void {
 
 const chat = new Chat($("chat"), $("composer"), {
   label: chipLabel,
+  merge: (chip) => card(chip, timeline),
   onChip: chipTap,
   // A tap on a message's own words is a look: the picture lights what that
   // message named, nothing enters the composer, and no turn is spent.

@@ -62,6 +62,9 @@ class ToolText(enum.StrEnum):
     Fields = "fields"
     Item = "item"
     Fact = "fact"
+    Keep = "keep"
+    Drop = "drop"
+    Take = "take"
 
 
 class Role(enum.StrEnum):
