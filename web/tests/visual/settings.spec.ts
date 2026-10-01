@@ -671,7 +671,7 @@ test.describe("the coding and quality sections", () => {
   // R-0629, R-0631
   test("an admin selects a cut in someone else's chat from Next meeting, and placing it returns there", async ({
     page,
-  }) => {
+  }, testInfo) => {
     await as(page, "admin");
     await row(page, "Next meeting").click();
     await expect(page.locator("#agenda-screen")).toBeVisible();
@@ -694,6 +694,12 @@ test.describe("the coding and quality sections", () => {
     await ask.locator("button", { hasText: "Keep it" }).click();
     await expect(ask).not.toHaveClass(/\bin\b/);
     await expect(page.locator(".tb-cut")).toHaveCount(before);
+    if (testInfo.project.name === "desktop") {
+      await cut.locator(".pl-btn").click();
+      await expect(ask).toHaveClass(/\bin\b/);
+      await page.mouse.click(10, 300);
+      await expect(ask).not.toHaveClass(/\bin\b/);
+    }
     await cut.locator(".pl-btn").click();
     await page.locator(".ag.cf-sheet button", { hasText: "Take it off" }).click();
     await expect(page.locator(".tb-cut")).toHaveCount(before - 1);
