@@ -261,6 +261,7 @@ button { font-family: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.path .here.on { color: var(--data); font-weight: 500; }
 .path .step > span {
   display: block;
   overflow: hidden;

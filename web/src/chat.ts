@@ -3,7 +3,7 @@ import { askedChip, chipOf, face, LEAD, Lead, pill, token, tokenize } from "./ch
 import { hush, say } from "./speech";
 import { INFO, notesView, type Notes } from "./notes";
 import { html, type Line } from "./tools";
-import { AWAY_PX, fit, fold } from "./viewport";
+import { AWAY_PX, fit, fold, type Fold } from "./viewport";
 import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
@@ -127,6 +127,7 @@ export class Chat {
   /** True while this class is the one moving the scroll, so its own pinning is
    * not mistaken for the reader scrolling away. */
   private pinning = false;
+  private strip: Fold;
 
   constructor(
     private list: HTMLElement,
@@ -158,7 +159,8 @@ export class Chat {
     };
     // the chat box stays above the phone's keyboard, however it came up
     fit();
-    this.watchScrolling(fold(this.composer, this.list.closest<HTMLElement>(".screen")!, () => this.toEnd()));
+    this.strip = fold(this.composer, this.list.closest<HTMLElement>(".screen")!, () => this.toEnd());
+    this.watchScrolling();
     // the thread's box changes size after it is put up — a phone's toolbar
     // collapsing, the picture taking its height or folding — and stays on its
     // last words, or, scrolled up, keeps every bubble where it was over the
@@ -583,7 +585,12 @@ export class Chat {
     return scrollHeight - clientHeight - scrollTop <= Chat.STUCK_PX;
   }
 
-  private watchScrolling(folds: (stuck: boolean, away: boolean) => void): void {
+  /** The full picture, opened from the strip. */
+  unfold(): void {
+    this.strip.open();
+  }
+
+  private watchScrolling(): void {
     let was = this.list.scrollTop;
     this.list.addEventListener(
       "scroll",
@@ -593,7 +600,7 @@ export class Chat {
         was = scrollTop;
         if (this.pinning) return;
         this.stuck = this.atBottom();
-        folds(this.stuck, up && scrollHeight - clientHeight - scrollTop > AWAY_PX);
+        this.strip.scrolled(this.stuck, up && scrollHeight - clientHeight - scrollTop > AWAY_PX);
       },
       { passive: true },
     );

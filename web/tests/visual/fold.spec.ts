@@ -117,3 +117,83 @@ test("a tap on the strip opens the full picture", async ({ page }) => {
   await settle(page);
   expect(await height(page)).toBe(144);
 });
+
+const ZONE = (part: number) => `#view .ss-hit[data-target="zone"][aria-label$="part ${part}"]`;
+const CLUSTER = `#view .ss-hit[data-target="cluster"]`;
+const CHIP = (part: number) => `#chat .bub .chip:text-is("moment number ${part}")`;
+
+/** Scrolled up the chat, so the picture is the strip. */
+const folded = async (page: Page) => {
+  await page.locator("#chat").hover();
+  await page.mouse.wheel(0, -400);
+  await settle(page);
+  expect(await height(page)).toBeLessThanOrEqual(42);
+};
+
+/** A tap on the wire under one target, where it shows on the strip. */
+const tapOnStrip = async (page: Page, target: string) => {
+  const hit = (await page.locator(target).first().boundingBox())!;
+  const wire = (await page.locator("#view line.wire").first().boundingBox())!;
+  await page.mouse.click(hit.x + hit.width / 2, wire.y + wire.height / 2);
+  await page.waitForTimeout(700);
+};
+
+/** What is picked, and how the path above the picture writes its last step. */
+const picked = (page: Page) =>
+  page.evaluate(() => {
+    const here = document.querySelector("#path .here")!;
+    const step = document.querySelector("#path .step");
+    return {
+      dot: document.querySelectorAll("#view circle.dot.on").length,
+      open: document.querySelectorAll("#view rect.pill.on").length,
+      lit: here.classList.contains("on"),
+      same: step !== null && getComputedStyle(here).color === getComputedStyle(step).color,
+    };
+  });
+
+// R-0168, R-0540, R-0543
+test("a tap on an event on the strip opens the picture with that event picked, its name in the path", async ({ page }) => {
+  await open(page);
+  await tapOnStrip(page, ZONE(4));
+  const direct = await picked(page);
+  expect(direct).toEqual({ dot: 1, open: 0, lit: true, same: true });
+
+  await open(page);
+  await folded(page);
+  await tapOnStrip(page, ZONE(4));
+  expect(await height(page)).toBe(144);
+  expect(await picked(page)).toEqual(direct);
+});
+
+// R-0168, R-0540, R-0543
+test("a tap on a cluster on the strip opens the picture with that cluster open", async ({ page }) => {
+  await open(page);
+  await folded(page);
+  await tapOnStrip(page, CLUSTER);
+  expect(await height(page)).toBe(144);
+  expect(await picked(page)).toEqual({ dot: 0, open: 1, lit: false, same: false });
+});
+
+// R-0168, R-0540
+test("a tap on an event chip with the picture folded opens it with that event picked", async ({ page }) => {
+  await open(page);
+  await tapOnStrip(page, ZONE(4));
+  const direct = await picked(page);
+
+  await open(page);
+  await folded(page);
+  const chip = page.locator(CHIP(4)).first();
+  await chip.evaluate((el) => el.scrollIntoView({ block: "center" }));
+  await settle(page);
+  expect(await height(page)).toBeLessThanOrEqual(42);
+  await chip.click();
+  await page.waitForTimeout(700);
+  expect(await height(page)).toBe(144);
+  expect(await picked(page)).toEqual(direct);
+});
+
+// R-0540
+test("with nothing picked the path stays in the quiet grey", async ({ page }) => {
+  await open(page);
+  expect(await picked(page)).toEqual({ dot: 0, open: 0, lit: false, same: false });
+});

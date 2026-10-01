@@ -32,6 +32,13 @@ const KEYBOARD_PX = 120;
 /** How far up from the newest bubble the reader scrolls before the picture folds. */
 export const AWAY_PX = 48;
 
+/** What the chat holds of the strip: what it calls as it is scrolled, and what
+ * opens the full picture. */
+export interface Fold {
+  scrolled: (stuck: boolean, away: boolean) => void;
+  open: () => void;
+}
+
 /** How long the picture takes to fold or open. */
 const FOLD_MS = 250;
 
@@ -42,13 +49,14 @@ const FOLD_MS = 250;
  * the focus on a touch screen and the visible area is shorter than the tallest
  * it has been at this width; a hardware keyboard on a tablet shrinks nothing.
  * The speak replies row steps aside only while the keyboard is up. Returns what
- * the chat calls as it is scrolled: whether it is on its newest bubble, and
- * whether the reader moved up past the strip's threshold. */
+ * the chat calls as it is scrolled — whether it is on its newest bubble, and
+ * whether the reader moved up past the strip's threshold — and what opens the
+ * full picture. */
 export const fold = (
   composer: HTMLElement,
   screen: HTMLElement,
   toEnd: () => void,
-): ((stuck: boolean, away: boolean) => void) => {
+): Fold => {
   const seen = window.visualViewport!;
   const pic = screen.querySelector<HTMLElement>(":scope > .pic")!;
   const label = pic.querySelector<HTMLElement>(":scope > .pin-label")!;
@@ -95,22 +103,33 @@ export const fold = (
   seen.addEventListener("resize", check);
   composer.addEventListener("focus", check);
   composer.addEventListener("blur", check);
-  // a tap anywhere on the strip opens the full picture and is nothing else
+  const open = () => {
+    scrolled = false;
+    composer.blur();
+    set();
+  };
+  // A mark on the strip is picked as the full picture picks it, and the picture
+  // opens with it once the tap has been read where it landed (Patrick,
+  // 2026-10-01); a tap anywhere else on the strip only opens it.
   pic.addEventListener(
     "click",
     (e) => {
-      if (!screen.classList.contains("folded")) return;
+      if (!screen.classList.contains("folded") || (e.target as Element).closest("[data-target]")) return;
       e.stopPropagation();
       e.preventDefault();
-      scrolled = false;
-      composer.blur();
-      set();
+      open();
     },
     true,
   );
-  return (stuck, away) => {
-    if (stuck) scrolled = false;
-    else if (away) scrolled = true;
-    set();
+  pic.addEventListener("click", () => {
+    if (screen.classList.contains("folded")) open();
+  });
+  return {
+    open,
+    scrolled: (stuck, away) => {
+      if (stuck) scrolled = false;
+      else if (away) scrolled = true;
+      set();
+    },
   };
 };

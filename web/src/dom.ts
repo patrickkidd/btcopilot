@@ -18,13 +18,14 @@ export function el<K extends keyof HTMLElementTagNameMap>(
 }
 
 /** The path: where the reader is, from the whole timeline down, each earlier
- * step the way back to it (R-0540). */
-export const pathRow = (steps: string[]): string =>
+ * step the way back to it (R-0540). A picked event at its end is written in the
+ * picked colour, as its words on the picture are (Patrick, 2026-10-01). */
+export const pathRow = (steps: string[], picked = false): string =>
   steps
     .map((step, i) =>
       i < steps.length - 1
         ? `<button type="button" class="step" data-step="${i}"><span>${esc(step)}</span></button>`
-        : `<span class="here">${esc(step)}</span>`,
+        : `<span class="here${picked ? " on" : ""}">${esc(step)}</span>`,
     )
     .join(`<span class="sep" aria-hidden="true"> \u203a </span>`);
 

@@ -804,24 +804,27 @@ function redraw(page: api.Said[]): void {
 }
 
 /** The coach pointing: the moments its words name become the spotlight, and
- * everything else on the wire recedes. A chip only ever aims the picture; it
- * never changes the picture's level, so nothing below it moves (the owner:
- * chat bubbles must never move from a tap on a chip). */
+ * everything else on the wire recedes. A chip never changes the picture's
+ * height, so nothing below it moves (the owner: chat bubbles must never move
+ * from a tap on a chip); from the strip it opens the full picture, as a tap on
+ * the strip does. */
 function aim(chip: Chip): void {
   const ids = aimedEvents(chip, timeline.clusters);
   if (!ids.length) return;
+  chat.unfold();
   // A chip in the coach's words does exactly what a tap on the picture does:
   // there is one selection, wherever the reader touched it. A chip naming an
-  // event no cluster claims selects that event; a chip naming a cluster, or an
-  // event inside one, selects the cluster, since an event in a cluster has no
-  // mark of its own on the line (R-0543).
-  const cluster = timeline.clusters.find((c) => ids.every((id) => c.event_ids.includes(id)));
-  if (cluster) {
-    apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Cluster, id: cluster.id }));
-    // a chip may name a cluster off screen, so the line goes to it
-    picture.spotlight(cluster.event_ids);
-  } else
+  // event selects that event, opening the cluster it belongs to (Patrick,
+  // 2026-10-01); a chip naming a cluster selects the cluster (R-0543).
+  if (chip.kind === ChipKind.Event) {
     apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(ids[0]) }), ids);
+    return;
+  }
+  const cluster = timeline.clusters.find((c) => ids.every((id) => c.event_ids.includes(id)));
+  if (!cluster) return;
+  apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Cluster, id: cluster.id }));
+  // a chip may name a cluster off screen, so the line goes to it
+  picture.spotlight(cluster.event_ids);
 }
 
 /** One place turns a picture tap into its consequences: what the picture shows,
@@ -1305,7 +1308,7 @@ async function load(): Promise<Timeline> {
 /** The path over the line: where the reader is, from the whole timeline
  * down, each earlier step the way back to it (R-0540). */
 function crumb(): void {
-  $("path").innerHTML = pathRow(picture.path());
+  $("path").innerHTML = pathRow(picture.path(), picture.picked());
   $("info").hidden = !picture.opened();
 }
 

@@ -809,9 +809,19 @@ export class Picture {
   }
 
 
+  /** The event the path ends on, when one is picked and no mode is open. */
+  private shown(): TimelineEvent | null {
+    return this.level === Level.Rest || this.level === Level.Wire ? this.event(this.selected) : null;
+  }
+
+  /** Whether the path ends on a picked event. */
+  picked(): boolean {
+    return this.shown() !== null;
+  }
+
   /** The path from the whole timeline to where the reader is (R-0540). */
   path(): string[] {
-    const picked = this.level === Level.Rest || this.level === Level.Wire ? this.event(this.selected) : null;
+    const picked = this.shown();
     return trail(
       this.level,
       this.level === Level.Rest ? null : this.focus,
