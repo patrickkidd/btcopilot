@@ -8,13 +8,14 @@ import { rowDate } from "./when";
 import type { SessionTurn, SessionTurns } from "./types";
 
 /** Placing the cut: the family's whole thread read-only in one scroll, with
- * the same line between sittings the chat shows, one line of their dates
- * that jumps to each, and the one button that puts the cut on the agenda (R-0267).
+ * the same line between sittings the chat shows, a row of the sittings in the
+ * agenda's own boxes, each of which scrolls the thread to its first line, and
+ * the one button that puts the cut on the agenda (R-0267).
  *
- * A cut is a first and a last line, in one sitting or across several. Taps
- * take turns: the first sets where the cut starts, the next where it ends.
- * The lines inside it are lit and the rest dimmed, and no end can be placed
- * at or before the last point already ratified.
+ * A cut is a first and a last line, in one sitting or across several. A new
+ * cut starts with neither: the first tap lights its first line, the second
+ * its last and everything between, and a tap after that starts over. No end
+ * can be placed at or before the last point already ratified.
  */
 
 export interface CutHandlers {
@@ -42,6 +43,7 @@ export class Cut {
 
   constructor(
     private jump: HTMLElement,
+    private hint: HTMLElement,
     private list: HTMLElement,
     private bar: HTMLElement,
     private handlers: CutHandlers,
@@ -55,21 +57,19 @@ export class Cut {
       if (to) this.reach(Number(to.dataset.sitting));
     });
     this.bar.addEventListener("click", (e) => {
-      if ((e.target as Element).closest(".ct-go")) void this.place();
+      if ((e.target as Element).closest(".ct-go:not([disabled])")) void this.place();
     });
     dragScroll(this.list);
   }
 
   /** Open the thread of one sitting's family at that sitting. A cut already
-   * on the agenda opens lit where it stands; a new one starts as the
-   * sitting's lines not yet ratified, and joins the meeting on `day`. */
+   * on the agenda opens lit where it stands; a new one opens with nothing
+   * chosen, and joins the meeting on `day`. */
   async open(discussionId: number, day: string | null): Promise<void> {
     this.day = day;
     const read = (this.read = await api.sessionTurns(discussionId));
-    const open = read.turns.filter((t) => !this.ratified(t));
-    const here = open.filter((t) => t.sitting_id === read.sitting_id);
-    this.first = read.on_agenda?.start_statement_id ?? here[0]?.id ?? open[0]?.id ?? null;
-    this.last = read.on_agenda?.statement_id ?? here[here.length - 1]?.id ?? this.first;
+    this.first = read.on_agenda?.start_statement_id ?? null;
+    this.last = read.on_agenda?.statement_id ?? null;
     this.next = End.First;
     this.handlers.onTitle(read.session);
     this.opening = read.on_agenda ? this.turn(this.first)!.sitting_id : read.sitting_id;
@@ -91,8 +91,8 @@ export class Cut {
     return agreed !== null && agreed !== undefined && turn.order <= agreed.order;
   }
 
-  /** The sitting's divider brought to the top of the scroll, and its date into
-   * the middle of the line of dates. */
+  /** The sitting's divider brought to the top of the scroll, and its box into
+   * the middle of the row of boxes. */
   private reach(sittingId: number): void {
     const line = this.list.querySelector<HTMLElement>(`.sitting[data-sitting="${sittingId}"]`);
     if (line) this.list.scrollTop += line.getBoundingClientRect().top - this.list.getBoundingClientRect().top;
@@ -114,13 +114,13 @@ export class Cut {
       return;
     }
     tap(Feature.CutLine);
-    const at = turn.order;
     if (this.next === End.First) {
       this.first = turnId;
-      if ((this.turn(this.last)?.order ?? 0) < at) this.last = turnId;
+      this.last = null;
       this.next = End.Last;
     } else {
-      if (at < (this.turn(this.first)?.order ?? 0)) this.first = turnId;
+      const first = this.turn(this.first)!;
+      if (turn.order < first.order) [this.first, this.last] = [turnId, first.id];
       else this.last = turnId;
       this.next = End.First;
     }
@@ -138,18 +138,23 @@ export class Cut {
     this.handlers.onPlaced();
   }
 
-  /** The thread, its sitting dividers and the line of dates, drawn once a
-   * read; a tap only repaints what is lit. */
+  /** The thread, its sitting dividers and the row of sitting boxes, drawn
+   * once a read; a tap only repaints what is lit. A sitting with no title yet
+   * is named by its first line. */
   private draw(): void {
     const read = this.read!;
     const now = new Date();
-    this.jump.hidden = read.sittings.length < 2;
     this.jump.innerHTML = read.sittings
-      .map(
-        (one) =>
-          `<button class="ct-to" type="button" data-sitting="${one.id}">` +
-          `${esc(rowDate(new Date(one.started), now))}</button>`,
-      )
+      .map((one) => {
+        const lines = read.turns.filter((t) => t.sitting_id === one.id).length;
+        const name = one.title || this.turn(one.first_statement_id)?.text || "";
+        return (
+          `<div class="sn-row push ct-to" data-sitting="${one.id}">` +
+          `<div class="sn-m"><div class="sn-t">${esc(name)}</div>` +
+          `<div class="sn-s">${rowDate(new Date(one.started), now)} · ${lines} ` +
+          `statement${lines === 1 ? "" : "s"}</div></div></div>`
+        );
+      })
       .join("");
     this.list.innerHTML = "";
     const starts = new Map(read.sittings.map((one) => [one.first_statement_id, one]));
@@ -170,24 +175,27 @@ export class Cut {
     this.paint();
   }
 
+  /** Nothing chosen: every line as it is. The first line chosen: it alone
+   * lit. Both: the range lit and the rest dimmed, and the button live. */
   private paint(): void {
     const first = this.turn(this.first);
     const last = this.turn(this.last);
     for (const old of this.list.querySelectorAll(".cutline.now")) old.remove();
     for (const bubble of this.list.querySelectorAll<HTMLElement>(".bub.line")) {
       const at = this.turn(Number(bubble.dataset.turn))!.order;
-      const inside = !!first && !!last && first.order <= at && at <= last.order;
+      const inside = !!first && first.order <= at && at <= (last ?? first).order;
       bubble.classList.toggle("lit", inside);
-      bubble.classList.toggle("after", !inside);
+      bubble.classList.toggle("after", !!last && !inside);
     }
-    if (first && last) {
-      this.bubble(first.id).before(this.endLine(`cut starts · turn ${first.order}`));
-      this.bubble(last.id).after(this.endLine(`cut ends · turn ${last.order} · ${last.day}`));
-    }
-    const span = first && last ? `turns ${first.order} to ${last.order}` : "";
+    if (first) this.bubble(first.id).before(this.endLine(`cut starts · turn ${first.order}`));
+    if (last) this.bubble(last.id).after(this.endLine(`cut ends · turn ${last.order} · ${last.day}`));
+    this.hint.textContent =
+      first && last
+        ? `Turns ${first.order} to ${last.order}. Tap a line to start again.`
+        : "Tap the first line, then the last";
     this.bar.innerHTML =
-      `<div class="ct-hint">tap the ${this.next} line of the cut</div>` +
-      `<button class="btn ct-go" type="button">put ${span} on the agenda</button>`;
+      `<button class="btn ct-go" type="button"${first && last ? "" : " disabled"}>` +
+      `Place this cut</button>`;
   }
 
   private bubble(id: number): HTMLElement {

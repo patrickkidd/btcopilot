@@ -2822,7 +2822,6 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 
 /* Placing the cut: the thread read-only, turns after the cut dimmed. */
 .ct-bar { flex-direction: column; align-items: stretch; gap: 6px; }
-.ct-hint { font: 400 13px var(--mono); color: var(--faint); text-align: center; }
 .ct-go { height: 44px; border-color: var(--ask); color: var(--ask-text); }
 .bub.line.after { opacity: 0.4; }
 
@@ -3347,30 +3346,36 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 /* a phone's keyboard is up: the chat keeps the room above the message box */
 .typing > .speakrow { display: none; }
 
-/* The cut picker's one line of sitting dates over the thread, shown only
-   when the thread has more than one sitting; the one in view is underlined,
-   and tapping a date scrolls the thread to that sitting's line. */
+/* The cut picker's row of sittings over the thread, each in the agenda's own
+   row box with its title over its date; the one in view is outlined, and
+   tapping one scrolls the thread to that sitting's first line. */
 .ct-jump {
   flex: none;
   display: flex;
-  gap: 14px;
+  gap: 8px;
   overflow-x: auto;
-  padding: 0 var(--gutter);
-  border-bottom: 1px solid var(--line);
+  padding: 8px var(--gutter);
   background: var(--bg);
   scrollbar-width: none;
 }
-.ct-jump[hidden] { display: none; }
-.ct-to {
+.ct-jump .sn-row.ct-to {
   flex: none;
-  padding: 9px 2px;
-  border: 0;
-  background: none;
-  font: 400 13px/18px var(--mono);
-  color: var(--faint);
-  white-space: nowrap;
-  cursor: pointer;
+  width: 72%;
+  max-width: 280px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
 }
-.ct-to.on { color: var(--ask-text); text-decoration: underline; text-underline-offset: 4px; }
+.ct-jump .sn-row.ct-to.on { border-color: var(--ask); box-shadow: 0 0 0 1px var(--ask); }
+/* what to tap next, in words, under the sittings */
+#cut-hint {
+  flex: none;
+  padding: 6px var(--gutter);
+  border-bottom: 1px solid var(--line);
+  font: 500 14px/20px var(--sans);
+  color: var(--ask-text);
+  text-align: center;
+}
+.ct-go[disabled] { opacity: 0.4; cursor: default; }
 /* The lines inside the cut are lit in the cut's own colour. */
 .bub.line.lit { box-shadow: 0 0 0 2px var(--ask); }

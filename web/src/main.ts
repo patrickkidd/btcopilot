@@ -533,7 +533,7 @@ async function openLine(statementId: number): Promise<void> {
  * Putting a conversation on the agenda, placing the cut everyone codes up to,
  * and the agenda itself (R-0258, R-0267). Nobody but Patrick sees these. */
 
-const placing = new Cut($("cut-jump"), $("cut-chat"), $("cut-bar"), {
+const placing = new Cut($("cut-jump"), $("cut-hint"), $("cut-chat"), $("cut-bar"), {
   onPlaced: () =>
     void agenda.load().then(() => settings.popTo(AGENDA)),
   onTitle: (title) => {

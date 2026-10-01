@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { EXACT, flask, shell, stateFor, username } from "./setup";
+import { EXACT, flask, placeCut, shell, stateFor, username } from "./setup";
 
 /** The settings stack: the avatar in the title row, and the pages it pushes.
  * Every value has one home, and the chat view's speak-replies row is the one
@@ -656,7 +656,7 @@ test.describe("the coding and quality sections", () => {
       "cut-screen",
     );
 
-    await page.locator(".ct-go").click();
+    await placeCut(page);
     await expect(page.locator(".sn-pane.in:not(.under)")).toHaveAttribute("data-page", "agenda-screen");
     const cut = page.locator(".tb-cut", { hasText: session });
     await expect(cut).toHaveCount(1);

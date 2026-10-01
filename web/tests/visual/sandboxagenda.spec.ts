@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { need, sandboxOnly, walker } from "./sandbox";
+import { placeCut } from "./setup";
 
 // Patrick putting a conversation on the agenda from the agenda screen: the
 // list of every family's sessions it opens picks the conversation to cut,
@@ -30,7 +31,7 @@ test.describe(() => {
     await gates("placing the cut");
     await shot("1-cut");
 
-    await page.locator(".ct-go").click();
+    await placeCut(page);
     await expect(page.locator("#agenda-screen")).toBeVisible();
     await expect(page.locator(".tb-cut .sn-t", { hasText: session })).toBeVisible();
     check(stored.join() === "201", `one new cut was stored (${stored.join(", ")})`);
