@@ -61,6 +61,7 @@ The box is reached as `ssh familydiagram` (Patrick's ssh config; never the raw I
 - **The production deploy lock is one branch, set by the session Patrick names [Oracle: R-0530].** The lock is the production environment's allowed deployment branch on GitHub. A session holds it only when Patrick tells that session so; it then runs `uv run bin/deploy-lock set <its branch>`. Every deploy brief runs `uv run bin/deploy-lock show` first and refuses to dispatch unless the lock names its own branch. A merge to master never deploys. The lock never names master and never names a second branch. To change this policy, Patrick tells a session and it rewrites this rule and the tool.
 - **Prompt evals (Patrick, 2026-09-25): every prompt change ships with an eval in the prompt-engineering suite (btcopilot/tests/live), never in the CI unit suite. The oracle is human: the fault comes from a logged case, the expected behaviour is put to Patrick as a ruling candidate, the eval cites the ruling, is proven to fail on the old prompt and pass on the new, and its inputs are fictionalized. Never an LLM as the oracle. Each eval states its pass criterion (a deterministic check on the record, or k of n runs); pass rates are tracked per model version in the ledger.**
 - **Model spend, this project's specifics (the general rule is in the user-level CLAUDE.md).** While iterating, unit tests with mocks and a local Ollama model in the sandbox (the model does not matter for plumbing and walks). One real turn on production after a deploy proves the stack. Every spend is logged to the eval ledger.
+- **Bedrock machines (Patrick, 2026-10-01).** On a machine signed in to Bedrock (CLAUDE_CODE_USE_BEDROCK set), every model call the app makes in testing goes through Bedrock; the Anthropic, Gemini and OpenAI APIs are unreachable there. Until the model-call code can do that, say so and escalate; never test around it with a key.
 
 ## Jira
 
@@ -181,7 +182,7 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
   reply after each. Every mechanical step — a deploy, a probe, a log read, a golden regeneration, a
   box fix — goes to a Sonnet or Haiku sub-agent with a one-page brief; a build goes to Opus; an
   Opus auditor is spawned before the workers on every multi-agent run. The coordinator's own tool
-  calls are limited to reading briefs and reports, spawning, and the final message.
+  calls are limited to reading briefs and reports, spawning, and the final message. Repeated 2026-10-01 (Patrick: "remember your instructions about sub-agents and preserving top level context window"): the coordinator read the synthesis file, two reference sections and directory trees itself while grounding; grounding reads go to a Sonnet reader that returns a one-page summary.
 - **Cost estimates are for the work, not for validation.** Squashing seven migrations is a few
   tool calls, not an hour. Verify only what changed, once, at the cheapest level that proves it;
   never re-verify before a merge is even in sight.

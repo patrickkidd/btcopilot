@@ -1764,6 +1764,13 @@ own part, the formulation last, then the effort to change. That order awaits Pat
 a redraw. Hand-off, research, gallery source: Jira FD-367
 (https://alaskafamilysystems.atlassian.net/browse/FD-367). Theory notes: btcopilot-sources PR FD-367.
 
+Research round two, 2026-10-01, on this machine (no ~/Documents here; Family Evaluation, Family Therapy in Clinical Practice, the seven Basic Series tapes and six Bowen Center recordings read in full as text; Titelman 1998, Papero 1990 and 2018, Kerr 2019, Frost and the Family Systems case conferences not on this machine, marked thin; Brown 1999 retrieved from the web). Written in the private corpus under fd-corpus/design/fd336/research/: SYNTHESIS-v2.md (the first synthesis corrected line by line), MENTAL_MODEL.md (the levels a presented case follows, each with its source; the deliverable for Patrick's ruling on the order), PLAY-BY-PLAY-DESKTOP.md, VERIFY-corpus-citations.md; in the theory corpus: six reader notes and notes/case-presentation.md, one paragraph in REFERENCE.md section 6b, OPEN_QUESTIONS item 41 (reading at the top or the end of a presented page; trying both ways in the next mockup round, not ruled), SOURCES.md and MANIFEST.tsv rows. Patrick, 2026-10-01: deliver from what is here with the missing books thin; "outcome first" is tried in mockups on his record, not ruled. The theory checker failed before today's edits (451 problems, baseline 2026-09-30) and was not repaired; only items caused today are to be resolved. Next: Patrick rules on the order in MENTAL_MODEL.md; then the one-page mockup on the app's own diagram and play-by-play, his record plus Client L and Anna, phone and desktop, a separate critique agent, a new private artifact from this machine.
+
+
+## Open — the app's model calls on a Bedrock machine
+
+Patrick, 2026-10-01: on a machine signed in to Bedrock (this one is), the app's testing model calls use Bedrock; Anthropic, Gemini and OpenAI are unreachable there. Not built: the model-call code in btcopilot/llmutil.py has only Anthropic and Gemini clients; the sandbox `--real` path reads the Anthropic key; the shadow model aliases name Anthropic model ids. Open with Patrick: what the Gemini-only paths (the e2e suite on GOOGLE_GEMINI_API_KEY) do on such a machine. No ticket yet.
+
 ## Jira / branches
 
 - FD-359 epic (chat-first web app) with FD-360 (built, draft PR #133) and FD-361
