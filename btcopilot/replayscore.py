@@ -92,10 +92,65 @@ def replay(
         cap += adapter.spent(diagram.id)
     if statements is None:
         statements = sorted(discussion.statements, key=lambda s: (s.order or 0, s.id))
-    with agent_prompt_from(prompt):
-        copy, replies = adapter.replay_into(
-            diagram, discussion, statements, model=model, cap=cap, copy=session
+    if session is None:
+        session = adapter.scratch_session(diagram, discussion)
+    replies = []
+    try:
+        with agent_prompt_from(prompt):
+            adapter.replay_into(
+                diagram,
+                discussion,
+                statements,
+                model=model,
+                cap=cap,
+                copy=session,
+                replies=replies,
+            )
+    finally:
+        row, calls = _keep(
+            discussion,
+            requested,
+            reference,
+            thinking,
+            prompt,
+            statements,
+            expected,
+            case,
+            diagram,
+            session,
+            replies,
+            before,
+            started,
         )
+    return {
+        **row,
+        "calls": calls,
+        "pairs": [
+            (said.turn_id, reply["turn_id"])
+            for said, reply in zip(adapter.spoken(statements), replies)
+        ],
+    }
+
+
+def _keep(
+    discussion: Discussion,
+    requested: str,
+    reference: Diagram,
+    thinking: str,
+    prompt: Path | None,
+    statements: list[Statement],
+    expected: dict | None,
+    case: str | None,
+    diagram: Diagram,
+    session: Discussion,
+    replies: list[dict],
+    before: int,
+    started: float,
+) -> tuple[dict, int]:
+    """The pass kept in the replay passes table and the eval ledger, for the
+    turns done, whether the replay finished, stopped at its cap or failed."""
+    # a turn that failed leaves its unfinished work in the session
+    db.session.rollback()
     mine = adapter.record_of(diagram)
     scores = compare(
         mine, adapter.record_of(reference) if expected is None else expected
@@ -111,6 +166,7 @@ def replay(
         "cache_read": sum(c.cache_read_tokens for c in calls),
     }
     cost = sum((c.cost_usd for c in calls), Decimal(0))
+    asked = len(adapter.spoken(statements))
     kept_pass = ReplayPass(
         model=resolve_model(requested),
         thinking=thinking,
@@ -140,9 +196,13 @@ def replay(
         "discussion_id": discussion.id,
         "reference_diagram_id": reference.id,
         "scratch_diagram_id": diagram.id,
-        "scratch_discussion_id": copy.id,
+        "scratch_discussion_id": session.id,
         "case": kept_pass.key if case else None,
-        "outcome": None,
+        "outcome": (
+            None
+            if len(replies) == asked
+            else f"stopped at turn {len(replies) + 1} of {asked}"
+        ),
         "turns": len(replies),
         "scores": {name: scores[name] for name in PARTS},
         "faults": faults(diagram.id, mine),
@@ -152,14 +212,7 @@ def replay(
         "source": Source.Api.value,
     }
     ledger.append(row, ledger.PATH)
-    return {
-        **row,
-        "calls": len(calls),
-        "pairs": [
-            (said.turn_id, reply["turn_id"])
-            for said, reply in zip(adapter.spoken(statements), replies)
-        ],
-    }
+    return row, len(calls)
 
 
 def turned(user_id: int, limit: int | None = None) -> list[Statement]:

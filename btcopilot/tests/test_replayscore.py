@@ -508,3 +508,26 @@ def test_a_replay_from_a_later_turn_goes_on_in_the_kept_pass(
         "My brother Wren.",
         "My brother Ada.",
     ]
+
+
+def test_a_replay_that_fails_keeps_the_turns_done_and_goes_on_from_them(
+    flask_app, lived, test_user, path, monkeypatch
+):
+    # R-0568
+    model = Model(said("Noted."))
+    monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
+    failed = _person(flask_app, test_user, "--turns", "3")
+    assert isinstance(failed.exception, IndexError)
+    first = ReplayPass.query.one()
+    assert first.turns == 1
+    assert json.loads(path.read_text())["outcome"] == "stopped at turn 2 of 3"
+
+    model.turns = [said("Noted."), said("Noted.")]
+    result = flask_app.test_cli_runner().invoke(
+        admin,
+        ["quality", "replay-person", str(test_user.id), "sonnet-5"]
+        + ["--start", "2", "--turns", "3", "--after", str(first.id)],
+    )
+    assert result.exit_code == 0, result.output
+    later = ReplayPass.query.order_by(ReplayPass.id.desc()).first()
+    assert (later.turns, later.scratch_diagram_id) == (2, first.scratch_diagram_id)

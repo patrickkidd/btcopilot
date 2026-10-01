@@ -300,16 +300,18 @@ def replay_into(
     model=None,
     cap: Decimal | None = None,
     copy: Discussion | None = None,
+    replies: list[dict] | None = None,
 ) -> tuple[Discussion, list[dict]]:
     """Run the coach over a cut's turns, writing what it codes onto `diagram`,
     as scratch turns that charge no one, in `copy` or a new scratch session.
     Each turn's tool calls are kept and watched as a real turn's are, so its
     mistakes are written down. With a cap, no turn starts once the diagram's
-    calls cost that much."""
+    calls cost that much. Each finished turn's reply is appended to `replies`
+    as it lands, so a caller keeps the turns done before a failing one."""
     if copy is None:
         copy = scratch_session(diagram, discussion)
     said = [s.text for s in spoken(statements)]
-    replies = []
+    replies = [] if replies is None else replies
     for text in said:
         if cap is not None and spent(diagram.id) >= cap:
             break

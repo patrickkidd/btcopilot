@@ -7,6 +7,7 @@ from pathlib import Path
 
 import click
 from flask import current_app
+from sqlalchemy import func
 
 from btcopilot import diagramjson
 from btcopilot import quality as runs
@@ -305,10 +306,20 @@ def quality_replay_person(
     prior = db.session.get(ReplayPass, after_id) if after_id else None
     if (start is None) != (prior is None):
         raise click.UsageError("--start and --after go together, on a kept pass")
-    if prior is not None and prior.turns != start - 1:
-        raise click.UsageError(
-            f"pass {prior.id} replayed {prior.turns} turns, not {start - 1}"
+    if prior is not None:
+        done = (
+            db.session.query(func.sum(ReplayPass.turns))
+            .filter(
+                ReplayPass.scratch_diagram_id == prior.scratch_diagram_id,
+                ReplayPass.id <= prior.id,
+            )
+            .scalar()
         )
+        if done != start - 1:
+            raise click.UsageError(
+                f"pass {prior.id} and those before it on its record replayed "
+                f"{done} turns, not {start - 1}"
+            )
     statements = every[(start or 1) - 1 : turns]
     if not statements:
         raise click.UsageError("no turns with a turn id")
