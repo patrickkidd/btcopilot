@@ -387,15 +387,13 @@ test.describe("an admin finds a person on the diagrams view", () => {
     );
 
   const openDiagrams = async (page: Page) => {
-    await settle(page);
-    await openSettings(page);
-    await page.locator('.sn-pane[data-page="root"] .sn-row.push', { hasText: "Your diagrams" }).click();
+    await page.goto("/app/account/diagrams");
     await expect(page.locator('.sn-pane[data-page="diagrams"]')).toBeVisible();
   };
 
   test.afterAll(() => as("subscriber"));
 
-  // R-0175, R-0629
+  // R-0175, R-0629, R-0630
   test("searching a name lists the person, and tapping their diagram opens it read-only", async ({ page }) => {
     as("admin");
     await openDiagrams(page);
@@ -404,8 +402,8 @@ test.describe("an admin finds a person on the diagrams view", () => {
     const person = pane.locator(".sn-find .sn-row", { hasText: username("whitlock") });
     await expect(person).toBeVisible();
     await person.click();
-    await expect(pane.locator(".sn-find .sn-hd")).toBeVisible();
-    const theirs = pane.locator(".sn-find .sn-grp .sn-row").first();
+    await expect(page.locator("#title")).toHaveText(/whitlock|Whitlock/i);
+    const theirs = page.locator(".sn-theirs .sn-row").first();
     const name = (await theirs.locator(".sn-t").textContent())!;
     await theirs.click();
     await expect(page.locator(".sn-stack")).toBeHidden();
@@ -436,19 +434,29 @@ test.describe("an admin finds a person on the diagrams view", () => {
     expect(await shown("#menu-foot")).not.toBe("none");
   });
 
-  // R-0175
-  test("an admin who finds himself sees his diagram in use ticked once", async ({ page }) => {
+  // R-0630
+  test("own diagrams give way to the people found and come back when the search is cleared", async ({ page }) => {
     as("admin");
     await openDiagrams(page);
     const pane = page.locator('.sn-pane[data-page="diagrams"]');
-    await pane.getByLabel("Find a person").fill(username("longname"));
-    await pane.locator(".sn-find .sn-row", { hasText: username("longname") }).click();
-    await expect(pane.locator(".sn-find .sn-hd")).toBeVisible();
-    const ticked = await pane
-      .locator(".sn-row")
-      .evaluateAll((rows) => rows.filter((r) => r.querySelector(".sn-tick")?.textContent?.trim()).length);
-    expect(ticked).toBe(1);
-    await expect(pane.locator(".sn-find .sn-hint")).toHaveText("Listed under your diagrams.");
+    const own = pane.locator(".sn-hd", { hasText: /Your diagrams|Cases/ });
+    await expect(own).toBeVisible();
+    const field = pane.getByLabel("Find a person");
+    await field.fill(username("longname"));
+    const person = pane.locator(".sn-find .sn-row", { hasText: username("longname") });
+    await expect(person).toBeVisible();
+    await expect(own).toBeHidden();
+    await person.click();
+    await expect(page.locator(".sn-theirs .sn-row").first()).toBeVisible();
+    await expect(pane).toHaveClass(/under/);
+    await page.locator("#settings-back").click();
+    await expect(pane).not.toHaveClass(/under/);
+    await expect(field).toHaveValue(username("longname"));
+    await expect(person).toBeVisible();
+    await expect(own).toBeHidden();
+    await field.fill("");
+    await expect(own).toBeVisible();
+    await expect(pane.locator(".sn-find .sn-row")).toHaveCount(0);
   });
 
   // R-0175

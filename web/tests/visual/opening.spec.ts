@@ -103,9 +103,9 @@ async function gone(page: Page): Promise<void> {
 }
 
 /** The rows that carry the tick, by name. */
-const ticked = (page: Page) =>
-  diagramsPage(page)
-    .locator(".sn-row")
+const ticked = (page: Page, within = ".sn-pane[data-page=\"diagrams\"]") =>
+  page
+    .locator(`${within} .sn-row:not([hidden])`)
     .evaluateAll((rows) =>
       rows
         .filter((r) => r.querySelector(".sn-tick")?.textContent?.trim())
@@ -305,14 +305,14 @@ test.describe("an admin's search results", () => {
   test.beforeEach(() => roles("admin"));
   test.afterEach(() => roles("subscriber"));
 
-  /** The person found by name, and their diagrams listed under the search. */
+  /** The person found by name, and their diagrams slid in as a page of their own. */
   const find = async (page: Page) => {
     await diagramsPage(page).locator('input[aria-label="Find a person"]').fill("Someone");
     await diagramsPage(page).locator(".sn-row", { hasText: "Someone Else" }).click();
-    await expect(diagramsPage(page).locator(".sn-row", { hasText: "Their family" })).toBeVisible();
+    await expect(page.locator(".sn-theirs .sn-row", { hasText: "Their family" })).toBeVisible();
   };
 
-  // R-0243
+  // R-0243, R-0630
   test("carry the tick only on the diagram open, whichever diagram that is", async ({ page }) => {
     const theirs: Stand = { id: 987005, name: "Their family", thread: [line(987501, "Said in their family.")], access: "admin-view" };
     await stand(page, theirs);
@@ -322,24 +322,26 @@ test.describe("an admin's search results", () => {
     await page.route(/\/app\/diagrams\?user_id=987900$/, (route) => route.fulfill({ json: [diagram(theirs)] }));
     await settle(page);
     await openDiagrams(page);
-    await find(page);
     expect(await ticked(page)).toEqual([OWN]);
-    await diagramsPage(page).locator(".sn-row", { hasText: "Their family" }).click();
+    await find(page);
+    expect(await ticked(page, ".sn-theirs")).toEqual([]);
+    await page.locator(".sn-theirs .sn-row", { hasText: "Their family" }).click();
     await gone(page);
     await expect(page.locator("#viewing-who")).toHaveText("Viewing Someone Else's diagram, read-only");
     await expect(page.locator("#chat")).toContainText("Said in their family.");
     await openDiagrams(page);
     await find(page);
-    expect(await ticked(page)).toEqual(["Their family"]);
+    expect(await ticked(page, ".sn-theirs")).toEqual(["Their family"]);
     // the open one does nothing when tapped
-    await diagramsPage(page).locator(".sn-row", { hasText: "Their family" }).click();
-    await expect(diagramsPage(page)).toBeVisible();
+    await page.locator(".sn-theirs .sn-row", { hasText: "Their family" }).click();
+    await expect(page.locator(".sn-theirs")).toBeVisible();
+    await page.locator("#settings-back").click();
+    await diagramsPage(page).locator('input[aria-label="Find a person"]').fill("");
     await diagramsPage(page).locator(".sn-row", { hasText: OWN }).click();
     await gone(page);
     await expect(page.locator("#viewing")).toBeHidden();
     await expect(page.locator("#title")).toHaveText(OWN);
     await openDiagrams(page);
-    await find(page);
     expect(await ticked(page)).toEqual([OWN]);
   });
 });

@@ -546,6 +546,7 @@ const agenda = new Agenda($("agenda-body"), $("meet-body"), {
   onAdd: () => {
     arming = { day: agenda.nextDate() };
     settings.push(Page.Diagrams);
+    settings.seek();
   },
   onOpen: (cut) => void openCut(cut),
   onMeeting: (title) => {
@@ -1805,6 +1806,8 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
   [Place.Coach]: () => toAccount(Page.Coach),
   [Place.Appearance]: () => toAccount(Page.Appearance),
   [Place.Diagrams]: () => toAccount(Page.Diagrams),
+  // the person's name is not in the address, so a reload lands on the search
+  [Place.Theirs]: () => toAccount(Page.Diagrams),
   [Place.Plan]: () => toAccount(Page.Plan),
   [Place.Task]: async () => {
     await readTask();

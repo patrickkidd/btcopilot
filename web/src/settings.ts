@@ -50,6 +50,8 @@ const PROACTIVE_HINT: Record<Proactive, string> = {
   [Proactive.Weekly]: writesFirst("week"),
 };
 const SEARCH_AT = 6;
+/** Letters typed before the people search asks the server. */
+const FIND_AT = 2;
 const GUIDE = NAMES[Place.Literature];
 
 const SILHOUETTE =
@@ -756,11 +758,15 @@ export class Settings {
 
   private diagrams(account: Account): Built {
     const pane = el("div");
-    if (isAdmin())
-      pane.append(
-        (this.finding ??= this.finder()),
-        el("div", "sn-hd", PRO ? Records : "Your diagrams"),
-      );
+    const mine = el("div");
+    if (isAdmin()) {
+      this.finding ??= this.finder();
+      pane.append(this.finding.box);
+      mine.append(el("div", "sn-hd", PRO ? Records : "Your diagrams"));
+      this.finding.mine = mine;
+      mine.hidden = this.finding.field.value.trim().length >= FIND_AT;
+    }
+    pane.append(mine);
     const box = el("div", "sn-grp");
     const now = new Date();
     for (const diagram of account.diagrams) box.append(this.diagramRow(diagram, now));
@@ -780,9 +786,9 @@ export class Settings {
           row.hidden = !!query && !row.dataset.name?.includes(query);
       });
       wrap.append(field);
-      pane.append(wrap, box);
+      mine.append(wrap, box);
     } else {
-      pane.append(
+      mine.append(
         box,
         el(
           "div",
@@ -798,8 +804,19 @@ export class Settings {
     return { title: PRO ? Records : "Your diagrams", pane };
   }
 
-  /** Kept across a re-draw of the page, so a search survives the reload. */
-  private finding?: HTMLElement;
+  /** Kept across a re-draw of the page and under a person's diagrams, so the
+   * search and its matches are there again on the way back (R-0630). */
+  private finding?: { box: HTMLElement; field: HTMLInputElement; mine?: HTMLElement };
+
+  /** The Diagrams page with the search empty and ready to type in, where
+   * Next meeting's "Select a cut for the agenda" lands. */
+  seek(): void {
+    const finding = this.finding;
+    if (!finding) return;
+    finding.field.value = "";
+    finding.field.dispatchEvent(new Event("input"));
+    finding.field.focus({ preventScroll: true });
+  }
 
   private diagramRow(diagram: Diagram, now: Date): HTMLElement {
     const row = el("div", "sn-row push");
@@ -819,10 +836,10 @@ export class Settings {
     return row;
   }
 
-  /** An admin finds anyone by name and opens one of their diagrams to look
-   * at, read-only. */
-  private finder(): HTMLElement {
-    const finder = el("div", "sn-find");
+  /** An admin finds anyone by name: the admin's own diagrams give way to the
+   * people found while there is a name typed (R-0630). */
+  private finder(): { box: HTMLElement; field: HTMLInputElement } {
+    const box = el("div", "sn-find");
     const wrap = el("div", "sn-srch");
     const field = document.createElement("input");
     field.type = "search";
@@ -832,45 +849,47 @@ export class Settings {
     const found = el("div");
     field.addEventListener("input", async () => {
       const words = field.value.trim();
-      if (words.length < 2) return found.replaceChildren();
+      if (this.finding?.mine) this.finding.mine.hidden = words.length >= FIND_AT;
+      if (words.length < FIND_AT) return found.replaceChildren();
       const people = await api.users(words);
       if (field.value.trim() !== words) return;
-      const box = el("div", "sn-grp");
+      const list = el("div", "sn-grp");
       for (const person of people) {
         const row = el("div", "sn-row push");
+        row.dataset.user = String(person.id);
         const main = el("div", "sn-m");
         main.append(
           el("div", "sn-t", esc(person.name || person.username)),
           el("div", "sn-s", esc(person.username)),
         );
         row.append(main, el("div", "sn-chev", "\u203a"));
-        row.addEventListener("click", () => void this.theirs(person, found));
-        box.append(row);
+        row.addEventListener("click", () => void this.theirs(person));
+        list.append(row);
       }
       found.replaceChildren(
-        people.length ? box : el("div", "sn-hint", "No one by that name."),
+        people.length ? list : el("div", "sn-hint", "No one by that name."),
       );
     });
-    finder.append(wrap, found);
-    return finder;
+    box.append(wrap, found);
+    return { box, field };
   }
 
-  /** A diagram already under the admin's own heading is not listed again,
-   * so the one in use carries the only tick on the page. */
-  private async theirs(person: User, found: HTMLElement): Promise<void> {
-    const all = await api.diagrams(person.id);
-    const mine = new Set(this.account?.diagrams.map((d) => d.id));
-    const diagrams = all.filter((d) => !mine.has(d.id));
+  /** The person tapped, slid in as a page of its own over the search, which
+   * waits underneath as it was (R-0630). Their diagrams open read-only. */
+  private async theirs(person: User): Promise<void> {
+    const diagrams = await api.diagrams(person.id);
+    const screen = el("div", "sn-theirs");
+    screen.id = `theirs-${person.id}`;
     const box = el("div", "sn-grp");
     const now = new Date();
     for (const diagram of diagrams) box.append(this.diagramRow(diagram, now));
     tick(box);
-    found.replaceChildren(
-      el("div", "sn-hd", esc(person.name || person.username)),
-      diagrams.length
-        ? box
-        : el("div", "sn-hint", all.length ? "Listed under your diagrams." : "No diagrams yet."),
-    );
+    screen.append(diagrams.length ? box : el("div", "sn-hint", "No diagrams yet."));
+    this.push({
+      title: person.name || person.username,
+      screen,
+      at: address(Place.Theirs, person.id),
+    });
   }
 
   /** A new case: an empty record the app is put on straight away, so the title

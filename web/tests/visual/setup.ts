@@ -192,14 +192,16 @@ export async function openList(page: Page): Promise<void> {
 export const username = (key: Key) => `${key}@fd362-fixture.invalid`;
 
 /** From Next meeting, its button to the Diagrams page, a person found with
- * the admin's Find a person box and their diagram opened, with selecting a
+ * the admin's Find a person box (focused and blank on arrival), their diagrams
+ * slid in as a page of their own, and one opened, with selecting a
  * cut already on. */
 export async function toTheirDiagram(page: Page, who: string, diagram?: string): Promise<void> {
   await page.locator(".tb-add").click();
   const pane = page.locator('.sn-pane[data-page="diagrams"]');
+  await expect(pane.getByLabel("Find a person")).toBeFocused();
   await pane.getByLabel("Find a person").fill(who);
   await pane.locator(".sn-find .sn-row", { hasText: who }).first().click();
-  const theirs = pane.locator(".sn-find .sn-grp .sn-row", diagram ? { hasText: diagram } : {});
+  const theirs = page.locator(".sn-theirs .sn-row", diagram ? { hasText: diagram } : {});
   await theirs.first().click();
   await expect(page.locator("#viewing")).toBeVisible();
   await expect(page.locator("#cut-strip")).toBeVisible();

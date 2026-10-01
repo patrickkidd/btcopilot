@@ -22,6 +22,7 @@ class Place(enum.StrEnum):
     Coach = "account/coach"
     Appearance = "account/appearance"
     Diagrams = "account/diagrams"
+    Theirs = "account/diagrams/:n"
     Plan = "account/plan"
     Task = "account/coding-task"
     Agenda = "account/meeting"
@@ -87,6 +88,7 @@ WORDS = {
     Place.Coach: "the coach settings",
     Place.Appearance: "the appearance settings",
     Place.Diagrams: "your diagrams",
+    Place.Theirs: "their diagrams",
     Place.Plan: "your plan",
     Place.Task: "your coding task",
     Place.Agenda: "the next meeting",
