@@ -383,7 +383,7 @@ export class Agenda {
       : `<button class="pl-btn" type="button" data-cut="${cut.id}" ` +
         `aria-label="take off the agenda">${CROSS}</button>`;
     return (
-      `<div class="sn-row tb-cut" data-discussion="${cut.discussion_id}">` +
+      `<div class="sn-row tb-cut" data-discussion="${cut.sitting_id}">` +
       this.cutLines(cut) +
       `</div>${off}</div>`
     );

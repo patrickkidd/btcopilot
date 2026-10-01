@@ -25,16 +25,8 @@ class Who(enum.StrEnum):
     Coach = "coach"
 
 
-def _said(discussion_id: int) -> list:
-    first = adapter.first_statement(discussion_id)
-    if first is None:
-        return []
-    last = adapter.last_statement(discussion_id)
-    return adapter.statements_between(discussion_id, first.id, last.id)
-
-
 def _spoken(discussion, speaker_id: int) -> list:
-    return [s for s in _said(discussion.id) if s.speaker_id == speaker_id]
+    return [s for s in adapter.sitting(discussion.id) if s.speaker_id == speaker_id]
 
 
 def _shadows():
@@ -111,7 +103,7 @@ def _context(said_id: int) -> list[dict]:
     """The conversation up to and including the words both replies answer."""
     said = adapter.statement(said_id)
     discussion = adapter.discussion_of(said.discussion_id)
-    first = adapter.first_statement(discussion.id)
+    lines = adapter.sitting(discussion.id)
     return [
         {
             "who": (
@@ -119,7 +111,7 @@ def _context(said_id: int) -> list[dict]:
             ),
             "text": s.text,
         }
-        for s in adapter.statements_between(discussion.id, first.id, said.id)
+        for s in lines[: lines.index(said) + 1]
     ]
 
 

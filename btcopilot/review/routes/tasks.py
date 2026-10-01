@@ -43,7 +43,7 @@ def _task(user) -> dict | None:
 
 def _to_code(cut: Cut, mine: Coding | None, user) -> dict:
     turns = adapter.statements_between(
-        cut.discussion_id, cut.start_statement_id, cut.end_statement_id
+        cut.diagram_id, cut.start_statement_id, cut.end_statement_id
     )
     return {
         "kind": "code",
@@ -71,13 +71,10 @@ def _to_vote(cut: Cut, mine: Coding, ready: bool) -> dict:
 
 def _since(cut: Cut, turns, user) -> str:
     """How much is new, and how long it will take."""
-    orders = [t.order or 0 for t in turns]
-    span = (
-        f"turns {min(orders)} to {max(orders)} are new"
-        if orders
-        else "nothing new yet"
-    )
-    last = _last_done(cut.discussion_id, user)
+    orders = adapter.statement_order(cut.diagram_id)
+    at = [orders[t.id] for t in turns]
+    span = f"turns {min(at)} to {max(at)} are new" if at else "nothing new yet"
+    last = _last_done(cut.diagram_id, user)
     when = f" since you pressed Done on {_day(last.done_at)}" if last else ""
     minutes = max(
         ROUND_TO, round(len(turns) * MINUTES_PER_TURN / ROUND_TO) * ROUND_TO
@@ -85,13 +82,13 @@ def _since(cut: Cut, turns, user) -> str:
     return f"{span}{when} · about {minutes} min"
 
 
-def _last_done(discussion_id: int, user) -> Coding | None:
+def _last_done(diagram_id: int, user) -> Coding | None:
     return (
         Coding.query.join(Cut, Coding.cut_id == Cut.id)
         .filter(
             Coding.user_id == user.id,
             Coding.done_at.isnot(None),
-            Cut.discussion_id == discussion_id,
+            Cut.diagram_id == diagram_id,
         )
         .order_by(Coding.done_at.desc())
         .first()
@@ -125,7 +122,7 @@ def _finished(coding: Coding) -> dict:
 
 
 def _cut_day(cut: Cut) -> str:
-    return _day(adapter.cut_day(cut.discussion_id, cut.end_statement_id))
+    return _day(adapter.cut_day(cut.end_statement_id))
 
 
 def _day(when) -> str:

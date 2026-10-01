@@ -163,7 +163,7 @@ What it is for: one group of related events, opened from the line.
 - The word for these is clusters, in the app and in the code. [built] {R-0197}
 - Backing out of an open cluster always closes it and puts you back on the full line, no matter whether you had picked an event first. [built] {R-0362}
 - Clusters are rebuilt from scratch after every turn that touches an event, so the same events can come back under different names; they are meant to stay put and change only when there is a reason. [open]
-- Tapping an event's words inside an open cluster does not open an editor; you edit an event by chatting about it, or by finding it in the event list and editing it there, but mainly by chat. [built] {R-0572}
+- Tapping an event's words inside an open cluster does not open an editor; you change an event by chatting about it. [built] {R-0572}
 
 ## The play-by-play
 
@@ -265,12 +265,23 @@ What it is for: seeing and editing everything in the record by hand.
 - Each row shows what happened on one line and the date and people on a second. [built]
 - A row's summary uses short codes rather than running off the side of the phone. [built]
 - The scrollbar is never covered by a cluster heading. [built] {R-0218}
-- Tapping a row opens the editor for that item in place. [built]
+- Tapping an event row opens that event's detail view in place, read-only; tapping a person row opens the person editor in place. [built]
 - The line saying you can also edit by chatting was removed from these lists. [built] {R-0219}
 - There is a button to add an event; the new event's form slides up over the lists, full screen, with its name and the app's close button at its top. [built]
-- Editing by hand is possible but is not what the app is being tested on. [built]
+- An event is changed by chatting about it, from its detail view; a person is still edited by hand. [built]
 
-## The event editor
+## The event detail view
+
+What it is for: reading one event, and taking it to the chat to comment on it or change it (Patrick's picks D2 to D4, 2026-10-01).
+
+- Tapping a row in the events list opens the event under its row, read-only: its kind, what happened, when and how sure, who, any shift, where, its cluster and its notes. Nothing on it is a form field. [built]
+- A person's name opens that person's editor; the cluster opens that cluster on the picture. [built] {R-0201}
+- One action sits at its foot, reading "Tap to comment or change this event in chat". It puts the event in the message box as a lit chip and brings up the chat with the box ready to type in; nothing is sent until you send. [built]
+- After the message is sent the chip is gone from the box; the coach's reply shows what it changed as any reply does. [built]
+
+## The event editor (parked)
+
+Parked on Patrick's 2026-10-01 decision to try chat-only editing: the form is not reached from the events list or the detail view, and is still used to add a new event and on the coding screen. Its code is kept so it can come back.
 
 @frame built#f14 | One event opened for correction by hand: its kind, who it happened to, its words, its date and how sure the date is.
 
@@ -301,7 +312,7 @@ What it is for: correcting or adding one event by hand.
 What it is for: one person's own details.
 
 - The person's kind field is labelled Kind rather than sex, to keep the category right. [built] {R-0200}
-- A person carries buttons to their birth and their death when those exist, jumping to that event's editor. [built] {R-0201}
+- A person carries buttons to their birth and their death when those exist, jumping to that event's detail view. [built] {R-0201}
 - The jump works in reverse, from an event back to the person. [built] {R-0201}
 - Your own birthdate anchors your own line on the picture. [built]
 - Every diagram that ever had a chat on it carries a person called Assistant, which is a defect and not yet fixed. [built]
@@ -423,7 +434,7 @@ What it is for: every screen and everything on it has its own web address, so th
 | `/app/cut/<session>` | the cut screen for that session, over Next meeting |
 | `/app/cluster/<cluster>` | that cluster opened on the picture |
 | `/app/event/<event>` | that event picked on the picture |
-| `/app/event/<event>/edit` | the events list with that event's editor open and its row ringed |
+| `/app/event/<event>/edit` | the events list with that event's detail view open and its row ringed (the address of the parked editor, kept) |
 | `/app/event/new` | the new-event form |
 | `/app/person/<person>` | the people list with that person's editor open and its row ringed |
 | `/app/person/new` | the new-person form |
@@ -565,10 +576,9 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 - Patrick puts a conversation on the agenda from the meeting page, never from a session: "Put a session on the agenda" lists every session on every family, newest first, each with its family, its day and how many statements it holds, and a search box finds sessions by words said in them, showing the line that carries them. [built] {R-0267}
 - Tapping one opens it to place the cut, and placing the cut returns to the agenda. Each is a page over the one it was opened from: the list over the agenda, the cut over the list or over the agenda, and the back arrow steps back one page. [built] {R-0267}
 - A newly placed cut joins the next meeting: the soonest meeting date on the agenda, or no date while none has one. [built] {R-0267}
-- That opens the conversation so he can place the cut: the point everyone codes up to. [drawn] {R-0267}
-- The cut starts at the last turn, and tapping any line moves it there. [drawn] {R-0267}
-- The cut can never be moved back past the last point that was already ratified. [drawn] {R-0267}
-- Turns after the cut are dimmed and wait for a later cut. [drawn] {R-0267}
+- That opens the family's whole thread in one scroll, at the sitting picked, with the same line between sittings the chat shows and a row of the sittings above it; tapping one scrolls to that sitting. [built] {R-0267}
+- A cut is a first and a last line of the thread, in one sitting or across several. It opens as the picked sitting's lines; taps take turns setting the first line and the last; the lines inside are lit and the rest dimmed. [built] {R-0267}
+- No end of a cut can be placed at or before the last point that was already ratified. [built] {R-0267}
 - A cut placed at the end of a finished conversation or recording takes in the whole thing, so a whole transcript is not a different kind of task. [drawn] {R-0267}
 - Anything that changed since the last cut is coded again. [drawn] {R-0267}
 - The agenda screen is the whole of Patrick's administration: the meeting date, what is on the agenda, and who is done. [drawn] {R-0259, R-0267}

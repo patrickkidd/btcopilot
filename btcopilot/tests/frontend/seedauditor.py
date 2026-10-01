@@ -69,7 +69,7 @@ with app.app_context():
     db.session.add_all(turns)
     db.session.flush()
     cut = Cut(
-        discussion_id=discussion.id,
+        diagram_id=discussion.diagram_id,
         start_statement_id=turns[0].id,
         end_statement_id=turns[-1].id,
         user_id=admin.id,

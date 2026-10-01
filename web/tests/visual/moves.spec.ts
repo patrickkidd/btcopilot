@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { CASES, drawings, freeze } from "./drawings";
-import { inside, lists, openList, stateFor } from "./setup";
+import { inside, lists, openList, PARKED, stateFor } from "./setup";
 
 /** The move language, one drawing per move: each draws its people, named, inside
  * its cell. Pixels are not compared here (R-0416).
@@ -71,9 +71,9 @@ test.describe("the timeline behind the menu", () => {
   test("the editor's fields, text centred in the box", async ({ page }) => {
     await page.goto("/app/");
     await openList(page);
-    await page.locator("#menu-body .row").first().click();
+    await page.locator("#menu-add").click();
     await expect(page.locator(".editor .segs").first()).toBeVisible();
-    await inside(page.locator(".editor").first(), lists(page), true);
+    await inside(page.locator(".editor").first(), page.locator("#add-sheet"), true);
   });
 });
 
@@ -85,7 +85,8 @@ test.describe("the editor's fields by kind", () => {
   const openEditor = async (page: import("@playwright/test").Page) => {
     await page.goto("/app/");
     await openList(page);
-    await page.locator("#menu-body .row").first().click();
+    // the form is reached only to add an event while it is parked (PARKED)
+    await page.locator("#menu-add").click();
     await expect(page.locator(".editor .segs").first()).toBeVisible();
   };
   const pick = (page: import("@playwright/test").Page, group: string, value: string) =>
@@ -154,6 +155,7 @@ test.describe("the editor's fields by kind", () => {
 
   // R-0527
   test("the mover is never offered as a target or a third person", async ({ page }) => {
+    test.skip(true, PARKED);
     await openEditor(page);
     await pick(page, "kind", "shift");
     await pick(page, "relationship", "inside");
@@ -172,6 +174,7 @@ test.describe("the editor's fields by kind", () => {
 
   // R-0142, R-0527
   test("a relationship saves with two targets", async ({ page }) => {
+    test.skip(true, PARKED);
     await openEditor(page);
     await pick(page, "kind", "shift");
     await pick(page, "relationship", "conflict");
@@ -199,6 +202,7 @@ test.describe("the editor's fields by kind", () => {
    * carries only the fields the chosen kind uses. */
   // R-0144
   test("a kind with no shift fields saves none of them", async ({ page }) => {
+    test.skip(true, PARKED);
     await openEditor(page);
     await pick(page, "kind", "shift");
     await pick(page, "relationship", "conflict");

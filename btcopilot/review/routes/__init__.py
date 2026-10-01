@@ -135,9 +135,17 @@ def sees_others(cut: Cut, user) -> bool:
 
 
 def session_name(cut: Cut) -> str:
-    """What the conversation a cut was taken from is called on screen."""
-    discussion = adapter.discussion_of(cut.discussion_id)
+    """What a cut is called on screen: the sitting its last line was said in."""
+    return sitting_name(adapter.statement(cut.end_statement_id).discussion)
+
+
+def sitting_name(discussion) -> str:
     return (discussion.title or "").strip() or "an untitled conversation"
+
+
+def day(statement_id: int) -> str:
+    when = adapter.cut_day(statement_id)
+    return when.strftime("%b %-d") if when else "an unknown day"
 
 
 from btcopilot.review.routes import (  # noqa: E402  bp must exist first

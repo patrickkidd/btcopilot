@@ -297,8 +297,10 @@ test.describe("the list views and their editors", () => {
   }) => {
     await settle(page);
     await openList(page);
-    await page.locator("#menu-body .row").first().click();
-    const block = page.locator('#menu-body .editor [data-block="shift"]');
+    // the form is reached only to add an event while it is parked (PARKED);
+    // a new event starts as a shift
+    await page.locator("#menu-add").click();
+    const block = page.locator('#add-sheet .editor [data-block="shift"]');
     await expect(block).toBeVisible();
     await expect(block.locator(".sec")).toHaveText(["Shifts"]);
     const labels = await block.locator(":scope > .lab").allTextContents();

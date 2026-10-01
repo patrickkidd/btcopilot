@@ -765,9 +765,13 @@ export interface Rule {
  * one tap that opens the vote (R-0258, R-0259, R-0267). */
 
 /** One window of a conversation, frozen and put on the agenda. */
+/** A first and a last line in one family's thread, in one sitting or across
+ * several. */
 export interface Cut {
   id: number;
-  discussion_id: number;
+  diagram_id: number;
+  /** The sitting its first line was said in, which the picker opens at. */
+  sitting_id: number;
   start_statement_id: number;
   end_statement_id: number;
   meeting_date: string | null;
@@ -804,6 +808,7 @@ export interface CoderLine {
 /** Where a line falls across a conversation: the last ratified cut, or the one
  * on the agenda now. */
 export interface CutLine {
+  start_statement_id: number;
   statement_id: number;
   order: number;
   day: string;
@@ -812,15 +817,30 @@ export interface CutLine {
 
 export interface SessionTurn {
   id: number;
+  /** Its place in the whole thread, counted from 1. */
   order: number;
+  sitting_id: number;
   client: boolean;
   text: string;
   day: string;
 }
 
-/** A whole conversation as the cut-placing screen reads it. */
+/** One sitting of a family's thread, with what its divider is drawn from. */
+export interface Sitting {
+  id: number;
+  /** Empty while the sitting has no title. */
+  title: string;
+  started: string;
+  previous_started: string | null;
+  first_statement_id: number;
+}
+
+/** A family's whole thread as the cut-placing screen reads it, opened at one
+ * sitting. */
 export interface SessionTurns {
-  discussion_id: number;
+  diagram_id: number;
+  sitting_id: number;
+  sittings: Sitting[];
   session: string;
   agreed: CutLine | null;
   on_agenda: CutLine | null;

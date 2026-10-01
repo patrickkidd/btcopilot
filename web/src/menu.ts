@@ -1,3 +1,4 @@
+import { eventDetail, type DetailHooks } from "./detail";
 import { closeX, el, flash, slideOver } from "./dom";
 import { openEditor, openPersonEditor } from "./editor";
 import { Feature, tap } from "./track";
@@ -74,6 +75,10 @@ export class Menu {
     /** The record being edited, when it is not the one the app is on: the
      * coding screen edits the record its own coding is of. */
     private diagramId?: number,
+    /** Where a tapped event row opens the read-only detail view instead of the
+     * form: the chat app's own drawer. The coding screen passes none, and keeps
+     * the form, since coders change the record they code by hand. */
+    private detail?: Omit<DetailHooks, "person">,
   ) {}
 
   add(): void {
@@ -96,6 +101,13 @@ export class Menu {
   /** The thing whose editor is open, if one is. */
   edited(): number | null {
     return this.editing;
+  }
+
+  /** The open event or person folds back into its row. */
+  fold(): void {
+    this.editing = null;
+    this.render();
+    this.onMove?.();
   }
 
   /** Which of the two lists is on screen. */
@@ -207,7 +219,7 @@ export class Menu {
     if (this.editing !== null) {
       const event = this.data.events.find((e) => e.id === this.editing);
       const row = this.body.querySelector(`.row[data-event="${this.editing}"]`);
-      if (event && row) row.after(this.editor(event));
+      if (event && row) row.after(this.detail ? this.view(event) : this.editor(event));
     }
   }
 
@@ -270,6 +282,20 @@ export class Menu {
     });
   }
 
+  private view(event: TimelineEvent): HTMLElement {
+    return eventDetail(event, this.data.people, this.clusterOf(event.id), {
+      ...this.detail!,
+      person: (id) => this.goTo(Tab.People, id),
+    });
+  }
+
+  /** PARKED, not dead (Patrick, 2026-10-01: "hide and adequately comment out
+   * the event edit form for now and see how it goes with the chat"). In the
+   * chat app a tapped event row opens the read-only detail view, and the event
+   * is changed by talking to the coach about it; this form is reached there
+   * only to add a new event. To bring editing back, render this.editor(event)
+   * instead of this.view(event) in render(). The coding screen still edits
+   * through it. */
   private editor(event: TimelineEvent | null): HTMLElement {
     return openEditor(
       event,

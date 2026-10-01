@@ -425,25 +425,29 @@ export const onAgenda = () => ask<Cut[]>("GET", "/cuts?on_agenda=true");
  * the ones the room has already ratified. */
 export const allCuts = () => ask<Cut[]>("GET", "/cuts");
 
-/** The whole conversation, so the cut can be placed on any line of it. */
+/** The whole thread of the sitting's family, opened at that sitting, so a
+ * cut can be placed on any lines of it. */
 export const sessionTurns = (discussionId: number) =>
   ask<SessionTurns>("GET", `/turns?discussion_id=${discussionId}`);
 
-/** Putting a conversation on the agenda: the cut ends on the turn tapped, and
- * starts where the last cut left off. */
+/** Putting lines of a thread on the agenda: the first and the last line
+ * tapped, in one sitting or across several. */
 export const putOnAgenda = (
-  discussionId: number,
+  startStatementId: number,
   endStatementId: number,
   meetingDate: string | null,
 ) =>
   ask<Cut>("POST", "/cuts", {
-    discussion_id: discussionId,
+    start_statement_id: startStatementId,
     end_statement_id: endStatementId,
     meeting_date: meetingDate,
   });
 
-export const moveCut = (cutId: number, endStatementId: number) =>
-  ask<Cut>("PATCH", `/cuts/${cutId}`, { end_statement_id: endStatementId });
+export const moveCut = (cutId: number, startStatementId: number, endStatementId: number) =>
+  ask<Cut>("PATCH", `/cuts/${cutId}`, {
+    start_statement_id: startStatementId,
+    end_statement_id: endStatementId,
+  });
 
 export const setMeetingDate = (cutId: number, meetingDate: string) =>
   ask<Cut>("PATCH", `/cuts/${cutId}`, { meeting_date: meetingDate });

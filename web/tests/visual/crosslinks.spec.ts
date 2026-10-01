@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { lists, openList, stateFor } from "./setup";
+import { lists, openList, PARKED, stateFor } from "./setup";
 
 /** One record, reached from either side. A person's editor offers the events
  * about them; an event's editor offers the people in it; and the words on the
@@ -47,10 +47,10 @@ test.describe("an event and the people in it", () => {
     await settle(page);
     await openList(page);
     await page.locator("#menu-body .row").first().click();
-    await expect(editor(page)).toBeVisible();
+    await expect(page.locator("#menu-body .det")).toBeVisible();
 
-    // the person already chosen: tapping them goes to them
-    await editor(page).locator('.segs[data-name="person"] .seg.on').click();
+    // the person the event is about: tapping them goes to them
+    await page.locator("#menu-body .det .who").first().click();
     await expect(page.locator("#tab-people")).toHaveClass(/on/);
     await expect(lists(page)).toBeVisible();
     await expect(editor(page).locator('[data-name="name"]')).toHaveValue("Ada");
@@ -58,6 +58,7 @@ test.describe("an event and the people in it", () => {
 
   // R-0141
   test("a person not yet chosen is still chosen by tapping", async ({ page }) => {
+    test.skip(true, PARKED);
     await settle(page);
     await openList(page);
     await page.locator("#menu-body .row").first().click();
@@ -76,7 +77,7 @@ test.describe("a person the record knows the birth and death of", () => {
   test.use({ storageState: stateFor("longmove") });
 
   // R-0201
-  test("offers those two events, and one opens its own editor", async ({
+  test("offers those two events, and one opens its own detail view", async ({
     page,
   }) => {
     await settle(page);
@@ -91,9 +92,7 @@ test.describe("a person the record knows the birth and death of", () => {
 
     await life.first().click();
     await expect(page.locator("#tab-events")).toHaveClass(/on/);
-    await expect(editor(page).locator('.segs[data-name="kind"] .seg.on')).toHaveText(
-      "birth",
-    );
+    await expect(page.locator("#menu-body .det .kind")).toHaveText("birth");
   });
 });
 

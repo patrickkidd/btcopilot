@@ -37,9 +37,7 @@ def write(item: Item, value: dict, user):
 
 
 def _write(item: Item, value: dict, user):
-    case = adapter.case_diagram(
-        db.session.get(adapter.Discussion, item.cut.discussion_id)
-    )
+    case = adapter.diagram_of(item.cut.diagram_id)
     data = adapter.record_of(case)
     # A change is a rewording of the same moment, so it lands on the item the
     # opinions already name rather than adding a second one beside it.

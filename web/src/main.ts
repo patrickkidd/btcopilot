@@ -75,6 +75,7 @@ import {
   type Statement,
   type Cluster,
   type Timeline,
+  type TimelineEvent,
   SessionKind,
   Spotlight,
   BugReports,
@@ -302,7 +303,24 @@ const chat = new Chat($("chat"), $("composer"), {
 const offered = (chip: Chip) =>
   chip.kind === ChipKind.Ask || chip.tone === ChipTone.Ask;
 
-const menu = new Menu($("menu-body"), load);
+/** An event carried from its detail view into the message box: the chat comes
+ * up with the event as a lit chip at the caret and nothing sent (Patrick's
+ * picks D3 and D4, 2026-10-01); the send clears it with the rest of the box. */
+function talkAbout(event: TimelineEvent): void {
+  menu.fold();
+  toThread();
+  chat.insert(
+    { kind: ChipKind.Event, target: String(event.id), label: event.label, tone: ChipTone.Data, bare: false },
+    Lead.None,
+  );
+  $("composer").querySelector(`.chip[data-target="${event.id}"]`)!.classList.add("lit");
+  sync();
+}
+
+const menu = new Menu($("menu-body"), load, undefined, {
+  talk: talkAbout,
+  cluster: (id) => void navigate(address(Place.Cluster, id)),
+});
 
 /** On a phone the drawer gets out of the way of the thread; pinned beside it,
  * it stays. */
@@ -1721,6 +1739,8 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
   },
   [Place.Event]: ([id]) => toEvent(Number(id)),
   [Place.EventEditor]: ([id]) => {
+  // the address of the parked form, kept so old links and the history still
+  // land: it opens the event's read-only detail view
     toList(Tab.Events);
     menu.goTo(Tab.Events, Number(id));
   },

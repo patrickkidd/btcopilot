@@ -19,6 +19,7 @@ from btcopilot import observer, proactive, prompts, push, record, turnstore
 from btcopilot.record import Invalid
 from btcopilot.coachmodel import COACH_EFFORT, CoachModel
 from btcopilot.coachturn import CoachTurn
+from btcopilot.discussions import utc_iso
 from btcopilot.metered import Metered
 from btcopilot.models import (
     Author,
@@ -61,7 +62,6 @@ __all__ = [
     "Statement",
     "ShadowTurn",
     "User",
-    "case_diagram",
     "coach_model",
     "coding_diagram",
     "commit",
@@ -75,6 +75,9 @@ __all__ = [
     "record_of",
     "to_json",
     "statements_between",
+    "sitting",
+    "utc_iso",
+    "thread",
     "statement_order",
 ]
 
@@ -117,14 +120,13 @@ def statement(statement_id: int) -> Statement:
     return db.session.get(Statement, statement_id)
 
 
-def cut_day(discussion_id: int, statement_id: int):
-    """The day a cut is named by: the day the conversation happened, or the day
-    the turn it ends on was written down when the session carries no date."""
-    discussion = discussion_of(discussion_id)
-    if discussion is not None and discussion.discussion_date:
-        return discussion.discussion_date
-    end = statement(statement_id)
-    return end.created_at if end else None
+def cut_day(statement_id: int):
+    """The day a line is named by: the day its sitting happened, or the day the
+    line was written down when the sitting carries no date."""
+    line = statement(statement_id)
+    if line is None:
+        return None
+    return line.discussion.discussion_date or line.created_at
 
 
 def initials(user: User | None) -> str:
@@ -157,10 +159,6 @@ def diagram_of(diagram_id: int) -> Diagram:
 def render_record(diagram_id: int) -> str:
     """The record as the models read it."""
     return render(diagram_of(diagram_id).get_diagram_data())
-
-
-def case_diagram(discussion: Discussion) -> Diagram:
-    return discussion.diagram
 
 
 def to_json(value):
@@ -232,48 +230,57 @@ def commit(diagram_id: int, deltas: list[dict], user_id: int, turn_id: str) -> C
     )
 
 
-def statements_between(
-    discussion_id: int, start_id: int, end_id: int
-) -> list[Statement]:
-    orders = statement_order(discussion_id)
-    lo, hi = orders.get(start_id), orders.get(end_id)
-    if lo is None or hi is None:
-        raise ValueError("a cut's start and end must be statements of its session")
-    return [
-        s
-        for s in _ordered(discussion_id)
-        if lo <= (s.order or 0) <= hi  # noqa: E501
-    ]
+def thread(diagram_id: int) -> list[Statement]:
+    """Every sitting's lines on one family as the chat app shows them: the
+    sittings in the order they started, each one's lines in their order."""
+    found = (
+        Statement.query.join(Discussion)
+        .filter(Discussion.diagram_id == diagram_id)
+        .all()
+    )
+    started: dict[int, datetime.datetime] = {}
+    for s in found:
+        was = started.get(s.discussion_id)
+        started[s.discussion_id] = s.created_at if was is None else min(was, s.created_at)
+    return sorted(
+        found,
+        key=lambda s: (started[s.discussion_id], s.discussion_id, s.order or 0, s.id),
+    )
 
 
-def _ordered(discussion_id: int) -> list[Statement]:
+def sitting(discussion_id: int) -> list[Statement]:
     found = Statement.query.filter_by(discussion_id=discussion_id).all()
     return sorted(found, key=lambda s: (s.order or 0, s.id or 0))
 
 
-def statement_order(discussion_id: int) -> dict[int, int]:
-    return {s.id: (s.order or 0) for s in _ordered(discussion_id)}
+def statement_order(diagram_id: int) -> dict[int, int]:
+    """Each line's place in the family's thread, counted from 1."""
+    return {s.id: at for at, s in enumerate(thread(diagram_id), start=1)}
 
 
-def first_statement(discussion_id: int) -> Statement | None:
-    found = _ordered(discussion_id)
-    return found[0] if found else None
+def statements_between(diagram_id: int, start_id: int, end_id: int) -> list[Statement]:
+    lines = thread(diagram_id)
+    ids = [s.id for s in lines]
+    if start_id not in ids or end_id not in ids:
+        raise ValueError("a cut's first and last lines must be lines of its thread")
+    return lines[ids.index(start_id) : ids.index(end_id) + 1]
 
 
-def last_statement(discussion_id: int) -> Statement | None:
-    found = _ordered(discussion_id)
-    return found[-1] if found else None
+def first_statement(diagram_id: int) -> Statement | None:
+    return next(iter(thread(diagram_id)), None)
 
 
-def next_statement(discussion_id: int, after_id: int) -> Statement | None:
-    orders = statement_order(discussion_id)
-    after = orders.get(after_id)
-    if after is None:
+def last_statement(diagram_id: int) -> Statement | None:
+    lines = thread(diagram_id)
+    return lines[-1] if lines else None
+
+
+def next_statement(diagram_id: int, after_id: int) -> Statement | None:
+    lines = thread(diagram_id)
+    ids = [s.id for s in lines]
+    if after_id not in ids or ids.index(after_id) + 1 == len(ids):
         return None
-    for statement in _ordered(discussion_id):
-        if (statement.order or 0) > after:
-            return statement
-    return None
+    return lines[ids.index(after_id) + 1]
 
 
 def coach_model(

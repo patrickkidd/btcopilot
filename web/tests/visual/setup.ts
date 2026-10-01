@@ -266,3 +266,8 @@ export default async function setup() {
   }
   await browser.close();
 }
+
+/** Why a test of the event form opened from an event's row is skipped: the
+ * form is parked, not deleted, while chat-only editing is tried (Patrick,
+ * 2026-10-01). Take the skip out when the form comes back. */
+export const PARKED = "the event form is parked on Patrick's 2026-10-01 decision to try chat-only editing";

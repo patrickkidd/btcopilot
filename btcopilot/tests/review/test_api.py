@@ -3,7 +3,7 @@ import datetime
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
 from btcopilot.extensions import db
-from btcopilot.models import Author, Change, ModelCall, Purpose
+from btcopilot.models import Author, Change, Discussion, ModelCall, Purpose, Statement
 from mock import patch
 
 from btcopilot.review import adapter, divergence, export, ruledraft, snapshot
@@ -22,7 +22,7 @@ def test_cut_starts_after_the_previous_one(patrick, session, turns, cut):
     # R-0296
     made = patrick.post(
         "/review/cuts",
-        json={"discussion_id": session.id, "end_statement_id": turns[3].id},
+        json={"end_statement_id": turns[3].id},
     )
     assert made.status_code == 201
     assert made.get_json()["start_statement_id"] == turns[2].id
@@ -32,9 +32,29 @@ def test_first_cut_starts_at_the_first_turn(patrick, session, turns):
     # R-0296
     made = patrick.post(
         "/review/cuts",
-        json={"discussion_id": session.id, "end_statement_id": turns[1].id},
+        json={"end_statement_id": turns[1].id},
     )
     assert made.get_json()["start_statement_id"] == turns[0].id
+
+
+def test_a_cut_runs_across_sittings_of_one_thread(patrick, test_user, session, turns):
+    # R-0296
+    later = Discussion(user_id=test_user.id, diagram_id=session.diagram_id)
+    db.session.add(later)
+    db.session.flush()
+    line = Statement(discussion_id=later.id, text="next day", order=0)
+    db.session.add(line)
+    db.session.commit()
+
+    made = patrick.post(
+        "/review/cuts",
+        json={"start_statement_id": turns[2].id, "end_statement_id": line.id},
+    ).get_json()
+    assert (made["diagram_id"], made["sitting_id"]) == (session.diagram_id, session.id)
+    assert made["end_order"] == len(turns) + 1
+    read = patrick.get(f"/review/turns?discussion_id={later.id}").get_json()
+    assert [s["id"] for s in read["sittings"]] == [session.id, later.id]
+    assert read["on_agenda"]["start_statement_id"] == turns[2].id
 
 
 def test_an_overlapping_window_is_refused(patrick, session, turns, cut):
@@ -42,7 +62,6 @@ def test_an_overlapping_window_is_refused(patrick, session, turns, cut):
     made = patrick.post(
         "/review/cuts",
         json={
-            "discussion_id": session.id,
             "start_statement_id": turns[1].id,
             "end_statement_id": turns[3].id,
         },
@@ -65,7 +84,7 @@ def test_coding_reuses_the_coders_record_from_the_last_cut(
     # R-0267
     first = coder.post("/review/codings", json={"cut_id": cut.id}).get_json()
     later = Cut(
-        discussion_id=session.id,
+        diagram_id=session.diagram_id,
         start_statement_id=turns[2].id,
         end_statement_id=turns[3].id,
         user_id=test_user_2.id,
@@ -344,7 +363,7 @@ def test_only_patrick_runs_the_agenda(patrick, coder, session, turns, cut):
     # R-0346
     put = coder.post(
         "/review/cuts",
-        json={"discussion_id": session.id, "end_statement_id": turns[3].id},
+        json={"end_statement_id": turns[3].id},
     )
     assert put.status_code in (302, 403)
 
@@ -432,7 +451,7 @@ def test_the_meeting_page_reads_who_submitted_each_cut_apart(
     # R-0258
     later = patrick.post(
         "/review/cuts",
-        json={"discussion_id": session.id, "end_statement_id": turns[3].id},
+        json={"end_statement_id": turns[3].id},
     ).get_json()
     coded(test_user_2, cut, {})
     one = patrick.get(f"/review/coders?cut_id={cut.id}").get_json()
@@ -465,7 +484,7 @@ def test_a_cut_cannot_be_placed_before_the_last_ratified_one(
     db.session.commit()
     refused = patrick.post(
         "/review/cuts",
-        json={"discussion_id": session.id, "end_statement_id": turns[0].id},
+        json={"end_statement_id": turns[0].id},
     )
     assert refused.status_code == 400
     assert "already ratified" in refused.get_data(as_text=True)

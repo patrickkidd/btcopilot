@@ -1294,6 +1294,50 @@ button { font-family: inherit; }
   cursor: pointer;
 }
 
+/* One event, read-only, opened under its row in the events list (Patrick's
+   pick D2, 2026-10-01): a head with the kind over what happened, then one
+   labelled line per fact, then the one action that takes it to the chat. */
+.det { background: var(--panel); border-bottom: 1px solid var(--line); }
+.det .head { padding: 16px 16px 10px; border-bottom: 1px solid var(--line); }
+.det .kind { font: 500 12px/18px var(--mono); color: var(--data); text-transform: uppercase; letter-spacing: .05em; }
+.det .what { font: 500 20px/1.25 var(--sans); margin-top: 2px; text-wrap: balance; overflow-wrap: anywhere; }
+.det .r {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 10px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line);
+  min-height: 44px;
+  box-sizing: border-box;
+  align-items: center;
+}
+.det .k { font: 500 12px/18px var(--mono); color: var(--faint); text-transform: uppercase; letter-spacing: .05em; }
+.det .v { font: 400 15px/1.35 var(--sans); min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.det .v .sub { font: 400 13px/1.3 var(--mono); color: var(--faint); }
+.det .v .chip { margin: 0; }
+.det .who {
+  font: inherit;
+  color: var(--data);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.det .foot { padding: 14px 16px 16px; }
+.det .talk {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--ask);
+  border-radius: 12px;
+  background: var(--ask-tint);
+  color: var(--ask-text);
+  font: 500 15px/1.3 var(--sans);
+  cursor: pointer;
+}
+.det .talk:active { color: var(--ask-press); }
+
 .editor {
   padding: 12px 16px 16px;
   background: var(--bg);

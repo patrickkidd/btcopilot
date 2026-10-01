@@ -15,21 +15,28 @@ from btcopilot.review import (
     snapshot,
 )
 from btcopilot.review.models import Cut
-from btcopilot.review.routes import admin, bp, coder, cut_or_404, open_items
+from btcopilot.review.routes import (
+    admin,
+    bp,
+    coder,
+    cut_or_404,
+    open_items,
+    session_name,
+)
 
 
 def payload(cut: Cut) -> dict:
-    """The row, plus what the agenda screen names it by: the session it cuts,
-    the turn it ends on and whether anyone has started coding it."""
+    """The row, plus what the agenda screen names it by: the sitting it ends
+    in, the turn it ends on and whether anyone has started coding it, and the
+    sitting its first line was said in, which is where the picker opens."""
     data = cut.as_dict()
-    discussion = adapter.discussion_of(cut.discussion_id)
-    end = adapter.statement(cut.end_statement_id)
-    when = adapter.cut_day(cut.discussion_id, cut.end_statement_id)
+    when = adapter.cut_day(cut.end_statement_id)
     # The day the meeting falls on, as a day and nothing else: the screen puts
     # it straight into the phone's own date picker.
     data["meeting_date"] = cut.meeting_date.isoformat() if cut.meeting_date else None
-    data["session"] = (discussion.title or "").strip() or "an untitled conversation"
-    data["end_order"] = end.order if end else None
+    data["session"] = session_name(cut)
+    data["sitting_id"] = adapter.statement(cut.start_statement_id).discussion_id
+    data["end_order"] = adapter.statement_order(cut.diagram_id).get(cut.end_statement_id)
     data["cut_day"] = when.strftime("%b %-d") if when else None
     data["started"] = len(cut.codings) > 0
     return data
@@ -47,9 +54,9 @@ def agenda_cuts(meeting_date: str | None) -> list[Cut]:
 def cut_index():
     coder()
     query = Cut.query
-    discussion_id = request.args.get("discussion_id", type=int)
-    if discussion_id is not None:
-        query = query.filter_by(discussion_id=discussion_id)
+    diagram_id = request.args.get("diagram_id", type=int)
+    if diagram_id is not None:
+        query = query.filter_by(diagram_id=diagram_id)
     meeting_date = request.args.get("meeting_date")
     if meeting_date is not None:
         query = query.filter_by(meeting_date=_date(meeting_date))
@@ -66,28 +73,28 @@ def cut_read(cut_id: int):
 
 @bp.route("/cuts", methods=["POST"])
 def cut_create():
+    """A cut is a first and a last line of one family's thread, in one sitting
+    or across several; without a first line it starts right after the last
+    cut."""
     user = admin()
     body = request.get_json() or {}
-    discussion_id = body.get("discussion_id")
-    end_statement_id = body.get("end_statement_id")
-    if not discussion_id or not end_statement_id:
-        raise ValueError("a cut needs a session and the turn it ends on")
-
-    start_statement_id = body.get("start_statement_id") or _default_start(
-        discussion_id
-    )
+    end = adapter.statement(body.get("end_statement_id") or 0)
+    if end is None:
+        raise ValueError("a cut needs the line it ends on")
+    diagram_id = end.discussion.diagram_id
+    start_statement_id = body.get("start_statement_id") or _default_start(diagram_id)
     if start_statement_id is None:
-        raise ValueError("that session has no turns to cut")
+        raise ValueError("that thread has no lines left to cut")
 
-    orders = adapter.statement_order(discussion_id)
-    _refuse_before_ratified(discussion_id, orders, end_statement_id)
-    window = _window(orders, start_statement_id, end_statement_id)
-    _refuse_overlap(discussion_id, orders, window)
+    orders = adapter.statement_order(diagram_id)
+    _refuse_before_ratified(diagram_id, orders, start_statement_id, end.id)
+    window = _window(orders, start_statement_id, end.id)
+    _refuse_overlap(diagram_id, orders, window)
 
     cut = Cut(
-        discussion_id=discussion_id,
+        diagram_id=diagram_id,
         start_statement_id=start_statement_id,
-        end_statement_id=end_statement_id,
+        end_statement_id=end.id,
         user_id=user.id,
         meeting_date=_date(body.get("meeting_date")),
     )
@@ -108,16 +115,17 @@ def cut_patch(cut_id: int):
         cut.meeting_date = _date(body["meeting_date"])
         _tell(cut)
 
-    if "end_statement_id" in body:
+    if "start_statement_id" in body or "end_statement_id" in body:
         admin()
         if cut.codings:
             raise ValueError("someone is already coding to that line")
-        end_statement_id = body["end_statement_id"]
-        orders = adapter.statement_order(cut.discussion_id)
-        _refuse_before_ratified(cut.discussion_id, orders, end_statement_id)
-        window = _window(orders, cut.start_statement_id, end_statement_id)
-        _refuse_overlap(cut.discussion_id, orders, window, except_id=cut.id)
-        cut.end_statement_id = end_statement_id
+        start_id = body.get("start_statement_id", cut.start_statement_id)
+        end_id = body.get("end_statement_id", cut.end_statement_id)
+        orders = adapter.statement_order(cut.diagram_id)
+        _refuse_before_ratified(cut.diagram_id, orders, start_id, end_id)
+        window = _window(orders, start_id, end_id)
+        _refuse_overlap(cut.diagram_id, orders, window, except_id=cut.id)
+        cut.start_statement_id, cut.end_statement_id = start_id, end_id
 
     if body.get("vote_opened_at"):
         admin()
@@ -167,52 +175,47 @@ def _tell(cut: Cut):
         notify.told(cut, adapter.utcnow())
 
 
-def _default_start(discussion_id: int) -> int | None:
-    """The turn after the last cut's end, or the session's first turn."""
+def _default_start(diagram_id: int) -> int | None:
+    """The line after the last cut's end, or the thread's first line."""
     previous = (
-        Cut.query.filter_by(discussion_id=discussion_id)
-        .order_by(Cut.id.desc())
-        .first()
+        Cut.query.filter_by(diagram_id=diagram_id).order_by(Cut.id.desc()).first()
     )
     if previous is None:
-        first = adapter.first_statement(discussion_id)
+        first = adapter.first_statement(diagram_id)
         return first.id if first else None
-    following = adapter.next_statement(discussion_id, previous.end_statement_id)
+    following = adapter.next_statement(diagram_id, previous.end_statement_id)
     return following.id if following else None
 
 
 def _window(orders: dict[int, int], start_id: int, end_id: int) -> tuple[int, int]:
     if start_id not in orders or end_id not in orders:
-        raise ValueError("a cut's start and end must be turns of its own session")
+        raise ValueError("a cut's first and last lines must be lines of one thread")
     start, end = orders[start_id], orders[end_id]
     if start > end:
         raise ValueError("a cut cannot end before it starts")
     return start, end
 
 
-def _refuse_before_ratified(discussion_id: int, orders: dict[int, int], end_id: int):
-    """A cut can never be placed before the last point already ratified
+def _refuse_before_ratified(diagram_id: int, orders: dict[int, int], *ends: int):
+    """No end of a cut can sit at or before the last point already ratified
     (R-0267)."""
     ratified = (
-        Cut.query.filter(
-            Cut.discussion_id == discussion_id, Cut.ratified_at.isnot(None)
-        )
+        Cut.query.filter(Cut.diagram_id == diagram_id, Cut.ratified_at.isnot(None))
         .order_by(Cut.id.desc())
         .first()
     )
     if ratified is None:
         return
     line = orders.get(ratified.end_statement_id)
-    here = orders.get(end_id)
-    if line is not None and here is not None and here <= line:
+    if line is not None and any(orders.get(end, line + 1) <= line for end in ends):
         raise ValueError("that line was already ratified; cut below it")
 
 
 def _refuse_overlap(
-    discussion_id: int, orders: dict[int, int], window, except_id: int | None = None
+    diagram_id: int, orders: dict[int, int], window, except_id: int | None = None
 ):
     start, end = window
-    for other in Cut.query.filter_by(discussion_id=discussion_id).all():
+    for other in Cut.query.filter_by(diagram_id=diagram_id).all():
         if other.id == except_id:
             continue
         theirs = (
