@@ -766,7 +766,7 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
 const badge = el(
   "div",
   "cut-strip",
-  `<span>Conversation feedback enabled; slower response, vote on the best replies</span><button type="button" class="cs-cancel">turn off</button>`,
+  `<span>Conversation feedback enabled; Responses will be slower, vote on the best replies</span><button type="button" class="cs-cancel">turn off</button>`,
 );
 badge.id = "feedback";
 badge.hidden = true;

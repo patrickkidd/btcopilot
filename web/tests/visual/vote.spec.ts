@@ -59,7 +59,7 @@ test("three replies are voted on unnamed, then the coach's is headed Coach with 
   const cast = await serve(page);
   await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
-  await expect(page.locator("#feedback span")).toHaveText("Conversation feedback enabled; slower response, vote on the best replies");
+  await expect(page.locator("#feedback span")).toHaveText("Conversation feedback enabled; Responses will be slower, vote on the best replies");
   await page.locator("#composer").fill("My dad called last night about mom's care.");
   await page.locator("#send").click();
 
