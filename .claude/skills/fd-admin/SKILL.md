@@ -54,18 +54,6 @@ Changes something: needs `--yes`.
 | `alias` | required |
 | `--json` | Print JSON, not a table. |
 
-### `flask admin coach-model shadow <email> <aliases>`
-
-Run each of this person's turns again on each model alias given, never shown to them and never charged to them; the word off alone stops it.
-
-Changes something: needs `--yes`.
-
-| Argument | What it is |
-|---|---|
-| `email` | required |
-| `aliases` | required |
-| `--json` | Print JSON, not a table. |
-
 ### `flask admin coach-model show [email]`
 
 One person's models, or the default and everyone who differs from it.

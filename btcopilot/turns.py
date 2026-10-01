@@ -27,6 +27,7 @@ from btcopilot.models import (
     Statement,
     StatementKind,
 )
+from btcopilot.models.preferences import PrefKey
 from btcopilot.turnlog import TurnEventKind
 
 _log = logging.getLogger(__name__)
@@ -120,9 +121,7 @@ def run(
     said = db.session.get(Statement, statement_id)
     # a resumed turn's record already holds its first attempt's edits, so it
     # has no clean copy to run a shadow on
-    shadows = (
-        [] if resume else setting.read(SettingKey.ShadowModel, discussion.user_id, [])
-    )
+    shadows = () if resume else discussion.user.pref(PrefKey.ShadowModels)
     before = discussion.diagram.data
     covered = coverage.counts(record_of(discussion))
     turn = CoachTurn(

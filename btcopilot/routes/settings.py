@@ -4,14 +4,15 @@ the name/birthdate the coach uses), and the read-only account page."""
 import datetime
 import enum
 
-from flask import jsonify, request
+from flask import abort, jsonify, request
 
-from btcopilot import auth
+import btcopilot
+from btcopilot import auth, shadow
 from btcopilot.routes import bp
 from btcopilot.licence import professional
 from btcopilot.routes.diagrams import diagrams_payload
 from btcopilot.extensions import db
-from btcopilot.models.preferences import PrefKey
+from btcopilot.models.preferences import SHADOW_CANDIDATES, PrefKey
 
 PROFILE_FIELDS = ("first_name", "last_name", "birthdate")
 
@@ -28,6 +29,9 @@ def _preferences(user) -> dict:
     payload["first_name"] = user.first_name
     payload["last_name"] = user.last_name
     payload["birthdate"] = user.birthdate.isoformat() if user.birthdate else None
+    payload["shadow_candidates"] = SHADOW_CANDIDATES
+    if user.has_role(btcopilot.ROLE_ADMIN):
+        payload["shadow_cost"] = shadow.spend(datetime.datetime.utcnow())
     return payload
 
 
@@ -48,6 +52,9 @@ def set_preferences():
     unknown = set(body) - known
     if unknown:
         raise ValueError(f"Unknown preference(s): {', '.join(sorted(unknown))}")
+    # Shadows cost money nobody is charged for, so only staff may turn them on.
+    if body.get(PrefKey.ShadowModels) and not user.has_role(btcopilot.ROLE_AUDITOR):
+        abort(403)
 
     user.set_prefs(**{k: v for k, v in body.items() if k not in PROFILE_FIELDS})
     if "first_name" in body:

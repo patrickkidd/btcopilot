@@ -9,6 +9,7 @@ page can move the picture with the same reply it types out.
 """
 
 import datetime
+import hashlib
 import itertools
 import logging
 import uuid
@@ -30,7 +31,7 @@ from btcopilot.models import (
     TokenMeter,
     TurnEvent,
 )
-from btcopilot.prompts import agent_prompt, note_register, onboarding
+from btcopilot.prompts import agent_prompt, get_agent_prompt, note_register, onboarding
 from btcopilot.interactions import recent
 from btcopilot.toolbox import (
     LOOKUPS,
@@ -182,6 +183,12 @@ def narrate(model, system, messages: list[dict], spoken: str, turn_id="") -> str
     if chips.bare_list(told):
         raise BareList("Reply is still a bare list of chips after asking again")
     return told
+
+
+def prompt_version() -> str:
+    """The coach's prompt as the replay ledger names it: its text with nothing
+    filled in, hashed."""
+    return hashlib.sha256(get_agent_prompt().encode()).hexdigest()[:12]
 
 
 def record_of(discussion: Discussion) -> DiagramData:
@@ -405,6 +412,7 @@ class CoachTurn:
             views=self.toolbox.views or None,
             kind=StatementKind.Turn,
             turn_id=self.turn_id,
+            prompt_version=prompt_version(),
         )
         db.session.add(coach_statement)
         db.session.flush()

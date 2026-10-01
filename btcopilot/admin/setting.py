@@ -15,7 +15,6 @@ class SettingKey(enum.StrEnum):
     TokenCap = "token_cap"
     NudgesOn = "nudges_on"
     CoachModel = "coach_model"
-    ShadowModel = "shadow_model"
 
 
 class Setting(db.Model, ModelMixin):

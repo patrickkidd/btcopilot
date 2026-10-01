@@ -1,6 +1,6 @@
-"""Which model coaches one person, and which models run each of their turns
-again for comparison only [R-0596]. With none set a person gets the default
-model and no second run."""
+"""Which model coaches one person; which models run each of their turns again
+for comparison only [R-0596] is their own setting, shown here. With none set a
+person gets the default model and no second run."""
 
 import enum
 
@@ -14,6 +14,7 @@ from btcopilot.admin.setting import SettingKey
 from btcopilot.admin.users import find as find_user
 from btcopilot.llmutil import MODEL_ALIASES, resolve_model
 from btcopilot.models import User
+from btcopilot.models.preferences import PrefKey
 
 
 class Unset(enum.StrEnum):
@@ -30,7 +31,7 @@ def _row(user: User) -> dict:
     return {
         "email": user.username,
         "model": setting.read(SettingKey.CoachModel, user.id, Unset.Default.value),
-        "shadow": setting.read(SettingKey.ShadowModel, user.id, Unset.Off.value),
+        "shadow": list(user.pref(PrefKey.ShadowModels)) or Unset.Off.value,
     }
 
 
@@ -45,15 +46,6 @@ def _known(aliases: tuple[str, ...], unset: Unset | None) -> None:
             f"unknown model {', '.join(unknown)}; "
             f"one of {', '.join(MODEL_ALIASES)}{alone}"
         )
-
-
-def _put(key: SettingKey, email: str, value, unset: Unset) -> list[dict]:
-    user = find_user(email)
-    if value in (unset, [unset]):
-        setting.clear(key, user.id)
-    else:
-        setting.write(key, value, user.id)
-    return [_row(user)]
 
 
 @coach_model.command("show")
@@ -85,19 +77,12 @@ def coach_model_show(email):
 def coach_model_set(email, alias):
     """Coach this person on a model alias, or on the default with the word default."""
     _known((alias,), Unset.Default)
-    return _put(SettingKey.CoachModel, email, alias, Unset.Default)
-
-
-@writes
-@coach_model.command("shadow")
-@click.argument("email")
-@click.argument("aliases", nargs=-1, required=True)
-@rows_option
-def coach_model_shadow(email, aliases):
-    """Run each of this person's turns again on each model alias given, never
-    shown to them and never charged to them; the word off alone stops it."""
-    _known(aliases, Unset.Off)
-    return _put(SettingKey.ShadowModel, email, list(aliases), Unset.Off)
+    user = find_user(email)
+    if alias == Unset.Default:
+        setting.clear(SettingKey.CoachModel, user.id)
+    else:
+        setting.write(SettingKey.CoachModel, alias, user.id)
+    return [_row(user)]
 
 
 @writes

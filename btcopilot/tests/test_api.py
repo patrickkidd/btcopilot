@@ -15,7 +15,15 @@ from btcopilot.models import Author, Change, Discussion, Interaction, Statement
 from btcopilot.models.interaction import InteractionKind
 from btcopilot.models import Diagram, License, Policy
 from btcopilot.models.license import LicenseStatus
-from btcopilot.models.preferences import BugReports, ChatMode, PrefKey, Proactive, Spotlight, Theme
+from btcopilot.models.preferences import (
+    SHADOW_CANDIDATES,
+    BugReports,
+    ChatMode,
+    PrefKey,
+    Proactive,
+    Spotlight,
+    Theme,
+)
 from btcopilot.schema import (
     Cluster,
     DateCertainty,
@@ -353,9 +361,11 @@ def test_preferences_defaults(web, test_user):
         PrefKey.HowItWorks.value: True,
         PrefKey.LineHint.value: True,
         PrefKey.BugReports.value: BugReports.Ask.value,
+        PrefKey.ShadowModels.value: [],
         "first_name": test_user.first_name,
         "last_name": test_user.last_name,
         "birthdate": None,
+        "shadow_candidates": list(SHADOW_CANDIDATES),
     }
 
 

@@ -6,6 +6,7 @@ when it ends; what it said, the tools it called and what it spent are kept on
 the real turn's row. The user never sees it and is never charged for it.
 """
 
+import datetime
 import logging
 import time
 from decimal import Decimal
@@ -17,7 +18,7 @@ from btcopilot import diagramjson, extensions, record
 from btcopilot.coachmodel import model_for
 from btcopilot.llmutil import Spent, resolve_model
 from btcopilot.pricing import cost, price
-from btcopilot.coachturn import RECENT_INTERACTIONS, CoachTurn
+from btcopilot.coachturn import RECENT_INTERACTIONS, CoachTurn, prompt_version
 from btcopilot.extensions import db
 from btcopilot.models import (
     AccessRight,
@@ -44,6 +45,11 @@ QUEUE = "shadow"
 # What a scratch record leaves behind, all thrown away with it. The model calls
 # are not: they move to the real record so the spend stays visible.
 SCRATCH_ROWS = (AccessRight, Change, Interaction, Observation, ProductEvent)
+
+# How far back the cost of a shadow run is averaged, and what one is guessed
+# to cost when none ran in that time.
+RECENT = datetime.timedelta(days=30)
+PER_RUN_GUESS = Decimal("0.19")
 
 
 def start(turn: CoachTurn, statement_id: int, model: str, before: bytes | None):
@@ -167,6 +173,23 @@ def estimate(turns: list[Statement], model: str) -> tuple[Decimal, int]:
     return cost(name, spent), len(turns) - metered
 
 
+def spend(now: datetime.datetime) -> dict:
+    """Across everyone: what one shadow run cost on average over the last 30
+    days, or a guess when none ran, and what the shadows have cost this
+    calendar month."""
+    shadows = db.session.query(
+        func.sum(ModelCall.cost_usd), func.count(func.distinct(ModelCall.turn_id))
+    ).filter(ModelCall.purpose == Purpose.Shadow)
+    usd, runs = shadows.filter(ModelCall.created_at >= now - RECENT).one()
+    month = shadows.filter(
+        ModelCall.created_at >= now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    ).one()[0]
+    return {
+        "per_turn_usd": round(float(usd / runs if runs else PER_RUN_GUESS), 2),
+        "month_usd": round(float(month or 0), 2),
+    }
+
+
 def backfill(user: User, model: str) -> int:
     """Run each of this person's past turns again on the model, over the record
     as it stood before each one. Returns how many were handed over."""
@@ -193,6 +216,7 @@ def run(row_id: int) -> None:
     db.session.flush()
     copy = _copy(said, diagram)
     _interactions(row, diagram)
+    row.prompt_version = prompt_version()
     db.session.commit()
     shadow_id = f"shadow-{row_id}"
     started = time.monotonic()
