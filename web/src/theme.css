@@ -3213,3 +3213,7 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   .pr-wide { display: inline; }
   .pr-narrow { display: none; }
 }
+
+/* a phone's keyboard is up: the chat keeps the room above the message box */
+.typing > .pic,
+.typing > .speakrow { display: none; }

@@ -3,7 +3,7 @@ import { askedChip, chipOf, face, LEAD, Lead, pill, token, tokenize } from "./ch
 import { hush, say } from "./speech";
 import { INFO, notesView, type Notes } from "./notes";
 import { html, type Line } from "./tools";
-import { fit } from "./viewport";
+import { fit, fold } from "./viewport";
 import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
@@ -159,6 +159,7 @@ export class Chat {
     this.watchScrolling();
     // the chat box stays above the phone's keyboard, however it came up
     fit();
+    fold(this.composer, this.list.closest<HTMLElement>(".screen")!, () => this.toEnd());
     // the thread's box changes size after it is put up — a phone's toolbar
     // collapsing, the picture taking its height — and stays on its last words
     new ResizeObserver(() => this.scroll()).observe(this.list);
