@@ -1915,6 +1915,11 @@ You rule keep, change, or undo on each.
 54. **Cuts are not blocked for an admin viewing read-only, since cuts are placed from the agenda across all families: fine, or block them**
    - You decide: Decide.
 
+67. **A failed sitting-title call fails the coach's whole turn**
+   - Done: Seen on the test stack with no Gemini key, 2026-10-01.
+   - Why it matters: A title failure should not cost the person their reply.
+   - You decide: Recommended: the turn succeeds and the title failure is logged. Alternative: keep failing the turn so nothing silent happens.
+
 ### B. Defects and unproven things
 
 You rule fix now, later, or accept.
