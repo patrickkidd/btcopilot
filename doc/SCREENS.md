@@ -265,17 +265,17 @@ What it is for: seeing and editing everything in the record by hand.
 - Each row shows what happened on one line and the date and people on a second. [built]
 - A row's summary uses short codes rather than running off the side of the phone. [built]
 - The scrollbar is never covered by a cluster heading. [built] {R-0218}
-- Tapping an event row opens that event's detail view in place, read-only; tapping a person row opens the person editor in place. [built]
+- Tapping a row opens that event's or that person's detail card in place, read-only. [built]
 - The line saying you can also edit by chatting was removed from these lists. [built] {R-0219}
 - There is a button to add an event; the new event's form slides up over the lists, full screen, with its name and the app's close button at its top. [built]
-- An event is changed by chatting about it, from its detail view; a person is still edited by hand. [built]
+- An event or a person is changed by chatting about it, from its detail card. [built]
 
 ## The event detail view
 
 What it is for: reading one event, and taking it to the chat to comment on it or change it (Patrick's picks D2 to D4, 2026-10-01).
 
 - Tapping a row in the events list opens the event under its row, read-only: its kind, what happened, when and how sure, who, any shift, where, its cluster and its notes. Nothing on it is a form field. [built]
-- A person's name opens that person's editor; the cluster opens that cluster on the picture. [built] {R-0201}
+- A person's name opens that person's card; the cluster opens that cluster on the picture. [built] {R-0201}
 - One action sits at its foot, reading "Tap to comment or change this event in chat". It puts the event in the message box as a lit chip and brings up the chat with the box ready to type in; nothing is sent until you send. [built]
 - After the message is sent the chip is gone from the box; the coach's reply shows what it changed as any reply does. [built]
 
@@ -305,14 +305,24 @@ What it is for: correcting or adding one event by hand.
 - Saving re-sorts the list by time and redraws the lists and the picture. [built]
 - Delete appears only when you are editing something that already exists. [built]
 
-## The person editor
+## The person detail card
+
+What it is for: reading one person, and taking them to the chat to comment on them or change them (Patrick, 2026-10-01: the same as for events).
+
+- Tapping a row in the people list opens the person under their row, read-only: their kind over their name, when they were born and died, their parents, partners and children, the clusters and events they are in, and their notes. Only what the record holds is shown; it keeps no address, contact or living status for a person. [built]
+- A name opens that person's card, an event opens that event's card, and a cluster opens that cluster on the picture. [built] {R-0201}
+- One action sits at its foot, reading "Tap to comment or change this person in chat". It puts the person in the message box as a lit chip and brings up the chat with the box ready to type in; the chip is gone after the send. [built]
+
+## The person editor (parked)
+
+Parked on Patrick's 2026-10-01 decision to do for people what was done for events: the form is not reached from the people list or any card, and is still used to add someone and on the coding screen. Its code is kept so it can come back.
 
 @frame built#f15 | A person opened the same way: a name, a kind, and a line saying births and deaths come from talking to the coach.
 
 What it is for: one person's own details.
 
 - The person's kind field is labelled Kind rather than sex, to keep the category right. [built] {R-0200}
-- A person carries buttons to their birth and their death when those exist, jumping to that event's detail view. [built] {R-0201}
+- A person carries buttons to their birth and their death when those exist, jumping to that event's detail view (the person card does this now). [built] {R-0201}
 - The jump works in reverse, from an event back to the person. [built] {R-0201}
 - Your own birthdate anchors your own line on the picture. [built]
 - Every diagram that ever had a chat on it carries a person called Assistant, which is a defect and not yet fixed. [built]
@@ -436,7 +446,7 @@ What it is for: every screen and everything on it has its own web address, so th
 | `/app/event/<event>` | that event picked on the picture |
 | `/app/event/<event>/edit` | the events list with that event's detail view open and its row ringed (the address of the parked editor, kept) |
 | `/app/event/new` | the new-event form |
-| `/app/person/<person>` | the people list with that person's editor open and its row ringed |
+| `/app/person/<person>` | the people list with that person's card open and its row ringed (the address of the parked editor, kept) |
 | `/app/person/new` | the new-person form |
 | `/app/events`, `/app/people`, `/app/questions` | that list of the lists drawer |
 | `/app/play/<message>` | the play-by-play that message keeps |

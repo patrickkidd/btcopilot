@@ -1,4 +1,4 @@
-import { eventDetail, type DetailHooks } from "./detail";
+import { eventDetail, personDetail, type DetailHooks } from "./detail";
 import { closeX, el, flash, slideOver } from "./dom";
 import { openEditor, openPersonEditor } from "./editor";
 import { Feature, tap } from "./track";
@@ -75,10 +75,10 @@ export class Menu {
     /** The record being edited, when it is not the one the app is on: the
      * coding screen edits the record its own coding is of. */
     private diagramId?: number,
-    /** Where a tapped event row opens the read-only detail view instead of the
-     * form: the chat app's own drawer. The coding screen passes none, and keeps
-     * the form, since coders change the record they code by hand. */
-    private detail?: Omit<DetailHooks, "person">,
+    /** Where a tapped row opens the read-only detail card instead of the form:
+     * the chat app's own drawer. The coding screen passes none, and keeps the
+     * forms, since coders change the record they code by hand. */
+    private detail?: Pick<DetailHooks, "talk" | "cluster">,
   ) {}
 
   add(): void {
@@ -260,7 +260,7 @@ export class Menu {
     if (this.editing !== null) {
       const person = this.data.people.find((p) => p.id === this.editing);
       const row = this.body.querySelector(`.row[data-person="${this.editing}"]`);
-      if (person && row) row.after(this.personEditor(person));
+      if (person && row) row.after(this.detail ? this.personView(person) : this.personEditor(person));
     }
   }
 
@@ -273,6 +273,14 @@ export class Menu {
     void this.reload().then((data) => this.show(data));
   }
 
+  /** PARKED, not dead, as the event form is (Patrick, 2026-10-01: "We need to
+   * do the same thing with people that we did with events. hide + comment the
+   * people editor form"). In the chat app a tapped person row opens the
+   * read-only person card, and a person is changed by talking to the coach
+   * about them; this form is reached there only to add someone. To bring
+   * editing back, render this.personEditor(person) instead of
+   * this.personView(person) in renderPeople(). The coding screen still edits
+   * through it. */
   private personEditor(person: Person | null): HTMLElement {
     return openPersonEditor(person, {
       done: () => this.done(),
@@ -282,11 +290,20 @@ export class Menu {
     });
   }
 
-  private view(event: TimelineEvent): HTMLElement {
-    return eventDetail(event, this.data.people, this.clusterOf(event.id), {
+  private hooks(): DetailHooks {
+    return {
       ...this.detail!,
       person: (id) => this.goTo(Tab.People, id),
-    });
+      event: (id) => this.goTo(Tab.Events, id),
+    };
+  }
+
+  private view(event: TimelineEvent): HTMLElement {
+    return eventDetail(event, this.data.people, this.clusterOf(event.id), this.hooks());
+  }
+
+  private personView(person: Person): HTMLElement {
+    return personDetail(person, this.data, this.hooks());
   }
 
   /** PARKED, not dead (Patrick, 2026-10-01: "hide and adequately comment out

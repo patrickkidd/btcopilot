@@ -75,7 +75,6 @@ import {
   type Statement,
   type Cluster,
   type Timeline,
-  type TimelineEvent,
   SessionKind,
   Spotlight,
   BugReports,
@@ -303,17 +302,17 @@ const chat = new Chat($("chat"), $("composer"), {
 const offered = (chip: Chip) =>
   chip.kind === ChipKind.Ask || chip.tone === ChipTone.Ask;
 
-/** An event carried from its detail view into the message box: the chat comes
- * up with the event as a lit chip at the caret and nothing sent (Patrick's
- * picks D3 and D4, 2026-10-01); the send clears it with the rest of the box. */
-function talkAbout(event: TimelineEvent): void {
+/** An event or a person carried from its detail card into the message box:
+ * the chat comes up with it as a lit chip at the caret and nothing sent
+ * (Patrick's picks D3 and D4, 2026-10-01); the send clears it with the rest of
+ * the box. */
+function talkAbout(chip: Chip): void {
   menu.fold();
   toThread();
-  chat.insert(
-    { kind: ChipKind.Event, target: String(event.id), label: event.label, tone: ChipTone.Data, bare: false },
-    Lead.None,
-  );
-  $("composer").querySelector(`.chip[data-target="${event.id}"]`)!.classList.add("lit");
+  chat.insert(chip, Lead.None);
+  $("composer")
+    .querySelector(`.chip[data-kind="${chip.kind}"][data-target="${chip.target}"]`)!
+    .classList.add("lit");
   sync();
 }
 
@@ -1749,6 +1748,8 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
     toList(Tab.People);
     menu.add();
   },
+  // the address of the parked person form, kept so old links and the history
+  // still land: it opens the person's read-only card
   [Place.Person]: ([id]) => {
     toList(Tab.People);
     menu.goTo(Tab.People, Number(id));

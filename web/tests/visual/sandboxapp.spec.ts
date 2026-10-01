@@ -84,7 +84,7 @@ test.describe(() => {
     await gates("the events list");
     await shot("3-events");
 
-    // ── 4. the people list and the person editor ──────────────────────────
+    // ── 4. the people list and the person card ────────────────────────────
     await changed("the people tab", () => page.locator("#tab-people").click());
     const people = await page.locator("#menu-body .row").allInnerTexts();
     say(`people: ${people.slice(0, 6).map((s) => s.replace(/\s+/g, " ")).join(" | ")}`);
@@ -97,12 +97,11 @@ test.describe(() => {
     await changed("opening a person", () =>
       page.locator("#menu-body .row").first().click(),
     );
-    const ed = (await text("#menu-body")).replace(/\s+/g, " ");
-    say(`person editor: ${ed.slice(0, 300)}`);
-    check(/kind/i.test(ed), "the person's kind field is labelled Kind");
-    check(/born to/i.test(ed), "the editor asks who the person was born to");
-    check(/partners/i.test(ed), "the editor lists the partners this person has (R-0345)");
-    await gates("the person editor");
+    const ed = (await text("#menu-body .det")).replace(/\s+/g, " ");
+    say(`person card: ${ed.slice(0, 300)}`);
+    check(!(await visible("#menu-body .editor")), "a person opens their read-only card, not the parked form");
+    check(ed.includes("Tap to comment or change this person in chat"), "the card's one action takes the person to the chat");
+    await gates("the person card");
     await shot("4-person");
 
     // ── 5. the sessions sheet ─────────────────────────────────────────────

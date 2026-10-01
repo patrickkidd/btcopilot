@@ -21,6 +21,7 @@ test.describe("the person editor", () => {
   test("says what the record keeps, and where the rest is kept", async ({
     page,
   }) => {
+    test.skip(true, PARKED);
     await settle(page);
     await openList(page);
     await page.locator("#tab-people").click();
@@ -43,7 +44,7 @@ test.describe("an event and the people in it", () => {
   test.use({ storageState: stateFor("three40") });
 
   // R-0201
-  test("the person it is about opens their own editor", async ({ page }) => {
+  test("the person it is about opens their own card", async ({ page }) => {
     await settle(page);
     await openList(page);
     await page.locator("#menu-body .row").first().click();
@@ -53,7 +54,7 @@ test.describe("an event and the people in it", () => {
     await page.locator("#menu-body .det .who").first().click();
     await expect(page.locator("#tab-people")).toHaveClass(/on/);
     await expect(lists(page)).toBeVisible();
-    await expect(editor(page).locator('[data-name="name"]')).toHaveValue("Ada");
+    await expect(page.locator("#menu-body .det .what")).toHaveText(/^Ada\b/);
   });
 
   // R-0141
@@ -85,12 +86,9 @@ test.describe("a person the record knows the birth and death of", () => {
     await page.locator("#tab-people").click();
     await page.locator('#menu-body .row:has-text("Ada")').first().click();
 
-    const life = editor(page).locator("[data-event]");
-    await expect(life).toHaveCount(2);
-    await expect(life.first()).toHaveText("Their birth");
-    await expect(life.last()).toHaveText("Their death");
-
-    await life.first().click();
+    const card = page.locator("#menu-body .det");
+    await expect(card.locator(".k")).toContainText(["Born", "Died"]);
+    await card.locator(".r:has(.k:text-is(\"Born\")) [data-event]").click();
     await expect(page.locator("#tab-events")).toHaveClass(/on/);
     await expect(page.locator("#menu-body .det .kind")).toHaveText("birth");
   });
