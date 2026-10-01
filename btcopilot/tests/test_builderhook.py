@@ -34,7 +34,7 @@ def repo(tmp_path):
     work = tmp_path / "work"
     subprocess.run(["git", "init", "-q", "--bare", "-b", "master", str(origin)], check=True)
     subprocess.run(["git", "clone", "-q", str(origin), str(work)], check=True)
-    git(work, "config", "user.email", "builder@example.com")
+    git(work, "config", "user.email", "new@fd362-fixture.invalid")
     git(work, "config", "user.name", "Builder")
     write(work, f"{VERSIONS}/a_first.py")
     git(work, "add", ".")
