@@ -136,9 +136,10 @@ export class Chat {
   private strip: Fold;
   /** What the message box says when it is open. */
   private ph: string;
-  /** Other models answer each turn too, and the reader votes before typing
-   * again; the coach's words are not shown until then (R-0636). */
-  shadows = false;
+  /** How many other models answer each turn too. While any do, the reader
+   * votes before typing again, and the coach's words are not shown until
+   * then (R-0636). */
+  shadows = 0;
 
   constructor(
     private list: HTMLElement,
@@ -465,7 +466,11 @@ export class Chat {
       },
       vote: (turnId) =>
         this.shadows
-          ? new Vote(bubble, turnId, (text) => this.written(tokenize(text), null), (on) => this.hold(on))
+          ? new Vote(bubble, turnId, this.shadows, {
+              written: (text) => this.written(tokenize(text), null),
+              hold: (on) => this.hold(on),
+              scroll: () => this.scroll(),
+            })
           : null,
       type: async (text, onChip, pace = READ_MS) => {
         this.said.set(bubble, text);

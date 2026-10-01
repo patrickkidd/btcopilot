@@ -748,6 +748,7 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
   onPrefs: (prefs) => {
     speak.checked = prefs.speak;
     reports.always = prefs.bug_reports === BugReports.Always;
+    chat.shadows = prefs.shadow_models.length;
   },
   onOpen: openDiagram,
   onTask: () => void readTask().then(() => settings.push(TASK)),
@@ -1323,8 +1324,10 @@ function follow(turnId: string): void {
         const said = opened();
         said.stamp(reply.statement_id);
         newest = reply.statement_id;
-        if (speak.checked) speech.say(reply.statement);
+        // a reply held for a vote is not read aloud: it would say which is the coach's
+        if (speak.checked && !chat.shadows) speech.say(reply.statement);
         said.settle(reply.statement, (chip) => aim(chip));
+        said.vote(turnId);
         stopFollowing();
         if (!(await store.refresh(Part.Record, Part.Sittings))) return;
         void notices.refresh();
