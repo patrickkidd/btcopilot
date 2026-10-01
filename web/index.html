@@ -54,7 +54,14 @@
 
   <div class="viewing" id="viewing" hidden>
     <span id="viewing-who"></span>
-    <button type="button" id="viewing-back">Back to my diagram</button>
+    <span class="viewing-acts">
+      <button type="button" id="viewing-cut" hidden>Select a cut</button>
+      <button type="button" id="viewing-back">Back to my diagram</button>
+    </span>
+  </div>
+  <div class="cut-strip" id="cut-strip" hidden>
+    <span id="cut-say"></span>
+    <button type="button" class="cs-cancel">cancel</button>
   </div>
 
   <div class="split" id="chat-split">
@@ -82,6 +89,7 @@
            aria-label="Message your coach" data-ph="Message your coach"></div></div>
       <button class="send" id="send" type="button" aria-label="Send"><span>&#8593;</span></button>
     </div>
+    <div class="inbar ct-bar" id="cut-bar" hidden></div>
     <div id="pbp" hidden></div>
   </div>
   <aside class="pinned" id="chat-drawer" hidden></aside>
@@ -143,19 +151,8 @@
     </div>
   </div>
 
-  <div class="screen" id="cut-screen" hidden>
-    <div class="ct-jump" id="cut-jump"></div>
-    <div class="ct-hint" id="cut-hint"></div>
-    <div class="chat" id="cut-chat"></div>
-    <div class="inbar ct-bar" id="cut-bar"></div>
-  </div>
-
   <div class="screen" id="agenda-screen" hidden>
     <div class="fs-body" id="agenda-body"></div>
-  </div>
-
-  <div class="screen" id="pick-screen" hidden>
-    <div class="fs-body" id="pick-body"></div>
   </div>
 
   <div class="screen" id="meet-screen" hidden>

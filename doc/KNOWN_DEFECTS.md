@@ -28,7 +28,7 @@ Each needs a test that fails before its fix, citing its ruling once the queued i
 
 | Ruling | What is wrong today | What it needs |
 |---|---|---|
-| R-0267 | Every session in the meeting's "Put a session on the agenda" list is named "Free Diagram". | each session named by its family |
+| R-0629 | A cut's row on Next meeting names the sitting its last line was said in, not the person whose diagram it is: the cut the server sends carries no owner name. | the owner's name on the cut the server sends |
 | — | The coding screen's title is clipped. | |
 | — | The reports route's limit of 20 an hour per sender is held in the server's memory, so every restart resets it. | |
 | R-0613 (queued) | Someone who joins a notice's audience after it was sent gets it in the app only, never by push or email, so a pricing notice sent by email misses them. | |

@@ -191,10 +191,32 @@ export async function openList(page: Page): Promise<void> {
 /** A fixture's account, as the server's fixtures name it. */
 export const username = (key: Key) => `${key}@fd362-fixture.invalid`;
 
+/** From Next meeting, its button to the Diagrams page, a person found with
+ * the admin's Find a person box and their diagram opened, with selecting a
+ * cut already on. */
+export async function toTheirDiagram(page: Page, who: string, diagram?: string): Promise<void> {
+  await page.locator(".tb-add").click();
+  const pane = page.locator('.sn-pane[data-page="diagrams"]');
+  await pane.getByLabel("Find a person").fill(who);
+  await pane.locator(".sn-find .sn-row", { hasText: who }).first().click();
+  const theirs = pane.locator(".sn-find .sn-grp .sn-row", diagram ? { hasText: diagram } : {});
+  await theirs.first().click();
+  await expect(page.locator("#viewing")).toBeVisible();
+  await expect(page.locator("#cut-strip")).toBeVisible();
+}
+
+/** Out of the account stack and back on the admin's own diagram, which the
+ * fixtures need before they install again over the diagram just viewed. */
+export async function backToMine(page: Page): Promise<void> {
+  while (await page.locator("#settings-back").isVisible()) await page.locator("#settings-back").click();
+  await page.locator("#viewing-back").click();
+  await expect(page.locator("#viewing")).toBeHidden();
+}
+
 /** Chooses a new cut's first and last lines, the thread's last two, and
  * places it: the button stays dead until both are chosen. */
 export async function placeCut(page: Page): Promise<void> {
-  const lines = page.locator("#cut-chat .bub.line");
+  const lines = page.locator("#chat .bub[data-statement]");
   await expect(page.locator(".ct-go")).toBeDisabled();
   await lines.nth(-2).click();
   await lines.last().click();

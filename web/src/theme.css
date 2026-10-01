@@ -2820,10 +2820,11 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .fs-acts.wide .fs-act { text-align: left; padding: 4px 6px; min-height: 36px; }
 .fs-act.tbl { color: var(--ask-text); }
 
-/* Placing the cut: the thread read-only, turns after the cut dimmed. */
+/* Selecting a cut: lines after the cut dimmed. */
 .ct-bar { flex-direction: column; align-items: stretch; gap: 6px; }
 .ct-go { height: 44px; border-color: var(--ask); color: var(--ask-text); }
-.bub.line.after { opacity: 0.4; }
+.ct-go.go { border-color: var(--ask); background: var(--ask); color: var(--onaccent); font-weight: 600; }
+.bub.after { opacity: 0.4; }
 
 /* One line per coder, and what they are doing. */
 .srow {
@@ -3345,37 +3346,34 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .folded > .pic > .view { margin-top: -31px; }
 /* a phone's keyboard is up: the chat keeps the room above the message box */
 .typing > .speakrow { display: none; }
+/* selecting a cut: the foot bar stands alone under the thread */
+.selecting > .speakrow { display: none; }
 
-/* The cut picker's row of sittings over the thread, each in the agenda's own
-   row box with its title over its date; the one in view is outlined, and
-   tapping one scrolls the thread to that sitting's first line. */
-.ct-jump {
+/* Selecting a cut in the chat (R-0629): an amber line under the read-only
+   line says what to tap, a foot bar places it, and the lines inside the cut
+   are ringed in the cut's own colour. */
+.viewing-acts { display: flex; gap: 10px; flex: none; }
+.cut-strip {
   flex: none;
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  overflow-x: auto;
-  padding: 8px var(--gutter);
-  background: var(--bg);
-  scrollbar-width: none;
-}
-.ct-jump .sn-row.ct-to {
-  flex: none;
-  width: 72%;
-  max-width: 280px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--panel);
-}
-.ct-jump .sn-row.ct-to.on { border-color: var(--ask); box-shadow: 0 0 0 1px var(--ask); }
-/* what to tap next, in words, under the sittings */
-#cut-hint {
-  flex: none;
-  padding: 6px var(--gutter);
+  padding: 6px 12px;
   border-bottom: 1px solid var(--line);
-  font: 500 14px/20px var(--sans);
+  background: var(--ask-tint);
+  font: 500 13px/20px var(--sans);
   color: var(--ask-text);
-  text-align: center;
+}
+.cut-strip[hidden], .ct-bar[hidden] { display: none; }
+.cut-strip button {
+  flex: none;
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  color: var(--data);
+  font: 400 13px/20px var(--sans);
 }
 .ct-go[disabled] { opacity: 0.4; cursor: default; }
 /* The lines inside the cut are lit in the cut's own colour. */
-.bub.line.lit { box-shadow: 0 0 0 2px var(--ask); }
+.bub.lit { box-shadow: 0 0 0 2px var(--ask); }

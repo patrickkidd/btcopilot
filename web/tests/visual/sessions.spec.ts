@@ -291,7 +291,7 @@ test.describe("the sessions Patrick sees listed", () => {
     await expect(page.locator("#sessions-sheet .fs-foot button:visible")).toHaveCount(0);
     const row = page.locator("#sessions-sheet .row").first();
     await row.locator(".rsub").click();
-    await expect(page.locator("#cut-screen")).toBeHidden();
+    await expect(page.locator("#cut-strip")).toBeHidden();
     await expect(page.locator("#sessions-sheet")).toBeHidden();
     await openSheet(page);
     await row.locator(".rmore").click();

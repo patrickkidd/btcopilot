@@ -7,7 +7,7 @@ import { adding, Menu, Tab, shut } from "./menu";
 import { Questions } from "./questions";
 import { Ballot } from "./ballot";
 import { Coding } from "./coding";
-import { Cut } from "./cut";
+import { CutSelect } from "./cut";
 import { Agenda } from "./agenda";
 import { Pairs } from "./pairs";
 import { Meeting } from "./meeting";
@@ -71,6 +71,7 @@ import {
   type CodedIn,
   type Delivery,
   Access,
+  type Cut,
   type Diagram,
   type Session,
   type Started,
@@ -416,11 +417,8 @@ const AGENDA: Sub = {
   name: Screen.Agenda,
   at: address(Place.Agenda),
 };
-const PICK: Sub = { title: "Pick a session", screen: $("pick-screen"), at: address(Place.Pick) };
-/** The page of one meeting and the cut screen take their addresses from the
- * meeting and the session they open on. */
+/** The page of one meeting takes its address from the meeting it opens on. */
 const MEET: Sub = { title: "Meeting", screen: $("meet-screen") };
-const CUT: Sub = { title: "", screen: $("cut-screen"), name: Screen.Cut };
 const PAIRS: Sub = {
   title: "Better replies",
   screen: $("pairs-screen"),
@@ -529,17 +527,27 @@ async function openLine(statementId: number): Promise<void> {
  * Putting a conversation on the agenda, placing the cut everyone codes up to,
  * and the agenda itself (R-0258, R-0267). Nobody but Patrick sees these. */
 
-const placing = new Cut($("cut-jump"), $("cut-hint"), $("cut-chat"), $("cut-bar"), {
-  onPlaced: () =>
-    void agenda.load().then(() => settings.popTo(AGENDA)),
-  onTitle: (title) => {
-    CUT.title = title;
+/** Selecting a cut happens in the chat itself, on someone else's diagram
+ * (R-0629); placing it returns to Next meeting. */
+const selecting = new CutSelect($("chat"), $("cut-strip"), $("cut-say"), $("cut-bar"), {
+  onSelecting: (on) => {
+    $("inbar").hidden = on;
+    $("chat-screen").classList.toggle("selecting", on);
+    $("viewing-cut").hidden = on || !looking();
   },
+  onPlaced: () => void openAgenda(),
 });
 
-const agenda = new Agenda($("agenda-body"), $("pick-body"), $("meet-body"), {
-  onPick: () => settings.push(PICK),
-  onPlace: (discussionId) => void placeCut(discussionId),
+/** The meeting a cut selected next joins, set by Next meeting's button and
+ * spent on the next diagram opened. */
+let arming: { day: string | null } | null = null;
+
+const agenda = new Agenda($("agenda-body"), $("meet-body"), {
+  onAdd: () => {
+    arming = { day: agenda.nextDate() };
+    settings.push(Page.Diagrams);
+  },
+  onOpen: (cut) => void openCut(cut),
   onMeeting: (title) => {
     MEET.title = title;
     MEET.at = address(Place.MeetingDay, agenda.meeting ?? UNDATED);
@@ -591,11 +599,15 @@ async function openResult(cutId: number, back: () => Promise<void>): Promise<voi
   screen(Screen.Result);
 }
 
-async function placeCut(discussionId: number): Promise<void> {
-  await placing.open(discussionId, agenda.nextDate());
-  CUT.at = address(Place.Cut, discussionId);
-  settings.push(CUT);
-  placing.land();
+/** A cut on the agenda opened where it stands in its family's thread, lit,
+ * to move its lines. */
+async function openCut(cut: Cut): Promise<void> {
+  uncover();
+  screen(Screen.Chat);
+  await openDiagram(cut.diagram_id);
+  const first = await thread.reach(bubbleOf(cut.start_statement_id));
+  await selecting.start(cut.diagram_id, cut.meeting_date, cut);
+  first?.scrollIntoView({ block: "center" });
 }
 
 /** The agenda from outside the stack: back from a result. */
@@ -664,7 +676,11 @@ $("coding-back").addEventListener("click", () => {
  * step that opens a diagram (FD-366). A turn already running on it is joined
  * once it is drawn. */
 async function openDiagram(id: number): Promise<void> {
-  if (await store.open(id)) await reattach();
+  const armed = arming;
+  arming = null;
+  if (!(await store.open(id))) return;
+  if (armed && looking()) await selecting.start(id, armed.day);
+  await reattach();
 }
 
 /** What the title row says with no family open yet. */
@@ -678,7 +694,7 @@ const familyTitle = (): string => store.current().diagram?.name ?? UNNAMED;
  * one line that says the diagram is someone else's with the way back to the
  * admin's own (the page hides whatever writes), and the product events. */
 store.watch({
-  reset: () => {},
+  reset: () => selecting.stop(),
   draw: (opened) => {
     const diagram = opened.diagram;
     $("menu-title").textContent = familyTitle();
@@ -687,9 +703,16 @@ store.watch({
     if ($("settings-back").hidden) $("title").textContent = familyTitle();
     document.documentElement.dataset.access = diagram?.access ?? Access.Own;
     $("viewing").hidden = !looking();
+    $("viewing-cut").hidden = !looking() || selecting.selecting();
     $("viewing-who").textContent = looking() ? `Viewing ${diagram!.owner}'s diagram, read-only` : "";
     if (diagram) track.diagram(diagram.id);
   },
+});
+
+$("viewing-cut").addEventListener("click", async () => {
+  track.tap(Feature.AgendaAdd);
+  await agenda.load();
+  await selecting.start(store.current().diagram!.id, agenda.nextDate());
 });
 
 $("viewing-back").addEventListener("click", async () => {
@@ -1791,12 +1814,6 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
     await agenda.load();
     await toAccount(AGENDA);
   },
-  [Place.Pick]: async () => {
-    await agenda.load();
-    const drawn = agenda.pick();
-    await toAccount(AGENDA, PICK);
-    await drawn;
-  },
   [Place.MeetingDay]: ([day]) => {
     uncover(Keep.Account);
     return toMeeting(day === UNDATED ? null : day);
@@ -1811,11 +1828,6 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
     await toAccount(PAIRS);
   },
   [Place.Literature]: () => toAccount(settings.literature),
-  [Place.Cut]: async ([id]) => {
-    await agenda.load();
-    await toAccount(AGENDA);
-    await placeCut(Number(id));
-  },
   [Place.Cluster]: ([id]) => toCluster(id),
   [Place.NewEvent]: () => {
     toList(Tab.Events);

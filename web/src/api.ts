@@ -324,12 +324,6 @@ export const sessionSearch = (diagramId: number, words: string) =>
     `${onDiagram("/sessions", diagramId)}&words=${encodeURIComponent(words)}`,
   );
 
-/** Every session on every family, each with its family's name, and on a
- * search only those where something said carries every word. Patrick's, to put
- * one on the agenda from the meeting page. */
-export const allSessions = (words: string) =>
-  call<Session[]>("GET", `/sessions?all=true&words=${encodeURIComponent(words)}`);
-
 export const newSession = (diagramId: number | null, kind?: SessionKind) =>
   call<Session>("POST", onDiagram("/sessions", diagramId), kind ? { kind } : {});
 
@@ -457,8 +451,13 @@ export const onAgenda = () => ask<Cut[]>("GET", "/cuts?on_agenda=true");
  * the ones the room has already ratified. */
 export const allCuts = () => ask<Cut[]>("GET", "/cuts");
 
-/** The whole thread of the sitting's family, opened at that sitting, so a
- * cut can be placed on any lines of it. */
+/** One family's cuts, oldest first, so selecting a cut knows where the room
+ * last ratified. */
+export const diagramCuts = (diagramId: number) =>
+  ask<Cut[]>("GET", `/cuts?diagram_id=${diagramId}`);
+
+/** The whole thread of the sitting's family, which the agenda row reads the
+ * days and sittings a cut spans from. */
 export const sessionTurns = (discussionId: number) =>
   ask<SessionTurns>("GET", `/turns?discussion_id=${discussionId}`);
 

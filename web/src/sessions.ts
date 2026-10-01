@@ -93,7 +93,8 @@ export class Sessions {
     this.scrim.id = "sessions-scrim";
     this.overlay.append(this.scrim, this.sheet);
     this.body = this.sheet.querySelector<HTMLElement>(".fs-body")!;
-    this.swipe = new Swipe(this.body, ".row", () => ({
+    // Someone else's sittings are only read: no rename or delete to swipe to.
+    this.swipe = new Swipe(this.body, ".row", () => store.readOnly() ? null : ({
       html:
         `<button class="fs-act ren" type="button">Rename</button>` +
         `<button class="fs-act del" type="button">Delete</button>`,

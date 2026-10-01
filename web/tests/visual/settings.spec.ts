@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { EXACT, flask, placeCut, shell, stateFor, username } from "./setup";
+import { EXACT, flask, placeCut, shell, stateFor, toTheirDiagram, backToMine, username } from "./setup";
 
 /** The settings stack: the avatar in the title row, and the pages it pushes.
  * Every value has one home, and the chat view's speak-replies row is the one
@@ -395,7 +395,7 @@ test.describe("an admin finds a person on the diagrams view", () => {
 
   test.afterAll(() => as("subscriber"));
 
-  // R-0175
+  // R-0175, R-0629
   test("searching a name lists the person, and tapping their diagram opens it read-only", async ({ page }) => {
     as("admin");
     await openDiagrams(page);
@@ -419,6 +419,15 @@ test.describe("an admin finds a person on the diagrams view", () => {
     const shown = (selector: string) =>
       page.locator(selector).evaluate((n) => getComputedStyle(n).display);
     expect(await shown("#menu-foot")).toBe("none");
+    await expect(page.locator("#viewing-cut")).toHaveText("Select a cut");
+    await expect(page.locator("#cut-strip")).toBeHidden();
+
+    await page.locator("#sessions-open").click();
+    const sitting = page.locator("#sessions-sheet .row").first();
+    await expect(sitting.locator(".rmore")).toBeHidden();
+    await sitting.locator(".rsub").click();
+    await expect(page.locator("#sessions-sheet")).toBeHidden();
+    await expect(page.locator("#viewing")).toBeVisible();
 
     await page.locator("#viewing-back").click();
     await expect(page.locator("#viewing")).toBeHidden();
@@ -644,45 +653,29 @@ test.describe("the coding and quality sections", () => {
     await expect(page.locator(".sn-pane.in:not(.under)")).toHaveAttribute("data-page", "agenda-screen");
   });
 
-  // R-0267
-  test("an admin puts another family's session on the agenda from the meeting page, and placing the cut returns there", async ({
+  // R-0629
+  test("an admin selects a cut in someone else's chat from Next meeting, and placing it returns there", async ({
     page,
   }) => {
     await as(page, "admin");
     await row(page, "Next meeting").click();
     await expect(page.locator("#agenda-screen")).toBeVisible();
-    await page.locator(".tb-add").click();
-    await expect(page.locator("#title")).toHaveText("Pick a session");
-    await page.locator("#settings-back").click();
-    await expect(page.locator(".sn-pane.in:not(.under)")).toHaveAttribute("data-page", "agenda-screen");
-    await expect(page.locator("#title")).toHaveText("Next meeting");
-
-    await page.locator(".tb-add").click();
-    // said only in the moves fixture's session, never in this admin's family,
-    // and inside a chip, which the line shows as its words
-    await page.locator(".tb-words").fill("altogether");
-    const picked = page.locator(".tb-pick");
-    await expect(picked).toHaveCount(1);
-    const line = await picked.locator(".sn-s").last().innerText();
-    expect(line).toContain("stopped speaking to him altogether.");
-    expect(line).not.toContain("[[");
-    await picked.click();
-    await expect(page.locator("#cut-screen")).toBeVisible();
-    await expect(page.locator("#cut-chat")).toContainText("walk me through it");
-    const session = await page.locator("#title").innerText();
-
-    await expect(page.locator(".sn-pane.in:not(.under)")).toHaveAttribute(
-      "data-page",
-      "cut-screen",
-    );
+    await expect(page.locator(".tb-add")).toHaveText("Select a cut for the agenda");
+    await toTheirDiagram(page, username("sittings"));
+    await expect(page.locator("#cut-say")).toHaveText("Selecting a cut · tap the first line, then the last");
+    await expect(page.locator("#viewing-cut")).toBeHidden();
+    await expect(page.locator("#inbar")).toBeHidden();
 
     await placeCut(page);
     await expect(page.locator(".sn-pane.in:not(.under)")).toHaveAttribute("data-page", "agenda-screen");
-    const cut = page.locator(".tb-cut", { hasText: session });
-    await expect(cut).toHaveCount(1);
+    const cut = page.locator(".tb-cut").last();
+    await expect(cut.locator(".sn-s")).toHaveText(/^[\w ]+ \d{4} · \d+ sittings?$/);
+    await expect(cut).not.toContainText("up to turn");
     // taken back off, so the fixtures install again over this record
+    const before = await page.locator(".tb-cut").count();
     await cut.locator(".pl-btn").click();
-    await expect(cut).toHaveCount(0);
+    await expect(page.locator(".tb-cut")).toHaveCount(before - 1);
+    await backToMine(page);
   });
 });
 

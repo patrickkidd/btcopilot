@@ -436,12 +436,10 @@ What it is for: every screen and everything on it has its own web address, so th
 | `/app/account/notices/<notice>` | the Notices page, with that notice ringed |
 | `/app/account/coding-task` | your coding task |
 | `/app/account/meeting` | Next meeting |
-| `/app/account/meeting/sessions` | Pick a session, over Next meeting |
 | `/app/account/meeting/<day>` | the page of the meeting on that day (`undated` for the one with no day) |
 | `/app/account/meeting/<day>/<cut>` | that meeting's page, with that cut ringed |
 | `/app/account/better-replies` | Better replies |
 | `/app/account/literature-review` | Auditor's Coding Guide |
-| `/app/cut/<session>` | the cut screen for that session, over Next meeting |
 | `/app/cluster/<cluster>` | that cluster opened on the picture |
 | `/app/event/<event>` | that event picked on the picture |
 | `/app/event/<event>/edit` | the events list with that event's detail view open and its row ringed (the address of the parked editor, kept) |
@@ -583,11 +581,12 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 @frame coding#f6 | After Done the next single card takes its place, greyed until Patrick opens the vote.
 @frame review#f10 | Patrick's screen: the date, what is on the agenda, who is done, the button that opens the vote, and the agenda that fills itself.
 
-- Patrick puts a conversation on the agenda from the meeting page, never from a session: "Put a session on the agenda" lists every family once, newest first, each with its newest conversation's title, its family, its day, how many conversations it has when more than one, and how many statements, and a search box finds families by words said in them, showing the line that carries them. [built] {R-0267}
-- Tapping one opens it to place the cut, and placing the cut returns to the agenda. Each is a page over the one it was opened from: the list over the agenda, the cut over the list or over the agenda, and the back arrow steps back one page. [built] {R-0267}
-- A newly placed cut joins the next meeting: the soonest meeting date on the agenda, or no date while none has one. [built] {R-0267}
-- That opens the family's whole thread in one scroll, at its newest sitting (or the newest one carrying the words searched for), with the same line between sittings the chat shows and, above it, a row of the sittings in the agenda's own row boxes, each with its title over its date and how many statements; tapping a box scrolls the thread to that sitting's first line (Patrick, 2026-10-01). A cut already on the agenda opens the same whole thread. [built] {R-0267}
-- A cut is a first and a last line of the thread, in one sitting or across several. A new cut opens with nothing chosen and the words "Tap the first line, then the last" under the sitting boxes; the first tap lights that line, the second lights the range and dims the rest, a tap after that starts over, and the one button, "Place this cut", works only once both are chosen. [built] {R-0267}
+- Patrick selects a cut inside the chat itself, never on a separate page. Next meeting's button, "Select a cut for the agenda", goes to the Diagrams page, where the admin's Find a person box opens anyone's diagram read-only. [built] {R-0629}
+- On someone else's diagram the read-only line carries "Select a cut" beside "Back to my diagram". Tapping it puts an amber line under the read-only line, "Selecting a cut · tap the first line, then the last", with "cancel"; arriving from Next meeting's button it is already on. The message bar gives way to a foot bar, "Place this cut", grey until both ends are tapped. [built] {R-0629}
+- A cut is a first and a last line of the thread, in one sitting or across several. The first tap rings that line amber and the amber line reads "now tap the last line"; the second rings every line between, across the lines between sittings, fades the lines after the cut, and the amber line says what the cut spans, as "10 to 17 Mar, 2 sittings". A third tap starts over. [built] {R-0629}
+- On someone else's diagram the sessions drawer only reads: tapping a sitting closes the drawer and scrolls the thread to that sitting's first line, and rename and delete are not offered. [built] {R-0629}
+- Placing the cut returns to Next meeting. A newly placed cut joins the next meeting: the soonest meeting date on the agenda, or no date while none has one. [built] {R-0267, R-0629}
+- A cut's row on Next meeting names it, then the days it spans with the year and how many sittings, as "10 to 17 Mar 2026 · 2 sittings". Tapping the row opens that cut in the family's thread, ringed, to move its lines; the cross takes it off before anyone has started. [built] {R-0629}
 - No end of a cut can be placed at or before the last point that was already ratified. [built] {R-0267}
 - A cut placed at the end of a finished conversation or recording takes in the whole thing, so a whole transcript is not a different kind of task. [drawn] {R-0267}
 - Anything that changed since the last cut is coded again. [drawn] {R-0267}

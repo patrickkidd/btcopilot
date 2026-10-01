@@ -1,5 +1,6 @@
 import { test } from "@playwright/test";
 import { need, sandboxOnly, walker } from "./sandbox";
+import { placeCut, toTheirDiagram, username } from "./setup";
 
 // Independent walk of Patrick's own screens on the FD-362 review sandbox:
 // putting a conversation on the table, placing the cut, and the table itself.
@@ -8,7 +9,7 @@ test.describe(() => {
   sandboxOnly("table");
   test.describe.configure({ timeout: 600_000 });
 
-  // R-0346, R-0268
+  // R-0346, R-0268, R-0629
   test("the table: a conversation goes on the agenda and the vote opens", async ({ page }, info) => {
     const { say, check, shot, text, visible, gates, changed, quiet } = walker(
       page,
@@ -56,8 +57,8 @@ test.describe(() => {
       );
     };
 
-    /** From the meeting page, the list of every family's sessions, and the
-     * conversation the walk cuts on it. */
+    /** From the meeting page, its button to the Diagrams page and the
+     * family's diagram, opened with selecting a cut on. */
     const openActions = async () => {
       if (!(await visible("#agenda-screen"))) {
         await page.locator("#account").click();
@@ -65,54 +66,39 @@ test.describe(() => {
         await page.locator(".sn-pane.in .sn-row", { hasText: "Next meeting" }).click();
         await page.waitForTimeout(1200);
       }
-      await page.locator(".tb-add").click();
-      await page.waitForTimeout(1200);
-      say(`list: ${(await text(".tb-found")).replace(/\s+/g, " ").slice(0, 300)}`);
-      return '.tb-pick:has-text("The mine years")';
+      await toTheirDiagram(page, username("sittings"));
     };
 
-    // ── 1. the sessions sheet offers Patrick one more action ───────────────
+    // ── 1. the meeting page's button opens someone's chat to select in ────
     await page.goto(invite, { waitUntil: "networkidle" });
     await page.waitForTimeout(900);
     say(`url after invite: ${page.url()}`);
     await switchCase("Marcus's side");
-    const row = await openActions();
-    check(await visible(row), "the meeting page lists the conversation among every family's sessions");
-    await gates("every family's sessions");
-    await shot("1-list");
+    await openActions();
+    check(await visible("#cut-strip"), "the chat opened with selecting a cut on");
+    await gates("selecting a cut");
+    await shot("1-select");
 
-    // ── 2. placing the cut ────────────────────────────────────────────────
-    await page.locator(row).first().click();
-    await page.waitForTimeout(1200);
-    check(await visible("#cut-screen"), "the conversation opened to place the cut");
-    check(!(await visible("#chat-screen")), "the chat is not on screen");
-    const bubbles = await page.locator("#cut-chat .bub.line").count();
-    const nowLbl = await text("#cut-chat .cutline.now .lb");
-    const hint = await text(".ct-hint");
-    const go = await text(".ct-go");
-    say(`bubbles=${bubbles} cut="${nowLbl}" hint="${hint}" button="${go}"`);
-    check(bubbles === 12, `every turn of the conversation is shown (${bubbles})`);
-    check(/^cut here · turn 11 /.test(nowLbl), "the cut starts at the last turn");
-    check(hint.trim() === "tap any line to move the cut", "the screen says a tap moves the cut");
-    check(/^put on the agenda at turn 11$/.test(go.trim()), "the button names the turn it will cut at");
-    check((await page.locator("#cut-chat .bub.line.after").count()) === 0,
-      "nothing is dimmed while the cut is at the last turn");
-    await gates("cut at the last turn");
-    await shot("2-cut");
-
-    // ── 3. moving the cut back dims what comes after it ───────────────────
-    const ninth = page.locator("#cut-chat .bub.line").nth(8);
-    await ninth.click();
+    // ── 2. the first tap rings one line ───────────────────────────────────
+    const lines = page.locator("#chat .bub[data-statement]");
+    const count = await lines.count();
+    await lines.nth(count - 4).click();
     await page.waitForTimeout(400);
-    const dimmed = await page.locator("#cut-chat .bub.line.after").count();
-    const moved = await text("#cut-chat .cutline.now .lb");
-    const go2 = await text(".ct-go");
-    say(`moved="${moved}" dimmed=${dimmed} button="${go2}"`);
-    check(/^cut here · turn 8 /.test(moved), "tapping a line moved the cut to it");
-    check(dimmed === 3, `turns after the cut are dimmed (${dimmed} of 12)`);
-    check(/^put on the agenda at turn 8$/.test(go2.trim()), "the button follows the cut");
-    await gates("cut moved");
-    await shot("3-moved");
+    check((await text("#cut-say")).endsWith("now tap the last line"), "the amber line asks for the last line");
+    check((await page.locator("#chat .bub.lit").count()) === 1, "one line ringed");
+    await shot("2-first");
+
+    // ── 3. the second tap rings the range and fades what comes after ──────
+    await lines.nth(count - 2).click();
+    await page.waitForTimeout(400);
+    const lit = await page.locator("#chat .bub.lit").count();
+    const dimmed = await page.locator("#chat .bub.after").count();
+    say(`lit=${lit} dimmed=${dimmed} say="${await text("#cut-say")}"`);
+    check(lit === 3, `the lines between are ringed (${lit})`);
+    check(dimmed === 1, `the line after the cut fades (${dimmed})`);
+    check(/ sittings?$/.test(await text("#cut-say")), "the amber line says what the cut spans");
+    await gates("cut selected");
+    await shot("3-selected");
 
     // ── 4. the table ──────────────────────────────────────────────────────
     await page.locator(".ct-go").click();
@@ -126,7 +112,7 @@ test.describe(() => {
     check(/^Next meeting · \w{3}, \w{3} \d+$/.test(title.trim()),
       `the title names the meeting by its day ("${title.trim()}")`);
     check(cuts >= 2, `what is on the table is listed (${cuts})`);
-    check((await text(".tb-cut")).includes("up to turn"), "each one says how far it is cut");
+    check(/ · \d+ sittings?$/.test(await text(".tb-cut .sn-s")), "each one says the days and sittings it spans");
     check(rows.length >= 4, `one line per coder (${rows.length})`);
     check(rows.every((r) => /not started|coding|done|voted/.test(r)),
       `every line says not started, coding, done or voted (${JSON.stringify(rows.slice(0, 3))})`);
@@ -150,9 +136,8 @@ test.describe(() => {
     await shot("5-off");
 
     // put it back, so the rest of the walk has it
-    await page.locator(await openActions()).first().click();
-    await page.waitForTimeout(1000);
-    await page.locator(".ct-go").click();
+    await openActions();
+    await placeCut(page);
     await page.waitForTimeout(1500);
     check((await page.locator(".tb-cut").count()) === cuts, "it goes back on the table the same way");
 
