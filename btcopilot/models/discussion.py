@@ -4,6 +4,7 @@ from sqlalchemy import Column, Text, Integer, Boolean, Date, JSON, Enum
 from sqlalchemy.orm import relationship
 
 from btcopilot.extensions import db
+from btcopilot.llmutil import EXTRACTION_MODEL
 from btcopilot.metered import Metered
 from btcopilot.modelmixin import ModelMixin
 from btcopilot import prompts
@@ -138,20 +139,24 @@ class Discussion(db.Model, ModelMixin):
         )
 
     def update_summary(self, metered: Metered):
-        self.summary = metered.text(
-            prompts.SUMMARIZE_MESSAGES_PROMPT.format(
+        self.summary = metered.gemini(
+            prompt=prompts.SUMMARIZE_MESSAGES_PROMPT.format(
                 conversation_history=self.conversation_history()
             ),
+            model=EXTRACTION_MODEL,
+            thinking_budget=0,
         )
 
     def update_title(self, metered: Metered):
         """The coach never overwrites a title someone gave by hand."""
         if self.title_set_by_user:
             return
-        self.title = metered.text(
-            prompts.DISCUSSION_TITLE_PROMPT.format(
+        self.title = metered.gemini(
+            prompt=prompts.DISCUSSION_TITLE_PROMPT.format(
                 conversation_history=self.conversation_history()
             ),
+            model=EXTRACTION_MODEL,
+            thinking_budget=0,
         ).strip()
 
     def next_order(self) -> int:

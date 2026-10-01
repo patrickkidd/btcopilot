@@ -167,7 +167,7 @@ def test_response_text_sync_routes_to_claude():
 # --- Integration: chat.py and discussion.py use unified routing ---
 
 
-def test_discussion_update_summary_uses_response_text_sync():
+def test_discussion_update_summary_uses_the_metered_gemini_call():
     # R-0097
     """Discussion.update_summary makes its one text call through the meter."""
     from btcopilot.models.discussion import Discussion
@@ -175,7 +175,7 @@ def test_discussion_update_summary_uses_response_text_sync():
     d = MagicMock(spec=Discussion)
     d.conversation_history.return_value = "User: Hello\nExpert: Hi"
     metered = MagicMock()
-    metered.text.return_value = "  Summary text  "
+    metered.gemini.return_value = "  Summary text  "
     Discussion.update_summary(d, metered)
-    metered.text.assert_called_once()
+    metered.gemini.assert_called_once()
     assert d.summary == "  Summary text  "

@@ -1185,3 +1185,8 @@ both a target and a third person. Not yet measured live: no model calls were mad
 **Change** (2026-09-30): the coach's thinking effort is low, down from medium. The replay's thinking option still overrides it.
 **Measured** on eight of Patrick's turns, one pass each: low cost $0.051 a turn against $0.071 at medium (28% cheaper). Events scored higher at low (0.75 against 0.55). The four variables scored lower at low (0.49 against 0.60).
 **Decision**: Patrick chose low and queued the question of giving the variables more thinking (open question 40 in the theory corpus).
+
+### October 2026: Sitting titles and summaries run on Gemini Flash Lite (FD-366)
+
+**Change** (2026-10-01): the title and the summary of a sitting are written by Gemini Flash Lite (`gemini-3.1-flash-lite`, the model the cluster regrouping uses), down from the response model, Opus 5.5. A model change only: the prompt wording is unchanged, the ledger purpose is still Summary, and the row's model column holds the model that answered. Thinking is off for these two calls.
+**Decision**: Patrick, 2026-10-01: "yes gemini flash is good for that". Not yet measured live: no model calls were made.

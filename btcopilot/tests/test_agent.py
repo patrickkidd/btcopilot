@@ -11,6 +11,8 @@ from btcopilot.extensions import db
 import btcopilot
 from btcopilot import chips, pricing, record, tracing
 from btcopilot.coachmodel import Spent
+from btcopilot.llmutil import EXTRACTION_MODEL, Served, Text
+from btcopilot.metered import Metered
 from btcopilot.coachturn import (
     FINISH,
     MAX_STEPS,
@@ -985,3 +987,20 @@ def test_a_read_tells_the_page_which_events_it_read(discussion, family):
     )
     reads = [e for e in reply["events"] if e["type"] == EventKind.ToolCall.value]
     assert [e.get("read") for e in reads] == [[10], [10], None]
+
+
+def test_sitting_title_and_summary_run_on_the_extraction_model(discussion, monkeypatch):
+    # R-0388
+    asked = []
+
+    def flash(*a, **k):
+        asked.append(k["model"])
+        return Text("Words", Spent(input=10, output=5), Served(k["model"]))
+
+    monkeypatch.setattr("btcopilot.metered.gemini_text_sync", flash)
+    summary = Metered(discussion.user_id, discussion.diagram_id, "t1", Purpose.Summary)
+    discussion.update_title(summary)
+    discussion.update_summary(summary)
+    assert asked == [EXTRACTION_MODEL] * 2
+    rows = ModelCall.query.filter_by(purpose=Purpose.Summary).all()
+    assert [r.model for r in rows] == [EXTRACTION_MODEL] * 2

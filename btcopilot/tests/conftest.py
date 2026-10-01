@@ -11,7 +11,7 @@ from mock import patch
 from sqlalchemy import text
 import btcopilot
 from btcopilot.extensions import db
-from btcopilot.llmutil import Served, Spent, Text
+from btcopilot.llmutil import EXTRACTION_MODEL, Served, Spent, Text
 from btcopilot.coachmodel import ModelTurn, ToolCall
 from btcopilot.coachturn import SPEAK
 from btcopilot.models import Diagram, Discussion, Statement, Speaker, SpeakerType
@@ -208,8 +208,8 @@ def chat_flow(request):
             title = marker.kwargs.get("title", "A session title")
             stack.enter_context(
                 patch(
-                    "btcopilot.metered.response_text_sync",
-                    return_value=wrote(title),
+                    "btcopilot.metered.gemini_text_sync",
+                    return_value=Text(title, Spent(), Served(EXTRACTION_MODEL)),
                 )
             )
             ret = {
@@ -217,6 +217,12 @@ def chat_flow(request):
                 "title": title,
             }
         else:
+            stack.enter_context(
+                patch(
+                    "btcopilot.metered.gemini_text_sync",
+                    return_value=Text("A session title", Spent(), Served(EXTRACTION_MODEL)),
+                )
+            )
             ret = None
         yield ret
 
