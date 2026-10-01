@@ -23,7 +23,7 @@ The older handover files in the private corpus stay as they were, for the record
 
 FD-366 is the follow-on ticket (child of epic FD-362): the coverage checklist per Kerr chapter 10 with four states, prose quality by Patrick's picks, the conversational regression test, and the shadow spend category. FD-365 is frozen for review and merge as of 2026-09-30; new work goes on branch FD-366 from the FD-365 head, and the deploy lock moves to FD-366 when Patrick says so.
 
-**Start here for FD-366 (end of 2026-10-01).** Production runs release 3.2026.10.1.7. The deploy lock is on FD-366 (`uv run bin/deploy-lock set FD-366`; Claude moves it when Patrick says so, R-0623).
+**Start here for FD-366 (end of 2026-10-01).** Production runs release 3.2026.10.1.8. The deploy lock is on FD-366 (`uv run bin/deploy-lock set FD-366`; Claude moves it when Patrick says so, R-0623).
 Live: the coach at low thinking; every model call metered by purpose, shadow kept out of real spend, shadow turns and backfill on a queue; coverage stages one to three and the coverage curve; the OpenAI client (alias gpt); sitting titles and summaries on Gemini Flash Lite; every coach turn records its release and replay passes sit in their own table (5 backfilled).
 Live, screens: one shared jump path for chips, bubbles, sittings and the drawer; the timeline folds to a strip while reading or typing; event and person detail cards replace the parked edit forms, with one action into the chat; the coach merges two people on the person's yes; cuts span sittings and the picker scrolls the whole thread with a jump list; the agenda's sittings list leaves out replay copies; the coach cost dashboard.
 On the branch, not released: admins search people by name on the diagrams view and open another person's diagram read-only (god access); the sittings scroll fix (a phone test shows the words move about 13px while the timeline folds) when it lands.
@@ -2090,6 +2090,30 @@ You rule fix now, later, or accept.
    - Fixed 2026-10-01: Cost dashboard headline: the latest day's cost per turn as one big number beside the line over time (released .6).
    - You decide: Nothing.
 
+60. **Guillermo's empty chat: a leftover read-write share from release .4 made his diagram read as shared; removed, and no admin keeps a share on a diagram they do not own (released .8)**
+   - Fixed 2026-10-01: Guillermo's empty chat: a leftover read-write share from release .4 made his diagram read as shared; removed, and no admin keeps a share on a diagram they do not own (released .8).
+   - You decide: Nothing.
+
+61. **One tick per row on the diagrams view (released .8)**
+   - Fixed 2026-10-01: One tick per row on the diagrams view (released .8).
+   - You decide: Nothing.
+
+62. **Cut picker: whole thread plus the agenda's sitting boxes as jump buttons, two-tap range with words that say so (released .8)**
+   - Fixed 2026-10-01: Cut picker: whole thread plus the agenda's sitting boxes as jump buttons, two-tap range with words that say so (released .8).
+   - You decide: Nothing.
+
+63. **Cost tiles show one number, no inner label (released .8)**
+   - Fixed 2026-10-01: Cost tiles show one number, no inner label (released .8).
+   - You decide: Nothing.
+
+64. **The branch now carries a second migration file (the admin-share cleanup) against the one-migration-per-PR rule; it must be folded into the single migration before the PR is ready, with the box's migration pointer re-stamped since the box already ran it**
+   - Open: The branch now carries a second migration file (the admin-share cleanup) against the one-migration-per-PR rule; it must be folded into the single migration before the PR is ready, with the box's migration pointer re-stamped since the box already ran it.
+   - You decide: Nothing; it is folded before the PR is ready.
+
+65. **In the cut picker the outlined sitting box marks the last box tapped, not the sitting on screen**
+   - Open: In the cut picker the outlined sitting box marks the last box tapped, not the sitting on screen.
+   - You decide: Nothing yet.
+
 ### C. Housekeeping
 
 21. **Queued rulings wait for your key**
@@ -2124,3 +2148,7 @@ You rule fix now, later, or accept.
    - Done: It holds outside authors, with Patrick's SARF and coding writing tagged as the layer under test. His statements are in the private corpus.
    - Why it matters: Patrick's writing is now the thing being tested, not a source.
    - You decide: Confirm the tagging.
+
+66. **In build: the open-diagram rebuild, one store and one open step for the whole web app (Patrick's yes, 2026-10-01), 10 to 14 hours, releases after his walk on the test stack**
+   - In build: In build: the open-diagram rebuild, one store and one open step for the whole web app (Patrick's yes, 2026-10-01), 10 to 14 hours, releases after his walk on the test stack.
+   - You decide: Walk the test stack when it is ready.
