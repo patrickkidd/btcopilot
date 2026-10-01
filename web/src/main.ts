@@ -37,7 +37,7 @@ import {
   type PicState,
   type Sel,
 } from "./caption";
-import { $, CLUSTER, flash, pathRow, setTitle, slideOver } from "./dom";
+import { $, CLUSTER, el, flash, pathRow, setTitle, slideOver } from "./dom";
 import { address, beyond, linked, parse, PICTURE, Place, settled, UNDATED } from "./place";
 import { Return, returnKey, touch } from "./keyboard";
 import { Drawer } from "./drawer";
@@ -749,6 +749,8 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
     speak.checked = prefs.speak;
     reports.always = prefs.bug_reports === BugReports.Always;
     chat.shadows = prefs.shadow_models.length;
+    chat.expires = prefs.shadow_expires_at ? Date.parse(prefs.shadow_expires_at) : null;
+    feedback();
   },
   onOpen: openDiagram,
   onTask: () => void readTask().then(() => settings.push(TASK)),
@@ -758,6 +760,30 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
   // one with nothing more to see is only counted read, which its row then shows
   onNotice: (one) => notices.open(one, beyond(one.link) !== null),
 });
+
+/** While shadow replies are on, a strip under the header says so, as one does
+ * while selecting a cut, and its tap turns them off (R-0637). */
+const badge = el(
+  "div",
+  "cut-strip",
+  `<span>Conversation feedback enabled; slower response, vote on the best replies</span><button type="button" class="cs-cancel">turn off</button>`,
+);
+badge.id = "feedback";
+badge.hidden = true;
+$("cut-strip").after(badge);
+badge
+  .querySelector(".cs-cancel")!
+  .addEventListener("click", () => void settings.set({ shadow_models: [] }));
+let lapsing = 0;
+
+/** The strip follows the shadows, and when they turn themselves off the
+ * preferences are read again so Settings shows them off too. */
+function feedback(): void {
+  const on = chat.feedback();
+  badge.hidden = !on;
+  clearTimeout(lapsing);
+  if (on) lapsing = window.setTimeout(() => void settings.refresh(), chat.expires! - Date.now());
+}
 
 /** What the coach heard the person say about the app, or saw it misread,
  * offered to be sent as a report (R-0056). */
@@ -1194,10 +1220,14 @@ function post(statement: string): void {
   if (!statement || inFlight || looking()) return;
   track.tap(Feature.SendMessage);
   chat.add(Role.User, statement);
-  void deliver(statement);
+  const lapsed = chat.sent();
+  feedback();
+  void deliver(statement, lapsed);
 }
 
-async function deliver(statement: string): Promise<void> {
+async function deliver(statement: string, lapsed = false): Promise<void> {
+  // read before this message is stored, which would count as the last one
+  if (lapsed) await settings.refresh();
   const started = await begin(() => api.say(store.id(), statement), () => void deliver(statement));
   if (!started) return;
   sat(started.discussion_id, [...$("chat").querySelectorAll(".bub.user")].at(-1) ?? null);
@@ -1325,7 +1355,7 @@ function follow(turnId: string): void {
         said.stamp(reply.statement_id);
         newest = reply.statement_id;
         // a reply held for a vote is not read aloud: it would say which is the coach's
-        if (speak.checked && !chat.shadows) speech.say(reply.statement);
+        if (speak.checked && !chat.feedback()) speech.say(reply.statement);
         said.settle(reply.statement, (chip) => aim(chip));
         said.vote(turnId);
         stopFollowing();

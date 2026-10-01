@@ -18,12 +18,18 @@ const PICKS = [
   { id: 72, left_key: "c", right_key: "b" },
 ];
 
-async function serve(page: Page): Promise<Record<string, unknown>[]> {
+const MINUTE = 60_000;
+const at = (ms: number) => new Date(Date.now() + ms).toISOString();
+
+/** The switch on, turning itself off at `expires`. */
+async function serve(page: Page, expires = at(5 * MINUTE)): Promise<Record<string, unknown>[]> {
   const cast: Record<string, unknown>[] = [];
   await page.route(/\/app\/preferences$/, async (route: Route) => {
     const answer = await route.fetch();
     const prefs = await answer.json();
-    await route.fulfill({ json: { ...prefs, shadow_models: ["sonnet", "gemini-pro"] } });
+    await route.fulfill({
+      json: { ...prefs, shadow_models: ["sonnet", "gemini-pro"], shadow_expires_at: expires },
+    });
   });
   await mockTurn(page, { statement: REAL, statement_id: 9601 });
   // the first ask finds one shadow finished, the next both
@@ -46,13 +52,14 @@ async function serve(page: Page): Promise<Record<string, unknown>[]> {
 
 test.use({ storageState: stateFor("moves") });
 
-// R-0636
+// R-0636, R-0637
 test("three replies are voted on unnamed, then the coach's is headed Coach with the others folded", async ({
   page,
 }) => {
   const cast = await serve(page);
   await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
+  await expect(page.locator("#feedback span")).toHaveText("Conversation feedback enabled; slower response, vote on the best replies");
   await page.locator("#composer").fill("My dad called last night about mom's care.");
   await page.locator("#send").click();
 
@@ -88,4 +95,26 @@ test("three replies are voted on unnamed, then the coach's is headed Coach with 
   await expect(bubble.locator(".vt-said")).toHaveText("Your note: Third asks two things at once");
   expect(await page.content()).not.toMatch(/sonnet|gemini/i);
   await expect(page).toHaveScreenshot("vote-folded-open.png");
+});
+
+// R-0637
+test("a message 6 minutes after the last one gets the coach's reply alone, with the message box open", async ({
+  page,
+}) => {
+  // the last message was 6 minutes ago, so the switch turned itself off a
+  // minute ago, though the switch still reads on
+  await serve(page, at(-MINUTE));
+  await page.goto("/app/");
+  await expect(page.locator("#view .ss")).toBeVisible();
+  await expect(page.locator("#feedback")).toBeHidden();
+  await page.locator("#composer").fill("My dad called last night about mom's care.");
+  await page.locator("#send").click();
+
+  const bubble = page.locator(".bub.coach").last();
+  await expect(bubble).toHaveClass("bub coach");
+  await expect(bubble.locator(".words")).toContainText("That puts you between the two of them");
+  await expect(bubble.locator(".vt-wait")).toHaveCount(0);
+  await expect(bubble.locator(".vt-reply")).toHaveCount(0);
+  await expect(page.locator("#send")).toBeEnabled();
+  await expect(page.locator("#composer")).toHaveAttribute("contenteditable", "true");
 });

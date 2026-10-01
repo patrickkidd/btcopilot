@@ -4,7 +4,7 @@ import { hush, say } from "./speech";
 import { INFO, notesView, type Notes } from "./notes";
 import { html, type Line } from "./tools";
 import { AWAY_PX, fit, fold, type Fold } from "./viewport";
-import { Vote } from "./vote";
+import { IDLE_MS, Vote } from "./vote";
 import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
@@ -140,6 +140,8 @@ export class Chat {
    * votes before typing again, and the coach's words are not shown until
    * then (R-0636). */
   shadows = 0;
+  /** When the shadows turn themselves off unless a message comes first. */
+  expires: number | null = null;
 
   constructor(
     private list: HTMLElement,
@@ -322,6 +324,20 @@ export class Chat {
     return bubble;
   }
 
+  /** Whether the shadows are on and have not yet turned themselves off. */
+  feedback(): boolean {
+    return this.shadows > 0 && this.expires !== null && Date.now() <= this.expires;
+  }
+
+  /** A message goes out: shadows that turned themselves off stay off for it,
+   * and ones still on last until IDLE_MS after it. True when they had lapsed. */
+  sent(): boolean {
+    const lapsed = this.shadows > 0 && !this.feedback();
+    if (lapsed) this.shadows = 0;
+    else if (this.shadows) this.expires = Date.now() + IDLE_MS;
+    return lapsed;
+  }
+
   /** The message box closed while a vote is open, and open again after. */
   private hold(on: boolean): void {
     const bar = this.composer.closest<HTMLElement>(".inbar")!;
@@ -391,7 +407,7 @@ export class Chat {
   live(play: string | null = null): LiveBubble {
     const bubble = el(
       "div",
-      `bub ${Role.Coach} typing${this.shadows ? " blind" : ""}`,
+      `bub ${Role.Coach} typing${this.feedback() ? " blind" : ""}`,
       `<div class="who">Coach</div><span class="words"></span>`,
     );
     if (play !== null) bubble.dataset.play = play;
@@ -465,7 +481,7 @@ export class Chat {
         this.scroll();
       },
       vote: (turnId) =>
-        this.shadows
+        this.feedback()
           ? new Vote(bubble, turnId, this.shadows, {
               written: (text) => this.written(tokenize(text), null),
               hold: (on) => this.hold(on),

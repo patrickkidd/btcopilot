@@ -10,6 +10,7 @@ import { identify } from "./telemetry";
 import { shortDate } from "./when";
 import { markup } from "./markup";
 import { addPasskey, available, deviceWords } from "./passkey";
+import { IDLE_MS } from "./vote";
 import { subscribe } from "./push";
 import { PRO, RECORD, RECORDS, Records } from "./pro";
 import { address, beyond, NAMES, Place } from "./place";
@@ -58,6 +59,7 @@ const SHADOW_WARNING =
 const SHADOW_HINT =
   "Other models also answer each turn, unnamed. Each reply waits a few seconds for them. " +
   "You vote before you can type again.";
+const SHADOW_LAPSE = `Turns off ${IDLE_MS / 60_000} minutes after your last message`;
 const cents = (usd: number) => `about ${Math.round(usd * 100)}¢ a turn`;
 const dollars = (usd: number) => `$${usd.toFixed(2)}`;
 const SEARCH_AT = 6;
@@ -231,6 +233,12 @@ export class Settings {
     await this.write(body);
   }
 
+  /** Read the preferences again, which the server changes by itself when the
+   * shadows turn themselves off (R-0637). */
+  async refresh(): Promise<void> {
+    this.took(await api.preferences());
+  }
+
   /** The disc behind the mark is a positioned pseudo-element, so a bare text
    * node would paint under it; the initial goes in its own element. */
   private mark(): void {
@@ -365,7 +373,11 @@ export class Settings {
   }
 
   private async write(body: Partial<Preferences>): Promise<void> {
-    this.prefs = await api.setPreferences(body);
+    this.took(await api.setPreferences(body));
+  }
+
+  private took(prefs: Preferences): void {
+    this.prefs = prefs;
     this.mark();
     this.applyTheme();
     this.handlers.onPrefs(this.prefs);
@@ -786,6 +798,7 @@ export class Settings {
         // an auditor has the switch too, but the Admin group is for admins
         isAdmin() ? "Admin" : undefined,
       ),
+      ...(on ? [el("div", "sn-hint", esc(SHADOW_LAPSE))] : []),
       el("div", "sn-hint", esc(SHADOW_HINT)),
     ];
   }

@@ -776,10 +776,13 @@ test.describe("the Conversation Feedback switch", () => {
     await sheet.getByRole("button", { name: "Cancel" }).click();
     await expect(sheet).toBeHidden();
     expect(patched).toEqual([]);
+    const lapse = pane.locator(".sn-hint", { hasText: "Turns off" });
+    await expect(lapse).toHaveCount(0);
 
     await toggle().click();
     await sheet.getByRole("button", { name: "Turn on" }).click();
     await expect(toggle()).toHaveAttribute("aria-checked", "true");
     expect(patched).toEqual([{ shadow_models: ["sonnet", "gemini-pro"] }]);
+    await expect(lapse).toHaveText("Turns off 5 minutes after your last message");
   });
 });

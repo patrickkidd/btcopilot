@@ -11,6 +11,9 @@ import { PickChoice, PickSource, type Shadows } from "./types";
 /** How long a reply waits for its shadows: what has come by then is voted
  * on, and with none the reply is shown alone. */
 const PATIENCE_MS = 60_000;
+/** Shadow replies turn themselves off this long after the last message, or
+ * after being turned on with none since (R-0637). */
+export const IDLE_MS = 5 * 60_000;
 /** How often the review is asked whether the shadows have finished. */
 const POLL_MS = 2000;
 const NOTE_CAP = 200;
