@@ -556,7 +556,7 @@ const agenda = new Agenda($("agenda-body"), $("meet-body"), {
   },
   onRatify: (cutId) => void openMeeting(cutId),
   onResult: (cutId) => void openResult(cutId, openAgenda),
-});
+}, $("overlay").parentElement!);
 
 /** The meeting: the room decides what the vote left open and ratifies the cut
  * (R-0250, R-0257). Patrick's screen, reached from the meeting's page. */

@@ -13,7 +13,7 @@ import { backToMine, toTheirDiagram, username } from "./setup";
 test.describe(() => {
   sandboxOnly("table");
 
-  // R-0629
+  // R-0629, R-0631
   test("a cut selected in the chat runs across a line between sittings", async ({ page }, info) => {
     const { check, gates, quiet } = walker(page, info);
 
@@ -77,6 +77,7 @@ test.describe(() => {
     await page.locator("#account").click();
     await page.locator(".sn-pane.in .sn-row", { hasText: "Next meeting" }).click();
     await row.locator(".pl-btn").click();
+    await page.locator(".ag.cf-sheet button", { hasText: "Take it off" }).click();
     await expect(row).toHaveCount(0);
     await backToMine(page);
     await quiet();

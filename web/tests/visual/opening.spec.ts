@@ -84,7 +84,7 @@ const diagramsPage = (page: Page) => page.locator('.sn-pane[data-page="diagrams"
 
 async function openDiagrams(page: Page): Promise<void> {
   await page.locator("#account").click();
-  await page.locator('.sn-pane[data-page="root"] .sn-row.push', { hasText: "Your diagrams" }).click();
+  await page.locator('.sn-pane[data-page="root"] .sn-row.push', { hasText: "Diagrams" }).click();
   await expect(diagramsPage(page)).toBeVisible();
   await page.waitForTimeout(300);
 }

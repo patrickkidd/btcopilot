@@ -31,7 +31,7 @@ test.describe("the settings stack", () => {
     expect(Math.round(box.height)).toBe(44);
   });
 
-  // R-0098
+  // R-0098, R-0631
   test("it opens on Account with the ruled rows in the ruled order", async ({
     page,
   }) => {
@@ -42,8 +42,8 @@ test.describe("the settings stack", () => {
     expect(labels).toEqual([
       "Coach",
       "Appearance",
-      "Your diagrams",
-      "Plan and licenses",
+      "Diagrams",
+      "Your Plan",
     ]);
     await expect(page.locator(".sn-out")).toHaveText("Sign out");
     await expect(page.locator(".sn-foot")).toHaveText("Family Diagram · beta");
@@ -268,7 +268,7 @@ test.describe("one home for every setting", () => {
 test.describe("the controls that were too small", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0102
+  // R-0102, R-0631
   test("the account button, the speak-replies box and the settings headings read at size", async ({
     page,
   }) => {
@@ -331,7 +331,7 @@ test.describe("your diagrams", () => {
 
   const openDiagrams = async (page: Page) => {
     await openSettings(page);
-    await page.locator('.sn-pane[data-page="root"] .sn-row.push', { hasText: "Your diagrams" }).click();
+    await page.locator('.sn-pane[data-page="root"] .sn-row.push', { hasText: "Diagrams" }).click();
     await expect(page.locator('.sn-pane[data-page="diagrams"]')).toBeVisible();
     await page.waitForTimeout(300);
   };
@@ -434,12 +434,12 @@ test.describe("an admin finds a person on the diagrams view", () => {
     expect(await shown("#menu-foot")).not.toBe("none");
   });
 
-  // R-0630
+  // R-0630, R-0631
   test("own diagrams give way to the people found and come back when the search is cleared", async ({ page }) => {
     as("admin");
     await openDiagrams(page);
     const pane = page.locator('.sn-pane[data-page="diagrams"]');
-    const own = pane.locator(".sn-hd", { hasText: /Your diagrams|Cases/ });
+    const own = pane.locator(".sn-hd", { hasText: /Diagrams|Cases/ });
     await expect(own).toBeVisible();
     const field = pane.getByLabel("Find a person");
     await field.fill(username("longname"));
@@ -668,7 +668,7 @@ test.describe("the coding and quality sections", () => {
     await expect(page.locator(".sn-pane.in:not(.under)")).toHaveAttribute("data-page", "agenda-screen");
   });
 
-  // R-0629
+  // R-0629, R-0631
   test("an admin selects a cut in someone else's chat from Next meeting, and placing it returns there", async ({
     page,
   }) => {
@@ -689,6 +689,13 @@ test.describe("the coding and quality sections", () => {
     // taken back off, so the fixtures install again over this record
     const before = await page.locator(".tb-cut").count();
     await cut.locator(".pl-btn").click();
+    const ask = page.locator(".ag.cf-sheet");
+    await expect(ask.locator(".cf-t")).toHaveText("Take this cut off the agenda?");
+    await ask.locator("button", { hasText: "Keep it" }).click();
+    await expect(ask).not.toHaveClass(/\bin\b/);
+    await expect(page.locator(".tb-cut")).toHaveCount(before);
+    await cut.locator(".pl-btn").click();
+    await page.locator(".ag.cf-sheet button", { hasText: "Take it off" }).click();
     await expect(page.locator(".tb-cut")).toHaveCount(before - 1);
     await backToMine(page);
   });

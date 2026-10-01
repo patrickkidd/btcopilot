@@ -369,6 +369,7 @@ What it is for: your past conversations.
 @frame built#f17 | Your name and address, the coach and appearance settings, your records and plan, and signing out.
 
 - The button that opens the account page shows its icon. [built] {R-0346}
+- Diagrams and Your Plan sit together under a section header "Data"; the Diagrams page is titled "Diagrams". [built] {R-0631}
 
 What it is for: you, your families, your plan, and signing out.
 
@@ -397,7 +398,7 @@ What it is for: you, your families, your plan, and signing out.
 - Auditors and admins see a Coding section above Sign out: Your coding task, which opens the one task card; Next meeting, for admins only, which opens the agenda; and Auditor's Coding Guide, which opens the concept pages on a page of its own. [built] {R-0265, R-0259, R-0541, R-0567}
 - Admins also see a Quality section with one row, Better replies, over the line "Pick the better of two coach replies"; it opens the screen where two coach replies to the same words are picked blind, titled Better replies. [built] {R-0599}
 - Better replies serves the pairs a conversation at a time, in the order the words were said, so a session reads as it happened; the conversation up to the words both replies answer stays above the two replies. [built] {R-0599}
-- Each of those opens as a page of the account view, sliding in over it the way Coach, Appearance and Plan do, and the back arrow at the top left returns to the account view. [built] {R-0259, R-0265}
+- Each of those opens as a page of the account view, sliding in over it the way Coach, Appearance and Your Plan do, and the back arrow at the top left returns to the account view. [built] {R-0259, R-0265}
 - A plain subscriber or a professional sees neither section. [built] {R-0311}
 - Sign out sits alone at the bottom and signs you out immediately, with no confirmation step. [built]
 - Every icon button in the app is the same size: a forty-four point target with a forty point mark inside it. [built] {R-0234}
@@ -595,7 +596,7 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 - "run the meeting" opens that meeting's page: each cut with who has submitted a coding of it and who has not; a cut nobody has submitted says "No coder has submitted yet" under it, and a cut someone has submitted opens the room on it. [built] {R-0250, R-0258}
 - Each coder's state is shown as not started, coding, done or voted, with a count of who is closed out. [drawn] {R-0258}
 - One control nudges the people who are not done. [drawn] {R-0258}
-- Taking a conversation off the agenda is one tap, before anyone has started. [drawn]
+- Taking a conversation off the agenda is the cross on its row, before anyone has started; the cross first asks "Take this cut off the agenda?" with the person and the days spanned, "Take it off" or "Keep it"; a tap outside or Escape keeps it. [built] {R-0631}
 - The button that runs the meeting is the app's filled primary button, reads "run the meeting", and has the same room after it as before it. [built] {R-0341}
 - Only an administrator sees the controls on this screen; a coder who reaches it sees the work but not the way to move it. [built] {R-0346}
 - A ratified conversation keeps a row with a way in to the result; the row says where the cut stops and the day the room ratified it, so two cuts of one conversation read differently. [built] {R-0275}

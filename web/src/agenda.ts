@@ -2,6 +2,7 @@ import * as api from "./api";
 import { Feature, tap } from "./track";
 import { esc } from "./dom";
 import { toast } from "./toast";
+import { Sheet } from "./sheet";
 import { dayText } from "./when";
 import { spanWords } from "./cut";
 import {
@@ -54,12 +55,28 @@ export class Agenda {
   private spans = new Map<number, string>();
   /** The day of the meeting whose page was last drawn. */
   meeting: string | null = null;
+  /** The question before a cut comes off the agenda (R-0631). */
+  private ask: Sheet;
+  /** The cut the question is about while it is up. */
+  private asking: number | null = null;
 
   constructor(
     private body: HTMLElement,
     private room: HTMLElement,
     private handlers: AgendaHandlers,
+    host: HTMLElement,
   ) {
+    this.ask = new Sheet(host, "ag");
+    this.ask.panel.addEventListener("click", (e) => {
+      const act = (e.target as Element).closest<HTMLElement>("[data-act]")?.dataset.act;
+      if (act) void this.answer(act === "off");
+    });
+    this.ask.panel.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") void this.answer(false);
+    });
+    host.addEventListener("click", (e) => {
+      if ((e.target as Element).matches(".fs-scrim.ag")) void this.answer(false);
+    });
     for (const one of [body, room])
       one.addEventListener("click", (e) => void this.onClick(e));
     this.body.addEventListener("change", (e) => void this.onDate(e));
@@ -129,8 +146,7 @@ export class Agenda {
     const target = e.target as Element;
     const off = target.closest<HTMLElement>(".pl-btn");
     if (off) {
-      tap(Feature.AgendaTakeOff);
-      await this.take(Number(off.dataset.cut));
+      this.confirm(Number(off.dataset.cut));
       return;
     }
     const row = target.closest<HTMLElement>(".tb-cut");
@@ -176,6 +192,32 @@ export class Agenda {
       await api.flagRule(Number(close.dataset.rule), false);
       await this.load();
     }
+  }
+
+  private confirm(cutId: number): void {
+    const cut = this.cuts.find((one) => one.id === cutId)!;
+    this.asking = cutId;
+    this.ask.show(
+      `<div class="cf-t">Take this cut off the agenda?</div>` +
+        `<p class="cf-p">${esc(cut.owner)}, ${esc(this.spans.get(cutId) ?? "")}</p>` +
+        `<div class="cf-btns">` +
+        `<button class="cf-go" type="button" data-act="off">Take it off</button>` +
+        `<button class="cf-no" type="button" data-act="keep">Keep it</button>` +
+        `</div>`,
+    );
+  }
+
+  private async answer(off: boolean): Promise<void> {
+    const cutId = this.asking;
+    if (cutId === null) return;
+    this.asking = null;
+    this.ask.lower();
+    if (off) {
+      tap(Feature.AgendaTakeOff);
+      await this.take(cutId);
+    }
+    const cross = this.body.querySelector<HTMLElement>(`.pl-btn[data-cut="${cutId}"]`);
+    (cross ?? this.body).focus({ preventScroll: true });
   }
 
   /** Taking a conversation off the agenda is one tap, and only before anyone

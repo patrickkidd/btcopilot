@@ -2740,11 +2740,13 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 /* the report sheet (R-0056): over every other screen and sheet, the lists and
    the account view included; what is sent scrolls when it runs long */
 .fs-scrim.rp, .fs-sheet.rp { z-index: 70; }
+/* the question before a cut comes off the agenda, over the account view */
+.fs-scrim.ag, .fs-sheet.ag { z-index: 60; }
 /* on a wide screen a card at the bottom, not a band across the whole window */
-.fs-sheet.rp { max-height: 92%; max-width: 480px; margin: 0 auto; }
+.fs-sheet.rp, .fs-sheet.ag { max-height: 92%; max-width: 480px; margin: 0 auto; }
 /* the sheet takes the focus only so no key reaches what is behind it; it is
    no control, so it draws no ring */
-.fs-sheet.rp:focus-visible { outline: none; }
+.fs-sheet.rp:focus-visible, .fs-sheet.ag:focus-visible { outline: none; }
 .rp-list {
   flex: 0 1 auto;
   min-height: 0;

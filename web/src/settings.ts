@@ -520,16 +520,16 @@ export class Settings {
       ]),
       this.group([
         this.pushRow(
-          PRO ? Records : "Your diagrams",
+          PRO ? Records : "Diagrams",
           String(account.diagrams.length),
           Page.Diagrams,
         ),
         this.pushRow(
-          "Plan and licenses",
+          "Your Plan",
           `${account.licenses.length} licence${account.licenses.length === 1 ? "" : "s"}`,
           Page.Plan,
         ),
-      ]),
+      ], "Data"),
     );
 
     // Coding and its meeting are for coders, and the meeting and the replies
@@ -762,7 +762,7 @@ export class Settings {
     if (isAdmin()) {
       this.finding ??= this.finder();
       pane.append(this.finding.box);
-      mine.append(el("div", "sn-hd", PRO ? Records : "Your diagrams"));
+      mine.append(el("div", "sn-hd", PRO ? Records : "Diagrams"));
       this.finding.mine = mine;
       mine.hidden = this.finding.field.value.trim().length >= FIND_AT;
     }
@@ -801,7 +801,7 @@ export class Settings {
         ),
       );
     }
-    return { title: PRO ? Records : "Your diagrams", pane };
+    return { title: PRO ? Records : "Diagrams", pane };
   }
 
   /** Kept across a re-draw of the page and under a person's diagrams, so the
@@ -976,7 +976,7 @@ export class Settings {
       el("div", "sn-hd", "Licenses"),
       licenceBox,
     );
-    return { title: "Plan and licenses", pane };
+    return { title: "Your Plan", pane };
   }
 }
 

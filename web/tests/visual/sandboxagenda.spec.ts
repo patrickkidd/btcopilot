@@ -10,7 +10,7 @@ import { backToMine, placeCut, toTheirDiagram, username } from "./setup";
 test.describe(() => {
   sandboxOnly("table");
 
-  // R-0629
+  // R-0629, R-0631
   test("a cut selected in someone's chat goes on the agenda", async ({ page }, info) => {
     const { check, shot, gates, quiet } = walker(page, info);
     const stored: number[] = [];
@@ -47,6 +47,7 @@ test.describe(() => {
 
     // Taken back off, so the fixtures can be installed again over this record.
     await page.locator(".tb-cut").last().locator(".pl-btn").click();
+    await page.locator(".ag.cf-sheet button", { hasText: "Take it off" }).click();
     await expect(page.locator(".tb-cut")).toHaveCount(before);
     await backToMine(page);
     await quiet();

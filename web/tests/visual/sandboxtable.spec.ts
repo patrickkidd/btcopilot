@@ -9,7 +9,7 @@ test.describe(() => {
   sandboxOnly("table");
   test.describe.configure({ timeout: 600_000 });
 
-  // R-0346, R-0268, R-0629
+  // R-0346, R-0268, R-0629, R-0631
   test("the table: a conversation goes on the agenda and the vote opens", async ({ page }, info) => {
     const { say, check, shot, text, visible, gates, changed, quiet } = walker(
       page,
@@ -26,7 +26,7 @@ test.describe(() => {
       await page.waitForTimeout(700);
       await page
         .locator(".sn-row.push")
-        .filter({ hasText: /^(Cases|Your diagrams)/ })
+        .filter({ hasText: /^(Cases|Diagrams)/ })
         .first()
         .click();
       await page.waitForTimeout(700);
@@ -130,6 +130,7 @@ test.describe(() => {
     check(offable >= 1 && started >= 1,
       "only a cut nobody has started carries the cross that takes it off");
     await page.locator(".tb-cut .pl-btn").first().click();
+    await page.locator(".ag.cf-sheet button", { hasText: "Take it off" }).click();
     await page.waitForTimeout(1200);
     const left = await page.locator(".tb-cut").count();
     check(left === cuts - 1, `one tap took it off the table (${cuts} → ${left})`);
