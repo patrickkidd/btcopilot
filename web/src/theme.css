@@ -993,8 +993,10 @@ button { font-family: inherit; }
 .bub.coach.fb {
   border-color: var(--ask);
   border-left-width: 3px;
+  box-shadow: 0 0 0 1px var(--ask);
   background: linear-gradient(var(--ask-tint), var(--ask-tint)), var(--panel);
 }
+.bub.coach.fb > .who::after { content: " \00b7  Feedback"; color: var(--ask-text); }
 .bub.blind > :not(.who, .did, .vt-wait, .vt-ballot) { display: none; }
 .chat > .bub.blind + .play { display: none; }
 .vt-wait { margin-top: 4px; font: 400 15px/1.45 var(--sans); color: var(--faint); }
