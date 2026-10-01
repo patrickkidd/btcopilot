@@ -80,4 +80,6 @@ def test_the_cost_dashboard_carries_the_turn_cost_panels():
         "Tokens written on a cold turn's first call, a day",
         "Share of coach turns that start cold, a day",
         "Coverage of the basic data over time, by family",
+        "Cost per coach turn by release",
+        "Replay passes",
     } <= titles

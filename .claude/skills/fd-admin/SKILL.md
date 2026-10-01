@@ -285,6 +285,12 @@ Changes something: needs `--yes`.
 
 The recorded runs the quality dashboard reads.
 
+### `flask admin quality keep-passes`
+
+Keep the replays of 2026-09-30 in the replay passes table.
+
+Changes something: needs `--yes`.
+
 ### `flask admin quality load [root]`
 
 Load every recorded run under a checkout or the image into the table, updating the ones already there.
@@ -314,7 +320,7 @@ Changes something: needs `--yes`.
 
 ### `flask admin quality replay-person <user_id> <model>`
 
-Replay the words of the live coach turns one person took, oldest first, on MODEL onto one scratch record that starts as their record stood before the first, score it against their record as it stood after the last, and append one ledger line. A key the ledger already holds is not run again. MODEL is a model alias; the coach's own is opus-5.5.
+Replay the words of the live coach turns one person took, oldest first, on MODEL onto one scratch record that starts as their record stood before the first, score it against their record as it stood after the last, keep the pass and append one ledger line. A key a kept pass already holds is not run again. MODEL is a model alias; the coach's own is opus-5.5.
 
 Changes something: needs `--yes`.
 
@@ -323,8 +329,8 @@ Changes something: needs `--yes`.
 | `user_id` | required |
 | `model` | required |
 | `--reference` | The diagram to score against; the person's record as it stood after the last replayed turn when left out. |
-| `--key` | Print the key and stop. |
-| `--again` | Run a key the ledger already holds. |
+| `--key` | Print the key and the passes kept under it, and stop. |
+| `--again` | Run a key a kept pass already holds. |
 | `--cap` | Dollars; no turn starts past it. |
 | `--thinking` | How hard the coach thinks, for this replay only. |
 | `--prompt-dir` | A folder holding any of agent.prompty and fragments/*.md; each file there replaces the same-named prompt for this replay only, and the rest are read from the usual places. |

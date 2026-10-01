@@ -374,6 +374,28 @@ a session gets after its first reply), the model that answered and its
 fallback hops, four token counts, `cost_usd`, `duration_ms` and `tool_calls`.
 Every caller names the purpose; there is no default.
 
+A coach turn's `done` row in `turn_events` carries `release` in its JSON
+payload: `btcopilot.__version__`, the value `/health` returns, so cost per
+turn can be charted by release by joining `model_calls` on `turn_id`.
+
+### Replay passes
+
+`btcopilot/models/replaypass.py`, written by `replayscore.replay` at the end
+of each pass
+
+A `replay_passes` row is one replay of a person's turns on one model onto a
+scratch record: `model` (the model asked for), `thinking`, `prompt` (the hash
+of the coach prompt the pass ran on), `case` (the person, the statements
+replayed and the record versions they span), `turns`, `calls`, the four token
+counts, `cost_usd`, the record's scores against the reference by part
+(`people`, `events`, `pair_bonds`, `clusters`, `variables`) and `overall`
+(the mean of the parts that were scored), `release`, `source` (`Source`: api
+or subscription) and `scratch_diagram_id`. Case, prompt, model and thinking
+together are the key: `flask admin quality replay-person` refuses a key a row
+already holds unless given `--again`. `release` is null on the passes of
+2026-09-30, kept by `flask admin quality keep-passes` before the table
+existed; `scratch_diagram_id` is null on a pass run on a copy of the database.
+
 ### Serialization
 
 - **Pickle**: Entire DiagramData in `Diagram.data` (preserves Qt scene objects)

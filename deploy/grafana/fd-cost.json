@@ -449,6 +449,126 @@
       ],
       "title": "Coverage of the basic data over time, by family",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "description": "What the coach spent per turn, averaged over the turns each release ran in the time range. A turn's release is the one its done row in turn_events names; turns from before the done row carried it show as 'not recorded'. Real families only: scratch records and the claude-test account are left out. Coach calls only.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 4
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 48
+      },
+      "id": 7,
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "Release"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with t as (select mc.turn_id, sum(mc.cost_usd) as usd from model_calls mc join users u on u.id=mc.user_id where mc.purpose = 'coach' and not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by mc.turn_id) select coalesce(te.payload->>'release', 'not recorded') as \"Release\", avg(t.usd) as \"Dollars per turn\" from t join turn_events te on te.turn_id = t.turn_id and te.kind = 'done' group by 1 order by min(te.created_at)",
+          "refId": "A"
+        }
+      ],
+      "title": "Cost per coach turn by release",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "description": "Every replay pass kept in the replay_passes table, newest first, whatever the time range. A pass replays a person's turns on one model onto a scratch record and scores the record against the one Patrick corrected (1 is a perfect match). A key (case, prompt version, model, thinking) already here is not run again. Release is blank on passes kept before the table existed.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Dollars"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Dollars per turn"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 56
+      },
+      "id": 8,
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select created_at as \"Kept\", \"case\" as \"Case\", model as \"Model\", thinking as \"Thinking\", prompt as \"Prompt\", release as \"Release\", source as \"Answered by\", turns as \"Turns\", calls as \"Calls\", input_tokens as \"Input\", cache_creation_tokens as \"Cache write\", cache_read_tokens as \"Cache read\", output_tokens as \"Output\", cost_usd as \"Dollars\", cost_usd / nullif(turns, 0) as \"Dollars per turn\", people as \"People\", events as \"Events\", pair_bonds as \"Pair-bonds\", clusters as \"Clusters\", variables as \"Variables\", overall as \"Overall\", scratch_diagram_id as \"Scratch diagram\" from replay_passes order by created_at desc, id desc",
+          "refId": "A"
+        }
+      ],
+      "title": "Replay passes",
+      "type": "table"
     }
   ]
 }

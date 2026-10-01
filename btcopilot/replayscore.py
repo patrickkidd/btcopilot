@@ -1,12 +1,11 @@
 """A discussion replayed on one model onto a scratch record, scored against a
 record Patrick ratified or corrected, never against another model's record,
-with the mistakes the watcher looks for counted. Each replay is one line in the
-eval ledger [Oracle: R-0597]."""
+with the mistakes the watcher looks for counted. Each replay is one row in the
+replay passes table and one line in the eval ledger [Oracle: R-0597]."""
 
 import contextlib
 import datetime
 import hashlib
-import json
 import time
 from collections import Counter
 from decimal import Decimal
@@ -26,12 +25,14 @@ from btcopilot.models import (
     ModelCall,
     Observation,
     ObservationKind,
+    ReplayPass,
     Speaker,
     SpeakerType,
     Statement,
     StatementKind,
 )
 from btcopilot.models.qualityrun import Source
+from btcopilot.models.replaypass import PARTS
 from btcopilot.promptdir import PromptDir
 from btcopilot.review import adapter
 from btcopilot.review.coachscore import compare
@@ -45,7 +46,6 @@ WATCHED = (
     ObservationKind.StepCap,
     ObservationKind.QuestionUnsaid,
 )
-SCORES = ("people", "pair_bonds", "events", "clusters", "variables")
 
 
 def replay(
@@ -58,12 +58,13 @@ def replay(
     statements: list[Statement] | None = None,
     start: bytes | None = None,
     expected: dict | None = None,
-    key: str | None = None,
+    case: str | None = None,
 ) -> dict:
     """The ledger line the replay appended, plus the model calls it made and
     each replayed turn's id beside the id of the turn it replays. Without
     `statements` the whole discussion is replayed; it starts from `start`, or
-    an empty record, and is scored against `expected`, or the reference."""
+    an empty record, and is scored against `expected`, or the reference. The
+    pass is kept under `case`, the person and the statements replayed."""
     started = time.monotonic()
     model = model_for(requested, thinking)
     diagram = adapter.coding_diagram(
@@ -86,6 +87,33 @@ def replay(
     )
     calls = ModelCall.query.filter_by(diagram_id=diagram.id).all()
     served = Counter(call.model for call in calls).most_common(1)
+    tokens = {
+        "input": sum(c.input_tokens for c in calls),
+        "output": sum(c.output_tokens for c in calls),
+        "cache_creation": sum(c.cache_creation_tokens for c in calls),
+        "cache_read": sum(c.cache_read_tokens for c in calls),
+    }
+    cost = sum((c.cost_usd for c in calls), Decimal(0))
+    kept_pass = ReplayPass(
+        model=resolve_model(requested),
+        thinking=thinking,
+        prompt=prompt_version(prompt),
+        case=case,
+        turns=len(replies),
+        calls=len(calls),
+        input_tokens=tokens["input"],
+        cache_creation_tokens=tokens["cache_creation"],
+        cache_read_tokens=tokens["cache_read"],
+        output_tokens=tokens["output"],
+        cost_usd=cost,
+        **{name: scores[name] for name in PARTS},
+        overall=ReplayPass.overall_of(scores),
+        release=btcopilot.__version__,
+        source=Source.Api,
+        scratch_diagram_id=diagram.id,
+    )
+    db.session.add(kept_pass)
+    db.session.commit()
     row = {
         "at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "kind": ledger.LedgerKind.Replay.value,
@@ -96,18 +124,13 @@ def replay(
         "reference_diagram_id": reference.id,
         "scratch_diagram_id": diagram.id,
         "scratch_discussion_id": copy.id,
-        "case": key,
+        "case": kept_pass.key if case else None,
         "outcome": None,
         "turns": len(replies),
-        "scores": {name: scores[name] for name in SCORES},
+        "scores": {name: scores[name] for name in PARTS},
         "faults": faults(diagram.id, mine),
-        "tokens": {
-            "input": sum(c.input_tokens for c in calls),
-            "output": sum(c.output_tokens for c in calls),
-            "cache_creation": sum(c.cache_creation_tokens for c in calls),
-            "cache_read": sum(c.cache_read_tokens for c in calls),
-        },
-        "cost": float(sum((c.cost_usd for c in calls), Decimal(0))),
+        "tokens": tokens,
+        "cost": float(cost),
         "duration_ms": round((time.monotonic() - started) * 1000),
         "source": Source.Api.value,
     }
@@ -179,14 +202,14 @@ def prompt_version(path: Path | None) -> str:
         return hashlib.sha256(prompts.get_agent_prompt().encode()).hexdigest()[:12]
 
 
-def kept(key: str) -> bool:
-    """Whether the ledger already holds a replay under this key."""
-    if not ledger.PATH.exists():
-        return False
-    rows = (json.loads(line) for line in ledger.PATH.read_text().splitlines())
-    return any(
-        row["kind"] == ledger.LedgerKind.Replay.value and row["case"] == key
-        for row in rows
+def kept(case: str, prompt: str, model: str, thinking: str) -> list[ReplayPass]:
+    """The passes already kept under this key, oldest first."""
+    return (
+        ReplayPass.query.filter_by(
+            case=case, prompt=prompt, model=model, thinking=thinking
+        )
+        .order_by(ReplayPass.id)
+        .all()
     )
 
 

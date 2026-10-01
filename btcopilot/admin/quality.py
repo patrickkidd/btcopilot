@@ -1,6 +1,7 @@
 """The quality dashboard's recorded runs, loaded by every release, and the
 replay of a discussion on another model, scored."""
 
+import datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -14,10 +15,69 @@ from btcopilot.admin.guard import writes
 from btcopilot.coachmodel import COACH_EFFORT
 from btcopilot.extensions import db
 from btcopilot.llmutil import DEFAULT_RESPONSE_MODEL_ALIAS, MODEL_ALIASES, resolve_model
-from btcopilot.models import Diagram, Discussion, User
+from btcopilot.models import Diagram, Discussion, ReplayPass, User
+from btcopilot.models.qualityrun import Source
+from btcopilot.models.replaypass import PARTS
 from btcopilot.review.adapter import spoken
 
 THINKING = ("low", "medium", "high")
+
+# The replays of Patrick's first eight turns kept before the replay passes
+# table existed, from the summaries the replay printed; their release was not
+# recorded, and the Sonnet pass ran on a copy of the database.
+KEPT_2026_09_30 = (
+    (
+        "claude-opus-5-5",
+        "low",
+        "406f08b6a3e2",
+        19,
+        (54, 36388, 417194, 6951),
+        "0.4046",
+        (1.0, 0.75, 1.0, 1.0, 0.49),
+        71,
+    ),
+    (
+        "claude-opus-5-5",
+        "medium",
+        "bb63094b9366",
+        22,
+        (62, 60037, 475849, 10226),
+        "0.6001",
+        (1.0, 0.55, 1.0, 1.0, 0.70),
+        72,
+    ),
+    (
+        "gemini-3.1-pro-preview",
+        "medium",
+        "406f08b6a3e2",
+        24,
+        (107615, 0, 335346, 10669),
+        "0.4103",
+        (1.0, 0.60, 1.0, 1.0, 1.0),
+        73,
+    ),
+    (
+        "claude-opus-5-5",
+        "medium",
+        "406f08b6a3e2",
+        23,
+        (64, 57869, 494852, 8993),
+        "0.568431",
+        (1.0, 0.55, 1.0, 1.0, 0.60),
+        76,
+    ),
+    (
+        "claude-sonnet-5-5",
+        "medium",
+        "87a9f0968e1b",
+        26,
+        (8286, 38466, 487374, 11393),
+        "0.2757",
+        (1.0, 0.57, 1.0, 1.0, 1.0),
+        None,
+    ),
+)
+KEPT_CASE = "person 1 statements 6..28 (8) record v1..v13"
 
 PRODUCTION = "production"
 MODEL_HELP = (
@@ -39,6 +99,45 @@ def quality_load(root):
     """Load every recorded run under a checkout or the image into the table,
     updating the ones already there."""
     click.echo(f"{runs.load(root)} values loaded")
+
+
+@writes
+@quality.command("keep-passes")
+def quality_keep_passes():
+    """Keep the replays of 2026-09-30 in the replay passes table."""
+    for (
+        model,
+        thinking,
+        prompt,
+        calls,
+        tokens,
+        cost,
+        scores,
+        scratch,
+    ) in KEPT_2026_09_30:
+        parts = dict(zip(PARTS, scores))
+        db.session.add(
+            ReplayPass(
+                model=model,
+                thinking=thinking,
+                prompt=prompt,
+                case=KEPT_CASE,
+                turns=8,
+                calls=calls,
+                input_tokens=tokens[0],
+                cache_creation_tokens=tokens[1],
+                cache_read_tokens=tokens[2],
+                output_tokens=tokens[3],
+                cost_usd=Decimal(cost),
+                **parts,
+                overall=ReplayPass.overall_of(parts),
+                source=Source.Api,
+                scratch_diagram_id=scratch,
+                created_at=datetime.datetime(2026, 9, 30),
+            )
+        )
+    db.session.commit()
+    click.echo(f"{len(KEPT_2026_09_30)} passes kept")
 
 
 def replay_options(command):
@@ -157,8 +256,8 @@ def quality_replay(
     help="Replay the words of the live coach turns one person took, oldest "
     "first, on MODEL onto one scratch record that starts as their record stood "
     "before the first, score it against their record as it stood after the "
-    "last, and append one ledger line. A key the ledger already holds is not "
-    f"run again. {MODEL_HELP}",
+    "last, keep the pass and append one ledger line. A key a kept pass already "
+    f"holds is not run again. {MODEL_HELP}",
 )
 @click.argument("user_id", type=int)
 @click.argument("model", type=click.Choice(sorted(MODEL_ALIASES)))
@@ -169,8 +268,13 @@ def quality_replay(
     help="The diagram to score against; the person's record as it stood after "
     "the last replayed turn when left out.",
 )
-@click.option("--key", "show_key", is_flag=True, help="Print the key and stop.")
-@click.option("--again", is_flag=True, help="Run a key the ledger already holds.")
+@click.option(
+    "--key",
+    "show_key",
+    is_flag=True,
+    help="Print the key and the passes kept under it, and stop.",
+)
+@click.option("--again", is_flag=True, help="Run a key a kept pass already holds.")
 @replay_options
 def quality_replay_person(
     user_id,
@@ -203,17 +307,23 @@ def quality_replay_person(
     reference = db.session.get(Diagram, reference_diagram_id or diagram.id)
     if reference is None:
         raise click.UsageError("no such reference diagram")
-    key = (
+    case = (
         f"person {user.id} statements {statements[0].id}..{statements[-1].id} "
-        f"({len(statements)}) record v{before}..v{after} "
-        f"prompt {replayscore.prompt_version(prompt_dir)} "
-        f"model {resolve_model(model)} thinking {thinking}"
+        f"({len(statements)}) record v{before}..v{after}"
     )
-    click.echo(f"key: {key}")
+    key = (case, replayscore.prompt_version(prompt_dir), resolve_model(model), thinking)
+    found = replayscore.kept(*key)
+    click.echo(f"key: {ReplayPass.key_of(*key)}")
     if show_key:
+        for one in found:
+            click.echo(
+                f"  kept {one.created_at:%Y-%m-%d} release {one.release or '-'}: "
+                f"{one.turns} turns, {one.calls} calls, ${one.cost_usd:.4f}, "
+                f"overall {'-' if one.overall is None else one.overall}"
+            )
         return
-    if replayscore.kept(key) and not again:
-        raise click.UsageError("the ledger already holds this key; --again runs it")
+    if found and not again:
+        raise click.UsageError("a pass is already kept under this key; --again runs it")
     _report(
         replayscore.replay(
             statements[0].discussion,
@@ -225,6 +335,6 @@ def quality_replay_person(
             statements=statements,
             start=start,
             expected=None if reference_diagram_id else diagramjson.loads(end),
-            key=key,
+            case=case,
         )
     )

@@ -22,3 +22,4 @@ from .pushsubscription import PushSubscription
 from .notice import Audience, Notice, NoticeLink
 from .notification import Notification, NotificationChannel, NotificationKind
 from .report import Report, ReportKind, ReportStatus
+from .replaypass import ReplayPass

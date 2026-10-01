@@ -10,11 +10,13 @@ import json
 import pytest
 from mock import patch
 
+import btcopilot
+
 from btcopilot.extensions import db
 from btcopilot import turnlog, turns
 from btcopilot.coachmodel import Refusal
 from btcopilot.coachturn import EmptyReply
-from btcopilot.models import Discussion, Statement
+from btcopilot.models import Discussion, Statement, TurnEvent
 from btcopilot.toolbox import ToolName
 from btcopilot.turnlog import TurnEventKind
 from btcopilot.schema import Person, asdict
@@ -100,6 +102,18 @@ def test_the_turn_writes_what_it_did_in_order_and_ends_in_done(
     assert events[-1]["session"]["id"] == body["discussion_id"]
 
 
+def test_the_turns_done_row_carries_the_release_it_ran_on(
+    web, token, family, monkeypatch
+):
+    # R-0595
+    coach(monkeypatch, said("Go on."))
+    body = post(web, token).get_json()
+    done = TurnEvent.query.filter_by(
+        turn_id=body["turn_id"], kind=TurnEventKind.Done.value
+    ).one()
+    assert done.payload["release"] == btcopilot.__version__
+
+
 def test_a_turn_that_breaks_ends_in_failed_and_stores_no_coach_words(
     web, token, family, monkeypatch
 ):
@@ -140,9 +154,7 @@ def test_a_refused_turn_says_so_in_the_coachs_voice_and_is_not_retried(
 ):
     # R-0410
     refuses = Refuses()
-    monkeypatch.setattr(
-        "btcopilot.turns.model_for", lambda *a, **k: refuses
-    )
+    monkeypatch.setattr("btcopilot.turns.model_for", lambda *a, **k: refuses)
     with patch("btcopilot.turns.enqueue"):
         body = post(web, token).get_json()
     turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])

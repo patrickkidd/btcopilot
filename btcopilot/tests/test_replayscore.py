@@ -11,8 +11,9 @@ import btcopilot
 from btcopilot import diagramjson, ledger, prompts, record, replayscore
 from btcopilot.admin import admin
 from btcopilot.admin.quality import PRODUCTION
-from btcopilot.coachmodel import Spent, model_for
+from btcopilot.coachmodel import COACH_EFFORT, Spent, model_for
 from btcopilot.extensions import db
+from btcopilot.llmutil import resolve_model
 from btcopilot.models import (
     Author,
     Change,
@@ -20,6 +21,7 @@ from btcopilot.models import (
     Discussion,
     ModelCall,
     Purpose,
+    ReplayPass,
     Speaker,
     SpeakerType,
     Statement,
@@ -374,6 +376,24 @@ def test_an_anchor_on_a_change_without_a_version_names_the_row(lived, test_user)
         replayscore.anchor(lived.diagram, words)
 
 
+def test_a_pass_is_kept_in_the_table(flask_app, lived, test_user, monkeypatch):
+    # R-0597
+    model = Model(said("Noted."), said("Noted."))
+    monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
+    result = _person(flask_app, test_user)
+    assert result.exit_code == 0, result.output
+    kept = ReplayPass.query.one()
+    assert (kept.model, kept.thinking, kept.turns, kept.release) == (
+        resolve_model("sonnet-5"),
+        COACH_EFFORT,
+        2,
+        btcopilot.__version__,
+    )
+    assert f"key: {kept.key}" in result.output
+    shown = _person(flask_app, test_user, "--key")
+    assert "kept " in shown.output and "2 turns" in shown.output
+
+
 def test_a_kept_key_is_not_run_again_without_again(
     flask_app, lived, test_user, path, monkeypatch
 ):
@@ -381,11 +401,25 @@ def test_a_kept_key_is_not_run_again_without_again(
     model = Model(said("Noted."), said("Noted."), said("Noted."), said("Noted."))
     monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
     assert _person(flask_app, test_user).exit_code == 0
+    path.unlink()
     result = _person(flask_app, test_user)
     assert result.exit_code != 0
-    assert len(path.read_text().splitlines()) == 1
+    assert ReplayPass.query.count() == 1
     assert _person(flask_app, test_user, "--again").exit_code == 0
-    assert len(path.read_text().splitlines()) == 2
+    assert ReplayPass.query.count() == 2
+
+
+def test_the_passes_of_september_30_are_kept(flask_app):
+    # R-0597
+    result = flask_app.test_cli_runner().invoke(admin, ["quality", "keep-passes"])
+    assert result.exit_code == 0, result.output
+    assert ReplayPass.query.count() == 5
+    gemini = ReplayPass.query.filter_by(model="gemini-3.1-pro-preview").one()
+    assert (gemini.cache_read_tokens, gemini.overall, gemini.release) == (
+        335346,
+        0.92,
+        None,
+    )
 
 
 @pytest.fixture

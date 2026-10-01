@@ -9,6 +9,7 @@ page follows that log. A page that reloads reads the log from the start.
 import logging
 import uuid
 
+import btcopilot
 from btcopilot import extensions
 from btcopilot.extensions import db
 from btcopilot import chips, coverage, observer, shadow, turnlog, turnstore
@@ -174,6 +175,7 @@ def run(
         turnstore.done(
             reply["statement_id"],
             {"before": covered, "after": coverage.counts(turn.data)},
+            btcopilot.__version__,
         ),
     )
     reply["kind"] = StatementKind.Turn.value
