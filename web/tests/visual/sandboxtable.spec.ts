@@ -37,7 +37,9 @@ test.describe(() => {
       await page.waitForTimeout(2500);
       // Picking a case closes the whole account stack on its own; the back
       // chevron is only needed when the walk was already on the right case.
-      for (let i = 0; i < 8 && !(await visible("#sessions-open")); i += 1) {
+      // The sessions button stays drawn under the account stack, so the stack
+      // itself is what says the walk is not back on the chat yet.
+      for (let i = 0; i < 8 && ((await visible("#settings-back")) || (await visible("#coding-back"))); i += 1) {
         if (await visible("#settings-back")) await page.locator("#settings-back").click();
         else if (await visible("#coding-back")) await page.locator("#coding-back").click();
         await page.waitForTimeout(900);
