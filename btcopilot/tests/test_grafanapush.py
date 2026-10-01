@@ -74,6 +74,9 @@ def test_the_cost_dashboard_carries_the_turn_cost_panels():
     titles = {panel["title"] for panel in dashboard["panels"]}
     assert (dashboard["uid"], "id" in dashboard) == ("fd-cost", False)
     assert {
+        "Cost per turn now",
+        "Cost per turn, last 7 days",
+        "Average cost per turn",
         "Cost per coach turn a day, warm and cold, with the 14-day mean",
         "Dollars by kind, coach calls",
         "Calls per coach turn a day",
