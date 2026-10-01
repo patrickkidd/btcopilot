@@ -167,7 +167,7 @@ def replay_options(command):
                 "only, and the rest are read from the usual places.",
             ),
             click.option(
-                "--turns", type=click.IntRange(min=1), help="At most this many turns."
+                "--turns", type=click.IntRange(min=1), help="The last turn replayed."
             ),
             click.option(
                 "--production",
@@ -275,6 +275,13 @@ def quality_replay(
     help="Print the key and the passes kept under it, and stop.",
 )
 @click.option("--again", is_flag=True, help="Run a key a kept pass already holds.")
+@click.option(
+    "--start",
+    type=click.IntRange(min=2),
+    help="Begin at this turn, going on in the scratch session and record of "
+    "the kept pass --after names, which replayed every turn before it.",
+)
+@click.option("--after", "after_id", type=int, help="The kept pass to go on from.")
 @replay_options
 def quality_replay_person(
     user_id,
@@ -282,6 +289,8 @@ def quality_replay_person(
     reference_diagram_id,
     show_key,
     again,
+    start,
+    after_id,
     cap,
     thinking,
     prompt_dir,
@@ -293,7 +302,14 @@ def quality_replay_person(
     if user is None:
         raise click.UsageError("no such user")
     every = replayscore.turned(user.id)
-    statements = every[:turns]
+    prior = db.session.get(ReplayPass, after_id) if after_id else None
+    if (start is None) != (prior is None):
+        raise click.UsageError("--start and --after go together, on a kept pass")
+    if prior is not None and prior.turns != start - 1:
+        raise click.UsageError(
+            f"pass {prior.id} replayed {prior.turns} turns, not {start - 1}"
+        )
+    statements = every[(start or 1) - 1 : turns]
     if not statements:
         raise click.UsageError("no turns with a turn id")
     diagram = statements[0].discussion.diagram
@@ -302,7 +318,7 @@ def quality_replay_person(
     following = every[len(statements)] if len(every) > len(statements) else None
     if following is not None and following.discussion.diagram_id != diagram.id:
         following = None
-    start, before = replayscore.anchor(diagram, statements[0])
+    begun, before = replayscore.anchor(diagram, statements[0])
     end, after = replayscore.anchor(diagram, following)
     reference = db.session.get(Diagram, reference_diagram_id or diagram.id)
     if reference is None:
@@ -333,7 +349,8 @@ def quality_replay_person(
             thinking=thinking,
             prompt=prompt_dir,
             statements=statements,
-            start=start,
+            start=begun,
+            after=prior,
             expected=None if reference_diagram_id else diagramjson.loads(end),
             case=case,
         )

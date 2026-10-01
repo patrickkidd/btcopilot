@@ -59,33 +59,50 @@ def replay(
     start: bytes | None = None,
     expected: dict | None = None,
     case: str | None = None,
+    after: ReplayPass | None = None,
 ) -> dict:
     """The ledger line the replay appended, plus the model calls it made and
     each replayed turn's id beside the id of the turn it replays. Without
     `statements` the whole discussion is replayed; it starts from `start`, or
     an empty record, and is scored against `expected`, or the reference. The
-    pass is kept under `case`, the person and the statements replayed."""
+    pass is kept under `case`, the person and the statements replayed. After
+    a kept pass, the replay goes on in that pass's scratch session and record,
+    and is charged only for its own calls."""
     started = time.monotonic()
     model = model_for(requested, thinking)
-    diagram = adapter.coding_diagram(
-        discussion.user,
-        f"Replay of session {discussion.id} on {requested}",
-        scratch=True,
+    if after is None:
+        diagram = adapter.coding_diagram(
+            discussion.user,
+            f"Replay of session {discussion.id} on {requested}",
+            scratch=True,
+        )
+        if start is not None:
+            diagram.data = start
+        db.session.commit()
+        session = None
+    else:
+        diagram = db.session.get(Diagram, after.scratch_diagram_id)
+        (session,) = diagram.discussions
+    before = (
+        db.session.query(func.coalesce(func.max(ModelCall.id), 0))
+        .filter(ModelCall.diagram_id == diagram.id)
+        .scalar()
     )
-    if start is not None:
-        diagram.data = start
-    db.session.commit()
+    if cap is not None:
+        cap += adapter.spent(diagram.id)
     if statements is None:
         statements = sorted(discussion.statements, key=lambda s: (s.order or 0, s.id))
     with agent_prompt_from(prompt):
         copy, replies = adapter.replay_into(
-            diagram, discussion, statements, model=model, cap=cap
+            diagram, discussion, statements, model=model, cap=cap, copy=session
         )
     mine = adapter.record_of(diagram)
     scores = compare(
         mine, adapter.record_of(reference) if expected is None else expected
     )
-    calls = ModelCall.query.filter_by(diagram_id=diagram.id).all()
+    calls = ModelCall.query.filter(
+        ModelCall.diagram_id == diagram.id, ModelCall.id > before
+    ).all()
     served = Counter(call.model for call in calls).most_common(1)
     tokens = {
         "input": sum(c.input_tokens for c in calls),

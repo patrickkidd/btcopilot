@@ -482,3 +482,29 @@ def test_a_replay_feeds_every_answered_turn_in_order_and_records_on_scratch(
         == 1 + Change.query.filter_by(diagram_id=scratch.id).count()
         == 3
     )
+
+
+def test_a_replay_from_a_later_turn_goes_on_in_the_kept_pass(
+    flask_app, lived, test_user, monkeypatch
+):
+    # R-0568
+    model = Model(said("Noted."), said("Noted."), said("Noted."))
+    monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
+    assert _person(flask_app, test_user).exit_code == 0
+    first = ReplayPass.query.one()
+    result = flask_app.test_cli_runner().invoke(
+        admin,
+        ["quality", "replay-person", str(test_user.id), "sonnet-5"]
+        + ["--start", "3", "--turns", "3", "--after", str(first.id)],
+    )
+    assert result.exit_code == 0, result.output
+    third = replayscore.turned(test_user.id)[2]
+    assert f"statements {third.id}..{third.id} (1)" in result.output
+    later = ReplayPass.query.order_by(ReplayPass.id.desc()).first()
+    assert (later.turns, later.scratch_diagram_id) == (1, first.scratch_diagram_id)
+    (session,) = db.session.get(Diagram, first.scratch_diagram_id).discussions
+    assert [s.text for s in adapter.spoken(session.statements)] == [
+        "Hello",
+        "My brother Wren.",
+        "My brother Ada.",
+    ]

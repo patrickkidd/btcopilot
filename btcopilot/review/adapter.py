@@ -139,7 +139,9 @@ def initials(user: User | None) -> str:
     letters = [part[0] for part in (user.first_name, user.last_name) if part]
     if letters:
         return ".".join(letters) + "."
-    parts = [part for part in re.split(r"[^A-Za-z0-9]+", user.username.split("@")[0]) if part]
+    parts = [
+        part for part in re.split(r"[^A-Za-z0-9]+", user.username.split("@")[0]) if part
+    ]
     return "".join(part[0].upper() + re.sub(r"\D", "", part) + "." for part in parts)
 
 
@@ -241,7 +243,9 @@ def thread(diagram_id: int) -> list[Statement]:
     started: dict[int, datetime.datetime] = {}
     for s in found:
         was = started.get(s.discussion_id)
-        started[s.discussion_id] = s.created_at if was is None else min(was, s.created_at)
+        started[s.discussion_id] = (
+            s.created_at if was is None else min(was, s.created_at)
+        )
     return sorted(
         found,
         key=lambda s: (started[s.discussion_id], s.discussion_id, s.order or 0, s.id),
@@ -295,29 +299,15 @@ def replay_into(
     statements,
     model=None,
     cap: Decimal | None = None,
+    copy: Discussion | None = None,
 ) -> tuple[Discussion, list[dict]]:
     """Run the coach over a cut's turns, writing what it codes onto `diagram`,
-    as scratch turns that charge no one. Each turn's tool calls are kept and
-    watched as a real turn's are, so its mistakes are written down. With a
-    cap, no turn starts once the diagram's calls cost that much."""
-    copy = Discussion(
-        user_id=discussion.user_id,
-        diagram_id=diagram.id,
-        # an untitled copy would spend a naming call on its first turn
-        title=discussion.title or f"Replay of session {discussion.id}",
-        title_set_by_user=True,
-        discussion_date=discussion.discussion_date,
-        speakers=[
-            Speaker(name="Client", type=SpeakerType.Subject, person_id=1),
-            Speaker(name="Coach", type=SpeakerType.Expert),
-        ],
-    )
-    db.session.add(copy)
-    db.session.flush()
-    copy.chat_user_speaker_id = copy.speakers[0].id
-    copy.chat_ai_speaker_id = copy.speakers[1].id
-    db.session.commit()
-
+    as scratch turns that charge no one, in `copy` or a new scratch session.
+    Each turn's tool calls are kept and watched as a real turn's are, so its
+    mistakes are written down. With a cap, no turn starts once the diagram's
+    calls cost that much."""
+    if copy is None:
+        copy = scratch_session(diagram, discussion)
     said = [s.text for s in spoken(statements)]
     replies = []
     for text in said:
@@ -340,6 +330,27 @@ def replay_into(
         db.session.commit()
         replies.append(reply)
     return copy, replies
+
+
+def scratch_session(diagram: Diagram, discussion: Discussion) -> Discussion:
+    copy = Discussion(
+        user_id=discussion.user_id,
+        diagram_id=diagram.id,
+        # an untitled copy would spend a naming call on its first turn
+        title=discussion.title or f"Replay of session {discussion.id}",
+        title_set_by_user=True,
+        discussion_date=discussion.discussion_date,
+        speakers=[
+            Speaker(name="Client", type=SpeakerType.Subject, person_id=1),
+            Speaker(name="Coach", type=SpeakerType.Expert),
+        ],
+    )
+    db.session.add(copy)
+    db.session.flush()
+    copy.chat_user_speaker_id = copy.speakers[0].id
+    copy.chat_ai_speaker_id = copy.speakers[1].id
+    db.session.commit()
+    return copy
 
 
 def spoken(statements) -> list[Statement]:
