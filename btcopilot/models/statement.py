@@ -55,6 +55,7 @@ class Statement(db.Model, ModelMixin):
     # The coach turn this statement started or answered; its tool calls are the
     # turn events with the same id.
     turn_id = Column(String(64), index=True)
+    prompt_version = Column(String(16), nullable=True)
 
     # Approval fields for test case generation
     approved = Column(Boolean, default=False)
