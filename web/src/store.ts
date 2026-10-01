@@ -146,7 +146,7 @@ export class Store {
     this.control.abort();
     this.control = new AbortController();
     this.release();
-    this.opened = { ...EMPTY, diagram: null };
+    this.opened = { ...EMPTY };
     for (const view of this.views) view.reset();
     return this.live();
   }

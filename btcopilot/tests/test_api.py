@@ -521,8 +521,6 @@ def test_a_page_reads_the_diagram_it_names_whatever_the_account_is_on(
     admin, test_user, theirs
 ):
     # R-0080
-    """The page names the diagram it has open on every read, so another tab
-    or phone moving the account elsewhere changes nothing it shows."""
     assert test_user.current_diagram_id is None
     q = {"diagram_id": theirs.id}
     said = admin.get("/app/statements", query_string=q).get_json()
@@ -532,7 +530,7 @@ def test_a_page_reads_the_diagram_it_names_whatever_the_account_is_on(
     assert admin.get(f"/app/sessions/{sittings[0]['id']}").status_code == 200
     assert admin.get("/app/timeline", query_string=q).status_code == 200
     assert admin.post(
-        "/app/chat?" + f"diagram_id={theirs.id}",
+        f"/app/chat?diagram_id={theirs.id}",
         json={"statement": "hello"},
         headers={"X-CSRFToken": csrf_token(admin)},
     ).status_code == 403

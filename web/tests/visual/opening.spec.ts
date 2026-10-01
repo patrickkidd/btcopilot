@@ -213,7 +213,7 @@ test.describe("an admin's search results", () => {
     const theirs: Stand = { id: 987005, name: "Their family", thread: [line(987501, "Said in their family.")], access: "admin-view" };
     await stand(page, theirs);
     await page.route(/\/app\/users\?q=/, (route) =>
-      route.fulfill({ json: [{ id: 987900, username: "someone@else.invalid", name: "Someone Else" }] }),
+      route.fulfill({ json: [{ id: 987900, username: "new@fd362-fixture.invalid", name: "Someone Else" }] }),
     );
     await page.route(/\/app\/diagrams\?user_id=987900$/, (route) => route.fulfill({ json: [diagram(theirs)] }));
     await settle(page);

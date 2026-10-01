@@ -56,3 +56,29 @@ we take the stricter number. Nothing ships below these. No exceptions without a 
 - A control that starts something starts it immediately, not on the next tick of a
   shared clock.
 - Every interactive element has a visible pressed state and a keyboard focus ring.
+
+## How a diagram is opened
+- The page holds the open diagram in one place, `web/src/store.ts`: the
+  diagram itself (name, owner, whether it is read-only), its record and the
+  coach's questions, the newest page of its thread, its sittings, the running
+  turn's stream, and the controller that cancels its pending reads.
+- One step opens a diagram, `store.open(id)`, for the first load and every
+  switch alike. It cancels every read still coming for the diagram before and
+  closes its running turn's stream, empties every screen, reads the record, the
+  thread, the sittings and the diagram itself by the diagram's id in parallel,
+  and draws every screen from what came back. When two opens overlap, only the
+  last is drawn. On the first load the server's page supplies the diagram and
+  the thread, so only the rest is read.
+- Every screen that shows the open diagram registers with `store.watch`: a
+  `reset` that puts it back to empty and a `draw` that draws it from the parts
+  that changed. It reads the diagram from `store.current()` and never fetches
+  the diagram's data on its own; a part read again goes through
+  `store.refresh`, and any other request about the open diagram through
+  `store.fetch`, which drops the answer if another diagram was opened meanwhile.
+- Every request about the open diagram names its id (`?diagram_id=`). The
+  server rejects an id the caller may not open with a 404. The account's
+  current diagram on the server only decides where the next page load lands.
+- What is the open diagram is never copied: the title, the read-only line, the
+  ticks in the diagrams list and the product events all read the store.
+- The coding screen and the cut picker show a different diagram (the coding's
+  own record, the family a cut is placed on) and keep their own reads.
