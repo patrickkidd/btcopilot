@@ -81,6 +81,7 @@ test("three replies are voted on unnamed, then the coach's is headed Coach with 
 
   await bubble.getByRole("button", { name: "Vote" }).click();
   await expect(bubble.locator(".who")).toHaveText("Coach");
+  await expect(bubble).toHaveClass(/\bfb\b/);
   await expect(bubble.locator(".vt-fold .n")).toHaveText("2");
   await expect(page.locator("#send")).toBeEnabled();
   await expect(page.locator("#composer")).toHaveAttribute("contenteditable", "true");

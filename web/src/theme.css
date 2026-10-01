@@ -987,6 +987,9 @@ button { font-family: inherit; }
 .bub > .info:active { color: var(--data-press); }
 /* While shadow replies are on, the coach's reply is held back, unread aloud
    and without its notes, until it has been voted on unnamed (R-0636). */
+/* a reply made while shadow replies are on keeps the amber tint, so the extra cost
+   and voting stay in view */
+.bub.coach.fb { background: linear-gradient(var(--ask-tint), var(--ask-tint)), var(--panel); }
 .bub.blind > :not(.who, .did, .vt-wait, .vt-ballot) { display: none; }
 .chat > .bub.blind + .play { display: none; }
 .vt-wait { margin-top: 4px; font: 400 15px/1.45 var(--sans); color: var(--faint); }

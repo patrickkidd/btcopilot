@@ -407,7 +407,7 @@ export class Chat {
   live(play: string | null = null): LiveBubble {
     const bubble = el(
       "div",
-      `bub ${Role.Coach} typing${this.feedback() ? " blind" : ""}`,
+      `bub ${Role.Coach} typing${this.feedback() ? " blind fb" : ""}`,
       `<div class="who">Coach</div><span class="words"></span>`,
     );
     if (play !== null) bubble.dataset.play = play;
