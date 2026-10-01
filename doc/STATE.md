@@ -23,7 +23,7 @@ The older handover files in the private corpus stay as they were, for the record
 
 FD-366 is the follow-on ticket (child of epic FD-362): the coverage checklist per Kerr chapter 10 with four states, prose quality by Patrick's picks, the conversational regression test, and the shadow spend category. FD-365 is frozen for review and merge as of 2026-09-30; new work goes on branch FD-366 from the FD-365 head, and the deploy lock moves to FD-366 when Patrick says so.
 
-**Start here for FD-366 (end of 2026-10-01).** Production runs release 3.2026.10.1.5. The deploy lock is on FD-366 (`uv run bin/deploy-lock set FD-366`; Claude moves it when Patrick says so, R-0623).
+**Start here for FD-366 (end of 2026-10-01).** Production runs release 3.2026.10.1.7. The deploy lock is on FD-366 (`uv run bin/deploy-lock set FD-366`; Claude moves it when Patrick says so, R-0623).
 Live: the coach at low thinking; every model call metered by purpose, shadow kept out of real spend, shadow turns and backfill on a queue; coverage stages one to three and the coverage curve; the OpenAI client (alias gpt); sitting titles and summaries on Gemini Flash Lite; every coach turn records its release and replay passes sit in their own table (5 backfilled).
 Live, screens: one shared jump path for chips, bubbles, sittings and the drawer; the timeline folds to a strip while reading or typing; event and person detail cards replace the parked edit forms, with one action into the chat; the coach merges two people on the person's yes; cuts span sittings and the picker scrolls the whole thread with a jump list; the agenda's sittings list leaves out replay copies; the coach cost dashboard.
 On the branch, not released: admins search people by name on the diagrams view and open another person's diagram read-only (god access); the sittings scroll fix (a phone test shows the words move about 13px while the timeline folds) when it lands.
@@ -1884,11 +1884,13 @@ You rule keep, change, or undo on each.
    - You decide: Whether the loop may keep words written beside tool calls.
 
 27. **Trying two outside models as shadows**
+   - Fixed 2026-09-30: The GPT-6.1 client is built; a key is needed on the box only for live shadows. Muse Spark still needs a key. DeepSeek is excluded by Patrick's BAA ruling.
    - Done: GPT-6.1 Sol costs about $0.18 to $0.21 a turn, needs an OpenAI key and a new client, and health-data terms apply only after OpenAI approval. Muse Spark 1.1 from Meta costs about $0.11 a turn, needs a Meta key, and is reachable through the existing Anthropic-format client with a small routing change. No training, retention or health-data terms were found for it.
    - Why it matters: Clinical text would leave the current providers.
    - You decide: Which keys to create, and whether clinical text may go to either.
 
 28. **The queued measurement spend**
+   - Fixed 2026-09-30: Measured: five passes, $3.45 plus the Sonnet re-run. Results are on the cost page.
    - Done: Replay his 13 turns on Opus 5.5 three ways: the current prompt at medium thinking as the baseline on the new layout, low thinking, and the batch-edits prompt variant. About $2.50 a run, $7.50 total. Plus one run on Gemini 3.1 Pro Preview through the existing Google client, about $2.50. The free routes cannot show it: the subscription replay gives no thinking control and the local model is not Opus.
    - Why it matters: Whether low thinking or the batch-edits prompt saves money without hurting replies cannot be judged without it.
    - You decide: Answer "go" or a number.
@@ -1899,11 +1901,26 @@ You rule keep, change, or undo on each.
    - Why it matters: Today an auditor cannot tell a missing note from a broken button.
    - You decide: Nothing.
 
+36. **More thinking on the variables while the rest runs low**
+   - Done: The coach runs at low thinking; Patrick wants more thinking on the variables (open question 40).
+   - Why it matters: It changes cost and reply quality.
+   - You decide: Rule on open question 40.
+
+52. **Retitle a sitting from its whole content when the next one opens, or keep first-impression titles (he wants to see the sittings first)**
+   - You decide: Decide.
+
+53. **'+ Add event' and '+ Add someone' still open the parked forms, and the coding screen still edits through them: keep for adding, or move adding to chat too**
+   - You decide: Decide.
+
+54. **Cuts are not blocked for an admin viewing read-only, since cuts are placed from the agenda across all families: fine, or block them**
+   - You decide: Decide.
+
 ### B. Defects and unproven things
 
 You rule fix now, later, or accept.
 
 13. **Cluster regrouping model calls are not recorded at all**
+   - Fixed 2026-09-30: All model calls are metered and the fix is released.
    - Done: They never write a row in the model-calls table.
    - Why it matters: Their cost is invisible in spend panels.
    - You decide: Decide whether to record them and under which purpose.
@@ -1935,7 +1952,7 @@ You rule fix now, later, or accept.
    - You decide: Decide whether to have it run on a scratch Postgres database before the next migration.
 
 12. **The fallback column on model calls reads as set on every row**
-   - Fixed 2026-09-30: Fixed on the branch. The column stored a JSON null instead of an empty value. Old production rows need a one-off correction on the next deploy, which Patrick approves.
+   - Fixed 2026-09-30: The code fix is released. The one-off correction of the old production rows is still Patrick's.
    - Done: It shows 100% while the real rate is 0%. This is a bug in how it is stored.
    - Why it matters: Any panel or question about fallbacks reads wrong.
    - You decide: Decide whether to fix it now.
@@ -2000,19 +2017,89 @@ You rule fix now, later, or accept.
    - You decide: Nothing yet.
 
 42. **Chip tap in the chat does not unfold the timeline or show the selection**
-   - In build 2026-10-01 (no input needed).
+   - Fixed 2026-10-01: released in 3.2026.10.1.5.
    - Done: Tapping a chip in the chat must unfold the timeline (now folded while reading) and select that event. The selected event's title must be shown front and centre in teal, as when tapped on the timeline, not grey in the breadcrumb. The grey timeline label with nothing selected stays (Patrick, 2026-10-01). Queued, not started.
    - Why it matters: A tap that shows nothing obvious reads as a broken chip.
+   - You decide: Nothing.
+
+55. **One phone test fails on the release: scrolling up to read older sittings moves the words about 13px while the timeline folds (fix in progress)**
+   - Fixed 2026-10-01: released in .6.
+   - You decide: Nothing.
+
+56. **Four diagrams-view tests fail on a 'Notices' row in the test account's Account page; cause unknown, to check**
+   - Fixed 2026-10-01: stale test-stack data, not a regression.
+   - You decide: Nothing.
+
+34. **The record-row lock left by a refused write**
+   - Fixed 2026-09-30: Fixed and released.
+   - Done: A refused write left the record's row locked.
+   - Why it matters: Later writes to that record could hang.
+   - You decide: Nothing.
+
+35. **The rewind's ghost event with no kind**
+   - Fixed 2026-09-30: Fixed.
+   - Done: Rewinding an event left an event with no kind.
+   - Why it matters: A blank event showed in the record.
+   - You decide: Nothing.
+
+43. **The questions list's teal chips jump instead of going to the chat; jumps to a bubble or a sitting animate; the drawer jumps; one shared jump path (released 3.2026.10.1.5)**
+   - Fixed 2026-10-01: The questions list's teal chips jump instead of going to the chat; jumps to a bubble or a sitting animate; the drawer jumps; one shared jump path (released 3.2026.10.1.5).
+   - You decide: Nothing.
+
+44. **Sittings list in the agenda left out the replay copies**
+   - Fixed 2026-10-01: Sittings list in the agenda left out the replay copies.
+   - You decide: Nothing.
+
+45. **Titles and summaries moved to Gemini Flash Lite**
+   - Fixed 2026-10-01: Titles and summaries moved to Gemini Flash Lite.
+   - You decide: Nothing.
+
+46. **Cuts span sittings; the picker scrolls the whole thread with a jump list**
+   - Fixed 2026-10-01: Cuts span sittings; the picker scrolls the whole thread with a jump list.
+   - You decide: Nothing.
+
+47. **The coach merges two people in chat on the person's yes (merge_people)**
+   - Fixed 2026-10-01: The coach merges two people in chat on the person's yes (merge_people).
+   - You decide: Nothing.
+
+48. **Event and person detail cards replace the edit forms, which are parked; one action into the chat**
+   - Fixed 2026-10-01: Event and person detail cards replace the edit forms, which are parked; one action into the chat.
+   - You decide: Nothing.
+
+49. **Admins search people by name on the diagrams view; opening another person's diagram is read-only god access (released 3.2026.10.1.6)**
+   - Fixed 2026-10-01: Admins search people by name on the diagrams view; opening another person's diagram is read-only god access (released 3.2026.10.1.6, read-only).
+   - You decide: Nothing.
+
+50. **Coach cost dashboard with warm/cold cost per turn, dollars by kind, calls, cold writes, coverage over time, cost by release, replay passes**
+   - Fixed 2026-10-01: Coach cost dashboard with warm/cold cost per turn, dollars by kind, calls, cold writes, coverage over time, cost by release, replay passes.
+   - You decide: Nothing.
+
+51. **Every coach turn records its release; replay passes kept in a table (5 backfilled)**
+   - Fixed 2026-10-01: Every coach turn records its release; replay passes kept in a table (5 backfilled).
+   - You decide: Nothing.
+
+57. **Cut picker: one row per family, whole thread at the newest sitting, a plain line of dates as the jump control (released .7)**
+   - Fixed 2026-10-01: Cut picker: one row per family, whole thread at the newest sitting, a plain line of dates as the jump control (released .7).
+   - You decide: Nothing.
+
+58. **An admin viewing another person's diagram sees their chat and their sittings in the drawer (released .6 and .7)**
+   - Fixed 2026-10-01: An admin viewing another person's diagram sees their chat and their sittings in the drawer (released .6 and .7).
+   - You decide: Nothing.
+
+59. **Cost dashboard headline: the latest day's cost per turn as one big number beside the line over time (released .6)**
+   - Fixed 2026-10-01: Cost dashboard headline: the latest day's cost per turn as one big number beside the line over time (released .6).
    - You decide: Nothing.
 
 ### C. Housekeeping
 
 21. **Queued rulings wait for your key**
+   - Fixed 2026-09-30: The queue now has four entries marked confirm or drop.
    - Done: R-0619, R-0622, R-0623 and R-0624 and the note that R-0618 supersedes an earlier ruling are queued. R-0620 and R-0621 were demoted to decisions.
    - Why it matters: The rulings store does not yet say what you said.
    - You decide: Provide the key so they are written, and confirm the two demotions.
 
 22. **26 shadow answers on your account await your picks**
+   - Fixed 2026-09-30: The Sonnet and Flash picks still await Patrick.
    - Done: They are in Better replies.
    - Why it matters: Shadow quality cannot be judged until you pick.
    - You decide: Pick when you have time.
@@ -2023,6 +2110,7 @@ You rule fix now, later, or accept.
    - You decide: Decide when the design pass happens.
 
 24. **Parts of the ticket are still unbuilt**
+   - Fixed 2026-09-30: Built: coverage stages one to three, and the low thinking setting. Still unbuilt: the conversational regression test, the coverage-efficiency experiment, the pick-notes rubric, the coach-started email design pass.
    - Done: Not built: the coverage checklist and its panels, the conversational regression test, the coverage-efficiency experiment, and the pick-notes rubric. Also unbuilt: the low thinking setting and the batch-edits prompt, both waiting on the measurement in item 28.
    - Why it matters: The ticket's acceptance criteria are not met without them.
    - You decide: Decide the order, or drop any.
@@ -2031,3 +2119,8 @@ You rule fix now, later, or accept.
    - Done: Design not started. Patrick asked for it on 2026-10-01: "we need a way to search chat messages". The coach already has a search tool over the chat; the person has none.
    - Why it matters: People cannot find what they said earlier.
    - You decide: Decide when the design starts.
+
+37. **The theory corpus now holds outside authors**
+   - Done: It holds outside authors, with Patrick's SARF and coding writing tagged as the layer under test. His statements are in the private corpus.
+   - Why it matters: Patrick's writing is now the thing being tested, not a source.
+   - You decide: Confirm the tagging.
