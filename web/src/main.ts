@@ -503,7 +503,7 @@ async function openLine(statementId: number): Promise<void> {
  * Putting a conversation on the agenda, placing the cut everyone codes up to,
  * and the agenda itself (R-0258, R-0267). Nobody but Patrick sees these. */
 
-const placing = new Cut($("cut-chat"), $("cut-bar"), {
+const placing = new Cut($("cut-jump"), $("cut-chat"), $("cut-bar"), {
   onPlaced: () =>
     void agenda.load().then(() => settings.popTo(AGENDA)),
   onTitle: (title) => {
@@ -569,6 +569,7 @@ async function placeCut(discussionId: number): Promise<void> {
   await placing.open(discussionId, agenda.nextDate());
   CUT.at = address(Place.Cut, discussionId);
   settings.push(CUT);
+  placing.land();
 }
 
 /** The agenda from outside the stack: back from a result. */
@@ -1738,9 +1739,9 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
     menu.add();
   },
   [Place.Event]: ([id]) => toEvent(Number(id)),
-  [Place.EventEditor]: ([id]) => {
   // the address of the parked form, kept so old links and the history still
   // land: it opens the event's read-only detail view
+  [Place.EventEditor]: ([id]) => {
     toList(Tab.Events);
     menu.goTo(Tab.Events, Number(id));
   },

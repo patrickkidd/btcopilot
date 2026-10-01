@@ -3276,3 +3276,42 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .folded > .pic > .view { margin-top: -31px; }
 /* a phone's keyboard is up: the chat keeps the room above the message box */
 .typing > .speakrow { display: none; }
+
+/* The cut picker's row of sittings over the thread: one button per sitting,
+   its day over its title, the one in view outlined; tapping one scrolls the
+   thread to that sitting's line. */
+.ct-jump {
+  flex: none;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 8px var(--gutter);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  scrollbar-width: none;
+}
+.ct-to {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 180px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.ct-to.on { border-color: var(--ask); }
+.ct-tt {
+  max-width: 100%;
+  font: 500 13px/18px var(--sans);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ct-td { font: 400 13px/18px var(--mono); color: var(--faint); }
+/* The lines inside the cut are lit in the cut's own colour. */
+.bub.line.lit { box-shadow: 0 0 0 2px var(--ask); }
