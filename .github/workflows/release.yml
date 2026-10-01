@@ -1,5 +1,5 @@
-# Build the image on a push to master, tag it with the release version (R-0419),
-# and deploy it to the box. The host is a repository variable so no address is
+# Build the image on a push to master or a dispatch, tag it with the release version
+# (R-0419), and deploy it to the box. Only a release from master makes a git tag. The host is a repository variable so no address is
 # committed before the droplet exists.
 name: Release
 
@@ -33,20 +33,31 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      # 3.YYYY.M.D.N+g<sha7>: the commit's UTC date, N = 1 + the release tags
-      # already carrying that date. The committed version stays 3.0.0.
+      # 3.YYYY.M.D.N+g<sha7>: the commit's UTC date. On master N = 1 + the release
+      # tags already carrying that date; on any other branch no git tag is made and
+      # N is this workflow's run number. The committed version stays 3.0.0.
+      # The image tag is the version with - for +, or on a branch <branch>-g<sha7>.
       - name: Version
         id: version
         run: |
           day=$(TZ=UTC git show -s --format=%cd --date=format-local:%Y.%-m.%-d HEAD)
-          n=$(( $(git tag -l "3.${day}.*" | wc -l) + 1 ))
+          if [ "${GITHUB_REF}" = refs/heads/master ]; then
+            n=$(( $(git tag -l "3.${day}.*" | wc -l) + 1 ))
+          else
+            n="${GITHUB_RUN_NUMBER}"
+          fi
           version="3.${day}.${n}+g$(git rev-parse --short=7 HEAD)"
           pip install build packaging
           python -c "from packaging.version import Version; Version('${version}')"
           sed -i "s/^version = \"3.0.0\"$/version = \"${version}\"/" pyproject.toml
           grep -q "^version = \"${version}\"$" pyproject.toml
           echo "version=${version}" >> "$GITHUB_OUTPUT"
-          echo "tag=${version/+/-}" >> "$GITHUB_OUTPUT"
+          if [ "${GITHUB_REF}" = refs/heads/master ]; then
+            echo "tag=${version/+/-}" >> "$GITHUB_OUTPUT"
+          else
+            branch=$(echo "${GITHUB_REF_NAME}" | tr 'A-Z' 'a-z' | tr -c 'a-z0-9._\n-' '-' | sed 's/^[-.]*//' | cut -c1-60)
+            echo "tag=${branch}-g$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build the web bundle
         env:
@@ -93,6 +104,7 @@ jobs:
             WHEEL_FILE=dist/*.whl
 
       - name: Tag the release
+        if: github.ref == 'refs/heads/master'
         run: |
           git tag "${{ steps.version.outputs.version }}"
           git push origin "${{ steps.version.outputs.version }}"

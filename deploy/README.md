@@ -42,9 +42,12 @@ runs `uv run bin/deploy-lock set <its branch>`. Every deploy runs `uv run bin/de
 first and does not dispatch unless the lock names its own branch. A merge to master never
 deploys; the lock never names master or a second branch.
 
-A dispatch of `release.yml` from the lock's branch builds the image, tags it with the release
-version `3.YYYY.M.D.N+g<sha7>` (UTC commit date, N counts that day's releases; the
-image tag has `-` for `+`; R-0419), pushes it to GHCR, then pulls it on the box, rolls the app and the worker with
+A dispatch of `release.yml` from the lock's branch makes no git tag. The image is tagged
+`<branch>-g<sha7>` (for example `fd-368-g2acce7b`), and the version string the app and Grafana
+show is `3.YYYY.M.D.N+g<sha7>` (UTC commit date, N the workflow run number). A release from
+master, after the PR merges, also creates the git tag `3.YYYY.M.D.N+g<sha7>` (N counts that
+day's tags) and tags the image the same with `-` for `+` (R-0419). The dispatch builds the
+image, pushes it to GHCR, then pulls it on the box, rolls the app and the worker with
 `docker rollout` (the new container comes up beside the old one and the old one
 stops once the new one is healthy, so no request is dropped), and runs
 `flask admin db upgrade`. Nothing is built on the box. The plugin is installed
@@ -70,10 +73,11 @@ workflow's deploy does this itself whenever the Caddyfile changed; by hand it is
 branch, and a dispatch deploys the branch head. Dispatching from an older release's tag is
 refused ("not allowed to deploy to production due to environment protection rules",
 2026-09-28). Roll back by hand on the box instead, to the last good release: its commit is
-the tag `3.YYYY.M.D.N+g<sha7>` and its image the same with `-` for `+`. As root:
+the `<sha7>` in its image tag (`<branch>-g<sha7>`, or `3.YYYY.M.D.N-g<sha7>` for a release from
+master; `docker images ghcr.io/patrickkidd/btcopilot` on the box lists them). As root:
 
     cd /var/www/btcopilot && git fetch origin <sha> && git checkout --detach <sha> && cd deploy
-    export BTCOPILOT_TAG=<image tag, e.g. 3.2026.9.28.1-gf66d603>
+    export BTCOPILOT_TAG=<image tag, e.g. fd-368-g2acce7b>
     docker compose --env-file /etc/fd/secrets.env pull fd-app fd-worker fd-shadow fd-beat
     docker rollout --env-file /etc/fd/secrets.env fd-app
     docker rollout --env-file /etc/fd/secrets.env fd-worker

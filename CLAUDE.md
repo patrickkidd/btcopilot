@@ -52,7 +52,7 @@ slug), created from the main clone with
 
 ## Production
 
-The box is reached as `ssh familydiagram` (Patrick's ssh config; never the raw IP). Deploys: the release workflow builds and tags the image; the rollout runs on the box from `/var/www/btcopilot/deploy` with `--env-file /etc/fd/secrets.env`. Grafana Cloud is administered through its API with `GRAFANA_SA_TOKEN` and `GRAFANA_URL` from `.env` at the clone root. The deploy lock moves to the ticket branch when Patrick says so, by Claude, never by him [Oracle: R-0623].
+The box is reached as `ssh familydiagram` (Patrick's ssh config; never the raw IP). Deploys: the release workflow builds the image, tagged `<branch>-g<sha7>`, and makes a git tag only for a release from master after the PR merges, never from a ticket branch; the rollout runs on the box from `/var/www/btcopilot/deploy` with `--env-file /etc/fd/secrets.env`. Grafana Cloud is administered through its API with `GRAFANA_SA_TOKEN` and `GRAFANA_URL` from `.env` at the clone root. The deploy lock moves to the ticket branch when Patrick says so, by Claude, never by him [Oracle: R-0623].
 
 ## Deploy and spend
 
