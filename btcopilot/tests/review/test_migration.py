@@ -12,6 +12,7 @@ from btcopilot.tests.repo import REPO
 
 REVISION = REPO / "btcopilot/migrations/versions/1b00000000aa_the_app_from_empty.py"
 CUTS = REPO / "btcopilot/migrations/versions/1b00000000c0_model_call_purpose.py"
+SHARES = REPO / "btcopilot/migrations/versions/1b00000000c1_admin_view_shares.py"
 
 RENAMED = {"diagram_changes", "diagram_interactions"}
 REVIEW = {
@@ -91,3 +92,25 @@ def test_a_cut_made_on_one_sitting_moves_to_its_familys_thread():
         "end_statement_id": 12,
         "diagram_id": 7,
     }
+
+
+def test_an_admins_leftover_share_on_anothers_diagram_is_removed():
+    # R-0080
+    engine = sa.create_engine("sqlite://")
+    with engine.begin() as conn:
+        for sql in (
+            "CREATE TABLE users (id INTEGER PRIMARY KEY, roles TEXT)",
+            "CREATE TABLE diagrams (id INTEGER PRIMARY KEY, user_id INTEGER)",
+            "CREATE TABLE access_rights (id INTEGER PRIMARY KEY, diagram_id INTEGER,"
+            " user_id INTEGER, right TEXT)",
+            "INSERT INTO users VALUES (1, 'subscriber,admin'), (2, 'subscriber'),"
+            " (3, 'subscriber')",
+            "INSERT INTO diagrams VALUES (10, 1), (11, 2)",
+            "INSERT INTO access_rights VALUES (1, 11, 1, 'rw'), (2, 11, 3, 'rw'),"
+            " (3, 10, 1, 'rw')",
+        ):
+            conn.execute(sa.text(sql))
+        with Operations.context(MigrationContext.configure(conn)):
+            revision(SHARES).upgrade()
+        kept = conn.execute(sa.text("SELECT id FROM access_rights")).scalars().all()
+    assert kept == [2, 3]
