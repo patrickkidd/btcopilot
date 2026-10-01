@@ -56,7 +56,7 @@ test("three replies are voted on unnamed, then the coach's is headed Coach with 
   await page.locator("#composer").fill("My dad called last night about mom's care.");
   await page.locator("#send").click();
 
-  await expect(page.locator(".bub.coach .vt-wait")).toHaveText("Waiting for shadow replies");
+  await expect(page.locator(".bub.coach .vt-wait")).toHaveText("Waiting for other replies");
   await expect(page.locator(".bub.coach.blind .words")).toBeHidden();
   const bubble = page.locator(".bub.coach").last();
   await expect(bubble.locator(".vt-reply")).toHaveCount(3);

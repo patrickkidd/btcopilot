@@ -740,7 +740,7 @@ test.describe("the Auditor's Coding Guide row", () => {
   });
 });
 
-test.describe("the shadow replies switch", () => {
+test.describe("the Conversation Feedback switch", () => {
   test.use({ storageState: stateFor("empty") });
   const roles = (...names: string[]) =>
     flask("admin", "run", "--", "users", "roles", username("empty"), ...names, "--yes");
@@ -768,7 +768,7 @@ test.describe("the shadow replies switch", () => {
     await page.waitForTimeout(300);
     await expect(pane).toHaveScreenshot("settings-shadows.png");
 
-    const toggle = () => page.locator('.sn-pane.in[data-page="coach"] [role="switch"][aria-label="Shadow replies"]');
+    const toggle = () => page.locator('.sn-pane.in[data-page="coach"] [role="switch"][aria-label="Conversation Feedback"]');
     await toggle().click();
     const sheet = page.locator(".fs-sheet.sh");
     await expect(sheet).toBeVisible();

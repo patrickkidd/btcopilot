@@ -68,7 +68,7 @@ export class Vote {
     private host: Host,
   ) {
     bubble.classList.add("blind");
-    bubble.append(el("div", "vt-wait dots3", "Waiting for shadow replies"));
+    bubble.append(el("div", "vt-wait dots3", "Waiting for other replies"));
     host.hold(true);
     host.scroll();
     void this.start();

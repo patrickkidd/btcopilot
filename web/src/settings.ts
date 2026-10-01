@@ -773,7 +773,7 @@ export class Settings {
     return [
       this.group(
         [
-          this.switchRow("Shadow replies", on, (want) =>
+          this.switchRow("Conversation Feedback", on, (want) =>
             want ? this.confirmShadows() : void this.write({ shadow_models: [] }),
           ),
           ...(cost
@@ -792,7 +792,7 @@ export class Settings {
 
   private confirmShadows(): void {
     this.ask.show(
-      `<div class="cf-t">Turn on shadow replies?</div>` +
+      `<div class="cf-t">Turn on Conversation Feedback?</div>` +
         `<p class="cf-p">${esc(SHADOW_WARNING)}</p>` +
         `<div class="cf-btns">` +
         `<button class="cf-go" type="button" data-act="on">Turn on</button>` +
