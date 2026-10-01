@@ -5,6 +5,7 @@ import datetime
 from flask import jsonify, request
 
 from btcopilot.extensions import db
+from btcopilot.models import Diagram
 from btcopilot.review import (
     adapter,
     divergence,
@@ -35,6 +36,8 @@ def payload(cut: Cut) -> dict:
     # it straight into the phone's own date picker.
     data["meeting_date"] = cut.meeting_date.isoformat() if cut.meeting_date else None
     data["session"] = session_name(cut)
+    owner = db.session.get(Diagram, cut.diagram_id).user
+    data["owner"] = owner.full_name().strip() or owner.username
     data["sitting_id"] = adapter.statement(cut.start_statement_id).discussion_id
     data["end_order"] = adapter.statement_order(cut.diagram_id).get(cut.end_statement_id)
     data["cut_day"] = when.strftime("%b %-d") if when else None

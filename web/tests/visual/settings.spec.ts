@@ -602,7 +602,7 @@ test.describe("the coding and quality sections", () => {
     await as(page, "admin");
     const cut = (id: number, session: string) => ({
       id,
-      discussion_id: 900 + id,
+      sitting_id: 900 + id,
       start_statement_id: 1,
       end_statement_id: 4,
       meeting_date: "2026-10-06",
@@ -610,6 +610,7 @@ test.describe("the coding and quality sections", () => {
       ratified_at: null,
       nudged_at: null,
       session,
+      owner: session,
       end_order: 4,
       cut_day: "Sep 29",
       started: id === 1,
@@ -625,6 +626,12 @@ test.describe("the coding and quality sections", () => {
     await page.route(
       (url) => url.pathname === "/review/cuts",
       (route) => route.fulfill({ json: cuts }),
+    );
+    const sitting = { id: 901, title: "", started: "2026-09-29T19:00:00", previous_started: null, first_statement_id: 1 };
+    const turn = (id: number) => ({ id, order: id, sitting_id: 901, client: true, text: "", day: "Sep 29" });
+    await page.route(
+      (url) => url.pathname === "/review/turns",
+      (route) => route.fulfill({ json: { sittings: [sitting], turns: [turn(1), turn(4)] } }),
     );
     await page.route(
       (url) => url.pathname === "/review/coders",

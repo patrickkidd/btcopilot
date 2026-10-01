@@ -52,6 +52,7 @@ def test_a_cut_runs_across_sittings_of_one_thread(patrick, test_user, session, t
     ).get_json()
     assert (made["diagram_id"], made["sitting_id"]) == (session.diagram_id, session.id)
     assert made["end_order"] == len(turns) + 1
+    assert made["owner"] == (test_user.full_name().strip() or test_user.username)
     read = patrick.get(f"/review/turns?discussion_id={later.id}").get_json()
     assert [s["id"] for s in read["sittings"]] == [session.id, later.id]
     assert read["on_agenda"]["start_statement_id"] == turns[2].id

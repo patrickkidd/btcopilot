@@ -795,6 +795,8 @@ export interface Cut {
   ratified_at: string | null;
   nudged_at: string | null;
   session: string;
+  /** Whose diagram the cut is from, which its agenda row is named by. */
+  owner: string;
   end_order: number | null;
   cut_day: string | null;
   /** Somebody has a coding of it, so it can no longer be taken off. */

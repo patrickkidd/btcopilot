@@ -358,7 +358,7 @@ export class Agenda {
    * words left open for more lines under them. */
   private cutLines(cut: Cut): string {
     return (
-      `<div class="sn-m"><div class="sn-t">${esc(cut.session)}</div>` +
+      `<div class="sn-m"><div class="sn-t">${esc(cut.owner)}</div>` +
       `<div class="sn-s">${esc(this.spans.get(cut.id) ?? "")}</div>`
     );
   }
