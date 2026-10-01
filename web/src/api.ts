@@ -25,6 +25,8 @@ import type {
   Passkey,
   Pair,
   Picked,
+  Cast,
+  Shadows,
   PickChoice,
   ModelPicks,
   PasskeyCreationOptions,
@@ -565,3 +567,9 @@ export const modelPicks = () => ask<ModelPicks[]>("GET", "/picks");
 /** Patrick's pick, which is answered with the two model names. */
 export const pick = (id: number, choice: PickChoice, note: string) =>
   ask<Picked>("PUT", `/picks/${id}`, { choice, note });
+
+/** One turn's replies to vote on in the chat (R-0636). */
+export const shadows = (turnId: string) =>
+  ask<Shadows>("GET", `/picks?turn=${encodeURIComponent(turnId)}`);
+
+export const cast = (id: number, body: Cast) => ask<Picked>("PUT", `/picks/${id}`, body);

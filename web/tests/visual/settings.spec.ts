@@ -739,3 +739,47 @@ test.describe("the Auditor's Coding Guide row", () => {
     await expect(row(page)).toHaveCount(0);
   });
 });
+
+test.describe("the shadow replies switch", () => {
+  test.use({ storageState: stateFor("empty") });
+  const roles = (...names: string[]) =>
+    flask("admin", "run", "--", "users", "roles", username("empty"), ...names, "--yes");
+  test.afterAll(() => roles("subscriber"));
+
+  // R-0637
+  test("an admin sees it with what it costs, and turning it on asks first", async ({ page }) => {
+    roles("admin", "subscriber");
+    const patched: unknown[] = [];
+    await page.route(/\/app\/preferences$/, async (route) => {
+      const prefs = await (await page.request.get("/app/preferences")).json();
+      const cost = { per_turn_usd: 0.19, month_usd: 3.42 };
+      if (route.request().method() !== "PATCH")
+        return route.fulfill({ json: { ...prefs, shadow_models: [], shadow_cost: cost } });
+      patched.push(route.request().postDataJSON());
+      await route.fulfill({ json: { ...prefs, shadow_models: prefs.shadow_candidates, shadow_cost: cost } });
+    });
+    await page.goto("/app/");
+    await openSettings(page);
+    await page.locator(".sn-pane.in .sn-row.push", { hasText: "Coach" }).click();
+    const pane = page.locator('.sn-pane.in[data-page="coach"]');
+    await expect(pane.locator(".sn-hd", { hasText: "Admin" })).toBeVisible();
+    await expect(pane.locator(".sn-row", { hasText: "Extra cost" })).toContainText("about 19¢ a turn");
+    await expect(pane.locator(".sn-row", { hasText: "Spent this month" })).toContainText("$3.42");
+    await page.waitForTimeout(300);
+    await expect(pane).toHaveScreenshot("settings-shadows.png");
+
+    const toggle = () => page.locator('.sn-pane.in[data-page="coach"] [role="switch"][aria-label="Shadow replies"]');
+    await toggle().click();
+    const sheet = page.locator(".fs-sheet.sh");
+    await expect(sheet).toBeVisible();
+    await expect(sheet.locator(".cf-p")).toContainText("It costs Patrick money.");
+    await sheet.getByRole("button", { name: "Cancel" }).click();
+    await expect(sheet).toBeHidden();
+    expect(patched).toEqual([]);
+
+    await toggle().click();
+    await sheet.getByRole("button", { name: "Turn on" }).click();
+    await expect(toggle()).toHaveAttribute("aria-checked", "true");
+    expect(patched).toEqual([{ shadow_models: ["sonnet", "gemini-pro"] }]);
+  });
+});

@@ -4,6 +4,7 @@ import { hush, say } from "./speech";
 import { INFO, notesView, type Notes } from "./notes";
 import { html, type Line } from "./tools";
 import { AWAY_PX, fit, fold, type Fold } from "./viewport";
+import { Vote } from "./vote";
 import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
@@ -99,6 +100,9 @@ const stamped = (bubble: HTMLElement) =>
  * of it arrives, so the reader never sees brackets. */
 const PART = /\[\[[^\]]*$/;
 
+/** What the message box says while a vote is open (R-0636). */
+const VOTE_FIRST = "Vote first, then type";
+
 /** One thing the coach did, as a plain line above its words. */
 const did = (line: Line) => el("div", "did", html(line));
 
@@ -130,6 +134,11 @@ export class Chat {
    * not mistaken for the reader scrolling away. */
   private pinning = false;
   private strip: Fold;
+  /** What the message box says when it is open. */
+  private ph: string;
+  /** Other models answer each turn too, and the reader votes before typing
+   * again; the coach's words are not shown until then (R-0636). */
+  shadows = false;
 
   constructor(
     private list: HTMLElement,
@@ -159,6 +168,7 @@ export class Chat {
       if (host === this.composer) return this.caret(button);
       this.handlers.onChip(chipOf(button));
     };
+    this.ph = composer.dataset.ph!;
     // the chat box stays above the phone's keyboard, however it came up
     fit();
     this.strip = fold(this.composer, this.list.closest<HTMLElement>(".screen")!, () => this.toEnd());
@@ -258,6 +268,7 @@ export class Chat {
 
   clear(): void {
     this.list.innerHTML = "";
+    this.hold(false);
     this.stuck = true;
   }
 
@@ -308,6 +319,15 @@ export class Chat {
     this.stuck = true;
     this.scroll();
     return bubble;
+  }
+
+  /** The message box closed while a vote is open, and open again after. */
+  private hold(on: boolean): void {
+    const bar = this.composer.closest<HTMLElement>(".inbar")!;
+    bar.classList.toggle("off", on);
+    this.composer.contentEditable = String(!on);
+    this.composer.dataset.ph = on ? VOTE_FIRST : this.ph;
+    bar.querySelector<HTMLButtonElement>(".send")!.disabled = on;
   }
 
   /** A line the app says rather than either speaker, centred between the
@@ -370,7 +390,7 @@ export class Chat {
   live(play: string | null = null): LiveBubble {
     const bubble = el(
       "div",
-      `bub ${Role.Coach} typing`,
+      `bub ${Role.Coach} typing${this.shadows ? " blind" : ""}`,
       `<div class="who">Coach</div><span class="words"></span>`,
     );
     if (play !== null) bubble.dataset.play = play;
@@ -439,10 +459,14 @@ export class Chat {
         for (const chip of [...said, ...offers.map((c) => ({ chip: c })), ...tail])
           if ("chip" in chip) onChip(chip.chip);
         playable(bubble, text);
-        bubble.classList.remove("typing");
+        bubble.classList.remove("typing", "blind");
         this.typing = null;
         this.scroll();
       },
+      vote: (turnId) =>
+        this.shadows
+          ? new Vote(bubble, turnId, (text) => this.written(tokenize(text), null), (on) => this.hold(on))
+          : null,
       type: async (text, onChip, pace = READ_MS) => {
         this.said.set(bubble, text);
         // A move holds until the sentence about it has been written and there
@@ -533,6 +557,7 @@ export class Chat {
    * offered keeps its amber, so what the user is about to send still looks
    * like the thing they tapped. */
   insert(chip: Chip, lead: Lead, after = " "): void {
+    if (this.composer.contentEditable === "false") return;
     this.composer.focus({ preventScroll: true });
     const selection = window.getSelection()!;
     if (
@@ -671,6 +696,9 @@ export interface LiveBubble {
   /** The reply as it will be stored: the words, the closing question, and the
    * offers, laid out for good. */
   settle(text: string, onChip: (chip: Chip) => void): void;
+  /** Right after settle: the reply held back for a vote on it and its
+   * shadows, while shadow replies are on; null when they are off. */
+  vote(turnId: string): Vote | null;
   type(text: string, onChip: (chip: Chip) => void, pace?: number): Promise<void>;
 }
 

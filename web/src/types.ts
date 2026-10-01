@@ -341,6 +341,8 @@ export enum TurnEventKind {
   /** Every model declined the message: a sentence in the coach's voice, and
    * no retry, since the same words would be declined again. */
   Refused = "refused",
+  /** A shadow reply has finished; `pending` are still running (R-0636). */
+  ShadowReady = "shadow_ready",
 }
 
 export enum ViewKind {
@@ -368,7 +370,8 @@ export type TurnEvent =
   | { type: TurnEventKind.TextReset }
   | ({ type: TurnEventKind.Done } & Reply)
   | { type: TurnEventKind.Failed; message: string }
-  | { type: TurnEventKind.Refused; message: string };
+  | { type: TurnEventKind.Refused; message: string }
+  | { type: TurnEventKind.ShadowReady; turn_id: string; pending: number };
 
 /** What a send answers with: the turn now running, to be followed on its own
  * stream. The words come later, down that stream. */
@@ -594,6 +597,12 @@ export interface Preferences {
   how_it_works: boolean;
   line_hint: boolean;
   bug_reports: BugReports;
+  /** The models each turn also runs on, for a vote; none is off (R-0636). */
+  shadow_models: string[];
+  /** Every model the switch turns on. */
+  shadow_candidates: string[];
+  /** What the shadows cost, sent to admins only (R-0637). */
+  shadow_cost?: { per_turn_usd: number; month_usd: number };
 }
 
 /** What a notification points at. Mirrors `NotificationKind` on the server. */
@@ -973,6 +982,27 @@ export interface Picked {
   note: string | null;
   left: string;
   right: string;
+}
+
+/** Where a pick was made: the chat's vote, against the review's own page. */
+export enum PickSource {
+  Chat = "chat",
+}
+
+/** One turn's replies to vote on, with no model named, in random order; each
+ * pick is one pair of them (R-0636). */
+export interface Shadows {
+  replies: { key: string; text: string }[];
+  real_key: string;
+  picks: { id: number; left_key: string; right_key: string }[];
+}
+
+export interface Cast {
+  choice: PickChoice;
+  left_acceptable: boolean;
+  right_acceptable: boolean;
+  note: string;
+  source: PickSource;
 }
 
 export interface ModelPicks {

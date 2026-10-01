@@ -4,6 +4,7 @@ import { $, el, esc, flash, isAdmin, isCoder, type Title } from "./dom";
 import { INDEX_URL } from "./concepts";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
+import { Sheet } from "./sheet";
 import { store } from "./store";
 import { identify } from "./telemetry";
 import { shortDate } from "./when";
@@ -49,6 +50,16 @@ const PROACTIVE_HINT: Record<Proactive, string> = {
   [Proactive.Rarely]: writesFirst("month"),
   [Proactive.Weekly]: writesFirst("week"),
 };
+/** Said before the shadows are switched on, since every turn then costs more
+ * (R-0637). */
+const SHADOW_WARNING =
+  "This runs extra models on every coach reply so you can vote on them. It costs Patrick money. " +
+  "Check with Patrick before turning it on, and turn it off when you are done.";
+const SHADOW_HINT =
+  "Other models also answer each turn, unnamed. Each reply waits a few seconds for them. " +
+  "You vote before you can type again.";
+const cents = (usd: number) => `about ${Math.round(usd * 100)}¢ a turn`;
+const dollars = (usd: number) => `$${usd.toFixed(2)}`;
 const SEARCH_AT = 6;
 /** Letters typed before the people search asks the server. */
 const FIND_AT = 2;
@@ -162,6 +173,8 @@ export class Settings {
   private passkeys: Passkey[] = [];
   private canPasskey = false;
   private host = el("div", "sn-stack");
+  /** The question before the shadows are switched on. */
+  private ask: Sheet;
   /** The auditor's coding guide, read on this stack like any page of it. */
   readonly literature: Sub;
   /** The account read again once the view has slid in, which draws its top
@@ -176,6 +189,13 @@ export class Settings {
   ) {
     this.host.hidden = true;
     overlay.append(this.host);
+    this.ask = new Sheet(overlay, "sh");
+    this.ask.panel.addEventListener("click", (e) => {
+      const act = (e.target as Element).closest<HTMLElement>("[data-act]")?.dataset.act;
+      if (!act) return;
+      this.ask.lower();
+      if (act === "on") void this.write({ shadow_models: this.prefs!.shadow_candidates });
+    });
     const frame = el("iframe");
     frame.id = "literature";
     frame.title = GUIDE;
@@ -394,9 +414,12 @@ export class Settings {
     return row;
   }
 
-  private valueRow(label: string, value: string): HTMLElement {
+  private valueRow(label: string, value: string, ink = true): HTMLElement {
     const row = el("div", "sn-row");
-    row.append(el("div", "sn-lbl", esc(label)), el("div", "sn-val ink", esc(value || "—")));
+    row.append(
+      el("div", "sn-lbl", esc(label)),
+      el("div", `sn-val${ink ? " ink" : ""}`, esc(value || "—")),
+    );
     return row;
   }
 
@@ -738,7 +761,43 @@ export class Settings {
         ),
       ]),
     );
+    if (isAdmin() || isCoder()) pane.append(...this.shadows(prefs));
     return { title: "Coach", pane };
+  }
+
+  /** Other models answer each turn too, for a vote in the chat; staff only,
+   * and what it costs only for admins (R-0636, R-0637). */
+  private shadows(prefs: Preferences): HTMLElement[] {
+    const on = prefs.shadow_models.length > 0;
+    const cost = prefs.shadow_cost;
+    return [
+      this.group(
+        [
+          this.switchRow("Shadow replies", on, (want) =>
+            want ? this.confirmShadows() : void this.write({ shadow_models: [] }),
+          ),
+          ...(cost
+            ? [
+                this.valueRow("Extra cost", cents(cost.per_turn_usd), false),
+                this.valueRow("Spent this month", dollars(cost.month_usd), false),
+              ]
+            : []),
+        ],
+        "Admin",
+      ),
+      el("div", "sn-hint", esc(SHADOW_HINT)),
+    ];
+  }
+
+  private confirmShadows(): void {
+    this.ask.show(
+      `<div class="cf-t">Turn on shadow replies?</div>` +
+        `<p class="cf-p">${esc(SHADOW_WARNING)}</p>` +
+        `<div class="cf-btns">` +
+        `<button class="cf-go" type="button" data-act="on">Turn on</button>` +
+        `<button class="cf-no" type="button" data-act="cancel">Cancel</button>` +
+        `</div>`,
+    );
   }
 
   private appearance(prefs: Preferences): Built {
