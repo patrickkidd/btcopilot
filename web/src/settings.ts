@@ -299,6 +299,7 @@ export class Settings {
   close(): void {
     if (!this.open) return;
     this.open = false;
+    this.finding = undefined;
     this.back.hidden = true;
     this.handlers.onTitle(null);
     const panes = this.stack.map((entry) => entry.pane);
@@ -746,7 +747,11 @@ export class Settings {
 
   private diagrams(account: Account): Built {
     const pane = el("div");
-    if (isAdmin()) pane.append(this.finder());
+    if (isAdmin())
+      pane.append(
+        (this.finding ??= this.finder()),
+        el("div", "sn-hd", PRO ? Records : "Your diagrams"),
+      );
     const box = el("div", "sn-grp");
     const now = new Date();
     for (const diagram of account.diagrams) box.append(this.diagramRow(diagram, now));
@@ -782,6 +787,9 @@ export class Settings {
     }
     return { title: PRO ? Records : "Your diagrams", pane };
   }
+
+  /** Kept across a re-draw of the page, so a search survives the reload. */
+  private finding?: HTMLElement;
 
   private diagramRow(diagram: Diagram, now: Date): HTMLElement {
     const row = el("div", `sn-row push${diagram.current ? " cur" : ""}`);
