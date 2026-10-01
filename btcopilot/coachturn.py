@@ -586,6 +586,7 @@ def _notes(said: Statement):
         .filter(
             TurnEvent.kind == TurnEventKind.ToolCall.value,
             TurnEvent.payload["name"].as_string() == ToolName.CoachNotes.value,
+            TurnEvent.payload["refusal"].as_string().is_(None),
         )
         .order_by(TurnEvent.id.desc())
     )

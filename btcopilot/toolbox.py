@@ -973,6 +973,21 @@ class Toolbox:
             )
 
     def _coach_notes(self, args: dict) -> tuple[str, None]:
+        schema = next(s for s in schemas() if s["name"] == ToolName.CoachNotes)["input_schema"]
+        missing = [field for field in schema["required"] if field not in args]
+        if not missing and not isinstance(args["plateau"], dict):
+            missing = ["plateau"]
+        elif not missing:
+            missing = [
+                f"plateau.{field}"
+                for field in schema["properties"]["plateau"]["required"]
+                if field not in args["plateau"]
+            ]
+        if missing:
+            raise ToolError(
+                f"Your notes lack {', '.join(missing)}; write them all again",
+                "Its notes were missing a field.",
+            )
         return "Kept.", None
 
     def _search_chat(self, args: dict) -> tuple[str, None]:
