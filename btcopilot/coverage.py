@@ -7,6 +7,7 @@ but the counts each coach turn keeps."""
 import datetime
 
 from btcopilot import profile
+from btcopilot.record import PLACEHOLDERS
 from btcopilot.schema import (
     DECLINED,
     DEFAULT_SUBJECT_NAME,
@@ -346,7 +347,7 @@ def _recorded(data: DiagramData, item: Item, answers: dict) -> bool:
         case Fact.DeathDate:
             return _dated(_death(data, iid))
         case Fact.CauseOfDeath:
-            return bool(_death(data, iid)["description"])
+            return _worded(_death(data, iid))
         case Fact.Schooling | Fact.Work:
             return _noted(data, iid, fact)
         case Fact.Health:
@@ -452,6 +453,17 @@ def _dated(event: dict) -> bool:
     return (
         bool(event.get("dateTime"))
         and event.get("dateCertainty") != DateCertainty.Unknown
+    )
+
+
+def _worded(event: dict) -> bool:
+    """Whether the event's words add to what its kind already says."""
+    kind = EventKind(event["kind"])
+    words = (event.get("description") or "").strip().lower()
+    return (
+        words not in (*PLACEHOLDERS, kind.value)
+        if kind.isSelfDescribing()
+        else bool(words)
     )
 
 

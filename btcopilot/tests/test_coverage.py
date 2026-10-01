@@ -112,8 +112,7 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
         )
     ]
     assert (
-        coverage.states(data)[(Fact.BirthDate, ItemKind.Person, ME)]
-        is FactState.Asked
+        coverage.states(data)[(Fact.BirthDate, ItemKind.Person, ME)] is FactState.Asked
     )
     # the person chatting is alive
     assert coverage.states(data)[(Fact.Alive, ItemKind.Person, ME)] is FactState.Known
@@ -372,11 +371,7 @@ def test_a_plateau_note_lapses_after_five_turns(web, token, family, monkeypatch)
         f"Your plateau note holds, turn {turn} of 5: the nearest 3 only."
         for turn in range(1, coverage.PLATEAU_TURNS + 1)
     ]
-    assert (
-        seen[0]
-        == seen[-1]
-        == "1 Wren (the person): birth date, schooling, work"
-    )
+    assert seen[0] == seen[-1] == "1 Wren (the person): birth date, schooling, work"
 
 
 def test_a_new_person_ends_the_plateau(web, token, family, monkeypatch):
@@ -460,3 +455,17 @@ def test_only_a_noted_event_names_the_item_it_records(family):
             author=Author.Coach,
             turn_id="t2",
         )
+
+
+def test_a_death_without_words_leaves_its_cause_unknown(family):
+    # R-0364
+    data = family.get_diagram_data()
+    cause = (Fact.CauseOfDeath, ItemKind.Person, ME)
+    data.events = [{"id": 2, "kind": "death", "person": ME, "dateTime": "2013-01-01"}]
+    assert coverage.states(data)[cause] is FactState.NotAsked
+
+    data.events[0]["description"] = "Death"
+    assert coverage.states(data)[cause] is FactState.NotAsked
+
+    data.events[0]["description"] = "Stroke"
+    assert coverage.states(data)[cause] is FactState.Known
