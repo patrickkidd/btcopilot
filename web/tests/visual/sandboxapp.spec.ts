@@ -1,4 +1,5 @@
 import { test } from "@playwright/test";
+import { boxOf } from "./setup";
 import { need, sandboxOnly, walker } from "./sandbox";
 
 // A walk of the chat app's own screens: the picture at rest, a cluster, the
@@ -35,7 +36,7 @@ test.describe(() => {
       wideNow ? !(await visible("#menu-open")) : await visible("#menu-open"),
       wideNow ? "on a wide window there is no list button (R-0352)" : "the list button sits at the end of that row",
     );
-    const h1 = await page.locator("#view").boundingBox();
+    const h1 = await boxOf(page.locator("#view"));
     await gates("the picture at rest");
     await shot("1-rest");
 
@@ -50,7 +51,7 @@ test.describe(() => {
       check(/ask/.test(row), "the row offers ask");
       check(/explain/.test(row), "the row offers explain");
       check(/in chat/.test(row), "the row offers in chat");
-      const h2 = await page.locator("#view").boundingBox();
+      const h2 = await boxOf(page.locator("#view"));
       check(Math.abs(h1.height - h2.height) < 2, "the picture keeps its height");
       await gates("a mark picked");
       await shot("2-picked");

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { inside, openList, pinned, stateFor, steady, type Key } from "./setup";
+import { inside, openList, pinned, stateFor, steady, type Key, boxOf } from "./setup";
 
 /** What the resting picture looks like on each shape of record, and what a tap
  * on it does. Goldens, so a change to the drawing has to be looked at.
@@ -294,13 +294,13 @@ test.describe("where the picture sits", () => {
   // R-0002, R-0106
   test("above the chat, and it stays there while the chat scrolls", async ({ page }) => {
     await settle(page);
-    const before = (await picture(page).boundingBox())!;
-    const chat = (await page.locator("#chat").boundingBox())!;
+    const before = await boxOf(picture(page));
+    const chat = await boxOf(page.locator("#chat"));
     expect(before.y + before.height).toBeLessThanOrEqual(chat.y + 1);
     await page.locator("#chat").evaluate((n) => (n.scrollTop = 0));
     await page.waitForTimeout(450);
-    const after = (await picture(page).boundingBox())!;
-    const moved = (await page.locator("#chat").boundingBox())!;
+    const after = await boxOf(picture(page));
+    const moved = await boxOf(page.locator("#chat"));
     expect(after.y).toBe(before.y);
     expect(after.y + after.height).toBeLessThanOrEqual(moved.y + 1);
   });

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { colours } from "./gate";
-import { flask, stateFor, username } from "./setup";
+import { flask, stateFor, username, boxOf } from "./setup";
 
 /** The sheet's door beside the message box, and the sheet it raises. Only a
  * professional or Patrick has one, and no fixture is either of them, so the
@@ -39,7 +39,7 @@ const closes = async (page: Page, sheet: string, scrim: string, open: () => Prom
   const { light, dark } = await colours(page, x);
   expect(light.drawn).toBe(light.token);
   expect(dark.drawn).toBe(dark.token);
-  const [b, p] = [(await x.boundingBox())!, (await page.locator(sheet).boundingBox())!];
+  const [b, p] = [await boxOf(x), await boxOf(page.locator(sheet))];
   expect(p.x + p.width - (b.x + b.width)).toBeLessThanOrEqual(8);
   // beside the search field, on a sheet that has one
   const f = await page.locator(`${sheet} .fs-search input`).boundingBox();
@@ -67,7 +67,7 @@ test.describe("the sessions sheet", () => {
     await expect(button).toBeVisible();
     const inBar = await button.evaluate((node) => !!node.closest(".inbar"));
     expect(inBar).toBe(true);
-    const box = (await button.boundingBox())!;
+    const box = await boxOf(button);
     expect(Math.round(box.width)).toBe(44);
     expect(Math.round(box.height)).toBe(44);
   });
@@ -78,8 +78,8 @@ test.describe("the sessions sheet", () => {
   }) => {
     await settle(page);
     await expect(page.locator(".titlerow #sessions-open, .titlerow [aria-label='sessions']")).toHaveCount(0);
-    const button = (await page.locator("#sessions-open").boundingBox())!;
-    const field = (await page.locator("#composer").boundingBox())!;
+    const button = await boxOf(page.locator("#sessions-open"));
+    const field = await boxOf(page.locator("#composer"));
     const middle = (b: { y: number; height: number }) => b.y + b.height / 2;
     expect(Math.abs(middle(button) - middle(field))).toBeLessThanOrEqual(2);
     const gap = field.x - (button.x + button.width);
@@ -123,8 +123,8 @@ test.describe("the sessions sheet", () => {
   test("it opens to 92% of the frame with a grabber", async ({ page }) => {
     await settle(page);
     await openSheet(page);
-    const frame = (await page.locator(".app").boundingBox())!;
-    const sheet = (await page.locator("#sessions-sheet").boundingBox())!;
+    const frame = await boxOf(page.locator(".app"));
+    const sheet = await boxOf(page.locator("#sessions-sheet"));
     expect(Math.round(sheet.height)).toBe(Math.round(frame.height * 0.92));
     // the page holds several sheets of this class; only this one is the sessions'
     await expect(page.locator("#sessions-sheet .fs-grab")).toBeVisible();

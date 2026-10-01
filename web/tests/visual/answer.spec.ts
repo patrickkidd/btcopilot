@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { stateFor, boxOf } from "./setup";
 import { mockTurn, SEND } from "./turn";
 
 /** A question the coach asked is an amber chip that goes into the message box
@@ -208,9 +208,9 @@ test.describe("the chat box once a chip is in it", () => {
       expect(at.box.top).toBeGreaterThanOrEqual(at.top);
     }
     // the thread shrinks with it and stays on the newest words
-    const last = await page.locator(".chat > .bub").last().boundingBox();
-    const thread = await page.locator("#chat").boundingBox();
-    expect(last!.y + last!.height).toBeLessThanOrEqual(thread!.y + thread!.height + 1);
+    const last = await boxOf(page.locator(".chat > .bub").last());
+    const thread = await boxOf(page.locator("#chat"));
+    expect(last.y + last.height).toBeLessThanOrEqual(thread.y + thread.height + 1);
   });
 
   // R-0591, R-0610

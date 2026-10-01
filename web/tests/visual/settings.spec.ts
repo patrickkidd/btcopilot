@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { EXACT, flask, placeCut, shell, stateFor, toTheirDiagram, backToMine, username } from "./setup";
+import { EXACT, flask, placeCut, shell, stateFor, toTheirDiagram, backToMine, username, boxOf } from "./setup";
 
 /** The settings stack: the avatar in the title row, and the pages it pushes.
  * Every value has one home, and the chat view's speak-replies row is the one
@@ -26,7 +26,7 @@ test.describe("the settings stack", () => {
     const avatar = page.locator("#account");
     const inTitle = await avatar.evaluate((node) => !!node.closest(".titlerow"));
     expect(inTitle).toBe(true);
-    const box = (await avatar.boundingBox())!;
+    const box = await boxOf(avatar);
     expect(Math.round(box.width)).toBe(44);
     expect(Math.round(box.height)).toBe(44);
   });
@@ -109,7 +109,7 @@ test.describe("the settings stack", () => {
     await openSettings(page);
     await page.locator(".sn-row.push").first().click();
     await page.waitForTimeout(300);
-    const box = (await page.locator(".sw").boundingBox())!;
+    const box = await boxOf(page.locator(".sw"));
     expect(Math.round(box.width)).toBe(51);
     expect(Math.round(box.height)).toBe(31);
     expect(await page.locator(".sn-pane.in input[type=checkbox]").count()).toBe(0);
@@ -273,12 +273,12 @@ test.describe("the controls that were too small", () => {
     page,
   }) => {
     await settle(page);
-    const avatar = (await page.locator("#account").boundingBox())!;
+    const avatar = await boxOf(page.locator("#account"));
     expect(Math.round(avatar.width)).toBeGreaterThanOrEqual(44);
     expect(Math.round(avatar.height)).toBeGreaterThanOrEqual(44);
-    const row = (await page.locator("#speakrow").boundingBox())!;
+    const row = await boxOf(page.locator("#speakrow"));
     expect(Math.round(row.height)).toBeGreaterThanOrEqual(44);
-    const box = (await page.locator("#speak").boundingBox())!;
+    const box = await boxOf(page.locator("#speak"));
     expect(Math.round(box.width)).toBeGreaterThanOrEqual(24);
     expect(
       await page.locator("#speakrow span").evaluate((n) => parseFloat(getComputedStyle(n).fontSize)),
@@ -477,7 +477,7 @@ test.describe("opening the account view", () => {
     const chat = page.locator("#chat-screen");
     expect(await chat.evaluate((n) => getComputedStyle(n).display)).not.toBe("none");
     expect(await chat.evaluate((n) => (n as HTMLElement).hidden)).toBe(false);
-    const box = (await chat.boundingBox())!;
+    const box = await boxOf(chat);
     expect(box.height).toBeGreaterThan(100);
   });
 
@@ -509,8 +509,8 @@ test.describe("opening the account view", () => {
     await page.waitForTimeout(400);
     // it lands on the content area: the chat, and on a wide window the lists
     // pinned beside it (R-0352)
-    const landed = (await pane.boundingBox())!;
-    const content = (await page.locator("#chat-split").boundingBox())!;
+    const landed = await boxOf(pane);
+    const content = await boxOf(page.locator("#chat-split"));
     expect(Math.round(landed.x - content.x)).toBe(0);
   });
 

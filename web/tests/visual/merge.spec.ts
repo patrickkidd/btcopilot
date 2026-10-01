@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { stateFor, boxOf } from "./setup";
 import { mockTurn, SEND } from "./turn";
 
 /** The coach asks whether two people are one with both of them side by side on
@@ -33,19 +33,25 @@ const asked = async (page: Page) => {
 test("the card sets both people side by side inside the bubble, without a line of its own for the yes", async ({ page }) => {
   const card = await asked(page);
   await expect(card.locator(".half .nm")).toHaveText(["Ben", "Cal"]);
-  const [bubble, box, yes, a, b] = await Promise.all([
-    card.locator("xpath=ancestor::div[contains(@class,'bub')]").boundingBox(),
-    card.boundingBox(),
-    card.locator(".yes").boundingBox(),
-    card.locator(".half").first().boundingBox(),
-    card.locator(".half").last().boundingBox(),
-  ]);
-  expect(box!.x).toBeGreaterThanOrEqual(bubble!.x);
-  expect(box!.x + box!.width).toBeLessThanOrEqual(bubble!.x + bubble!.width + 1);
-  // the yes rides on the card's top border, so the card is only as tall as
-  // its two sides
-  expect(yes!.y).toBeLessThan(box!.y + 4);
-  expect(box!.height).toBeLessThanOrEqual(Math.max(a!.height, b!.height) + 2);
+  // measured again until it holds, so a card caught while the thread is still
+  // being redrawn is not the one that is judged
+  await expect(async () => {
+    const [bubble, box, yes, a, b] = await Promise.all(
+      [
+        card.locator("xpath=ancestor::div[contains(@class,'bub')]"),
+        card,
+        card.locator(".yes"),
+        card.locator(".half").first(),
+        card.locator(".half").last(),
+      ].map(boxOf),
+    );
+    expect(box.x).toBeGreaterThanOrEqual(bubble.x);
+    expect(box.x + box.width).toBeLessThanOrEqual(bubble.x + bubble.width + 1);
+    // the yes rides on the card's top border, so the card is only as tall as
+    // its two sides
+    expect(yes.y).toBeLessThan(box.y + 4);
+    expect(box.height).toBeLessThanOrEqual(Math.max(a.height, b.height) + 2);
+  }).toPass({ timeout: 5000 });
 });
 
 // R-0072, R-0073

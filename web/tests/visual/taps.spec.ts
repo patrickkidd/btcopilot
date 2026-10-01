@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor, type Key } from "./setup";
+import { stateFor, type Key, boxOf } from "./setup";
 
 /** A thumb on a phone, on the line: a tap on a loose event's dot picks that
  * event and never the one beside it, a tap on the picked event's words goes to
@@ -24,7 +24,7 @@ const centres = async (page: Page) =>
   ).sort((a, b) => a.x - b.x);
 
 const picked = async (page: Page) => {
-  const r = (await page.locator("#view svg circle.dot.on").boundingBox())!;
+  const r = await boxOf(page.locator("#view svg circle.dot.on"));
   return r.x + r.width / 2;
 };
 
@@ -40,7 +40,7 @@ async function tapBoth(page: Page, at: { x: number; y: number }) {
   await expect(page.locator("#view svg circle.dot.on")).toHaveCount(1);
   expect(Math.abs((await picked(page)) - at.x)).toBeLessThan(1);
 
-  const words = (await page.locator("#view .ss-t.on").first().boundingBox())!;
+  const words = await boxOf(page.locator("#view .ss-t.on").first());
   await page.touchscreen.tap(words.x + words.width / 2, words.y + words.height / 2);
   await expect(page.locator(".bub.traced")).toHaveCount(1);
   await expect(page.locator("#menu-screen")).toBeHidden();
@@ -110,7 +110,7 @@ test.describe("dense60, every pill", () => {
         document.querySelector("#view .ss-scroll")!.scrollTo(Number(pill.getAttribute("x")) - 16, 0);
       }, i);
       await page.waitForTimeout(400);
-      const r = (await page.locator("#view rect.pill").nth(i).boundingBox())!;
+      const r = await boxOf(page.locator("#view rect.pill").nth(i));
       const pill = { x: r.x + r.width / 2, y: r.y + r.height / 2 };
       await page.touchscreen.tap(pill.x, pill.y);
       await expect(page.locator('#path [data-step="0"]')).toBeVisible();

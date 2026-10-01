@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { PIC_H } from "../../src/spotlight";
-import { NO_LIST, pinned, stateFor } from "./setup";
+import { NO_LIST, pinned, stateFor, boxOf } from "./setup";
 
 /** The layout contract, asserted rather than eyeballed: the picture region owns
  * its level's height and the chat fills what is left, so a tap on a chip or on
@@ -264,7 +264,7 @@ test.describe("explain resizes nothing until it is tapped", () => {
     // the button going and coming back must not move anything: a tap on the
     // open pill puts it down, and a tap on a pill opens it again
     const before = await frame(page);
-    const pill = (await page.locator("#view rect.pill.on").boundingBox())!;
+    const pill = await boxOf(page.locator("#view rect.pill.on"));
     await page.mouse.click(pill.x + pill.width / 2, pill.y + pill.height / 2);
     await expect(page.locator("#chat-screen .caption .cta")).toHaveText("tap a cluster");
     await page.locator('.ss-hit[data-target="cluster"]').first().click();
@@ -305,12 +305,12 @@ test.describe("a long family name", () => {
     expect(fit.rows).toBeLessThanOrEqual(24);
 
     // and the control beside it keeps its ruled size
-    const avatar = (await page.locator("#account").boundingBox())!;
+    const avatar = await boxOf(page.locator("#account"));
     expect(Math.round(avatar.width)).toBe(44);
     expect(Math.round(avatar.height)).toBe(44);
     // the list button is at the end of the row of chips, at its ruled size
     if (!(await pinned(page))) {
-      const list = (await page.locator("#menu-open").boundingBox())!;
+      const list = await boxOf(page.locator("#menu-open"));
       expect([Math.round(list.width), Math.round(list.height)]).toEqual([44, 44]);
     }
 

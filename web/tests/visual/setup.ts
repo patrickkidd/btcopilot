@@ -244,11 +244,28 @@ export const steady = (page: Page) => ({
   mask: [page.locator("#caption")],
 });
 
+type Box = NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>;
+
+/** Where an element sits, read only once it is on screen: a box asked for
+ * while the thread is still being redrawn comes back null, so it is asked for
+ * again until the element is there to measure. `flat` is for a line with no
+ * thickness, which Playwright never counts as visible: it only has to be in the
+ * page and have a box. */
+export async function boxOf(target: Locator, flat = false) {
+  let box = null as Box | null;
+  await expect(async () => {
+    await (flat ? expect(target).toBeAttached() : expect(target).toBeVisible());
+    box = await target.boundingBox();
+    expect(box).not.toBeNull();
+  }).toPass({ timeout: 5000 });
+  return box!;
+}
+
 /** The inner box lies within the outer one, give or take a pixel of
  * antialiasing; `across` checks only left and right, for a box that scrolls. */
 export async function inside(inner: Locator, outer: Locator, across = false) {
-  const a = (await inner.boundingBox())!;
-  const b = (await outer.boundingBox())!;
+  const a = await boxOf(inner);
+  const b = await boxOf(outer);
   expect(a.x).toBeGreaterThanOrEqual(b.x - 1);
   expect(a.x + a.width).toBeLessThanOrEqual(b.x + b.width + 1);
   if (across) return;

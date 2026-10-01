@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { stateFor, boxOf } from "./setup";
 
 /** The picture folds to a 40-tall strip under the title row while a phone's
  * keyboard is up or the chat is scrolled up, and opens back to the full picture
@@ -27,7 +27,7 @@ const open = async (page: Page) => {
   await page.waitForTimeout(1200);
 };
 
-const height = async (page: Page) => (await page.locator(PIC).boundingBox())!.height;
+const height = async (page: Page) => (await boxOf(page.locator(PIC))).height;
 
 /** Every dot and pill's middle lies inside the picture's box. */
 const shown = (page: Page) =>
@@ -79,12 +79,12 @@ test("the keyboard folds the picture to the strip and the newest bubble stays ab
   expect(await shown(page)).toBe(marks);
   await expect(page.locator("#speakrow")).toBeHidden();
   const [last, chat, bar] = await Promise.all([
-    page.locator(".bub").last().boundingBox(),
-    page.locator("#chat").boundingBox(),
-    page.locator("#inbar").boundingBox(),
+    boxOf(page.locator(".bub").last()),
+    boxOf(page.locator("#chat")),
+    boxOf(page.locator("#inbar")),
   ]);
-  expect(last!.y + last!.height).toBeLessThanOrEqual(bar!.y + 1);
-  expect(last!.y + last!.height).toBeGreaterThan(chat!.y);
+  expect(last.y + last.height).toBeLessThanOrEqual(bar.y + 1);
+  expect(last.y + last.height).toBeGreaterThan(chat.y);
   await page.locator("#composer").evaluate((box) => box.blur());
   await page.setViewportSize(size);
   await settle(page);
@@ -132,8 +132,8 @@ const folded = async (page: Page) => {
 
 /** A tap on the wire under one target, where it shows on the strip. */
 const tapOnStrip = async (page: Page, target: string) => {
-  const hit = (await page.locator(target).first().boundingBox())!;
-  const wire = (await page.locator("#view line.wire").first().boundingBox())!;
+  const hit = await boxOf(page.locator(target).first());
+  const wire = await boxOf(page.locator("#view line.wire").first(), true);
   await page.mouse.click(hit.x + hit.width / 2, wire.y + wire.height / 2);
   await page.waitForTimeout(700);
 };

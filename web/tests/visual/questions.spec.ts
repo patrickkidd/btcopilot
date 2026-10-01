@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { watch } from "./gate";
-import { flask, stateFor, username } from "./setup";
+import { flask, stateFor, username, boxOf } from "./setup";
 
 /** Every jump goes one way, from wherever it starts. A teal chip under an
  * impression's "Based on:" goes where the same chip in the thread goes: an
@@ -103,7 +103,7 @@ const landed = async (page: Page, item: string, top = false) => {
   ).then((r) => ({ ...r, ringed }));
 };
 
-const height = async (page: Page) => (await page.locator(PIC).boundingBox())!.height;
+const height = async (page: Page) => (await boxOf(page.locator(PIC))).height;
 
 // R-0168, R-0540, R-0587
 test("an event chip under Based on picks the event on the picture, opening it when folded, and puts nothing in the message box", async ({ page }) => {

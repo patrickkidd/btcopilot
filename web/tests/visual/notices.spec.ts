@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { flask, shell, stateFor, username } from "./setup";
+import { flask, shell, stateFor, username, boxOf } from "./setup";
 
 /** Notices against the fixture that holds one unread notice, one opened four
  * days ago, and an unread coach message newer than both. Each test puts the
@@ -78,10 +78,10 @@ test("a notice shows once in a strip above the message box, the cross counts it 
   page,
 }) => {
   await arrive(page);
-  const box = (await strip(page).boundingBox())!;
-  const bar = (await page.locator("#inbar").boundingBox())!;
+  const box = await boxOf(strip(page));
+  const bar = await boxOf(page.locator("#inbar"));
   expect(box.y + box.height).toBeLessThanOrEqual(bar.y);
-  expect((await strip(page).locator(".strip-m").boundingBox())!.height).toBeLessThanOrEqual(
+  expect((await boxOf(strip(page).locator(".strip-m"))).height).toBeLessThanOrEqual(
     TWO_LINES,
   );
   await expect(page.locator("#chat")).not.toContainText(NEW);
@@ -175,30 +175,30 @@ test("a 160-character body folds to two lines, a tap shows all of it and then Op
       };
     });
 
-  expect((await words.boundingBox())!.height).toBeLessThanOrEqual(TWO_LINES);
+  expect((await boxOf(words)).height).toBeLessThanOrEqual(TWO_LINES);
   expect((await at()).cut).toBe(true);
   await expect(strip(page).locator(".stepbtn")).toBeHidden();
   await expect(strip(page).locator(".cardx")).toBeHidden();
 
   await strip(page).locator(".strip-s").click();
   await expect(strip(page)).toHaveClass(/\bopen\b/);
-  expect((await words.boundingBox())!.height).toBeGreaterThan(TWO_LINES);
+  expect((await boxOf(words)).height).toBeGreaterThan(TWO_LINES);
   const open = await at();
   expect(open.cut).toBe(false);
   await expect(strip(page).locator(".strip-s strong")).toHaveText("turn them off");
   await expect(strip(page).locator(".strip-c > .stepbtn")).toBeVisible();
   await expect(strip(page).locator(".strip-c > .cardx")).toBeVisible();
   await expect(strip(page).locator(".strip-more")).toBeHidden();
-  const under = (await words.boundingBox())!;
+  const under = await boxOf(words);
   for (const button of [".stepbtn", ".cardx"])
-    expect((await strip(page).locator(button).boundingBox())!.y).toBeGreaterThanOrEqual(under.y + under.height);
+    expect((await boxOf(strip(page).locator(button))).y).toBeGreaterThanOrEqual(under.y + under.height);
   expect(open.card.left).toBeGreaterThanOrEqual(0);
   expect(open.card.right).toBeLessThanOrEqual(page.viewportSize()!.width);
   expect(open.sideways).toBeLessThanOrEqual(0);
 
   await strip(page).locator(".strip-t").click();
   await expect(strip(page)).not.toHaveClass(/\bopen\b/);
-  expect((await words.boundingBox())!.height).toBeLessThanOrEqual(TWO_LINES);
+  expect((await boxOf(words)).height).toBeLessThanOrEqual(TWO_LINES);
   expect((await at()).cut).toBe(true);
   await expect(strip(page)).toBeVisible();
   expect(patched).toEqual([]);

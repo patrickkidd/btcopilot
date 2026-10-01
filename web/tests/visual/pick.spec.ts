@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { flask, stateFor, username } from "./setup";
+import { flask, stateFor, username, boxOf } from "./setup";
 
 /** A chip naming an event and the event's own dot pick it the same way
  * [Oracle: R-0168]: the others fade, the clusters stay drawn as they are on the
@@ -54,7 +54,7 @@ const shown = (page: Page) =>
   });
 /** Where the chip sits on screen, so the chat under the picture is seen not to move. */
 const chipTop = async (page: Page, part: number) =>
-  Math.round((await page.locator(chip(part)).first().boundingBox())!.y);
+  Math.round((await boxOf(page.locator(chip(part)).first())).y);
 
 test.use({ storageState: stateFor("hostile"), hasTouch: true });
 
