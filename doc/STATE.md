@@ -1892,9 +1892,10 @@ You rule keep, change, or undo on each.
    - You decide: Answer "go" or a number.
 
 41. **For auditors, a coach reply with no saved note shows no (i)**
+   - Dropped 2026-10-01 by Patrick: "skip the (i) for auditors topic."
    - Done: Guillermo's case, 2026-10-01: 42 of his 45 replies have notes. The three without are the opener, a reply that only edited the record, and a play-by-play. Recommended: show a greyed (i) that reads "No notes for this reply" on tap.
    - Why it matters: Today an auditor cannot tell a missing note from a broken button.
-   - You decide: Show the greyed (i) (recommended) or keep it hidden.
+   - You decide: Nothing.
 
 ### B. Defects and unproven things
 
