@@ -68,10 +68,11 @@ def access(dia: Diagram, user) -> Access | None:
     return None
 
 
-def chatter(user):
-    """Whose sittings the app shows: the user's own, or on a diagram an admin
-    is only viewing, the sittings of the person it belongs to."""
-    dia = user.current_diagram or user.free_diagram
+def chatter(user, dia: Diagram | None = None):
+    """Whose sittings the app shows on `dia`, or on the diagram the app is on:
+    the user's own, or on a diagram an admin is only viewing, the sittings of
+    the person it belongs to."""
+    dia = dia or user.current_diagram or user.free_diagram
     if dia is not None and access(dia, user) is Access.AdminView:
         return dia.user
     return user

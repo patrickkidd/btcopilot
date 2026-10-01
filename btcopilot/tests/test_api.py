@@ -513,6 +513,8 @@ def test_an_admin_finds_a_person_by_name_and_opens_their_diagram_read_only(
     assert [s["text"] for s in said] == ["My mother moved in."]
     sitting = admin.get("/app/sessions").get_json()[0]["id"]
     assert admin.get(f"/app/sessions/{sitting}").status_code == 200
+    drawer = admin.get(f"/app/sessions?diagram_id={theirs.id}")
+    assert [s["id"] for s in drawer.get_json()] == [sitting]
 
 
 @pytest.mark.parametrize(

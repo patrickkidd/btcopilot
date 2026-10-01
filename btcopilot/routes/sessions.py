@@ -8,6 +8,8 @@ from sqlalchemy import func, tuple_
 import btcopilot
 from btcopilot import auth
 from btcopilot.routes import (
+    Access,
+    access,
     bp,
     chatter,
     current_session,
@@ -183,7 +185,8 @@ def statement_index():
 def session_index():
     """`?diagram_id=` lists another readable diagram's sessions, which is what
     the sessions sheet needs to show a professional's families in one scroll.
-    A diagram the user cannot read is a 404, never a 403. `?all=true` is
+    An admin viewing another person's diagram reads that person's sessions on
+    it. A diagram the user cannot read is a 404, never a 403. `?all=true` is
     Patrick's: every session on every family, whoever had it, each with its
     family's name, which is what the meeting page puts one on the agenda from.
     `?words=` keeps the sessions where something said carries every word, the
@@ -194,14 +197,19 @@ def session_index():
     asked = request.args.get("diagram_id", type=int)
     if every and not user.has_role(btcopilot.ROLE_ADMIN):
         abort(403)
-    if asked is not None and asked not in {d.id for d in readable(user)}:
+    dia = db.session.get(Diagram, asked) if asked is not None else None
+    if asked is not None and (
+        dia is None
+        or (
+            asked not in {d.id for d in readable(user)}
+            and access(dia, user) is not Access.AdminView
+        )
+    ):
         abort(404)
     if every:
         found = real_sessions()
-    elif asked is None:
-        found = chats(chatter(user), user.diagram_in_use())
     else:
-        found = chats(user, asked)
+        found = chats(chatter(user, dia), asked or user.diagram_in_use())
     terms = request.args.get("words", "").split()
     lines = {}
     if terms:
