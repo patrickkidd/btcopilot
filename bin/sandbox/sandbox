@@ -146,19 +146,26 @@ guide() {
 
 flask_() { (. "$D/env.sh" && cd "$REPO" && "$PY" -m flask "$@"); }
 
-# The one admin account every instance has, signed in with the same link
-# everywhere: its token is SANDBOX_ADMIN_TOKEN in .env, so it is never printed.
+# The one admin account every instance has, on an empty case called Sandbox and
+# signed in with the same link everywhere: its token is SANDBOX_ADMIN_TOKEN in .env, so it is never printed.
 SEED='
 import datetime, os
 import btcopilot
 from btcopilot.app import create_app
 from btcopilot.auth.invitation import Invitation
+from btcopilot import diagramjson
 from btcopilot.auth.signin import ensure_user
 from btcopilot.extensions import db
+from btcopilot.models import Diagram
 app = create_app()
 app.app_context().push()
 user = ensure_user("admin@sandbox.invalid")
 user.roles = f"{btcopilot.ROLE_ADMIN},{btcopilot.ROLE_SUBSCRIBER}"
+if not Diagram.query.filter_by(user_id=user.id, name="Sandbox").first():
+    empty = Diagram(user_id=user.id, name="Sandbox", data=diagramjson.dumps({}))
+    db.session.add(empty)
+    db.session.flush()
+    user.current_diagram_id = empty.id
 token = os.environ["SANDBOX_ADMIN_TOKEN"]
 invitation = Invitation.query.filter_by(token=token).first() or Invitation(token=token)
 invitation.email = user.username
