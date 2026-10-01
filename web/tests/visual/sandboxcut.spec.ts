@@ -1,10 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { need, sandboxOnly, walker } from "./sandbox";
 
-// Patrick placing a cut on a family's whole thread: every sitting in one
-// scroll with the chat's line between sittings, a row of the sittings that
-// jumps to each, and a cut whose first and last lines sit on either side of a
-// line between sittings. INVITE_TABLE must be an admin, and the sandbox must
+// Patrick placing a cut on a family's whole thread: the list to pick from has
+// one row per family, every way in shows the family's every sitting in one
+// scroll with the chat's line between sittings, one line of their dates jumps
+// to each, and a cut's first and last lines can sit on either side of a line
+// between sittings. INVITE_TABLE must be an admin, and the sandbox must
 // hold the many-sittings fixture family, whose sittings each open with "I keep
 // coming back to".
 
@@ -19,15 +20,35 @@ test.describe(() => {
     await page.locator("#account").click();
     await page.locator(".sn-pane.in .sn-row", { hasText: "Next meeting" }).click();
     await page.locator(".tb-add").click();
+    await expect(page.locator(".tb-pick").first()).toBeVisible();
+    const families = await page.evaluate(async () => {
+      const found: { diagram_id: number }[] = await (await fetch("/app/sessions?all=true&words=")).json();
+      return new Set(found.map((one) => one.diagram_id)).size;
+    });
+    check((await page.locator(".tb-pick").count()) === families, `one row per family (${families})`);
+
+    // A family with one sitting: the thread is that sitting, with no dates to jump between.
+    await page.locator(".tb-pick:not(:has-text('conversations'))").first().click();
+    await expect(page.locator("#cut-screen")).toBeVisible();
+    check((await page.locator("#cut-chat .sitting").count()) === 1, "one sitting, one line");
+    await expect(page.locator("#cut-jump")).toBeHidden();
+    await page.goBack();
+
     await page.locator(".tb-words").fill("keep coming back to Dad's drinking");
-    await page.locator(".tb-pick", { hasText: "FD-362 visual fixture" }).first().click();
+    await page.locator(".tb-pick", { hasText: "conversations" }).first().click();
     await expect(page.locator("#cut-screen")).toBeVisible();
 
     const dividers = page.locator("#cut-chat .sitting");
     const jumps = page.locator("#cut-jump .ct-to");
     const many = await dividers.count();
     check(many > 2, `the whole thread is one scroll with a line per sitting (${many})`);
-    check((await jumps.count()) === many, "one jump per sitting");
+    check((await jumps.count()) === many, "one date per sitting");
+    const jump = await page.locator("#cut-jump").boundingBox();
+    check(!!jump && jump.height <= 48, `the dates are one line, not boxes (${jump?.height}px)`);
+    check(
+      await jumps.first().evaluate((one) => getComputedStyle(one).borderTopWidth === "0px"),
+      "a date has no box around it",
+    );
 
     await jumps.nth(3).click();
     const gap = await page.evaluate(
@@ -70,7 +91,14 @@ test.describe(() => {
     await expect(page.locator(`.tb-cut[data-discussion="${cut.sitting_id}"]`)).toBeVisible();
 
     // Taken back off, so the fixtures can be installed again over this record.
+    // Back in from the cut on the agenda: the same whole thread, the cut lit.
     const row = page.locator(`.tb-cut[data-discussion="${cut.sitting_id}"]`);
+    await row.locator(".sn-m").click();
+    await expect(page.locator("#cut-screen")).toBeVisible();
+    check((await dividers.count()) === many, "the cut on the agenda opens the same whole thread");
+    await expect(lit).toHaveCount(3);
+    await page.goBack();
+
     await row.locator(".pl-btn").click();
     await quiet();
   });

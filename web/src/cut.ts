@@ -8,8 +8,8 @@ import { rowDate } from "./when";
 import type { SessionTurn, SessionTurns } from "./types";
 
 /** Placing the cut: the family's whole thread read-only in one scroll, with
- * the same line between sittings the chat shows, a row of its sittings that
- * jumps to each, and the one button that puts the cut on the agenda (R-0267).
+ * the same line between sittings the chat shows, one line of their dates
+ * that jumps to each, and the one button that puts the cut on the agenda (R-0267).
  *
  * A cut is a first and a last line, in one sitting or across several. Taps
  * take turns: the first sets where the cut starts, the next where it ends.
@@ -91,12 +91,19 @@ export class Cut {
     return agreed !== null && agreed !== undefined && turn.order <= agreed.order;
   }
 
-  /** The sitting's divider brought to the top of the scroll. */
+  /** The sitting's divider brought to the top of the scroll, and its date into
+   * the middle of the line of dates. */
   private reach(sittingId: number): void {
     const line = this.list.querySelector<HTMLElement>(`.sitting[data-sitting="${sittingId}"]`);
     if (line) this.list.scrollTop += line.getBoundingClientRect().top - this.list.getBoundingClientRect().top;
     for (const to of this.jump.querySelectorAll<HTMLElement>(".ct-to"))
       to.classList.toggle("on", Number(to.dataset.sitting) === sittingId);
+    const on = this.jump.querySelector<HTMLElement>(".ct-to.on");
+    if (on) {
+      const at = on.getBoundingClientRect();
+      const row = this.jump.getBoundingClientRect();
+      this.jump.scrollLeft += at.left - row.left - (row.width - at.width) / 2;
+    }
   }
 
   private move(turnId: number): void {
@@ -131,18 +138,17 @@ export class Cut {
     this.handlers.onPlaced();
   }
 
-  /** The thread, its sitting dividers and the row of sittings, drawn once a
+  /** The thread, its sitting dividers and the line of dates, drawn once a
    * read; a tap only repaints what is lit. */
   private draw(): void {
     const read = this.read!;
     const now = new Date();
+    this.jump.hidden = read.sittings.length < 2;
     this.jump.innerHTML = read.sittings
       .map(
         (one) =>
           `<button class="ct-to" type="button" data-sitting="${one.id}">` +
-          `<span class="ct-td">${esc(rowDate(new Date(one.started), now))}</span>` +
-          (one.title ? `<span class="ct-tt">${esc(one.title)}</span>` : "") +
-          `</button>`,
+          `${esc(rowDate(new Date(one.started), now))}</button>`,
       )
       .join("");
     this.list.innerHTML = "";

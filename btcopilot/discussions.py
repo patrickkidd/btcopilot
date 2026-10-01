@@ -65,6 +65,7 @@ def row(
     has just loaded, or come back to the front, knows to attach to it."""
     return {
         "id": discussion.id,
+        "diagram_id": discussion.diagram_id,
         "title": discussion.title,
         "summary": discussion.summary,
         "preview": first,

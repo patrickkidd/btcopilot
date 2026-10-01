@@ -328,20 +328,28 @@ export class Agenda {
     if (words === field.value && field.isConnected) this.list(found, words);
   }
 
+  /** One row per family, since a cut is placed on the family's whole thread:
+   * the row opens the thread at its newest sitting, or at the newest one
+   * carrying the words searched for (R-0267). */
   private list(found: Session[], words: string): void {
     const now = new Date();
-    this.picker.querySelector(".tb-found")!.innerHTML = found.length
-      ? found
-          .map(
-            (session) =>
-              `<div class="sn-row push tb-pick" data-discussion="${session.id}">` +
-              `<div class="sn-m"><div class="sn-t">${esc(sessionTitle(session))}</div>` +
-              `<div class="sn-s">${esc(session.family ?? "")} · ` +
-              `${rowDate(sessionWhen(session), now)} · ${session.message_count} ` +
-              `statement${session.message_count === 1 ? "" : "s"}</div>` +
-              (session.match ? `<div class="sn-s">${esc(session.match)}</div>` : "") +
-              `</div></div>`,
-          )
+    const families = new Map<number, Session[]>();
+    for (const session of found) families.set(session.diagram_id, [...(families.get(session.diagram_id) ?? []), session]);
+    this.picker.querySelector(".tb-found")!.innerHTML = families.size
+      ? [...families.values()]
+          .map(([newest, ...older]) => {
+            const lines = [newest, ...older].reduce((all, one) => all + one.message_count, 0);
+            const sittings = older.length ? ` · ${older.length + 1} conversations` : "";
+            return (
+              `<div class="sn-row push tb-pick" data-discussion="${newest.id}">` +
+              `<div class="sn-m"><div class="sn-t">${esc(sessionTitle(newest))}</div>` +
+              `<div class="sn-s">${esc(newest.family ?? "")} · ` +
+              `${rowDate(sessionWhen(newest), now)}${sittings} · ${lines} ` +
+              `statement${lines === 1 ? "" : "s"}</div>` +
+              (newest.match ? `<div class="sn-s">${esc(newest.match)}</div>` : "") +
+              `</div></div>`
+            );
+          })
           .join("")
       : `<div class="none">${words.trim() ? "No session matches." : "No sessions yet."}</div>`;
   }

@@ -46,9 +46,9 @@ def test_an_admin_finds_a_session_on_any_family_by_what_was_said(
     other = said(theirs, test_user_2, "My brother [[event:4|lost his job]].")
 
     listed = web.get("/app/sessions?all=true").get_json()
-    assert {(s["id"], s["family"]) for s in listed} == {
-        (mine.id, test_user.free_diagram.name),
-        (other.id, "The Other Family"),
+    assert {(s["id"], s["diagram_id"], s["family"]) for s in listed} == {
+        (mine.id, test_user.free_diagram.id, test_user.free_diagram.name),
+        (other.id, theirs.id, "The Other Family"),
     }
     found = web.get("/app/sessions?all=true&words=job").get_json()
     assert [(s["id"], s["match"]) for s in found] == [

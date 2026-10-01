@@ -458,6 +458,8 @@ export enum SessionKind {
 
 export interface Session {
   id: number;
+  /** The family it was said about: its sittings share one thread. */
+  diagram_id: number;
   title: string | null;
   kind: SessionKind;
   /** The day the session happened, which a recording carries and a chat does

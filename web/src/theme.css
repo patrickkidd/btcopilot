@@ -3347,41 +3347,30 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 /* a phone's keyboard is up: the chat keeps the room above the message box */
 .typing > .speakrow { display: none; }
 
-/* The cut picker's row of sittings over the thread: one button per sitting,
-   its day over its title, the one in view outlined; tapping one scrolls the
-   thread to that sitting's line. */
+/* The cut picker's one line of sitting dates over the thread, shown only
+   when the thread has more than one sitting; the one in view is underlined,
+   and tapping a date scrolls the thread to that sitting's line. */
 .ct-jump {
   flex: none;
   display: flex;
-  gap: 6px;
+  gap: 14px;
   overflow-x: auto;
-  padding: 8px var(--gutter);
+  padding: 0 var(--gutter);
   border-bottom: 1px solid var(--line);
   background: var(--bg);
   scrollbar-width: none;
 }
+.ct-jump[hidden] { display: none; }
 .ct-to {
   flex: none;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  max-width: 180px;
-  padding: 4px 10px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--panel);
-  color: var(--ink);
-  text-align: left;
+  padding: 9px 2px;
+  border: 0;
+  background: none;
+  font: 400 13px/18px var(--mono);
+  color: var(--faint);
+  white-space: nowrap;
   cursor: pointer;
 }
-.ct-to.on { border-color: var(--ask); }
-.ct-tt {
-  max-width: 100%;
-  font: 500 13px/18px var(--sans);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ct-td { font: 400 13px/18px var(--mono); color: var(--faint); }
+.ct-to.on { color: var(--ask-text); text-decoration: underline; text-underline-offset: 4px; }
 /* The lines inside the cut are lit in the cut's own colour. */
 .bub.line.lit { box-shadow: 0 0 0 2px var(--ask); }
