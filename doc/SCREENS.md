@@ -265,7 +265,7 @@ What it is for: seeing and editing everything in the record by hand.
 - Each row shows what happened on one line and the date and people on a second. [built]
 - A row's summary uses short codes rather than running off the side of the phone. [built]
 - The scrollbar is never covered by a cluster heading. [built] {R-0218}
-- Tapping a row opens that event's or that person's detail card in place, read-only. [built]
+- Tapping a row opens that event's or that person's detail card as its own page, read-only; its back arrow returns to the list where it was scrolled. [built]
 - The line saying you can also edit by chatting was removed from these lists. [built] {R-0219}
 - There is a button to add an event; the new event's form slides up over the lists, full screen, with its name and the app's close button at its top. [built]
 - An event or a person is changed by chatting about it, from its detail card. [built]
@@ -274,7 +274,7 @@ What it is for: seeing and editing everything in the record by hand.
 
 What it is for: reading one event, and taking it to the chat to comment on it or change it (Patrick's picks D2 to D4, 2026-10-01).
 
-- Tapping a row in the events list opens the event under its row, read-only: its kind, what happened, when and how sure, who, any shift, where, its cluster and its notes. Nothing on it is a form field. [built]
+- Tapping a row in the events list opens the event as its own page with a back arrow to the list, read-only: its kind, what happened, when and how sure, who, any shift, where, its cluster, its notes, and the chat message it was said in, which jumps to that message. Nothing on it is a form field. [built]
 - A person's name opens that person's card; the cluster opens that cluster on the picture. [built] {R-0201}
 - One action sits at its foot, reading "Tap to comment or change this event in chat". It puts the event in the message box as a lit chip and brings up the chat with the box ready to type in; nothing is sent until you send. [built]
 - After the message is sent the chip is gone from the box; the coach's reply shows what it changed as any reply does. [built]
@@ -309,7 +309,7 @@ What it is for: correcting or adding one event by hand.
 
 What it is for: reading one person, and taking them to the chat to comment on them or change them (Patrick, 2026-10-01: the same as for events).
 
-- Tapping a row in the people list opens the person under their row, read-only: their kind over their name, when they were born and died, their parents, partners and children, the clusters and events they are in, and their notes. Only what the record holds is shown; it keeps no address, contact or living status for a person. [built]
+- Tapping a row in the people list opens the person as their own page with a back arrow to the list, read-only: their kind over their name, when they were born and died, their parents, partners and children, the clusters and events they are in, and their notes. Only what the record holds is shown; it keeps no address, contact or living status for a person. [built]
 - A name opens that person's card, an event opens that event's card, and a cluster opens that cluster on the picture. [built] {R-0201}
 - One action sits at its foot, reading "Tap to comment or change this person in chat". It puts the person in the message box as a lit chip and brings up the chat with the box ready to type in; the chip is gone after the send. [built]
 

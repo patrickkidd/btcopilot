@@ -1294,10 +1294,24 @@ button { font-family: inherit; }
   cursor: pointer;
 }
 
-/* One event, read-only, opened under its row in the events list (Patrick's
-   pick D2, 2026-10-01): a head with the kind over what happened, then one
+/* One event or person, read-only, its own page over the list (Patrick's pick
+   D2, 2026-10-01): a back arrow, a head with the kind over the name, one
    labelled line per fact, then the one action that takes it to the chat. */
-.det { background: var(--panel); border-bottom: 1px solid var(--line); }
+.det { background: var(--panel); min-height: 100%; }
+/* the card is a page of its own over the list: the drawer's title row, tabs,
+   search and add button give way to its back arrow and the list it goes back to */
+.carded > .ovbar, .carded > #menu-tabs, .carded > #menu-searchrow, .carded > #menu-foot { display: none; }
+.det .detbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: env(safe-area-inset-top) 14px 0;
+  border-bottom: 1px solid var(--line);
+  font: 500 15px var(--sans);
+}
+.det .detbar .backbtn { margin-left: -12px; }
+.det .said { margin: 0; }
 .det .head { padding: 16px 16px 10px; border-bottom: 1px solid var(--line); }
 .det .kind { font: 500 12px/18px var(--mono); color: var(--data); text-transform: uppercase; letter-spacing: .05em; }
 .det .what { font: 500 20px/1.25 var(--sans); margin-top: 2px; text-wrap: balance; overflow-wrap: anywhere; }

@@ -14,8 +14,9 @@ const opened = async (page: Page) => {
   await page.goto("/app/");
   await openList(page);
   const row = page.locator("#menu-body .row[data-event]").first();
+  const id = Number(await row.getAttribute("data-event"));
   await row.click();
-  return Number(await row.getAttribute("data-event"));
+  return id;
 };
 
 test.describe("the event detail view", () => {
@@ -37,6 +38,38 @@ test.describe("the event detail view", () => {
     await expect(view.locator(".talk")).toHaveText(TALK);
     await expect(page.locator("#menu-body .editor")).toHaveCount(0);
     await expect(view).not.toContainText("!");
+    // its own page: the list is gone from under it until the back arrow
+    await expect(page.locator("#menu-body .row")).toHaveCount(0);
+    await expect(page.locator("#menu-search")).toBeHidden();
+  });
+
+  // R-0199, R-0141
+  test("the back arrow returns to the list where it was scrolled", async ({ page }) => {
+    await page.goto("/app/");
+    await openList(page);
+    const body = page.locator("#menu-body");
+    const last = page.locator("#menu-body .row[data-event]").last();
+    await last.scrollIntoViewIfNeeded();
+    const top = await body.evaluate((n) => n.scrollTop);
+    await last.click();
+    await expect(page.locator("#menu-body .det")).toBeVisible();
+    await page.locator("#menu-body .det .detbar .backbtn").click();
+    await expect(page.locator("#menu-body .det")).toHaveCount(0);
+    await expect(last).toBeVisible();
+    expect(await body.evaluate((n) => n.scrollTop)).toBe(top);
+  });
+
+  // R-0201, R-0069
+  test("the chat message an event was said in is a line that jumps to its bubble", async ({ page }) => {
+    const id = await opened(page);
+    const from = page.locator("#menu-body .det .said");
+    await expect(from).toHaveText(/^in chat · .+→$/);
+    const statement = await page.evaluate(
+      async (id) => (await (await fetch("/app/timeline")).json()).coded_in[String(id)].statement_id,
+      id,
+    );
+    await from.click();
+    await expect(page.locator(`.bub[data-statement="${statement}"]`)).toBeInViewport();
   });
 
   // R-0069, R-0199
@@ -67,8 +100,9 @@ test.describe("the person detail card", () => {
     await openList(page);
     await page.locator("#tab-people").click();
     const row = page.locator("#menu-body .row[data-person]").first();
+    const id = Number(await row.getAttribute("data-person"));
     await row.click();
-    return Number(await row.getAttribute("data-person"));
+    return id;
   };
 
   // R-0199, R-0201

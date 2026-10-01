@@ -62,6 +62,8 @@ export function shut(): void {
 
 export class Menu {
   private editing: number | null = null;
+  /** Where the list was scrolled when a card opened over it, to go back to. */
+  private listTop = 0;
   private query = "";
   private tab = Tab.Events;
   /** The people list is ordered by birth until the reader asks for names. */
@@ -78,7 +80,7 @@ export class Menu {
     /** Where a tapped row opens the read-only detail card instead of the form:
      * the chat app's own drawer. The coding screen passes none, and keeps the
      * forms, since coders change the record they code by hand. */
-    private detail?: Pick<DetailHooks, "talk" | "cluster">,
+    private detail?: Pick<DetailHooks, "talk" | "cluster" | "said">,
   ) {}
 
   add(): void {
@@ -103,11 +105,24 @@ export class Menu {
     return this.editing;
   }
 
-  /** The open event or person folds back into its row. */
+  /** The open card or form closes, and the list is back where it was. */
   fold(): void {
     this.editing = null;
     this.render();
+    this.body.scrollTop = this.listTop;
     this.onMove?.();
+  }
+
+  /** The card of what is open, as its own page in place of the list, when
+   * this drawer has cards. */
+  private page(): HTMLElement | null {
+    if (!this.detail || this.editing === null) return null;
+    if (this.tab === Tab.Events) {
+      const event = this.data.events.find((e) => e.id === this.editing);
+      return event ? this.view(event) : null;
+    }
+    const person = this.data.people.find((p) => p.id === this.editing);
+    return person ? this.personView(person) : null;
   }
 
   /** Which of the two lists is on screen. */
@@ -181,6 +196,13 @@ export class Menu {
   }
 
   private render(): void {
+    const page = this.tab === Tab.Questions ? null : this.page();
+    this.body.parentElement?.classList.toggle("carded", page !== null);
+    if (page) {
+      this.body.replaceChildren(page);
+      this.body.scrollTop = 0;
+      return;
+    }
     if (this.tab === Tab.People) {
       this.renderPeople();
       return;
@@ -209,6 +231,7 @@ export class Menu {
     this.body.querySelectorAll<HTMLElement>(".row").forEach((row) => {
       row.addEventListener("click", () => {
         const id = Number(row.dataset.event);
+        this.listTop = this.body.scrollTop;
         if (this.editing !== id)
           tap(Feature.EventOpen, { kind: ItemKind.Event, id: String(id) });
         this.editing = this.editing === id ? null : id;
@@ -219,7 +242,7 @@ export class Menu {
     if (this.editing !== null) {
       const event = this.data.events.find((e) => e.id === this.editing);
       const row = this.body.querySelector(`.row[data-event="${this.editing}"]`);
-      if (event && row) row.after(this.detail ? this.view(event) : this.editor(event));
+      if (event && row) row.after(this.editor(event));
     }
   }
 
@@ -250,6 +273,7 @@ export class Menu {
     this.body.querySelectorAll<HTMLElement>(".row").forEach((row) => {
       row.addEventListener("click", () => {
         const id = Number(row.dataset.person);
+        this.listTop = this.body.scrollTop;
         if (this.editing !== id)
           tap(Feature.PersonOpen, { kind: ItemKind.Person, id: String(id) });
         this.editing = this.editing === id ? null : id;
@@ -260,7 +284,7 @@ export class Menu {
     if (this.editing !== null) {
       const person = this.data.people.find((p) => p.id === this.editing);
       const row = this.body.querySelector(`.row[data-person="${this.editing}"]`);
-      if (person && row) row.after(this.detail ? this.personView(person) : this.personEditor(person));
+      if (person && row) row.after(this.personEditor(person));
     }
   }
 
@@ -278,9 +302,8 @@ export class Menu {
    * people editor form"). In the chat app a tapped person row opens the
    * read-only person card, and a person is changed by talking to the coach
    * about them; this form is reached there only to add someone. To bring
-   * editing back, render this.personEditor(person) instead of
-   * this.personView(person) in renderPeople(). The coding screen still edits
-   * through it. */
+   * editing back, let page() return null for people: the row then opens this
+   * form under it, as it still does on the coding screen. */
   private personEditor(person: Person | null): HTMLElement {
     return openPersonEditor(person, {
       done: () => this.done(),
@@ -295,6 +318,7 @@ export class Menu {
       ...this.detail!,
       person: (id) => this.goTo(Tab.People, id),
       event: (id) => this.goTo(Tab.Events, id),
+      back: () => this.fold(),
     };
   }
 
@@ -310,9 +334,9 @@ export class Menu {
    * the event edit form for now and see how it goes with the chat"). In the
    * chat app a tapped event row opens the read-only detail view, and the event
    * is changed by talking to the coach about it; this form is reached there
-   * only to add a new event. To bring editing back, render this.editor(event)
-   * instead of this.view(event) in render(). The coding screen still edits
-   * through it. */
+   * only to add a new event. To bring editing back, let page() return null
+   * for events: the row then opens this form under it, as it still does on
+   * the coding screen. */
   private editor(event: TimelineEvent | null): HTMLElement {
     return openEditor(
       event,

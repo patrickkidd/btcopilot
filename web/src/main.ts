@@ -316,9 +316,24 @@ function talkAbout(chip: Chip): void {
   sync();
 }
 
+/** Where an event was said, as the card's line that jumps to that bubble. */
+function said(eventId: number): { label: string; go: () => void } | null {
+  const trace = codedIn(eventId);
+  if (!trace) return null;
+  return {
+    label: trace.label,
+    go: () => {
+      menu.fold();
+      toThread();
+      void traceTo(trace.where);
+    },
+  };
+}
+
 const menu = new Menu($("menu-body"), load, undefined, {
   talk: talkAbout,
   cluster: (id) => void navigate(address(Place.Cluster, id)),
+  said,
 });
 
 /** On a phone the drawer gets out of the way of the thread; pinned beside it,
@@ -900,7 +915,7 @@ function codedIn(eventId: number): { label: string; where: CodedIn } | null {
   const cut =
     title.length > TRACE_TITLE_CAP ? `${title.slice(0, TRACE_TITLE_CAP - 1)}…` : title;
   const when = found ? shortDate(new Date(found.last_activity), new Date()) : "";
-  return { label: `coded in: ${cut}${when ? ` · ${when}` : ""} →`, where };
+  return { label: `in chat · ${cut}${when ? ` · ${when}` : ""} →`, where };
 }
 
 /** Jump to the words that coded this moment: the session if it is not the one

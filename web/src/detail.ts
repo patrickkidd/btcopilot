@@ -1,4 +1,5 @@
 import { el, esc } from "./dom";
+import { BACK } from "./tokens";
 import { fullName, when } from "./rows";
 import {
   ChipKind,
@@ -11,10 +12,11 @@ import {
   type TimelineEvent,
 } from "./types";
 
-/** One event or one person, read-only, opened by a tap on its row in the lists
- * (Patrick's pick D2, 2026-10-01, and the same for people the same day). What
- * the record holds is shown and nothing is changed here; the one action at the
- * foot carries the thing into the chat, where it is changed by talking (D3). */
+/** One event or one person, read-only, its own page over the list it was
+ * tapped in, with a back arrow to that list (Patrick's pick D2, 2026-10-01, and
+ * the same for people the same day). What the record holds is shown and nothing
+ * is changed here; the one action at the foot carries the thing into the chat,
+ * where it is changed by talking (D3). */
 
 export const TALK_EVENT = "Tap to comment or change this event in chat";
 export const TALK_PERSON = "Tap to comment or change this person in chat";
@@ -36,6 +38,11 @@ export interface DetailHooks {
   cluster: (id: string) => void;
   person: (id: number) => void;
   event: (id: number) => void;
+  /** Back to the list the card was opened from, where it was scrolled to. */
+  back: () => void;
+  /** The chat message an event was said in, as a line that jumps to its
+   * bubble; null when the record does not know it. */
+  said: (eventId: number) => { label: string; go: () => void } | null;
 }
 
 const row = (key: string, value: string) =>
@@ -70,15 +77,17 @@ function shift(event: TimelineEvent, name: (id: number) => string): string {
 
 /** The card itself: a head with the kind over the name, one labelled line per
  * fact the record holds, the action at the foot; and every link in it wired. */
-function card(kind: string, title: string, rows: string, talk: string, chip: Chip, hooks: DetailHooks): HTMLElement {
+function card(list: string, kind: string, title: string, rows: string, talk: string, chip: Chip, hooks: DetailHooks): HTMLElement {
   const view = el(
     "div",
     "det",
-    `<div class="head"><div class="kind">${esc(kind)}</div><div class="what">${esc(title)}</div></div>` +
+    `<div class="detbar"><button class="backbtn" type="button" aria-label="back">${BACK}</button>${list}</div>` +
+      `<div class="head"><div class="kind">${esc(kind)}</div><div class="what">${esc(title)}</div></div>` +
       rows +
       `<div class="foot"><button type="button" class="talk">${talk}</button></div>`,
   );
   view.querySelector<HTMLElement>(".talk")!.onclick = () => hooks.talk(chip);
+  view.querySelector<HTMLElement>(".detbar .backbtn")!.onclick = hooks.back;
   for (const button of view.querySelectorAll<HTMLElement>("[data-cluster]"))
     button.onclick = () => hooks.cluster(button.dataset.cluster!);
   for (const button of view.querySelectorAll<HTMLElement>("[data-person]"))
@@ -108,7 +117,9 @@ export function eventDetail(
   const name = nameIn(people);
   const who = [...new Set([event.person, event.spouse, event.child].filter((id): id is number => id !== null))];
   const changed = shift(event, name);
-  return card(
+  const from = hooks.said(event.id);
+  const view = card(
+    "Events",
     event.kind ?? "",
     event.label,
     row("When", dates(event)) +
@@ -116,11 +127,14 @@ export function eventDetail(
       (changed ? row("Shift", changed) : "") +
       (event.location ? row("Where", esc(event.location)) : "") +
       (cluster ? row("Cluster", clusterChip(cluster)) : "") +
-      (event.notes ? row("Notes", esc(event.notes)) : ""),
+      (event.notes ? row("Notes", esc(event.notes)) : "") +
+      (from ? row("From", `<button type="button" class="chip said">${esc(from.label)}</button>`) : ""),
     TALK_EVENT,
     chipFor(ChipKind.Event, event.id, event.label),
     hooks,
   );
+  if (from) view.querySelector<HTMLElement>(".said")!.onclick = from.go;
+  return view;
 }
 
 /** Everyone a person is tied to in the record, and everything it says about
@@ -150,6 +164,7 @@ export function personDetail(person: Person, record: Timeline, hooks: DetailHook
   const clusters = record.clusters.filter((c) => events.some((e) => c.event_ids.includes(e.id)));
   const kind = person.gender && person.gender !== UNSAID ? person.gender : "person";
   return card(
+    "People",
     kind,
     fullName(person),
     (person.birth_event !== null ? row("Born", dated(person.birth_event)) : "") +
