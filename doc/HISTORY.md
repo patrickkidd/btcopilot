@@ -2023,3 +2023,7 @@ An env-file change followed by a bare `docker compose up -d` without `BTCOPILOT_
 
 Patrick picked frame C6 of the cut-in-chat gallery (R-0629); commits 4c409562 and 5b7262d6 put cut selection in the read-only chat, deleted the separate picker and family list, renamed the button "Select a cut for the agenda", and added the owner's name to the cut payload. Not released; awaiting his eyeball walk.
 The box's alembic pointer was re-stamped from 1b00000000c1 to 1b00000000c0, so the next release no longer aborts.
+
+## 2026-10-01 — release 3.2026.10.1.9
+
+Released from FD-366: cut selection in chat, Diagrams page drill-down, agenda confirmation panel, Settings Data header, open-diagram rebuild, folded migration, Next Meeting date field, cost tiles. Rulings R-0619 to R-0633 queued.
