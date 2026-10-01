@@ -783,7 +783,8 @@ export class Settings {
               ]
             : []),
         ],
-        "Admin",
+        // an auditor has the switch too, but the Admin group is for admins
+        isAdmin() ? "Admin" : undefined,
       ),
       el("div", "sn-hint", esc(SHADOW_HINT)),
     ];
