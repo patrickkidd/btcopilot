@@ -423,6 +423,21 @@ test.describe("an admin finds a person on the diagrams view", () => {
   });
 
   // R-0175
+  test("an admin who finds himself sees his diagram in use ticked once", async ({ page }) => {
+    as("admin");
+    await openDiagrams(page);
+    const pane = page.locator('.sn-pane[data-page="diagrams"]');
+    await pane.getByLabel("Find a person").fill(username("longname"));
+    await pane.locator(".sn-find .sn-row", { hasText: username("longname") }).click();
+    await expect(pane.locator(".sn-find .sn-hd")).toBeVisible();
+    const ticked = await pane
+      .locator(".sn-row")
+      .evaluateAll((rows) => rows.filter((r) => r.querySelector(".sn-tick")?.textContent?.trim()).length);
+    expect(ticked).toBe(1);
+    await expect(pane.locator(".sn-find .sn-hint")).toHaveText("Listed under your diagrams.");
+  });
+
+  // R-0175
   test("someone who is not an admin sees no search for people", async ({ page }) => {
     as("subscriber");
     await openDiagrams(page);

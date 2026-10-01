@@ -808,8 +808,8 @@ export class Settings {
     return row;
   }
 
-  /** An admin finds anyone by name and opens one of their diagrams, which
-   * grants the admin that diagram. */
+  /** An admin finds anyone by name and opens one of their diagrams to look
+   * at, read-only. */
   private finder(): HTMLElement {
     const finder = el("div", "sn-find");
     const wrap = el("div", "sn-srch");
@@ -844,14 +844,20 @@ export class Settings {
     return finder;
   }
 
+  /** A diagram already under the admin's own heading is not listed again,
+   * so the one in use carries the only tick on the page. */
   private async theirs(person: User, found: HTMLElement): Promise<void> {
-    const diagrams = await api.diagrams(person.id);
+    const all = await api.diagrams(person.id);
+    const mine = new Set(this.account?.diagrams.map((d) => d.id));
+    const diagrams = all.filter((d) => !mine.has(d.id));
     const box = el("div", "sn-grp");
     const now = new Date();
     for (const diagram of diagrams) box.append(this.diagramRow(diagram, now));
     found.replaceChildren(
       el("div", "sn-hd", esc(person.name || person.username)),
-      diagrams.length ? box : el("div", "sn-hint", "No diagrams yet."),
+      diagrams.length
+        ? box
+        : el("div", "sn-hint", all.length ? "Listed under your diagrams." : "No diagrams yet."),
     );
   }
 
@@ -890,8 +896,9 @@ export class Settings {
    * diagram, so the whole surface is re-read afterwards. */
   private async switchTo(diagram: Diagram): Promise<void> {
     const opened = await api.selectDiagram(diagram.id);
-    await this.load();
+    // closed first, so the page never re-draws with the search's old ticks
     this.close();
+    await this.load();
     this.handlers.onDiagram(opened, { switched: true });
     toast(`Now on ${diagram.name}`);
   }
