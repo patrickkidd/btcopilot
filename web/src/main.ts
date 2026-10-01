@@ -1413,18 +1413,22 @@ $("composer").addEventListener("keydown", (e) => {
   while (next instanceof Text && next.data === "") next = next.nextSibling;
   if (!next) br.after(document.createTextNode("\n"));
   // No browser scrolls a box to a caret a script put there, so the new line
-  // would open below the box's bottom edge once the box is full (FD-366).
+  // would open below the box's bottom edge once the box is full (FD-366). The
+  // box is only measured, never written to: an element put into the focused
+  // box can make iOS scroll the page to it, sliding the box off the keyboard.
   const composer = e.currentTarget as HTMLElement;
   const style = getComputedStyle(composer);
-  // a mark one line tall, set to the line's top, covers the whole new line
-  const mark = document.createElement("span");
-  mark.style.cssText = `display:inline-block;vertical-align:top;height:${style.lineHeight}`;
-  br.after(mark);
+  const breaks = document.createRange();
+  breaks.selectNode(br);
+  const glyph = breaks.getBoundingClientRect();
+  const line = parseFloat(style.lineHeight);
+  // the glyph sits centred in its line; the new line is the one under it
   const below =
-    mark.getBoundingClientRect().bottom -
+    glyph.bottom +
+    (line - glyph.height) / 2 +
+    line -
     composer.getBoundingClientRect().bottom +
     parseFloat(style.paddingBottom);
-  mark.remove();
   if (below > 0) composer.scrollTop += Math.ceil(below);
   range.setStartAfter(br);
   range.collapse(true);
