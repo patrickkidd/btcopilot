@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """The builder's pre-commit hook, installed in this worktree only.
 
-  uv run bin/builder-hook install --files 'btcopilot/x.py,btcopilot/tests/test_x.py'
-  uv run bin/builder-hook install              # the coordinator: any file
+  uv run bin/builder-hook install --name picks --files 'btcopilot/x.py,btcopilot/tests/test_x.py'
+  uv run bin/builder-hook install --name picks  # drops that builder's set
   uv run bin/builder-hook install --base origin/FD-366 --files ...
 
-Refuses a commit with a second migration the base (origin/master unless
---base) does not have, a staged file outside the declared set, a stash entry
-made since the install, or a conflict marker.
+Each builder's set is kept apart; with no set at all, any file goes. Refuses a
+commit with a second migration the base (origin/master unless --base) does
+not have, staged files no one builder's set holds all of, a stash entry made
+since the install, or a conflict marker.
 """
 import argparse
 import fnmatch
@@ -39,18 +40,19 @@ def setting(key: str, default: str) -> str:
     return found or default
 
 
-def install(files: str | None, base: str | None):
+def install(name: str, files: str | None, base: str | None):
     hooks = gitdir() / "hooks"
     hooks.mkdir(exist_ok=True)
     hook = hooks / "pre-commit"
     hook.write_text(f'#!/bin/sh\nexec "{sys.executable}" "{Path(__file__).resolve()}" check\n')
     hook.chmod(0o755)
-    declared = gitdir() / "builder-files"
-    if files:
-        declared.write_text("\n".join(g.strip() for g in files.split(",") if g.strip()) + "\n")
-    else:
-        declared.unlink(missing_ok=True)
     git("config", "extensions.worktreeConfig", "true")
+    key = f"builder.files.{name}"
+    if files:
+        globs = ",".join(g.strip() for g in files.split(",") if g.strip())
+        git("config", "--worktree", key, globs)
+    else:
+        subprocess.run(["git", "config", "--worktree", "--unset", key])
     git("config", "--worktree", "core.hooksPath", str(hooks))
     git("config", "--worktree", "builder.base", base or "origin/master")
     git("config", "--worktree", "builder.installed", str(int(time.time())))
@@ -62,6 +64,18 @@ def migrations() -> list[str]:
     base = setting("builder.base", "origin/master")
     theirs = set(git("ls-tree", "-r", "--name-only", base, VERSIONS).split())
     return sorted(ours - theirs)
+
+
+def declared() -> dict[str, list[str]]:
+    lines = subprocess.run(
+        ["git", "config", "--get-regexp", r"^builder\.files\."],
+        stdout=subprocess.PIPE,
+        text=True,
+    ).stdout.splitlines()
+    return {
+        key.removeprefix("builder.files."): globs.split(",")
+        for key, globs in (line.split(" ", 1) for line in lines)
+    }
 
 
 def staged() -> list[str]:
@@ -77,15 +91,17 @@ def refusals() -> list[str]:
             f"{setting('builder.base', 'origin/master')} does not "
             f"({', '.join(Path(p).name for p in new)}); squash them into one"
         )
-    declared = gitdir() / "builder-files"
-    if declared.exists():
-        globs = declared.read_text().split()
-        outside = [p for p in staged() if not any(fnmatch.fnmatch(p, g) for g in globs)]
-        if outside:
-            found.append(
-                f"declared files only: {', '.join(outside)} is outside this builder's files "
-                f"({', '.join(globs)}); unstage it or ask the coordinator"
-            )
+    sets = declared()
+    files = staged()
+    covered = any(
+        all(any(fnmatch.fnmatch(p, g) for g in globs) for p in files)
+        for globs in sets.values()
+    )
+    if sets and not covered:
+        found.append(
+            f"declared files only: {', '.join(files)} is outside any one builder's files "
+            f"({', '.join(sorted(sets))}); unstage the rest or ask the coordinator"
+        )
     installed = int(setting("builder.installed", "0"))
     if any(int(t) >= installed for t in git("stash", "list", "--format=%ct").split()):
         found.append(
@@ -112,12 +128,13 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="cmd", required=True)
     installer = sub.add_parser("install")
+    installer.add_argument("--name", default="builder")
     installer.add_argument("--files")
     installer.add_argument("--base")
     sub.add_parser("check")
     args = parser.parse_args()
     if args.cmd == "install":
-        install(args.files, args.base)
+        install(args.name, args.files, args.base)
         return 0
     return check()
 
