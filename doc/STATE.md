@@ -1981,6 +1981,11 @@ You rule fix now, later, or accept.
    - Why it matters: Nothing open.
    - You decide: Nothing.
 
+38. **Play-by-play: the symbols are drawn at different sizes that are not right**
+   - Done: Queued, not started. Patrick reported it on 2026-10-01.
+   - Why it matters: Symbols of different sizes make people look different in importance when they are not.
+   - You decide: Nothing yet.
+
 ### C. Housekeeping
 
 21. **Queued rulings wait for your key**
@@ -2003,3 +2008,7 @@ You rule fix now, later, or accept.
    - Why it matters: The ticket's acceptance criteria are not met without them.
    - You decide: Decide the order, or drop any.
 
+39. **A way for the person to search their own chat messages**
+   - Done: Design not started. Patrick asked for it on 2026-10-01: "we need a way to search chat messages". The coach already has a search tool over the chat; the person has none.
+   - Why it matters: People cannot find what they said earlier.
+   - You decide: Decide when the design starts.
