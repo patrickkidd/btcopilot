@@ -5,7 +5,7 @@ import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { periodLabel, rowDate } from "./when";
 import { matching, sessionTitle, type Family } from "./search";
-import { SessionKind, type Session } from "./types";
+import { Access, SessionKind, type Diagram, type Session } from "./types";
 import { PRO } from "./pro";
 import { Recording } from "./recording";
 import { Swipe } from "./swipe";
@@ -38,6 +38,8 @@ export interface SessionsHandlers {
   /** A session tapped: the drawer goes down and the thread goes to where that
    * session starts. */
   onPick(sitting: number): void;
+  /** The diagram the app is on, whose sessions the drawer lists. */
+  diagram(): Diagram | null;
 }
 
 
@@ -111,8 +113,7 @@ export class Sessions {
 
   /** The conversations of the family the app is on, read as the sheet rises. */
   private async load(): Promise<void> {
-    const diagrams = await api.diagrams();
-    const diagram = diagrams.find((d) => d.current) ?? diagrams[0];
+    const diagram = this.handlers.diagram();
     const fresh = diagram
       ? [{ diagram, sessions: await api.sessionIndex(diagram.id) }]
       : [];
@@ -214,7 +215,7 @@ export class Sessions {
     const cancel = () => window.clearTimeout(timer);
     this.body.addEventListener("pointerdown", (e) => {
       const row = (e.target as Element).closest<HTMLElement>(".row");
-      if (!row) return;
+      if (!row || this.handlers.diagram()?.access === Access.AdminView) return;
       timer = window.setTimeout(() => this.rename(row), PRESS_MS);
     });
     for (const kind of ["pointerup", "pointercancel", "pointermove"])

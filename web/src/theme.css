@@ -131,6 +131,32 @@ button { font-family: inherit; }
   flex-direction: column;
   transition: transform 0.24s ease, filter 0.24s ease;
 }
+/* An admin looking at another person's diagram (Patrick, 2026-10-01): one
+   quiet line under the title row, and nothing on the page that writes. */
+.viewing {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--faint);
+  font-size: 13px;
+}
+.viewing[hidden] { display: none; }
+.viewing button {
+  flex: none;
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  color: var(--data);
+  font: inherit;
+}
+:root[data-access="admin-view"] :is(#inbar .field, #send, #menu-foot, .fs-act, .rmore, .fs-note, .fs-upload, .iacts, .det .foot) {
+  display: none;
+}
+
 .titlerow {
   flex: none;
   display: flex;

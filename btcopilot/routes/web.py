@@ -8,7 +8,7 @@ from markupsafe import escape
 import btcopilot
 from btcopilot import auth
 from btcopilot.routes import bp, current_session, diagram
-from btcopilot.routes.diagrams import readable
+from btcopilot.routes.diagrams import diagram_payload, readable
 from btcopilot.discussions import session_payload
 from btcopilot.routes.sessions import thread
 from btcopilot import place, playturn, questions, record
@@ -46,9 +46,7 @@ def _page() -> str:
         },
         "session": session_payload(discussion) if discussion else None,
         "statements": thread(user),
-        "diagram": (
-            {"id": in_use.id, "name": in_use.name} if in_use else None
-        ),
+        "diagram": diagram_payload(in_use, user) if in_use else None,
         "version": btcopilot.__version__,
         "beta": btcopilot.BETA,
     }

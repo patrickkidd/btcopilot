@@ -480,6 +480,15 @@ export interface Session {
   family?: string;
 }
 
+/** How the app is on a diagram: one's own, shared read-write, or another
+ * person's an admin opened to look at, where nothing is written (Patrick,
+ * 2026-10-01). */
+export enum Access {
+  Own = "own",
+  Shared = "shared",
+  AdminView = "admin-view",
+}
+
 export interface Diagram {
   id: number;
   name: string;
@@ -491,6 +500,9 @@ export interface Diagram {
   /** The one the app is on. */
   current: boolean;
   owned: boolean;
+  access: Access;
+  /** The full name of the person the diagram belongs to, or their email. */
+  owner: string;
 }
 
 /** Someone with an account, as an admin's search finds them. */

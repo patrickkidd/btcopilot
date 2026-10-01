@@ -6,6 +6,9 @@ import pytest
 
 import btcopilot
 from btcopilot import diagramjson
+from btcopilot.discussions import open_session
+from btcopilot.models.etc import AccessRight
+from btcopilot.routes import Access
 from btcopilot.routes.settings import PLAN_PLACEHOLDER
 from btcopilot.extensions import db
 from btcopilot.models import Author, Change, Discussion, Interaction, Statement
@@ -458,15 +461,36 @@ def test_read_only_grant_is_not_listed_or_writable(web, token, test_user, test_u
 
 @pytest.fixture
 def theirs(test_user_2):
+    """Another person's diagram with a question on it and one sitting said in."""
+    asked = {"id": "q1", "text": "Who?", "kind": "fact", "state": "asked"}
     diagram = Diagram(
-        user_id=test_user_2.id, name="Their Family", data=diagramjson.dumps({})
+        user_id=test_user_2.id,
+        name="Their Family",
+        data=diagramjson.dumps({"questions": [asked]}),
     )
     db.session.add(diagram)
+    db.session.flush()
+    sitting = open_session(test_user_2, diagram)
+    db.session.add(
+        Statement(
+            discussion_id=sitting.id,
+            speaker_id=sitting.chat_user_speaker_id,
+            text="My mother moved in.",
+        )
+    )
     db.session.commit()
     return diagram
 
 
-def test_an_admin_finds_a_person_by_name_and_opens_their_diagram(
+def view(admin, diagram):
+    return admin.post(
+        f"/app/diagrams/{diagram.id}/select",
+        json={},
+        headers={"X-CSRFToken": csrf_token(admin)},
+    )
+
+
+def test_an_admin_finds_a_person_by_name_and_opens_their_diagram_read_only(
     admin, test_user, test_user_2, theirs
 ):
     # R-0080
@@ -478,13 +502,60 @@ def test_an_admin_finds_a_person_by_name_and_opens_their_diagram(
     listed = admin.get(f"/app/diagrams?user_id={test_user_2.id}").get_json()
     assert theirs.id in {d["id"] for d in listed}
 
-    opened = admin.post(
-        f"/app/diagrams/{theirs.id}/select",
-        json={},
+    opened = view(admin, theirs)
+    assert opened.status_code == 200
+    assert opened.get_json()["access"] == Access.AdminView
+    assert opened.get_json()["owner"] == "Unit Tester 2"
+    assert test_user.current_diagram_id == theirs.id
+    assert AccessRight.query.filter_by(user_id=test_user.id).count() == 0
+
+    said = admin.get("/app/statements").get_json()
+    assert [s["text"] for s in said] == ["My mother moved in."]
+    sitting = admin.get("/app/sessions").get_json()[0]["id"]
+    assert admin.get(f"/app/sessions/{sitting}").status_code == 200
+
+
+@pytest.mark.parametrize(
+    "method, path, body",
+    [
+        ("post", "/app/chat", {"statement": "hello"}),
+        ("post", "/app/sessions", {}),
+        ("post", "/app/people", {"name": "Nova"}),
+        ("post", "/app/events", {"kind": "shift", "description": "moved"}),
+        ("patch", "/app/questions/q1", {"state": "dismissed"}),
+        ("post", "/app/play", {"cluster_id": "c1"}),
+        ("patch", "/app/sessions/{sitting}", {"title": "Mine now"}),
+        ("delete", "/app/sessions/{sitting}", None),
+        ("post", "/app/sessions/{sitting}/statements", {"statement": "hello"}),
+    ],
+)
+def test_an_admin_viewing_a_diagram_writes_nothing_on_it(
+    admin, test_user, theirs, method, path, body
+):
+    # R-0080
+    view(admin, theirs)
+    sitting = Discussion.query.filter_by(diagram_id=theirs.id).one()
+    before = (Statement.query.count(), Discussion.query.count(), Change.query.count())
+
+    refused = getattr(admin, method)(
+        path.format(sitting=sitting.id),
+        json=body,
         headers={"X-CSRFToken": csrf_token(admin)},
     )
-    assert opened.status_code == 200
-    assert test_user.current_diagram_id == theirs.id
+    assert refused.status_code == 403
+    assert "read-only" in refused.get_data(as_text=True)
+    db.session.expire_all()
+    assert (Statement.query.count(), Discussion.query.count(), Change.query.count()) == before
+    assert sitting.title is None
+    assert theirs.get_diagram_data().people == []
+
+
+def test_someone_who_is_not_an_admin_cannot_open_another_persons_diagram(
+    web, token, test_user, theirs
+):
+    # R-0080
+    assert post(web, token, f"/app/diagrams/{theirs.id}/select", {}).status_code == 404
+    assert test_user.current_diagram_id is None
 
 
 def test_a_search_needs_two_letters(admin):

@@ -9,6 +9,7 @@ import btcopilot
 from btcopilot import auth
 from btcopilot.routes import (
     bp,
+    chatter,
     current_session,
     owned_session,
     require_write_access,
@@ -111,7 +112,9 @@ def thread(user, before: int | None = None) -> list[dict]:
         )
         .filter(
             Statement.discussion_id.in_(
-                chats(user, user.diagram_in_use()).with_entities(Discussion.id)
+                chats(chatter(user), user.diagram_in_use()).with_entities(
+                    Discussion.id
+                )
             )
         )
         .group_by(Statement.discussion_id)
@@ -193,7 +196,12 @@ def session_index():
         abort(403)
     if asked is not None and asked not in {d.id for d in readable(user)}:
         abort(404)
-    found = real_sessions() if every else chats(user, asked or user.diagram_in_use())
+    if every:
+        found = real_sessions()
+    elif asked is None:
+        found = chats(chatter(user), user.diagram_in_use())
+    else:
+        found = chats(user, asked)
     terms = request.args.get("words", "").split()
     lines = {}
     if terms:
@@ -252,6 +260,7 @@ def session_get(session_id: int):
 @bp.route("/sessions/<int:session_id>", methods=["PATCH"])
 def session_rename(session_id: int):
     discussion = owned_session(session_id)
+    require_write_access(discussion.diagram)
     body = request.get_json()
     unknown = set(body) - {"title"}
     if unknown:
@@ -270,6 +279,7 @@ def session_delete(session_id: int):
     """A session goes; the record it coded stays. What the coach wrote into the
     diagram is the record's, not the conversation's."""
     discussion = owned_session(session_id)
+    require_write_access(discussion.diagram)
     discussion.chat_user_speaker_id = None
     discussion.chat_ai_speaker_id = None
     db.session.flush()

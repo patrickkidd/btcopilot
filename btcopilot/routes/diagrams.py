@@ -8,7 +8,7 @@ from flask import abort, jsonify, request
 import btcopilot
 from btcopilot import auth, diagramjson
 from btcopilot.licence import require_professional
-from btcopilot.routes import bp, last_activity, utc_iso
+from btcopilot.routes import Access, access, bp, last_activity, utc_iso
 from btcopilot.extensions import db
 from btcopilot.models import Discussion
 from btcopilot.models import Diagram, User
@@ -55,6 +55,8 @@ def diagram_payload(diagram: Diagram, user) -> dict:
         "free": diagram.id == user.free_diagram_id,
         "current": diagram.id == user.diagram_in_use(),
         "owned": diagram.user_id == user.id,
+        "access": access(diagram, user),
+        "owner": diagram.user.full_name().strip() or diagram.user.username,
     }
 
 
@@ -108,20 +110,14 @@ def diagram_create():
 
 @bp.route("/diagrams/<int:diagram_id>/select", methods=["POST"])
 def diagram_select(diagram_id: int):
-    """Put the app on one of the user's writable diagrams. This never writes
-    free_diagram_id: which diagram is free of charge is a billing fact, not a
-    record of where the reader is. An admin opening someone else's diagram is
-    granted read-write on it first, so every check after this one passes the
-    way it does for a shared diagram."""
+    """Put the app on one of the user's writable diagrams, or, for an admin,
+    on anyone's to look at: no access right is written for that, and every
+    write on it is refused. This never writes free_diagram_id: which diagram
+    is free of charge is a billing fact, not a record of where the reader is."""
     user = auth.current_user()
-    if diagram_id not in {d.id for d in writable(user)}:
-        if not user.has_role(btcopilot.ROLE_ADMIN):
-            abort(404)
-        db.get_or_404(Diagram, diagram_id).grant_access(
-            user, btcopilot.ACCESS_READ_WRITE
-        )
+    found = db.get_or_404(Diagram, diagram_id)
+    if found not in writable(user) and access(found, user) is not Access.AdminView:
+        abort(404)
     user.current_diagram_id = diagram_id
     db.session.commit()
-    return jsonify(
-        diagram_payload(next(d for d in writable(user) if d.id == diagram_id), user)
-    )
+    return jsonify(diagram_payload(found, user))

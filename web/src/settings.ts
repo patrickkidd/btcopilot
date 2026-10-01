@@ -889,10 +889,10 @@ export class Settings {
   /** Put the app on another family. Everything the app shows is about one
    * diagram, so the whole surface is re-read afterwards. */
   private async switchTo(diagram: Diagram): Promise<void> {
-    await api.selectDiagram(diagram.id);
+    const opened = await api.selectDiagram(diagram.id);
     await this.load();
     this.close();
-    this.handlers.onDiagram(diagram, { switched: true });
+    this.handlers.onDiagram(opened, { switched: true });
     toast(`Now on ${diagram.name}`);
   }
 

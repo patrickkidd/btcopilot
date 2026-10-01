@@ -5,7 +5,9 @@ import uuid
 
 from flask import Blueprint, abort, request
 from flask_wtf.csrf import CSRFError, generate_csrf
+from werkzeug.exceptions import Forbidden
 
+import btcopilot
 from btcopilot import auth
 from btcopilot.auth.signin import origin
 from btcopilot.extensions import csrf, db
@@ -45,6 +47,40 @@ TOKENLESS = {"app.create_report"}
 PUBLIC_STATIC = re.compile(r"web/icon-\w+\.png")
 
 
+class Access(enum.StrEnum):
+    """How the app is on a diagram: the user's own, shared with them
+    read-write, or another person's that an admin opened to look at, which no
+    access right grants and nothing may write to (Patrick, 2026-10-01)."""
+
+    Own = "own"
+    Shared = "shared"
+    AdminView = "admin-view"
+
+
+def access(dia: Diagram, user) -> Access | None:
+    """None when the user may not put the app on the diagram at all."""
+    if dia.user_id == user.id:
+        return Access.Own
+    if dia.check_write_access(user):
+        return Access.Shared
+    if user.has_role(btcopilot.ROLE_ADMIN):
+        return Access.AdminView
+    return None
+
+
+def chatter(user):
+    """Whose sittings the app shows: the user's own, or on a diagram an admin
+    is only viewing, the sittings of the person it belongs to."""
+    dia = user.current_diagram or user.free_diagram
+    if dia is not None and access(dia, user) is Access.AdminView:
+        return dia.user
+    return user
+
+
+class ReadOnly(Forbidden):
+    description = "this diagram is open read-only"
+
+
 class FetchSite(enum.StrEnum):
     SameOrigin = "same-origin"
     Typed = "none"
@@ -82,6 +118,12 @@ def _csrf_error(e):
     return e.description, 400
 
 
+@bp.errorhandler(ReadOnly)
+def _read_only(e):
+    """Said in words, where every other refusal is a bare Forbidden."""
+    return e.description, 403
+
+
 @bp.errorhandler(ValueError)
 def _value_error(e):
     """A rejected value is the client's fault, not a server fault: every
@@ -105,7 +147,7 @@ def _inject_globals():
 def user_sessions(user, diagram_id: int | None = None) -> list[Discussion]:
     """The user's sessions on one diagram, most recently active first. Without
     a diagram it is the one the app is on."""
-    return newest(chats(user, diagram_id or user.diagram_in_use()))
+    return newest(chats(chatter(user), diagram_id or user.diagram_in_use()))
 
 
 def current_session(user, create: bool = False) -> Discussion | None:
@@ -119,12 +161,14 @@ def current_session(user, create: bool = False) -> Discussion | None:
 
 def owned_session(session_id: int) -> Discussion:
     """Another user's session is a 404, not a 403: the app never confirms that
-    a session it will not show exists. A discussion missing either chat
+    a session it will not show exists. An admin viewing another person's
+    diagram reads that person's sessions; every write on one still passes
+    `require_write_access`. A discussion missing either chat
     speaker id is not a session either — see `user_sessions`."""
     discussion = db.session.get(Discussion, session_id)
     if (
         discussion is None
-        or discussion.user_id != auth.current_user().id
+        or discussion.user_id != chatter(auth.current_user()).id
         or discussion.chat_user_speaker_id is None
         or discussion.chat_ai_speaker_id is None
     ):
@@ -159,7 +203,7 @@ def require_write_access(dia):
     if dia is None:
         return dia
     if not dia.check_write_access(auth.current_user()):
-        abort(403)
+        raise ReadOnly()
     if frozen(dia.id):
         abort(409, "that coding is done and its record no longer takes edits")
     return dia

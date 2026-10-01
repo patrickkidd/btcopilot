@@ -306,14 +306,14 @@ test.describe("your diagrams", () => {
       selected.push(route.request().url());
       current = Number(route.request().url().match(/diagrams\/(\d+)/)![1]);
       await route.fulfill({
-        json: { ...OTHER, session_count: 0, last_activity: null, free: false, current: true, owned: true },
+        json: { ...OTHER, session_count: 0, last_activity: null, free: false, current: true, owned: true, access: "own", owner: "Unit Tester" },
       });
     });
     await page.route(/\/app\/account$/, async (route) => {
       const real = await (await route.fetch()).json();
       const own = real.diagrams[0];
       current ??= own.id;
-      const other = { ...OTHER, session_count: 0, last_activity: null, free: false, owned: true };
+      const other = { ...OTHER, session_count: 0, last_activity: null, free: false, owned: true, access: "own", owner: "Unit Tester" };
       await route.fulfill({
         json: {
           ...real,
@@ -367,17 +367,15 @@ test.describe("your diagrams", () => {
 test.describe("an admin finds a person on the diagrams view", () => {
   test.use({ storageState: stateFor("longname") });
 
-  /** The admin role, and afterwards nothing the walk granted or opened. */
+  /** The admin role, and afterwards nothing the walk opened. */
   const as = (roles: string) =>
     shell(
       [
         "from btcopilot.extensions import db",
         "from btcopilot.models import User",
-        "from btcopilot.models.etc import AccessRight",
         `me = User.query.filter_by(username="${username("longname")}").one()`,
         `me.roles = "${roles}"`,
         "me.current_diagram_id = None",
-        "AccessRight.query.filter_by(user_id=me.id).delete()",
         "db.session.commit()",
         "",
       ].join("\n"),
@@ -393,7 +391,7 @@ test.describe("an admin finds a person on the diagrams view", () => {
   test.afterAll(() => as("subscriber"));
 
   // R-0175
-  test("searching a name lists the person, and tapping their diagram opens it", async ({ page }) => {
+  test("searching a name lists the person, and tapping their diagram opens it read-only", async ({ page }) => {
     as("admin");
     await openDiagrams(page);
     const pane = page.locator('.sn-pane[data-page="diagrams"]');
@@ -407,6 +405,21 @@ test.describe("an admin finds a person on the diagrams view", () => {
     await theirs.click();
     await expect(page.locator(".sn-stack")).toBeHidden();
     await expect(page.locator("#title")).toHaveText(name);
+
+    await expect(page.locator("#viewing")).toBeVisible();
+    await expect(page.locator("#chat .bub").first()).toBeVisible();
+    await expect(page.locator("#viewing-who")).toHaveText(/^Viewing .+'s diagram, read-only$/);
+    await expect(page.locator("#composer")).toBeHidden();
+    await expect(page.locator("#send")).toBeHidden();
+    const shown = (selector: string) =>
+      page.locator(selector).evaluate((n) => getComputedStyle(n).display);
+    expect(await shown("#menu-foot")).toBe("none");
+
+    await page.locator("#viewing-back").click();
+    await expect(page.locator("#viewing")).toBeHidden();
+    await expect(page.locator("#title")).not.toHaveText(name);
+    await expect(page.locator("#composer")).toBeVisible();
+    expect(await shown("#menu-foot")).not.toBe("none");
   });
 
   // R-0175

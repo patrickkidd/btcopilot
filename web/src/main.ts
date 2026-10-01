@@ -70,6 +70,7 @@ import {
   type Chip,
   type CodedIn,
   type Delivery,
+  Access,
   type Diagram,
   type Session,
   type Started,
@@ -95,7 +96,7 @@ declare global {
         coder: boolean;
         prefs: Pick<Preferences, "spotlight" | "bug_reports">;
       } | null;
-      diagram: { id: number; name: string } | null;
+      diagram: Diagram | null;
       session: { id: number; turn: string | null } | null;
       statements: api.Said[];
       version: string;
@@ -128,11 +129,17 @@ let lastSitting: number | null = window.BOOTSTRAP.statements.at(-1)?.session_id 
  * moment. */
 let known: Session[] = [];
 
+/** The diagram the app is on. */
+let opened: Diagram | null = window.BOOTSTRAP.diagram;
+
+/** An admin looking at another person's diagram: nothing is said, tapped into
+ * the record or written (Patrick, 2026-10-01). */
+const looking = (): boolean => opened?.access === Access.AdminView;
+
 /** A tap can only be recorded against a diagram; without one there is nothing to
- * record it on. */
+ * record it on, and a look at someone else's diagram is not theirs to learn from. */
 function tapped(kind: InteractionKind, item: ItemKind, id: string | null = null): void {
-  const diagram = window.BOOTSTRAP.diagram;
-  if (diagram) void api.record(diagram.id, kind, item, id);
+  if (opened && !looking()) void api.record(opened.id, kind, item, id);
 }
 
 const picture = new Picture(
@@ -388,6 +395,7 @@ const sessions = new Sessions(
     },
     onMoved: () => sync(),
     onPick: (sitting) => void toSitting(sitting),
+    diagram: () => opened,
   },
 );
 
@@ -660,6 +668,8 @@ $("coding-back").addEventListener("click", () => {
  * the picture and the title all start again on it. Opening on a family only
  * names it; nothing is thrown away. */
 function onDiagram(diagram: Diagram, how = { switched: true }): void {
+  opened = diagram;
+  viewing();
   track.diagram(diagram.id);
   familyTitle = diagram.name;
   $("menu-title").textContent = familyTitle;
@@ -677,6 +687,20 @@ function onDiagram(diagram: Diagram, how = { switched: true }): void {
 let familyTitle =
   window.BOOTSTRAP.diagram?.name ?? $("title").textContent ?? "Your family";
 $("title").textContent = familyTitle;
+
+/** The one line that says the diagram on screen is someone else's, with the
+ * way back to the admin's own; the page hides whatever writes. */
+function viewing(): void {
+  document.documentElement.dataset.access = opened?.access ?? Access.Own;
+  $("viewing").hidden = !looking();
+  $("viewing-who").textContent = looking() ? `Viewing ${opened!.owner}'s diagram, read-only` : "";
+}
+viewing();
+
+$("viewing-back").addEventListener("click", async () => {
+  const [own] = await api.diagrams();
+  onDiagram(await api.selectDiagram(own.id));
+});
 // the drawer is the family's too, so it carries the same name (frame 2)
 $("menu-title").textContent = familyTitle;
 
@@ -1058,6 +1082,7 @@ function shown(view: View): Promise<void> | void {
  * opens it again. A record the picture cannot draw is refused in the
  * server's own words. */
 async function explain(clusterId: string): Promise<void> {
+  if (looking()) return;
   track.tap(Feature.Play, { kind: ItemKind.Cluster, id: clusterId });
   chat.busy(true);
   let reply;
@@ -1117,7 +1142,7 @@ async function send(): Promise<void> {
 
 /** The reader's words go into the thread as theirs and on to the coach. */
 function post(statement: string): void {
-  if (!statement || inFlight) return;
+  if (!statement || inFlight || looking()) return;
   track.tap(Feature.SendMessage);
   chat.add(Role.User, statement);
   void deliver(statement);
