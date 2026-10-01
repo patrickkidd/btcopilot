@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+"""The builder's pre-commit hook, installed in this worktree only.
+
+  uv run bin/builder-hook install --files 'btcopilot/x.py,btcopilot/tests/test_x.py'
+  uv run bin/builder-hook install              # the coordinator: any file
+
+Refuses a commit with a second new migration, a staged file outside the
+declared set, a stash entry, or a conflict marker.
+"""
+import argparse
+import fnmatch
+import subprocess
+import sys
+from pathlib import Path
+
+VERSIONS = "btcopilot/migrations/versions/"
+MARKERS = (b"<<<<<<< ", b">>>>>>> ")
+
+
+def git(*args: str) -> str:
+    return blob(*args).decode()
+
+
+def blob(*args: str) -> bytes:
+    return subprocess.run(["git", *args], check=True, stdout=subprocess.PIPE).stdout
+
+
+def gitdir() -> Path:
+    return Path(git("rev-parse", "--absolute-git-dir").strip())
+
+
+def install(files: str | None):
+    hooks = gitdir() / "hooks"
+    hooks.mkdir(exist_ok=True)
+    hook = hooks / "pre-commit"
+    hook.write_text(f'#!/bin/sh\nexec "{sys.executable}" "{Path(__file__).resolve()}" check\n')
+    hook.chmod(0o755)
+    declared = gitdir() / "builder-files"
+    if files:
+        declared.write_text("\n".join(g.strip() for g in files.split(",") if g.strip()) + "\n")
+    else:
+        declared.unlink(missing_ok=True)
+    git("config", "extensions.worktreeConfig", "true")
+    git("config", "--worktree", "core.hooksPath", str(hooks))
+
+
+def migrations() -> list[str]:
+    root = Path(git("rev-parse", "--show-toplevel").strip())
+    ours = {p.relative_to(root).as_posix() for p in (root / VERSIONS).glob("*.py")}
+    theirs = set(git("ls-tree", "-r", "--name-only", "origin/master", VERSIONS).split())
+    return sorted(ours - theirs)
+
+
+def staged() -> list[str]:
+    return git("diff", "--cached", "--name-only", "--diff-filter=ACMR").split("\n")[:-1]
+
+
+def refusals() -> list[str]:
+    found = []
+    new = migrations()
+    if len(new) > 1:
+        found.append(
+            f"one migration per PR: this branch has {len(new)} migration files master does not "
+            f"({', '.join(Path(p).name for p in new)}); squash them into one"
+        )
+    declared = gitdir() / "builder-files"
+    if declared.exists():
+        globs = declared.read_text().split()
+        outside = [p for p in staged() if not any(fnmatch.fnmatch(p, g) for g in globs)]
+        if outside:
+            found.append(
+                f"declared files only: {', '.join(outside)} is outside this builder's files "
+                f"({', '.join(globs)}); unstage it or ask the coordinator"
+            )
+    if git("stash", "list").strip():
+        found.append("never git stash: the repo holds a stash entry; restore it and drop it")
+    marked = [
+        p for p in staged()
+        if any(line.startswith(MARKERS) for line in blob("show", f":{p}").splitlines())
+    ]
+    if marked:
+        found.append(f"no conflict markers: {', '.join(marked)} still holds one")
+    return found
+
+
+def check() -> int:
+    found = refusals()
+    for line in found:
+        print(f"builder-hook: commit refused, {line}", file=sys.stderr)
+    return int(bool(found))
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("install").add_argument("--files")
+    sub.add_parser("check")
+    args = parser.parse_args()
+    if args.cmd == "install":
+        install(args.files)
+        return 0
+    return check()
+
+
+if __name__ == "__main__":
+    sys.exit(main())
