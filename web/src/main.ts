@@ -20,7 +20,7 @@ import { Thread, divider } from "./thread";
 import { Page, Settings, type Sub } from "./settings";
 import { Notices } from "./notices";
 import { Strip } from "./strip";
-import { aimedEvents, chips, itemKind, Lead } from "./chips";
+import { aimedEvents, chips, Does, DOES, itemKind, Lead } from "./chips";
 import { feed } from "./turn";
 import { Release } from "./release";
 import { Reports } from "./report";
@@ -36,7 +36,7 @@ import {
   type PicState,
   type Sel,
 } from "./caption";
-import { $, CLUSTER, pathRow, setTitle, slideOver } from "./dom";
+import { $, CLUSTER, flash, pathRow, setTitle, slideOver } from "./dom";
 import { address, beyond, linked, parse, PICTURE, Place, settled, UNDATED } from "./place";
 import { Return, returnKey, touch } from "./keyboard";
 import { Drawer } from "./drawer";
@@ -266,21 +266,25 @@ function replay(statement: number): boolean {
   return true;
 }
 
-/** A chip tapped in the thread or the drawer. Two kinds of chip, and the
- * colour says which. An amber chip is the coach asking: an old offer goes into
- * the message as words, and a question it asked goes in as the reference that
- * answers it (R-0587). A teal chip is a reference into the record, so it aims
- * the picture, except the cluster chip a play-by-play leads with, which opens
- * that play again as a tap on its words does. A chip in an
+/** A chip tapped anywhere: the thread, the play-by-play drawer, the list of
+ * what the coach has for the reader. What it does follows what it names, and
+ * its colour follows the same (R-0587): the coach asking goes into the message
+ * as the reference that answers it, a reference into the record goes to it on
+ * the picture, and an address goes there. The cluster chip a play-by-play
+ * leads with opens that play again, as a tap on its words does. A chip in an
  * old prose walk is a chip like any other (R-0501, R-0570). */
 function chipTap(chip: Chip): void {
   tapped(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
   track.tap(Feature.ChipTap, { kind: itemKind(chip.kind), id: chip.target });
-  if (chip.kind === ChipKind.Place) return void navigate(chip.target);
   if (chip.play !== undefined && replay(chip.play)) return;
-  if (offered(chip)) chat.insert(chip, chip.kind === ChipKind.Message ? Lead.Answer : Lead.None);
-  else aim(chip);
+  DOING[DOES[chip.kind]](chip);
 }
+
+const DOING: Record<Does, (chip: Chip) => void> = {
+  [Does.Say]: (chip) => chat.insert(chip, chip.kind === ChipKind.Message ? Lead.Answer : Lead.None),
+  [Does.Aim]: (chip) => aim(chip),
+  [Does.Go]: (chip) => void navigate(chip.target),
+};
 
 const chat = new Chat($("chat"), $("composer"), {
   label: chipLabel,
@@ -299,10 +303,6 @@ const chat = new Chat($("chat"), $("composer"), {
   },
   onPlay: replay,
 });
-
-/** An offer: the coach holding out something to say next, drawn amber. */
-const offered = (chip: Chip) =>
-  chip.kind === ChipKind.Ask || chip.tone === ChipTone.Ask;
 
 /** An event or a person carried from its detail card into the message box:
  * the chat comes up with it as a lit chip at the caret and nothing sent
@@ -345,7 +345,8 @@ const toThread = () => {
 };
 
 /** A question or impression tapped in the drawer goes into the message as a
- * reference with the cursor after it, and nothing is sent (R-0072). */
+ * reference with the cursor after it, and nothing is sent (R-0072); what an
+ * impression rests on goes where the same chip in the thread goes. */
 const questions = new Questions($("menu-body"), {
   onChip: (chip, lead, after) => {
     toThread();
@@ -354,6 +355,10 @@ const questions = new Questions($("menu-body"), {
   onAsked: (where, ask) => {
     toThread();
     void traceTo(where, ask);
+  },
+  onRef: (chip) => {
+    toThread();
+    chipTap(chip);
   },
   onDismissed: () => void load(),
   busy: () => inFlight,
@@ -382,6 +387,7 @@ const sessions = new Sessions(
       });
     },
     onMoved: () => sync(),
+    onPick: (sitting) => void toSitting(sitting),
   },
 );
 
@@ -745,7 +751,7 @@ let stopped: { turn: string; bubble: HTMLElement } | null = null;
 function addStatements(statements: api.Said[], newest = false): void {
   for (const statement of statements) {
     if (statement.sitting)
-      $("chat").append(divider(statement.sitting.started, statement.sitting.previous_started));
+      $("chat").append(divider(statement.sitting.id, statement.sitting.started, statement.sitting.previous_started));
     const coach = statement.role === Role.Coach;
     if (statement.case && statement.id !== null)
       cases.set(statement.id, { case: statement.case, digest: statement.digest });
@@ -781,7 +787,7 @@ function sat(sittingId: number, words: Element | null): void {
   if (sittingId === lastSitting) return;
   lastSitting = sittingId;
   const before = [...$("chat").querySelectorAll<HTMLElement>(".sitting")].at(-1);
-  words?.before(divider(new Date().toISOString(), before?.dataset.started ?? null));
+  words?.before(divider(sittingId, new Date().toISOString(), before?.dataset.started ?? null));
   chat.toEnd();
 }
 
@@ -898,11 +904,22 @@ function selLabel(sel: Sel): string {
   return n ? `${n} thing${n === 1 ? "" : "s"} with no date yet` : "what has no date";
 }
 
-/** The words of one message lit in the thread, reading back to them first
- * when they are further back than the thread has read. */
+/** Where every jump into the thread lands, from a chip, a link or a drawer
+ * row alike, so none of them can go somewhere the others do not: a message's
+ * bubble glides to the middle and is ringed, a sitting's line glides to the
+ * top. Each reads the thread back first when it is further back than the
+ * thread has read. An event goes to the picture instead (`aim`). */
+const bubbleOf = (statement: number) => `.bub[data-statement="${statement}"]`;
+
 async function toMessage(statement: number, ask = false): Promise<void> {
-  await thread.reach(statement);
+  await thread.reach(bubbleOf(statement));
   if (!chat.trace(statement, ask)) toast("Those words are no longer here");
+}
+
+async function toSitting(sitting: number): Promise<void> {
+  const line = await thread.reach(`.sitting[data-sitting="${sitting}"]`);
+  if (line) flash(line, true);
+  else toast("That session has nothing in the chat");
 }
 
 /** Traceability runs both ways: a moment on the picture says which session
@@ -1678,7 +1695,7 @@ function toEvent(id: number): void {
 async function toPlay(statement: number): Promise<boolean> {
   uncover();
   putDown();
-  await thread.reach(statement);
+  await thread.reach(bubbleOf(statement));
   if (replay(statement)) return true;
   toast("That play-by-play is no longer here");
   return false;

@@ -35,6 +35,9 @@ export interface SessionsHandlers {
   onMade(session: Session): void;
   /** The drawer came up or went down, so the address says so. */
   onMoved(): void;
+  /** A session tapped: the drawer goes down and the thread goes to where that
+   * session starts. */
+  onPick(sitting: number): void;
 }
 
 
@@ -190,7 +193,11 @@ export class Sessions {
     // a tap anywhere else puts an open row's actions away rather than firing
     if (this.swipe.claims()) return;
     const row = target.closest<HTMLElement>(".row");
-    if (row && target.closest(".rmore")) this.swipe.open(row, false);
+    if (!row || row.querySelector("input")) return;
+    if (target.closest(".rmore")) return this.swipe.open(row, false);
+    tap(Feature.SessionOpen);
+    this.lower();
+    this.handlers.onPick(Number(row.dataset.id));
   }
 
   private async remove(row: HTMLElement): Promise<void> {

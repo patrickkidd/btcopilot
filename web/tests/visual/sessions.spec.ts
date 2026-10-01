@@ -283,7 +283,7 @@ test.describe("the sessions Patrick sees listed", () => {
   });
 
   // R-0259, R-0267
-  test("holds no way to coding, the meeting or the replies, and a row only renames or deletes", async ({
+  test("holds no way to coding, the meeting or the replies, and a row goes to its session, renames or deletes", async ({
     page,
   }) => {
     await page.goto("/app/");
@@ -292,6 +292,8 @@ test.describe("the sessions Patrick sees listed", () => {
     const row = page.locator("#sessions-sheet .row").first();
     await row.locator(".rsub").click();
     await expect(page.locator("#cut-screen")).toBeHidden();
+    await expect(page.locator("#sessions-sheet")).toBeHidden();
+    await openSheet(page);
     await row.locator(".rmore").click();
     await expect(page.locator("#sessions-sheet .fs-act")).toHaveText(["Rename", "Delete"]);
   });

@@ -1,5 +1,5 @@
 import * as api from "./api";
-import { itemKind, Lead, token } from "./chips";
+import { Lead, token } from "./chips";
 import { esc } from "./dom";
 import { Swipe } from "./swipe";
 import { Feature, tap } from "./track";
@@ -60,8 +60,8 @@ const LEAD_OF: Record<QuestionKind, Lead> = {
   [QuestionKind.Impression]: Lead.None,
 };
 
-/** A thing an impression rests on, as a chip into the message box. A message
- * is not a chip there: it opens where it was said. */
+/** A thing an impression rests on, as the chip that goes to it. A message is
+ * not a chip kind: it opens where it was said. */
 const EVIDENCE_CHIP: Record<Exclude<EvidenceKind, EvidenceKind.Statement>, ChipKind> = {
   [EvidenceKind.Person]: ChipKind.Person,
   [EvidenceKind.PairBond]: ChipKind.PairBond,
@@ -131,6 +131,9 @@ export interface QuestionHandlers {
   /** A reference goes into the message box, with the words before it and any
    * words after it. */
   onChip(chip: Chip, lead: Lead, after?: string): void;
+  /** A thing an impression rests on was tapped: a chip like any in the
+   * thread, which goes where a tap on it there goes. */
+  onRef(chip: Chip): void;
   /** The reader asked to see where something was said; `ask` lights the
    * question that closes that reply. */
   onAsked(where: CodedIn, ask: boolean): void;
@@ -213,9 +216,7 @@ export class Questions {
       );
       return;
     }
-    const chip = evidenceChip(e);
-    this.handlers.record(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
-    this.handlers.onChip(chip, Lead.None);
+    this.handlers.onRef(evidenceChip(e));
   }
 
   private find(row: HTMLElement): AskedQuestion {

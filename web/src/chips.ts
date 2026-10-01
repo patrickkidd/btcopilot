@@ -83,7 +83,28 @@ const ITEM_OF: Record<ChipKind, ItemKind> = {
   [ChipKind.Merge]: ItemKind.Diagram,
 };
 
-const ASKING = new Set([ChipKind.Ask, ChipKind.Question, ChipKind.Message, ChipKind.Merge]);
+/** What a tap on a chip does, by what it names; its colour follows. */
+export enum Does {
+  /** The coach asking, in amber: it goes into the message box. */
+  Say = "say",
+  /** A reference into the record, in teal: the picture goes to it. */
+  Aim = "aim",
+  /** A place in the app, which the app goes to. */
+  Go = "go",
+}
+
+export const DOES: Record<ChipKind, Does> = {
+  [ChipKind.Event]: Does.Aim,
+  [ChipKind.Cluster]: Does.Aim,
+  [ChipKind.Person]: Does.Aim,
+  [ChipKind.PairBond]: Does.Aim,
+  [ChipKind.Impression]: Does.Aim,
+  [ChipKind.Ask]: Does.Say,
+  [ChipKind.Question]: Does.Say,
+  [ChipKind.Message]: Does.Say,
+  [ChipKind.Merge]: Does.Say,
+  [ChipKind.Place]: Does.Go,
+};
 
 export const itemKind = (kind: ChipKind): ItemKind => ITEM_OF[kind];
 
@@ -110,7 +131,7 @@ export function tokenize(text: string, tone = ChipTone.Data): Piece[] {
           label: label || (kind === ChipKind.Ask ? m[2].trim() : KIND_WORD[kind]),
           // An offer or a question is the coach asking, and asking is always
           // amber.
-          tone: ASKING.has(kind) ? ChipTone.Ask : tone,
+          tone: DOES[kind] === Does.Say ? ChipTone.Ask : tone,
           bare: !label,
         },
       });

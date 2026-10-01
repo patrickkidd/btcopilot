@@ -68,19 +68,60 @@ function scroller(item: HTMLElement): HTMLElement | null {
   return null;
 }
 
+/** How long a glide may take to land, however often it is stopped. */
+const GLIDE_MS = 2000;
+/** Frames the box must hold still before a glide counts as stopped. */
+const STILL = 3;
+const HANDS = ["wheel", "touchstart", "pointerdown", "keydown"];
+
+/** Glide `box` until `to()` is where it stands. Something on the page may
+ * stop a glide partway — the box changing size as the picture folds sets its
+ * scroll — so it goes on from where it stopped, until it lands, the reader
+ * takes the scroll in hand, or the time is up. */
+function glide(box: HTMLElement, to: () => number): void {
+  const go = () => box.scrollTo({ top: to(), behavior: "smooth" });
+  const until = performance.now() + GLIDE_MS;
+  let held = false;
+  const hold = () => (held = true);
+  for (const kind of HANDS) box.addEventListener(kind, hold, { once: true, passive: true });
+  let last = Number.NaN;
+  let still = 0;
+  const done = () => {
+    for (const kind of HANDS) box.removeEventListener(kind, hold);
+  };
+  const check = () => {
+    if (held || performance.now() > until) return done();
+    still = box.scrollTop === last ? still + 1 : 0;
+    last = box.scrollTop;
+    if (still >= STILL) {
+      if (Math.abs(box.scrollTop - to()) <= 1) return done();
+      still = 0;
+      go();
+    }
+    requestAnimationFrame(check);
+  };
+  go();
+  requestAnimationFrame(check);
+}
+
 /** The one light for whatever an address or a jump points at: a message, a
- * row in a drawer or a list. The item is scrolled to the middle of the box
- * that scrolls it and ringed while it settles. Never `scrollIntoView`: the
- * outer page must not move (UI_STANDARDS). */
-export function flash(item: HTMLElement): void {
+ * sitting's line, a row in a drawer or a list. The box that scrolls the item
+ * glides it to the middle, or to the top for a line that starts what follows
+ * it, and the item is ringed while it settles; a reader who asks for less
+ * motion gets the jump without the glide. Never `scrollIntoView`: the outer
+ * page must not move (UI_STANDARDS). */
+export function flash(item: HTMLElement, top = false): void {
   const box = scroller(item);
   if (box) {
-    const outer = box.getBoundingClientRect();
-    const at = item.getBoundingClientRect();
-    box.scrollTop = Math.max(
-      0,
-      box.scrollTop + (at.top - outer.top) - (outer.height - at.height) / 2,
-    );
+    const to = () => {
+      const outer = box.getBoundingClientRect();
+      const at = item.getBoundingClientRect();
+      const room = top ? 0 : (outer.height - at.height) / 2;
+      const end = box.scrollHeight - box.clientHeight;
+      return Math.min(end, Math.max(0, box.scrollTop + (at.top - outer.top) - room));
+    };
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) box.scrollTop = to();
+    else glide(box, to);
   }
   item.classList.remove("traced");
   void item.offsetWidth;

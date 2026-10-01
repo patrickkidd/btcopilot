@@ -113,18 +113,18 @@ describe("tapping an impression", () => {
     expect(handlers.say).not.toHaveBeenCalled();
   });
 
-  // R-0072
-  it("on what it rests on puts that in the message box, or opens the message it came from", async () => {
+  // R-0072, R-0587
+  it("on what it rests on goes to it as the same chip in the thread does, or opens the message it came from", async () => {
     const { handlers, click } = drawer(FAMILY);
     await click("i2", "[data-ev]", { ev: "0" });
-    expect(handlers.onChip).toHaveBeenCalledWith({
+    expect(handlers.onRef).toHaveBeenCalledWith({
       kind: ChipKind.Event,
       target: "14",
       label: "Moved to Tacoma",
       tone: ChipTone.Data,
       bare: false,
-    }, Lead.None);
-    expect(handlers.record).toHaveBeenCalledWith(InteractionKind.ChipTap, ItemKind.Event, "14");
+    });
+    expect(handlers.onChip).not.toHaveBeenCalled();
     await click("i2", "[data-ev]", { ev: "2" });
     expect(handlers.onAsked).toHaveBeenCalledWith({ discussion_id: 5, statement_id: 812 }, false);
     expect(fetched).not.toHaveBeenCalled();

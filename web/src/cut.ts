@@ -151,9 +151,7 @@ export class Cut {
     for (const turn of read.turns) {
       const sitting = starts.get(turn.id);
       if (sitting) {
-        const line = divider(sitting.started, sitting.previous_started);
-        line.dataset.sitting = String(sitting.id);
-        this.list.append(line);
+        this.list.append(divider(sitting.id, sitting.started, sitting.previous_started));
       }
       if (!agreedDrawn && !this.ratified(turn)) {
         agreedDrawn = true;
