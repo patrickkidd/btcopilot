@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { EXACT, flask, stateFor, username } from "./setup";
+import { EXACT, flask, shell, stateFor, username } from "./setup";
 
 /** The settings stack: the avatar in the title row, and the pages it pushes.
  * Every value has one home, and the chat view's speak-replies row is the one
@@ -361,6 +361,59 @@ test.describe("your diagrams", () => {
     await expect(page.locator(".sn-stack")).toBeHidden();
     await openDiagrams(page);
     expect(await ticks()).toEqual([OTHER.name]);
+  });
+});
+
+test.describe("an admin finds a person on the diagrams view", () => {
+  test.use({ storageState: stateFor("longname") });
+
+  /** The admin role, and afterwards nothing the walk granted or opened. */
+  const as = (roles: string) =>
+    shell(
+      [
+        "from btcopilot.extensions import db",
+        "from btcopilot.models import User",
+        "from btcopilot.models.etc import AccessRight",
+        `me = User.query.filter_by(username="${username("longname")}").one()`,
+        `me.roles = "${roles}"`,
+        "me.current_diagram_id = None",
+        "AccessRight.query.filter_by(user_id=me.id).delete()",
+        "db.session.commit()",
+        "",
+      ].join("\n"),
+    );
+
+  const openDiagrams = async (page: Page) => {
+    await settle(page);
+    await openSettings(page);
+    await page.locator('.sn-pane[data-page="root"] .sn-row.push', { hasText: "Your diagrams" }).click();
+    await expect(page.locator('.sn-pane[data-page="diagrams"]')).toBeVisible();
+  };
+
+  test.afterAll(() => as("subscriber"));
+
+  // R-0175
+  test("searching a name lists the person, and tapping their diagram opens it", async ({ page }) => {
+    as("admin");
+    await openDiagrams(page);
+    const pane = page.locator('.sn-pane[data-page="diagrams"]');
+    await pane.getByLabel("Find a person").fill("whitlock");
+    const person = pane.locator(".sn-find .sn-row", { hasText: username("whitlock") });
+    await expect(person).toBeVisible();
+    await person.click();
+    await expect(pane.locator(".sn-find .sn-hd")).toBeVisible();
+    const theirs = pane.locator(".sn-find .sn-grp .sn-row").first();
+    const name = (await theirs.locator(".sn-t").textContent())!;
+    await theirs.click();
+    await expect(page.locator(".sn-stack")).toBeHidden();
+    await expect(page.locator("#title")).toHaveText(name);
+  });
+
+  // R-0175
+  test("someone who is not an admin sees no search for people", async ({ page }) => {
+    as("subscriber");
+    await openDiagrams(page);
+    await expect(page.locator('.sn-pane[data-page="diagrams"] .sn-find')).toHaveCount(0);
   });
 });
 

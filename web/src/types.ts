@@ -490,6 +490,13 @@ export interface Diagram {
   owned: boolean;
 }
 
+/** Someone with an account, as an admin's search finds them. */
+export interface User {
+  id: number;
+  username: string;
+  name: string;
+}
+
 export interface Account {
   email: string;
   sign_in_method: string;

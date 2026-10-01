@@ -456,6 +456,48 @@ def test_read_only_grant_is_not_listed_or_writable(web, token, test_user, test_u
     assert shared.get_diagram_data().people == []
 
 
+@pytest.fixture
+def theirs(test_user_2):
+    diagram = Diagram(
+        user_id=test_user_2.id, name="Their Family", data=diagramjson.dumps({})
+    )
+    db.session.add(diagram)
+    db.session.commit()
+    return diagram
+
+
+def test_an_admin_finds_a_person_by_name_and_opens_their_diagram(
+    admin, test_user, test_user_2, theirs
+):
+    # R-0080
+    found = admin.get("/app/users", query_string={"q": "tESTER 2"}).get_json()
+    assert found == [
+        {"id": test_user_2.id, "username": test_user_2.username, "name": "Unit Tester 2"}
+    ]
+
+    listed = admin.get(f"/app/diagrams?user_id={test_user_2.id}").get_json()
+    assert theirs.id in {d["id"] for d in listed}
+
+    opened = admin.post(
+        f"/app/diagrams/{theirs.id}/select",
+        json={},
+        headers={"X-CSRFToken": csrf_token(admin)},
+    )
+    assert opened.status_code == 200
+    assert test_user.current_diagram_id == theirs.id
+
+
+def test_a_search_needs_two_letters(admin):
+    # R-0080
+    assert admin.get("/app/users?q=t").status_code == 400
+
+
+def test_only_an_admin_finds_people_or_lists_their_diagrams(web, test_user_2):
+    # R-0080
+    assert web.get("/app/users?q=Unit").status_code == 403
+    assert web.get(f"/app/diagrams?user_id={test_user_2.id}").status_code == 403
+
+
 # ── event CRUD ──────────────────────────────────────────────────────────────
 
 

@@ -79,6 +79,12 @@ names the server's log lines for that request.
 Patrick sets the numbers), `diagrams` (`id`, `name`, `last_activity`, `free`),
 `licenses` (`id`, `policy`, `status`). Sign out is the existing auth route.
 
+| | |
+|---|---|
+| `GET /diagrams` | the diagrams the caller may write to, most recently active first; `?user_id=` lists another person's, admins only (403 otherwise), with `current` still meaning the caller's own |
+| `POST /diagrams/<id>/select` | puts the app on that diagram; an admin opening someone else's is granted read-write on it first (a row in `access_rights`), anyone else gets 404 |
+| `GET /users?q=` | admins only (403 otherwise): up to 20 people whose email or full name contains the words, any case, each `id`, `username`, `name`; fewer than two letters is a 400 |
+
 ## Notifications
 
 | | |

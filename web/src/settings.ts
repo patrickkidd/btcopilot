@@ -21,6 +21,7 @@ import {
   type Diagram,
   type Passkey,
   type Preferences,
+  type User,
 } from "./types";
 
 /** The app-level view: an iOS-Settings list where every row pushes its own full
@@ -745,24 +746,10 @@ export class Settings {
 
   private diagrams(account: Account): Built {
     const pane = el("div");
+    if (isAdmin()) pane.append(this.finder());
     const box = el("div", "sn-grp");
     const now = new Date();
-    for (const diagram of account.diagrams) {
-      const row = el("div", `sn-row push${diagram.current ? " cur" : ""}`);
-      row.dataset.name = diagram.name.toLowerCase();
-      const main = el("div", "sn-m");
-      main.append(
-        el("div", "sn-t", esc(diagram.name)),
-        el("div", "sn-s", esc(diagramSub(diagram, now))),
-      );
-      row.append(main, el("span", "sn-tick", diagram.current ? "✓" : ""));
-      if (!diagram.current)
-        row.addEventListener("click", () => {
-          tap(Feature.FamilySwitch);
-          void this.switchTo(diagram);
-        });
-      box.append(row);
-    }
+    for (const diagram of account.diagrams) box.append(this.diagramRow(diagram, now));
 
     if (PRO) box.append(this.newCaseRow());
 
@@ -794,6 +781,70 @@ export class Settings {
       );
     }
     return { title: PRO ? Records : "Your diagrams", pane };
+  }
+
+  private diagramRow(diagram: Diagram, now: Date): HTMLElement {
+    const row = el("div", `sn-row push${diagram.current ? " cur" : ""}`);
+    row.dataset.name = diagram.name.toLowerCase();
+    const main = el("div", "sn-m");
+    main.append(
+      el("div", "sn-t", esc(diagram.name)),
+      el("div", "sn-s", esc(diagramSub(diagram, now))),
+    );
+    row.append(main, el("span", "sn-tick", diagram.current ? "✓" : ""));
+    if (!diagram.current)
+      row.addEventListener("click", () => {
+        tap(Feature.FamilySwitch);
+        void this.switchTo(diagram);
+      });
+    return row;
+  }
+
+  /** An admin finds anyone by name and opens one of their diagrams, which
+   * grants the admin that diagram. */
+  private finder(): HTMLElement {
+    const finder = el("div", "sn-find");
+    const wrap = el("div", "sn-srch");
+    const field = document.createElement("input");
+    field.type = "search";
+    field.placeholder = "Find a person";
+    field.setAttribute("aria-label", "Find a person");
+    wrap.append(field);
+    const found = el("div");
+    field.addEventListener("input", async () => {
+      const words = field.value.trim();
+      if (words.length < 2) return found.replaceChildren();
+      const people = await api.users(words);
+      if (field.value.trim() !== words) return;
+      const box = el("div", "sn-grp");
+      for (const person of people) {
+        const row = el("div", "sn-row push");
+        const main = el("div", "sn-m");
+        main.append(
+          el("div", "sn-t", esc(person.name || person.username)),
+          el("div", "sn-s", esc(person.username)),
+        );
+        row.append(main, el("div", "sn-chev", "\u203a"));
+        row.addEventListener("click", () => void this.theirs(person, found));
+        box.append(row);
+      }
+      found.replaceChildren(
+        people.length ? box : el("div", "sn-hint", "No one by that name."),
+      );
+    });
+    finder.append(wrap, found);
+    return finder;
+  }
+
+  private async theirs(person: User, found: HTMLElement): Promise<void> {
+    const diagrams = await api.diagrams(person.id);
+    const box = el("div", "sn-grp");
+    const now = new Date();
+    for (const diagram of diagrams) box.append(this.diagramRow(diagram, now));
+    found.replaceChildren(
+      el("div", "sn-hd", esc(person.name || person.username)),
+      diagrams.length ? box : el("div", "sn-hint", "No diagrams yet."),
+    );
   }
 
   /** A new case: an empty record the app is put on straight away, so the title

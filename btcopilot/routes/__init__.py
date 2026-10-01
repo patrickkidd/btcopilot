@@ -208,6 +208,7 @@ from btcopilot.routes import (  # noqa: E402  bp must exist first
     settings,
     theory,
     turns,
+    users,
     web,
 )
 

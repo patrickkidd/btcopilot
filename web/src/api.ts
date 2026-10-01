@@ -40,6 +40,7 @@ import type {
   Statement,
   Timeline,
   TimelineEvent,
+  User,
   Utterance,
   Voice,
 } from "./types";
@@ -326,7 +327,12 @@ export const openNotification = (id: number) =>
 
 /** Every diagram the user can open — owned and granted — most recently active
  * first, each with how many sessions sit on it. */
-export const diagrams = () => call<Diagram[]>("GET", "/diagrams");
+export const diagrams = (userId?: number) =>
+  call<Diagram[]>("GET", `/diagrams${userId === undefined ? "" : `?user_id=${userId}`}`);
+
+/** People found by email or name, for admins only. */
+export const users = (q: string) =>
+  call<User[]>("GET", `/users?q=${encodeURIComponent(q)}`);
 
 /** Put the app on one of the user's diagrams. Which one is free of charge is a
  * billing fact and is never written by switching. */
