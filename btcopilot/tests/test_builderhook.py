@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -44,8 +45,11 @@ def repo(tmp_path):
     return work
 
 
-def install(repo: Path, files: str | None = None):
-    args = ["install"] + (["--files", files] if files else [])
+def install(repo: Path, files: str | None = None, name=None, base=None):
+    args = ["install"]
+    for flag, value in (("--files", files), ("--name", name), ("--base", base)):
+        if value:
+            args += [flag, value]
     result = run(repo, sys.executable, str(HOOK), *args)
     assert result.returncode == 0, result.stderr
 
@@ -90,6 +94,46 @@ def test_stash_entry_refused(repo):
     result = commit(repo, "app/mine.py")
     assert result.returncode == 1
     assert "never git stash" in result.stderr
+
+
+def test_migration_counted_against_the_base_branch(repo):
+    # R-0575
+    write(repo, f"{VERSIONS}/b_one.py")
+    git(repo, "add", ".")
+    git(repo, "commit", "-q", "-m", "base")
+    git(repo, "push", "-q", "origin", "FD-1")
+    git(repo, "checkout", "-q", "-b", "FD-2")
+    install(repo, base="origin/FD-1")
+    write(repo, f"{VERSIONS}/c_two.py")
+    assert commit(repo, str(VERSIONS)).returncode == 0
+
+
+def test_stash_entry_from_before_the_install_ignored(repo):
+    # R-0575
+    write(repo, f"{VERSIONS}/a_first.py", "changed\n")
+    subprocess.run(
+        ["git", "stash"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        env={**os.environ, "GIT_COMMITTER_DATE": "2025-01-01T00:00:00"},
+    )
+    install(repo)
+    write(repo, "app/mine.py")
+    assert commit(repo, "app/mine.py").returncode == 0
+
+
+def test_each_builder_commits_within_its_own_set(repo):
+    # R-0575
+    install(repo, "app/a.py", name="a")
+    install(repo, "app/b.py", name="b")
+    write(repo, "app/a.py")
+    assert commit(repo, "app/a.py").returncode == 0
+    write(repo, "app/b.py")
+    assert commit(repo, "app/b.py").returncode == 0
+    write(repo, "app/a.py", "again\n")
+    write(repo, "app/b.py", "again\n")
+    assert commit(repo, "app").returncode == 1
 
 
 def test_conflict_marker_refused(repo):
