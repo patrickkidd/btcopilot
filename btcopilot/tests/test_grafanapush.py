@@ -66,3 +66,18 @@ def test_the_features_dashboard_carries_a_panel_for_each_loop():
         "Coverage curve, each sitting",
         "Coach turns to 50% coverage, by family",
     } <= titles
+
+
+def test_the_cost_dashboard_carries_the_turn_cost_panels():
+    # R-0595, R-0517
+    dashboard = json.loads((grafanapush.DASHBOARDS / "fd-cost.json").read_text())
+    titles = {panel["title"] for panel in dashboard["panels"]}
+    assert (dashboard["uid"], "id" in dashboard) == ("fd-cost", False)
+    assert {
+        "Cost per coach turn a day, warm and cold, with the 14-day mean",
+        "Dollars by kind, coach calls",
+        "Calls per coach turn a day",
+        "Tokens written on a cold turn's first call, a day",
+        "Share of coach turns that start cold, a day",
+        "Coverage of the basic data over time, by family",
+    } <= titles
