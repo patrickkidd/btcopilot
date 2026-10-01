@@ -129,32 +129,6 @@ test.describe("the message box on a touch screen", () => {
     });
     expect(bottom).toBeGreaterThan(top);
   });
-
-  // R-0368
-  test("with the keyboard up the picture folds and the newest bubble stays above the box", async ({
-    page,
-  }) => {
-    await page.addInitScript(() => localStorage.setItem("fd-home-screen-asked", String(Date.now())));
-    await page.goto("/app/");
-    await expect(page.locator(".bub").first()).toBeVisible();
-    const size = page.viewportSize()!;
-    await page.locator("#composer").click();
-    // a phone keyboard takes the lower half of the visible area
-    await page.setViewportSize({ width: size.width, height: 460 });
-    await expect(page.locator("#chat-screen .pic")).toBeHidden();
-    await expect(page.locator("#speakrow")).toBeHidden();
-    await page.waitForTimeout(400);
-    const [last, chat, bar] = await Promise.all([
-      page.locator(".bub").last().boundingBox(),
-      page.locator("#chat").boundingBox(),
-      page.locator("#inbar").boundingBox(),
-    ]);
-    expect(last!.y + last!.height).toBeLessThanOrEqual(bar!.y + 1);
-    expect(last!.y + last!.height).toBeGreaterThan(chat!.y);
-    await page.setViewportSize(size);
-    await expect(page.locator("#chat-screen .pic")).toBeVisible();
-    await expect(page.locator("#speakrow")).toBeVisible();
-  });
 });
 
 test.describe("the question's colour", () => {

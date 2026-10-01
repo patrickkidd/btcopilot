@@ -1,5 +1,5 @@
 import { DateCertainty } from "./certainty";
-import { closeX, esc } from "./dom";
+import { closeX, esc, still } from "./dom";
 // this line draws pills, dots and the wire
 import {
   CH,
@@ -419,9 +419,6 @@ const DEPTH: Record<Level, number> = {
   [Level.Compare]: 0,
   [Level.About]: 1,
 };
-
-const still = (): boolean =>
-  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
 /** Where the resting line sits once it has been drawn again. */
 enum Park {

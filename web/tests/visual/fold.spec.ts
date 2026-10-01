@@ -1,0 +1,119 @@
+import { expect, test, type Page } from "@playwright/test";
+import { stateFor } from "./setup";
+
+/** The picture folds to a 40-tall strip under the title row while a phone's
+ * keyboard is up or the chat is scrolled up, and opens back to the full picture
+ * when the keyboard goes down, the chat is back on its newest bubble, or the
+ * strip is tapped (Patrick, 2026-10-01, frame A1). The full picture is exactly
+ * what it was before the strip was added. */
+
+test.use({ storageState: stateFor("hostile"), hasTouch: true });
+
+const PIC = "#chat-screen > .pic";
+const MARKS = "#view svg .dot, #view svg .pill";
+
+/** The full picture on release 3.2026.10.1.2, before the strip: its height, how
+ * many dots and pills it draws, and where three of its dots sit. */
+const BEFORE = {
+  phone: { height: 144, marks: 4, dots: [[226.2, 126.5], [297.8, 126.5], [369.5, 126.5]] },
+  desktop: { height: 144, marks: 4, dots: [[535.9, 126.5], [637.2, 126.5], [738.5, 126.5]] },
+};
+
+const open = async (page: Page) => {
+  // a phone that already answered the add-to-home-screen card
+  await page.addInitScript(() => localStorage.setItem("fd-home-screen-asked", String(Date.now())));
+  await page.goto("/app/");
+  await expect(page.locator(".bub").first()).toBeVisible();
+  await page.waitForTimeout(1200);
+};
+
+const height = async (page: Page) => (await page.locator(PIC).boundingBox())!.height;
+
+/** Every dot and pill's middle lies inside the picture's box. */
+const shown = (page: Page) =>
+  page.evaluate(
+    ([pic, marks]) => {
+      const box = document.querySelector(pic)!.getBoundingClientRect();
+      return [...document.querySelectorAll(marks)].filter((mark) => {
+        const b = mark.getBoundingClientRect();
+        const y = b.y + b.height / 2;
+        return y > box.top && y < box.bottom;
+      }).length;
+    },
+    [PIC, MARKS],
+  );
+
+const settle = (page: Page) => page.waitForTimeout(450);
+
+// R-0368, R-0570
+test("with the keyboard down and the chat on its newest bubble the picture is unchanged", async ({ page }) => {
+  await open(page);
+  const before = BEFORE[test.info().project.name as keyof typeof BEFORE];
+  expect(await height(page)).toBe(before.height);
+  const dots = await page.evaluate(
+    (marks) =>
+      [...document.querySelectorAll(marks)]
+        .filter((mark) => mark.tagName === "circle")
+        .map((mark) => {
+          const b = mark.getBoundingClientRect();
+          return [Math.round(b.x * 10) / 10, Math.round(b.y * 10) / 10];
+        }),
+    MARKS,
+  );
+  expect(await page.locator(MARKS).count()).toBe(before.marks);
+  expect(dots.slice(0, 3)).toEqual(before.dots);
+});
+
+// R-0368, R-0570
+test("the keyboard folds the picture to the strip and the newest bubble stays above the box", async ({ page }) => {
+  await open(page);
+  const marks = await page.locator(MARKS).count();
+  const size = page.viewportSize()!;
+  await page.locator("#composer").click();
+  // a phone keyboard takes the lower half of the visible area
+  await page.setViewportSize({ width: size.width, height: 460 });
+  await settle(page);
+  const strip = await height(page);
+  expect(strip).toBeGreaterThanOrEqual(38);
+  expect(strip).toBeLessThanOrEqual(42);
+  expect(await shown(page)).toBe(marks);
+  await expect(page.locator("#speakrow")).toBeHidden();
+  const [last, chat, bar] = await Promise.all([
+    page.locator(".bub").last().boundingBox(),
+    page.locator("#chat").boundingBox(),
+    page.locator("#inbar").boundingBox(),
+  ]);
+  expect(last!.y + last!.height).toBeLessThanOrEqual(bar!.y + 1);
+  expect(last!.y + last!.height).toBeGreaterThan(chat!.y);
+  await page.locator("#composer").evaluate((box) => box.blur());
+  await page.setViewportSize(size);
+  await settle(page);
+  expect(await height(page)).toBe(144);
+  await expect(page.locator("#speakrow")).toBeVisible();
+});
+
+// R-0368, R-0570
+test("scrolling up folds the picture, and back down to the newest bubble opens it", async ({ page }) => {
+  await open(page);
+  const chat = page.locator("#chat");
+  await chat.hover();
+  await page.mouse.wheel(0, -400);
+  await settle(page);
+  expect(await height(page)).toBeLessThanOrEqual(42);
+  await expect(page.locator("#speakrow")).toBeVisible();
+  await page.mouse.wheel(0, 4000);
+  await settle(page);
+  expect(await height(page)).toBe(144);
+});
+
+// R-0368
+test("a tap on the strip opens the full picture", async ({ page }) => {
+  await open(page);
+  await page.locator("#chat").hover();
+  await page.mouse.wheel(0, -400);
+  await settle(page);
+  expect(await height(page)).toBeLessThanOrEqual(42);
+  await page.locator(PIC).click();
+  await settle(page);
+  expect(await height(page)).toBe(144);
+});

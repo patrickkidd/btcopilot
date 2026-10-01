@@ -290,17 +290,19 @@ test.describe("a person with three directed points", () => {
 test.describe("where the picture sits", () => {
   test.use({ storageState: stateFor("hostile") });
 
+  // scrolled up, it folds to the strip in its place (Patrick, 2026-10-01, frame A1)
   // R-0002, R-0106
-  test("above the chat, and it stays put while the chat scrolls", async ({ page }) => {
+  test("above the chat, and it stays there while the chat scrolls", async ({ page }) => {
     await settle(page);
     const before = (await picture(page).boundingBox())!;
     const chat = (await page.locator("#chat").boundingBox())!;
     expect(before.y + before.height).toBeLessThanOrEqual(chat.y + 1);
     await page.locator("#chat").evaluate((n) => (n.scrollTop = 0));
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(450);
     const after = (await picture(page).boundingBox())!;
-    expect(after).toEqual(before);
-    expect(after.y).toBeGreaterThanOrEqual(0);
+    const moved = (await page.locator("#chat").boundingBox())!;
+    expect(after.y).toBe(before.y);
+    expect(after.y + after.height).toBeLessThanOrEqual(moved.y + 1);
   });
 });
 

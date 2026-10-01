@@ -3,7 +3,7 @@ import { askedChip, chipOf, face, LEAD, Lead, pill, token, tokenize } from "./ch
 import { hush, say } from "./speech";
 import { INFO, notesView, type Notes } from "./notes";
 import { html, type Line } from "./tools";
-import { fit, fold } from "./viewport";
+import { AWAY_PX, fit, fold } from "./viewport";
 import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
@@ -156,13 +156,24 @@ export class Chat {
       if (host === this.composer) return this.caret(button);
       this.handlers.onChip(chipOf(button));
     };
-    this.watchScrolling();
     // the chat box stays above the phone's keyboard, however it came up
     fit();
-    fold(this.composer, this.list.closest<HTMLElement>(".screen")!, () => this.toEnd());
+    this.watchScrolling(fold(this.composer, this.list.closest<HTMLElement>(".screen")!, () => this.toEnd()));
     // the thread's box changes size after it is put up — a phone's toolbar
-    // collapsing, the picture taking its height — and stays on its last words
-    new ResizeObserver(() => this.scroll()).observe(this.list);
+    // collapsing, the picture taking its height or folding — and stays on its
+    // last words, or, scrolled up, keeps every bubble where it was over the
+    // message box (R-0570)
+    let high = this.list.clientHeight;
+    new ResizeObserver(() => {
+      const grew = this.list.clientHeight - high;
+      high = this.list.clientHeight;
+      if (this.stuck) return this.scroll();
+      this.pinning = true;
+      this.list.scrollTop -= grew;
+      requestAnimationFrame(() => {
+        this.pinning = false;
+      });
+    }).observe(this.list);
     // The thread's height is only final once the web font has replaced the
     // fallback, so pin it again then: otherwise a thread opened before the font
     // lands sits partway up its own scroll.
@@ -572,11 +583,17 @@ export class Chat {
     return scrollHeight - clientHeight - scrollTop <= Chat.STUCK_PX;
   }
 
-  private watchScrolling(): void {
+  private watchScrolling(folds: (stuck: boolean, away: boolean) => void): void {
+    let was = this.list.scrollTop;
     this.list.addEventListener(
       "scroll",
       () => {
-        if (!this.pinning) this.stuck = this.atBottom();
+        const { scrollTop, scrollHeight, clientHeight } = this.list;
+        const up = scrollTop < was;
+        was = scrollTop;
+        if (this.pinning) return;
+        this.stuck = this.atBottom();
+        folds(this.stuck, up && scrollHeight - clientHeight - scrollTop > AWAY_PX);
       },
       { passive: true },
     );

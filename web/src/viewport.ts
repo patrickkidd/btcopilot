@@ -1,3 +1,4 @@
+import { still } from "./dom";
 import { touch } from "./keyboard";
 
 /** The app fills the part of the screen the reader can see. When a phone's
@@ -28,26 +29,88 @@ export const fit = (): void => {
  * a phone's toolbar collapsing is less than this, a keyboard is more. */
 const KEYBOARD_PX = 120;
 
-/** While a phone's keyboard is up, the picture and the speak replies row step
- * aside so the chat keeps the room above the message box, on its newest words
- * (Patrick, 2026-10-01). The keyboard is up when the message box has the focus
- * on a touch screen and the visible area is shorter than the tallest it has
- * been at this width; a hardware keyboard on a tablet shrinks nothing, so
- * nothing folds. */
-export const fold = (composer: HTMLElement, screen: HTMLElement, toEnd: () => void): void => {
+/** How far up from the newest bubble the reader scrolls before the picture folds. */
+export const AWAY_PX = 48;
+
+/** How long the picture takes to fold or open. */
+const FOLD_MS = 250;
+
+/** The picture folds to a strip under the title row while a phone's keyboard is
+ * up or the reader has scrolled up the chat, and opens again when the keyboard
+ * goes down, the reader is back on the newest bubble, or the strip is tapped
+ * (Patrick, 2026-10-01, frame A1). The keyboard is up when the message box has
+ * the focus on a touch screen and the visible area is shorter than the tallest
+ * it has been at this width; a hardware keyboard on a tablet shrinks nothing.
+ * The speak replies row steps aside only while the keyboard is up. Returns what
+ * the chat calls as it is scrolled: whether it is on its newest bubble, and
+ * whether the reader moved up past the strip's threshold. */
+export const fold = (
+  composer: HTMLElement,
+  screen: HTMLElement,
+  toEnd: () => void,
+): ((stuck: boolean, away: boolean) => void) => {
   const seen = window.visualViewport!;
+  const pic = screen.querySelector<HTMLElement>(":scope > .pic")!;
+  const label = pic.querySelector<HTMLElement>(":scope > .pin-label")!;
+  const view = pic.querySelector<HTMLElement>(":scope > .view")!;
+  // the strip is the picture's own line slid up into a shorter box, so the one
+  // motion is the box's height and how far the line and its name row are slid
+  const look = () => ({
+    height: `${pic.offsetHeight}px`,
+    label: getComputedStyle(label),
+    view: getComputedStyle(view).marginTop,
+  });
   let width = seen.width;
   let tall = seen.height;
+  let typing = false;
+  let scrolled = false;
+  const set = () => {
+    const on = typing || scrolled;
+    if (on === screen.classList.contains("folded")) return;
+    const a = look();
+    const [top, shown] = [a.label.marginTop, a.label.opacity];
+    // turned back halfway, it sets out from where it is
+    for (const one of [pic, label, view]) for (const motion of one.getAnimations()) motion.cancel();
+    screen.classList.toggle("folded", on);
+    if (still()) return pic.classList.remove("folding");
+    const b = look();
+    const timing = { duration: FOLD_MS, easing: "ease" };
+    pic.classList.add("folding");
+    label.animate([{ marginTop: top, opacity: shown }, { marginTop: b.label.marginTop, opacity: b.label.opacity }], timing);
+    view.animate([{ marginTop: a.view }, { marginTop: b.view }], timing);
+    pic.animate([{ height: a.height }, { height: b.height }], timing).onfinish = () =>
+      pic.classList.remove("folding");
+  };
   const check = () => {
     if (seen.scale > 1) return;
     if (seen.width !== width) [width, tall] = [seen.width, seen.height];
     tall = Math.max(tall, seen.height);
     const up = touch() && document.activeElement === composer && seen.height < tall - KEYBOARD_PX;
-    if (up === screen.classList.contains("typing")) return;
+    if (up === typing) return;
+    typing = up;
     screen.classList.toggle("typing", up);
+    set();
     if (up) toEnd();
   };
   seen.addEventListener("resize", check);
   composer.addEventListener("focus", check);
   composer.addEventListener("blur", check);
+  // a tap anywhere on the strip opens the full picture and is nothing else
+  pic.addEventListener(
+    "click",
+    (e) => {
+      if (!screen.classList.contains("folded")) return;
+      e.stopPropagation();
+      e.preventDefault();
+      scrolled = false;
+      composer.blur();
+      set();
+    },
+    true,
+  );
+  return (stuck, away) => {
+    if (stuck) scrolled = false;
+    else if (away) scrolled = true;
+    set();
+  };
 };

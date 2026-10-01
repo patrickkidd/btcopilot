@@ -134,3 +134,7 @@ export function isAdmin(): boolean {
 export function isCoder(): boolean {
   return window.BOOTSTRAP.user?.coder === true;
 }
+
+/** The reader asked the system for less motion. */
+export const still = (): boolean =>
+  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;

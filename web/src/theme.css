@@ -3214,6 +3214,20 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   .pr-narrow { display: none; }
 }
 
+/* The picture folds to a strip under the title row while a phone's keyboard is
+   up or the chat is scrolled up (Patrick, 2026-10-01, frame A1): the same line,
+   40 tall, its wire 16 down and the years under it; the name row above and the
+   row of chips below slide out of sight with it, and the full picture is
+   untouched. */
+.pic.folding { overflow: hidden; }
+.folded > .pic {
+  z-index: 2;
+  height: 40px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 1px 0 var(--line), 0 4px 7px var(--shadow);
+}
+.folded > .pic > .pin-label { margin-top: -28px; opacity: 0; }
+.folded > .pic > .view { margin-top: -31px; }
 /* a phone's keyboard is up: the chat keeps the room above the message box */
-.typing > .pic,
 .typing > .speakrow { display: none; }
