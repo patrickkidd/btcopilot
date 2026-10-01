@@ -61,6 +61,7 @@ class ToolText(enum.StrEnum):
     Parents = "parents"
     Fields = "fields"
     Item = "item"
+    Fact = "fact"
 
 
 class Role(enum.StrEnum):

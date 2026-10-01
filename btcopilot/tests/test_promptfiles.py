@@ -299,3 +299,15 @@ def test_the_sandbox_will_not_start_on_the_open_prompts_unasked(tmp_path):
     assert done.returncode != 0
     assert f"no sops key in {tmp_path / 'keys.txt'}" in done.stderr
     assert "--open-prompts" in done.stderr
+
+
+def test_the_coach_asks_one_item_and_the_question_names_it(public):
+    # R-0006
+    prompt = public.get_agent_prompt(record=RECORD, coverage=COVERAGE)
+    assert (
+        "When the person's thread leaves an opening, ask one item from this list "
+        "this turn."
+    ) in prompt
+    fact = public.tool_meanings()[public.ToolText.Fact]
+    assert "Name it whenever the question asks for one of the required facts." in fact
+    assert "A question that asks for two items is kept as two questions." in fact

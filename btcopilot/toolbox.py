@@ -443,10 +443,7 @@ def schemas(coder: bool = False) -> list[dict]:
                     "fact": {
                         "type": "string",
                         "enum": _values(Fact),
-                        "description": (
-                            "On a fact question about a person or a couple: the "
-                            "item of the family's basic data it asks about."
-                        ),
+                        "description": means[prompts.ToolText.Fact],
                     },
                     "asked_in": ASKED_IN,
                 },
