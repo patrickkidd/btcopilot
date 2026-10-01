@@ -121,7 +121,8 @@ def run(
     said = db.session.get(Statement, statement_id)
     # a resumed turn's record already holds its first attempt's edits, so it
     # has no clean copy to run a shadow on
-    shadows = () if resume else discussion.user.pref(PrefKey.ShadowModels)
+    on = not resume and shadow.expiry(discussion.user, said.created_at, statement_id)
+    shadows = discussion.user.pref(PrefKey.ShadowModels) if on else ()
     before = discussion.diagram.data
     covered = coverage.counts(record_of(discussion))
     turn = CoachTurn(

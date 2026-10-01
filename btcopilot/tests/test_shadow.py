@@ -1,3 +1,5 @@
+import datetime
+
 import pytest
 from mock import Mock, patch
 
@@ -23,6 +25,7 @@ from btcopilot.models import (
     TokenMeter,
 )
 from btcopilot.models.change import Author
+from btcopilot.models.preferences import PrefKey
 from btcopilot.models.diagram import diagram_data
 from btcopilot.routes.diagrams import readable
 from btcopilot.schema import ItemKind
@@ -72,7 +75,7 @@ def coach(monkeypatch, where, model):
 
 
 def shadows(user, *models):
-    user.set_prefs(shadow_models=list(models))
+    shadow.switch(user, list(models), datetime.datetime.utcnow())
     db.session.commit()
 
 
@@ -171,6 +174,28 @@ def test_a_shadow_turn_is_kept_apart_from_the_real_one(
     }
     assert TokenMeter.query.one().input_tokens == 10
     assert test_user.first_name == "Unit"
+
+
+@pytest.mark.parametrize("minutes, ran", [(6, False), (4, True)])
+def test_a_turn_after_five_quiet_minutes_runs_no_shadow_and_turns_them_off(
+    web, token, test_user, monkeypatch, minutes, ran
+):
+    # R-0637
+    coach(
+        monkeypatch,
+        "btcopilot.turns.model_for",
+        Model(said("Tell me about Nell."), said("How much older?")),
+    )
+    coach(monkeypatch, "btcopilot.shadow.model_for", Model(said("Older by how much?")))
+    first = post(web, token, "My sister is Nell.")
+    earlier = datetime.datetime.utcnow() - datetime.timedelta(minutes=minutes)
+    db.session.get(Statement, first["statement_id"]).created_at = earlier
+    shadow.switch(test_user, ["sonnet"], earlier - datetime.timedelta(minutes=5))
+    db.session.commit()
+    with patch("btcopilot.shadow.enqueue", shadow.run):
+        post(web, token, "She is older.")
+    assert ShadowTurn.query.count() == ran
+    assert bool(test_user.pref(PrefKey.ShadowModels)) == ran
 
 
 def test_a_shadow_turn_reads_the_words_of_every_session_as_the_real_one_did(

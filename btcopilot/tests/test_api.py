@@ -362,6 +362,8 @@ def test_preferences_defaults(web, test_user):
         PrefKey.LineHint.value: True,
         PrefKey.BugReports.value: BugReports.Ask.value,
         PrefKey.ShadowModels.value: [],
+        PrefKey.ShadowSince.value: None,
+        "shadow_expires_at": None,
         "first_name": test_user.first_name,
         "last_name": test_user.last_name,
         "birthdate": None,

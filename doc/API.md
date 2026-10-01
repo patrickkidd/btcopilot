@@ -57,6 +57,14 @@ in …" reads. Events never traced are absent.
 `GET /preferences`, `PATCH /preferences` — one object: `speak`, `proactive`,
 `mode`, `theme`, `bug_reports` (`ask` or `always`), `first_name`, `last_name`,
 `birthdate`. PATCH takes any subset; an unknown key or a bad value is a 400.
+`shadow_models` (the Conversation Feedback switch, a list of names from
+`shadow_candidates`; empty is off; turning it on is auditors only, 403
+otherwise) turns itself off 5 minutes after the later of the person's last
+message and the switch going on [Oracle: R-0637]. `shadow_since` (UTC ISO time
+it went on, null when off) is set by the server and is a 400 in a PATCH;
+`shadow_expires_at` (UTC ISO time it turns off, null when off) is read-only.
+GET, PATCH and every coach turn turn an expired switch off and store that; a
+turn sent more than 5 minutes after both runs no shadow replies.
 
 ## Reports
 

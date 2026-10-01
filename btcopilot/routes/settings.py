@@ -25,7 +25,9 @@ class SignInMethod(enum.StrEnum):
 
 
 def _preferences(user) -> dict:
+    expires = shadow.expiry(user, datetime.datetime.utcnow())
     payload = {key.value: user.pref(key) for key in PrefKey}
+    payload["shadow_expires_at"] = expires and expires.isoformat()
     payload["first_name"] = user.first_name
     payload["last_name"] = user.last_name
     payload["birthdate"] = user.birthdate.isoformat() if user.birthdate else None
@@ -48,7 +50,7 @@ def preferences():
 def set_preferences():
     user = auth.current_user()
     body = request.get_json()
-    known = {key.value for key in PrefKey} | set(PROFILE_FIELDS)
+    known = {key.value for key in PrefKey} - {PrefKey.ShadowSince} | set(PROFILE_FIELDS)
     unknown = set(body) - known
     if unknown:
         raise ValueError(f"Unknown preference(s): {', '.join(sorted(unknown))}")
@@ -56,6 +58,10 @@ def set_preferences():
     if body.get(PrefKey.ShadowModels) and not user.has_role(btcopilot.ROLE_AUDITOR):
         abort(403)
 
+    now = datetime.datetime.utcnow()
+    shadow.expiry(user, now)
+    if PrefKey.ShadowModels in body:
+        shadow.switch(user, body.pop(PrefKey.ShadowModels), now)
     user.set_prefs(**{k: v for k, v in body.items() if k not in PROFILE_FIELDS})
     if "first_name" in body:
         user.first_name = body["first_name"]

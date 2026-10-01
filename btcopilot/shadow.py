@@ -35,6 +35,7 @@ from btcopilot.models import (
     Statement,
     User,
 )
+from btcopilot.models.preferences import PrefKey
 from btcopilot.turnlog import TurnEventKind
 
 _log = logging.getLogger(__name__)
@@ -50,6 +51,50 @@ SCRATCH_ROWS = (AccessRight, Change, Interaction, Observation, ProductEvent)
 # to cost when none ran in that time.
 RECENT = datetime.timedelta(days=30)
 PER_RUN_GUESS = Decimal("0.19")
+
+# Conversation Feedback turns itself off this long after the later of the
+# person's last message and the switch going on, as the prompt cache does [R-0637].
+IDLE = datetime.timedelta(minutes=5)
+
+
+def switch(user: User, models: list, now: datetime.datetime) -> None:
+    if not models:
+        user.set_prefs(shadow_models=[], shadow_since=None)
+    elif user.pref(PrefKey.ShadowModels):
+        user.set_prefs(shadow_models=models)
+    else:
+        user.set_prefs(shadow_models=models, shadow_since=now.isoformat())
+
+
+def last_said(user: User, before: int | None = None) -> datetime.datetime | None:
+    query = (
+        select(func.max(Statement.created_at))
+        .join(Discussion, Statement.speaker_id == Discussion.chat_user_speaker_id)
+        .where(Discussion.user_id == user.id)
+    )
+    if before is not None:
+        query = query.where(Statement.id < before)
+    return db.session.scalar(query)
+
+
+def expiry(
+    user: User, now: datetime.datetime, before: int | None = None
+) -> datetime.datetime | None:
+    """When Conversation Feedback turns itself off, None once it is off; past
+    that time it is turned off here. `before` counts only the messages sent
+    before that statement."""
+    if not user.pref(PrefKey.ShadowModels):
+        return None
+    times = [last_said(user, before)]
+    if since := user.pref(PrefKey.ShadowSince):
+        times.append(datetime.datetime.fromisoformat(since))
+    started = max(filter(None, times), default=None)
+    ends = started + IDLE if started else now
+    if ends > now:
+        return ends
+    switch(user, [], now)
+    db.session.commit()
+    return None
 
 
 def start(turn: CoachTurn, statement_id: int, model: str, before: bytes | None):

@@ -1,10 +1,13 @@
+import datetime
 from decimal import Decimal
 
 import pytest
 
 import btcopilot
+from btcopilot import shadow
+from btcopilot.discussions import open_session
 from btcopilot.extensions import db
-from btcopilot.models import ModelCall, Purpose
+from btcopilot.models import ModelCall, Purpose, Statement
 from btcopilot.models.preferences import SHADOW_CANDIDATES, PrefKey
 from btcopilot.tests.conftest import csrf_token
 
@@ -65,3 +68,30 @@ def test_an_auditor_turns_shadows_on_and_only_an_admin_sees_their_cost(
     db.session.commit()
     body = web.get("/app/preferences").get_json()
     assert body["shadow_cost"] == {"per_turn_usd": 0.3, "month_usd": 0.6}
+
+
+@pytest.mark.parametrize("minutes, on", [(6, False), (4, True)])
+def test_shadows_turn_off_five_minutes_after_the_last_message(
+    web, test_user, minutes, on
+):
+    # R-0637
+    test_user.roles = btcopilot.ROLE_AUDITOR
+    now = datetime.datetime.utcnow()
+    shadow.switch(test_user, ["sonnet"], now - datetime.timedelta(minutes=10))
+    discussion = open_session(test_user, test_user.free_diagram)
+    said = now - datetime.timedelta(minutes=minutes)
+    db.session.add(
+        Statement(
+            discussion_id=discussion.id,
+            speaker_id=discussion.chat_user_speaker_id,
+            text="She is older.",
+            created_at=said,
+        )
+    )
+    db.session.commit()
+    body = web.get("/app/preferences").get_json()
+    assert body[PrefKey.ShadowModels.value] == (["sonnet"] if on else [])
+    assert body["shadow_expires_at"] == (
+        (said + shadow.IDLE).isoformat() if on else None
+    )
+    assert bool(test_user.pref(PrefKey.ShadowModels)) == on
