@@ -557,20 +557,20 @@ test.describe("the coding and quality sections", () => {
   };
   test.afterAll(() => roles("subscriber"));
 
-  // R-0259, R-0265, R-0599
+  // R-0259, R-0265, R-0599, R-0631
   test("a subscriber sees neither, an auditor sees Coding, and an admin sees Coding with the meeting and Quality", async ({
     page,
   }) => {
     await as(page);
-    expect(await heads(page)).toEqual([]);
+    expect(await heads(page)).toEqual(["Data"]);
 
     await as(page, "auditor");
-    expect(await heads(page)).toEqual(["Coding"]);
+    expect(await heads(page)).toEqual(["Data", "Coding"]);
     await expect(row(page, "Your coding task")).toHaveCount(1);
     await expect(row(page, "Next meeting")).toHaveCount(0);
 
     await as(page, "admin");
-    expect(await heads(page)).toEqual(["Coding", "Quality"]);
+    expect(await heads(page)).toEqual(["Data", "Coding", "Quality"]);
     await expect(row(page, "Next meeting")).toHaveCount(1);
     await expect(row(page, "Better replies")).toHaveCount(1);
     await expect(page.locator(".sn-pane.in .sn-hint")).toHaveText(
