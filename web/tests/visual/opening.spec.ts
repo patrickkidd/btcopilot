@@ -312,7 +312,7 @@ test.describe("an admin's search results", () => {
     await expect(page.locator(".sn-theirs .sn-row", { hasText: "Their family" })).toBeVisible();
   };
 
-  // R-0243, R-0630
+  // R-0243, R-0630, R-0632
   test("carry the tick only on the diagram open, whichever diagram that is", async ({ page }) => {
     const theirs: Stand = { id: 987005, name: "Their family", thread: [line(987501, "Said in their family.")], access: "admin-view" };
     await stand(page, theirs);
@@ -332,10 +332,11 @@ test.describe("an admin's search results", () => {
     await openDiagrams(page);
     await find(page);
     expect(await ticked(page, ".sn-theirs")).toEqual(["Their family"]);
-    // the open one does nothing when tapped
+    // the open one returns to its chat
     await page.locator(".sn-theirs .sn-row", { hasText: "Their family" }).click();
-    await expect(page.locator(".sn-theirs")).toBeVisible();
-    await page.locator("#settings-back").click();
+    await gone(page);
+    await expect(page.locator("#chat")).toContainText("Said in their family.");
+    await openDiagrams(page);
     await diagramsPage(page).locator('input[aria-label="Find a person"]').fill("");
     await diagramsPage(page).locator(".sn-row", { hasText: OWN }).click();
     await gone(page);
