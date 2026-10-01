@@ -528,7 +528,8 @@ async function openLine(statementId: number): Promise<void> {
  * and the agenda itself (R-0258, R-0267). Nobody but Patrick sees these. */
 
 /** Selecting a cut happens in the chat itself, on someone else's diagram
- * (R-0629); placing it returns to Next meeting. */
+ * (R-0629) or, from Next meeting's button, the admin's own (R-0632); placing
+ * it returns to Next meeting. */
 const selecting = new CutSelect($("chat"), $("cut-strip"), $("cut-say"), $("cut-bar"), {
   onSelecting: (on) => {
     $("inbar").hidden = on;
@@ -680,7 +681,7 @@ async function openDiagram(id: number): Promise<void> {
   const armed = arming;
   arming = null;
   if (!(await store.open(id))) return;
-  if (armed && looking()) await selecting.start(id, armed.day);
+  if (armed) await selecting.start(id, armed.day);
   await reattach();
 }
 

@@ -829,9 +829,12 @@ export class Settings {
     );
     row.append(main, el("span", "sn-tick"));
     row.addEventListener("click", () => {
-      if (diagram.id === store.current().diagram?.id) return;
-      tap(Feature.FamilySwitch);
-      void this.switchTo(diagram);
+      if (diagram.id !== store.current().diagram?.id) {
+        tap(Feature.FamilySwitch);
+        return void this.switchTo(diagram);
+      }
+      this.close();
+      void this.handlers.onOpen(diagram.id);
     });
     return row;
   }

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { need, sandboxOnly, walker } from "./sandbox";
-import { backToMine, toTheirDiagram, username } from "./setup";
+import { backToMine, placeCut, toTheirDiagram, username } from "./setup";
 
 // Patrick selecting a cut inside the chat of someone else's diagram: Next
 // meeting's button lands on the Diagrams page, the diagram opens read-only
@@ -80,6 +80,40 @@ test.describe(() => {
     await page.locator(".ag.cf-sheet button", { hasText: "Take it off" }).click();
     await expect(row).toHaveCount(0);
     await backToMine(page);
+    await quiet();
+  });
+
+  // R-0632
+  test("a cut selected on the admin's own diagram from Next meeting", async ({ page }, info) => {
+    const { check, gates, quiet } = walker(page, info);
+
+    await page.goto(need("table"), { waitUntil: "networkidle" });
+    await page.locator("#account").click();
+    await page.locator(".sn-pane.in .sn-row", { hasText: "Next meeting" }).click();
+    await page.locator(".tb-add").click();
+    const pane = page.locator('.sn-pane[data-page="diagrams"]');
+    await pane.locator(".sn-row[data-diagram]").first().click();
+
+    await expect(page.locator("#viewing")).toBeHidden();
+    await expect(page.locator("#cut-say")).toHaveText("Selecting a cut · tap the first line, then the last");
+    await expect(page.locator("#inbar")).toBeHidden();
+    await gates("selecting on the admin's own diagram");
+    if (info.project.name === "sandbox-phone" && process.env.OWN_CUT_SHOT)
+      await page.screenshot({ path: process.env.OWN_CUT_SHOT });
+
+    const [stored] = await Promise.all([
+      page.waitForResponse((r) => r.request().method() === "POST" && /\/cuts$/.test(r.url())),
+      placeCut(page),
+    ]);
+    check(stored.status() === 201, `the cut was stored (${stored.status()})`);
+    const cut = await stored.json();
+    const row = page.locator(`.tb-cut[data-cut="${cut.id}"]`);
+    await expect(row).toContainText(cut.owner);
+    await expect(page.locator("#inbar")).toBeVisible();
+
+    await row.locator(".pl-btn").click();
+    await page.locator(".ag.cf-sheet button", { hasText: "Take it off" }).click();
+    await expect(row).toHaveCount(0);
     await quiet();
   });
 });
