@@ -57,7 +57,7 @@ def test_notes_fold_into_the_existing_event(subscriber):
 
 
 def test_notes_are_read_by_tool_not_shown_in_the_record(subscriber):
-    # R-0446
+    # R-0446, R-0649
     diagram = _diagram(subscriber.user)
     first = _event(
         diagram, kind="noted", date="2019-03-01", person=1, description="Moved",
@@ -84,7 +84,7 @@ def test_notes_are_read_by_tool_not_shown_in_the_record(subscriber):
 
 
 def test_a_wrong_field_is_cleared_and_the_rest_stays(subscriber):
-    # R-0533
+    # R-0533, R-0649
     diagram = _diagram(subscriber.user)
     added = _event(
         diagram, kind="shift", date="2019-03-01", person=1, description="Stopped calling",

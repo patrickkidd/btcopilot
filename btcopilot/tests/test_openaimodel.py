@@ -135,7 +135,7 @@ def sol(monkeypatch):
 
 
 def test_a_whole_tool_using_turn_runs_on_gpt(discussion, sol):
-    # R-0598
+    # R-0647
     reply = CoachTurn(
         discussion,
         "My sister is Nell.",
@@ -166,7 +166,7 @@ def test_a_whole_tool_using_turn_runs_on_gpt(discussion, sol):
 def test_the_second_call_sends_back_the_reasoning_the_call_and_its_answer(
     discussion, sol
 ):
-    # R-0598
+    # R-0647
     CoachTurn(
         discussion,
         "My sister is Nell.",
@@ -189,7 +189,7 @@ def test_the_second_call_sends_back_the_reasoning_the_call_and_its_answer(
 
 
 def test_the_tool_schemas_go_over_unchanged():
-    # R-0598
+    # R-0647
     schema = {"type": "object", "properties": {"name": {"type": "string"}}}
     sent = functions([{"name": "edit", "description": "Edit.", "input_schema": schema}])
     assert sent == [
@@ -204,7 +204,7 @@ def test_the_tool_schemas_go_over_unchanged():
 
 
 def test_the_alias_resolves_and_prices(anthropic_env):  # noqa: F811
-    # R-0598
+    # R-0647
     model = model_for("gpt")
     assert isinstance(model, OpenAIModel)
     assert model.model == SOL
@@ -216,7 +216,7 @@ def test_the_alias_resolves_and_prices(anthropic_env):  # noqa: F811
 
 
 def test_a_local_url_runs_the_gpt_alias_on_the_local_model(anthropic_env):  # noqa: F811
-    # R-0598
+    # R-0647
     anthropic_env.setenv(llmutil.LOCAL_URL, "http://127.0.0.1:11434")
     anthropic_env.setenv(llmutil.LOCAL_MODEL, "qwen3:8b")
     model = model_for("gpt")
@@ -225,7 +225,7 @@ def test_a_local_url_runs_the_gpt_alias_on_the_local_model(anthropic_env):  # no
 
 
 def test_a_content_filter_stop_raises_refusal(monkeypatch):
-    # R-0598
+    # R-0647
     client = Client([done(incomplete=IncompleteDetails(reason="content_filter"))])
     monkeypatch.setattr("btcopilot.openaimodel.openai_client", lambda timeout: client)
     with pytest.raises(Refusal) as refused:

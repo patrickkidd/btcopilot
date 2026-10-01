@@ -712,7 +712,7 @@ wording, and those go to the ruled end-of-batch API run. The efficiency skill li
 
 **Deployed earlier 2026-09-28: commit a8b2245b, image 3.2026.9.28.9+ga8b2245, database still at
 1b00000000b4 (run 36462083019).** The database revision is unchanged: this PR's migrations are
-squashed into one [R-0584]. It carries:
+squashed into one [R-0622]. It carries:
 - The play-by-play drawer's close button is the app's own ×, the same one the meeting card uses,
   and the drawer opens with its order path row, point and snapshot line in place.
 - An event's words in the drawer stay inside the family's side margin, none running to the

@@ -361,7 +361,7 @@ def held(model: Model) -> str:
 
 
 def test_a_plateau_note_lapses_after_five_turns(web, token, family, monkeypatch):
-    # R-0006, R-0520
+    # R-0006, R-0520, R-0648
     seen = []
     for _ in range(coverage.PLATEAU_TURNS + 2):
         model = coach(monkeypatch, Model(plateaued(True), said("Go on.")))
@@ -375,7 +375,7 @@ def test_a_plateau_note_lapses_after_five_turns(web, token, family, monkeypatch)
 
 
 def test_a_new_person_ends_the_plateau(web, token, family, monkeypatch):
-    # R-0006, R-0520
+    # R-0006, R-0520, R-0648
     coach(monkeypatch, Model(plateaued(True), said("Go on.")))
     post(web, token, "Go on.")
     model = coach(
