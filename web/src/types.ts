@@ -598,6 +598,9 @@ export interface Preferences {
   shadow_models: string[];
   /** Every model the switch turns on. */
   shadow_candidates: string[];
+  /** When the shadows turn themselves off unless a message comes first; null
+   * while they are off (R-0637). */
+  shadow_expires_at: string | null;
   /** What the shadows cost, sent to admins only (R-0637). */
   shadow_cost?: { per_turn_usd: number; month_usd: number };
 }
