@@ -25,7 +25,6 @@ def test_an_address_reads_back_as_its_place_and_values():
         Place.MeetingCut,
         ["2026-10-06", "12"],
     )
-    assert place.parse("/app/account/meeting/sessions") == (Place.Pick, [])
     assert place.parse("/app/event/new") == (Place.NewEvent, [])
     assert place.parse("/app/event/5/edit") == (Place.EventEditor, ["5"])
     assert place.parse("/app/nowhere") is None

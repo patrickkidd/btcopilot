@@ -26,12 +26,10 @@ class Place(enum.StrEnum):
     Plan = "account/plan"
     Task = "account/coding-task"
     Agenda = "account/meeting"
-    Pick = "account/meeting/sessions"
     MeetingDay = "account/meeting/:day"
     MeetingCut = "account/meeting/:day/:n"
     Pairs = "account/better-replies"
     Literature = "account/literature-review"
-    Cut = "cut/:n"
     Cluster = "cluster/:key"
     NewEvent = "event/new"
     Event = "event/:n"
@@ -56,11 +54,9 @@ CODER = frozenset(
     {
         Place.Task,
         Place.Agenda,
-        Place.Pick,
         Place.MeetingDay,
         Place.MeetingCut,
         Place.Literature,
-        Place.Cut,
         Place.Coding,
         Place.Vote,
         Place.Meeting,
@@ -92,12 +88,10 @@ WORDS = {
     Place.Plan: "your plan",
     Place.Task: "your coding task",
     Place.Agenda: "the next meeting",
-    Place.Pick: "the sessions to put on the agenda",
     Place.MeetingDay: "the meeting",
     Place.MeetingCut: "the meeting",
     Place.Pairs: "better replies",
     Place.Literature: "the Auditor's Coding Guide",
-    Place.Cut: "the cut",
     Place.NewEvent: "a new event",
     Place.NewPerson: "a new person",
     Place.Events: "the events",
