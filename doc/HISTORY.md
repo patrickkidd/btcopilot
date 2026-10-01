@@ -2027,3 +2027,8 @@ The box's alembic pointer was re-stamped from 1b00000000c1 to 1b00000000c0, so t
 ## 2026-10-01 — release 3.2026.10.1.9
 
 Released from FD-366: cut selection in chat, Diagrams page drill-down, agenda confirmation panel, Settings Data header, open-diagram rebuild, folded migration, Next Meeting date field, cost tiles. Rulings R-0619 to R-0633 queued.
+
+## 2026-10-01 — release 3.2026.10.1.10
+
+Released from FD-366: fix for the coach's turn crashing after a death recorded with no cause, replay start-turn option, replay passes kept when a run stops early.
+PR #145 ready for review with CI green; follow-on work goes to FD-368.
