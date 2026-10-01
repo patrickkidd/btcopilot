@@ -60,23 +60,24 @@ const VOTED = [
 /** The thread as a reload finds it after a vote: the coach reply before the
  * newest message was made with two shadow replies, voted on. Answers how
  * often its replies were asked for. */
-async function voted(page: Page): Promise<() => number> {
+async function voted(page: Page, picks = VOTED, newest = false): Promise<() => number> {
   let asked = 0;
   await page.route(/\/review\/picks\?turn=t9$/, (route) => {
     asked += 1;
-    return route.fulfill({ json: { replies: REPLIES, real_key: "b", picks: VOTED } });
+    return route.fulfill({ json: { replies: REPLIES, real_key: "b", picks } });
   });
-  await page.addInitScript(() => {
+  await page.addInitScript((newest) => {
     let boot: { statements: { id: number; role: string; turn_id: string | null; feedback: number }[] };
     Object.defineProperty(window, "BOOTSTRAP", {
       get: () => boot,
       set: (value) => {
-        const past = value.statements.slice(0, -1).filter((s: { role: string }) => s.role === "coach").at(-1);
+        const past = value.statements.slice(0, newest ? undefined : -1).filter((s: { role: string }) => s.role === "coach").at(-1);
+        if (newest) value.statements.length = value.statements.indexOf(past) + 1;
         Object.assign(past, { turn_id: "t9", feedback: 2 });
         boot = value;
       },
     });
-  });
+  }, newest);
   return () => asked;
 }
 
@@ -169,6 +170,25 @@ test.describe("a thread read again", () => {
     await expect(bubble.locator(".vt-voted")).toHaveText(["✓ acceptable · ★ best", "✓ acceptable", "not acceptable"]);
     await expect(bubble.locator(".vt-said")).toHaveText("Your note: Third asks two things at once");
     expect(asked()).toBe(1);
+  });
+
+  // R-0636
+  test("after a reload with the vote open the coach's own text is hidden and each reply shows once", async ({
+    page,
+  }) => {
+    const open = VOTED.map((p) => ({ ...p, choice: null }));
+    await voted(page, open as typeof VOTED, true);
+    await page.goto("/app/");
+    const bubble = page.locator(".bub.coach.fb").last();
+    await expect(bubble.locator(".vt-reply")).toHaveCount(3);
+    await expect(bubble.locator(":scope > .words")).toBeHidden();
+    const seen = await bubble.innerText();
+    for (const reply of REPLIES) expect(seen.split(reply.text.slice(0, 30)).length - 1).toBe(1);
+    const shown = await bubble.evaluate((e) => {
+      const own = [...e.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE && n.textContent!.trim());
+      return own.length;
+    });
+    expect(shown).toBe(0);
   });
 
   // R-0636

@@ -244,12 +244,12 @@ export class Chat {
   private written(pieces: Piece[], statementId: number | null): string {
     const { words, ask, offers, tail } = layout(pieces);
     return (
-      this.render(words) +
+      `<span class="words">${this.render(words)}</span>` +
       (ask ? `<div class="ask">${asked(ask, statementId)}</div>` : "") +
       (offers.length
         ? `<div class="offer">${offers.map((c) => this.pill(c)).join("")}</div>`
         : "") +
-      this.render(tail)
+      (tail.length ? `<span class="words">${this.render(tail)}</span>` : "")
     );
   }
 
