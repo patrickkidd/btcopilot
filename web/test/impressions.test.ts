@@ -53,7 +53,7 @@ const FAMILY = [
 const words = (html: string) => html.replace(/<[^>]+>/g, "\n").split("\n").filter(Boolean);
 
 describe("impressions on the coach's tab", () => {
-  // R-0006, R-0485
+  // R-0006, R-0618
   it("the tab is Questions, and impressions come after both kinds of question", () => {
     expect(readFileSync("index.html", "utf8")).toMatch(/id="tab-questions"[^>]*>Questions</);
     const said = words(questionsHtml(FAMILY, NOW));

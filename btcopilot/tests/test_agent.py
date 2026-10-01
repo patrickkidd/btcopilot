@@ -916,7 +916,7 @@ def test_the_coach_is_told_to_end_its_reply_with_a_question():
 
 
 def test_the_coach_is_told_how_to_raise_an_impression():
-    # R-0482, R-0485
+    # R-0482, R-0618
     prompt = " ".join(get_agent_prompt().split())
     assert "Raise it with `add_impression` before you say it" in prompt
     assert "an impression you have not raised is one you do not say" in prompt
@@ -937,7 +937,7 @@ def test_the_coach_is_told_to_give_every_date_its_certainty():
 
 
 def test_the_coach_is_told_how_to_keep_its_questions():
-    # R-0482, R-0485
+    # R-0482, R-0618
     prompt = " ".join(get_agent_prompt().split())
     assert "people usually require questions to stimulate their thinking" in prompt
     assert "Family Evaluation, ch. 10" in prompt

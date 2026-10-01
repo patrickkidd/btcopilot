@@ -45,7 +45,7 @@ const shown = (page: Page) =>
 
 const settle = (page: Page) => page.waitForTimeout(450);
 
-// R-0368, R-0570
+// R-0610, R-0570
 test("with the keyboard down and the chat on its newest bubble the picture is unchanged", async ({ page }) => {
   await open(page);
   const before = BEFORE[test.info().project.name as keyof typeof BEFORE];
@@ -64,7 +64,7 @@ test("with the keyboard down and the chat on its newest bubble the picture is un
   expect(dots.slice(0, 3)).toEqual(before.dots);
 });
 
-// R-0368, R-0570
+// R-0610, R-0570
 test("the keyboard folds the picture to the strip and the newest bubble stays above the box", async ({ page }) => {
   await open(page);
   const marks = await page.locator(MARKS).count();
@@ -92,7 +92,7 @@ test("the keyboard folds the picture to the strip and the newest bubble stays ab
   await expect(page.locator("#speakrow")).toBeVisible();
 });
 
-// R-0368, R-0570
+// R-0610, R-0570
 test("scrolling up folds the picture, and back down to the newest bubble opens it", async ({ page }) => {
   await open(page);
   const chat = page.locator("#chat");
@@ -106,7 +106,7 @@ test("scrolling up folds the picture, and back down to the newest bubble opens i
   expect(await height(page)).toBe(144);
 });
 
-// R-0368
+// R-0610
 test("a tap on the strip opens the full picture", async ({ page }) => {
   await open(page);
   await page.locator("#chat").hover();

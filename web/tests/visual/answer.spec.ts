@@ -213,7 +213,7 @@ test.describe("the chat box once a chip is in it", () => {
     expect(last!.y + last!.height).toBeLessThanOrEqual(thread!.y + thread!.height + 1);
   });
 
-  // R-0591, R-0368
+  // R-0591, R-0610
   test("stays in view above the keyboard when it opens from a tap in the chat box", async ({ page }) => {
     await phone(page);
     await settle(page);

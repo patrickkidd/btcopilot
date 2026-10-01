@@ -3,7 +3,7 @@ import { stateFor } from "./setup";
 
 test.use({ storageState: stateFor("moves") });
 
-// R-0368
+// R-0610
 test("Shift-Return past the box's height keeps the new line in view", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("fd-home-screen-asked", String(Date.now())));
   await page.goto("/app/");
