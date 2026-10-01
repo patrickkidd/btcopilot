@@ -128,3 +128,18 @@ Saving normalizes rather than refusing: a non-shift kind clears the four shift
 values, targets need a relationship kind, triangles survive only for inside and
 outside. So a stored event can never break the editor's rules, and switching a
 shift to a death clears its shift values.
+
+## Review picks (`/review`, the model_picks table)
+
+| | |
+|---|---|
+| `GET /review/pairs` | admins only: every pick not yet made, each `{id, source, context, left, right}`; a pair seen for the first time gets its pick row and its random side order here |
+| `GET /review/picks` | admins only: each model's `{model, won, lost, tied}` over the picks made |
+| `GET /review/picks?turn=<turn id>` | the owner of that turn's session, admin or auditor (403 otherwise): `{replies: [{key, text}], real_key, picks: [{id, left_key, right_key}]}`, the real reply and each finished shadow reply keyed `a`, `b`, `c` in a random order, and one pick per shadow against the real reply, made here if missing as `GET /review/pairs` makes it; a shadow with an error is left out and no model is named |
+| `PUT /review/picks/<id>` | `{choice, note, left_acceptable, right_acceptable, source}`; an admin, or an auditor on their own session's pick; answers the pick with both model names |
+
+`choice` is `left`, `right` or `tie`; the client sends it already resolved. A
+reply marked unacceptable never wins; with only one acceptable, that one wins;
+with neither, it is a tie; any other `choice` is a 400. The two flags are
+optional, true or false. `source` is optional and may only be `chat`, which a
+pick voted in the chat sets. `note` is optional, at most 200 characters.

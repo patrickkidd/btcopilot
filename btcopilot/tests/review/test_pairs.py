@@ -15,7 +15,7 @@ from btcopilot.models import (
     SpeakerType,
     Statement,
 )
-from btcopilot.review.models import Pick, PickChoice
+from btcopilot.review.models import Pick, PickChoice, PickSource
 from btcopilot.review.models.pick import NOTE_CAP
 
 REAL = "claude-opus-5-5"
@@ -221,3 +221,76 @@ def test_only_patrick_sees_the_pairs(coder, test_user, case):
     shadowed(test_user, case)
     assert coder.get("/review/pairs").status_code in (302, 403)
     assert coder.get("/review/picks").status_code in (302, 403)
+
+
+def turn_of(user, diagram) -> str:
+    discussion = chat(user, diagram, ["My aunt moved away.", "When was that?"])
+    shadow(user, diagram, discussion)
+    shadow(user, diagram, discussion, text="Which spring?", model="sonnet")
+    shadow(user, diagram, discussion, model="haiku").error = "overloaded"
+    db.session.commit()
+    return statements(discussion)[0].turn_id
+
+
+def test_a_turn_serves_its_replies_blind_in_a_random_order(patrick, test_user, case):
+    # R-0636
+    turn = turn_of(test_user, case)
+    served = []
+    for seed in range(6):
+        random.seed(seed)
+        served.append(patrick.get(f"/review/picks?turn={turn}").json)
+    first = served[0]
+    assert {reply["text"] for reply in first["replies"]} == {
+        "When was that?",
+        REPLY,
+        "Which spring?",
+    }
+    assert {reply["key"] for reply in first["replies"]} == {"a", "b", "c"}
+    assert len({body["real_key"] for body in served}) > 1
+    assert not any(model in json.dumps(served) for model in (REAL, SHADOW, "sonnet"))
+    assert Pick.query.count() == 2
+    assert {pick["id"] for pick in first["picks"]} == {pick.id for pick in Pick.query}
+    for pick in first["picks"]:
+        assert first["real_key"] in (pick["left_key"], pick["right_key"])
+
+
+def test_a_chat_pick_keeps_whether_each_reply_was_acceptable(
+    patrick, test_user, case
+):
+    # R-0640
+    pick = patrick.get(f"/review/picks?turn={turn_of(test_user, case)}").json["picks"][0]
+    response = patrick.put(
+        f"/review/picks/{pick['id']}",
+        json={
+            "choice": PickChoice.Right,
+            "left_acceptable": False,
+            "right_acceptable": True,
+            "source": PickSource.Chat,
+        },
+    )
+    assert response.status_code == 200
+    stored = db.session.get(Pick, pick["id"])
+    assert (stored.source, stored.choice) == (PickSource.Chat, PickChoice.Right)
+    assert (stored.left_acceptable, stored.right_acceptable) == (False, True)
+
+
+def test_an_unacceptable_reply_cannot_win(patrick, test_user, case):
+    # R-0640
+    pick = patrick.get(f"/review/picks?turn={turn_of(test_user, case)}").json["picks"][0]
+    response = patrick.put(
+        f"/review/picks/{pick['id']}",
+        json={
+            "choice": PickChoice.Left,
+            "left_acceptable": False,
+            "right_acceptable": False,
+            "source": PickSource.Chat,
+        },
+    )
+    assert response.status_code == 400
+    assert db.session.get(Pick, pick["id"]).choice is None
+
+
+def test_a_turn_is_voted_only_by_a_coder(subscriber, test_user_2, case):
+    # R-0636
+    turn = turn_of(test_user_2, case)
+    assert subscriber.get(f"/review/picks?turn={turn}").status_code in (302, 403)
