@@ -47,7 +47,7 @@
         "type": "grafana-postgresql-datasource",
         "uid": "ffz1wy7unkdfke"
       },
-      "description": "The most recent day with at least one real coach turn: dollars of coach calls divided by distinct coach turns that day, warm and cold together. The day is shown beside it. Real families only: scratch records and the claude-test account are left out.",
+      "description": "The most recent day with at least one real coach turn: dollars of coach calls divided by distinct coach turns that day, warm and cold together. The day is shown beside it. Real families only: scratch records and the claude-test account are left out. Shows the most recent day with turns.",
       "fieldConfig": {
         "defaults": {
           "unit": "currencyUSD",
@@ -65,20 +65,7 @@
             ]
           }
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Day"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "none"
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 5,
@@ -92,16 +79,15 @@
           "calcs": [
             "lastNotNull"
           ],
-          "fields": "/.*/",
+          "fields": "",
           "values": false
         },
         "colorMode": "none",
         "graphMode": "none",
-        "textMode": "value_and_name",
-        "justifyMode": "auto",
+        "textMode": "value",
+        "justifyMode": "center",
         "text": {
-          "valueSize": 64,
-          "titleSize": 14
+          "valueSize": 64
         }
       },
       "targets": [
@@ -114,7 +100,7 @@
           "format": "table",
           "rawQuery": true,
           "refId": "A",
-          "rawSql": "select sum(mc.cost_usd) / count(distinct mc.turn_id) as \"Cost per turn now\", to_char(date_trunc('day', mc.created_at - mc.duration_ms * interval '1 millisecond'), 'YYYY-MM-DD') as \"Day\" from model_calls mc join users u on u.id=mc.user_id where mc.purpose = 'coach' and not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' group by 2 order by 2 desc limit 1"
+          "rawSql": "select sum(mc.cost_usd) / count(distinct mc.turn_id) as \"Cost per turn now\" from model_calls mc join users u on u.id=mc.user_id where mc.purpose = 'coach' and not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' group by date_trunc('day', mc.created_at - mc.duration_ms * interval '1 millisecond') order by date_trunc('day', mc.created_at - mc.duration_ms * interval '1 millisecond') desc limit 1"
         }
       ],
       "title": "Cost per turn now",
@@ -163,10 +149,9 @@
         "colorMode": "none",
         "graphMode": "none",
         "textMode": "value",
-        "justifyMode": "auto",
+        "justifyMode": "center",
         "text": {
-          "valueSize": 24,
-          "titleSize": 12
+          "valueSize": 40
         }
       },
       "targets": [
