@@ -179,8 +179,8 @@ def _ref_key(ref: dict) -> tuple:
 
 def _turn(turn_id: str):
     """One coach turn's replies keyed a, b, c in a random order, the real one
-    among them, and a pick for each shadow against the real reply (R-0636).
-    No model is named."""
+    among them, and a pick for each shadow against the real reply with how it
+    was voted, if it was (R-0636). No model is named."""
     user = coder()
     said = adapter.Statement.query.filter_by(turn_id=turn_id).first()
     if said is None:
@@ -201,6 +201,10 @@ def _turn(turn_id: str):
                     "id": pick.id,
                     "left_key": keys[_ref_key(pick.left_ref)],
                     "right_key": keys[_ref_key(pick.right_ref)],
+                    "choice": pick.choice,
+                    "left_acceptable": pick.left_acceptable,
+                    "right_acceptable": pick.right_acceptable,
+                    "note": pick.note,
                 }
                 for pick in picks
             ],

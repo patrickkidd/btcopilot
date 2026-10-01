@@ -14,7 +14,14 @@ from btcopilot.extensions import db
 from btcopilot import record, turnlog, turns
 from btcopilot.coachmodel import CACHE
 from btcopilot.discussions import open_session
-from btcopilot.models import Author, Change, Discussion, Statement, TurnEvent
+from btcopilot.models import (
+    Author,
+    Change,
+    Discussion,
+    ShadowTurn,
+    Statement,
+    TurnEvent,
+)
 from btcopilot.schema import ItemKind, Person, asdict
 from btcopilot.toolbox import ToolName
 from btcopilot.turnlog import TurnEventKind
@@ -127,6 +134,30 @@ def test_a_replys_tool_calls_are_on_the_thread_after_the_live_log_is_gone(
     assert [s["role"] for s in shown] == ["user", "coach"]
     assert shown[1]["tools"] == NELL
     assert shown[0]["tools"] == []
+
+
+def test_a_coach_reply_says_how_many_shadow_replies_its_turn_has(
+    web, token, family, test_user, monkeypatch
+):
+    # R-0636
+    coach(monkeypatch, Model(said("Tell me about Nell."), said("How much older?")))
+    body = post(web, token).get_json()
+    post(web, token, "She is older.")
+    for model in ("sonnet", "gemini-pro"):
+        db.session.add(
+            ShadowTurn(
+                turn_id=body["turn_id"],
+                user_id=test_user.id,
+                diagram_id=family.id,
+                discussion_id=body["discussion_id"],
+                statement_id=body["statement_id"],
+                model=model,
+            )
+        )
+    db.session.commit()
+
+    shown = statements(web, body["discussion_id"])
+    assert [s["feedback"] for s in shown] == [0, 2, 0, 0]
 
 
 def test_a_refused_call_stays_on_the_thread_with_why_in_plain_words(

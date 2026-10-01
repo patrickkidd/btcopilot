@@ -52,6 +52,34 @@ async function serve(page: Page, expires = at(5 * MINUTE)): Promise<Record<strin
 
 test.use({ storageState: stateFor("moves") });
 
+const VOTED = [
+  { ...PICKS[0], choice: "right", left_acceptable: true, right_acceptable: true, note: "Third asks two things at once" },
+  { ...PICKS[1], choice: "right", left_acceptable: false, right_acceptable: true, note: "Third asks two things at once" },
+];
+
+/** The thread as a reload finds it after a vote: the coach reply before the
+ * newest message was made with two shadow replies, voted on. Answers how
+ * often its replies were asked for. */
+async function voted(page: Page): Promise<() => number> {
+  let asked = 0;
+  await page.route(/\/review\/picks\?turn=t9$/, (route) => {
+    asked += 1;
+    return route.fulfill({ json: { replies: REPLIES, real_key: "b", picks: VOTED } });
+  });
+  await page.addInitScript(() => {
+    let boot: { statements: { id: number; role: string; turn_id: string | null; feedback: number }[] };
+    Object.defineProperty(window, "BOOTSTRAP", {
+      get: () => boot,
+      set: (value) => {
+        const past = value.statements.slice(0, -1).filter((s: { role: string }) => s.role === "coach").at(-1);
+        Object.assign(past, { turn_id: "t9", feedback: 2 });
+        boot = value;
+      },
+    });
+  });
+  return () => asked;
+}
+
 // R-0636, R-0637
 test("three replies are voted on unnamed, then the coach's is headed Coach with the others folded", async ({
   page,
@@ -118,4 +146,41 @@ test("a message 6 minutes after the last one gets the coach's reply alone, with 
   await expect(bubble.locator(".vt-reply")).toHaveCount(0);
   await expect(page.locator("#send")).toBeEnabled();
   await expect(page.locator("#composer")).toHaveAttribute("contenteditable", "true");
+});
+
+// a family whose thread has coach replies before its newest message
+test.describe("a thread read again", () => {
+  test.use({ storageState: stateFor("sitting") });
+
+  // R-0636
+  test("after a reload a past reply voted on keeps its amber edge and its fold, and the fold shows how each was voted", async ({
+    page,
+  }) => {
+    const asked = await voted(page);
+    await page.goto("/app/");
+    const bubble = page.locator(".bub.coach.fb");
+    await expect(bubble).toHaveCount(1);
+    await expect(bubble.locator(".vt-fold .n")).toHaveText("2");
+    expect(asked()).toBe(0);
+    await expect(page.locator("#send")).toBeEnabled();
+
+    await bubble.locator(".vt-fold").click();
+    await expect(bubble.locator(".vt-shadow .who")).toHaveText(["Shadow reply", "Shadow reply"]);
+    await expect(bubble.locator(".vt-voted")).toHaveText(["✓ acceptable · ★ best", "✓ acceptable", "not acceptable"]);
+    await expect(bubble.locator(".vt-said")).toHaveText("Your note: Third asks two things at once");
+    expect(asked()).toBe(1);
+  });
+
+  // R-0636
+  test("in dark mode a reply made with Conversation Feedback on has an amber edge", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    await voted(page);
+    await page.goto("/app/");
+    const bubble = page.locator(".bub.coach.fb");
+    await expect(bubble).toHaveCSS("border-left-width", "3px");
+    await expect(bubble).toHaveCSS("border-left-color", "rgb(224, 168, 63)");
+    await expect(page.locator(".bub.coach:not(.fb)").first()).toHaveCSS("border-left-width", "1px");
+    await bubble.scrollIntoViewIfNeeded();
+    await expect(bubble).toHaveScreenshot("vote-dark.png");
+  });
 });

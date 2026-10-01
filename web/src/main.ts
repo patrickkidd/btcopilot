@@ -826,7 +826,7 @@ function addStatements(statements: api.Said[], newest = false): void {
       cases.set(statement.id, { case: statement.case, digest: statement.digest });
     const lines = statement.tools.map(toolLine).filter((line) => line !== null);
     const notes = statement.tools.find((tool) => tool.name === NOTES_TOOL);
-    chat.add(
+    const bubble = chat.add(
       statement.role,
       statement.text,
       ChipTone.Data,
@@ -835,6 +835,8 @@ function addStatements(statements: api.Said[], newest = false): void {
       coach ? lines : [],
       coach && notes ? (notes.args as unknown as Notes) : null,
     );
+    if (statement.feedback)
+      chat.kept(bubble, statement.turn_id!, statement.feedback, newest && statement === statements.at(-1));
     if (statement.unfinished && lines.length) {
       const bubble = chat.add(Role.Coach, "", ChipTone.Data, null, null, lines);
       if (newest) stopped = { turn: statement.turn_id!, bubble };

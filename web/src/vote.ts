@@ -57,24 +57,75 @@ export interface Host {
   scroll(): void;
 }
 
+/** How a turn's picks were voted, read back once the page is loaded again: a
+ * reply is best where it won a pick in which both replies were acceptable. */
+function votedOn(picks: Shadows["picks"]): Voted {
+  const ok = new Set<string>();
+  let best: string | null = null;
+  for (const p of picks) {
+    if (p.left_acceptable) ok.add(p.left_key);
+    if (p.right_acceptable) ok.add(p.right_key);
+    if (p.left_acceptable && p.right_acceptable && p.choice !== PickChoice.Tie)
+      best = p.choice === PickChoice.Left ? p.left_key : p.right_key;
+  }
+  return { ok, best, note: picks.find((p) => p.note)?.note ?? "" };
+}
+
 export class Vote {
   private voted: Voted = { ok: new Set(), best: null, note: "" };
   private replies: Shadows["replies"] = [];
   private realKey = "";
   private ballot: HTMLElement | null = null;
+  /** Whether the turn's replies have been read from the review. */
+  private read = false;
 
   constructor(
     private bubble: HTMLElement,
     private turnId: string,
-    /** How many shadow models answer each turn: one pick each when all are in. */
+    /** How many shadow models answer the turn: one pick each when all are in. */
     private models: number,
     private host: Host,
   ) {
-    bubble.classList.add("blind");
-    bubble.append(el("div", "vt-wait dots3", "Waiting for other replies"));
-    host.hold(true);
-    host.scroll();
+    bubble.classList.add("fb");
+  }
+
+  /** A reply just made: held back until its shadows are in and voted on. */
+  wait(): this {
+    this.bubble.classList.add("blind");
+    this.bubble.append(el("div", "vt-wait dots3", "Waiting for other replies"));
+    this.host.hold(true);
+    this.host.scroll();
     void this.start();
+    return this;
+  }
+
+  /** A reply drawn from the thread, its shadows folded behind the mark. The
+   * thread's last message is read at once, so a vote a reload left open opens
+   * again and holds the message box; any other is read when its fold is
+   * opened, and a vote found open there leaves the box alone. */
+  kept(last: boolean): this {
+    this.fold(this.models);
+    if (last) void this.resume(true);
+    return this;
+  }
+
+  private async resume(last: boolean): Promise<void> {
+    const shadows = await api.shadows(this.turnId);
+    this.read = true;
+    const picked = new Set(shadows.picks.flatMap((p) => [p.left_key, p.right_key]));
+    this.replies = shadows.replies.filter((r) => picked.has(r.key));
+    const fold = this.bubble.querySelector<HTMLElement>(":scope > .vt-fold")!;
+    if (this.replies.length < 2) return fold.remove();
+    this.realKey = shadows.real_key!;
+    if (shadows.picks.some((p) => p.choice === null)) {
+      fold.remove();
+      this.bubble.classList.add("blind");
+      if (last) this.host.hold(true);
+      return this.open(shadows.picks);
+    }
+    this.voted = votedOn(shadows.picks);
+    fold.querySelector(".n")!.textContent = String(this.replies.length - 1);
+    if (!last) this.unfold(fold);
   }
 
   private async start(): Promise<void> {
@@ -117,6 +168,7 @@ export class Vote {
   }
 
   private open(picks: Shadows["picks"]): void {
+    this.read = true;
     this.bubble.querySelector(".vt-wait")?.remove();
     this.bubble.classList.add("voting");
     this.bubble.querySelector(".who")!.textContent = `${this.replies.length} replies`;
@@ -135,13 +187,13 @@ export class Vote {
         .join("") +
         `<div class="vt-cast">` +
         `<input class="vt-note" type="text" maxlength="${NOTE_CAP}" aria-label="Note" placeholder="${HELP}">` +
-        `<div class="vt-row"><span class="vt-count">${HELP}</span>` +
+        `<div class="vt-row"><span class="vt-count"></span>` +
         `<button class="btn primary vt-go" type="button">Vote</button></div></div>`,
     );
     const note = ballot.querySelector<HTMLInputElement>(".vt-note")!;
     const count = ballot.querySelector<HTMLElement>(".vt-count")!;
     note.addEventListener("input", () => {
-      count.textContent = note.value ? `${note.value.length}/${NOTE_CAP}` : HELP;
+      count.textContent = note.value ? `${note.value.length}/${NOTE_CAP}` : "";
     });
     // the words of a reply are not a look at the picture while it is unnamed
     ballot.addEventListener("click", (e) => {
@@ -210,20 +262,21 @@ export class Vote {
     this.ballot = null;
     this.bubble.classList.remove("blind", "voting");
     this.bubble.querySelector(".who")!.textContent = "Coach";
-    const fold = el(
-      "button",
-      "vt-fold",
-      `${FOLD}<span class="n">${this.replies.length - 1}</span>`,
-    );
+    this.fold(this.replies.length - 1);
+    this.host.hold(false);
+  }
+
+  private fold(count: number): void {
+    const fold = el("button", "vt-fold", `${FOLD}<span class="n">${count}</span>`);
     fold.setAttribute("type", "button");
     fold.setAttribute("aria-label", "Shadow replies");
     fold.setAttribute("aria-expanded", "false");
     fold.addEventListener("click", (e) => {
       e.stopPropagation();
-      this.unfold(fold);
+      if (this.read) this.unfold(fold);
+      else void this.resume(false);
     });
     this.bubble.append(fold);
-    this.host.hold(false);
   }
 
   private unfold(fold: HTMLElement): void {

@@ -14,7 +14,7 @@ names; a proxy's own error page has none.
 | | |
 |---|---|
 | `POST /chat` | `{statement}` into the family's current sitting: the session last spoken in, or a new one once its last statement is 12 hours old |
-| `GET /statements` | the family's one thread across its sessions, 50 statements at a time, oldest first; `?before=<statement id>` reads the page just older. Each carries `session_id`; a session's first statement carries `sitting: {id, started, previous_started}`, the last being when the sitting before it started, or null for the first |
+| `GET /statements` | the family's one thread across its sessions, 50 statements at a time, oldest first; `?before=<statement id>` reads the page just older. Each carries `session_id`; a session's first statement carries `sitting: {id, started, previous_started}`, the last being when the sitting before it started, or null for the first. Each also carries `feedback`, the number of shadow replies its turn has on a coach reply, 0 on the user's words and on a reply made with Conversation Feedback off (R-0636) |
 | `POST /sessions/<id>/statements` | `{statement}` into a named session |
 | `GET /sessions` | the user's sessions on the family the app is on (`?diagram_id=` another readable one, or the one an admin is viewing, whose sessions are its owner's), most recently active first; `?all=true`, admins only (403 otherwise), is every session on every family, whoever had it, each with `family`, its family's name (every row carries `diagram_id`), which is what the meeting page puts one on the agenda from; `?words=` keeps those where something said carries every word, the coach's chat search, each with `match`, the newest line that does, chips shown as their words |
 | `POST /sessions` | new empty session, 201 |
@@ -143,7 +143,7 @@ shift to a death clears its shift values.
 |---|---|
 | `GET /review/pairs` | admins only: every pick not yet made, each `{id, source, context, left, right}`; a pair seen for the first time gets its pick row and its random side order here |
 | `GET /review/picks` | admins only: each model's `{model, won, lost, tied}` over the picks made |
-| `GET /review/picks?turn=<turn id>` | the owner of that turn's session, admin or auditor (403 otherwise): `{replies: [{key, text}], real_key, picks: [{id, left_key, right_key}]}`, the real reply and each finished shadow reply keyed `a`, `b`, `c` in a random order, and one pick per shadow against the real reply, made here if missing as `GET /review/pairs` makes it; a shadow with an error is left out and no model is named |
+| `GET /review/picks?turn=<turn id>` | the owner of that turn's session, admin or auditor (403 otherwise): `{replies: [{key, text}], real_key, picks: [{id, left_key, right_key, choice, left_acceptable, right_acceptable, note}]}`, a pick's last four null until it is voted, the real reply and each finished shadow reply keyed `a`, `b`, `c` in a random order, and one pick per shadow against the real reply, made here if missing as `GET /review/pairs` makes it; a shadow with an error is left out and no model is named |
 | `PUT /review/picks/<id>` | `{choice, note, left_acceptable, right_acceptable, source}`; an admin, or an auditor on their own session's pick; answers the pick with both model names |
 
 `choice` is `left`, `right` or `tie`; the client sends it already resolved. A

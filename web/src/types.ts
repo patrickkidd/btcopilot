@@ -300,6 +300,9 @@ export interface Statement {
    * play kept before digests. */
   digest: string | null;
   turn_id: string | null;
+  /** How many shadow replies a coach reply's turn has; 0 on the user's words
+   * and on a reply made with Conversation Feedback off (R-0636). */
+  feedback: number;
   /** What the coach did in this statement's turn: behind a reply, or before a
    * turn failed with these words left unanswered. */
   tools: ToolCall[];
@@ -995,7 +998,16 @@ export interface Shadows {
   replies: { key: string; text: string }[];
   /** Null when no shadow finished, and so nothing is to be voted on. */
   real_key: string | null;
-  picks: { id: number; left_key: string; right_key: string }[];
+  /** How each was voted: all null until it is. */
+  picks: {
+    id: number;
+    left_key: string;
+    right_key: string;
+    choice: PickChoice | null;
+    left_acceptable: boolean | null;
+    right_acceptable: boolean | null;
+    note: string | null;
+  }[];
 }
 
 export interface Cast {

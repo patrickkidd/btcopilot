@@ -4,7 +4,7 @@ import { hush, say } from "./speech";
 import { INFO, notesView, type Notes } from "./notes";
 import { html, type Line } from "./tools";
 import { AWAY_PX, fit, fold, type Fold } from "./viewport";
-import { IDLE_MS, Vote } from "./vote";
+import { IDLE_MS, Vote, type Host } from "./vote";
 import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
@@ -324,6 +324,18 @@ export class Chat {
     return bubble;
   }
 
+  private voter: Host = {
+    written: (text) => this.written(tokenize(text), null),
+    hold: (on) => this.hold(on),
+    scroll: () => this.scroll(),
+  };
+
+  /** A stored coach reply whose turn has `count` shadow replies (R-0636);
+   * `last` when it is the thread's newest message. */
+  kept(bubble: HTMLElement, turnId: string, count: number, last: boolean): Vote {
+    return new Vote(bubble, turnId, count, this.voter).kept(last);
+  }
+
   /** Whether the shadows are on and have not yet turned themselves off. */
   feedback(): boolean {
     return this.shadows > 0 && this.expires !== null && Date.now() <= this.expires;
@@ -481,13 +493,7 @@ export class Chat {
         this.scroll();
       },
       vote: (turnId) =>
-        this.feedback()
-          ? new Vote(bubble, turnId, this.shadows, {
-              written: (text) => this.written(tokenize(text), null),
-              hold: (on) => this.hold(on),
-              scroll: () => this.scroll(),
-            })
-          : null,
+        this.feedback() ? new Vote(bubble, turnId, this.shadows, this.voter).wait() : null,
       type: async (text, onChip, pace = READ_MS) => {
         this.said.set(bubble, text);
         // A move holds until the sentence about it has been written and there

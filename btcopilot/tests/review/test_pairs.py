@@ -257,8 +257,9 @@ def test_a_turn_serves_its_replies_blind_in_a_random_order(patrick, test_user, c
 def test_a_chat_pick_keeps_whether_each_reply_was_acceptable(
     patrick, test_user, case
 ):
-    # R-0640
-    pick = patrick.get(f"/review/picks?turn={turn_of(test_user, case)}").json["picks"][0]
+    # R-0640, R-0636
+    turn = turn_of(test_user, case)
+    pick = patrick.get(f"/review/picks?turn={turn}").json["picks"][0]
     response = patrick.put(
         f"/review/picks/{pick['id']}",
         json={
@@ -272,6 +273,16 @@ def test_a_chat_pick_keeps_whether_each_reply_was_acceptable(
     stored = db.session.get(Pick, pick["id"])
     assert (stored.source, stored.choice) == (PickSource.Chat, PickChoice.Right)
     assert (stored.left_acceptable, stored.right_acceptable) == (False, True)
+    voted = next(
+        p
+        for p in patrick.get(f"/review/picks?turn={turn}").json["picks"]
+        if p["id"] == pick["id"]
+    )
+    assert [voted[k] for k in ("choice", "left_acceptable", "right_acceptable")] == [
+        PickChoice.Right,
+        False,
+        True,
+    ]
 
 
 def test_an_unacceptable_reply_cannot_win(patrick, test_user, case):
