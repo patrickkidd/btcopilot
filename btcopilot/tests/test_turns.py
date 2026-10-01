@@ -235,6 +235,32 @@ def test_the_stream_replays_from_where_the_page_got_to(web, token, family, monke
     ]
 
 
+def test_a_page_that_stops_listening_mid_turn_leaves_the_turn_to_finish(
+    web, token, family, monkeypatch
+):
+    # R-0369
+    coach(monkeypatch, said("Tell me about Nell."))
+    with patch("btcopilot.turns.enqueue"):
+        body = post(web, token).get_json()
+    turnlog.append(body["turn_id"], {"type": TurnEventKind.Text.value, "text": "Tell"})
+
+    stream = web.get(f"/app/turns/{body['turn_id']}/events", buffered=False)
+    assert b"Tell" in next(iter(stream.response))
+    stream.close()
+
+    reply = turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
+    assert reply["statement"] == "Tell me about Nell."
+    discussion = db.session.get(Discussion, body["discussion_id"])
+    assert [s.text for s in discussion.statements] == [
+        "My sister is Nell.",
+        "Tell me about Nell.",
+    ]
+    assert TurnEvent.query.filter_by(
+        turn_id=body["turn_id"], kind=TurnEventKind.Done.value
+    ).count() == 1
+    assert turnlog.running(discussion.id) is None
+
+
 def test_another_users_turn_is_not_found(web, token, family, monkeypatch, test_user_2):
     # R-0080
     coach(monkeypatch, said("Tell me about Nell."))

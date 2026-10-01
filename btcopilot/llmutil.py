@@ -710,6 +710,8 @@ async def claude_structured(prompt, response_format, model):
 async def gemini_text(prompt=None, **kwargs):
     from google.genai import types
 
+    if local_model():
+        return await claude_text(prompt, **kwargs)
     start_time = time.time()
     model = kwargs.get("model", GEMINI_RESPONSE_MODEL)
     temperature = kwargs.get("temperature", 0.45)

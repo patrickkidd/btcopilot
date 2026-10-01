@@ -94,6 +94,21 @@ def test_a_local_url_sends_gemini_extraction_to_the_local_model(anthropic_env):
     assert asked == [llmutil.EXTRACTION_MODEL]
 
 
+def test_a_local_url_sends_gemini_text_to_the_local_model(anthropic_env):
+    # R-0507
+    anthropic_env.setenv(llmutil.LOCAL_URL, "http://127.0.0.1:11434")
+    anthropic_env.setenv(llmutil.LOCAL_MODEL, "qwen3:8b")
+    anthropic_env.delenv("GOOGLE_GEMINI_API_KEY", raising=False)
+    asked = []
+
+    async def claude_text(prompt, **kwargs):
+        asked.append(kwargs["model"])
+
+    anthropic_env.setattr(llmutil, "claude_text", claude_text)
+    llmutil.gemini_text_sync("Name this session", model=llmutil.EXTRACTION_MODEL)
+    assert asked == [llmutil.EXTRACTION_MODEL]
+
+
 def test_sonnet_5_5_costs_what_sonnet_5_costs():
     # R-0405
     assert price("claude-sonnet-5-5") == price("claude-sonnet-5")

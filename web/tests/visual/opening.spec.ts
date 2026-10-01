@@ -119,7 +119,7 @@ const later = () => {
 };
 
 // R-0369, R-0243
-test("a turn still streaming when the diagram switches is cancelled and never draws into the new chat", async ({ page }) => {
+test("a turn still streaming when the diagram switches never draws into the new chat", async ({ page }) => {
   const stream = later();
   await mockTurn(page, { statement: "Words for the family before.", statement_id: 9701, hold: stream.held });
   await stand(page, { id: 987001, name: "Second family", thread: [line(987101, "Said in the second family.")] });
@@ -136,6 +136,110 @@ test("a turn still streaming when the diagram switches is cancelled and never dr
   await expect(page.locator("#chat")).not.toContainText("Words for the family before.");
   await expect(page.locator("#chat")).not.toContainText("Tell me more.");
   await expect(page.locator("#chat .typing")).toHaveCount(0);
+});
+
+/** The server's side of a turn left running on the fixture's own diagram:
+ * its newest sitting names the turn while it runs, and its thread carries the
+ * words and the reply, or the words marked unfinished, once it has ended. */
+async function away(page: Page) {
+  const turn = {
+    running: null as string | null,
+    ended: [] as Record<string, unknown>[],
+  };
+  let sittings: Record<string, unknown>[] = [];
+  await page.route(/\/app\/sessions\?diagram_id=\d+$/, async (route) => {
+    sittings = await (await route.fetch()).json();
+    await route.fulfill({ json: [{ ...sittings[0], turn: turn.running }, ...sittings.slice(1)] });
+  });
+  // the mocked turn's own sitting is not on the server, so every sitting is
+  // answered from the list
+  await page.route(/\/app\/sessions\/\d+$/, async (route) => {
+    const id = Number(new URL(route.request().url()).pathname.split("/").at(-1));
+    const newest = id === sittings[0]?.id;
+    await route.fulfill({ json: { id, statements: [], turn: newest ? turn.running : null } });
+  });
+  await page.route(/\/app\/statements\?diagram_id=\d+$/, async (route) => {
+    const real = await (await route.fetch()).json();
+    await route.fulfill({ json: [...real, ...turn.ended] });
+  });
+  return turn;
+}
+
+/** Sends on the fixture's own diagram and goes to the second family while the
+ * coach is still answering. */
+async function sendAndLeave(page: Page, turn: { running: string | null }): Promise<void> {
+  await settle(page);
+  await page.locator("#composer").fill("Tell me more.");
+  const following = page.waitForRequest(STREAM);
+  await page.locator("#send").click();
+  await following;
+  turn.running = "t1";
+  await switchTo(page, "Second family");
+  await expect(page.locator("#chat")).toContainText("Said in the second family.");
+}
+
+const SECOND: Stand = { id: 987001, name: "Second family", thread: [line(987101, "Said in the second family.")] };
+const BROKE = /did not finish that turn/;
+
+// R-0369
+test("coming back while the coach is still answering follows the same turn to its reply", async ({ page }) => {
+  const stream = later();
+  await mockTurn(page, { statement: "Words for the family before.", statement_id: 9701, hold: stream.held });
+  const turn = await away(page);
+  await stand(page, SECOND);
+  await sendAndLeave(page, turn);
+  const following = page.waitForRequest(STREAM);
+  await switchTo(page, OWN);
+  await following;
+  await expect(page.locator("#chat .typing")).toBeVisible();
+  stream.go();
+  await expect(page.locator("#chat")).toContainText("Words for the family before.");
+  await expect(page.locator("#chat")).not.toContainText(BROKE);
+  await expect(page.locator("#chat .typing")).toHaveCount(0);
+  // the finished reply reads the record and sittings again, still in flight
+  await page.unrouteAll({ behavior: "ignoreErrors" });
+});
+
+// R-0369
+test("coming back after the coach finished shows the saved reply and what it did", async ({ page }) => {
+  const stream = later();
+  await mockTurn(page, { statement: "Words for the family before.", statement_id: 9701, hold: stream.held });
+  const turn = await away(page);
+  await stand(page, SECOND);
+  await sendAndLeave(page, turn);
+  stream.go();
+  turn.running = null;
+  turn.ended = [
+    { ...line(9700, "Tell me more."), turn_id: "t1" },
+    {
+      ...line(9701, "Words for the family before."),
+      role: "coach",
+      turn_id: "t1",
+      tools: [{ name: "edit_person", args: { name: "Nell" }, names: { it: "Nell" }, refusal: null }],
+    },
+  ];
+  await switchTo(page, OWN);
+  await expect(page.locator("#chat")).toContainText("Tell me more.");
+  await expect(page.locator("#chat")).toContainText("Words for the family before.");
+  await expect(page.locator("#chat")).toContainText("Nell");
+  await expect(page.locator("#chat")).not.toContainText(BROKE);
+  await expect(page.locator("#chat .typing")).toHaveCount(0);
+});
+
+// R-0182
+test("coming back to a turn the server could not finish says so once", async ({ page }) => {
+  const stream = later();
+  await mockTurn(page, { statement: "Words for the family before.", statement_id: 9701, hold: stream.held });
+  const turn = await away(page);
+  await stand(page, SECOND);
+  await sendAndLeave(page, turn);
+  turn.running = null;
+  turn.ended = [
+    { ...line(9700, "Tell me more."), turn_id: "t1", unfinished: true, failure: "The coach did not finish that turn." },
+  ];
+  await switchTo(page, OWN);
+  await expect(page.locator("#chat")).toContainText("Tell me more.");
+  await expect(page.locator("#chat .warn", { hasText: BROKE })).toHaveCount(1);
 });
 
 // R-0243
