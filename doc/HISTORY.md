@@ -2018,3 +2018,8 @@ HOW_THIS_PROJECT_WORKS.md. The box answers ssh only as root.
 ## 2026-09-30 — production ran an older image for about 15 minutes
 
 An env-file change followed by a bare `docker compose up -d` without `BTCOPILOT_TAG` rolled release 3.2026.9.30.6 back to 3.2026.9.26.1 on the box while the database already carried the newer migration; box restarts now always go through the rollout with the current tag (deploy/README.md).
+
+## 2026-10-01 — cut selection built inside the admin's chat
+
+Patrick picked frame C6 of the cut-in-chat gallery (R-0629); commits 4c409562 and 5b7262d6 put cut selection in the read-only chat, deleted the separate picker and family list, renamed the button "Select a cut for the agenda", and added the owner's name to the cut payload. Not released; awaiting his eyeball walk.
+The box's alembic pointer was re-stamped from 1b00000000c1 to 1b00000000c0, so the next release no longer aborts.
