@@ -1891,6 +1891,11 @@ You rule keep, change, or undo on each.
    - Why it matters: Whether low thinking or the batch-edits prompt saves money without hurting replies cannot be judged without it.
    - You decide: Answer "go" or a number.
 
+41. **For auditors, a coach reply with no saved note shows no (i)**
+   - Done: Guillermo's case, 2026-10-01: 42 of his 45 replies have notes. The three without are the opener, a reply that only edited the record, and a play-by-play. Recommended: show a greyed (i) that reads "No notes for this reply" on tap.
+   - Why it matters: Today an auditor cannot tell a missing note from a broken button.
+   - You decide: Show the greyed (i) (recommended) or keep it hidden.
+
 ### B. Defects and unproven things
 
 You rule fix now, later, or accept.
@@ -1984,6 +1989,11 @@ You rule fix now, later, or accept.
 38. **Play-by-play: the symbols are drawn at different sizes that are not right**
    - Done: Queued, not started. Patrick reported it on 2026-10-01.
    - Why it matters: Symbols of different sizes make people look different in importance when they are not.
+   - You decide: Nothing yet.
+
+40. **Timeline strip: a page cut short when the picture folds**
+   - Done: If a cluster's page or a two-event comparison is open when the picture folds, the strip shows that page cut short instead of the line. Found 2026-10-01 during the strip build. Not fixed.
+   - Why it matters: The folded picture shows a broken page instead of the line.
    - You decide: Nothing yet.
 
 ### C. Housekeeping
