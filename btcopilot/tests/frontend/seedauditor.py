@@ -58,11 +58,19 @@ with app.app_context():
     client = Speaker(
         discussion_id=discussion.id, name="Client", type=SpeakerType.Subject
     )
-    db.session.add(client)
+    coach = Speaker(
+        discussion_id=discussion.id, name="Coach", type=SpeakerType.Expert
+    )
+    db.session.add_all([client, coach])
     db.session.flush()
+    discussion.chat_user_speaker_id = client.id
+    discussion.chat_ai_speaker_id = coach.id
     turns = [
         Statement(
-            discussion_id=discussion.id, speaker_id=client.id, text=text, order=order
+            discussion_id=discussion.id,
+            speaker_id=(client, coach)[order % 2].id,
+            text=text,
+            order=order,
         )
         for order, text in enumerate(LINES)
     ]
