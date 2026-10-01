@@ -1,6 +1,6 @@
 import * as api from "./api";
 import type { Said } from "./api";
-import { el, esc } from "./dom";
+import { el, esc, shift } from "./dom";
 import { clockTime, dayKey, periodLabel, rowDate } from "./when";
 
 /** The family's one thread: every sitting's words in the order they were said,
@@ -77,7 +77,7 @@ export class Thread {
     for (let node = end ? end.nextSibling : this.list.firstChild; node; node = node.nextSibling)
       drawn.push(node);
     this.list.prepend(...drawn);
-    if (anchor) this.list.scrollTop += anchor.getBoundingClientRect().top - was;
+    if (anchor) shift(this.list, anchor.getBoundingClientRect().top - was);
     // The chat pins itself to its newest words on every bubble it draws and
     // ignores the scroll that pinning causes; once its frame has passed, a
     // scroll it does notice tells it the reader is up here, not at the end.

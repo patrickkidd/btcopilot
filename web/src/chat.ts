@@ -1,4 +1,4 @@
-import { esc, el, flash } from "./dom";
+import { esc, el, flash, shift } from "./dom";
 import { askedChip, chipOf, face, LEAD, Lead, pill, token, tokenize } from "./chips";
 import { hush, say } from "./speech";
 import { INFO, notesView, type Notes } from "./notes";
@@ -173,7 +173,7 @@ export class Chat {
       high = this.list.clientHeight;
       if (this.stuck) return this.scroll();
       this.pinning = true;
-      this.list.scrollTop -= grew;
+      shift(this.list, -grew);
       requestAnimationFrame(() => {
         this.pinning = false;
       });

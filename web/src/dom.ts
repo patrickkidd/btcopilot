@@ -180,3 +180,17 @@ export function isCoder(): boolean {
 /** The reader asked the system for less motion. */
 export const still = (): boolean =>
   window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
+/** The thread's room above its first words: what its scroll cannot take up,
+ * near the top as its box grows or on the fraction of a pixel a scroll
+ * rounds away, held in the padding over the first words (R-0570). */
+const ROOM = "--room";
+
+/** Move the thread's words up by `by` pixels as a scroll of exactly that
+ * would, room first given back to the scroll and the rest held as room. */
+export const shift = (list: HTMLElement, by: number): void => {
+  const to = list.scrollTop - (parseFloat(list.style.getPropertyValue(ROOM)) || 0) + by;
+  list.style.setProperty(ROOM, `${Math.max(0, -to)}px`);
+  list.scrollTop = to;
+  list.style.setProperty(ROOM, `${list.scrollTop - to}px`);
+};

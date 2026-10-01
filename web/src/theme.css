@@ -807,6 +807,7 @@ button { font-family: inherit; }
   flex-direction: column;
   gap: 10px;
   padding: 14px 12px;
+  padding-top: calc(14px + var(--room, 0px));
   background: var(--bg);
   touch-action: pan-y;
   overscroll-behavior: contain;
