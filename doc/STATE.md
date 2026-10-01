@@ -1998,9 +1998,10 @@ You rule fix now, later, or accept.
    - You decide: Nothing yet.
 
 42. **Chip tap in the chat does not unfold the timeline or show the selection**
+   - In build 2026-10-01 (no input needed).
    - Done: Tapping a chip in the chat must unfold the timeline (now folded while reading) and select that event. The selected event's title must be shown front and centre in teal, as when tapped on the timeline, not grey in the breadcrumb. The grey timeline label with nothing selected stays (Patrick, 2026-10-01). Queued, not started.
    - Why it matters: A tap that shows nothing obvious reads as a broken chip.
-   - You decide: Nothing yet.
+   - You decide: Nothing.
 
 ### C. Housekeeping
 
