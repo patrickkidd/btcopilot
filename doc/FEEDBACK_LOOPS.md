@@ -10,7 +10,7 @@ gets its row the day it is added [R-0578].
 Status words. **Live**: the signal is collected in production and the action it drives has
 happened at least once. **Partial**: only one side exists: the signal is collected but nobody
 acts on it on a schedule, or it is built but not deployed. **Missing**: ruled or designed, not
-built. **Retired**: stopped by a ruling.
+built. **Retired**: stopped by a ruling. **Open**: data may be collected, but no automated step yet turns it into a product change; parked, and watched for others like it [R-0668].
 
 Written 2026-09-30. Production runs the build of the FD-365 branch, which carries the sittings
 work (the coach writing first, coach-offered reports, notices, the coach's memory across
@@ -59,6 +59,7 @@ Panels that show the same people and messages: "People who chatted", "Messages f
 | 22 | The migration check before a deploy | bin/migrationgate.py restores a copy of production into a throwaway Postgres and runs the migrations on it: row counts, orphans, and tool lines per coach reply. | The deploy goes ahead or stops. | live | Deploys, and deploys that ran the check. | `gh run list --workflow release.yml`; the deploy entries in doc/HISTORY.md |
 | 23 | The efficiency skill | Your corrections on cost, speed and method, each dated, in ~/.claude/skills/efficiency/references/corrections.md. | Each correction becomes a numbered rule. A session writes bindings for the rules in play, and a rule broken twice goes into your CLAUDE.md. Bindings live in each job's temporary folder, so repeats are not counted across sessions. | live | New rules and repeats per week. Last known: 43 rules; 111 dated corrections from 09-22 to 09-29. | ~/.claude/skills/efficiency/ACCEPTANCE_CRITERIA.md; references/corrections.md |
 | 24 | The scout and the loop review | The scout was to read the corpus and propose up to ten ranked process changes. | Retired on 2026-09-23 [R-0420] without ever running once. | retired | None. | None |
+| 25 | Notes on votes in the chat | The optional note a person writes with a vote on shadow replies in the chat, stored with the vote in the model_picks table, source chat [R-0668]. | Nobody yet. The aim is an automated step that turns the notes into checks on replies, a rubric; it is not built and not designed. | open | None today. | None |
 
 ## Queries
 
