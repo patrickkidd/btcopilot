@@ -73,6 +73,16 @@ describe("an event row's kind", () => {
     expect(shift).not.toContain('class="kw"');
     expect(shift).toContain('<svg class="kmark" viewBox="0 0 28 28" aria-hidden="true"></svg>');
   });
+
+  // R-0113, R-0636
+  it("is in the data colour whether the label is the kind, the kind and a name, or a whole description", () => {
+    const born = (label: string, description: string | null) =>
+      eventRow({ ...coded, kind: "birth", child: 1, label, description }, new Map(), tree);
+    expect(born("born", null)).toContain('<span class="kw">born</span>');
+    expect(born("born \u00b7 half brother born", "half brother born")).toContain('<span class="kw">born</span> \u00b7 half brother born');
+    expect(born("born \u00b7 Robert", "born \u00b7 Robert")).toContain('<span class="kw">born</span> \u00b7 Robert');
+    expect(born("Robert was born in Reno", "Robert was born in Reno")).toContain('Robert was <span class="kw">born</span> in Reno');
+  });
 });
 
 describe("an event row's summary line", () => {

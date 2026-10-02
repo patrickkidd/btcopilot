@@ -416,5 +416,7 @@ test.describe("an event's kind in the events list", () => {
     expect(seen.slashes).toBe(2);
     expect(seen.shapes).toBe(2);
     await expect(lists(page).locator('.row[data-event="203"] .kw')).toHaveCount(0);
+    // R-0636
+    await expect(lists(page).locator(".row[data-event]:has(.kmark .shape):not(:has(.r1 .kw))")).toHaveCount(0);
   });
 });
