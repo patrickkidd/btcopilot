@@ -13,6 +13,7 @@ from mock import patch
 from btcopilot.extensions import db
 from btcopilot import record, turnlog, turns
 from btcopilot.coachmodel import CACHE
+from btcopilot.coachturn import run_call
 from btcopilot.discussions import open_session
 from btcopilot.models import (
     Author,
@@ -158,6 +159,50 @@ def test_a_coach_reply_says_how_many_shadow_replies_its_turn_has(
 
     shown = statements(web, body["discussion_id"])
     assert [s["feedback"] for s in shown] == [0, 2, 0, 0]
+
+
+def test_the_words_of_a_stopped_turn_say_so_on_the_thread(
+    web, token, family, monkeypatch
+):
+    # R-0636
+    coach(
+        monkeypatch,
+        Model(
+            called(ToolName.EditPerson, name="Nell"),
+            called(ToolName.EditPerson, name="Finn"),
+            said("Tell me about Finn."),
+        ),
+    )
+
+    def run_then_stop(toolbox, call):
+        answer = run_call(toolbox, call)
+        turnlog.halt(toolbox.turn_id)
+        return answer
+
+    def run_change_stop(toolbox, call):
+        answer = run_then_stop(toolbox, call)
+        finn = {"item_kind": ItemKind.Person.value, "item_id": 2, "field": "name"}
+        record.apply(
+            family.id, [dict(finn, after="Finley")], author=Author.User, turn_id="by-hand"
+        )
+        return answer
+
+    monkeypatch.setattr("btcopilot.coachturn.run_call", run_then_stop)
+    body = post(web, token).get_json()
+    monkeypatch.setattr("btcopilot.coachturn.run_call", run_change_stop)
+    post(web, token, "My brother is Finn.")
+    monkeypatch.setattr("btcopilot.coachturn.run_call", run_call)
+    post(web, token, "He is older.")
+
+    shown = statements(web, body["discussion_id"])
+    assert [(s["role"], s["stopped"]) for s in shown] == [
+        ("user", True),
+        ("user", True),
+        ("user", False),
+        ("coach", False),
+    ]
+    assert shown[0]["conflict"] is None
+    assert "Finley" in shown[1]["conflict"]
 
 
 def test_a_refused_call_stays_on_the_thread_with_why_in_plain_words(

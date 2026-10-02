@@ -303,6 +303,11 @@ export interface Statement {
   /** How many shadow replies a coach reply's turn has; 0 on the user's words
    * and on a reply made with Conversation Feedback off (R-0636). */
   feedback: number;
+  /** The reader stopped the turn these words started (R-0636). */
+  stopped: boolean;
+  /** Why a stopped turn's edits stayed in the record; null when they were
+   * taken back. */
+  conflict: string | null;
   /** What the coach did in this statement's turn: behind a reply, or before a
    * turn failed with these words left unanswered. */
   tools: ToolCall[];
