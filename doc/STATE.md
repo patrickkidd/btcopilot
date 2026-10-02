@@ -2143,7 +2143,7 @@ You rule fix now, later, or accept.
 
 24. **Parts of the ticket are still unbuilt**
    - Fixed 2026-09-30: Built: coverage stages one to three, and the low thinking setting. Still unbuilt: the conversational regression test, the coverage-efficiency experiment, the pick-notes rubric, the coach-started email design pass.
-   - Done: Not built: the coverage checklist and its panels, the conversational regression test, the coverage-efficiency experiment, and the pick-notes rubric. Also unbuilt: the low thinking setting and the batch-edits prompt, both waiting on the measurement in item 28.
+   - Done: Built (FD-366): the basic-data coverage checklist and its Features dashboard panels, described in doc/COVERAGE.md. Not built: the conversational regression test, the coverage-efficiency experiment, and the pick-notes rubric. Also unbuilt: the low thinking setting and the batch-edits prompt, both waiting on the measurement in item 28.
    - Why it matters: The ticket's acceptance criteria are not met without them.
    - You decide: Decide the order, or drop any.
 
