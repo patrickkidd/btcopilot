@@ -434,51 +434,83 @@ test.describe("the message box while the coach replies", () => {
   });
 
   // R-0636
-  test("Stop ends the reply where it stands", async ({ page }) => {
+  test("a stopped turn that added a person leaves no reply, and the person is gone from the picture", async ({
+    page,
+  }) => {
+    // what the turn put in the record, until it is stopped and takes it back
+    let added = false;
+    await page.route("**/app/timeline*", async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      if (added) {
+        json.people.push({ ...json.people[0], id: 901, name: "Nell" });
+        json.events.push({ ...json.events[0], id: 9901, person: 901, person_name: "Nell", label: "Nell was born" });
+      }
+      await route.fulfill({ response, json });
+    });
     await page.goto("/app/");
     await expect(page.locator("#view .ss")).toBeVisible();
-    await page.route(SEND, (route) =>
-      route.fulfill({ status: 202, json: { turn_id: "t1", discussion_id: 1, statement_id: 9300 } }),
-    );
+    const dot = page.locator('#view circle.dot[data-event="9901"]');
+    await expect(dot).toHaveCount(0);
+
+    await page.route(SEND, (route) => {
+      added = true;
+      return route.fulfill({ status: 202, json: { turn_id: "t1", discussion_id: 1, statement_id: 9300 } });
+    });
     let stopped = false;
     await page.route(/\/app\/turns\/t1\/stop$/, (route) => {
       stopped = true;
-      return route.fulfill({ json: { turn_id: "t1", statement_id: 9301 } });
+      added = false;
+      return route.fulfill({ json: { turn_id: "t1" } });
     });
-    // the words so far, then nothing until the stop; the browser comes back
+    const events = [
+      { type: "tool_call", name: "edit_person", args: { name: "Nell" }, names: { it: "Nell" }, refusal: null },
+      {
+        type: "record_patch",
+        deltas: [{ item_kind: "person", item_id: "901", field: null, before: null, after: { id: 901 } }],
+        turn_id: "t1",
+      },
+      { type: "text", text: "I added" },
+      {
+        type: "done",
+        stopped: true,
+        version: 7,
+        statement: null,
+        statement_id: 9300,
+        discussion_id: 1,
+        kind: "turn",
+        views: [],
+        events: [],
+        turn_id: "t1",
+      },
+    ];
+    // what the turn did, then nothing until the stop; the browser comes back
     // every 100ms saying where it got to
     await page.route(STREAM, (route) => {
       const last = Number(route.request().headers()["last-event-id"] ?? 0);
-      const frames = [
-        `id: 1\ndata: ${JSON.stringify({ type: "text", text: "So your dad" })}\n\n`,
-        `id: 2\ndata: ${JSON.stringify({
-          type: "done",
-          statement: "So your dad",
-          statement_id: 9301,
-          discussion_id: 1,
-          kind: "turn",
-          views: null,
-          events: [],
-          turn_id: "t1",
-          stopped: true,
-        })}\n\n`,
-      ];
       return route.fulfill({
         status: 200,
         headers: { "content-type": "text/event-stream", "cache-control": "no-cache" },
-        body: "retry: 100\n\n" + frames.slice(last, stopped ? 2 : 1).join(""),
+        body:
+          "retry: 100\n\n" +
+          events
+            .slice(last, stopped ? 4 : 3)
+            .map((event, at) => `id: ${last + at + 1}\ndata: ${JSON.stringify(event)}\n\n`)
+            .join(""),
       });
     });
-    await page.locator("#composer").fill("My dad moved out.");
+    await page.locator("#composer").fill("My sister is Nell.");
     await page.locator("#send").click();
-    const bubble = page.locator(".bub.coach").last();
-    await expect(bubble.locator(".words")).toHaveText("So your dad");
-    await expect(bubble).toHaveClass(/\btyping\b/);
+    await expect(page.locator(".bub.coach.typing .words")).toHaveText("I added");
+    await expect(dot).toHaveCount(1);
+    await expect(page.locator("#send")).toHaveAttribute("aria-label", "Stop");
 
     await page.locator("#send").click();
-    await expect(bubble).not.toHaveClass(/\btyping\b/);
-    expect(stopped).toBe(true);
-    await expect(bubble.locator(".words")).toHaveText("So your dad");
+    await expect(page.locator("#chat > :last-child")).toHaveText("Stopped");
+    await expect(page.locator("#chat > :last-child")).toHaveClass("sys");
+    await expect(page.locator(".bub.coach.typing")).toHaveCount(0);
+    await expect(dot).toHaveCount(0);
     await expect(page.locator("#send")).toHaveAttribute("aria-label", "Send");
+    await expect(page.locator(".vt-wait")).toHaveCount(0);
   });
 });

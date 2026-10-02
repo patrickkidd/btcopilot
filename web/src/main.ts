@@ -1227,8 +1227,8 @@ function flush(): void {
   if (chat.held && !inFlight && !chat.voting()) void send();
 }
 
-/** The reply the coach is writing ends here: what it has typed so far is its
- * reply, and the stream brings the end as it would any other (R-0636). */
+/** The coach's turn is asked to end at its next step; the stream brings the
+ * end, with the turn's edits taken back (R-0636). */
 async function halt(): Promise<void> {
   if (onTurn === null) return;
   try {
@@ -1302,6 +1302,10 @@ async function begin(
  * again, not added to. */
 /** What the thread says when the page could not draw a reply. */
 const UNDRAWN = "This reply could not be shown";
+/** What takes a stopped reply's place in the thread (R-0636). */
+const STOPPED = "Stopped";
+/** The same, when what the turn put in the record could not be taken back. */
+const STOPPED_KEPT = "Stopped; its changes stayed";
 
 let onTurn: string | null = null;
 
@@ -1385,6 +1389,15 @@ function follow(turnId: string): void {
     reset: () => step(() => void opened().reset()),
     done: (reply) =>
       last(async () => {
+        // a stopped turn says nothing and its edits are taken back, so the
+        // picture and the lists are read again as the record now stands
+        if (reply.stopped) {
+          stopFollowing();
+          chat.stopped(bubble?.bubble ?? null, reply.conflict ? STOPPED_KEPT : STOPPED);
+          picture.untouch();
+          await store.refresh(Part.Record, Part.Sittings);
+          return;
+        }
         const said = opened();
         said.stamp(reply.statement_id);
         newest = reply.statement_id;
@@ -1393,8 +1406,7 @@ function follow(turnId: string): void {
         // a reply held for a vote is not read aloud: it would say which is the coach's
         if (speak.checked && !chat.feedback()) speech.say(reply.statement);
         said.settle(reply.statement, (chip) => aim(chip));
-        // a stopped reply has no shadows to vote on
-        if (!reply.stopped) said.vote(turnId);
+        said.vote(turnId);
         stopFollowing();
         if (!(await store.refresh(Part.Record, Part.Sittings))) return;
         void notices.refresh();

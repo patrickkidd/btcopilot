@@ -209,10 +209,10 @@ export const thread = (diagramId: number | null, before?: number, signal?: Abort
 export const resume = (turnId: string) =>
   call<Started>("POST", `/turns/${turnId}/resume`);
 
-/** End the running turn now; the words typed out so far are its reply
- * (R-0636). */
+/** Ask the running turn to end at its next step; its edits are taken back
+ * and its stream says so (R-0636). */
 export const stop = (turnId: string) =>
-  call<{ turn_id: string; statement_id: number }>("POST", `/turns/${turnId}/stop`);
+  call<{ turn_id: string }>("POST", `/turns/${turnId}/stop`);
 
 /** Follow a running turn. A page attaching to one reads it from the start and
  * draws the bubble again; the browser's own reconnect says where it got to

@@ -428,6 +428,18 @@ export class Chat {
     this.scroll();
   }
 
+  /** A reply the reader stopped gives way to a grey line in its place: nothing
+   * it began to say stays, and the dots end (R-0636). */
+  stopped(bubble: HTMLElement | null, line: string): void {
+    const at = bubble ?? this.typing;
+    const note = el("div", "sys", esc(line));
+    if (at?.nextElementSibling?.matches(".play")) at.nextElementSibling.remove();
+    if (at) at.replaceWith(note);
+    else this.list.append(note);
+    this.typing = null;
+    this.scroll();
+  }
+
   /** Something did not go through, said where it would have appeared and left
    * there until it is put right. It never types, never fades and never goes on
    * its own: the reader has to still find it when they look back.

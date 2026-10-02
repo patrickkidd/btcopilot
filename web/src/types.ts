@@ -399,8 +399,10 @@ export interface Reply {
   events: TurnEvent[];
   turn_id: string;
   discussion_id: number;
-  /** The reader stopped it: the words are what it had typed by then. */
+  /** The reader stopped it: there are no words, and its edits were taken back. */
   stopped?: boolean;
+  /** Why a stopped turn's edits could not be taken back, when they could not. */
+  conflict?: string;
 }
 
 /** One picture of a play-by-play: a date, the events on it, the fact line and
