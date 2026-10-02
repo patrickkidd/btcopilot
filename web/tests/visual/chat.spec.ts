@@ -547,20 +547,32 @@ test.describe("the message box while the coach replies", () => {
   // R-0636
   test("the grey line under a stopped turn's words is still there after a reload", async ({ page }) => {
     // two turns the reader stopped, the second with edits that stayed, in the
-    // thread the server hands the page as it opens, which is what a reload reads
-    await page.addInitScript(() => {
+    // thread the server hands the page as it opens, which is what a reload
+    // reads, and in the thread the page reads again once it is shown: left out
+    // of that one, the two are drawn and then wiped when it comes back
+    const stops = (statements: Record<string, unknown>[]) => {
+      const words = statements.find((s) => s.role === "user");
+      const ended = { ...words, sitting: undefined, tools: [], feedback: 0, stopped: true };
+      statements.push(
+        { ...ended, id: 9401, turn_id: "s1", text: "My sister is Nell.", conflict: null },
+        { ...ended, id: 9402, turn_id: "s2", text: "My brother is Finn.", conflict: "Finn was renamed since" },
+      );
+    };
+    await page.addInitScript(`
       Object.defineProperty(window, "BOOTSTRAP", {
         configurable: true,
         set(boot) {
-          const words = boot.statements.find((s: { role: string }) => s.role === "user");
-          const ended = { ...words, sitting: undefined, tools: [], feedback: 0, stopped: true };
-          boot.statements.push(
-            { ...ended, id: 9401, turn_id: "s1", text: "My sister is Nell.", conflict: null },
-            { ...ended, id: 9402, turn_id: "s2", text: "My brother is Finn.", conflict: "Finn was renamed since" },
-          );
+          (${stops})(boot.statements);
           Object.defineProperty(window, "BOOTSTRAP", { value: boot, writable: true });
         },
       });
+    `);
+    await page.route(/\/app\/statements\?diagram_id=\d+$/, async (route) => {
+      if (route.request().method() !== "GET") return route.fallback();
+      const response = await route.fetch();
+      const json = await response.json();
+      stops(json);
+      await route.fulfill({ response, json });
     });
     await page.goto("/app/");
     await expect(page.locator("#view .ss")).toBeVisible();
