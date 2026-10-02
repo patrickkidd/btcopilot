@@ -26,7 +26,14 @@ from btcopilot.models import (
 from btcopilot.schema import ItemKind, Person, asdict
 from btcopilot.toolbox import ToolName
 from btcopilot.turnlog import TurnEventKind
-from btcopilot.tests.conftest import Model, called, csrf_token, said, wrote
+from btcopilot.tests.conftest import (
+    Model,
+    called,
+    csrf_token,
+    run_then_stop,
+    said,
+    wrote,
+)
 
 
 NELL = [
@@ -173,11 +180,6 @@ def test_the_words_of_a_stopped_turn_say_so_on_the_thread(
             said("Tell me about Finn."),
         ),
     )
-
-    def run_then_stop(toolbox, call):
-        answer = run_call(toolbox, call)
-        turnlog.halt(toolbox.turn_id)
-        return answer
 
     def run_change_stop(toolbox, call):
         answer = run_then_stop(toolbox, call)

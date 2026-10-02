@@ -28,6 +28,11 @@ class Who(enum.StrEnum):
     Coach = "coach"
 
 
+class Ref(enum.StrEnum):
+    Shadow = "shadow"
+    Statement = "statement"
+
+
 def _spoken(discussion, speaker_id: int) -> list:
     return [s for s in adapter.sitting(discussion.id) if s.speaker_id == speaker_id]
 
@@ -199,8 +204,8 @@ def _owner(user, discussion):
 
 def _ref_key(ref: dict) -> tuple:
     if "shadow_id" in ref:
-        return ("shadow", ref["shadow_id"])
-    return ("statement", ref["statement_id"])
+        return (Ref.Shadow, ref["shadow_id"])
+    return (Ref.Statement, ref["statement_id"])
 
 
 def _turn(turn_id: str):
@@ -218,7 +223,7 @@ def _turn(turn_id: str):
     refs.update({_ref_key(pick.right_ref): pick.right_text for pick in picks})
     order = random.sample(sorted(refs), len(refs))
     keys = dict(zip(order, string.ascii_lowercase))
-    real = next((ref for ref in keys if ref[0] == "statement"), None)
+    real = next((ref for ref in keys if ref[0] is Ref.Statement), None)
     rows = adapter.ShadowTurn.query.filter_by(turn_id=turn_id)
     return jsonify(
         {

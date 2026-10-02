@@ -23,7 +23,15 @@ from btcopilot.models import Author, Change, Discussion, Statement, TurnEvent
 from btcopilot.toolbox import ToolName
 from btcopilot.turnlog import TurnEventKind
 from btcopilot.schema import ItemKind, Person, asdict
-from btcopilot.tests.conftest import Model, called, calling, csrf_token, said, wrote
+from btcopilot.tests.conftest import (
+    Model,
+    called,
+    calling,
+    csrf_token,
+    run_then_stop,
+    said,
+    wrote,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -356,11 +364,6 @@ def test_a_turn_stopped_between_two_tool_calls_takes_its_edits_back(
         ),
         said("Added both."),
     )
-
-    def run_then_stop(toolbox, call):
-        answer = run_call(toolbox, call)
-        turnlog.halt(toolbox.turn_id)
-        return answer
 
     monkeypatch.setattr("btcopilot.coachturn.run_call", run_then_stop)
     body = post(web, token).get_json()
