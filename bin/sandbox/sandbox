@@ -185,6 +185,7 @@ seed_admin() {
   grep -v '^admin ' "$D/links.txt" > "$D/links.tmp" || true
   echo "admin $base/app/invite/$token" >> "$D/links.tmp"
   mv "$D/links.tmp" "$D/links.txt"
+  chmod 600 "$D/links.txt"
 }
 
 start_db() {
@@ -220,6 +221,7 @@ fill_db() {
   base=$(. "$D/env.sh" && echo "$FLASK_SITE_URL")
   grep -E '^[a-z0-9]+ [A-Za-z0-9_-]{20,}$' "$D/fixtures.out" \
     | awk -v base="$base" '{ print $1, base "/app/invite/" $2 }' > "$D/links.txt"
+  chmod 600 "$D/links.txt"
   echo "  database migrated, $(wc -l < "$D/links.txt" | tr -d ' ') fixture records installed (${SECONDS}s)"
 }
 
