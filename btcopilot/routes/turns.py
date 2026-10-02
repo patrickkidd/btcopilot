@@ -102,5 +102,5 @@ def turn_stop(turn_id: str):
     require_write_access(discussion.diagram)
     try:
         return jsonify(turns.stop(discussion, turn_id))
-    except turns.Idle as refused:
+    except (turns.Idle, turns.Unreached) as refused:
         abort(409, description=str(refused))

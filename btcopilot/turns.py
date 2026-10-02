@@ -68,6 +68,10 @@ class Idle(Exception):
     """A stop for a turn that is not running."""
 
 
+class Unreached(Exception):
+    """A stop no worker answered, so the turn goes on to its own end."""
+
+
 def start(discussion: Discussion, statement: str) -> dict:
     """Store what the user said, reserve the turn, and hand it over."""
     turn_id = uuid.uuid4().hex
@@ -176,12 +180,20 @@ def stop(discussion: Discussion, turn_id: str) -> dict:
 
 def kill(turn_id: str) -> None:
     """Revoke the worker's task for this turn, waiting for the worker to say it
-    has been signalled, so nothing it writes after lands behind the stop."""
+    has been signalled, so nothing it writes after lands behind the stop. A
+    worker that cannot say it holds the turn is refused rather than written
+    over: one on the solo pool answers nobody while it runs a task."""
     inspect = extensions.celery.control.inspect()
-    for found in (inspect.active() or {}, inspect.reserved() or {}):
-        for task in (t for tasks in found.values() for t in tasks):
-            if task["name"] == TASK and task["args"][0] == turn_id:
-                extensions.celery.control.revoke(task["id"], terminate=True, reply=True)
+    held = [
+        task["id"]
+        for found in (inspect.active() or {}, inspect.reserved() or {})
+        for tasks in found.values()
+        for task in tasks
+        if task["name"] == TASK and task["args"][0] == turn_id
+    ]
+    if not held:
+        raise Unreached(f"no worker says it is running turn {turn_id}")
+    extensions.celery.control.revoke(held, terminate=True, reply=True)
 
 
 def enqueue(

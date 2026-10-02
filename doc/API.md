@@ -20,7 +20,7 @@ names; a proxy's own error page has none.
 | `POST /sessions` | new empty session, 201 |
 | `GET /sessions/<id>` | one session plus `statements: [{id, role, text}]`, role is `user` or `coach` |
 | `PATCH /sessions/<id>` | `{title}` only |
-| `POST /turns/<id>/stop` | ends the running turn now: its worker is killed and the words typed out so far are stored as the coach's reply, its done event carrying `stopped: true` and no shadow replies; with no words yet it ends in failed, which can be tried again. 409 when the turn is not running (R-0636) |
+| `POST /turns/<id>/stop` | ends the running turn now: its worker is killed and the words typed out so far are stored as the coach's reply, its done event carrying `stopped: true` and no shadow replies; with no words yet it ends in failed, which can be tried again. 409 when the turn is not running, or when no worker answers that it holds the turn, which is every time on the solo pool the workers run today (R-0636) |
 
 A session reads `{id, title, summary, last_activity, message_count}`. The title
 and summary are written by the coach after the first exchange and are editable
