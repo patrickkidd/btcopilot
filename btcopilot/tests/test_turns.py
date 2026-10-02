@@ -159,43 +159,6 @@ def test_the_sitting_before_is_titled_again_from_all_of_it_when_the_next_opens(
     )
 
 
-def test_a_reply_beside_its_edits_is_typed_out_once_and_stays(
-    web, token, family, monkeypatch
-):
-    # R-0369
-    coach(monkeypatch, called(ToolName.EditPerson, "Nell is in. What is she like?", name="Nell"))
-    body = post(web, token).get_json()
-
-    events = logged(body["turn_id"])
-    assert [e["type"] for e in events] == [
-        TurnEventKind.Text.value,
-        TurnEventKind.ToolCall.value,
-        TurnEventKind.RecordPatch.value,
-        TurnEventKind.Done.value,
-    ]
-    assert events[-1]["statement"] == "Nell is in. What is she like?"
-
-
-def test_words_beside_a_refused_edit_are_wiped_before_the_reply(
-    web, token, family, monkeypatch
-):
-    # R-0369
-    coach(
-        monkeypatch,
-        called(ToolName.Remove, "Removed it.", item_kind="household", item_id="1", version=1),
-        said("There is no household to remove."),
-    )
-    body = post(web, token).get_json()
-
-    assert [e["type"] for e in logged(body["turn_id"])] == [
-        TurnEventKind.Text.value,
-        TurnEventKind.ToolCall.value,
-        TurnEventKind.TextReset.value,
-        TurnEventKind.Text.value,
-        TurnEventKind.Done.value,
-    ]
-
-
 def test_the_turns_done_row_carries_the_release_it_ran_on(
     web, token, family, monkeypatch
 ):

@@ -571,45 +571,4 @@ test.describe("the message box while the coach replies", () => {
     expect((await boxOf(lines.first())).height).toBeGreaterThan(12);
     await expect(page.locator("#send")).toHaveAttribute("aria-label", "Send");
   });
-
-  // R-0369
-  test("a reply typed out before its edits land is on the page once, over the line saying what it did", async ({
-    page,
-  }) => {
-    await page.goto("/app/");
-    await expect(page.locator("#view .ss")).toBeVisible();
-    await page.route(SEND, (route) =>
-      route.fulfill({ status: 202, json: { turn_id: "t1", discussion_id: 1, statement_id: 9500 } }),
-    );
-    const words = "Nell is in. What is she like?";
-    const events = [
-      { type: "text", text: words },
-      { type: "tool_call", name: "edit_person", args: { name: "Nell" }, names: { it: "Nell" }, refusal: null },
-      {
-        type: "done",
-        statement: words,
-        statement_id: 9501,
-        discussion_id: 1,
-        kind: "turn",
-        views: null,
-        events: [],
-        turn_id: "t1",
-      },
-    ];
-    await page.route(STREAM, (route) =>
-      route.fulfill({
-        status: 200,
-        headers: { "content-type": "text/event-stream", "cache-control": "no-cache" },
-        body: events.map((event, at) => `id: ${at + 1}\ndata: ${JSON.stringify(event)}\n\n`).join(""),
-      }),
-    );
-    await page.locator("#composer").fill("My sister is Nell.");
-    await page.locator("#send").click();
-
-    const reply = page.locator(".bub.coach:not(.typing)").last();
-    // the line saying what the coach did, then its words, once
-    await expect(reply).toHaveText("CoachAdded NellNell is in.What is she like?");
-    await expect(page.locator("#chat .sys")).toHaveCount(0);
-    await expect(page.locator("#send")).toHaveAttribute("aria-label", "Send");
-  });
 });

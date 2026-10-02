@@ -366,15 +366,10 @@ class CoachTurn:
             turn = self._say(
                 system, messages, schemas(self.toolbox.coder), stream=True
             )
-            # A turn ends on words. A step that calls nothing is the coach
-            # speaking; so are the words beside calls that all changed
-            # something and all went through, which saves the further request.
-            # Words beside a read or a refused call are the model working out
-            # what to do, and the user never sees them.
+            # A turn ends on words, never on a tool call. Text written before a
+            # call is the model working out what to do and the user never sees
+            # it, so only a step that calls nothing is the coach speaking.
             spoken = turn.text
-            reads = any(call.name in LOOKUPS for call in turn.calls)
-            if reads:
-                self._unsay()
             if not turn.calls:
                 if spoken.strip() or step == 0 or silent:
                     break
@@ -382,6 +377,9 @@ class CoachTurn:
                 silent = True
                 _say(messages, ("user", SPEAK))
                 continue
+            if turn.text:
+                _log.info(f"Turn {self.turn_id} step {step} thought aloud: {turn.text}")
+
             results = []
             for call in turn.calls:
                 self._halt()
@@ -425,18 +423,6 @@ class CoachTurn:
                     "results": results,
                 }
             )
-            # The coach has to read a refusal, and the sentences saying how the
-            # story changed, before it speaks.
-            if (
-                spoken.strip()
-                and not reads
-                and not sentences
-                and not any(result["is_error"] for result in results)
-            ):
-                break
-            if turn.text:
-                _log.info(f"Turn {self.turn_id} step {step} thought aloud: {turn.text}")
-            self._unsay()
         else:
             _log.warning(
                 f"Turn {self.turn_id} hit the step cap: {MAX_STEPS} steps used, "
@@ -565,11 +551,6 @@ class CoachTurn:
         if self.sink:
             self.sink(event)
 
-    def _unsay(self) -> None:
-        """Words typed out live that turned out not to be the reply go."""
-        if self.streamed:
-            self._send({"type": TurnEventKind.TextReset.value})
-
     def _note(self, events: list[dict], event: dict) -> None:
         """What the turn returns at the end and what it says as it goes are the
         same events, in the same order. The record's own edits are kept in the
@@ -593,15 +574,20 @@ class CoachTurn:
         return messages
 
     def _say(self, system, messages: list[dict], tools: list[dict], stream=False):
-        """One model call. The words go out as they arrive."""
+        """One model call. The words go out as they arrive; a step that ends in
+        a tool call was the coach thinking aloud, so those words are dropped."""
         self._halt()
         words = self.model.turn(system, messages, tools, self.turn_id)
+        sent = False
         while True:
             try:
                 piece = next(words)
                 if stream:
                     self._send({"type": TurnEventKind.Text.value, "text": piece})
+                    sent = True
             except StopIteration as stop:
+                if sent and stop.value.calls:
+                    self._send({"type": TurnEventKind.TextReset.value})
                 return stop.value
 
     def _history(self, tail: str, answered: Statement) -> list[dict]:
