@@ -150,3 +150,4 @@ R-0664 | TEST OWED | appended from the queue on 2026-10-02; 0 of 1 citing tests 
 R-0646 | TEST OWED | appended from the queue on 2026-10-02; 0 of 1 citing tests exist
 R-0665 | TEST OWED | appended from the queue on 2026-10-02; 0 of 2 citing tests exist
 R-0666 | TEST OWED | appended from the queue on 2026-10-02; 0 of 2 citing tests exist
+R-0655 | TEST OWED | appended from the queue on 2026-10-02; 0 of 2 citing tests exist
