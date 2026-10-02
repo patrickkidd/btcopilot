@@ -6,7 +6,7 @@ behaviour, tagged `[built]` if it is in the app today, `[drawn]` if it is approv
 but not built, and `[open]` if it is a choice Patrick has not made yet. It is rewritten as
 decisions land; the exact sizes and colours live in the internal interface spec, not here.
 
-Updated: 2026-09-29
+Updated: 2026-10-02
 
 ---
 
@@ -59,12 +59,11 @@ What it is for: talking to the coach, which is how everything else in the app ge
 - The coach adds, changes and removes people, pair-bonds, events and shifts as you talk, and says in the thread what it did. [built] {R-0185}
 - Those lines saying what it changed are set apart from the coach's own words, deliberately, and are staying. [built] {R-0186}
 - Each line of what it did lights the thing it made in the picture as that line lands. [built] {R-0185}
-- Three dots appear in the coach's bubble the moment you send, so the bubble is never blank while it thinks. [built] {R-0184}
+- Three dots appear in the coach's bubble the moment you send, so the bubble is never blank while it thinks. [built] {R-0184, R-0653}
 - The thread stays at the bottom on the newest words while the coach types. [built] {R-0172, R-0231}
 - Opening the app again puts you at the bottom of the thread, on the newest words. [built] {R-0231}
 - Everything the app says can be selected and copied, including the coach's replies and the lines about what it changed. [built] {R-0183}
 - The first time you open it, the coach says it is there whenever you want to think out loud about your family and asks who is on your mind. [built]
-- Sending a second message while the coach is still answering does nothing, so your words are never stored twice. [built]
 - The coach does not message you first unless you ask it to. [built] {R-0017}
 - Correcting something in conversation changes the record in place, and older references still point at the right thing. [built]
 - You can also undo the last thing the coach did by telling it to. [built]
@@ -89,6 +88,15 @@ What it is for: talking to the coach, which is how everything else in the app ge
 - A tap on a notification lands where it points from wherever the app is: the sessions drawer, the play-by-play drawer, the new-event form, the account view and any other screen are put away, then the thread scrolls to its message and lights it; a task or notice instead opens the account view at its root and the page it names. [built] {R-0055}
 - A coach message written while the app was open elsewhere, or away, appears in the thread when you come back to the app, when you tap its notification, and within a minute while the app is in front; the thread is only drawn again when something new is in it. [built] {R-0606}
 - Admins and auditors see a small circled (i) at the top right of a coach reply; tapping it opens the coach's own notes for that turn in a panel that grows out of the bubble and shrinks back into it. Nobody else sees the notes. [built] {R-0520, R-0522, R-0529}
+- While the coach replies the message box stays open and the Send button is a Stop button. A message you send meanwhile waits under the line "Sends when the coach finishes" and goes the moment the reply ends. [built] {R-0674}
+- Stop ends the coach's turn at its next step. Anything that turn had added to or changed in the record is taken back, the picture and the lists show it gone, and a grey line "Stopped" stays under your words, after a reload too. [built] {R-0674}
+- Reloading the page never changes what you see: an open vote, a mode that is on and a selection all come back as they were. [built] {R-0652}
+- With Conversation Feedback on, a strip under the header says it is on, that replies will be slower, and to vote; a tap on the strip turns it off. [built] {R-0673}
+- With it on, each coach reply arrives beside one other reply to the same words, neither one named. You mark every reply that is acceptable and the one that is best, may add a note of at most two sentences, and tap Vote. [built] {R-0636, R-0639, R-0645}
+- The message box is locked until you vote. [built] {R-0638}
+- After the vote the coach's real reply is labelled Coach and the other is folded under it; which model wrote the other is never shown. [built] {R-0636, R-0644}
+- Replies made with Conversation Feedback on are amber, in light and dark mode, and stay amber after a reload with their fold and how each was voted. [built] {R-0673}
+- The circled (i) for the coach's notes is hidden while a vote is open. [built] {R-0646}
 
 ## The picture at rest
 
@@ -269,6 +277,8 @@ What it is for: seeing and editing everything in the record by hand.
 - The line saying you can also edit by chatting was removed from these lists. [built] {R-0219}
 - There is a button to add an event; the new event's form slides up over the lists, full screen, with its name and the app's close button at its top. [built]
 - An event or a person is changed by chatting about it, from its detail card. [built]
+- There is no button for adding a person or an event; you add one by telling the coach. The two forms remain for editing what is already there. [built] {R-0663}
+- Every row of the events list shows the word for its kind in the emphasis colour, whatever the kind. [built] {R-0675}
 
 ## The event detail view
 
@@ -402,6 +412,8 @@ What it is for: you, your families, your plan, and signing out.
 - A plain subscriber or a professional sees neither section. [built] {R-0311}
 - Sign out sits alone at the bottom and signs you out immediately, with no confirmation step. [built]
 - Every icon button in the app is the same size: a forty-four point target with a forty point mark inside it. [built] {R-0234}
+- Admins and auditors see a Conversation Feedback switch on the Coach page. Turning it on asks first, in a dialog that says it adds cost and to turn it off when done; admins also see what it costs. [built] {R-0637, R-0642, R-0643}
+- Conversation Feedback turns itself off 5 minutes after the latest of your turning it on, the coach's last reply and your last vote, and the page says when. [built] {R-0672}
 
 ## The about page
 
@@ -572,6 +584,8 @@ What it is for: saying what each line of a conversation tells you happened, so w
 - The coach's own pass over a conversation is one coding among the others and is hidden the same way. [drawn] {R-0242}
 - Nobody is paid and there is no quota; the work is a rolling window and conversations keep growing. [drawn] {R-0251}
 - The old coding page becomes a link marked as legacy and is deleted once its material has been coded again. [drawn] {R-0238}
+- The coding screen's header shows the conversation's name. [built]
+- The coding screen's list has no button for adding an event or a person; a coder adds one by tapping a line of the conversation and saying what happened. [built] {R-0663}
 
 ## Your one task
 

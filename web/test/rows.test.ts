@@ -74,7 +74,7 @@ describe("an event row's kind", () => {
     expect(shift).toContain('<svg class="kmark" viewBox="0 0 28 28" aria-hidden="true"></svg>');
   });
 
-  // R-0113, R-0636
+  // R-0113, R-0636, R-0675
   it("is in the data colour whether the label is the kind, the kind and a name, or a whole description", () => {
     const born = (label: string, description: string | null) =>
       eventRow({ ...coded, kind: "birth", child: 1, label, description }, new Map(), tree);

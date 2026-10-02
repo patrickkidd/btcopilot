@@ -403,7 +403,7 @@ test.describe("the coach's notes", () => {
 test.describe("the message box while the coach replies", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0636
+  // R-0636, R-0674
   test("a message sent during a reply waits in the box and goes after Done", async ({ page }) => {
     await page.goto("/app/");
     await expect(page.locator("#view .ss")).toBeVisible();
@@ -459,7 +459,7 @@ test.describe("the message box while the coach replies", () => {
     await expect(page.locator("#send")).toHaveAttribute("aria-label", "Send");
   });
 
-  // R-0636
+  // R-0636, R-0674
   test("a stopped turn that added a person leaves no reply, and the person is gone from the picture", async ({
     page,
   }) => {

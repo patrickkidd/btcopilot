@@ -128,7 +128,7 @@ def test_a_model_taken_off_the_shadow_models_is_dropped_from_whoever_had_it(
 def test_shadows_turn_off_five_minutes_after_the_coach_last_replied(
     web, test_user, minutes, on
 ):
-    # R-0637
+    # R-0637, R-0672
     test_user.roles = btcopilot.ROLE_AUDITOR
     now = datetime.datetime.utcnow()
     shadow.switch(test_user, ["sonnet"], now - datetime.timedelta(minutes=10))
@@ -150,7 +150,7 @@ def test_shadows_turn_off_five_minutes_after_the_coach_last_replied(
 
 
 def test_a_vote_keeps_shadows_on_five_minutes_after_it(web, test_user):
-    # R-0637
+    # R-0637, R-0672
     test_user.roles = btcopilot.ROLE_AUDITOR
     now = datetime.datetime.utcnow()
     shadow.switch(test_user, ["sonnet"], now - datetime.timedelta(minutes=10))

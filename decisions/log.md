@@ -2082,3 +2082,41 @@ and model, and each shadow pairs with the real reply. The alias `sonnet` names C
 ## 2026-09-30: FD-366 — the shadow backfill goes ahead and the shadow spend stays
 
 Patrick [R-0620, R-0621, queued]. He said "yes" to building the shadow backfill over his past turns: the Flash spend of about $2 is approved, and the eleven older replies without a turn id are skipped. He said "keep" for both shadow models on his account, about $25 a month. On the leftover parts of R-0485 he asked for the literature analysis before ruling, and on whether a complaint about the coach's dates is a bug the coach should offer he said it depends on the context; neither is ruled.
+
+## 2026-10-02: FD-368 — the model choice is narrowed to Opus against Sonnet, judged by Patrick's own votes on production
+
+Patrick [R-0635, R-0656, R-0657, R-0659, R-0660, R-0666]. Gemini and Haiku-class models are out
+as candidates for the coach. No new model is tried and no outside key is created until he asks.
+The next step is his own votes on production with Conversation Feedback on, with no pass rule
+and nothing tracked until he has data. Sandbox votes so far: 17, Opus best in 11.
+
+## 2026-10-02: FD-368 — no synthetic clients for the model choice; the learning loops run on real beta users
+
+Patrick [R-0655, R-0665, R-0668]. The synthetic client code and what was learned from it are kept
+for later. A loop that collects data with no automated way yet to act on it is called an open
+learning loop and is listed in doc/FEEDBACK_LOOPS.md; two are listed, the notes on votes and the
+acceptable and best marks.
+
+## 2026-10-02: FD-368 — the evaluation suite for the coach, the rubric from vote notes, the one-request turn, more thinking on the variables and the design pass for emails are parked
+
+Patrick [R-0669, R-0668, R-0664, R-0619]. Each is picked up only when he asks. The evaluation
+suite has a concept page and a plan in the private corpus and nothing built; it needs his yes on
+direction and then two new tables that are his to rule. The one-request turn is built on branch
+FD-368-one-request and was dropped for now because it raises the risk of bugs.
+
+## 2026-10-02: FD-368 — a release goes out only on Patrick's message naming it; PR status goes in comments
+
+Patrick [R-0670, R-0671, R-0650, R-0651]. A session never releases on its own judgement. A PR
+description says what changed, user-facing first; status and updates go in PR comments. A release
+from a ticket branch makes no git tag.
+
+## 2026-10-02: FD-368 — the default test suite runs on SQLite; tests that need Postgres are a separate integration suite
+
+Patrick [R-0627]. The integration suite lives in btcopilot/tests/integration, is skipped by
+default and runs with `--integration`, with its own CI step.
+
+## 2026-10-02: FD-368 — the clone under theapp is deprecated
+
+Patrick [R-0677]. It is kept only to maintain the legacy app. Ticket worktrees for this project
+belong under the standalone clone; this session's worktree was made in the deprecated one by
+mistake.

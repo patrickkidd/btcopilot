@@ -207,7 +207,7 @@ test("a message 6 minutes after the coach's last reply gets the coach's reply al
 test.describe("a thread read again", () => {
   test.use({ storageState: stateFor("sitting") });
 
-  // R-0636, R-0639, R-0652
+  // R-0636, R-0639, R-0652, R-0673
   test("after a reload a past reply voted on keeps its amber edge and its fold, and the fold shows how each was voted", async ({
     page,
   }) => {
@@ -245,7 +245,7 @@ test.describe("a thread read again", () => {
     expect(shown).toBe(0);
   });
 
-  // R-0636
+  // R-0636, R-0673
   test("in dark mode a reply made with Conversation Feedback on has an amber edge", async ({ page }) => {
     await page.emulateMedia({ colorScheme: "dark" });
     await voted(page);

@@ -112,6 +112,10 @@ work; the file on Patrick's Mac also carries keys for his other projects.
 The file holds multi-line values, so it cannot be `source`d; read one key with
 `grep '^NAME=' .env | cut -d= -f2-`.
 
+**Which clone.** Work on this project happens in the standalone clone and its ticket worktrees
+(`.claude/worktrees/<ticket>` under it). The older clone under `theapp` is retired for this project:
+it serves the legacy app's upkeep and nothing else, so never create a ticket worktree there.
+
 ## 6. A working server: the sandbox kit
 
 One command brings up Postgres, Redis, the Celery worker, the fixture records and the built
