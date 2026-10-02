@@ -486,7 +486,7 @@ passed, the paid behaviour suite passed 9 of 9 ($0.64, testing key), no migratio
 thread had 78 statements before and after. It was deployed by hand on the box, because the
 setting naming the server was missing from GitHub. Backup:
 `/root/backups/prod-2026-09-26-0540-pre-fd363-5b2a6bb.dump`, copied to
-`~/theapp/btcopilot-sources/`.
+`~/btcopilot/btcopilot-sources/`.
 
 **Pushed after the 05:40 deploy, not part of the app on the box**:
 - The paid behaviour suite saves each real response, sops-encrypted under private/replays and
@@ -547,7 +547,7 @@ already-superseded database revision instead stopped the current one and ran aft
 had already gone live rather than before the image was pulled — it now runs first and lets the
 current chain through (2a797b0). Backup:
 `/root/backups/prod-2026-09-26-2013-pre-fd363-2a797b0.dump`, copied to
-`~/theapp/btcopilot-sources/`. His thread was unchanged by the deploy: 81 statements, 29 people,
+`~/btcopilot/btcopilot-sources/`. His thread was unchanged by the deploy: 81 statements, 29 people,
 67 events, 12 pair-bonds, 5 clusters, 194 change rows, before and after. One real turn on the
 claude-test account proved the running stack, for $0.16.
 
