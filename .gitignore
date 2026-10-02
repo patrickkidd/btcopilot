@@ -204,3 +204,6 @@ doc/events.json
 doc/trace.json
 doc/archive/2026-09-events.json
 doc/archive/2026-09-trace.json
+
+# Scratch scripts for workers (FD-367)
+/tmp-fd367/

@@ -27,18 +27,25 @@ def test_shadows_set_names_the_shadow_models_for_everyone(flask_app):
     assert result.exit_code != 0 and "unknown model opus-typo" in result.output
 
 
+def test_shadows_set_rejects_a_gemini_model(flask_app):
+    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    result = invoke(flask_app, "shadows", "set", "gemini-flash")
+    assert result.exit_code != 0 and "unknown model gemini-flash" in result.output
+    assert setting.shadow_candidates() == ["sonnet"]
+
+
 def test_set_writes_and_clears_a_persons_model_and_show_names_their_shadows(
     flask_app, test_user
 ):
     # R-0596
     invoke(flask_app, "set", test_user.username, "sonnet-5")
-    test_user.set_prefs(shadow_models=["gemini-pro", "sonnet"])
+    test_user.set_prefs(shadow_models=["haiku-4.5", "sonnet"])
     db.session.commit()
     shown = json.loads(invoke(flask_app, "show").output)
     assert shown[1] == {
         "email": test_user.username,
         "model": "sonnet-5",
-        "shadow": ["gemini-pro", "sonnet"],
+        "shadow": ["haiku-4.5", "sonnet"],
     }
     invoke(flask_app, "set", test_user.username, "default")
     test_user.set_prefs(shadow_models=[])

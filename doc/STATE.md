@@ -1769,7 +1769,13 @@ Research round two, 2026-10-01, on this machine (no ~/Documents here; Family Eva
 
 ## Open — the app's model calls on a Bedrock machine
 
-Patrick, 2026-10-01: on a machine signed in to Bedrock (this one is), the app's testing model calls use Bedrock; Anthropic, Gemini and OpenAI are unreachable there. Not built: the model-call code in btcopilot/llmutil.py has only Anthropic and Gemini clients; the sandbox `--real` path reads the Anthropic key; the shadow model aliases name Anthropic model ids. Open with Patrick: what the Gemini-only paths (the e2e suite on GOOGLE_GEMINI_API_KEY) do on such a machine. No ticket yet.
+Patrick, 2026-10-01: build the Anthropic-on-Bedrock path on FD-367; Gemini is dropped, side-by-side testing included. Being built 2026-10-01.
+
+Deploy step for this branch, before the rollout: a shadow list stored under FD-365 may still name a
+Gemini alias the app no longer offers. On the box, `docker compose --env-file /etc/fd/secrets.env exec fd-app flask admin coach-model show`
+lists every person whose shadow list differs from off; for each one naming a Gemini alias, run
+`docker compose --env-file /etc/fd/secrets.env exec fd-app flask admin coach-model shadow <email> sonnet` (or `off`). The worker also
+skips an alias it no longer offers, one warning each, so an old setting never fails a turn.
 
 ## Jira / branches
 
