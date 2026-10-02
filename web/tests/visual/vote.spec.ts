@@ -19,10 +19,18 @@ const PICKS = [
 ];
 
 const MINUTE = 60_000;
+/** Polls that step the page's clock want no pause of their own. */
+const FAST = { timeout: 30_000, intervals: [50] };
 const at = (ms: number) => new Date(Date.now() + ms).toISOString();
 
-/** The switch on, turning itself off at `expires`. */
-async function serve(page: Page, expires = at(5 * MINUTE)): Promise<Record<string, unknown>[]> {
+/** The switch on, turning itself off at `expires`; the second shadow
+ * finishes on the `second`th ask, the first before the first ask. Answers the
+ * votes cast and how often the replies were asked for. */
+async function serve(
+  page: Page,
+  expires = at(5 * MINUTE),
+  second = 2,
+): Promise<{ cast: Record<string, unknown>[]; asked: () => number }> {
   const cast: Record<string, unknown>[] = [];
   await page.route(/\/app\/preferences$/, async (route: Route) => {
     const answer = await route.fetch();
@@ -32,14 +40,20 @@ async function serve(page: Page, expires = at(5 * MINUTE)): Promise<Record<strin
     });
   });
   await mockTurn(page, { statement: REAL, statement_id: 9601 });
-  // the first ask finds one shadow finished, the next both
   let asked = 0;
   await page.route(/\/review\/picks\?turn=t1$/, (route) => {
     asked += 1;
-    const picks = asked === 1 ? PICKS.slice(0, 1) : PICKS;
+    const running = asked < second ? 1 : 0;
+    const picks = PICKS.slice(0, 2 - running);
     const keys = new Set(picks.flatMap((p) => [p.left_key, p.right_key]));
     return route.fulfill({
-      json: { replies: REPLIES.filter((r) => keys.has(r.key)), real_key: "b", picks },
+      json: {
+        replies: REPLIES.filter((r) => keys.has(r.key)),
+        real_key: "b",
+        picks,
+        pending: running,
+        expected: 2,
+      },
     });
   });
   await page.route(/\/review\/picks\/\d+$/, async (route) => {
@@ -47,7 +61,7 @@ async function serve(page: Page, expires = at(5 * MINUTE)): Promise<Record<strin
     cast.push({ id, ...route.request().postDataJSON() });
     await route.fulfill({ json: { id, choice: "right", note: null, left: "x", right: "y" } });
   });
-  return cast;
+  return { cast, asked: () => asked };
 }
 
 test.use({ storageState: stateFor("moves") });
@@ -64,7 +78,7 @@ async function voted(page: Page, picks = VOTED, newest = false): Promise<() => n
   let asked = 0;
   await page.route(/\/review\/picks\?turn=t9$/, (route) => {
     asked += 1;
-    return route.fulfill({ json: { replies: REPLIES, real_key: "b", picks } });
+    return route.fulfill({ json: { replies: REPLIES, real_key: "b", picks, pending: 0, expected: 2 } });
   });
   await page.addInitScript((newest) => {
     let boot: { statements: { id: number; role: string; turn_id: string | null; feedback: number }[] };
@@ -85,7 +99,7 @@ async function voted(page: Page, picks = VOTED, newest = false): Promise<() => n
 test("three replies are voted on unnamed, then the coach's is headed Coach with the others folded", async ({
   page,
 }) => {
-  const cast = await serve(page);
+  const { cast } = await serve(page);
   await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await expect(page.locator("#feedback span")).toHaveText("Conversation feedback enabled; Responses will be slower, vote on the best replies");
@@ -129,6 +143,40 @@ test("three replies are voted on unnamed, then the coach's is headed Coach with 
   await expect(bubble.locator(".vt-said")).toHaveText("Your note: Third asks two things at once");
   expect(await page.content()).not.toMatch(/sonnet|gemini/i);
   await expect(page).toHaveScreenshot("vote-folded-open.png");
+});
+
+// R-0636
+test("a shadow reply that finishes 70 seconds after the coach's is still voted on", async ({ page }) => {
+  await page.clock.install();
+  // polled every 2 seconds from the coach's reply, the 32nd ask is past the
+  // old 60-second cut-off and the 36th at 70 seconds
+  const { asked } = await serve(page, at(5 * MINUTE), 36);
+  await page.goto("/app/");
+  await expect(page.locator("#view .ss")).toBeVisible();
+  await page.locator("#composer").fill("My dad called last night about mom's care.");
+  await page.locator("#send").click();
+  const bubble = page.locator(".bub.coach").last();
+  await expect(bubble.locator(".vt-wait")).toHaveText("Waiting for other replies");
+  // the mocked reply is not in the record, so the thread read once a minute
+  // would draw the thread again without it; that read finds no signal instead
+  await page.route(/\/app\/statements\?diagram_id=\d+$/, (route) => route.abort("internetdisconnected"));
+
+  await expect
+    .poll(async () => {
+      await page.clock.runFor(2000);
+      return asked();
+    }, FAST)
+    .toBeGreaterThanOrEqual(32);
+  await expect(bubble.locator(".vt-wait")).toBeVisible();
+  await expect(bubble.locator(".vt-reply")).toHaveCount(0);
+
+  await expect
+    .poll(async () => {
+      await page.clock.runFor(2000);
+      return bubble.locator(".vt-reply").count();
+    }, FAST)
+    .toBe(3);
+  expect(asked()).toBe(36);
 });
 
 // R-0637

@@ -8,9 +8,9 @@ import { PickChoice, PickSource, type Shadows } from "./types";
  * The reply that is the coach's is only said once the vote is in, and no model
  * is ever named. */
 
-/** How long a reply waits for its shadows: what has come by then is voted
- * on, and with none the reply is shown alone. */
-const PATIENCE_MS = 60_000;
+/** How long a reply waits at most for shadows still running: what has come
+ * by then is voted on, and with none the reply is shown alone. */
+const PATIENCE_MS = 180_000;
 /** Shadow replies turn themselves off this long after the latest of the
  * coach's last reply being done, the last vote and being turned on (R-0637). */
 export const IDLE_MS = 5 * 60_000;
@@ -143,14 +143,17 @@ export class Vote {
     if (shadows) this.show(shadows);
   }
 
-  /** The turn's replies once every shadow has its pick, or whatever is in at
-   * the deadline; null when the thread was put away meanwhile. */
+  /** The turn's replies once every shadow started has finished, or whatever
+   * is in at the deadline; null when the thread was put away meanwhile. The
+   * shadows are started just after the reply is done, so none started yet is
+   * not all finished. */
   private async ready(): Promise<Shadows | null> {
     const until = Date.now() + PATIENCE_MS;
     for (;;) {
       if (!this.bubble.isConnected) return null;
       const shadows = await api.shadows(this.turnId);
-      if (shadows.picks.length >= this.models || Date.now() + POLL_MS > until) return shadows;
+      const done = shadows.expected >= this.models && shadows.pending === 0;
+      if (done || Date.now() + POLL_MS > until) return shadows;
       await new Promise((go) => setTimeout(go, POLL_MS));
     }
   }

@@ -1008,6 +1008,10 @@ export interface Shadows {
     right_acceptable: boolean | null;
     note: string | null;
   }[];
+  /** Shadow replies started and not yet finished, with text or an error. */
+  pending: number;
+  /** Shadow replies started, finished or not. */
+  expected: number;
 }
 
 export interface Cast {
