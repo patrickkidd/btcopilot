@@ -72,7 +72,7 @@ def test_only_staff_may_turn_shadows_on(web, token, test_user):
 def test_an_auditor_turns_shadows_on_and_only_an_admin_sees_their_cost(
     web, token, test_user
 ):
-    # R-0637
+    # R-0637, R-0642, R-0643
     test_user.roles = btcopilot.ROLE_AUDITOR
     setting.write(SettingKey.ShadowCandidates, ["sonnet", "gemini-pro"])
     body = shadows(web, token, ["sonnet", "gemini-pro"]).get_json()
@@ -99,7 +99,7 @@ def test_an_auditor_turns_shadows_on_and_only_an_admin_sees_their_cost(
 def test_only_sonnet_is_a_shadow_model_until_an_admin_sets_others(
     web, token, test_user
 ):
-    # R-0637
+    # R-0637, R-0658
     test_user.roles = btcopilot.ROLE_AUDITOR
     db.session.commit()
     assert web.get("/app/preferences").get_json()["shadow_candidates"] == ["sonnet"]

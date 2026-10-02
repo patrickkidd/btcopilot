@@ -117,7 +117,7 @@ def test_the_turn_writes_what_it_did_in_order_and_ends_in_done(
 def test_a_title_call_that_fails_leaves_the_reply_and_the_sitting_unnamed(
     web, token, family, monkeypatch, down
 ):
-    # R-0097
+    # R-0097, R-0661
     coach(monkeypatch, said("Tell me about Nell."))
     with patch("btcopilot.metered.gemini_text_sync", side_effect=down):
         body = post(web, token).get_json()
@@ -134,7 +134,7 @@ def test_a_title_call_that_fails_leaves_the_reply_and_the_sitting_unnamed(
 def test_the_sitting_before_is_titled_again_from_all_of_it_when_the_next_opens(
     web, token, family, monkeypatch
 ):
-    # R-0097
+    # R-0097, R-0662
     coach(monkeypatch, said("Tell me more."), said("Go on."), said("And then?"))
     first = post(web, token, "My dad called last night.").get_json()["discussion_id"]
     for statement in Statement.query:

@@ -742,7 +742,7 @@ test.describe("the Conversation Feedback switch", () => {
     flask("admin", "run", "--", "users", "roles", username("empty"), ...names, "--yes");
   test.afterAll(() => roles("subscriber"));
 
-  // R-0637
+  // R-0637, R-0642, R-0643
   test("an admin sees it with what it costs, and turning it on asks first", async ({ page }) => {
     roles("admin", "subscriber");
     const patched: unknown[] = [];

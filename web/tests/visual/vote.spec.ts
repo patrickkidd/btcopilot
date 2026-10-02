@@ -95,7 +95,7 @@ async function voted(page: Page, picks = VOTED, newest = false): Promise<() => n
   return () => asked;
 }
 
-// R-0636, R-0637
+// R-0636, R-0637, R-0639, R-0644, R-0645
 test("three replies are voted on unnamed, then the coach's is headed Coach with the others folded", async ({
   page,
 }) => {
@@ -207,7 +207,7 @@ test("a message 6 minutes after the coach's last reply gets the coach's reply al
 test.describe("a thread read again", () => {
   test.use({ storageState: stateFor("sitting") });
 
-  // R-0636
+  // R-0636, R-0639, R-0652
   test("after a reload a past reply voted on keeps its amber edge and its fold, and the fold shows how each was voted", async ({
     page,
   }) => {
@@ -226,7 +226,7 @@ test.describe("a thread read again", () => {
     expect(asked()).toBe(1);
   });
 
-  // R-0636
+  // R-0636, R-0652
   test("after a reload with the vote open the coach's own text is hidden and each reply shows once", async ({
     page,
   }) => {

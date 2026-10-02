@@ -304,7 +304,7 @@ def test_navigate_to_a_place_the_app_or_the_record_lacks_is_refused(
 
 @pytest.mark.parametrize("coder", [False, True])
 def test_navigate_lists_coder_screens_only_for_a_coder(coder):
-    # R-0055
+    # R-0055, R-0626
     tool = next(s for s in schemas(coder) if s["name"] == ToolName.Navigate.value)
     listed = tool["input_schema"]["properties"]["address"]["description"]
     assert ("/app/vote/:n," in listed) is coder
@@ -315,7 +315,7 @@ def test_navigate_lists_coder_screens_only_for_a_coder(coder):
 def test_navigate_to_a_coder_screen_is_refused_for_a_person_without_the_role(
     discussion, family
 ):
-    # R-0055
+    # R-0055, R-0626
     model = Model(called(ToolName.Navigate, address="/app/coding/3"), said("I cannot open that."))
     reply = run(discussion, "Open it.", model)
     assert EventKind.Navigate.value not in kinds(reply)
@@ -998,7 +998,7 @@ def test_a_read_tells_the_page_which_events_it_read(discussion, family):
 
 
 def test_sitting_title_and_summary_run_on_the_extraction_model(discussion, monkeypatch):
-    # R-0388
+    # R-0388, R-0661
     asked = []
 
     def flash(*a, **k):
