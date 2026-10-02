@@ -57,7 +57,7 @@ def wren(test_user):
 
 
 def test_a_refused_write_does_not_stall_the_next_model_call(discussion, wren):
-    # R-0388, R-0597
+    # R-0388, R-0597, R-0628
     reply = CoachTurn(
         discussion,
         "My dad moved out in 1994.",
@@ -76,4 +76,5 @@ def test_a_refused_write_does_not_stall_the_next_model_call(discussion, wren):
         scratch=True,
     ).run()
     assert reply["statement"] == "What changed for you when he left?"
-    assert ModelCall.query.filter_by(purpose=Purpose.Replay).count() == 2
+    # the coach's two calls, then the session's title and summary
+    assert ModelCall.query.filter_by(purpose=Purpose.Replay).count() == 4
