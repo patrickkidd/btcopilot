@@ -11,6 +11,7 @@ import pytest
 from mock import patch
 from sqlalchemy import text
 import btcopilot
+from btcopilot import provider
 from btcopilot.extensions import db
 from btcopilot.llmutil import EXTRACTION_MODEL, Served, Spent, Text
 from btcopilot.coachmodel import ModelTurn, ToolCall
@@ -66,6 +67,20 @@ def pytest_configure(config):
 def extensions():
     with stubbed(STUBS) as originals:
         yield originals
+
+
+# Read machine's provider before the suite pins it for tests.
+MACHINE = provider.provider()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def anthropic_provider():
+    """Pin provider to Anthropic; suite uses stand-in calls."""
+    patched = pytest.MonkeyPatch()
+    patched.delenv(provider.BEDROCK_MACHINE, raising=False)
+    patched.delenv(provider.SETTING, raising=False)
+    yield
+    patched.undo()
 
 
 @pytest.fixture

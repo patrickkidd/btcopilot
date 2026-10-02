@@ -7,12 +7,21 @@ import logging
 from dataclasses import dataclass, field, fields, MISSING
 from typing import get_origin, get_args, Union
 
+import anthropic
 import openai
 from google import genai
 from google.genai import types
 import aiohttp
 from google.genai.errors import APIError, ClientError, ServerError
 
+from btcopilot.provider import (
+    Provider,
+    bedrock_model,
+    credentials,
+    provider,
+    region,
+    require_bedrock_ids,
+)
 from btcopilot.schema import from_dict
 
 _log = logging.getLogger(__name__)
@@ -26,11 +35,14 @@ CALIBRATION_MODEL = "gemini-3-flash-preview"
 # Set BTCOPILOT_RESPONSE_MODEL to override. Supported values:
 #   "claude-opus-5-5" (default) — Anthropic Claude Opus 5.5
 #   "claude-opus-4-6" — Anthropic Claude Opus 4.6
-#   "gemini-3-flash-preview" — Google Gemini Flash (legacy)
-#   Any valid Anthropic or Gemini model identifier.
-# The backend is auto-detected from the model name prefix.
+#   Any valid Anthropic model identifier.
 RESPONSE_MODEL = os.environ.get("BTCOPILOT_RESPONSE_MODEL", "claude-opus-5-5")
 GEMINI_RESPONSE_MODEL = "gemini-3-flash-preview"
+
+# Gemini Flash and Sonnet are near-identical in performance and cost (Patrick,
+# 2026-10-01), so on Bedrock, where Google is unreachable, Sonnet answers every
+# call that names a Gemini model.
+GEMINI_STAND_IN = "claude-sonnet-5-5"
 
 TEXT_EFFORT = "medium"
 STRUCTURED_EFFORT = "high"
@@ -40,11 +52,6 @@ STRUCTURED_EFFORT = "high"
 MODEL_ALIASES = {
     "opus-5.5": "claude-opus-5-5",
     "opus-4.6": "claude-opus-4-6",
-    "gemini-flash": "gemini-3.8-flash",
-    "gemini-pro": "gemini-3.1-pro-preview",
-    "gemini-3.8-flash": "gemini-3.8-flash",
-    "gemini-3.6-flash": "gemini-3.6-flash",
-    "gemini-2.5-flash": "gemini-2.5-flash",
     "haiku-4.5": "claude-haiku-4-5-20251001",
     "sonnet": "claude-sonnet-5-5",
     "sonnet-5": "claude-sonnet-5",
@@ -62,10 +69,6 @@ def resolve_model(alias: str | None) -> str:
     return MODEL_ALIASES[alias] if alias else RESPONSE_MODEL
 
 
-def is_gemini(model: str) -> bool:
-    return model.startswith("gemini-")
-
-
 def is_openai(model: str) -> bool:
     return model.startswith("gpt-")
 
@@ -73,6 +76,16 @@ def is_openai(model: str) -> bool:
 def _is_claude_model(model: str) -> bool:
     """Return True if the model identifier is a Claude/Anthropic model."""
     return model.startswith("claude-")
+
+
+def bedrock_models() -> set[str]:
+    """Every Claude model the app may name, each of which Bedrock must serve."""
+    named = {*MODEL_ALIASES.values(), RESPONSE_MODEL, GEMINI_STAND_IN}
+    return {model for model in named if _is_claude_model(model)}
+
+
+if provider() is Provider.Bedrock:
+    require_bedrock_ids(bedrock_models())
 
 
 # --- JSON Schema generation for Gemini structured output ---
@@ -232,35 +245,6 @@ def _client():
     )
 
 
-# Which Google endpoint the coach's Gemini calls go to. Vertex AI runs under
-# the Google Cloud project, whose agreement covers health data; the Developer
-# API runs on an API key.
-GEMINI_ENDPOINT = "BTCOPILOT_GEMINI_ENDPOINT"
-
-
-class GeminiEndpoint(enum.StrEnum):
-    Vertex = "vertex"
-    Developer = "developer"
-
-
-def gemini_client(timeout: float | None = None) -> genai.Client:
-    """No timeout, in seconds, is the Gemini default."""
-    options = types.HttpOptions(
-        timeout=int(timeout * 1000) if timeout else GEMINI_TIMEOUT_MS
-    )
-    endpoint = GeminiEndpoint(os.environ.get(GEMINI_ENDPOINT, GeminiEndpoint.Vertex))
-    if endpoint is GeminiEndpoint.Vertex:
-        return genai.Client(
-            vertexai=True,
-            project=os.environ["GOOGLE_CLOUD_PROJECT"],
-            location=os.environ["GOOGLE_CLOUD_LOCATION"],
-            http_options=options,
-        )
-    return genai.Client(
-        api_key=os.environ["GOOGLE_GEMINI_API_KEY"], http_options=options
-    )
-
-
 def openai_client(timeout: float | None = None) -> openai.OpenAI:
     """No timeout, in seconds, is the OpenAI default."""
     return openai.OpenAI(
@@ -287,9 +271,10 @@ FALLBACKS = {
 
 
 def fallback_args(model: str) -> dict:
-    """The request arguments that ask for the fallbacks, on the beta client."""
+    """The request arguments that ask for the fallbacks, on the beta client.
+    Bedrock does not take the parameter."""
     chain = FALLBACKS.get(model)
-    if not chain:
+    if not chain or _bedrock():
         return {}
     return {
         "betas": [FALLBACK_BETA],
@@ -465,18 +450,44 @@ def local_model() -> str | None:
     return os.environ[LOCAL_MODEL] if os.environ.get(LOCAL_URL) else None
 
 
+def _bedrock() -> bool:
+    """Whether calls go to Bedrock: the local server, when set, comes first."""
+    return not os.environ.get(LOCAL_URL) and provider() is Provider.Bedrock
+
+
+def check_provider() -> None:
+    """Run when the app starts: Bedrock calls need the machine's AWS sign-in."""
+    if _bedrock():
+        credentials()
+
+
 def wire_model(model: str) -> str:
-    """The model a call names on the wire: the local one when it is set."""
-    return local_model() or model
+    """Model name on wire: local server > Bedrock > app name."""
+    if local_model():
+        return local_model()
+    if _bedrock():
+        return bedrock_model(model)
+    return model
+
+
+def anthropic_client(**options) -> anthropic.Anthropic | anthropic.AnthropicBedrock:
+    """A client for the local server, Bedrock or Anthropic, in that order."""
+    if _bedrock():
+        return anthropic.AnthropicBedrock(aws_region=region(), **options)
+    return anthropic.Anthropic(**anthropic_args(), **options)
+
+
+def async_anthropic_client(
+    key: str = "ANTHROPIC_API_KEY", **options
+) -> anthropic.AsyncAnthropic | anthropic.AsyncAnthropicBedrock:
+    if _bedrock():
+        return anthropic.AsyncAnthropicBedrock(aws_region=region(), **options)
+    return anthropic.AsyncAnthropic(**anthropic_args(key), **options)
 
 
 def _anthropic_client():
-    import anthropic
-
-    return anthropic.AsyncAnthropic(
-        **anthropic_args(),
-        timeout=ANTHROPIC_TIMEOUT,
-        max_retries=ANTHROPIC_MAX_RETRIES,
+    return async_anthropic_client(
+        timeout=ANTHROPIC_TIMEOUT, max_retries=ANTHROPIC_MAX_RETRIES
     )
 
 
@@ -484,10 +495,8 @@ ANTHROPIC_EXTRACTION_TIMEOUT = 600  # seconds
 
 
 def _extraction_anthropic_client():
-    import anthropic
-
-    return anthropic.AsyncAnthropic(
-        **anthropic_args("ANTHROPIC_EXTRACTION_API_KEY"),
+    return async_anthropic_client(
+        "ANTHROPIC_EXTRACTION_API_KEY",
         timeout=ANTHROPIC_EXTRACTION_TIMEOUT,
         max_retries=ANTHROPIC_MAX_RETRIES,
     )
@@ -627,6 +636,10 @@ async def gemini_structured(
         return await claude_structured(
             prompt, response_format, model, response_schema, limit or 32000
         )
+    if _bedrock():
+        return await claude_structured(
+            prompt, response_format, GEMINI_STAND_IN, response_schema, limit or 32000
+        )
 
     start_time = time.time()
 
@@ -748,7 +761,8 @@ async def claude_structured(prompt, response_format, model, schema, limit):
 
 
 async def gemini_text(prompt=None, **kwargs):
-    from google.genai import types
+    if _bedrock():
+        return await claude_text(prompt, **dict(kwargs, model=GEMINI_STAND_IN))
 
     if local_model():
         return await claude_text(prompt, **kwargs)
@@ -809,7 +823,9 @@ def gemini_text_sync(prompt=None, **kwargs):
     return asyncio.run(gemini_text(prompt, **kwargs))
 
 
-async def gemini_calibration(prompt, system_instruction=None, deep=False, max_output_tokens=None):
+async def gemini_calibration(
+    prompt, system_instruction=None, deep=False, max_output_tokens=None
+):
     from google.genai import types
 
     start_time = time.time()
@@ -863,4 +879,8 @@ async def gemini_calibration(prompt, system_instruction=None, deep=False, max_ou
 
 
 def gemini_calibration_sync(prompt, system_instruction=None, max_output_tokens=None):
-    return asyncio.run(gemini_calibration(prompt, system_instruction, max_output_tokens=max_output_tokens))
+    return asyncio.run(
+        gemini_calibration(
+            prompt, system_instruction, max_output_tokens=max_output_tokens
+        )
+    )

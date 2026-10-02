@@ -36,13 +36,14 @@ import pytest
 from sqlalchemy import event
 
 from btcopilot.coachmodel import CoachModel
-from btcopilot import diagramjson, turnlog
+from btcopilot import diagramjson, provider, turnlog
 from btcopilot.extensions import db
 from btcopilot.models import Diagram, ModelCall
 from btcopilot.pricing import cost
 from btcopilot.promptdir import key_present
+from btcopilot.provider import Provider
 from btcopilot.schema import DiagramData
-from btcopilot.tests.conftest import csrf_token, replied, wrote
+from btcopilot.tests.conftest import MACHINE, csrf_token, replied, wrote
 from btcopilot.tests.live.criterion import WAITING
 from btcopilot.tests.live.replay import STORE, Miss, Mode, Replay
 from btcopilot.quality import Source
@@ -101,21 +102,28 @@ def run(request):
         check=True,
     ).stdout.strip()
     cap = os.environ.get("LIVE_CAP")
-    opened = request.config.stash[RUN] = Run(
-        CoachModel().model, git, cap=Decimal(cap) if cap else RUN_CAP, calls=bool(cap)
-    )
-    replay = request.config.stash[REPLAY] = Replay(
-        mode(),
-        Path(os.environ.get("LIVE_STORE", STORE)).resolve(),
-        requests=Path(os.environ["LIVE_REQUESTS"]) if mode() is Mode.Dump else None,
-    )
-    replay.prune()
-    if not replay.mode.offline:
-        opened.open(require_testing_key())
-    charged = opened.recorded
-    if not opened.calls:
-        event.listen(ModelCall, "after_insert", charged)
     with pytest.MonkeyPatch.context() as patched:
+        if MACHINE is Provider.Bedrock:
+            patched.setenv(provider.SETTING, Provider.Bedrock.value)
+        opened = request.config.stash[RUN] = Run(
+            CoachModel().model,
+            git,
+            cap=Decimal(cap) if cap else RUN_CAP,
+            calls=bool(cap),
+        )
+        replay = request.config.stash[REPLAY] = Replay(
+            mode(),
+            Path(os.environ.get("LIVE_STORE", STORE)).resolve(),
+            requests=(
+                Path(os.environ["LIVE_REQUESTS"]) if mode() is Mode.Dump else None
+            ),
+        )
+        replay.prune()
+        if not replay.mode.offline:
+            opened.open(credentials())
+        charged = opened.recorded
+        if not opened.calls:
+            event.listen(ModelCall, "after_insert", charged)
         patched.setattr(
             CoachModel, "turn", replay.wrap(capped(CoachModel.turn, opened))
         )
@@ -181,11 +189,25 @@ def require_testing_key() -> str:
     return key
 
 
+def credentials() -> str | None:
+    """What the real calls run on: the machine's AWS sign-in through Bedrock,
+    with no key, on a Bedrock machine; the testing key everywhere else."""
+    if MACHINE is Provider.Bedrock:
+        provider.credentials()
+        return None
+    return require_testing_key()
+
+
 @pytest.fixture(autouse=True)
 def testing_key(request, monkeypatch):
     """The live venue's own key, never production's: set ANTHROPIC_API_KEY from
-    ANTHROPIC_TESTING_KEY for this test only, and fail loudly if it is unset."""
-    if request.config.getoption("--e2e") and not mode().offline:
+    ANTHROPIC_TESTING_KEY for this test only, and fail loudly if it is unset.
+    A Bedrock machine has no key to set."""
+    if (
+        request.config.getoption("--e2e")
+        and not mode().offline
+        and MACHINE is Provider.Anthropic
+    ):
         monkeypatch.setenv("ANTHROPIC_API_KEY", require_testing_key())
 
 

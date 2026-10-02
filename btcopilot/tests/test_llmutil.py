@@ -181,10 +181,7 @@ def test_sonnet_5_5_costs_what_sonnet_5_costs():
     assert price("claude-sonnet-5-5") == price("claude-sonnet-5")
 
 
-def test_gemini_pro_is_3_1_pro_preview_with_its_own_price():
+def test_gemini_3_1_pro_preview_has_its_own_price():
     # R-0405
-    model = llmutil.resolve_model("gemini-pro")
-    assert model == "gemini-3.1-pro-preview"
-    assert llmutil.is_gemini(model)
-    rate = price(model)
+    rate = price("gemini-3.1-pro-preview")
     assert (rate.input, rate.output, rate.cache_read) == (2, 12, Decimal("0.20"))

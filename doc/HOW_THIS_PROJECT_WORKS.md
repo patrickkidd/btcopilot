@@ -254,7 +254,9 @@ on production.
 The sandbox, live evals, and browser walks with real turns all spend `ANTHROPIC_TESTING_KEY`;
 none of them ever spends `ANTHROPIC_API_KEY`, which is production's key, and there is no
 fallback to it. A missing testing key fails loudly, the same as a missing model key above,
-and is escalated to Patrick rather than worked around.
+and is escalated to Patrick rather than worked around. On a Bedrock machine (Patrick,
+2026-10-01) there is no key at all: every test path goes through Bedrock with the machine's AWS
+sign-in, and a missing sign-in stops the app at startup (doc/SETUP.md section 6).
 
 **Real spend is asked first, every time, and only at the end of a batch (2026-09-25, Patrick).**
 A real call to Anthropic happens only right before a deploy, and only when a prompt or a tool

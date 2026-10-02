@@ -45,7 +45,7 @@ app = [
     "pyqt5==5.15.11",
     "pyqt5-sip==12.15.0",
     "pyqt5-qt5==5.15.2",
-    "anthropic>=0.97,<1",
+    "anthropic[bedrock]>=0.97,<1",
     "google-genai",
     "openai>=3.22.1",
     "rapidfuzz>=3.0.0",
