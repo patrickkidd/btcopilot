@@ -33,15 +33,6 @@ test.describe("what the app says can be taken away", () => {
     expect((await dragAcross(page, ".bub.coach")).trim()).not.toBe("");
   });
 
-  // R-0183
-  test("a session row's words select", async ({ page }) => {
-    await settle(page);
-    await page.locator("#sessions-open").click();
-    await expect(page.locator("#sessions-sheet .fs-body .row").first()).toBeVisible();
-    await page.waitForTimeout(400);
-    expect((await dragAcross(page, ".fs-body .row .r1")).trim()).not.toBe("");
-  });
-
   // R-0183, R-0570
   test("the play-by-play's words select", async ({ page }) => {
     await tellWithoutModel(page);

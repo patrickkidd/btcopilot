@@ -72,7 +72,7 @@ What it is for: talking to the coach, which is how everything else in the app ge
 - Without your birth date the coach has nothing to turn an age into a year, so early events land on years it invented. [built] {R-0360}
 - The last sentence of a coach reply is its question and is set in amber. It reads as bold, which is where your eye should go. [built] {R-0358}
 - The coach no longer holds out answers for you to tap; you type your own words. [built] {R-0361}
-- The Return key starts a new line, and only the send button sends, so a message can have paragraphs. [built] {R-0368}
+- With a real keyboard, Return sends and Shift-Return or Alt-Return starts a new line; on a touch screen, Return starts a new line and only the send button sends, so a message can have paragraphs. A touch screen is told by its pointer, not by the browser's name. [built] {R-0368}
 - The coach's words and the steps it takes arrive as they happen rather than all at the end, so a long turn is never a blank wait. [built] {R-0369}
 - The turn runs on the server on its own, so reloading the page, or leaving the app and coming back, picks the turn up where it is. [built] {R-0369}
 - Every step the coach takes, reads and changes to the picture included, is a line in its reply, and the lines stay after a reload. [built] {R-0478}
@@ -83,6 +83,11 @@ What it is for: talking to the coach, which is how everything else in the app ge
 - In each of those lines, the name of the thing it touched is in italics, set apart from the verb, as in "Changed *Dad's move*: date 1990". [built] {R-0528}
 - Under each coach reply that has words there is a thin, line-drawn play button, as in the Claude Code mobile app; tap it to hear that reply, tap again to stop. [built] {R-0521}
 - On an iPhone, a long message in the message box scrolls without its lines drawing over each other. [built]
+- A notice from the app, or a coding task waiting for you, shows as a small card above the message box. Folded, it is two lines and a small mark that it opens: its title on one line and the body on the line under it, each cut short with an ellipsis when it does not fit, with no buttons. A tap on the card shows the whole title and body in place, with bold, italics, links and line breaks, and then, under them, Open with the name of where it goes ("Open Coach settings") when it points somewhere with more to see, and a cross; one pointing at the account view, its Notices or nowhere has only the cross, so it is read before it is acted on; a tap on the words folds it again, and unfolding does not count it read. It is never in the thread and never covers the page. [built] {R-0611}
+- One shows at a time, the newest. It stays there until you tap Open, which goes to the screen it points to, or the cross, which puts it away; either way it is counted read and does not come back. [built] {R-0611}
+- A coach message never shows there, because it is already in the thread. [built] {R-0606, R-0611}
+- A tap on a notification lands where it points from wherever the app is: the sessions drawer, the play-by-play drawer, the new-event form, the account view and any other screen are put away, then the thread scrolls to its message and lights it; a task or notice instead opens the account view at its root and the page it names. [built] {R-0055}
+- A coach message written while the app was open elsewhere, or away, appears in the thread when you come back to the app, when you tap its notification, and within a minute while the app is in front; the thread is only drawn again when something new is in it. [built] {R-0606}
 - Admins and auditors see a small circled (i) at the top right of a coach reply; tapping it opens the coach's own notes for that turn in a panel that grows out of the bubble and shrinks back into it. Nobody else sees the notes. [built] {R-0520, R-0522, R-0529}
 
 ## The picture at rest
@@ -239,7 +244,7 @@ What it is for: seeing and editing everything in the record by hand.
 
 - One button in the row under the picture opens a drawer holding everything in the record. [built] {R-0198}
 - The events list and the people list are two tabs in that one drawer, not a filter. [built] {R-0199}
-- A third tab, "From the coach", holds what the coach is keeping for you: questions under "Food for thought" and "Facts to find", and its impressions under "Impressions". [built]
+- A third tab, "Questions", holds what the coach is keeping for you: questions under "Food for thought" and "Facts to find", and its impressions under "Impressions". [built]
 - You only see questions the coach has actually asked and that are still open; ones you turned down or that led nowhere never show. [built]
 - The coach only keeps a fact to find it thinks matters to your family's story, and keeps it when in doubt. [built]
 - Tapping a question or an impression puts it in the message box; nothing sends until you do. [built]
@@ -262,7 +267,7 @@ What it is for: seeing and editing everything in the record by hand.
 - The scrollbar is never covered by a cluster heading. [built] {R-0218}
 - Tapping a row opens the editor for that item in place. [built]
 - The line saying you can also edit by chatting was removed from these lists. [built] {R-0219}
-- There is a button to add an event. [built]
+- There is a button to add an event; the new event's form slides up over the lists, full screen, with its name and the app's close button at its top. [built]
 - Editing by hand is possible but is not what the app is being tested on. [built]
 
 ## The event editor
@@ -317,10 +322,11 @@ What it is for: your past conversations.
 
 - A button beside the chat input opens a sheet holding your past sessions. [built]
 - The sheet rises from the input bar and can be dragged back down to close. [built]
-- Sessions are searchable by their titles and their summaries. [built] {R-0347}
+- Sessions are searchable by their titles, their summaries and the words said in them, with the coach's own search; a session found by its words shows the line that carries them under its title. [built] {R-0347}
 - The list is drawn on the notes-list precedent: a small uppercase grey heading per period — today, yesterday, previous 7 days, previous 30 days, then the month — over a rounded group of rows; no clock column, no badges, no pencil. [built] {R-0347}
 - Each row is a bold title with the day small at its right (left out under today and yesterday), then two lines of the first thing the client said, so a session can be told apart without opening it. A session nobody titled is named by its first six words, or "New session". [built] {R-0347}
 - A "⋯" at the row's right opens the same rename and delete actions as the swipe. [built] {R-0347}
+- Rename is green and Delete is red, in the app's own colours for adding and removing. [built]
 - The coach titles a session after the first exchange, and you can rename it by hand. [built]
 - A session you renamed by hand is not marked; the coach simply never overwrites it. [built] {R-0347}
 - Emptying a rename puts the coach's own title back and says so. [built]
@@ -329,7 +335,8 @@ What it is for: your past conversations.
 - A button at the foot starts a new session, and refuses while the current one is still empty. [built]
 - With no sessions at all it says past conversations collect here. [built]
 - The sheet holds only the sessions of the family the app is on; the family is chosen on the account page, never in the sheet, and a personal user never sees the word case at all. [built] {R-0285, R-0347}
-- The three buttons at the foot are spaced apart. [built] {R-0347}
+- The buttons at the foot, a professional's upload and new note, are spaced apart. [built] {R-0347}
+- The sheet holds no way to coding, the meeting or picking the better reply, and a session row neither opens nor goes on the agenda; those live on the account page, since none of them hangs on the family the app is on. [built] {R-0259, R-0267}
 - Someone else's session is simply not found rather than refused, so the app never confirms a session it will not show you. [built]
 - The history in the review database is kept across code changes rather than reset. [built] {R-0191}
 - Existing diagrams and conversations made before this app must open in it as sessions; old training transcripts are kept out of the list. [built]
@@ -349,6 +356,8 @@ What it is for: you, your families, your plan, and signing out.
 - Tapping it slides the account page smoothly over the app rather than making the app disappear. [built] {R-0225}
 - The account page is a list where each row opens its own page with a back arrow, like the phone's own settings. [built]
 - The top of it shows your name, your email and your plan. [built]
+- While a notice is unread, the account mark carries a small amber dot, the amber of the coach's question; the dot goes when none is unread. [built] {R-0611}
+- Under your name, one row, Notices, with the number unread as its figure, opens the Notices page: every notice you have been sent, newest first, each with its day and its first line; an unread one has the same amber dot before it. Tapping one opens the screen it points to and counts it read; one that points to the account view, its Notices, or nowhere has no arrow and a tap only counts it read, in place. There is no row until a notice has been sent. [built] {R-0611}
 - Your profile page holds your first name, last name and birthdate. [built]
 - There is a row for whether the coach speaks its replies out loud. [built]
 - The same speaking switch appears once in the chat as a named shortcut, writing the same setting. [built]
@@ -356,12 +365,18 @@ What it is for: you, your families, your plan, and signing out.
 - A button under each coach reply plays it again, the way the Claude Code mobile app has one. [built] {R-0521}
 - Which voice reads the replies is not settled: today it is your phone's own, which costs nothing, and a better-sounding paid one waits on Patrick. [open]
 - No other setting appears in two places. [built]
-- There is a row for how often the coach may message you first, and it says the coach never messages first unless you ask. [built]
+- There is a row for how often the coach may message you first, and its choices read as a most, never a schedule: never, at most monthly, at most weekly. The line under it says never unless you ask, or never more than once a month (a week), and only when the coach notices a pattern in your family's events or follows up on something you agreed to. [built] {R-0004}
+- The coach page has a row for bug reports: ask me, or always send. [built] {R-0056}
 - There is a row for light, dark or matching your phone. [built]
 - Your families are listed, with the number of sessions and when each was last used, and a tick on the one you are in. [built]
 - Tapping a family opens it, and one is open at a time. [built] {R-0175}
 - A search box appears in that list once you have six or more families. [built]
 - Licences and the plan are listed; nothing on that page implies a price yet. [built]
+- Auditors and admins see a Coding section above Sign out: Your coding task, which opens the one task card; Next meeting, for admins only, which opens the agenda; and Auditor's Coding Guide, which opens the concept pages on a page of its own. [built] {R-0265, R-0259, R-0541, R-0567}
+- Admins also see a Quality section with one row, Better replies, over the line "Pick the better of two coach replies"; it opens the screen where two coach replies to the same words are picked blind, titled Better replies. [built] {R-0599}
+- Better replies serves the pairs a conversation at a time, in the order the words were said, so a session reads as it happened; the conversation up to the words both replies answer stays above the two replies. [built] {R-0599}
+- Each of those opens as a page of the account view, sliding in over it the way Coach, Appearance and Plan do, and the back arrow at the top left returns to the account view. [built] {R-0259, R-0265}
+- A plain subscriber or a professional sees neither section. [built] {R-0311}
 - Sign out sits alone at the bottom and signs you out immediately, with no confirmation step. [built]
 - Every icon button in the app is the same size: a forty-four point target with a forty point mark inside it. [built] {R-0234}
 
@@ -376,6 +391,50 @@ What it is for: what the app is, one level in from the picture.
 - It is words, so no hint line is drawn under it. [built]
 - Going back from it returns you to the whole line. [built]
 
+## Addresses
+
+What it is for: every screen and everything on it has its own web address, so the address bar says where you are, the back button steps back, and the coach, a notice or a link can take you anywhere in the app.
+
+- The address bar changes as you move: opening the account view, one of its pages, the sessions drawer, the lists, an editor, the play-by-play or a coding screen is a new step the back button undoes. [built] {R-0055}
+- Opening a cluster or picking an event on the picture changes the address without adding a step, so a reply that points at five things is not five presses of back. [built] {R-0055}
+- Opening the app at any address, or signing in from one, lands there; an address that names something to light (a message, a session, a notice, a cut, a snapshot) scrolls it into the middle of its list and rings it the way a message is ringed when a moment traces back to it. [built] {R-0055}
+- An address whose thing is gone says so in a short note and leaves the app where it could get to. [built] {R-0055}
+- A notice may point at any address in the app as well as at the four screens it named before. [built] {R-0055, R-0611}
+- When you ask the coach for help with the app, or ask to see something, it can take the app there while it answers; its reply then carries a line such as "Opened *the coach settings*" whose name is a chip that goes there again. It never moves the app during coaching otherwise. [built] {R-0055}
+
+| address | what it opens |
+|---|---|
+| `/app/` | the chat, with the picture put down |
+| `/app/chat/<message>` | the chat, scrolled to that message and ringed |
+| `/app/sessions` | the sessions drawer |
+| `/app/sessions/<session>` | the sessions drawer, with that session's row ringed |
+| `/app/account` | the account view |
+| `/app/account/profile`, `coach`, `appearance`, `diagrams`, `plan` | that page of the account view |
+| `/app/account/notices` | the account view's Notices page |
+| `/app/account/notices/<notice>` | the Notices page, with that notice ringed |
+| `/app/account/coding-task` | your coding task |
+| `/app/account/meeting` | Next meeting |
+| `/app/account/meeting/sessions` | Pick a session, over Next meeting |
+| `/app/account/meeting/<day>` | the page of the meeting on that day (`undated` for the one with no day) |
+| `/app/account/meeting/<day>/<cut>` | that meeting's page, with that cut ringed |
+| `/app/account/better-replies` | Better replies |
+| `/app/account/literature-review` | Auditor's Coding Guide |
+| `/app/cut/<session>` | the cut screen for that session, over Next meeting |
+| `/app/cluster/<cluster>` | that cluster opened on the picture |
+| `/app/event/<event>` | that event picked on the picture |
+| `/app/event/<event>/edit` | the events list with that event's editor open and its row ringed |
+| `/app/event/new` | the new-event form |
+| `/app/person/<person>` | the people list with that person's editor open and its row ringed |
+| `/app/person/new` | the new-person form |
+| `/app/events`, `/app/people`, `/app/questions` | that list of the lists drawer |
+| `/app/play/<message>` | the play-by-play that message keeps |
+| `/app/play/<message>/<snapshot>` | that play-by-play at one snapshot, its caption ringed |
+| `/app/coding/<coding>` | a coding screen |
+| `/app/vote/<cut>` | the vote on that cut |
+| `/app/meeting/<cut>` | the meeting run on that cut |
+| `/app/result/<cut>` | what the meeting produced on that cut |
+| `/app/guidelines` | the coding guidelines |
+
 ## When something goes wrong
 
 @frame built#f19 | A message that did not go through: the notice sits where the reply would have been and stays until you tap try again.
@@ -388,6 +447,21 @@ What it is for: knowing what happened when a message does not go through.
 - Your words are only stored once the coach's answer lands, so sending again never stores them twice. [built]
 - The coach's bubble is never left blank waiting. [built] {R-0184}
 - A record edit the app cannot make on your behalf fails and says so rather than writing something invented. [built]
+
+## Bug reports and feedback
+
+What it is for: telling the people who make the app that something did not work for you, or what you want changed, without leaving the conversation.
+
+- When you tell the coach the app or the coach went wrong (something did not work or did not update, the coach keeps repeating itself or misunderstood you, you correct the same thing in your record a second time, or you are frustrated with the app), the coach answers in one sentence and goes back to the conversation; once its reply is done, a sheet slides up from the bottom headed "Send this as a bug report?" with your words and the buttons "Send the report", "Always send" and "Don't send". The coach may also offer one about its own mistake when it sees it misread your record; then the words are its own. [built] {R-0056}
+- During the beta, "Don't send" on the bug sheet is drawn faint and cannot be tapped, with the line "Disabled during the beta" under it: you choose between sending this once and always sending, never whether it is a bug, and a bug is never turned down. [built] {R-0613}
+- When you tell the coach something you wish for or dislike about the app, the same sheet is headed "Send this as feedback?" with your own words and the buttons "Send the report" and "Not feedback". "Not feedback" stays live in the beta, for when the coach took something you said to it as feedback about the app. [built] {R-0056, R-0613}
+- The sheet is always in full, never folded, and takes the focus itself, not a button. It comes up for each new thing you say, but never twice in one sitting for the same words (ignoring case and spaces at either end), whether you sent them or turned them down; this phone remembers them across a reload. [built] {R-0056}
+- An error in the app's code never raises a sheet: the amber warning in the thread says what went wrong, and the error goes to Grafana. [built] {R-0056, R-0182}
+- The sheet is modal: the thread behind it is dimmed and cannot be tapped until you answer it, and nothing is ever added to the thread. [built] {R-0056}
+- The sheet and the card after it are as wide as a phone and at most 480 wide on a wider screen, centred at the bottom. [built] {R-0056}
+- After Send, the sheet turns in place into "Your report was sent" with an OK button; it closes on OK or by itself after ten seconds. If the report cannot be sent, the same card says so and why. [built] {R-0056}
+- "Always send" is kept in your settings: from then on a bug the coach offers is sent with no sheet and no card at all. Feedback still asks. [built] {R-0056}
+- A report is one row in the reports table: sent, it keeps the words; turned down, only the turn and the message it came from. During the beta only feedback is ever turned down. [built] {R-0056, R-0613}
 
 ## On a desktop (Pro)
 
@@ -446,7 +520,7 @@ What it is for: saying what each line of a conversation tells you happened, so w
 @frame coding#f7 | Tapping Done asks once and explains that your coding will be saved and submitted for the meeting.
 
 - Coding is stage one of reaching agreement, and it is done blind: you never see anyone else's coding of that conversation until you press Done. [drawn] {R-0242, R-0250}
-- Only a user with the auditor role is a coder; a professional licence holder and a plain subscriber open on the chat and never see the task card, the coding task in the sessions sheet, the ballot or the meeting. [drawn] {R-0311}
+- Only a user with the auditor role is a coder; a professional licence holder and a plain subscriber open on the chat and never see the task card, the Coding section of the account page, the ballot or the meeting. [drawn] {R-0311}
 - You are given one task at a time and never a list to choose from. [drawn] {R-0265}
 - The task names the conversation, the point it is frozen at, how many turns are new since you last pressed Done, and roughly how long it will take. [drawn] {R-0267}
 - One green button starts it, and under it is a faint record of the tasks you have already finished. [drawn] {R-0265}
@@ -487,7 +561,9 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 @frame coding#f6 | After Done the next single card takes its place, greyed until Patrick opens the vote.
 @frame review#f10 | Patrick's screen: the date, what is on the agenda, who is done, the button that opens the vote, and the agenda that fills itself.
 
-- Patrick opens the sessions sheet like anyone else, swipes the conversation he wants, and taps to put it on the agenda. [drawn] {R-0267}
+- Patrick puts a conversation on the agenda from the meeting page, never from a session: "Put a session on the agenda" lists every session on every family, newest first, each with its family, its day and how many statements it holds, and a search box finds sessions by words said in them, showing the line that carries them. [built] {R-0267}
+- Tapping one opens it to place the cut, and placing the cut returns to the agenda. Each is a page over the one it was opened from: the list over the agenda, the cut over the list or over the agenda, and the back arrow steps back one page. [built] {R-0267}
+- A newly placed cut joins the next meeting: the soonest meeting date on the agenda, or no date while none has one. [built] {R-0267}
 - That opens the conversation so he can place the cut: the point everyone codes up to. [drawn] {R-0267}
 - The cut starts at the last turn, and tapping any line moves it there. [drawn] {R-0267}
 - The cut can never be moved back past the last point that was already ratified. [drawn] {R-0267}
@@ -495,6 +571,8 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 - A cut placed at the end of a finished conversation or recording takes in the whole thing, so a whole transcript is not a different kind of task. [drawn] {R-0267}
 - Anything that changed since the last cut is coded again. [drawn] {R-0267}
 - The agenda screen is the whole of Patrick's administration: the meeting date, what is on the agenda, and who is done. [drawn] {R-0259, R-0267}
+- One meeting date is one meeting: the agenda shows each date once, its cuts under it, and, once the vote is open, one "run the meeting" button for it. A new date on a meeting moves all of its cuts. [built] {R-0250, R-0258}
+- "run the meeting" opens that meeting's page: each cut with who has submitted a coding of it and who has not; a cut nobody has submitted says "No coder has submitted yet" under it, and a cut someone has submitted opens the room on it. [built] {R-0250, R-0258}
 - Each coder's state is shown as not started, coding, done or voted, with a count of who is closed out. [drawn] {R-0258}
 - One control nudges the people who are not done. [drawn] {R-0258}
 - Taking a conversation off the agenda is one tap, before anyone has started. [drawn]

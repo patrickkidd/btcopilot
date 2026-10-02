@@ -494,6 +494,8 @@ MATCH_LINKS = ("person", "spouse", "child", "relationshipTargets", "relationship
 KINDS = {kind.value for kind in EventKind}
 OFFSPRING_KINDS = {kind.value for kind in EventKind if kind.isOffspring()}
 WORDED_KINDS = (EventKind.Noted.value, EventKind.Shift.value)
+# Words an editor leaves behind that say nothing about what happened.
+PLACEHOLDERS = {"", "new event", "unknown"}
 TRIANGLES = (RelationshipKind.Inside.value, RelationshipKind.Outside.value)
 DATES = ("dateTime", "endDateTime")
 #: Each closed field of an event, the values it may hold, and what they are called.
@@ -615,7 +617,7 @@ def _moves(data: dict, deltas: list[dict]):
         if event is None:
             continue
         kind = _val(event.get("kind"))
-        if kind in WORDED_KINDS and not (event.get("description") or "").strip():
+        if kind in WORDED_KINDS and (event.get("description") or "").strip().lower() in PLACEHOLDERS:
             raise Invalid(
                 f"event {event_id} is a {kind} event with no words: say what "
                 "happened",

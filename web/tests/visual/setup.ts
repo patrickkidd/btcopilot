@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page } from "@playwright/test";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import {
   closeSync,
   mkdirSync,
@@ -103,6 +103,10 @@ export const KEYS = [
   "longname",
   "editable",
   "whitlock",
+  "sitting",
+  "sittings",
+  "sameday",
+  "notice",
 ] as const;
 export type Key = (typeof KEYS)[number];
 
@@ -111,13 +115,32 @@ export const stateFor = (key: Key) => join(AUTH, `${key}.json`);
 /** The server's own command line, run the way FIXTURE_CMD runs the fixture
  * installer: `uv run flask` here, `python -m flask` on CI. */
 export function flask(...args: string[]): string {
-  const [bin, ...before] = (process.env.FIXTURE_CMD ?? "uv run flask app fixtures")
-    .split(" ")
-    .slice(0, -2);
+  return run(args);
+}
+
+/** Python run in the sandbox's own app, as `flask shell` reads it, one
+ * statement a line: how a spec writes what only the server writes. */
+export function shell(code: string): string {
+  return run(["shell"], code);
+}
+
+/** The same, left running: for a command that waits on the page. */
+export function flaskRunning(...args: string[]): ChildProcess {
+  const [bin, ...before] = cli();
+  return spawn(bin, [...before, ...args], { cwd: CLI_CWD, env: process.env });
+}
+
+const CLI_CWD = process.env.FIXTURE_CWD ?? resolve("..");
+
+const cli = () => (process.env.FIXTURE_CMD ?? "uv run flask app fixtures").split(" ").slice(0, -2);
+
+function run(args: string[], input?: string): string {
+  const [bin, ...before] = cli();
   return execFileSync(bin, [...before, ...args], {
-    cwd: process.env.FIXTURE_CWD ?? resolve(".."),
+    cwd: CLI_CWD,
     encoding: "utf8",
     env: process.env,
+    input,
   });
 }
 

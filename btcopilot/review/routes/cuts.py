@@ -9,6 +9,7 @@ from btcopilot.review import (
     adapter,
     divergence,
     export,
+    notify,
     ruledraft,
     decision,
     snapshot,
@@ -91,6 +92,8 @@ def cut_create():
         meeting_date=_date(body.get("meeting_date")),
     )
     db.session.add(cut)
+    db.session.flush()
+    _tell(cut)
     db.session.commit()
     return jsonify(payload(cut)), 201
 
@@ -103,6 +106,7 @@ def cut_patch(cut_id: int):
     if "meeting_date" in body:
         admin()
         cut.meeting_date = _date(body["meeting_date"])
+        _tell(cut)
 
     if "end_statement_id" in body:
         admin()
@@ -154,6 +158,13 @@ def cut_delete(cut_id: int):
     db.session.delete(cut)
     db.session.commit()
     return jsonify({"id": cut_id})
+
+
+def _tell(cut: Cut):
+    """A cut is due once it has a meeting date, which is when its coders hear
+    of it (the app places a cut first and dates it after)."""
+    if cut.meeting_date:
+        notify.told(cut, adapter.utcnow())
 
 
 def _default_start(discussion_id: int) -> int | None:

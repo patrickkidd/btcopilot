@@ -6,8 +6,8 @@ picture draws lives in the record; who did what when lives beside it, which is
 why the interactions render separately.
 """
 
+import datetime
 import json
-from collections import Counter
 
 from btcopilot import diagramjson, record
 from btcopilot.models import Change, Interaction
@@ -65,7 +65,9 @@ def bond_line(bond: dict) -> str:
     return f"{bond['id']} {bond.get('person_a')}+{bond.get('person_b')} {state}"
 
 
-def event_line(event: dict) -> str:
+def _event_head(event: dict) -> list[str]:
+    """When an event was, what kind it is and who it is about: enough to tell
+    it from another without saying what happened."""
     parts = [
         str(event["id"]),
         date_text(event.get("dateTime")) or "undated",
@@ -77,6 +79,11 @@ def event_line(event: dict) -> str:
     for key in ("person", "spouse", "child"):
         if event.get(key) is not None:
             parts.append(f"{key}={event[key]}")
+    return parts
+
+
+def event_line(event: dict) -> str:
+    parts = _event_head(event)
     if event.get("description"):
         parts.append(f'"{event["description"]}"')
     if event.get("notes"):
@@ -153,6 +160,7 @@ def note_line(question: dict) -> str:
 
 
 QUESTIONS = "QUESTIONS (open, then declined: never ask a declined one again)"
+EVENTS = "EVENTS (date order)"
 IMPRESSIONS = (
     "IMPRESSIONS (raised and held; one the user said doesn't fit is never raised "
     "again in those words)"
@@ -220,7 +228,7 @@ def render(data: DiagramData | None, speaker: int | None = None) -> str:
             [person_line(p, p["id"] == speaker) for p in _rows(data.people)],
         ),
         _section("PAIR BONDS", [bond_line(b) for b in _rows(data.pair_bonds)]),
-        _section("EVENTS (date order)", [event_line(e) for e in events]),
+        _section(EVENTS, [event_line(e) for e in events]),
         _section("CLUSTERS", [cluster_line(c) for c in _rows(data.clusters)]),
     ]
     return "\n\n".join(section for section in sections if section)
@@ -248,14 +256,17 @@ def _span(cluster: dict, dates: dict) -> str:
 
 
 def outline(data: DiagramData | None, version: int, speaker: int | None = None) -> str:
-    """A map of the record rather than the record (R-0479): who is in it, how
-    the events spread over time, and the version it was drawn at. The coach
-    reads the rest with its tools. Only the version when nothing is stored yet."""
+    """A map of the record rather than the record (R-0479): who is in it, each
+    event's date, kind and people, and the version it was drawn at. The chat
+    before the latest words is not given back, so the map is how the coach
+    knows an event is already down (R-0481). What happened is read with the
+    tools. Only the version when nothing is stored yet."""
     if data is None:
         return version_line(version)
-    events = _rows(data.events)
+    events = sorted(
+        _rows(data.events), key=lambda e: (date_text(e.get("dateTime")) or "", e["id"])
+    )
     dates = {e["id"]: date_text(e.get("dateTime")) for e in events}
-    decades = Counter(f"{d[:3]}0s" if d else "undated" for d in dates.values())
     sections = [
         _section(
             "PEOPLE",
@@ -271,10 +282,7 @@ def outline(data: DiagramData | None, version: int, speaker: int | None = None) 
             _notes(data, record.QUESTION),
         ),
         _section(IMPRESSIONS, _notes(data, record.IMPRESSION)),
-        _section(
-            "EVENTS PER DECADE",
-            [", ".join(f"{d} {n}" for d, n in sorted(decades.items()))] if events else [],
-        ),
+        _section(EVENTS, [" ".join(_event_head(e)) for e in events]),
     ]
     return "\n\n".join(s for s in [*sections, version_line(version)] if s)
 
@@ -293,3 +301,20 @@ def interactions(rows: list[Interaction]) -> str:
         for (kind, item_kind, item_id), count in counts.items()
     ]
     return "WHAT THE USER HAS BEEN DOING\n" + "\n".join(lines)
+
+
+NOTES = "YOUR NOTES FROM YOUR LAST TURN, written {day}"
+
+
+def notes(args: dict, written: datetime.datetime) -> str:
+    """The coach's last notes, one labelled line per field, as it wrote them."""
+    lines = [
+        f"{field}: "
+        + (
+            ", ".join(f"{key}={value}" for key, value in said.items())
+            if isinstance(said, dict)
+            else str(said)
+        )
+        for field, said in args.items()
+    ]
+    return _section(NOTES.format(day=written.date().isoformat()), lines)

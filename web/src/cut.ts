@@ -23,6 +23,8 @@ export interface CutHandlers {
 export class Cut {
   private read: SessionTurns | null = null;
   private at: number | null = null;
+  /** The meeting a cut newly put on the agenda joins. */
+  private day: string | null = null;
 
   constructor(
     private list: HTMLElement,
@@ -40,8 +42,10 @@ export class Cut {
   }
 
   /** Open one conversation to place its cut. A conversation already on the
-   * agenda opens on the line it was cut at. */
-  async open(discussionId: number): Promise<void> {
+   * agenda opens on the line it was cut at; a new one joins the meeting on
+   * `day`. */
+  async open(discussionId: number, day: string | null): Promise<void> {
+    this.day = day;
     this.read = await api.sessionTurns(discussionId);
     const last = this.read.turns[this.read.turns.length - 1];
     this.at = this.read.on_agenda?.statement_id ?? last?.id ?? null;
@@ -73,7 +77,7 @@ export class Cut {
     const read = this.read;
     if (!read || this.at === null) return;
     tap(Feature.CutConfirm);
-    if (read.cut_id === null) await api.putOnAgenda(read.discussion_id, this.at);
+    if (read.cut_id === null) await api.putOnAgenda(read.discussion_id, this.at, this.day);
     else await api.moveCut(read.cut_id, this.at);
     this.handlers.onPlaced();
   }

@@ -61,7 +61,7 @@ test.describe("a send that does not go through", () => {
     await expect(page.locator(".bub.typing")).toHaveCount(0);
   });
 
-  // R-0182
+  // R-0182, R-0056
   test("goes when a later message lands, not only on the retry", async ({
     page,
   }) => {
@@ -75,6 +75,8 @@ test.describe("a send that does not go through", () => {
 
     await say(page, "My dad moved out.");
     await expect(warning(page)).toHaveText(/server broke/);
+    // an error is Grafana's, never a sheet over the thread
+    await expect(page.locator(".fs-sheet.rp")).toBeHidden();
 
     // a second failure says the same thing in the same place, never a pile
     await say(page, "And my mum got ill.");

@@ -1,4 +1,13 @@
-from sqlalchemy import JSON, Column, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import (
+    JSON,
+    Column,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 
 from btcopilot.extensions import db
@@ -10,13 +19,17 @@ def _owned(table: str) -> ForeignKey:
 
 
 class ShadowTurn(db.Model, ModelMixin):
-    """A real turn run again on a second model over a copy of the record, kept
-    only for comparison. `snapshot` is the record as the real turn found it,
-    cleared when the run ends; the counts stay null until then."""
+    """A real turn run again on one shadow model over a copy of the record, kept
+    only for comparison; one row per real turn and model. `snapshot` is the
+    record as the real turn found it, cleared when the run ends; the counts stay
+    null until then."""
 
     __tablename__ = "shadow_turns"
+    __table_args__ = (
+        UniqueConstraint("turn_id", "model", name="uq_shadow_turns_turn_model"),
+    )
 
-    turn_id = Column(String(64), nullable=False, unique=True, index=True)
+    turn_id = Column(String(64), nullable=False)
     user_id = Column(Integer, _owned("users"), nullable=False, index=True)
     diagram_id = Column(Integer, _owned("diagrams"), nullable=False)
     discussion_id = Column(Integer, _owned("discussions"), nullable=False)

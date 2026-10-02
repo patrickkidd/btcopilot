@@ -21,3 +21,15 @@ The mark comes off in the change that fixes it. Kept for the fast-follow PR.
 | R-0315 | The coding confirm sheet calls another coder's version a "take". | |
 | R-0376 | The page behind a cluster's (i) counts events; the key shift and opening event are not drawn. | a design: what the picture spot draws behind a cluster's i |
 | R-0378 | Behind a cluster's (i) the picture spot holds words only. | a design: what the picture spot draws behind a cluster's i |
+
+## Found 2026-09-29 and 30, with no failing test yet
+
+Each needs a test that fails before its fix, citing its ruling once the queued ids are in the store.
+
+| Ruling | What is wrong today | What it needs |
+|---|---|---|
+| R-0267 | Every session in the meeting's "Put a session on the agenda" list is named "Free Diagram". | each session named by its family |
+| — | The coding screen's title is clipped. | |
+| — | The reports route's limit of 20 an hour per sender is held in the server's memory, so every restart resets it. | |
+| R-0613 (queued) | Someone who joins a notice's audience after it was sent gets it in the app only, never by push or email, so a pricing notice sent by email misses them. | |
+| R-0096 | The sessions sheet's plain-list ruling lost its only citing test when the session list was removed. | a test, or a supersession |

@@ -9,7 +9,7 @@ import pytest
 from alembic.script import ScriptDirectory
 
 import btcopilot
-from btcopilot import tuning
+from btcopilot import tuning, turnlog
 from btcopilot.admin import admin
 from btcopilot.admin import guard, setting, skill
 from btcopilot.admin.database import config
@@ -209,7 +209,7 @@ def test_db_upgrade_builds_the_chain_from_empty(flask_app, tmp_path):
 READS = {
     "users list", "users show", "licences list", "licences plans", "diagrams list",
     "diagrams show", "diagrams export", "observations list", "observations queue",
-    "imports dry-run",
+    "imports dry-run", "notice list",
     "token-cap show", "coach-model show",
     "review agenda", "review cuts", "review codings", "review nudge show",
     "db current", "skill", "run",
@@ -259,3 +259,12 @@ def test_users_invite_send_emails_the_link(run):
     with mock.patch("btcopilot.admin.users.send_invitation") as send_invitation:
         invited = rows(run("users", "invite", "new@fd362-fixture.invalid", "--send", "--json"))
     send_invitation.assert_called_once_with("new@fd362-fixture.invalid", invited[0]["url"])
+
+
+def test_report_offer_goes_on_the_persons_running_turn(run, test_user, discussion):
+    # R-0056
+    turnlog.start(discussion.id, "t1")
+    run("report", "offer", test_user.username, "Let me import my GEDCOM file")
+    assert turnlog.read_from("t1", 0) == [
+        (1, {"type": "report", "report": {"kind": "feedback", "words": "Let me import my GEDCOM file"}})
+    ]

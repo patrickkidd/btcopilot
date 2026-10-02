@@ -116,6 +116,12 @@ def onboarding(missing: list[str], person_id: int) -> str:
     return files().text("onboarding", missing=", ".join(missing), person_id=person_id)
 
 
+def proactive(events: str, speaker: str) -> str:
+    """The coach's first words when two of the family's events just came to
+    sit close together in the record."""
+    return files().text("proactive", events=events, speaker=speaker)
+
+
 def get_agent_prompt(record: str = "", interactions: str = "", today: str = "") -> str:
     """The coach's system prompt for one agent-loop turn. `record` is the whole
     family record rendered by `btcopilot.recordtext`; `interactions` is

@@ -27,6 +27,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import btcopilot
+from btcopilot import push
 from btcopilot.app import create_app
 from btcopilot.extensions import db
 import btcopilot.extensions as extension_module
@@ -155,6 +156,7 @@ def make_app(request, tmp_path, tables=None):
 
     logging.getLogger("btcopilot").setLevel(logging.DEBUG)
 
+    public, private = push.keypair()
     kwargs = {
         "ENV": "unittest",
         "CONFIG": "testing",
@@ -171,7 +173,13 @@ def make_app(request, tmp_path, tables=None):
         "SCHEDULER_API_ENABLED": False,
         "CELERY_BROKER_URL": "memory://",
         "CELERY_RESULT_BACKEND": "cache+memory://",
+        "VAPID_PUBLIC_KEY": public,
+        "VAPID_PRIVATE_KEY": private,
+        "VAPID_SUBJECT": "mailto:test@example.com",
     }
+    # A test parametrizes flask_app indirectly to build the app under another
+    # config, since some routes are made only under one.
+    kwargs.update(getattr(request, "param", {}))
 
     app = create_app(config=kwargs)
     app.instance_path = str(tmp_path)

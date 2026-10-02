@@ -46,10 +46,11 @@ test.describe("the app frame", () => {
     const shell = found.filter((b) =>
       ["account", "sessions-open", "menu-open", "send"].includes(b.id),
     );
-    // a wide window draws no list button (R-0352)
+    // a wide window draws no list button (R-0352); a reader with nothing in
+    // the sessions sheet has no door to it
     const drawn = (await pinned(page))
-      ? ["account", "send", "sessions-open"]
-      : ["account", "menu-open", "send", "sessions-open"];
+      ? ["account", "send"]
+      : ["account", "menu-open", "send"];
     expect(shell.map((b) => b.id).sort()).toEqual(drawn);
     expect(new Set(shell.map((b) => b.size))).toEqual(new Set(["44x44"]));
     // the list button is drawn the height of the chips it sits beside

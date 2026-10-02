@@ -50,6 +50,7 @@ app = [
     "rapidfuzz>=3.0.0",
     "markdown-it-py",
     "requests",
+    "pywebpush>=2.5.0",
 ]
 
 test = [

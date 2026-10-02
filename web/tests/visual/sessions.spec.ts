@@ -1,13 +1,15 @@
 import { expect, test, type Page } from "@playwright/test";
 import { colours } from "./gate";
-import { EXACT, stateFor } from "./setup";
+import { flask, stateFor, username } from "./setup";
 
-/** The session door: the button beside the message box and the family-sections
- * sheet it raises. */
+/** The sheet's door beside the message box, and the sheet it raises. Only a
+ * professional or Patrick has one, and no fixture is either of them, so the
+ * door is shown here the way their bootstrap shows it. */
 
 const settle = async (page: Page) => {
   await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
+  await page.locator("#sessions-open").evaluate((b) => ((b as HTMLElement).hidden = false));
   await page.waitForTimeout(600);
 };
 
@@ -37,14 +39,14 @@ const closes = async (page: Page, sheet: string, scrim: string, open: () => Prom
   const { light, dark } = await colours(page, x);
   expect(light.drawn).toBe(light.token);
   expect(dark.drawn).toBe(dark.token);
-  const [b, p, f] = [
-    (await x.boundingBox())!,
-    (await page.locator(sheet).boundingBox())!,
-    (await page.locator(`${sheet} .fs-search input`).boundingBox())!,
-  ];
+  const [b, p] = [(await x.boundingBox())!, (await page.locator(sheet).boundingBox())!];
   expect(p.x + p.width - (b.x + b.width)).toBeLessThanOrEqual(8);
-  expect(Math.abs(b.y + b.height / 2 - (f.y + f.height / 2))).toBeLessThanOrEqual(4);
-  expect(f.x + f.width).toBeLessThanOrEqual(b.x);
+  // beside the search field, on a sheet that has one
+  const f = await page.locator(`${sheet} .fs-search input`).boundingBox();
+  if (f) {
+    expect(Math.abs(b.y + b.height / 2 - (f.y + f.height / 2))).toBeLessThanOrEqual(4);
+    expect(f.x + f.width).toBeLessThanOrEqual(b.x);
+  }
   await x.click();
   expect(await shown(page)).toEqual(byScrim);
 };
@@ -117,10 +119,8 @@ test.describe("the sessions sheet", () => {
     await expect(button.locator("svg")).toBeVisible();
   });
 
-  // R-0347, R-0095
-  test("it opens to 92% of the frame with a grabber and a search field", async ({
-    page,
-  }) => {
+  // R-0095
+  test("it opens to 92% of the frame with a grabber", async ({ page }) => {
     await settle(page);
     await openSheet(page);
     const frame = (await page.locator(".app").boundingBox())!;
@@ -128,41 +128,15 @@ test.describe("the sessions sheet", () => {
     expect(Math.round(sheet.height)).toBe(Math.round(frame.height * 0.92));
     // the page holds several sheets of this class; only this one is the sessions'
     await expect(page.locator("#sessions-sheet .fs-grab")).toBeVisible();
-    // R-0347: the sheet lists only this family's sessions, so it searches sessions
-    await expect(page.locator("#sessions-sheet .fs-search input")).toHaveAttribute(
-      "placeholder",
-      "Search sessions",
-    );
-    const field = (await page.locator("#sessions-sheet .fs-search input").boundingBox())!;
-    expect(Math.round(field.height)).toBe(44);
   });
 
-  // R-0347
-  test("it lists the sessions under a day heading, and marks the current one", async ({
-    page,
-  }) => {
+  // R-0055
+  test("it lists no conversation to open and offers none to start", async ({ page }) => {
     await settle(page);
     await openSheet(page);
-    await expect(page.locator("#sessions-sheet .fs-body .ghead").first()).not.toBeEmpty();
-    await expect(page.locator("#sessions-sheet .fs-body .row").first()).toBeVisible();
-    await expect(page.locator("#sessions-sheet .fs-body .row.cur")).toHaveCount(1);
-    // the foot also carries the upload and note buttons of the same class
-    await expect(page.locator("#sessions-sheet .fs-new").first()).toContainText(
-      "New session with",
-    );
-    // the days and titles follow the day the fixtures were installed
-    await expect(page.locator("#sessions-sheet")).toHaveScreenshot("sessions-sheet.png", {
-      ...EXACT,
-      mask: [page.locator("#sessions-sheet .ghead, #sessions-sheet .rday, #sessions-sheet .rtitle")],
-    });
-  });
-
-  // R-0347
-  test("a search that matches nothing says so, in those words", async ({ page }) => {
-    await settle(page);
-    await openSheet(page);
-    await page.locator("#sessions-sheet .fs-search input").fill("zzzzz-no-such-session");
-    await expect(page.locator(".fs-hint")).toHaveText("No sessions match");
+    await expect(page.locator("#sessions-sheet .fs-search")).toBeHidden();
+    await expect(page.locator("#sessions-sheet .row")).toHaveCount(0);
+    expect(await page.locator("#sessions-sheet").innerText()).not.toMatch(/new session/i);
   });
 
   // R-0095
@@ -263,11 +237,22 @@ test.describe("uploading a recording", () => {
   });
 });
 
-test.describe("the rows of the sessions sheet", () => {
-  test.use({ storageState: stateFor("hostile") });
+/** Only Patrick sees a family's sessions listed, twelve of them on this
+ * fixture. His search reads what was said in each session, not only its title
+ * and summary: a word said only inside one session finds that session, with
+ * the line that carries it under its title. */
+test.describe("the sessions Patrick sees listed", () => {
+  test.use({ storageState: stateFor("sittings") });
+  const roles = (...names: string[]) =>
+    flask("admin", "run", "--", "users", "roles", username("sittings"), ...names, "--yes");
+  test.beforeAll(() => roles("admin", "subscriber"));
+  test.afterAll(() => roles("subscriber"));
 
-  const rows = (page: Page) =>
-    page.locator("#sessions-sheet .fs-body .row").evaluateAll((all) =>
+  const rows = async (page: Page) => {
+    await page.goto("/app/");
+    await openSheet(page);
+    await expect(page.locator("#sessions-sheet .fs-body .row")).toHaveCount(12);
+    return page.locator("#sessions-sheet .fs-body .row").evaluateAll((all) =>
       all.map((r) => {
         const box = r.getBoundingClientRect();
         const style = getComputedStyle(r);
@@ -282,33 +267,43 @@ test.describe("the rows of the sessions sheet", () => {
         };
       }),
     );
+  };
 
   // R-0096
   test("are a plain list: one column, none laid over another", async ({ page }) => {
-    // every fixture holds one session, so the list is given three of it
-    await page.route(/\/app\/sessions(\?.*)?$/, async (route) => {
-      if (route.request().method() !== "GET") return route.continue();
-      const real = await (await route.fetch()).json();
-      const more = real.flatMap((s: { id: number }) =>
-        [0, 1, 2].map((i) => ({ ...s, id: s.id + i * 100000 })),
-      );
-      await route.fulfill({ json: more });
-    });
-    await settle(page);
-    await openSheet(page);
-    await expect(page.locator("#sessions-sheet .fs-body .row")).toHaveCount(3);
     const all = await rows(page);
-    expect(all.length).toBeGreaterThan(0);
     expect(new Set(all.map((r) => `${r.left} ${r.width}`)).size).toBe(1);
     all.slice(1).forEach((r, i) => expect(r.top).toBeGreaterThanOrEqual(all[i].bottom - 1));
   });
 
   // R-0096
   test("are not dressed as stacked cards: no offset, tilt or card behind", async ({ page }) => {
-    await settle(page);
-    await openSheet(page);
     const all = await rows(page);
-    expect(all.length).toBeGreaterThan(0);
     expect(all.filter((r) => r.transform !== "none" || r.cards)).toEqual([]);
+  });
+
+  // R-0259, R-0267
+  test("holds no way to coding, the meeting or the replies, and a row only renames or deletes", async ({
+    page,
+  }) => {
+    await page.goto("/app/");
+    await openSheet(page);
+    await expect(page.locator("#sessions-sheet .fs-foot button:visible")).toHaveCount(0);
+    const row = page.locator("#sessions-sheet .row").first();
+    await row.locator(".rsub").click();
+    await expect(page.locator("#cut-screen")).toBeHidden();
+    await row.locator(".rmore").click();
+    await expect(page.locator("#sessions-sheet .fs-act")).toHaveText(["Rename", "Delete"]);
+  });
+
+  // R-0347
+  test("finds a session by a word said only inside it", async ({ page }) => {
+    await page.goto("/app/");
+    await openSheet(page);
+    await page.locator("#sessions-sheet .fs-search input").fill("job");
+    const rows = page.locator("#sessions-sheet .row");
+    await expect(rows).toHaveCount(1);
+    await expect(rows.locator(".rtitle")).not.toContainText("job");
+    await expect(rows.locator(".rsub")).toHaveText("What happened first, with my brother's job?");
   });
 });

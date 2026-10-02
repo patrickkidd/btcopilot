@@ -782,3 +782,57 @@ deploy/grafana/fd-quality.json (the "Tuning queue" panel), .claude/skills/fd-adm
 observations queue` on the box, and rules on whether the six tracked kinds and the ten-group cap
 are right.
 **Updated:** 2026-09-28.
+
+## T-14 · Feedback loops: every place the project collects something to drive an action
+
+**Status:** the ledger and the `/product-owner` skill are in the repo, pushed after the last
+release; the skill has run once (2026-09-30).
+**Decided:** every signal a loop is needed is tracked, dashboarded and queued for his yes or no
+[R-0578]; no automated digest (2026-09-28), so the skill runs only when he asks, with one Fable
+call ranking at most five recommendations toward product-market fit.
+**Open:** (1) [ruling] the first run's proposed ledger diff awaits his yes; (2) [build] nothing
+collects whether anyone felt a shift, the goal's own test.
+**Lives in:** doc/FEEDBACK_LOOPS.md; btcopilot/tests/test_feedbackloops.py;
+.claude/skills/product-owner/SKILL.md; doc/log/product-owner/.
+**Next action:** he reads the first run's five lines and rules on its ledger diff.
+**Updated:** 2026-09-30.
+
+## T-15 · Notices and notifications
+
+**Status:** deployed in 3.2026.9.30.1.
+**Decided:** two tables, `notices` (the message and its audience, once) and `notifications` (one
+row per delivery); an in-app notice is a card above the message box, never in the thread, then a
+Notices page in the account view [queued R-0613]; every notification is first a coach message
+when it comes from the coach [queued R-0608]; auditors get task notices and reminders [queued
+R-0612].
+**Open:** (1) [build] someone who joins an audience after a notice was sent gets it in the app
+only; (2) [waiting] the queued rulings wait for his key.
+**Lives in:** doc/API.md (Notifications); doc/SCREENS.md; `flask admin notice send` and `notice
+list`; doc/FEEDBACK_LOOPS.md row 9.
+**Next action:** he sends the first real notice.
+**Updated:** 2026-09-30.
+
+## T-16 · Bug reports and feedback
+
+**Status:** deployed in 3.2026.9.30.1; the coach's report tool has not offered a report on
+production yet.
+**Decided:** a modal sheet from the bottom, only from the coach's offers, never touching the
+thread; one row per answer in the `reports` table, sent or declined; errors in the code are
+Grafana's (Faro and Alloy), never a report [queued R-0615].
+**Open:** (1) [deploy] the beta's forced send, "Don't send" disabled on the bug sheet and a declined
+bug refused by the server, is on branch FD-365, not deployed; (2) [build] the report route's limit
+is held in server memory; (3) [verify] a real turn on production offering a report.
+**Lives in:** doc/API.md (Reports); doc/SCREENS.md (Bug reports and feedback); doc/KNOWN_DEFECTS.md;
+doc/FEEDBACK_LOOPS.md row 8.
+**Next action:** disable the bug sheet's not-send button for the beta.
+**Updated:** 2026-09-30.
+
+## T-17 · In-app addresses and the coach's navigate tool
+
+**Status:** deployed in 3.2026.9.30.1.
+**Decided:** every view and object is addressable so the coach can help with any feature; an
+address opens its drawer and rings the item [queued R-0616].
+**Open:** (1) [verify] his walk of the addresses and the back button on his phone.
+**Lives in:** doc/SCREENS.md (Addresses).
+**Next action:** his walk on the `walk` stack.
+**Updated:** 2026-09-30.

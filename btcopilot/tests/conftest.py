@@ -3,6 +3,7 @@ and names its own stubs (R-0332)."""
 
 import contextlib
 import datetime
+import logging
 import re
 import flask.testing
 import pytest
@@ -232,6 +233,15 @@ def web(flask_app, test_user):
                 datetime.timezone.utc
             ).isoformat()
         yield client
+
+
+@pytest.fixture
+def logged(monkeypatch):
+    """The app's loggers on, whichever tests ran first: alembic's fileConfig,
+    run by any test that migrates, turns off every logger it does not name."""
+    for name, logger in logging.root.manager.loggerDict.items():
+        if name.startswith("btcopilot") and isinstance(logger, logging.Logger):
+            monkeypatch.setattr(logger, "disabled", False)
 
 
 def csrf_token(web) -> str:

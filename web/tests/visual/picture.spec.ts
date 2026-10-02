@@ -69,6 +69,7 @@ test.describe("a tap on the wire", () => {
 
   // R-0072, R-0055
   test("the chip beside it drops a reference in the composer", async ({ page }) => {
+    test.fixme(true, "the ask chip is hidden for now (Patrick, 2026-09-29)");
     await settle(page);
     await openCluster(page);
     await page.locator('.ss-hit[data-target="zone"]').first().click();
@@ -325,7 +326,7 @@ test.describe("an event added by hand", () => {
     const before = await page.locator("#view circle.dot").count();
     await openList(page);
     await page.locator("#menu-add").click();
-    const editor = page.locator("#menu-body .editor");
+    const editor = page.locator("#add-sheet .editor");
     // a move is a noted event; a new event opens as a shift, which is refused
     // until something in it moves
     await editor.locator('.segs[data-name="kind"] .seg[data-value="noted"]').click();
@@ -386,6 +387,7 @@ test.describe("the mark that says a tap goes into the message", () => {
   test("the ask in the row and the coach's offers wear the same outline", async ({
     page,
   }) => {
+    test.fixme(true, "the ask chip is hidden for now (Patrick, 2026-09-29)");
     await settle(page);
     // the record opens on a cluster, and the row offers ask for it
     await expect(page.locator("#cap-chip")).toBeVisible();

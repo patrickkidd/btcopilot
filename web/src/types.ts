@@ -15,6 +15,8 @@ export enum ChipKind {
   /** The question a coach message ended on, which the reader is answering
    * (R-0587). */
   Message = "message",
+  /** An address in the app, which a tap goes to (R-0055). */
+  Place = "place",
 }
 
 /** Teal is a reference to something the record holds; amber is the coach or the
@@ -323,6 +325,10 @@ export enum TurnEventKind {
   ToolCall = "tool_call",
   RecordPatch = "record_patch",
   View = "view",
+  /** The coach moved the app to an address in it (R-0055). */
+  Navigate = "navigate",
+  /** The coach offered to send what the person said about the app (R-0056). */
+  Report = "report",
   /** The next words of the reply, as the coach says them. */
   Text = "text",
   /** The coach said those words again: drop what has been drawn. */
@@ -353,6 +359,8 @@ export type TurnEvent =
   | ({ type: TurnEventKind.ToolCall } & ToolCall)
   | { type: TurnEventKind.RecordPatch; deltas: Delta[]; turn_id: string }
   | { type: TurnEventKind.View; view: View }
+  | { type: TurnEventKind.Navigate; address: string }
+  | { type: TurnEventKind.Report; report: { kind: ReportKind; words: string } }
   | { type: TurnEventKind.Text; text: string }
   | { type: TurnEventKind.TextReset }
   | ({ type: TurnEventKind.Done } & Reply)
@@ -463,6 +471,10 @@ export interface Session {
   /** The turn the coach is running on this session, if one is running: a page
    * that has just loaded attaches to it instead of showing nothing. */
   turn: string | null;
+  /** On a search, the newest line said in it that carries the words. */
+  match?: string;
+  /** The family it was said about, on the list of every family's sessions. */
+  family?: string;
 }
 
 export interface Diagram {
@@ -513,6 +525,40 @@ export enum Spotlight {
   Chip = "chip",
 }
 
+/** Whether a turn or the page breaking asks before its report is sent.
+ * Mirrors `BugReports` on the server. */
+export enum BugReports {
+  Ask = "ask",
+  Always = "always",
+}
+
+/** What the person can send from the app (R-0056). Mirrors `ReportKind` on
+ * the server. */
+export enum ReportKind {
+  Bug = "bug",
+  Feedback = "feedback",
+}
+
+/** Mirrors `ReportStatus` on the server. */
+export enum ReportStatus {
+  Sent = "sent",
+  Declined = "declined",
+}
+
+/** A report as it is sent: one row of the reports table. */
+export interface Report {
+  kind: ReportKind;
+  status: ReportStatus;
+  release: string;
+  /** The screen the page was on. */
+  address: string;
+  turn_id: string;
+  /** The coach's reply that offered it. */
+  statement_id: number;
+  /** The words the coach offered to send; none once turned down. */
+  words?: string;
+}
+
 export interface Preferences {
   speak: boolean;
   proactive: Proactive;
@@ -522,6 +568,43 @@ export interface Preferences {
   first_name: string | null;
   last_name: string | null;
   birthdate: string | null;
+  how_it_works: boolean;
+  line_hint: boolean;
+  bug_reports: BugReports;
+}
+
+/** What a notification points at. Mirrors `NotificationKind` on the server. */
+export enum NotificationKind {
+  Coach = "coach",
+  Task = "task",
+  Reminder = "reminder",
+  Notice = "notice",
+}
+
+/** The fixed screens a notification opens by name. A notice may instead
+ * carry any address in the app (R-0055). */
+export enum Link {
+  Account = "account",
+  Coach = "coach_settings",
+  Task = "task",
+  Agenda = "agenda",
+}
+
+/** One notification delivered to the signed-in person, and when they opened
+ * it. */
+export interface Delivery {
+  id: number;
+  kind: NotificationKind;
+  title: string;
+  /** A notice's words; the other kinds are their title alone. */
+  body: string | null;
+  /** A `Link`, or an address starting /app/. */
+  link: string | null;
+  /** A coach message's own place in the thread. */
+  discussion_id: number | null;
+  statement_id: number | null;
+  created_at: string;
+  opened_at: string | null;
 }
 
 /** A key held by one device that signs the reader in without an emailed code. */

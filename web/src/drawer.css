@@ -21,7 +21,7 @@
 .pbp .path { flex: none; height: 44px; padding: 0 52px 0 16px; font: 400 13px/1.2 var(--mono); color: var(--faint); }
 .pbp > .cardx { top: 0; }
 .pbp .point { flex: none; padding: 0 16px; font: 400 13px/20px var(--sans); color: var(--ink); }
-.pbp .path .step:focus-visible, .pbp .nav:focus-visible, .pbp .dot:focus-visible { outline: 2px solid var(--data); outline-offset: 2px; }
+.pbp .path .step:focus-visible, .pbp .stepbtn:focus-visible, .pbp .dot:focus-visible { outline: 2px solid var(--data); outline-offset: 2px; }
 
 /* Q6: the picture shrinks so the caption fits; when even that does not fit, the whole drawer scrolls */
 .pbp .lv { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
@@ -31,9 +31,6 @@
 .pbp .draw svg { display: block; width: 100%; height: 100%; }
 
 .pbp .scroll .step { display: flex; align-items: center; gap: 4px; padding: 4px 10px 8px; }
-.pbp .nav { flex: none; height: 40px; min-width: 70px; padding: 0 12px; border: 1px solid var(--line); border-radius: 20px; background: var(--panel); color: var(--data); font: 500 13px var(--mono); cursor: pointer; }
-.pbp .nav:disabled { opacity: 0.35; cursor: default; }
-.pbp .nav:not(:disabled):active { background: var(--tint); }
 .pbp .dots { flex: 1; min-width: 0; display: flex; justify-content: center; }
 .pbp .dot { flex: none; width: 22px; height: 40px; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .pbp .dot::after { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--data); box-sizing: border-box; }

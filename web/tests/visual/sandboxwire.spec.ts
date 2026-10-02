@@ -14,13 +14,14 @@ async function meeting(page: Page): Promise<void> {
   if (await page.locator("#task-screen").isVisible())
     await page.locator("#task-screen .addbtn").first().click();
   else {
-    await page.locator("#sessions-open").click();
+    await page.locator("#account").click();
     await page.waitForTimeout(700);
-    await page.locator(".fs-task.fs-agenda").first().click();
+    await page.locator(".sn-pane.in .sn-row", { hasText: "Next meeting" }).click();
   }
   await page.waitForTimeout(1200);
   if (!(await page.locator("#meeting-screen").isVisible())) {
     await page.locator(".tb-meet").first().click();
+    await page.locator(".tb-run").first().click();
     await page.waitForTimeout(1500);
   }
   await expect(page.locator("#meeting-screen")).toBeVisible();

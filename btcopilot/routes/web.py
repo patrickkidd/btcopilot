@@ -10,8 +10,8 @@ from btcopilot import auth
 from btcopilot.routes import bp, current_session, diagram
 from btcopilot.routes.diagrams import readable
 from btcopilot.discussions import session_payload
-from btcopilot.routes.sessions import statements_payload
-from btcopilot import playturn, questions, record
+from btcopilot.routes.sessions import thread
+from btcopilot import place, playturn, questions, record
 from btcopilot.licence import professional
 from btcopilot.timeline import build_timeline
 from btcopilot.schema import DiagramData
@@ -45,11 +45,12 @@ def _page() -> str:
             "prefs": user.prefs(),
         },
         "session": session_payload(discussion) if discussion else None,
-        "statements": statements_payload(discussion, user) if discussion else [],
+        "statements": thread(user),
         "diagram": (
             {"id": in_use.id, "name": in_use.name} if in_use else None
         ),
         "version": btcopilot.__version__,
+        "beta": btcopilot.BETA,
     }
     head = (
         f'<meta name="csrf-token" content="{escape(generate_csrf())}">'
@@ -73,6 +74,27 @@ FRESH = {"Cache-Control": "no-cache"}
 
 @bp.route("/")
 def index():
+    return _page(), FRESH
+
+
+@bp.before_request
+def _opened_at_address():
+    """A browser opening an address in the app as a page gets the page there,
+    even where the same path answers one of the page's own reads (R-0055)."""
+    if (
+        request.method == "GET"
+        and request.headers.get("Sec-Fetch-Dest") == "document"
+        and place.parse(request.path)
+    ):
+        return _page(), FRESH
+
+
+@bp.route("/<path:where>")
+def address(where):
+    """An address in the app that nothing else answers: the page, which puts
+    itself where the address says."""
+    if not place.parse(request.path):
+        abort(404)
     return _page(), FRESH
 
 

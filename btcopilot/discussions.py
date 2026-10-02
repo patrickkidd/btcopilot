@@ -3,6 +3,8 @@ session."""
 
 import datetime
 
+from sqlalchemy import func
+
 from btcopilot import auth, diagramjson
 from btcopilot.extensions import db
 from btcopilot.models import Diagram
@@ -16,6 +18,9 @@ from btcopilot.models import (
 from btcopilot import turnlog
 
 PREVIEW_CHARS = 120
+# Nobody opens or closes a sitting by hand. Words
+# that come after the family has been quiet this long start the next sitting.
+SITTING_GAP = datetime.timedelta(hours=12)
 
 
 def utc_iso(when: datetime.datetime) -> str:
@@ -29,17 +34,7 @@ def last_activity(discussion: Discussion):
     return max(times) if times else discussion.created_at
 
 
-def preview(discussion: Discussion) -> str | None:
-    """The first thing the client said, the way a notes or messages list
-    previews its content under the title."""
-    said = next(
-        (
-            s.text
-            for s in discussion.statements
-            if s.text and s.speaker_id != discussion.chat_ai_speaker_id
-        ),
-        None,
-    )
+def clip(said: str | None) -> str | None:
     if said is None:
         return None
     words = " ".join(said.split())
@@ -48,17 +43,34 @@ def preview(discussion: Discussion) -> str | None:
     )
 
 
-def session_payload(discussion: Discussion) -> dict:
+def preview(discussion: Discussion) -> str | None:
+    """The first thing the client said, the way a notes or messages list
+    previews its content under the title."""
+    return clip(
+        next(
+            (
+                s.text
+                for s in discussion.statements
+                if s.text and s.speaker_id != discussion.chat_ai_speaker_id
+            ),
+            None,
+        )
+    )
+
+
+def row(
+    discussion: Discussion, last: datetime.datetime, count: int, first: str | None
+) -> dict:
     """`turn` is the turn the coach is running on this session, so a page that
     has just loaded, or come back to the front, knows to attach to it."""
     return {
         "id": discussion.id,
         "title": discussion.title,
         "summary": discussion.summary,
-        "preview": preview(discussion),
+        "preview": first,
         "title_set_by_user": discussion.title_set_by_user,
-        "last_activity": utc_iso(last_activity(discussion)),
-        "message_count": len(discussion.statements),
+        "last_activity": utc_iso(last),
+        "message_count": count,
         "kind": DiscussionKind(discussion.kind).value,
         "turn": turnlog.running(discussion.id),
         "date": (
@@ -69,12 +81,83 @@ def session_payload(discussion: Discussion) -> dict:
     }
 
 
-def create_discussion(data: dict, diagram: Diagram | None = None) -> Discussion:
-    """A caller that knows which diagram the session belongs on says so; the
-    personal app's own routes do not, and get the free one."""
-    user = auth.current_user()
+def session_payload(discussion: Discussion) -> dict:
+    return row(
+        discussion,
+        last_activity(discussion),
+        len(discussion.statements),
+        preview(discussion),
+    )
 
-    # Ensure user has a free_diagram
+
+def listed(found) -> list[dict]:
+    """The rows of the sessions `found` picks, most recently active first. The
+    database counts and dates each one and hands back only its first line,
+    never every line of every session."""
+    ids = Statement.discussion_id.in_(found.with_entities(Discussion.id))
+    stats = (
+        db.session.query(
+            Statement.discussion_id,
+            func.count(Statement.id).label("count"),
+            func.max(Statement.created_at).label("last"),
+        )
+        .filter(ids)
+        .group_by(Statement.discussion_id)
+        .subquery()
+    )
+    told = (
+        db.session.query(
+            Statement.discussion_id,
+            Statement.text,
+            func.row_number()
+            .over(
+                partition_by=Statement.discussion_id,
+                order_by=(Statement.order, Statement.id),
+            )
+            .label("at"),
+        )
+        .join(Discussion)
+        .filter(
+            ids,
+            Statement.text.isnot(None),
+            Statement.text != "",
+            Statement.speaker_id.is_distinct_from(Discussion.chat_ai_speaker_id),
+        )
+        .subquery()
+    )
+    last = func.coalesce(stats.c.last, Discussion.created_at)
+    rows = (
+        found.outerjoin(stats, stats.c.discussion_id == Discussion.id)
+        .outerjoin(told, (told.c.discussion_id == Discussion.id) & (told.c.at == 1))
+        .add_columns(last, stats.c.count, told.c.text)
+        .order_by(last.desc(), Discussion.id.desc())
+    )
+    return [row(d, at, count or 0, clip(text)) for d, at, count, text in rows]
+
+
+def all_sessions():
+    """Every session on every family. A discussion missing either chat speaker
+    id is not one: its speakers are not the two chat roles, so every line would
+    render as the user's."""
+    return Discussion.query.filter(
+        Discussion.chat_user_speaker_id.isnot(None),
+        Discussion.chat_ai_speaker_id.isnot(None),
+    )
+
+
+def chats(user, diagram_id: int):
+    """The user's sessions on one family."""
+    return all_sessions().filter_by(user_id=user.id, diagram_id=diagram_id)
+
+
+def newest(found) -> list[Discussion]:
+    """Most recently active first."""
+    return sorted(found, key=lambda d: (last_activity(d), d.id), reverse=True)
+
+
+def family(user, diagram: Diagram | None) -> Diagram:
+    """A caller that knows which diagram the session belongs on says so; the
+    personal app's own routes do not, and get the free one, made on first use."""
     diagram = diagram or user.free_diagram
     if diagram is None:
         diagram = Diagram(
@@ -85,10 +168,29 @@ def create_discussion(data: dict, diagram: Diagram | None = None) -> Discussion:
         db.session.add(diagram)
         db.session.flush()
         user.free_diagram_id = diagram.id
+    return diagram
 
-    discussion = open_session(user, diagram)
+
+def create_discussion(data: dict, diagram: Diagram | None = None) -> Discussion:
+    user = auth.current_user()
+    discussion = open_session(user, family(user, diagram))
     db.session.commit()
     return discussion
+
+
+def sitting(user, diagram: Diagram) -> Discussion:
+    """The sitting the next words on this family go into, from either speaker:
+    the one last spoken in, until the family has been quiet for SITTING_GAP;
+    then a new one, which the coach opens with nothing. One nobody has spoken
+    in yet, such as a note just made, is still waiting for its first words.
+    Flushed, not committed: the words that start it commit it."""
+    last = max(chats(user, diagram.id), key=lambda d: (last_activity(d), d.id), default=None)
+    if last and (
+        not last.statements
+        or datetime.datetime.utcnow() - last_activity(last) <= SITTING_GAP
+    ):
+        return last
+    return open_session(user, diagram)
 
 
 def open_session(user, diagram: Diagram) -> Discussion:

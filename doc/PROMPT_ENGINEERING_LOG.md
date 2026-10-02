@@ -2,7 +2,50 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-09-28 (defined-self wording held; its eval kept as a regression case)
+**Last Updated**: 2026-09-29 ("What it's doing" defaults to coaching)
+
+---
+
+## Sittings — "What it's doing" defaults to coaching (2026-09-29)
+
+2026-09-29: the field's description now makes coaching the default and evaluation the exception, a question that asks for a missing basic fact about the family (a name, an age, a date, a place, a marriage, a death, a move), even alongside a question about how things were. Replayed on the Claude Code subscription ($0) over Patrick's first 15 statements of session 1 on diagram 1: before, evaluation 15 and coaching 0, though 2 of those questions were coaching ones (30 of 30 evaluation over 30 statements); first rewording, evaluation 7, coaching 6, record correction 2, with three questions that asked about feelings and also for parents' names or a partner's age labelled coaching; final wording, evaluation 9 and coaching 6, every question asking for a missing fact labelled evaluation and every question about feelings, patterns or what happened next labelled coaching. One run each. [R-0535]
+
+---
+
+## Sittings — the coach's notes say evaluation, not journaling (2026-09-29)
+
+**Not evaluated yet.** No real model calls were made.
+
+**Scope**: the "What it's doing" field of the coach's notes tool. Its fourth value, journaling, is
+now evaluation, and the field's description defines the two: evaluation is a turn whose question
+aims at covering the basic family history an evaluation needs; coaching is ongoing conversation
+outside that aim. Record correction and app help are unchanged. No prompt file named the values,
+so no prompt wording changed and the goldens stand.
+
+**Why** [R-0535; Patrick, 2026-09-29, not yet in the rulings store]: evaluation matches the
+family evaluation of Kerr's chapter 10. Notes already stored keep the word they were written
+with; the notes card shows a stored journaling as it is.
+
+---
+
+## Sittings — the coach's memory is the record, its last notes and a chat search (2026-09-28)
+
+**Not evaluated yet.** An eval answered on the Claude Code subscription replay gates this before
+it ships; no real model calls were made.
+
+**Scope**: `private/prompts/fragments/coach_notes.md` and its public twin now say where the coach
+reads its last notes. When to search the chat is `btcopilot/prompty/fragments/search_chat.md`,
+read into the search tool's description rather than the system prompt, as the follow-up tool's
+paragraph is. No other wording changed; both sets of goldens are regenerated.
+
+**Why** [R-0520, R-0481; queued R-0605, R-0606, R-0607]: the coach no longer gets its past tool
+calls back in the chat, so the thread cannot grow without end. It gets the last 20 statements from
+the user's sessions on the family, its latest notes as labelled lines at the head of the newest
+message, and a map listing each event's date, kind and people. Older words it finds with the
+search tool.
+
+**Map sentence**: the sentence over the map in both prompts now says it lists every event with
+its id, date, kind and people; the private one no longer counts events per decade.
 
 ---
 

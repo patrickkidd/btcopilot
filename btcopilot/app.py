@@ -1,5 +1,5 @@
-import os, os.path, logging
-from flask import Flask, jsonify, redirect, request, url_for
+import os, os.path, logging, uuid
+from flask import Flask, g, jsonify, redirect, request, url_for
 from werkzeug.exceptions import Unauthorized, HTTPException
 
 import btcopilot
@@ -9,6 +9,15 @@ from btcopilot.turnlog import TurnLogBackend
 
 
 _log = logging.getLogger(__name__)
+
+# A push goes out long after the message it points at is committed, so these
+# are read when the app is made rather than at the first send.
+VAPID = ("VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT")
+
+# The header naming the request each response answers, which every line logged
+# while serving it names too; only this server sets it, so a proxy's own error
+# page never carries it [Oracle: R-0056].
+REQUEST_ID = "X-Request-Id"
 
 
 def create_app(config: dict = None, **kwargs):
@@ -48,6 +57,8 @@ def create_app(config: dict = None, **kwargs):
         THEORY_REPO="patrickkidd/btcopilot-sources",
         THEORY_REF="master",
         THEORY_PATH="theory/CONCEPTS",
+        # How often celery beat looks for a message the coach may write first.
+        PROACTIVE_EVERY_S=15 * 60,
     )
 
     if config and config.get("CONFIG"):
@@ -79,6 +90,13 @@ def create_app(config: dict = None, **kwargs):
         # load the test config if passed in
         _log.debug("Importing config overrides passed to create_app().")
         app.config.from_mapping(config)
+
+    missing = [f"FLASK_{key}" for key in VAPID if not app.config.get(key)]
+    if missing:
+        raise ValueError(
+            f"{', '.join(missing)} must be set: python -m btcopilot.push makes"
+            " the key pair, and the subject is mailto: and an address"
+        )
 
     ## Instance
 
@@ -125,6 +143,7 @@ def create_app(config: dict = None, **kwargs):
 
     @app.before_request
     def _():
+        g.request_id = uuid.uuid4().hex
         if request.path == "/health":
             return
 
@@ -142,6 +161,11 @@ def create_app(config: dict = None, **kwargs):
                 }
             },
         )
+
+    @app.after_request
+    def _(response):
+        response.headers[REQUEST_ID] = g.request_id
+        return response
 
     ## Initialize Modules
 

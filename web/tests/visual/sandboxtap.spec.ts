@@ -46,9 +46,9 @@ test.describe(() => {
       const open = page.locator("#task-screen .addbtn").first();
       if ((await open.count()) && (await open.isEnabled())) await open.click();
     } else {
-      await page.locator("#sessions-open").click();
+      await page.locator("#account").click();
       await page.waitForTimeout(800);
-      await page.locator(".fs-task").first().click();
+      await page.locator(".sn-pane.in .sn-row", { hasText: "Your coding task" }).click();
     }
     await page.waitForTimeout(2500);
     test.skip(

@@ -2,6 +2,7 @@
 
 import json
 from decimal import Decimal
+from types import SimpleNamespace
 
 import anthropic
 import httpx
@@ -10,7 +11,10 @@ import pytest
 from btcopilot import ledger
 from btcopilot.coachmodel import Spent
 from btcopilot.tests.live import passrate
+from btcopilot.pricing import cost
 from btcopilot.tests.live import test_coachturn as coachturn
+from btcopilot.tests.live.conftest import capped
+from btcopilot.tests.live.replay import Miss
 from btcopilot.tests.live.criterion import Criterion, passes
 from btcopilot.quality import Source
 from btcopilot.tests.live.run import RUN_CAP, Outcome, Run
@@ -193,3 +197,36 @@ def test_a_finished_run_appends_one_ledger_line_per_case(tmp_path):
         ("live", MODEL, "passes", "passed", 0.25),
         ("live", MODEL, "misses", "failed", 0.0),
     ]
+
+
+def answered(turn):
+    with pytest.raises(StopIteration) as done:
+        next(turn)
+    return done.value.value
+
+
+def test_a_calibration_stops_before_the_call_that_could_pass_its_cap(tmp_path):
+    # R-0507, R-0599
+    spent = Spent(input=1000, output=100)
+    price = cost(MODEL, spent)
+    run = Run(MODEL, GIT, tmp_path, cap=price * Decimal("1.5"), calls=True)
+    run.begin("a case", "once")
+
+    def real(model):
+        yield from ()
+        return SimpleNamespace(spent=spent, served=SimpleNamespace(model=MODEL))
+
+    turn = capped(real, run)
+    assert answered(turn(None)).spent == spent
+    with pytest.raises(Miss, match="next call could pass the cap"):
+        answered(turn(None))
+    lines = [
+        json.loads(line)
+        for line in (tmp_path / ledger.PATH.name).read_text().splitlines()
+    ]
+    assert [line.keys() for line in lines] == [ledger.FIELDS]
+    assert [
+        (line["kind"], line["case"], line["turns"], line["cost"], line["source"])
+        for line in lines
+    ] == [("live", "a case", 1, float(price), Source.Api.value)]
+    assert run.cost == price

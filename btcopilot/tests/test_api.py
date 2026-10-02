@@ -12,7 +12,7 @@ from btcopilot.models import Author, Change, Discussion, Interaction, Statement
 from btcopilot.models.interaction import InteractionKind
 from btcopilot.models import Diagram, License, Policy
 from btcopilot.models.license import LicenseStatus
-from btcopilot.models.preferences import ChatMode, PrefKey, Proactive, Spotlight, Theme
+from btcopilot.models.preferences import BugReports, ChatMode, PrefKey, Proactive, Spotlight, Theme
 from btcopilot.schema import (
     Cluster,
     DateCertainty,
@@ -27,11 +27,6 @@ from btcopilot.schema import (
 )
 from btcopilot.tests.conftest import csrf_token, replied, version
 from btcopilot.toolbox import ToolName, Toolbox
-
-
-@pytest.fixture(autouse=True)
-def no_auto_auth(monkeypatch):
-    monkeypatch.delenv("FLASK_AUTO_AUTH_USER", raising=False)
 
 
 @pytest.fixture
@@ -352,6 +347,9 @@ def test_preferences_defaults(web, test_user):
         PrefKey.Mode.value: ChatMode.Text.value,
         PrefKey.Theme.value: Theme.System.value,
         PrefKey.Spotlight.value: Spotlight.Unified.value,
+        PrefKey.HowItWorks.value: True,
+        PrefKey.LineHint.value: True,
+        PrefKey.BugReports.value: BugReports.Ask.value,
         "first_name": test_user.first_name,
         "last_name": test_user.last_name,
         "birthdate": None,
@@ -568,6 +566,16 @@ def test_a_hand_added_couple_event_adds_the_couples_bond(web, token, family):
     assert created.status_code == 201
     bonds = family.get_diagram_data().pair_bonds
     assert [(b["person_a"], b["person_b"], b["married"]) for b in bonds] == [(1, 2, True)]
+
+
+def test_a_hand_edited_bad_date_is_refused_in_plain_words(web, token, family):
+    # R-0453
+    event = post(web, token, "/app/events", SHIFT).get_json()
+    refused = patch(web, token, f"/app/events/{event['id']}", {"endDateTime": "spring"})
+    assert (refused.status_code, refused.get_data(as_text=True)) == (
+        400,
+        'The end date "spring" could not be read. Give the year, month and day.',
+    )
 
 
 def test_event_write_takes_the_diagram_lock(web, token, family):

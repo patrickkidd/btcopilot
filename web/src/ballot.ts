@@ -1,7 +1,7 @@
 import * as api from "./api";
 import { Feature, tap } from "./track";
 import { conceptLinks, conceptsOf } from "./concepts";
-import { esc, el, type Title } from "./dom";
+import { esc, el, stepBtn, type Title } from "./dom";
 import {
   openBondEditor,
   openEditor,
@@ -462,9 +462,9 @@ export class Ballot {
       // A dot can take you back to an item already voted on, so there is a way
       // forward again from wherever you land (R-0337).
       `<div class="nextrow">` +
-      `<button class="btn" id="bl-prev" type="button"${this.at === 0 ? " disabled" : ""}>‹ prev</button>` +
-      `<button class="btn" id="bl-next" type="button">` +
-      `${this.last() ? "done" : "next ›"}</button></div>`
+      stepBtn("‹ Back", `id="bl-prev"`, this.at === 0) +
+      stepBtn(this.last() ? "Done" : "Next ›", `id="bl-next"`, false) +
+      `</div>`
     );
   }
 
@@ -648,7 +648,7 @@ export class Ballot {
     this.close();
   }
 
-  private close(): void {
+  close(): void {
     this.scrim.classList.remove("in");
     this.sheet.classList.remove("in");
     window.setTimeout(() => {

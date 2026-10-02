@@ -54,8 +54,8 @@ const words = (html: string) => html.replace(/<[^>]+>/g, "\n").split("\n").filte
 
 describe("impressions on the coach's tab", () => {
   // R-0006, R-0485
-  it("the tab is From the coach, and impressions come after both kinds of question", () => {
-    expect(readFileSync("index.html", "utf8")).toMatch(/id="tab-questions"[^>]*>From the coach</);
+  it("the tab is Questions, and impressions come after both kinds of question", () => {
+    expect(readFileSync("index.html", "utf8")).toMatch(/id="tab-questions"[^>]*>Questions</);
     const said = words(questionsHtml(FAMILY, NOW));
     expect(said.filter((w) => w.endsWith("thought") || w.endsWith("find") || w === "Impressions")).toEqual([
       "Food for thought",

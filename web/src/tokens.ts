@@ -27,6 +27,12 @@ export const IN_CHAT_MARK =
   `stroke-width="1.5" stroke-linejoin="round"/></svg>`;
 
 /** A chip with nothing to do is dimmed rather than missing. */
+/** The one back arrow every screen draws (R-0223). */
+export const BACK =
+  `<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">` +
+  `<path d="M13.5 4.5 7 11l6.5 6.5" stroke="currentColor" stroke-width="2" ` +
+  `stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+
 export const tok = (
   id: string,
   kind: string,

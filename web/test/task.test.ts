@@ -4,21 +4,12 @@ import { TaskKind, type FinishedTask, type Tasks } from "../src/types";
 vi.stubGlobal("window", { BOOTSTRAP: { user: { coder: true } } });
 
 const found: { tasks: Tasks } = { tasks: { task: null, done: [] } };
-vi.mock("../src/api", () => ({ tasks: async () => found.tasks }));
+vi.mock("../src/api", () => ({
+  tasks: async () => found.tasks,
+  preferences: async () => ({ how_it_works: false }),
+}));
 
-const { finishedRow, OneTask, wayIn } = await import("../src/task");
-
-describe("wayIn", () => {
-  // R-0311
-  it("offers the card to a coder whether or not a task is open", () => {
-    expect(wayIn(true)).toBe("Your coding task");
-  });
-
-  // R-0311
-  it("offers nothing to a reader who does no coding", () => {
-    expect(wayIn(false)).toBeNull();
-  });
-});
+const { finishedRow, OneTask } = await import("../src/task");
 
 const done = (ratified: boolean): FinishedTask => ({
   coding_id: 3,

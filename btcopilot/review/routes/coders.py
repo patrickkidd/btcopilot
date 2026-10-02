@@ -11,7 +11,7 @@ from flask import jsonify, request
 from btcopilot import ROLE_ADMIN, ROLE_AUDITOR
 from btcopilot.review.adapter import User, initials
 from btcopilot.review.models import Coding, Cut
-from btcopilot.review.routes import bp, coder, voted
+from btcopilot.review.routes import bp, coder, cut_or_404, voted
 from btcopilot.review.routes.cuts import agenda_cuts
 
 
@@ -61,10 +61,15 @@ def state_of(user, cuts: list[Cut]) -> CoderState:
 
 @bp.route("/coders")
 def coder_index():
-    """One line per coder for the meeting asked for, or for everything on the
-    agenda when no date is given."""
+    """One line per coder for the one cut asked for, the meeting asked for, or
+    everything on the agenda when neither is given."""
     me = coder()
-    cuts = agenda_cuts(request.args.get("meeting_date"))
+    cut_id = request.args.get("cut_id", type=int)
+    cuts = (
+        [cut_or_404(cut_id)]
+        if cut_id is not None
+        else agenda_cuts(request.args.get("meeting_date"))
+    )
     rows = [(user, state_of(user, cuts)) for user in roster(cuts)]
     return jsonify(
         [

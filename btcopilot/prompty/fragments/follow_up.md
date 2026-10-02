@@ -1,0 +1,1 @@
+Call it only after the person said yes to being asked about something later ("ask me next week how the talk with my sister went"): the day to ask, and the question worded so it stands alone when they read it days from now. Never offer one about an anniversary or a loss, and never set more than one in a turn.

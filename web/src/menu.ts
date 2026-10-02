@@ -1,3 +1,4 @@
+import { closeX, el, flash, slideOver } from "./dom";
 import { openEditor, openPersonEditor } from "./editor";
 import { Feature, tap } from "./track";
 import { eventDivider, eventRow, fullName, personRow, sections } from "./rows";
@@ -29,9 +30,37 @@ function byBirth(a: Person, b: Person): number {
 
 const byName = (a: Person, b: Person) => a.name.localeCompare(b.name);
 
+const ADD = "add-sheet";
+
+/** The form for something new, one for the whole app: it comes up over the
+ * lists the way they came up over the chat, full screen, with what it makes
+ * and the app's close button at its top. Made on the first add. */
+function addSheet(): HTMLElement {
+  const found = document.getElementById(ADD);
+  if (found) return found;
+  const sheet = el(
+    "div",
+    "slideover",
+    `<div class="ovbar"><span class="ovt"></span>${closeX()}</div><div class="scroller"></div>`,
+  );
+  sheet.id = ADD;
+  sheet.hidden = true;
+  document.querySelector(".app")!.append(sheet);
+  return sheet;
+}
+
+/** Whether the form for something new is up. */
+export const adding = (): boolean =>
+  document.getElementById(ADD)?.classList.contains("in") ?? false;
+
+/** The form for something new goes back down, if one ever came up. */
+export function shut(): void {
+  const sheet = document.getElementById(ADD);
+  if (sheet) slideOver(sheet, false);
+}
+
 export class Menu {
   private editing: number | null = null;
-  private adding = false;
   private query = "";
   private tab = Tab.Events;
   /** The people list is ordered by birth until the reader asks for names. */
@@ -48,10 +77,25 @@ export class Menu {
   ) {}
 
   add(): void {
-    this.adding = true;
     this.editing = null;
-    this.body.scrollTop = 0;
     this.render();
+    const people = this.tab === Tab.People;
+    const sheet = addSheet();
+    sheet.querySelector(".ovt")!.textContent = people ? "New person" : "New event";
+    sheet.querySelector<HTMLElement>(".cardx")!.onclick = () => {
+      shut();
+      this.onMove?.();
+    };
+    const body = sheet.querySelector<HTMLElement>(".scroller")!;
+    body.replaceChildren(people ? this.personEditor(null) : this.editor(null));
+    body.scrollTop = 0;
+    slideOver(sheet, true);
+    this.onMove?.();
+  }
+
+  /** The thing whose editor is open, if one is. */
+  edited(): number | null {
+    return this.editing;
   }
 
   /** Which of the two lists is on screen. */
@@ -62,7 +106,6 @@ export class Menu {
   open(tab: Tab): void {
     this.tab = tab;
     this.editing = null;
-    this.adding = false;
     this.body.scrollTop = 0;
     this.render();
   }
@@ -71,25 +114,29 @@ export class Menu {
    * person reaches the events about them and how an event reaches the people
    * in it: the drawer stays open and the tab under it changes. */
   goTo(tab: Tab, id: number): void {
+    shut();
     this.tab = tab;
-    this.adding = false;
     this.editing = id;
     this.query = "";
     this.onTab?.(tab);
     this.render();
-    this.body
-      .querySelector(tab === Tab.People ? `.row[data-person="${id}"]` : `.row[data-event="${id}"]`)
-      ?.scrollIntoView({ block: "center" });
+    const row = this.body.querySelector<HTMLElement>(
+      tab === Tab.People ? `.row[data-person="${id}"]` : `.row[data-event="${id}"]`,
+    );
+    if (row) flash(row);
+    this.onMove?.();
   }
 
   /** Told when the drawer changes tab under its own steam, so the header and
    * the buttons above the list say the same thing it does. */
   onTab?: (tab: Tab) => void;
 
+  /** Told when an editor opens or closes, so the address says so. */
+  onMove?: () => void;
+
   search(query: string): void {
     this.query = query;
     this.editing = null;
-    this.adding = false;
     this.render();
   }
 
@@ -153,12 +200,11 @@ export class Menu {
         if (this.editing !== id)
           tap(Feature.EventOpen, { kind: ItemKind.Event, id: String(id) });
         this.editing = this.editing === id ? null : id;
-        this.adding = false;
         this.render();
+        this.onMove?.();
       });
     });
-    if (this.adding) this.body.prepend(this.editor(null));
-    else if (this.editing !== null) {
+    if (this.editing !== null) {
       const event = this.data.events.find((e) => e.id === this.editing);
       const row = this.body.querySelector(`.row[data-event="${this.editing}"]`);
       if (event && row) row.after(this.editor(event));
@@ -195,25 +241,29 @@ export class Menu {
         if (this.editing !== id)
           tap(Feature.PersonOpen, { kind: ItemKind.Person, id: String(id) });
         this.editing = this.editing === id ? null : id;
-        this.adding = false;
         this.render();
+        this.onMove?.();
       });
     });
-    if (this.adding) this.body.prepend(this.personEditor(null));
-    else if (this.editing !== null) {
+    if (this.editing !== null) {
       const person = this.data.people.find((p) => p.id === this.editing);
       const row = this.body.querySelector(`.row[data-person="${this.editing}"]`);
       if (person && row) row.after(this.personEditor(person));
     }
   }
 
+  /** A save or a delete: the form for something new goes down, and the list
+   * reads the record again. */
+  private done(): void {
+    this.editing = null;
+    shut();
+    this.onMove?.();
+    void this.reload().then((data) => this.show(data));
+  }
+
   private personEditor(person: Person | null): HTMLElement {
     return openPersonEditor(person, {
-      done: () => {
-        this.editing = null;
-        this.adding = false;
-        void this.reload().then((data) => this.show(data));
-      },
+      done: () => this.done(),
       goToEvent: (eventId: number) => this.goTo(Tab.Events, eventId),
       diagramId: this.diagramId,
       family: this.data,
@@ -224,11 +274,7 @@ export class Menu {
     return openEditor(
       event,
       this.data.people,
-      () => {
-        this.editing = null;
-        this.adding = false;
-        void this.reload().then((data) => this.show(data));
-      },
+      () => this.done(),
       (personId) => this.goTo(Tab.People, personId),
       this.diagramId,
     );

@@ -4,6 +4,7 @@ import {
   ItemKind,
   Touch,
   TurnEventKind,
+  type ReportKind,
   type Delta,
   type Reply,
   type TurnEvent,
@@ -39,6 +40,10 @@ export interface TurnSink {
   /** A read looked at these events; the record is as it was. */
   read(ids: number[]): void;
   show(view: View): void;
+  /** The coach moved the app to this address (R-0055). */
+  go(address: string): void;
+  /** The coach offered to send the person's words about the app (R-0056). */
+  report(kind: ReportKind, words: string): void;
   /** The next words of the reply. */
   text(text: string): void;
   /** Those words again: what has been drawn is dropped. */
@@ -94,6 +99,12 @@ export function feed(sink: TurnSink): (event: TurnEvent) => void {
         break;
       case TurnEventKind.View:
         sink.show(event.view);
+        break;
+      case TurnEventKind.Navigate:
+        sink.go(event.address);
+        break;
+      case TurnEventKind.Report:
+        sink.report(event.report.kind, event.report.words);
         break;
       case TurnEventKind.Text:
         sink.text(event.text);

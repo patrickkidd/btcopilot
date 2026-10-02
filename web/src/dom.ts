@@ -36,6 +36,10 @@ export const CLUSTER = 1;
 export const closeX = (attrs = "") =>
   `<button class="cardx" type="button" aria-label="close"${attrs}>×</button>`;
 
+/** A step back or forward, the same pill wherever steps are walked. */
+export const stepBtn = (label: string, attrs: string, off: boolean) =>
+  `<button class="stepbtn" type="button" ${attrs}${off ? " disabled" : ""}>${label}</button>`;
+
 export function $(id: string): HTMLElement {
   const node = document.getElementById(id);
   if (!node) throw new Error(`No element #${id}`);
@@ -51,6 +55,38 @@ const sliding = new WeakMap<HTMLElement, number>();
 /** Bring a full-screen panel up over everything beneath it, or send it back
  * down: the events and people list travels the way the sessions sheet does,
  * full height, and is only taken out of the page once it has landed (R-0345). */
+/** How long a lit item stays ringed after an address or a jump points at it. */
+const FLASH_MS = 2200;
+
+/** The nearest box that scrolls the item, if one does. */
+function scroller(item: HTMLElement): HTMLElement | null {
+  for (let box = item.parentElement; box; box = box.parentElement) {
+    const y = getComputedStyle(box).overflowY;
+    if ((y === "auto" || y === "scroll") && box.scrollHeight > box.clientHeight) return box;
+  }
+  return null;
+}
+
+/** The one light for whatever an address or a jump points at: a message, a
+ * row in a drawer or a list. The item is scrolled to the middle of the box
+ * that scrolls it and ringed while it settles. Never `scrollIntoView`: the
+ * outer page must not move (UI_STANDARDS). */
+export function flash(item: HTMLElement): void {
+  const box = scroller(item);
+  if (box) {
+    const outer = box.getBoundingClientRect();
+    const at = item.getBoundingClientRect();
+    box.scrollTop = Math.max(
+      0,
+      box.scrollTop + (at.top - outer.top) - (outer.height - at.height) / 2,
+    );
+  }
+  item.classList.remove("traced");
+  void item.offsetWidth;
+  item.classList.add("traced");
+  window.setTimeout(() => item.classList.remove("traced"), FLASH_MS);
+}
+
 export function slideOver(panel: HTMLElement, up: boolean): void {
   window.clearTimeout(sliding.get(panel));
   if (up) {
