@@ -84,6 +84,7 @@ import {
   type Preferences,
   type ReportKind,
 } from "./types";
+import { IDLE_MS } from "./vote";
 
 declare global {
   interface Window {
@@ -1356,6 +1357,9 @@ function follow(turnId: string): void {
         const said = opened();
         said.stamp(reply.statement_id);
         newest = reply.statement_id;
+        // the five minutes start once the reply is there to read and vote on (R-0637)
+        if (chat.feedback()) chat.expires = Date.now() + IDLE_MS;
+        feedback();
         // a reply held for a vote is not read aloud: it would say which is the coach's
         if (speak.checked && !chat.feedback()) speech.say(reply.statement);
         said.settle(reply.statement, (chip) => aim(chip));

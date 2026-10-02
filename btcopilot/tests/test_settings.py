@@ -71,7 +71,7 @@ def test_an_auditor_turns_shadows_on_and_only_an_admin_sees_their_cost(
 
 
 @pytest.mark.parametrize("minutes, on", [(6, False), (4, True)])
-def test_shadows_turn_off_five_minutes_after_the_last_message(
+def test_shadows_turn_off_five_minutes_after_the_coach_last_replied(
     web, test_user, minutes, on
 ):
     # R-0637
@@ -83,8 +83,8 @@ def test_shadows_turn_off_five_minutes_after_the_last_message(
     db.session.add(
         Statement(
             discussion_id=discussion.id,
-            speaker_id=discussion.chat_user_speaker_id,
-            text="She is older.",
+            speaker_id=discussion.chat_ai_speaker_id,
+            text="How much older?",
             created_at=said,
         )
     )

@@ -176,9 +176,13 @@ def test_a_shadow_turn_is_kept_apart_from_the_real_one(
     assert test_user.first_name == "Unit"
 
 
-@pytest.mark.parametrize("minutes, ran", [(6, False), (4, True)])
-def test_a_turn_after_five_quiet_minutes_runs_no_shadow_and_turns_them_off(
-    web, token, test_user, monkeypatch, minutes, ran
+@pytest.mark.parametrize(
+    "replied, asked, ran",
+    [(6, 6, False), (4, 4, True), (4, 7, True)],
+    ids=["quiet", "soon", "slow-to-vote"],
+)
+def test_a_turn_five_minutes_after_the_coach_last_replied_runs_no_shadow_and_turns_them_off(
+    web, token, test_user, monkeypatch, replied, asked, ran
 ):
     # R-0637
     coach(
@@ -188,9 +192,11 @@ def test_a_turn_after_five_quiet_minutes_runs_no_shadow_and_turns_them_off(
     )
     coach(monkeypatch, "btcopilot.shadow.model_for", Model(said("Older by how much?")))
     first = post(web, token, "My sister is Nell.")
-    earlier = datetime.datetime.utcnow() - datetime.timedelta(minutes=minutes)
-    db.session.get(Statement, first["statement_id"]).created_at = earlier
-    shadow.switch(test_user, ["sonnet"], earlier - datetime.timedelta(minutes=5))
+    now = datetime.datetime.utcnow()
+    question, reply = db.session.get(Discussion, first["discussion_id"]).statements
+    question.created_at = now - datetime.timedelta(minutes=asked)
+    reply.created_at = now - datetime.timedelta(minutes=replied)
+    shadow.switch(test_user, ["sonnet"], now - datetime.timedelta(minutes=12))
     db.session.commit()
     with patch("btcopilot.shadow.enqueue", shadow.run):
         post(web, token, "She is older.")

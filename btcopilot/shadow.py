@@ -53,7 +53,8 @@ RECENT = datetime.timedelta(days=30)
 PER_RUN_GUESS = Decimal("0.19")
 
 # Conversation Feedback turns itself off this long after the later of the
-# person's last message and the switch going on, as the prompt cache does [R-0637].
+# coach's last reply being written and the switch going on, so the time spent
+# reading and voting on a reply never counts against it [R-0637].
 IDLE = datetime.timedelta(minutes=5)
 
 
@@ -66,11 +67,12 @@ def switch(user: User, models: list, now: datetime.datetime) -> None:
         user.set_prefs(shadow_models=models, shadow_since=now.isoformat())
 
 
-def last_said(user: User, before: int | None = None) -> datetime.datetime | None:
+def last_reply(user: User, before: int | None = None) -> datetime.datetime | None:
     query = (
         select(func.max(Statement.created_at))
-        .join(Discussion, Statement.speaker_id == Discussion.chat_user_speaker_id)
-        .where(Discussion.user_id == user.id)
+        .join(Discussion, Statement.speaker_id == Discussion.chat_ai_speaker_id)
+        .join(Diagram, Discussion.diagram_id == Diagram.id)
+        .where(Discussion.user_id == user.id, Diagram.scratch.is_(False))
     )
     if before is not None:
         query = query.where(Statement.id < before)
@@ -81,11 +83,11 @@ def expiry(
     user: User, now: datetime.datetime, before: int | None = None
 ) -> datetime.datetime | None:
     """When Conversation Feedback turns itself off, None once it is off; past
-    that time it is turned off here. `before` counts only the messages sent
-    before that statement."""
+    that time it is turned off here. `before` counts only the coach's replies
+    written before that statement."""
     if not user.pref(PrefKey.ShadowModels):
         return None
-    times = [last_said(user, before)]
+    times = [last_reply(user, before)]
     if since := user.pref(PrefKey.ShadowSince):
         times.append(datetime.datetime.fromisoformat(since))
     started = max(filter(None, times), default=None)

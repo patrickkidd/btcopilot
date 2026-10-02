@@ -128,11 +128,11 @@ test("three replies are voted on unnamed, then the coach's is headed Coach with 
 });
 
 // R-0637
-test("a message 6 minutes after the last one gets the coach's reply alone, with the message box open", async ({
+test("a message 6 minutes after the coach's last reply gets the coach's reply alone, with the message box open", async ({
   page,
 }) => {
-  // the last message was 6 minutes ago, so the switch turned itself off a
-  // minute ago, though the switch still reads on
+  // the coach's last reply was done 6 minutes ago, so the switch turned itself
+  // off a minute ago, though the switch still reads on
   await serve(page, at(-MINUTE));
   await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
