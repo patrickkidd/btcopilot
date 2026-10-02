@@ -323,7 +323,7 @@ Changes something: needs `--yes`.
 | `discussion_id` | required |
 | `model` | required |
 | `reference_diagram_id` | required |
-| `--cap` | Dollars; no turn starts past it. |
+| `--cap` | Dollars; no model call is made that could pass it. |
 | `--thinking` | How hard the coach thinks, for this replay only. |
 | `--prompt-dir` | A folder holding any of agent.prompty and fragments/*.md; each file there replaces the same-named prompt for this replay only, and the rest are read from the usual places. |
 | `--turns` | The last turn replayed. |
@@ -344,7 +344,7 @@ Changes something: needs `--yes`.
 | `--again` | Run a key a kept pass already holds. |
 | `--start` | Begin at this turn, going on in the scratch session and record of the kept pass --after names, which replayed every turn before it. |
 | `--after` | The kept pass to go on from. |
-| `--cap` | Dollars; no turn starts past it. |
+| `--cap` | Dollars; no model call is made that could pass it. |
 | `--thinking` | How hard the coach thinks, for this replay only. |
 | `--prompt-dir` | A folder holding any of agent.prompty and fragments/*.md; each file there replaces the same-named prompt for this replay only, and the rest are read from the usual places. |
 | `--turns` | The last turn replayed. |
