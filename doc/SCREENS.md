@@ -281,7 +281,7 @@ What it is for: reading one event, and taking it to the chat to comment on it or
 
 ## The event editor (parked)
 
-Parked on Patrick's 2026-10-01 decision to try chat-only editing: the form is not reached from the events list or the detail view, and is still used to add a new event and on the coding screen. Its code is kept so it can come back.
+Parked on Patrick's 2026-10-01 decision to try chat-only editing: the form is not reached from the events list or the detail view, no button adds an event (Patrick, 2026-10-02): the address `/app/event/new` still opens the form, and on the coding screen a tapped event row opens it to change or delete that event. Its code is kept so it can come back.
 
 @frame built#f14 | One event opened for correction by hand: its kind, who it happened to, its words, its date and how sure the date is.
 
@@ -315,7 +315,7 @@ What it is for: reading one person, and taking them to the chat to comment on th
 
 ## The person editor (parked)
 
-Parked on Patrick's 2026-10-01 decision to do for people what was done for events: the form is not reached from the people list or any card, and is still used to add someone and on the coding screen. Its code is kept so it can come back.
+Parked on Patrick's 2026-10-01 decision to do for people what was done for events: the form is not reached from the people list or any card, no button adds a person (Patrick, 2026-10-02): the address `/app/person/new` still opens the form, and on the coding screen a tapped person row opens it to change or delete that person. Its code is kept so it can come back.
 
 @frame built#f15 | A person opened the same way: a name, a kind, and a line saying births and deaths come from talking to the coach.
 

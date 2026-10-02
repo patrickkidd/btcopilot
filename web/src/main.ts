@@ -444,7 +444,6 @@ const coding = new Coding(
   $("coding-drawer"),
   $("coding-search") as HTMLInputElement,
   $("coding-tabs"),
-  $("coding-add"),
   $("coding-view"),
   $("overlay"),
   {
