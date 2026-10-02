@@ -210,7 +210,7 @@ READS = {
     "users list", "users show", "licences list", "licences plans", "diagrams list",
     "diagrams show", "diagrams export", "observations list", "observations queue",
     "imports dry-run", "notice list",
-    "token-cap show", "coach-model show",
+    "token-cap show", "coach-model show", "coach-model shadows show",
     "review agenda", "review cuts", "review codings", "review nudge show",
     "db current", "skill", "run",
 }
