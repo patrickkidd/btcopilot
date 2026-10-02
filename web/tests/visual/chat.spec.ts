@@ -102,14 +102,14 @@ test.describe("the message box on a touch screen", () => {
     return { bubbles, posts };
   };
 
-  // R-0368
+  // R-0610
   test("Return sends nothing; only the send button sends", async ({ page }) => {
     const { bubbles, posts } = await twoLines(page);
     expect(posts.filter((u) => !/telemetry|collect|events/.test(u))).toEqual([]);
     await expect(page.locator(".bub")).toHaveCount(bubbles);
   });
 
-  // R-0368
+  // R-0610
   test("Return starts a new line in the message", async ({ page }) => {
     await twoLines(page);
     // the message is sent trimmed, so a newline held open at the end is not part of it
@@ -271,7 +271,7 @@ test.describe("an empty session", () => {
     };
     // once made, the note heads the family's sessions, as the server lists it
     let made = false;
-    await page.route(/\/app\/sessions$/, async (route) => {
+    await page.route(/\/app\/sessions(\?diagram_id=\d+)?$/, async (route) => {
       if (route.request().method() === "POST") {
         made = true;
         return route.fulfill({ status: 201, json: note });

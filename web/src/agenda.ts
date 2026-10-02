@@ -2,16 +2,15 @@ import * as api from "./api";
 import { Feature, tap } from "./track";
 import { esc } from "./dom";
 import { toast } from "./toast";
-import { dayText, rowDate } from "./when";
-import { sessionTitle } from "./search";
-import { sessionWhen } from "./sessions";
+import { Sheet } from "./sheet";
+import { dayText } from "./when";
+import { spanWords } from "./cut";
 import {
   CoderState,
   type NextMeeting,
   type CoderLine,
   type Cut,
   type Rule,
-  type Session,
 } from "./types";
 
 /** The agenda: the whole of Patrick's administration (R-0259, R-0267).
@@ -24,17 +23,16 @@ import {
  * from the flagged rules (R-0276, R-0308). An event the room left unresolved
  * stays unresolved and is never brought back to a later meeting (R-0312).
  *
- * Two more pages hang off it: every session on every family, to put one on
- * the agenda, and the page of one meeting, each cut on it with who has
- * submitted a coding of it and who has not.
+ * A cut is selected in the chat, on the family's own diagram (R-0629). One
+ * more page hangs off it: the page of one meeting, each cut on it with who
+ * has submitted a coding of it and who has not.
  */
 
 export interface AgendaHandlers {
-  /** The list a session is put on the agenda from is drawn. */
-  onPick(): void;
-  /** Place the cut on one conversation: one already on the agenda, to move
-   * its line, or one picked from every family's sessions, to put it on. */
-  onPlace(discussionId: number): void;
+  /** Select a new cut: the Diagrams page, to open someone's diagram on. */
+  onAdd(): void;
+  /** One cut on the agenda opened in its family's thread, to move its lines. */
+  onOpen(cut: Cut): void;
   /** The page of one meeting is drawn, under this title. */
   onMeeting(title: string): void;
   /** The room on one cut of the meeting: decide the open items and ratify
@@ -53,22 +51,35 @@ export class Agenda {
   private ratified: Cut[] = [];
   private coders: CoderLine[] = [];
   private next: NextMeeting | null = null;
+  /** What each cut's row says it spans, by cut. */
+  private spans = new Map<number, string>();
   /** The day of the meeting whose page was last drawn. */
   meeting: string | null = null;
+  /** The question before a cut comes off the agenda (R-0631). */
+  private ask: Sheet;
+  /** The cut the question is about while it is up. */
+  private asking: number | null = null;
 
   constructor(
     private body: HTMLElement,
-    private picker: HTMLElement,
     private room: HTMLElement,
     private handlers: AgendaHandlers,
+    host: HTMLElement,
   ) {
-    for (const one of [body, picker, room])
+    this.ask = new Sheet(host, "ag");
+    this.ask.panel.addEventListener("click", (e) => {
+      const act = (e.target as Element).closest<HTMLElement>("[data-act]")?.dataset.act;
+      if (act) void this.answer(act === "off");
+    });
+    this.ask.panel.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") void this.answer(false);
+    });
+    host.addEventListener("click", (e) => {
+      if ((e.target as Element).matches(".fs-scrim.ag")) void this.answer(false);
+    });
+    for (const one of [body, room])
       one.addEventListener("click", (e) => void this.onClick(e));
     this.body.addEventListener("change", (e) => void this.onDate(e));
-    this.picker.addEventListener("input", (e) => {
-      const field = (e.target as Element).closest<HTMLInputElement>(".tb-words");
-      if (field) void this.seek(field);
-    });
   }
 
   async load(): Promise<void> {
@@ -82,7 +93,21 @@ export class Agenda {
     this.coders = coders;
     this.next = next;
     this.ratified = every.filter((cut) => cut.ratified_at !== null);
+    const spans = await Promise.all(cuts.map((cut) => this.span(cut)));
+    this.spans = new Map(cuts.map((cut, at) => [cut.id, spans[at]]));
     this.render();
+  }
+
+  /** The days from the sitting of a cut's first line to the sitting of its
+   * last, and how many sittings that is. */
+  private async span(cut: Cut): Promise<string> {
+    const read = await api.sessionTurns(cut.sitting_id);
+    const sittingOf = (id: number) => read.turns.find((turn) => turn.id === id)!.sitting_id;
+    const ids = read.sittings.map((one) => one.id);
+    const from = ids.indexOf(sittingOf(cut.start_statement_id));
+    const to = ids.indexOf(sittingOf(cut.end_statement_id));
+    const at = (index: number) => new Date(read.sittings[index].started);
+    return spanWords(at(from), at(to), to - from + 1, true);
   }
 
   /** The cuts on the agenda by the day of their meeting, soonest first and
@@ -121,27 +146,18 @@ export class Agenda {
     const target = e.target as Element;
     const off = target.closest<HTMLElement>(".pl-btn");
     if (off) {
-      tap(Feature.AgendaTakeOff);
-      await this.take(Number(off.dataset.cut));
+      this.confirm(Number(off.dataset.cut));
       return;
     }
-    const cut = target.closest<HTMLElement>(".tb-cut");
-    if (cut) {
+    const row = target.closest<HTMLElement>(".tb-cut");
+    if (row) {
       tap(Feature.AgendaOpenItem);
-      this.handlers.onPlace(Number(cut.dataset.discussion));
+      this.handlers.onOpen(this.cuts.find((cut) => cut.id === Number(row.dataset.cut))!);
       return;
     }
     if (target.closest(".tb-add")) {
       tap(Feature.AgendaAdd);
-      const drawn = this.pick();
-      this.handlers.onPick();
-      await drawn;
-      return;
-    }
-    const picked = target.closest<HTMLElement>(".tb-pick");
-    if (picked) {
-      tap(Feature.SessionToAgenda);
-      this.handlers.onPlace(Number(picked.dataset.discussion));
+      this.handlers.onAdd();
       return;
     }
     if (target.closest(".tb-nudge")) {
@@ -176,6 +192,32 @@ export class Agenda {
       await api.flagRule(Number(close.dataset.rule), false);
       await this.load();
     }
+  }
+
+  private confirm(cutId: number): void {
+    const cut = this.cuts.find((one) => one.id === cutId)!;
+    this.asking = cutId;
+    this.ask.show(
+      `<div class="cf-t">Take this cut off the agenda?</div>` +
+        `<p class="cf-p">${esc(cut.owner)}, ${esc(this.spans.get(cutId) ?? "")}</p>` +
+        `<div class="cf-btns">` +
+        `<button class="cf-go" type="button" data-act="off">Take it off</button>` +
+        `<button class="cf-no" type="button" data-act="keep">Keep it</button>` +
+        `</div>`,
+    );
+  }
+
+  private async answer(off: boolean): Promise<void> {
+    const cutId = this.asking;
+    if (cutId === null) return;
+    this.asking = null;
+    this.ask.lower();
+    if (off) {
+      tap(Feature.AgendaTakeOff);
+      await this.take(cutId);
+    }
+    const cross = this.body.querySelector<HTMLElement>(`.pl-btn[data-cut="${cutId}"]`);
+    (cross ?? this.body).focus({ preventScroll: true });
   }
 
   /** Taking a conversation off the agenda is one tap, and only before anyone
@@ -220,13 +262,13 @@ export class Agenda {
       this.cuts.length > 0 &&
       this.cuts.every((cut) => cut.vote_opened_at !== null);
     this.body.innerHTML =
-      `<div class="sn-hd">On the agenda</div>` +
       (this.cuts.length
         ? this.meetings()
             .map(([day, cuts]) => this.meetingRows(day, cuts))
             .join("")
-        : `<div class="none">Nothing is on the agenda yet.</div>`) +
-      `<button class="nudge tb-add" type="button">Put a session on the agenda</button>` +
+        : `<div class="sn-hd">On the agenda</div>` +
+          `<div class="none">Nothing is on the agenda yet.</div>`) +
+      `<button class="nudge tb-add" type="button">Select a cut for the agenda</button>` +
       this.results() +
       `<div class="sn-hd">Coders</div>` +
       this.coders.map((one) => this.coderRow(one)).join("") +
@@ -243,12 +285,13 @@ export class Agenda {
       this.agendaBox();
   }
 
-  /** One meeting: its day once, its cuts under it, and once the vote is open
+  /** One meeting: its day as a field above the list, the cuts alone in the list, and once the vote is open
    * on them, the one way to run it (R-0250, R-0273). */
   private meetingRows(day: string | null, cuts: Cut[]): string {
     const open = cuts.some((cut) => cut.vote_opened_at !== null);
     return (
       this.dateRow(day) +
+      `<div class="sn-hd">On the agenda</div>` +
       cuts.map((cut) => this.cutRow(cut)).join("") +
       (open
         ? `<button class="nudge go tb-meet" type="button" data-day="${esc(day ?? "")}">` +
@@ -310,42 +353,6 @@ export class Agenda {
     );
   }
 
-  /** Every session on every family, newest first, to put one on the agenda;
-   * the words typed keep those where something said carries them. */
-  async pick(): Promise<void> {
-    this.picker.innerHTML =
-      `<div class="sn-srch"><input class="tb-words" type="search" ` +
-      `placeholder="Search what was said" aria-label="Search what was said"></div>` +
-      `<div class="tb-found"></div>`;
-    await this.seek(this.picker.querySelector<HTMLInputElement>(".tb-words")!);
-  }
-
-  /** An answer for words since typed over, or for a list since left, is
-   * dropped. */
-  private async seek(field: HTMLInputElement): Promise<void> {
-    const words = field.value;
-    const found = await api.allSessions(words);
-    if (words === field.value && field.isConnected) this.list(found, words);
-  }
-
-  private list(found: Session[], words: string): void {
-    const now = new Date();
-    this.picker.querySelector(".tb-found")!.innerHTML = found.length
-      ? found
-          .map(
-            (session) =>
-              `<div class="sn-row push tb-pick" data-discussion="${session.id}">` +
-              `<div class="sn-m"><div class="sn-t">${esc(sessionTitle(session))}</div>` +
-              `<div class="sn-s">${esc(session.family ?? "")} · ` +
-              `${rowDate(sessionWhen(session), now)} · ${session.message_count} ` +
-              `statement${session.message_count === 1 ? "" : "s"}</div>` +
-              (session.match ? `<div class="sn-s">${esc(session.match)}</div>` : "") +
-              `</div></div>`,
-          )
-          .join("")
-      : `<div class="none">${words.trim() ? "No session matches." : "No sessions yet."}</div>`;
-  }
-
   private nudged(): string {
     const when = this.cuts.map((cut) => cut.nudged_at).filter(Boolean)[0];
     if (!when) return "";
@@ -383,19 +390,18 @@ export class Agenda {
       : `<button class="pl-btn" type="button" data-cut="${cut.id}" ` +
         `aria-label="take off the agenda">${CROSS}</button>`;
     return (
-      `<div class="sn-row tb-cut" data-discussion="${cut.discussion_id}">` +
+      `<div class="sn-row push tb-cut" data-cut="${cut.id}">` +
       this.cutLines(cut) +
       `</div>${off}</div>`
     );
   }
 
-  /** A cut's session and where it stops, in a row's words left open for more
-   * lines under them. */
+  /** Whose the cut is, the days it spans and how many sittings, in a row's
+   * words left open for more lines under them. */
   private cutLines(cut: Cut): string {
     return (
-      `<div class="sn-m"><div class="sn-t">${esc(cut.session)}</div>` +
-      `<div class="sn-s">up to turn ${cut.end_order ?? 0} · ` +
-      `${esc(cut.cut_day ?? "")}</div>`
+      `<div class="sn-m"><div class="sn-t">${esc(cut.owner)}</div>` +
+      `<div class="sn-s">${esc(this.spans.get(cut.id) ?? "")}</div>`
     );
   }
 

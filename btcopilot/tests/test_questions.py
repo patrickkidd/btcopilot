@@ -36,7 +36,7 @@ def clock():
 
 
 def box(diagram, turn="t1", author=Author.Coach) -> Toolbox:
-    return Toolbox(diagram.id, turn, session_id="7", author=author)
+    return Toolbox(diagram.id, turn, session_id=7, author=author)
 
 
 def add(toolbox, text=ASK, kind="fact", state="asked", **args):
@@ -82,6 +82,7 @@ def test_a_question_is_added_whole_in_one_change_row(family):
         "outcome": None,
         "item_kind": "person",
         "item_id": "1",
+        "fact": None,
         "session_id": 7,
         "asked_at": TODAY,
     }

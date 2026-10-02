@@ -3,22 +3,26 @@ import datetime
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
 from btcopilot.extensions import db
-from btcopilot.models import Author, Change
+from btcopilot.models import Author, Change, Discussion, ModelCall, Purpose, Statement
 from mock import patch
 
-from btcopilot.review import export, ruledraft, snapshot
+from btcopilot.review import adapter, divergence, export, ruledraft, snapshot
 from btcopilot.review.adapter import initials
 from btcopilot.models import User
 from btcopilot.review.freeze import frozen
 from btcopilot.review.models import Coding, Cut, Item, ReviewStatus, Rule, RuleSource
+from btcopilot.tests.conftest import Model, said
 from btcopilot.tests.review.conftest import coded, person, shift
+
+# The real drafter, from before the autouse fixture stands it down.
+DRAFT = ruledraft.draft
 
 
 def test_cut_starts_after_the_previous_one(patrick, session, turns, cut):
     # R-0296
     made = patrick.post(
         "/review/cuts",
-        json={"discussion_id": session.id, "end_statement_id": turns[3].id},
+        json={"end_statement_id": turns[3].id},
     )
     assert made.status_code == 201
     assert made.get_json()["start_statement_id"] == turns[2].id
@@ -28,9 +32,30 @@ def test_first_cut_starts_at_the_first_turn(patrick, session, turns):
     # R-0296
     made = patrick.post(
         "/review/cuts",
-        json={"discussion_id": session.id, "end_statement_id": turns[1].id},
+        json={"end_statement_id": turns[1].id},
     )
     assert made.get_json()["start_statement_id"] == turns[0].id
+
+
+def test_a_cut_runs_across_sittings_of_one_thread(patrick, test_user, session, turns):
+    # R-0296
+    later = Discussion(user_id=test_user.id, diagram_id=session.diagram_id)
+    db.session.add(later)
+    db.session.flush()
+    line = Statement(discussion_id=later.id, text="next day", order=0)
+    db.session.add(line)
+    db.session.commit()
+
+    made = patrick.post(
+        "/review/cuts",
+        json={"start_statement_id": turns[2].id, "end_statement_id": line.id},
+    ).get_json()
+    assert (made["diagram_id"], made["sitting_id"]) == (session.diagram_id, session.id)
+    assert made["end_order"] == len(turns) + 1
+    assert made["owner"] == (test_user.full_name().strip() or test_user.username)
+    read = patrick.get(f"/review/turns?discussion_id={later.id}").get_json()
+    assert [s["id"] for s in read["sittings"]] == [session.id, later.id]
+    assert read["on_agenda"]["start_statement_id"] == turns[2].id
 
 
 def test_an_overlapping_window_is_refused(patrick, session, turns, cut):
@@ -38,7 +63,6 @@ def test_an_overlapping_window_is_refused(patrick, session, turns, cut):
     made = patrick.post(
         "/review/cuts",
         json={
-            "discussion_id": session.id,
             "start_statement_id": turns[1].id,
             "end_statement_id": turns[3].id,
         },
@@ -61,7 +85,7 @@ def test_coding_reuses_the_coders_record_from_the_last_cut(
     # R-0267
     first = coder.post("/review/codings", json={"cut_id": cut.id}).get_json()
     later = Cut(
-        discussion_id=session.id,
+        diagram_id=session.diagram_id,
         start_statement_id=turns[2].id,
         end_statement_id=turns[3].id,
         user_id=test_user_2.id,
@@ -183,7 +207,9 @@ def test_one_vote_per_coder_per_item(patrick, coder, test_user, test_user_2, cut
     assert votes[0]["choice"] == "drop"
 
 
-def test_a_coder_reads_only_their_own_votes(patrick, coder, test_user, test_user_2, cut):
+def test_a_coder_reads_only_their_own_votes(
+    patrick, coder, test_user, test_user_2, cut
+):
     # R-0252
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
@@ -235,7 +261,10 @@ def test_ratifying_writes_the_ground_truth_export(
     )
     patrick.patch(
         f"/review/items/{agreed.id}",
-        json={"choice": "keep", "value": {"coding_id": agreed.opinions[0]["coding_id"]}},
+        json={
+            "choice": "keep",
+            "value": {"coding_id": agreed.opinions[0]["coding_id"]},
+        },
     )
     decide_everything(patrick, db.session.get(Cut, cut.id))
     patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
@@ -268,17 +297,46 @@ def test_the_coachs_draft_lands_as_ai_rules(patrick, test_user, test_user_2, cut
     with patch.object(
         ruledraft, "draft", return_value={1: "Date a shift by its start"}
     ):
-        ruledraft.draft_for(db.session.get(Cut, cut.id))
+        ruledraft.draft_for(db.session.get(Cut, cut.id), patrick.user.id)
     db.session.commit()
     drafted = Rule.query.filter_by(drafted_by=RuleSource.Ai).all()
     assert [r.text for r in drafted] == ["Date a shift by its start"]
 
 
+def test_the_rule_draft_is_charged_to_the_admin_who_ratified(
+    patrick, test_user, test_user_2, cut
+):
+    # R-0259, R-0388
+    two_codings(test_user, test_user_2, cut)
+    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    item = Item.query.filter_by(cut_id=cut.id, item_kind="event").first()
+    item.status = ReviewStatus.Decided
+    db.session.commit()
+
+    with (
+        patch.object(ruledraft, "draft", DRAFT),
+        patch.object(adapter, "coach_model", return_value=Model(said("[1] A rule"))),
+    ):
+        ruledraft.draft_for(db.session.get(Cut, cut.id), patrick.user.id)
+    rows = ModelCall.query.filter_by(purpose=Purpose.Ratify).all()
+    assert [(r.user_id, r.diagram_id, r.turn_id) for r in rows] == [
+        (patrick.user.id, None, f"ratify:{cut.id}")
+    ]
+
+
+def test_the_divergence_reasons_are_charged_to_the_admin_who_ratified(patrick, cut):
+    # R-0254, R-0388
+    found = [{"label": "a move", "room": "1971", "coach": "1972", "reason": None}]
+    with patch.object(adapter, "coach_model", return_value=Model(said("[1] Misheard"))):
+        divergence.reasons(found, cut, patrick.user.id)
+    assert found[0]["reason"] == "Misheard"
+    rows = ModelCall.query.filter_by(purpose=Purpose.Ratify).all()
+    assert [(r.user_id, r.diagram_id) for r in rows] == [(patrick.user.id, None)]
+
+
 def test_patrick_flags_a_rule_and_the_same_tap_takes_the_flag_off(patrick):
     # R-0346
-    made = patrick.post(
-        "/review/rules", json={"text": "Date a shift by when it began"}
-    )
+    made = patrick.post("/review/rules", json={"text": "Date a shift by when it began"})
     rule_id = made.get_json()["id"]
 
     on = patrick.patch(
@@ -306,7 +364,7 @@ def test_only_patrick_runs_the_agenda(patrick, coder, session, turns, cut):
     # R-0346
     put = coder.post(
         "/review/cuts",
-        json={"discussion_id": session.id, "end_statement_id": turns[3].id},
+        json={"end_statement_id": turns[3].id},
     )
     assert put.status_code in (302, 403)
 
@@ -394,7 +452,7 @@ def test_the_meeting_page_reads_who_submitted_each_cut_apart(
     # R-0258
     later = patrick.post(
         "/review/cuts",
-        json={"discussion_id": session.id, "end_statement_id": turns[3].id},
+        json={"end_statement_id": turns[3].id},
     ).get_json()
     coded(test_user_2, cut, {})
     one = patrick.get(f"/review/coders?cut_id={cut.id}").get_json()
@@ -427,7 +485,7 @@ def test_a_cut_cannot_be_placed_before_the_last_ratified_one(
     db.session.commit()
     refused = patrick.post(
         "/review/cuts",
-        json={"discussion_id": session.id, "end_statement_id": turns[0].id},
+        json={"end_statement_id": turns[0].id},
     )
     assert refused.status_code == 400
     assert "already ratified" in refused.get_data(as_text=True)
@@ -637,5 +695,3 @@ def test_a_coder_without_a_name_is_still_shown_as_initials(flask_app):
     assert initials(User(username="ballot1@fd362-fixture.invalid")) == "B1."
     assert initials(User(username="ballot3@fd362-fixture.invalid")) == "B3."
     assert initials(User(username="patrickkidd+beta@gmail.com")) == "P.B."
-
-

@@ -1,9 +1,9 @@
-import { esc, el, flash } from "./dom";
+import { esc, el, flash, shift } from "./dom";
 import { askedChip, chipOf, face, LEAD, Lead, pill, token, tokenize } from "./chips";
 import { hush, say } from "./speech";
 import { INFO, notesView, type Notes } from "./notes";
 import { html, type Line } from "./tools";
-import { fit } from "./viewport";
+import { AWAY_PX, fit, fold, type Fold } from "./viewport";
 import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
@@ -23,6 +23,8 @@ export interface ChatHandlers {
   /** What a chip should read as. The coach may write a reference with no words
    * of its own, and a name out of the record beats a pronoun in a sentence. */
   label(chip: Chip): string;
+  /** The card that asks whether two people are one, drawn from the record. */
+  merge(chip: Chip): string;
 }
 
 /** The beat after a chip's sentence has been written, before the next chip
@@ -127,6 +129,7 @@ export class Chat {
   /** True while this class is the one moving the scroll, so its own pinning is
    * not mistaken for the reader scrolling away. */
   private pinning = false;
+  private strip: Fold;
 
   constructor(
     private list: HTMLElement,
@@ -156,12 +159,25 @@ export class Chat {
       if (host === this.composer) return this.caret(button);
       this.handlers.onChip(chipOf(button));
     };
-    this.watchScrolling();
     // the chat box stays above the phone's keyboard, however it came up
     fit();
+    this.strip = fold(this.composer, this.list.closest<HTMLElement>(".screen")!, () => this.toEnd());
+    this.watchScrolling();
     // the thread's box changes size after it is put up — a phone's toolbar
-    // collapsing, the picture taking its height — and stays on its last words
-    new ResizeObserver(() => this.scroll()).observe(this.list);
+    // collapsing, the picture taking its height or folding — and stays on its
+    // last words, or, scrolled up, keeps every bubble where it was over the
+    // message box (R-0570)
+    let high = this.list.clientHeight;
+    new ResizeObserver(() => {
+      const grew = this.list.clientHeight - high;
+      high = this.list.clientHeight;
+      if (this.stuck) return this.scroll();
+      this.pinning = true;
+      shift(this.list, -grew);
+      requestAnimationFrame(() => {
+        this.pinning = false;
+      });
+    }).observe(this.list);
     // The thread's height is only final once the web font has replaced the
     // fallback, so pin it again then: otherwise a thread opened before the font
     // lands sits partway up its own scroll.
@@ -172,6 +188,12 @@ export class Chat {
 
   private pill(chip: Chip): string {
     return pill(chip, this.handlers.label(chip));
+  }
+
+  /** A chip as the coach's words carry it: two people asked about are their
+   * card, anything else its pill. */
+  private piece(chip: Chip): string {
+    return chip.kind === ChipKind.Merge ? this.handlers.merge(chip) : this.pill(chip);
   }
 
   /** The thread is drawn before the record arrives, so a chip written with no
@@ -191,10 +213,16 @@ export class Chat {
       button.title = full;
       button.textContent = face(kind, full);
     }
+    for (const card of this.list.querySelectorAll<HTMLElement>('.bub.coach button.chip[data-kind="merge"]'))
+      card.outerHTML = this.handlers.merge(chipOf(card));
   }
 
-  private render(pieces: Piece[]): string {
-    return pieces.map((p) => ("chip" in p ? this.pill(p.chip) : esc(p.text))).join("");
+  /** Words and chips; the coach's carry the card two people are asked
+   * about on, the reader's the pill they sent it back as. */
+  private render(pieces: Piece[], coach = true): string {
+    return pieces
+      .map((p) => ("chip" in p ? (coach ? this.piece(p.chip) : this.pill(p.chip)) : esc(p.text)))
+      .join("");
   }
 
   /** A whole reply as it stands when nothing is typing: the words, the closing
@@ -265,7 +293,7 @@ export class Chat {
         ? `<div class="who">Coach</div>` + this.written(tokenize(text, tone), statementId)
         : // Only the coach offers; the same chip sent back by the user is words
           // in their own sentence.
-          this.render(tokenize(text, tone)),
+          this.render(tokenize(text, tone), false),
     );
     bubble.querySelector(".who")?.after(...lines.map(did));
     if (notes) this.annotate(bubble, notes);
@@ -439,7 +467,7 @@ export class Chat {
         for (const piece of said) {
           if ("chip" in piece) {
             await release();
-            words.insertAdjacentHTML("beforeend", this.pill(piece.chip));
+            words.insertAdjacentHTML("beforeend", this.piece(piece.chip));
             (words.lastElementChild as HTMLElement).classList.add("lit");
             held = words.lastElementChild as HTMLElement;
             onChip(piece.chip);
@@ -471,7 +499,7 @@ export class Chat {
           bubble.append(after);
           for (const piece of tail) {
             if ("chip" in piece) {
-              after.insertAdjacentHTML("beforeend", this.pill(piece.chip));
+              after.insertAdjacentHTML("beforeend", this.piece(piece.chip));
               onChip(piece.chip);
             } else await write(after, piece.text, TICK_MS);
           }
@@ -571,11 +599,22 @@ export class Chat {
     return scrollHeight - clientHeight - scrollTop <= Chat.STUCK_PX;
   }
 
+  /** The full picture, opened from the strip. */
+  unfold(): void {
+    this.strip.open();
+  }
+
   private watchScrolling(): void {
+    let was = this.list.scrollTop;
     this.list.addEventListener(
       "scroll",
       () => {
-        if (!this.pinning) this.stuck = this.atBottom();
+        const { scrollTop, scrollHeight, clientHeight } = this.list;
+        const up = scrollTop < was;
+        was = scrollTop;
+        if (this.pinning) return;
+        this.stuck = this.atBottom();
+        this.strip.scrolled(this.stuck, up && scrollHeight - clientHeight - scrollTop > AWAY_PX);
       },
       { passive: true },
     );

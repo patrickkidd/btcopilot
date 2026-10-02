@@ -58,6 +58,9 @@ makes that possible. So:
 - Parallel builders each get their own worktree and branch: the harness moves every sub-agent's
   working directory when any one of them switches worktree, so builders in separate worktrees
   running at the same time can collide. Guard every commit with a branch check first.
+- One migration per PR: squash a branch's migrations into a single revision on top of master's head before the PR is ready, and reset any sandbox database that ran the intermediate ones [Oracle: R-0622].
+- Architecture, tools, how tools interact, background work, table and row shapes and test-database behaviour are escalated to Patrick before building; a builder that meets one stops and reports it [Oracle: R-0624].
+- The deploy lock moves to the ticket branch when Patrick says so, done by Claude, never left to him [Oracle: R-0623].
 
 ## Running tests: `bin/t`, and nothing else, while you build
 

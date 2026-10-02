@@ -61,7 +61,7 @@ with app.app_context():
     db.session.commit()
     ada = next(p["id"] for p in diagram.get_diagram_data().people if p["name"] == "Ada")
     ben = next(p["id"] for p in diagram.get_diagram_data().people if p["name"] == "Ben")
-    done = Toolbox(diagram.id, "t-done", user_id=user.id, session_id=str(discussion.id),
+    done = Toolbox(diagram.id, "t-done", user_id=user.id, session_id=discussion.id,
                    statement_id=rows[1].id)
     events = run(done, [("read_people", {}), ("read_events", {}),
                         ("edit_person", {"name": "Nell", "gender": "female"})])
@@ -71,10 +71,10 @@ with app.app_context():
         ("show", {"kind": "triangle", "persons": [ada, nell, ben]}),
     ])
     keep(discussion, "t-done", events + [{"type": "done", "statement_id": rows[1].id}])
-    failed = Toolbox(diagram.id, "t-failed", user_id=user.id, session_id=str(discussion.id),
+    failed = Toolbox(diagram.id, "t-failed", user_id=user.id, session_id=discussion.id,
                      statement_id=rows[2].id)
     events = run(failed, [
-        ("read_notes", {}),
+        ("read_events", {"fields": ["notes"]}),
         ("edit_event", {"kind": "noted", "description": "Drinking got worse", "date": "1996-01-01", "date_certainty": "certain"}),
     ])
     keep(discussion, "t-failed", events + [{"type": "failed", "message": "The coach did not finish that turn."}])

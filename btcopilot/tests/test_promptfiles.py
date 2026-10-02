@@ -22,6 +22,7 @@ REAL_PRIVATE = REPO / "private" / "prompts"
 
 RECORD = "RECORD-SENTINEL\nsecond line"
 INTERACTIONS = "INTERACTIONS-SENTINEL"
+COVERAGE = "COVERAGE-SENTINEL"
 TRANSCRIPT = "TRANSCRIPT-SENTINEL\n41 coach: Who were your father's brothers and sisters?"
 
 
@@ -34,6 +35,9 @@ def rendered(module, names) -> dict:
     out["get_agent_prompt/record"] = module.get_agent_prompt(record=RECORD)
     out["get_agent_prompt/both"] = module.get_agent_prompt(
         record=RECORD, interactions=INTERACTIONS
+    )
+    out["get_agent_prompt/coverage"] = module.get_agent_prompt(
+        record=RECORD, coverage=COVERAGE
     )
     out["question_backfill"] = module.question_backfill(
         map=RECORD, transcript=TRANSCRIPT
@@ -83,6 +87,25 @@ def test_the_private_prompts_say_what_their_constants_said(monkeypatch):
     try:
         want = json.loads(read(goldens))
         compare(want, rendered(module, want))
+    finally:
+        monkeypatch.undo()
+        importlib.reload(prompts)
+
+
+def test_the_private_coach_prompt_keeps_every_paragraph_it_had(monkeypatch):
+    # R-0392
+    goldens = REAL_PRIVATE.parent / "goldens.json"
+    if not goldens.exists() or not key_present():
+        pytest.skip("the private prompts are not installed, or no key opens them")
+    monkeypatch.delenv("FD_PRIVATE_PROMPTS", raising=False)
+    module = importlib.reload(prompts)
+    try:
+        want = json.loads(read(goldens))
+        got = rendered(module, want)
+        for key in [k for k in want if k.startswith("get_agent_prompt/")]:
+            said = [p.strip() for p in want[key].split("\n\n")]
+            says = [p.strip() for p in got[key].split("\n\n")]
+            assert sorted(says) == sorted(said), key
     finally:
         monkeypatch.undo()
         importlib.reload(prompts)
@@ -276,3 +299,15 @@ def test_the_sandbox_will_not_start_on_the_open_prompts_unasked(tmp_path):
     assert done.returncode != 0
     assert f"no sops key in {tmp_path / 'keys.txt'}" in done.stderr
     assert "--open-prompts" in done.stderr
+
+
+def test_the_coach_asks_one_item_and_the_question_names_it(public):
+    # R-0006
+    prompt = public.get_agent_prompt(record=RECORD, coverage=COVERAGE)
+    assert (
+        "When the person's thread leaves an opening, ask one item from this list "
+        "this turn."
+    ) in prompt
+    fact = public.tool_meanings()[public.ToolText.Fact]
+    assert "Name it whenever the question asks for one of the required facts." in fact
+    assert "A question that asks for two items is kept as two questions." in fact

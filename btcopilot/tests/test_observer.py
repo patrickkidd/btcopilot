@@ -14,7 +14,7 @@ from btcopilot import turns
 from btcopilot.models import Observation, ObservationKind
 from btcopilot.schema import DiagramData
 from btcopilot.toolbox import ToolName
-from btcopilot.tests.conftest import Model, called, csrf_token, said, version
+from btcopilot.tests.conftest import Model, called, csrf_token, said, version, wrote
 from btcopilot.tests.test_turnhistory import Breaks, coach, post, resume
 
 WREN = {"id": 1, "name": "Wren"}
@@ -32,8 +32,8 @@ MOVED = {
 @pytest.fixture(autouse=True)
 def titles(monkeypatch):
     monkeypatch.setattr(
-        "btcopilot.models.discussion.response_text_sync",
-        lambda *a, **k: "A session title",
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
     )
 
 

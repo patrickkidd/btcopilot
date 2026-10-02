@@ -7,6 +7,7 @@ import logging
 from dataclasses import dataclass, field, fields, MISSING
 from typing import get_origin, get_args, Union
 
+import openai
 from google import genai
 from google.genai import types
 from google.genai.errors import ClientError, ServerError
@@ -39,6 +40,7 @@ MODEL_ALIASES = {
     "opus-5.5": "claude-opus-5-5",
     "opus-4.6": "claude-opus-4-6",
     "gemini-flash": "gemini-3.8-flash",
+    "gemini-pro": "gemini-3.1-pro-preview",
     "gemini-3.8-flash": "gemini-3.8-flash",
     "gemini-3.6-flash": "gemini-3.6-flash",
     "gemini-2.5-flash": "gemini-2.5-flash",
@@ -48,6 +50,7 @@ MODEL_ALIASES = {
     "claude-opus-5-5": "claude-opus-5-5",
     "claude-opus-5": "claude-opus-5",
     "claude-opus-4-8": "claude-opus-4-8",
+    "gpt": "gpt-6.1-sol",
 }
 
 DEFAULT_RESPONSE_MODEL_ALIAS = "opus-5.5"
@@ -60,6 +63,10 @@ def resolve_model(alias: str | None) -> str:
 
 def is_gemini(model: str) -> bool:
     return model.startswith("gemini-")
+
+
+def is_openai(model: str) -> bool:
+    return model.startswith("gpt-")
 
 
 def _is_claude_model(model: str) -> bool:
@@ -257,6 +264,14 @@ def gemini_client(timeout: float | None = None) -> genai.Client:
     )
 
 
+def openai_client(timeout: float | None = None) -> openai.OpenAI:
+    """No timeout, in seconds, is the OpenAI default."""
+    return openai.OpenAI(
+        api_key=os.environ["OPENAI_API_KEY"],
+        **({"timeout": timeout} if timeout else {}),
+    )
+
+
 # --- Anthropic client ---
 
 
@@ -313,6 +328,67 @@ class Served:
             ],
             "sticky": self.sticky,
         }
+
+
+@dataclass
+class Spent:
+    input: int = 0
+    output: int = 0
+    cache_creation: int = 0
+    cache_read: int = 0
+
+    def add(self, other: "Spent") -> None:
+        self.input += other.input
+        self.output += other.output
+        self.cache_creation += other.cache_creation
+        self.cache_read += other.cache_read
+
+
+def claude_spent(usage) -> Spent:
+    return Spent(
+        input=usage.input_tokens,
+        output=usage.output_tokens,
+        cache_creation=usage.cache_creation_input_tokens or 0,
+        cache_read=usage.cache_read_input_tokens or 0,
+    )
+
+
+def gemini_spent(usage: types.GenerateContentResponseUsageMetadata) -> Spent:
+    """Cached input is part of the prompt count and thinking is billed as
+    output. Gemini keeps its cache without charging to write it."""
+    cached = usage.cached_content_token_count or 0
+    return Spent(
+        input=usage.prompt_token_count - cached,
+        output=(usage.candidates_token_count or 0) + (usage.thoughts_token_count or 0),
+        cache_read=cached,
+    )
+
+
+def openai_spent(usage) -> Spent:
+    """OpenAI's input count holds the cached and cache-written tokens, and
+    its output count holds the reasoning."""
+    cached = usage.input_tokens_details.cached_tokens
+    written = usage.input_tokens_details.cache_write_tokens
+    return Spent(
+        input=usage.input_tokens - cached - written,
+        output=usage.output_tokens,
+        cache_creation=written,
+        cache_read=cached,
+    )
+
+
+@dataclass
+class Text:
+    words: str
+    spent: Spent
+    served: Served
+
+
+@dataclass
+class Parsed:
+    value: object
+    spent: Spent
+    served: Served
 
 
 def served(message, label: str) -> Served:
@@ -464,7 +540,7 @@ async def claude_text(prompt=None, **kwargs):
         response = await client.beta.messages.create(
             **api_kwargs, **fallback_args(resolved_model)
         )
-        served(response, f"claude_text {resolved_model}")
+        answered = served(response, f"claude_text {resolved_model}")
         content = "".join(
             block.text for block in response.content if block.type == "text"
         )
@@ -476,7 +552,7 @@ async def claude_text(prompt=None, **kwargs):
         await client.close()
     _log.debug(f"Completed Claude response in {time.time() - start_time} seconds")
     _log.debug(f"claude_text(): --> \n\n{content}")
-    return content
+    return Text(content, claude_spent(response.usage), answered)
 
 
 def claude_text_sync(prompt=None, **kwargs):
@@ -564,7 +640,11 @@ async def gemini_structured(prompt, response_format, large=False, model=None):
     data = json.loads(response.text)
     result = from_dict(response_format, data)
     _log.debug(f"gemini_structured(): --> {result}")
-    return result
+    return Parsed(
+        result,
+        gemini_spent(response.usage_metadata),
+        Served(model=response.model_version),
+    )
 
 
 def gemini_structured_sync(prompt, response_format, large=False):
@@ -622,12 +702,16 @@ async def claude_structured(prompt, response_format, model):
     data = json.loads(text)
     result = from_dict(response_format, data)
     _log.debug(f"claude_structured(): --> {result}")
-    return result
+    return Parsed(
+        result, claude_spent(response.usage), served(response, f"claude_structured {model}")
+    )
 
 
 async def gemini_text(prompt=None, **kwargs):
     from google.genai import types
 
+    if local_model():
+        return await claude_text(prompt, **kwargs)
     start_time = time.time()
     model = kwargs.get("model", GEMINI_RESPONSE_MODEL)
     temperature = kwargs.get("temperature", 0.45)
@@ -674,7 +758,11 @@ async def gemini_text(prompt=None, **kwargs):
     content = response.text
     _log.debug(f"Completed response in {time.time() - start_time} seconds")
     _log.debug(f"gemini_text(): --> \n\n{content}")
-    return content
+    return Text(
+        content,
+        gemini_spent(response.usage_metadata),
+        Served(model=response.model_version),
+    )
 
 
 def gemini_text_sync(prompt=None, **kwargs):

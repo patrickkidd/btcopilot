@@ -97,7 +97,7 @@ test.describe("an explain that does not go through", () => {
   // R-0182, R-0570
   test("warns in the thread and opens no play-by-play", async ({ page }) => {
     await settle(page);
-    await page.route("**/app/play", (route) =>
+    await page.route(/\/app\/play(\?diagram_id=\d+)?$/, (route) =>
       route.fulfill({ status: 500, body: "no" }),
     );
     await page.locator("#cap-play").click();
@@ -110,7 +110,7 @@ test.describe("an explain that does not go through", () => {
   // R-0182, R-0563
   test("says in plain words when the coach could not tell it, and explain can be asked again", async ({ page }) => {
     await settle(page);
-    await page.route("**/app/play", (route) =>
+    await page.route(/\/app\/play(\?diagram_id=\d+)?$/, (route) =>
       route.fulfill({ status: 422, body: "untold: The coach couldn't tell this one; try again." }),
     );
     await page.locator("#cap-play").click();

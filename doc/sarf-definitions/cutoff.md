@@ -36,7 +36,7 @@ The main off-theory trap: reading cutoff from geography or from hostile words ("
 6. **Cutoff is judged on the quality of contact.** A source idea, not a ruling: physical distance and the number of contacts are "not a reliable indicator" (CO12, CO13, CO14). What in a record shows quality of contact is not ruled.
 7. **Where the kind of move is open, record it in the source's words.** Claude's proposal, not ruled: “record the move in the source's words with mover, target and date, and mark its kind open rather than picking one” CODING section 8.
 8. **A cutoff code does not imply an anxiety shift.** RULED 2026-09-26 ([`anxiety.md`](anxiety.md) status item 6). Kerr: cutoff can lower anxiety or raise it (CO35).
-9. **A reading from theory stays apart from the facts.** RULED 2026-09-26. Ruling OPEN_QUESTIONS 5 (facts and theory-based readings are kept in separate layers) — see the private edition. "The cutoff made the marriage more intense" or "the contact eased the symptom" is kept, if at all, as a labelled hypothesis (CO39 to CO43).
+9. **A reading from theory stays apart from the facts.** RULED 2026-09-26. See the private corpus for the app's decision on this point (2026-09-26). (OPEN_QUESTIONS 5). "The cutoff made the marriage more intense" or "the contact eased the symptom" is kept, if at all, as a labelled hypothesis (CO39 to CO43).
 
 
 ## 2. What the original authors wrote

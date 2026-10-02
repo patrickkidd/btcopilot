@@ -33,8 +33,18 @@ def save(turn_id: str, discussion_id: int, kept: list[dict]) -> None:
         )
 
 
-def done(statement_id: int) -> dict:
-    return {"type": TurnEventKind.Done.value, "statement_id": statement_id}
+def done(
+    statement_id: int, coverage: dict | None = None, release: str | None = None
+) -> dict:
+    """The row that ends a turn. A coach turn's carries the counts of the
+    basic data's items in each state, before the turn and after it, and the
+    release it ran on, so its cost is charted by release."""
+    out = {"type": TurnEventKind.Done.value, "statement_id": statement_id}
+    if coverage is not None:
+        out["coverage"] = coverage
+    if release is not None:
+        out["release"] = release
+    return out
 
 
 def kept(turn_ids: set[str]) -> dict[str, list[dict]]:

@@ -9,7 +9,6 @@ from pathlib import Path
 
 from flask import current_app
 
-from btcopilot.extensions import db
 from btcopilot.review import adapter
 from btcopilot.review.models import Item, ReviewStatus
 
@@ -31,7 +30,7 @@ RATIFIED = (ReviewStatus.Decided, ReviewStatus.Agreed)
 def ratified_record(cut) -> dict:
     """The agreed record of one cut: the case as it stands, kept to the items
     the meeting ratified."""
-    case = adapter.case_diagram(db.session.get(adapter.Discussion, cut.discussion_id))
+    case = adapter.diagram_of(cut.diagram_id)
     record = adapter.record_of(case)
     decided = {
         str(item.item_id)
@@ -52,7 +51,7 @@ def ratified_record(cut) -> dict:
 
 def cases(cut) -> list[dict]:
     statements = adapter.statements_between(
-        cut.discussion_id, cut.start_statement_id, cut.end_statement_id
+        cut.diagram_id, cut.start_statement_id, cut.end_statement_id
     )
     last = statements[-1] if statements else None
     return [

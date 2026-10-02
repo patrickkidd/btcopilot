@@ -18,9 +18,25 @@
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=Libre+Franklin:wght@400;500;600;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=Libre+Franklin:wght@400;500;600;800&display=swap" media="print" onload="this.media='all'">
+<!-- The only style the page has before the bundle arrives: the splash, and the
+     app held out of sight until main.ts has drawn its first screen. The
+     colours are the grounds and ink in theme.css. -->
+<style>
+#splash { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f7f6f2; transition: opacity 0.2s; }
+#splash img { width: 72px; height: 72px; border-radius: 16px; animation: splash-breath 1.6s ease-in-out infinite alternate; }
+#splash.gone { opacity: 0; pointer-events: none; }
+#splash:not(.gone) ~ .app { visibility: hidden; }
+@keyframes splash-breath { to { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { #splash img { animation: none; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #splash { background: #171d1c; } }
+:root[data-theme="dark"] #splash { background: #171d1c; }
+</style>
 </head>
 <body>
+<div id="splash">
+  <img src="/app/static/web/icon-192.png" alt="">
+</div>
 <div class="app">
   <div class="titlerow">
     <button class="backbtn" id="settings-back" type="button" aria-label="back" hidden></button>
@@ -34,6 +50,18 @@
       <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="10" height="18" rx="2"/><path d="M9.5 17.5h3"/><path d="M11 6.5v6M8.8 10.3 11 12.5l2.2-2.2"/></svg>
     </button>
     <button class="avatar" id="account" type="button" aria-label="Account and settings"></button>
+  </div>
+
+  <div class="viewing" id="viewing" hidden>
+    <span id="viewing-who"></span>
+    <span class="viewing-acts">
+      <button type="button" id="viewing-cut" hidden>Select a cut</button>
+      <button type="button" id="viewing-back">Back to my diagram</button>
+    </span>
+  </div>
+  <div class="cut-strip" id="cut-strip" hidden>
+    <span id="cut-say"></span>
+    <button type="button" class="cs-cancel">cancel</button>
   </div>
 
   <div class="split" id="chat-split">
@@ -61,6 +89,7 @@
            aria-label="Message your coach" data-ph="Message your coach"></div></div>
       <button class="send" id="send" type="button" aria-label="Send"><span>&#8593;</span></button>
     </div>
+    <div class="inbar ct-bar" id="cut-bar" hidden></div>
     <div id="pbp" hidden></div>
   </div>
   <aside class="pinned" id="chat-drawer" hidden></aside>
@@ -122,17 +151,8 @@
     </div>
   </div>
 
-  <div class="screen" id="cut-screen" hidden>
-    <div class="chat" id="cut-chat"></div>
-    <div class="inbar ct-bar" id="cut-bar"></div>
-  </div>
-
   <div class="screen" id="agenda-screen" hidden>
-    <div class="fs-body" id="agenda-body"></div>
-  </div>
-
-  <div class="screen" id="pick-screen" hidden>
-    <div class="fs-body" id="pick-body"></div>
+    <div class="fs-body" id="agenda-body" tabindex="-1"></div>
   </div>
 
   <div class="screen" id="meet-screen" hidden>
@@ -193,6 +213,6 @@
 
   <div class="overlay" id="overlay"></div>
 </div>
-<script type="module" src="/src/main.ts"></script>
+<script type="module" src="/src/boot.ts"></script>
 </body>
 </html>

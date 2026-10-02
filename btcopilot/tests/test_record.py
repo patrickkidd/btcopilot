@@ -8,7 +8,7 @@ from btcopilot.extensions import db
 from btcopilot import record
 from btcopilot.models import Author, Change
 from btcopilot.models import Diagram
-from btcopilot.schema import EventKind, ItemKind, RelationshipKind
+from btcopilot.schema import Event, EventKind, ItemKind, RelationshipKind, from_dict
 
 
 def _diagram(user, data: dict) -> Diagram:
@@ -845,3 +845,48 @@ def test_removing_an_event_takes_it_out_of_its_clusters(subscriber):
     assert [(c["id"], c["eventIds"]) for c in diagram.get_diagram_data().clusters] == [
         ("c1", [40, 41, 43])
     ]
+
+
+def test_taking_back_targets_set_on_an_event_leaves_an_empty_list(subscriber):
+    # R-0596, R-0084
+    """Production FD-366: a hand edit gave an event with no targets a
+    relationship and a target; the backfill took that row back and the shadow
+    turn failed reading the event."""
+    diagram = _diagram(
+        subscriber.user,
+        {
+            "people": [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Lou"}],
+            "events": [{"id": 3, "kind": "shift", "person": 1, "description": "went into treatment"}],
+        },
+    )
+    change = record.apply(
+        diagram.id,
+        [
+            {"item_kind": ItemKind.Event, "item_id": 3, "field": "relationship", "after": "toward"},
+            {"item_kind": ItemKind.Event, "item_id": 3, "field": "relationshipTargets", "after": [2]},
+        ],
+        author=Author.Review,
+        turn_id="t1",
+        user_id=subscriber.user.id,
+    )
+    data = diagramjson.loads(diagram.data)
+    record.rewind(data, change.deltas)
+    assert from_dict(Event, data["events"][0]).relationshipTargets == []
+
+
+def test_taking_back_an_event_made_by_field_sets_then_given_targets_removes_it():
+    # R-0596, R-0084
+    """Production FD-366: rewinding Patrick's record left event 66 holding only
+    an empty target list and no kind, and coverage failed reading it."""
+    made = [
+        {"item_kind": "event", "item_id": 66, "field": field, "before": None, "after": after}
+        for field, after in (("kind", "noted"), ("person", 1), ("description", "told Lou"))
+    ]
+    targeted = [
+        {"item_kind": "event", "item_id": 66, "field": "kind", "before": "noted", "after": "shift"},
+        {"item_kind": "event", "item_id": 66, "field": "relationshipTargets", "before": [], "after": [2]},
+    ]
+    data = {"events": [{"id": 66, "kind": "shift", "person": 1, "description": "told Lou", "relationshipTargets": [2]}]}
+    record.rewind(data, targeted)
+    record.rewind(data, made)
+    assert data["events"] == []

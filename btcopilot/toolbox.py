@@ -14,9 +14,11 @@ import re
 
 from sqlalchemy import or_
 
+import btcopilot
 from btcopilot import clusters, place, proactive, prompts, record, views
 from btcopilot.models import Author, Change, Discussion, ReportKind, Statement
 from btcopilot.recordtext import (
+    bond_line,
     change_line,
     date_text,
     event_line,
@@ -27,7 +29,7 @@ from btcopilot.recordtext import (
     version_line,
 )
 from btcopilot.extensions import db
-from btcopilot.models import Diagram
+from btcopilot.models import Diagram, User
 from btcopilot.schema import (
     MIN_CLUSTER_EVENTS,
     ClusterSource,
@@ -36,7 +38,9 @@ from btcopilot.schema import (
     DiagramData,
     EventKind,
     EvidenceKind,
+    Fact,
     ItemKind,
+    NotedFact,
     PersonKind,
     QuestionKind,
     QuestionOutcome,
@@ -53,13 +57,13 @@ SHIFTS = ("anxiety", "symptom", "functioning")
 class ToolName(enum.StrEnum):
     ReadPeople = "read_people"
     ReadEvents = "read_events"
-    ReadNotes = "read_notes"
     ReadChanges = "read_changes"
     EditPerson = "edit_person"
     EditPairBond = "edit_pair_bond"
     EditEvent = "edit_event"
     EditCluster = "edit_cluster"
     Remove = "remove"
+    MergePeople = "merge_people"
     Undo = "undo"
     Show = "show"
     AddQuestion = "add_question"
@@ -82,6 +86,12 @@ class Register(enum.StrEnum):
     Evaluation = "evaluation"
 
 
+class ReadField(enum.StrEnum):
+    Words = "words"
+    Notes = "notes"
+    Location = "location"
+
+
 class Variable(enum.StrEnum):
     Symptom = "symptom"
     Anxiety = "anxiety"
@@ -93,7 +103,6 @@ class Variable(enum.StrEnum):
 READS = (
     ToolName.ReadPeople,
     ToolName.ReadEvents,
-    ToolName.ReadNotes,
     ToolName.ReadChanges,
     ToolName.ReadQuestions,
     ToolName.ReadImpressions,
@@ -118,9 +127,12 @@ CHANGES = (
     ToolName.EditEvent,
     ToolName.EditCluster,
     ToolName.Remove,
+    ToolName.MergePeople,
     ToolName.SetQuestion,
     ToolName.SetImpression,
 )
+# The changes that only ever touch what is already there, so always name a version.
+EXISTING = (ToolName.Remove, ToolName.MergePeople)
 
 EDITS = (
     ToolName.EditPerson,
@@ -143,6 +155,25 @@ def _values(cls) -> list[str]:
 def _enum_param(cls, description: str) -> dict:
     return {"type": "string", "enum": _values(cls), "description": description}
 
+
+# The event fields an edit may empty, by the name the tool gives them. Kind,
+# date and date_certainty stay: every event has them.
+CLEARABLE = {
+    "end_date": "endDateTime",
+    "description": "description",
+    "notes": "notes",
+    "location": "location",
+    "item": "item",
+    "person": "person",
+    "spouse": "spouse",
+    "child": "child",
+    "anxiety": "anxiety",
+    "symptom": "symptom",
+    "functioning": "functioning",
+    "relationship": "relationship",
+    "relationship_targets": "relationshipTargets",
+    "relationship_triangles": "relationshipTriangles",
+}
 
 CERTAINTY = (
     "certain for an exact day, approximate for a month or a year only, unknown "
@@ -167,8 +198,9 @@ VERSION = {
 }
 
 
-def schemas() -> list[dict]:
-    """The coach's tool schemas. What a field means clinically comes from
+def schemas(coder: bool = False) -> list[dict]:
+    """The coach's tool schemas; a coder's navigate also lists the coder's
+    screens (R-0626). What a field means clinically comes from
     `prompts.tool_meanings()`, which fdserver overrides (R-0305); everything
     here is the shape of the value, not what it means to a clinician."""
     means = prompts.tool_meanings()
@@ -182,9 +214,7 @@ def schemas() -> list[dict]:
             "name": ToolName.ReadEvents.value,
             "description": (
                 "Events in the record, in date order. Narrow by ids, a date span, "
-                "one person, or one cluster; with no filter it returns everything. "
-                "Ask for the words to see what the user said that each event came "
-                "from, and for the notes to see them in full."
+                "one person, or one cluster; with no filter it returns everything."
             ),
             "input_schema": {
                 "type": "object",
@@ -194,20 +224,10 @@ def schemas() -> list[dict]:
                     "end": {"type": "string", "description": "YYYY-MM-DD"},
                     "person": {"type": "integer"},
                     "cluster": {"type": "string"},
-                    "words": {"type": "boolean"},
-                    "notes": {"type": "boolean"},
-                },
-            },
-        },
-        {
-            "name": ToolName.ReadNotes.value,
-            "description": means[prompts.ToolText.ReadNotes],
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "event": {
-                        "type": "integer",
-                        "description": "One event's id; leave it out for every event that has notes.",
+                    "fields": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": _values(ReadField)},
+                        "description": means[prompts.ToolText.Fields],
                     },
                 },
             },
@@ -241,7 +261,7 @@ def schemas() -> list[dict]:
                     "version": VERSION,
                     "name": {"type": "string"},
                     "last_name": {"type": "string"},
-                    "gender": _enum_param(PersonKind, "The person's gender."),
+                    "gender": {"type": "string", "enum": _values(PersonKind)},
                     "parents": {
                         "type": "integer",
                         "description": means[prompts.ToolText.Parents],
@@ -273,7 +293,9 @@ def schemas() -> list[dict]:
             "name": ToolName.EditEvent.value,
             "description": (
                 "Add an event, or change one. Give id to change an existing event; "
-                "leave it out to add one."
+                "leave it out to add one. Only a shift carries a variable or a "
+                "relationship, and a shift always says in its description what "
+                "happened. No one is both a target and a third person of one move."
             ),
             "input_schema": {
                 "type": "object",
@@ -305,6 +327,7 @@ def schemas() -> list[dict]:
                         "type": "string",
                         "description": means[prompts.ToolText.Location],
                     },
+                    "item": _enum_param(NotedFact, means[prompts.ToolText.Item]),
                     "person": {
                         "type": "integer",
                         "description": means[prompts.ToolText.Person],
@@ -339,6 +362,15 @@ def schemas() -> list[dict]:
                         "items": {"type": "integer"},
                         "description": means[prompts.ToolText.RelationshipTriangles],
                     },
+                    "clear": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": list(CLEARABLE)},
+                        "description": (
+                            "Fields to empty on an existing event when what is "
+                            "there is wrong. Clearing relationship needs its targets "
+                            "and triangles cleared too."
+                        ),
+                    },
                 },
             },
         },
@@ -370,11 +402,39 @@ def schemas() -> list[dict]:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "item_kind": _enum_param(ItemKind, "What kind of item to remove."),
+                    "item_kind": {"type": "string", "enum": _values(ItemKind)},
                     "item_id": {"type": "string"},
                     "version": VERSION,
                 },
                 "required": ["item_kind", "item_id", "version"],
+            },
+        },
+        {
+            "name": ToolName.MergePeople.value,
+            "description": (
+                "Join two people who are one person into one, as one change that "
+                "undo puts back whole. Returns what moved over and what was dropped."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "keep": {"type": "integer", "description": means[prompts.ToolText.Keep]},
+                    "drop": {"type": "integer", "description": means[prompts.ToolText.Drop]},
+                    "version": VERSION,
+                    "name": {
+                        "type": "string",
+                        "description": "The kept person's name after, when it changes.",
+                    },
+                    "take": {
+                        "type": "object",
+                        "properties": {
+                            fact: _enum_param(record.Side, "Whose it is.")
+                            for fact in _values(record.Kept)
+                        },
+                        "description": means[prompts.ToolText.Take],
+                    },
+                },
+                "required": ["keep", "drop", "version"],
             },
         },
         {
@@ -413,6 +473,11 @@ def schemas() -> list[dict]:
                         "description": "What the question is about, with item_id; or neither.",
                     },
                     "item_id": {"type": "string"},
+                    "fact": {
+                        "type": "string",
+                        "enum": _values(Fact),
+                        "description": means[prompts.ToolText.Fact],
+                    },
                     "asked_in": ASKED_IN,
                 },
                 "required": ["text", "kind", "state"],
@@ -468,7 +533,7 @@ def schemas() -> list[dict]:
                         "items": {
                             "type": "object",
                             "properties": {
-                                "kind": _enum_param(EvidenceKind, "What it rests on."),
+                                "kind": {"type": "string", "enum": _values(EvidenceKind)},
                                 "id": {"type": "string"},
                             },
                             "required": ["kind", "id"],
@@ -528,7 +593,7 @@ def schemas() -> list[dict]:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "kind": _enum_param(views.ViewKind, "Which view to draw."),
+                    "kind": {"type": "string", "enum": _values(views.ViewKind)},
                     "persons": {
                         "type": "array",
                         "items": {"type": "integer"},
@@ -608,7 +673,11 @@ def schemas() -> list[dict]:
                         "type": "string",
                         "description": (
                             "The place, one of: "
-                            + ", ".join(place.APP + p.value for p in place.Place)
+                            + ", ".join(
+                                place.APP + p.value
+                                for p in place.Place
+                                if coder or p not in place.CODER
+                            )
                             + ". :n is a number, :key a cluster's id, :day a "
                             "meeting's YYYY-MM-DD."
                         ),
@@ -826,7 +895,7 @@ class Toolbox:
         turn_id: str,
         *,
         user_id: int | None = None,
-        session_id: str | None = None,
+        session_id: int | None = None,
         author: Author = Author.Coach,
         statement_id: int | None = None,
         said: Statement | None = None,
@@ -844,6 +913,13 @@ class Toolbox:
         self.views: list[dict] = []
         # The record versions this turn's own writes made, undo included.
         self.versions: set[int] = set()
+
+    @property
+    def coder(self) -> bool:
+        """Admin counts: `has_role` gives an admin every role."""
+        return self.user_id is not None and db.session.get(
+            User, self.user_id
+        ).has_role(btcopilot.ROLE_AUDITOR)
 
     @property
     def diagram(self) -> Diagram:
@@ -865,7 +941,7 @@ class Toolbox:
             tool = ToolName(name)
         except ValueError:
             raise ToolError(f"There is no tool called {name}", "There is no such tool.")
-        if tool in CHANGES and (tool is ToolName.Remove or args.get("id") is not None):
+        if tool in CHANGES and (tool in EXISTING or args.get("id") is not None):
             self._fresh(args.get("version"))
         text, event = getattr(self, f"_{tool.value}")(args)
         if tool in READS:
@@ -972,13 +1048,17 @@ class Toolbox:
                 e for e in events if (date_text(e.get("dateTime")) or "") <= args["end"]
             ]
         events.sort(key=lambda e: (date_text(e.get("dateTime")) or "", e["id"]))
-        words = self._words({e["id"] for e in events}) if args.get("words") else {}
+        fields = {choice(ReadField, f, "fields") for f in args.get("fields") or []}
+        words = self._words({e["id"] for e in events}) if ReadField.Words in fields else {}
         lines = []
         for e in events:
-            lines.append(event_line(e))
+            line = event_line(e)
+            if ReadField.Location in fields and e.get("location"):
+                line += f' location="{e["location"]}"'
+            lines.append(line)
             if e["id"] in words:
                 lines.append(f"  words: {words[e['id']]}")
-            if args.get("notes") and e.get("notes"):
+            if ReadField.Notes in fields and e.get("notes"):
                 lines.append(f"  notes: {e['notes']}")
         return ("\n".join(lines) or "No events.", {"read": [e["id"] for e in events]})
 
@@ -999,15 +1079,6 @@ class Toolbox:
             )
         }
         return {event: said[turn] for event, turn in turns.items() if turn in said}
-
-    def _read_notes(self, args: dict) -> tuple[str, dict]:
-        data = self.data
-        events = [e for e in data.events if isinstance(e, dict) and e.get("notes")]
-        if args.get("event") is not None:
-            wanted = self._event(data, args["event"])
-            events = [e for e in data.events if e.get("id") == wanted]
-        lines = [f"{e['id']}: {e.get('notes') or 'no notes'}" for e in events]
-        return ("\n".join(lines) or "No event has notes.", {"read": [e["id"] for e in events]})
 
     def _read_questions(self, args: dict) -> tuple[str, None]:
         return self._read_notes_of(record.QUESTION, args), None
@@ -1123,6 +1194,8 @@ class Toolbox:
         for key in ("notes", "location"):
             if args.get(key):
                 fields[key] = args[key]
+        if args.get("item"):
+            fields["item"] = choice(NotedFact, args["item"], "noted items").value
         for key in ("person", "spouse", "child"):
             if args.get(key) is not None:
                 fields[key] = self._person(data, args[key])
@@ -1154,6 +1227,24 @@ class Toolbox:
             spouse = self._other_parent(fields["child"], fields["person"])
             if spouse is not None:
                 fields["spouse"] = spouse
+        cleared = args.get("clear") or []
+        if cleared and new:
+            raise ToolError(
+                "Only an event already in the record has fields to clear",
+                "A new event has nothing to clear.",
+            )
+        for arg in cleared:
+            key = CLEARABLE.get(arg)
+            if key is None:
+                raise ToolError(
+                    f"{arg} cannot be cleared: clear one of {', '.join(CLEARABLE)}",
+                    "That field cannot be emptied.",
+                )
+            if key in fields:
+                raise ToolError(
+                    f"{arg} is both set and cleared: do one", "It both set and cleared a field."
+                )
+            fields[key] = [] if key in dict(record.MOVE_LINKS) else None
         self._couple({**was, **fields})
         text, patch = self._write(ItemKind.Event, args.get("id"), fields)
         event_id = patch["deltas"][0]["item_id"]
@@ -1269,6 +1360,53 @@ class Toolbox:
         )
         return (f"Removed {kind.value} {item_id}.", self._patch(change))
 
+    def _merge_people(self, args: dict) -> tuple[str, dict]:
+        if not isinstance(args.get("take") or {}, dict):
+            raise ToolError(
+                "take names each differing fact with whose it is: {\"birth\": \"keep\"}",
+                "It did not say whose facts to keep.",
+            )
+        take = {
+            choice(record.Kept, fact, "facts to take").value: choice(record.Side, side, "sides").value
+            for fact, side in (args.get("take") or {}).items()
+        }
+        data = self.data
+        names = {p: person_line(self._find_person(args[p])) for p in ("keep", "drop")}
+        try:
+            change, merged = record.merge(
+                self.diagram_id,
+                args["keep"],
+                args["drop"],
+                take=take,
+                name=args.get("name"),
+                author=self.author,
+                turn_id=self.turn_id,
+                user_id=self.user_id,
+                session_id=self.session_id,
+                statement_id=self.statement_id,
+            )
+        except record.Invalid as e:
+            raise ToolError(str(e), e.plain)
+        self.deltas.extend(change.deltas)
+        self.versions.add(change.version)
+        lines = [f"Joined {names['drop']} into {names['keep']}."]
+        moved = [self._moved_line(data, kind, item_id) for kind, item_id in merged.moved]
+        if moved:
+            lines.append("Moved over: " + "; ".join(moved))
+        if merged.dropped:
+            lines.append("Dropped: " + "; ".join(merged.dropped))
+        return "\n".join(lines), self._patch(change)
+
+    def _moved_line(self, data: DiagramData, kind: ItemKind, item_id: str) -> str:
+        item = next(
+            i for i in getattr(data, ITEM_COLLECTIONS[kind]) if str(i.get("id")) == item_id
+        )
+        if kind is ItemKind.Event:
+            return f"event {event_line(item)}"
+        if kind is ItemKind.PairBond:
+            return f"pair bond {bond_line(item)}"
+        return f"{record.note(item).noun} {item_id}"
+
     def _undo(self, args: dict) -> tuple[str, dict]:
         previous = self._previous_turn()
         if previous is None:
@@ -1325,6 +1463,7 @@ class Toolbox:
                 "kind": choice(QuestionKind, args["kind"], "question kinds").value,
                 "item_kind": args.get("item_kind"),
                 "item_id": args.get("item_id"),
+                "fact": args.get("fact") and choice(Fact, args["fact"], "facts").value,
             },
         )
 
@@ -1410,8 +1549,10 @@ class Toolbox:
         """The session a question is asked in and the day: this turn's, or the
         past coach message it was asked in."""
         if said is None:
+            if self.session_id is None:
+                raise ValueError(f"turn {self.turn_id} has no session to ask a question in")
             return {
-                "session_id": int(self.session_id),
+                "session_id": self.session_id,
                 "asked_at": datetime.datetime.utcnow().date().isoformat(),
             }
         return {
@@ -1461,6 +1602,11 @@ class Toolbox:
                 "It tried to open a place the app does not have.",
             )
         where, slots = found
+        if where in place.CODER and not self.coder:
+            raise ToolError(
+                f"{address!r} is a coder's screen and this person is no coder",
+                "It tried to open a screen only coders see.",
+            )
         data = self.data
         if where is place.Place.Cluster:
             self._cluster(data, slots[0])

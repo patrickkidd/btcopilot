@@ -6,6 +6,8 @@ never disagree with the record. `undo` replays a turn backwards with a
 compare-and-set on each value.
 """
 
+import contextlib
+import enum
 import logging
 import re
 from dataclasses import dataclass
@@ -19,11 +21,14 @@ from btcopilot.prompts import Role
 from btcopilot.models import Diagram
 from btcopilot.schema import (
     ITEM_COLLECTIONS,
+    LIST_FIELDS,
     MIN_CLUSTER_EVENTS,
     DateCertainty,
     EventKind,
     EvidenceKind,
+    Fact,
     ItemKind,
+    NotedFact,
     PersonKind,
     Pushback,
     QuestionKind,
@@ -94,7 +99,7 @@ def apply(
     author: Author,
     turn_id: str,
     user_id: int | None = None,
-    session_id: str | None = None,
+    session_id: int | None = None,
     statement_id: int | None = None,
 ) -> Change:
     """Set each delta's `after` on the record and log the command.
@@ -108,19 +113,19 @@ def apply(
     it back. A field set on an id the record does not hold makes the item, and
     is logged as one add holding the whole item, so undo takes it off.
     """
-    diagram = _lock(diagram_id)
-    data = diagramjson.loads(diagram.data)
-    applied = [d for delta in deltas for d in _apply(data, delta)]
-    return _commit(
-        diagram,
-        data,
-        compress(applied),
-        author,
-        turn_id,
-        user_id,
-        session_id,
-        statement_id,
-    )
+    with _locked(diagram_id) as diagram:
+        data = diagramjson.loads(diagram.data)
+        applied = [d for delta in deltas for d in _apply(data, delta)]
+        return _commit(
+            diagram,
+            data,
+            compress(applied),
+            author,
+            turn_id,
+            user_id,
+            session_id,
+            statement_id,
+        )
 
 
 def undo(
@@ -129,47 +134,47 @@ def undo(
     *,
     author: Author,
     user_id: int | None = None,
-    session_id: str | None = None,
+    session_id: int | None = None,
 ) -> Change:
     """Reverse every delta of `turn_id`, newest first, and log the reversal."""
-    diagram = _lock(diagram_id)
-    changes = (
-        Change.query.filter_by(diagram_id=diagram_id, turn_id=turn_id)
-        .order_by(Change.id.desc())
-        .all()
-    )
-    if not changes:
-        raise ValueError(f"no changes for turn {turn_id} on diagram {diagram_id}")
+    with _locked(diagram_id) as diagram:
+        changes = (
+            Change.query.filter_by(diagram_id=diagram_id, turn_id=turn_id)
+            .order_by(Change.id.desc())
+            .all()
+        )
+        if not changes:
+            raise ValueError(f"no changes for turn {turn_id} on diagram {diagram_id}")
 
-    data = diagramjson.loads(diagram.data)
-    applied = []
-    for change in changes:
-        # A question is put back only where a removal closed it.
-        removal = any(_removes(delta) for delta in change.deltas)
-        for delta in reversed(change.deltas):
-            if delta["item_kind"] == ItemKind.Question.value and not removal:
-                continue
-            inverse = _inverse(delta)
-            actual = _get(data, inverse)
-            if actual != inverse["before"]:
-                raise Conflict(inverse, actual)
-            done = _apply(data, inverse)
-            # Taking off what the turn made would also take what hangs on it
-            # since, which the turn did not make.
-            if inverse["field"] is None and inverse["after"] is None and len(done) > 1:
-                raise Conflict(inverse, [f"{d['item_kind']} {d['item_id']}" for d in done[:-1]])
-            applied.extend(done)
-    return _commit(
-        diagram,
-        data,
-        compress(applied),
-        author,
-        f"undo:{turn_id}",
-        user_id,
-        session_id,
-        None,
-        undoing=True,
-    )
+        data = diagramjson.loads(diagram.data)
+        applied = []
+        for change in changes:
+            # A question is put back only where a removal closed it.
+            removal = any(_removes(delta) for delta in change.deltas)
+            for delta in reversed(change.deltas):
+                if delta["item_kind"] == ItemKind.Question.value and not removal:
+                    continue
+                inverse = _inverse(delta)
+                actual = _get(data, inverse)
+                if actual != inverse["before"]:
+                    raise Conflict(inverse, actual)
+                done = _apply(data, inverse)
+                # Taking off what the turn made would also take what hangs on it
+                # since, which the turn did not make.
+                if inverse["field"] is None and inverse["after"] is None and len(done) > 1:
+                    raise Conflict(inverse, [f"{d['item_kind']} {d['item_id']}" for d in done[:-1]])
+                applied.extend(done)
+        return _commit(
+            diagram,
+            data,
+            compress(applied),
+            author,
+            f"undo:{turn_id}",
+            user_id,
+            session_id,
+            None,
+            undoing=True,
+        )
 
 
 def rewind(data: dict, deltas: list[dict]):
@@ -191,7 +196,7 @@ def rewind(data: dict, deltas: list[dict]):
         if d["field"] is not None and d["item_kind"] != ItemKind.Diagram.value
     }:
         item = _find(data, kind, item_id)
-        if all(value is None for field, value in item.items() if field != "id"):
+        if all(value in (None, []) for field, value in item.items() if field != "id"):
             _collection(data, kind).remove(item)
 
 
@@ -223,6 +228,20 @@ def compress(deltas: list[dict]) -> list[dict]:
         if delta["field"] is None and out[-1]["before"] is None:
             made[key] = out[-1]
     return out
+
+
+@contextlib.contextmanager
+def _locked(diagram_id: int):
+    """The record's row, locked until the write commits. A write the record
+    refuses gives the lock back: the turn goes on after a refusal, and the
+    ledger row of its next model call is written on its own connection, which
+    would wait on this row for as long as the turn waits on it."""
+    savepoint = db.session.begin_nested()
+    try:
+        yield _lock(diagram_id)
+    except (Invalid, Conflict):
+        savepoint.rollback()
+        raise
 
 
 def _lock(diagram_id: int) -> Diagram:
@@ -270,7 +289,14 @@ def _get(data: dict, delta: dict):
     kind = ItemKind(delta["item_kind"])
     if delta["field"] is None:
         return diagramjson.to_json(_find(data, kind, delta["item_id"]))
-    return diagramjson.to_json(_item(data, delta).get(delta["field"]))
+    return diagramjson.to_json(_held(_item(data, delta), delta))
+
+
+def _held(item: dict, delta: dict):
+    """A field's value as the log states it: a list field left off the item
+    is the empty list it reads as, so taking a later set back leaves a list."""
+    empty = [] if delta["field"] in LIST_FIELDS.get(ItemKind(delta["item_kind"]), ()) else None
+    return item.get(delta["field"], empty)
 
 
 def _apply(data: dict, delta: dict) -> list[dict]:
@@ -291,7 +317,7 @@ def _apply(data: dict, delta: dict) -> list[dict]:
 
 def _set(data: dict, delta: dict) -> dict:
     item = _item(data, delta)
-    before = diagramjson.to_json(item.get(delta["field"]))
+    before = diagramjson.to_json(_held(item, delta))
     item[delta["field"]] = diagramjson.from_json(delta["after"])
     return _delta(delta, before, delta["after"])
 
@@ -331,6 +357,8 @@ def _remove(data: dict, kind: ItemKind, item_id) -> list[dict]:
         fields = {}
         if question.get("item_kind") == kind.value and str(question.get("item_id")) == str(item_id):
             fields = {"item_kind": None, "item_id": None}
+            if question.get("fact") is not None:
+                fields["fact"] = None
             if question["state"] != QuestionState.Resolved:
                 fields.update(state=QuestionState.Resolved.value, outcome=QuestionOutcome.LetGo.value)
         kept = [
@@ -504,6 +532,7 @@ EVENT_SETS = (
     *((field, SHIFTS, "shift directions") for field in VARIABLES),
     ("relationship", RELATIONSHIPS, "relationships"),
     ("dateCertainty", {c.value for c in DateCertainty}, "date certainties"),
+    ("item", {f.value for f in NotedFact}, "items a noted event records"),
 )
 GENDERS = {kind.value for kind in PersonKind}
 
@@ -639,6 +668,13 @@ def _moves(data: dict, deltas: list[dict]):
                 "what moved as a shift of its own, dated to it",
                 "Only a shift carries symptom, anxiety, functioning or a "
                 "relationship: record that as a shift of its own.",
+            )
+        if event.get("item") is not None and kind != EventKind.Noted.value:
+            raise Invalid(
+                f"event {event_id} is a {kind} event: only a noted event says "
+                "which item of the basic data it records",
+                "Only a noted event says it records schooling, work, health or "
+                "where someone lived.",
             )
         for field in DATES:
             day = _day(event.get(field))
@@ -1062,6 +1098,7 @@ def _lost(data: dict, deltas: list[dict]) -> set[tuple]:
 
 
 QUESTION_LINKS = (ItemKind.Person, ItemKind.PairBond, ItemKind.Event, ItemKind.Cluster)
+FACT_LINKS = (ItemKind.Person, ItemKind.PairBond)
 
 
 @dataclass(frozen=True)
@@ -1190,6 +1227,7 @@ def _questions(data: dict, deltas: list[dict], author: Author):
             _rests(data, question, question_id, added)
         else:
             _linked(data, question, question_id)
+            _names(question, question_id)
         for other in questions:
             if (
                 str(other.get("id")) == question_id
@@ -1219,6 +1257,20 @@ def _linked(data: dict, question: dict, question_id: str):
         raise Invalid(
             f"question {question_id} is about {link[0]} {link[1]}, which is not in the record",
             GONE,
+        )
+
+
+def _names(question: dict, question_id: str):
+    """A fact question may name the item of the basic data it asks about, on
+    the person or the couple it is linked to."""
+    if question.get("fact") is None:
+        return
+    Fact(question["fact"])
+    if question["kind"] != QuestionKind.Fact or question.get("item_kind") not in FACT_LINKS:
+        raise Invalid(
+            f"question {question_id} names {question['fact']}: only a fact question "
+            "about a person or a couple names what it asks",
+            "It named what the question asks on something that cannot hold it.",
         )
 
 
@@ -1262,7 +1314,7 @@ def _commit(
         statement_id=statement_id,
         turn_id=turn_id,
         user_id=user_id,
-        session_id=session_id,
+        session_id=None if session_id is None else str(session_id),
         author=Author(author),
         deltas=deltas,
     )
@@ -1378,3 +1430,270 @@ def asked_in(diagram_id: int) -> dict[str, dict]:
                     "statement_id": row.statement_id,
                 }
     return found
+
+
+class Kept(enum.StrEnum):
+    """A fact about a person that two records of one person can disagree on,
+    which a merge keeps from one side only."""
+
+    Birth = "birth"
+    Death = "death"
+    Gender = "gender"
+    Notes = "notes"
+    Parents = "parents"
+
+
+class Side(enum.StrEnum):
+    """Whose fact a merge keeps where the two people's records differ."""
+
+    Keep = "keep"
+    Drop = "drop"
+
+
+#: The event that holds a birth or a death, and the role its person has in it.
+LIFE = {Kept.Birth: (EventKind.Birth, "child"), Kept.Death: (EventKind.Death, "person")}
+KEPT_WORDS = {
+    Kept.Birth: "born",
+    Kept.Death: "died",
+    Kept.Gender: "gender",
+    Kept.Notes: "notes",
+    Kept.Parents: "parents",
+}
+
+
+def collections(data) -> dict:
+    """A DiagramData's items as the dict the write path reads."""
+    return {name: getattr(data, name) for name in ITEM_COLLECTIONS.values()}
+
+
+def life(data: dict, person_id, fact: Kept) -> dict | None:
+    kind, role = LIFE[fact]
+    return next(
+        (
+            e
+            for e in _collection(data, ItemKind.Event)
+            if _val(e.get("kind")) == kind.value and str(e.get(role)) == str(person_id)
+        ),
+        None,
+    )
+
+
+def facts(data: dict, person_id) -> dict[Kept, object]:
+    """What a person's record says of each fact a merge keeps from one side;
+    None where it says nothing."""
+    person = _find(data, ItemKind.Person, person_id)
+    gender = _val(person.get("gender"))
+    return {
+        **{fact: _day((life(data, person_id, fact) or {}).get("dateTime")) for fact in LIFE},
+        Kept.Gender: None if gender in (None, PersonKind.Unknown.value) else gender,
+        Kept.Notes: (person.get("notes") or "").strip() or None,
+        Kept.Parents: person.get("parents"),
+    }
+
+
+def differing(data: dict, a, b) -> dict[Kept, tuple]:
+    """The facts two people's records both hold and disagree on."""
+    fa, fb = facts(data, a), facts(data, b)
+    return {
+        fact: (fa[fact], fb[fact])
+        for fact in Kept
+        if None not in (fa[fact], fb[fact]) and str(fa[fact]) != str(fb[fact])
+    }
+
+
+def dropped_words(fact: Kept, lost, won) -> str:
+    """A fact one side of a merge gave up, as the line under the merge says it."""
+    if fact in LIFE:
+        lost, won = (lost, won) if lost[:4] == won[:4] else (lost[:4], won[:4])
+        return f"{KEPT_WORDS[fact]} {lost} dropped \u00b7 {won} kept"
+    if fact is Kept.Gender:
+        return f"{lost} dropped \u00b7 {won} kept"
+    return f"the other {KEPT_WORDS[fact]} dropped"
+
+
+def kin(data: dict, a, b) -> bool:
+    """The two are partners, or one is the other's parent."""
+    if any(pair(bond) == pair({"person_a": a, "person_b": b}) for bond in _collection(data, ItemKind.PairBond)):
+        return True
+    for child, parent in ((a, b), (b, a)):
+        person = _find(data, ItemKind.Person, child) or {}
+        bond = _find(data, ItemKind.PairBond, person.get("parents"))
+        if bond and str(parent) in pair(bond):
+            return True
+    return False
+
+
+@dataclass
+class Merge:
+    """What joining one person into another writes, what it moves over to the
+    kept person, and the facts of either side it leaves behind."""
+
+    deltas: list[dict]
+    moved: list[tuple[ItemKind, str]]
+    dropped: list[str]
+
+
+def _merge_refusal(data: dict, keep, drop, take: dict[str, str]):
+    if str(keep) == str(drop):
+        raise Invalid(
+            f"keep and drop are both person {keep}: name two people",
+            "That is one person already.",
+        )
+    for person_id in (keep, drop):
+        if _find(data, ItemKind.Person, person_id) is None:
+            raise Invalid(f"No person {person_id} in the record", GONE)
+    if kin(data, keep, drop):
+        raise Invalid(
+            f"persons {keep} and {drop} are partners, or parent and child: two "
+            "people, never one",
+            "Those two are partners, or parent and child, so they are two people.",
+        )
+    unnamed = [fact for fact in differing(data, keep, drop) if fact.value not in take]
+    if unnamed:
+        both = differing(data, keep, drop)
+        said = "; ".join(
+            f"{fact.value}: {both[fact][0]} on person {keep}, {both[fact][1]} on person {drop}"
+            for fact in unnamed
+        )
+        raise Invalid(
+            f"the two differ on {said}. Ask the person which is right, name it in "
+            "take as keep or drop, and merge again",
+            "Those two differ on "
+            + " and ".join(KEPT_WORDS[fact] for fact in unnamed)
+            + ", so it asks which is right first.",
+        )
+
+
+def merging(data: dict, keep, drop, take: dict[str, str], name: str | None = None) -> Merge:
+    """Join person `drop` into person `keep`. Every event, pair bond, parent
+    link, relationship, question and impression naming the dropped person names
+    the kept one; a fact the kept person lacks comes over; a fact both hold is
+    the kept person's unless `take` gives it to the dropped one; a pair bond both had with the same
+    partner becomes one; then the dropped person goes. Reads `data` only."""
+    deltas = []
+    moved: dict[tuple[ItemKind, str], None] = {}
+    dropped = []
+    keep_id = int(keep)
+
+    def put(kind: ItemKind, item_id, field: str, after):
+        deltas.append({"item_kind": kind.value, "item_id": item_id, "field": field, "after": after})
+
+    def remove(kind: ItemKind, item_id):
+        deltas.append({"item_kind": kind.value, "item_id": item_id, "field": None, "after": None})
+
+    both = differing(data, keep, drop)
+    theirs = {fact for fact, side in take.items() if side == Side.Drop.value}
+    gone = set()
+    for fact in LIFE:
+        kept, lost = life(data, keep, fact), life(data, drop, fact)
+        if kept is None or lost is None:
+            continue
+        if fact.value in theirs or _day(kept.get("dateTime")) is None:
+            for field in ("dateTime", "dateCertainty"):
+                put(ItemKind.Event, kept["id"], field, diagramjson.to_json(lost.get(field)))
+        remove(ItemKind.Event, lost["id"])
+        gone.add(str(lost["id"]))
+
+    for event in _collection(data, ItemKind.Event):
+        if str(event.get("id")) in gone:
+            continue
+        for field in ("person", "spouse", "child"):
+            if str(event.get(field)) == str(drop):
+                put(ItemKind.Event, event["id"], field, keep_id)
+                moved[(ItemKind.Event, str(event["id"]))] = None
+        for field, _ in MOVE_LINKS:
+            ids = event.get(field) or []
+            if any(str(x) == str(drop) for x in ids):
+                swapped = [keep_id if str(x) == str(drop) else x for x in ids]
+                put(ItemKind.Event, event["id"], field, list(dict.fromkeys(swapped)))
+                moved[(ItemKind.Event, str(event["id"]))] = None
+
+    for emotion in _collection(data, ItemKind.Emotion):
+        for field in ("person", "target"):
+            if str(emotion.get(field)) == str(drop):
+                put(ItemKind.Emotion, emotion["id"], field, keep_id)
+
+    renamed = {(ItemKind.Person.value, str(drop)): keep_id}
+    bonds = _collection(data, ItemKind.PairBond)
+    for bond in bonds:
+        sides = [side for side in ("person_a", "person_b") if str(bond.get(side)) == str(drop)]
+        if not sides:
+            continue
+        other = bond.get("person_b" if sides[0] == "person_a" else "person_a")
+        twin = next(
+            (b for b in bonds if pair(b) == pair({"person_a": keep, "person_b": other})),
+            None,
+        )
+        if twin is None:
+            put(ItemKind.PairBond, bond["id"], sides[0], keep_id)
+            moved[(ItemKind.PairBond, str(bond["id"]))] = None
+            continue
+        for child in _collection(data, ItemKind.Person):
+            if str(child.get("parents")) == str(bond["id"]):
+                put(ItemKind.Person, child["id"], "parents", twin["id"])
+        if bond.get("married") and not twin.get("married"):
+            put(ItemKind.PairBond, twin["id"], "married", True)
+        renamed[(ItemKind.PairBond.value, str(bond["id"]))] = twin["id"]
+        moved[(ItemKind.PairBond, str(twin["id"]))] = None
+
+    for question in _collection(data, ItemKind.Question):
+        to = renamed.get((question.get("item_kind"), str(question.get("item_id"))))
+        if to is not None:
+            put(ItemKind.Question, question["id"], "item_id", type(question["item_id"])(to))
+            moved[(ItemKind.Question, str(question["id"]))] = None
+        evidence = question.get("evidence") or []
+        swapped = [
+            dict(one, id=type(one["id"])(renamed.get((one["kind"], str(one["id"])), one["id"])))
+            for one in evidence
+        ]
+        if swapped != evidence:
+            unique = list({(one["kind"], str(one["id"])): one for one in swapped}.values())
+            put(ItemKind.Question, question["id"], "evidence", unique)
+            moved[(ItemKind.Question, str(question["id"]))] = None
+
+    for (kind, bond_id), twin_id in renamed.items():
+        if kind == ItemKind.PairBond.value:
+            remove(ItemKind.PairBond, next(b["id"] for b in bonds if str(b["id"]) == bond_id))
+
+    kept = _find(data, ItemKind.Person, keep)
+    lost = _find(data, ItemKind.Person, drop)
+    if name:
+        put(ItemKind.Person, kept["id"], "name", name)
+    for field in ("name", "last_name"):
+        if lost.get(field) and not kept.get(field) and not (name and field == "name"):
+            put(ItemKind.Person, kept["id"], field, lost[field])
+    mine, other = facts(data, keep), facts(data, drop)
+    for fact, field in ((Kept.Gender, "gender"), (Kept.Notes, "notes"), (Kept.Parents, "parents")):
+        if other[fact] is not None and (mine[fact] is None or fact.value in theirs):
+            put(ItemKind.Person, kept["id"], field, lost.get(field))
+    for fact, (ours, other_value) in both.items():
+        lost_fact, won = (ours, other_value) if fact.value in theirs else (other_value, ours)
+        dropped.append(dropped_words(fact, str(lost_fact), str(won)))
+    remove(ItemKind.Person, lost["id"])
+    return Merge(deltas, list(moved), dropped)
+
+
+def merge(
+    diagram_id: int,
+    keep,
+    drop,
+    *,
+    take: dict[str, str],
+    name: str | None = None,
+    author: Author,
+    turn_id: str,
+    user_id: int | None = None,
+    session_id: int | None = None,
+    statement_id: int | None = None,
+) -> tuple[Change, Merge]:
+    """Join two records of one person as one change, so one undo of its turn
+    puts both back as they were."""
+    with _locked(diagram_id) as diagram:
+        data = diagramjson.loads(diagram.data)
+        _merge_refusal(data, keep, drop, take)
+        plan = merging(data, keep, drop, take, name)
+        applied = [d for delta in plan.deltas for d in _apply(data, delta)]
+        change = _commit(
+            diagram, data, compress(applied), author, turn_id, user_id, session_id, statement_id
+        )
+        return change, plan

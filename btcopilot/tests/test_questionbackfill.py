@@ -156,7 +156,6 @@ def test_the_backfill_can_read_the_whole_record_and_write_only_questions(
         "read_changes",
         "read_events",
         "read_impressions",
-        "read_notes",
         "read_people",
         "read_questions",
         "set_question",

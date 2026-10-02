@@ -35,6 +35,9 @@ class ChipKind(enum.StrEnum):
     # The question a coach message closed on, which the reader is answering
     # [Oracle: R-0587].
     Message = "message"
+    # Two people who may be one, side by side: the kept person's id, then the
+    # dropped one's. Tapped and sent, it is the person's yes.
+    Merge = "merge"
 
 
 TOKEN = re.compile(
@@ -57,6 +60,7 @@ KIND_WORDS = {
     ChipKind.Impression: "this impression",
     ChipKind.Ask: "this",
     ChipKind.Message: "this question",
+    ChipKind.Merge: "same person",
 }
 
 
@@ -112,7 +116,14 @@ def _message(target: str, diagram_id: int | None) -> Statement | None:
     return statement
 
 
+def _pair(target: str) -> list[str]:
+    return [part.strip() for part in str(target).split(",")]
+
+
 def resolves(kind: ChipKind, target: str, data: DiagramData, diagram_id: int | None) -> bool:
+    if kind is ChipKind.Merge:
+        ids = _pair(target)
+        return len(set(ids)) == 2 and set(ids) <= _ids(data, ChipKind.Person)
     if kind is ChipKind.Ask:
         return bool(str(target).strip())
     if kind is ChipKind.Message:
@@ -199,6 +210,14 @@ def _describe(kind: ChipKind, target: str, data: DiagramData, diagram_id: int | 
     if kind is ChipKind.Person:
         person = next(p for p in data.people if str(p.get("id")) == target)
         return f"person {target}: {person.get('name') or 'unnamed'}"
+    if kind is ChipKind.Merge:
+        keep, drop = _pair(target)
+        return (
+            f"the card asking whether persons {keep} and {drop} are one person. "
+            "Sent, it is their yes: join them with "
+            f"merge_people(keep={keep}, drop={drop}), with what their own words "
+            "say of which name or fact is right"
+        )
     if kind is ChipKind.Event:
         event = next(e for e in data.events if str(e.get("id")) == target)
         words = event.get("description") or enum_val(event.get("kind")) or ""
@@ -234,3 +253,18 @@ def context(text: str, data: DiagramData, diagram_id: int | None) -> str:
         else "The user's message refers to:"
     )
     return head + "\n" + "\n".join(lines)
+
+
+def people(text: str, data: DiagramData, diagram_id: int | None) -> set[str]:
+    """The people a message's chips name, the people of the events it names
+    included."""
+    named = set()
+    for kind, target, _ in parse(text, data, diagram_id):
+        if kind is ChipKind.Person:
+            named.add(target)
+        elif kind is ChipKind.Event:
+            event = next(e for e in data.events if str(e.get("id")) == target)
+            named |= {
+                str(p.get("id")) for p in data.people if record.involves(event, p.get("id"))
+            }
+    return named

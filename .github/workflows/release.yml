@@ -137,6 +137,7 @@ jobs:
               # an empty database or any revision of the current chain goes on to the upgrade
               *) [ -z "$at" ] || ls ../btcopilot/migrations/versions | grep -q "^${at}_" || { echo "database is at unknown revision $at; stamp it by hand before deploying" >&2; exit 1; } ;;
             esac
+            prev=$(docker compose --env-file /etc/fd/secrets.env images fd-app --format json | python3 -c 'import sys,json; d=json.load(sys.stdin); d=d if isinstance(d,list) else [d]; print(d[0]["Tag"] if d else "")' || true)
             docker compose --env-file /etc/fd/secrets.env pull
             # the new app and worker start beside the old ones; the old stop once the new are healthy
             docker rollout --env-file /etc/fd/secrets.env fd-app
@@ -148,6 +149,11 @@ jobs:
             # the quality dashboard's recorded runs, from this commit (R-0517)
             docker compose --env-file /etc/fd/secrets.env exec -T fd-app flask admin quality load
             docker compose --env-file /etc/fd/secrets.env ps
+            # keep the new and the previous running tag; a prune error is logged, never fatal
+            for t in $(docker images ghcr.io/patrickkidd/btcopilot --format '{{.Tag}}'); do
+              [ "$t" = "$BTCOPILOT_TAG" ] || [ "$t" = "$prev" ] || docker rmi "ghcr.io/patrickkidd/btcopilot:$t" || echo "prune: could not remove $t" >&2
+            done
+            docker image prune -f || echo "prune: dangling prune failed" >&2
 
       - uses: actions/checkout@v4
 

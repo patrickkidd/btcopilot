@@ -41,7 +41,8 @@ for (const width of [320, 390])
       test.skip(test.info().project.name !== "phone");
       await page.goto("/app/");
       await openList(page);
-      await page.locator("#menu-body .row").first().click();
+      // the form is reached only to add an event while it is parked (PARKED)
+      await page.locator("#menu-add").click();
       const editor = page.locator(".editor");
       await expect(editor.locator(".segs").first()).toBeVisible();
       await editor.locator('[data-name="description"]').fill(LONG);

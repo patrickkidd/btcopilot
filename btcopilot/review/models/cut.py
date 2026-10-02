@@ -7,18 +7,16 @@ from btcopilot.modelmixin import ModelMixin
 
 
 class Cut(db.Model, ModelMixin):
-    """A window of one session's turns, frozen and put on the agenda (R-0296).
-
-    Bounded by a start and end position, kept flexible for any future range.
-    A new one continues right after the last one ended by default; code, not
-    the table definition, blocks overlapping ranges.
+    """A range of lines in a family's thread, frozen and put on the agenda
+    (R-0296): a first and a last line, in one sitting or across several. The
+    sitting each line belongs to is that line's own. A new one continues right
+    after the last one ended by default; code, not the table definition, blocks
+    overlapping ranges.
     """
 
     __tablename__ = "review_cuts"
 
-    discussion_id = Column(
-        Integer, ForeignKey("discussions.id"), nullable=False, index=True
-    )
+    diagram_id = Column(Integer, ForeignKey("diagrams.id"), nullable=False, index=True)
     start_statement_id = Column(Integer, ForeignKey("statements.id"), nullable=False)
     end_statement_id = Column(Integer, ForeignKey("statements.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -38,6 +36,6 @@ class Cut(db.Model, ModelMixin):
 
     def __repr__(self):
         return (
-            f"<Cut {self.id}: session {self.discussion_id} "
+            f"<Cut {self.id}: family {self.diagram_id} "
             f"{self.start_statement_id}..{self.end_statement_id}>"
         )

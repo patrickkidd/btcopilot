@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { stateFor, boxOf } from "./setup";
 
 /** The words of the event already picked lead back to where it was said. */
 
@@ -15,7 +15,7 @@ const tapItsWords = async (page: Page) => {
   const words = page.locator("#view .ss-t.on").first();
   await expect(words).toBeVisible();
   const label = (await page.locator("#path .here").textContent()) ?? "";
-  const box = (await words.boundingBox())!;
+  const box = await boxOf(words);
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
   return label;
 };

@@ -1,3 +1,4 @@
+import { eventDetail, personDetail, type DetailHooks } from "./detail";
 import { closeX, el, flash, slideOver } from "./dom";
 import { openEditor, openPersonEditor } from "./editor";
 import { Feature, tap } from "./track";
@@ -61,6 +62,8 @@ export function shut(): void {
 
 export class Menu {
   private editing: number | null = null;
+  /** Where the list was scrolled when a card opened over it, to go back to. */
+  private listTop = 0;
   private query = "";
   private tab = Tab.Events;
   /** The people list is ordered by birth until the reader asks for names. */
@@ -71,9 +74,13 @@ export class Menu {
   constructor(
     private body: HTMLElement,
     private reload: () => Promise<Timeline>,
-    /** The record being edited, when it is not the one the app is on: the
-     * coding screen edits the record its own coding is of. */
-    private diagramId?: number,
+    /** The record being edited: the diagram open, or on the coding screen the
+     * record its own coding is of. */
+    private diagramId: () => number | undefined,
+    /** Where a tapped row opens the read-only detail card instead of the form:
+     * the chat app's own drawer. The coding screen passes none, and keeps the
+     * forms, since coders change the record they code by hand. */
+    private detail?: Pick<DetailHooks, "talk" | "cluster" | "said">,
   ) {}
 
   add(): void {
@@ -96,6 +103,26 @@ export class Menu {
   /** The thing whose editor is open, if one is. */
   edited(): number | null {
     return this.editing;
+  }
+
+  /** The open card or form closes, and the list is back where it was. */
+  fold(): void {
+    this.editing = null;
+    this.render();
+    this.body.scrollTop = this.listTop;
+    this.onMove?.();
+  }
+
+  /** The card of what is open, as its own page in place of the list, when
+   * this drawer has cards. */
+  private page(): HTMLElement | null {
+    if (!this.detail || this.editing === null) return null;
+    if (this.tab === Tab.Events) {
+      const event = this.data.events.find((e) => e.id === this.editing);
+      return event ? this.view(event) : null;
+    }
+    const person = this.data.people.find((p) => p.id === this.editing);
+    return person ? this.personView(person) : null;
   }
 
   /** Which of the two lists is on screen. */
@@ -169,6 +196,13 @@ export class Menu {
   }
 
   private render(): void {
+    const page = this.tab === Tab.Questions ? null : this.page();
+    this.body.parentElement?.classList.toggle("carded", page !== null);
+    if (page) {
+      this.body.replaceChildren(page);
+      this.body.scrollTop = 0;
+      return;
+    }
     if (this.tab === Tab.People) {
       this.renderPeople();
       return;
@@ -197,6 +231,7 @@ export class Menu {
     this.body.querySelectorAll<HTMLElement>(".row").forEach((row) => {
       row.addEventListener("click", () => {
         const id = Number(row.dataset.event);
+        this.listTop = this.body.scrollTop;
         if (this.editing !== id)
           tap(Feature.EventOpen, { kind: ItemKind.Event, id: String(id) });
         this.editing = this.editing === id ? null : id;
@@ -238,6 +273,7 @@ export class Menu {
     this.body.querySelectorAll<HTMLElement>(".row").forEach((row) => {
       row.addEventListener("click", () => {
         const id = Number(row.dataset.person);
+        this.listTop = this.body.scrollTop;
         if (this.editing !== id)
           tap(Feature.PersonOpen, { kind: ItemKind.Person, id: String(id) });
         this.editing = this.editing === id ? null : id;
@@ -261,22 +297,53 @@ export class Menu {
     void this.reload().then((data) => this.show(data));
   }
 
+  /** PARKED, not dead, as the event form is (Patrick, 2026-10-01: "We need to
+   * do the same thing with people that we did with events. hide + comment the
+   * people editor form"). In the chat app a tapped person row opens the
+   * read-only person card, and a person is changed by talking to the coach
+   * about them; this form is reached there only to add someone. To bring
+   * editing back, let page() return null for people: the row then opens this
+   * form under it, as it still does on the coding screen. */
   private personEditor(person: Person | null): HTMLElement {
     return openPersonEditor(person, {
       done: () => this.done(),
       goToEvent: (eventId: number) => this.goTo(Tab.Events, eventId),
-      diagramId: this.diagramId,
+      diagramId: this.diagramId(),
       family: this.data,
     });
   }
 
+  private hooks(): DetailHooks {
+    return {
+      ...this.detail!,
+      person: (id) => this.goTo(Tab.People, id),
+      event: (id) => this.goTo(Tab.Events, id),
+      back: () => this.fold(),
+    };
+  }
+
+  private view(event: TimelineEvent): HTMLElement {
+    return eventDetail(event, this.data.people, this.clusterOf(event.id), this.hooks());
+  }
+
+  private personView(person: Person): HTMLElement {
+    return personDetail(person, this.data, this.hooks());
+  }
+
+  /** PARKED, not dead (Patrick, 2026-10-01: "hide and adequately comment out
+   * the event edit form for now and see how it goes with the chat"). In the
+   * chat app a tapped event row opens the read-only detail view, and the event
+   * is changed by talking to the coach about it; this form is reached there
+   * only to add a new event. To bring editing back, let page() return null
+   * for events: the row then opens this form under it, as it still does on
+   * the coding screen. */
   private editor(event: TimelineEvent | null): HTMLElement {
     return openEditor(
       event,
       this.data.people,
       () => this.done(),
       (personId) => this.goTo(Tab.People, personId),
-      this.diagramId,
+      this.diagramId(),
     );
   }
 }

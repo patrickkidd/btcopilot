@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { stateFor, boxOf } from "./setup";
 
 /** Putting the picture down, and what a label does.
  *
@@ -41,7 +41,7 @@ test.describe("putting the picture down", () => {
     await pickMoment(page);
 
     // the foot of the picture, under every moment's target and every label
-    const box = (await page.locator("#view .ss").boundingBox())!;
+    const box = await boxOf(page.locator("#view .ss"));
     await page.mouse.click(box.x + box.width - 4, box.y + box.height - 1);
 
     await expect(page.locator("#view .ss-t.on")).toHaveCount(0);

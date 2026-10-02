@@ -8,9 +8,10 @@ from typing import Callable
 
 from btcopilot import prompts, record
 from btcopilot.coachmodel import CoachModel
-from btcopilot.coachturn import MAX_STEPS, Metered, drain, run_call
+from btcopilot.coachturn import MAX_STEPS, drain, run_call
+from btcopilot.metered import Metered
 from btcopilot.extensions import db
-from btcopilot.models import Author, Diagram, Discussion, Statement
+from btcopilot.models import Author, Diagram, Discussion, Purpose, Statement
 from btcopilot.recordtext import outline
 from btcopilot.schema import DiagramData, EvidenceKind, ItemKind
 from btcopilot.toolbox import READS, ToolName, Toolbox, schemas
@@ -132,11 +133,13 @@ def backfill(diagram: Diagram, discussion: Discussion, model, kind: Kind) -> int
         diagram.id,
         turn_id,
         user_id=discussion.user_id,
-        session_id=str(discussion.id),
+        session_id=discussion.id,
         author=Author.Coach,
         statement_id=last.id,
     )
-    metered = Metered(model, discussion.user_id, diagram.id, turn_id)
+    metered = Metered(
+        discussion.user_id, diagram.id, turn_id, Purpose.Backfill, model=model
+    )
     system = kind.prompt(
         map=outline(toolbox.data, toolbox.diagram.version),
         transcript=transcript(discussion),
@@ -181,7 +184,7 @@ def backfill(diagram: Diagram, discussion: Discussion, model, kind: Kind) -> int
         author=Author.Coach,
         turn_id=turn_id,
         user_id=discussion.user_id,
-        session_id=str(discussion.id),
+        session_id=discussion.id,
         statement_id=last.id,
     )
     return calls

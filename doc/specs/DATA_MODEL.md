@@ -97,8 +97,14 @@ class Event:
     relationshipTargets: list[int] = field(default_factory=list)
     relationshipTriangles: list[int] = field(default_factory=list)
     functioning: VariableShift | None = None
+    item: NotedFact | None = None
     confidence: float | None = None
 ```
+
+`item` is set only on a noted event that records an item of the basic data
+about its `person`: one of `schooling`, `work`, `health`, `places` (where they
+lived). The record refuses it on any other kind. The coach sets it with
+`edit_event`; coverage then counts that item as known.
 
 ---
 
@@ -213,6 +219,43 @@ class RelationshipKind(enum.Enum):
     Cutoff = "cutoff"
 ```
 
+### Fact and FactState (the basic data's checklist)
+
+The items of the basic data a family evaluation gathers, each on one person or
+one couple; the checklist itself is never stored but worked out from the record
+by `btcopilot/coverage.py` (see [COVERAGE.md](../COVERAGE.md)).
+
+```python
+class Fact(enum.StrEnum):
+    # on a person
+    Name, BirthDate, Alive, DeathDate, CauseOfDeath, Schooling, Work, Health,
+    Marriages, Places, Contact, LifeCourse, Order, Sex, Parents, Stress
+    # on a couple
+    Children, Met
+
+class NotedFact(enum.StrEnum):
+    Schooling, Work, Health, Places  # the same values as in Fact
+
+class FactState(enum.StrEnum):
+    Known = "known"
+    Asked = "asked"
+    SaidUnknown = "said_unknown"
+    Declined = "declined"
+    NotAsked = "not_asked"
+```
+
+A question in `DiagramData.questions` carries `fact`, a `Fact` value or null.
+Only a fact question linked to a person or a couple (`item_kind` person or
+pair_bond) may name one. Asked and not yet closed it makes the item asked.
+Closed as `fact` or `answered` it makes the item known,
+as `unknown` said unknown, as `declined_by_user` or `declined_in_chat`
+declined; one held or let go says nothing. The last such question wins. Removing the person or couple drops the
+link and the `fact` together.
+
+Each coach turn's done row in `turn_events` carries
+`coverage: {before: counts, after: counts}`, where counts is
+`{required, known, asked, said_unknown, declined, not_asked}`.
+
 ---
 
 ## Validation & Constraints
@@ -315,6 +358,43 @@ person said yes; declined, a row keeps only where it was. An error in the page
 or the server is never a row: it goes to Grafana. A coach turn that fails is
 kept as a `turn_failed` observation. The observations table no longer has the
 bug and feedback kinds.
+
+### Model calls
+
+`btcopilot/models/modelcall.py`, written only by `Metered` in
+`btcopilot/metered.py`
+
+A `model_calls` row is one call to the model: the person charged
+(`user_id`), the diagram, `turn_id`, `purpose` (`Purpose`: coach, a reply to
+the person; shadow, the same turn run again on a shadow model; replay, a
+session run again onto a scratch record; play, a play-by-play asked for in a
+session; backfill, questions and impressions added to an old session;
+proactive, a message the coach writes first; summary, the title and summary
+a session gets after its first reply), the model that answered and its
+fallback hops, four token counts, `cost_usd`, `duration_ms` and `tool_calls`.
+Every caller names the purpose; there is no default.
+
+A coach turn's `done` row in `turn_events` carries `release` in its JSON
+payload: `btcopilot.__version__`, the value `/health` returns, so cost per
+turn can be charted by release by joining `model_calls` on `turn_id`.
+
+### Replay passes
+
+`btcopilot/models/replaypass.py`, written by `replayscore.replay` at the end
+of each pass
+
+A `replay_passes` row is one replay of a person's turns on one model onto a
+scratch record: `model` (the model asked for), `thinking`, `prompt` (the hash
+of the coach prompt the pass ran on), `case` (the person, the statements
+replayed and the record versions they span), `turns`, `calls`, the four token
+counts, `cost_usd`, the record's scores against the reference by part
+(`people`, `events`, `pair_bonds`, `clusters`, `variables`) and `overall`
+(the mean of the parts that were scored), `release`, `source` (`Source`: api
+or subscription) and `scratch_diagram_id`. Case, prompt, model and thinking
+together are the key: `flask admin quality replay-person` refuses a key a row
+already holds unless given `--again`. `release` is null on the passes of
+2026-09-30, kept by `flask admin quality keep-passes` before the table
+existed; `scratch_diagram_id` is null on a pass run on a copy of the database.
 
 ### Serialization
 

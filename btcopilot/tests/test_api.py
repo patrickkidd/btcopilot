@@ -6,6 +6,9 @@ import pytest
 
 import btcopilot
 from btcopilot import diagramjson
+from btcopilot.discussions import open_session
+from btcopilot.models.etc import AccessRight
+from btcopilot.routes import Access
 from btcopilot.routes.settings import PLAN_PLACEHOLDER
 from btcopilot.extensions import db
 from btcopilot.models import Author, Change, Discussion, Interaction, Statement
@@ -456,6 +459,143 @@ def test_read_only_grant_is_not_listed_or_writable(web, token, test_user, test_u
     assert shared.get_diagram_data().people == []
 
 
+@pytest.fixture
+def theirs(test_user_2):
+    """Another person's diagram with a question on it and one sitting said in."""
+    asked = {"id": "q1", "text": "Who?", "kind": "fact", "state": "asked", "asked_at": None}
+    diagram = Diagram(
+        user_id=test_user_2.id,
+        name="Their Family",
+        data=diagramjson.dumps({"questions": [asked]}),
+    )
+    db.session.add(diagram)
+    db.session.flush()
+    sitting = open_session(test_user_2, diagram)
+    db.session.add(
+        Statement(
+            discussion_id=sitting.id,
+            speaker_id=sitting.chat_user_speaker_id,
+            text="My mother moved in.",
+        )
+    )
+    db.session.commit()
+    return diagram
+
+
+def view(admin, diagram):
+    return admin.post(
+        f"/app/diagrams/{diagram.id}/select",
+        json={},
+        headers={"X-CSRFToken": csrf_token(admin)},
+    )
+
+
+def test_an_admin_finds_a_person_by_name_and_opens_their_diagram_read_only(
+    admin, test_user, test_user_2, theirs
+):
+    # R-0080
+    found = admin.get("/app/users", query_string={"q": "tESTER 2"}).get_json()
+    assert found == [
+        {"id": test_user_2.id, "username": test_user_2.username, "name": "Unit Tester 2"}
+    ]
+
+    listed = admin.get(f"/app/diagrams?user_id={test_user_2.id}").get_json()
+    assert theirs.id in {d["id"] for d in listed}
+
+    opened = view(admin, theirs)
+    assert opened.status_code == 200
+    assert opened.get_json()["access"] == Access.AdminView
+    assert opened.get_json()["owner"] == "Unit Tester 2"
+    assert test_user.current_diagram_id == theirs.id
+    assert AccessRight.query.filter_by(user_id=test_user.id).count() == 0
+
+    said = admin.get("/app/statements").get_json()
+    assert [s["text"] for s in said] == ["My mother moved in."]
+    sitting = admin.get("/app/sessions").get_json()[0]["id"]
+    assert admin.get(f"/app/sessions/{sitting}").status_code == 200
+    drawer = admin.get(f"/app/sessions?diagram_id={theirs.id}")
+    assert [s["id"] for s in drawer.get_json()] == [sitting]
+
+
+def test_a_page_reads_the_diagram_it_names_whatever_the_account_is_on(
+    admin, test_user, theirs
+):
+    # R-0080
+    assert test_user.current_diagram_id is None
+    q = {"diagram_id": theirs.id}
+    said = admin.get("/app/statements", query_string=q).get_json()
+    assert [s["text"] for s in said] == ["My mother moved in."]
+    sittings = admin.get("/app/sessions", query_string=q).get_json()
+    assert [s["id"] for s in sittings] == [said[0]["session_id"]]
+    assert admin.get(f"/app/sessions/{sittings[0]['id']}").status_code == 200
+    assert admin.get("/app/timeline", query_string=q).status_code == 200
+    assert admin.post(
+        f"/app/chat?diagram_id={theirs.id}",
+        json={"statement": "hello"},
+        headers={"X-CSRFToken": csrf_token(admin)},
+    ).status_code == 403
+
+
+def test_a_diagram_the_caller_may_not_open_is_not_found_by_its_id(web, theirs):
+    # R-0080
+    for path in ("/app/statements", "/app/sessions", "/app/timeline"):
+        assert web.get(path, query_string={"diagram_id": theirs.id}).status_code == 404
+
+
+@pytest.mark.parametrize(
+    "method, path, body",
+    [
+        ("post", "/app/chat", {"statement": "hello"}),
+        ("post", "/app/sessions", {}),
+        ("post", "/app/people", {"name": "Nova"}),
+        ("post", "/app/events", {"kind": "shift", "description": "moved"}),
+        ("patch", "/app/questions/q1", {"state": "dismissed"}),
+        ("post", "/app/play", {"cluster_id": "c1"}),
+        ("patch", "/app/sessions/{sitting}", {"title": "Mine now"}),
+        ("delete", "/app/sessions/{sitting}", None),
+        ("post", "/app/sessions/{sitting}/statements", {"statement": "hello"}),
+    ],
+)
+def test_an_admin_viewing_a_diagram_writes_nothing_on_it(
+    admin, test_user, theirs, method, path, body
+):
+    # R-0080
+    view(admin, theirs)
+    sitting = Discussion.query.filter_by(diagram_id=theirs.id).one()
+    before = (Statement.query.count(), Discussion.query.count(), Change.query.count())
+
+    refused = getattr(admin, method)(
+        path.format(sitting=sitting.id),
+        json=body,
+        headers={"X-CSRFToken": csrf_token(admin)},
+    )
+    assert refused.status_code == 403
+    assert "read-only" in refused.get_data(as_text=True)
+    db.session.expire_all()
+    assert (Statement.query.count(), Discussion.query.count(), Change.query.count()) == before
+    assert sitting.title is None
+    assert theirs.get_diagram_data().people == []
+
+
+def test_someone_who_is_not_an_admin_cannot_open_another_persons_diagram(
+    web, token, test_user, theirs
+):
+    # R-0080
+    assert post(web, token, f"/app/diagrams/{theirs.id}/select", {}).status_code == 404
+    assert test_user.current_diagram_id is None
+
+
+def test_a_search_needs_two_letters(admin):
+    # R-0080
+    assert admin.get("/app/users?q=t").status_code == 400
+
+
+def test_only_an_admin_finds_people_or_lists_their_diagrams(web, test_user_2):
+    # R-0080
+    assert web.get("/app/users?q=Unit").status_code == 403
+    assert web.get(f"/app/diagrams?user_id={test_user_2.id}").status_code == 403
+
+
 # ── event CRUD ──────────────────────────────────────────────────────────────
 
 
@@ -545,7 +685,7 @@ def test_a_named_record_takes_the_write_and_a_stranger_s_does_not(
     assert mine.get_diagram_data().events == []
 
     refused = post(web, token, f"/app/people?diagram_id={theirs.id}", {"name": "Nova"})
-    assert refused.status_code == 403
+    assert refused.status_code == 404
     assert theirs.get_diagram_data().people == []
 
 

@@ -43,7 +43,7 @@ from btcopilot.models import ModelCall
 from btcopilot.pricing import cost
 from btcopilot.promptdir import key_present
 from btcopilot.schema import DiagramData
-from btcopilot.tests.conftest import csrf_token, replied
+from btcopilot.tests.conftest import csrf_token, replied, wrote
 from btcopilot.tests.live.criterion import WAITING
 from btcopilot.tests.live.replay import STORE, Miss, Mode, Replay
 from btcopilot.quality import Source
@@ -203,8 +203,8 @@ def private_prompts(request):
 def titles(monkeypatch):
     """Naming the session is its own model call, and not what is under test."""
     monkeypatch.setattr(
-        "btcopilot.models.discussion.response_text_sync",
-        lambda *a, **k: "A session title",
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
     )
 
 

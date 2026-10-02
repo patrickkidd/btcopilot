@@ -30,6 +30,18 @@ not edit it by hand; change the commands and generate it again.
 
 The coach model and the shadow models of one person.
 
+### `flask admin coach-model backfill <email> <aliases>`
+
+Run each of this person's past turns again on each model alias given, over the record as it stood before each turn. Makes model calls. Without --yes it prints, per model, the turns to run, the replies too old to run and what the run would cost, and writes nothing.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `email` | required |
+| `aliases` | required |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin coach-model set <email> <alias>`
 
 Coach this person on a model alias, or on the default with the word default.
@@ -273,6 +285,12 @@ Changes something: needs `--yes`.
 
 The recorded runs the quality dashboard reads.
 
+### `flask admin quality keep-passes`
+
+Keep the replays of 2026-09-30 in the replay passes table.
+
+Changes something: needs `--yes`.
+
 ### `flask admin quality load [root]`
 
 Load every recorded run under a checkout or the image into the table, updating the ones already there.
@@ -285,7 +303,7 @@ Changes something: needs `--yes`.
 
 ### `flask admin quality replay <discussion_id> <model> <reference_diagram_id>`
 
-Replay a session's words on MODEL onto a scratch record, score it against the record Patrick corrected, and append one ledger line. Never on the box: it spends on the model and writes scratch records.
+Replay a session's words on MODEL onto a scratch record, score it against the record Patrick corrected, and append one ledger line. It spends on the model and writes scratch records. MODEL is a model alias; the coach's own is opus-5.5.
 
 Changes something: needs `--yes`.
 
@@ -295,6 +313,31 @@ Changes something: needs `--yes`.
 | `model` | required |
 | `reference_diagram_id` | required |
 | `--cap` | Dollars; no turn starts past it. |
+| `--thinking` | How hard the coach thinks, for this replay only. |
+| `--prompt-dir` | A folder holding any of agent.prompty and fragments/*.md; each file there replaces the same-named prompt for this replay only, and the rest are read from the usual places. |
+| `--turns` | The last turn replayed. |
+| `--production` | Run on the production database: Patrick agreed the spend. |
+
+### `flask admin quality replay-person <user_id> <model>`
+
+Replay the words of the live coach turns one person took, oldest first, on MODEL onto one scratch record that starts as their record stood before the first, score it against their record as it stood after the last, keep the pass and append one ledger line. A key a kept pass already holds is not run again. MODEL is a model alias; the coach's own is opus-5.5.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `user_id` | required |
+| `model` | required |
+| `--reference` | The diagram to score against; the person's record as it stood after the last replayed turn when left out. |
+| `--key` | Print the key and the passes kept under it, and stop. |
+| `--again` | Run a key a kept pass already holds. |
+| `--start` | Begin at this turn, going on in the scratch session and record of the kept pass --after names, which replayed every turn before it. |
+| `--after` | The kept pass to go on from. |
+| `--cap` | Dollars; no turn starts past it. |
+| `--thinking` | How hard the coach thinks, for this replay only. |
+| `--prompt-dir` | A folder holding any of agent.prompty and fragments/*.md; each file there replaces the same-named prompt for this replay only, and the rest are read from the usual places. |
+| `--turns` | The last turn replayed. |
+| `--production` | Run on the production database: Patrick agreed the spend. |
 
 ### `flask admin questions`
 

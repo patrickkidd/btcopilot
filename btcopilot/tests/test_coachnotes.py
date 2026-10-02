@@ -16,7 +16,7 @@ from btcopilot.models import TurnEvent
 from btcopilot.schema import Person, asdict
 from btcopilot.toolbox import Register, ToolName, Variable, schemas
 from btcopilot.turnlog import TurnEventKind
-from btcopilot.tests.conftest import Model, called, csrf_token, said
+from btcopilot.tests.conftest import Model, called, csrf_token, said, wrote
 
 NOTES = {
     "register": Register.Coaching.value,
@@ -33,8 +33,8 @@ NOTES = {
 @pytest.fixture(autouse=True)
 def titles(monkeypatch):
     monkeypatch.setattr(
-        "btcopilot.models.discussion.response_text_sync",
-        lambda *a, **k: "A session title",
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
     )
 
 

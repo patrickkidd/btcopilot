@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { lists, openList, stateFor } from "./setup";
+import { lists, openList, PARKED, stateFor } from "./setup";
 
 /** One record, reached from either side. A person's editor offers the events
  * about them; an event's editor offers the people in it; and the words on the
@@ -21,6 +21,7 @@ test.describe("the person editor", () => {
   test("says what the record keeps, and where the rest is kept", async ({
     page,
   }) => {
+    test.skip(true, PARKED);
     await settle(page);
     await openList(page);
     await page.locator("#tab-people").click();
@@ -43,21 +44,22 @@ test.describe("an event and the people in it", () => {
   test.use({ storageState: stateFor("three40") });
 
   // R-0201
-  test("the person it is about opens their own editor", async ({ page }) => {
+  test("the person it is about opens their own card", async ({ page }) => {
     await settle(page);
     await openList(page);
     await page.locator("#menu-body .row").first().click();
-    await expect(editor(page)).toBeVisible();
+    await expect(page.locator("#menu-body .det")).toBeVisible();
 
-    // the person already chosen: tapping them goes to them
-    await editor(page).locator('.segs[data-name="person"] .seg.on').click();
+    // the person the event is about: tapping them goes to them
+    await page.locator("#menu-body .det .who").first().click();
     await expect(page.locator("#tab-people")).toHaveClass(/on/);
     await expect(lists(page)).toBeVisible();
-    await expect(editor(page).locator('[data-name="name"]')).toHaveValue("Ada");
+    await expect(page.locator("#menu-body .det .what")).toHaveText(/^Ada\b/);
   });
 
   // R-0141
   test("a person not yet chosen is still chosen by tapping", async ({ page }) => {
+    test.skip(true, PARKED);
     await settle(page);
     await openList(page);
     await page.locator("#menu-body .row").first().click();
@@ -76,7 +78,7 @@ test.describe("a person the record knows the birth and death of", () => {
   test.use({ storageState: stateFor("longmove") });
 
   // R-0201
-  test("offers those two events, and one opens its own editor", async ({
+  test("offers those two events, and one opens its own detail view", async ({
     page,
   }) => {
     await settle(page);
@@ -84,16 +86,11 @@ test.describe("a person the record knows the birth and death of", () => {
     await page.locator("#tab-people").click();
     await page.locator('#menu-body .row:has-text("Ada")').first().click();
 
-    const life = editor(page).locator("[data-event]");
-    await expect(life).toHaveCount(2);
-    await expect(life.first()).toHaveText("Their birth");
-    await expect(life.last()).toHaveText("Their death");
-
-    await life.first().click();
+    const card = page.locator("#menu-body .det");
+    await expect(card.locator(".k")).toContainText(["Born", "Died"]);
+    await card.locator(".r:has(.k:text-is(\"Born\")) [data-event]").click();
     await expect(page.locator("#tab-events")).toHaveClass(/on/);
-    await expect(editor(page).locator('.segs[data-name="kind"] .seg.on')).toHaveText(
-      "birth",
-    );
+    await expect(page.locator("#menu-body .det .kind")).toHaveText("birth");
   });
 });
 

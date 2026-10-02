@@ -3,6 +3,7 @@ import { execSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { need, sandboxOnly } from "./sandbox";
+import { PARKED } from "./setup";
 
 // A hand edit made on the page, then the coach's own read of recent changes and
 // its undo, run as the coach would, then the page again: the event reads as it
@@ -15,6 +16,7 @@ const EVENT = 10;
 
 test.describe(() => {
   sandboxOnly("turns");
+  test.skip(true, PARKED);
   test.skip(!process.env.SANDBOX_ENV, "needs SANDBOX_ENV, the sandbox's Flask settings");
 
   // R-0084

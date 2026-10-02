@@ -1,5 +1,6 @@
 import * as api from "./api";
-import { itemKind, Lead, token } from "./chips";
+import { store } from "./store";
+import { Lead, token } from "./chips";
 import { esc } from "./dom";
 import { Swipe } from "./swipe";
 import { Feature, tap } from "./track";
@@ -60,8 +61,8 @@ const LEAD_OF: Record<QuestionKind, Lead> = {
   [QuestionKind.Impression]: Lead.None,
 };
 
-/** A thing an impression rests on, as a chip into the message box. A message
- * is not a chip there: it opens where it was said. */
+/** A thing an impression rests on, as the chip that goes to it. A message is
+ * not a chip kind: it opens where it was said. */
 const EVIDENCE_CHIP: Record<Exclude<EvidenceKind, EvidenceKind.Statement>, ChipKind> = {
   [EvidenceKind.Person]: ChipKind.Person,
   [EvidenceKind.PairBond]: ChipKind.PairBond,
@@ -131,6 +132,9 @@ export interface QuestionHandlers {
   /** A reference goes into the message box, with the words before it and any
    * words after it. */
   onChip(chip: Chip, lead: Lead, after?: string): void;
+  /** A thing an impression rests on was tapped: a chip like any in the
+   * thread, which goes where a tap on it there goes. */
+  onRef(chip: Chip): void;
   /** The reader asked to see where something was said; `ask` lights the
    * question that closes that reply. */
   onAsked(where: CodedIn, ask: boolean): void;
@@ -177,7 +181,7 @@ export class Questions {
   async sending(draft: string): Promise<void> {
     const ids = [...this.partly].filter((id) => draft.includes(token(ChipKind.Impression, id)));
     this.partly.clear();
-    await Promise.all(ids.map((id) => api.saveQuestion(id, { pushback: Pushback.Partly })));
+    await Promise.all(ids.map((id) => api.saveQuestion(store.id(), id, { pushback: Pushback.Partly })));
   }
 
   private async onClick(e: Event): Promise<void> {
@@ -213,9 +217,7 @@ export class Questions {
       );
       return;
     }
-    const chip = evidenceChip(e);
-    this.handlers.record(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
-    this.handlers.onChip(chip, Lead.None);
+    this.handlers.onRef(evidenceChip(e));
   }
 
   private find(row: HTMLElement): AskedQuestion {
@@ -227,7 +229,7 @@ export class Questions {
   private async dismiss(q: AskedQuestion): Promise<void> {
     this.handlers.record(InteractionKind.Dismiss, ItemKind.Question, q.id);
     tap(Feature.QuestionDismiss, { kind: ItemKind.Question, id: q.id });
-    await api.saveQuestion(q.id, {
+    await api.saveQuestion(store.id(), q.id, {
       state: QuestionState.Resolved,
       outcome: QuestionOutcome.DeclinedByUser,
     });
@@ -239,7 +241,7 @@ export class Questions {
   private async doesntFit(q: AskedQuestion): Promise<void> {
     if (this.handlers.busy()) return toast("The coach is still answering");
     this.partly.delete(q.id);
-    await api.saveQuestion(q.id, {
+    await api.saveQuestion(store.id(), q.id, {
       state: QuestionState.Resolved,
       outcome: QuestionOutcome.DoesntFit,
     });

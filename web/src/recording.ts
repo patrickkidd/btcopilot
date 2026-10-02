@@ -1,4 +1,5 @@
 import * as api from "./api";
+import { store } from "./store";
 import { closeX, el, esc } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
@@ -200,7 +201,7 @@ export class Recording {
     }
     const voices: Record<string, { type: string }> = {};
     for (const [label, role] of this.roles) voices[label] = { type: role };
-    const made = await api.newRecording({
+    const made = await api.newRecording(store.id(), {
       utterances: this.utterances,
       voices,
       title: this.title.trim(),

@@ -6,8 +6,8 @@ Backend, training system, and ML-specific architectural decisions.
 
 | ADR | Status | Decision |
 |-----|--------|----------|
-| (none yet) | | |
+| [0001](0001-open-diagram.md) | accepted | The web app opens a diagram in one step, from one store |
 
 ## Template
 
-Use [../adrs/template.md](../adrs/template.md) for new ADRs.
+Number new ADRs in order: context, decision, consequences.

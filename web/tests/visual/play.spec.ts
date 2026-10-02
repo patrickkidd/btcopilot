@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { stateFor, boxOf } from "./setup";
 import { colours } from "./gate";
 import { mockTurn } from "./turn";
 
@@ -58,7 +58,7 @@ test.describe("the play-by-play drawer", () => {
 
   // R-0590, R-0576, R-0563
   test("the teal cluster chip of a play whose cluster has changed since tells it again through explain", async ({ page }) => {
-    await page.route(/\/app\/timeline$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
       const json = await (await route.fetch()).json();
       for (const cluster of json.clusters) cluster.digest = "changed since";
       await route.fulfill({ json });
@@ -70,7 +70,7 @@ test.describe("the play-by-play drawer", () => {
       return statements.find((s: { case: unknown }) => s.case);
     });
     const plays: string[] = [];
-    await page.route(/\/app\/play$/, (route) => {
+    await page.route(/\/app\/play(\?diagram_id=\d+)?$/, (route) => {
       plays.push(route.request().postData() ?? "");
       return route.fulfill({
         json: { statement: play.text, statement_id: play.id, kind: "play", cluster_id: play.cluster_id, case: play.case, digest: "changed since" },
@@ -120,7 +120,7 @@ test.describe("the play-by-play drawer", () => {
     expect(light.drawn).toBe(light.token);
     expect(dark.drawn).toBe(dark.token);
     expect(dark.token).not.toBe(light.token);
-    const [b, p] = [(await x.boundingBox())!, (await drawer(page).boundingBox())!];
+    const [b, p] = [await boxOf(x), await boxOf(drawer(page))];
     expect(p.x + p.width - (b.x + b.width)).toBeLessThanOrEqual(8);
     expect(b.y - p.y).toBeLessThanOrEqual(8);
     await x.click();
@@ -184,7 +184,7 @@ test.describe("the play-by-play drawer", () => {
       return (await (await fetch(`/app/sessions/${sessions[0].id}`)).json()).statements;
     });
     const play = statements.find((s: { case: unknown }) => s.case);
-    await page.route(/\/app\/play$/, (route) =>
+    await page.route(/\/app\/play(\?diagram_id=\d+)?$/, (route) =>
       route.fulfill({
         json: { statement: play.text, statement_id: play.id, kind: "play", cluster_id: play.cluster_id, case: play.case },
       }),
@@ -234,7 +234,7 @@ test.describe("an event's words at the drawing's edge", () => {
 
   // R-0558, R-0551
   test("beside the rightmost person keep the family's margin from the drawing's side", async ({ page }) => {
-    await page.route(/\/app\/timeline$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       const e = tl.events.find((e: { description?: string }) => e.description?.startsWith("Took a room"));
       const right = tl.people.find((p: { name: string }) => p.name === "Delphine");
@@ -247,7 +247,7 @@ test.describe("an event's words at the drawing's edge", () => {
     await expect(words).toBeVisible();
     // the word pops in; measured once it has landed
     await page.waitForTimeout(400);
-    const [w, d] = [(await words.boundingBox())!, (await drawer(page).locator(".draw svg").boundingBox())!];
+    const [w, d] = [await boxOf(words), await boxOf(drawer(page).locator(".draw svg"))];
     // the ruled 24px at 393 wide, at this phone's width
     const margin = (24 * d.width) / 393;
     expect(d.x + d.width - (w.x + w.width)).toBeGreaterThanOrEqual(margin - 1);
@@ -278,15 +278,16 @@ test.describe("a chip in a walk told the old way", () => {
   test.use({ storageState: stateFor("play") });
 
   // R-0501, R-0570, R-0543
-  test("opens its moment's cluster on the timeline, in place, and opens nothing", async ({
+  test("selects its event on the timeline, in place, and opens nothing", async ({
     page,
   }) => {
     await settle(page);
     const old = page.locator(".bub.coach[data-play]").first();
     await old.locator(".chip.data").first().click();
-    // every event of this record is in the one cluster, and an event inside a
-    // cluster has no mark of its own, so the chip opens the cluster
-    await expect(page.locator("#path .here")).toHaveText(/^\d{4}/);
+    // every event of this record is in the one cluster, so the chip opens the
+    // cluster with the event picked and its title at the end of the path
+    await expect(page.locator("#path .here")).toHaveText("Ada toward");
+    await expect(page.locator("#path .here.on")).toHaveCount(1);
     await expect(page.locator("#view rect.pill.on")).toHaveCount(1);
     await expect(drawer(page)).toBeHidden();
   });

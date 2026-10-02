@@ -30,6 +30,8 @@ enum Markup {
   PairBond = "pair_bond",
   /** The question a coach message ended on, answered by the reader. */
   Message = "message",
+  /** Two people the coach asks are one person. */
+  Merge = "merge",
 }
 
 const NARROWED: Record<Markup, ChipKind | null> = {
@@ -43,6 +45,7 @@ const NARROWED: Record<Markup, ChipKind | null> = {
   [Markup.Impression]: ChipKind.Impression,
   [Markup.PairBond]: ChipKind.PairBond,
   [Markup.Message]: ChipKind.Message,
+  [Markup.Merge]: ChipKind.Merge,
 };
 
 const TOKEN = new RegExp(
@@ -60,6 +63,7 @@ const KIND_WORD: Record<ChipKind, string> = {
   [ChipKind.PairBond]: "them",
   [ChipKind.Message]: "this question",
   [ChipKind.Place]: "there",
+  [ChipKind.Merge]: "same person",
 };
 
 const ITEM_OF: Record<ChipKind, ItemKind> = {
@@ -75,9 +79,32 @@ const ITEM_OF: Record<ChipKind, ItemKind> = {
   // place in the app
   [ChipKind.Message]: ItemKind.Diagram,
   [ChipKind.Place]: ItemKind.Diagram,
+  // two people, not one item: the card names both
+  [ChipKind.Merge]: ItemKind.Diagram,
 };
 
-const ASKING = new Set([ChipKind.Ask, ChipKind.Question, ChipKind.Message]);
+/** What a tap on a chip does, by what it names; its colour follows. */
+export enum Does {
+  /** The coach asking, in amber: it goes into the message box. */
+  Say = "say",
+  /** A reference into the record, in teal: the picture goes to it. */
+  Aim = "aim",
+  /** A place in the app, which the app goes to. */
+  Go = "go",
+}
+
+export const DOES: Record<ChipKind, Does> = {
+  [ChipKind.Event]: Does.Aim,
+  [ChipKind.Cluster]: Does.Aim,
+  [ChipKind.Person]: Does.Aim,
+  [ChipKind.PairBond]: Does.Aim,
+  [ChipKind.Impression]: Does.Aim,
+  [ChipKind.Ask]: Does.Say,
+  [ChipKind.Question]: Does.Say,
+  [ChipKind.Message]: Does.Say,
+  [ChipKind.Merge]: Does.Say,
+  [ChipKind.Place]: Does.Go,
+};
 
 export const itemKind = (kind: ChipKind): ItemKind => ITEM_OF[kind];
 
@@ -104,7 +131,7 @@ export function tokenize(text: string, tone = ChipTone.Data): Piece[] {
           label: label || (kind === ChipKind.Ask ? m[2].trim() : KIND_WORD[kind]),
           // An offer or a question is the coach asking, and asking is always
           // amber.
-          tone: ASKING.has(kind) ? ChipTone.Ask : tone,
+          tone: DOES[kind] === Does.Say ? ChipTone.Ask : tone,
           bare: !label,
         },
       });
@@ -142,6 +169,7 @@ export function aimedEvents(
     case ChipKind.PairBond:
     case ChipKind.Message:
     case ChipKind.Place:
+    case ChipKind.Merge:
       return [];
   }
 }

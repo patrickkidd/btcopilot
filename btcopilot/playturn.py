@@ -25,12 +25,13 @@ from btcopilot import recordtext, turnstore, tuning
 from btcopilot.chips import ChipKind, token
 from btcopilot.case import Case, RecordFault, Tool, Untold, faults, tool
 from btcopilot.coachmodel import CoachModel
-from btcopilot.coachturn import Metered
+from btcopilot.metered import Metered
 from btcopilot.llmutil import ANTHROPIC_TIMEOUT
 from btcopilot.models import (
     Discussion,
     Observation,
     ObservationKind,
+    Purpose,
     Statement,
     StatementKind,
 )
@@ -227,7 +228,11 @@ class PlayTurn:
         # Asked for in a session, the calls are charged to its owner like a turn's.
         if discussion is not None:
             self.model = Metered(
-                self.model, discussion.user_id, discussion.diagram_id, self.turn_id
+                discussion.user_id,
+                discussion.diagram_id,
+                self.turn_id,
+                Purpose.Play,
+                model=self.model,
             )
 
     @classmethod

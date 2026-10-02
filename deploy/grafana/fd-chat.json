@@ -276,7 +276,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select coalesce(sum(mc.cost_usd),0) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at)",
+          "rawSql": "select coalesce(sum(mc.cost_usd),0) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and mc.purpose <> 'shadow' and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at)",
           "refId": "A"
         }
       ],
@@ -336,7 +336,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select coalesce(sum(mc.input_tokens+mc.output_tokens+mc.cache_creation_tokens+mc.cache_read_tokens),0) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at)",
+          "rawSql": "select coalesce(sum(mc.input_tokens+mc.output_tokens+mc.cache_creation_tokens+mc.cache_read_tokens),0) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and mc.purpose <> 'shadow' and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at)",
           "refId": "A"
         }
       ],
@@ -523,7 +523,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), u.username as metric, sum(mc.cost_usd) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1, u.username order by 1",
+          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), u.username as metric, sum(mc.cost_usd) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and mc.purpose <> 'shadow' and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1, u.username order by 1",
           "refId": "A"
         }
       ],
@@ -584,11 +584,76 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), mc.model as metric, sum(mc.cost_usd) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1, mc.model order by 1",
+          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), mc.model as metric, sum(mc.cost_usd) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and mc.purpose <> 'shadow' and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1, mc.model order by 1",
           "refId": "A"
         }
       ],
       "title": "Cost a day, by model",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "id": 13,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), mc.purpose::text as metric, sum(mc.cost_usd) as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1, mc.purpose order by 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Cost a day, by purpose",
       "type": "timeseries"
     },
     {
@@ -660,7 +725,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 36
+        "y": 44
       },
       "id": 10,
       "options": {
@@ -682,7 +747,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "with msgs as (\n  select d.user_id, count(*) as messages\n  from statements s join discussions d on d.id=s.discussion_id\n  join speakers sp on sp.id=s.speaker_id\n  where not exists (select 1 from diagrams dg where dg.id=d.diagram_id and dg.scratch) and sp.type='Subject' and $__timeFilter(s.created_at)\n  group by d.user_id\n),\nreplies as (\n  select d.user_id, count(*) as replies\n  from statements s join discussions d on d.id=s.discussion_id\n  join speakers sp on sp.id=s.speaker_id\n  where not exists (select 1 from diagrams dg where dg.id=d.diagram_id and dg.scratch) and sp.type='Expert' and $__timeFilter(s.created_at)\n  group by d.user_id\n),\ncalls as (\n  select mc.user_id, count(*) as calls, sum(mc.input_tokens) as tokens_in,\n         sum(mc.output_tokens) as tokens_out, sum(mc.cache_read_tokens) as tokens_cache_read,\n         sum(mc.cost_usd) as cost\n  from model_calls mc\n  where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and $__timeFilter(mc.created_at)\n  group by mc.user_id\n)\nselect u.username as email,\n  coalesce(msgs.messages,0) as messages,\n  coalesce(replies.replies,0) as coach_replies,\n  coalesce(calls.calls,0) as calls,\n  coalesce(calls.tokens_in,0) as tokens_in,\n  coalesce(calls.tokens_out,0) as tokens_out,\n  coalesce(calls.tokens_cache_read,0) as tokens_cache_read,\n  coalesce(calls.cost,0) as cost\nfrom users u\nleft join msgs on msgs.user_id=u.id\nleft join replies on replies.user_id=u.id\nleft join calls on calls.user_id=u.id\nwhere (coalesce(msgs.messages,0) > 0 or coalesce(replies.replies,0) > 0 or coalesce(calls.calls,0) > 0)\n  and u.id in ($user) and u.username not like 'claude-test%'\norder by cost desc, messages desc",
+          "rawSql": "with msgs as (\n  select d.user_id, count(*) as messages\n  from statements s join discussions d on d.id=s.discussion_id\n  join speakers sp on sp.id=s.speaker_id\n  where not exists (select 1 from diagrams dg where dg.id=d.diagram_id and dg.scratch) and sp.type='Subject' and $__timeFilter(s.created_at)\n  group by d.user_id\n),\nreplies as (\n  select d.user_id, count(*) as replies\n  from statements s join discussions d on d.id=s.discussion_id\n  join speakers sp on sp.id=s.speaker_id\n  where not exists (select 1 from diagrams dg where dg.id=d.diagram_id and dg.scratch) and sp.type='Expert' and $__timeFilter(s.created_at)\n  group by d.user_id\n),\ncalls as (\n  select mc.user_id, count(*) as calls, sum(mc.input_tokens) as tokens_in,\n         sum(mc.output_tokens) as tokens_out, sum(mc.cache_read_tokens) as tokens_cache_read,\n         sum(mc.cost_usd) as cost\n  from model_calls mc\n  where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and mc.purpose <> 'shadow' and $__timeFilter(mc.created_at)\n  group by mc.user_id\n)\nselect u.username as email,\n  coalesce(msgs.messages,0) as messages,\n  coalesce(replies.replies,0) as coach_replies,\n  coalesce(calls.calls,0) as calls,\n  coalesce(calls.tokens_in,0) as tokens_in,\n  coalesce(calls.tokens_out,0) as tokens_out,\n  coalesce(calls.tokens_cache_read,0) as tokens_cache_read,\n  coalesce(calls.cost,0) as cost\nfrom users u\nleft join msgs on msgs.user_id=u.id\nleft join replies on replies.user_id=u.id\nleft join calls on calls.user_id=u.id\nwhere (coalesce(msgs.messages,0) > 0 or coalesce(replies.replies,0) > 0 or coalesce(calls.calls,0) > 0)\n  and u.id in ($user) and u.username not like 'claude-test%'\norder by cost desc, messages desc",
           "refId": "A"
         }
       ],
@@ -746,7 +811,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 46
+        "y": 54
       },
       "id": 11,
       "options": {
@@ -768,7 +833,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select mc.created_at as time, u.username as email, mc.model, mc.duration_ms, mc.tool_calls, mc.cost_usd as cost\nfrom model_calls mc join users u on u.id=mc.user_id\nwhere not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch)\n  and mc.created_at >= now() - interval '24 hours'\n  and u.id in ($user) and u.username not like 'claude-test%'\norder by mc.duration_ms desc\nlimit 20",
+          "rawSql": "select mc.created_at as time, u.username as email, mc.model, mc.duration_ms, mc.tool_calls, mc.cost_usd as cost\nfrom model_calls mc join users u on u.id=mc.user_id\nwhere not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and mc.purpose <> 'shadow'\n  and mc.created_at >= now() - interval '24 hours'\n  and u.id in ($user) and u.username not like 'claude-test%'\norder by mc.duration_ms desc\nlimit 20",
           "refId": "A"
         }
       ],
@@ -788,19 +853,21 @@
           "custom": {
             "axisLabel": "",
             "axisPlacement": "auto",
-            "drawStyle": "line",
-            "fillOpacity": 20,
+            "drawStyle": "bars",
+            "fillOpacity": 80,
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
             "showPoints": "auto",
-            "spanNulls": false
+            "spanNulls": false,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
           },
-          "max": 1,
-          "min": 0,
-          "unit": "percentunit"
+          "unit": "currencyUSD"
         },
         "overrides": []
       },
@@ -808,7 +875,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 54
+        "y": 62
       },
       "id": 12,
       "options": {
@@ -831,11 +898,11 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), case when sum(mc.input_tokens+mc.cache_read_tokens+mc.cache_creation_tokens)=0 then null else sum(mc.cache_read_tokens)::float/sum(mc.input_tokens+mc.cache_read_tokens+mc.cache_creation_tokens) end as value from model_calls mc join users u on u.id=mc.user_id where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1 order by 1",
+          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), sum(mc.cache_creation_tokens*r.w)/1e6 as \"Cache write\", sum(mc.cache_read_tokens*r.c)/1e6 as \"Cache read\", sum(mc.output_tokens*r.o)/1e6 as \"Output\", sum(mc.input_tokens*r.i)/1e6 as \"Uncached input\" from model_calls mc join users u on u.id=mc.user_id join lateral (select i,o,w,c from (values ('claude-opus-4-6',5.00,25.00,6.25,0.50),('claude-opus-4-8',5.00,25.00,6.25,0.50),('claude-opus-5',5.00,25.00,6.25,0.50),('claude-opus-5-5',4.00,20.00,5.00,0.20),('claude-sonnet-5',2.00,10.00,2.50,0.20),('claude-haiku-4-5',1.00,5.00,1.25,0.10),('gemini-3.8-flash',0.75,3.75,0,0.075),('gemini-3.7-flash',0.75,3.75,0,0.075),('gemini-3.6-flash',0.75,3.75,0,0.075),('gemini-3.5-flash',1.50,9.00,0,0.15),('gemini-2.5-flash',0.30,2.50,0,0.03),('gemini-2.5-flash-lite',0.10,0.40,0,0.01)) v(p,i,o,w,c) where mc.model like v.p||'%' order by length(v.p) desc limit 1) r on true where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and mc.purpose = 'coach' and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1 order by 1",
           "refId": "A"
         }
       ],
-      "title": "Cache hit share",
+      "title": "Dollars by kind, coach calls",
       "type": "timeseries"
     }
   ]

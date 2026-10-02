@@ -30,14 +30,14 @@ The main off-theory trap: treating a relationship move (distancing, conflict, a 
 3. **The coach infers.** RULED, then qualified. Ruling R-0427 (the coach may infer anxiety; the user can correct it) — see the private edition. After item 9, such an inference is a hypothesis until the person confirms a fact (Claude's reading, not ruled).
 4. **Anxiety inside the projection code.** Ruling R-0435 (when the projection code applies) — see the private edition. Whether the parent's anxiety or the child's problem comes first is OPEN between two options (OPEN_QUESTIONS 3).
 5. **Every coding rule here is provisional.** Ruling R-0511 (coding rules are provisional while ground truth is rebuilt) — see the private edition. Ground truth comes from the IRR group (R-0509).
-6. **An anxiety shift needs its own evidence. Never read it off a relationship code.** RULED 2026-09-26. Ruling OPEN_QUESTIONS 1 (anxiety needs its own evidence, never assumed) — see the private edition. The coders' argument that led here is A102 and A104.
-7. **What counts as raw evidence of an anxiety shift?** OPEN, for the IRR group to settle (OPEN_QUESTIONS 1; IRR results, unresolved item 1). Ruling OPEN_QUESTIONS 1 (left open, no settled answer) — see the private edition. Candidates in the sources, none ruled:
+6. **An anxiety shift needs its own evidence. Never read it off a relationship code.** RULED 2026-09-26. See the private corpus for the app's decision on this point (2026-09-26). (OPEN_QUESTIONS 1). The coders' argument that led here is A102 and A104.
+7. **What counts as raw evidence of an anxiety shift?** OPEN, for the IRR group to settle (OPEN_QUESTIONS 1; IRR results, unresolved item 1). See the private corpus for the app's decision on this point (2026-09-26).. Candidates in the sources, none ruled:
    - the intensity and fixedness of the relationship patterns (A25). This reads anxiety from the moves, the circularity item 6 forbids;
    - objective signs such as restlessness or not sleeping (A24);
    - the person's own report of uncertainty and urgency (A10, A11);
    - how the person thinks, not what they think, e.g. calm but jumping from topic to topic (A50);
 8. **Which came first, the anxiety shift or the relationship shift?** RULED 2026-09-26: no default. Record the order of the dates only (OPEN_QUESTIONS 2). Section 2g lists what each author claimed; each claim is a hypothesis.
-9. **A reading from theory stays apart from the facts.** RULED 2026-09-26. Ruling OPEN_QUESTIONS 5 (facts and theory-based readings are kept in separate layers) — see the private edition. So "he withdrew, so his anxiety must have gone up" is kept, if at all, as a labelled hypothesis.
+9. **A reading from theory stays apart from the facts.** RULED 2026-09-26. See the private corpus for the app's decision on this point (2026-09-26). (OPEN_QUESTIONS 5). So "he withdrew, so his anxiety must have gone up" is kept, if at all, as a labelled hypothesis.
 10. **Which definition?** UNDECIDED between three options (OPEN_QUESTIONS 8): (a) a sufficient combination of uncertainty and urgency (A10, A11); (b) autonomic threat response, set by perceived threat (A12); (c) both, (a) naming the conditions and (b) the response. Bowen and Kerr: a response to a threat, real or imagined (A1, A2).
 11. **Acute or chronic?** OPEN. Every source separates them (section 2b). None gives a rule for telling them apart in a record. Havstad applied her acute label years after the interviews (A22).
 

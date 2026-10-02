@@ -9,22 +9,22 @@ page can move the picture with the same reply it types out.
 """
 
 import datetime
+import itertools
 import logging
-import time
 import uuid
 from typing import Callable
 
 from opentelemetry import trace
 
 from btcopilot.extensions import ai_log, db
-from btcopilot import chips, clusters, profile, recordtext, turnstore
-from btcopilot.pricing import cost
-from btcopilot.coachmodel import CoachModel, Spent, marked_ends
+from btcopilot import chips, clusters, coverage, profile, recordtext, turnstore
+from btcopilot.coachmodel import CoachModel, marked_ends
+from btcopilot.metered import Metered
 from btcopilot.models import (
     Change,
     Discussion,
     DiscussionKind,
-    ModelCall,
+    Purpose,
     Statement,
     StatementKind,
     TokenMeter,
@@ -192,40 +192,6 @@ def record_of(discussion: Discussion) -> DiagramData:
     )
 
 
-class Metered:
-    """The model with every call's tokens summed, so one turn charges one meter
-    row, and each call written down with its cost."""
-
-    def __init__(self, model, user_id: int, diagram_id: int, turn_id: str):
-        self.model = model
-        self.user_id = user_id
-        self.diagram_id = diagram_id
-        self.turn_id = turn_id
-        self.spent = Spent()
-
-    def turn(self, system, messages: list[dict], tools: list[dict], turn_id: str = ""):
-        started = time.monotonic()
-        turn = yield from self.model.turn(system, messages, tools, turn_id)
-        self.spent.add(turn.spent)
-        db.session.add(
-            ModelCall(
-                user_id=self.user_id,
-                diagram_id=self.diagram_id,
-                turn_id=self.turn_id,
-                model=turn.served.model,
-                fallback=turn.served.fallback,
-                input_tokens=turn.spent.input,
-                output_tokens=turn.spent.output,
-                cache_creation_tokens=turn.spent.cache_creation,
-                cache_read_tokens=turn.spent.cache_read,
-                cost_usd=cost(turn.served.model, turn.spent),
-                duration_ms=round((time.monotonic() - started) * 1000),
-                tool_calls=len(turn.calls),
-            )
-        )
-        return turn
-
-
 class CoachTurn:
     """One user message in, one coach statement and its edits out."""
 
@@ -234,8 +200,8 @@ class CoachTurn:
         discussion: Discussion,
         statement: str,
         *,
+        purpose: Purpose,
         model: CoachModel | None = None,
-        session_id: str | None = None,
         statement_id: int | None = None,
         sink: Callable[[dict], None] | None = None,
         turn_id: str | None = None,
@@ -256,11 +222,14 @@ class CoachTurn:
         # was told, less the words, plus each round of tool calls as sent.
         self.kept: list[dict] = []
         self.streamed = ""
-        self.session_id = session_id or str(discussion.id)
         self.turn_id = turn_id or uuid.uuid4().hex
         self.diagram = discussion.diagram
         self.model = Metered(
-            model or CoachModel(), discussion.user_id, self.diagram.id, self.turn_id
+            discussion.user_id,
+            self.diagram.id,
+            self.turn_id,
+            purpose,
+            model=model or CoachModel(),
         )
 
     @property
@@ -302,7 +271,7 @@ class CoachTurn:
             self.diagram.id,
             self.turn_id,
             user_id=self.discussion.user_id,
-            session_id=self.session_id,
+            session_id=self.discussion.id,
             said=answered,
         )
 
@@ -320,6 +289,7 @@ class CoachTurn:
                 recent(self.diagram.id, RECENT_INTERACTIONS)
             ),
             today=datetime.date.today().isoformat(),
+            coverage=coverage.block(data, plateau(answered, self.diagram.id)),
         )
         last = last_notes(answered)
         if last:
@@ -327,6 +297,13 @@ class CoachTurn:
             tail = f"{tail}\n\n{notes}"
         if note:
             tail = f"{tail}\n\n{note_register()}"
+        pairs = recordtext.pairs(
+            data,
+            chips.plain(self.statement),
+            chips.people(self.statement, data, self.discussion.diagram_id),
+        )
+        if pairs:
+            tail = f"{tail}\n\n{pairs}"
         gaps = profile.missing(data)
         if gaps:
             tail = f"{tail}\n\n{onboarding(gaps, own['id'] if own else 1)}"
@@ -338,7 +315,9 @@ class CoachTurn:
         silent = False
 
         for step in range(MAX_STEPS):
-            turn = self._say(system, messages, schemas(), stream=True)
+            turn = self._say(
+                system, messages, schemas(self.toolbox.coder), stream=True
+            )
             # A turn ends on words, never on a tool call. Text written before a
             # call is the model working out what to do and the user never sees
             # it, so only a step that calls nothing is the coach speaking.
@@ -433,8 +412,11 @@ class CoachTurn:
             {"statement_id": coach_statement.id}
         )
         if self.discussion.title is None:
-            self.discussion.update_title()
-            self.discussion.update_summary()
+            summary = Metered(
+                self.discussion.user_id, self.diagram.id, self.turn_id, Purpose.Summary
+            )
+            self.discussion.update_title(summary)
+            self.discussion.update_summary(summary)
         if not self.scratch:
             profile.mirror(self.discussion.user, self.data)
             TokenMeter.charge(self.discussion.user_id, self.model.spent)
@@ -463,7 +445,7 @@ class CoachTurn:
                 self.diagram.id,
                 turn_id=self.turn_id,
                 user_id=self.discussion.user_id,
-                session_id=self.session_id,
+                session_id=self.discussion.id,
             )
         except clusters.ClusterError as rejected:
             _log.warning(
@@ -576,22 +558,70 @@ def _recent(said: Statement) -> list[Statement]:
     return before.order_by(Statement.created_at, Statement.id).offset(start).all()
 
 
-def last_notes(said: Statement) -> TurnEvent | None:
-    """The coach's latest notes before these words, from whichever of that
-    user's sessions on the family."""
+def _family(said: Statement):
+    """The turn rows before these words, from any of that user's sessions on
+    the family."""
     family = said.discussion
+    return TurnEvent.query.join(
+        Discussion, Discussion.id == TurnEvent.discussion_id
+    ).filter(
+        Discussion.diagram_id == family.diagram_id,
+        Discussion.user_id == family.user_id,
+        TurnEvent.created_at < said.created_at,
+    )
+
+
+def _notes(said: Statement):
+    """The coach's notes before these words, newest first."""
     return (
-        TurnEvent.query.join(Discussion, Discussion.id == TurnEvent.discussion_id)
+        _family(said)
         .filter(
-            Discussion.diagram_id == family.diagram_id,
-            Discussion.user_id == family.user_id,
-            TurnEvent.created_at < said.created_at,
             TurnEvent.kind == TurnEventKind.ToolCall.value,
             TurnEvent.payload["name"].as_string() == ToolName.CoachNotes.value,
         )
         .order_by(TurnEvent.id.desc())
-        .first()
     )
+
+
+def last_notes(said: Statement) -> TurnEvent | None:
+    """The coach's latest notes before these words, from whichever of that
+    user's sessions on the family."""
+    return _notes(said).first()
+
+
+def plateau(said: Statement, diagram_id: int) -> int | None:
+    """The turn the coach's plateau note is on while it holds. It starts at
+    the first of the coach's unbroken notes saying the plateau is reached and
+    lapses after PLATEAU_TURNS turns, or once a person or event is added."""
+    run = list(
+        itertools.takewhile(
+            lambda row: row.payload["args"]["plateau"]["reached"],
+            _notes(said).limit(coverage.PLATEAU_TURNS + 1),
+        )
+    )
+    if not run or len(run) > coverage.PLATEAU_TURNS:
+        return None
+    start = run[-1]
+    turns = (
+        _family(said)
+        .filter(
+            TurnEvent.kind == TurnEventKind.Done.value,
+            TurnEvent.created_at > start.created_at,
+        )
+        .count()
+    )
+    added = any(
+        delta["field"] is None
+        and delta["before"] is None
+        and ItemKind(delta["item_kind"]) in (ItemKind.Person, ItemKind.Event)
+        for change in Change.query.filter(
+            Change.diagram_id == diagram_id,
+            Change.created_at > start.created_at,
+            Change.turn_id != start.turn_id,
+        )
+        for delta in change.deltas
+    )
+    return None if added or turns > coverage.PLATEAU_TURNS else turns
 
 
 def _say(messages: list[dict], *said: tuple[str, str | list[dict]]) -> None:

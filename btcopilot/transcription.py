@@ -6,6 +6,9 @@ import os
 
 import requests
 
+from btcopilot.metered import Metered
+from btcopilot.models.modelcall import ModelCall, Purpose
+
 SERVICE = "https://api.assemblyai.com/v2"
 
 
@@ -35,15 +38,28 @@ def start(audio) -> str:
     return asked.json()["id"]
 
 
-def status(transcript_id: str) -> dict:
-    """{status, utterances, error}: the utterances only once it is completed."""
+def status(transcript_id: str, user_id: int) -> dict:
+    """{status, utterances, error}: the utterances only once it is completed.
+    A completed transcript is charged to `user_id` once, however often it is
+    read back."""
     answer = requests.get(
         f"{SERVICE}/transcript/{transcript_id}", headers={"authorization": _key()}
     )
     answer.raise_for_status()
     data = answer.json()
+    if (
+        data["status"] == "completed"
+        and not ModelCall.query.filter_by(
+            turn_id=transcript_id, purpose=Purpose.Transcribe
+        ).first()
+    ):
+        Metered(user_id, None, transcript_id, Purpose.Transcribe).transcribed(
+            data["speech_model_used"], data["audio_duration"]
+        )
     return {
         "status": data["status"],
-        "utterances": data.get("utterances") or [] if data["status"] == "completed" else None,
+        "utterances": (
+            data.get("utterances") or [] if data["status"] == "completed" else None
+        ),
         "error": data.get("error"),
     }

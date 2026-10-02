@@ -46,9 +46,9 @@ def test_an_admin_finds_a_session_on_any_family_by_what_was_said(
     other = said(theirs, test_user_2, "My brother [[event:4|lost his job]].")
 
     listed = web.get("/app/sessions?all=true").get_json()
-    assert {(s["id"], s["family"]) for s in listed} == {
-        (mine.id, test_user.free_diagram.name),
-        (other.id, "The Other Family"),
+    assert {(s["id"], s["diagram_id"], s["family"]) for s in listed} == {
+        (mine.id, test_user.free_diagram.id, test_user.free_diagram.name),
+        (other.id, theirs.id, "The Other Family"),
     }
     found = web.get("/app/sessions?all=true&words=job").get_json()
     assert [(s["id"], s["match"]) for s in found] == [
@@ -73,6 +73,21 @@ def test_a_list_of_sessions_reads_each_row_as_the_session_itself_does(test_user)
         (told.id, 3, "We went to the lake."),
         (quiet.id, 0, None),
     ]
+
+
+def test_the_list_of_every_familys_sessions_leaves_out_scratch_copies(web, test_user):
+    # R-0267
+    web.user.roles = btcopilot.ROLE_ADMIN
+    copy = Diagram(
+        user_id=test_user.id, name="Replay", data=diagramjson.dumps({}), scratch=True
+    )
+    db.session.add(copy)
+    db.session.flush()
+    real = said(test_user.free_diagram, test_user, "We went to the lake.")
+    said(copy, test_user, "A replayed line.")
+
+    listed = web.get("/app/sessions?all=true").get_json()
+    assert [s["id"] for s in listed] == [real.id]
 
 
 def test_only_an_admin_lists_every_familys_sessions(web):

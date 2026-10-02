@@ -13,7 +13,7 @@ import pytest
 from mock import patch
 
 from btcopilot.llmutil import FALLBACK_BETA
-from btcopilot import prompts
+from btcopilot import coverage, prompts
 from btcopilot.coachmodel import (
     CACHE,
     COACH_EFFORT,
@@ -23,8 +23,10 @@ from btcopilot.coachmodel import (
 )
 from btcopilot.coachturn import CoachTurn
 from btcopilot.extensions import db
-from btcopilot.models import ModelCall, Speaker, SpeakerType
+from btcopilot.models import ModelCall, Purpose, Speaker, SpeakerType
 from btcopilot.pricing import cost
+from btcopilot.schema import Person, asdict
+from btcopilot.tests.conftest import wrote
 from btcopilot.toolbox import ToolName
 
 TOOLS = [
@@ -193,6 +195,54 @@ def test_the_two_halves_of_the_coach_prompt_are_the_whole_prompt():
     assert fixed == prompts.agent_prompt(record="Someone else, 12")[0]
 
 
+def paragraphs(text: str) -> list[str]:
+    return [p.strip() for p in text.split("\n\n") if p.strip()]
+
+
+def test_the_fixed_coaching_text_is_kept_ahead_of_the_record(
+    wire, discussion, monkeypatch
+):
+    # R-0392, R-0595
+    ones = prompts.agent_prompt(
+        record="Marcus, 40",
+        interactions="looked at 3",
+        today="2026-09-30",
+        coverage="Marcus: birth date",
+    )
+    others = prompts.agent_prompt(
+        record="Nell, 12",
+        interactions="looked at 5",
+        today="2027-01-02",
+        coverage="Nell: work",
+    )
+    fixed_left = set(paragraphs(ones[1])) & set(paragraphs(others[1]))
+    # Only the record's own heading, the paragraph that reads the record above
+    # it, the one that reads what is still unknown, and the words around the
+    # interactions stay after the chat.
+    assert sum(len(p) for p in fixed_left) < 1500
+    assert "Marcus: birth date" in ones[1]
+    assert ones[0] == others[0]
+
+    data = discussion.diagram.get_diagram_data()
+    data.people = [asdict(Person(id=1, name="Wren"))]
+    discussion.diagram.set_diagram_data(data)
+    db.session.commit()
+    monkeypatch.setattr(
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
+    )
+    wire.reply = Reply([Block(type="text", text="Go on.")])
+    CoachTurn(discussion, "hi", purpose=Purpose.Coach, model=CoachModel()).run()
+    assert wire.sent["system"] == [
+        {"type": "text", "text": ones[0], "cache_control": CACHE}
+    ]
+    assert "hi" in wire.sent["messages"][-1]["content"][-1]["text"]
+    assert any(
+        coverage.HEAD in block["text"] for block in wire.sent["messages"][-1]["content"]
+    )
+    assert coverage.HEAD not in ones[0]
+
+
 def test_the_coach_asks_for_its_effort_and_no_sampling(wire):
     # R-0405
     sent = call(wire, ["COACHING", "RECORD"], [{"role": "user", "content": "hi"}])
@@ -276,25 +326,41 @@ def test_a_refused_call_answered_by_a_fallback_is_priced_and_logged_as_its(
 ):
     # R-0409, R-0410
     monkeypatch.setattr(
-        "btcopilot.models.discussion.response_text_sync",
-        lambda *a, **k: "A session title",
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
     )
     wire.reply = Reply(**FELL)
-    reply = CoachTurn(discussion, "hi", model=CoachModel()).run()
+    reply = CoachTurn(discussion, "hi", purpose=Purpose.Coach, model=CoachModel()).run()
     assert reply["statement"] == "Tell me more about that."
 
-    row = ModelCall.query.one()
+    row = ModelCall.query.filter_by(purpose=Purpose.Coach).one()
     assert row.model == "claude-opus-5"
     assert row.fallback == {
         "hops": [{"from": "claude-opus-5-5", "to": "claude-opus-5", "category": "bio"}],
         "sticky": False,
     }
+    assert ModelCall.query.filter(ModelCall.fallback.isnot(None)).one() == row
     spent = Spent(input=120, output=30, cache_creation=4100, cache_read=8200)
     assert row.cost_usd == cost("claude-opus-5", spent).quantize(Decimal("0.000001"))
     assert row.cost_usd != cost("claude-opus-5-5", spent).quantize(Decimal("0.000001"))
     hop = [r for r in caplog.records if "took over" in r.message]
     assert len(hop) == 1
     assert "claude-opus-5-5 refused (bio), claude-opus-5 took over" in hop[0].message
+
+
+def test_a_call_the_requested_model_answered_stores_no_fallback(
+    wire, discussion, monkeypatch
+):
+    # R-0409, R-0410
+    monkeypatch.setattr(
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
+    )
+    wire.reply = Reply([Block(type="text", text="Go on.")])
+    CoachTurn(discussion, "hi", purpose=Purpose.Coach, model=CoachModel()).run()
+    assert ModelCall.query.filter(ModelCall.fallback.is_(None)).count() == (
+        ModelCall.query.count()
+    )
 
 
 def test_a_turn_served_by_an_earlier_fallback_is_marked_sticky(wire):
@@ -367,8 +433,8 @@ def test_what_a_call_writes_to_the_wire_the_next_call_and_turn_read_back(
     db.session.commit()
     monkeypatch.setenv("ANTHROPIC_API_KEY", "not-a-key")
     monkeypatch.setattr(
-        "btcopilot.models.discussion.response_text_sync",
-        lambda *a, **k: "A session title",
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
     )
     nell = Block(
         type="tool_use", id="t1", name=ToolName.EditPerson.value, input={"name": "Nell"}
@@ -381,7 +447,9 @@ def test_what_a_call_writes_to_the_wire_the_next_call_and_turn_read_back(
     )
     with patch("btcopilot.coachmodel.anthropic.Anthropic", lambda **k: script):
         for words in ["My sister is Nell.", "She was kind.", "He left."]:
-            CoachTurn(discussion, words, model=CoachModel()).run()
+            CoachTurn(
+                discussion, words, purpose=Purpose.Coach, model=CoachModel()
+            ).run()
     first, second, third, fourth = [wire_order(sent) for sent in script.requests]
 
     blocks, marks = first

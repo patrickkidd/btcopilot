@@ -648,10 +648,10 @@ def username(key: str) -> str:
     return f"{key}@{DOMAIN}"
 
 
-def drop_cuts(discussion_id: int):
-    """A session on the agenda is held by its cuts, and each cut by what was
-    coded and voted on it; they go before its lines, children first."""
-    cuts = [c.id for c in Cut.query.filter_by(discussion_id=discussion_id)]
+def drop_cuts(diagram_id: int):
+    """A family's thread on the agenda is held by its cuts, and each cut by what
+    was coded and voted on it; they go before its lines, children first."""
+    cuts = [c.id for c in Cut.query.filter_by(diagram_id=diagram_id)]
     items = [i.id for i in Item.query.filter(Item.cut_id.in_(cuts))]
     codings = [c.id for c in Coding.query.filter(Coding.cut_id.in_(cuts))]
     Vote.query.filter(Vote.review_item_id.in_(items)).delete()
@@ -677,16 +677,16 @@ def install(key: str):
         if notice.user_ids == [user.id]:
             db.session.delete(notice)
     for old in Diagram.query.filter_by(user_id=user.id).all():
+        drop_cuts(old.id)
         for discussion in old.discussions:
-            drop_cuts(discussion.id)
             discussion.chat_user_speaker_id = None
             discussion.chat_ai_speaker_id = None
             db.session.flush()
             db.session.delete(discussion)
         if user.free_diagram_id == old.id:
             user.free_diagram_id = None
-        if user.current_diagram_id == old.id:
-            user.current_diagram_id = None
+        # an admin who opened this record holds it as theirs too
+        User.query.filter_by(current_diagram_id=old.id).update({"current_diagram_id": None})
         # what was done to the old record goes with it; the database will not
         # delete a diagram while rows still point at it
         for kept in DIAGRAM_ROWS:
