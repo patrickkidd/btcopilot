@@ -58,6 +58,14 @@ would save two to three seconds as the suite stands, and introduces leak-between
 bugs that cost debugging hours the first time they bite. In-memory already beats a file.
 Recommendation: leave it. Revisit past thirty seconds.
 
+Every test runs on SQLite, with no Postgres server to start (Patrick, 2026-10-02). The
+Alembic chain is run from empty on a SQLite file: `test_db.py` compares the tables and
+columns it built with the ones the models declare, and `test_migrationchain.py` checks, as
+each table is made, that no foreign key names a table not made yet, which Postgres refuses
+and SQLite lets by. The one exception is the turn lock test
+(`test_turnlock.py`): row locks exist only on Postgres, so it starts its own Postgres
+server, carries the `conventions` marker, and runs on CI only.
+
 ## 4. Where a test should live
 
 - **Unit** if it can be decided by calling a function with records in hand: scribe

@@ -17,6 +17,10 @@ from btcopilot.tests.conftest import Model, called, said, wrote
 from btcopilot.tests.fixtures import make_app
 from btcopilot.toolbox import ToolName
 
+# Row locks exist only on Postgres, so this one test starts a Postgres server
+# and runs on CI only, with the other tests a local run leaves out.
+pytestmark = pytest.mark.conventions
+
 
 @pytest.fixture
 def flask_app(tmp_path):
