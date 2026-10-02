@@ -19,6 +19,7 @@ from pathlib import Path
 
 VERSIONS = "btcopilot/migrations/versions/"
 MARKERS = (b"<<<<<<< ", b">>>>>>> ")
+BASE = "origin/master"
 
 
 def git(*args: str) -> str:
@@ -54,14 +55,14 @@ def install(name: str, files: str | None, base: str | None):
     else:
         subprocess.run(["git", "config", "--worktree", "--unset", key])
     git("config", "--worktree", "core.hooksPath", str(hooks))
-    git("config", "--worktree", "builder.base", base or "origin/master")
+    git("config", "--worktree", "builder.base", base or BASE)
     git("config", "--worktree", "builder.installed", str(int(time.time())))
 
 
 def migrations() -> list[str]:
     root = Path(git("rev-parse", "--show-toplevel").strip())
     ours = {p.relative_to(root).as_posix() for p in (root / VERSIONS).glob("*.py")}
-    base = setting("builder.base", "origin/master")
+    base = setting("builder.base", BASE)
     theirs = set(git("ls-tree", "-r", "--name-only", base, VERSIONS).split())
     return sorted(ours - theirs)
 
@@ -88,7 +89,7 @@ def refusals() -> list[str]:
     if len(new) > 1:
         found.append(
             f"one migration per PR: this branch has {len(new)} migration files "
-            f"{setting('builder.base', 'origin/master')} does not "
+            f"{setting('builder.base', BASE)} does not "
             f"({', '.join(Path(p).name for p in new)}); squash them into one"
         )
     sets = declared()
