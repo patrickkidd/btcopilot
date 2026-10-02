@@ -258,3 +258,54 @@ test.describe("a thread read again", () => {
     await expect(bubble).toHaveScreenshot("vote-dark.png");
   });
 });
+
+// a family whose thread is long enough to scroll well past the vote
+test.describe("the vote read with a thumb", () => {
+  test.use({ storageState: stateFor("hostile"), hasTouch: true });
+
+  // R-0636
+  test("a drag up and down on the open vote at the foot of the thread leaves the picture as it is until the finger lifts, and nothing jumps under the thumb", async ({
+    page,
+    context,
+  }) => {
+    await page.addInitScript(() => localStorage.setItem("fd-home-screen-asked", String(Date.now())));
+    await serve(page);
+    await page.goto("/app/");
+    await expect(page.locator(".bub").first()).toBeVisible();
+    await page.locator("#composer").fill("My dad called last night about mom's care.");
+    await page.locator("#send").click();
+    const bubble = page.locator(".bub.coach").last();
+    await expect(bubble.locator(".vt-reply")).toHaveCount(3);
+    await page.waitForTimeout(1000);
+    await bubble.evaluate((voting) => {
+      const seen = { folds: 0, ys: [] as number[] };
+      Object.assign(window, { seen });
+      new MutationObserver(() => seen.folds++).observe(document.querySelector("#chat-screen")!, {
+        attributes: true,
+        attributeFilter: ["class"],
+      });
+      const tick = () => {
+        seen.ys.push(voting.getBoundingClientRect().y);
+        requestAnimationFrame(tick);
+      };
+      tick();
+    });
+    const cdp = await context.newCDPSession(page);
+    let y = 560;
+    const touch = (type: string) =>
+      cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x: 150, y }] });
+    await touch("touchStart");
+    // up from the foot of the thread, back down to it, and up again, twice
+    for (const way of [1, -1, 1, -1])
+      for (let i = 0; i < 40; i++) {
+        y += way * 6;
+        await touch("touchMove");
+        await page.waitForTimeout(16);
+      }
+    const seen = await page.evaluate(() => (window as unknown as { seen: { folds: number; ys: number[] } }).seen);
+    await touch("touchEnd");
+    expect(seen.folds).toBe(0);
+    const jumps = seen.ys.slice(1).map((at, i) => Math.abs(at - seen.ys[i]));
+    expect(Math.max(...jumps)).toBeLessThan(10);
+  });
+});

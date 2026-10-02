@@ -130,12 +130,34 @@ export const fold = (
   pic.addEventListener("click", () => {
     if (screen.classList.contains("folded")) open();
   });
+  // While a finger is on the thread the picture stays as it is: folding or
+  // opening it then moves the thread's box under the finger, and at the foot
+  // of the thread, where a vote is read up and down, it would open and fold
+  // on every turn of the drag. It follows the scroll once the finger lifts.
+  let held = false;
+  screen.querySelector(".chat")!.addEventListener(
+    "touchstart",
+    (e) => {
+      held = true;
+      // heard on what was touched, which a thread drawn again under the finger
+      // has taken out of the thread
+      const lifted = new AbortController();
+      const lift = (up: Event) => {
+        lifted.abort();
+        held = (up as TouchEvent).touches.length > 0;
+        if (!held) set();
+      };
+      for (const end of ["touchend", "touchcancel"])
+        e.target!.addEventListener(end, lift, { passive: true, signal: lifted.signal });
+    },
+    { passive: true },
+  );
   return {
     open,
     scrolled: (stuck, away) => {
       if (stuck) scrolled = false;
       else if (away) scrolled = true;
-      set();
+      if (!held) set();
     },
   };
 };
