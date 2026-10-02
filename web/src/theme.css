@@ -959,8 +959,10 @@ button { font-family: inherit; }
 .chat > .play.on .halt { display: inline; }
 .chat > .play.on { color: var(--data); }
 .chat > .play:active { color: var(--data-press); }
-/* opens the coach's notes; out of the flow in the top-right padding beside the
-   COACH label, its 44px target inside the bubble's corner, never past it */
+/* opens the coach's notes; out of the flow, level with the COACH label, its 16px
+   mark the bubble's padding in from the right edge. The 44px target stays inside
+   the bubble: the mark sits in it by transparent padding, 10.4px under it so its
+   centre is the label's (9 padding + 7.8) and 11px from the right (12 - 1 border). */
 .bub > .info {
   position: absolute;
   top: 0;
@@ -969,8 +971,8 @@ button { font-family: inherit; }
   height: 44px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0;
+  justify-content: flex-end;
+  padding: 0 11px 10.4px 0;
   border: none;
   background: none;
   color: var(--faint);
@@ -985,6 +987,10 @@ button { font-family: inherit; }
   stroke-linecap: round;
 }
 .bub > .info:active { color: var(--data-press); }
+/* the label stops short of the marks on its line: the mark and its 8px gap, then the
+   fold's 26px and its 8px gap */
+.bub:has(> .info) > .who { padding-right: 22px; }
+.bub:has(> .vt-fold) > .who { padding-right: 56px; }
 /* While shadow replies are on, the coach's reply is held back, unread aloud
    and without its notes, until it has been voted on unnamed (R-0636). */
 /* a reply made while shadow replies are on keeps an amber edge, thicker on the
@@ -1033,16 +1039,17 @@ button { font-family: inherit; }
 .vt-count { min-width: 0; font: 500 13px/1.3 var(--mono); color: var(--faint); font-variant-numeric: tabular-nums; }
 .vt-go { flex: none; }
 .vt-go:disabled { opacity: 0.55; cursor: default; }
-/* the replies voted on, folded behind a stack beside the notes mark */
+/* the replies voted on, folded behind a stack on the notes mark's line, 8px left of it */
 .bub > .vt-fold {
   position: absolute;
+  z-index: 1;
   top: 0;
-  right: 38px;
+  right: 30px;
   height: 44px;
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 0 4px;
+  padding: 0 4px 10.4px;
   border: none;
   background: none;
   color: var(--faint);
