@@ -1118,7 +1118,7 @@ const wide = window.matchMedia(WIDE);
 
 const pinned = () => wide.matches;
 
-const DRAWER = ["menu-tabs", "menu-searchrow", "menu-body", "menu-foot"];
+const DRAWER = ["menu-tabs", "menu-searchrow", "menu-body"];
 
 function pinDrawer(): void {
   const on = pinned();
@@ -1658,38 +1658,34 @@ $("menu-close").addEventListener("click", () => {
   menu.search("");
   screen(Screen.Chat);
 });
-$("menu-add").addEventListener("click", () => {
-  track.tap(menu.showing() === Tab.People ? Feature.PersonAdd : Feature.EventAdd);
-  menu.add();
-});
 $("menu-search").addEventListener("input", (e) =>
   menu.search((e.target as HTMLInputElement).value),
 );
 
 /** The lists behind the one button: what happened, who it happened to, and
- * what the coach asked that is still open. The search and the add button say
- * which list they are for; the questions are the coach's, so that list has
- * neither. */
-const TABS: [string, Tab, string | null, string | null, Feature][] = [
-  ["tab-events", Tab.Events, "Search events", "+ Add event", Feature.TabEvents],
-  ["tab-people", Tab.People, "Search people", "+ Add someone", Feature.TabPeople],
-  ["tab-questions", Tab.Questions, null, null, Feature.TabQuestions],
+ * what the coach asked that is still open. The search says which list it is
+ * for; the questions are the coach's, so that list has none. Nothing here
+ * adds a person or an event: that is done by telling the coach (Patrick,
+ * 2026-10-02). */
+const TABS: [string, Tab, string | null, Feature][] = [
+  ["tab-events", Tab.Events, "Search events", Feature.TabEvents],
+  ["tab-people", Tab.People, "Search people", Feature.TabPeople],
+  ["tab-questions", Tab.Questions, null, Feature.TabQuestions],
 ];
 
 /** Dress the drawer for one of its lists. */
 function onTab(tab: Tab): void {
-  for (const [id, which, placeholder, add] of TABS) {
+  for (const [id, which, placeholder] of TABS) {
     const on = which === tab;
     $(id).classList.toggle("on", on);
     $(id).setAttribute("aria-selected", String(on));
     if (!on) continue;
-    $("menu-searchrow").hidden = $("menu-foot").hidden = placeholder === null;
+    $("menu-searchrow").hidden = placeholder === null;
     if (placeholder === null) continue;
     const field = $("menu-search") as HTMLInputElement;
     field.value = "";
     field.placeholder = placeholder;
     field.setAttribute("aria-label", placeholder);
-    $("menu-add").textContent = add;
   }
 }
 
@@ -1700,7 +1696,7 @@ function showTab(tab: Tab): void {
   menu.open(tab);
 }
 
-for (const [id, tab, , , feature] of TABS)
+for (const [id, tab, , feature] of TABS)
   $(id).addEventListener("click", () => {
     track.tap(feature);
     showTab(tab);

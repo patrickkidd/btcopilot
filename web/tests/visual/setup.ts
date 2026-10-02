@@ -188,6 +188,17 @@ export async function openList(page: Page): Promise<void> {
   await expect(lists(page)).toBeVisible();
 }
 
+/** The form that adds an event or a person, opened by its address: no button
+ * in the chat app opens it, since adding is said to the coach (Patrick,
+ * 2026-10-02), and the form is parked, not dead. */
+export async function addForm(page: Page, what: "event" | "person"): Promise<void> {
+  await page.evaluate((to) => {
+    history.pushState(null, "", to);
+    dispatchEvent(new PopStateEvent("popstate"));
+  }, `/app/${what}/new`);
+  await expect(page.locator("#add-sheet .editor")).toBeVisible();
+}
+
 /** A fixture's account, as the server's fixtures name it. */
 export const username = (key: Key) => `${key}@fd362-fixture.invalid`;
 

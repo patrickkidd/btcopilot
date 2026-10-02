@@ -414,9 +414,6 @@ test.describe("an admin finds a person on the diagrams view", () => {
     await expect(page.locator("#viewing-who")).toHaveText(/^Viewing .+'s diagram, read-only$/);
     await expect(page.locator("#composer")).toBeHidden();
     await expect(page.locator("#send")).toBeHidden();
-    const shown = (selector: string) =>
-      page.locator(selector).evaluate((n) => getComputedStyle(n).display);
-    expect(await shown("#menu-foot")).toBe("none");
     await expect(page.locator("#viewing-cut")).toHaveText("Select a cut");
     await expect(page.locator("#cut-strip")).toBeHidden();
 
@@ -431,7 +428,6 @@ test.describe("an admin finds a person on the diagrams view", () => {
     await expect(page.locator("#viewing")).toBeHidden();
     await expect(page.locator("#title")).not.toHaveText(name);
     await expect(page.locator("#composer")).toBeVisible();
-    expect(await shown("#menu-foot")).not.toBe("none");
   });
 
   // R-0630, R-0631

@@ -153,7 +153,7 @@ button { font-family: inherit; }
   color: var(--data);
   font: inherit;
 }
-:root[data-access="admin-view"] :is(#inbar .field, #send, #menu-foot, .fs-act, .rmore, .fs-note, .fs-upload, .iacts, .det .foot) {
+:root[data-access="admin-view"] :is(#inbar .field, #send, .fs-act, .rmore, .fs-note, .fs-upload, .iacts, .det .foot) {
   display: none;
 }
 
@@ -1461,7 +1461,7 @@ button { font-family: inherit; }
 .det { background: var(--panel); min-height: 100%; }
 /* the card is a page of its own over the list: the drawer's title row, tabs,
    search and add button give way to its back arrow and the list it goes back to */
-.carded > .ovbar, .carded > #menu-tabs, .carded > #menu-searchrow, .carded > #menu-foot { display: none; }
+.carded > .ovbar, .carded > #menu-tabs, .carded > #menu-searchrow { display: none; }
 .det .detbar {
   display: flex;
   align-items: center;
