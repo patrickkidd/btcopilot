@@ -574,13 +574,17 @@ test.describe("the message box while the coach replies", () => {
       stops(json);
       await route.fulfill({ response, json });
     });
+    const read = page.waitForResponse(/\/app\/statements\?diagram_id=\d+$/);
     await page.goto("/app/");
     await expect(page.locator("#view .ss")).toBeVisible();
+    await read;
 
     const lines = page.locator("#chat .bub.user + .sys");
     await expect(lines).toHaveText(["Stopped", "Stopped; its changes stayed"]);
     await expect(page.locator("#chat > :last-child")).toHaveText("Stopped; its changes stayed");
     expect((await boxOf(lines.first())).height).toBeGreaterThan(12);
     await expect(page.locator("#send")).toHaveAttribute("aria-label", "Send");
+    // a read still on its way when the test ends is not a failure
+    await page.unrouteAll({ behavior: "ignoreErrors" });
   });
 });
