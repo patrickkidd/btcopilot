@@ -61,6 +61,7 @@ Panels that show the same people and messages: "People who chatted", "Messages f
 | 24 | The scout and the loop review | The scout was to read the corpus and propose up to ten ranked process changes. | Retired on 2026-09-23 [R-0420] without ever running once. | retired | None. | None |
 | 25 | Notes on votes in the chat | The optional note a person writes with a vote on shadow replies in the chat, stored with the vote in the model_picks table, source chat [R-0668]. | Nobody yet. The aim is an automated step that turns the notes into checks on replies, a rubric; it is not built and not designed. | open | None today. | None |
 | 26 | Acceptable and best marks on votes in the chat | The replies a person marks acceptable and the one marked best, on every vote in the chat, stored with the vote in the model_picks table, source chat [R-0668]. | Nobody yet. Nothing turns the marks into a change to the coach; it is not built and not designed. | open | None today. | None |
+| 27 | The measurement suite for the coach's replies | Not built. Checks on every stored reply, grouped by prompt version and model [R-0669]. | A session finds the checks and keeps improving them, and you review the direction. Parked on 2026-10-02 until you ask; files in the private corpus folder private/eval-suite/. | missing | None today. | None |
 
 ## Queries
 

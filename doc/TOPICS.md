@@ -130,7 +130,10 @@ event's old words; (9) [ruling] whether the separate Fable session on the frame 
 this session's draft or from nothing; (10) [build] the frame itself: one document of the theory
 as requirements, passed when a fresh session reading only it and one cluster names the key shift
 the way he does, across about ten of his and clinic clusters; (11) [verify] the coach's notes
-were proven on the real model for one first turn; the read-back is proven by a unit test only.
+were proven on the real model for one first turn; the read-back is proven by a unit test only; (12) [waiting] the evaluation suite for the coach
+is parked since 2026-10-02 until Patrick asks for it, concept drafted and direction not yet approved,
+nothing built, two new tables and one new field his to rule first [R-0669]; its files are in the
+private corpus folder private/eval-suite/.
 **Lives in:** btcopilot/{record.py,toolbox.py,recordtext.py,timeline.py}; the prompts under
 private/prompts/; btcopilot/tests/live (the paid suite and its waiting list in README.md);
 doc/PROMPT_ENGINEERING_LOG.md; doc/HOW_THIS_PROJECT_WORKS.md (spend and eval rules); the frame
