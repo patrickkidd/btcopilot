@@ -1098,7 +1098,7 @@ directory on purpose: a database inside a job directory is deleted with the job,
 already cost one sandbox. Postgres runs in a container per instance, the Celery worker uses the
 solo pool because the default one crashes on macOS, the turn log goes through Redis so the
 worker's events reach the page, and the coach runs on the local Ollama model (qwen3:8b) unless
-`--real` is given. Since 2026-10-01 `up` also seeds one admin account (admin@sandbox.invalid) with an empty
+`--real` is given. Since 2026-10-01 `up` also seeds one admin account with an empty
 case called Sandbox, and a fixed sign-in link for it built from `SANDBOX_ADMIN_TOKEN` in the
 parent `.env`, so the same link signs Patrick in on every sandbox [R-0678]; the instance binds
 all interfaces and is served at `turin`. Real models need the Anthropic and Gemini keys in the
