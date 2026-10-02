@@ -1619,8 +1619,9 @@ the oracle store as R-0165..R-0228; what follows is only what constrains future 
   the board button, and the "in chat" chip. This row looks the same whether it is a whole
   cluster open or a single event inside one selected. [R-0168, R-0211]
 - **Chips are one size, full text**, never truncated and never expandable. Labels are capped
-  at the source at 28 grapheme clusters with one re-ask, never trimmed afterwards. Every chip
-  has a pressed state.
+  at the source at 28 grapheme clusters: an over-long label is asked for again once on its own
+  (the reply's words and events stay), and one still over is cut at the last whole word within
+  28, or at 28 when no word fits; the turn is kept. Every chip has a pressed state.
 - **The board fits its content.** This superseded the fixed 264px rows; every UI_SPEC row
   carrying RESOLVED #28 is superseded by it. Its control row is always back, explain, forward,
   with explain dead only while the coach is answering the last one. The way onto the board

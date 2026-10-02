@@ -15,6 +15,7 @@ import logging
 import uuid
 from typing import Callable
 
+import regex
 from opentelemetry import trace
 
 from btcopilot.extensions import ai_log, db
@@ -73,10 +74,10 @@ SPEAK = (
 
 
 SHORTEN = (
-    "These chip labels are too long for the chip they go on: {labels}. Write "
-    "your reply again with every label at most {limit} characters — a noun "
-    "phrase, not a clause. Keep the same ids, the same events and the same "
-    "words around them; only the labels change."
+    "These chips have labels too long for the chip they go on: {chips}. Send "
+    "back only these chips, one per line, with the same kind and id and a label "
+    "of at most {limit} characters — a noun phrase, not a clause. Write nothing "
+    "else: the rest of your reply stays as it is."
 )
 
 
@@ -108,12 +109,6 @@ class EmptyReply(Exception):
     words is a bare bubble on the page, so the turn fails instead."""
 
 
-class LabelTooLong(Exception):
-    """A chip label will not fit and the coach would not shorten it. Trimming
-    it here would hide a prompt that has stopped holding, and the page has no
-    truncation left to cover it."""
-
-
 class BareList(Exception):
     """The coach answered with a run of chips and would not narrate it when
     asked. A list of chips is not the coach speaking, and there is nothing here
@@ -141,8 +136,7 @@ def run_call(toolbox: Toolbox, call) -> tuple[str, dict | None, str | None]:
 
 
 def _again(model, system, messages: list[dict], spoken: str, ask: str, turn_id: str):
-    """Ask once for the reply again. The words are the coach's own, so nothing
-    here rewrites them — it asks the coach to."""
+    """Ask the coach once more, with no tools."""
     asked = messages + [
         {"role": "assistant", "content": spoken},
         {"role": "user", "content": ask},
@@ -150,28 +144,68 @@ def _again(model, system, messages: list[dict], spoken: str, ask: str, turn_id: 
     return drain(model.turn(system, asked, [], turn_id)).text
 
 
+def _shown(match) -> str:
+    return (match.group(3) or match.group(2)).strip()
+
+
+def cut(label: str) -> str:
+    """The label within the limit, ended at the last whole word that fits, or
+    at the limit when no word does."""
+    shown = regex.findall(r"\X", label)
+    if len(shown) <= chips.CHIP_MAX:
+        return label
+    head = "".join(shown[: chips.CHIP_MAX])
+    if not (head[-1].isspace() or shown[chips.CHIP_MAX].isspace()):
+        words = head.rsplit(None, 1)
+        head = words[0] if len(words) > 1 else head
+    return head.rstrip(" ,;:—–-")
+
+
 def shorten_labels(
     model, system, messages: list[dict], spoken: str, data, diagram_id: int | None, turn_id=""
 ) -> str:
-    """Ask once for shorter chip labels."""
-    over = chips.too_long(spoken, data, diagram_id)
-    if not over:
+    """Ask once for shorter labels for the chips that will not fit, and only
+    for those labels: the words and the events around them stay as they are.
+    A label still too long after that is cut at a word."""
+
+    def over(match) -> bool:
+        kind, target = chips.ChipKind(match.group(1)), match.group(2).strip()
+        return (
+            chips.resolves(kind, target, data, diagram_id)
+            and chips.length(_shown(match)) > chips.CHIP_MAX
+        )
+
+    long = [m.group(0) for m in chips.TOKEN.finditer(spoken) if over(m)]
+    if not long:
         return spoken
-    _log.warning(f"Chip labels too long, asking again: {over}")
-    shortened = _again(
+    _log.warning(f"Chip labels too long, asking for new ones: {long}")
+    told = _again(
         model,
         system,
         messages,
         spoken,
-        SHORTEN.format(
-            labels="; ".join(repr(label) for label in over), limit=chips.CHIP_MAX
-        ),
+        SHORTEN.format(chips="; ".join(long), limit=chips.CHIP_MAX),
         turn_id,
     )
-    still = chips.too_long(shortened, data, diagram_id)
-    if still:
-        raise LabelTooLong(f"Chip labels still too long after asking again: {still}")
-    return shortened
+    given: dict[tuple[str, str], list[str]] = {}
+    for m in chips.TOKEN.finditer(told):
+        if (m.group(3) or "").strip():
+            given.setdefault((m.group(1), m.group(2).strip()), []).append(
+                m.group(3).strip()
+            )
+
+    def relabel(match) -> str:
+        if not over(match):
+            return match.group(0)
+        kind, target = match.group(1), match.group(2).strip()
+        offered = given.get((kind, target))
+        label = offered.pop(0) if offered else _shown(match)
+        if chips.length(label) > chips.CHIP_MAX:
+            _log.warning(f"Chip label still too long, cut at a word: {label!r}")
+            label = cut(label)
+        return chips.token(chips.ChipKind(kind), target, label)
+
+    return chips.TOKEN.sub(relabel, spoken)
 
 
 def narrate(model, system, messages: list[dict], spoken: str, turn_id="") -> str:

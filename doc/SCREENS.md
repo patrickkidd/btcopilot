@@ -228,7 +228,7 @@ What it is for: the coach's references to real things in your record, and yours 
 - Tapping a chip for an event in a message picks it in the picture the same way tapping its dot does: the rest fades and its cluster's brackets show. An admin switch per person puts back the old behaviour. [built]
 - A chip is the one visual that means "this puts words in the chat", so nothing else ever costs you a turn. [built] {R-0073}
 - Chips are one size and show their whole label; they are never cut short and never expand. [built] {R-0169}
-- Labels are kept short where they are written rather than trimmed afterwards, and the coach is asked once to shorten an over-long one. [built] {R-0169}
+- Labels are kept short where they are written: a label over 28 characters is asked for again once, on its own, and the rest of the reply stays as written; one still too long is cut at the last whole word that fits. [built] {R-0169}
 - Every chip shows that it has been pressed. [built] {R-0169}
 - A reference the coach writes that does not resolve to anything real is dropped rather than left pointing at nothing. [built]
 - Messages from earlier sessions carry no chips; references only come back on a live reply. [built]

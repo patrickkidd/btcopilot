@@ -19,7 +19,6 @@ from btcopilot.coachturn import (
     BareList,
     CoachTurn,
     EmptyReply,
-    LabelTooLong,
 )
 from btcopilot.turnlog import TurnEventKind as EventKind
 from btcopilot.models import (
@@ -598,20 +597,21 @@ def test_a_label_of_exactly_the_limit_is_left_alone(discussion, family):
     assert reply["statement"] == f"[[event:10|{label}]] is where it starts."
 
 
-def test_one_label_over_the_limit_is_asked_again_never_trimmed(discussion, family):
+def test_one_label_over_the_limit_is_asked_for_again_on_its_own(discussion, family):
     # R-0169
-    """Twenty-nine does not fit. The coach is asked once to shorten it, and its
-    own shorter words are what the person reads — nothing here cuts them."""
+    """Twenty-nine does not fit. The coach is asked once for that label alone,
+    and its new label goes into the reply it already wrote; anything else in
+    its answer is not used."""
     long_label = "a" * (chips.CHIP_MAX + 1)
     model = Model(
         said(f"[[event:10|{long_label}]] is where it starts."),
-        said("[[event:10|the move]] is where it starts."),
+        said("Here it is: [[event:10|the move]], and it was hard."),
     )
     reply = run(discussion, "Tell me about that.", model)
 
     assert reply["statement"] == "[[event:10|the move]] is where it starts."
     assert model.offered[-1] == []
-    assert long_label in model.histories[-1][-1]["content"]
+    assert f"[[event:10|{long_label}]]" in model.histories[-1][-1]["content"]
     assert discussion.statements[-1].text == reply["statement"]
 
 
@@ -644,18 +644,26 @@ def test_a_reply_that_stays_a_list_of_chips_fails(discussion, family):
         run(discussion, "Walk me through it.", Model(said(BARE), said(BARE)))
 
 
-def test_a_label_that_stays_too_long_fails_rather_than_being_cut(discussion, family):
+@pytest.mark.parametrize(
+    "long_label, kept",
+    [
+        ("the summer he finally left home for good", "the summer he finally left"),
+        ("a" * (chips.CHIP_MAX + 1), "a" * chips.CHIP_MAX),
+    ],
+)
+def test_a_label_that_stays_too_long_is_cut_at_a_word_and_the_reply_kept(
+    discussion, family, long_label, kept
+):
     # R-0169
-    long_label = "a" * (chips.CHIP_MAX + 1)
-    with pytest.raises(LabelTooLong):
-        run(
-            discussion,
-            "Tell me about that.",
-            Model(
-                said(f"[[event:10|{long_label}]]."),
-                said(f"[[event:10|{long_label}]] still."),
-            ),
-        )
+    reply = run(
+        discussion,
+        "Tell me about that.",
+        Model(
+            said(f"[[event:10|{long_label}]] is where it starts."),
+            said(f"[[event:10|{long_label}]]"),
+        ),
+    )
+    assert reply["statement"] == f"[[event:10|{kept}]] is where it starts."
 
 
 def test_a_label_is_measured_in_what_a_reader_sees(discussion, family):
