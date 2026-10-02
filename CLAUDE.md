@@ -379,6 +379,7 @@ package is incompatible (symptom: `create_app() takes 0 to 1 positional argument
 ### Testing
 - **Local run**: `uv run pytest -m "not conventions" btcopilot/tests -q`
 - **Oracle guards** (`btcopilot/tests/conventions/`, marker `conventions`) read the sops-encrypted rulings store and run on CI only, where the key is; locally run `uv run pytest -m "not conventions" ...`. Without a key they fail, never skip.
+- **Integration suite** (`btcopilot/tests/integration/`, marker `integration`): tests that need a real Postgres; skipped in the local run; run with `uv run pytest --integration btcopilot/tests/integration`, which starts a Postgres container with Docker; CI runs it as its own step.
 - **E2e tests** (real LLM calls): `uv run pytest --e2e -m e2e` — requires `GOOGLE_GEMINI_API_KEY` from `.env` at the clone root
 - **Async**: `--asyncio-mode=auto` (configured in `btcopilot/tests/pytest.ini`)
 - **Directories**: `btcopilot/tests/` (the chat app's suite), `btcopilot/tests/schema/`, `btcopilot/tests/test_*.py`
