@@ -22,6 +22,7 @@ from opentelemetry import trace
 from btcopilot.extensions import ai_log, db
 from btcopilot import chips, clusters, coverage, profile, recordtext, turnlog, turnstore
 from btcopilot.coachmodel import CoachModel, marked_ends
+from btcopilot.discussions import previous
 from btcopilot.metered import Metered
 from btcopilot.models import (
     Change,
@@ -477,15 +478,20 @@ class CoachTurn:
 
     def _title(self) -> None:
         """Naming the sitting is not the reply: when that call fails the
-        sitting stays unnamed and the next turn names it."""
+        sitting stays unnamed and the next turn names it. A sitting is named
+        from its opening words, so the one before it, now over, is named once
+        more from all of it; when that call fails its title stays."""
         summary = Metered(
             self.discussion.user_id, self.diagram.id, self.turn_id, Purpose.Summary
         )
         try:
             self.discussion.update_title(summary)
             self.discussion.update_summary(summary)
+            before = previous(self.discussion)
+            if before:
+                before.update_title(summary)
         except GeminiError as failed:
-            _log.warning(f"Turn {self.turn_id} left its sitting unnamed: {failed}")
+            _log.warning(f"Turn {self.turn_id} left a sitting's title as it was: {failed}")
 
     def _regroup(self, events: list[dict]) -> list[str]:
         """Re-group the line when the turn has moved an event, before the coach

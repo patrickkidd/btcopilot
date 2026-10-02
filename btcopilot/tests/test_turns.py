@@ -17,6 +17,7 @@ from btcopilot.extensions import db
 from btcopilot import record, turnlog, turns
 from btcopilot.coachmodel import Refusal
 from btcopilot.coachturn import EmptyReply, run_call
+from btcopilot.discussions import SITTING_GAP
 from btcopilot.models import Author, Change, Discussion, Statement, TurnEvent
 from btcopilot.toolbox import ToolName
 from btcopilot.turnlog import TurnEventKind
@@ -119,6 +120,34 @@ def test_a_title_call_that_fails_leaves_the_reply_and_the_sitting_unnamed(
     ]
     assert discussion.title is None
     assert logged(body["turn_id"])[-1]["type"] == TurnEventKind.Done.value
+
+
+def test_the_sitting_before_is_titled_again_from_all_of_it_when_the_next_opens(
+    web, token, family, monkeypatch
+):
+    # R-0097
+    coach(monkeypatch, said("Tell me more."), said("Go on."), said("And then?"))
+    first = post(web, token, "My dad called last night.").get_json()["discussion_id"]
+    for statement in Statement.query:
+        statement.created_at -= 2 * SITTING_GAP
+    db.session.commit()
+    titles = [
+        wrote("The move"),
+        wrote("A summary"),
+        wrote("Conflict with father over care of mother"),
+    ]
+    with patch("btcopilot.metered.gemini_text_sync", side_effect=titles) as gemini:
+        second = post(web, token, "We moved in May.").get_json()["discussion_id"]
+        post(web, token, "It was hard.")
+
+    assert gemini.call_count == 3
+    assert "My dad called last night." in gemini.call_args.kwargs["prompt"]
+    assert second != first
+    assert db.session.get(Discussion, second).title == "The move"
+    assert (
+        db.session.get(Discussion, first).title
+        == "Conflict with father over care of mother"
+    )
 
 
 def test_the_turns_done_row_carries_the_release_it_ran_on(
