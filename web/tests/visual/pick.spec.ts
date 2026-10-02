@@ -66,6 +66,9 @@ test("a chip and a dot pick a loose event the same way", async ({ page }, info) 
   await open(page);
   const height = (await shown(page)).height;
   await page.locator(chip(4)).first().scrollIntoViewIfNeeded();
+  // that scroll folds the picture, and a tap sent while it folds is tried
+  // again by Playwright with a scroll of its own, which moves the chip
+  await expect(page.locator("#chat-screen.folded > .pic:not(.folding)")).toBeVisible();
   const top = await chipTop(page, 4);
   await tapped(page, chip(4));
   const byChip = await shown(page);
