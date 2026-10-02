@@ -19,7 +19,7 @@ import regex
 from opentelemetry import trace
 
 from btcopilot.extensions import ai_log, db
-from btcopilot import chips, clusters, coverage, profile, recordtext, turnstore
+from btcopilot import chips, clusters, coverage, profile, recordtext, turnlog, turnstore
 from btcopilot.coachmodel import CoachModel, marked_ends
 from btcopilot.metered import Metered
 from btcopilot.models import (
@@ -107,6 +107,10 @@ NARRATE = (
 class EmptyReply(Exception):
     """The coach finished a turn without saying anything. A statement with no
     words is a bare bubble on the page, so the turn fails instead."""
+
+
+class Stopped(Exception):
+    """The person stopped the turn; it ends at its next model or tool call."""
 
 
 class BareList(Exception):
@@ -375,6 +379,7 @@ class CoachTurn:
 
             results = []
             for call in turn.calls:
+                self._halt()
                 asked = toolcall(self.toolbox.data, call.name, call.args)
                 text, event, refusal = run_call(self.toolbox, call)
                 asked["refusal"] = refusal
@@ -423,6 +428,7 @@ class CoachTurn:
             messages.append({"role": "user", "content": FINISH})
             spoken = self._say(system, messages, [], stream=True).text
 
+        self._halt()
         if not spoken.strip():
             raise EmptyReply(f"Turn {self.turn_id} produced no words for the user")
         spoken = shorten_labels(
@@ -514,6 +520,10 @@ class CoachTurn:
             )
         return regrouped.sentences
 
+    def _halt(self) -> None:
+        if turnlog.halted(self.turn_id):
+            raise Stopped(f"turn {self.turn_id} was stopped")
+
     def _send(self, event: dict) -> None:
         """Tell whoever is watching, as it happens."""
         if event["type"] == TurnEventKind.Text.value:
@@ -548,6 +558,7 @@ class CoachTurn:
     def _say(self, system, messages: list[dict], tools: list[dict], stream=False):
         """One model call. The words go out as they arrive; a step that ends in
         a tool call was the coach thinking aloud, so those words are dropped."""
+        self._halt()
         words = self.model.turn(system, messages, tools, self.turn_id)
         sent = False
         while True:

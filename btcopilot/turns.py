@@ -7,19 +7,19 @@ page follows that log. A page that reloads reads the log from the start.
 """
 
 import logging
-import re
 import uuid
 
 import btcopilot
 from btcopilot import extensions
 from btcopilot.extensions import db
-from btcopilot import chips, coverage, observer, shadow, turnlog, turnstore
+from btcopilot import chips, coverage, observer, record, shadow, turnlog, turnstore
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
 from btcopilot.coachmodel import Refusal, model_for
-from btcopilot.coachturn import CoachTurn, record_of
+from btcopilot.coachturn import CoachTurn, Stopped, record_of
 from btcopilot.discussions import session_payload
 from btcopilot.models import (
+    Author,
     Change,
     Discussion,
     Observation,
@@ -32,17 +32,6 @@ from btcopilot.models.preferences import PrefKey
 from btcopilot.turnlog import TurnEventKind
 
 _log = logging.getLogger(__name__)
-
-# A chip the stop cut off before its closing brackets.
-CUT = re.compile(r"\[\[[^\]]*$")
-
-# What the thread never shows again: the words are the reply itself, and the
-# record's own edits are in the change log.
-UNKEPT = (
-    TurnEventKind.Text.value,
-    TurnEventKind.TextReset.value,
-    TurnEventKind.RecordPatch.value,
-)
 
 TASK = "coach_turn"
 
@@ -66,10 +55,6 @@ class Busy(Exception):
 
 class Idle(Exception):
     """A stop for a turn that is not running."""
-
-
-class Unreached(Exception):
-    """A stop no worker answered, so the turn goes on to its own end."""
 
 
 def start(discussion: Discussion, statement: str) -> dict:
@@ -116,84 +101,12 @@ def resume(discussion: Discussion, turn_id: str) -> dict:
 
 
 def stop(discussion: Discussion, turn_id: str) -> dict:
-    """End a running turn at the person's word. Its worker is killed where it
-    stands; the words it had typed out so far are kept as its reply, and with
-    none it ends as a turn that did not finish. Its edits stay made either way."""
+    """Ask the running turn to end at its next model or tool call; the turn
+    itself takes its edits back and says so in its last event (R-0636)."""
     if turnlog.running(discussion.id) != turn_id:
         raise Idle(f"turn {turn_id} is not running")
-    kill(turn_id)
-    live = [event for _, event in turnlog.read_from(turn_id, 0)]
-    text = ""
-    for event in live:
-        if event["type"] == TurnEventKind.Text.value:
-            text += event["text"]
-        elif event["type"] == TurnEventKind.TextReset.value:
-            text = ""
-    text = chips.validate(
-        CUT.sub("", text).strip(), record_of(discussion), discussion.diagram_id
-    )
-    said = Statement.query.filter_by(
-        discussion_id=discussion.id,
-        turn_id=turn_id,
-        speaker_id=discussion.chat_user_speaker_id,
-    ).one()
-    reply = said
-    if text:
-        reply = Statement(
-            discussion_id=discussion.id,
-            text=text,
-            speaker=discussion.chat_ai_speaker,
-            order=discussion.next_order(),
-            kind=StatementKind.Turn,
-            turn_id=turn_id,
-        )
-        db.session.add(reply)
-        db.session.flush()
-    Change.query.filter_by(diagram_id=discussion.diagram_id, turn_id=turn_id).update(
-        {"statement_id": reply.id}
-    )
-    # a resumed turn sent the calls it had already kept again, first
-    prior = turnstore.kept({turn_id}).get(turn_id, [])
-    again = sum(e["type"] == TurnEventKind.ToolCall.value for e in prior)
-    shown = [e for e in live if e["type"] not in UNKEPT][again:]
-    ending = (
-        dict(turnstore.done(reply.id, release=btcopilot.__version__), stopped=True)
-        if text
-        else {"type": TurnEventKind.Failed.value, "message": BROKE}
-    )
-    turnstore.save(turn_id, discussion.id, shown + [ending])
-    db.session.commit()
-    turnlog.clear(discussion.id)
-    if text:
-        ending.update(
-            statement=text,
-            views=[],
-            events=[],
-            turn_id=turn_id,
-            kind=StatementKind.Turn.value,
-            discussion_id=discussion.id,
-            session=session_payload(discussion),
-        )
-    turnlog.append(turn_id, ending)
-    return {"turn_id": turn_id, "statement_id": reply.id}
-
-
-def kill(turn_id: str) -> None:
-    """Revoke the worker's task for this turn, waiting for the worker to say it
-    has been signalled, so nothing it writes after lands behind the stop. A
-    worker that cannot say it holds the turn is refused rather than written
-    over: one on the solo pool answers nobody while it runs a task."""
-    inspect = extensions.celery.control.inspect()
-    held = [
-        task["id"]
-        for found in (inspect.active() or {}, inspect.reserved() or {})
-        for tasks in found.values()
-        for task in tasks
-        if task["name"] == TASK and task["args"][0] == turn_id
-    ]
-    if not held:
-        raise Unreached(f"no worker says it is running turn {turn_id}")
-    extensions.celery.control.revoke(held, terminate=True, reply=True)
+    turnlog.halt(turn_id)
+    return {"turn_id": turn_id}
 
 
 def enqueue(
@@ -238,6 +151,9 @@ def run(
     )
     try:
         reply = turn.run()
+    except Stopped:
+        db.session.rollback()
+        return _stopped(turn, statement_id)
     # A refusal is not a fault to retry: the same words would be declined
     # again. The page gets the coach's sentence and the category stays here.
     except Refusal as refused:
@@ -287,6 +203,51 @@ def run(
     for model in shadows:
         shadow.start(turn, statement_id, model, before)
     return reply
+
+
+def _stopped(turn: CoachTurn, statement_id: int) -> dict:
+    """A turn the person stopped: no reply is kept and its edits are taken back
+    as one, so the record is as it was before the words were sent; edits that
+    were changed since stay, and the last event says why (R-0636)."""
+    discussion = turn.discussion
+    ending = dict(
+        turnstore.done(statement_id, release=btcopilot.__version__), stopped=True
+    )
+    kept = []
+    if Change.query.filter_by(diagram_id=turn.diagram.id, turn_id=turn.turn_id).first():
+        try:
+            record.undo(
+                turn.diagram.id,
+                turn.turn_id,
+                author=Author.Coach,
+                user_id=discussion.user_id,
+                session_id=discussion.id,
+            )
+        except (record.Conflict, record.Invalid) as conflict:
+            _log.warning(f"coach_turn {turn.turn_id} stopped, edits kept: {conflict}")
+            ending["conflict"] = str(conflict)
+            kept = turn.kept
+    db.session.refresh(turn.diagram)
+    ending["version"] = turn.diagram.version
+    Change.query.filter(
+        Change.diagram_id == turn.diagram.id,
+        Change.turn_id.in_([turn.turn_id, f"undo:{turn.turn_id}"]),
+    ).update({"statement_id": statement_id})
+    turnstore.save(turn.turn_id, discussion.id, kept + [ending])
+    db.session.commit()
+    turnlog.clear(discussion.id)
+    event = dict(
+        ending,
+        statement=None,
+        views=[],
+        events=[],
+        turn_id=turn.turn_id,
+        kind=StatementKind.Turn.value,
+        discussion_id=discussion.id,
+        session=session_payload(discussion),
+    )
+    turnlog.append(turn.turn_id, event)
+    return event
 
 
 def _unanswered(turn: CoachTurn, statement_id: int, ending: dict) -> None:

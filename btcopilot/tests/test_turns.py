@@ -13,13 +13,13 @@ from mock import patch
 import btcopilot
 
 from btcopilot.extensions import db
-from btcopilot import turnlog, turns
+from btcopilot import record, turnlog, turns
 from btcopilot.coachmodel import Refusal
-from btcopilot.coachturn import EmptyReply
-from btcopilot.models import Discussion, Statement, TurnEvent
+from btcopilot.coachturn import EmptyReply, run_call
+from btcopilot.models import Author, Change, Discussion, Statement, TurnEvent
 from btcopilot.toolbox import ToolName
 from btcopilot.turnlog import TurnEventKind
-from btcopilot.schema import Person, asdict
+from btcopilot.schema import ItemKind, Person, asdict
 from btcopilot.tests.conftest import Model, called, calling, csrf_token, said, wrote
 
 
@@ -264,7 +264,7 @@ def test_a_page_that_stops_listening_mid_turn_leaves_the_turn_to_finish(
     assert turnlog.running(discussion.id) is None
 
 
-def test_stop_kills_the_worker_and_keeps_the_words_typed_so_far(
+def test_stop_ends_a_turn_before_its_next_model_call_with_no_reply(
     web, token, family, monkeypatch
 ):
     # R-0636
@@ -272,28 +272,85 @@ def test_stop_kills_the_worker_and_keeps_the_words_typed_so_far(
     with patch("btcopilot.turns.enqueue"):
         body = post(web, token).get_json()
     turn_id = body["turn_id"]
-    turnlog.append(turn_id, {"type": TurnEventKind.Text.value, "text": "Tell me "})
-    turnlog.append(
-        turn_id, {"type": TurnEventKind.Text.value, "text": "about [[person:1|Wr"}
-    )
+    response = web.post(f"/app/turns/{turn_id}/stop", headers={"X-CSRFToken": token})
+    assert response.status_code == 202
 
-    with patch("btcopilot.turns.kill") as kill:
-        response = web.post(
-            f"/app/turns/{turn_id}/stop", headers={"X-CSRFToken": token}
-        )
-    assert response.status_code == 200
-    kill.assert_called_once_with(turn_id)
-
+    with patch("btcopilot.shadow.start") as shadowed:
+        turns.run(turn_id, body["discussion_id"], body["statement_id"])
+    shadowed.assert_not_called()
     discussion = db.session.get(Discussion, body["discussion_id"])
-    assert [s.text for s in discussion.statements] == [
-        "My sister is Nell.",
-        "Tell me about",
-    ]
-    assert logged(turn_id)[-1]["type"] == TurnEventKind.Done.value
-    assert logged(turn_id)[-1]["stopped"] is True
+    assert [s.text for s in discussion.statements] == ["My sister is Nell."]
+    done = logged(turn_id)[-1]
+    assert (done["type"], done["stopped"]) == (TurnEventKind.Done.value, True)
     assert turnlog.running(discussion.id) is None
     again = web.post(f"/app/turns/{turn_id}/stop", headers={"X-CSRFToken": token})
     assert again.status_code == 409
+
+
+def test_a_turn_stopped_between_two_tool_calls_takes_its_edits_back(
+    web, token, family, monkeypatch
+):
+    # R-0636
+    coach(
+        monkeypatch,
+        calling(
+            (ToolName.EditPerson, {"name": "Nell"}),
+            (ToolName.EditPerson, {"name": "Finn"}),
+        ),
+        said("Added both."),
+    )
+
+    def run_then_stop(toolbox, call):
+        answer = run_call(toolbox, call)
+        turnlog.halt(toolbox.turn_id)
+        return answer
+
+    monkeypatch.setattr("btcopilot.coachturn.run_call", run_then_stop)
+    body = post(web, token).get_json()
+
+    db.session.refresh(family)
+    assert [p["name"] for p in family.get_diagram_data().people] == ["Wren"]
+    changes = Change.query.filter_by(diagram_id=family.id).order_by(Change.id).all()
+    assert [c.turn_id for c in changes] == [
+        body["turn_id"],
+        f"undo:{body['turn_id']}",
+    ]
+    discussion = db.session.get(Discussion, body["discussion_id"])
+    assert [s.text for s in discussion.statements] == ["My sister is Nell."]
+    done = logged(body["turn_id"])[-1]
+    assert (done["type"], done["stopped"], done["version"]) == (
+        TurnEventKind.Done.value,
+        True,
+        family.version,
+    )
+    assert "conflict" not in done
+    kept = TurnEvent.query.filter_by(turn_id=body["turn_id"]).all()
+    assert [k.kind for k in kept] == [TurnEventKind.Done.value]
+
+
+def test_a_stopped_turn_keeps_edits_changed_since_and_says_so(
+    web, token, family, monkeypatch
+):
+    # R-0636
+    coach(monkeypatch, called(ToolName.EditPerson, name="Nell"), said("Added Nell."))
+
+    def run_change_stop(toolbox, call):
+        answer = run_call(toolbox, call)
+        nell = {"item_kind": ItemKind.Person.value, "item_id": 2, "field": "name"}
+        record.apply(
+            family.id, [dict(nell, after="Nelly")], author=Author.User, turn_id="by-hand"
+        )
+        turnlog.halt(toolbox.turn_id)
+        return answer
+
+    monkeypatch.setattr("btcopilot.coachturn.run_call", run_change_stop)
+    body = post(web, token).get_json()
+
+    db.session.refresh(family)
+    assert [p["name"] for p in family.get_diagram_data().people] == ["Wren", "Nelly"]
+    done = logged(body["turn_id"])[-1]
+    assert (done["stopped"], done["version"]) == (True, family.version)
+    assert "Nelly" in done["conflict"]
 
 
 def test_another_users_turn_is_not_found(web, token, family, monkeypatch, test_user_2):
