@@ -15,6 +15,7 @@ import logging
 import uuid
 from typing import Callable
 
+import aiohttp
 import regex
 from google.genai.errors import APIError as GeminiError
 from opentelemetry import trace
@@ -478,9 +479,11 @@ class CoachTurn:
 
     def _title(self) -> None:
         """Naming the sitting is not the reply: when that call fails the
-        sitting stays unnamed and the next turn names it. A sitting is named
-        from its opening words, so the one before it, now over, is named once
-        more from all of it; when that call fails its title stays."""
+        sitting stays unnamed and the next turn names it, whether Gemini
+        answered with an error, could not be reached or took too long. A
+        sitting is named from its opening words, so the one before it, now
+        over, is named once more from all of it; when that call fails its
+        title stays."""
         summary = Metered(
             self.discussion.user_id, self.diagram.id, self.turn_id, Purpose.Summary
         )
@@ -490,7 +493,7 @@ class CoachTurn:
             before = previous(self.discussion)
             if before:
                 before.update_title(summary)
-        except GeminiError as failed:
+        except (GeminiError, aiohttp.ClientError, TimeoutError) as failed:
             _log.warning(f"Turn {self.turn_id} left a sitting's title as it was: {failed}")
 
     def _regroup(self, events: list[dict]) -> list[str]:

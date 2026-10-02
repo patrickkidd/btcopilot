@@ -7,6 +7,7 @@ got to.
 
 import json
 
+import aiohttp
 import pytest
 from google.genai.errors import ServerError
 from mock import patch
@@ -104,12 +105,20 @@ def test_the_turn_writes_what_it_did_in_order_and_ends_in_done(
     assert events[-1]["session"]["id"] == body["discussion_id"]
 
 
+@pytest.mark.parametrize(
+    "down",
+    [
+        ServerError(503, {"error": {"message": "unavailable"}}),
+        aiohttp.ClientConnectionError("unreachable"),
+        TimeoutError(),
+    ],
+    ids=["error", "unreachable", "timeout"],
+)
 def test_a_title_call_that_fails_leaves_the_reply_and_the_sitting_unnamed(
-    web, token, family, monkeypatch
+    web, token, family, monkeypatch, down
 ):
     # R-0097
     coach(monkeypatch, said("Tell me about Nell."))
-    down = ServerError(503, {"error": {"message": "unavailable"}})
     with patch("btcopilot.metered.gemini_text_sync", side_effect=down):
         body = post(web, token).get_json()
 
