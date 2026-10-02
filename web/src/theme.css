@@ -2517,6 +2517,8 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 }
 
 .sys {
+  /* its clipped overflow would let a thread longer than its box squeeze it to nothing */
+  flex: none;
   align-self: center;
   max-width: 92%;
   font: 500 13px/1.35 var(--mono);

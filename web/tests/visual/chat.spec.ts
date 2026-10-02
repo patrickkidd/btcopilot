@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { inside, stateFor } from "./setup";
+import { boxOf, inside, stateFor } from "./setup";
 import { mockTurn, SEND, STREAM } from "./turn";
 
 /** Chips have to stay inside their bubble whatever the record calls things, and
@@ -508,6 +508,10 @@ test.describe("the message box while the coach replies", () => {
     await page.locator("#send").click();
     await expect(page.locator("#chat > :last-child")).toHaveText("Stopped");
     await expect(page.locator("#chat > :last-child")).toHaveClass("sys");
+    // in a thread longer than its box the line keeps its height
+    await page.setViewportSize({ width: 390, height: 520 });
+    expect(await page.locator("#chat").evaluate((t) => t.scrollHeight > t.clientHeight)).toBe(true);
+    expect((await boxOf(page.locator("#chat > :last-child"))).height).toBeGreaterThan(12);
     await expect(page.locator(".bub.coach.typing")).toHaveCount(0);
     await expect(dot).toHaveCount(0);
     await expect(page.locator("#send")).toHaveAttribute("aria-label", "Send");
