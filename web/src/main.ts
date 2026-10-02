@@ -838,6 +838,7 @@ function addStatements(statements: api.Said[], newest = false): void {
     );
     if (statement.feedback)
       chat.kept(bubble, statement.turn_id!, statement.feedback, newest && statement === statements.at(-1));
+    if (statement.stopped) chat.halted(statement.conflict ? STOPPED_KEPT : STOPPED);
     if (statement.unfinished && lines.length) {
       const bubble = chat.add(Role.Coach, "", ChipTone.Data, null, null, lines);
       if (newest) stopped = { turn: statement.turn_id!, bubble };

@@ -543,4 +543,32 @@ test.describe("the message box while the coach replies", () => {
     await expect(page.locator("#send")).toHaveAttribute("aria-label", "Send");
     await expect(page.locator(".vt-wait")).toHaveCount(0);
   });
+
+  // R-0636
+  test("the grey line under a stopped turn's words is still there after a reload", async ({ page }) => {
+    // two turns the reader stopped, the second with edits that stayed, in the
+    // thread the server hands the page as it opens, which is what a reload reads
+    await page.addInitScript(() => {
+      Object.defineProperty(window, "BOOTSTRAP", {
+        configurable: true,
+        set(boot) {
+          const words = boot.statements.find((s: { role: string }) => s.role === "user");
+          const ended = { ...words, sitting: undefined, tools: [], feedback: 0, stopped: true };
+          boot.statements.push(
+            { ...ended, id: 9401, turn_id: "s1", text: "My sister is Nell.", conflict: null },
+            { ...ended, id: 9402, turn_id: "s2", text: "My brother is Finn.", conflict: "Finn was renamed since" },
+          );
+          Object.defineProperty(window, "BOOTSTRAP", { value: boot, writable: true });
+        },
+      });
+    });
+    await page.goto("/app/");
+    await expect(page.locator("#view .ss")).toBeVisible();
+
+    const lines = page.locator("#chat .bub.user + .sys");
+    await expect(lines).toHaveText(["Stopped", "Stopped; its changes stayed"]);
+    await expect(page.locator("#chat > :last-child")).toHaveText("Stopped; its changes stayed");
+    expect((await boxOf(lines.first())).height).toBeGreaterThan(12);
+    await expect(page.locator("#send")).toHaveAttribute("aria-label", "Send");
+  });
 });

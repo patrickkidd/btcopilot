@@ -423,16 +423,26 @@ export class Chat {
   /** A line the app says rather than either speaker, centred between the
    * bubbles: what just happened to the thread. */
   system(line: string): void {
-    this.list.append(el("div", "sys", esc(line)));
+    this.list.append(this.note(line));
     this.stuck = true;
     this.scroll();
+  }
+
+  private note(line: string): HTMLElement {
+    return el("div", "sys", esc(line));
+  }
+
+  /** The grey line of a turn stopped before this page was read, under the
+   * words that started it, so it is still there after a reload (R-0636). */
+  halted(line: string): void {
+    this.list.append(this.note(line));
   }
 
   /** A reply the reader stopped gives way to a grey line in its place: nothing
    * it began to say stays, and the dots end (R-0636). */
   stopped(bubble: HTMLElement | null, line: string): void {
     const at = bubble ?? this.typing;
-    const note = el("div", "sys", esc(line));
+    const note = this.note(line);
     if (at?.nextElementSibling?.matches(".play")) at.nextElementSibling.remove();
     if (at) at.replaceWith(note);
     else this.list.append(note);
