@@ -255,6 +255,15 @@ def test_a_turn_serves_its_replies_blind_in_a_random_order(patrick, test_user, c
         assert first["real_key"] in (pick["left_key"], pick["right_key"])
 
 
+def test_a_turn_counts_the_shadow_replies_still_running(patrick, test_user, case):
+    # R-0636
+    turn = turn_of(test_user, case)
+    row = db.session.get(Statement, ShadowTurn.query.first().statement_id)
+    shadow(test_user, case, row.discussion, text=None, model="gemini-3-pro")
+    body = patrick.get(f"/review/picks?turn={turn}").json
+    assert (body["pending"], body["expected"], len(body["replies"])) == (1, 4, 3)
+
+
 def test_a_chat_pick_keeps_whether_each_reply_was_acceptable(
     patrick, test_user, case
 ):

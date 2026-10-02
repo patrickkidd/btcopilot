@@ -145,7 +145,7 @@ shift to a death clears its shift values.
 |---|---|
 | `GET /review/pairs` | admins only: every pick not yet made, each `{id, source, context, left, right}`; a pair seen for the first time gets its pick row and its random side order here |
 | `GET /review/picks` | admins only: each model's `{model, won, lost, tied}` over the picks made |
-| `GET /review/picks?turn=<turn id>` | the owner of that turn's session, admin or auditor (403 otherwise): `{replies: [{key, text}], real_key, picks: [{id, left_key, right_key, choice, left_acceptable, right_acceptable, note}]}`, a pick's last four null until it is voted, the real reply and each finished shadow reply keyed `a`, `b`, `c` in a random order, and one pick per shadow against the real reply, made here if missing as `GET /review/pairs` makes it; a shadow with an error is left out and no model is named |
+| `GET /review/picks?turn=<turn id>` | the owner of that turn's session, admin or auditor (403 otherwise): `{replies: [{key, text}], real_key, picks: [{id, left_key, right_key, choice, left_acceptable, right_acceptable, note}], pending, expected}`, a pick's last four null until it is voted, the real reply and each finished shadow reply keyed `a`, `b`, `c` in a random order, and one pick per shadow against the real reply, made here if missing as `GET /review/pairs` makes it; a shadow with an error is left out and no model is named; `expected` counts the shadow replies started for the turn and `pending` those with neither text nor error yet |
 | `PUT /review/picks/<id>` | `{choice, note, left_acceptable, right_acceptable, source}`; an admin, or an auditor on their own session's pick; answers the pick with both model names |
 
 `choice` is `left`, `right` or `tie`; the client sends it already resolved. A

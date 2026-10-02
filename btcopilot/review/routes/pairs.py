@@ -180,7 +180,8 @@ def _ref_key(ref: dict) -> tuple:
 def _turn(turn_id: str):
     """One coach turn's replies keyed a, b, c in a random order, the real one
     among them, and a pick for each shadow against the real reply with how it
-    was voted, if it was (R-0636). No model is named."""
+    was voted, if it was, and how many shadows are still running out of how
+    many were started (R-0636). No model is named."""
     user = coder()
     said = adapter.Statement.query.filter_by(turn_id=turn_id).first()
     if said is None:
@@ -192,6 +193,7 @@ def _turn(turn_id: str):
     order = random.sample(sorted(refs), len(refs))
     keys = dict(zip(order, string.ascii_lowercase))
     real = next((ref for ref in keys if ref[0] == "statement"), None)
+    rows = adapter.ShadowTurn.query.filter_by(turn_id=turn_id)
     return jsonify(
         {
             "replies": [{"key": keys[ref], "text": refs[ref]} for ref in order],
@@ -208,6 +210,10 @@ def _turn(turn_id: str):
                 }
                 for pick in picks
             ],
+            "pending": rows.filter(
+                adapter.ShadowTurn.text.is_(None), adapter.ShadowTurn.error.is_(None)
+            ).count(),
+            "expected": rows.count(),
         }
     )
 
