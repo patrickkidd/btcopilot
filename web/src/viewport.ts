@@ -161,3 +161,9 @@ export const fold = (
     },
   };
 };
+
+/** Where the app widens: the drawer stands beside the thread rather than
+ * sliding over it, and the pinned column stands beside the screen, once the
+ * window is this wide, which is the width the desktop drawings are drawn at.
+ * Kept here, with no side effect at load, so every screen reads one value. */
+export const WIDE = "(min-width: 840px)";

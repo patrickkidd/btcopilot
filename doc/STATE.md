@@ -1778,6 +1778,7 @@ fd-corpus/design/fd336/cases/ with PROVENANCE.md, never in this repo. Three theo
 flagged for re-run were re-run the same day; none matched the recorded verdict cleanly and nothing
 was overwritten (T-2 in doc/TOPICS.md). Mockup round: in progress, see this section's next entry.
 
+Mockup version 4 built on the app's own code: the household picture, the timeline and the told drawer come from the app's modules and are byte-identical to the app's output; seven frames (Patrick's record twice, desktop, the telling mid-step, Client L twice, Anna) with three decisions on the page; served from this laptop and attached to Jira FD-367; source under web/ as a separate Vite mode plus the case page modules case.ts, casepage.ts, lens.ts, viewport.ts; the chat screen's own files were not refactored (the extraction is saved as a patch in the worktree's scratch folder for Patrick's decision); the three case files live only in the corpus design folder; the app's drawer controls (Back, dots, Next) stand for the play-by-play controls; the app's font links stay.
 
 ## The app's model calls on a Bedrock machine (built 2026-10-01, commit 666486bb on FD-367, not deployed)
 
