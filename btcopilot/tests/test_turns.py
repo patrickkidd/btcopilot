@@ -8,6 +8,7 @@ got to.
 import json
 
 import pytest
+from google.genai.errors import ServerError
 from mock import patch
 
 import btcopilot
@@ -100,6 +101,24 @@ def test_the_turn_writes_what_it_did_in_order_and_ends_in_done(
     ]
     assert events[-1]["statement"] == "Added Nell."
     assert events[-1]["session"]["id"] == body["discussion_id"]
+
+
+def test_a_title_call_that_fails_leaves_the_reply_and_the_sitting_unnamed(
+    web, token, family, monkeypatch
+):
+    # R-0097
+    coach(monkeypatch, said("Tell me about Nell."))
+    down = ServerError(503, {"error": {"message": "unavailable"}})
+    with patch("btcopilot.metered.gemini_text_sync", side_effect=down):
+        body = post(web, token).get_json()
+
+    discussion = db.session.get(Discussion, body["discussion_id"])
+    assert [s.text for s in discussion.statements] == [
+        "My sister is Nell.",
+        "Tell me about Nell.",
+    ]
+    assert discussion.title is None
+    assert logged(body["turn_id"])[-1]["type"] == TurnEventKind.Done.value
 
 
 def test_the_turns_done_row_carries_the_release_it_ran_on(
