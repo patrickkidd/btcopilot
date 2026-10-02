@@ -585,7 +585,7 @@ def test_a_turn_with_no_words_at_all_fails_rather_than_showing_a_bare_bubble(
 
 
 def test_a_label_of_exactly_the_limit_is_left_alone(discussion, family):
-    # R-0169
+    # R-0654
     """Twenty-eight fits. The boundary is where this goes wrong, so it is
     pinned on both sides."""
     label = "a" * chips.CHIP_MAX
@@ -598,7 +598,7 @@ def test_a_label_of_exactly_the_limit_is_left_alone(discussion, family):
 
 
 def test_one_label_over_the_limit_is_asked_for_again_on_its_own(discussion, family):
-    # R-0169
+    # R-0654
     """Twenty-nine does not fit. The coach is asked once for that label alone,
     and its new label goes into the reply it already wrote; anything else in
     its answer is not used."""
@@ -654,7 +654,7 @@ def test_a_reply_that_stays_a_list_of_chips_fails(discussion, family):
 def test_a_label_that_stays_too_long_is_cut_at_a_word_and_the_reply_kept(
     discussion, family, long_label, kept
 ):
-    # R-0169
+    # R-0654
     reply = run(
         discussion,
         "Tell me about that.",
@@ -667,7 +667,7 @@ def test_a_label_that_stays_too_long_is_cut_at_a_word_and_the_reply_kept(
 
 
 def test_a_label_is_measured_in_what_a_reader_sees(discussion, family):
-    # R-0169
+    # R-0654
     """An accented letter is two code points and one character to read, so a
     label of accents at the limit fits."""
     label = "e\u0301" * chips.CHIP_MAX
