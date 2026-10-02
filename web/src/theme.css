@@ -3492,3 +3492,70 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .ct-go[disabled] { opacity: 0.4; cursor: default; }
 /* The lines inside the cut are lit in the cut's own colour. */
 .bub.lit { box-shadow: 0 0 0 2px var(--ask); }
+
+/* ---- the case page (case.ts, casepage.ts): a record read as a presented case, in the thread's place ---- */
+/* The page is a column of cards on the chat's own ground. Every card is a fact
+   unless it says otherwise: a guess is an amber box; the one dated step of the
+   person's own is a green one, the colour of a move. The rules on the small
+   labels, the gaps and the quiet lines name the element (p.label) and come
+   last, so they beat the cards' own paragraph rules. */
+.case { display: flex; flex-direction: column; gap: 14px; }
+.case .level, .case .header-note { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.case .level > p, .case .side > p { margin: 0; font: 400 15px/1.45 var(--sans); color: var(--ink); }
+.case .level.now { border-color: var(--data); }
+.case .header-note { font: 400 15px/1.45 var(--sans); background: var(--tint); border: 0; margin: 0; }
+.case .account { margin: 0; font: 400 13px/1.4 var(--sans); color: var(--faint); border-top: 1px solid var(--line); padding-top: 10px; }
+/* the record's dated lines: the date column holds a full date on one line */
+.case .dates { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.case .dates li { display: grid; grid-template-columns: 96px 1fr; gap: 8px; font: 400 15px/1.35 var(--sans); }
+.case .d { font: 400 13px/20px var(--mono); color: var(--data); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* the still family picture, drawn by diagram.ts: the card's full width */
+.case .fam { margin: 0 -16px; padding: 4px 0 0; }
+.case .fam svg { display: block; width: 100%; height: auto; }
+.case .side .fam { margin: 0; }
+/* a guess: amber, labelled, what it rests on behind the first tap. On a pointer
+   a hover shows it laid over the cards below, so nothing under the pointer
+   moves; the tap opens it in the flow of the page. */
+.case .guessbox { position: relative; border: 1px solid var(--ask); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.case .guessbox > p { margin: 0; font: 400 15px/1.4 var(--sans); color: var(--ink); }
+.case .basis { display: none; flex-wrap: wrap; gap: 6px; align-items: center; }
+.case .basis .sublabel { flex-basis: 100%; }
+.case .guessbox.open .basis { display: flex; }
+.case .guessbox.open .basis-open { display: none; }
+.case .basis-open { align-self: flex-start; min-height: 44px; padding: 0 10px; margin: -6px 0 -8px -10px; border: 0; background: none; color: var(--ask-text); font: 500 13px var(--mono); cursor: pointer; text-decoration: underline dotted; }
+@media (hover: hover) {
+  .case .guessbox:hover { z-index: 4; }
+  .case .guessbox:hover:not(.open) .basis { display: flex; position: absolute; left: -1px; right: -1px; top: calc(100% + 4px); z-index: 3; padding: 10px 12px; background: var(--panel); border: 1px solid var(--ask); border-radius: 10px; box-shadow: 0 8px 24px var(--shadow); }
+}
+/* where there was a choice: the one dated step in the green box, the facts under it plain */
+.case .choice { border: 1px solid var(--move); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.case .choice p { margin: 0; font: 400 15px/1.4 var(--sans); color: var(--ink); }
+.case .choice .part { color: var(--faint); font-size: 13px; }
+.case .facts { margin: 0; padding-left: 20px; font: 400 15px/1.4 var(--sans); display: flex; flex-direction: column; gap: 4px; }
+/* each side of the family under level 4 */
+.case .side { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.case .side:first-of-type { padding-top: 0; border-top: 0; }
+.case .side > p.sub { margin: 0; font: 600 15px/1.3 var(--sans); color: var(--ink); }
+/* the line in its card, the chat's own picture region, as wide as the card
+   inside its border: the margin cancels the card's 16 of padding and no more,
+   so the card's border stays whole and no box reaches outside the card
+   (Patrick's rule on boxes outside their parent). The line is drawn at the
+   width it finds here, as it is at the top of the screen. */
+.case .pic { margin: 0 -16px; background: var(--panel); }
+/* the clusters under the line, one chip each */
+.case .clusters { display: flex; flex-wrap: wrap; gap: 6px; }
+/* a question a viewer pinned */
+.case .pins { display: flex; flex-direction: column; gap: 8px; }
+.case .pin { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border: 1px solid var(--line); border-left: 3px solid var(--data); border-radius: 8px; }
+.case .pin p { margin: 0; font: 400 15px/1.4 var(--sans); color: var(--ink); }
+.case .pin .pinby { font: 400 13px var(--mono); color: var(--faint); }
+.case .pin .chip { align-self: flex-start; }
+.case .notheld ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.case .notheld li { font: 400 15px/1.4 var(--sans); color: var(--ink); }
+/* the small labels, the gaps and the quiet lines, named on the element and last */
+.case p.label, .case p.sublabel { margin: 0; font: 400 13px/1.2 var(--mono); color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; }
+.case .guessbox > p.label { color: var(--ask-text); }
+.case p.gapline, .case p.faint { margin: 0; font: 400 13px/1.4 var(--sans); color: var(--faint); }
+.case p.gapline { font-size: 15px; }
+/* the page in the pinned column beside the thread */
+.pinned .case { padding: 14px 12px; }

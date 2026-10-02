@@ -207,3 +207,7 @@ doc/archive/2026-09-trace.json
 
 # Scratch scripts for workers (FD-367)
 /tmp-fd367/
+
+# the case page gallery: the critics' scratch builds (one folder per round) and the mockup bundle, never committed (both can hold a record's text)
+/web/mockup/.exact-*/
+/web/mockup/dist/
