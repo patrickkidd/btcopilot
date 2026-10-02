@@ -49,6 +49,12 @@ def pytest_terminal_summary(terminalreporter):
 
 def pytest_addoption(parser):
     add_e2e_option(parser)
+    parser.addoption(
+        "--integration",
+        action="store_true",
+        default=False,
+        help="Run the tests that need a real Postgres (starts a container with Docker)",
+    )
 
 
 def pytest_configure(config):
