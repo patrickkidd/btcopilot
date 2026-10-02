@@ -37,21 +37,21 @@ Panels that show the same people and messages: "People who chatted", "Messages f
 |---|------|---------------------------|------------------------|--------|---------------------------|---------|
 | 1 | The watcher's findings and your accept-or-reject queue | After every coach turn, one row in the observations table per likely mistake: `duplicate_person`, `duplicate_event`, `add_without_read`, `question_unsaid`. Rows are grouped into a queue of at most ten. | You reject a group (a row in observation_rejects, through `flask admin observations reject`) or take it up as a coach eval case. Taking a group up leaves no record, and no row links a group to its eval case. | partial | Groups on the queue; groups rejected; eval cases linked to a group. Last known: 3 cases seeded 09-24, 0 linked. | "Watcher findings per coach turn, by kind"; "Tuning queue: the ten biggest groups not yet rejected"; query 1 |
 | 2 | Refused writes and failed turns | Observations rows `tool_refused` (the record refused a coach tool call), `step_cap` (a turn used all 20 steps), `turn_failed`, `turn_declined` (every model declined the turn), `play_refused`, `play_failed` (a play-by-play refused or failed). A hand edit the record refuses answers 400 and writes no row. | The coach reads the refusal and retries [R-0579]. The rows join the same queue as row 1. | partial | Refusals per 100 coach turns, by kind. Refused hand edits: not counted. | "Refused tool calls, used-up turns and failures per day, by kind"; "Steps per coach turn, by model"; query 2 |
-| 3 | Cost per turn and cache-hit share | model_calls, one row per model call: whose, the model, four token counts, cost, duration. Play-by-play calls are not written there, so their cost is missing. | A session changes the prompt layout or the model. Closed once: a day with 78% of its cost in cache writes led to the record moving into the user message on 09-28 [R-0595]. | live | Cost per coach turn; cache-hit share. Last known: $22.99 from 09-23 to 09-28, five accounts. | "Cost per coach turn, by model"; "Cache hit share"; "Cost in range"; "Tokens in range"; "Cost a day, by person"; "Cost a day, by model"; "This month by person"; "Slowest coach calls (last 24h)"; the quality dashboard's section "In production: every coach turn people took, test accounts left out"; query 3 |
+| 3 | Cost per turn and dollars by kind | model_calls, one row per model call: whose, what it was for (`coach`, `shadow`, `proactive`, `replay`, `play`, `backfill`, `summary`, `cluster`, `scribe`, `ratify`, `judge`, `transcribe`), the model, four token counts, cost, duration. A play-by-play asked for in a session, a message the coach writes first, a session's title and summary, the regrouping of events into clusters after a turn, each scribe step on a coding, the rule draft and divergence reasons written when an admin ratifies a cut (charged to that admin, no diagram), the quality judge (charged to the user whose thread is judged, no diagram), and each finished AssemblyAI transcription (charged to the user who recorded it, no diagram, priced by audio length with zero tokens) are each written there. Shadow calls are left out of every real-spend panel and shown only in "Cost a day, by purpose"; the per-turn panels count coach calls only. | A session changes the prompt layout or the model. Closed once: a day with 78% of its cost in cache writes led to the record moving into the user message on 09-28 [R-0595]. | live | Cost per coach turn; dollars by kind. Last known: $22.99 from 09-23 to 09-28, five accounts. | "Cost per coach turn, by model"; "Dollars by kind, coach calls" (cache-write, cache-read, output and uncached-input dollars a day, stacked; dollars on cache writes is the gauge the cost follows, where the cache-read share of tokens read 77% while writes were 77% of the dollars); "Cost in range"; "Tokens in range"; "Cost a day, by person"; "Cost a day, by model"; "Cost a day, by purpose"; "This month by person"; "Slowest coach calls (last 24h)"; the Coach cost dashboard: "Cost per coach turn a day, warm and cold, with the 14-day mean", "Dollars by kind, coach calls", "Calls per coach turn a day", "Tokens written on a cold turn's first call, a day", "Share of coach turns that start cold, a day", "Coverage of the basic data over time, by family", "Cost per coach turn by release" (each coach turn's release is read from its done row in turn_events), "Replay passes" (the replay_passes table, section 17); the quality dashboard's section "In production: every coach turn people took, test accounts left out"; query 3 |
 | 4 | Each beta user sees their own use and cost | token_meters: each person's tokens this month and their cap. | The person sees it, and you learn whether people will pay. You ruled on 09-22 that no paid per-use feature comes before this exists. No screen shows a person their use. | missing | None today. | Query 4 (the meter only) |
 | 5 | Messages the coach writes first | proactive_messages, one row per message with its trigger (a pattern in the record, or a follow-up the person agreed to). Observations rows `proactive_sent`, `proactive_opened`, `proactive_replied`, `proactive_returned`, and `proactive_refused` when the words break the message's shape. Each sent message reaches the person as a notifications row of kind `coach`, with opened_at. | You change the budget or the triggers. The four counts are kept out of the queue; a panel shows them, and nobody reads it on a schedule. | partial | Opened, replied and returned, each as a share of sent. | "Messages the coach wrote first, by the week they were sent"; query 5 |
 | 6 | The coach's memory across sittings | Observations row `earlier_edit` when a coach turn's edits change items an earlier sitting made. | A session tunes what the coach reads: the last 20 statements, its last notes, the chat search. The rows land in your queue as one group with no reason attached. | partial | Share of coach turns with such a row. | "Watcher findings per coach turn, by kind"; "Coach edits to things an earlier sitting put down, per week"; query 6 |
 | 7 | Corrections by the person to the coach's record | diagram_changes rows written by the person on a record the coach built; "Doesn't fit" and dismissals in diagram_interactions. | Each correction is kept as a case an eval can run against, and the fix goes through the change log [R-0533]. Three case files since 09-26. A general policy and queue for record corrections is not built. | partial | Hand edits per week; correction cases with a passing eval. | "Coach edits by kind"; query 7; the correction cases in the private corpus |
 | 8 | Bug reports and feedback the coach offers | reports, kind `bug` or `feedback`, sent or declined, when the coach offers one and the person answers the sheet. Sent rows carry the person's words. Errors in the code are Grafana's, never a row. | Nobody yet. The route only takes posts and no admin command lists the rows; a panel counts them, and nobody reads it on a schedule. | partial | Sent and declined per week. | "Bug reports and feedback the coach offered to send, per week"; query 8 |
 | 9 | Product notices | notices, and a notifications row of kind `notice` for each person a notice reaches, with opened_at. | You decide the next notice. `flask admin notice list` prints how many got and opened each one. | partial | Opened ÷ got, per notice. | "Notices: how many people each was sent to, and how many opened it"; query 9 |
-| 10 | Which features people use | product_events: every screen a person opens and about sixty named taps. | What to cut or build next. Nobody reads it on a schedule. | partial | People active per week; days active per person. | "People active"; "Sessions"; "Taps"; "Screens opened"; "Features by use"; "Features by person"; "Feature use a day"; "Screens opened a day"; "First use of each feature, by person"; "Days active, by person"; "First session path"; "Cost per person per feature share"; the Features dashboard's section "What the coach and the app sent, and what came back"; query 10 |
+| 10 | Which features people use | product_events: every screen a person opens and about sixty named taps. | What to cut or build next. Nobody reads it on a schedule. | partial | People active per week; days active per person. | "People active"; "Sessions"; "Taps"; "Screens opened"; "Features by use"; "Features by person"; "Feature use a day"; "Screens opened a day"; "First use of each feature, by person"; "Days active, by person"; "First session path"; "Cost per person per feature share"; the Features dashboard's section "What the coach and the app sent, and what came back"; the Features dashboard's section "Coverage of the basic data": "Coverage curve, across all sittings", "Coverage curve, each sitting", "Coach turns to 50% coverage, by family"; query 10 |
 | 11 | Errors on the page and session replay | Grafana Faro on familydiagram.com: page errors in Grafana's logs with kind exception, and session replay with every element masked. | Someone opens Frontend Observability. You ruled that alerts wait until after the beta (09-22). | partial | Page errors and error groups per week; sessions with an error. Last known: 296 page errors in the 30 days to 09-29. | Query 11 |
 | 12 | Server logs and traces | Alloy sends container logs, host metrics and the coach turn traces to Grafana Cloud. Every request carries an id. | Read when something breaks. No alerting. | partial | Server error lines per day; failed traces per day. | "Memory available"; "Disk free on /"; "CPU busy"; "Load (1m)"; "Memory used by container"; "CPU by container"; "Errors and exceptions (last 6h)"; "Log lines a minute by container"; query 12 |
 | 13 | How much of the family evaluation is covered | The coach's own notes on each turn: whether the history has levelled off, its biggest gap, and whether the turn is evaluation or coaching. Stored with each coach turn's tool calls. | The three-generation coverage brainstorm, which you ruled waits for the frame session. Nothing counts the notes. | missing | None today. One candidate: the share of families with grandparents named. | None |
 | 14 | Requests to join the beta | The landing page's form emails you each request. No table stores the requests, because new schema needs your yes [R-0581]. The page needs its Turnstile keys before it can go out. | You send an invite, a row in invitations. | missing | Requests: none. Invites sent per week. | Query 14 |
 | 15 | Evals gating a prompt change | A live eval case built from your ruling, answered on the Claude Code subscription and saved as a replay in private/replays, then one paid run at the end of the batch. | The session ships the prompt change or holds it. Of the 3 prompt changes logged since 09-28, one is held and two are not evaluated. Ten live cases have no saved answers. | partial | Prompt changes shipped with a passing eval ÷ prompt changes made. Last known: 0 of 3. | doc/PROMPT_ENGINEERING_LOG.md; btcopilot/tests/live; private/replays |
 | 16 | Recorded runs on the quality dashboard | A kept live run is copied into quality/evals, and every release loads it into quality_runs. | You see pass rates by model over time. Copying a run in is done by hand. | live | Recorded runs and their pass rate. Last known: 1 run (09-26), 9 of 9 passed, $0.64. | "Recorded runs: kept in the repository, loaded by every release"; "Behaviour evals: share of cases passed, by model and who answered"; "Behaviour evals: each case over time"; "Behaviour evals: each case, by model"; "Extraction F1 history, with its sub-scores"; query 16 |
-| 17 | Which model replies better | shadow_turns: a real turn re-run on each of the person's shadow models, one row per model, never shown to them. Quality replay scores a model against a record you corrected. Your blind picks on Better replies, in model_picks. | You pick, and the tally decides the model. Beta users stay on Opus 5.5. Patrick's own account shadows on the latest Gemini Flash and the latest Sonnet (2026-09-29). | partial | Won, lost and tied per model; shadow turns per week. | Query 17 |
+| 17 | Which model replies better | shadow_turns: a real turn re-run on each of the person's shadow models, one row per model, never shown to them. Quality replay scores a model against a record you corrected. Your blind picks on Better replies, in model_picks. | You pick, and the tally decides the model. Beta users stay on Opus 5.5. Patrick's own account shadows on the latest Gemini Flash and the latest Sonnet (2026-09-29). Models a shadow or a replay can name, by alias: `opus-5.5`, `opus-4.6`, `sonnet`, `sonnet-5`, `haiku-4.5`, `gemini-flash` (3.8 Flash), `gemini-pro` (3.1 Pro preview), `gemini-3.6-flash`, `gemini-2.5-flash`, and `gpt` (GPT-6.1 Sol through OpenAI, under Patrick's BAA; key `OPENAI_API_KEY`, 2026-09-30). | partial | Won, lost and tied per model; shadow turns per week. | Query 17 |
 | 18 | The IRR coding review | review_codings, review_votes, review_cuts (ratified_at, audit), review_rules. A coder is told of a cut to code by a notifications row of kind `task`, and nudged by one of kind `reminder`. | Ratified codings become ground truth, coding F1 is scored against them, and coding rules reach the prompt. Nothing writes coding F1 yet. The last meeting on file is 2026-04-27. | partial | Cuts ratified; coding F1 points. | "Coding F1 against the IRR group's ground truth: empty until the group ratifies its codings"; query 18 |
 | 19 | The frame of reference test | A fresh session reads the frame document and one cluster, then writes a reading naming the key shift. Not built. | You grade the readings against your own across about ten clusters, and each disagreement becomes an example in the document. Waits on the frame session. | missing | Clusters where your reading agrees ÷ clusters graded. | None |
 | 20 | Your rulings and the check that every test cites one | Your words become rulings in the store. Every test cites a ruling, and CI fails a test that cites none. | Sessions queue your rulings in the private corpus (RULINGS_TO_APPEND files), and you append them by hand with your key. | live | Rulings waiting and how long; rulings with no citing test. Last known: 14 waiting (R-0603 to R-0616, since 09-28); 115 uncited (46 owed a test, 69 waived). | fd-corpus/private/RULINGS_TO_APPEND_*.md; btcopilot/tests/conventions/exceptions.txt |
@@ -150,7 +150,11 @@ where not d.scratch and u.username not like 'claude-test%'
 group by 1;
 ```
 
-### 3. Cost per turn and cache-hit share
+### 3. Cost per turn and dollars by kind
+
+The Coach cost dashboard (`deploy/grafana/fd-cost.json`, written 2026-10-01 for FD-366) follows a prompt or model change through to the cost of a real turn. It opens with the single figure to watch, with no projection over sittings: "Cost per turn now" (a large tile: the latest day with a real coach turn, with the day shown) and, small beneath it, "Cost per turn, last 7 days" (a tile: dollars of coach calls over distinct coach turns in the last 7 days, two decimals) and "Average cost per turn" (a line: dollars over distinct coach turns for each day, warm and cold together, with a 7-day rolling mean) beside them. Coach calls only; real families only, as everywhere. A turn is the coach calls sharing one turn id; it starts when its first call starts (the row's time less the call's duration). A turn is cold when it starts more than 5 minutes after the start of the same family's previous turn, the cache's life [R-0595]; the first turn of a family is cold. Turns are read from 14 days before the range so the first day's mean and cold flags are whole. The coverage panel takes the last done row of each day on each record, known items over required items. Not on it, because the database does not hold them: the release a turn ran on (model_calls and the done rows carry no version), and the replay passes' scores and settings (each pass's line is kept only in the eval ledger file inside the container, lost when the container is replaced; the database keeps the pass's model calls as model_calls rows of purpose `replay` on a scratch record, with no key, thinking level, prompt version or score).
+
+The tool list differs by role (a coder's navigate also lists the coder's screens, R-0626), so a coder's and a non-coder's turns share no cached prefix: the tools head it.
 
 ```sql
 select count(distinct mc.turn_id) filter (where mc.created_at > now() - interval '7 days') as turns_7d,
@@ -163,6 +167,7 @@ select count(distinct mc.turn_id) filter (where mc.created_at > now() - interval
 from model_calls mc
 join users u on u.id = mc.user_id
 where u.username not like 'claude-test%' and mc.created_at > now() - interval '30 days'
+  and mc.purpose = 'coach'
   and not exists (select 1 from diagrams dg where dg.id = mc.diagram_id and dg.scratch);
 ```
 
@@ -278,6 +283,25 @@ where u.username not like 'claude-test%' and pe.created_at > now() - interval '3
 group by 1 order by 2 desc limit 10;
 ```
 
+**Coverage of the basic data.** A section of the Features dashboard, read from
+the done row each coach turn leaves in turn_events, which carries the counts of
+the basic data's items before and after the turn (doc/COVERAGE.md). Real
+families only: scratch diagrams, synthetic sittings and the claude-test
+accounts are left out.
+
+- "Coverage curve, across all sittings": one line per family, the items known
+  after each coach turn as a share of the items required after it, against the
+  family's coach turns counted from its first.
+- "Coverage curve, each sitting": the same share, one line per sitting, with
+  the coach turns counted again from the start of each sitting.
+- "Coach turns to 50% coverage, by family": the first coach turn after which
+  half the required items were known; families that have not reached half are
+  left out.
+
+Next, not built: facts per evaluation question; coverage gained on coaching
+turns without an evaluation question; engagement after an evaluation question;
+ask density against return within a week.
+
 ### 11. Errors on the page and session replay
 
 LogQL on the data source `grafanacloud-logs`:
@@ -325,6 +349,29 @@ from shadow_turns;
 
 select source::text, coalesce(choice::text, 'not yet') as choice, count(*) as picks
 from model_picks group by 1, 2;
+```
+
+Past turns can be run on a shadow model too, so the comparison does not wait for new
+turns. The backfill rebuilds each record as it stood before each past turn by taking
+that turn's changes, and every change after it by anyone, back off today's record,
+newest first; the shadow then runs on that copy exactly as a live one does. It is run
+by hand for one person and a list of model aliases with `flask admin coach-model
+backfill <email> <alias>...`: without `--yes` it prints, per model, the turns to run,
+the replies too old to carry a turn id (skipped) and the estimated dollars priced from
+the real turns' token counts; with `--yes` it hands the turns to the shadow queue
+[R-0596].
+
+Every quality replay is kept as a row in the `replay_passes` table: model, thinking
+level, prompt version, the person and statements replayed, turns, calls, tokens,
+dollars, the scores by part, the release and who answered. A pass under a key (case,
+prompt version, model, thinking level) already in the table is not run again without
+`--again`, and `--key` prints the passes kept under it. The cost dashboard's Replay
+passes panel lists them, beside its cost per coach turn by release [R-0597].
+
+```sql
+select created_at::date, model, thinking, prompt, release, turns, calls,
+       round(cost_usd / nullif(turns, 0), 4) as dollars_per_turn, overall
+from replay_passes order by created_at desc;
 ```
 
 ### 18. The IRR coding review

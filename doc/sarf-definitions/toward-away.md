@@ -32,7 +32,7 @@ The main off-theory trap: reading toward as good and away as bad. By Patrick's c
 5. **A couple's split, coded as away.** RULED, then marked undecided. Ruling R-0057 (a worked coding example, marked undecided) — see the private edition. R-0511 marks it undecided.
 6. **Every coding rule is provisional.** Ruling R-0511 (coding rules are provisional while ground truth is rebuilt) — see the private edition.
 7. **Not in the white paper's value space.** “Value space: conflict, distance, reciprocal functioning, child-focus, cutoff, inside (triangle), outside (triangle), defined-self.” Patrick, WP L51. Toward and away are not among the eight values. How the eight break down into toward and away moves appears only in Claude's drafts (CODING section 5).
-8. **The fact and the theory are kept apart.** RULED 2026-09-26. Ruling OPEN_QUESTIONS 5 (facts and theory-based readings are kept in separate layers) — see the private edition. A toward or an away is the fact layer; what theory reads into it is not.
+8. **The fact and the theory are kept apart.** RULED 2026-09-26. See the private corpus for the app's decision on this point (2026-09-26) (OPEN_QUESTIONS 5). A toward or an away is the fact layer; what theory reads into it is not.
 9. **How a toward move is drawn.** RULED for the picture only. Ruling R-0115 (how the picture draws a toward move) — see the private edition.
 
 ### Coders' group (IRR)

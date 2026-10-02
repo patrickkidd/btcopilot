@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { NO_LIST, lists, openList, pinned, stateFor } from "./setup";
+import { NO_LIST, lists, openList, PARKED, pinned, stateFor } from "./setup";
 
 /** The list behind the picture, and the button that opens it.
  *
@@ -17,8 +17,9 @@ const personEditor = async (page: Page) => {
   await settle(page);
   await openList(page);
   await page.locator("#tab-people").click();
-  await page.locator("#menu-body .row").first().click();
-  await expect(page.locator("#menu-body .editor")).toBeVisible();
+  // the form is reached only to add someone while it is parked (PARKED)
+  await page.locator("#menu-add").click();
+  await expect(page.locator("#add-sheet .editor")).toBeVisible();
 };
 
 test.describe("the button that opens the list", () => {
@@ -125,6 +126,7 @@ test.describe("the two lists behind it", () => {
   test("a person opens the editor on the fields the record keeps", async ({
     page,
   }) => {
+    test.skip(true, PARKED);
     await settle(page);
     await openList(page);
     await page.locator("#tab-people").click();
@@ -142,6 +144,7 @@ test.describe("the two lists behind it", () => {
   test("a name typed in the editor is on the record after saving", async ({
     page,
   }) => {
+    test.skip(true, PARKED);
     await settle(page);
     await openList(page);
     await page.locator("#tab-people").click();
@@ -218,7 +221,7 @@ test.describe("the two lists behind it", () => {
   }) => {
     await personEditor(page);
     const fields = await page
-      .locator("#menu-body .editor input.f")
+      .locator("#add-sheet .editor input.f")
       .evaluateAll((all) =>
         all
           .filter((n) => (n as HTMLElement).offsetParent)
@@ -279,14 +282,14 @@ test.describe("the list views and their editors", () => {
   // R-0200
   test("a person's symbol field is labelled Kind", async ({ page }) => {
     await personEditor(page);
-    const labels = await page.locator("#menu-body .editor .lab").allTextContents();
+    const labels = await page.locator("#add-sheet .editor .lab").allTextContents();
     expect(labels).toContain("Kind");
   });
 
   // R-0200
   test("no label in the person editor says sex or gender", async ({ page }) => {
     await personEditor(page);
-    const labels = await page.locator("#menu-body .editor .lab").allTextContents();
+    const labels = await page.locator("#add-sheet .editor .lab").allTextContents();
     expect(labels.length).toBeGreaterThan(0);
     expect(labels.filter((l) => /sex|gender/i.test(l))).toEqual([]);
   });
@@ -297,8 +300,10 @@ test.describe("the list views and their editors", () => {
   }) => {
     await settle(page);
     await openList(page);
-    await page.locator("#menu-body .row").first().click();
-    const block = page.locator('#menu-body .editor [data-block="shift"]');
+    // the form is reached only to add an event while it is parked (PARKED);
+    // a new event starts as a shift
+    await page.locator("#menu-add").click();
+    const block = page.locator('#add-sheet .editor [data-block="shift"]');
     await expect(block).toBeVisible();
     await expect(block.locator(".sec")).toHaveText(["Shifts"]);
     const labels = await block.locator(":scope > .lab").allTextContents();

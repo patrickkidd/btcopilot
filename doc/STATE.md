@@ -21,6 +21,19 @@ names another session [R-0530]. The flush revises this file and appends to HISTO
 the whole handover.
 The older handover files in the private corpus stay as they were, for the record only.
 
+FD-366 is the follow-on ticket (child of epic FD-362): the coverage checklist per Kerr chapter 10 with four states, prose quality by Patrick's picks, the conversational regression test, and the shadow spend category. FD-365 is frozen for review and merge as of 2026-09-30; new work goes on branch FD-366 from the FD-365 head, and the deploy lock moves to FD-366 when Patrick says so.
+
+**Start here for FD-366 (flush 2026-10-01 22:40).** Production runs release 3.2026.10.1.10 (image 3.2026.10.1.10-g3bc341f). The deploy lock is on FD-366 (`uv run bin/deploy-lock set FD-366`; Claude moves it when Patrick says so, R-0623).
+Newly released in it: the fix for the coach's turn crashing on the turn after a death recorded with no cause, the replay start-turn option, replay passes kept when a run stops early. Released earlier in 3.2026.10.1.9: cut selection in chat (C6, R-0629), the Diagrams page drill-down, the agenda confirmation panel, the Settings Data header and renames, cut from the admin's own diagram, the open-diagram rebuild, the folded migration, the Next Meeting date field, the cost tiles. Rulings R-0603 to R-0649 are in the store except R-0619, R-0625, R-0626, R-0627 and R-0639, still queued unconfirmed. PR #145 is ready for review, CI green, awaiting Patrick's merge. The follow-on ticket is FD-368 and new work goes there. Sonnet 5.5 shadows Patrick's account since 2026-10-01 and Gemini Flash is out. The box's alembic pointer was re-stamped to 1b00000000c0 on 2026-10-01.
+The two tests that start their own Postgres cannot run on this Mac today (shared memory limit 4 MB); they were proven on CI.
+Decisions open for him (ask in the session, one at a time; do not republish the open-issues artifact): 1) the add forms: keep for adding, or move to chat; 2) retitling sittings; 3) cuts for a read-only admin; 4) a failed title call failing the turn; 5) more thinking on the variables; 6) the coach speaking in the same call as its edits (turn loop change); 7) GPT-6.1 and Muse Spark keys on the box.
+Rules changed 2026-10-01 in the sources repo, uncommitted (Patrick commits): claude-user/CLAUDE.md (auditors only for 3+ builders; builder briefs; automatic efficiency reminder; architecture escalation R-0624; builders never run the full suite; one migration per PR); skills/efficiency (spend critique, scannable output, criteria 44 to 50, references/builder-brief.md); skills/token-optimization (new); skills/theory (outside authors only; Patrick's writing is the hypothesis layer); fd-corpus/private/PATRICK_STATEMENTS.md and the rulings queue (R-0619 to R-0629, four marked "confirm or drop").
+Artifacts (all https://claude.ai/artifact/<id>): cost WMnou7A3UcZcUhAgZujQre; models 2dHnrTjSaD2cTyzdjue5GL; tools 3sLhHczKGyWLLXmMw2DY8q; coverage TtrD5U4qYmut1bdb7jM4Yg; timeline fold U3QN1ZJ8rPyJvteLwDPxg4; merge and detail 6tSYUH4UciQxTv2UMerCEV; open issues 6V3sTBzxEz7WZKGZJNGe9s (not to be republished); rebuild walk QcW4Seiv4ZzcYsPvFMg34C; cut gallery 2rYmrvZiAMSpK6a5ioqsB1; cut walk QNKF2Y6ASqoV1N1gJCkiuJ.
+Local measurement harness: /Users/patrick/btcopilot-sandbox/prodcopy (its README says how to replay turns against a copy of production data).
+Box changes made by hand on 2026-10-01: a swap file, an image prune, new enum values, diagram_id made nullable (model calls), diagram_id added on review_cuts, the replay_passes table.
+Spend 2026-10-01: $1.88 on the backfill, $3.73 on measurement.
+Uncommitted in the sources repo (12 paths): claude-user/CLAUDE.md, claude-user/skills/efficiency/{ACCEPTANCE_CRITERIA.md,SKILL.md,references/corrections.md,references/builder-brief.md}, claude-user/skills/token-optimization/, app-pm/, fd-corpus/private/prompts/{agent.prompty,agent_record_contract.md,flow_core.md,tool_meanings.prompty,coach_notes.md}.
+
 ## The product (ruled)
 
 **"A coach who never forgets your family."** You talk to it (voice or text) the way
@@ -699,7 +712,7 @@ wording, and those go to the ruled end-of-batch API run. The efficiency skill li
 
 **Deployed earlier 2026-09-28: commit a8b2245b, image 3.2026.9.28.9+ga8b2245, database still at
 1b00000000b4 (run 36462083019).** The database revision is unchanged: this PR's migrations are
-squashed into one [R-0584]. It carries:
+squashed into one [R-0622]. It carries:
 - The play-by-play drawer's close button is the app's own ×, the same one the meeting card uses,
   and the drawer opens with its order path row, point and snapshot line in place.
 - An event's words in the drawer stay inside the family's side margin, none running to the
@@ -1806,3 +1819,341 @@ That build is done and reviewed; where it stands is at the head of this file.
 - Read this file first. Read HISTORY only for a specific fact.
 
 Pinned, not active: the corpus/subset sessions in [NEXT_SESSIONS.md](archive/2026-09-NEXT_SESSIONS.md).
+
+## Open issues from 2026-09-30
+
+FD-366 session. Each item: what was done, why it matters, what you decide.
+
+### A. Architecture and tool choices made without your ruling
+
+You rule keep, change, or undo on each.
+
+1. **A new column on the model-calls table naming why each call was made**
+   - Done: Every row in the model-calls table now has a required purpose from a fixed list: coach, shadow, proactive, replay, play, backfill, summary. Each place that makes a call fills it in. The migration labelled old rows from their turn id.
+   - Why it matters: It changes a production table and every call site, and the fixed list is now what all cost panels group by.
+   - You decide: Keep, change the list, or undo.
+
+2. **The plain text model call now returns token counts and the answering model, and always writes a row**
+   - Done: The plain text call (used for proactive messages, session titles and summaries) used to return only text. It now returns token counts and the model that answered, and every such call writes a model-calls row. The metering code moved into its own module.
+   - Why it matters: It changes the return shape that other code depends on, and it is the reason spend for these calls is now visible at all.
+   - You decide: Keep, change, or undo.
+
+3. **Shadow turns run through a background job queue**
+   - Done: Shadow turns and the backfill are queued as background jobs on a dedicated shadow queue, with its own worker container on the box. You told me you did not know background workers existed.
+   - Why it matters: It adds a new running part to production, and how background work is designed is a decision you have not made.
+   - You decide: Rule on whether background workers belong in the app at all, and if so how they are designed. Otherwise undo and run shadow turns another way.
+
+4. **Tests run on SQLite while production runs Postgres**
+   - Done: The purpose migration was first written with Postgres-only casts and failed the tests. It was then rewritten to go through the database layer so it runs on both. You want tests to stay on SQLite.
+   - Why it matters: Anything Postgres-only (enum types, JSON casts) can pass here and break there, or the other way round.
+   - You decide: Rule how Postgres-only features are handled when tests run on SQLite.
+
+5. **The change-history writer records an empty list instead of null when a list field was absent before an edit**
+   - Done: Taking back a later edit now leaves an empty list, not null. Five stored production rows were corrected by hand to match, with your approval.
+   - Why it matters: It changes what the history table holds for every future edit of a list field.
+   - You decide: Keep or change.
+
+6. **The shadow backfill rebuilds the record before a past turn by rewinding the change history**
+   - Done: It starts from today's record and undoes change-history rows newest first, including edits made by other authors after that turn.
+   - Why it matters: The rebuilt record may differ from what the coach really saw at that moment, so the backfilled shadow answers may be judged against the wrong facts.
+   - You decide: Keep, restrict to the same author, or undo.
+
+7. **The Gemini client on the box uses the developer endpoint with the API key**
+   - Done: One line was added to the box environment file. The compose file still passes a service-account path that points to an empty file.
+   - Why it matters: Production depends on a hand-edited box setting that is not in the repository, and the leftover service-account path is misleading.
+   - You decide: Keep, and whether the leftover path is removed.
+
+8. **Grafana panels were re-cut by purpose**
+   - Done: Real-spend panels exclude shadow. A new panel, Cost a day by purpose, was added. The quality dashboard's per-turn panels now count coach calls only, so play-by-play and backfill calls are excluded there too.
+   - Why it matters: The numbers you have watched before will look different, and you did not choose that cut.
+   - You decide: Keep or change which purposes each panel counts.
+
+9. **The splash screen loads the app through a small boot file**
+   - Done: The app script is loaded by a small boot file with a dynamic import so the stylesheet arrives before the app runs. The offline worker is now registered from the app script instead of on the page-load event.
+   - Why it matters: It changes how the app starts, and offline registration timing changed with it.
+   - You decide: Keep or undo.
+
+10. **The shape of the backfill admin command**
+   - Done: Run without a flag it only previews. With the flag it runs. The cost estimate is priced from the real turns' token counts.
+   - Why it matters: It is the command that spends money, and its safety depends on you liking preview by default.
+   - You decide: Keep or change.
+
+26. **Letting the coach write its words to the person in the same model call as its last record edits**
+   - Done: Today the turn loop throws away words written beside a tool call, and the prompt tells the coach to ask its question only after its tool calls come back (R-0482, because 3 of 75 turns ended with no reply). Doing it in one call would save about $0.027 per turn, the separate closing call, which is 26% of calls. The turn loop would have to change. The prompt variant is drafted and ready to measure.
+   - Why it matters: It changes how tools interact with the coach's words, so it needs his ruling.
+   - You decide: Whether the loop may keep words written beside tool calls.
+
+27. **Trying two outside models as shadows**
+   - Fixed 2026-09-30: The GPT-6.1 client is built; a key is needed on the box only for live shadows. Muse Spark still needs a key. DeepSeek is excluded by Patrick's BAA ruling.
+   - Done: GPT-6.1 Sol costs about $0.18 to $0.21 a turn, needs an OpenAI key and a new client, and health-data terms apply only after OpenAI approval. Muse Spark 1.1 from Meta costs about $0.11 a turn, needs a Meta key, and is reachable through the existing Anthropic-format client with a small routing change. No training, retention or health-data terms were found for it.
+   - Why it matters: Clinical text would leave the current providers.
+   - You decide: Which keys to create, and whether clinical text may go to either.
+
+28. **The queued measurement spend**
+   - Fixed 2026-09-30: Measured: five passes, $3.45 plus the Sonnet re-run. Results are on the cost page.
+   - Done: Replay his 13 turns on Opus 5.5 three ways: the current prompt at medium thinking as the baseline on the new layout, low thinking, and the batch-edits prompt variant. About $2.50 a run, $7.50 total. Plus one run on Gemini 3.1 Pro Preview through the existing Google client, about $2.50. The free routes cannot show it: the subscription replay gives no thinking control and the local model is not Opus.
+   - Why it matters: Whether low thinking or the batch-edits prompt saves money without hurting replies cannot be judged without it.
+   - You decide: Answer "go" or a number.
+
+41. **For auditors, a coach reply with no saved note shows no (i)**
+   - Dropped 2026-10-01 by Patrick: "skip the (i) for auditors topic."
+   - Done: Guillermo's case, 2026-10-01: 42 of his 45 replies have notes. The three without are the opener, a reply that only edited the record, and a play-by-play. Recommended: show a greyed (i) that reads "No notes for this reply" on tap.
+   - Why it matters: Today an auditor cannot tell a missing note from a broken button.
+   - You decide: Nothing.
+
+36. **More thinking on the variables while the rest runs low**
+   - Done: The coach runs at low thinking; Patrick wants more thinking on the variables (open question 40).
+   - Why it matters: It changes cost and reply quality.
+   - You decide: Rule on open question 40.
+
+52. **Retitle a sitting from its whole content when the next one opens, or keep first-impression titles (he wants to see the sittings first)**
+   - You decide: Decide.
+
+53. **'+ Add event' and '+ Add someone' still open the parked forms, and the coding screen still edits through them: keep for adding, or move adding to chat too**
+   - You decide: Decide.
+
+54. **Cuts are not blocked for an admin viewing read-only, since cuts are placed from the agenda across all families: fine, or block them**
+   - You decide: Decide.
+
+67. **A failed sitting-title call fails the coach's whole turn**
+   - Done: Seen on the test stack with no Gemini key, 2026-10-01.
+   - Why it matters: A title failure should not cost the person their reply.
+   - You decide: Recommended: the turn succeeds and the title failure is logged. Alternative: keep failing the turn so nothing silent happens.
+
+### B. Defects and unproven things
+
+You rule fix now, later, or accept.
+
+13. **Cluster regrouping model calls are not recorded at all**
+   - Fixed 2026-09-30: All model calls are metered and the fix is released.
+   - Done: They never write a row in the model-calls table.
+   - Why it matters: Their cost is invisible in spend panels.
+   - You decide: Decide whether to record them and under which purpose.
+
+15. **Production ran the previous image for about 15 minutes on 2026-09-30**
+   - Done: The database carried the new migration while the app ran the old image, because a bare container restart dropped the image tag. No real turns fell in the window. The deploy README now says restarts must carry the tag.
+   - Why it matters: It can happen again if someone restarts without the tag.
+   - You decide: Decide whether a guard against it is worth building.
+
+16. **45% of coach turns start more than 5 minutes after the previous one and miss the prompt cache**
+   - Done: Keeping the cache alive would conflict with R-0595.
+   - Why it matters: Those turns cost more than cached ones.
+   - You decide: Rule whether R-0595 yields, or the cost stays.
+
+17. **14 older coach replies on your account have no turn id**
+   - Done: The backfill skipped them.
+   - Why it matters: They have no shadow answers to compare.
+   - You decide: Decide whether to leave them out or link them by hand.
+
+20. **Tailscale on the Mac was stopped**
+   - Done: That broke the phone link to the test stack.
+   - Why it matters: Your phone walks fail until it is running again.
+   - You decide: Turn it back on before the next walk.
+
+11. **The rewritten purpose migration has not been run on Postgres**
+   - Fixed 2026-09-30: The migration was proven on a fresh Postgres database from empty, and old rows were relabelled correctly.
+   - Done: Production already carries the column from the earlier version of the migration, so the rewrite has only run on SQLite.
+   - Why it matters: A fresh Postgres database built from the migrations could fail or differ from production.
+   - You decide: Decide whether to have it run on a scratch Postgres database before the next migration.
+
+12. **The fallback column on model calls reads as set on every row**
+   - Fixed 2026-09-30: The code fix is released. The one-off correction of the old production rows is still Patrick's.
+   - Done: It shows 100% while the real rate is 0%. This is a bug in how it is stored.
+   - Why it matters: Any panel or question about fallbacks reads wrong.
+   - You decide: Decide whether to fix it now.
+
+14. **The coach eval judge and the synthetic-client helpers are changed but not run**
+   - Fixed 2026-09-30: Fake-model tests now cover the judge and the simulated client reading the metered text reply. The persona generator and quality scorer still lack one.
+   - Done: They were updated for the new text-call return shape. They make real model calls, so they were not run.
+   - Why it matters: They may be broken and nobody would know until a run.
+   - You decide: Decide whether to spend on one run, or check them another way first.
+
+18. **The theory reference page is over its length limit**
+   - Fixed 2026-09-30: The reference is at 7,459 corpus words (8,053 plain count). Remaining passages are all tripwires, open items, principles or the source index. The citation is corrected. Sources commit 739ec3c.
+   - Done: It is 9,292 words against a 7,000 target and a 9,000 cap. One citation there points at line 93 of Bowen's chapter 9 in the source, where the text now sits at line 95.
+   - Why it matters: It breaks the cap you set, and the citation is stale.
+   - You decide: Decide whether to cut it now or later.
+
+19. **Sub-agents could not enter the FD-366 worktree**
+   - Fixed 2026-09-30: Cause found: this session runs from the sources repo, so the worktree tool treats the app repo's worktrees as foreign. Sessions on app tickets start in the app clone. No code change.
+   - Done: The tool refused with a message that it belongs to another repository. Builders worked by absolute path.
+   - Why it matters: Any rule that relies on entering the worktree does not hold for sub-agents.
+   - You decide: Decide whether this is accepted or worth fixing.
+
+25. **The shadow "sonnet" alias resolves to Sonnet 5.5**
+   - Fixed 2026-09-30: The shadow "sonnet" alias is Sonnet 5.5, priced at the same rates as Sonnet 5 per the price sheet. Verified against 60 production calls with $0 difference. A test pins it.
+   - Done: The alias points at Sonnet 5.5, which the price sheet prices the same as Sonnet 5.
+   - Why it matters: A wrong rate would misstate shadow spend.
+   - You decide: Nothing.
+
+29. **The fixed coaching text is now cached ahead of the record**
+   - Fixed 2026-09-30: The fixed coaching text (about 3,700 tokens) is cached ahead of the record instead of rewritten every turn. The part rewritten each turn fell from about 13,900 to about 1,100 characters plus the record. Behaviour unmeasured, by Patrick's instruction.
+   - Why it matters: Nothing open.
+   - You decide: Nothing.
+
+30. **The coach's tool definitions were shortened**
+   - Fixed 2026-09-30: They were cut from 22,989 to 15,259 characters (about 2,270 tokens), keeping every rule stated nowhere else. Rules that only the record-editing tools carried now sit in the scribe's prompt. About $0.007 per turn.
+   - Why it matters: Nothing open.
+   - You decide: Nothing.
+
+31. **The cache-hit panel shows dollars by kind**
+   - Fixed 2026-09-30: For coach calls it now shows dollars for cache write, cache read, output and uncached input, the gauge the cost follows.
+   - Why it matters: Nothing open.
+   - You decide: Nothing.
+
+32. **Re-asks inside a turn are not worth a change**
+   - Fixed 2026-09-30: Re-asks (shorter labels, sentences instead of chips, words after a silent stop) fired five times in two weeks and never since 23 Sep.
+   - Why it matters: Nothing open.
+   - You decide: Nothing.
+
+33. **The replay tool can vary thinking, prompt and turn count**
+   - Fixed 2026-09-30: It can run one person's turns under a thinking level, an alternative prompt file, or a turn cap, and prints cost and score. A "gemini-pro" alias for Gemini 3.1 Pro Preview exists, with its own price row.
+   - Why it matters: Nothing open.
+   - You decide: Nothing.
+
+38. **Play-by-play: the symbols are drawn at different sizes that are not right**
+   - Done: Queued, not started. Patrick reported it on 2026-10-01.
+   - Why it matters: Symbols of different sizes make people look different in importance when they are not.
+   - You decide: Nothing yet.
+
+40. **Timeline strip: a page cut short when the picture folds**
+   - Done: If a cluster's page or a two-event comparison is open when the picture folds, the strip shows that page cut short instead of the line. Found 2026-10-01 during the strip build. Not fixed.
+   - Why it matters: The folded picture shows a broken page instead of the line.
+   - You decide: Nothing yet.
+
+42. **Chip tap in the chat does not unfold the timeline or show the selection**
+   - Fixed 2026-10-01: released in 3.2026.10.1.5.
+   - Done: Tapping a chip in the chat must unfold the timeline (now folded while reading) and select that event. The selected event's title must be shown front and centre in teal, as when tapped on the timeline, not grey in the breadcrumb. The grey timeline label with nothing selected stays (Patrick, 2026-10-01). Queued, not started.
+   - Why it matters: A tap that shows nothing obvious reads as a broken chip.
+   - You decide: Nothing.
+
+55. **One phone test fails on the release: scrolling up to read older sittings moves the words about 13px while the timeline folds (fix in progress)**
+   - Fixed 2026-10-01: released in .6.
+   - You decide: Nothing.
+
+56. **Four diagrams-view tests fail on a 'Notices' row in the test account's Account page; cause unknown, to check**
+   - Fixed 2026-10-01: stale test-stack data, not a regression.
+   - You decide: Nothing.
+
+34. **The record-row lock left by a refused write**
+   - Fixed 2026-09-30: Fixed and released.
+   - Done: A refused write left the record's row locked.
+   - Why it matters: Later writes to that record could hang.
+   - You decide: Nothing.
+
+35. **The rewind's ghost event with no kind**
+   - Fixed 2026-09-30: Fixed.
+   - Done: Rewinding an event left an event with no kind.
+   - Why it matters: A blank event showed in the record.
+   - You decide: Nothing.
+
+43. **The questions list's teal chips jump instead of going to the chat; jumps to a bubble or a sitting animate; the drawer jumps; one shared jump path (released 3.2026.10.1.5)**
+   - Fixed 2026-10-01: The questions list's teal chips jump instead of going to the chat; jumps to a bubble or a sitting animate; the drawer jumps; one shared jump path (released 3.2026.10.1.5).
+   - You decide: Nothing.
+
+44. **Sittings list in the agenda left out the replay copies**
+   - Fixed 2026-10-01: Sittings list in the agenda left out the replay copies.
+   - You decide: Nothing.
+
+45. **Titles and summaries moved to Gemini Flash Lite**
+   - Fixed 2026-10-01: Titles and summaries moved to Gemini Flash Lite.
+   - You decide: Nothing.
+
+46. **Cuts span sittings; the picker scrolls the whole thread with a jump list**
+   - Fixed 2026-10-01: Cuts span sittings; the picker scrolls the whole thread with a jump list.
+   - You decide: Nothing.
+
+47. **The coach merges two people in chat on the person's yes (merge_people)**
+   - Fixed 2026-10-01: The coach merges two people in chat on the person's yes (merge_people).
+   - You decide: Nothing.
+
+48. **Event and person detail cards replace the edit forms, which are parked; one action into the chat**
+   - Fixed 2026-10-01: Event and person detail cards replace the edit forms, which are parked; one action into the chat.
+   - You decide: Nothing.
+
+49. **Admins search people by name on the diagrams view; opening another person's diagram is read-only god access (released 3.2026.10.1.6)**
+   - Fixed 2026-10-01: Admins search people by name on the diagrams view; opening another person's diagram is read-only god access (released 3.2026.10.1.6, read-only).
+   - You decide: Nothing.
+
+50. **Coach cost dashboard with warm/cold cost per turn, dollars by kind, calls, cold writes, coverage over time, cost by release, replay passes**
+   - Fixed 2026-10-01: Coach cost dashboard with warm/cold cost per turn, dollars by kind, calls, cold writes, coverage over time, cost by release, replay passes.
+   - You decide: Nothing.
+
+51. **Every coach turn records its release; replay passes kept in a table (5 backfilled)**
+   - Fixed 2026-10-01: Every coach turn records its release; replay passes kept in a table (5 backfilled).
+   - You decide: Nothing.
+
+57. **Cut picker: one row per family, whole thread at the newest sitting, a plain line of dates as the jump control (released .7)**
+   - Fixed 2026-10-01: Cut picker: one row per family, whole thread at the newest sitting, a plain line of dates as the jump control (released .7).
+   - You decide: Nothing.
+
+58. **An admin viewing another person's diagram sees their chat and their sittings in the drawer (released .6 and .7)**
+   - Fixed 2026-10-01: An admin viewing another person's diagram sees their chat and their sittings in the drawer (released .6 and .7).
+   - You decide: Nothing.
+
+59. **Cost dashboard headline: the latest day's cost per turn as one big number beside the line over time (released .6)**
+   - Fixed 2026-10-01: Cost dashboard headline: the latest day's cost per turn as one big number beside the line over time (released .6).
+   - You decide: Nothing.
+
+60. **Guillermo's empty chat: a leftover read-write share from release .4 made his diagram read as shared; removed, and no admin keeps a share on a diagram they do not own (released .8)**
+   - Fixed 2026-10-01: Guillermo's empty chat: a leftover read-write share from release .4 made his diagram read as shared; removed, and no admin keeps a share on a diagram they do not own (released .8).
+   - You decide: Nothing.
+
+61. **One tick per row on the diagrams view (released .8)**
+   - Fixed 2026-10-01: One tick per row on the diagrams view (released .8).
+   - You decide: Nothing.
+
+62. **Cut picker: whole thread plus the agenda's sitting boxes as jump buttons, two-tap range with words that say so (released .8)**
+   - Fixed 2026-10-01: Cut picker: whole thread plus the agenda's sitting boxes as jump buttons, two-tap range with words that say so (released .8).
+   - You decide: Nothing.
+
+63. **Cost tiles show one number, no inner label (released .8)**
+   - Fixed 2026-10-01: Cost tiles show one number, no inner label (released .8).
+   - You decide: Nothing.
+
+64. **The branch now carries a second migration file (the admin-share cleanup) against the one-migration-per-PR rule; it must be folded into the single migration before the PR is ready, with the box's migration pointer re-stamped since the box already ran it**
+   - Open: The branch now carries a second migration file (the admin-share cleanup) against the one-migration-per-PR rule; it must be folded into the single migration before the PR is ready, with the box's migration pointer re-stamped since the box already ran it.
+   - You decide: Nothing; it is folded before the PR is ready.
+
+65. **In the cut picker the outlined sitting box marks the last box tapped, not the sitting on screen**
+   - Open: In the cut picker the outlined sitting box marks the last box tapped, not the sitting on screen.
+   - You decide: Nothing yet.
+
+### C. Housekeeping
+
+21. **Queued rulings wait for your key**
+   - Fixed 2026-09-30: The queue now has four entries marked confirm or drop.
+   - Done: R-0619, R-0622, R-0623 and R-0624 and the note that R-0618 supersedes an earlier ruling are queued. R-0620 and R-0621 were demoted to decisions.
+   - Why it matters: The rulings store does not yet say what you said.
+   - You decide: Provide the key so they are written, and confirm the two demotions.
+
+22. **26 shadow answers on your account await your picks**
+   - Fixed 2026-09-30: The Sonnet and Flash picks still await Patrick.
+   - Done: They are in Better replies.
+   - Why it matters: Shadow quality cannot be judged until you pick.
+   - You decide: Pick when you have time.
+
+23. **The coach-started email needs a design pass**
+   - Done: Nothing more should go out before it gets one.
+   - Why it matters: Another send would repeat the unreviewed design.
+   - You decide: Decide when the design pass happens.
+
+24. **Parts of the ticket are still unbuilt**
+   - Fixed 2026-09-30: Built: coverage stages one to three, and the low thinking setting. Still unbuilt: the conversational regression test, the coverage-efficiency experiment, the pick-notes rubric, the coach-started email design pass.
+   - Done: Not built: the coverage checklist and its panels, the conversational regression test, the coverage-efficiency experiment, and the pick-notes rubric. Also unbuilt: the low thinking setting and the batch-edits prompt, both waiting on the measurement in item 28.
+   - Why it matters: The ticket's acceptance criteria are not met without them.
+   - You decide: Decide the order, or drop any.
+
+39. **A way for the person to search their own chat messages**
+   - Done: Design not started. Patrick asked for it on 2026-10-01: "we need a way to search chat messages". The coach already has a search tool over the chat; the person has none.
+   - Why it matters: People cannot find what they said earlier.
+   - You decide: Decide when the design starts.
+
+37. **The theory corpus now holds outside authors**
+   - Done: It holds outside authors, with Patrick's SARF and coding writing tagged as the layer under test. His statements are in the private corpus.
+   - Why it matters: Patrick's writing is now the thing being tested, not a source.
+   - You decide: Confirm the tagging.
+
+66. **In build: the open-diagram rebuild, one store and one open step for the whole web app (Patrick's yes, 2026-10-01), 10 to 14 hours, releases after his walk on the test stack**
+   - In build: In build: the open-diagram rebuild, one store and one open step for the whole web app (Patrick's yes, 2026-10-01), 10 to 14 hours, releases after his walk on the test stack.
+   - You decide: Walk the test stack when it is ready.

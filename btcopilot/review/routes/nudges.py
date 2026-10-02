@@ -6,7 +6,7 @@ from btcopilot.admin.setting import nudges_on
 from btcopilot.auth.emails import send_nudge
 from btcopilot.extensions import db
 from btcopilot.review import adapter
-from btcopilot.review.routes import admin, bp
+from btcopilot.review.routes import admin, bp, session_name
 from btcopilot.review.routes.coders import CoderState, roster, state_of
 from btcopilot.review.routes.cuts import agenda_cuts
 
@@ -27,7 +27,7 @@ def nudge_create():
     meeting = cuts[0].meeting_date
     when = meeting.strftime("%a %b %-d") if meeting else "the next meeting"
     for user in behind:
-        send_nudge(user.username, [_name(cut) for cut in cuts], when)
+        send_nudge(user.username, [session_name(cut) for cut in cuts], when)
     nudged_at = adapter.utcnow()
     for cut in cuts:
         cut.nudged_at = nudged_at
@@ -38,8 +38,3 @@ def nudge_create():
             "nudged_at": nudged_at.isoformat(),
         }
     ), 201
-
-
-def _name(cut) -> str:
-    discussion = adapter.discussion_of(cut.discussion_id)
-    return (discussion.title or "").strip() or "an untitled conversation"

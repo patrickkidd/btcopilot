@@ -59,7 +59,12 @@ class ToolText(enum.StrEnum):
     PersonA = "person_a"
     PersonB = "person_b"
     Parents = "parents"
-    ReadNotes = "read_notes"
+    Fields = "fields"
+    Item = "item"
+    Fact = "fact"
+    Keep = "keep"
+    Drop = "drop"
+    Take = "take"
 
 
 class Role(enum.StrEnum):
@@ -122,12 +127,19 @@ def proactive(events: str, speaker: str) -> str:
     return files().text("proactive", events=events, speaker=speaker)
 
 
-def get_agent_prompt(record: str = "", interactions: str = "", today: str = "") -> str:
+def get_agent_prompt(
+    record: str = "", interactions: str = "", today: str = "", coverage: str = ""
+) -> str:
     """The coach's system prompt for one agent-loop turn. `record` is the whole
     family record rendered by `btcopilot.recordtext`; `interactions` is
-    what the user has been looking at; `today` is the date as YYYY-MM-DD."""
+    what the user has been looking at; `today` is the date as YYYY-MM-DD;
+    `coverage` is what is still unknown of the basic data (`coverage.block`)."""
     return files().text(
-        "agent", committed_state=record, interactions=interactions, today=today
+        "agent",
+        committed_state=record,
+        interactions=interactions,
+        today=today,
+        coverage=coverage,
     )
 
 
@@ -139,9 +151,15 @@ def _agent_fixed() -> str:
     then cut back to a paragraph so the heading over the record goes with it."""
     head = os.path.commonprefix(
         [
-            files().text("agent", committed_state="", interactions="", today=""),
             files().text(
-                "agent", committed_state=MARK, interactions=MARK, today=MARK
+                "agent", committed_state="", interactions="", today="", coverage=""
+            ),
+            files().text(
+                "agent",
+                committed_state=MARK,
+                interactions=MARK,
+                today=MARK,
+                coverage=MARK,
             ),
         ]
     )
@@ -149,12 +167,12 @@ def _agent_fixed() -> str:
 
 
 def agent_prompt(
-    record: str = "", interactions: str = "", today: str = ""
+    record: str = "", interactions: str = "", today: str = "", coverage: str = ""
 ) -> tuple[str, str]:
     """The same prompt in two parts: the coaching text that repeats every call,
     which the wire caches, and the tail that changes with the record and the
     day, which goes after the chat so the chat stays cached too."""
-    text = get_agent_prompt(record, interactions, today)
+    text = get_agent_prompt(record, interactions, today, coverage)
     fixed = _agent_fixed()
     if not text.startswith(fixed):
         raise ValueError("The agent prompt no longer opens with its fixed part")

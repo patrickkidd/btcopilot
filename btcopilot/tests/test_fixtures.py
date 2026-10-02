@@ -29,7 +29,7 @@ def test_a_fixture_reinstalls_while_its_session_is_on_the_agenda(flask_app, fore
     session = user.free_diagram.discussions[0]
     turns = sorted(session.statements, key=lambda s: s.order)
     cut = Cut(
-        discussion_id=session.id,
+        diagram_id=session.diagram_id,
         start_statement_id=turns[0].id,
         end_statement_id=turns[-1].id,
         user_id=user.id,

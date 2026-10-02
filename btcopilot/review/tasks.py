@@ -22,7 +22,6 @@ def replay_cut(
     if coach is None:
         raise ValueError(f"no user {user_id} for the coach's coding")
 
-    discussion = db.session.get(adapter.Discussion, cut.discussion_id)
     diagram = adapter.coding_diagram(coach, f"coach coding of cut {cut.id}")
     adapter.grant_write(diagram, coach)
     coding = Coding(
@@ -35,10 +34,10 @@ def replay_cut(
     db.session.commit()
 
     statements = adapter.statements_between(
-        cut.discussion_id, cut.start_statement_id, cut.end_statement_id
+        cut.diagram_id, cut.start_statement_id, cut.end_statement_id
     )
     adapter.replay_into(
-        diagram, discussion, statements, model=adapter.coach_model(model)
+        diagram, statements[0].discussion, statements, model=adapter.coach_model(model)
     )
 
     coding.done_at = adapter.utcnow()

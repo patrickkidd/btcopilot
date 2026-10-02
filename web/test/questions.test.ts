@@ -43,7 +43,7 @@ const FAMILY = [
 const words = (html: string) => html.replace(/<[^>]+>/g, "\n").split("\n").filter(Boolean);
 
 describe("the questions tab", () => {
-  // R-0006, R-0485
+  // R-0006, R-0618
   it("lists only the open questions, food for thought before facts to find", () => {
     const said = words(questionsHtml(FAMILY, NOW));
     expect(said).not.toContain("Where was Abel born?");
@@ -61,7 +61,7 @@ describe("the questions tab", () => {
     ]);
   });
 
-  // R-0006, R-0485
+  // R-0006, R-0618
   it("leaves out a section with nothing in it", () => {
     const said = words(questionsHtml(FAMILY.filter((q) => q.kind === QuestionKind.Fact), NOW));
     expect(said).not.toContain("Food for thought");
@@ -74,7 +74,7 @@ describe("the questions tab", () => {
     expect(words(questionsHtml([], NOW))).toEqual([EMPTY]);
   });
 
-  // R-0007, R-0485
+  // R-0007, R-0618
   it("shows no count and no state anywhere", () => {
     const html = questionsHtml(FAMILY, NOW);
     const said = words(html).filter((w) => !w.startsWith("Asked ") && !w.includes("?"));

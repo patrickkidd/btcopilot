@@ -724,7 +724,7 @@ Start differently - with a fact, a name, a date, an emotion, or a question."""
     def _generate_and_trim():
         raw = gemini_text_sync(
             prompt, temperature=0.75, max_output_tokens=token_ceiling, thinking_budget=0
-        )
+        ).words
         if not raw:
             return ""
         text = raw.strip()
@@ -1015,7 +1015,7 @@ def generate_persona(traits, attachment_style, sex, age):
 Return JSON:
 {{"name": "...", "background": "...", "presenting_problem": "...", "data_points": [{{"category": "...", "keywords": [...]}}]}}"""
 
-    response = gemini_text_sync(prompt, temperature=0.8, max_output_tokens=8192)
+    response = gemini_text_sync(prompt, temperature=0.8, max_output_tokens=8192).words
 
     # Parse JSON, stripping markdown code fences if present
     text = response.strip()
@@ -1624,7 +1624,7 @@ Transcript (turn number, word count, content):
 Respond with ONLY a JSON object: {{"score": 0.0-1.0, "evidence": "one sentence explanation"}}"""
 
         try:
-            response = gemini_text_sync(prompt, temperature=0.0)
+            response = gemini_text_sync(prompt, temperature=0.0).words
             # Strip markdown code fences if present
             cleaned = response.strip()
             if cleaned.startswith("```"):

@@ -1,5 +1,5 @@
 import { DateCertainty } from "./certainty";
-import { closeX, esc } from "./dom";
+import { closeX, esc, still } from "./dom";
 // this line draws pills, dots and the wire
 import {
   CH,
@@ -420,9 +420,6 @@ const DEPTH: Record<Level, number> = {
   [Level.About]: 1,
 };
 
-const still = (): boolean =>
-  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-
 /** Where the resting line sits once it has been drawn again. */
 enum Park {
   /** The present at the right end: at load, and when the record changes. */
@@ -812,9 +809,19 @@ export class Picture {
   }
 
 
+  /** The event the path ends on, when one is picked and no mode is open. */
+  private shown(): TimelineEvent | null {
+    return this.level === Level.Rest || this.level === Level.Wire ? this.event(this.selected) : null;
+  }
+
+  /** Whether the path ends on a picked event. */
+  picked(): boolean {
+    return this.shown() !== null;
+  }
+
   /** The path from the whole timeline to where the reader is (R-0540). */
   path(): string[] {
-    const picked = this.level === Level.Rest || this.level === Level.Wire ? this.event(this.selected) : null;
+    const picked = this.shown();
     return trail(
       this.level,
       this.level === Level.Rest ? null : this.focus,

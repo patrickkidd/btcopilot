@@ -16,7 +16,7 @@ names; a proxy's own error page has none.
 | `POST /chat` | `{statement}` into the family's current sitting: the session last spoken in, or a new one once its last statement is 12 hours old |
 | `GET /statements` | the family's one thread across its sessions, 50 statements at a time, oldest first; `?before=<statement id>` reads the page just older. Each carries `session_id`; a session's first statement carries `sitting: {id, started, previous_started}`, the last being when the sitting before it started, or null for the first |
 | `POST /sessions/<id>/statements` | `{statement}` into a named session |
-| `GET /sessions` | the user's sessions on the family the app is on (`?diagram_id=` another readable one), most recently active first; `?all=true`, admins only (403 otherwise), is every session on every family, whoever had it, each with `family`, its family's name, which is what the meeting page puts one on the agenda from; `?words=` keeps those where something said carries every word, the coach's chat search, each with `match`, the newest line that does, chips shown as their words |
+| `GET /sessions` | the user's sessions on the family the app is on (`?diagram_id=` another readable one, or the one an admin is viewing, whose sessions are its owner's), most recently active first; `?all=true`, admins only (403 otherwise), is every session on every family, whoever had it, each with `family`, its family's name (every row carries `diagram_id`), which is what the meeting page puts one on the agenda from; `?words=` keeps those where something said carries every word, the coach's chat search, each with `match`, the newest line that does, chips shown as their words |
 | `POST /sessions` | new empty session, 201 |
 | `GET /sessions/<id>` | one session plus `statements: [{id, role, text}]`, role is `user` or `coach` |
 | `PATCH /sessions/<id>` | `{title}` only |
@@ -78,6 +78,13 @@ names the server's log lines for that request.
 `GET /account` — `email`, `sign_in_method`, `plan` (placeholder text until
 Patrick sets the numbers), `diagrams` (`id`, `name`, `last_activity`, `free`),
 `licenses` (`id`, `policy`, `status`). Sign out is the existing auth route.
+
+| | |
+|---|---|
+| `GET /diagrams` | the diagrams the caller may write to, most recently active first; `?user_id=` lists another person's, admins only (403 otherwise), with `current` still meaning the caller's own |
+| `POST /diagrams/<id>/select` | puts the app on that diagram and answers it with `access` (`own`, `shared`, `admin-view`) and `owner` (the owner's full name, or email); an admin may open anyone's diagram as `admin-view`, which writes no row in `access_rights`; anyone else gets 404 for a diagram they cannot write to |
+| `admin-view` | the admin reads the diagram, its timeline and its owner's sessions (`/statements`, `/sessions`, `/sessions/<id>`); every write on it (a turn, a session, a note, a record edit, a question, a play, a rename or delete) is a 403 with the words "this diagram is open read-only", and nothing is written; selecting one of the admin's own diagrams ends it |
+| `GET /users?q=` | admins only (403 otherwise): up to 20 people whose email or full name contains the words, any case, each `id`, `username`, `name`; fewer than two letters is a 400 |
 
 ## Notifications
 

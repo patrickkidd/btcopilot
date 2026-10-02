@@ -2,9 +2,54 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-09-29 ("What it's doing" defaults to coaching)
+**Last Updated**: 2026-09-30 (the coach reads what is still unknown of the basic data)
 
 ---
+
+## FD-366 — the coach reads what is still unknown of the basic data (2026-09-30)
+
+**Change**: each coach turn's per-turn part (after the chat, beside the record's map) gains a
+block headed WHAT IS STILL UNKNOWN, rendered from the coverage checklist (doc/COVERAGE.md): the
+nearest eight unasked items in Kerr's loose order, at most three per person or couple, grouped by
+person with id, name and relation; every item said unknown; coverage and resolution as fractions.
+Under the coach's plateau note the list is cut to three for up to five turns, ended early by a new
+person or event; the block's own line says so. Two sentences after the block (private and
+public agent prompt) say it is what is still unknown, for the coach's judgement, never a script,
+and that a fact said unknown is evidence toward a hypothesis about cutoff in the parents'
+generation, not a stop. No other behaviour rule is added; when to ask stays Patrick's to word.
+
+**Removed**: the static "Required Data Checklist" section of the private coaching flow (1,020
+characters). It was loaded: the flow file is included in the coach's prompt, in the cached part,
+so the coach read a fixed intake list every turn; the block replaces it. Also removed: the
+sentence after the record's map pointing at "Still outstanding" items, which no longer exist in
+the map (132 characters per turn).
+
+**Size**: about 480 characters more per turn in the uncached part (the two sentences, 318; the
+block, about 290 for a family of four; less the 132 removed); the cached part is 1,020 shorter,
+written to the cache once.
+
+**Behaviour**: unmeasured; no real model calls. [R-0006, R-0520]
+
+## FD-366 — the fixed coaching text is cached ahead of the record (2026-09-30)
+
+**Change**: layout only, no wording. The interview steps, the data checklist, the reply style
+and the examples (the rest of the private coaching flow after the record, and the Claude reply
+style) sat after the record, so they went into the new user message and were written to the
+prompt cache fresh every turn. The record's heading, the record, the date and the paragraph that
+reads "the block above" now come after all of that, just before what the person has been
+looking at; everything ahead of them is the cached system prompt. 12,771 characters (about 3,700
+tokens) move from the per-turn part into the cached part; every paragraph is byte-identical and
+the fixed paragraphs keep their order. Left after the chat though fixed: the record's heading
+and the paragraph that refers to the record above it (moving it would make "above" wrong), the
+words around what the person has been looking at (shown only when there is something), and the
+note register (note sessions only).
+
+**Expected saving**: on each coach call those ~3,700 tokens are read back from the cache at a
+tenth of the input price instead of written at 1.25 times it.
+
+**Behaviour**: unmeasured, by Patrick's instruction 2026-09-30 (same segments, new order, no
+measurement before shipping). The record now sits nearer the end of the prompt, after the
+coaching text, instead of in the middle of it. [R-0392, R-0595]
 
 ## Sittings — "What it's doing" defaults to coaching (2026-09-29)
 
@@ -1119,3 +1164,29 @@ remembered episodes each reported on its own, never a series or a trend. An
 impression the user said doesn't fit is not raised again in those words; one
 they said fits partly is revised or let go. Not yet measured live: model calls
 are unavailable. [R-0482, R-0485]
+
+### September 2026: Tool text stated once (FD-366)
+
+**Change**: what each event field means is now written only on the coach's
+edit_event fields; the record rules in the private coach prompt point there and
+keep the theory, the worked examples, the provisional rules and the rulings.
+Defined-self is one sentence, on the relationship field, in the theory corpus's
+wording: the action a person takes to define themselves in relation to others.
+read_notes is gone: read_events takes a list of extra fields (the user's words,
+the notes, the location), and the rule to read the notes before adding to them
+moved to edit_event's notes field. edit_event can empty a field with a list of
+fields to clear, and its text names three rules the record enforces: only a shift
+carries a variable or a move, a shift says in words what happened, and no one is
+both a target and a third person. Not yet measured live: no model calls were made.
+[R-0446, R-0480, R-0533]
+
+### September 2026: The coach thinks at low effort (FD-366)
+
+**Change** (2026-09-30): the coach's thinking effort is low, down from medium. The replay's thinking option still overrides it.
+**Measured** on eight of Patrick's turns, one pass each: low cost $0.051 a turn against $0.071 at medium (28% cheaper). Events scored higher at low (0.75 against 0.55). The four variables scored lower at low (0.49 against 0.60).
+**Decision**: Patrick chose low and queued the question of giving the variables more thinking (open question 40 in the theory corpus).
+
+### October 2026: Sitting titles and summaries run on Gemini Flash Lite (FD-366)
+
+**Change** (2026-10-01): the title and the summary of a sitting are written by Gemini Flash Lite (`gemini-3.1-flash-lite`, the model the cluster regrouping uses), down from the response model, Opus 5.5. A model change only: the prompt wording is unchanged, the ledger purpose is still Summary, and the row's model column holds the model that answered. Thinking is off for these two calls.
+**Decision**: Patrick, 2026-10-01: "yes gemini flash is good for that". Not yet measured live: no model calls were made.

@@ -31,6 +31,7 @@ export function drawer(asked: AskedQuestion[], busy = false) {
   const handlers = {
     onChip: vi.fn(),
     onAsked: vi.fn(),
+    onRef: vi.fn(),
     onDismissed: vi.fn(),
     busy: () => busy,
     say: vi.fn(),

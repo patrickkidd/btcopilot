@@ -33,7 +33,7 @@ The main off-theory trap: coding the content of a fight (money, the children, a 
 6. **Coding questions stay open for the IRR group, including arguments about a third person.** RULED. Ruling R-0439 (coding judgment calls are left to the IRR group) — see the private edition. Meanwhile the coach's prompt carries a best-guess rule marked provisional (R-0440).
 7. **Every coding rule here is provisional.** Ruling R-0511 (coding rules are provisional while ground truth is rebuilt) — see the private edition.
 8. **A conflict code does not imply an anxiety shift.** RULED 2026-09-26. An anxiety shift needs its own evidence ([`anxiety.md`](anxiety.md) status item 6). Kerr's claim that conflict binds anxiety (C35) is theory, not a coding rule.
-9. **A reading from theory stays apart from the facts.** RULED 2026-09-26. Ruling OPEN_QUESTIONS 5 (facts and theory-based readings are kept in separate layers) — see the private edition. So father–daughter fighting is coded as conflict between them; Kerr's reading that it is "acted out" marital tension (C28) is kept, if at all, as a labelled hypothesis.
+9. **A reading from theory stays apart from the facts.** RULED 2026-09-26. See the private corpus for the app's decision on this point (2026-09-26). (OPEN_QUESTIONS 5). So father–daughter fighting is coded as conflict between them; Kerr's reading that it is "acted out" marital tension (C28) is kept, if at all, as a labelled hypothesis.
 
 ### Coders' group (IRR)
 

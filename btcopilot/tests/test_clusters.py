@@ -7,8 +7,10 @@ record refuses to store, and that a grouping already there is kept rather than
 rebuilt.
 """
 
+from contextlib import contextmanager
+
 import pytest
-from mock import patch
+from mock import Mock
 
 from btcopilot.clusters import (
     ClusterError,
@@ -17,6 +19,7 @@ from btcopilot.clusters import (
     candidates,
     detect_clusters,
 )
+from btcopilot.llmutil import gemini_structured_sync
 from btcopilot.seed import seed_diagram_data
 from btcopilot.schema import (
     Cluster,
@@ -210,17 +213,21 @@ def named(
     )
 
 
+@contextmanager
 def replies(*responses):
-    return patch(
-        "btcopilot.clusters.gemini_structured_sync",
-        side_effect=list(responses),
-    )
+    yield Mock(side_effect=list(responses))
+
+
+def real(prompt: str) -> ClusterListResponse:
+    return gemini_structured_sync(prompt, ClusterListResponse).value
 
 
 def test_the_model_names_the_candidates_it_was_given():
     # R-0076, R-0287
-    with replies(answers(named(1, 2, 3), named(4, 5, 6, name="The winter after"))):
-        result = detect_clusters(RECORD)
+    with replies(
+        answers(named(1, 2, 3), named(4, 5, 6, name="The winter after"))
+    ) as ask:
+        result = detect_clusters(RECORD, ask)
     assert [c.eventIds for c in result.clusters] == [[1, 2, 3], [4, 5, 6]]
     assert [c.name for c in result.clusters] == ["A hard spring", "The winter after"]
     assert all(c.reason for c in result.clusters)
@@ -228,25 +235,25 @@ def test_the_model_names_the_candidates_it_was_given():
 
 def test_a_grouping_that_names_an_event_the_record_does_not_hold_is_rejected():
     # R-0076
-    with replies(answers(named(1, 2, 3, 99)), answers(named(1, 2, 3, 99))):
+    with replies(answers(named(1, 2, 3, 99)), answers(named(1, 2, 3, 99))) as ask:
         with pytest.raises(ClusterError, match="99"):
-            detect_clusters(RECORD)
+            detect_clusters(RECORD, ask)
 
 
 def test_a_group_that_is_not_a_candidate_and_says_no_why_is_rejected():
     # R-0287, R-0371
     joined = named(1, 2, 3, 4, 5, 6)
-    with replies(answers(joined), answers(joined)):
+    with replies(answers(joined), answers(joined)) as ask:
         with pytest.raises(ClusterError, match="says no reason"):
-            detect_clusters(RECORD)
+            detect_clusters(RECORD, ask)
 
 
 def test_the_model_may_join_two_candidates_when_it_says_why():
     # R-0287, R-0371
     with replies(
         answers(named(1, 2, 3, 4, 5, 6, change="the same argument came back in 1997"))
-    ):
-        result = detect_clusters(RECORD)
+    ) as ask:
+        result = detect_clusters(RECORD, ask)
     assert [c.eventIds for c in result.clusters] == [[1, 2, 3, 4, 5, 6]]
 
 
@@ -261,7 +268,7 @@ def test_a_group_under_three_events_is_rejected():
     )
     with replies(small, small) as ask:
         with pytest.raises(ClusterError, match="never a cluster"):
-            detect_clusters(RECORD)
+            detect_clusters(RECORD, ask)
     assert ask.call_count == 2
     assert "thrown out" in ask.call_args_list[1].args[0]
 
@@ -271,17 +278,17 @@ def test_a_split_under_the_minimum_that_is_corrected_is_stored():
     with replies(
         answers(named(1, 2, 3), named(4, 5), named(6)),
         answers(named(1, 2, 3), named(4, 5, 6)),
-    ):
-        result = detect_clusters(RECORD)
+    ) as ask:
+        result = detect_clusters(RECORD, ask)
     assert [c.eventIds for c in result.clusters] == [[1, 2, 3], [4, 5, 6]]
 
 
 def test_a_group_with_no_reason_is_rejected():
     # R-0287, R-0205
     silent = answers(named(1, 2, 3, reason=""), named(4, 5, 6))
-    with replies(silent, silent):
+    with replies(silent, silent) as ask:
         with pytest.raises(ClusterError, match="needs a reason"):
-            detect_clusters(RECORD)
+            detect_clusters(RECORD, ask)
 
 
 def test_words_from_outside_the_given_definitions_are_rejected():
@@ -295,7 +302,7 @@ def test_words_from_outside_the_given_definitions_are_rejected():
     )
     with replies(outside, outside) as ask:
         with pytest.raises(ClusterError, match="toxic"):
-            detect_clusters(RECORD)
+            detect_clusters(RECORD, ask)
     assert ask.call_count == 2
     assert "thrown out" in ask.call_args_list[1].args[0]
 
@@ -306,7 +313,7 @@ def test_a_contaminated_name_that_is_corrected_on_the_second_ask_is_stored():
         answers(named(1, 2, 3, name="The gaslighting spring"), named(4, 5, 6)),
         answers(named(1, 2, 3, name="The spring they argued"), named(4, 5, 6)),
     ) as ask:
-        result = detect_clusters(RECORD)
+        result = detect_clusters(RECORD, ask)
     assert ask.call_count == 2
     assert [c.name for c in result.clusters] == [
         "The spring they argued",
@@ -319,7 +326,7 @@ def test_a_rejected_grouping_is_asked_for_once_more():
     with replies(
         answers(named(1, 2, 99)), answers(named(1, 2, 3), named(4, 5, 6))
     ) as ask:
-        result = detect_clusters(RECORD)
+        result = detect_clusters(RECORD, ask)
     assert [c.eventIds for c in result.clusters] == [[1, 2, 3], [4, 5, 6]]
     second = ask.call_args_list[1].args[0]
     assert "thrown out" in second and "99" in second
@@ -348,7 +355,7 @@ def test_a_real_model_names_the_seeded_record():
     # R-0076, R-0287
     data = seed_diagram_data()
     proposed = candidates(data)
-    result = detect_clusters(data)
+    result = detect_clusters(data, real)
     print(f"candidates: {len(proposed)}  named: {len(result.clusters)}")
     for cluster in result.clusters:
         print(f"  {len(cluster.eventIds)} events — {cluster.reason}")
@@ -365,7 +372,7 @@ def test_a_real_model_does_not_repeat_the_words_it_was_fed():
     for event in data.events:
         if event.get("description"):
             event["description"] = f"his toxic narcissistic {event['description']}"
-    result = detect_clusters(data)
+    result = detect_clusters(data, real)
     spoken = [(c.name, c.reason) for c in result.clusters]
     print(f"named: {len(spoken)}")
     for name, reason in spoken:
@@ -404,7 +411,7 @@ def test_a_grouping_already_there_is_handed_back_and_kept():
     """Nothing changed about it, so it keeps its id and the name that has
     already been read, and says nothing about a change."""
     with replies(answers(named(1, 2, 3, cluster_id="c1", name=SPRING))) as ask:
-        result = detect_clusters(KEPT)
+        result = detect_clusters(KEPT, ask)
     assert [(c.id, c.name) for c in result.clusters] == [("c1", SPRING)]
     assert result.changes == []
     assert SPRING in ask.call_args_list[0].args[0]
@@ -413,7 +420,7 @@ def test_a_grouping_already_there_is_handed_back_and_kept():
 def test_a_grouping_already_there_is_given_to_the_model_with_its_id():
     # R-0374
     with replies(answers(named(1, 2, 3, cluster_id="c1", name=SPRING))) as ask:
-        detect_clusters(KEPT)
+        detect_clusters(KEPT, ask)
     asked = ask.call_args_list[0].args[0]
     assert "EXISTING GROUPS" in asked
     assert '"id": "c1"' in asked
@@ -424,7 +431,7 @@ def test_renaming_a_grouping_already_there_and_saying_nothing_is_rejected():
     renamed = answers(named(1, 2, 3, cluster_id="c1", name="A better sounding name"))
     with replies(renamed, renamed) as ask:
         with pytest.raises(ClusterError, match="says no reason"):
-            detect_clusters(KEPT)
+            detect_clusters(KEPT, ask)
     assert ask.call_count == 2
     assert "thrown out" in ask.call_args_list[1].args[0]
 
@@ -434,8 +441,8 @@ def test_changing_a_grouping_already_there_is_kept_when_it_says_what_changed():
     moved = "She stepped back a month later than the record first said."
     with replies(
         answers(named(1, 2, 3, cluster_id="c1", name="The autumn after", change=moved))
-    ):
-        result = detect_clusters(KEPT)
+    ) as ask:
+        result = detect_clusters(KEPT, ask)
     assert [(c.id, c.name) for c in result.clusters] == [("c1", "The autumn after")]
     assert result.changes == [moved]
 
@@ -443,9 +450,9 @@ def test_changing_a_grouping_already_there_is_kept_when_it_says_what_changed():
 def test_an_id_the_record_does_not_have_is_rejected():
     # R-0076
     invented = answers(named(1, 2, 3, cluster_id="c99", name=SPRING))
-    with replies(invented, invented):
+    with replies(invented, invented) as ask:
         with pytest.raises(ClusterError, match="c99"):
-            detect_clusters(KEPT)
+            detect_clusters(KEPT, ask)
 
 
 FAR = record(
@@ -462,7 +469,7 @@ def test_an_event_years_outside_the_proposal_joins_when_the_model_says_why():
     years later joins on a stated reason."""
     assert grouped(FAR) == [[1, 2, 3]]
     late = "The trouble she had in 1999 started in the year they argued."
-    with replies(answers(named(1, 2, 3, 7, change=late))):
-        result = detect_clusters(FAR)
+    with replies(answers(named(1, 2, 3, 7, change=late))) as ask:
+        result = detect_clusters(FAR, ask)
     assert [c.eventIds for c in result.clusters] == [[1, 2, 3, 7]]
     assert result.changes == [late]

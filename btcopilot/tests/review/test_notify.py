@@ -20,7 +20,7 @@ def test_a_dated_cut_tells_each_auditor_once_and_reminds_once(
     # R-0055, R-0258, R-0265
     put = patrick.post(
         "/review/cuts",
-        json={"discussion_id": session.id, "end_statement_id": turns[1].id},
+        json={"end_statement_id": turns[1].id},
     )
     cut_id = put.json["id"]
     assert sent() == []

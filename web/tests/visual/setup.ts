@@ -154,7 +154,7 @@ export async function tellWithoutModel(
   page: Page,
   only: (e: Record<string, unknown>) => boolean = () => true,
 ): Promise<void> {
-  await page.route(/\/app\/play$/, async (route) => {
+  await page.route(/\/app\/play(\?diagram_id=\d+)?$/, async (route) => {
     const cluster_id = (route.request().postDataJSON() as { cluster_id: string }).cluster_id;
     const timeline = await (await page.request.get("/app/timeline")).json();
     const cluster = timeline.clusters.find((c: { id: string }) => c.id === cluster_id);
@@ -191,6 +191,40 @@ export async function openList(page: Page): Promise<void> {
 /** A fixture's account, as the server's fixtures name it. */
 export const username = (key: Key) => `${key}@fd362-fixture.invalid`;
 
+/** From Next meeting, its button to the Diagrams page, a person found with
+ * the admin's Find a person box (focused and blank on arrival), their diagrams
+ * slid in as a page of their own, and one opened, with selecting a
+ * cut already on. */
+export async function toTheirDiagram(page: Page, who: string, diagram?: string): Promise<void> {
+  await page.locator(".tb-add").click();
+  const pane = page.locator('.sn-pane[data-page="diagrams"]');
+  await expect(pane.getByLabel("Find a person")).toBeFocused();
+  await pane.getByLabel("Find a person").fill(who);
+  await pane.locator(".sn-find .sn-row", { hasText: who }).first().click();
+  const theirs = page.locator(".sn-theirs .sn-row", diagram ? { hasText: diagram } : {});
+  await theirs.first().click();
+  await expect(page.locator("#viewing")).toBeVisible();
+  await expect(page.locator("#cut-strip")).toBeVisible();
+}
+
+/** Out of the account stack and back on the admin's own diagram, which the
+ * fixtures need before they install again over the diagram just viewed. */
+export async function backToMine(page: Page): Promise<void> {
+  while (await page.locator("#settings-back").isVisible()) await page.locator("#settings-back").click();
+  await page.locator("#viewing-back").click();
+  await expect(page.locator("#viewing")).toBeHidden();
+}
+
+/** Chooses a new cut's first and last lines, the thread's last two, and
+ * places it: the button stays dead until both are chosen. */
+export async function placeCut(page: Page): Promise<void> {
+  const lines = page.locator("#chat .bub[data-statement]");
+  await expect(page.locator(".ct-go")).toBeDisabled();
+  await lines.nth(-2).click();
+  await lines.last().click();
+  await page.locator(".ct-go").click();
+}
+
 /** For the goldens of a drawing rather than a page. The suite's one percent
  * ratio is worth hundreds of pixels on a small cell, enough to hide a whole
  * stroke width: five move drawings once passed while carrying the wrong one.
@@ -210,11 +244,28 @@ export const steady = (page: Page) => ({
   mask: [page.locator("#caption")],
 });
 
+type Box = NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>;
+
+/** Where an element sits, read only once it is on screen: a box asked for
+ * while the thread is still being redrawn comes back null, so it is asked for
+ * again until the element is there to measure. `flat` is for a line with no
+ * thickness, which Playwright never counts as visible: it only has to be in the
+ * page and have a box. */
+export async function boxOf(target: Locator, flat = false) {
+  let box = null as Box | null;
+  await expect(async () => {
+    await (flat ? expect(target).toBeAttached() : expect(target).toBeVisible());
+    box = await target.boundingBox();
+    expect(box).not.toBeNull();
+  }).toPass({ timeout: 5000 });
+  return box!;
+}
+
 /** The inner box lies within the outer one, give or take a pixel of
  * antialiasing; `across` checks only left and right, for a box that scrolls. */
 export async function inside(inner: Locator, outer: Locator, across = false) {
-  const a = (await inner.boundingBox())!;
-  const b = (await outer.boundingBox())!;
+  const a = await boxOf(inner);
+  const b = await boxOf(outer);
   expect(a.x).toBeGreaterThanOrEqual(b.x - 1);
   expect(a.x + a.width).toBeLessThanOrEqual(b.x + b.width + 1);
   if (across) return;
@@ -266,3 +317,8 @@ export default async function setup() {
   }
   await browser.close();
 }
+
+/** Why a test of the event form opened from an event's row is skipped: the
+ * form is parked, not deleted, while chat-only editing is tried (Patrick,
+ * 2026-10-01). Take the skip out when the form comes back. */
+export const PARKED = "the event form is parked on Patrick's 2026-10-01 decision to try chat-only editing";

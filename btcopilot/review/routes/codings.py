@@ -9,8 +9,10 @@ from btcopilot.review.routes import (
     bp,
     coder,
     cut_or_404,
+    day,
     my_coding,
     sees_others,
+    session_name,
 )
 
 
@@ -77,8 +79,7 @@ def coding_patch(coding_id: int):
 def _diagram_for(user, cut: Cut):
     """The coder's own record of this case: the one they built coding it last
     time, carried forward, or a fresh empty one (R-0267)."""
-    discussion = db.session.get(adapter.Discussion, cut.discussion_id)
-    case = adapter.case_diagram(discussion)
+    case = adapter.diagram_of(cut.diagram_id)
     previous = _previous_coding(user, case.id, cut.id)
     if previous is not None:
         return db.session.get(adapter.Diagram, previous.diagram_id)
@@ -91,11 +92,10 @@ def _diagram_for(user, cut: Cut):
 def _previous_coding(user, case_diagram_id: int, cut_id: int) -> Coding | None:
     found = (
         Coding.query.join(Cut, Coding.cut_id == Cut.id)
-        .join(adapter.Discussion, Cut.discussion_id == adapter.Discussion.id)
         .filter(
             Coding.user_id == user.id,
             Coding.cut_id != cut_id,
-            adapter.Discussion.diagram_id == case_diagram_id,
+            Cut.diagram_id == case_diagram_id,
         )
         .order_by(Coding.id.desc())
         .first()
@@ -105,22 +105,19 @@ def _previous_coding(user, case_diagram_id: int, cut_id: int) -> Coding | None:
 
 @bp.route("/codings/<int:coding_id>/thread")
 def coding_thread(coding_id: int):
-    """The conversation this coding is of: every turn from the session's first
+    """The conversation this coding is of: every turn from the thread's first
     up to the cut, what this coder has already written from each, and the two
     lines across the thread — the last ratified cut and this one (R-0267)."""
     coding = _mine_or_404(coding_id)
     cut = coding.cut
-    first = adapter.first_statement(cut.discussion_id)
-    if first is None:
-        raise ValueError("that session has no turns")
+    orders = adapter.statement_order(cut.diagram_id)
     turns = adapter.statements_between(
-        cut.discussion_id, first.id, cut.end_statement_id
+        cut.diagram_id, adapter.first_statement(cut.diagram_id).id, cut.end_statement_id
     )
     agreed = _last_ratified(cut)
-    agreed_order = _order_of(agreed.end_statement_id) if agreed else None
+    agreed_order = orders[agreed.end_statement_id] if agreed else None
     data = adapter.record_of(adapter.diagram_of(coding.diagram_id))
     said = _said_by_turn(coding.id, coding.diagram_id, data)
-    discussion = adapter.discussion_of(cut.discussion_id)
 
     return jsonify(
         {
@@ -131,12 +128,12 @@ def coding_thread(coding_id: int):
             "meeting_date": (
                 cut.meeting_date.isoformat() if cut.meeting_date else None
             ),
-            "session": (discussion.title or "").strip() or "an untitled conversation",
-            "cut_day": _day(cut.discussion_id, cut.end_statement_id),
+            "session": session_name(cut),
+            "cut_day": day(cut.end_statement_id),
             "agreed": (
                 {
                     "order": agreed_order,
-                    "day": _day(agreed.discussion_id, agreed.end_statement_id),
+                    "day": day(agreed.end_statement_id),
                     "ratified": agreed.ratified_at.strftime("%b %-d"),
                 }
                 if agreed
@@ -145,13 +142,13 @@ def coding_thread(coding_id: int):
             "turns": [
                 {
                     "id": turn.id,
-                    "order": turn.order or 0,
+                    "order": orders[turn.id],
                     "who": _who(turn),
                     "client": _client(turn),
                     "text": turn.text or "",
                     "said": said.get(turn.id, []),
                     "above": agreed_order is not None
-                    and (turn.order or 0) <= agreed_order,
+                    and orders[turn.id] <= agreed_order,
                 }
                 for turn in turns
             ],
@@ -171,7 +168,7 @@ def coding_scribe(coding_id: int):
     if not said:
         raise ValueError("say what the turn tells you happened")
     statement = adapter.statement(body.get("statement_id") or 0)
-    if statement is None or statement.discussion_id != coding.cut.discussion_id:
+    if statement is None or statement.discussion.diagram_id != coding.cut.diagram_id:
         raise ValueError("that turn is not part of this conversation")
     if not _in_cut(coding.cut, statement):
         raise ValueError("coding happens between the last agreed line and the cut")
@@ -199,7 +196,7 @@ def _mine_or_404(coding_id: int) -> Coding:
 
 
 def _in_cut(cut: Cut, statement) -> bool:
-    orders = adapter.statement_order(cut.discussion_id)
+    orders = adapter.statement_order(cut.diagram_id)
     start = orders.get(cut.start_statement_id)
     end = orders.get(cut.end_statement_id)
     here = orders.get(statement.id)
@@ -209,18 +206,13 @@ def _in_cut(cut: Cut, statement) -> bool:
 def _last_ratified(cut: Cut) -> Cut | None:
     return (
         Cut.query.filter(
-            Cut.discussion_id == cut.discussion_id,
+            Cut.diagram_id == cut.diagram_id,
             Cut.id != cut.id,
             Cut.ratified_at.isnot(None),
         )
         .order_by(Cut.id.desc())
         .first()
     )
-
-
-def _order_of(statement_id: int) -> int | None:
-    statement = adapter.statement(statement_id)
-    return (statement.order or 0) if statement else None
 
 
 def _said_by_turn(
@@ -266,7 +258,3 @@ def _client(statement) -> bool:
     speaker = statement.speaker
     return speaker is not None and speaker.type == adapter.SpeakerType.Subject
 
-
-def _day(discussion_id: int, statement_id: int) -> str:
-    when = adapter.cut_day(discussion_id, statement_id)
-    return when.strftime("%b %-d") if when else "an unknown day"

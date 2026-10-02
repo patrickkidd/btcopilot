@@ -84,6 +84,10 @@ export function walker(page: Page, info: TestInfo) {
     // A page that never answers is a failure of this step, not a run that eats
     // its whole budget in silence.
     await page.waitForLoadState("domcontentloaded").catch(() => {});
+    // A page still sliding in is measured where it comes to rest.
+    await page
+      .waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"))
+      .catch(() => {});
     const asked = page.evaluate(() => {
       const se = document.scrollingElement!;
       const out: string[] = [];
@@ -93,6 +97,9 @@ export function walker(page: Page, info: TestInfo) {
         // actions behind it, so its own words sit off the edge while it is
         // open. Everything else must stay inside.
         if (e.closest(".row.swiped")) continue;
+        // A settings page with another pushed over it slides partly off to the
+        // left on purpose, as the page to go back to.
+        if (e.closest(".sn-pane.under")) continue;
         // A strip that scrolls sideways on purpose — the caption band under the
         // picture is one — keeps what does not fit off to the side until the
         // reader pushes it along. What sits in such a strip is measured

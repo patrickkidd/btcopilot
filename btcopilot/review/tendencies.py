@@ -27,7 +27,7 @@ def rows(cut) -> list[dict]:
 def _agreed(cut) -> dict[str, dict]:
     """The case as it stands, by item id, read once for the whole cut."""
     record = adapter.record_of(
-        adapter.case_diagram(db.session.get(adapter.Discussion, cut.discussion_id))
+        adapter.diagram_of(cut.diagram_id)
     )
     return {
         str(entry.get("id")): entry

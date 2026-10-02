@@ -1,6 +1,7 @@
 import * as api from "./api";
+import { store } from "./store";
 import type { Said } from "./api";
-import { el, esc } from "./dom";
+import { el, esc, shift } from "./dom";
 import { clockTime, dayKey, periodLabel, rowDate } from "./when";
 
 /** The family's one thread: every sitting's words in the order they were said,
@@ -49,15 +50,27 @@ export class Thread {
     return this.reading;
   }
 
-  /** Read back until the words `statementId` are on screen, or the thread
-   * has no older words. */
-  async reach(statementId: number): Promise<void> {
-    while (!this.list.querySelector(`[data-statement="${statementId}"]`) && this.more)
+  /** Read back until `selector` is on screen with room above it for the
+   * glide to it to stop short of the edge that reads further back, or until
+   * the thread has no older words. Null when it is not in the thread. */
+  async reach(selector: string): Promise<HTMLElement | null> {
+    for (;;) {
+      const found = this.list.querySelector<HTMLElement>(selector);
+      if (!this.more || (found && this.depth(found) > EDGE_PX + this.list.clientHeight)) return found;
       await this.older();
+    }
   }
 
+  /** How far down the thread's content an item starts. */
+  private depth(item: HTMLElement): number {
+    return item.getBoundingClientRect().top - this.list.getBoundingClientRect().top + this.list.scrollTop;
+  }
+
+  /** A page still being read when another diagram opens is dropped. */
   private async readBack(): Promise<void> {
-    const page = await api.thread(this.oldest!);
+    const before = this.oldest!;
+    const page = await store.fetch((id, signal) => api.thread(id, before, signal));
+    if (!page) return;
     this.start(page);
     if (!page.length) return;
     const anchor = this.list.firstElementChild;
@@ -68,7 +81,7 @@ export class Thread {
     for (let node = end ? end.nextSibling : this.list.firstChild; node; node = node.nextSibling)
       drawn.push(node);
     this.list.prepend(...drawn);
-    if (anchor) this.list.scrollTop += anchor.getBoundingClientRect().top - was;
+    if (anchor) shift(this.list, anchor.getBoundingClientRect().top - was);
     // The chat pins itself to its newest words on every bubble it draws and
     // ignores the scroll that pinning causes; once its frame has passed, a
     // scroll it does notice tells it the reader is up here, not at the end.
@@ -79,13 +92,14 @@ export class Thread {
 /** The line where a sitting starts, with the day it started, and the time
  * as well when the sitting before it started that same day, so two lines in
  * a row never say the same thing. */
-export function divider(when: string, previous: string | null): HTMLElement {
+export function divider(sittingId: number, when: string, previous: string | null): HTMLElement {
   const started = new Date(when);
   const now = new Date();
   const period = periodLabel(started, now);
   const day = DAY_WORDS.has(period) ? period : rowDate(started, now);
   const again = previous !== null && dayKey(new Date(previous)) === dayKey(started);
   const line = el("div", "sitting", esc(again ? `${day}, ${clockTime(started)}` : day));
+  line.dataset.sitting = String(sittingId);
   line.dataset.started = when;
   return line;
 }

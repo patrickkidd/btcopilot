@@ -115,3 +115,25 @@ R-0286 | TEST OWED | the triangle-vs-conflict clinical distinction covers two of
 R-0288 | TEST OWED | the triangle position rules cover two of three tags; the third awaits a citing test
 R-0572 | WAIVED | a negative behaviour with no editor code path to assert against; editing now runs through chat and the event list, covered by their own rulings
 R-0573 | WAIVED | a design rationale for clusters over individual events as the tap target; the tap behaviour itself is proven by R-0543's and R-0537's citing tests
+R-0603 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0604 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0605 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0606 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0607 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0608 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0609 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0611 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0612 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0613 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0614 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0615 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0616 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0617 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0628 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0633 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0634 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0635 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0636 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0637 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0638 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0640 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist

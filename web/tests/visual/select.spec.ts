@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor, tellWithoutModel } from "./setup";
+import { stateFor, tellWithoutModel, boxOf } from "./setup";
 
 /** Every word the app says can be selected and copied. Dragging a scroll area
  * and selecting a line of it are the same gesture, so where the press lands
@@ -14,8 +14,7 @@ const settle = async (page: Page) => {
 /** Drag across one element's words, the way a reader does, and read back what
  * the browser thinks is selected. */
 const dragAcross = async (page: Page, selector: string) => {
-  const box = await page.locator(selector).first().boundingBox();
-  if (!box) throw new Error(`nothing at ${selector}`);
+  const box = await boxOf(page.locator(selector).first());
   const y = box.y + 12;
   await page.mouse.move(box.x + 6, y);
   await page.mouse.down();
@@ -53,8 +52,7 @@ test.describe("dragging the thread", () => {
   test("still scrolls when the press lands off the words", async ({ page }) => {
     await settle(page);
     const chat = page.locator("#chat");
-    const box = await chat.boundingBox();
-    if (!box) throw new Error("no thread");
+    const box = await boxOf(chat);
     await chat.evaluate((n) => (n.scrollTop = 0));
     const before = await chat.evaluate((n) => n.scrollTop);
     // down the left gutter, clear of every bubble's words
@@ -98,10 +96,9 @@ test.describe("a label that runs onto a second line", () => {
     for (const mark of ["#view circle.dot.on", "#view rect.pill"])
       for (let row = 0; row < lines; row += 1) {
         await pick();
-        const at = await rows.nth(row).boundingBox();
-        if (!at) throw new Error(`row ${row} is not drawn`);
+        const at = await boxOf(rows.nth(row));
         await expect(page.locator(".bub.traced")).toHaveCount(0);
-        const under = (await page.locator(mark).boundingBox())!;
+        const under = await boxOf(page.locator(mark));
         const x = Math.min(Math.max(under.x + under.width / 2, at.x + 2), at.x + at.width - 2);
         await page.mouse.click(x, at.y + at.height / 2);
         // the words answered, going to where the event was said, not the mark

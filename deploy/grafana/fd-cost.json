@@ -1,0 +1,796 @@
+{
+  "uid": "fd-cost",
+  "title": "Coach cost",
+  "tags": [
+    "fd",
+    "cost"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "5m",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "user",
+        "label": "Person",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "ffz1wy7unkdfke"
+        },
+        "query": "select u.username as __text, u.id as __value from users u where u.username not like 'claude-test%' and (exists (select 1 from model_calls mc where mc.user_id=u.id and not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch)) or exists (select 1 from discussions d join statements s on s.discussion_id=d.id where d.user_id=u.id and not exists (select 1 from diagrams dg where dg.id=d.diagram_id and dg.scratch))) order by u.username",
+        "definition": "select u.username as __text, u.id as __value from users u where u.username not like 'claude-test%' and (exists (select 1 from model_calls mc where mc.user_id=u.id and not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch)) or exists (select 1 from discussions d join statements s on s.discussion_id=d.id where d.user_id=u.id and not exists (select 1 from diagrams dg where dg.id=d.diagram_id and dg.scratch))) order by u.username",
+        "refresh": 1,
+        "sort": 0,
+        "multi": true,
+        "includeAll": true,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": []
+      }
+    ]
+  },
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "description": "The most recent day with at least one real coach turn: dollars of coach calls divided by distinct coach turns that day, warm and cold together. The day is shown beside it. Real families only: scratch records and the claude-test account are left out. Shows the most recent day with turns.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 11,
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "text": {
+          "valueSize": 64
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "refId": "A",
+          "rawSql": "select sum(mc.cost_usd) / count(distinct mc.turn_id) as \"Cost per turn now\" from model_calls mc join users u on u.id=mc.user_id where mc.purpose = 'coach' and not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' group by date_trunc('day', mc.created_at - mc.duration_ms * interval '1 millisecond') order by date_trunc('day', mc.created_at - mc.duration_ms * interval '1 millisecond') desc limit 1"
+        }
+      ],
+      "title": "Cost per turn now",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "description": "Dollars of coach calls divided by distinct coach turns, over the last 7 days. Real families only: scratch records and the claude-test account are left out. Warm and cold turns together.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 6,
+        "x": 0,
+        "y": 5
+      },
+      "id": 9,
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "text": {
+          "valueSize": 40
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "refId": "A",
+          "rawSql": "select sum(mc.cost_usd) / nullif(count(distinct mc.turn_id), 0) as \"Cost per turn, last 7 days\" from model_calls mc join users u on u.id=mc.user_id where mc.purpose = 'coach' and not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and mc.created_at > now() - interval '7 days'"
+        }
+      ],
+      "title": "Cost per turn, last 7 days",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "description": "Per day: dollars of coach calls divided by distinct coach turns that day, warm and cold together. The dashed line is the mean over the 7 days up to that day (dollars over turns of those days). Real families only: scratch records and the claude-test account are left out.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "spanNulls": false
+          },
+          "unit": "currencyUSD",
+          "decimals": 2
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "7-day rolling mean"
+            },
+            "properties": [
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    10,
+                    10
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 18,
+        "x": 6,
+        "y": 0
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "refId": "A",
+          "rawSql": "with t as (select mc.turn_id, min(mc.created_at - mc.duration_ms * interval '1 millisecond') as started, sum(mc.cost_usd) as usd from model_calls mc join users u on u.id=mc.user_id where mc.purpose = 'coach' and not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and mc.created_at >= $__timeFrom()::timestamp - interval '7 days' and mc.created_at <= $__timeTo()::timestamp group by mc.turn_id), d as (select date_trunc('day', started) as day, count(*) as n, sum(usd) as usd from t group by 1), m as (select day, usd / n as avg, sum(usd) over w / sum(n) over w as mean from d window w as (order by day range between interval '6 days' preceding and current row)) select day as time, avg as \"Average cost per turn\", mean as \"7-day rolling mean\" from m where $__timeFilter(day) order by 1"
+        }
+      ],
+      "title": "Average cost per turn",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "description": "A turn is cold when its first coach call starts more than 5 minutes after the start of the family's previous turn, so the cached prompt has expired and is written again. Real families only: scratch records and the claude-test account are left out. Coach calls only. The dashed line is the mean over all turns of the 14 days up to that day.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "spanNulls": false
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "All turns, 14-day mean"
+            },
+            "properties": [
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    10,
+                    10
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "with c as (select mc.*, mc.created_at - mc.duration_ms * interval '1 millisecond' as started from model_calls mc join users u on u.id=mc.user_id where mc.purpose = 'coach' and not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and mc.created_at >= $__timeFrom()::timestamp - interval '14 days' and mc.created_at <= $__timeTo()::timestamp), t as (select turn_id, diagram_id, min(started) as started, sum(cost_usd) as usd, count(*) as calls, (array_agg(cache_creation_tokens order by created_at, id))[1] as first_write from c group by turn_id, diagram_id), g as (select *, coalesce(started - lag(started) over (partition by diagram_id order by started) > interval '5 minutes', true) as cold from t), d as (select date_trunc('day', started) as day, count(*) as n, sum(usd) as usd, sum(calls) as calls, count(*) filter (where cold) as cn, sum(usd) filter (where cold) as cu, avg(first_write) filter (where cold) as cw, count(*) filter (where not cold) as wn, sum(usd) filter (where not cold) as wu from g group by 1) , m as (select day, cu / nullif(cn, 0) as cold, wu / nullif(wn, 0) as warm, sum(usd) over w / sum(n) over w as mean from d window w as (order by day range between interval '13 days' preceding and current row)) select day as time, cold as \"Cold turn\", warm as \"Warm turn\", mean as \"All turns, 14-day mean\" from m where $__timeFilter(day) order by 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Cost per coach turn a day, warm and cold, with the 14-day mean",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), sum(mc.cache_creation_tokens*r.w)/1e6 as \"Cache write\", sum(mc.cache_read_tokens*r.c)/1e6 as \"Cache read\", sum(mc.output_tokens*r.o)/1e6 as \"Output\", sum(mc.input_tokens*r.i)/1e6 as \"Uncached input\" from model_calls mc join users u on u.id=mc.user_id join lateral (select i,o,w,c from (values ('claude-opus-4-6',5.00,25.00,6.25,0.50),('claude-opus-4-8',5.00,25.00,6.25,0.50),('claude-opus-5',5.00,25.00,6.25,0.50),('claude-opus-5-5',4.00,20.00,5.00,0.20),('claude-sonnet-5',2.00,10.00,2.50,0.20),('claude-haiku-4-5',1.00,5.00,1.25,0.10),('gemini-3.8-flash',0.75,3.75,0,0.075),('gemini-3.7-flash',0.75,3.75,0,0.075),('gemini-3.6-flash',0.75,3.75,0,0.075),('gemini-3.5-flash',1.50,9.00,0,0.15),('gemini-2.5-flash',0.30,2.50,0,0.03),('gemini-2.5-flash-lite',0.10,0.40,0,0.01)) v(p,i,o,w,c) where mc.model like v.p||'%' order by length(v.p) desc limit 1) r on true where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and mc.purpose = 'coach' and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1 order by 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Dollars by kind, coach calls",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "description": "Model calls the coach made per turn, averaged over the day's turns. A turn is cold when its first coach call starts more than 5 minutes after the start of the family's previous turn, so the cached prompt has expired and is written again. Real families only: scratch records and the claude-test account are left out. Coach calls only.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "spanNulls": false
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "with c as (select mc.*, mc.created_at - mc.duration_ms * interval '1 millisecond' as started from model_calls mc join users u on u.id=mc.user_id where mc.purpose = 'coach' and not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and mc.created_at >= $__timeFrom()::timestamp - interval '14 days' and mc.created_at <= $__timeTo()::timestamp), t as (select turn_id, diagram_id, min(started) as started, sum(cost_usd) as usd, count(*) as calls, (array_agg(cache_creation_tokens order by created_at, id))[1] as first_write from c group by turn_id, diagram_id), g as (select *, coalesce(started - lag(started) over (partition by diagram_id order by started) > interval '5 minutes', true) as cold from t), d as (select date_trunc('day', started) as day, count(*) as n, sum(usd) as usd, sum(calls) as calls, count(*) filter (where cold) as cn, sum(usd) filter (where cold) as cu, avg(first_write) filter (where cold) as cw, count(*) filter (where not cold) as wn, sum(usd) filter (where not cold) as wu from g group by 1) select day as time, calls::float / n as \"Calls per turn\" from d where $__timeFilter(day) order by 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Calls per coach turn a day",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "description": "Mean cache write tokens of the first coach call of each cold turn. A turn is cold when its first coach call starts more than 5 minutes after the start of the family's previous turn, so the cached prompt has expired and is written again. Real families only: scratch records and the claude-test account are left out. Coach calls only.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "spanNulls": false
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "with c as (select mc.*, mc.created_at - mc.duration_ms * interval '1 millisecond' as started from model_calls mc join users u on u.id=mc.user_id where mc.purpose = 'coach' and not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and mc.created_at >= $__timeFrom()::timestamp - interval '14 days' and mc.created_at <= $__timeTo()::timestamp), t as (select turn_id, diagram_id, min(started) as started, sum(cost_usd) as usd, count(*) as calls, (array_agg(cache_creation_tokens order by created_at, id))[1] as first_write from c group by turn_id, diagram_id), g as (select *, coalesce(started - lag(started) over (partition by diagram_id order by started) > interval '5 minutes', true) as cold from t), d as (select date_trunc('day', started) as day, count(*) as n, sum(usd) as usd, sum(calls) as calls, count(*) filter (where cold) as cn, sum(usd) filter (where cold) as cu, avg(first_write) filter (where cold) as cw, count(*) filter (where not cold) as wn, sum(usd) filter (where not cold) as wu from g group by 1) select day as time, cw as \"Cache write tokens\" from d where $__timeFilter(day) and cn > 0 order by 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Tokens written on a cold turn's first call, a day",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "description": "A turn is cold when its first coach call starts more than 5 minutes after the start of the family's previous turn, so the cached prompt has expired and is written again. Real families only: scratch records and the claude-test account are left out. Coach calls only.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "spanNulls": false
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "with c as (select mc.*, mc.created_at - mc.duration_ms * interval '1 millisecond' as started from model_calls mc join users u on u.id=mc.user_id where mc.purpose = 'coach' and not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and mc.created_at >= $__timeFrom()::timestamp - interval '14 days' and mc.created_at <= $__timeTo()::timestamp), t as (select turn_id, diagram_id, min(started) as started, sum(cost_usd) as usd, count(*) as calls, (array_agg(cache_creation_tokens order by created_at, id))[1] as first_write from c group by turn_id, diagram_id), g as (select *, coalesce(started - lag(started) over (partition by diagram_id order by started) > interval '5 minutes', true) as cold from t), d as (select date_trunc('day', started) as day, count(*) as n, sum(usd) as usd, sum(calls) as calls, count(*) filter (where cold) as cn, sum(usd) filter (where cold) as cu, avg(first_write) filter (where cold) as cw, count(*) filter (where not cold) as wn, sum(usd) filter (where not cold) as wu from g group by 1) select day as time, cn::float / n as \"Cold turns\" from d where $__timeFilter(day) order by 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Share of coach turns that start cold, a day",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "description": "Basic-data items known over items required, from the last coach turn of each day on each family's record. One line per record, named by its owner and record number. Real families only: scratch records, made-up discussions and the claude-test account are left out.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "spanNulls": false
+          },
+          "unit": "percentunit",
+          "max": 1,
+          "min": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 48
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select distinct on (dg.id, date_trunc('day', te.created_at)) date_trunc('day', te.created_at) as time, u.username || ' / ' || dg.id as metric, (te.payload->'coverage'->'after'->>'known')::float / nullif((te.payload->'coverage'->'after'->>'required')::float, 0) as value from turn_events te join discussions d on d.id = te.discussion_id join diagrams dg on dg.id = d.diagram_id join users u on u.id = dg.user_id where te.kind = 'done' and te.payload->'coverage' is not null and not dg.scratch and not d.synthetic and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(te.created_at) order by dg.id, date_trunc('day', te.created_at), te.created_at desc, te.id desc",
+          "refId": "A"
+        }
+      ],
+      "title": "Coverage of the basic data over time, by family",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "description": "What the coach spent per turn, averaged over the turns each release ran in the time range. A turn's release is the one its done row in turn_events names; turns from before the done row carried it show as 'not recorded'. Real families only: scratch records and the claude-test account are left out. Coach calls only.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 4
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 56
+      },
+      "id": 7,
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "Release"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with t as (select mc.turn_id, sum(mc.cost_usd) as usd from model_calls mc join users u on u.id=mc.user_id where mc.purpose = 'coach' and not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by mc.turn_id) select coalesce(te.payload->>'release', 'not recorded') as \"Release\", avg(t.usd) as \"Dollars per turn\" from t join turn_events te on te.turn_id = t.turn_id and te.kind = 'done' group by 1 order by min(te.created_at)",
+          "refId": "A"
+        }
+      ],
+      "title": "Cost per coach turn by release",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "description": "Every replay pass kept in the replay_passes table, newest first, whatever the time range. A pass replays a person's turns on one model onto a scratch record and scores the record against the one Patrick corrected (1 is a perfect match). A key (case, prompt version, model, thinking) already here is not run again. Release is blank on passes kept before the table existed.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Dollars"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Dollars per turn"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 64
+      },
+      "id": 8,
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select created_at as \"Kept\", \"case\" as \"Case\", model as \"Model\", thinking as \"Thinking\", prompt as \"Prompt\", release as \"Release\", source as \"Answered by\", turns as \"Turns\", calls as \"Calls\", input_tokens as \"Input\", cache_creation_tokens as \"Cache write\", cache_read_tokens as \"Cache read\", output_tokens as \"Output\", cost_usd as \"Dollars\", cost_usd / nullif(turns, 0) as \"Dollars per turn\", people as \"People\", events as \"Events\", pair_bonds as \"Pair-bonds\", clusters as \"Clusters\", variables as \"Variables\", overall as \"Overall\", scratch_diagram_id as \"Scratch diagram\" from replay_passes order by created_at desc, id desc",
+          "refId": "A"
+        }
+      ],
+      "title": "Replay passes",
+      "type": "table"
+    }
+  ]
+}

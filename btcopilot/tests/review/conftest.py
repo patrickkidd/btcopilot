@@ -101,7 +101,7 @@ def turns(session):
 @pytest.fixture
 def cut(test_user, session, turns):
     cut = Cut(
-        discussion_id=session.id,
+        diagram_id=session.diagram_id,
         start_statement_id=turns[0].id,
         end_statement_id=turns[1].id,
         user_id=test_user.id,

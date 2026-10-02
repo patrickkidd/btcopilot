@@ -301,7 +301,7 @@ def test_where_the_coach_differed_is_written_once_at_ratification(
     three_readings(test_user, test_user_2, coach_user, cut)
     open_vote(patrick, cut)
     decide_all(patrick, cut)
-    with patch.object(divergence, "reasons", side_effect=lambda rows: rows):
+    with patch.object(divergence, "reasons", side_effect=lambda rows, cut, user_id: rows):
         patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
 
     result = patrick.get(f"/review/result?cut_id={cut.id}").get_json()

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { stateFor, boxOf } from "./setup";
 import { mockTurn } from "./turn";
 
 /** The strip reads as one view: one drawing at every level, a path row that
@@ -75,7 +75,7 @@ test.describe("a tap on a box", () => {
     page,
   }) => {
     await settle(page);
-    const pill = (await page.locator("#view rect.pill").boundingBox())!;
+    const pill = await boxOf(page.locator("#view rect.pill"));
     const mid = pill.y + pill.height / 2;
     for (const [x, y] of [
       [pill.x + 4, mid],
@@ -187,9 +187,9 @@ test.describe("the path row at a phone's width", () => {
 test.describe("the modes of a cluster", () => {
   const still = async (page: Page, open: () => Promise<void>) => {
     const where = async () => ({
-      view: Math.round((await page.locator("#view").boundingBox())!.height),
-      bubble: Math.round((await page.locator(".bub").first().boundingBox())!.y),
-      header: Math.round((await page.locator(".pin-label").first().boundingBox())!.y),
+      view: Math.round((await boxOf(page.locator("#view"))).height),
+      bubble: Math.round((await boxOf(page.locator(".bub").first())).y),
+      header: Math.round((await boxOf(page.locator(".pin-label").first())).y),
     });
     const before = await where();
     await open();
@@ -226,11 +226,11 @@ test.describe("the open cluster's name on a crowded line", () => {
       await expect(page.locator("#view .ss-name")).toBeVisible();
       await page.waitForTimeout(600);
       const [name, pic] = await Promise.all([
-        page.locator("#view .ss-name").boundingBox(),
-        page.locator("#chat-screen .pic").boundingBox(),
+        boxOf(page.locator("#view .ss-name")),
+        boxOf(page.locator("#chat-screen .pic")),
       ]);
-      expect(name!.x).toBeGreaterThanOrEqual(pic!.x);
-      expect(name!.x + name!.width).toBeLessThanOrEqual(pic!.x + pic!.width);
+      expect(name.x).toBeGreaterThanOrEqual(pic.x);
+      expect(name.x + name.width).toBeLessThanOrEqual(pic.x + pic.width);
       await step(page, 0).click();
       await page.waitForTimeout(600);
     }

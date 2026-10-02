@@ -7,7 +7,7 @@ import { adding, Menu, Tab, shut } from "./menu";
 import { Questions } from "./questions";
 import { Ballot } from "./ballot";
 import { Coding } from "./coding";
-import { Cut } from "./cut";
+import { CutSelect } from "./cut";
 import { Agenda } from "./agenda";
 import { Pairs } from "./pairs";
 import { Meeting } from "./meeting";
@@ -20,11 +20,13 @@ import { Thread, divider } from "./thread";
 import { Page, Settings, type Sub } from "./settings";
 import { Notices } from "./notices";
 import { Strip } from "./strip";
-import { aimedEvents, chips, itemKind, Lead } from "./chips";
+import { aimedEvents, chips, Does, DOES, itemKind, Lead } from "./chips";
 import { feed } from "./turn";
 import { Release } from "./release";
 import { Reports } from "./report";
 import { toolLine } from "./tools";
+import { card } from "./merge";
+import { Part, store } from "./store";
 import {
   CHIP_KIND,
   PicEvent,
@@ -35,7 +37,7 @@ import {
   type PicState,
   type Sel,
 } from "./caption";
-import { $, CLUSTER, pathRow, setTitle, slideOver } from "./dom";
+import { $, CLUSTER, flash, pathRow, setTitle, slideOver } from "./dom";
 import { address, beyond, linked, parse, PICTURE, Place, settled, UNDATED } from "./place";
 import { Return, returnKey, touch } from "./keyboard";
 import { Drawer } from "./drawer";
@@ -61,7 +63,6 @@ import {
   InteractionKind,
   ItemKind,
   Touch,
-  emptyTimeline,
   Role,
   StatementKind,
   type View,
@@ -69,6 +70,8 @@ import {
   type Chip,
   type CodedIn,
   type Delivery,
+  Access,
+  type Cut,
   type Diagram,
   type Session,
   type Started,
@@ -94,7 +97,7 @@ declare global {
         coder: boolean;
         prefs: Pick<Preferences, "spotlight" | "bug_reports">;
       } | null;
-      diagram: { id: number; name: string } | null;
+      diagram: Diagram | null;
       session: { id: number; turn: string | null } | null;
       statements: api.Said[];
       version: string;
@@ -115,23 +118,26 @@ const CODING_SCREENS = [
 
 document.querySelectorAll(".backbtn").forEach((b) => (b.innerHTML = BACK));
 
-let timeline: Timeline = emptyTimeline();
+/** The record of the diagram open, and its sittings newest first, which name
+ * the one that coded a moment: both read from the one store (FD-366). */
+const record = (): Timeline => store.current().record;
+const sittings = (): Session[] => store.current().sittings;
+
 let pic: PicState = REST;
 /** The sitting the coach is in, or was last: the one a page coming back asks
  * about a turn still running. */
-let session: number | null = window.BOOTSTRAP.session?.id ?? null;
+let session: number | null = null;
 /** The sitting the newest words on screen belong to, so words that land in
  * another one get the line between them. */
-let lastSitting: number | null = window.BOOTSTRAP.statements.at(-1)?.session_id ?? null;
-/** The family's sittings, newest first, for naming the one that coded a
- * moment. */
-let known: Session[] = [];
+let lastSitting: number | null = null;
+
+const looking = (): boolean => store.readOnly();
 
 /** A tap can only be recorded against a diagram; without one there is nothing to
- * record it on. */
+ * record it on, and a look at someone else's diagram is not theirs to learn from. */
 function tapped(kind: InteractionKind, item: ItemKind, id: string | null = null): void {
-  const diagram = window.BOOTSTRAP.diagram;
-  if (diagram) void api.record(diagram.id, kind, item, id);
+  const diagram = store.current().diagram;
+  if (diagram && !looking()) void api.record(diagram.id, kind, item, id);
 }
 
 const picture = new Picture(
@@ -215,22 +221,22 @@ function chipLabel(chip: Chip): string {
   if (!chip.bare) return chip.label;
   if (chip.kind === ChipKind.Person)
     return (
-      timeline.people.find((p) => String(p.id) === chip.target)?.name ?? chip.label
+      record().people.find((p) => String(p.id) === chip.target)?.name ?? chip.label
     );
   if (chip.kind === ChipKind.Event)
     return (
-      timeline.events.find((e) => String(e.id) === chip.target)?.label ?? chip.label
+      record().events.find((e) => String(e.id) === chip.target)?.label ?? chip.label
     );
   if (chip.kind === ChipKind.Question || chip.kind === ChipKind.Impression)
     return (
-      timeline.asked_questions.find((q) => q.id === chip.target)?.text ?? chip.label
+      record().asked_questions.find((q) => q.id === chip.target)?.text ?? chip.label
     );
   if (chip.kind === ChipKind.PairBond)
     return (
-      timeline.pair_bonds.find((b) => String(b.id) === chip.target)?.label ?? chip.label
+      record().pair_bonds.find((b) => String(b.id) === chip.target)?.label ?? chip.label
     );
   return (
-    timeline.clusters.find(
+    record().clusters.find(
       (c) => c.id === chip.target || c.cluster_ids.includes(chip.target),
     )?.title ?? chip.label
   );
@@ -261,28 +267,33 @@ const pbp = new Drawer(
 function replay(statement: number): boolean {
   const kept = cases.get(statement);
   if (!kept) return false;
-  reopen(kept, timeline.clusters, (told) => pbp.open(timeline, told, statement), (id) => void explain(id));
+  reopen(kept, record().clusters, (told) => pbp.open(record(), told, statement), (id) => void explain(id));
   return true;
 }
 
-/** A chip tapped in the thread or the drawer. Two kinds of chip, and the
- * colour says which. An amber chip is the coach asking: an old offer goes into
- * the message as words, and a question it asked goes in as the reference that
- * answers it (R-0587). A teal chip is a reference into the record, so it aims
- * the picture, except the cluster chip a play-by-play leads with, which opens
- * that play again as a tap on its words does. A chip in an
+/** A chip tapped anywhere: the thread, the play-by-play drawer, the list of
+ * what the coach has for the reader. What it does follows what it names, and
+ * its colour follows the same (R-0587): the coach asking goes into the message
+ * as the reference that answers it, a reference into the record goes to it on
+ * the picture, and an address goes there. The cluster chip a play-by-play
+ * leads with opens that play again, as a tap on its words does. A chip in an
  * old prose walk is a chip like any other (R-0501, R-0570). */
 function chipTap(chip: Chip): void {
   tapped(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
   track.tap(Feature.ChipTap, { kind: itemKind(chip.kind), id: chip.target });
-  if (chip.kind === ChipKind.Place) return void navigate(chip.target);
   if (chip.play !== undefined && replay(chip.play)) return;
-  if (offered(chip)) chat.insert(chip, chip.kind === ChipKind.Message ? Lead.Answer : Lead.None);
-  else aim(chip);
+  DOING[DOES[chip.kind]](chip);
 }
+
+const DOING: Record<Does, (chip: Chip) => void> = {
+  [Does.Say]: (chip) => chat.insert(chip, chip.kind === ChipKind.Message ? Lead.Answer : Lead.None),
+  [Does.Aim]: (chip) => aim(chip),
+  [Does.Go]: (chip) => void navigate(chip.target),
+};
 
 const chat = new Chat($("chat"), $("composer"), {
   label: chipLabel,
+  merge: (chip) => card(chip, record()),
   onChip: chipTap,
   // A tap on a message's own words is a look: the picture lights what that
   // message named, nothing enters the composer, and no turn is spent.
@@ -298,11 +309,39 @@ const chat = new Chat($("chat"), $("composer"), {
   onPlay: replay,
 });
 
-/** An offer: the coach holding out something to say next, drawn amber. */
-const offered = (chip: Chip) =>
-  chip.kind === ChipKind.Ask || chip.tone === ChipTone.Ask;
+/** An event or a person carried from its detail card into the message box:
+ * the chat comes up with it as a lit chip at the caret and nothing sent
+ * (Patrick's picks D3 and D4, 2026-10-01); the send clears it with the rest of
+ * the box. */
+function talkAbout(chip: Chip): void {
+  menu.fold();
+  toThread();
+  chat.insert(chip, Lead.None);
+  $("composer")
+    .querySelector(`.chip[data-kind="${chip.kind}"][data-target="${chip.target}"]`)!
+    .classList.add("lit");
+  sync();
+}
 
-const menu = new Menu($("menu-body"), load);
+/** Where an event was said, as the card's line that jumps to that bubble. */
+function said(eventId: number): { label: string; go: () => void } | null {
+  const trace = codedIn(eventId);
+  if (!trace) return null;
+  return {
+    label: trace.label,
+    go: () => {
+      menu.fold();
+      toThread();
+      void traceTo(trace.where);
+    },
+  };
+}
+
+const menu = new Menu($("menu-body"), () => load().then(record), () => store.id() ?? undefined, {
+  talk: talkAbout,
+  cluster: (id) => void navigate(address(Place.Cluster, id)),
+  said,
+});
 
 /** On a phone the drawer gets out of the way of the thread; pinned beside it,
  * it stays. */
@@ -311,7 +350,8 @@ const toThread = () => {
 };
 
 /** A question or impression tapped in the drawer goes into the message as a
- * reference with the cursor after it, and nothing is sent (R-0072). */
+ * reference with the cursor after it, and nothing is sent (R-0072); what an
+ * impression rests on goes where the same chip in the thread goes. */
 const questions = new Questions($("menu-body"), {
   onChip: (chip, lead, after) => {
     toThread();
@@ -320,6 +360,10 @@ const questions = new Questions($("menu-body"), {
   onAsked: (where, ask) => {
     toThread();
     void traceTo(where, ask);
+  },
+  onRef: (chip) => {
+    toThread();
+    chipTap(chip);
   },
   onDismissed: () => void load(),
   busy: () => inFlight,
@@ -348,6 +392,7 @@ const sessions = new Sessions(
       });
     },
     onMoved: () => sync(),
+    onPick: (sitting) => void toSitting(sitting),
   },
 );
 
@@ -372,11 +417,8 @@ const AGENDA: Sub = {
   name: Screen.Agenda,
   at: address(Place.Agenda),
 };
-const PICK: Sub = { title: "Pick a session", screen: $("pick-screen"), at: address(Place.Pick) };
-/** The page of one meeting and the cut screen take their addresses from the
- * meeting and the session they open on. */
+/** The page of one meeting takes its address from the meeting it opens on. */
 const MEET: Sub = { title: "Meeting", screen: $("meet-screen") };
-const CUT: Sub = { title: "", screen: $("cut-screen"), name: Screen.Cut };
 const PAIRS: Sub = {
   title: "Better replies",
   screen: $("pairs-screen"),
@@ -485,17 +527,29 @@ async function openLine(statementId: number): Promise<void> {
  * Putting a conversation on the agenda, placing the cut everyone codes up to,
  * and the agenda itself (R-0258, R-0267). Nobody but Patrick sees these. */
 
-const placing = new Cut($("cut-chat"), $("cut-bar"), {
-  onPlaced: () =>
-    void agenda.load().then(() => settings.popTo(AGENDA)),
-  onTitle: (title) => {
-    CUT.title = title;
+/** Selecting a cut happens in the chat itself, on someone else's diagram
+ * (R-0629) or, from Next meeting's button, the admin's own (R-0632); placing
+ * it returns to Next meeting. */
+const selecting = new CutSelect($("chat"), $("cut-strip"), $("cut-say"), $("cut-bar"), {
+  onSelecting: (on) => {
+    $("inbar").hidden = on;
+    $("chat-screen").classList.toggle("selecting", on);
+    $("viewing-cut").hidden = on || !looking();
   },
+  onPlaced: () => void openAgenda(),
 });
 
-const agenda = new Agenda($("agenda-body"), $("pick-body"), $("meet-body"), {
-  onPick: () => settings.push(PICK),
-  onPlace: (discussionId) => void placeCut(discussionId),
+/** The meeting a cut selected next joins, set by Next meeting's button and
+ * spent on the next diagram opened. */
+let arming: { day: string | null } | null = null;
+
+const agenda = new Agenda($("agenda-body"), $("meet-body"), {
+  onAdd: () => {
+    arming = { day: agenda.nextDate() };
+    settings.push(Page.Diagrams);
+    settings.seek();
+  },
+  onOpen: (cut) => void openCut(cut),
   onMeeting: (title) => {
     MEET.title = title;
     MEET.at = address(Place.MeetingDay, agenda.meeting ?? UNDATED);
@@ -503,7 +557,7 @@ const agenda = new Agenda($("agenda-body"), $("pick-body"), $("meet-body"), {
   },
   onRatify: (cutId) => void openMeeting(cutId),
   onResult: (cutId) => void openResult(cutId, openAgenda),
-});
+}, $("overlay").parentElement!);
 
 /** The meeting: the room decides what the vote left open and ratifies the cut
  * (R-0250, R-0257). Patrick's screen, reached from the meeting's page. */
@@ -547,10 +601,15 @@ async function openResult(cutId: number, back: () => Promise<void>): Promise<voi
   screen(Screen.Result);
 }
 
-async function placeCut(discussionId: number): Promise<void> {
-  await placing.open(discussionId, agenda.nextDate());
-  CUT.at = address(Place.Cut, discussionId);
-  settings.push(CUT);
+/** A cut on the agenda opened where it stands in its family's thread, lit,
+ * to move its lines. */
+async function openCut(cut: Cut): Promise<void> {
+  uncover();
+  screen(Screen.Chat);
+  await openDiagram(cut.diagram_id);
+  const first = await thread.reach(bubbleOf(cut.start_statement_id));
+  await selecting.start(cut.diagram_id, cut.meeting_date, cut);
+  first?.scrollIntoView({ block: "center" });
 }
 
 /** The agenda from outside the stack: back from a result. */
@@ -615,29 +674,53 @@ $("coding-back").addEventListener("click", () => {
   else if (here === Screen.Result) void resultBack();
 });
 
-/** Another family is another record and another set of sessions, so the chat,
- * the picture and the title all start again on it. Opening on a family only
- * names it; nothing is thrown away. */
-function onDiagram(diagram: Diagram, how = { switched: true }): void {
-  track.diagram(diagram.id);
-  familyTitle = diagram.name;
-  $("menu-title").textContent = familyTitle;
-  // The settings stack owns the title while it is open, so only write it when
-  // the chat is what the title row is naming.
-  if ($("settings-back").hidden) $("title").textContent = familyTitle;
-  if (!how.switched) return;
-  session = null;
-  void load().then(reload);
+/** Another family is another record and another set of sittings: the one
+ * step that opens a diagram (FD-366). A turn already running on it is joined
+ * once it is drawn. */
+async function openDiagram(id: number): Promise<void> {
+  const armed = arming;
+  arming = null;
+  if (!(await store.open(id))) return;
+  if (armed) await selecting.start(id, armed.day);
+  await reattach();
 }
 
+/** What the title row says with no family open yet. */
+const UNNAMED = $("title").textContent ?? "Your family";
+
 /** The title row shows the current view's title, and the family's name again
- * when the settings stack closes. The name follows whichever family the app is
- * on. */
-let familyTitle =
-  window.BOOTSTRAP.diagram?.name ?? $("title").textContent ?? "Your family";
-$("title").textContent = familyTitle;
-// the drawer is the family's too, so it carries the same name (frame 2)
-$("menu-title").textContent = familyTitle;
+ * when the settings stack closes. */
+const familyTitle = (): string => store.current().diagram?.name ?? UNNAMED;
+
+/** What names the diagram open: the title row and the drawer's (frame 2), the
+ * one line that says the diagram is someone else's with the way back to the
+ * admin's own (the page hides whatever writes), and the product events. */
+store.watch({
+  reset: () => selecting.stop(),
+  draw: (opened) => {
+    const diagram = opened.diagram;
+    $("menu-title").textContent = familyTitle();
+    // The settings stack owns the title while it is open, so only write it when
+    // the chat is what the title row is naming.
+    if ($("settings-back").hidden) $("title").textContent = familyTitle();
+    document.documentElement.dataset.access = diagram?.access ?? Access.Own;
+    $("viewing").hidden = !looking();
+    $("viewing-cut").hidden = !looking() || selecting.selecting();
+    $("viewing-who").textContent = looking() ? `Viewing ${diagram!.owner}'s diagram, read-only` : "";
+    if (diagram) track.diagram(diagram.id);
+  },
+});
+
+$("viewing-cut").addEventListener("click", async () => {
+  track.tap(Feature.AgendaAdd);
+  await agenda.load();
+  await selecting.start(store.current().diagram!.id, agenda.nextDate());
+});
+
+$("viewing-back").addEventListener("click", async () => {
+  const [own] = await api.diagrams();
+  await openDiagram(own.id);
+});
 
 /** Speak replies is the one ruled duplicate: this row and the Coach settings
  * page are two doors onto the same value. */
@@ -651,7 +734,7 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
   onTitle: (title, sub) => {
     // The title row belongs to whatever is on top of it, so the chat's own
     // controls step aside while the settings stack is up.
-    if (title === null) $("title").textContent = familyTitle;
+    if (title === null) $("title").textContent = familyTitle();
     else setTitle(title);
     $("account").hidden = title !== null;
     // the guidelines are read from the task card too (R-0275, R-0278)
@@ -666,7 +749,7 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
     speak.checked = prefs.speak;
     reports.always = prefs.bug_reports === BugReports.Always;
   },
-  onDiagram: (diagram, how) => onDiagram(diagram, how),
+  onOpen: openDiagram,
   onTask: () => void readTask().then(() => settings.push(TASK)),
   onAgenda: () => void agenda.load().then(() => settings.push(AGENDA)),
   onPairs: () => void pairs.load().then(() => settings.push(PAIRS)),
@@ -683,7 +766,7 @@ const reports = new Reports($("overlay").parentElement!, () =>
 reports.always = window.BOOTSTRAP.user?.prefs.bug_reports === BugReports.Always;
 
 /** The newest statement the thread on screen holds. */
-let newest: number | null = window.BOOTSTRAP.statements.at(-1)?.id ?? null;
+let newest: number | null = null;
 
 /** A notice goes to the screen it names or the address it carries (R-0613). */
 const notices = new Notices(new Strip($("speakrow")), $("account"), (link) =>
@@ -710,7 +793,7 @@ let stopped: { turn: string; bubble: HTMLElement } | null = null;
 function addStatements(statements: api.Said[], newest = false): void {
   for (const statement of statements) {
     if (statement.sitting)
-      $("chat").append(divider(statement.sitting.started, statement.sitting.previous_started));
+      $("chat").append(divider(statement.sitting.id, statement.sitting.started, statement.sitting.previous_started));
     const coach = statement.role === Role.Coach;
     if (statement.case && statement.id !== null)
       cases.set(statement.id, { case: statement.case, digest: statement.digest });
@@ -746,17 +829,8 @@ function sat(sittingId: number, words: Element | null): void {
   if (sittingId === lastSitting) return;
   lastSitting = sittingId;
   const before = [...$("chat").querySelectorAll<HTMLElement>(".sitting")].at(-1);
-  words?.before(divider(new Date().toISOString(), before?.dataset.started ?? null));
+  words?.before(divider(sittingId, new Date().toISOString(), before?.dataset.started ?? null));
   chat.toEnd();
-}
-
-/** The family's sittings read again, which name the session that coded a
- * moment. */
-async function refreshKnown(): Promise<void> {
-  known = await api.sessionIndex();
-  actions();
-  // the list says what kind of session the empty one is
-  if ($("chat").querySelector(".cta")) showPrompt();
 }
 
 /** The empty session's call to action, worded for what the session is: a
@@ -764,15 +838,15 @@ async function refreshKnown(): Promise<void> {
  * session is about a case, and a personal session is about your own family
  * (R-0350). */
 function showPrompt(kind?: SessionKind): void {
-  kind ??= known.find((s) => s.id === session)?.kind ?? SessionKind.Chat;
+  kind ??= sittings().find((s) => s.id === session)?.kind ?? SessionKind.Chat;
   if (kind === SessionKind.Note)
     chat.prompt("Write up the session", [
-      `Tell the coach what happened in the session you just had with the ${familyTitle} family: who was there, what came up, what changed.`,
+      `Tell the coach what happened in the session you just had with the ${familyTitle()} family: who was there, what came up, what changed.`,
       "The coach puts it into the record the way a session's own words would be.",
     ]);
   else if (PRO)
     chat.prompt("Start the session", [
-      `Talk to the coach about the ${familyTitle} case. Who is in the family, and what brought them in?`,
+      `Talk to the coach about the ${familyTitle()} case. Who is in the family, and what brought them in?`,
       "You can also tap the mic on your keyboard and say it.",
     ]);
   else
@@ -783,11 +857,11 @@ function showPrompt(kind?: SessionKind): void {
 }
 
 /** The newest page of the family's thread in place of what is on screen, and
- * the picture back where its last coach message left it. */
-async function reload(): Promise<void> {
-  redraw(await api.thread());
-}
+ * its sittings, read again. */
+const reload = (): Promise<boolean> => store.refresh(Part.Thread, Part.Sittings);
 
+/** The newest page of the thread drawn in place of what is on screen, and the
+ * picture back where its last coach message left it. */
 function redraw(page: api.Said[]): void {
   newest = page.at(-1)?.id ?? null;
   chat.clear();
@@ -800,28 +874,64 @@ function redraw(page: api.Said[]): void {
   pic = REST;
   leftAt(page);
   chat.toEnd();
-  void refreshKnown();
 }
 
+/** The chat, the picture, the drawer and the turn show the diagram open:
+ * emptied the moment another starts opening, so nothing of the one before is
+ * left on screen or still drawing into it, and drawn from each part as it
+ * comes in. */
+store.watch({
+  reset: () => {
+    stopFollowing();
+    stopped = null;
+    chat.busy(false);
+    chat.clear();
+    chat.unfold();
+    cases.clear();
+    pbp.close();
+    menu.fold();
+    picture.clear();
+    pic = REST;
+    session = null;
+    lastSitting = null;
+    newest = null;
+    thread.start([]);
+  },
+  draw: (opened, parts) => {
+    if (parts.includes(Part.Record)) {
+      picture.setData(opened.record);
+      menu.show(opened.record);
+      chat.relabel();
+    }
+    if (parts.includes(Part.Thread)) redraw(opened.thread);
+    // the list says what kind of session the empty one is
+    if (parts.includes(Part.Sittings) && $("chat").querySelector(".cta")) showPrompt();
+    actions();
+  },
+});
+
 /** The coach pointing: the moments its words name become the spotlight, and
- * everything else on the wire recedes. A chip only ever aims the picture; it
- * never changes the picture's level, so nothing below it moves (the owner:
- * chat bubbles must never move from a tap on a chip). */
+ * everything else on the wire recedes. A chip never changes the picture's
+ * height, so nothing below it moves (the owner: chat bubbles must never move
+ * from a tap on a chip); from the strip it opens the full picture, as a tap on
+ * the strip does. */
 function aim(chip: Chip): void {
-  const ids = aimedEvents(chip, timeline.clusters);
+  const ids = aimedEvents(chip, record().clusters);
   if (!ids.length) return;
+  chat.unfold();
   // A chip in the coach's words does exactly what a tap on the picture does:
   // there is one selection, wherever the reader touched it. A chip naming an
-  // event no cluster claims selects that event; a chip naming a cluster, or an
-  // event inside one, selects the cluster, since an event in a cluster has no
-  // mark of its own on the line (R-0543).
-  const cluster = timeline.clusters.find((c) => ids.every((id) => c.event_ids.includes(id)));
-  if (cluster) {
-    apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Cluster, id: cluster.id }));
-    // a chip may name a cluster off screen, so the line goes to it
-    picture.spotlight(cluster.event_ids);
-  } else
+  // event selects that event, opening the cluster it belongs to (Patrick,
+  // 2026-10-01); a chip naming a cluster selects the cluster (R-0543).
+  if (chip.kind === ChipKind.Event) {
     apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(ids[0]) }), ids);
+    return;
+  }
+  const cluster = record().clusters.find((c) => ids.every((id) => c.event_ids.includes(id)));
+  if (!cluster) return;
+  apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Cluster, id: cluster.id }));
+  // a chip may name a cluster off screen, so the line goes to it
+  picture.spotlight(cluster.event_ids);
 }
 
 /** One place turns a picture tap into its consequences: what the picture shows,
@@ -834,7 +944,7 @@ function apply(outcome: Outcome, named: number[] | null = null): void {
     picture.pick(Number(sel.id), named ?? [Number(sel.id)], named ? Via.Chip : Via.Dot);
   else picture.select(null);
   if (sel?.kind === SelKind.Cluster) {
-    const cluster = timeline.clusters.find((c) => c.id === sel.id);
+    const cluster = record().clusters.find((c) => c.id === sel.id);
     if (cluster) picture.open(cluster.event_ids);
   }
   actions();
@@ -853,18 +963,29 @@ function apply(outcome: Outcome, named: number[] | null = null): void {
 
 function selLabel(sel: Sel): string {
   if (sel.kind === SelKind.Event)
-    return timeline.events.find((e) => String(e.id) === sel.id)?.label ?? "this event";
+    return record().events.find((e) => String(e.id) === sel.id)?.label ?? "this event";
   if (sel.kind === SelKind.Cluster)
-    return timeline.clusters.find((c) => c.id === sel.id)?.title ?? "this cluster";
-  const n = timeline.shelf.length;
+    return record().clusters.find((c) => c.id === sel.id)?.title ?? "this cluster";
+  const n = record().shelf.length;
   return n ? `${n} thing${n === 1 ? "" : "s"} with no date yet` : "what has no date";
 }
 
-/** The words of one message lit in the thread, reading back to them first
- * when they are further back than the thread has read. */
+/** Where every jump into the thread lands, from a chip, a link or a drawer
+ * row alike, so none of them can go somewhere the others do not: a message's
+ * bubble glides to the middle and is ringed, a sitting's line glides to the
+ * top. Each reads the thread back first when it is further back than the
+ * thread has read. An event goes to the picture instead (`aim`). */
+const bubbleOf = (statement: number) => `.bub[data-statement="${statement}"]`;
+
 async function toMessage(statement: number, ask = false): Promise<void> {
-  await thread.reach(statement);
+  await thread.reach(bubbleOf(statement));
   if (!chat.trace(statement, ask)) toast("Those words are no longer here");
+}
+
+async function toSitting(sitting: number): Promise<void> {
+  const line = await thread.reach(`.sitting[data-sitting="${sitting}"]`);
+  if (line) flash(line, true);
+  else toast("That session has nothing in the chat");
 }
 
 /** Traceability runs both ways: a moment on the picture says which session
@@ -872,14 +993,14 @@ async function toMessage(statement: number, ask = false): Promise<void> {
 const TRACE_TITLE_CAP = 30;
 
 function codedIn(eventId: number): { label: string; where: CodedIn } | null {
-  const where = timeline.coded_in[String(eventId)];
+  const where = record().coded_in[String(eventId)];
   if (!where) return null;
-  const found = known.find((s) => s.id === where.discussion_id);
+  const found = sittings().find((s) => s.id === where.discussion_id);
   const title = found ? sessionTitle(found) : "an earlier session";
   const cut =
     title.length > TRACE_TITLE_CAP ? `${title.slice(0, TRACE_TITLE_CAP - 1)}…` : title;
   const when = found ? shortDate(new Date(found.last_activity), new Date()) : "";
-  return { label: `coded in: ${cut}${when ? ` · ${when}` : ""} →`, where };
+  return { label: `in chat · ${cut}${when ? ` · ${when}` : ""} →`, where };
 }
 
 /** Jump to the words that coded this moment: the session if it is not the one
@@ -989,13 +1110,13 @@ wide.addEventListener("change", () => {
 function shown(view: View): Promise<void> | void {
   const ids =
     view.kind === ViewKind.Triangle
-      ? among(timeline, view.persons)
+      ? among(record(), view.persons)
       : view.kind === ViewKind.Sequence
         ? view.events
         : null;
   if (ids === null) return picture.show(view);
-  const told = untold(timeline, ids);
-  if (told.snapshots.length) pbp.open(timeline, told, null);
+  const told = untold(record(), ids);
+  if (told.snapshots.length) pbp.open(record(), told, null);
 }
 
 /** Ask the coach to tell the cluster on screen. The case opens in its drawer
@@ -1003,32 +1124,39 @@ function shown(view: View): Promise<void> | void {
  * opens it again. A record the picture cannot draw is refused in the
  * server's own words. */
 async function explain(clusterId: string): Promise<void> {
+  if (looking()) return;
   track.tap(Feature.Play, { kind: ItemKind.Cluster, id: clusterId });
+  const live = store.live();
   chat.busy(true);
   let reply;
   try {
-    reply = await api.play(clusterId);
+    reply = await store.fetch((id, signal) => api.play(id, clusterId, signal));
   } catch (error) {
     chat.warn(api.whatFailed(error), () => void explain(clusterId));
     return;
   } finally {
-    // answered or not, the row is back to what the cluster offers, explain again
-    chat.busy(false);
-    pic = REST;
-    actions();
+    // answered or not, the row is back to what the cluster offers, explain
+    // again; another diagram opened meanwhile has its own row
+    if (live()) {
+      chat.busy(false);
+      pic = REST;
+      actions();
+    }
   }
+  if (!reply) return;
   chat.settled();
   // a kept play already on the thread opens again; it is not said twice
   const id = reply.statement_id;
   if (id === null || !cases.has(id)) {
     const told = chat.add(Role.Coach, reply.statement, ChipTone.Data, id, reply.cluster_id);
     // a play told after a quiet spell starts the family's next sitting
-    void refreshKnown().then(() => {
-      if (known.length) sat(known[0].id, told);
+    void store.refresh(Part.Sittings).then((drawn) => {
+      const [latest] = sittings();
+      if (drawn && latest) sat(latest.id, told);
     });
   }
   if (id !== null) cases.set(id, { case: reply.case, digest: reply.digest });
-  pbp.open(timeline, reply.case, id);
+  pbp.open(record(), reply.case, id);
 }
 
 /** What went wrong, in the words the reader needs: nothing came back, the
@@ -1062,14 +1190,14 @@ async function send(): Promise<void> {
 
 /** The reader's words go into the thread as theirs and on to the coach. */
 function post(statement: string): void {
-  if (!statement || inFlight) return;
+  if (!statement || inFlight || looking()) return;
   track.tap(Feature.SendMessage);
   chat.add(Role.User, statement);
   void deliver(statement);
 }
 
 async function deliver(statement: string): Promise<void> {
-  const started = await begin(() => api.say(statement), () => void deliver(statement));
+  const started = await begin(() => api.say(store.id(), statement), () => void deliver(statement));
   if (!started) return;
   sat(started.discussion_id, [...$("chat").querySelectorAll(".bub.user")].at(-1) ?? null);
   follow(started.turn_id);
@@ -1090,16 +1218,20 @@ async function begin(
   inFlight = true;
   chat.busy(true);
   speech.hush();
+  // words sent on one diagram are never followed on the next one opened
+  const live = store.live();
 
   let started;
   try {
     started = await ask();
   } catch (error) {
+    if (!live()) return null;
     inFlight = false;
     chat.busy(false);
     chat.warn(whatFailed(error), again);
     return null;
   }
+  if (!live()) return null;
   session = started.discussion_id;
   return started;
 }
@@ -1112,7 +1244,6 @@ async function begin(
 /** What the thread says when the page could not draw a reply. */
 const UNDRAWN = "This reply could not be shown";
 
-let watching: EventSource | null = null;
 let onTurn: string | null = null;
 
 function follow(turnId: string): void {
@@ -1125,6 +1256,9 @@ function follow(turnId: string): void {
   onTurn = turnId;
   inFlight = true;
   chat.busy(true);
+  // the turn belongs to the diagram it was said on: opening another closes its
+  // stream, and nothing already queued is drawn into the new one's chat
+  const live = store.live();
 
   let bubble: LiveBubble | null = null;
   // The typing dots stay until the coach's first word or first step, and the
@@ -1152,7 +1286,7 @@ function follow(turnId: string): void {
   let offered: { kind: ReportKind; words: string } | null = null;
   const step = (work: () => Promise<void> | void) => {
     queue = queue
-      .then(() => (broken ? undefined : work()))
+      .then(() => (broken || !live() ? undefined : work()))
       .catch((error) => {
         broken = true;
         stopFollowing();
@@ -1174,9 +1308,8 @@ function follow(turnId: string): void {
             .filter((one) => one.kind === ItemKind.Event && one.touch === Touch.Remove)
             .map((one) => Number(one.id)),
         );
-        const gone = timeline.events.filter((e) => removed.has(e.id));
-        await load();
-        if (items.length) picture.light(items, gone);
+        const gone = record().events.filter((e) => removed.has(e.id));
+        if ((await load()) && items.length) picture.light(items, gone);
       }),
     read: (ids) => step(() => picture.read(ids)),
     show: (view) => step(() => shown(view)),
@@ -1193,8 +1326,7 @@ function follow(turnId: string): void {
         if (speak.checked) speech.say(reply.statement);
         said.settle(reply.statement, (chip) => aim(chip));
         stopFollowing();
-        await load();
-        void refreshKnown();
+        if (!(await store.refresh(Part.Record, Part.Sittings))) return;
         void notices.refresh();
         // What the message named stays lit after it is written: the spotlight
         // is the resting state of the picture, not a flourish while it types.
@@ -1223,7 +1355,7 @@ function follow(turnId: string): void {
   });
 
   const source = api.turnEvents(turnId);
-  watching = source;
+  store.hold(source);
   source.addEventListener("message", (event) => take(JSON.parse(event.data)));
   source.addEventListener("error", () => {
     // The browser reconnects on its own and says where it got to; only a turn
@@ -1233,19 +1365,20 @@ function follow(turnId: string): void {
 }
 
 function stopFollowing(): void {
-  watching?.close();
-  watching = null;
+  store.release();
   onTurn = null;
   inFlight = false;
 }
 
-/** A page that has just loaded, or come back to the front, attaches to the
- * turn the session says is running. */
+/** A page that has just loaded, or come back to the front, or a diagram just
+ * opened, attaches to the turn the session says is running. */
 async function reattach(): Promise<void> {
-  if (watching) return;
-  if (session !== null) {
-    const { turn } = await api.session(session);
-    if (turn) return follow(turn);
+  if (onTurn !== null) return;
+  const asked = session;
+  if (asked !== null) {
+    const found = await store.fetch(() => api.session(asked));
+    if (!found) return;
+    if (found.turn) return follow(found.turn);
   }
   // A turn that finished while the page was away is read in with the rest.
   await catchUp();
@@ -1259,8 +1392,10 @@ const CATCH_UP_MS = 60_000;
  * newest statement is not the newest on screen. */
 async function catchUp(): Promise<void> {
   if (inFlight) return;
-  const page = await api.thread();
-  if (!inFlight && (page.at(-1)?.id ?? null) !== newest) redraw(page);
+  const page = await store.fetch((id, signal) => api.thread(id, undefined, signal));
+  if (!page || inFlight || (page.at(-1)?.id ?? null) === newest) return;
+  store.update({ thread: page });
+  await store.refresh(Part.Sittings);
 }
 
 window.setInterval(() => {
@@ -1288,24 +1423,19 @@ function spotlightFrom(text: string): void {
 function aimedFrom(text: string): number[] {
   const out: number[] = [];
   for (const chip of chips(text))
-    for (const id of aimedEvents(chip, timeline.clusters))
+    for (const id of aimedEvents(chip, record().clusters))
       if (!out.includes(id)) out.push(id);
   return out;
 }
 
-async function load(): Promise<Timeline> {
-  timeline = await api.timeline();
-  picture.setData(timeline);
-  menu.show(timeline);
-  chat.relabel();
-  actions();
-  return timeline;
-}
+/** The record read again, drawn wherever it shows; false when another
+ * diagram was opened before it came back. */
+const load = (): Promise<boolean> => store.refresh(Part.Record);
 
 /** The path over the line: where the reader is, from the whole timeline
  * down, each earlier step the way back to it (R-0540). */
 function crumb(): void {
-  $("path").innerHTML = pathRow(picture.path());
+  $("path").innerHTML = pathRow(picture.path(), picture.picked());
   $("info").hidden = !picture.opened();
 }
 
@@ -1412,6 +1542,24 @@ $("composer").addEventListener("keydown", (e) => {
   let next = br.nextSibling;
   while (next instanceof Text && next.data === "") next = next.nextSibling;
   if (!next) br.after(document.createTextNode("\n"));
+  // No browser scrolls a box to a caret a script put there, so the new line
+  // would open below the box's bottom edge once the box is full (FD-366). The
+  // box is only measured, never written to: an element put into the focused
+  // box can make iOS scroll the page to it, sliding the box off the keyboard.
+  const composer = e.currentTarget as HTMLElement;
+  const style = getComputedStyle(composer);
+  const breaks = document.createRange();
+  breaks.selectNode(br);
+  const glyph = breaks.getBoundingClientRect();
+  const line = parseFloat(style.lineHeight);
+  // the glyph sits centred in its line; the new line is the one under it
+  const below =
+    glyph.bottom +
+    (line - glyph.height) / 2 +
+    line -
+    composer.getBoundingClientRect().bottom +
+    parseFloat(style.paddingBottom);
+  if (below > 0) composer.scrollTop += Math.ceil(below);
   range.setStartAfter(br);
   range.collapse(true);
   selection.removeAllRanges();
@@ -1601,7 +1749,7 @@ function toList(tab: Tab): void {
 function toCluster(id: string): void {
   uncover();
   putDown();
-  const cluster = timeline.clusters.find((c) => c.id === id || c.cluster_ids.includes(id));
+  const cluster = record().clusters.find((c) => c.id === id || c.cluster_ids.includes(id));
   if (!cluster) return toast("That cluster is no longer in the record");
   picture.spotlight(cluster.event_ids);
   actions();
@@ -1611,7 +1759,7 @@ function toCluster(id: string): void {
 function toEvent(id: number): void {
   uncover();
   putDown();
-  if (!timeline.events.some((e) => e.id === id))
+  if (!record().events.some((e) => e.id === id))
     return toast("That event is no longer in the record");
   pic = { sel: { kind: SelKind.Event, id: String(id) }, playing: null };
   picture.pick(id, [id], Via.Chip);
@@ -1622,7 +1770,7 @@ function toEvent(id: number): void {
 async function toPlay(statement: number): Promise<boolean> {
   uncover();
   putDown();
-  await thread.reach(statement);
+  await thread.reach(bubbleOf(statement));
   if (replay(statement)) return true;
   toast("That play-by-play is no longer here");
   return false;
@@ -1659,6 +1807,8 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
   [Place.Coach]: () => toAccount(Page.Coach),
   [Place.Appearance]: () => toAccount(Page.Appearance),
   [Place.Diagrams]: () => toAccount(Page.Diagrams),
+  // the person's name is not in the address, so a reload lands on the search
+  [Place.Theirs]: () => toAccount(Page.Diagrams),
   [Place.Plan]: () => toAccount(Page.Plan),
   [Place.Task]: async () => {
     await readTask();
@@ -1667,12 +1817,6 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
   [Place.Agenda]: async () => {
     await agenda.load();
     await toAccount(AGENDA);
-  },
-  [Place.Pick]: async () => {
-    await agenda.load();
-    const drawn = agenda.pick();
-    await toAccount(AGENDA, PICK);
-    await drawn;
   },
   [Place.MeetingDay]: ([day]) => {
     uncover(Keep.Account);
@@ -1688,17 +1832,14 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
     await toAccount(PAIRS);
   },
   [Place.Literature]: () => toAccount(settings.literature),
-  [Place.Cut]: async ([id]) => {
-    await agenda.load();
-    await toAccount(AGENDA);
-    await placeCut(Number(id));
-  },
   [Place.Cluster]: ([id]) => toCluster(id),
   [Place.NewEvent]: () => {
     toList(Tab.Events);
     menu.add();
   },
   [Place.Event]: ([id]) => toEvent(Number(id)),
+  // the address of the parked form, kept so old links and the history still
+  // land: it opens the event's read-only detail view
   [Place.EventEditor]: ([id]) => {
     toList(Tab.Events);
     menu.goTo(Tab.Events, Number(id));
@@ -1707,6 +1848,8 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
     toList(Tab.People);
     menu.add();
   },
+  // the address of the parked person form, kept so old links and the history
+  // still land: it opens the person's read-only card
   [Place.Person]: ([id]) => {
     toList(Tab.People);
     menu.goTo(Tab.People, Number(id));
@@ -1787,6 +1930,13 @@ async function land(one: Delivery): Promise<void> {
   await navigate(delivered(one));
 }
 
+/** The first screen is drawn: the splash fades off it and leaves the page. */
+function reveal(): void {
+  const splash = $("splash");
+  splash.addEventListener("transitionend", () => splash.remove(), { once: true });
+  splash.classList.add("gone");
+}
+
 /** Opened at an address, the app goes there once the record is in; opened at
  * the chat it is there already. */
 async function arrive(): Promise<void> {
@@ -1798,18 +1948,8 @@ async function arrive(): Promise<void> {
 
 pinDrawer();
 
-addStatements(window.BOOTSTRAP.statements, true);
-thread.start(window.BOOTSTRAP.statements);
-chat.toEnd();
-
-void refreshKnown();
 void settings.load();
 void notices.refresh();
-
-// A turn the coach is still running when the page opens is drawn from its first
-// event, so a reload lands back in the middle of it rather than on nothing.
-const running = window.BOOTSTRAP.session?.turn ?? null;
-if (running) follow(running);
 
 // Coming back to the app — a phone returning to it, a tab shown again, the page
 // restored from the back cache — attaches to whatever the coach is doing now.
@@ -1831,26 +1971,32 @@ window.addEventListener("pageshow", (e) => {
   if (e.persisted) void release.check();
 });
 
-void load().then(async () => {
-  const said = window.BOOTSTRAP.statements;
-  if (!said.length) {
-    showPrompt();
-    return;
-  }
-  // Coming back a week later, the picture is where the last message left it.
-  leftAt(said);
-})
+// The first load opens the diagram the server put the page on the same way a
+// switch does; the server's page carries the diagram and the thread already.
+// A turn the coach is still running when the page opens is drawn from its
+// first event, so a reload lands back in the middle of it rather than on
+// nothing; coming back a week later, the picture is where the last message
+// left it.
+void store
+  .open(window.BOOTSTRAP.diagram?.id ?? null, {
+    diagram: window.BOOTSTRAP.diagram,
+    thread: window.BOOTSTRAP.statements,
+  })
+  .then(() => {
+    session = window.BOOTSTRAP.session?.id ?? session;
+    const running = window.BOOTSTRAP.session?.turn ?? null;
+    if (running) follow(running);
+  })
   .then(arrive)
+  .then(reveal)
   .then(() => landing(land));
 
 // The dev server too: push needs the worker, and the worker asks the network
 // first, so a saved edit still reaches the page.
 if ("serviceWorker" in navigator)
-  window.addEventListener("load", () =>
-    navigator.serviceWorker.register(
-      `/app/sw.js?release=${encodeURIComponent(window.BOOTSTRAP.version)}`,
-      { scope: "/app/" },
-    ),
+  void navigator.serviceWorker.register(
+    `/app/sw.js?release=${encodeURIComponent(window.BOOTSTRAP.version)}`,
+    { scope: "/app/" },
   );
 
 // A coder opens on their one task rather than on the chat (R-0265, frame f1),

@@ -7,7 +7,7 @@ from pywebpush import WebPushException
 
 from btcopilot import proactive, tuning
 from btcopilot.proactive import Reason
-from btcopilot.tests.conftest import csrf_token
+from btcopilot.tests.conftest import csrf_token, wrote
 from btcopilot.extensions import db
 from btcopilot.models import (
     NotificationKind,
@@ -15,9 +15,11 @@ from btcopilot.models import (
     Notification,
     NotificationChannel,
     Observation,
+    ModelCall,
     ObservationKind,
     ProactiveMessage,
     ProductEvent,
+    Purpose,
     Statement,
     Trigger,
 )
@@ -90,7 +92,9 @@ def family(test_user):
 def sent():
     with (
         patch("btcopilot.proactive.push.send") as send,
-        patch("btcopilot.proactive.response_text_sync", return_value=WORDS) as model,
+        patch(
+            "btcopilot.metered.response_text_sync", return_value=wrote(WORDS)
+        ) as model,
     ):
         yield send, model
 
@@ -143,6 +147,12 @@ def test_a_pattern_becomes_one_coach_message_then_a_notification(family, sent):
     assert statement.speaker_id == statement.discussion.chat_ai_speaker_id
     assert send.call_args.args == (family, statement)
     assert _counts() == [ObservationKind.ProactiveSent]
+    call = ModelCall.query.one()
+    assert (call.user_id, call.diagram_id, call.purpose) == (
+        family.id,
+        message.diagram_id,
+        Purpose.Proactive,
+    )
     prompt = model.call_args.args[0]
     assert (
         prompt.index("EARLIER")
@@ -160,7 +170,7 @@ def test_words_out_of_shape_stay_unsent_and_are_tried_twice_more_then_never(
 ):
     # R-0004
     send, model = sent
-    model.return_value = "The breakup came first. Then the depression. Why?"
+    model.return_value = wrote("The breakup came first. Then the depression. Why?")
     for day in range(proactive.TRIES):
         said = proactive.run(now=T0 + day * DAY)
         assert [s["refused"] for s in said] == [True]
@@ -175,7 +185,7 @@ def test_words_out_of_shape_stay_unsent_and_are_tried_twice_more_then_never(
 def test_words_making_one_event_the_cause_of_the_other_stay_unsent(family, sent):
     # R-0004
     send, model = sent
-    model.return_value = (
+    model.return_value = wrote(
         "The loss in November 1998 led to the symptoms that December. "
         "What do you notice?"
     )

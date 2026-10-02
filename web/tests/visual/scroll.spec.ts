@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { stateFor, boxOf } from "./setup";
 
 /** Every scroll area takes wheel, trackpad, touch drag AND mouse drag, and the
  * outer page never moves (UI_STANDARDS) [Oracle: R-0104, R-0105]. */
@@ -21,7 +21,7 @@ const overflows = (page: Page, selector: string) =>
  * words can be taken away. The surface still takes a mouse drag everywhere
  * else, which is what this asserts. */
 const dragUp = async (page: Page, selector: string, by: number) => {
-  const box = (await page.locator(selector).boundingBox())!;
+  const box = await boxOf(page.locator(selector));
   const x = box.x + 3;
   const y = box.y + box.height * 0.7;
   await page.mouse.move(x, y);

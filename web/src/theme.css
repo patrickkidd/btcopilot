@@ -131,6 +131,32 @@ button { font-family: inherit; }
   flex-direction: column;
   transition: transform 0.24s ease, filter 0.24s ease;
 }
+/* An admin looking at another person's diagram (Patrick, 2026-10-01): one
+   quiet line under the title row, and nothing on the page that writes. */
+.viewing {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--faint);
+  font-size: 13px;
+}
+.viewing[hidden] { display: none; }
+.viewing button {
+  flex: none;
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  color: var(--data);
+  font: inherit;
+}
+:root[data-access="admin-view"] :is(#inbar .field, #send, #menu-foot, .fs-act, .rmore, .fs-note, .fs-upload, .iacts, .det .foot) {
+  display: none;
+}
+
 .titlerow {
   flex: none;
   display: flex;
@@ -261,6 +287,7 @@ button { font-family: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.path .here.on { color: var(--data); font-weight: 500; }
 .path .step > span {
   display: block;
   overflow: hidden;
@@ -780,6 +807,7 @@ button { font-family: inherit; }
   flex-direction: column;
   gap: 10px;
   padding: 14px 12px;
+  padding-top: calc(14px + var(--room, 0px));
   background: var(--bg);
   touch-action: pan-y;
   overscroll-behavior: contain;
@@ -1055,6 +1083,35 @@ button { font-family: inherit; }
 }
 .bub.user .chip { color: var(--onaccent); border-color: currentColor; }
 
+/* Two people the coach asks are one person, side by side, the whole card one
+   chip (M1): a name line and one wrapping line of facts each, shared facts
+   grey and the ones that differ amber, the yes riding on the top border so
+   it costs no line of its own. */
+.chip.merge {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  margin: 12px 0 2px;
+  padding: 0;
+  font: 400 12px/1.35 var(--mono);
+  color: var(--ink);
+}
+.chip.merge::before { inset: 0; }
+.chip.merge .half { padding: 8px 8px 6px; min-width: 0; }
+.chip.merge .half + .half { border-left: 1px solid var(--ask); }
+.chip.merge .nm { display: block; font-weight: 500; }
+.chip.merge .facts { color: var(--faint); }
+.chip.merge .differ { color: var(--ask-text); }
+.chip.merge .yes {
+  position: absolute;
+  top: -9px;
+  right: 8px;
+  padding: 0 4px;
+  font: 500 11px/16px var(--mono);
+  color: var(--ask-text);
+  background: var(--panel);
+}
+
 .inbar {
   flex: none;
   display: flex;
@@ -1292,6 +1349,64 @@ button { font-family: inherit; }
   font: 500 15px var(--sans);
   cursor: pointer;
 }
+
+/* One event or person, read-only, its own page over the list (Patrick's pick
+   D2, 2026-10-01): a back arrow, a head with the kind over the name, one
+   labelled line per fact, then the one action that takes it to the chat. */
+.det { background: var(--panel); min-height: 100%; }
+/* the card is a page of its own over the list: the drawer's title row, tabs,
+   search and add button give way to its back arrow and the list it goes back to */
+.carded > .ovbar, .carded > #menu-tabs, .carded > #menu-searchrow, .carded > #menu-foot { display: none; }
+.det .detbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: env(safe-area-inset-top) 14px 0;
+  border-bottom: 1px solid var(--line);
+  font: 500 15px var(--sans);
+}
+.det .detbar .backbtn { margin-left: -12px; }
+.det .said { margin: 0; }
+.det .head { padding: 16px 16px 10px; border-bottom: 1px solid var(--line); }
+.det .kind { font: 500 12px/18px var(--mono); color: var(--data); text-transform: uppercase; letter-spacing: .05em; }
+.det .what { font: 500 20px/1.25 var(--sans); margin-top: 2px; text-wrap: balance; overflow-wrap: anywhere; }
+.det .r {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 10px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line);
+  min-height: 44px;
+  box-sizing: border-box;
+  align-items: center;
+}
+.det .k { font: 500 12px/18px var(--mono); color: var(--faint); text-transform: uppercase; letter-spacing: .05em; }
+.det .v { font: 400 15px/1.35 var(--sans); min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.det .v .sub { font: 400 13px/1.3 var(--mono); color: var(--faint); }
+.det .v .chip { margin: 0; }
+.det .who {
+  font: inherit;
+  color: var(--data);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.det .foot { padding: 14px 16px 16px; }
+.det .talk {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--ask);
+  border-radius: 12px;
+  background: var(--ask-tint);
+  color: var(--ask-text);
+  font: 500 15px/1.3 var(--sans);
+  cursor: pointer;
+}
+.det .talk:active { color: var(--ask-press); }
 
 .editor {
   padding: 12px 16px 16px;
@@ -1804,6 +1919,7 @@ button { font-family: inherit; }
    is only the frame it fills. */
 .sn-pane.host { display: flex; flex-direction: column; overflow: hidden; }
 .sn-pane.host > iframe { flex: 1; width: 100%; border: none; background: var(--bg); }
+.sn-pane.host > .sn-theirs { flex: 1; overflow-y: auto; padding-top: 14px; }
 .sn-grp {
   margin: 0;
   background: var(--panel);
@@ -2624,11 +2740,16 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 /* the report sheet (R-0056): over every other screen and sheet, the lists and
    the account view included; what is sent scrolls when it runs long */
 .fs-scrim.rp, .fs-sheet.rp { z-index: 70; }
+/* the question before a cut comes off the agenda, over the account view */
+.fs-scrim.ag, .fs-sheet.ag { z-index: 60; }
 /* on a wide screen a card at the bottom, not a band across the whole window */
-.fs-sheet.rp { max-height: 92%; max-width: 480px; margin: 0 auto; }
+.fs-sheet.rp, .fs-sheet.ag { max-height: 92%; max-width: 480px; margin: 0 auto; }
+/* the dim covers the whole window, so a tap in the margin beside the app
+   column lands on it too */
+.fs-scrim.rp, .fs-scrim.ag { position: fixed; }
 /* the sheet takes the focus only so no key reaches what is behind it; it is
    no control, so it draws no ring */
-.fs-sheet.rp:focus-visible { outline: none; }
+.fs-sheet.rp:focus-visible, .fs-sheet.ag:focus-visible { outline: none; }
 .rp-list {
   flex: 0 1 auto;
   min-height: 0;
@@ -2705,11 +2826,11 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .fs-acts.wide .fs-act { text-align: left; padding: 4px 6px; min-height: 36px; }
 .fs-act.tbl { color: var(--ask-text); }
 
-/* Placing the cut: the thread read-only, turns after the cut dimmed. */
+/* Selecting a cut: lines after the cut dimmed. */
 .ct-bar { flex-direction: column; align-items: stretch; gap: 6px; }
-.ct-hint { font: 400 13px var(--mono); color: var(--faint); text-align: center; }
 .ct-go { height: 44px; border-color: var(--ask); color: var(--ask-text); }
-.bub.line.after { opacity: 0.4; }
+.ct-go.go { border-color: var(--ask); background: var(--ask); color: var(--onaccent); font-weight: 600; }
+.bub.after { opacity: 0.4; }
 
 /* One line per coder, and what they are doing. */
 .srow {
@@ -3213,3 +3334,52 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   .pr-wide { display: inline; }
   .pr-narrow { display: none; }
 }
+
+/* The picture folds to a strip under the title row while a phone's keyboard is
+   up or the chat is scrolled up (Patrick, 2026-10-01, frame A1): the same line,
+   40 tall, its wire 16 down and the years under it; the name row above and the
+   row of chips below slide out of sight with it, and the full picture is
+   untouched. */
+.pic.folding { overflow: hidden; }
+.folded > .pic {
+  z-index: 2;
+  height: 40px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 1px 0 var(--line), 0 4px 7px var(--shadow);
+}
+.folded > .pic > .pin-label { margin-top: -28px; opacity: 0; }
+.folded > .pic > .view { margin-top: -31px; }
+/* a phone's keyboard is up: the chat keeps the room above the message box */
+.typing > .speakrow { display: none; }
+/* selecting a cut: the foot bar stands alone under the thread */
+.selecting > .speakrow { display: none; }
+
+/* Selecting a cut in the chat (R-0629): an amber line under the read-only
+   line says what to tap, a foot bar places it, and the lines inside the cut
+   are ringed in the cut's own colour. */
+.viewing-acts { display: flex; gap: 10px; flex: none; }
+.cut-strip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--ask-tint);
+  font: 500 13px/20px var(--sans);
+  color: var(--ask-text);
+}
+.cut-strip[hidden], .ct-bar[hidden] { display: none; }
+.cut-strip button {
+  flex: none;
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  color: var(--data);
+  font: 400 13px/20px var(--sans);
+}
+.ct-go[disabled] { opacity: 0.4; cursor: default; }
+/* The lines inside the cut are lit in the cut's own colour. */
+.bub.lit { box-shadow: 0 0 0 2px var(--ask); }

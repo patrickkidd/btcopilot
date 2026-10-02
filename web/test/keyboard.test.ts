@@ -8,7 +8,7 @@ const press = (key: string, shift = false, alt = false, composing = false) => ({
   isComposing: composing,
 });
 
-// R-0368
+// R-0610
 it("Return sends with a real keyboard and only makes a new line on a touch screen", () => {
   expect(returnKey(press("Enter"), false)).toBe(Return.Send);
   expect(returnKey(press("Enter", true), false)).toBe(Return.Newline);

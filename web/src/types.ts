@@ -17,6 +17,9 @@ export enum ChipKind {
   Message = "message",
   /** An address in the app, which a tap goes to (R-0055). */
   Place = "place",
+  /** Two people who may be one person, side by side: the kept id, then the
+   * dropped one. Tapped and sent, it is the reader's yes to joining them. */
+  Merge = "merge",
 }
 
 /** Teal is a reference to something the record holds; amber is the coach or the
@@ -455,6 +458,8 @@ export enum SessionKind {
 
 export interface Session {
   id: number;
+  /** The family it was said about: its sittings share one thread. */
+  diagram_id: number;
   title: string | null;
   kind: SessionKind;
   /** The day the session happened, which a recording carries and a chat does
@@ -477,17 +482,35 @@ export interface Session {
   family?: string;
 }
 
+/** How the app is on a diagram: one's own, shared read-write, or another
+ * person's an admin opened to look at, where nothing is written (Patrick,
+ * 2026-10-01). */
+export enum Access {
+  Own = "own",
+  Shared = "shared",
+  AdminView = "admin-view",
+}
+
 export interface Diagram {
   id: number;
   name: string;
   /** How many of this user's sessions sit on it. */
   session_count: number;
   last_activity: string | null;
-  /** The one that is free of charge, which is a billing fact. */
+  /** The one that is free of charge, which is a billing fact. Which one the
+   * page has open is the store's, never a field of the list (FD-366). */
   free: boolean;
-  /** The one the app is on. */
-  current: boolean;
   owned: boolean;
+  access: Access;
+  /** The full name of the person the diagram belongs to, or their email. */
+  owner: string;
+}
+
+/** Someone with an account, as an admin's search finds them. */
+export interface User {
+  id: number;
+  username: string;
+  name: string;
 }
 
 export interface Account {
@@ -758,9 +781,13 @@ export interface Rule {
  * one tap that opens the vote (R-0258, R-0259, R-0267). */
 
 /** One window of a conversation, frozen and put on the agenda. */
+/** A first and a last line in one family's thread, in one sitting or across
+ * several. */
 export interface Cut {
   id: number;
-  discussion_id: number;
+  diagram_id: number;
+  /** The sitting its first line was said in, which the picker opens at. */
+  sitting_id: number;
   start_statement_id: number;
   end_statement_id: number;
   meeting_date: string | null;
@@ -768,6 +795,8 @@ export interface Cut {
   ratified_at: string | null;
   nudged_at: string | null;
   session: string;
+  /** Whose diagram the cut is from, which its agenda row is named by. */
+  owner: string;
   end_order: number | null;
   cut_day: string | null;
   /** Somebody has a coding of it, so it can no longer be taken off. */
@@ -797,6 +826,7 @@ export interface CoderLine {
 /** Where a line falls across a conversation: the last ratified cut, or the one
  * on the agenda now. */
 export interface CutLine {
+  start_statement_id: number;
   statement_id: number;
   order: number;
   day: string;
@@ -805,15 +835,30 @@ export interface CutLine {
 
 export interface SessionTurn {
   id: number;
+  /** Its place in the whole thread, counted from 1. */
   order: number;
+  sitting_id: number;
   client: boolean;
   text: string;
   day: string;
 }
 
-/** A whole conversation as the cut-placing screen reads it. */
+/** One sitting of a family's thread, with what its divider is drawn from. */
+export interface Sitting {
+  id: number;
+  /** Empty while the sitting has no title. */
+  title: string;
+  started: string;
+  previous_started: string | null;
+  first_statement_id: number;
+}
+
+/** A family's whole thread as the cut-placing screen reads it, opened at one
+ * sitting. */
 export interface SessionTurns {
-  discussion_id: number;
+  diagram_id: number;
+  sitting_id: number;
+  sittings: Sitting[];
   session: string;
   agreed: CutLine | null;
   on_agenda: CutLine | null;

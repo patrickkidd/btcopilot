@@ -14,7 +14,7 @@ from pywebpush import WebPushException
 from btcopilot import correlation, prompts, push
 from btcopilot.discussions import chats, sitting, sync_chat_speakers
 from btcopilot.extensions import db
-from btcopilot.llmutil import response_text_sync
+from btcopilot.metered import Metered
 from btcopilot.models import (
     Diagram,
     Discussion,
@@ -23,6 +23,7 @@ from btcopilot.models import (
     ObservationKind,
     ProactiveMessage,
     ProductEvent,
+    Purpose,
     Statement,
     StatementKind,
     Trigger,
@@ -283,7 +284,10 @@ def _compose(user: User, found) -> tuple[ProactiveMessage, str, bool]:
         key=found.key,
     )
     try:
-        return message, words(diagram.get_diagram_data(), found), False
+        metered = Metered(
+            user.id, diagram.id, f"proactive:{found.key}", Purpose.Proactive
+        )
+        return message, words(diagram.get_diagram_data(), found, metered), False
     except Unsendable as refused:
         db.session.add(message)
         db.session.flush()
@@ -291,7 +295,7 @@ def _compose(user: User, found) -> tuple[ProactiveMessage, str, bool]:
         return message, str(refused), True
 
 
-def words(data: DiagramData, firing: correlation.Firing) -> str:
+def words(data: DiagramData, firing: correlation.Firing, metered: Metered) -> str:
     """One short model call: the two events side by side, then a question."""
     events = {e["id"]: e for e in data.events}
     people = {p["id"]: p for p in data.people}
@@ -311,7 +315,7 @@ def words(data: DiagramData, firing: correlation.Firing) -> str:
         "NEWEST",
         *(event_line(events[i]) for i in newest),
     ]
-    text = response_text_sync(
+    text = metered.text(
         prompts.proactive(events="\n".join(lines), speaker=data.subject_display_name())
     ).strip()
     if (

@@ -10,10 +10,13 @@ import anthropic
 from opentelemetry import trace
 
 from btcopilot.geminimodel import GeminiModel
+from btcopilot.openaimodel import OpenAIModel
 from btcopilot.llmutil import (
     anthropic_args,
+    claude_spent,
     fallback_args,
     is_gemini,
+    is_openai,
     local_model,
     resolve_model,
     served,
@@ -25,7 +28,7 @@ _log = logging.getLogger(__name__)
 _tracer = trace.get_tracer(__name__)
 
 # How hard the coach thinks before it speaks. Medium keeps the first word quick.
-COACH_EFFORT = "medium"
+COACH_EFFORT = "low"
 HAIKU = "claude-haiku-4-5"
 
 # What the wire keeps between calls. The wire reads tools, then the system
@@ -178,12 +181,7 @@ class CoachModel:
                         }
                     )
             used = message.usage
-            turn.spent = Spent(
-                input=used.input_tokens,
-                output=used.output_tokens,
-                cache_creation=used.cache_creation_input_tokens or 0,
-                cache_read=used.cache_read_input_tokens or 0,
-            )
+            turn.spent = claude_spent(used)
             _log.info(
                 f"Coach model {answered.model} turn {turn_id}: {len(turn.text)} chars, "
                 f"{len(turn.calls)} tool calls, {used.input_tokens} tokens in, "
@@ -206,13 +204,15 @@ def model_for(
     name: str | None = None,
     effort: str | None = COACH_EFFORT,
     timeout: float | None = None,
-) -> CoachModel | GeminiModel:
+) -> CoachModel | GeminiModel | OpenAIModel:
     """The coach model an alias names: none is the default, an unknown one
     raises KeyError. Haiku 4.5 rejects the effort setting, so it gets none. The
-    local server answers every name, Gemini's included."""
+    local server answers every name, Gemini's and OpenAI's included."""
     model = resolve_model(name)
     if is_gemini(model) and not local_model():
         return GeminiModel(model, effort, timeout)
+    if is_openai(model) and not local_model():
+        return OpenAIModel(model, effort, timeout)
     if model.startswith(HAIKU):
         effort = None
     return CoachModel(name, effort, timeout)

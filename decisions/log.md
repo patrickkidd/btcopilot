@@ -2078,3 +2078,7 @@ Patrick [R-0596, R-0599]. So that Better replies fills with pairs, his account's
 now a list: each live turn starts one shadow turn per listed model, stored one row per real turn
 and model, and each shadow pairs with the real reply. The alias `sonnet` names Claude Sonnet 5.5;
 `gemini-flash` names Gemini 3.8 Flash. `flask admin coach-model shadow <email> off` stops them.
+
+## 2026-09-30: FD-366 — the shadow backfill goes ahead and the shadow spend stays
+
+Patrick [R-0620, R-0621, queued]. He said "yes" to building the shadow backfill over his past turns: the Flash spend of about $2 is approved, and the eleven older replies without a turn id are skipped. He said "keep" for both shadow models on his account, about $25 a month. On the leftover parts of R-0485 he asked for the literature analysis before ruling, and on whether a complaint about the coach's dates is a bug the coach should offer he said it depends on the context; neither is ruled.

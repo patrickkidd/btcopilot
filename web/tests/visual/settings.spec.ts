@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { EXACT, flask, stateFor, username } from "./setup";
+import { EXACT, flask, placeCut, shell, stateFor, toTheirDiagram, backToMine, username, boxOf } from "./setup";
 
 /** The settings stack: the avatar in the title row, and the pages it pushes.
  * Every value has one home, and the chat view's speak-replies row is the one
@@ -26,12 +26,12 @@ test.describe("the settings stack", () => {
     const avatar = page.locator("#account");
     const inTitle = await avatar.evaluate((node) => !!node.closest(".titlerow"));
     expect(inTitle).toBe(true);
-    const box = (await avatar.boundingBox())!;
+    const box = await boxOf(avatar);
     expect(Math.round(box.width)).toBe(44);
     expect(Math.round(box.height)).toBe(44);
   });
 
-  // R-0098
+  // R-0098, R-0631
   test("it opens on Account with the ruled rows in the ruled order", async ({
     page,
   }) => {
@@ -42,8 +42,8 @@ test.describe("the settings stack", () => {
     expect(labels).toEqual([
       "Coach",
       "Appearance",
-      "Your diagrams",
-      "Plan and licenses",
+      "Diagrams",
+      "Your Plan",
     ]);
     await expect(page.locator(".sn-out")).toHaveText("Sign out");
     await expect(page.locator(".sn-foot")).toHaveText("Family Diagram · beta");
@@ -109,7 +109,7 @@ test.describe("the settings stack", () => {
     await openSettings(page);
     await page.locator(".sn-row.push").first().click();
     await page.waitForTimeout(300);
-    const box = (await page.locator(".sw").boundingBox())!;
+    const box = await boxOf(page.locator(".sw"));
     expect(Math.round(box.width)).toBe(51);
     expect(Math.round(box.height)).toBe(31);
     expect(await page.locator(".sn-pane.in input[type=checkbox]").count()).toBe(0);
@@ -268,17 +268,17 @@ test.describe("one home for every setting", () => {
 test.describe("the controls that were too small", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0102
+  // R-0102, R-0631
   test("the account button, the speak-replies box and the settings headings read at size", async ({
     page,
   }) => {
     await settle(page);
-    const avatar = (await page.locator("#account").boundingBox())!;
+    const avatar = await boxOf(page.locator("#account"));
     expect(Math.round(avatar.width)).toBeGreaterThanOrEqual(44);
     expect(Math.round(avatar.height)).toBeGreaterThanOrEqual(44);
-    const row = (await page.locator("#speakrow").boundingBox())!;
+    const row = await boxOf(page.locator("#speakrow"));
     expect(Math.round(row.height)).toBeGreaterThanOrEqual(44);
-    const box = (await page.locator("#speak").boundingBox())!;
+    const box = await boxOf(page.locator("#speak"));
     expect(Math.round(box.width)).toBeGreaterThanOrEqual(24);
     expect(
       await page.locator("#speakrow span").evaluate((n) => parseFloat(getComputedStyle(n).fontSize)),
@@ -298,22 +298,27 @@ test.describe("your diagrams", () => {
   const OTHER = { id: 987654, name: "The other family" };
 
   /** The account as the server tells it, with a second diagram beside the
-   * fixture's own; which one is current follows the last select. */
+   * fixture's own; which one is current follows the last select. The second
+   * diagram is only in the page, so what is read by its id is the fixture's
+   * own record, thread and sittings. */
   const twoDiagrams = async (page: Page) => {
     let current: number | null = null;
     const selected: string[] = [];
+    await page.route(new RegExp(`\\?diagram_id=${OTHER.id}$`), async (route) =>
+      route.fulfill({ response: await route.fetch({ url: route.request().url().split("?")[0] }) }),
+    );
     await page.route(/\/app\/diagrams\/\d+\/select$/, async (route) => {
       selected.push(route.request().url());
       current = Number(route.request().url().match(/diagrams\/(\d+)/)![1]);
       await route.fulfill({
-        json: { ...OTHER, session_count: 0, last_activity: null, free: false, current: true, owned: true },
+        json: { ...OTHER, session_count: 0, last_activity: null, free: false, current: true, owned: true, access: "own", owner: "Unit Tester" },
       });
     });
     await page.route(/\/app\/account$/, async (route) => {
       const real = await (await route.fetch()).json();
       const own = real.diagrams[0];
       current ??= own.id;
-      const other = { ...OTHER, session_count: 0, last_activity: null, free: false, owned: true };
+      const other = { ...OTHER, session_count: 0, last_activity: null, free: false, owned: true, access: "own", owner: "Unit Tester" };
       await route.fulfill({
         json: {
           ...real,
@@ -326,7 +331,7 @@ test.describe("your diagrams", () => {
 
   const openDiagrams = async (page: Page) => {
     await openSettings(page);
-    await page.locator('.sn-pane[data-page="root"] .sn-row.push', { hasText: "Your diagrams" }).click();
+    await page.locator('.sn-pane[data-page="root"] .sn-row.push', { hasText: "Diagrams" }).click();
     await expect(page.locator('.sn-pane[data-page="diagrams"]')).toBeVisible();
     await page.waitForTimeout(300);
   };
@@ -364,6 +369,104 @@ test.describe("your diagrams", () => {
   });
 });
 
+test.describe("an admin finds a person on the diagrams view", () => {
+  test.use({ storageState: stateFor("longname") });
+
+  /** The admin role, and afterwards nothing the walk opened. */
+  const as = (roles: string) =>
+    shell(
+      [
+        "from btcopilot.extensions import db",
+        "from btcopilot.models import User",
+        `me = User.query.filter_by(username="${username("longname")}").one()`,
+        `me.roles = "${roles}"`,
+        "me.current_diagram_id = None",
+        "db.session.commit()",
+        "",
+      ].join("\n"),
+    );
+
+  const openDiagrams = async (page: Page) => {
+    await page.goto("/app/account/diagrams");
+    await expect(page.locator('.sn-pane[data-page="diagrams"]')).toBeVisible();
+  };
+
+  test.afterAll(() => as("subscriber"));
+
+  // R-0175, R-0629, R-0630
+  test("searching a name lists the person, and tapping their diagram opens it read-only", async ({ page }) => {
+    as("admin");
+    await openDiagrams(page);
+    const pane = page.locator('.sn-pane[data-page="diagrams"]');
+    await pane.getByLabel("Find a person").fill("whitlock");
+    const person = pane.locator(".sn-find .sn-row", { hasText: username("whitlock") });
+    await expect(person).toBeVisible();
+    await person.click();
+    await expect(page.locator("#title")).toHaveText(/whitlock|Whitlock/i);
+    const theirs = page.locator(".sn-theirs .sn-row").first();
+    const name = (await theirs.locator(".sn-t").textContent())!;
+    await theirs.click();
+    await expect(page.locator(".sn-stack")).toBeHidden();
+    await expect(page.locator("#title")).toHaveText(name);
+
+    await expect(page.locator("#viewing")).toBeVisible();
+    await expect(page.locator("#chat .bub").first()).toBeVisible();
+    await expect(page.locator("#viewing-who")).toHaveText(/^Viewing .+'s diagram, read-only$/);
+    await expect(page.locator("#composer")).toBeHidden();
+    await expect(page.locator("#send")).toBeHidden();
+    const shown = (selector: string) =>
+      page.locator(selector).evaluate((n) => getComputedStyle(n).display);
+    expect(await shown("#menu-foot")).toBe("none");
+    await expect(page.locator("#viewing-cut")).toHaveText("Select a cut");
+    await expect(page.locator("#cut-strip")).toBeHidden();
+
+    await page.locator("#sessions-open").click();
+    const sitting = page.locator("#sessions-sheet .row").first();
+    await expect(sitting.locator(".rmore")).toBeHidden();
+    await sitting.locator(".rsub").click();
+    await expect(page.locator("#sessions-sheet")).toBeHidden();
+    await expect(page.locator("#viewing")).toBeVisible();
+
+    await page.locator("#viewing-back").click();
+    await expect(page.locator("#viewing")).toBeHidden();
+    await expect(page.locator("#title")).not.toHaveText(name);
+    await expect(page.locator("#composer")).toBeVisible();
+    expect(await shown("#menu-foot")).not.toBe("none");
+  });
+
+  // R-0630, R-0631
+  test("own diagrams give way to the people found and come back when the search is cleared", async ({ page }) => {
+    as("admin");
+    await openDiagrams(page);
+    const pane = page.locator('.sn-pane[data-page="diagrams"]');
+    const own = pane.locator(".sn-hd", { hasText: /Diagrams|Cases/ });
+    await expect(own).toBeVisible();
+    const field = pane.getByLabel("Find a person");
+    await field.fill(username("longname"));
+    const person = pane.locator(".sn-find .sn-row", { hasText: username("longname") });
+    await expect(person).toBeVisible();
+    await expect(own).toBeHidden();
+    await person.click();
+    await expect(page.locator(".sn-theirs .sn-row").first()).toBeVisible();
+    await expect(pane).toHaveClass(/under/);
+    await page.locator("#settings-back").click();
+    await expect(pane).not.toHaveClass(/under/);
+    await expect(field).toHaveValue(username("longname"));
+    await expect(person).toBeVisible();
+    await expect(own).toBeHidden();
+    await field.fill("");
+    await expect(own).toBeVisible();
+    await expect(pane.locator(".sn-find .sn-row")).toHaveCount(0);
+  });
+
+  // R-0175
+  test("someone who is not an admin sees no search for people", async ({ page }) => {
+    as("subscriber");
+    await openDiagrams(page);
+    await expect(page.locator('.sn-pane[data-page="diagrams"] .sn-find')).toHaveCount(0);
+  });
+});
+
 test.describe("opening the account view", () => {
   test.use({ storageState: stateFor("moves") });
 
@@ -374,7 +477,7 @@ test.describe("opening the account view", () => {
     const chat = page.locator("#chat-screen");
     expect(await chat.evaluate((n) => getComputedStyle(n).display)).not.toBe("none");
     expect(await chat.evaluate((n) => (n as HTMLElement).hidden)).toBe(false);
-    const box = (await chat.boundingBox())!;
+    const box = await boxOf(chat);
     expect(box.height).toBeGreaterThan(100);
   });
 
@@ -406,8 +509,8 @@ test.describe("opening the account view", () => {
     await page.waitForTimeout(400);
     // it lands on the content area: the chat, and on a wide window the lists
     // pinned beside it (R-0352)
-    const landed = (await pane.boundingBox())!;
-    const content = (await page.locator("#chat-split").boundingBox())!;
+    const landed = await boxOf(pane);
+    const content = await boxOf(page.locator("#chat-split"));
     expect(Math.round(landed.x - content.x)).toBe(0);
   });
 
@@ -454,20 +557,20 @@ test.describe("the coding and quality sections", () => {
   };
   test.afterAll(() => roles("subscriber"));
 
-  // R-0259, R-0265, R-0599
+  // R-0259, R-0265, R-0599, R-0631
   test("a subscriber sees neither, an auditor sees Coding, and an admin sees Coding with the meeting and Quality", async ({
     page,
   }) => {
     await as(page);
-    expect(await heads(page)).toEqual([]);
+    expect(await heads(page)).toEqual(["Data"]);
 
     await as(page, "auditor");
-    expect(await heads(page)).toEqual(["Coding"]);
+    expect(await heads(page)).toEqual(["Data", "Coding"]);
     await expect(row(page, "Your coding task")).toHaveCount(1);
     await expect(row(page, "Next meeting")).toHaveCount(0);
 
     await as(page, "admin");
-    expect(await heads(page)).toEqual(["Coding", "Quality"]);
+    expect(await heads(page)).toEqual(["Data", "Coding", "Quality"]);
     await expect(row(page, "Next meeting")).toHaveCount(1);
     await expect(row(page, "Better replies")).toHaveCount(1);
     await expect(page.locator(".sn-pane.in .sn-hint")).toHaveText(
@@ -507,7 +610,7 @@ test.describe("the coding and quality sections", () => {
     await as(page, "admin");
     const cut = (id: number, session: string) => ({
       id,
-      discussion_id: 900 + id,
+      sitting_id: 900 + id,
       start_statement_id: 1,
       end_statement_id: 4,
       meeting_date: "2026-10-06",
@@ -515,6 +618,7 @@ test.describe("the coding and quality sections", () => {
       ratified_at: null,
       nudged_at: null,
       session,
+      owner: session,
       end_order: 4,
       cut_day: "Sep 29",
       started: id === 1,
@@ -530,6 +634,12 @@ test.describe("the coding and quality sections", () => {
     await page.route(
       (url) => url.pathname === "/review/cuts",
       (route) => route.fulfill({ json: cuts }),
+    );
+    const sitting = { id: 901, title: "", started: "2026-09-29T19:00:00", previous_started: null, first_statement_id: 1 };
+    const turn = (id: number) => ({ id, order: id, sitting_id: 901, client: true, text: "", day: "Sep 29" });
+    await page.route(
+      (url) => url.pathname === "/review/turns",
+      (route) => route.fulfill({ json: { sittings: [sitting], turns: [turn(1), turn(4)] } }),
     );
     await page.route(
       (url) => url.pathname === "/review/coders",
@@ -558,45 +668,42 @@ test.describe("the coding and quality sections", () => {
     await expect(page.locator(".sn-pane.in:not(.under)")).toHaveAttribute("data-page", "agenda-screen");
   });
 
-  // R-0267
-  test("an admin puts another family's session on the agenda from the meeting page, and placing the cut returns there", async ({
+  // R-0629, R-0631
+  test("an admin selects a cut in someone else's chat from Next meeting, and placing it returns there", async ({
     page,
-  }) => {
+  }, testInfo) => {
     await as(page, "admin");
     await row(page, "Next meeting").click();
     await expect(page.locator("#agenda-screen")).toBeVisible();
-    await page.locator(".tb-add").click();
-    await expect(page.locator("#title")).toHaveText("Pick a session");
-    await page.locator("#settings-back").click();
+    await expect(page.locator(".tb-add")).toHaveText("Select a cut for the agenda");
+    await toTheirDiagram(page, username("sittings"));
+    await expect(page.locator("#cut-say")).toHaveText("Selecting a cut · tap the first line, then the last");
+    await expect(page.locator("#viewing-cut")).toBeHidden();
+    await expect(page.locator("#inbar")).toBeHidden();
+
+    await placeCut(page);
     await expect(page.locator(".sn-pane.in:not(.under)")).toHaveAttribute("data-page", "agenda-screen");
-    await expect(page.locator("#title")).toHaveText("Next meeting");
-
-    await page.locator(".tb-add").click();
-    // said only in the moves fixture's session, never in this admin's family,
-    // and inside a chip, which the line shows as its words
-    await page.locator(".tb-words").fill("altogether");
-    const picked = page.locator(".tb-pick");
-    await expect(picked).toHaveCount(1);
-    const line = await picked.locator(".sn-s").last().innerText();
-    expect(line).toContain("stopped speaking to him altogether.");
-    expect(line).not.toContain("[[");
-    await picked.click();
-    await expect(page.locator("#cut-screen")).toBeVisible();
-    await expect(page.locator("#cut-chat")).toContainText("walk me through it");
-    const session = await page.locator("#title").innerText();
-
-    await expect(page.locator(".sn-pane.in:not(.under)")).toHaveAttribute(
-      "data-page",
-      "cut-screen",
-    );
-
-    await page.locator(".ct-go").click();
-    await expect(page.locator(".sn-pane.in:not(.under)")).toHaveAttribute("data-page", "agenda-screen");
-    const cut = page.locator(".tb-cut", { hasText: session });
-    await expect(cut).toHaveCount(1);
+    const cut = page.locator(".tb-cut").last();
+    await expect(cut.locator(".sn-s")).toHaveText(/^[\w ]+ \d{4} · \d+ sittings?$/);
+    await expect(cut).not.toContainText("up to turn");
     // taken back off, so the fixtures install again over this record
+    const before = await page.locator(".tb-cut").count();
     await cut.locator(".pl-btn").click();
-    await expect(cut).toHaveCount(0);
+    const ask = page.locator(".ag.cf-sheet");
+    await expect(ask.locator(".cf-t")).toHaveText("Take this cut off the agenda?");
+    await ask.locator("button", { hasText: "Keep it" }).click();
+    await expect(ask).not.toHaveClass(/\bin\b/);
+    await expect(page.locator(".tb-cut")).toHaveCount(before);
+    if (testInfo.project.name === "desktop") {
+      await cut.locator(".pl-btn").click();
+      await expect(ask).toHaveClass(/\bin\b/);
+      await page.mouse.click(10, 300);
+      await expect(ask).not.toHaveClass(/\bin\b/);
+    }
+    await cut.locator(".pl-btn").click();
+    await page.locator(".ag.cf-sheet button", { hasText: "Take it off" }).click();
+    await expect(page.locator(".tb-cut")).toHaveCount(before - 1);
+    await backToMine(page);
   });
 });
 

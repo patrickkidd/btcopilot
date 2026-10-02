@@ -27,11 +27,11 @@ The main off-theory trap: blame. The mother is "not malicious; she is just anxio
 ### Patrick (writing and rulings)
 
 1. **Coded without asking.** RULED. Ruling R-0435 (projection is coded without asking) — see the private edition. Its direction clause is narrowed by item 2.
-2. **Which direction qualifies?** OPEN, narrowed 2026-09-26 (OPEN_QUESTIONS 3). Ruling OPEN_QUESTIONS 3 (one option ruled out; the rest left open) — see the private edition. The options:
+2. **Which direction qualifies?** OPEN, narrowed 2026-09-26 (OPEN_QUESTIONS 3). See the private corpus for the app's decision on this point (2026-09-26).. The options:
    - (a) only when the child's perceived problem came first and made the parent anxious (R-0435 as written). Ruled out as the only case;
    - (b) also when the parent's anxiety came first and then found a problem in the child (Bowen, P32, P34, P35);
    - (c) code the focus with no direction and record the order separately (Kerr, P40, P41; Bowen, P31, P33).
-3. **A predicted projection is not a fact.** RULED 2026-09-26. Ruling OPEN_QUESTIONS 5 (facts and theory-based readings are kept in separate layers) — see the private edition. OPEN_QUESTIONS 5 uses this very case: a projection theory predicts is kept, if at all, as a labelled hypothesis.
+3. **A predicted projection is not a fact.** RULED 2026-09-26. See the private corpus for the app's decision on this point (2026-09-26). (OPEN_QUESTIONS 5). OPEN_QUESTIONS 5 uses this very case: a projection theory predicts is kept, if at all, as a labelled hypothesis.
 4. **The parent's anxiety inside the projection code.** Not ruled. R-0435 codes "the perceived problem in the child made the parent anxious", while an anxiety shift needs its own evidence ([`anxiety.md`](anxiety.md), status item 6). Whether the parent's anxiety step needs separate evidence before projection is coded is not ruled (Claude's reading).
 5. **The drawing.** RULED, as a symbol, not a code. Ruling R-0123 (how the picture draws projection) — see the private edition.
 6. **Every coding rule here is provisional.** Ruling R-0511 (coding rules are provisional while ground truth is rebuilt) — see the private edition. Ground truth comes from the IRR group (R-0509).

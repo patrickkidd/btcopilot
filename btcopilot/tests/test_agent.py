@@ -8,8 +8,11 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from btcopilot.extensions import db
+import btcopilot
 from btcopilot import chips, pricing, record, tracing
 from btcopilot.coachmodel import Spent
+from btcopilot.llmutil import EXTRACTION_MODEL, Served, Text
+from btcopilot.metered import Metered
 from btcopilot.coachturn import (
     FINISH,
     MAX_STEPS,
@@ -25,13 +28,15 @@ from btcopilot.models import (
     Discussion,
     ModelCall,
     Observation,
+    Purpose,
     Speaker,
     SpeakerType,
     Statement,
     StatementKind,
+    User,
 )
 from btcopilot.prompts import get_agent_prompt
-from btcopilot.toolbox import ToolName
+from btcopilot.toolbox import Toolbox, ToolName, schemas
 from btcopilot.schema import (
     Cluster,
     DateCertainty,
@@ -48,11 +53,12 @@ from btcopilot.tests.conftest import (
     calling,
     replied,
     said,
+    wrote,
 )
 
 
 def run(discussion, statement, model) -> dict:
-    return CoachTurn(discussion, statement, model=model).run()
+    return CoachTurn(discussion, statement, purpose=Purpose.Coach, model=model).run()
 
 
 def kinds(reply: dict) -> list[str]:
@@ -68,8 +74,8 @@ def titles(monkeypatch):
     """Naming a session is its own model call; the agent loop is what is under
     test here."""
     monkeypatch.setattr(
-        "btcopilot.models.discussion.response_text_sync",
-        lambda *a, **k: "A session title",
+        "btcopilot.metered.response_text_sync",
+        lambda *a, **k: wrote("A session title"),
     )
 
 
@@ -169,6 +175,18 @@ def test_a_turn_that_fails_before_the_coach_answers_stores_no_words(discussion, 
         run(discussion, "May of 1971", Down())
     db.session.rollback()
     assert len(discussion.statements) == before
+
+
+def test_a_turn_whose_tool_step_raises_keeps_its_model_calls(discussion, family, monkeypatch):
+    # R-0388
+    def broken(self, args):
+        raise RuntimeError("tool broke")
+
+    monkeypatch.setattr(Toolbox, "_read_people", broken)
+    with pytest.raises(RuntimeError):
+        run(discussion, "My aunt Nell.", Model(called(ToolName.ReadPeople), said("Noted.")))
+    db.session.rollback()
+    assert ModelCall.query.filter_by(purpose=Purpose.Coach).count() == 1
 
 
 def test_a_chip_the_record_cannot_resolve_never_reaches_the_transcript(
@@ -283,6 +301,37 @@ def test_navigate_to_a_place_the_app_or_the_record_lacks_is_refused(
     refused = model.histories[-1][-1]["content"][0]
     assert refused["is_error"] is True
     assert reason in refused["content"]
+
+
+@pytest.mark.parametrize("coder", [False, True])
+def test_navigate_lists_coder_screens_only_for_a_coder(coder):
+    # R-0055
+    tool = next(s for s in schemas(coder) if s["name"] == ToolName.Navigate.value)
+    listed = tool["input_schema"]["properties"]["address"]["description"]
+    assert ("/app/vote/:n," in listed) is coder
+    assert ("/app/account/coding-task," in listed) is coder
+    assert "/app/account/profile," in listed
+
+
+def test_navigate_to_a_coder_screen_is_refused_for_a_person_without_the_role(
+    discussion, family
+):
+    # R-0055
+    model = Model(called(ToolName.Navigate, address="/app/coding/3"), said("I cannot open that."))
+    reply = run(discussion, "Open it.", model)
+    assert EventKind.Navigate.value not in kinds(reply)
+    refused = model.histories[-1][-1]["content"][0]
+    assert refused["is_error"] is True
+    assert "no coder" in refused["content"]
+
+
+def test_navigate_to_a_coder_screen_opens_for_a_coder(discussion, family):
+    # R-0055
+    db.session.get(User, discussion.user_id).roles = btcopilot.ROLE_AUDITOR
+    db.session.commit()
+    model = Model(called(ToolName.Navigate, address="/app/coding/3"), said("It is open now."))
+    reply = run(discussion, "Open it.", model)
+    assert event(reply, EventKind.Navigate)["address"] == "/app/coding/3"
 
 
 def test_a_report_asks_the_page_and_keeps_no_observation(discussion, family):
@@ -750,7 +799,13 @@ def test_a_turn_writes_down_each_model_call_with_its_cost(discussion, family):
     second.spent = Spent(input=1100, output=40, cache_creation=0, cache_read=800)
     reply = run(discussion, "My aunt Nell.", Model(first, second))
 
-    calls = ModelCall.query.order_by(ModelCall.id).all()
+    named = ModelCall.query.filter_by(purpose=Purpose.Summary).all()
+    assert [(c.diagram_id, c.turn_id) for c in named] == [
+        (discussion.diagram_id, reply["turn_id"])
+    ] * 2
+    calls = (
+        ModelCall.query.filter_by(purpose=Purpose.Coach).order_by(ModelCall.id).all()
+    )
     rate = pricing.PRICES["claude-opus-5-5"]
     assert [
         (
@@ -826,7 +881,7 @@ def _with_notes(diagram):
     db.session.commit()
 
 
-def test_the_notes_stay_out_of_every_call_and_the_tool_to_read_them_is_offered(
+def test_the_notes_stay_out_of_every_call_and_the_read_that_shows_them_is_offered(
     discussion, family
 ):
     # R-0446
@@ -837,17 +892,20 @@ def test_the_notes_stay_out_of_every_call_and_the_tool_to_read_them_is_offered(
     assert "(has notes)" in str(model.histories[1][-1])
     for system, history in zip(model.systems, model.histories):
         assert QUOTE not in system + str(history)
-    assert all(ToolName.ReadNotes.value in offered for offered in model.offered)
+    assert all(ToolName.ReadEvents.value in offered for offered in model.offered)
 
 
 def test_the_coach_reads_an_events_notes_when_it_asks_for_them(discussion, family):
     # R-0446
     _with_notes(family)
-    model = Model(called(ToolName.ReadNotes, event=10), said("What happened next?"))
+    model = Model(
+        called(ToolName.ReadEvents, ids=[10], fields=["notes"]),
+        said("What happened next?"),
+    )
     run(discussion, "What did he say about the house?", model)
     answer = model.histories[-1][-1]["content"][-1]
     assert answer["type"] == "tool_result"
-    assert answer["content"].splitlines()[0] == f"10: {QUOTE}"
+    assert answer["content"].splitlines()[1] == f"  notes: {QUOTE}"
 
 
 def test_the_coach_is_told_to_end_its_reply_with_a_question():
@@ -858,7 +916,7 @@ def test_the_coach_is_told_to_end_its_reply_with_a_question():
 
 
 def test_the_coach_is_told_how_to_raise_an_impression():
-    # R-0482, R-0485
+    # R-0482, R-0618
     prompt = " ".join(get_agent_prompt().split())
     assert "Raise it with `add_impression` before you say it" in prompt
     assert "an impression you have not raised is one you do not say" in prompt
@@ -879,7 +937,7 @@ def test_the_coach_is_told_to_give_every_date_its_certainty():
 
 
 def test_the_coach_is_told_how_to_keep_its_questions():
-    # R-0482, R-0485
+    # R-0482, R-0618
     prompt = " ".join(get_agent_prompt().split())
     assert "people usually require questions to stimulate their thinking" in prompt
     assert "Family Evaluation, ch. 10" in prompt
@@ -922,10 +980,27 @@ def test_a_read_tells_the_page_which_events_it_read(discussion, family):
         "Tell me about when he moved out.",
         Model(
             called(ToolName.ReadEvents, cluster="c1"),
-            called(ToolName.ReadNotes, event=10),
+            called(ToolName.ReadEvents, ids=[10], fields=["notes"]),
             called(ToolName.ReadPeople),
             said("What happened next?"),
         ),
     )
     reads = [e for e in reply["events"] if e["type"] == EventKind.ToolCall.value]
     assert [e.get("read") for e in reads] == [[10], [10], None]
+
+
+def test_sitting_title_and_summary_run_on_the_extraction_model(discussion, monkeypatch):
+    # R-0388
+    asked = []
+
+    def flash(*a, **k):
+        asked.append(k["model"])
+        return Text("Words", Spent(input=10, output=5), Served(k["model"]))
+
+    monkeypatch.setattr("btcopilot.metered.gemini_text_sync", flash)
+    summary = Metered(discussion.user_id, discussion.diagram_id, "t1", Purpose.Summary)
+    discussion.update_title(summary)
+    discussion.update_summary(summary)
+    assert asked == [EXTRACTION_MODEL] * 2
+    rows = ModelCall.query.filter_by(purpose=Purpose.Summary).all()
+    assert [r.model for r in rows] == [EXTRACTION_MODEL] * 2

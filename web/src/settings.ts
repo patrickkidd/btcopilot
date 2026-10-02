@@ -4,6 +4,7 @@ import { $, el, esc, flash, isAdmin, isCoder, type Title } from "./dom";
 import { INDEX_URL } from "./concepts";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
+import { store } from "./store";
 import { identify } from "./telemetry";
 import { shortDate } from "./when";
 import { markup } from "./markup";
@@ -21,6 +22,7 @@ import {
   type Diagram,
   type Passkey,
   type Preferences,
+  type User,
 } from "./types";
 
 /** The app-level view: an iOS-Settings list where every row pushes its own full
@@ -48,6 +50,8 @@ const PROACTIVE_HINT: Record<Proactive, string> = {
   [Proactive.Weekly]: writesFirst("week"),
 };
 const SEARCH_AT = 6;
+/** Letters typed before the people search asks the server. */
+const FIND_AT = 2;
 const GUIDE = NAMES[Place.Literature];
 
 const SILHOUETTE =
@@ -92,9 +96,8 @@ export interface SettingsHandlers {
   /** Every read or write of the preferences, so a value with a shortcut
    * elsewhere on screen shows the same thing. */
   onPrefs(prefs: Preferences): void;
-  /** Which family the app is on. `switched` is false when this is simply the
-   * family it opened on, and true when the reader moved it. */
-  onDiagram(diagram: Diagram, how: { switched: boolean }): void;
+  /** Open a diagram: the page's one step for that (FD-366). */
+  onOpen(id: number): Promise<void>;
   /** The coder's one task (R-0265). */
   onTask(): void;
   /** The agenda, which is Patrick's whole administration (R-0259). */
@@ -121,14 +124,28 @@ function deviceLabel(userAgent: string): string {
   return "This device";
 }
 
-/** What a diagram row says under its name: how many sessions sit on it, when
- * that last happened, and whether it is the one in use. */
+/** What a diagram row says under its name: how many sessions sit on it, and
+ * when that last happened; whether it is the one in use is marked from the
+ * store. */
 function diagramSub(diagram: Diagram, now: Date): string {
   const count = `${diagram.session_count} session${diagram.session_count === 1 ? "" : "s"}`;
   const when = diagram.last_activity
     ? shortDate(new Date(diagram.last_activity), now)
     : "nothing on it yet";
-  return `${count} · ${when}${diagram.current ? " · in use" : ""}`;
+  return `${count} · ${when}`;
+}
+
+/** Every diagram row on the stack ticked from the store, and only the one
+ * open: the admin's search results with the rest, whenever they were read,
+ * so a stale tick cannot be drawn (FD-366). */
+function tick(host: HTMLElement): void {
+  const open = store.current().diagram?.id;
+  for (const row of host.querySelectorAll<HTMLElement>(".sn-row[data-diagram]")) {
+    const on = Number(row.dataset.diagram) === open;
+    row.classList.toggle("cur", on);
+    row.querySelector(".sn-tick")!.textContent = on ? "✓" : "";
+    row.querySelector<HTMLElement>(".sn-use")!.hidden = !on;
+  }
 }
 
 /** Asked for inside the tap that lets the coach message first. A browser that
@@ -170,6 +187,7 @@ export class Settings {
       void this.raise();
     });
     this.back.addEventListener("click", () => this.pop());
+    store.watch({ reset: () => {}, draw: () => tick(this.host) });
   }
 
   /** The avatar carries the initial of whatever name the account has. */
@@ -184,9 +202,6 @@ export class Settings {
     this.mark();
     this.applyTheme();
     this.handlers.onPrefs(this.prefs);
-    // The title row names the family the app is on, not a stock phrase.
-    const here = this.account?.diagrams.find((d) => d.current);
-    if (here) this.handlers.onDiagram(here, { switched: false });
     if (this.open) this.replaceTop();
   }
 
@@ -298,6 +313,7 @@ export class Settings {
   close(): void {
     if (!this.open) return;
     this.open = false;
+    this.finding = undefined;
     this.back.hidden = true;
     this.handlers.onTitle(null);
     const panes = this.stack.map((entry) => entry.pane);
@@ -333,9 +349,6 @@ export class Settings {
     this.mark();
     this.applyTheme();
     this.handlers.onPrefs(this.prefs);
-    // The title row names the family the app is on, not a stock phrase.
-    const here = this.account?.diagrams.find((d) => d.current);
-    if (here) this.handlers.onDiagram(here, { switched: false });
     if (this.open) this.replaceTop();
   }
 
@@ -507,16 +520,16 @@ export class Settings {
       ]),
       this.group([
         this.pushRow(
-          PRO ? Records : "Your diagrams",
+          PRO ? Records : "Diagrams",
           String(account.diagrams.length),
           Page.Diagrams,
         ),
         this.pushRow(
-          "Plan and licenses",
+          "Your Plan",
           `${account.licenses.length} licence${account.licenses.length === 1 ? "" : "s"}`,
           Page.Plan,
         ),
-      ]),
+      ], "Data"),
     );
 
     // Coding and its meeting are for coders, and the meeting and the replies
@@ -745,24 +758,19 @@ export class Settings {
 
   private diagrams(account: Account): Built {
     const pane = el("div");
+    const mine = el("div");
+    if (isAdmin()) {
+      this.finding ??= this.finder();
+      pane.append(this.finding.box);
+      mine.append(el("div", "sn-hd", PRO ? Records : "Diagrams"));
+      this.finding.mine = mine;
+      mine.hidden = this.finding.field.value.trim().length >= FIND_AT;
+    }
+    pane.append(mine);
     const box = el("div", "sn-grp");
     const now = new Date();
-    for (const diagram of account.diagrams) {
-      const row = el("div", `sn-row push${diagram.current ? " cur" : ""}`);
-      row.dataset.name = diagram.name.toLowerCase();
-      const main = el("div", "sn-m");
-      main.append(
-        el("div", "sn-t", esc(diagram.name)),
-        el("div", "sn-s", esc(diagramSub(diagram, now))),
-      );
-      row.append(main, el("span", "sn-tick", diagram.current ? "✓" : ""));
-      if (!diagram.current)
-        row.addEventListener("click", () => {
-          tap(Feature.FamilySwitch);
-          void this.switchTo(diagram);
-        });
-      box.append(row);
-    }
+    for (const diagram of account.diagrams) box.append(this.diagramRow(diagram, now));
+    tick(box);
 
     if (PRO) box.append(this.newCaseRow());
 
@@ -778,9 +786,9 @@ export class Settings {
           row.hidden = !!query && !row.dataset.name?.includes(query);
       });
       wrap.append(field);
-      pane.append(wrap, box);
+      mine.append(wrap, box);
     } else {
-      pane.append(
+      mine.append(
         box,
         el(
           "div",
@@ -793,7 +801,98 @@ export class Settings {
         ),
       );
     }
-    return { title: PRO ? Records : "Your diagrams", pane };
+    return { title: PRO ? Records : "Diagrams", pane };
+  }
+
+  /** Kept across a re-draw of the page and under a person's diagrams, so the
+   * search and its matches are there again on the way back (R-0630). */
+  private finding?: { box: HTMLElement; field: HTMLInputElement; mine?: HTMLElement };
+
+  /** The Diagrams page with the search empty and ready to type in, where
+   * Next meeting's "Select a cut for the agenda" lands. */
+  seek(): void {
+    const finding = this.finding;
+    if (!finding) return;
+    finding.field.value = "";
+    finding.field.dispatchEvent(new Event("input"));
+    finding.field.focus({ preventScroll: true });
+  }
+
+  private diagramRow(diagram: Diagram, now: Date): HTMLElement {
+    const row = el("div", "sn-row push");
+    row.dataset.name = diagram.name.toLowerCase();
+    row.dataset.diagram = String(diagram.id);
+    const main = el("div", "sn-m");
+    main.append(
+      el("div", "sn-t", esc(diagram.name)),
+      el("div", "sn-s", `${esc(diagramSub(diagram, now))}<span class="sn-use"> · in use</span>`),
+    );
+    row.append(main, el("span", "sn-tick"));
+    row.addEventListener("click", () => {
+      if (diagram.id !== store.current().diagram?.id) {
+        tap(Feature.FamilySwitch);
+        return void this.switchTo(diagram);
+      }
+      this.close();
+      void this.handlers.onOpen(diagram.id);
+    });
+    return row;
+  }
+
+  /** An admin finds anyone by name: the admin's own diagrams give way to the
+   * people found while there is a name typed (R-0630). */
+  private finder(): { box: HTMLElement; field: HTMLInputElement } {
+    const box = el("div", "sn-find");
+    const wrap = el("div", "sn-srch");
+    const field = document.createElement("input");
+    field.type = "search";
+    field.placeholder = "Find a person";
+    field.setAttribute("aria-label", "Find a person");
+    wrap.append(field);
+    const found = el("div");
+    field.addEventListener("input", async () => {
+      const words = field.value.trim();
+      if (this.finding?.mine) this.finding.mine.hidden = words.length >= FIND_AT;
+      if (words.length < FIND_AT) return found.replaceChildren();
+      const people = await api.users(words);
+      if (field.value.trim() !== words) return;
+      const list = el("div", "sn-grp");
+      for (const person of people) {
+        const row = el("div", "sn-row push");
+        row.dataset.user = String(person.id);
+        const main = el("div", "sn-m");
+        main.append(
+          el("div", "sn-t", esc(person.name || person.username)),
+          el("div", "sn-s", esc(person.username)),
+        );
+        row.append(main, el("div", "sn-chev", "\u203a"));
+        row.addEventListener("click", () => void this.theirs(person));
+        list.append(row);
+      }
+      found.replaceChildren(
+        people.length ? list : el("div", "sn-hint", "No one by that name."),
+      );
+    });
+    box.append(wrap, found);
+    return { box, field };
+  }
+
+  /** The person tapped, slid in as a page of its own over the search, which
+   * waits underneath as it was (R-0630). Their diagrams open read-only. */
+  private async theirs(person: User): Promise<void> {
+    const diagrams = await api.diagrams(person.id);
+    const screen = el("div", "sn-theirs");
+    screen.id = `theirs-${person.id}`;
+    const box = el("div", "sn-grp");
+    const now = new Date();
+    for (const diagram of diagrams) box.append(this.diagramRow(diagram, now));
+    tick(box);
+    screen.append(diagrams.length ? box : el("div", "sn-hint", "No diagrams yet."));
+    this.push({
+      title: person.name || person.username,
+      screen,
+      at: address(Place.Theirs, person.id),
+    });
   }
 
   /** A new case: an empty record the app is put on straight away, so the title
@@ -821,19 +920,19 @@ export class Settings {
   private async addCase(name: string): Promise<void> {
     if (!name) return;
     const made = await api.newDiagram(name);
-    await this.load();
     this.close();
-    this.handlers.onDiagram(made, { switched: true });
+    await this.handlers.onOpen(made.id);
+    void this.load();
     toast(`Now on ${made.name}`);
   }
 
   /** Put the app on another family. Everything the app shows is about one
-   * diagram, so the whole surface is re-read afterwards. */
+   * diagram, so the whole surface is opened afresh; the list's counts are read
+   * again after. */
   private async switchTo(diagram: Diagram): Promise<void> {
-    await api.selectDiagram(diagram.id);
-    await this.load();
     this.close();
-    this.handlers.onDiagram(diagram, { switched: true });
+    await this.handlers.onOpen(diagram.id);
+    void this.load();
     toast(`Now on ${diagram.name}`);
   }
 
@@ -880,7 +979,7 @@ export class Settings {
       el("div", "sn-hd", "Licenses"),
       licenceBox,
     );
-    return { title: "Plan and licenses", pane };
+    return { title: "Your Plan", pane };
   }
 }
 

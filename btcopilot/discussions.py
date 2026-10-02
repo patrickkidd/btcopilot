@@ -65,6 +65,7 @@ def row(
     has just loaded, or come back to the front, knows to attach to it."""
     return {
         "id": discussion.id,
+        "diagram_id": discussion.diagram_id,
         "title": discussion.title,
         "summary": discussion.summary,
         "preview": first,
@@ -143,6 +144,12 @@ def all_sessions():
         Discussion.chat_user_speaker_id.isnot(None),
         Discussion.chat_ai_speaker_id.isnot(None),
     )
+
+
+def real_sessions():
+    """Every session on every family that is not a throwaway copy (the replay
+    and shadow families are marked scratch)."""
+    return all_sessions().join(Diagram).filter(Diagram.scratch.is_(False))
 
 
 def chats(user, diagram_id: int):

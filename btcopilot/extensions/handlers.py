@@ -7,12 +7,32 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonTracebackLexer
 import smtplib
+import sys
+
+from celery import current_task
+from flask import has_request_context, request
+
+import btcopilot
 
 
 class ColorfulSMTPHandler(SMTPHandler):
 
-    def getSubject(self, record):    
-        return '[Family Diagram Server] ' + getattr(record, 'message', '')
+    def origin(self):
+        return f"{self.source()} {btcopilot.__version__}"
+
+    def source(self):
+        if has_request_context():
+            return f"{request.host}{request.path}"
+        if current_task:
+            return f"worker {current_task.name}"
+        args = " ".join(sys.argv[1:])
+        return f"command {args}" if args else "shell"
+
+    def getSubject(self, record):
+        return f"[{self.origin()}] " + record.getMessage()
+
+    def format(self, record):
+        return f"Server: {self.origin()}\n" + super().format(record)
 
     def emit(self, record):
         try:

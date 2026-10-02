@@ -1,88 +1,94 @@
-"""One session's turns as the cut-placing screen reads them: the whole
-conversation, where the last ratified cut fell, and where a cut already on the
-agenda falls (R-0267).
+"""A family's whole thread as the cut-placing screen reads it: every sitting's
+lines in one scroll, the sittings to jump between, where the last ratified cut
+fell, and where a cut already on the agenda falls (R-0267).
 
 This is the same thread the coding screen shows, read before any coding of it
-exists, so it is the session's turns rather than a coding's.
+exists, so it is the family's lines rather than a coding's.
 """
 
 from flask import jsonify, request
 
 from btcopilot.review import adapter
 from btcopilot.review.models import Cut
-from btcopilot.review.routes import admin, bp
+from btcopilot.review.routes import admin, bp, day, sitting_name
 
 
 @bp.route("/turns")
 def turn_index():
-    """Placing the cut is Patrick's, so reading a session whole is too."""
+    """Placing the cut is Patrick's, so reading a thread whole is too. The
+    sitting asked for is the one the screen opens at."""
     admin()
-    discussion_id = request.args.get("discussion_id", type=int)
-    if not discussion_id:
-        raise ValueError("say which session's turns")
-    discussion = adapter.discussion_of(discussion_id)
+    discussion = adapter.discussion_of(request.args.get("discussion_id", type=int) or 0)
     if discussion is None:
-        raise ValueError("no session by that id")
-    first = adapter.first_statement(discussion_id)
-    last = adapter.last_statement(discussion_id)
-    if first is None or last is None:
-        raise ValueError("that session has no turns to cut")
-    ratified = _last_ratified(discussion_id)
-    standing = _on_agenda(discussion_id)
+        raise ValueError("no sitting by that id")
+    lines = adapter.thread(discussion.diagram_id)
+    if not lines:
+        raise ValueError("that thread has no turns to cut")
+    orders = adapter.statement_order(discussion.diagram_id)
+    ratified = _last(discussion.diagram_id, Cut.ratified_at.isnot(None))
+    standing = _last(discussion.diagram_id, Cut.ratified_at.is_(None))
 
     return jsonify(
         {
-            "discussion_id": discussion_id,
-            "session": (discussion.title or "").strip()
-            or "an untitled conversation",
-            "agreed": _line(ratified),
-            "on_agenda": _line(standing),
+            "diagram_id": discussion.diagram_id,
+            "sitting_id": discussion.id,
+            "session": sitting_name(discussion),
+            "agreed": _line(ratified, orders),
+            "on_agenda": _line(standing, orders),
             "cut_id": standing.id if standing else None,
+            "sittings": _sittings(lines),
             "turns": [
                 {
-                    "id": turn.id,
-                    "order": turn.order or 0,
-                    "client": _client(turn),
-                    "text": turn.text or "",
-                    "day": _day(discussion_id, turn.id),
+                    "id": line.id,
+                    "order": orders[line.id],
+                    "sitting_id": line.discussion_id,
+                    "client": _client(line),
+                    "text": line.text or "",
+                    "day": day(line.id),
                 }
-                for turn in adapter.statements_between(
-                    discussion_id, first.id, last.id
-                )
+                for line in lines
             ],
         }
     )
 
 
-def _line(cut: Cut | None) -> dict | None:
+def _sittings(lines) -> list[dict]:
+    """Each sitting once, in thread order, with when it started and when the
+    one before it started, which is what the chat app's divider is drawn from."""
+    out: list[dict] = []
+    for line in lines:
+        if out and out[-1]["id"] == line.discussion_id:
+            continue
+        started = adapter.utc_iso(line.created_at)
+        out.append(
+            {
+                "id": line.discussion_id,
+                "title": (line.discussion.title or "").strip(),
+                "started": started,
+                "previous_started": out[-1]["started"] if out else None,
+                "first_statement_id": line.id,
+            }
+        )
+    return out
+
+
+def _line(cut: Cut | None, orders: dict[int, int]) -> dict | None:
     if cut is None:
         return None
-    end = adapter.statement(cut.end_statement_id)
     return {
+        "start_statement_id": cut.start_statement_id,
         "statement_id": cut.end_statement_id,
-        "order": (end.order or 0) if end else 0,
-        "day": _day(cut.discussion_id, cut.end_statement_id),
+        "order": orders.get(cut.end_statement_id, 0),
+        "day": day(cut.end_statement_id),
         "ratified": (
             cut.ratified_at.strftime("%b %-d") if cut.ratified_at else None
         ),
     }
 
 
-def _last_ratified(discussion_id: int) -> Cut | None:
+def _last(diagram_id: int, state) -> Cut | None:
     return (
-        Cut.query.filter(
-            Cut.discussion_id == discussion_id, Cut.ratified_at.isnot(None)
-        )
-        .order_by(Cut.id.desc())
-        .first()
-    )
-
-
-def _on_agenda(discussion_id: int) -> Cut | None:
-    return (
-        Cut.query.filter(
-            Cut.discussion_id == discussion_id, Cut.ratified_at.is_(None)
-        )
+        Cut.query.filter(Cut.diagram_id == diagram_id, state)
         .order_by(Cut.id.desc())
         .first()
     )
@@ -91,8 +97,3 @@ def _on_agenda(discussion_id: int) -> Cut | None:
 def _client(statement) -> bool:
     speaker = statement.speaker
     return speaker is not None and speaker.type == adapter.SpeakerType.Subject
-
-
-def _day(discussion_id: int, statement_id: int) -> str:
-    when = adapter.cut_day(discussion_id, statement_id)
-    return when.strftime("%b %-d") if when else "an unknown day"

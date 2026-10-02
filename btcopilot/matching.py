@@ -267,6 +267,45 @@ def _parents_score(
     return avg
 
 
+def genders_agree(a: Person, b: Person) -> bool:
+    """Gender must match when both are known."""
+    known = {None, PersonKind.Unknown}
+    return a.gender in known or b.gender in known or a.gender == b.gender
+
+
+#: How alike two names in one record must be to be one person written twice:
+#: "Robert" and "Robert Stinson", or "Katherine" and "Catherine".
+SAME_NAME = 0.85
+
+
+def full_name(person: Person) -> str:
+    return normalize_name_for_matching(" ".join(filter(None, [person.name, person.last_name])))
+
+
+def likely_same(people: list[Person], pair_bonds: list[PairBond]) -> list[tuple[Person, Person]]:
+    """Two people in one record who may be one person written twice: the same
+    or a near-same name, genders that agree, and the same parents by name, or
+    parents on one side only or neither."""
+    pairs = []
+    for i, a in enumerate(people):
+        for b in people[i + 1 :]:
+            if not (full_name(a) and full_name(b)):
+                continue
+            if fuzz.token_set_ratio(full_name(a), full_name(b)) / 100.0 < SAME_NAME:
+                continue
+            if not genders_agree(a, b):
+                continue
+            both = all(_resolve_parent_names(p, people, pair_bonds) for p in (a, b))
+            if (
+                both
+                and a.parents != b.parents
+                and _parents_score(a, b, people, people, pair_bonds, pair_bonds) < SAME_NAME
+            ):
+                continue
+            pairs.append((a, b))
+    return pairs
+
+
 def match_people(
     ai_people: list[Person],
     gt_people: list[Person],
@@ -306,16 +345,7 @@ def match_people(
             if name_sim < NAME_SIMILARITY_THRESHOLD:
                 continue
 
-            # Gender must match if both are set (ignore if either is None/Unknown)
-            gender_match = True
-            if ai_person.gender is not None and gt_person.gender is not None:
-                if (
-                    ai_person.gender != PersonKind.Unknown
-                    and gt_person.gender != PersonKind.Unknown
-                ):
-                    gender_match = ai_person.gender == gt_person.gender
-
-            if not gender_match:
+            if not genders_agree(ai_person, gt_person):
                 continue
 
             parent_sim = _parents_score(

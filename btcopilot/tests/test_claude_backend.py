@@ -107,7 +107,7 @@ async def test_claude_text_with_turns():
             turns=[("user", "Hi"), ("model", "Hello"), ("user", "How are you?")],
         )
 
-    assert result == "AI response"
+    assert result.words == "AI response"
     call_kwargs = mock_create.call_args[1]
     assert call_kwargs["system"] == "You are a coach."
     assert call_kwargs["output_config"] == {"effort": TEXT_EFFORT}
@@ -136,7 +136,7 @@ async def test_claude_text_with_simple_prompt():
 
         result = await claude_text(prompt="What is 2+2?")
 
-    assert result == "Simple response"
+    assert result.words == "Simple response"
     call_kwargs = mock_create.call_args[1]
     assert call_kwargs["messages"] == [{"role": "user", "content": "What is 2+2?"}]
     assert "system" not in call_kwargs
@@ -167,18 +167,15 @@ def test_response_text_sync_routes_to_claude():
 # --- Integration: chat.py and discussion.py use unified routing ---
 
 
-def test_discussion_update_summary_uses_response_text_sync():
+def test_discussion_update_summary_uses_the_metered_gemini_call():
     # R-0097
-    """Discussion.update_summary uses the unified response_text_sync."""
-    with patch(
-        "btcopilot.models.discussion.response_text_sync",
-        return_value="  Summary text  ",
-    ) as mock:
-        from btcopilot.models.discussion import Discussion
+    """Discussion.update_summary makes its one text call through the meter."""
+    from btcopilot.models.discussion import Discussion
 
-        d = MagicMock(spec=Discussion)
-        d.conversation_history.return_value = "User: Hello\nExpert: Hi"
-        # Call the unbound method with the mock instance
-        Discussion.update_summary(d)
-        mock.assert_called_once()
-        assert d.summary == "  Summary text  "
+    d = MagicMock(spec=Discussion)
+    d.conversation_history.return_value = "User: Hello\nExpert: Hi"
+    metered = MagicMock()
+    metered.gemini.return_value = "  Summary text  "
+    Discussion.update_summary(d, metered)
+    metered.gemini.assert_called_once()
+    assert d.summary == "  Summary text  "

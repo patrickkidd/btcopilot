@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 
-from btcopilot.llmutil import Served
+from btcopilot.llmutil import Served, Spent
 
 # Thinking counts toward the cap even though its text is not returned.
 MAX_TOKENS = 16000
@@ -13,20 +13,6 @@ class ToolCall:
     id: str
     name: str
     args: dict = field(default_factory=dict)
-
-
-@dataclass
-class Spent:
-    input: int = 0
-    output: int = 0
-    cache_creation: int = 0
-    cache_read: int = 0
-
-    def add(self, other: "Spent") -> None:
-        self.input += other.input
-        self.output += other.output
-        self.cache_creation += other.cache_creation
-        self.cache_read += other.cache_read
 
 
 @dataclass

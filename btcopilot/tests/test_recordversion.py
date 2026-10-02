@@ -40,7 +40,7 @@ def test_every_read_ends_with_the_version_it_saw(family):
     for tool, args in (
         (ToolName.ReadPeople, {}),
         (ToolName.ReadEvents, {}),
-        (ToolName.ReadNotes, {}),
+        (ToolName.ReadEvents, {"fields": ["notes"]}),
     ):
         text, _ = tools.call(tool.value, args)
         assert text.splitlines()[-1] == f"Record version {version(family)}."

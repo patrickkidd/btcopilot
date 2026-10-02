@@ -4,7 +4,8 @@ from sqlalchemy import Column, Text, Integer, Boolean, Date, JSON, Enum
 from sqlalchemy.orm import relationship
 
 from btcopilot.extensions import db
-from btcopilot.llmutil import response_text_sync
+from btcopilot.llmutil import EXTRACTION_MODEL
+from btcopilot.metered import Metered
 from btcopilot.modelmixin import ModelMixin
 from btcopilot import prompts
 
@@ -137,21 +138,25 @@ class Discussion(db.Model, ModelMixin):
             else "(No statements in this discussion yet)"
         )
 
-    def update_summary(self):
-        self.summary = response_text_sync(
-            prompts.SUMMARIZE_MESSAGES_PROMPT.format(
+    def update_summary(self, metered: Metered):
+        self.summary = metered.gemini(
+            prompt=prompts.SUMMARIZE_MESSAGES_PROMPT.format(
                 conversation_history=self.conversation_history()
             ),
+            model=EXTRACTION_MODEL,
+            thinking_budget=0,
         )
 
-    def update_title(self):
+    def update_title(self, metered: Metered):
         """The coach never overwrites a title someone gave by hand."""
         if self.title_set_by_user:
             return
-        self.title = response_text_sync(
-            prompts.DISCUSSION_TITLE_PROMPT.format(
+        self.title = metered.gemini(
+            prompt=prompts.DISCUSSION_TITLE_PROMPT.format(
                 conversation_history=self.conversation_history()
             ),
+            model=EXTRACTION_MODEL,
+            thinking_budget=0,
         ).strip()
 
     def next_order(self) -> int:

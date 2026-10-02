@@ -15,15 +15,21 @@ Dimensions (all judged against the user's actual turns, not a rubric):
 - no_theory_pitch: the coach does not deliver "why family systems matters"
   preambles or therapy clichés ("it sounds like", "I'm so sorry to hear").
 """
+
 import json
 import re
+import uuid
 from dataclasses import dataclass
 
-from btcopilot.llmutil import gemini_text_sync
+from btcopilot.metered import Metered
+from btcopilot.models.modelcall import Purpose
 
 _BOOL_KEYS = (
-    "current_events_engagement", "name_usage", "no_premature_pivot",
-    "no_theory_pitch", "returns_to_collection",
+    "current_events_engagement",
+    "name_usage",
+    "no_premature_pivot",
+    "no_theory_pitch",
+    "returns_to_collection",
 )
 
 
@@ -36,7 +42,7 @@ def _parse_judge(raw: str) -> dict | None:
         s = s.split("```")[1].lstrip("json").strip()
     if "{" in s and "}" in s:
         try:
-            return json.loads(s[s.index("{"): s.rindex("}") + 1])
+            return json.loads(s[s.index("{") : s.rindex("}") + 1])
         except json.JSONDecodeError:
             pass
     d = {}
@@ -118,7 +124,11 @@ Return ONLY compact JSON:
 "notes": "<=10 words, no quotes, no newlines, ASCII only, cite worst turn #"}}"""
 
 
-def evaluate_coach(turns: list[tuple[str, str]], known_names: list[str]) -> CoachScores:
+def evaluate_coach(
+    turns: list[tuple[str, str]], known_names: list[str], user_id: int
+) -> CoachScores:
+    """`user_id` is whose thread is judged, or the admin running the judge
+    when the thread is nobody's; the judge's calls are charged to them."""
     transcript = "\n".join(
         f"[{i + 1}] {'USER' if r == 'user' else 'COACH'}: {t}"
         for i, (r, t) in enumerate(turns)
@@ -127,9 +137,10 @@ def evaluate_coach(turns: list[tuple[str, str]], known_names: list[str]) -> Coac
         names=", ".join(known_names) if known_names else "(none)",
         transcript=transcript,
     )
+    judge = Metered(user_id, None, uuid.uuid4().hex, Purpose.Judge)
     d = None
     for _ in range(2):  # gemini-2.5-flash occasionally truncates the JSON tail
-        raw = gemini_text_sync(
+        raw = judge.gemini(
             turns=[("user", prompt)],
             system_instruction="You are a precise auditor. Output only JSON.",
             model="gemini-2.5-flash",

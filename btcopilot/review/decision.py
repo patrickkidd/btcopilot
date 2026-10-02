@@ -15,13 +15,13 @@ from btcopilot.schema import ItemKind
 def value_of(item: Item, given) -> dict:
     """What the meeting decided on: a coder's opinion picked by its coding, or a
     written-out item of its own."""
-    if isinstance(given, dict) and "coding_id" in given and "item" not in given:
+    if isinstance(given, dict) and "coding_id" in given:
         for opinion in item.opinions or []:
             if opinion.get("coding_id") == given["coding_id"]:
                 return opinion["item"]
         raise ValueError("no opinion on this item from that coding")
     if isinstance(given, dict) and given:
-        return given.get("item", given)
+        return given
     opinions = item.opinions or []
     if len(opinions) != 1:
         raise ValueError("say which opinion or what to write")
@@ -37,9 +37,7 @@ def write(item: Item, value: dict, user):
 
 
 def _write(item: Item, value: dict, user):
-    case = adapter.case_diagram(
-        db.session.get(adapter.Discussion, item.cut.discussion_id)
-    )
+    case = adapter.diagram_of(item.cut.diagram_id)
     data = adapter.record_of(case)
     # A change is a rewording of the same moment, so it lands on the item the
     # opinions already name rather than adding a second one beside it.

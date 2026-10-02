@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { watch } from "./gate";
-import { inside, stateFor } from "./setup";
+import { inside, stateFor, boxOf } from "./setup";
 
 /** A family has one thread. A light line with the day stands where each
  * sitting starts, with the start time too when the sitting before it started
@@ -63,7 +63,7 @@ test.describe("a family with one sitting", () => {
   test("nothing opens or starts another conversation", async ({ page }) => {
     const w = await open(page);
     await expect(page.locator("#sessions-open")).toBeHidden();
-    const bar = (await page.locator("#inbar").boundingBox())!;
+    const bar = await boxOf(page.locator("#inbar"));
     await page.mouse.move(bar.x + 20, bar.y + 10);
     await page.mouse.down();
     await page.mouse.move(bar.x + 20, bar.y - 120, { steps: 6 });

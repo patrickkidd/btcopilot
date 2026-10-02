@@ -153,7 +153,13 @@ def write(coding, statement, said: str, model=None) -> dict:
     toolbox = adapter.scribe_toolbox(
         coding.diagram_id, coding.user_id, statement.id, turn_id
     )
-    coach = model or adapter.coach_model(MODEL, effort=None)
+    coach = adapter.Metered(
+        coding.user_id,
+        coding.diagram_id,
+        turn_id,
+        adapter.Purpose.Scribe,
+        model=model or adapter.coach_model(MODEL, effort=None),
+    )
     system = adapter.scribe_prompt(adapter.render_record(coding.diagram_id))
     messages = [
         {

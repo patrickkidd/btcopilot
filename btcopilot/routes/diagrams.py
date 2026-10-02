@@ -8,11 +8,12 @@ from flask import abort, jsonify, request
 import btcopilot
 from btcopilot import auth, diagramjson
 from btcopilot.licence import require_professional
-from btcopilot.routes import bp, last_activity, utc_iso
+from btcopilot.routes import Access, access, bp, last_activity, utc_iso
 from btcopilot.extensions import db
 from btcopilot.models import Discussion
-from btcopilot.models import Diagram
+from btcopilot.models import Diagram, User
 from btcopilot.models.etc import AccessRight
+from btcopilot.routes.users import require_admin
 
 GRANTED = (btcopilot.ACCESS_READ_ONLY, btcopilot.ACCESS_READ_WRITE)
 
@@ -54,6 +55,8 @@ def diagram_payload(diagram: Diagram, user) -> dict:
         "free": diagram.id == user.free_diagram_id,
         "current": diagram.id == user.diagram_in_use(),
         "owned": diagram.user_id == user.id,
+        "access": access(diagram, user),
+        "owner": diagram.user.full_name().strip() or diagram.user.username,
     }
 
 
@@ -71,7 +74,20 @@ def diagrams_payload(user) -> list[dict]:
 
 @bp.route("/diagrams")
 def diagram_index():
-    return jsonify(diagrams_payload(auth.current_user()))
+    """`?user_id=` lists another person's diagrams, which only an admin may
+    read; `current` still says which one the caller is on."""
+    user = auth.current_user()
+    asked = request.args.get("user_id", type=int)
+    if asked is None or asked == user.id:
+        return jsonify(diagrams_payload(user))
+    require_admin()
+    here = user.diagram_in_use()
+    return jsonify(
+        [
+            d | {"current": d["id"] == here}
+            for d in diagrams_payload(db.get_or_404(User, asked))
+        ]
+    )
 
 
 @bp.route("/diagrams", methods=["POST"])
@@ -94,14 +110,14 @@ def diagram_create():
 
 @bp.route("/diagrams/<int:diagram_id>/select", methods=["POST"])
 def diagram_select(diagram_id: int):
-    """Put the app on one of the user's writable diagrams. This never writes
-    free_diagram_id: which diagram is free of charge is a billing fact, not a
-    record of where the reader is."""
+    """Put the app on one of the user's writable diagrams, or, for an admin,
+    on anyone's to look at: no access right is written for that, and every
+    write on it is refused. This never writes free_diagram_id: which diagram
+    is free of charge is a billing fact, not a record of where the reader is."""
     user = auth.current_user()
-    if diagram_id not in {d.id for d in writable(user)}:
+    found = db.get_or_404(Diagram, diagram_id)
+    if found not in writable(user) and access(found, user) is not Access.AdminView:
         abort(404)
     user.current_diagram_id = diagram_id
     db.session.commit()
-    return jsonify(
-        diagram_payload(next(d for d in writable(user) if d.id == diagram_id), user)
-    )
+    return jsonify(diagram_payload(found, user))

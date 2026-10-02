@@ -142,7 +142,7 @@ test.describe("on the record with the longest line", () => {
       return (await (await fetch(`/app/sessions/${sessions[0].id}`)).json()).statements;
     });
     const play = statements.find((s: { case: unknown }) => s.case);
-    await page.route(/\/app\/play$/, (route) =>
+    await page.route(/\/app\/play(\?diagram_id=\d+)?$/, (route) =>
       route.fulfill({
         json: { statement: play.text, statement_id: play.id, kind: "play", cluster_id: play.cluster_id, case: play.case },
       }),

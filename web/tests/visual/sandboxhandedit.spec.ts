@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { deadTaps, tap, watch, watchDom } from "./gate";
 import { need, sandboxOnly } from "./sandbox";
+import { PARKED } from "./setup";
 
 // Hand edits on the lists drawer: each one writes one change row by the user,
 // with the version it made, and what the page refuses it says in plain words
@@ -42,6 +43,7 @@ async function openList(page: Page) {
 
 test.describe(() => {
   sandboxOnly("turns");
+  test.skip(true, PARKED);
   test.skip(!process.env.SANDBOX_PG, "needs SANDBOX_PG, the sandbox's database container");
   test.describe.configure({ timeout: 180_000 });
 

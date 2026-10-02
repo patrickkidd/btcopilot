@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { boxOf } from "./setup";
 import { need, sandboxOnly } from "./sandbox";
 
 // The push-back button beside an impression keeps its whole 44-point target
@@ -36,8 +37,8 @@ test.describe(() => {
     await page.locator("#tab-questions").click();
     const more = page.locator(`.irow[data-q="${IMPRESSION.id}"] .rmore`);
     await more.scrollIntoViewIfNeeded();
-    const target = (await more.boundingBox())!;
-    const row = (await page.locator(`.irow[data-q="${IMPRESSION.id}"] .islide`).boundingBox())!;
+    const target = await boxOf(more);
+    const row = await boxOf(page.locator(`.irow[data-q="${IMPRESSION.id}"] .islide`));
     const width = page.viewportSize()!.width;
     expect(target.width).toBeGreaterThanOrEqual(44);
     expect(target.height).toBeGreaterThanOrEqual(44);

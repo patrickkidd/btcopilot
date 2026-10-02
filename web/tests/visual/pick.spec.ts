@@ -1,11 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
-import { flask, stateFor, username } from "./setup";
+import { flask, stateFor, username, boxOf } from "./setup";
 
 /** A chip naming an event and the event's own dot pick it the same way
  * [Oracle: R-0168]: the others fade, the clusters stay drawn as they are on the
  * one drawing [Oracle: R-0538, R-0540], and the picture keeps its height
- * [Oracle: R-0377, R-0460]. An event inside a cluster has no dot of its own, so
- * a chip naming one opens its cluster, as a tap on the pill does [Oracle: R-0543]. The old chip spotlight comes back for one person when an
+ * [Oracle: R-0377, R-0460]. An event inside a cluster has no dot of its own
+ * [Oracle: R-0543], so a chip naming one opens its cluster as a tap on the pill
+ * does, with that event picked and named at the end of the path (Patrick,
+ * 2026-10-01). The old chip spotlight comes back for one person when an
  * admin sets it, and goes again when set back; it draws on the same line.
  *
  * The hostile record: one cluster holds parts 1 to 3, parts 4 to 6 are loose,
@@ -52,7 +54,7 @@ const shown = (page: Page) =>
   });
 /** Where the chip sits on screen, so the chat under the picture is seen not to move. */
 const chipTop = async (page: Page, part: number) =>
-  Math.round((await page.locator(chip(part)).first().boundingBox())!.y);
+  Math.round((await boxOf(page.locator(chip(part)).first())).y);
 
 test.use({ storageState: stateFor("hostile"), hasTouch: true });
 
@@ -79,21 +81,20 @@ test("a chip and a dot pick a loose event the same way", async ({ page }, info) 
   expect(await shown(page)).toEqual(byChip);
 });
 
-// R-0168, R-0377, R-0543
-test("a chip naming an event inside a cluster opens it as a tap on its pill does", async ({
+// R-0168, R-0377, R-0540, R-0543
+test("a chip naming an event inside a cluster opens it with that event picked", async ({
   page,
 }) => {
   await open(page);
-  await tapped(page, chip(2));
-  const byChip = await shown(page);
-  expect(byChip.picked).toBe(0);
-  expect(byChip.open).toBe(1);
-  expect(byChip.faded).toBe(true);
-  await expect(page.locator(dot(2))).toHaveCount(0);
+  await tapped(page, CLUSTER);
+  const byPill = await shown(page);
 
   await open(page);
-  await tapped(page, CLUSTER);
-  expect(await shown(page)).toEqual(byChip);
+  await tapped(page, chip(2));
+  const byChip = await shown(page);
+  expect(byChip).toEqual({ ...byPill, path: expect.stringMatching(new RegExp(`^${byPill.path} › \\S`)) });
+  await expect(page.locator("#path .here.on")).toHaveCount(1);
+  await expect(page.locator(dot(2))).toHaveCount(0);
 });
 
 // R-0168, R-0538, R-0540

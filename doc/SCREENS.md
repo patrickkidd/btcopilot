@@ -163,7 +163,7 @@ What it is for: one group of related events, opened from the line.
 - The word for these is clusters, in the app and in the code. [built] {R-0197}
 - Backing out of an open cluster always closes it and puts you back on the full line, no matter whether you had picked an event first. [built] {R-0362}
 - Clusters are rebuilt from scratch after every turn that touches an event, so the same events can come back under different names; they are meant to stay put and change only when there is a reason. [open]
-- Tapping an event's words inside an open cluster does not open an editor; you edit an event by chatting about it, or by finding it in the event list and editing it there, but mainly by chat. [built] {R-0572}
+- Tapping an event's words inside an open cluster does not open an editor; you change an event by chatting about it. [built] {R-0572}
 
 ## The play-by-play
 
@@ -265,12 +265,23 @@ What it is for: seeing and editing everything in the record by hand.
 - Each row shows what happened on one line and the date and people on a second. [built]
 - A row's summary uses short codes rather than running off the side of the phone. [built]
 - The scrollbar is never covered by a cluster heading. [built] {R-0218}
-- Tapping a row opens the editor for that item in place. [built]
+- Tapping a row opens that event's or that person's detail card as its own page, read-only; its back arrow returns to the list where it was scrolled. [built]
 - The line saying you can also edit by chatting was removed from these lists. [built] {R-0219}
 - There is a button to add an event; the new event's form slides up over the lists, full screen, with its name and the app's close button at its top. [built]
-- Editing by hand is possible but is not what the app is being tested on. [built]
+- An event or a person is changed by chatting about it, from its detail card. [built]
 
-## The event editor
+## The event detail view
+
+What it is for: reading one event, and taking it to the chat to comment on it or change it (Patrick's picks D2 to D4, 2026-10-01).
+
+- Tapping a row in the events list opens the event as its own page with a back arrow to the list, read-only: its kind, what happened, when and how sure, who, any shift, where, its cluster, its notes, and the chat message it was said in, which jumps to that message. Nothing on it is a form field. [built]
+- A person's name opens that person's card; the cluster opens that cluster on the picture. [built] {R-0201}
+- One action sits at its foot, reading "Tap to comment or change this event in chat". It puts the event in the message box as a lit chip and brings up the chat with the box ready to type in; nothing is sent until you send. [built]
+- After the message is sent the chip is gone from the box; the coach's reply shows what it changed as any reply does. [built]
+
+## The event editor (parked)
+
+Parked on Patrick's 2026-10-01 decision to try chat-only editing: the form is not reached from the events list or the detail view, and is still used to add a new event and on the coding screen. Its code is kept so it can come back.
 
 @frame built#f14 | One event opened for correction by hand: its kind, who it happened to, its words, its date and how sure the date is.
 
@@ -294,14 +305,24 @@ What it is for: correcting or adding one event by hand.
 - Saving re-sorts the list by time and redraws the lists and the picture. [built]
 - Delete appears only when you are editing something that already exists. [built]
 
-## The person editor
+## The person detail card
+
+What it is for: reading one person, and taking them to the chat to comment on them or change them (Patrick, 2026-10-01: the same as for events).
+
+- Tapping a row in the people list opens the person as their own page with a back arrow to the list, read-only: their kind over their name, when they were born and died, their parents, partners and children, the clusters and events they are in, and their notes. Only what the record holds is shown; it keeps no address, contact or living status for a person. [built]
+- A name opens that person's card, an event opens that event's card, and a cluster opens that cluster on the picture. [built] {R-0201}
+- One action sits at its foot, reading "Tap to comment or change this person in chat". It puts the person in the message box as a lit chip and brings up the chat with the box ready to type in; the chip is gone after the send. [built]
+
+## The person editor (parked)
+
+Parked on Patrick's 2026-10-01 decision to do for people what was done for events: the form is not reached from the people list or any card, and is still used to add someone and on the coding screen. Its code is kept so it can come back.
 
 @frame built#f15 | A person opened the same way: a name, a kind, and a line saying births and deaths come from talking to the coach.
 
 What it is for: one person's own details.
 
 - The person's kind field is labelled Kind rather than sex, to keep the category right. [built] {R-0200}
-- A person carries buttons to their birth and their death when those exist, jumping to that event's editor. [built] {R-0201}
+- A person carries buttons to their birth and their death when those exist, jumping to that event's detail view (the person card does this now). [built] {R-0201}
 - The jump works in reverse, from an event back to the person. [built] {R-0201}
 - Your own birthdate anchors your own line on the picture. [built]
 - Every diagram that ever had a chat on it carries a person called Assistant, which is a defect and not yet fixed. [built]
@@ -348,6 +369,7 @@ What it is for: your past conversations.
 @frame built#f17 | Your name and address, the coach and appearance settings, your records and plan, and signing out.
 
 - The button that opens the account page shows its icon. [built] {R-0346}
+- Diagrams and Your Plan sit together under a section header "Data"; the Diagrams page is titled "Diagrams". [built] {R-0631}
 
 What it is for: you, your families, your plan, and signing out.
 
@@ -371,11 +393,12 @@ What it is for: you, your families, your plan, and signing out.
 - Your families are listed, with the number of sessions and when each was last used, and a tick on the one you are in. [built]
 - Tapping a family opens it, and one is open at a time. [built] {R-0175}
 - A search box appears in that list once you have six or more families. [built]
+- Admins see a "Find a person" box at the top of that page: with the box empty the page shows only the admin's own diagrams; two or more letters show only the people whose email or name match, and the admin's own diagrams are hidden until the box is cleared; tapping a person slides in a page of its own titled with their name, listing their diagrams in the same rows, the way every page of the account view slides in; back slides it away to the search with the words and the people found as they were; tapping a diagram opens it read-only: one quiet line under the title row says "Viewing <name>'s diagram, read-only" with "Back to my diagram", which puts the app back on the admin's most recently used diagram. While it is open the record, the timeline, the chat history and the lists show, and the message box, Send, "+ Add event", rename and delete, a question's actions, and a detail card's "Tap to comment…" are hidden; no tap is recorded and nothing is sent. It is never listed among the admin's own diagrams, and no sharing is granted. Nobody else sees the box. [built] (Patrick, 2026-10-01) {R-0630}
 - Licences and the plan are listed; nothing on that page implies a price yet. [built]
 - Auditors and admins see a Coding section above Sign out: Your coding task, which opens the one task card; Next meeting, for admins only, which opens the agenda; and Auditor's Coding Guide, which opens the concept pages on a page of its own. [built] {R-0265, R-0259, R-0541, R-0567}
 - Admins also see a Quality section with one row, Better replies, over the line "Pick the better of two coach replies"; it opens the screen where two coach replies to the same words are picked blind, titled Better replies. [built] {R-0599}
 - Better replies serves the pairs a conversation at a time, in the order the words were said, so a session reads as it happened; the conversation up to the words both replies answer stays above the two replies. [built] {R-0599}
-- Each of those opens as a page of the account view, sliding in over it the way Coach, Appearance and Plan do, and the back arrow at the top left returns to the account view. [built] {R-0259, R-0265}
+- Each of those opens as a page of the account view, sliding in over it the way Coach, Appearance and Your Plan do, and the back arrow at the top left returns to the account view. [built] {R-0259, R-0265}
 - A plain subscriber or a professional sees neither section. [built] {R-0311}
 - Sign out sits alone at the bottom and signs you out immediately, with no confirmation step. [built]
 - Every icon button in the app is the same size: a forty-four point target with a forty point mark inside it. [built] {R-0234}
@@ -414,17 +437,15 @@ What it is for: every screen and everything on it has its own web address, so th
 | `/app/account/notices/<notice>` | the Notices page, with that notice ringed |
 | `/app/account/coding-task` | your coding task |
 | `/app/account/meeting` | Next meeting |
-| `/app/account/meeting/sessions` | Pick a session, over Next meeting |
 | `/app/account/meeting/<day>` | the page of the meeting on that day (`undated` for the one with no day) |
 | `/app/account/meeting/<day>/<cut>` | that meeting's page, with that cut ringed |
 | `/app/account/better-replies` | Better replies |
 | `/app/account/literature-review` | Auditor's Coding Guide |
-| `/app/cut/<session>` | the cut screen for that session, over Next meeting |
 | `/app/cluster/<cluster>` | that cluster opened on the picture |
 | `/app/event/<event>` | that event picked on the picture |
-| `/app/event/<event>/edit` | the events list with that event's editor open and its row ringed |
+| `/app/event/<event>/edit` | the events list with that event's detail view open and its row ringed (the address of the parked editor, kept) |
 | `/app/event/new` | the new-event form |
-| `/app/person/<person>` | the people list with that person's editor open and its row ringed |
+| `/app/person/<person>` | the people list with that person's card open and its row ringed (the address of the parked editor, kept) |
 | `/app/person/new` | the new-person form |
 | `/app/events`, `/app/people`, `/app/questions` | that list of the lists drawer |
 | `/app/play/<message>` | the play-by-play that message keeps |
@@ -561,13 +582,14 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 @frame coding#f6 | After Done the next single card takes its place, greyed until Patrick opens the vote.
 @frame review#f10 | Patrick's screen: the date, what is on the agenda, who is done, the button that opens the vote, and the agenda that fills itself.
 
-- Patrick puts a conversation on the agenda from the meeting page, never from a session: "Put a session on the agenda" lists every session on every family, newest first, each with its family, its day and how many statements it holds, and a search box finds sessions by words said in them, showing the line that carries them. [built] {R-0267}
-- Tapping one opens it to place the cut, and placing the cut returns to the agenda. Each is a page over the one it was opened from: the list over the agenda, the cut over the list or over the agenda, and the back arrow steps back one page. [built] {R-0267}
-- A newly placed cut joins the next meeting: the soonest meeting date on the agenda, or no date while none has one. [built] {R-0267}
-- That opens the conversation so he can place the cut: the point everyone codes up to. [drawn] {R-0267}
-- The cut starts at the last turn, and tapping any line moves it there. [drawn] {R-0267}
-- The cut can never be moved back past the last point that was already ratified. [drawn] {R-0267}
-- Turns after the cut are dimmed and wait for a later cut. [drawn] {R-0267}
+- Patrick selects a cut inside the chat itself, never on a separate page. Next meeting's button, "Select a cut for the agenda", goes to the Diagrams page with the Find a person box empty and ready to type in, which opens anyone's diagram read-only. [built] {R-0629}
+- On someone else's diagram the read-only line carries "Select a cut" beside "Back to my diagram". Tapping it puts an amber line under the read-only line, "Selecting a cut · tap the first line, then the last", with "cancel"; arriving from Next meeting's button it is already on. The message bar gives way to a foot bar, "Place this cut", grey until both ends are tapped. [built] {R-0629}
+- From Next meeting's "Select a cut for the agenda", tapping the admin's own diagram on the Diagrams page, ticked or not, opens the admin's own chat with the same amber line, "cancel" and foot bar; the message box is hidden until cancel or placing. The admin's own chat has no standing "Select a cut". Tapping the open diagram without the button simply returns to its chat. [built] {R-0632}
+- A cut is a first and a last line of the thread, in one sitting or across several. The first tap rings that line amber and the amber line reads "now tap the last line"; the second rings every line between, across the lines between sittings, fades the lines after the cut, and the amber line says what the cut spans, as "10 to 17 Mar, 2 sittings". A third tap starts over. [built] {R-0629}
+- On someone else's diagram the sessions drawer only reads: tapping a sitting closes the drawer and scrolls the thread to that sitting's first line, and rename and delete are not offered. [built] {R-0629}
+- Placing the cut returns to Next meeting. A newly placed cut joins the next meeting: the soonest meeting date on the agenda, or no date while none has one. [built] {R-0267, R-0629}
+- A cut's row on Next meeting names the person whose diagram it is, then the days it spans with the year and how many sittings, as "10 to 17 Mar 2026 · 2 sittings". Tapping the row opens that cut in the family's thread, ringed, to move its lines; the cross takes it off before anyone has started. [built] {R-0629}
+- No end of a cut can be placed at or before the last point that was already ratified. [built] {R-0267}
 - A cut placed at the end of a finished conversation or recording takes in the whole thing, so a whole transcript is not a different kind of task. [drawn] {R-0267}
 - Anything that changed since the last cut is coded again. [drawn] {R-0267}
 - The agenda screen is the whole of Patrick's administration: the meeting date, what is on the agenda, and who is done. [drawn] {R-0259, R-0267}
@@ -575,7 +597,7 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 - "run the meeting" opens that meeting's page: each cut with who has submitted a coding of it and who has not; a cut nobody has submitted says "No coder has submitted yet" under it, and a cut someone has submitted opens the room on it. [built] {R-0250, R-0258}
 - Each coder's state is shown as not started, coding, done or voted, with a count of who is closed out. [drawn] {R-0258}
 - One control nudges the people who are not done. [drawn] {R-0258}
-- Taking a conversation off the agenda is one tap, before anyone has started. [drawn]
+- Taking a conversation off the agenda is the cross on its row, before anyone has started; the cross first asks "Take this cut off the agenda?" with the person and the days spanned, "Take it off" or "Keep it"; a tap outside or Escape keeps it. [built] {R-0631}
 - The button that runs the meeting is the app's filled primary button, reads "run the meeting", and has the same room after it as before it. [built] {R-0341}
 - Only an administrator sees the controls on this screen; a coder who reaches it sees the work but not the way to move it. [built] {R-0346}
 - A ratified conversation keeps a row with a way in to the result; the row says where the cut stops and the day the room ratified it, so two cuts of one conversation read differently. [built] {R-0275}

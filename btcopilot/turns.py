@@ -9,9 +9,10 @@ page follows that log. A page that reloads reads the log from the start.
 import logging
 import uuid
 
+import btcopilot
 from btcopilot import extensions
 from btcopilot.extensions import db
-from btcopilot import chips, observer, shadow, turnlog, turnstore
+from btcopilot import chips, coverage, observer, shadow, turnlog, turnstore
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
 from btcopilot.coachmodel import Refusal, model_for
@@ -22,6 +23,7 @@ from btcopilot.models import (
     Discussion,
     Observation,
     ObservationKind,
+    Purpose,
     Statement,
     StatementKind,
 )
@@ -122,11 +124,12 @@ def run(
         [] if resume else setting.read(SettingKey.ShadowModel, discussion.user_id, [])
     )
     before = discussion.diagram.data
+    covered = coverage.counts(record_of(discussion))
     turn = CoachTurn(
         discussion,
         said.text,
+        purpose=Purpose.Coach,
         model=model_for(setting.read(SettingKey.CoachModel, discussion.user_id)),
-        session_id=str(discussion_id),
         statement_id=statement_id,
         turn_id=turn_id,
         sink=lambda event: written(turn_id, discussion_id, event),
@@ -167,7 +170,14 @@ def run(
         turnlog.clear(discussion_id)
         turnlog.append(turn_id, failed)
         raise
-    _keep(turn, turnstore.done(reply["statement_id"]))
+    _keep(
+        turn,
+        turnstore.done(
+            reply["statement_id"],
+            {"before": covered, "after": coverage.counts(turn.data)},
+            btcopilot.__version__,
+        ),
+    )
     reply["kind"] = StatementKind.Turn.value
     reply["discussion_id"] = discussion_id
     turnlog.clear(discussion_id)

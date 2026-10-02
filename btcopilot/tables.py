@@ -50,6 +50,7 @@ TABLES = frozenset(
         "product_events",
         "push_subscriptions",
         "quality_runs",
+        "replay_passes",
         "reports",
         "review_codings",
         "review_cuts",

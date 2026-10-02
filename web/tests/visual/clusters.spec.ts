@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { colours } from "./gate";
-import { stateFor, tellWithoutModel } from "./setup";
+import { stateFor, tellWithoutModel, boxOf } from "./setup";
 
 /** Opening a cluster and coming back out of it: the boxes at rest, the path
  * that goes back up, the page behind the small i, the board, and the card
@@ -129,7 +129,7 @@ test.describe("the boxes at rest", () => {
     // R-0129
     test("a tap near either end of a box opens it", async ({ page }) => {
       await settle(page);
-      const box = (await page.locator("#view rect.pill").boundingBox())!;
+      const box = await boxOf(page.locator("#view rect.pill"));
       for (const x of [box.x + 4, box.x + box.width - 4]) {
         await page.mouse.click(x, box.y + box.height / 2);
         await expect(name(page)).toHaveText("Leaving and losing (3)");
@@ -173,8 +173,8 @@ test.describe("one cluster open on the sparse record", () => {
     await openCluster(page);
     // the one target on the line is the loose event's; none sits on the pill
     await expect(zones(page)).toHaveCount(1);
-    const pill = (await page.locator("#view rect.pill").boundingBox())!;
-    const zone = (await zones(page).first().boundingBox())!;
+    const pill = await boxOf(page.locator("#view rect.pill"));
+    const zone = await boxOf(zones(page).first());
     expect(zone.x).toBeGreaterThanOrEqual(pill.x + pill.width - 1);
     await expect(step(page, 0)).toBeVisible();
     await expect(path(page)).toHaveText("Timeline \u203a 1981\u20132003");
@@ -224,7 +224,7 @@ test.describe("one cluster open on the sparse record", () => {
     expect(light.drawn).toBe(light.token);
     expect(dark.drawn).toBe(dark.token);
     expect(dark.token).not.toBe(light.token);
-    const [b, p] = [(await x.boundingBox())!, (await card.boundingBox())!];
+    const [b, p] = [await boxOf(x), await boxOf(card)];
     expect(p.x + p.width - (b.x + b.width)).toBeLessThanOrEqual(8);
     expect(b.y - p.y).toBeLessThanOrEqual(8);
     await x.click();
