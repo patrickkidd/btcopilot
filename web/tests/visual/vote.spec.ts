@@ -151,6 +151,8 @@ test("a message 6 minutes after the coach's last reply gets the coach's reply al
   await expect(bubble.locator(".vt-reply")).toHaveCount(0);
   await expect(page.locator("#send")).toBeEnabled();
   await expect(page.locator("#composer")).toHaveAttribute("contenteditable", "true");
+  // R-0636
+  await expect(page.locator("#composer")).toHaveText("");
 });
 
 // a family whose thread has coach replies before its newest message

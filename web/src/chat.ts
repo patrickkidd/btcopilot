@@ -4,7 +4,7 @@ import { hush, say } from "./speech";
 import { INFO, notesView, type Notes } from "./notes";
 import { html, type Line } from "./tools";
 import { AWAY_PX, fit, fold, type Fold } from "./viewport";
-import { Vote, type Host } from "./vote";
+import { IDLE_MS, Vote, type Host } from "./vote";
 import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
@@ -329,6 +329,7 @@ export class Chat {
     hold: (on) => this.hold(on),
     scroll: () => this.scroll(),
     end: () => this.toEnd(),
+    voted: () => this.extend(),
   };
 
   /** A stored coach reply whose turn has `count` shadow replies (R-0636);
@@ -340,6 +341,12 @@ export class Chat {
   /** Whether the shadows are on and have not yet turned themselves off. */
   feedback(): boolean {
     return this.shadows > 0 && this.expires !== null && Date.now() <= this.expires;
+  }
+
+  /** The five minutes start again from now while the shadows are on: a reply
+   * is there to read and vote on, or a vote was just saved (R-0637). */
+  extend(): void {
+    if (this.feedback()) this.expires = Date.now() + IDLE_MS;
   }
 
   /** A message goes out: shadows that turned themselves off stay off for it,
