@@ -326,7 +326,8 @@ def quality_replay_person(
     diagram = statements[0].discussion.diagram
     if {s.discussion.diagram_id for s in statements} != {diagram.id}:
         raise click.UsageError("the turns lie on more than one record")
-    following = every[len(statements)] if len(every) > len(statements) else None
+    next_index = (start or 1) - 1 + len(statements)
+    following = every[next_index] if next_index < len(every) else None
     if following is not None and following.discussion.diagram_id != diagram.id:
         following = None
     begun, before = replayscore.anchor(diagram, statements[0])

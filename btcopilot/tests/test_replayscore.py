@@ -502,6 +502,7 @@ def test_a_replay_from_a_later_turn_goes_on_in_the_kept_pass(
     assert f"statements {third.id}..{third.id} (1)" in result.output
     later = ReplayPass.query.order_by(ReplayPass.id.desc()).first()
     assert (later.turns, later.scratch_diagram_id) == (1, first.scratch_diagram_id)
+    assert later.case.endswith("record v3..v4")
     (session,) = db.session.get(Diagram, first.scratch_diagram_id).discussions
     assert [s.text for s in adapter.spoken(session.statements)] == [
         "Hello",
