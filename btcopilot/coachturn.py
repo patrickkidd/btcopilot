@@ -484,9 +484,7 @@ class CoachTurn:
         sitting is named from its opening words, so the one before it, now
         over, is named once more from all of it; when that call fails its
         title stays."""
-        summary = Metered(
-            self.discussion.user_id, self.diagram.id, self.turn_id, Purpose.Summary
-        )
+        summary = self.model.aside(Purpose.Summary)
         try:
             self.discussion.update_title(summary)
             self.discussion.update_summary(summary)
@@ -512,6 +510,7 @@ class CoachTurn:
                 turn_id=self.turn_id,
                 user_id=self.discussion.user_id,
                 session_id=self.discussion.id,
+                metered=self.model.aside(Purpose.Cluster),
             )
         except clusters.ClusterError as rejected:
             _log.warning(

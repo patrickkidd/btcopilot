@@ -3,6 +3,8 @@ corrected record, with the watcher's mistakes counted and one ledger line
 appended. Invented names only; the coach is scripted, never called."""
 
 import json
+from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
 
@@ -11,9 +13,10 @@ import btcopilot
 from btcopilot import diagramjson, ledger, prompts, record, replayscore
 from btcopilot.admin import admin
 from btcopilot.admin.quality import PRODUCTION
+from btcopilot.clusters import ClusterListResponse, sync
 from btcopilot.coachmodel import COACH_EFFORT, Spent, model_for
 from btcopilot.extensions import db
-from btcopilot.llmutil import resolve_model
+from btcopilot.llmutil import Parsed, Served, resolve_model
 from btcopilot.models import (
     Author,
     Change,
@@ -32,7 +35,8 @@ from btcopilot.review import adapter
 from btcopilot.routes.diagrams import readable
 from btcopilot.schema import ItemKind
 from btcopilot.toolbox import ToolName
-from btcopilot.tests.conftest import Model, called, calling, said
+from btcopilot.pricing import cost
+from btcopilot.tests.conftest import SERVED, Model, called, calling, said
 
 NELL = {"id": 1, "name": "Nell", "last_name": "Hale", "gender": "female"}
 
@@ -532,3 +536,92 @@ def test_a_replay_that_fails_keeps_the_turns_done_and_goes_on_from_them(
     assert result.exit_code == 0, result.output
     later = ReplayPass.query.order_by(ReplayPass.id.desc()).first()
     assert (later.turns, later.scratch_diagram_id) == (2, first.scratch_diagram_id)
+
+
+def test_a_call_that_could_pass_the_cap_is_not_made_and_its_turn_is_taken_back(
+    flask_app, lived, test_user, path, monkeypatch
+):
+    # R-0568
+    spent = Spent(input=1000, output=50)
+    first, added, unsaid = (
+        said("Noted."),
+        called(ToolName.EditPerson, name="Ada", last_name="Hale"),
+        said("Ada is in."),
+    )
+    first.spent = added.spent = spent
+    model = Model(first, added, unsaid)
+    monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
+    each = cost(SERVED, spent)
+    result = _person(flask_app, test_user, "--cap", str(each * Decimal("2.5")))
+    assert result.exit_code == 0, result.output
+    assert model.turns == [unsaid]
+    kept = ReplayPass.query.one()
+    assert (kept.turns, kept.cost_usd) == (1, each * 2)
+    assert json.loads(path.read_text())["outcome"] == "stopped at turn 2 of 2"
+    scratch = db.session.get(Diagram, kept.scratch_diagram_id)
+    assert "Ada" not in [p["name"] for p in scratch.get_diagram_data().people]
+    (session,) = scratch.discussions
+    assert [s.text for s in adapter.spoken(session.statements)] == ["Hello"]
+
+    model.turns = [said("Noted.")]
+    result = flask_app.test_cli_runner().invoke(
+        admin,
+        ["quality", "replay-person", str(test_user.id), "sonnet-5"]
+        + ["--start", "2", "--turns", "2", "--after", str(kept.id)],
+    )
+    assert result.exit_code == 0, result.output
+    later = ReplayPass.query.order_by(ReplayPass.id.desc()).first()
+    assert (later.turns, later.scratch_diagram_id) == (1, kept.scratch_diagram_id)
+
+
+def test_the_cluster_sorting_of_a_replay_turn_is_replay_spend_in_its_total_and_cap(
+    discussion, reference, monkeypatch
+):
+    # R-0628
+    model = Model(
+        called(
+            ToolName.EditEvent,
+            kind="shift",
+            date="1994-07-01",
+            description="got sick",
+            person=1,
+            symptom="up",
+            date_certainty="certain",
+        ),
+        said("I put that down."),
+    )
+    monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
+    sorted_ = Parsed(
+        ClusterListResponse(clusters=[]),
+        Spent(input=900, output=60),
+        Served("gemini-3.1-flash-lite"),
+    )
+    start = diagramjson.dumps(
+        {
+            "people": [NELL],
+            "events": [
+                {
+                    "id": 10 + n,
+                    "kind": "shift",
+                    "person": 1,
+                    "dateTime": f"1994-0{n + 1}-01",
+                    "dateCertainty": "certain",
+                    "description": f"event {n}",
+                    "anxiety": "up",
+                }
+                for n in range(6)
+            ],
+            "lastItemId": 15,
+        }
+    )
+    with (
+        patch("btcopilot.clusters.sync", new=sync),
+        patch("btcopilot.metered.gemini_structured_sync", return_value=sorted_),
+    ):
+        row = replayscore.replay(discussion, "sonnet-5", reference, start=start)
+    calls = ModelCall.query.filter_by(diagram_id=row["scratch_diagram_id"]).all()
+    assert {c.purpose for c in calls} == {Purpose.Replay}
+    assert sorted_.served.model in [c.model for c in calls]
+    total = sum(c.cost_usd for c in calls)
+    assert row["cost"] == float(total)
+    assert adapter.spent(row["scratch_diagram_id"]) == total

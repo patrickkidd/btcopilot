@@ -559,6 +559,7 @@ def sync(
     turn_id: str,
     user_id: int,
     session_id: int | None = None,
+    metered: Metered | None = None,
 ) -> Regroup | None:
     """Re-group the record's events and store the grouping.
 
@@ -581,7 +582,7 @@ def sync(
         return None
 
     dates = {e.id: e.dateTime for e in events if e.dateTime}
-    metered = Metered(user_id, diagram_id, turn_id, Purpose.Cluster)
+    metered = metered or Metered(user_id, diagram_id, turn_id, Purpose.Cluster)
     result = detect_clusters(
         data, lambda prompt: metered.structured(prompt, ClusterListResponse)
     )
