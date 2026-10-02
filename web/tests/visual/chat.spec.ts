@@ -434,6 +434,32 @@ test.describe("the message box while the coach replies", () => {
   });
 
   // R-0636
+  test("a Stop that arrives after the reply has ended leaves the reply and says nothing", async ({ page }) => {
+    await page.goto("/app/");
+    await expect(page.locator("#view .ss")).toBeVisible();
+    let answer: () => void = () => {};
+    const held = new Promise<void>((go) => (answer = go));
+    await mockTurn(page, { statement: "Noted.", statement_id: 9305, hold: held });
+    await page.route(/\/app\/turns\/[^/]+\/stop$/, async (route) => {
+      answer();
+      await expect(page.locator(".bub.coach:not(.typing)").last()).toContainText("Noted.");
+      await route.fulfill({ status: 409, body: "turn t1 is not running" });
+    });
+    await page.locator("#composer").fill("My dad moved out.");
+    await page.locator("#send").click();
+    await expect(page.locator(".bub.coach.typing")).toBeVisible();
+    const refused = page.waitForResponse(/\/stop$/);
+    await page.locator("#send").click();
+    await refused;
+    // a notice goes by itself after a moment, so it is looked for once, now
+    await page.waitForTimeout(200);
+    expect(await page.locator(".toast").count()).toBe(0);
+    await expect(page.locator(".bub.coach").last()).toContainText("Noted.");
+    await expect(page.locator("#chat .sys")).toHaveCount(0);
+    await expect(page.locator("#send")).toHaveAttribute("aria-label", "Send");
+  });
+
+  // R-0636
   test("a stopped turn that added a person leaves no reply, and the person is gone from the picture", async ({
     page,
   }) => {

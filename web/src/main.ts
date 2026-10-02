@@ -1234,6 +1234,8 @@ async function halt(): Promise<void> {
   try {
     await api.stop(onTurn);
   } catch (error) {
+    // refused because the reply had already ended: the reply is the answer
+    if (error instanceof api.Failed && error.status === 409) return;
     toast(whatFailed(error));
   }
 }
