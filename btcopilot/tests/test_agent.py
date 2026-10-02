@@ -4,6 +4,7 @@ kind at a time, and a play-by-play that cannot invent a move."""
 import datetime
 import re
 import pytest
+from mock import Mock
 from opentelemetry import trace
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
@@ -523,12 +524,7 @@ def test_a_turn_that_never_stops_calling_tools_still_says_something(
     call. When the steps run out the coach is asked for its reply with no tools
     at all, and that is what the person reads."""
     working = [
-        called(
-            ToolName.EditPerson,
-            text=f"Working out step {n}.",
-            name=f"Person {n}",
-        )
-        for n in range(MAX_STEPS)
+        called(ToolName.EditPerson, name=f"Person {n}") for n in range(MAX_STEPS)
     ]
     before = len(discussion.statements)
     model = Model(*working, said("I added them all. Who else was around then?"))
@@ -543,7 +539,6 @@ def test_a_turn_that_never_stops_calling_tools_still_says_something(
         "There were six of them.",
         "I added them all. Who else was around then?",
     ]
-    assert "Working out" not in " ".join(spoken)
     assert discussion.statements[-1].id == reply["statement_id"]
 
 
@@ -636,6 +631,84 @@ def test_a_reply_that_is_only_chips_is_asked_again_for_sentences(discussion, fam
 
     assert reply["statement"] == TOLD
     assert BARE in model.histories[-1][-2]["content"]
+
+
+def test_words_beside_edits_that_went_through_are_the_reply_in_one_request(
+    discussion, family
+):
+    # R-0086
+    words = "[[person:11|Nell]] is in. What is she like?"
+    model = Model(called(ToolName.EditPerson, words, name="Nell"))
+    reply = run(discussion, "My sister is Nell.", model)
+
+    assert len(model.histories) == 1
+    assert reply["statement"] == words
+    db.session.refresh(family)
+    assert [p["name"] for p in family.get_diagram_data().people] == ["Wren", "Bo", "Nell"]
+
+
+@pytest.mark.parametrize(
+    "first",
+    [
+        called(ToolName.EditPerson, name="Nell"),
+        called(ToolName.Remove, "Removed it.", item_kind="household", item_id="1", version=1),
+        called(ToolName.ReadPeople, "Let me look."),
+        calling(
+            (ToolName.EditPerson, {"name": "Nell"}),
+            (ToolName.ReadEvents, {}),
+            text="Nell is in.",
+        ),
+    ],
+    ids=["edits and no words", "a refused edit", "a read", "an edit and a read"],
+)
+def test_a_step_the_coach_has_to_read_the_answer_of_gets_a_further_request(
+    discussion, family, first
+):
+    # R-0086
+    model = Model(first, said("What is she like?"))
+    reply = run(discussion, "My sister is Nell.", model)
+
+    assert len(model.histories) == 2
+    assert reply["statement"] == "What is she like?"
+    assert model.histories[-1][-1]["content"][0]["type"] == "tool_result"
+
+
+def test_edits_that_change_the_story_get_a_further_request(discussion, family, regrouping):
+    # R-0412
+    changed = "The summer she got sick sits with the spring they argued."
+    regrouping.return_value = Mock(change=Mock(deltas=[], turn_id="t"), sentences=[changed])
+    model = Model(
+        called(
+            ToolName.EditEvent,
+            "Noted. What happened next?",
+            kind="shift",
+            date="1994-07-01",
+            description="got sick",
+            person=1,
+            symptom="up",
+            date_certainty="certain",
+        ),
+        said("Those look like one story to me now, not two."),
+    )
+    reply = run(discussion, "She got sick that summer.", model)
+
+    assert reply["statement"] == "Those look like one story to me now, not two."
+    assert changed in model.histories[-1][-1]["content"][-1]["content"]
+
+
+def test_a_reply_beside_edits_that_is_only_chips_is_asked_again_for_sentences(
+    discussion, family
+):
+    # R-0160
+    model = Model(called(ToolName.EditPerson, BARE, name="Nell"), said(TOLD))
+    reply = run(discussion, "Walk me through it.", model)
+
+    assert reply["statement"] == TOLD
+    edits, results, bare, ask = model.histories[-1][-4:]
+    assert edits["content"][-1]["type"] == "tool_use"
+    assert results["content"][0]["type"] == "tool_result"
+    assert (bare["role"], bare["content"]) == ("assistant", BARE)
+    assert ask["role"] == "user"
 
 
 def test_a_reply_that_stays_a_list_of_chips_fails(discussion, family):
