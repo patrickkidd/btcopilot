@@ -27,7 +27,6 @@ def shadows(web, token, models):
 
 
 def ran(said, turn_id, model, usd):
-    """One shadow of a coach turn, with what it spent in the ledger."""
     discussion = said.discussion
     row = ShadowTurn(
         turn_id=turn_id,
@@ -116,9 +115,7 @@ def test_shadows_turn_off_five_minutes_after_the_coach_last_replied(
     db.session.commit()
     body = web.get("/app/preferences").get_json()
     assert body[PrefKey.ShadowModels.value] == (["sonnet"] if on else [])
-    assert body["shadow_expires_at"] == (
-        utc_iso(said + shadow.IDLE) if on else None
-    )
+    assert body["shadow_expires_at"] == (utc_iso(said + shadow.IDLE) if on else None)
     assert bool(test_user.pref(PrefKey.ShadowModels)) == on
 
 
