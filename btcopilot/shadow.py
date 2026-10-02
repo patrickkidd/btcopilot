@@ -48,10 +48,10 @@ QUEUE = "shadow"
 # are not: they move to the real record so the spend stays visible.
 SCRATCH_ROWS = (AccessRight, Change, Interaction, Observation, ProductEvent)
 
-# How far back the cost of a shadow run is averaged, and what one is guessed
-# to cost when none ran in that time.
+# How far back the cost of a coach turn's shadows is averaged, and what they
+# are guessed to cost when none ran in that time.
 RECENT = datetime.timedelta(days=30)
-PER_RUN_GUESS = Decimal("0.19")
+PER_TURN_GUESS = Decimal("0.19")
 
 # Conversation Feedback turns itself off this long after the latest of the
 # coach's last reply being written, the person's last vote and the switch going
@@ -230,18 +230,25 @@ def estimate(turns: list[Statement], model: str) -> tuple[Decimal, int]:
 
 
 def spend(now: datetime.datetime) -> dict:
-    """Across everyone: what one shadow run cost on average over the last 30
-    days, or a guess when none ran, and what the shadows have cost this
-    calendar month."""
-    shadows = db.session.query(
-        func.sum(ModelCall.cost_usd), func.count(func.distinct(ModelCall.turn_id))
-    ).filter(ModelCall.purpose == Purpose.Shadow)
-    usd, runs = shadows.filter(ModelCall.created_at >= now - RECENT).one()
-    month = shadows.filter(
-        ModelCall.created_at >= now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    ).one()[0]
+    """Across everyone: what all the shadows of one coach turn cost together
+    on average over the last 30 days, or a guess when none ran, and what the
+    shadows have cost this calendar month."""
+    usd, turns = (
+        db.session.query(
+            func.sum(ShadowTurn.cost_usd), func.count(func.distinct(ShadowTurn.turn_id))
+        )
+        .filter(ShadowTurn.cost_usd.isnot(None), ShadowTurn.created_at >= now - RECENT)
+        .one()
+    )
+    month = db.session.scalar(
+        select(func.sum(ModelCall.cost_usd)).where(
+            ModelCall.purpose == Purpose.Shadow,
+            ModelCall.created_at
+            >= now.replace(day=1, hour=0, minute=0, second=0, microsecond=0),
+        )
+    )
     return {
-        "per_turn_usd": round(float(usd / runs if runs else PER_RUN_GUESS), 2),
+        "per_turn_usd": round(float(usd / turns if turns else PER_TURN_GUESS), 2),
         "month_usd": round(float(month or 0), 2),
     }
 

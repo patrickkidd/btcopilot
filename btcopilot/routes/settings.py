@@ -11,6 +11,7 @@ from btcopilot import auth, shadow
 from btcopilot.routes import bp
 from btcopilot.licence import professional
 from btcopilot.routes.diagrams import diagrams_payload
+from btcopilot.discussions import utc_iso
 from btcopilot.extensions import db
 from btcopilot.models.preferences import SHADOW_CANDIDATES, PrefKey
 
@@ -27,7 +28,7 @@ class SignInMethod(enum.StrEnum):
 def _preferences(user) -> dict:
     expires = shadow.expiry(user, datetime.datetime.utcnow())
     payload = {key.value: user.pref(key) for key in PrefKey}
-    payload["shadow_expires_at"] = expires and expires.isoformat()
+    payload["shadow_expires_at"] = expires and utc_iso(expires)
     payload["first_name"] = user.first_name
     payload["last_name"] = user.last_name
     payload["birthdate"] = user.birthdate.isoformat() if user.birthdate else None

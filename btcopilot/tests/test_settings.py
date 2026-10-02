@@ -5,9 +5,9 @@ import pytest
 
 import btcopilot
 from btcopilot import shadow
-from btcopilot.discussions import open_session
+from btcopilot.discussions import open_session, utc_iso
 from btcopilot.extensions import db
-from btcopilot.models import ModelCall, Purpose, Statement
+from btcopilot.models import ModelCall, Purpose, ShadowTurn, Statement
 from btcopilot.models.preferences import SHADOW_CANDIDATES, PrefKey
 from btcopilot.review.models import Pick, PickChoice, PickSource
 from btcopilot.tests.conftest import csrf_token
@@ -24,6 +24,23 @@ def shadows(web, token, models):
         json={PrefKey.ShadowModels.value: models},
         headers={"X-CSRFToken": token},
     )
+
+
+def ran(said, turn_id, model, usd):
+    """One shadow of a coach turn, with what it spent in the ledger."""
+    discussion = said.discussion
+    row = ShadowTurn(
+        turn_id=turn_id,
+        user_id=discussion.user_id,
+        diagram_id=discussion.diagram_id,
+        discussion_id=discussion.id,
+        statement_id=said.id,
+        model=model,
+        cost_usd=Decimal(usd),
+    )
+    db.session.add(row)
+    db.session.flush()
+    spent(discussion.user, f"shadow-{row.id}", usd)
 
 
 def spent(user, turn_id, usd):
@@ -63,9 +80,16 @@ def test_an_auditor_turns_shadows_on_and_only_an_admin_sees_their_cost(
     assert "shadow_cost" not in body
 
     test_user.roles = btcopilot.ROLE_ADMIN
-    spent(test_user, "shadow-1", "0.30")
-    spent(test_user, "shadow-1", "0.10")
-    spent(test_user, "shadow-2", "0.20")
+    discussion = open_session(test_user, test_user.free_diagram)
+    said = Statement(
+        discussion_id=discussion.id, speaker_id=discussion.chat_ai_speaker_id, text="Hi"
+    )
+    db.session.add(said)
+    db.session.flush()
+    # the first turn ran on both models, the second on one
+    ran(said, "t1", "sonnet", "0.30")
+    ran(said, "t1", "gemini-pro", "0.10")
+    ran(said, "t2", "sonnet", "0.20")
     db.session.commit()
     body = web.get("/app/preferences").get_json()
     assert body["shadow_cost"] == {"per_turn_usd": 0.3, "month_usd": 0.6}
@@ -93,7 +117,7 @@ def test_shadows_turn_off_five_minutes_after_the_coach_last_replied(
     body = web.get("/app/preferences").get_json()
     assert body[PrefKey.ShadowModels.value] == (["sonnet"] if on else [])
     assert body["shadow_expires_at"] == (
-        (said + shadow.IDLE).isoformat() if on else None
+        utc_iso(said + shadow.IDLE) if on else None
     )
     assert bool(test_user.pref(PrefKey.ShadowModels)) == on
 
@@ -129,4 +153,4 @@ def test_a_vote_keeps_shadows_on_five_minutes_after_it(web, test_user):
     db.session.commit()
     body = web.get("/app/preferences").get_json()
     assert body[PrefKey.ShadowModels.value] == ["sonnet"]
-    assert body["shadow_expires_at"] == (voted + shadow.IDLE).isoformat()
+    assert body["shadow_expires_at"] == utc_iso(voted + shadow.IDLE)
