@@ -132,6 +132,28 @@ test.describe("the sessions drawer, as Patrick", () => {
     await expect(page.locator(`#sessions-sheet .row.traced[data-id="${session.id}"]`)).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`/app/sessions/${session.id}$`));
   });
+
+  // R-0055
+  test("with the page's worker in control, a session's address and forward to the account view still show the app", async ({
+    page,
+  }) => {
+    await page.goto("/app/");
+    await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+    const [session] = (await (await page.request.get("/app/sessions")).json()) as { id: number }[];
+    const opened = await page.goto(`/app/sessions/${session.id}`);
+    expect(opened!.fromServiceWorker()).toBe(true);
+    await expect(page.locator("#sessions-sheet")).toBeVisible();
+
+    // the account view reads its own address, and the browser kept that read
+    const account = page.locator('.sn-pane[data-page="root"]');
+    await page.goto("/app/account");
+    await expect(account).toBeVisible();
+    await page.waitForLoadState("networkidle");
+    await page.goBack();
+    await expect(page.locator("#sessions-sheet")).toBeVisible();
+    await page.goForward();
+    await expect(account).toBeVisible();
+  });
 });
 
 test.describe("the account view's Notices", () => {

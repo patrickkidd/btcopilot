@@ -39,7 +39,11 @@ def test_a_browser_opening_an_address_in_the_app_gets_the_page_there(web):
         assert "window.BOOTSTRAP" in opened.get_data(as_text=True)
     assert web.get("/app/nowhere", headers=OPENED).status_code == 404
     # the page's own reads at the same paths still answer the page
-    assert web.get("/app/account").is_json
+    read = web.get("/app/account")
+    assert read.is_json
+    # and a browser keeps the two apart when it goes back or forward
+    assert "Sec-Fetch-Dest" in read.vary
+    assert "Sec-Fetch-Dest" in web.get("/app/account", headers=OPENED).vary
 
 
 def test_an_address_opened_signed_out_signs_in_and_comes_back_to_it(flask_app):
