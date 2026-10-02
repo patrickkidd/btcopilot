@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { EXACT, flask, placeCut, shell, stateFor, toTheirDiagram, backToMine, username, boxOf } from "./setup";
+import { EXACT, flask, placeCut, shell, stateFor, toTheirDiagram, backToMine, username, boxOf, inside } from "./setup";
 
 /** The settings stack: the avatar in the title row, and the pages it pushes.
  * Every value has one home, and the chat view's speak-replies row is the one
@@ -597,6 +597,55 @@ test.describe("the coding and quality sections", () => {
       await expect(page.locator(".sn-pane.in")).toHaveAttribute("data-page", "root");
       await expect(page.locator("#title")).toHaveText("Account");
     }
+  });
+
+  // R-0259, R-0271
+  test("the coding screen opened from the task card is titled with the conversation and how far it runs, all of it inside the title row", async ({
+    page,
+  }) => {
+    await as(page, "auditor");
+    const coded = await page.evaluate(
+      () => (window as unknown as { BOOTSTRAP: { diagram: { id: number } } }).BOOTSTRAP.diagram.id,
+    );
+    const session = "The long conversation about the move to the coast";
+    await page.route(
+      (url) => url.pathname === "/review/tasks",
+      (route) =>
+        route.fulfill({
+          json: {
+            task: { kind: "code", cut_id: 1, coding_id: 7, meeting_date: null, title: `Code ${session}`, detail: "", ready: true },
+            done: [],
+          },
+        }),
+    );
+    await page.route(
+      (url) => url.pathname === "/review/codings/7/thread",
+      (route) =>
+        route.fulfill({
+          json: { coding_id: 7, cut_id: 1, diagram_id: coded, done_at: null, meeting_date: null, session, cut_day: "Sep 29", agreed: null, turns: [] },
+        }),
+    );
+    await row(page, "Your coding task").click();
+    await page.locator(".sn-pane.in #task-screen .addbtn").click();
+    await expect(page.locator("#coding-screen")).toBeVisible();
+    const title = page.locator("#title");
+    const name = title.locator(".ttl-name");
+    const tail = title.locator(".ttl-tail");
+    const cut = () => name.evaluate((el) => el.scrollWidth > el.clientWidth);
+    const size = page.viewportSize()!;
+    for (const [width, shortened] of [[390, true], [1024, false]] as const) {
+      await page.setViewportSize({ width, height: size.height });
+      await expect(name).toHaveText(session);
+      await expect(tail).toHaveText(" · up to Sep 29");
+      await inside(title, page.locator(".titlerow"));
+      await inside(tail, title);
+      const [end, next] = [await boxOf(title), await boxOf(page.locator("#coding-info"))];
+      expect(end.x + end.width).toBeLessThanOrEqual(next.x);
+      // at phone width the name gives way with an ellipsis and the tail stays
+      expect(await cut()).toBe(shortened);
+      await expect(name).toHaveCSS("text-overflow", "ellipsis");
+    }
+    await page.setViewportSize(size);
   });
 
   // R-0250, R-0258

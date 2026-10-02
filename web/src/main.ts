@@ -37,7 +37,7 @@ import {
   type PicState,
   type Sel,
 } from "./caption";
-import { $, CLUSTER, el, flash, pathRow, setTitle, slideOver } from "./dom";
+import { $, CLUSTER, el, flash, pathRow, setTitle, slideOver, type Title } from "./dom";
 import { address, beyond, linked, parse, PICTURE, Place, settled, UNDATED } from "./place";
 import { Return, returnKey, touch } from "./keyboard";
 import { Drawer } from "./drawer";
@@ -449,9 +449,7 @@ const coding = new Coding(
   {
     onDone: () => void openTask(),
     onGuidelines: () => void openRules(),
-    onTitle: (title) => {
-      setTitle(title);
-    },
+    onTitle: (title) => entitle(title),
   },
 );
 
@@ -490,9 +488,7 @@ const ballot = new Ballot(
   $("ballot-body"),
   $("overlay"),
   {
-    onTitle: (title) => {
-      setTitle(title);
-    },
+    onTitle: (title) => entitle(title),
     onDone: () => void openTask(),
     onTranscript: (statementId) => void openLine(statementId),
   },
@@ -570,9 +566,7 @@ const meeting = new Meeting(
   $("meeting-bar"),
   $("overlay"),
   {
-    onTitle: (title) => {
-      setTitle(title);
-    },
+    onTitle: (title) => entitle(title),
     onRatified: (cutId) => void openResult(cutId, openAgenda),
   },
 );
@@ -580,9 +574,7 @@ const meeting = new Meeting(
 /** What the meeting produced, which everyone who took part can read once the
  * cut is ratified (R-0275). */
 const result = new ResultScreen($("result-stats"), $("result-body"), {
-  onTitle: (title) => {
-    setTitle(title);
-  },
+  onTitle: (title) => entitle(title),
 });
 
 async function openMeeting(cutId: number): Promise<void> {
@@ -692,6 +684,17 @@ const UNNAMED = $("title").textContent ?? "Your family";
  * when the settings stack closes. */
 const familyTitle = (): string => store.current().diagram?.name ?? UNNAMED;
 
+/** What the coding, vote, meeting or result screen on top calls itself. The
+ * account view's stack and a redrawn diagram both hand the title row back, and
+ * it goes back to this while one of those screens is up, to the family name
+ * otherwise. */
+let named: string | Title | null = null;
+const retitle = (): void => setTitle(named ?? familyTitle());
+function entitle(title: string | Title | null): void {
+  named = title;
+  retitle();
+}
+
 /** What names the diagram open: the title row and the drawer's (frame 2), the
  * one line that says the diagram is someone else's with the way back to the
  * admin's own (the page hides whatever writes), and the product events. */
@@ -702,7 +705,7 @@ store.watch({
     $("menu-title").textContent = familyTitle();
     // The settings stack owns the title while it is open, so only write it when
     // the chat is what the title row is naming.
-    if ($("settings-back").hidden) $("title").textContent = familyTitle();
+    if ($("settings-back").hidden) retitle();
     document.documentElement.dataset.access = diagram?.access ?? Access.Own;
     $("viewing").hidden = !looking();
     $("viewing-cut").hidden = !looking() || selecting.selecting();
@@ -734,7 +737,7 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
   onTitle: (title, sub) => {
     // The title row belongs to whatever is on top of it, so the chat's own
     // controls step aside while the settings stack is up.
-    if (title === null) $("title").textContent = familyTitle();
+    if (title === null) retitle();
     else setTitle(title);
     $("account").hidden = title !== null;
     // the guidelines are read from the task card too (R-0275, R-0278)
@@ -1528,6 +1531,7 @@ function crumb(): void {
 function screen(which: Screen): void {
   // the account view's stack is over the chat, and every other screen is
   // opened instead of it
+  if (!CODING_SCREENS.includes(which) && named !== null) entitle(null);
   if (which !== Screen.Chat) settings.close();
   if (which !== here) track.screen(which);
   // The list comes up over the chat rather than replacing it, so the chat is
