@@ -27,6 +27,7 @@ R-0058 | WAIVED | a post-mortem of a discarded tab; the lesson is carried by R-0
 R-0059 | WAIVED | a design principle; judged by eye
 R-0066 | WAIVED | a design principle of simplicity; judged by eye
 R-0069 | TEST OWED | not built: the editor has no banner saying editing by chat also works
+R-0083 | TEST OWED | round-trip tests on the desktop format return with the one-way import from the old format (Patrick, 2026-10-02)
 R-0107 | WAIVED | a rejected mockup option; nothing in the app to observe
 R-0108 | WAIVED | a rejected design round; nothing in the app to observe
 R-0110 | WAIVED | a rejected mockup option; nothing in the app to observe
