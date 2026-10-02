@@ -328,6 +328,7 @@ export class Chat {
     written: (text) => this.written(tokenize(text), null),
     hold: (on) => this.hold(on),
     scroll: () => this.scroll(),
+    end: () => this.toEnd(),
   };
 
   /** A stored coach reply whose turn has `count` shadow replies (R-0636);
@@ -695,6 +696,7 @@ export class Chat {
   toEnd(): void {
     this.stuck = true;
     this.scroll();
+    this.strip.scrolled(true, false);
     const until = performance.now() + Chat.SETTLE_MS;
     const again = () => {
       if (!this.stuck) return;

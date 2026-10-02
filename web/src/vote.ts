@@ -55,6 +55,8 @@ export interface Host {
   hold(on: boolean): void;
   /** The thread follows the bubble down as it grows. */
   scroll(): void;
+  /** The thread goes to its last words, wherever the reader had it. */
+  end(): void;
 }
 
 /** How a turn's picks were voted, read back once the page is loaded again: a
@@ -264,6 +266,7 @@ export class Vote {
     this.bubble.querySelector(".who")!.textContent = "Coach";
     this.fold(this.replies.length - 1);
     this.host.hold(false);
+    this.host.end();
   }
 
   private fold(count: number): void {

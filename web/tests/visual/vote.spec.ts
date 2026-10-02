@@ -112,6 +112,10 @@ test("three replies are voted on unnamed, then the coach's is headed Coach with 
   await expect(bubble.locator(".who")).toHaveText("Coach");
   await expect(bubble).toHaveClass(/\bfb\b/);
   await expect(bubble.locator(".vt-fold .n")).toHaveText("2");
+  // R-0636
+  await expect
+    .poll(() => page.locator("#chat").evaluate((list) => list.scrollHeight - list.clientHeight - list.scrollTop))
+    .toBeLessThanOrEqual(24);
   await expect(page.locator("#send")).toBeEnabled();
   await expect(page.locator("#composer")).toHaveAttribute("contenteditable", "true");
   expect(cast.sort((a, b) => Number(a.id) - Number(b.id))).toEqual([
