@@ -82,6 +82,7 @@ describe("an event row's kind", () => {
     expect(born("born \u00b7 half brother born", "half brother born")).toContain('<span class="kw">born</span> \u00b7 half brother born');
     expect(born("born \u00b7 Robert", "born \u00b7 Robert")).toContain('<span class="kw">born</span> \u00b7 Robert');
     expect(born("Robert was born in Reno", "Robert was born in Reno")).toContain('Robert was <span class="kw">born</span> in Reno');
+    expect(born("born1905", "born1905")).toContain('<span class="kw">born</span>1905');
   });
 });
 
