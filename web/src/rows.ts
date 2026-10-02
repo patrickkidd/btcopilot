@@ -92,28 +92,31 @@ export function kindMark(event: TimelineEvent, tree: Tree): string {
 
 /** The words the server's label may say a kind with (KIND_FORMS in timeline.py):
  * its own word in front of a description, or the description's own when that
- * already opens by saying the kind. */
+ * already opens by saying the kind. A word there is a run of letters, so
+ * "born1905" says born. */
+const forms = (...words: string[]) => new RegExp(`(^|[^a-z])(${words.join("|")})(?![a-z])`, "i");
 const KIND_FORMS: Record<string, RegExp> = {
-  [EventKind.Birth]: /\b(born|birth)\b/i,
-  [EventKind.Adopted]: /\b(adopted|adoption|adopts)\b/i,
-  [EventKind.Married]: /\b(married|marriage|marries|marry|wed|wedding)\b/i,
-  [EventKind.Separated]: /\b(separated|separation|separate|separates)\b/i,
-  [EventKind.Divorced]: /\b(divorced|divorce|divorces)\b/i,
-  [EventKind.Bonded]: /\b(bonded|bond|bonds)\b/i,
-  [EventKind.Death]: /\b(died|dies|death|dead|passed)\b/i,
+  [EventKind.Birth]: forms("born", "birth"),
+  [EventKind.Adopted]: forms("adopted", "adoption", "adopts"),
+  [EventKind.Married]: forms("married", "marriage", "marries", "marry", "wed", "wedding"),
+  [EventKind.Separated]: forms("separated", "separation", "separate", "separates"),
+  [EventKind.Divorced]: forms("divorced", "divorce", "divorces"),
+  [EventKind.Bonded]: forms("bonded", "bond", "bonds"),
+  [EventKind.Death]: forms("died", "dies", "death", "dead", "passed"),
 };
 
 /** The first line: the server's words for the event, with the word that says
  * its kind in the data colour, on every row of a kind that has one. */
 function title(event: TimelineEvent): string {
-  const forms = KIND_FORMS[event.kind ?? ""];
-  if (!forms) return esc(event.label);
-  const found = forms.exec(event.label);
+  const said = KIND_FORMS[event.kind ?? ""];
+  if (!said) return esc(event.label);
+  const found = said.exec(event.label);
   if (!found) throw new Error(`event ${event.id} is ${event.kind} but its label "${event.label}" does not say so`);
-  const end = found.index + found[0].length;
+  const start = found.index + found[1].length;
+  const end = start + found[2].length;
   return (
-    esc(event.label.slice(0, found.index)) +
-    `<span class="kw">${esc(found[0])}</span>` +
+    esc(event.label.slice(0, start)) +
+    `<span class="kw">${esc(found[2])}</span>` +
     esc(event.label.slice(end))
   );
 }
