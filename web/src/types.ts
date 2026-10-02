@@ -399,6 +399,8 @@ export interface Reply {
   events: TurnEvent[];
   turn_id: string;
   discussion_id: number;
+  /** The reader stopped it: the words are what it had typed by then. */
+  stopped?: boolean;
 }
 
 /** One picture of a play-by-play: a date, the events on it, the fact line and
@@ -1020,6 +1022,8 @@ export interface Cast {
   right_acceptable: boolean;
   note: string;
   source: PickSource;
+  /** The side of the pair the reader saw first. */
+  shown: PickChoice.Left | PickChoice.Right;
 }
 
 export interface ModelPicks {

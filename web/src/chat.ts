@@ -26,6 +26,9 @@ export interface ChatHandlers {
   label(chip: Chip): string;
   /** The card that asks whether two people are one, drawn from the record. */
   merge(chip: Chip): string;
+  /** The message box opened again after a vote: a message held while the coach
+   * was replying goes now. */
+  onOpen(): void;
 }
 
 /** The beat after a chip's sentence has been written, before the next chip
@@ -102,6 +105,8 @@ const PART = /\[\[[^\]]*$/;
 
 /** What the message box says while a vote is open (R-0636). */
 const VOTE_FIRST = "Vote first, then type";
+/** Under a message sent while the coach is still replying (R-0636). */
+const HELD = "Sends when the coach finishes";
 
 /** One thing the coach did, as a plain line above its words. */
 const did = (line: Line) => el("div", "did", html(line));
@@ -142,6 +147,11 @@ export class Chat {
   shadows = 0;
   /** When the shadows turn themselves off unless a message comes first. */
   expires: number | null = null;
+  /** The words in the box were sent while the coach was replying, and go the
+   * moment the reply ends. */
+  held = false;
+  private bar: HTMLElement;
+  private button: HTMLButtonElement;
 
   constructor(
     private list: HTMLElement,
@@ -172,6 +182,13 @@ export class Chat {
       this.handlers.onChip(chipOf(button));
     };
     this.ph = composer.dataset.ph!;
+    this.bar = composer.closest<HTMLElement>(".inbar")!;
+    this.button = this.bar.querySelector<HTMLButtonElement>(".send")!;
+    composer.after(el("div", "held", HELD));
+    composer.addEventListener("input", () => {
+      if (this.draft() === "") this.unhold();
+      this.mark();
+    });
     // the chat box stays above the phone's keyboard, however it came up
     fit();
     this.strip = fold(this.composer, this.list.closest<HTMLElement>(".screen")!, () => this.toEnd());
@@ -271,6 +288,7 @@ export class Chat {
 
   clear(): void {
     this.list.innerHTML = "";
+    this.unhold();
     this.hold(false);
     this.stuck = true;
   }
@@ -359,11 +377,47 @@ export class Chat {
 
   /** The message box closed while a vote is open, and open again after. */
   private hold(on: boolean): void {
-    const bar = this.composer.closest<HTMLElement>(".inbar")!;
-    bar.classList.toggle("off", on);
+    this.bar.classList.toggle("off", on);
     this.composer.contentEditable = String(!on);
     this.composer.dataset.ph = on ? VOTE_FIRST : this.ph;
-    bar.querySelector<HTMLButtonElement>(".send")!.disabled = on;
+    this.button.disabled = on;
+    if (!on && this.held) this.handlers.onOpen();
+  }
+
+  /** Whether a vote has the message box closed. */
+  voting(): boolean {
+    return this.bar.classList.contains("off");
+  }
+
+  /** While the coach replies the box stays open to type in, and its button
+   * stops the reply unless there are new words in the box to send after it. */
+  running(on: boolean): void {
+    this.bar.classList.toggle("run", on);
+    this.mark();
+  }
+
+  /** Whether a tap on the button stops the reply rather than sends. */
+  stops(): boolean {
+    return this.bar.classList.contains("run") && (this.held || this.draft() === "");
+  }
+
+  /** The words in the box wait for the reply to end. */
+  keep(): void {
+    this.held = true;
+    this.bar.classList.add("hold");
+    this.mark();
+  }
+
+  unhold(): void {
+    this.held = false;
+    this.bar.classList.remove("hold");
+    this.mark();
+  }
+
+  private mark(): void {
+    const stop = this.stops();
+    this.bar.classList.toggle("stop", stop);
+    this.button.setAttribute("aria-label", stop ? "Stop" : "Send");
   }
 
   /** A line the app says rather than either speaker, centred between the
@@ -614,6 +668,7 @@ export class Chat {
     for (const button of fragment.querySelectorAll<HTMLElement>(".chip")) button.contentEditable = "false";
     range.insertNode(fragment);
     selection.collapseToEnd();
+    this.mark();
   }
 
   /** A chip in the chat box is a place in the words, not a control: a tap
@@ -645,6 +700,7 @@ export class Chat {
 
   resetDraft(): void {
     this.composer.innerHTML = "";
+    this.unhold();
   }
 
   /** How far from the bottom still counts as watching the newest words. */

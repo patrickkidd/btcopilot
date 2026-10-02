@@ -307,6 +307,7 @@ const chat = new Chat($("chat"), $("composer"), {
     actions();
   },
   onPlay: replay,
+  onOpen: () => flush(),
 });
 
 /** An event or a person carried from its detail card into the message box:
@@ -1211,10 +1212,35 @@ let inFlight = false;
 
 async function send(): Promise<void> {
   const statement = chat.draft();
-  if (!statement || inFlight) return;
+  if (!statement) return;
+  // sent while the coach replies, it waits in the box for the reply to end,
+  // and never changes the reply under way (R-0636)
+  if (inFlight) return chat.keep();
   await questions.sending(statement);
   chat.resetDraft();
   post(statement);
+}
+
+/** A message held while the coach replied goes once the reply has ended and
+ * no vote has the box closed. */
+function flush(): void {
+  if (chat.held && !inFlight && !chat.voting()) void send();
+}
+
+/** The reply the coach is writing ends here: what it has typed so far is its
+ * reply, and the stream brings the end as it would any other (R-0636). */
+async function halt(): Promise<void> {
+  if (onTurn === null) return;
+  try {
+    await api.stop(onTurn);
+  } catch (error) {
+    toast(whatFailed(error));
+  }
+}
+
+function flying(on: boolean): void {
+  inFlight = on;
+  chat.running(on);
 }
 
 /** The reader's words go into the thread as theirs and on to the coach. */
@@ -1248,7 +1274,7 @@ async function begin(
 ): Promise<Started | null> {
   // One turn at a time: a second send while the coach is answering would store
   // the words again.
-  inFlight = true;
+  flying(true);
   chat.busy(true);
   speech.hush();
   // words sent on one diagram are never followed on the next one opened
@@ -1259,7 +1285,7 @@ async function begin(
     started = await ask();
   } catch (error) {
     if (!live()) return null;
-    inFlight = false;
+    flying(false);
     chat.busy(false);
     chat.warn(whatFailed(error), again);
     return null;
@@ -1287,7 +1313,7 @@ function follow(turnId: string): void {
   // the line draws it (R-0539)
   picture.untouch();
   onTurn = turnId;
-  inFlight = true;
+  flying(true);
   chat.busy(true);
   // the turn belongs to the diagram it was said on: opening another closes its
   // stream, and nothing already queued is drawn into the new one's chat
@@ -1329,6 +1355,12 @@ function follow(turnId: string): void {
       });
   };
 
+  // a message held while the coach replied goes once the reply is drawn
+  const last = (work: () => Promise<void> | void) => {
+    step(work);
+    step(flush);
+  };
+
   const take = feed({
     note: (line) => step(() => void opened().note(line)),
     notes: (notes) => step(() => opened().notes(notes)),
@@ -1352,7 +1384,7 @@ function follow(turnId: string): void {
     text: (text) => step(() => void opened().append(text, (chip) => aim(chip))),
     reset: () => step(() => void opened().reset()),
     done: (reply) =>
-      step(async () => {
+      last(async () => {
         const said = opened();
         said.stamp(reply.statement_id);
         newest = reply.statement_id;
@@ -1361,7 +1393,8 @@ function follow(turnId: string): void {
         // a reply held for a vote is not read aloud: it would say which is the coach's
         if (speak.checked && !chat.feedback()) speech.say(reply.statement);
         said.settle(reply.statement, (chip) => aim(chip));
-        said.vote(turnId);
+        // a stopped reply has no shadows to vote on
+        if (!reply.stopped) said.vote(turnId);
         stopFollowing();
         if (!(await store.refresh(Part.Record, Part.Sittings))) return;
         void notices.refresh();
@@ -1372,7 +1405,7 @@ function follow(turnId: string): void {
           reports.offer(offered.kind, offered.words, turnId, reply.statement_id, reply.discussion_id);
       }),
     failed: (message) =>
-      step(() => {
+      last(() => {
         stopFollowing();
         chat.busy(false);
         // What it did stays; the words it had begun are not kept, so they go.
@@ -1383,7 +1416,7 @@ function follow(turnId: string): void {
         chat.warn(message, () => void resume(turnId));
       }),
     refused: (message) =>
-      step(() => {
+      last(() => {
         stopFollowing();
         const said = opened();
         said.reset();
@@ -1404,7 +1437,7 @@ function follow(turnId: string): void {
 function stopFollowing(): void {
   store.release();
   onTurn = null;
-  inFlight = false;
+  flying(false);
 }
 
 /** A page that has just loaded, or come back to the front, or a diagram just
@@ -1602,7 +1635,7 @@ $("composer").addEventListener("keydown", (e) => {
   selection.removeAllRanges();
   selection.addRange(range);
 });
-$("send").addEventListener("click", () => void send());
+$("send").addEventListener("click", () => void (chat.stops() ? halt() : send()));
 $("menu-close").addEventListener("click", () => {
   track.tap(Feature.CloseMenu);
   const field = $("menu-search") as HTMLInputElement;

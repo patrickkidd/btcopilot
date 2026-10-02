@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { inside, stateFor } from "./setup";
-import { mockTurn } from "./turn";
+import { mockTurn, SEND, STREAM } from "./turn";
 
 /** Chips have to stay inside their bubble whatever the record calls things, and
  * the play-by-play has to light each chip as its move is drawn. A reply ends in
@@ -397,5 +397,88 @@ test.describe("the coach's notes", () => {
     await inside(bubble.locator(".did"), bubble);
     await bubble.locator(":scope > .info").click();
     await inside(page.locator(".notes-head > .cardx"), page.locator(".notes-head"));
+  });
+});
+
+test.describe("the message box while the coach replies", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  // R-0636
+  test("a message sent during a reply waits in the box and goes after Done", async ({ page }) => {
+    await page.goto("/app/");
+    await expect(page.locator("#view .ss")).toBeVisible();
+    let answer: () => void = () => {};
+    const held = new Promise<void>((go) => (answer = go));
+    await mockTurn(page, { statement: "Noted.", statement_id: 9301, hold: held });
+    const sent: string[] = [];
+    page.on("request", (r) => {
+      if (SEND.test(r.url()) && r.method() === "POST") sent.push(r.postDataJSON().statement);
+    });
+    await page.locator("#composer").fill("My dad moved out.");
+    await page.locator("#send").click();
+    await expect(page.locator(".bub.coach.typing")).toBeVisible();
+    await expect(page.locator("#send")).toHaveAttribute("aria-label", "Stop");
+
+    await page.locator("#composer").fill("He took the dog.");
+    await expect(page.locator("#send")).toHaveAttribute("aria-label", "Send");
+    await page.locator("#composer").press("Enter");
+    await expect(page.locator("#composer")).toHaveText("He took the dog.");
+    await expect(page.locator(".field > .held")).toHaveText("Sends when the coach finishes");
+    await expect(page.locator("#send")).toHaveAttribute("aria-label", "Stop");
+    expect(sent).toEqual(["My dad moved out."]);
+
+    answer();
+    await expect(page.locator(".bub.user").last()).toHaveText("He took the dog.");
+    expect(sent).toEqual(["My dad moved out.", "He took the dog."]);
+    await expect(page.locator(".field > .held")).toBeHidden();
+  });
+
+  // R-0636
+  test("Stop ends the reply where it stands", async ({ page }) => {
+    await page.goto("/app/");
+    await expect(page.locator("#view .ss")).toBeVisible();
+    await page.route(SEND, (route) =>
+      route.fulfill({ status: 202, json: { turn_id: "t1", discussion_id: 1, statement_id: 9300 } }),
+    );
+    let stopped = false;
+    await page.route(/\/app\/turns\/t1\/stop$/, (route) => {
+      stopped = true;
+      return route.fulfill({ json: { turn_id: "t1", statement_id: 9301 } });
+    });
+    // the words so far, then nothing until the stop; the browser comes back
+    // every 100ms saying where it got to
+    await page.route(STREAM, (route) => {
+      const last = Number(route.request().headers()["last-event-id"] ?? 0);
+      const frames = [
+        `id: 1\ndata: ${JSON.stringify({ type: "text", text: "So your dad" })}\n\n`,
+        `id: 2\ndata: ${JSON.stringify({
+          type: "done",
+          statement: "So your dad",
+          statement_id: 9301,
+          discussion_id: 1,
+          kind: "turn",
+          views: null,
+          events: [],
+          turn_id: "t1",
+          stopped: true,
+        })}\n\n`,
+      ];
+      return route.fulfill({
+        status: 200,
+        headers: { "content-type": "text/event-stream", "cache-control": "no-cache" },
+        body: "retry: 100\n\n" + frames.slice(last, stopped ? 2 : 1).join(""),
+      });
+    });
+    await page.locator("#composer").fill("My dad moved out.");
+    await page.locator("#send").click();
+    const bubble = page.locator(".bub.coach").last();
+    await expect(bubble.locator(".words")).toHaveText("So your dad");
+    await expect(bubble).toHaveClass(/\btyping\b/);
+
+    await page.locator("#send").click();
+    await expect(bubble).not.toHaveClass(/\btyping\b/);
+    expect(stopped).toBe(true);
+    await expect(bubble.locator(".words")).toHaveText("So your dad");
+    await expect(page.locator("#send")).toHaveAttribute("aria-label", "Send");
   });
 });

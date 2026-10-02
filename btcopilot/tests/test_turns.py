@@ -255,10 +255,45 @@ def test_a_page_that_stops_listening_mid_turn_leaves_the_turn_to_finish(
         "My sister is Nell.",
         "Tell me about Nell.",
     ]
-    assert TurnEvent.query.filter_by(
-        turn_id=body["turn_id"], kind=TurnEventKind.Done.value
-    ).count() == 1
+    assert (
+        TurnEvent.query.filter_by(
+            turn_id=body["turn_id"], kind=TurnEventKind.Done.value
+        ).count()
+        == 1
+    )
     assert turnlog.running(discussion.id) is None
+
+
+def test_stop_kills_the_worker_and_keeps_the_words_typed_so_far(
+    web, token, family, monkeypatch
+):
+    # R-0636
+    coach(monkeypatch, said("Tell me about Nell."))
+    with patch("btcopilot.turns.enqueue"):
+        body = post(web, token).get_json()
+    turn_id = body["turn_id"]
+    turnlog.append(turn_id, {"type": TurnEventKind.Text.value, "text": "Tell me "})
+    turnlog.append(
+        turn_id, {"type": TurnEventKind.Text.value, "text": "about [[person:1|Wr"}
+    )
+
+    with patch("btcopilot.turns.kill") as kill:
+        response = web.post(
+            f"/app/turns/{turn_id}/stop", headers={"X-CSRFToken": token}
+        )
+    assert response.status_code == 200
+    kill.assert_called_once_with(turn_id)
+
+    discussion = db.session.get(Discussion, body["discussion_id"])
+    assert [s.text for s in discussion.statements] == [
+        "My sister is Nell.",
+        "Tell me about",
+    ]
+    assert logged(turn_id)[-1]["type"] == TurnEventKind.Done.value
+    assert logged(turn_id)[-1]["stopped"] is True
+    assert turnlog.running(discussion.id) is None
+    again = web.post(f"/app/turns/{turn_id}/stop", headers={"X-CSRFToken": token})
+    assert again.status_code == 409
 
 
 def test_another_users_turn_is_not_found(web, token, family, monkeypatch, test_user_2):

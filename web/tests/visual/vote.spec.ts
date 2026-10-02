@@ -133,8 +133,8 @@ test("three replies are voted on unnamed, then the coach's is headed Coach with 
   await expect(page.locator("#send")).toBeEnabled();
   await expect(page.locator("#composer")).toHaveAttribute("contenteditable", "true");
   expect(cast.sort((a, b) => Number(a.id) - Number(b.id))).toEqual([
-    { id: 71, choice: "right", left_acceptable: true, right_acceptable: true, note: "Third asks two things at once", source: "chat" },
-    { id: 72, choice: "right", left_acceptable: false, right_acceptable: true, note: "Third asks two things at once", source: "chat" },
+    { id: 71, choice: "right", left_acceptable: true, right_acceptable: true, note: "Third asks two things at once", source: "chat", shown: "left" },
+    { id: 72, choice: "right", left_acceptable: false, right_acceptable: true, note: "Third asks two things at once", source: "chat", shown: "right" },
   ]);
 
   await bubble.locator(".vt-fold").click();

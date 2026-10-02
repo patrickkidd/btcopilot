@@ -7,6 +7,7 @@ page follows that log. A page that reloads reads the log from the start.
 """
 
 import logging
+import re
 import uuid
 
 import btcopilot
@@ -32,6 +33,17 @@ from btcopilot.turnlog import TurnEventKind
 
 _log = logging.getLogger(__name__)
 
+# A chip the stop cut off before its closing brackets.
+CUT = re.compile(r"\[\[[^\]]*$")
+
+# What the thread never shows again: the words are the reply itself, and the
+# record's own edits are in the change log.
+UNKEPT = (
+    TurnEventKind.Text.value,
+    TurnEventKind.TextReset.value,
+    TurnEventKind.RecordPatch.value,
+)
+
 TASK = "coach_turn"
 
 BUSY = "the coach is still answering the last message"
@@ -50,6 +62,10 @@ class Unfinished(Exception):
 class Busy(Exception):
     """A second message while the coach is still on the last one. Two turns on
     one session would write over each other's record."""
+
+
+class Idle(Exception):
+    """A stop for a turn that is not running."""
 
 
 def start(discussion: Discussion, statement: str) -> dict:
@@ -93,6 +109,79 @@ def resume(discussion: Discussion, turn_id: str) -> dict:
     turnlog.forget(turn_id)
     enqueue(turn_id, discussion.id, said.id, resume=True)
     return {"turn_id": turn_id, "discussion_id": discussion.id, "statement_id": said.id}
+
+
+def stop(discussion: Discussion, turn_id: str) -> dict:
+    """End a running turn at the person's word. Its worker is killed where it
+    stands; the words it had typed out so far are kept as its reply, and with
+    none it ends as a turn that did not finish. Its edits stay made either way."""
+    if turnlog.running(discussion.id) != turn_id:
+        raise Idle(f"turn {turn_id} is not running")
+    kill(turn_id)
+    live = [event for _, event in turnlog.read_from(turn_id, 0)]
+    text = ""
+    for event in live:
+        if event["type"] == TurnEventKind.Text.value:
+            text += event["text"]
+        elif event["type"] == TurnEventKind.TextReset.value:
+            text = ""
+    text = chips.validate(
+        CUT.sub("", text).strip(), record_of(discussion), discussion.diagram_id
+    )
+    said = Statement.query.filter_by(
+        discussion_id=discussion.id,
+        turn_id=turn_id,
+        speaker_id=discussion.chat_user_speaker_id,
+    ).one()
+    reply = said
+    if text:
+        reply = Statement(
+            discussion_id=discussion.id,
+            text=text,
+            speaker=discussion.chat_ai_speaker,
+            order=discussion.next_order(),
+            kind=StatementKind.Turn,
+            turn_id=turn_id,
+        )
+        db.session.add(reply)
+        db.session.flush()
+    Change.query.filter_by(diagram_id=discussion.diagram_id, turn_id=turn_id).update(
+        {"statement_id": reply.id}
+    )
+    # a resumed turn sent the calls it had already kept again, first
+    prior = turnstore.kept({turn_id}).get(turn_id, [])
+    again = sum(e["type"] == TurnEventKind.ToolCall.value for e in prior)
+    shown = [e for e in live if e["type"] not in UNKEPT][again:]
+    ending = (
+        dict(turnstore.done(reply.id, release=btcopilot.__version__), stopped=True)
+        if text
+        else {"type": TurnEventKind.Failed.value, "message": BROKE}
+    )
+    turnstore.save(turn_id, discussion.id, shown + [ending])
+    db.session.commit()
+    turnlog.clear(discussion.id)
+    if text:
+        ending.update(
+            statement=text,
+            views=[],
+            events=[],
+            turn_id=turn_id,
+            kind=StatementKind.Turn.value,
+            discussion_id=discussion.id,
+            session=session_payload(discussion),
+        )
+    turnlog.append(turn_id, ending)
+    return {"turn_id": turn_id, "statement_id": reply.id}
+
+
+def kill(turn_id: str) -> None:
+    """Revoke the worker's task for this turn, waiting for the worker to say it
+    has been signalled, so nothing it writes after lands behind the stop."""
+    inspect = extensions.celery.control.inspect()
+    for found in (inspect.active() or {}, inspect.reserved() or {}):
+        for task in (t for tasks in found.values() for t in tasks):
+            if task["name"] == TASK and task["args"][0] == turn_id:
+                extensions.celery.control.revoke(task["id"], terminate=True, reply=True)
 
 
 def enqueue(

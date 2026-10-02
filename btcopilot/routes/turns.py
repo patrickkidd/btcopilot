@@ -90,3 +90,17 @@ def turn_resume(turn_id: str):
         return jsonify(turns.resume(discussion, turn_id)), 202
     except (turns.Busy, turns.Unfinished) as refused:
         abort(409, description=str(refused))
+
+
+@bp.route("/turns/<turn_id>/stop", methods=["POST"])
+def turn_stop(turn_id: str):
+    """End the running turn now; the words typed out so far are its reply."""
+    session_id = turnlog.owner(turn_id)
+    if session_id is None:
+        abort(404)
+    discussion = owned_session(session_id)
+    require_write_access(discussion.diagram)
+    try:
+        return jsonify(turns.stop(discussion, turn_id))
+    except turns.Idle as refused:
+        abort(409, description=str(refused))

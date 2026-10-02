@@ -251,6 +251,7 @@ export class Vote {
             right_acceptable: this.voted.ok.has(p.right_key),
             note,
             source: PickSource.Chat,
+            shown: this.first(p.left_key, p.right_key),
           }),
         ),
       );
@@ -261,6 +262,12 @@ export class Vote {
     }
     this.host.voted();
     this.close();
+  }
+
+  /** Which of a pick's two replies sits higher in the ballot. */
+  private first(left: string, right: string): PickChoice.Left | PickChoice.Right {
+    const at = (key: string) => this.replies.findIndex((r) => r.key === key);
+    return at(left) < at(right) ? PickChoice.Left : PickChoice.Right;
   }
 
   /** The vote is in: the coach's own reply, headed Coach, and the others
