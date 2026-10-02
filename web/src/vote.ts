@@ -1,5 +1,6 @@
 import * as api from "./api";
 import { el, esc } from "./dom";
+import { NOTE_CAP } from "./pairs";
 import { toast } from "./toast";
 import { PickChoice, PickSource, type Shadows } from "./types";
 
@@ -16,12 +17,16 @@ const PATIENCE_MS = 180_000;
 export const IDLE_MS = 5 * 60_000;
 /** How often the review is asked whether the shadows have finished. */
 const POLL_MS = 2000;
-const NOTE_CAP = 200;
 const HELP = "One or two sentences, optional";
 
 const FOLD =
   `<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="5.5" width="9" height="8" rx="1.5"/>` +
   `<path d="M5 3h7.5a1.5 1.5 0 0 1 1.5 1.5V11"/></svg>`;
+
+enum Mark {
+  Ok = "ok",
+  Best = "best",
+}
 
 interface Voted {
   ok: Set<string>;
@@ -116,11 +121,8 @@ export class Vote {
   private async resume(last: boolean): Promise<void> {
     const shadows = await api.shadows(this.turnId);
     this.read = true;
-    const picked = new Set(shadows.picks.flatMap((p) => [p.left_key, p.right_key]));
-    this.replies = shadows.replies.filter((r) => picked.has(r.key));
     const fold = this.bubble.querySelector<HTMLElement>(":scope > .vt-fold")!;
-    if (this.replies.length < 2) return fold.remove();
-    this.realKey = shadows.real_key!;
+    if (!this.take(shadows)) return fold.remove();
     if (shadows.picks.some((p) => p.choice === null)) {
       fold.remove();
       this.bubble.classList.add("blind");
@@ -159,12 +161,17 @@ export class Vote {
   }
 
   private show(shadows: Shadows): void {
-    // only a reply in a pick is voted on
+    if (!this.take(shadows)) return this.alone();
+    this.open(shadows.picks);
+  }
+
+  /** Only a reply in a pick is voted on; false when that leaves no vote. */
+  private take(shadows: Shadows): boolean {
     const picked = new Set(shadows.picks.flatMap((p) => [p.left_key, p.right_key]));
     this.replies = shadows.replies.filter((r) => picked.has(r.key));
-    if (this.replies.length < 2) return this.alone();
+    if (this.replies.length < 2) return false;
     this.realKey = shadows.real_key!;
-    this.open(shadows.picks);
+    return true;
   }
 
   /** No shadow came in time: the coach's reply alone, as on any other turn. */
@@ -187,8 +194,8 @@ export class Vote {
           (r) =>
             `<div class="vt-reply" data-key="${esc(r.key)}">${this.host.written(r.text)}` +
             `<div class="vt-marks">` +
-            `<button class="vt-mark" type="button" data-mark="ok" aria-pressed="false">✓ acceptable</button>` +
-            `<button class="vt-mark" type="button" data-mark="best" aria-pressed="false">☆ best</button>` +
+            `<button class="vt-mark" type="button" data-mark="${Mark.Ok}" aria-pressed="false">✓ acceptable</button>` +
+            `<button class="vt-mark" type="button" data-mark="${Mark.Best}" aria-pressed="false">☆ best</button>` +
             `</div></div>`,
         )
         .join("") +
@@ -207,7 +214,7 @@ export class Vote {
       e.stopPropagation();
       const target = e.target as Element;
       const mark = target.closest<HTMLElement>(".vt-mark");
-      if (mark) return this.mark(mark.closest<HTMLElement>(".vt-reply")!.dataset.key!, mark.dataset.mark!);
+      if (mark) return this.mark(mark.closest<HTMLElement>(".vt-reply")!.dataset.key!, mark.dataset.mark as Mark);
       const go = target.closest<HTMLButtonElement>(".vt-go");
       if (go) void this.cast(go, picks, note.value.trim());
     });
@@ -217,9 +224,9 @@ export class Vote {
   }
 
   /** Acceptable on its own; best is one reply at most, and is acceptable too. */
-  private mark(key: string, which: string): void {
+  private mark(key: string, which: Mark): void {
     const { ok } = this.voted;
-    if (which === "best") {
+    if (which === Mark.Best) {
       this.voted.best = this.voted.best === key ? null : key;
       if (this.voted.best) ok.add(key);
     } else if (ok.has(key)) {

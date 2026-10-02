@@ -8,7 +8,7 @@ import { PickChoice, Who, type ModelPicks, type Pair } from "./types";
  * once, and no model named until Patrick has picked left, right or a tie with
  * a one-line note (R-0599). Under it, each model's picks so far. */
 
-const NOTE_CAP = 200;
+export const NOTE_CAP = 200;
 /** Where the app widens and the two replies stand side by side (theme.css). */
 const WIDE = "(min-width: 840px)";
 
