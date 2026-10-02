@@ -10,11 +10,13 @@ from btcopilot.models import (
     Discussion,
     ModelCall,
     Purpose,
+    ReplayPass,
     ShadowTurn,
     Speaker,
     SpeakerType,
     Statement,
 )
+from btcopilot.models.qualityrun import Source
 from btcopilot.review.models import Pick, PickChoice, PickSource
 from btcopilot.review.models.pick import NOTE_CAP
 
@@ -195,26 +197,67 @@ def test_a_long_note_is_refused(patrick, test_user, case):
     assert response.status_code == 400
 
 
+TOKENS = {"input": 40, "output": 9, "cache_creation": 0, "cache_read": 0}
+
+
+def replayed(real: Discussion, scratch: Discussion, model: str, kept: bool = True):
+    """A replay's ledger line, and the pass the database keeps of it; one not
+    kept ran on another database, where the same ids were another replay."""
+    row = dict.fromkeys(ledger.FIELDS)
+    row.update(
+        kind=ledger.LedgerKind.Replay,
+        model=model,
+        discussion_id=real.id,
+        scratch_diagram_id=scratch.diagram_id,
+        scratch_discussion_id=scratch.id,
+        turns=2,
+        tokens=TOKENS if kept else dict(TOKENS, input=41),
+    )
+    ledger.append(row, ledger.PATH)
+    if not kept:
+        return
+    db.session.add(
+        ReplayPass(
+            model=model,
+            thinking="medium",
+            prompt="p",
+            turns=2,
+            calls=2,
+            input_tokens=TOKENS["input"],
+            output_tokens=TOKENS["output"],
+            cache_creation_tokens=0,
+            cache_read_tokens=0,
+            cost_usd=Decimal(0),
+            source=Source.Api,
+            scratch_diagram_id=scratch.diagram_id,
+        )
+    )
+    db.session.commit()
+
+
 def test_replays_of_one_discussion_pair_turn_by_turn(patrick, test_user, case):
     # R-0599
     real = chat(test_user, case, ["one", "real a", "two", "real b"])
     first = chat(test_user, case, ["one", "opus a", "two", "opus b"])
     second = chat(test_user, case, ["one", "flash a", "two", "flash b"])
-    for model, scratch in ((REAL, first), (SHADOW, second)):
-        row = dict.fromkeys(ledger.FIELDS)
-        row.update(
-            kind=ledger.LedgerKind.Replay,
-            model=model,
-            discussion_id=real.id,
-            scratch_discussion_id=scratch.id,
-        )
-        ledger.append(row, ledger.PATH)
+    replayed(real, first, REAL)
+    replayed(real, second, SHADOW)
     pairs = patrick.get("/review/pairs").json
     assert [sorted([p["left"], p["right"]]) for p in pairs] == [
         ["flash a", "opus a"],
         ["flash b", "opus b"],
     ]
     assert [line["text"] for line in pairs[1]["context"]] == ["one", "real a", "two"]
+
+
+def test_a_replay_line_from_another_database_is_not_paired(patrick, test_user, case):
+    # R-0599
+    real = chat(test_user, case, ["one", "real a"])
+    first = chat(test_user, case, ["one", "opus a"])
+    second = chat(test_user, case, ["one", "flash a"])
+    replayed(real, first, REAL)
+    replayed(real, second, SHADOW, kept=False)
+    assert patrick.get("/review/pairs").json == []
 
 
 def test_only_patrick_sees_the_pairs(coder, test_user, case):

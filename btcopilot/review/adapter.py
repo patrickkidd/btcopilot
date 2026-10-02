@@ -34,7 +34,14 @@ from btcopilot.models import (
 )
 from btcopilot.recordtext import date_text, render
 from btcopilot.toolbox import EDITS, ToolError, Toolbox, schemas
-from btcopilot.models import Diagram, Notification, NotificationKind, ShadowTurn, User
+from btcopilot.models import (
+    Diagram,
+    Notification,
+    NotificationKind,
+    ReplayPass,
+    ShadowTurn,
+    User,
+)
 from btcopilot.schema import PDP, Event, ItemKind, PairBond, Person, from_dict
 
 __all__ = [
@@ -60,6 +67,7 @@ __all__ = [
     "Discussion",
     "DiscussionKind",
     "Statement",
+    "ReplayPass",
     "ShadowTurn",
     "User",
     "coach_model",

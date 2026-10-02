@@ -3,7 +3,8 @@ model named until Patrick has picked (R-0599). His pick is the only judgement;
 no model judges another.
 
 A pair is a shadow turn against the real reply it shadowed, or the same reply
-of two replays of one discussion on different models, aligned by turn."""
+of two replays of one discussion on different models, aligned by turn. Only a
+replay whose pass this database keeps is paired."""
 
 import enum
 import itertools
@@ -56,6 +57,27 @@ def _shadows(*where):
         )
 
 
+def _held(line: dict) -> bool:
+    """Whether this database holds the replay a ledger line describes. The
+    ledger is a file beside the code and outlives a database, so it can hold
+    replays run on another one, whose ids mean other rows here."""
+    tokens = line["tokens"]
+    kept = adapter.ReplayPass.query.filter_by(
+        scratch_diagram_id=line["scratch_diagram_id"],
+        turns=line["turns"],
+        input_tokens=tokens["input"],
+        output_tokens=tokens["output"],
+        cache_creation_tokens=tokens["cache_creation"],
+        cache_read_tokens=tokens["cache_read"],
+    ).first()
+    scratch = adapter.discussion_of(line["scratch_discussion_id"])
+    return (
+        kept is not None
+        and scratch is not None
+        and scratch.diagram_id == line["scratch_diagram_id"]
+    )
+
+
 def _replays():
     path = ledger.PATH
     lines = (
@@ -64,7 +86,11 @@ def _replays():
         else []
     )
     replays = sorted(
-        (line for line in lines if line["kind"] == ledger.LedgerKind.Replay),
+        (
+            line
+            for line in lines
+            if line["kind"] == ledger.LedgerKind.Replay and _held(line)
+        ),
         key=lambda line: line["discussion_id"],
     )
     for discussion_id, group in itertools.groupby(
