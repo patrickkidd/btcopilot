@@ -12,8 +12,7 @@ from the Pro box on purpose. Nothing in it has run yet; the droplet does not exi
    (Gemini is the model that groups events into clusters on the picture)
    with a new credential (none of the old compose file's values are reused),
    encrypt it: `sops -e secrets.env > secrets.env.enc`, delete the plain file,
-   commit `secrets.env.enc`. The Vertex service account file for Gemini goes on
-   the box at `GCP_SA_FILE` (default `/etc/fd/gcp-sa.json`, root, 600).
+   commit `secrets.env.enc`. The Gemini values are listed under "Gemini settings" below.
 2. **Keys.** On the new box: `age-keygen -o /etc/fd/age.key`, `chmod 600`. Its
    public key goes into `.sops.yaml` here beside the Mac's; the prompts, the
    rulings and the secrets file are re-encrypted with `sops updatekeys`. Claude
@@ -147,6 +146,29 @@ with `flask admin quality load` (see `quality/evals/README.md`).
 The features dashboard, `fd-features` (what people use, and what the coach and the app sent and what came back), is kept in `grafana/fd-features.json` and put the same way: the release's "Push the dashboards" step (`bin/grafanapush.py`) puts every file in `grafana/`.
 
 The desktop app's update feeds live on the legacy box and are forwarded because shipped apps have this address built in.
+
+## Gemini settings
+
+Two kinds of call go to Gemini, and they do not read the same settings. All of them live in
+`/etc/fd/secrets.env`; `secrets.env.example` names each one.
+
+| Setting | Read by | What it does |
+|---------|---------|--------------|
+| `GOOGLE_GEMINI_API_KEY` | cluster sorting, session titles and summaries, always; a coach model on Gemini when the endpoint is `developer` | the Developer API key |
+| `BTCOPILOT_GEMINI_ENDPOINT` | a coach model on Gemini (shadows and replays) | `vertex` or `developer`; unset means `vertex` |
+| `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | a coach model on Gemini, `vertex` only | the Google Cloud project and region; a call fails with a missing-key error when either is unset |
+| `GCP_SA_FILE` | compose, not the app | the path on the box of the Vertex service account file (default `/etc/fd/gcp-sa.json`, root, 600), mounted read-only at `/run/secrets/gcp-sa.json` |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Google's library, `vertex` only | set by the compose file to the mounted copy; never set in the secrets file |
+
+The file at `GCP_SA_FILE` must exist whichever endpoint is set, because compose mounts it
+either way; on `developer` nothing reads it and an empty file is enough. A box with no
+service account therefore needs exactly these two lines for every Gemini call to work:
+
+    GOOGLE_GEMINI_API_KEY=<the Developer API key>
+    BTCOPILOT_GEMINI_ENDPOINT=developer
+
+Vertex runs under the Google Cloud project, whose agreement covers health data; the Developer
+API runs on the key alone [Oracle: R-0598].
 
 ## What is not here yet
 
