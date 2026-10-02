@@ -36,6 +36,7 @@ from btcopilot.models import (
     User,
 )
 from btcopilot.models.preferences import PrefKey
+from btcopilot.review.models import Pick
 from btcopilot.turnlog import TurnEventKind
 
 _log = logging.getLogger(__name__)
@@ -52,9 +53,9 @@ SCRATCH_ROWS = (AccessRight, Change, Interaction, Observation, ProductEvent)
 RECENT = datetime.timedelta(days=30)
 PER_RUN_GUESS = Decimal("0.19")
 
-# Conversation Feedback turns itself off this long after the later of the
-# coach's last reply being written and the switch going on, so the time spent
-# reading and voting on a reply never counts against it [R-0637].
+# Conversation Feedback turns itself off this long after the latest of the
+# coach's last reply being written, the person's last vote and the switch going
+# on, so the time spent reading and voting never counts against it [R-0637].
 IDLE = datetime.timedelta(minutes=5)
 
 
@@ -79,6 +80,14 @@ def last_reply(user: User, before: int | None = None) -> datetime.datetime | Non
     return db.session.scalar(query)
 
 
+def last_vote(user: User) -> datetime.datetime | None:
+    return db.session.scalar(
+        select(func.max(Pick.updated_at)).where(
+            Pick.user_id == user.id, Pick.choice.isnot(None)
+        )
+    )
+
+
 def expiry(
     user: User, now: datetime.datetime, before: int | None = None
 ) -> datetime.datetime | None:
@@ -87,7 +96,7 @@ def expiry(
     written before that statement."""
     if not user.pref(PrefKey.ShadowModels):
         return None
-    times = [last_reply(user, before)]
+    times = [last_reply(user, before), last_vote(user)]
     if since := user.pref(PrefKey.ShadowSince):
         times.append(datetime.datetime.fromisoformat(since))
     started = max(filter(None, times), default=None)

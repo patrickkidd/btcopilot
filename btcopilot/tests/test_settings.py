@@ -9,6 +9,7 @@ from btcopilot.discussions import open_session
 from btcopilot.extensions import db
 from btcopilot.models import ModelCall, Purpose, Statement
 from btcopilot.models.preferences import SHADOW_CANDIDATES, PrefKey
+from btcopilot.review.models import Pick, PickChoice, PickSource
 from btcopilot.tests.conftest import csrf_token
 
 
@@ -95,3 +96,37 @@ def test_shadows_turn_off_five_minutes_after_the_coach_last_replied(
         (said + shadow.IDLE).isoformat() if on else None
     )
     assert bool(test_user.pref(PrefKey.ShadowModels)) == on
+
+
+def test_a_vote_keeps_shadows_on_five_minutes_after_it(web, test_user):
+    # R-0637
+    test_user.roles = btcopilot.ROLE_AUDITOR
+    now = datetime.datetime.utcnow()
+    shadow.switch(test_user, ["sonnet"], now - datetime.timedelta(minutes=10))
+    discussion = open_session(test_user, test_user.free_diagram)
+    voted = now - datetime.timedelta(minutes=4)
+    db.session.add_all(
+        [
+            Statement(
+                discussion_id=discussion.id,
+                speaker_id=discussion.chat_ai_speaker_id,
+                text="How much older?",
+                created_at=now - datetime.timedelta(minutes=8),
+            ),
+            Pick(
+                pair="a-b",
+                source=PickSource.Chat,
+                left_ref={"model": "sonnet"},
+                right_ref={"model": "opus"},
+                left_text="Older by two years?",
+                right_text="How much older?",
+                choice=PickChoice.Left,
+                user_id=test_user.id,
+                updated_at=voted,
+            ),
+        ]
+    )
+    db.session.commit()
+    body = web.get("/app/preferences").get_json()
+    assert body[PrefKey.ShadowModels.value] == ["sonnet"]
+    assert body["shadow_expires_at"] == (voted + shadow.IDLE).isoformat()

@@ -141,6 +141,7 @@ def test_a_pick_reveals_the_models_and_counts_in_the_summary(patrick, test_user,
     ).json
     assert seen[shadow_side] == SHADOW
     assert Pick.query.one().choice is shadow_side
+    assert Pick.query.one().updated_at is not None
     assert patrick.get("/review/pairs").json == []
     assert patrick.get("/review/picks").json == [
         {"model": REAL, "won": 0, "lost": 1, "tied": 0},

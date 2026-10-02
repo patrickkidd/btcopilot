@@ -247,12 +247,14 @@ def pick_put(pick_id: int):
         if PickSource(body["source"]) is not PickSource.Chat:
             raise ValueError("a pick can only move to the chat")
         pick.source = PickSource.Chat
-    pick.choice = choice
-    pick.left_acceptable = left
-    pick.right_acceptable = right
-    pick.note = note or None
-    pick.user_id = user.id
-    db.session.commit()
+    pick.update(
+        choice=choice,
+        left_acceptable=left,
+        right_acceptable=right,
+        note=note or None,
+        user_id=user.id,
+        _commit=True,
+    )
     return jsonify(
         {
             "id": pick.id,
