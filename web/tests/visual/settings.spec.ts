@@ -782,7 +782,7 @@ test.describe("the Conversation Feedback switch", () => {
     await toggle().click();
     await sheet.getByRole("button", { name: "Turn on" }).click();
     await expect(toggle()).toHaveAttribute("aria-checked", "true");
-    expect(patched).toEqual([{ shadow_models: ["sonnet", "gemini-pro"] }]);
+    expect(patched).toEqual([{ shadow_models: ["sonnet"] }]);
     await expect(lapse).toHaveText("Turns off 5 minutes after the coach's last reply or your last vote");
   });
 });
