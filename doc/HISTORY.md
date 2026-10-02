@@ -2087,3 +2087,63 @@ learning loop, for a loop that collects data with no automated way yet to act on
 ledger lists two. The flush added nine rulings he had said and the store lacked (R-0670 to
 R-0678). One working fact: this session's worktree was made in the deprecated clone by mistake;
 ticket worktrees belong under the standalone clone.
+
+## 2026-10-01 and 02 — FD-367: setup on a Bedrock laptop, the second reading round on how a case is presented and Patrick's ruling on the page's order, the app's model calls through Bedrock with Gemini dropped, the mockup round begun [T-19, T-11, T-9, T-10, T-2]
+<!-- session: 103f44c5 · flushed: 2026-10-02T00:55:00-08:00 -->
+
+**Setup.** A Micron laptop signed in to Bedrock, with no Documents folder and no sops key: the
+code worktree on FD-367, the private corpus clone checked out on FD-367 (Patrick commits it by
+hand), skill links for theory and efficiency, the ten Jira attachments restored into the corpus's
+design folder fd336/, and the corpus's own ignore change pulled so fd-corpus is tracked.
+
+**Research round two on how a Bowen case is presented.** Six Sonnet readers read in full what is on
+this machine — Family Evaluation chapter 10, Family Therapy in Clinical Practice chapters 9, 10,
+14, 21 and 22, Basic Series 3, 5 and 7, six Bowen Center recordings including Kerr's H family
+presentation and his 2020 webcast, and Bowen's one-year family therapy tape; a web round got
+abstracts and Brown 1999. Titelman 1998, Papero 1990 and 2018, Kerr 2019, Frost and the Family
+Systems case conferences are not on this machine and were marked thin. Written to the corpus's
+research folder: SYNTHESIS-v2.md, MENTAL_MODEL.md, PLAY-BY-PLAY-DESKTOP.md and
+VERIFY-corpus-citations.md; to the theory corpus: seven notes files, a paragraph in REFERENCE.md
+section 6b, OPEN_QUESTIONS item 41 (the reading at the top or the end of a presented page, tried
+both ways), and SOURCES.md and MANIFEST.tsv rows. The theory checker went from 451 to 237 quote
+problems, all older than today and not repaired; today's one stale item was cleared.
+
+**Patrick ruled (2026-10-01)** that the case page follows the ten-level order in MENTAL_MODEL.md —
+the people on a picture; what brought them, dated; the couple since they met; each parent's own
+family; one calendar; the formulation; the person's own part; where there was a choice; what to
+work on and expect; the effort. A ruling candidate for the store, with no key on this machine.
+"Outcome first" is tried both ways in mockups, not ruled; the missing books stay thin.
+
+**Three theory case cards** flagged for re-run were re-run on fresh Opus readers; none matched the
+recorded verdict cleanly — two graded readability stricter (Havstad's Client L partial rather than
+traceable; the death-reaction anchor not usable rather than partial), and the third records his
+agreement on six eval items and is not a facts card, so a re-run does not apply. Nothing was
+overwritten; the stale items stay for his judgment.
+
+**The Bedrock path (commit 666486bb).** A provider setting, BTCOPILOT_MODEL_PROVIDER (anthropic by
+default, or bedrock), with Bedrock chosen by itself when CLAUDE_CODE_USE_BEDROCK is set; the
+AnthropicBedrock client on the AWS credential chain; the models mapped to us-west-2 inference
+profiles, the sonnet alias included; fail-early with no key fallback. Gemini is removed from the
+coach and from side-by-side (shadow) testing (geminimodel.py deleted); the Gemini-named helper
+calls for cluster grouping, the coach eval judge and the synthetic suite run on Sonnet 5.5 on a
+Bedrock machine and still on Gemini on production; a stored shadow list naming a Gemini alias is
+filtered with a warning; the sandbox's real mode needs no key on a Bedrock machine; docs in
+SETUP.md, HOW_THIS_PROJECT_WORKS.md and the deploy files. Proof: one real Opus 5.5 call through
+the coach path on Bedrock answered (E2E-DONE); 949 unit tests pass; the sandbox turn is NOT-DONE on
+this laptop because the kit starts a local redis-server binary that is not installed (needs sudo).
+The new tests cite R-0000 until a session with the key assigns the id, and CI's citation guard
+fails until then. Patrick (2026-10-01): batch work into this ticket's branch; drop Gemini; never
+prompt a human during an unattended run.
+
+**Method corrections**, recorded in CLAUDE.md: the coordinator reads only briefs; no placeholder
+chatter lines; unattended runs never prompt; mockups are the app's own code pixel for pixel. Also
+learned: never message an agent inside a Workflow run (it forks a copy); changing a shared prompt
+text in a Workflow script changes earlier stages' cache keys and restarts them.
+
+**Mockup round** in progress — a Vite mockup entry under web/ renders the case page gallery from
+the app's own diagram, timeline and move code; the three case files live in the corpus's
+fd336/cases/ and never in this repo; the page is served locally and will be attached to Jira
+FD-367. See the FD-367 section of doc/STATE.md, its next entry.
+
+**master was squashed** by Patrick (FD-365 and FD-366 are single commits on master); FD-367 is
+rebased onto origin/master before PR #146 merges, scheduled after the mockup commit.

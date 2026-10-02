@@ -2123,7 +2123,10 @@ mistake.
 
 ## 2026-10-01: FD-367 — the case page follows the sources' top-down order, pending Patrick's ruling
 
-No ruling yet; nothing is redrawn until Patrick rules. The page for presenting a case to peers
+Ruled later the same day; see the entry below. The seven-item order here was refined to ten
+levels by the second reading round before he ruled.
+
+No ruling yet at the time of writing; nothing is redrawn until Patrick rules. The page for presenting a case to peers
 follows the order the theory sources present a case in: the people on the diagram, the symptom on a
 calendar, the nuclear family dated with a fix at each event, each extended side, the person's own
 part, the formulation last, then the effort to change. The "Where there was a choice" box stays, in
@@ -2131,3 +2134,31 @@ the only shape the sources allow: a dated move of the person's own, their part i
 a question, the facts under it, and a guess to reject. It never holds a plan or a level. A
 professional presenting a client's record gets their own header, their own reading box, and
 questions addressed to the professional.
+
+## 2026-10-01: FD-367 — Patrick ruled the case page's order: the ten levels of MENTAL_MODEL.md
+
+Patrick, 2026-10-01 [ruling candidate, no id: no key on this machine]. The page for presenting a
+case to peers follows the ten levels the second reading round found in the sources and wrote up in
+MENTAL_MODEL.md in the private corpus: the people on a picture; what brought them, dated; the
+couple since they met; each parent's own family; one calendar; the formulation; the person's own
+part; where there was a choice; what to work on and expect; the effort. Whether the reading comes
+first or last is tried both ways in mockups, not ruled. The books not on this machine (Titelman
+1998, Papero 1990 and 2018, Kerr 2019, Frost, the Family Systems case conferences) stay thin
+rather than holding the work.
+
+## 2026-10-01: FD-367 — the app's model calls go through Bedrock on a Bedrock machine; Gemini is dropped
+
+Patrick, 2026-10-01 [ruling candidate, no id]. On a machine signed in to Bedrock every model call
+the app makes in testing goes through Bedrock on the machine's AWS sign-in, with no key and no key
+fallback; a provider setting picks the path and Bedrock is chosen by itself on such a machine.
+Gemini is dropped from the coach and from side-by-side testing because it matched Sonnet in
+performance and cost; its helper calls run on Sonnet on a Bedrock machine and still on Gemini on
+production. Built as commit 666486bb on FD-367, not deployed; the shadow lists on the box naming a
+Gemini alias are reset before the rollout.
+
+## 2026-10-01: process — work is batched into the open ticket branch; unattended runs never prompt
+
+Patrick, 2026-10-01 [in CLAUDE.md, no ids]. Until he says otherwise, new work goes into the
+session's open ticket branch (FD-367 now), not a new ticket or PR. An unattended run never prompts
+a human: no rm -rf, sudo, kill or interactive command in any brief, because one prompt kills an
+overnight run. A mockup is the app's own code running, pixel for pixel, never a drawn stand-in.

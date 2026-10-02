@@ -527,6 +527,14 @@ What it is for: a professional's several client records.
 - People and events keep a notes field in their editors, the same notes the desktop app already stores. [built] {R-0281}
 - The drawn family diagram stays in the plan and arrives once auto-arrange proves itself on real data. [drawn] {R-0240, R-0281}
 
+## The case page (presenting a case to peers)
+
+What it is for: one page to present a case from, in the order the Bowen literature presents a case; mockups are in progress on branch FD-367.
+
+- The page follows ten levels in order: the people on a picture; what brought them, dated; the couple since they met; each parent's own family; one calendar; the formulation; the person's own part; where there was a choice; what to work on and expect; the effort. [drawn] {ruled 2026-10-01, id pending}
+- Whether the formulation reads at the top of the page or at the end is being tried both ways in mockups. [open]
+- A professional presenting a client's record gets their own header, their own reading box, and questions addressed to the professional. [open]
+
 ## Upload a recording (Pro)
 
 @frame pro#f3 | The sessions sheet gains one button for putting a recording in.

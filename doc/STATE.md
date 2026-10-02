@@ -449,7 +449,8 @@ cluster instead of grouping it wrong silently. A command installs a stand-in tes
 review. The coach can raise, close and read impressions in the same way it handles open
 questions, shown to the user in the drawer with what each rests on and two ways to push back.
 The live suite now counts its own spend, stops at its hard caps, and keeps a results row per
-run. A local model can stand in for Anthropic and Gemini, so the sandbox runs free by default.
+run. A local model can stand in for Anthropic and Gemini, so the sandbox runs free by default;
+on a Bedrock machine the sandbox's real mode goes through Bedrock with no key (FD-367).
 The paid suite holds behaviour evals only; the clinical-coding cases wait for ground truth from
 the IRR review group. Every test path spends the testing key; the box runs on the new
 production key, and the old key is off it.
@@ -767,7 +768,8 @@ the ledger; the reference record is one Patrick corrected himself, never a model
 [R-0597]. A Gemini Flash coach model is wired in (google-genai, Vertex by default, aliases
 gemini-flash, gemini-3.8-flash, gemini-3.6-flash, gemini-2.5-flash), because Patrick holds a
 business associate agreement with Google [R-0598]; a real call on it awaits Vertex credentials
-on the box and his confirmation of what the agreement covers. The review app's Compare replies
+on the box and his confirmation of what the agreement covers (dropped on FD-367, 2026-10-01:
+Gemini is out of the coach and the shadow list, see "The app's model calls on a Bedrock machine"). The review app's Compare replies
 page serves blind pairs from shadow rows and replays and records Patrick's picks in a new
 model_picks table [R-0599]. Live eval runs append one Live line per case to the ledger
 (`btcopilot/ledger.py`, `ledger.jsonl`, gitignored). One migration, 1b00000000b5, squashed for
@@ -855,7 +857,8 @@ Open:
 - The live eval run against the moved prompt (branch FD-363-cost) awaits Patrick's spend
   approval.
 - A real Gemini call for the new coach model awaits Vertex credentials on the box and Patrick's
-  confirmation of what his Google business associate agreement covers.
+  confirmation of what his Google business associate agreement covers. Overtaken 2026-10-01: the
+  Gemini coach model is dropped on FD-367.
 
 **Patrick's actions.**
 1. Test the 5b2a6bb batch in his own thread, including a long message on his iPhone and the (i)
@@ -1758,18 +1761,40 @@ Kept for when there are enough users to run one.
 Brainstormed 2026-10-01 beside FD-336. Mockup gallery, version 3: private artifact
 (https://claude.ai/artifact/KM74THMGmR13YG96yUwZPS). Patrick judged it the wrong shape: period cards
 with no top level, prose-heavy, no formulation line, no nuclear and extended split, no play-by-play.
-Theory research found the order a Bowen case is presented in: the people on the diagram, the symptom
-on a calendar, the nuclear family dated with a fix at each event, each extended side, the person's
-own part, the formulation last, then the effort to change. That order awaits Patrick's ruling before
-a redraw. Hand-off, research, gallery source: Jira FD-367
+Theory research found the order a Bowen case is presented in; the second round refined it to the
+ten levels of MENTAL_MODEL.md, which Patrick ruled on 2026-10-01 (below). Hand-off, research,
+gallery source: Jira FD-367
 (https://alaskafamilysystems.atlassian.net/browse/FD-367). Theory notes: btcopilot-sources PR FD-367.
 
-Research round two, 2026-10-01, on this machine (no ~/Documents here; Family Evaluation, Family Therapy in Clinical Practice, the seven Basic Series tapes and six Bowen Center recordings read in full as text; Titelman 1998, Papero 1990 and 2018, Kerr 2019, Frost and the Family Systems case conferences not on this machine, marked thin; Brown 1999 retrieved from the web). Written in the private corpus under fd-corpus/design/fd336/research/: SYNTHESIS-v2.md (the first synthesis corrected line by line), MENTAL_MODEL.md (the levels a presented case follows, each with its source; the deliverable for Patrick's ruling on the order), PLAY-BY-PLAY-DESKTOP.md, VERIFY-corpus-citations.md; in the theory corpus: six reader notes and notes/case-presentation.md, one paragraph in REFERENCE.md section 6b, OPEN_QUESTIONS item 41 (reading at the top or the end of a presented page; trying both ways in the next mockup round, not ruled), SOURCES.md and MANIFEST.tsv rows. Patrick, 2026-10-01: deliver from what is here with the missing books thin; "outcome first" is tried in mockups on his record, not ruled. The theory checker failed before today's edits (451 problems, baseline 2026-09-30) and was not repaired; only items caused today are to be resolved. Next: Patrick rules on the order in MENTAL_MODEL.md; then the one-page mockup on the app's own diagram and play-by-play, his record plus Client L and Anna, phone and desktop, a separate critique agent, a new private artifact from this machine.
+Research round two, 2026-10-01, on this machine (no ~/Documents here; Family Evaluation, Family Therapy in Clinical Practice, the seven Basic Series tapes and six Bowen Center recordings read in full as text; Titelman 1998, Papero 1990 and 2018, Kerr 2019, Frost and the Family Systems case conferences not on this machine, marked thin; Brown 1999 retrieved from the web). Written in the private corpus under fd-corpus/design/fd336/research/: SYNTHESIS-v2.md (the first synthesis corrected line by line), MENTAL_MODEL.md (the levels a presented case follows, each with its source; the deliverable for Patrick's ruling on the order), PLAY-BY-PLAY-DESKTOP.md, VERIFY-corpus-citations.md; in the theory corpus: six reader notes and notes/case-presentation.md, one paragraph in REFERENCE.md section 6b, OPEN_QUESTIONS item 41 (reading at the top or the end of a presented page; trying both ways in the next mockup round, not ruled), SOURCES.md and MANIFEST.tsv rows. Patrick, 2026-10-01: deliver from what is here with the missing books thin; "outcome first" is tried in mockups on his record, not ruled. The theory checker failed before today's edits (451 problems, baseline 2026-09-30) and was not repaired; only items caused today are to be resolved; it stood at 237 after the day's edits, with today's one stale item cleared.
+
+**Ruled 2026-10-01 (ruling candidate, no id yet — no key on this machine):** the case page follows
+the ten-level order in MENTAL_MODEL.md — the people on a picture; what brought them, dated; the
+couple since they met; each parent's own family; one calendar; the formulation; the person's own
+part; where there was a choice; what to work on and expect; the effort. "Outcome first" (the
+reading at the top or the end) is tried both ways in mockups, not ruled; the missing books stay
+thin. The three case files for mockups (his record, Client L, Anna) live in the corpus at
+fd-corpus/design/fd336/cases/ with PROVENANCE.md, never in this repo. Three theory case cards
+flagged for re-run were re-run the same day; none matched the recorded verdict cleanly and nothing
+was overwritten (T-2 in doc/TOPICS.md). Mockup round: in progress, see this section's next entry.
 
 
-## Open — the app's model calls on a Bedrock machine
+## The app's model calls on a Bedrock machine (built 2026-10-01, commit 666486bb on FD-367, not deployed)
 
-Patrick, 2026-10-01: build the Anthropic-on-Bedrock path on FD-367; Gemini is dropped, side-by-side testing included. Being built 2026-10-01.
+Patrick, 2026-10-01: build the Anthropic-on-Bedrock path on FD-367; Gemini is dropped, side-by-side
+testing included. Built: a provider setting, BTCOPILOT_MODEL_PROVIDER (anthropic by default, or
+bedrock), with Bedrock chosen by itself when CLAUDE_CODE_USE_BEDROCK is set; the AnthropicBedrock
+client on the AWS credential chain; the models mapped to us-west-2 inference profiles, the sonnet
+alias included; fail-early with no key fallback, so a missing sign-in stops the app at startup.
+Gemini is out of the coach and of side-by-side (shadow) testing (geminimodel.py deleted); the
+Gemini-named helper calls for cluster grouping, the coach eval judge and the synthetic suite run on
+Sonnet 5.5 on a Bedrock machine and still on Gemini on production; a stored shadow list naming a
+Gemini alias is skipped with a warning; `bin/sandbox/sandbox up --real` needs no key on a Bedrock
+machine (doc/SETUP.md section 6). Proof: one real Opus 5.5 call through the coach path on Bedrock
+answered (E2E-DONE); 949 unit tests pass. NOT-DONE: one coach turn through the whole sandbox stack
+on the Bedrock laptop, because the kit starts a local redis-server binary that is not installed
+there (needs sudo). The new tests cite R-0000 until a session with the key assigns the ruling's
+id; CI's citation guard fails until then.
 
 Deploy step for this branch, before the rollout: a shadow list stored under FD-365 may still name a
 Gemini alias the app no longer offers. On the box, `docker compose --env-file /etc/fd/secrets.env exec fd-app flask admin coach-model show`
@@ -1788,7 +1813,11 @@ skips an alias it no longer offers, one warning each, so an old setting never fa
   btcopilot #136 is merged; fdserver #30 was closed unmerged (#135 and #29 are closed
   predecessors). The first fast-follow, FD-363 (PR #138), is merged. The second is FD-365,
   **draft PR #142**, with the sittings work (PR #144) and the landing page (PR #143) merged into
-  it; everything for this work goes into Jira FD-365, with no new ticket.
+  it; everything for this work goes into Jira FD-365, with no new ticket. The third is FD-367,
+  **draft PR #146**, carrying the case page work and the Bedrock path; new work is batched into it
+  (Patrick, 2026-10-01). Patrick squashed master on 2026-10-01 (FD-365 and FD-366 are single
+  commits there), so FD-367 is rebased onto origin/master before #146 merges, scheduled after the
+  mockup commit.
 
 ## Open security items (Patrick's calls, untouched)
 
