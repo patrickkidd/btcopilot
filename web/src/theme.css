@@ -1257,6 +1257,8 @@ button { font-family: inherit; }
 .send {
   flex: none;
   position: relative;
+  display: grid;
+  place-items: center;
   width: 44px;
   height: 44px;
   padding: 0;
@@ -1276,7 +1278,7 @@ button { font-family: inherit; }
 .send > * { position: relative; }
 .send:active { filter: brightness(0.9); }
 /* while the coach replies the button stops it, a square for the arrow */
-.inbar.stop .send > span { display: inline-block; font-size: 0; vertical-align: middle; }
+.inbar.stop .send > span { font-size: 0; }
 .inbar.stop .send > span::before {
   content: "";
   display: block;
