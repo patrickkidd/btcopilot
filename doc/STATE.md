@@ -669,8 +669,6 @@ Left from 2026-09-29 and 30:
     email, which matters for a pricing notice sent by email.
 15. The coach's report tool has not been exercised on production: no real turn there has offered
     a report.
-16. R-0096 (the sessions sheet is a plain list) lost its only citing test when the session list
-    was removed; it needs a test or a supersession.
 17. The first `/product-owner` run's proposed ledger diff awaits his yes.
 18. The PR #144 description cites ruling ids from before the queue was renumbered.
 
