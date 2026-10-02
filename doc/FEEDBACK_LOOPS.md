@@ -60,6 +60,7 @@ Panels that show the same people and messages: "People who chatted", "Messages f
 | 23 | The efficiency skill | Your corrections on cost, speed and method, each dated, in ~/.claude/skills/efficiency/references/corrections.md. | Each correction becomes a numbered rule. A session writes bindings for the rules in play, and a rule broken twice goes into your CLAUDE.md. Bindings live in each job's temporary folder, so repeats are not counted across sessions. | live | New rules and repeats per week. Last known: 43 rules; 111 dated corrections from 09-22 to 09-29. | ~/.claude/skills/efficiency/ACCEPTANCE_CRITERIA.md; references/corrections.md |
 | 24 | The scout and the loop review | The scout was to read the corpus and propose up to ten ranked process changes. | Retired on 2026-09-23 [R-0420] without ever running once. | retired | None. | None |
 | 25 | Notes on votes in the chat | The optional note a person writes with a vote on shadow replies in the chat, stored with the vote in the model_picks table, source chat [R-0668]. | Nobody yet. The aim is an automated step that turns the notes into checks on replies, a rubric; it is not built and not designed. | open | None today. | None |
+| 26 | Acceptable and best marks on votes in the chat | The replies a person marks acceptable and the one marked best, on every vote in the chat, stored with the vote in the model_picks table, source chat [R-0668]. | Nobody yet. Nothing turns the marks into a change to the coach; it is not built and not designed. | open | None today. | None |
 
 ## Queries
 
