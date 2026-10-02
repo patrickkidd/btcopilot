@@ -849,10 +849,11 @@ button { font-family: inherit; }
   animation: blink 0.7s steps(1) infinite;
 }
 @keyframes blink { 50% { opacity: 0; } }
-/* Waiting, before there is anything to write. The mockups blink the caret here
-   too; the owner ruled that too dead to read as thinking, so it is three dots
-   at text height instead, and his ruling supersedes the mockup. */
-.bub.typing.dots::after,
+/* Waiting, before there is anything to write: from the send until the coach's
+   first words, and while a reply held for a vote is written out unseen. The
+   owner ruled the blinking caret too dead to read as thinking, so it is three
+   dots at text height, the same ones a button that is working shows. */
+.bub.typing:is(.blind, :has(.words:empty))::after,
 .dots3::after {
   content: "";
   display: inline-block;

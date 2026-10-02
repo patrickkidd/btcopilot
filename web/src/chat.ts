@@ -561,18 +561,18 @@ export class Chat {
     };
   }
 
-  /** Waiting is the same caret that types: one bar, blinking, where the words
-   * are about to appear. */
+  /** Waiting is an empty coach bubble, which shows the three dots until the
+   * words arrive. */
   busy(on: boolean): void {
     if (on && !this.typing) {
       this.typing = el(
         "div",
-        `bub ${Role.Coach} typing dots`,
-        `<div class="who">Coach</div>`,
+        `bub ${Role.Coach} typing wait`,
+        `<div class="who">Coach</div><span class="words"></span>`,
       );
       this.list.append(this.typing);
       this.scroll();
-    } else if (!on && this.typing?.classList.contains("dots")) {
+    } else if (!on && this.typing?.classList.contains("wait")) {
       this.typing.remove();
       this.typing = null;
     }

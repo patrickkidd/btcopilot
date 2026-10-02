@@ -195,6 +195,23 @@ test.describe("the thread's place while the coach answers", () => {
     answer();
   });
 
+  // R-0636
+  test("the coach bubble shows the three moving dots, not a blinking bar, before the reply streams", async ({
+    page,
+  }) => {
+    await start(page);
+    let answer: () => void = () => {};
+    const held = new Promise<void>((go) => (answer = go));
+    await mockTurn(page, { statement: "Noted.", statement_id: 9303, hold: held });
+    await page.locator("#composer").fill("My dad moved out.");
+    await page.locator("#send").click();
+    const wait = page.locator(".bub.coach.typing");
+    await expect(wait).toBeVisible();
+    const motion = await wait.evaluate((b) => getComputedStyle(b, "::after").animationName);
+    expect(motion).toBe("think");
+    answer();
+  });
+
   // R-0172
   test("a long reply keeps its newest words in view as they are typed", async ({ page }) => {
     await start(page);
