@@ -244,6 +244,49 @@ test.describe("a thread reopened", () => {
     expect(rest).toBeLessThanOrEqual(1);
     expect(await below(page)).toBeLessThanOrEqual(1);
   });
+
+  test.describe("read with a thumb", () => {
+    test.use({ hasTouch: true });
+
+    // R-0636
+    test("a drag of 300px up the thread folds the picture at most once and no bubble jumps under the thumb", async ({
+      page,
+      context,
+    }) => {
+      await page.addInitScript(() => localStorage.setItem("fd-home-screen-asked", String(Date.now())));
+      await page.goto("/app/");
+      await expect(page.locator(".bub").first()).toBeVisible();
+      await page.waitForTimeout(1500);
+      await page.evaluate(() => {
+        const screen = document.querySelector("#chat-screen")!;
+        const bubble = document.querySelectorAll("#chat .bub")[document.querySelectorAll("#chat .bub").length - 3];
+        const seen = { folds: 0, ys: [] as number[] };
+        Object.assign(window, { seen });
+        new MutationObserver(() => seen.folds++).observe(screen, { attributes: true, attributeFilter: ["class"] });
+        const tick = () => {
+          seen.ys.push(bubble.getBoundingClientRect().y);
+          requestAnimationFrame(tick);
+        };
+        tick();
+      });
+      const cdp = await context.newCDPSession(page);
+      const touch = (type: string, y: number) =>
+        cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x: 200, y }] });
+      await touch("touchStart", 250);
+      for (let i = 1; i <= 50; i++) {
+        await touch("touchMove", 250 + i * 6);
+        await page.waitForTimeout(16);
+      }
+      await touch("touchEnd", 550);
+      await page.waitForTimeout(600);
+      const seen = await page.evaluate(
+        () => (window as unknown as { seen: { folds: number; ys: number[] } }).seen,
+      );
+      expect(seen.folds).toBeLessThanOrEqual(1);
+      const jumps = seen.ys.slice(1).map((y, i) => Math.abs(y - seen.ys[i]));
+      expect(Math.max(...jumps)).toBeLessThan(20);
+    });
+  });
 });
 
 test.describe("an empty session", () => {
