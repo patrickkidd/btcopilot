@@ -1,6 +1,7 @@
 """Which model coaches one person; which models run each of their turns again
-for comparison only [R-0596] is their own setting, shown here. With none set a
-person gets the default model and no second run."""
+for comparison only [R-0596] is their own setting, shown here, picked from the
+shadow models set here for everyone [R-0637]. With none set a person gets the
+default model and no second run."""
 
 import enum
 
@@ -24,7 +25,8 @@ class Unset(enum.StrEnum):
 
 @click.group("coach-model")
 def coach_model():
-    """The coach model and the shadow models of one person."""
+    """The coach model and the shadow models of one person, and the shadow
+    models anyone may have."""
 
 
 def _row(user: User) -> dict:
@@ -46,6 +48,34 @@ def _known(aliases: tuple[str, ...], unset: Unset | None) -> None:
             f"unknown model {', '.join(unknown)}; "
             f"one of {', '.join(MODEL_ALIASES)}{alone}"
         )
+
+
+@coach_model.group("shadows")
+def shadows():
+    """The models staff may turn on to run each turn again, for everyone."""
+
+
+def _shadows() -> list[dict]:
+    return [{"model": alias} for alias in setting.shadow_candidates()]
+
+
+@shadows.command("show")
+@rows_option
+def shadows_show():
+    """The models staff may turn on; Sonnet alone when none were set."""
+    return _shadows()
+
+
+@writes
+@shadows.command("set")
+@click.argument("aliases", nargs=-1, required=True)
+@rows_option
+def shadows_set(aliases):
+    """The models staff may turn on, as model aliases. A person who had one
+    that is left out loses it on their next turn or settings visit."""
+    _known(aliases, None)
+    setting.write(SettingKey.ShadowCandidates, list(aliases))
+    return _shadows()
 
 
 @coach_model.command("show")

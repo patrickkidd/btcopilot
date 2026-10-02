@@ -16,7 +16,6 @@ from btcopilot.models.interaction import InteractionKind
 from btcopilot.models import Diagram, License, Policy
 from btcopilot.models.license import LicenseStatus
 from btcopilot.models.preferences import (
-    SHADOW_CANDIDATES,
     BugReports,
     ChatMode,
     PrefKey,
@@ -367,7 +366,7 @@ def test_preferences_defaults(web, test_user):
         "first_name": test_user.first_name,
         "last_name": test_user.last_name,
         "birthdate": None,
-        "shadow_candidates": list(SHADOW_CANDIDATES),
+        "shadow_candidates": ["sonnet"],
     }
 
 

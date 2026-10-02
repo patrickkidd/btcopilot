@@ -295,6 +295,24 @@ def test_a_chat_pick_keeps_whether_each_reply_was_acceptable(
     ]
 
 
+def test_a_chat_pick_keeps_which_reply_was_shown_first(patrick, test_user, case):
+    # R-0640
+    turn = turn_of(test_user, case)
+    pick = patrick.get(f"/review/picks?turn={turn}").json["picks"][0]
+    assert pick["shown"] is None
+    patrick.put(
+        f"/review/picks/{pick['id']}",
+        json={"choice": PickChoice.Tie, "shown": PickChoice.Right},
+    )
+    stored = db.session.get(Pick, pick["id"])
+    assert (stored.left_ref["shown_first"], stored.right_ref["shown_first"]) == (
+        False,
+        True,
+    )
+    voted = patrick.get(f"/review/picks?turn={turn}").json["picks"]
+    assert next(p for p in voted if p["id"] == pick["id"])["shown"] == PickChoice.Right
+
+
 def test_an_unacceptable_reply_cannot_win(patrick, test_user, case):
     # R-0640
     pick = patrick.get(f"/review/picks?turn={turn_of(test_user, case)}").json["picks"][0]

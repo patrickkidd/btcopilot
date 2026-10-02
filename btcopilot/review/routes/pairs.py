@@ -207,6 +207,7 @@ def _turn(turn_id: str):
                     "left_acceptable": pick.left_acceptable,
                     "right_acceptable": pick.right_acceptable,
                     "note": pick.note,
+                    "shown": _shown(pick),
                 }
                 for pick in picks
             ],
@@ -216,6 +217,17 @@ def _turn(turn_id: str):
             "expected": rows.count(),
         }
     )
+
+
+def _shown(pick: Pick) -> PickChoice | None:
+    """Which side was on screen first when it was voted (R-0640)."""
+    for side, ref in (
+        (PickChoice.Left, pick.left_ref),
+        (PickChoice.Right, pick.right_ref),
+    ):
+        if ref.get("shown_first"):
+            return side
+    return None
 
 
 def _check(choice: PickChoice, left: bool | None, right: bool | None):
@@ -234,7 +246,8 @@ def _check(choice: PickChoice, left: bool | None, right: bool | None):
 @bp.route("/picks/<int:pick_id>", methods=["PUT"])
 def pick_put(pick_id: int):
     """The pick, and only then the two model names. A pick made in the chat is
-    its owner's, admin or auditor (R-0640)."""
+    its owner's, admin or auditor; `shown` is the side on screen first
+    (R-0640)."""
     user = coder()
     pick = db.session.get(Pick, pick_id)
     if pick is None:
@@ -253,6 +266,12 @@ def pick_put(pick_id: int):
         if PickSource(body["source"]) is not PickSource.Chat:
             raise ValueError("a pick can only move to the chat")
         pick.source = PickSource.Chat
+    if body.get("shown") is not None:
+        shown = PickChoice(body["shown"])
+        if shown is PickChoice.Tie:
+            raise ValueError("shown is left or right")
+        pick.left_ref = {**pick.left_ref, "shown_first": shown is PickChoice.Left}
+        pick.right_ref = {**pick.right_ref, "shown_first": shown is PickChoice.Right}
     pick.update(
         choice=choice,
         left_acceptable=left,

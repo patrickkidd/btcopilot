@@ -13,7 +13,8 @@ from btcopilot.licence import professional
 from btcopilot.routes.diagrams import diagrams_payload
 from btcopilot.discussions import utc_iso
 from btcopilot.extensions import db
-from btcopilot.models.preferences import SHADOW_CANDIDATES, PrefKey
+from btcopilot.admin.setting import shadow_candidates
+from btcopilot.models.preferences import PrefKey
 
 PROFILE_FIELDS = ("first_name", "last_name", "birthdate")
 
@@ -32,7 +33,7 @@ def _preferences(user) -> dict:
     payload["first_name"] = user.first_name
     payload["last_name"] = user.last_name
     payload["birthdate"] = user.birthdate.isoformat() if user.birthdate else None
-    payload["shadow_candidates"] = SHADOW_CANDIDATES
+    payload["shadow_candidates"] = shadow_candidates()
     if user.has_role(btcopilot.ROLE_ADMIN):
         payload["shadow_cost"] = shadow.spend(datetime.datetime.utcnow())
     return payload

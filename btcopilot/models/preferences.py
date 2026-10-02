@@ -1,6 +1,8 @@
 import datetime
 import enum
 
+from btcopilot.llmutil import MODEL_ALIASES
+
 
 class PrefKey(enum.StrEnum):
     Speak = "speak"
@@ -53,9 +55,6 @@ class BugReports(enum.StrEnum):
     Always = "always"
 
 
-# The models a turn may run again on, as aliases in llmutil.MODEL_ALIASES.
-SHADOW_CANDIDATES = ("sonnet", "gemini-pro")
-
 PREF_ENUMS = {
     PrefKey.Proactive: Proactive,
     PrefKey.Mode: ChatMode,
@@ -86,8 +85,8 @@ def coerce_pref(key: PrefKey, value):
             else datetime.datetime.fromisoformat(value).isoformat()
         )
     if key is PrefKey.ShadowModels:
-        if not isinstance(value, (list, tuple)) or set(value) - set(SHADOW_CANDIDATES):
-            raise ValueError(f"{key} must name only {SHADOW_CANDIDATES}, got {value!r}")
+        if not isinstance(value, (list, tuple)) or set(value) - set(MODEL_ALIASES):
+            raise ValueError(f"{key} must name only model aliases, got {value!r}")
         return tuple(value)
     if isinstance(PREF_DEFAULTS[key], bool):
         if not isinstance(value, bool):

@@ -28,7 +28,7 @@ not edit it by hand; change the commands and generate it again.
 
 ### `flask admin coach-model`
 
-The coach model and the shadow models of one person.
+The coach model and the shadow models of one person, and the shadow models anyone may have.
 
 ### `flask admin coach-model backfill <email> <aliases>`
 
@@ -52,6 +52,29 @@ Changes something: needs `--yes`.
 |---|---|
 | `email` | required |
 | `alias` | required |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin coach-model shadows`
+
+The models staff may turn on to run each turn again, for everyone.
+
+### `flask admin coach-model shadows set <aliases>`
+
+The models staff may turn on, as model aliases. A person who had one that is left out loses it on their next turn or settings visit.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `aliases` | required |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin coach-model shadows show`
+
+The models staff may turn on; Sonnet alone when none were set.
+
+| Argument | What it is |
+|---|---|
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin coach-model show [email]`

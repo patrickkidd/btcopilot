@@ -8,7 +8,9 @@ from btcopilot import shadow
 from btcopilot.discussions import open_session, utc_iso
 from btcopilot.extensions import db
 from btcopilot.models import ModelCall, Purpose, ShadowTurn, Statement
-from btcopilot.models.preferences import SHADOW_CANDIDATES, PrefKey
+from btcopilot.admin import setting
+from btcopilot.admin.setting import SettingKey
+from btcopilot.models.preferences import PrefKey
 from btcopilot.review.models import Pick, PickChoice, PickSource
 from btcopilot.tests.conftest import csrf_token
 
@@ -72,10 +74,10 @@ def test_an_auditor_turns_shadows_on_and_only_an_admin_sees_their_cost(
 ):
     # R-0637
     test_user.roles = btcopilot.ROLE_AUDITOR
-    db.session.commit()
+    setting.write(SettingKey.ShadowCandidates, ["sonnet", "gemini-pro"])
     body = shadows(web, token, ["sonnet", "gemini-pro"]).get_json()
     assert body[PrefKey.ShadowModels.value] == ["sonnet", "gemini-pro"]
-    assert body["shadow_candidates"] == list(SHADOW_CANDIDATES)
+    assert body["shadow_candidates"] == ["sonnet", "gemini-pro"]
     assert "shadow_cost" not in body
 
     test_user.roles = btcopilot.ROLE_ADMIN
@@ -92,6 +94,34 @@ def test_an_auditor_turns_shadows_on_and_only_an_admin_sees_their_cost(
     db.session.commit()
     body = web.get("/app/preferences").get_json()
     assert body["shadow_cost"] == {"per_turn_usd": 0.3, "month_usd": 0.6}
+
+
+def test_only_sonnet_is_a_shadow_model_until_an_admin_sets_others(
+    web, token, test_user
+):
+    # R-0637
+    test_user.roles = btcopilot.ROLE_AUDITOR
+    db.session.commit()
+    assert web.get("/app/preferences").get_json()["shadow_candidates"] == ["sonnet"]
+    assert shadows(web, token, ["gemini-pro"]).status_code == 400
+    assert test_user.pref(PrefKey.ShadowModels) == ()
+
+
+@pytest.mark.parametrize(
+    "candidates, left", [(["sonnet"], ["sonnet"]), (["opus-5.5"], [])]
+)
+def test_a_model_taken_off_the_shadow_models_is_dropped_from_whoever_had_it(
+    web, token, test_user, candidates, left
+):
+    # R-0637
+    test_user.roles = btcopilot.ROLE_AUDITOR
+    setting.write(SettingKey.ShadowCandidates, ["sonnet", "gemini-pro"])
+    shadows(web, token, ["sonnet", "gemini-pro"])
+    setting.write(SettingKey.ShadowCandidates, candidates)
+    body = web.get("/app/preferences").get_json()
+    assert body[PrefKey.ShadowModels.value] == left
+    assert test_user.pref(PrefKey.ShadowModels) == tuple(left)
+    assert (test_user.pref(PrefKey.ShadowSince) is None) == (not left)
 
 
 @pytest.mark.parametrize("minutes, on", [(6, False), (4, True)])

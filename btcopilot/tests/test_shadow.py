@@ -245,6 +245,7 @@ def test_each_shadow_model_runs_the_turn_again_on_its_own(
     monkeypatch.setattr(
         "btcopilot.shadow.model_for", lambda name: Model(said(replies[name]))
     )
+    setting.write(SettingKey.ShadowCandidates, list(replies))
     shadows(test_user, *replies)
     with patch("btcopilot.shadow.enqueue", shadow.run):
         body = post(web, token, "My sister is Nell.")

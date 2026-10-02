@@ -15,6 +15,7 @@ from sqlalchemy import exists, func, or_, select
 from sqlalchemy.orm import aliased
 
 from btcopilot import diagramjson, extensions, record
+from btcopilot.admin.setting import shadow_candidates
 from btcopilot.coachmodel import model_for
 from btcopilot.llmutil import Spent, resolve_model
 from btcopilot.pricing import cost, price
@@ -60,6 +61,8 @@ IDLE = datetime.timedelta(minutes=5)
 
 
 def switch(user: User, models: list, now: datetime.datetime) -> None:
+    if unknown := set(models) - set(shadow_candidates()):
+        raise ValueError(f"not a shadow model: {', '.join(sorted(unknown))}")
     if not models:
         user.set_prefs(shadow_models=[], shadow_since=None)
     elif user.pref(PrefKey.ShadowModels):
@@ -92,9 +95,15 @@ def expiry(
     user: User, now: datetime.datetime, before: int | None = None
 ) -> datetime.datetime | None:
     """When Conversation Feedback turns itself off, None once it is off; past
-    that time it is turned off here. `before` counts only the coach's replies
-    written before that statement."""
-    if not user.pref(PrefKey.ShadowModels):
+    that time it is turned off here, and a model no longer a shadow candidate
+    is dropped. `before` counts only the coach's replies written before that
+    statement."""
+    models = user.pref(PrefKey.ShadowModels)
+    kept = [alias for alias in models if alias in shadow_candidates()]
+    if kept != list(models):
+        switch(user, kept, now)
+        db.session.commit()
+    if not kept:
         return None
     times = [last_reply(user, before), last_vote(user)]
     if since := user.pref(PrefKey.ShadowSince):
