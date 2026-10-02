@@ -139,6 +139,22 @@ def test_a_title_call_that_fails_leaves_the_reply_and_the_sitting_unnamed(
     assert logged(body["turn_id"])[-1]["type"] == TurnEventKind.Done.value
 
 
+def test_a_sitting_is_not_named_until_its_summary_is_written(
+    web, token, family, monkeypatch
+):
+    # R-0097, R-0661
+    coach(monkeypatch, said("Tell me about Nell."), said("Go on."))
+    calls = [wrote("A summary"), TimeoutError(), wrote("A summary"), wrote("Nell")]
+    with patch("btcopilot.metered.gemini_text_sync", side_effect=calls):
+        body = post(web, token).get_json()
+        discussion = db.session.get(Discussion, body["discussion_id"])
+        assert discussion.title is None
+
+        post(web, token, "She is older.")
+    db.session.refresh(discussion)
+    assert (discussion.title, discussion.summary) == ("Nell", "A summary")
+
+
 def test_the_sitting_before_is_titled_again_from_all_of_it_when_the_next_opens(
     web, token, family, monkeypatch
 ):
@@ -149,8 +165,8 @@ def test_the_sitting_before_is_titled_again_from_all_of_it_when_the_next_opens(
         statement.created_at -= 2 * SITTING_GAP
     db.session.commit()
     titles = [
-        wrote("The move"),
         wrote("A summary"),
+        wrote("The move"),
         wrote("Conflict with father over care of mother"),
     ]
     with patch("btcopilot.metered.gemini_text_sync", side_effect=titles) as gemini:
@@ -386,6 +402,24 @@ def test_a_turn_stopped_between_two_tool_calls_takes_its_edits_back(
     assert "conflict" not in done
     kept = TurnEvent.query.filter_by(turn_id=body["turn_id"]).all()
     assert [k.kind for k in kept] == [TurnEventKind.Done.value]
+
+
+def test_a_turn_stopped_while_its_sitting_is_named_keeps_no_reply(
+    web, token, family, monkeypatch
+):
+    # R-0636
+    coach(monkeypatch, said("Tell me about Nell."))
+
+    def stop(turn):
+        turnlog.halt(turn.turn_id)
+
+    monkeypatch.setattr("btcopilot.coachturn.CoachTurn._title", stop)
+    body = post(web, token).get_json()
+
+    discussion = db.session.get(Discussion, body["discussion_id"])
+    assert [s.text for s in discussion.statements] == ["My sister is Nell."]
+    done = logged(body["turn_id"])[-1]
+    assert (done["type"], done["stopped"]) == (TurnEventKind.Done.value, True)
 
 
 def test_a_stopped_turn_keeps_edits_changed_since_and_says_so(

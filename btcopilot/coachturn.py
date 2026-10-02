@@ -438,6 +438,7 @@ class CoachTurn:
             self.model, system, messages, spoken, self.data, self.discussion.diagram_id, self.turn_id
         )
         spoken = narrate(self.model, system, messages, spoken, self.turn_id)
+        self._halt()
 
         reply = chips.validate(spoken.strip(), self.data, self.discussion.diagram_id)
         # What was typed out live is the words as the model first said them. A
@@ -464,6 +465,7 @@ class CoachTurn:
         )
         if self.discussion.title is None:
             self._title()
+        self._halt()
         if not self.scratch:
             profile.mirror(self.discussion.user, self.data)
             TokenMeter.charge(self.discussion.user_id, self.model.spent)
@@ -480,14 +482,15 @@ class CoachTurn:
     def _title(self) -> None:
         """Naming the sitting is not the reply: when that call fails the
         sitting stays unnamed and the next turn names it, whether Gemini
-        answered with an error, could not be reached or took too long. A
+        answered with an error, could not be reached or took too long. The
+        summary is written first, so a named sitting always has one. A
         sitting is named from its opening words, so the one before it, now
         over, is named once more from all of it; when that call fails its
         title stays."""
         summary = self.model.aside(Purpose.Summary)
         try:
-            self.discussion.update_title(summary)
             self.discussion.update_summary(summary)
+            self.discussion.update_title(summary)
             before = previous(self.discussion)
             if before:
                 before.update_title(summary)
