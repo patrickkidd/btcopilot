@@ -4,7 +4,7 @@ import { hush, say } from "./speech";
 import { INFO, notesView, type Notes } from "./notes";
 import { html, type Line } from "./tools";
 import { AWAY_PX, fit, fold, type Fold } from "./viewport";
-import { IDLE_MS, Vote, type Host } from "./vote";
+import { Vote, type Host } from "./vote";
 import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
@@ -346,7 +346,6 @@ export class Chat {
   sent(): boolean {
     const lapsed = this.shadows > 0 && !this.feedback();
     if (lapsed) this.shadows = 0;
-    else if (this.shadows) this.expires = Date.now() + IDLE_MS;
     return lapsed;
   }
 

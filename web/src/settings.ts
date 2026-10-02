@@ -59,7 +59,7 @@ const SHADOW_WARNING =
 const SHADOW_HINT =
   "Other models also answer each turn, unnamed. Each reply waits a few seconds for them. " +
   "You vote before you can type again.";
-const SHADOW_LAPSE = `Turns off ${IDLE_MS / 60_000} minutes after your last message`;
+const SHADOW_LAPSE = `Turns off ${IDLE_MS / 60_000} minutes after the coach's last reply`;
 const cents = (usd: number) => `about ${Math.round(usd * 100)}¢ a turn`;
 const dollars = (usd: number) => `$${usd.toFixed(2)}`;
 const SEARCH_AT = 6;
