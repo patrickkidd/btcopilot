@@ -25,6 +25,8 @@ import type {
   Passkey,
   Pair,
   Picked,
+  Cast,
+  Shadows,
   PickChoice,
   ModelPicks,
   PasskeyCreationOptions,
@@ -206,6 +208,11 @@ export const thread = (diagramId: number | null, before?: number, signal?: Abort
  * said (R-0477). */
 export const resume = (turnId: string) =>
   call<Started>("POST", `/turns/${turnId}/resume`);
+
+/** Ask the running turn to end at its next step; its edits are taken back
+ * and its stream says so (R-0636). */
+export const stop = (turnId: string) =>
+  call<{ turn_id: string }>("POST", `/turns/${turnId}/stop`);
 
 /** Follow a running turn. A page attaching to one reads it from the start and
  * draws the bubble again; the browser's own reconnect says where it got to
@@ -565,3 +572,9 @@ export const modelPicks = () => ask<ModelPicks[]>("GET", "/picks");
 /** Patrick's pick, which is answered with the two model names. */
 export const pick = (id: number, choice: PickChoice, note: string) =>
   ask<Picked>("PUT", `/picks/${id}`, { choice, note });
+
+/** One turn's replies to vote on in the chat (R-0636). */
+export const shadows = (turnId: string) =>
+  ask<Shadows>("GET", `/picks?turn=${encodeURIComponent(turnId)}`);
+
+export const cast = (id: number, body: Cast) => ask<Picked>("PUT", `/picks/${id}`, body);

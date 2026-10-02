@@ -153,7 +153,7 @@ button { font-family: inherit; }
   color: var(--data);
   font: inherit;
 }
-:root[data-access="admin-view"] :is(#inbar .field, #send, #menu-foot, .fs-act, .rmore, .fs-note, .fs-upload, .iacts, .det .foot) {
+:root[data-access="admin-view"] :is(#inbar .field, #send, .fs-act, .rmore, .fs-note, .fs-upload, .iacts, .det .foot) {
   display: none;
 }
 
@@ -849,10 +849,11 @@ button { font-family: inherit; }
   animation: blink 0.7s steps(1) infinite;
 }
 @keyframes blink { 50% { opacity: 0; } }
-/* Waiting, before there is anything to write. The mockups blink the caret here
-   too; the owner ruled that too dead to read as thinking, so it is three dots
-   at text height instead, and his ruling supersedes the mockup. */
-.bub.typing.dots::after,
+/* Waiting, before there is anything to write: from the send until the coach's
+   first words, and while a reply held for a vote is written out unseen. The
+   owner ruled the blinking caret too dead to read as thinking, so it is three
+   dots at text height, the same ones a button that is working shows. */
+.bub.typing:is(.blind, :has(.words:empty))::after,
 .dots3::after {
   content: "";
   display: inline-block;
@@ -959,8 +960,10 @@ button { font-family: inherit; }
 .chat > .play.on .halt { display: inline; }
 .chat > .play.on { color: var(--data); }
 .chat > .play:active { color: var(--data-press); }
-/* opens the coach's notes; out of the flow in the top-right padding beside the
-   COACH label, its 44px target inside the bubble's corner, never past it */
+/* opens the coach's notes; out of the flow, level with the COACH label, its 16px
+   mark the bubble's padding in from the right edge. The 44px target stays inside
+   the bubble: the mark sits in it by transparent padding, 10.4px under it so its
+   centre is the label's (9 padding + 7.8) and 11px from the right (12 - 1 border). */
 .bub > .info {
   position: absolute;
   top: 0;
@@ -969,8 +972,8 @@ button { font-family: inherit; }
   height: 44px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0;
+  justify-content: flex-end;
+  padding: 0 11px 10.4px 0;
   border: none;
   background: none;
   color: var(--faint);
@@ -985,6 +988,93 @@ button { font-family: inherit; }
   stroke-linecap: round;
 }
 .bub > .info:active { color: var(--data-press); }
+/* the label stops short of the marks on its line: the mark and its 8px gap, then the
+   fold's 26px and its 8px gap */
+.bub:has(> .info) > .who { padding-right: 22px; }
+.bub:has(> .vt-fold) > .who { padding-right: 56px; }
+/* While shadow replies are on, the coach's reply is held back, unread aloud
+   and without its notes, until it has been voted on unnamed (R-0636). */
+/* a reply made while shadow replies are on keeps an amber edge, thicker on the
+   left, over the amber tint, so the extra cost and voting stay in view in both
+   modes; a stronger tint turns the dark panel brown and the faint words unreadable */
+.bub.coach.fb {
+  border-color: var(--ask);
+  border-left-width: 3px;
+  box-shadow: 0 0 0 1px var(--ask);
+  background: linear-gradient(var(--ask-tint), var(--ask-tint)), var(--panel);
+}
+.bub.coach.fb > .who::after { content: " \00b7  Feedback"; color: var(--ask-text); }
+.bub.blind > :not(.who, .did, .vt-wait, .vt-ballot) { display: none; }
+.chat > .bub.blind + .play { display: none; }
+.vt-wait { margin-top: 4px; font: 400 15px/1.45 var(--sans); color: var(--faint); }
+.bub.voting { max-width: 94%; }
+.vt-ballot { margin: 6px -12px -9px; }
+.vt-reply { padding: 10px 12px; border-top: 1px solid var(--line); }
+.vt-reply.ok { background: var(--tint); }
+.vt-reply > .ask { margin-top: 9px; color: var(--ask-text); font-weight: 500; }
+.vt-marks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.vt-mark {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--faint);
+  font: 500 13px var(--mono);
+  cursor: pointer;
+}
+.vt-mark.on { color: var(--data); border-color: var(--data); background: var(--tint); }
+.vt-cast { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 12px; border-top: 1px solid var(--line); }
+.vt-note {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 15px var(--sans);
+}
+.vt-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.vt-count { min-width: 0; font: 500 13px/1.3 var(--mono); color: var(--faint); font-variant-numeric: tabular-nums; }
+.vt-go { flex: none; }
+.vt-go:disabled { opacity: 0.55; cursor: default; }
+/* the replies voted on, folded behind a stack on the notes mark's line, 8px left of it */
+.bub > .vt-fold {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 30px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px 10.4px;
+  border: none;
+  background: none;
+  color: var(--faint);
+  cursor: pointer;
+}
+.bub > .vt-fold.on { color: var(--data); }
+.bub > .vt-fold svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.vt-fold .n { font: 500 13px/1 var(--mono); }
+.vt-voted { margin-top: 6px; font: 500 13px/1.4 var(--mono); color: var(--data); }
+.vt-voted.no { color: var(--faint); }
+.vt-shadow { margin: 10px -12px 0; padding: 10px 12px 0; border-top: 1px solid var(--line); color: var(--faint); }
+.vt-shadow > .ask { margin-top: 9px; color: var(--faint); font-weight: 500; }
+.vt-said { margin: 10px -12px 0; padding: 8px 12px 0; border-top: 1px solid var(--line); font: 500 13px/1.45 var(--mono); color: var(--faint); }
+.inbar.off .field { opacity: 0.55; }
+.inbar.off .send::before { background: var(--line); }
+.inbar.off .send { color: var(--faint); cursor: default; }
 /* the coach's own notes on a turn, for admins and auditors, popped out of the
    bubble they belong to */
 .notes-veil {
@@ -1167,6 +1257,8 @@ button { font-family: inherit; }
 .send {
   flex: none;
   position: relative;
+  display: grid;
+  place-items: center;
   width: 44px;
   height: 44px;
   padding: 0;
@@ -1185,6 +1277,19 @@ button { font-family: inherit; }
 }
 .send > * { position: relative; }
 .send:active { filter: brightness(0.9); }
+/* while the coach replies the button stops it, a square for the arrow */
+.inbar.stop .send > span { font-size: 0; }
+.inbar.stop .send > span::before {
+  content: "";
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: currentColor;
+}
+/* a message sent while the coach replies waits in the box, and says so */
+.field > .held { display: none; padding: 0 16px 7px; font: 400 12px/1.3 var(--sans); color: var(--faint); }
+.inbar.hold .field > .held { display: block; }
 
 /* ---- menu: the list and the editor ---- */
 .ovbar {
@@ -1356,7 +1461,7 @@ button { font-family: inherit; }
 .det { background: var(--panel); min-height: 100%; }
 /* the card is a page of its own over the list: the drawer's title row, tabs,
    search and add button give way to its back arrow and the list it goes back to */
-.carded > .ovbar, .carded > #menu-tabs, .carded > #menu-searchrow, .carded > #menu-foot { display: none; }
+.carded > .ovbar, .carded > #menu-tabs, .carded > #menu-searchrow { display: none; }
 .det .detbar {
   display: flex;
   align-items: center;
@@ -2414,6 +2519,8 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 }
 
 .sys {
+  /* its clipped overflow would let a thread longer than its box squeeze it to nothing */
+  flex: none;
   align-self: center;
   max-width: 92%;
   font: 500 13px/1.35 var(--mono);
@@ -2740,16 +2847,18 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 /* the report sheet (R-0056): over every other screen and sheet, the lists and
    the account view included; what is sent scrolls when it runs long */
 .fs-scrim.rp, .fs-sheet.rp { z-index: 70; }
+/* the question before shadow replies are switched on, over the account view */
+.fs-scrim.sh, .fs-sheet.sh { z-index: 60; }
 /* the question before a cut comes off the agenda, over the account view */
 .fs-scrim.ag, .fs-sheet.ag { z-index: 60; }
 /* on a wide screen a card at the bottom, not a band across the whole window */
-.fs-sheet.rp, .fs-sheet.ag { max-height: 92%; max-width: 480px; margin: 0 auto; }
+.fs-sheet.rp, .fs-sheet.ag, .fs-sheet.sh { max-height: 92%; max-width: 480px; margin: 0 auto; }
 /* the dim covers the whole window, so a tap in the margin beside the app
    column lands on it too */
-.fs-scrim.rp, .fs-scrim.ag { position: fixed; }
+.fs-scrim.rp, .fs-scrim.ag, .fs-scrim.sh { position: fixed; }
 /* the sheet takes the focus only so no key reaches what is behind it; it is
    no control, so it draws no ring */
-.fs-sheet.rp:focus-visible, .fs-sheet.ag:focus-visible { outline: none; }
+.fs-sheet.rp:focus-visible, .fs-sheet.ag:focus-visible, .fs-sheet.sh:focus-visible { outline: none; }
 .rp-list {
   flex: 0 1 auto;
   min-height: 0;

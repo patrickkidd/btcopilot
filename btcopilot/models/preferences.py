@@ -1,4 +1,7 @@
+import datetime
 import enum
+
+from btcopilot.llmutil import MODEL_ALIASES
 
 
 class PrefKey(enum.StrEnum):
@@ -12,6 +15,11 @@ class PrefKey(enum.StrEnum):
     HowItWorks = "how_it_works"
     LineHint = "line_hint"
     BugReports = "bug_reports"
+    # The models each of this person's turns runs again on, for comparison
+    # only [R-0596]; none is off.
+    ShadowModels = "shadow_models"
+    # When they were last turned on, set by the server only [R-0637].
+    ShadowSince = "shadow_since"
 
 
 class Proactive(enum.StrEnum):
@@ -64,10 +72,22 @@ PREF_DEFAULTS = {
     PrefKey.HowItWorks: True,
     PrefKey.LineHint: True,
     PrefKey.BugReports: BugReports.Ask,
+    PrefKey.ShadowModels: (),
+    PrefKey.ShadowSince: None,
 }
 
 
 def coerce_pref(key: PrefKey, value):
+    if key is PrefKey.ShadowSince:
+        return (
+            None
+            if value is None
+            else datetime.datetime.fromisoformat(value).isoformat()
+        )
+    if key is PrefKey.ShadowModels:
+        if not isinstance(value, (list, tuple)) or set(value) - set(MODEL_ALIASES):
+            raise ValueError(f"{key} must name only model aliases, got {value!r}")
+        return tuple(value)
     if isinstance(PREF_DEFAULTS[key], bool):
         if not isinstance(value, bool):
             raise ValueError(f"{key} must be a bool, got {value!r}")

@@ -28,7 +28,7 @@ not edit it by hand; change the commands and generate it again.
 
 ### `flask admin coach-model`
 
-The coach model and the shadow models of one person.
+The coach model and the shadow models of one person, and the shadow models anyone may have.
 
 ### `flask admin coach-model backfill <email> <aliases>`
 
@@ -54,16 +54,27 @@ Changes something: needs `--yes`.
 | `alias` | required |
 | `--json` | Print JSON, not a table. |
 
-### `flask admin coach-model shadow <email> <aliases>`
+### `flask admin coach-model shadows`
 
-Run each of this person's turns again on each model alias given, never shown to them and never charged to them; the word off alone stops it.
+The models staff may turn on to run each turn again, for everyone.
+
+### `flask admin coach-model shadows set <aliases>`
+
+The models staff may turn on, as model aliases. A person who had one that is left out loses it on their next turn or settings visit.
 
 Changes something: needs `--yes`.
 
 | Argument | What it is |
 |---|---|
-| `email` | required |
 | `aliases` | required |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin coach-model shadows show`
+
+The models staff may turn on; Sonnet alone when none were set.
+
+| Argument | What it is |
+|---|---|
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin coach-model show [email]`
@@ -312,7 +323,7 @@ Changes something: needs `--yes`.
 | `discussion_id` | required |
 | `model` | required |
 | `reference_diagram_id` | required |
-| `--cap` | Dollars; no turn starts past it. |
+| `--cap` | Dollars; no model call is made that could pass it. |
 | `--thinking` | How hard the coach thinks, for this replay only. |
 | `--prompt-dir` | A folder holding any of agent.prompty and fragments/*.md; each file there replaces the same-named prompt for this replay only, and the rest are read from the usual places. |
 | `--turns` | The last turn replayed. |
@@ -333,7 +344,7 @@ Changes something: needs `--yes`.
 | `--again` | Run a key a kept pass already holds. |
 | `--start` | Begin at this turn, going on in the scratch session and record of the kept pass --after names, which replayed every turn before it. |
 | `--after` | The kept pass to go on from. |
-| `--cap` | Dollars; no turn starts past it. |
+| `--cap` | Dollars; no model call is made that could pass it. |
 | `--thinking` | How hard the coach thinks, for this replay only. |
 | `--prompt-dir` | A folder holding any of agent.prompty and fragments/*.md; each file there replaces the same-named prompt for this replay only, and the rest are read from the usual places. |
 | `--turns` | The last turn replayed. |

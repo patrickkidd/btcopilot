@@ -1,0 +1,331 @@
+import * as api from "./api";
+import { el, esc } from "./dom";
+import { NOTE_CAP } from "./pairs";
+import { toast } from "./toast";
+import { PickChoice, PickSource, type Shadows } from "./types";
+
+/** While shadow replies are on, a coach reply waits for the other models' and
+ * the reader votes on all of them unnamed before they type again (R-0636).
+ * The reply that is the coach's is only said once the vote is in, and no model
+ * is ever named. */
+
+/** How long a reply waits at most for shadows still running: what has come
+ * by then is voted on, and with none the reply is shown alone. */
+const PATIENCE_MS = 180_000;
+/** Shadow replies turn themselves off this long after the latest of the
+ * coach's last reply being done, the last vote and being turned on (R-0637). */
+export const IDLE_MS = 5 * 60_000;
+/** How often the review is asked whether the shadows have finished. */
+const POLL_MS = 2000;
+const HELP = "One or two sentences, optional";
+
+const FOLD =
+  `<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="5.5" width="9" height="8" rx="1.5"/>` +
+  `<path d="M5 3h7.5a1.5 1.5 0 0 1 1.5 1.5V11"/></svg>`;
+
+enum Mark {
+  Ok = "ok",
+  Best = "best",
+}
+
+interface Voted {
+  ok: Set<string>;
+  best: string | null;
+  note: string;
+}
+
+/** An unacceptable reply never wins; of two acceptable ones the best does,
+ * and with no best between them, or neither acceptable, it is a tie. */
+export function choose(left: string, right: string, voted: Voted): PickChoice {
+  const l = voted.ok.has(left);
+  const r = voted.ok.has(right);
+  if (l && !r) return PickChoice.Left;
+  if (r && !l) return PickChoice.Right;
+  if (l && voted.best === left) return PickChoice.Left;
+  if (r && voted.best === right) return PickChoice.Right;
+  return PickChoice.Tie;
+}
+
+const verdict = (key: string, voted: Voted) =>
+  voted.ok.has(key)
+    ? `<div class="vt-voted">✓ acceptable${voted.best === key ? " · ★ best" : ""}</div>`
+    : `<div class="vt-voted no">not acceptable</div>`;
+
+/** What the vote needs of the thread it sits in. */
+export interface Host {
+  /** A reply's words laid out as a coach reply is, with nothing to say which
+   * one the coach's is. */
+  written(text: string): string;
+  /** The message box, closed while the vote is open. */
+  hold(on: boolean): void;
+  /** The thread follows the bubble down as it grows. */
+  scroll(): void;
+  /** The thread goes to its last words, wherever the reader had it. */
+  end(): void;
+  /** A vote was saved, which counts as the person still being here. */
+  voted(): void;
+}
+
+/** How a turn's picks were voted, read back once the page is loaded again: a
+ * reply is best where it won a pick in which both replies were acceptable. */
+function votedOn(picks: Shadows["picks"]): Voted {
+  const ok = new Set<string>();
+  let best: string | null = null;
+  for (const p of picks) {
+    if (p.left_acceptable) ok.add(p.left_key);
+    if (p.right_acceptable) ok.add(p.right_key);
+    if (p.left_acceptable && p.right_acceptable && p.choice !== PickChoice.Tie)
+      best = p.choice === PickChoice.Left ? p.left_key : p.right_key;
+  }
+  return { ok, best, note: picks.find((p) => p.note)?.note ?? "" };
+}
+
+export class Vote {
+  private voted: Voted = { ok: new Set(), best: null, note: "" };
+  private replies: Shadows["replies"] = [];
+  private realKey = "";
+  private ballot: HTMLElement | null = null;
+  /** Whether the turn's replies have been read from the review. */
+  private read = false;
+
+  constructor(
+    private bubble: HTMLElement,
+    private turnId: string,
+    /** How many shadow models answer the turn: one pick each when all are in. */
+    private models: number,
+    private host: Host,
+  ) {
+    bubble.classList.add("fb");
+  }
+
+  /** A reply just made: held back until its shadows are in and voted on. */
+  wait(): this {
+    this.bubble.classList.add("blind");
+    this.bubble.append(el("div", "vt-wait dots3", "Waiting for other replies"));
+    this.host.hold(true);
+    this.host.scroll();
+    void this.start();
+    return this;
+  }
+
+  /** A reply drawn from the thread, its shadows folded behind the mark. The
+   * thread's last message is read at once, so a vote a reload left open opens
+   * again and holds the message box; any other is read when its fold is
+   * opened, and a vote found open there leaves the box alone. */
+  kept(last: boolean): this {
+    this.fold(this.models);
+    if (last) void this.resume(true);
+    return this;
+  }
+
+  private async resume(last: boolean): Promise<void> {
+    const shadows = await api.shadows(this.turnId);
+    this.read = true;
+    const fold = this.bubble.querySelector<HTMLElement>(":scope > .vt-fold")!;
+    if (!this.take(shadows)) return fold.remove();
+    if (shadows.picks.some((p) => p.choice === null)) {
+      fold.remove();
+      this.bubble.classList.add("blind");
+      if (last) this.host.hold(true);
+      return this.open(shadows.picks);
+    }
+    this.voted = votedOn(shadows.picks);
+    fold.querySelector(".n")!.textContent = String(this.replies.length - 1);
+    if (!last) this.unfold(fold);
+  }
+
+  private async start(): Promise<void> {
+    let shadows: Shadows | null;
+    try {
+      shadows = await this.ready();
+    } catch (error) {
+      this.alone();
+      throw error;
+    }
+    if (shadows) this.show(shadows);
+  }
+
+  /** The turn's replies once every shadow started has finished, or whatever
+   * is in at the deadline; null when the thread was put away meanwhile. The
+   * shadows are started just after the reply is done, so none started yet is
+   * not all finished. */
+  private async ready(): Promise<Shadows | null> {
+    const until = Date.now() + PATIENCE_MS;
+    for (;;) {
+      if (!this.bubble.isConnected) return null;
+      const shadows = await api.shadows(this.turnId);
+      const done = shadows.expected >= this.models && shadows.pending === 0;
+      if (done || Date.now() + POLL_MS > until) return shadows;
+      await new Promise((go) => setTimeout(go, POLL_MS));
+    }
+  }
+
+  private show(shadows: Shadows): void {
+    if (!this.take(shadows)) return this.alone();
+    this.open(shadows.picks);
+  }
+
+  /** Only a reply in a pick is voted on; false when that leaves no vote. */
+  private take(shadows: Shadows): boolean {
+    const picked = new Set(shadows.picks.flatMap((p) => [p.left_key, p.right_key]));
+    this.replies = shadows.replies.filter((r) => picked.has(r.key));
+    if (this.replies.length < 2) return false;
+    this.realKey = shadows.real_key!;
+    return true;
+  }
+
+  /** No shadow came in time: the coach's reply alone, as on any other turn. */
+  private alone(): void {
+    this.bubble.querySelector(".vt-wait")?.remove();
+    this.bubble.classList.remove("blind");
+    this.host.hold(false);
+  }
+
+  private open(picks: Shadows["picks"]): void {
+    this.read = true;
+    this.bubble.querySelector(".vt-wait")?.remove();
+    this.bubble.classList.add("voting");
+    this.bubble.querySelector(".who")!.textContent = `${this.replies.length} replies`;
+    const ballot = el(
+      "div",
+      "vt-ballot",
+      this.replies
+        .map(
+          (r) =>
+            `<div class="vt-reply" data-key="${esc(r.key)}">${this.host.written(r.text)}` +
+            `<div class="vt-marks">` +
+            `<button class="vt-mark" type="button" data-mark="${Mark.Ok}" aria-pressed="false">✓ acceptable</button>` +
+            `<button class="vt-mark" type="button" data-mark="${Mark.Best}" aria-pressed="false">☆ best</button>` +
+            `</div></div>`,
+        )
+        .join("") +
+        `<div class="vt-cast">` +
+        `<input class="vt-note" type="text" maxlength="${NOTE_CAP}" aria-label="Note" placeholder="${HELP}">` +
+        `<div class="vt-row"><span class="vt-count"></span>` +
+        `<button class="btn primary vt-go" type="button">Vote</button></div></div>`,
+    );
+    const note = ballot.querySelector<HTMLInputElement>(".vt-note")!;
+    const count = ballot.querySelector<HTMLElement>(".vt-count")!;
+    note.addEventListener("input", () => {
+      count.textContent = note.value ? `${note.value.length}/${NOTE_CAP}` : "";
+    });
+    // the words of a reply are not a look at the picture while it is unnamed
+    ballot.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const target = e.target as Element;
+      const mark = target.closest<HTMLElement>(".vt-mark");
+      if (mark) return this.mark(mark.closest<HTMLElement>(".vt-reply")!.dataset.key!, mark.dataset.mark as Mark);
+      const go = target.closest<HTMLButtonElement>(".vt-go");
+      if (go) void this.cast(go, picks, note.value.trim());
+    });
+    this.bubble.append(ballot);
+    this.ballot = ballot;
+    this.host.scroll();
+  }
+
+  /** Acceptable on its own; best is one reply at most, and is acceptable too. */
+  private mark(key: string, which: Mark): void {
+    const { ok } = this.voted;
+    if (which === Mark.Best) {
+      this.voted.best = this.voted.best === key ? null : key;
+      if (this.voted.best) ok.add(key);
+    } else if (ok.has(key)) {
+      ok.delete(key);
+      if (this.voted.best === key) this.voted.best = null;
+    } else ok.add(key);
+    for (const reply of this.ballot!.querySelectorAll<HTMLElement>(".vt-reply")) {
+      const fine = ok.has(reply.dataset.key!);
+      const best = this.voted.best === reply.dataset.key;
+      reply.classList.toggle("ok", fine);
+      const [okMark, bestMark] = reply.querySelectorAll<HTMLElement>(".vt-mark");
+      okMark.classList.toggle("on", fine);
+      okMark.setAttribute("aria-pressed", String(fine));
+      bestMark.classList.toggle("on", best);
+      bestMark.setAttribute("aria-pressed", String(best));
+      bestMark.textContent = `${best ? "★" : "☆"} best`;
+    }
+  }
+
+  private async cast(go: HTMLButtonElement, picks: Shadows["picks"], note: string): Promise<void> {
+    this.voted.note = note;
+    go.disabled = true;
+    try {
+      await Promise.all(
+        picks.map((p) =>
+          api.cast(p.id, {
+            choice: choose(p.left_key, p.right_key, this.voted),
+            left_acceptable: this.voted.ok.has(p.left_key),
+            right_acceptable: this.voted.ok.has(p.right_key),
+            note,
+            source: PickSource.Chat,
+            shown: this.first(p.left_key, p.right_key),
+          }),
+        ),
+      );
+    } catch (error) {
+      go.disabled = false;
+      toast(api.whatFailed(error));
+      return;
+    }
+    this.host.voted();
+    this.close();
+  }
+
+  /** Which of a pick's two replies sits higher in the ballot. */
+  private first(left: string, right: string): PickChoice.Left | PickChoice.Right {
+    const at = (key: string) => this.replies.findIndex((r) => r.key === key);
+    return at(left) < at(right) ? PickChoice.Left : PickChoice.Right;
+  }
+
+  /** The vote is in: the coach's own reply, headed Coach, and the others
+   * folded behind a mark beside the notes, with how each was voted. */
+  private close(): void {
+    this.ballot!.remove();
+    this.ballot = null;
+    this.bubble.classList.remove("blind", "voting");
+    this.bubble.querySelector(".who")!.textContent = "Coach";
+    this.fold(this.replies.length - 1);
+    this.host.hold(false);
+    this.host.end();
+  }
+
+  private fold(count: number): void {
+    const fold = el("button", "vt-fold", `${FOLD}<span class="n">${count}</span>`);
+    fold.setAttribute("type", "button");
+    fold.setAttribute("aria-label", "Shadow replies");
+    fold.setAttribute("aria-expanded", "false");
+    fold.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (this.read) this.unfold(fold);
+      else void this.resume(false);
+    });
+    this.bubble.append(fold);
+  }
+
+  private unfold(fold: HTMLElement): void {
+    const shown = this.bubble.querySelector(":scope > .vt-open");
+    fold.classList.toggle("on", !shown);
+    fold.setAttribute("aria-expanded", String(!shown));
+    if (shown) return shown.remove();
+    const { note } = this.voted;
+    this.bubble.append(
+      el(
+        "div",
+        "vt-open",
+        verdict(this.realKey, this.voted) +
+          this.replies
+            .filter((r) => r.key !== this.realKey)
+            .map(
+              (r) =>
+                `<div class="vt-shadow"><div class="who">Shadow reply</div>` +
+                this.host.written(r.text) +
+                verdict(r.key, this.voted) +
+                `</div>`,
+            )
+            .join("") +
+          (note ? `<div class="vt-said">Your note: ${esc(note)}</div>` : ""),
+      ),
+    );
+    this.host.scroll();
+  }
+}

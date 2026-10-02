@@ -1190,3 +1190,10 @@ both a target and a third person. Not yet measured live: no model calls were mad
 
 **Change** (2026-10-01): the title and the summary of a sitting are written by Gemini Flash Lite (`gemini-3.1-flash-lite`, the model the cluster regrouping uses), down from the response model, Opus 5.5. A model change only: the prompt wording is unchanged, the ledger purpose is still Summary, and the row's model column holds the model that answered. Thinking is off for these two calls.
 **Decision**: Patrick, 2026-10-01: "yes gemini flash is good for that". Not yet measured live: no model calls were made.
+
+### October 2026: The chip label limit was already in the coach's prompt (FD-368)
+
+**Change** (2026-10-01): none in the end. The sentence "Every label is at most 28 characters — a noun phrase, not a clause." was first added to the private coach reference fragment, then taken out the same day: no prompt the coach is sent includes that fragment, and the coach's own prompt already says the limit in its paragraph on pointing at the record, with an example and the warning that a label that does not fit is sent back.
+**Reason**: a 29-character label failed a turn on 2026-10-01. The queued R-0654 replaces R-0169: a labels-only retry, then a cut at a word boundary.
+**Modelled cost**: nothing; the coach's prompt is unchanged.
+**Decision**: Patrick, 2026-10-01.

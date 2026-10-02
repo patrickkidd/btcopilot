@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { inside, openList, pinned, stateFor, steady, type Key, boxOf } from "./setup";
+import { addForm, boxOf, inside, openList, pinned, stateFor, steady, type Key } from "./setup";
 
 /** What the resting picture looks like on each shape of record, and what a tap
  * on it does. Goldens, so a change to the drawing has to be looked at.
@@ -327,7 +327,7 @@ test.describe("an event added by hand", () => {
     await settle(page);
     const before = await page.locator("#view circle.dot").count();
     await openList(page);
-    await page.locator("#menu-add").click();
+    await addForm(page, "event");
     const editor = page.locator("#add-sheet .editor");
     // a move is a noted event; a new event opens as a shift, which is refused
     // until something in it moves

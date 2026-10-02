@@ -10,9 +10,12 @@
 #   sandbox reset <name>              empty the database and put the fixtures back
 #   sandbox invite <name> <email>     a sign-in link (and the Mac's copy under --dev)
 #   sandbox turn <name> [email] [words]   send one coach turn and print the reply
+#   sandbox admin <name>              seed the admin account into a running instance
 #   sandbox status [name]             what is running
 #   sandbox env <name>                the settings file to source for tests
 #
+# Every instance seeds admin@sandbox.invalid with the same sign-in link,
+# http://turin:<port>/app/invite/$SANDBOX_ADMIN_TOKEN, the token read from .env.
 # Postgres listens on <port>+10000 and Redis on <port>+11000. --dev adds the
 # Vite dev server (default 8891) at https://turin:<dev port>/app/ for Patrick's
 # phone. --host serves it at another name instead of turin, such as this Mac's
@@ -32,13 +35,15 @@ REPO=$(cd "$(dirname "$0")/../.." && pwd -P)
 # A worktree shares the main clone's .env and private corpus, both gitignored.
 MAIN=$(dirname "$(git -C "$REPO" rev-parse --path-format=absolute --git-common-dir)")
 HOME_DIR=${SANDBOX_HOME:-$HOME/btcopilot-sandbox}
+# A clone with no .env of its own reads the one in the folder above it.
 DOTENV=${SANDBOX_DOTENV:-$MAIN/.env}
+[ -f "$DOTENV" ] || DOTENV=$(dirname "$MAIN")/.env
 SOURCES=${BTCOPILOT_SOURCES:-$MAIN/btcopilot-sources}
 OLLAMA=http://127.0.0.1:11434
 WAIT=${SANDBOX_WAIT:-120}
 
 die() { echo "sandbox: $*" >&2; exit 1; }
-usage() { sed -n '8,14p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '8,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 
 at() {
   NAME=${1:-}
@@ -86,7 +91,7 @@ ready() {
 }
 
 write_settings() {
-  local site=http://127.0.0.1:$PORT
+  local site=http://$DEV_HOST:$PORT
   [ -n "$DEV" ] && site=https://$DEV_HOST:$DEV
   cat > "$D/instance.sh" <<SETTINGS
 REPO=$REPO
@@ -141,6 +146,48 @@ guide() {
 
 flask_() { (. "$D/env.sh" && cd "$REPO" && "$PY" -m flask "$@"); }
 
+# The one admin account every instance has, on an empty case called Sandbox and
+# signed in with the same link everywhere: its token is SANDBOX_ADMIN_TOKEN in .env, so it is never printed.
+SEED='
+import datetime, os
+import btcopilot
+from btcopilot.app import create_app
+from btcopilot.auth.invitation import Invitation
+from btcopilot import diagramjson
+from btcopilot.auth.signin import ensure_user
+from btcopilot.extensions import db
+from btcopilot.models import Diagram
+app = create_app()
+app.app_context().push()
+user = ensure_user("admin@sandbox.invalid")
+user.roles = f"{btcopilot.ROLE_ADMIN},{btcopilot.ROLE_SUBSCRIBER}"
+if not Diagram.query.filter_by(user_id=user.id, name="Sandbox").first():
+    empty = Diagram(user_id=user.id, name="Sandbox", data=diagramjson.dumps({}))
+    db.session.add(empty)
+    db.session.flush()
+    user.current_diagram_id = empty.id
+token = os.environ["SANDBOX_ADMIN_TOKEN"]
+invitation = Invitation.query.filter_by(token=token).first() or Invitation(token=token)
+invitation.email = user.username
+invitation.used_at = None
+invitation.expires_at = datetime.datetime.utcnow() + datetime.timedelta(days=3650)
+db.session.add(invitation)
+db.session.commit()'
+
+seed_admin() {
+  [ -f "$DOTENV" ] || { echo "sandbox: the admin link reads SANDBOX_ADMIN_TOKEN from $DOTENV, which is missing" >&2; return 1; }
+  local token
+  token=$(grep '^SANDBOX_ADMIN_TOKEN=' "$DOTENV" | cut -d= -f2-)
+  [ -n "$token" ] || { echo "sandbox: no SANDBOX_ADMIN_TOKEN in $DOTENV" >&2; return 1; }
+  (. "$D/env.sh" && cd "$REPO" && SANDBOX_ADMIN_TOKEN=$token "$PY" -c "$SEED") >> "$D/migrate.log" 2>&1 || { tails; echo "sandbox: the admin account was not seeded" >&2; return 1; }
+  local base
+  base=$(. "$D/env.sh" && echo "$FLASK_SITE_URL")
+  grep -v '^admin ' "$D/links.txt" > "$D/links.tmp" || true
+  echo "admin $base/app/invite/$token" >> "$D/links.tmp"
+  mv "$D/links.tmp" "$D/links.txt"
+  chmod 600 "$D/links.txt"
+}
+
 start_db() {
   mkdir -p "$D/pg"
   if docker ps -a --format '{{.Names}}' | grep -qx "$PG"; then
@@ -174,6 +221,7 @@ fill_db() {
   base=$(. "$D/env.sh" && echo "$FLASK_SITE_URL")
   grep -E '^[a-z0-9]+ [A-Za-z0-9_-]{20,}$' "$D/fixtures.out" \
     | awk -v base="$base" '{ print $1, base "/app/invite/" $2 }' > "$D/links.txt"
+  chmod 600 "$D/links.txt"
   echo "  database migrated, $(wc -l < "$D/links.txt" | tr -d ' ') fixture records installed (${SECONDS}s)"
 }
 
@@ -183,7 +231,7 @@ start_app() {
     keys
     guide
     cd "$REPO"
-    nohup "$PY" -m flask run -h 127.0.0.1 -p "$PORT" --no-reload >> "$D/flask.log" 2>&1 &
+    nohup "$PY" -m flask run -h 0.0.0.0 -p "$PORT" --no-reload >> "$D/flask.log" 2>&1 &
     echo $! > "$D/flask.pid"
     # prefork crashes on macOS; solo runs one turn at a time, which is plenty
     nohup "$REPO/.venv/bin/celery" -A btcopilot.celery:celery worker -P solo \
@@ -297,9 +345,10 @@ cmd_up() {
   ready "Redis on $REDIS_PORT" redis-cli -p "$REDIS_PORT" ping
   start_db
   if [ -n "$fresh" ]; then fill_db; else flask_ admin db upgrade > "$D/migrate.log" 2>&1 || { tails; stop_all; die "the migrations failed"; }; fi
+  seed_admin || { stop_all; exit 1; }
   start_app
   start_dev
-  echo "sandbox $NAME is up in ${SECONDS}s: http://127.0.0.1:$PORT/app/"
+  echo "sandbox $NAME is up in ${SECONDS}s: http://$DEV_HOST:$PORT/app/"
   [ -n "$DEV" ] && echo "  Patrick's phone: https://$DEV_HOST:$DEV/app/  (this Mac: https://127.0.0.1:$DEV/app/)"
   echo "  sign-in links for the fixture records: $D/links.txt"
   echo "  settings for tests: . $D/env.sh"
@@ -325,6 +374,7 @@ cmd_reset() {
     -c "DROP DATABASE IF EXISTS $db WITH (FORCE)" -c "CREATE DATABASE $db" >/dev/null
   redis-cli -p "$REDIS_PORT" flushall >/dev/null
   fill_db
+  seed_admin || { stop_all; exit 1; }
   start_app
   start_dev
   echo "sandbox $NAME is back on the fixtures in ${SECONDS}s"
@@ -381,9 +431,11 @@ cmd_status() {
   done
 }
 
+cmd_admin() { loaded "${1:-}"; seed_admin || exit 1; echo "the admin link of $NAME is in $D/links.txt"; }
+
 cmd_env() { loaded "${1:-}"; echo "$D/env.sh"; }
 
 case ${1:-} in
-  up | down | reset | invite | turn | status | env) c=$1; shift; "cmd_$c" "$@" ;;
+  up | down | reset | invite | turn | status | env | admin) c=$1; shift; "cmd_$c" "$@" ;;
   *) usage ;;
 esac

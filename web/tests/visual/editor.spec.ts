@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { openList, stateFor } from "./setup";
+import { addForm, openList, stateFor } from "./setup";
 
 /** Words with no place to break, longer than any phone is wide. */
 const LONG = "Fitzgerald-Winterbottom".repeat(10);
@@ -41,8 +41,8 @@ for (const width of [320, 390])
       test.skip(test.info().project.name !== "phone");
       await page.goto("/app/");
       await openList(page);
-      // the form is reached only to add an event while it is parked (PARKED)
-      await page.locator("#menu-add").click();
+      // the form is parked (PARKED) and reached only by its address
+      await addForm(page, "event");
       const editor = page.locator(".editor");
       await expect(editor.locator(".segs").first()).toBeVisible();
       await editor.locator('[data-name="description"]').fill(LONG);

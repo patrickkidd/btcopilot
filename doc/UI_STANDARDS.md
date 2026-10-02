@@ -56,6 +56,7 @@ we take the stricter number. Nothing ships below these. No exceptions without a 
 - A control that starts something starts it immediately, not on the next tick of a
   shared clock.
 - Every interactive element has a visible pressed state and a keyboard focus ring.
+- Page state survives a reload. Every screen rebuilds what the person was looking at from the server on load — an open vote, a selected mode, a selection in progress — so a reload never changes what they see. [Oracle: R-0652]
 
 ## How a diagram is opened
 - The page holds the open diagram in one place, `web/src/store.ts`: the

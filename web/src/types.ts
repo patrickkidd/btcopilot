@@ -300,6 +300,14 @@ export interface Statement {
    * play kept before digests. */
   digest: string | null;
   turn_id: string | null;
+  /** How many shadow replies a coach reply's turn has; 0 on the user's words
+   * and on a reply made with Conversation Feedback off (R-0636). */
+  feedback: number;
+  /** The reader stopped the turn these words started (R-0636). */
+  stopped: boolean;
+  /** Why a stopped turn's edits stayed in the record; null when they were
+   * taken back. */
+  conflict: string | null;
   /** What the coach did in this statement's turn: behind a reply, or before a
    * turn failed with these words left unanswered. */
   tools: ToolCall[];
@@ -396,6 +404,10 @@ export interface Reply {
   events: TurnEvent[];
   turn_id: string;
   discussion_id: number;
+  /** The reader stopped it: there are no words, and its edits were taken back. */
+  stopped?: boolean;
+  /** Why a stopped turn's edits could not be taken back, when they could not. */
+  conflict?: string;
 }
 
 /** One picture of a play-by-play: a date, the events on it, the fact line and
@@ -594,6 +606,15 @@ export interface Preferences {
   how_it_works: boolean;
   line_hint: boolean;
   bug_reports: BugReports;
+  /** The models each turn also runs on, for a vote; none is off (R-0636). */
+  shadow_models: string[];
+  /** Every model the switch turns on. */
+  shadow_candidates: string[];
+  /** When the shadows turn themselves off unless a message comes first; null
+   * while they are off (R-0637). */
+  shadow_expires_at: string | null;
+  /** What the shadows cost, sent to admins only (R-0637). */
+  shadow_cost?: { per_turn_usd: number; month_usd: number };
 }
 
 /** What a notification points at. Mirrors `NotificationKind` on the server. */
@@ -973,6 +994,43 @@ export interface Picked {
   note: string | null;
   left: string;
   right: string;
+}
+
+/** Where a pick was made: the chat's vote, against the review's own page. */
+export enum PickSource {
+  Chat = "chat",
+}
+
+/** One turn's replies to vote on, with no model named, in random order; each
+ * pick is one pair of them (R-0636). */
+export interface Shadows {
+  replies: { key: string; text: string }[];
+  /** Null when no shadow finished, and so nothing is to be voted on. */
+  real_key: string | null;
+  /** How each was voted: all null until it is. */
+  picks: {
+    id: number;
+    left_key: string;
+    right_key: string;
+    choice: PickChoice | null;
+    left_acceptable: boolean | null;
+    right_acceptable: boolean | null;
+    note: string | null;
+  }[];
+  /** Shadow replies started and not yet finished, with text or an error. */
+  pending: number;
+  /** Shadow replies started, finished or not. */
+  expected: number;
+}
+
+export interface Cast {
+  choice: PickChoice;
+  left_acceptable: boolean;
+  right_acceptable: boolean;
+  note: string;
+  source: PickSource;
+  /** The side of the pair the reader saw first. */
+  shown: PickChoice.Left | PickChoice.Right;
 }
 
 export interface ModelPicks {

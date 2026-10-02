@@ -20,7 +20,7 @@ from btcopilot.record import Invalid
 from btcopilot.coachmodel import COACH_EFFORT, CoachModel
 from btcopilot.coachturn import CoachTurn
 from btcopilot.discussions import utc_iso
-from btcopilot.metered import Metered
+from btcopilot.metered import Metered, OverCap
 from btcopilot.models import (
     Author,
     Change,
@@ -34,7 +34,14 @@ from btcopilot.models import (
 )
 from btcopilot.recordtext import date_text, render
 from btcopilot.toolbox import EDITS, ToolError, Toolbox, schemas
-from btcopilot.models import Diagram, Notification, NotificationKind, ShadowTurn, User
+from btcopilot.models import (
+    Diagram,
+    Notification,
+    NotificationKind,
+    ReplayPass,
+    ShadowTurn,
+    User,
+)
 from btcopilot.schema import PDP, Event, ItemKind, PairBond, Person, from_dict
 
 __all__ = [
@@ -60,6 +67,7 @@ __all__ = [
     "Discussion",
     "DiscussionKind",
     "Statement",
+    "ReplayPass",
     "ShadowTurn",
     "User",
     "coach_model",
@@ -305,16 +313,16 @@ def replay_into(
     """Run the coach over a cut's turns, writing what it codes onto `diagram`,
     as scratch turns that charge no one, in `copy` or a new scratch session.
     Each turn's tool calls are kept and watched as a real turn's are, so its
-    mistakes are written down. With a cap, no turn starts once the diagram's
-    calls cost that much. Each finished turn's reply is appended to `replies`
-    as it lands, so a caller keeps the turns done before a failing one."""
+    mistakes are written down. With a cap, no paid call is made that could
+    take the diagram's replay calls past it: the turn that would is taken back
+    whole, so the replay can go on from it later. Each finished turn's reply is
+    appended to `replies` as it lands, so a caller keeps the turns done before
+    a failing one."""
     if copy is None:
         copy = scratch_session(diagram, discussion)
     said = [s.text for s in spoken(statements)]
     replies = [] if replies is None else replies
     for text in said:
-        if cap is not None and spent(diagram.id) >= cap:
-            break
         turn = CoachTurn(
             copy,
             text,
@@ -322,7 +330,14 @@ def replay_into(
             model=model,
             scratch=True,
         )
-        reply = turn.run()
+        if cap is not None:
+            turn.model.afford = lambda: afford(diagram.id, cap)
+        try:
+            reply = turn.run()
+        except OverCap:
+            db.session.rollback()
+            _taken_back(turn)
+            break
         turnstore.save(
             turn.turn_id,
             copy.id,
@@ -332,6 +347,37 @@ def replay_into(
         db.session.commit()
         replies.append(reply)
     return copy, replies
+
+
+def afford(diagram_id: int, cap: Decimal) -> None:
+    """Refuse the next replay call on the record when it could pass the cap,
+    if it costs as much as the dearest so far."""
+    total, dearest = (
+        db.session.query(
+            func.coalesce(func.sum(ModelCall.cost_usd), 0),
+            func.coalesce(func.max(ModelCall.cost_usd), 0),
+        )
+        .filter(ModelCall.diagram_id == diagram_id, ModelCall.purpose == Purpose.Replay)
+        .one()
+    )
+    if total >= cap or total + dearest > cap:
+        raise OverCap(f"${total} of ${cap} spent; the dearest call cost ${dearest}")
+
+
+def _taken_back(turn: CoachTurn) -> None:
+    """A turn stopped at the cap leaves nothing but its model calls: an edit is
+    committed as it is made, and the person's words with it."""
+    session = turn.discussion
+    if Change.query.filter_by(diagram_id=turn.diagram.id, turn_id=turn.turn_id).first():
+        record.undo(
+            turn.diagram.id,
+            turn.turn_id,
+            author=Author.Coach,
+            user_id=session.user_id,
+            session_id=session.id,
+        )
+    Statement.query.filter_by(discussion_id=session.id, turn_id=turn.turn_id).delete()
+    db.session.commit()
 
 
 def scratch_session(diagram: Diagram, discussion: Discussion) -> Discussion:

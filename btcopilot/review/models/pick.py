@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import JSON, Column, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, Column, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 
 from btcopilot.extensions import db
@@ -12,6 +12,7 @@ NOTE_CAP = 200
 class PickSource(enum.StrEnum):
     Shadow = "shadow"
     Replay = "replay"
+    Chat = "chat"
 
 
 class PickChoice(enum.StrEnum):
@@ -43,5 +44,7 @@ class Pick(db.Model, ModelMixin):
     left_text = Column(Text, nullable=False)
     right_text = Column(Text, nullable=False)
     choice = Column(_enum(PickChoice), nullable=True)
+    left_acceptable = Column(Boolean, nullable=True)
+    right_acceptable = Column(Boolean, nullable=True)
     note = Column(String(NOTE_CAP), nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)

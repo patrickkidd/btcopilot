@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { deadTaps, tap, watch, watchDom } from "./gate";
 import { need, sandboxOnly } from "./sandbox";
-import { PARKED } from "./setup";
+import { addForm, PARKED } from "./setup";
 
 // Hand edits on the lists drawer: each one writes one change row by the user,
 // with the version it made, and what the page refuses it says in plain words
@@ -81,7 +81,7 @@ test.describe(() => {
 
     // a noted event added, then deleted
     const b2 = changes(d).length;
-    await tap(page, page.locator("#menu-add"));
+    await addForm(page, "event");
     const ed = page.locator("#add-sheet .editor");
     await tap(page, ed.locator('.segs[data-name=kind] .seg[data-value="noted"]'));
     await ed.locator("[data-name=description]").fill(`Added by hand ${info.project.name}`);
@@ -106,7 +106,7 @@ test.describe(() => {
 
     // a noted event with no words is stopped on the page
     const b5 = changes(d).length;
-    await tap(page, page.locator("#menu-add"));
+    await addForm(page, "event");
     const e5 = page.locator("#add-sheet .editor");
     await tap(page, e5.locator('.segs[data-name=kind] .seg[data-value="noted"]'));
     await tap(page, e5.locator(".save"));
@@ -121,7 +121,7 @@ test.describe(() => {
     page.on("request", (r) => {
       if (r.method() === "POST" && /\/app\/events(\?|$)/.test(r.url())) posts.push(r.url());
     });
-    await tap(page, page.locator("#menu-add"));
+    await addForm(page, "event");
     const e6 = page.locator("#add-sheet .editor");
     await tap(page, e6.locator('.segs[data-name=kind] .seg[data-value="shift"]'));
     await e6.locator("[data-name=description]").fill("Shift that moved nothing");

@@ -79,7 +79,7 @@ test.describe(() => {
     check(await visible("#tab-events"), "the drawer has an events tab");
     check(await visible("#tab-people"), "the drawer has a people tab");
     check(await visible("#menu-search"), "the lists can be searched");
-    check(await visible("#menu-add"), "there is a button to add an event");
+    check(!(await visible("#menu-add")), "no button adds an event: that is said to the coach");
     const rows = await page.locator("#menu-body .row").count();
     say(`event rows: ${rows}`);
     await gates("the events list");

@@ -25,6 +25,7 @@ self.addEventListener("activate", (e) => {
       .then((keys) =>
         Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))),
       )
+      .then(() => self.registration.navigationPreload.enable())
       .then(() => self.clients.claim()),
   );
 });
@@ -35,8 +36,13 @@ self.addEventListener("fetch", (e) => {
     e.request.mode === "navigate" ||
     url.pathname.startsWith("/app/static/web/");
   if (e.request.method !== "GET" || !shell) return;
+  // A page being opened is asked for by the browser itself, which the server
+  // can tell from one of the page's own reads. The worker's fetch of the same
+  // address cannot be told apart, so a session opened from its link came back
+  // as the JSON the page reads there (R-0055).
+  const asked = e.request.mode === "navigate" ? e.preloadResponse : fetch(e.request);
   e.respondWith(
-    fetch(e.request)
+    asked
       .then((response) => {
         const copy = response.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy));

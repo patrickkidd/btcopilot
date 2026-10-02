@@ -12,13 +12,14 @@ import uuid
 import btcopilot
 from btcopilot import extensions
 from btcopilot.extensions import db
-from btcopilot import chips, coverage, observer, shadow, turnlog, turnstore
+from btcopilot import chips, coverage, observer, record, shadow, turnlog, turnstore
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
 from btcopilot.coachmodel import Refusal, model_for
-from btcopilot.coachturn import CoachTurn, record_of
+from btcopilot.coachturn import CoachTurn, Stopped, record_of
 from btcopilot.discussions import session_payload
 from btcopilot.models import (
+    Author,
     Change,
     Discussion,
     Observation,
@@ -27,6 +28,7 @@ from btcopilot.models import (
     Statement,
     StatementKind,
 )
+from btcopilot.models.preferences import PrefKey
 from btcopilot.turnlog import TurnEventKind
 
 _log = logging.getLogger(__name__)
@@ -49,6 +51,10 @@ class Unfinished(Exception):
 class Busy(Exception):
     """A second message while the coach is still on the last one. Two turns on
     one session would write over each other's record."""
+
+
+class Idle(Exception):
+    """A stop for a turn that is not running."""
 
 
 def start(discussion: Discussion, statement: str) -> dict:
@@ -94,6 +100,15 @@ def resume(discussion: Discussion, turn_id: str) -> dict:
     return {"turn_id": turn_id, "discussion_id": discussion.id, "statement_id": said.id}
 
 
+def stop(discussion: Discussion, turn_id: str) -> dict:
+    """Ask the running turn to end at its next model or tool call; the turn
+    itself takes its edits back and says so in its last event (R-0636)."""
+    if turnlog.running(discussion.id) != turn_id:
+        raise Idle(f"turn {turn_id} is not running")
+    turnlog.halt(turn_id)
+    return {"turn_id": turn_id}
+
+
 def enqueue(
     turn_id: str, discussion_id: int, statement_id: int, resume: bool = False
 ) -> None:
@@ -120,9 +135,8 @@ def run(
     said = db.session.get(Statement, statement_id)
     # a resumed turn's record already holds its first attempt's edits, so it
     # has no clean copy to run a shadow on
-    shadows = (
-        [] if resume else setting.read(SettingKey.ShadowModel, discussion.user_id, [])
-    )
+    on = not resume and shadow.expiry(discussion.user, said.created_at, statement_id)
+    shadows = discussion.user.pref(PrefKey.ShadowModels) if on else ()
     before = discussion.diagram.data
     covered = coverage.counts(record_of(discussion))
     turn = CoachTurn(
@@ -137,6 +151,9 @@ def run(
     )
     try:
         reply = turn.run()
+    except Stopped:
+        db.session.rollback()
+        return _stopped(turn, statement_id)
     # A refusal is not a fault to retry: the same words would be declined
     # again. The page gets the coach's sentence and the category stays here.
     except Refusal as refused:
@@ -186,6 +203,51 @@ def run(
     for model in shadows:
         shadow.start(turn, statement_id, model, before)
     return reply
+
+
+def _stopped(turn: CoachTurn, statement_id: int) -> dict:
+    """A turn the person stopped: no reply is kept and its edits are taken back
+    as one, so the record is as it was before the words were sent; edits that
+    were changed since stay, and the last event says why (R-0636)."""
+    discussion = turn.discussion
+    ending = dict(
+        turnstore.done(statement_id, release=btcopilot.__version__), stopped=True
+    )
+    kept = []
+    if Change.query.filter_by(diagram_id=turn.diagram.id, turn_id=turn.turn_id).first():
+        try:
+            record.undo(
+                turn.diagram.id,
+                turn.turn_id,
+                author=Author.Coach,
+                user_id=discussion.user_id,
+                session_id=discussion.id,
+            )
+        except (record.Conflict, record.Invalid) as conflict:
+            _log.warning(f"coach_turn {turn.turn_id} stopped, edits kept: {conflict}")
+            ending["conflict"] = str(conflict)
+            kept = turn.kept
+    db.session.refresh(turn.diagram)
+    ending["version"] = turn.diagram.version
+    Change.query.filter(
+        Change.diagram_id == turn.diagram.id,
+        Change.turn_id.in_([turn.turn_id, f"undo:{turn.turn_id}"]),
+    ).update({"statement_id": statement_id})
+    turnstore.save(turn.turn_id, discussion.id, kept + [ending])
+    db.session.commit()
+    turnlog.clear(discussion.id)
+    event = dict(
+        ending,
+        statement=None,
+        views=[],
+        events=[],
+        turn_id=turn.turn_id,
+        kind=StatementKind.Turn.value,
+        discussion_id=discussion.id,
+        session=session_payload(discussion),
+    )
+    turnlog.append(turn.turn_id, event)
+    return event
 
 
 def _unanswered(turn: CoachTurn, statement_id: int, ending: dict) -> None:

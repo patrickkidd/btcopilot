@@ -4,6 +4,7 @@ import { hush, say } from "./speech";
 import { INFO, notesView, type Notes } from "./notes";
 import { html, type Line } from "./tools";
 import { AWAY_PX, fit, fold, type Fold } from "./viewport";
+import { IDLE_MS, Vote, type Host } from "./vote";
 import { ChipKind, ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
@@ -25,6 +26,9 @@ export interface ChatHandlers {
   label(chip: Chip): string;
   /** The card that asks whether two people are one, drawn from the record. */
   merge(chip: Chip): string;
+  /** The message box opened again after a vote: a message held while the coach
+   * was replying goes now. */
+  onOpen(): void;
 }
 
 /** The beat after a chip's sentence has been written, before the next chip
@@ -99,6 +103,11 @@ const stamped = (bubble: HTMLElement) =>
  * of it arrives, so the reader never sees brackets. */
 const PART = /\[\[[^\]]*$/;
 
+/** What the message box says while a vote is open (R-0636). */
+const VOTE_FIRST = "Vote first, then type";
+/** Under a message sent while the coach is still replying (R-0636). */
+const HELD = "Sends when the coach finishes";
+
 /** One thing the coach did, as a plain line above its words. */
 const did = (line: Line) => el("div", "did", html(line));
 
@@ -130,6 +139,19 @@ export class Chat {
    * not mistaken for the reader scrolling away. */
   private pinning = false;
   private strip: Fold;
+  /** What the message box says when it is open. */
+  private ph: string;
+  /** How many other models answer each turn too. While any do, the reader
+   * votes before typing again, and the coach's words are not shown until
+   * then (R-0636). */
+  shadows = 0;
+  /** When the shadows turn themselves off unless a message comes first. */
+  expires: number | null = null;
+  /** The words in the box were sent while the coach was replying, and go the
+   * moment the reply ends. */
+  held = false;
+  private bar: HTMLElement;
+  private button: HTMLButtonElement;
 
   constructor(
     private list: HTMLElement,
@@ -159,6 +181,14 @@ export class Chat {
       if (host === this.composer) return this.caret(button);
       this.handlers.onChip(chipOf(button));
     };
+    this.ph = composer.dataset.ph!;
+    this.bar = composer.closest<HTMLElement>(".inbar")!;
+    this.button = this.bar.querySelector<HTMLButtonElement>(".send")!;
+    composer.after(el("div", "held", HELD));
+    composer.addEventListener("input", () => {
+      if (this.draft() === "") this.unhold();
+      this.mark();
+    });
     // the chat box stays above the phone's keyboard, however it came up
     fit();
     this.strip = fold(this.composer, this.list.closest<HTMLElement>(".screen")!, () => this.toEnd());
@@ -231,12 +261,12 @@ export class Chat {
   private written(pieces: Piece[], statementId: number | null): string {
     const { words, ask, offers, tail } = layout(pieces);
     return (
-      this.render(words) +
+      `<span class="words">${this.render(words)}</span>` +
       (ask ? `<div class="ask">${asked(ask, statementId)}</div>` : "") +
       (offers.length
         ? `<div class="offer">${offers.map((c) => this.pill(c)).join("")}</div>`
         : "") +
-      this.render(tail)
+      (tail.length ? `<span class="words">${this.render(tail)}</span>` : "")
     );
   }
 
@@ -258,6 +288,8 @@ export class Chat {
 
   clear(): void {
     this.list.innerHTML = "";
+    this.unhold();
+    this.hold(false);
     this.stuck = true;
   }
 
@@ -310,11 +342,111 @@ export class Chat {
     return bubble;
   }
 
+  private voter: Host = {
+    written: (text) => this.written(tokenize(text), null),
+    hold: (on) => this.hold(on),
+    scroll: () => this.scroll(),
+    end: () => this.toEnd(),
+    voted: () => this.extend(),
+  };
+
+  /** A stored coach reply whose turn has `count` shadow replies (R-0636);
+   * `last` when it is the thread's newest message. */
+  kept(bubble: HTMLElement, turnId: string, count: number, last: boolean): Vote {
+    return new Vote(bubble, turnId, count, this.voter).kept(last);
+  }
+
+  /** Whether the shadows are on and have not yet turned themselves off. */
+  feedback(): boolean {
+    return this.shadows > 0 && this.expires !== null && Date.now() <= this.expires;
+  }
+
+  /** The five minutes start again from now while the shadows are on: a reply
+   * is there to read and vote on, or a vote was just saved (R-0637). */
+  extend(): void {
+    if (this.feedback()) this.expires = Date.now() + IDLE_MS;
+  }
+
+  /** A message goes out: shadows that turned themselves off stay off for it,
+   * and ones still on last until IDLE_MS after it. True when they had lapsed. */
+  sent(): boolean {
+    const lapsed = this.shadows > 0 && !this.feedback();
+    if (lapsed) this.shadows = 0;
+    return lapsed;
+  }
+
+  /** The message box closed while a vote is open, and open again after. */
+  private hold(on: boolean): void {
+    this.bar.classList.toggle("off", on);
+    this.composer.contentEditable = String(!on);
+    this.composer.dataset.ph = on ? VOTE_FIRST : this.ph;
+    this.button.disabled = on;
+    if (!on && this.held) this.handlers.onOpen();
+  }
+
+  /** Whether a vote has the message box closed. */
+  voting(): boolean {
+    return this.bar.classList.contains("off");
+  }
+
+  /** While the coach replies the box stays open to type in, and its button
+   * stops the reply unless there are new words in the box to send after it. */
+  running(on: boolean): void {
+    this.bar.classList.toggle("run", on);
+    this.mark();
+  }
+
+  /** Whether a tap on the button stops the reply rather than sends. */
+  stops(): boolean {
+    return this.bar.classList.contains("run") && (this.held || this.draft() === "");
+  }
+
+  /** The words in the box wait for the reply to end. */
+  keep(): void {
+    this.held = true;
+    this.bar.classList.add("hold");
+    this.mark();
+  }
+
+  unhold(): void {
+    this.held = false;
+    this.bar.classList.remove("hold");
+    this.mark();
+  }
+
+  private mark(): void {
+    const stop = this.stops();
+    this.bar.classList.toggle("stop", stop);
+    this.button.setAttribute("aria-label", stop ? "Stop" : "Send");
+  }
+
   /** A line the app says rather than either speaker, centred between the
    * bubbles: what just happened to the thread. */
   system(line: string): void {
-    this.list.append(el("div", "sys", esc(line)));
+    this.list.append(this.note(line));
     this.stuck = true;
+    this.scroll();
+  }
+
+  private note(line: string): HTMLElement {
+    return el("div", "sys", esc(line));
+  }
+
+  /** The grey line of a turn stopped before this page was read, under the
+   * words that started it, so it is still there after a reload (R-0636). */
+  halted(line: string): void {
+    this.list.append(this.note(line));
+  }
+
+  /** A reply the reader stopped gives way to a grey line in its place: nothing
+   * it began to say stays, and the dots end (R-0636). */
+  stopped(bubble: HTMLElement | null, line: string): void {
+    const at = bubble ?? this.typing;
+    const note = this.note(line);
+    if (at?.nextElementSibling?.matches(".play")) at.nextElementSibling.remove();
+    if (at) at.replaceWith(note);
+    else this.list.append(note);
+    this.typing = null;
     this.scroll();
   }
 
@@ -370,7 +502,7 @@ export class Chat {
   live(play: string | null = null): LiveBubble {
     const bubble = el(
       "div",
-      `bub ${Role.Coach} typing`,
+      `bub ${Role.Coach} typing${this.feedback() ? " blind fb" : ""}`,
       `<div class="who">Coach</div><span class="words"></span>`,
     );
     if (play !== null) bubble.dataset.play = play;
@@ -439,10 +571,12 @@ export class Chat {
         for (const chip of [...said, ...offers.map((c) => ({ chip: c })), ...tail])
           if ("chip" in chip) onChip(chip.chip);
         playable(bubble, text);
-        bubble.classList.remove("typing");
+        bubble.classList.remove("typing", "blind");
         this.typing = null;
         this.scroll();
       },
+      vote: (turnId) =>
+        this.feedback() ? new Vote(bubble, turnId, this.shadows, this.voter).wait() : null,
       type: async (text, onChip, pace = READ_MS) => {
         this.said.set(bubble, text);
         // A move holds until the sentence about it has been written and there
@@ -511,18 +645,18 @@ export class Chat {
     };
   }
 
-  /** Waiting is the same caret that types: one bar, blinking, where the words
-   * are about to appear. */
+  /** Waiting is an empty coach bubble, which shows the three dots until the
+   * words arrive. */
   busy(on: boolean): void {
     if (on && !this.typing) {
       this.typing = el(
         "div",
-        `bub ${Role.Coach} typing dots`,
-        `<div class="who">Coach</div>`,
+        `bub ${Role.Coach} typing wait`,
+        `<div class="who">Coach</div><span class="words"></span>`,
       );
       this.list.append(this.typing);
       this.scroll();
-    } else if (!on && this.typing?.classList.contains("dots")) {
+    } else if (!on && this.typing?.classList.contains("wait")) {
       this.typing.remove();
       this.typing = null;
     }
@@ -533,6 +667,7 @@ export class Chat {
    * offered keeps its amber, so what the user is about to send still looks
    * like the thing they tapped. */
   insert(chip: Chip, lead: Lead, after = " "): void {
+    if (this.composer.contentEditable === "false") return;
     this.composer.focus({ preventScroll: true });
     const selection = window.getSelection()!;
     if (
@@ -555,6 +690,7 @@ export class Chat {
     for (const button of fragment.querySelectorAll<HTMLElement>(".chip")) button.contentEditable = "false";
     range.insertNode(fragment);
     selection.collapseToEnd();
+    this.mark();
   }
 
   /** A chip in the chat box is a place in the words, not a control: a tap
@@ -586,6 +722,7 @@ export class Chat {
 
   resetDraft(): void {
     this.composer.innerHTML = "";
+    this.unhold();
   }
 
   /** How far from the bottom still counts as watching the newest words. */
@@ -644,6 +781,7 @@ export class Chat {
   toEnd(): void {
     this.stuck = true;
     this.scroll();
+    this.strip.scrolled(true, false);
     const until = performance.now() + Chat.SETTLE_MS;
     const again = () => {
       if (!this.stuck) return;
@@ -671,6 +809,9 @@ export interface LiveBubble {
   /** The reply as it will be stored: the words, the closing question, and the
    * offers, laid out for good. */
   settle(text: string, onChip: (chip: Chip) => void): void;
+  /** Right after settle: the reply held back for a vote on it and its
+   * shadows, while shadow replies are on; null when they are off. */
+  vote(turnId: string): Vote | null;
   type(text: string, onChip: (chip: Chip) => void, pace?: number): Promise<void>;
 }
 

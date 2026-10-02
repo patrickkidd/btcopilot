@@ -151,7 +151,7 @@ def replay_options(command):
                 type=Decimal,
                 default=Decimal(5),
                 show_default=True,
-                help="Dollars; no turn starts past it.",
+                help="Dollars; no model call is made that could pass it.",
             ),
             click.option(
                 "--thinking",

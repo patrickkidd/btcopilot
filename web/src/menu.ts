@@ -301,7 +301,8 @@ export class Menu {
    * do the same thing with people that we did with events. hide + comment the
    * people editor form"). In the chat app a tapped person row opens the
    * read-only person card, and a person is changed by talking to the coach
-   * about them; this form is reached there only to add someone. To bring
+   * about them; this form is reached there only by the address that adds
+   * someone, with no button to it (Patrick, 2026-10-02). To bring
    * editing back, let page() return null for people: the row then opens this
    * form under it, as it still does on the coding screen. */
   private personEditor(person: Person | null): HTMLElement {
@@ -334,7 +335,8 @@ export class Menu {
    * the event edit form for now and see how it goes with the chat"). In the
    * chat app a tapped event row opens the read-only detail view, and the event
    * is changed by talking to the coach about it; this form is reached there
-   * only to add a new event. To bring editing back, let page() return null
+   * only by the address that adds an event, with no button to it (Patrick,
+   * 2026-10-02). To bring editing back, let page() return null
    * for events: the row then opens this form under it, as it still does on
    * the coding screen. */
   private editor(event: TimelineEvent | null): HTMLElement {

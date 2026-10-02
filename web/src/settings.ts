@@ -4,11 +4,13 @@ import { $, el, esc, flash, isAdmin, isCoder, type Title } from "./dom";
 import { INDEX_URL } from "./concepts";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
+import { Sheet } from "./sheet";
 import { store } from "./store";
 import { identify } from "./telemetry";
 import { shortDate } from "./when";
 import { markup } from "./markup";
 import { addPasskey, available, deviceWords } from "./passkey";
+import { IDLE_MS } from "./vote";
 import { subscribe } from "./push";
 import { PRO, RECORD, RECORDS, Records } from "./pro";
 import { address, beyond, NAMES, Place } from "./place";
@@ -49,6 +51,17 @@ const PROACTIVE_HINT: Record<Proactive, string> = {
   [Proactive.Rarely]: writesFirst("month"),
   [Proactive.Weekly]: writesFirst("week"),
 };
+/** Said before the shadows are switched on, since every turn then costs more
+ * (R-0637). */
+const SHADOW_WARNING =
+  "This runs extra models on every coach reply so you can vote on them. It costs Patrick money. " +
+  "Check with Patrick before turning it on, and turn it off when you are done.";
+const SHADOW_HINT =
+  "Other models also answer each turn, unnamed. Each reply waits a few seconds for them. " +
+  "You vote before you can type again.";
+const SHADOW_LAPSE = `Turns off ${IDLE_MS / 60_000} minutes after the coach's last reply or your last vote`;
+const cents = (usd: number) => `about ${Math.round(usd * 100)}¢ a turn`;
+const dollars = (usd: number) => `$${usd.toFixed(2)}`;
 const SEARCH_AT = 6;
 /** Letters typed before the people search asks the server. */
 const FIND_AT = 2;
@@ -162,6 +175,8 @@ export class Settings {
   private passkeys: Passkey[] = [];
   private canPasskey = false;
   private host = el("div", "sn-stack");
+  /** The question before the shadows are switched on. */
+  private ask: Sheet;
   /** The auditor's coding guide, read on this stack like any page of it. */
   readonly literature: Sub;
   /** The account read again once the view has slid in, which draws its top
@@ -176,6 +191,13 @@ export class Settings {
   ) {
     this.host.hidden = true;
     overlay.append(this.host);
+    this.ask = new Sheet(overlay, "sh");
+    this.ask.panel.addEventListener("click", (e) => {
+      const act = (e.target as Element).closest<HTMLElement>("[data-act]")?.dataset.act;
+      if (!act) return;
+      this.ask.lower();
+      if (act === "on") void this.write({ shadow_models: this.prefs!.shadow_candidates });
+    });
     const frame = el("iframe");
     frame.id = "literature";
     frame.title = GUIDE;
@@ -209,6 +231,12 @@ export class Settings {
    * speak-replies shortcut on the chat view is the one ruled case. */
   async set(body: Partial<Preferences>): Promise<void> {
     await this.write(body);
+  }
+
+  /** Read the preferences again, which the server changes by itself when the
+   * shadows turn themselves off (R-0637). */
+  async refresh(): Promise<void> {
+    this.took(await api.preferences());
   }
 
   /** The disc behind the mark is a positioned pseudo-element, so a bare text
@@ -345,7 +373,11 @@ export class Settings {
   }
 
   private async write(body: Partial<Preferences>): Promise<void> {
-    this.prefs = await api.setPreferences(body);
+    this.took(await api.setPreferences(body));
+  }
+
+  private took(prefs: Preferences): void {
+    this.prefs = prefs;
     this.mark();
     this.applyTheme();
     this.handlers.onPrefs(this.prefs);
@@ -394,9 +426,12 @@ export class Settings {
     return row;
   }
 
-  private valueRow(label: string, value: string): HTMLElement {
+  private valueRow(label: string, value: string, ink = true): HTMLElement {
     const row = el("div", "sn-row");
-    row.append(el("div", "sn-lbl", esc(label)), el("div", "sn-val ink", esc(value || "—")));
+    row.append(
+      el("div", "sn-lbl", esc(label)),
+      el("div", `sn-val${ink ? " ink" : ""}`, esc(value || "—")),
+    );
     return row;
   }
 
@@ -738,7 +773,45 @@ export class Settings {
         ),
       ]),
     );
+    if (isAdmin() || isCoder()) pane.append(...this.shadows(prefs));
     return { title: "Coach", pane };
+  }
+
+  /** Other models answer each turn too, for a vote in the chat; staff only,
+   * and what it costs only for admins (R-0636, R-0637). */
+  private shadows(prefs: Preferences): HTMLElement[] {
+    const on = prefs.shadow_models.length > 0;
+    const cost = prefs.shadow_cost;
+    return [
+      this.group(
+        [
+          this.switchRow("Conversation Feedback", on, (want) =>
+            want ? this.confirmShadows() : void this.write({ shadow_models: [] }),
+          ),
+          ...(cost
+            ? [
+                this.valueRow("Extra cost", cents(cost.per_turn_usd), false),
+                this.valueRow("Spent this month", dollars(cost.month_usd), false),
+              ]
+            : []),
+        ],
+        // an auditor has the switch too, but the Admin group is for admins
+        isAdmin() ? "Admin" : undefined,
+      ),
+      ...(on ? [el("div", "sn-hint", esc(SHADOW_LAPSE))] : []),
+      el("div", "sn-hint", esc(SHADOW_HINT)),
+    ];
+  }
+
+  private confirmShadows(): void {
+    this.ask.show(
+      `<div class="cf-t">Turn on Conversation Feedback?</div>` +
+        `<p class="cf-p">${esc(SHADOW_WARNING)}</p>` +
+        `<div class="cf-btns">` +
+        `<button class="cf-go" type="button" data-act="on">Turn on</button>` +
+        `<button class="cf-no" type="button" data-act="cancel">Cancel</button>` +
+        `</div>`,
+    );
   }
 
   private appearance(prefs: Preferences): Built {

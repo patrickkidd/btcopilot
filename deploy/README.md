@@ -12,8 +12,7 @@ from the Pro box on purpose. Nothing in it has run yet; the droplet does not exi
    (Gemini is the model that groups events into clusters on the picture)
    with a new credential (none of the old compose file's values are reused),
    encrypt it: `sops -e secrets.env > secrets.env.enc`, delete the plain file,
-   commit `secrets.env.enc`. The Vertex service account file for Gemini goes on
-   the box at `GCP_SA_FILE` (default `/etc/fd/gcp-sa.json`, root, 600).
+   commit `secrets.env.enc`. The Gemini values are listed under "Gemini settings" below.
 2. **Keys.** On the new box: `age-keygen -o /etc/fd/age.key`, `chmod 600`. Its
    public key goes into `.sops.yaml` here beside the Mac's; the prompts, the
    rulings and the secrets file are re-encrypted with `sops updatekeys`. Claude
@@ -42,9 +41,12 @@ runs `uv run bin/deploy-lock set <its branch>`. Every deploy runs `uv run bin/de
 first and does not dispatch unless the lock names its own branch. A merge to master never
 deploys; the lock never names master or a second branch.
 
-A dispatch of `release.yml` from the lock's branch builds the image, tags it with the release
-version `3.YYYY.M.D.N+g<sha7>` (UTC commit date, N counts that day's releases; the
-image tag has `-` for `+`; R-0419), pushes it to GHCR, then pulls it on the box, rolls the app and the worker with
+A dispatch of `release.yml` from the lock's branch makes no git tag. The image is tagged
+`<branch>-g<sha7>` (for example `fd-368-g2acce7b`), and the version string the app and Grafana
+show is `3.YYYY.M.D.N+g<sha7>` (UTC commit date, N the workflow run number). A release from
+master, after the PR merges, also creates the git tag `3.YYYY.M.D.N+g<sha7>` (N counts that
+day's tags) and tags the image the same with `-` for `+` (R-0419). The dispatch builds the
+image, pushes it to GHCR, then pulls it on the box, rolls the app and the worker with
 `docker rollout` (the new container comes up beside the old one and the old one
 stops once the new one is healthy, so no request is dropped), and runs
 `flask admin db upgrade`. Nothing is built on the box. The plugin is installed
@@ -70,10 +72,11 @@ workflow's deploy does this itself whenever the Caddyfile changed; by hand it is
 branch, and a dispatch deploys the branch head. Dispatching from an older release's tag is
 refused ("not allowed to deploy to production due to environment protection rules",
 2026-09-28). Roll back by hand on the box instead, to the last good release: its commit is
-the tag `3.YYYY.M.D.N+g<sha7>` and its image the same with `-` for `+`. As root:
+the `<sha7>` in its image tag (`<branch>-g<sha7>`, or `3.YYYY.M.D.N-g<sha7>` for a release from
+master; `docker images ghcr.io/patrickkidd/btcopilot` on the box lists them). As root:
 
     cd /var/www/btcopilot && git fetch origin <sha> && git checkout --detach <sha> && cd deploy
-    export BTCOPILOT_TAG=<image tag, e.g. 3.2026.9.28.1-gf66d603>
+    export BTCOPILOT_TAG=<image tag, e.g. fd-368-g2acce7b>
     docker compose --env-file /etc/fd/secrets.env pull fd-app fd-worker fd-shadow fd-beat
     docker rollout --env-file /etc/fd/secrets.env fd-app
     docker rollout --env-file /etc/fd/secrets.env fd-worker
@@ -143,6 +146,29 @@ with `flask admin quality load` (see `quality/evals/README.md`).
 The features dashboard, `fd-features` (what people use, and what the coach and the app sent and what came back), is kept in `grafana/fd-features.json` and put the same way: the release's "Push the dashboards" step (`bin/grafanapush.py`) puts every file in `grafana/`.
 
 The desktop app's update feeds live on the legacy box and are forwarded because shipped apps have this address built in.
+
+## Gemini settings
+
+Two kinds of call go to Gemini, and they do not read the same settings. All of them live in
+`/etc/fd/secrets.env`; `secrets.env.example` names each one.
+
+| Setting | Read by | What it does |
+|---------|---------|--------------|
+| `GOOGLE_GEMINI_API_KEY` | cluster sorting, session titles and summaries, always; a coach model on Gemini when the endpoint is `developer` | the Developer API key |
+| `BTCOPILOT_GEMINI_ENDPOINT` | a coach model on Gemini (shadows and replays) | `vertex` or `developer`; unset means `vertex` |
+| `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | a coach model on Gemini, `vertex` only | the Google Cloud project and region; a call fails with a missing-key error when either is unset |
+| `GCP_SA_FILE` | compose, not the app | the path on the box of the Vertex service account file (default `/etc/fd/gcp-sa.json`, root, 600), mounted read-only at `/run/secrets/gcp-sa.json` |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Google's library, `vertex` only | set by the compose file to the mounted copy; never set in the secrets file |
+
+The file at `GCP_SA_FILE` must exist whichever endpoint is set, because compose mounts it
+either way; on `developer` nothing reads it and an empty file is enough. A box with no
+service account therefore needs exactly these two lines for every Gemini call to work:
+
+    GOOGLE_GEMINI_API_KEY=<the Developer API key>
+    BTCOPILOT_GEMINI_ENDPOINT=developer
+
+Vertex runs under the Google Cloud project, whose agreement covers health data; the Developer
+API runs on the key alone [Oracle: R-0598].
 
 ## What is not here yet
 

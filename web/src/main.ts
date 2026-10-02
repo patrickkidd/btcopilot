@@ -37,7 +37,7 @@ import {
   type PicState,
   type Sel,
 } from "./caption";
-import { $, CLUSTER, flash, pathRow, setTitle, slideOver } from "./dom";
+import { $, CLUSTER, el, flash, pathRow, setTitle, slideOver, type Title } from "./dom";
 import { address, beyond, linked, parse, PICTURE, Place, settled, UNDATED } from "./place";
 import { Return, returnKey, touch } from "./keyboard";
 import { Drawer } from "./drawer";
@@ -307,6 +307,7 @@ const chat = new Chat($("chat"), $("composer"), {
     actions();
   },
   onPlay: replay,
+  onOpen: () => flush(),
 });
 
 /** An event or a person carried from its detail card into the message box:
@@ -443,15 +444,12 @@ const coding = new Coding(
   $("coding-drawer"),
   $("coding-search") as HTMLInputElement,
   $("coding-tabs"),
-  $("coding-add"),
   $("coding-view"),
   $("overlay"),
   {
     onDone: () => void openTask(),
     onGuidelines: () => void openRules(),
-    onTitle: (title) => {
-      setTitle(title);
-    },
+    onTitle: (title) => entitle(title),
   },
 );
 
@@ -490,9 +488,7 @@ const ballot = new Ballot(
   $("ballot-body"),
   $("overlay"),
   {
-    onTitle: (title) => {
-      setTitle(title);
-    },
+    onTitle: (title) => entitle(title),
     onDone: () => void openTask(),
     onTranscript: (statementId) => void openLine(statementId),
   },
@@ -570,9 +566,7 @@ const meeting = new Meeting(
   $("meeting-bar"),
   $("overlay"),
   {
-    onTitle: (title) => {
-      setTitle(title);
-    },
+    onTitle: (title) => entitle(title),
     onRatified: (cutId) => void openResult(cutId, openAgenda),
   },
 );
@@ -580,9 +574,7 @@ const meeting = new Meeting(
 /** What the meeting produced, which everyone who took part can read once the
  * cut is ratified (R-0275). */
 const result = new ResultScreen($("result-stats"), $("result-body"), {
-  onTitle: (title) => {
-    setTitle(title);
-  },
+  onTitle: (title) => entitle(title),
 });
 
 async function openMeeting(cutId: number): Promise<void> {
@@ -692,6 +684,17 @@ const UNNAMED = $("title").textContent ?? "Your family";
  * when the settings stack closes. */
 const familyTitle = (): string => store.current().diagram?.name ?? UNNAMED;
 
+/** What the coding, vote, meeting or result screen on top calls itself. The
+ * account view's stack and a redrawn diagram both hand the title row back, and
+ * it goes back to this while one of those screens is up, to the family name
+ * otherwise. */
+let named: string | Title | null = null;
+const retitle = (): void => setTitle(named ?? familyTitle());
+function entitle(title: string | Title | null): void {
+  named = title;
+  retitle();
+}
+
 /** What names the diagram open: the title row and the drawer's (frame 2), the
  * one line that says the diagram is someone else's with the way back to the
  * admin's own (the page hides whatever writes), and the product events. */
@@ -702,7 +705,7 @@ store.watch({
     $("menu-title").textContent = familyTitle();
     // The settings stack owns the title while it is open, so only write it when
     // the chat is what the title row is naming.
-    if ($("settings-back").hidden) $("title").textContent = familyTitle();
+    if ($("settings-back").hidden) retitle();
     document.documentElement.dataset.access = diagram?.access ?? Access.Own;
     $("viewing").hidden = !looking();
     $("viewing-cut").hidden = !looking() || selecting.selecting();
@@ -734,7 +737,7 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
   onTitle: (title, sub) => {
     // The title row belongs to whatever is on top of it, so the chat's own
     // controls step aside while the settings stack is up.
-    if (title === null) $("title").textContent = familyTitle();
+    if (title === null) retitle();
     else setTitle(title);
     $("account").hidden = title !== null;
     // the guidelines are read from the task card too (R-0275, R-0278)
@@ -748,6 +751,9 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
   onPrefs: (prefs) => {
     speak.checked = prefs.speak;
     reports.always = prefs.bug_reports === BugReports.Always;
+    chat.shadows = prefs.shadow_models.length;
+    chat.expires = prefs.shadow_expires_at ? Date.parse(prefs.shadow_expires_at) : null;
+    feedback();
   },
   onOpen: openDiagram,
   onTask: () => void readTask().then(() => settings.push(TASK)),
@@ -757,6 +763,30 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
   // one with nothing more to see is only counted read, which its row then shows
   onNotice: (one) => notices.open(one, beyond(one.link) !== null),
 });
+
+/** While shadow replies are on, a strip under the header says so, as one does
+ * while selecting a cut, and its tap turns them off (R-0637). */
+const badge = el(
+  "div",
+  "cut-strip",
+  `<span>Conversation feedback enabled; Responses will be slower, vote on the best replies</span><button type="button" class="cs-cancel">turn off</button>`,
+);
+badge.id = "feedback";
+badge.hidden = true;
+$("cut-strip").after(badge);
+badge
+  .querySelector(".cs-cancel")!
+  .addEventListener("click", () => void settings.set({ shadow_models: [] }));
+let lapsing = 0;
+
+/** The strip follows the shadows, and when they turn themselves off the
+ * preferences are read again so Settings shows them off too. */
+function feedback(): void {
+  const on = chat.feedback();
+  badge.hidden = !on;
+  clearTimeout(lapsing);
+  if (on) lapsing = window.setTimeout(() => void settings.refresh(), chat.expires! - Date.now());
+}
 
 /** What the coach heard the person say about the app, or saw it misread,
  * offered to be sent as a report (R-0056). */
@@ -799,7 +829,7 @@ function addStatements(statements: api.Said[], newest = false): void {
       cases.set(statement.id, { case: statement.case, digest: statement.digest });
     const lines = statement.tools.map(toolLine).filter((line) => line !== null);
     const notes = statement.tools.find((tool) => tool.name === NOTES_TOOL);
-    chat.add(
+    const bubble = chat.add(
       statement.role,
       statement.text,
       ChipTone.Data,
@@ -808,6 +838,9 @@ function addStatements(statements: api.Said[], newest = false): void {
       coach ? lines : [],
       coach && notes ? (notes.args as unknown as Notes) : null,
     );
+    if (statement.feedback)
+      chat.kept(bubble, statement.turn_id!, statement.feedback, newest && statement === statements.at(-1));
+    if (statement.stopped) chat.halted(statement.conflict ? STOPPED_KEPT : STOPPED);
     if (statement.unfinished && lines.length) {
       const bubble = chat.add(Role.Coach, "", ChipTone.Data, null, null, lines);
       if (newest) stopped = { turn: statement.turn_id!, bubble };
@@ -1087,7 +1120,7 @@ const wide = window.matchMedia(WIDE);
 
 const pinned = () => wide.matches;
 
-const DRAWER = ["menu-tabs", "menu-searchrow", "menu-body", "menu-foot"];
+const DRAWER = ["menu-tabs", "menu-searchrow", "menu-body"];
 
 function pinDrawer(): void {
   const on = pinned();
@@ -1182,10 +1215,37 @@ let inFlight = false;
 
 async function send(): Promise<void> {
   const statement = chat.draft();
-  if (!statement || inFlight) return;
+  if (!statement) return;
+  // sent while the coach replies, it waits in the box for the reply to end,
+  // and never changes the reply under way (R-0636)
+  if (inFlight) return chat.keep();
   await questions.sending(statement);
   chat.resetDraft();
   post(statement);
+}
+
+/** A message held while the coach replied goes once the reply has ended and
+ * no vote has the box closed. */
+function flush(): void {
+  if (chat.held && !inFlight && !chat.voting()) void send();
+}
+
+/** The coach's turn is asked to end at its next step; the stream brings the
+ * end, with the turn's edits taken back (R-0636). */
+async function halt(): Promise<void> {
+  if (onTurn === null) return;
+  try {
+    await api.stop(onTurn);
+  } catch (error) {
+    // refused because the reply had already ended: the reply is the answer
+    if (error instanceof api.Failed && error.status === 409) return;
+    toast(whatFailed(error));
+  }
+}
+
+function flying(on: boolean): void {
+  inFlight = on;
+  chat.running(on);
 }
 
 /** The reader's words go into the thread as theirs and on to the coach. */
@@ -1193,10 +1253,14 @@ function post(statement: string): void {
   if (!statement || inFlight || looking()) return;
   track.tap(Feature.SendMessage);
   chat.add(Role.User, statement);
-  void deliver(statement);
+  const lapsed = chat.sent();
+  feedback();
+  void deliver(statement, lapsed);
 }
 
-async function deliver(statement: string): Promise<void> {
+async function deliver(statement: string, lapsed = false): Promise<void> {
+  // read before this message is stored, which would count as the last one
+  if (lapsed) await settings.refresh();
   const started = await begin(() => api.say(store.id(), statement), () => void deliver(statement));
   if (!started) return;
   sat(started.discussion_id, [...$("chat").querySelectorAll(".bub.user")].at(-1) ?? null);
@@ -1215,7 +1279,7 @@ async function begin(
 ): Promise<Started | null> {
   // One turn at a time: a second send while the coach is answering would store
   // the words again.
-  inFlight = true;
+  flying(true);
   chat.busy(true);
   speech.hush();
   // words sent on one diagram are never followed on the next one opened
@@ -1226,7 +1290,7 @@ async function begin(
     started = await ask();
   } catch (error) {
     if (!live()) return null;
-    inFlight = false;
+    flying(false);
     chat.busy(false);
     chat.warn(whatFailed(error), again);
     return null;
@@ -1243,6 +1307,10 @@ async function begin(
  * again, not added to. */
 /** What the thread says when the page could not draw a reply. */
 const UNDRAWN = "This reply could not be shown";
+/** What takes a stopped reply's place in the thread (R-0636). */
+const STOPPED = "Stopped";
+/** The same, when what the turn put in the record could not be taken back. */
+const STOPPED_KEPT = "Stopped; its changes stayed";
 
 let onTurn: string | null = null;
 
@@ -1254,7 +1322,7 @@ function follow(turnId: string): void {
   // the line draws it (R-0539)
   picture.untouch();
   onTurn = turnId;
-  inFlight = true;
+  flying(true);
   chat.busy(true);
   // the turn belongs to the diagram it was said on: opening another closes its
   // stream, and nothing already queued is drawn into the new one's chat
@@ -1296,6 +1364,12 @@ function follow(turnId: string): void {
       });
   };
 
+  // a message held while the coach replied goes once the reply is drawn
+  const last = (work: () => Promise<void> | void) => {
+    step(work);
+    step(flush);
+  };
+
   const take = feed({
     note: (line) => step(() => void opened().note(line)),
     notes: (notes) => step(() => opened().notes(notes)),
@@ -1319,12 +1393,25 @@ function follow(turnId: string): void {
     text: (text) => step(() => void opened().append(text, (chip) => aim(chip))),
     reset: () => step(() => void opened().reset()),
     done: (reply) =>
-      step(async () => {
+      last(async () => {
+        // a stopped turn says nothing and its edits are taken back, so the
+        // picture and the lists are read again as the record now stands
+        if (reply.stopped) {
+          stopFollowing();
+          chat.stopped(bubble?.bubble ?? null, reply.conflict ? STOPPED_KEPT : STOPPED);
+          picture.untouch();
+          await store.refresh(Part.Record, Part.Sittings);
+          return;
+        }
         const said = opened();
         said.stamp(reply.statement_id);
         newest = reply.statement_id;
-        if (speak.checked) speech.say(reply.statement);
+        chat.extend();
+        feedback();
+        // a reply held for a vote is not read aloud: it would say which is the coach's
+        if (speak.checked && !chat.feedback()) speech.say(reply.statement);
         said.settle(reply.statement, (chip) => aim(chip));
+        said.vote(turnId);
         stopFollowing();
         if (!(await store.refresh(Part.Record, Part.Sittings))) return;
         void notices.refresh();
@@ -1335,7 +1422,7 @@ function follow(turnId: string): void {
           reports.offer(offered.kind, offered.words, turnId, reply.statement_id, reply.discussion_id);
       }),
     failed: (message) =>
-      step(() => {
+      last(() => {
         stopFollowing();
         chat.busy(false);
         // What it did stays; the words it had begun are not kept, so they go.
@@ -1346,7 +1433,7 @@ function follow(turnId: string): void {
         chat.warn(message, () => void resume(turnId));
       }),
     refused: (message) =>
-      step(() => {
+      last(() => {
         stopFollowing();
         const said = opened();
         said.reset();
@@ -1367,7 +1454,7 @@ function follow(turnId: string): void {
 function stopFollowing(): void {
   store.release();
   onTurn = null;
-  inFlight = false;
+  flying(false);
 }
 
 /** A page that has just loaded, or come back to the front, or a diagram just
@@ -1444,6 +1531,7 @@ function crumb(): void {
 function screen(which: Screen): void {
   // the account view's stack is over the chat, and every other screen is
   // opened instead of it
+  if (!CODING_SCREENS.includes(which) && named !== null) entitle(null);
   if (which !== Screen.Chat) settings.close();
   if (which !== here) track.screen(which);
   // The list comes up over the chat rather than replacing it, so the chat is
@@ -1565,7 +1653,7 @@ $("composer").addEventListener("keydown", (e) => {
   selection.removeAllRanges();
   selection.addRange(range);
 });
-$("send").addEventListener("click", () => void send());
+$("send").addEventListener("click", () => void (chat.stops() ? halt() : send()));
 $("menu-close").addEventListener("click", () => {
   track.tap(Feature.CloseMenu);
   const field = $("menu-search") as HTMLInputElement;
@@ -1573,38 +1661,34 @@ $("menu-close").addEventListener("click", () => {
   menu.search("");
   screen(Screen.Chat);
 });
-$("menu-add").addEventListener("click", () => {
-  track.tap(menu.showing() === Tab.People ? Feature.PersonAdd : Feature.EventAdd);
-  menu.add();
-});
 $("menu-search").addEventListener("input", (e) =>
   menu.search((e.target as HTMLInputElement).value),
 );
 
 /** The lists behind the one button: what happened, who it happened to, and
- * what the coach asked that is still open. The search and the add button say
- * which list they are for; the questions are the coach's, so that list has
- * neither. */
-const TABS: [string, Tab, string | null, string | null, Feature][] = [
-  ["tab-events", Tab.Events, "Search events", "+ Add event", Feature.TabEvents],
-  ["tab-people", Tab.People, "Search people", "+ Add someone", Feature.TabPeople],
-  ["tab-questions", Tab.Questions, null, null, Feature.TabQuestions],
+ * what the coach asked that is still open. The search says which list it is
+ * for; the questions are the coach's, so that list has none. Nothing here
+ * adds a person or an event: that is done by telling the coach (Patrick,
+ * 2026-10-02). */
+const TABS: [string, Tab, string | null, Feature][] = [
+  ["tab-events", Tab.Events, "Search events", Feature.TabEvents],
+  ["tab-people", Tab.People, "Search people", Feature.TabPeople],
+  ["tab-questions", Tab.Questions, null, Feature.TabQuestions],
 ];
 
 /** Dress the drawer for one of its lists. */
 function onTab(tab: Tab): void {
-  for (const [id, which, placeholder, add] of TABS) {
+  for (const [id, which, placeholder] of TABS) {
     const on = which === tab;
     $(id).classList.toggle("on", on);
     $(id).setAttribute("aria-selected", String(on));
     if (!on) continue;
-    $("menu-searchrow").hidden = $("menu-foot").hidden = placeholder === null;
+    $("menu-searchrow").hidden = placeholder === null;
     if (placeholder === null) continue;
     const field = $("menu-search") as HTMLInputElement;
     field.value = "";
     field.placeholder = placeholder;
     field.setAttribute("aria-label", placeholder);
-    $("menu-add").textContent = add;
   }
 }
 
@@ -1615,7 +1699,7 @@ function showTab(tab: Tab): void {
   menu.open(tab);
 }
 
-for (const [id, tab, , , feature] of TABS)
+for (const [id, tab, , feature] of TABS)
   $(id).addEventListener("click", () => {
     track.tap(feature);
     showTab(tab);

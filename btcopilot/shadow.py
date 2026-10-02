@@ -6,6 +6,7 @@ when it ends; what it said, the tools it called and what it spent are kept on
 the real turn's row. The user never sees it and is never charged for it.
 """
 
+import datetime
 import logging
 import time
 from decimal import Decimal
@@ -14,10 +15,11 @@ from sqlalchemy import exists, func, or_, select
 from sqlalchemy.orm import aliased
 
 from btcopilot import diagramjson, extensions, record
+from btcopilot.admin.setting import shadow_candidates
 from btcopilot.coachmodel import model_for
 from btcopilot.llmutil import Spent, resolve_model
 from btcopilot.pricing import cost, price
-from btcopilot.coachturn import RECENT_INTERACTIONS, CoachTurn
+from btcopilot.coachturn import RECENT_INTERACTIONS, CoachTurn, prompt_version
 from btcopilot.extensions import db
 from btcopilot.models import (
     AccessRight,
@@ -34,6 +36,8 @@ from btcopilot.models import (
     Statement,
     User,
 )
+from btcopilot.models.preferences import PrefKey
+from btcopilot.review.models import Pick
 from btcopilot.turnlog import TurnEventKind
 
 _log = logging.getLogger(__name__)
@@ -44,6 +48,73 @@ QUEUE = "shadow"
 # What a scratch record leaves behind, all thrown away with it. The model calls
 # are not: they move to the real record so the spend stays visible.
 SCRATCH_ROWS = (AccessRight, Change, Interaction, Observation, ProductEvent)
+
+# How far back the cost of a coach turn's shadows is averaged, and what they
+# are guessed to cost when none ran in that time.
+RECENT = datetime.timedelta(days=30)
+PER_TURN_GUESS = Decimal("0.19")
+
+# Conversation Feedback turns itself off this long after the latest of the
+# coach's last reply being written, the person's last vote and the switch going
+# on, so the time spent reading and voting never counts against it [R-0637].
+IDLE = datetime.timedelta(minutes=5)
+
+
+def switch(user: User, models: list, now: datetime.datetime) -> None:
+    if unknown := set(models) - set(shadow_candidates()):
+        raise ValueError(f"not a shadow model: {', '.join(sorted(unknown))}")
+    if not models:
+        user.set_prefs(shadow_models=[], shadow_since=None)
+    elif user.pref(PrefKey.ShadowModels):
+        user.set_prefs(shadow_models=models)
+    else:
+        user.set_prefs(shadow_models=models, shadow_since=now.isoformat())
+
+
+def last_reply(user: User, before: int | None = None) -> datetime.datetime | None:
+    query = (
+        select(func.max(Statement.created_at))
+        .join(Discussion, Statement.speaker_id == Discussion.chat_ai_speaker_id)
+        .join(Diagram, Discussion.diagram_id == Diagram.id)
+        .where(Discussion.user_id == user.id, Diagram.scratch.is_(False))
+    )
+    if before is not None:
+        query = query.where(Statement.id < before)
+    return db.session.scalar(query)
+
+
+def last_vote(user: User) -> datetime.datetime | None:
+    return db.session.scalar(
+        select(func.max(Pick.updated_at)).where(
+            Pick.user_id == user.id, Pick.choice.isnot(None)
+        )
+    )
+
+
+def expiry(
+    user: User, now: datetime.datetime, before: int | None = None
+) -> datetime.datetime | None:
+    """When Conversation Feedback turns itself off, None once it is off; past
+    that time it is turned off here, and a model no longer a shadow candidate
+    is dropped. `before` counts only the coach's replies written before that
+    statement."""
+    models = user.pref(PrefKey.ShadowModels)
+    kept = [alias for alias in models if alias in shadow_candidates()]
+    if kept != list(models):
+        switch(user, kept, now)
+        db.session.commit()
+    if not kept:
+        return None
+    times = [last_reply(user, before), last_vote(user)]
+    if since := user.pref(PrefKey.ShadowSince):
+        times.append(datetime.datetime.fromisoformat(since))
+    started = max(filter(None, times), default=None)
+    ends = started + IDLE if started else now
+    if ends > now:
+        return ends
+    switch(user, [], now)
+    db.session.commit()
+    return None
 
 
 def start(turn: CoachTurn, statement_id: int, model: str, before: bytes | None):
@@ -167,6 +238,30 @@ def estimate(turns: list[Statement], model: str) -> tuple[Decimal, int]:
     return cost(name, spent), len(turns) - metered
 
 
+def spend(now: datetime.datetime) -> dict:
+    """Across everyone: what all the shadows of one coach turn cost together
+    on average over the last 30 days, or a guess when none ran, and what the
+    shadows have cost this calendar month."""
+    usd, turns = (
+        db.session.query(
+            func.sum(ShadowTurn.cost_usd), func.count(func.distinct(ShadowTurn.turn_id))
+        )
+        .filter(ShadowTurn.cost_usd.isnot(None), ShadowTurn.created_at >= now - RECENT)
+        .one()
+    )
+    month = db.session.scalar(
+        select(func.sum(ModelCall.cost_usd)).where(
+            ModelCall.purpose == Purpose.Shadow,
+            ModelCall.created_at
+            >= now.replace(day=1, hour=0, minute=0, second=0, microsecond=0),
+        )
+    )
+    return {
+        "per_turn_usd": round(float(usd / turns if turns else PER_TURN_GUESS), 2),
+        "month_usd": round(float(month or 0), 2),
+    }
+
+
 def backfill(user: User, model: str) -> int:
     """Run each of this person's past turns again on the model, over the record
     as it stood before each one. Returns how many were handed over."""
@@ -193,6 +288,7 @@ def run(row_id: int) -> None:
     db.session.flush()
     copy = _copy(said, diagram)
     _interactions(row, diagram)
+    row.prompt_version = prompt_version()
     db.session.commit()
     shadow_id = f"shadow-{row_id}"
     started = time.monotonic()

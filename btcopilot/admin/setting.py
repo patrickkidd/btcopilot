@@ -15,7 +15,8 @@ class SettingKey(enum.StrEnum):
     TokenCap = "token_cap"
     NudgesOn = "nudges_on"
     CoachModel = "coach_model"
-    ShadowModel = "shadow_model"
+    # The models staff may run each turn again on, as model aliases [R-0637].
+    ShadowCandidates = "shadow_candidates"
 
 
 class Setting(db.Model, ModelMixin):
@@ -49,6 +50,10 @@ def write(key: SettingKey, value, scope_id: int | None = None) -> None:
 def clear(key: SettingKey, scope_id: int | None = None) -> None:
     Setting.query.filter_by(key=key.value, scope_id=scope_id).delete()
     db.session.commit()
+
+
+def shadow_candidates() -> list[str]:
+    return read(SettingKey.ShadowCandidates, default=["sonnet"])
 
 
 def nudges_on() -> bool:

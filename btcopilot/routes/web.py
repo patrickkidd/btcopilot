@@ -79,6 +79,16 @@ def _opened_at_address():
         return _page(), FRESH
 
 
+@bp.after_request
+def _told_apart(response):
+    """A browser going back or forward shows the copy it kept of an address,
+    and without this it kept one copy for the page and for the page's own read
+    there, so forward to the account view showed the read's JSON (R-0055)."""
+    if place.parse(request.path):
+        response.vary.add("Sec-Fetch-Dest")
+    return response
+
+
 @bp.route("/<path:where>")
 def address(where):
     """An address in the app that nothing else answers: the page, which puts

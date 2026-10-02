@@ -90,14 +90,35 @@ export function kindMark(event: TimelineEvent, tree: Tree): string {
   return `<svg class="kmark" viewBox="0 0 28 28" aria-hidden="true">${out}</svg>`;
 }
 
-/** The first line: the server's words for the event, with the kind that opens
- * them in the data colour when the diagram has a mark for it. A description that
- * already says the kind is the label whole, and stays as it is. */
+/** The words the server's label may say a kind with (KIND_FORMS in timeline.py):
+ * its own word in front of a description, or the description's own when that
+ * already opens by saying the kind. A word there is a run of letters, so
+ * "born1905" says born. */
+const forms = (...words: string[]) => new RegExp(`(^|[^a-z])(${words.join("|")})(?![a-z])`, "i");
+const KIND_FORMS: Record<string, RegExp> = {
+  [EventKind.Birth]: forms("born", "birth"),
+  [EventKind.Adopted]: forms("adopted", "adoption", "adopts"),
+  [EventKind.Married]: forms("married", "marriage", "marries", "marry", "wed", "wedding"),
+  [EventKind.Separated]: forms("separated", "separation", "separate", "separates"),
+  [EventKind.Divorced]: forms("divorced", "divorce", "divorces"),
+  [EventKind.Bonded]: forms("bonded", "bond", "bonds"),
+  [EventKind.Death]: forms("died", "dies", "death", "dead", "passed"),
+};
+
+/** The first line: the server's words for the event, with the word that says
+ * its kind in the data colour, on every row of a kind that has one. */
 function title(event: TimelineEvent): string {
-  const said = event.label !== (event.description ?? "").trim();
-  if (!drawn(event.kind ?? "") || !said) return esc(event.label);
-  const [word] = event.label.split(" \u00b7 ");
-  return `<span class="kw">${esc(word)}</span>${esc(event.label.slice(word.length))}`;
+  const said = KIND_FORMS[event.kind ?? ""];
+  if (!said) return esc(event.label);
+  const found = said.exec(event.label);
+  if (!found) throw new Error(`event ${event.id} is ${event.kind} but its label "${event.label}" does not say so`);
+  const start = found.index + found[1].length;
+  const end = start + found[2].length;
+  return (
+    esc(event.label.slice(0, start)) +
+    `<span class="kw">${esc(found[2])}</span>` +
+    esc(event.label.slice(end))
+  );
 }
 
 export function eventRow(

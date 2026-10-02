@@ -19,7 +19,6 @@ from btcopilot.coachturn import (
     BareList,
     CoachTurn,
     EmptyReply,
-    LabelTooLong,
 )
 from btcopilot.turnlog import TurnEventKind as EventKind
 from btcopilot.models import (
@@ -305,7 +304,7 @@ def test_navigate_to_a_place_the_app_or_the_record_lacks_is_refused(
 
 @pytest.mark.parametrize("coder", [False, True])
 def test_navigate_lists_coder_screens_only_for_a_coder(coder):
-    # R-0055
+    # R-0055, R-0626
     tool = next(s for s in schemas(coder) if s["name"] == ToolName.Navigate.value)
     listed = tool["input_schema"]["properties"]["address"]["description"]
     assert ("/app/vote/:n," in listed) is coder
@@ -316,7 +315,7 @@ def test_navigate_lists_coder_screens_only_for_a_coder(coder):
 def test_navigate_to_a_coder_screen_is_refused_for_a_person_without_the_role(
     discussion, family
 ):
-    # R-0055
+    # R-0055, R-0626
     model = Model(called(ToolName.Navigate, address="/app/coding/3"), said("I cannot open that."))
     reply = run(discussion, "Open it.", model)
     assert EventKind.Navigate.value not in kinds(reply)
@@ -586,7 +585,7 @@ def test_a_turn_with_no_words_at_all_fails_rather_than_showing_a_bare_bubble(
 
 
 def test_a_label_of_exactly_the_limit_is_left_alone(discussion, family):
-    # R-0169
+    # R-0654
     """Twenty-eight fits. The boundary is where this goes wrong, so it is
     pinned on both sides."""
     label = "a" * chips.CHIP_MAX
@@ -598,20 +597,21 @@ def test_a_label_of_exactly_the_limit_is_left_alone(discussion, family):
     assert reply["statement"] == f"[[event:10|{label}]] is where it starts."
 
 
-def test_one_label_over_the_limit_is_asked_again_never_trimmed(discussion, family):
-    # R-0169
-    """Twenty-nine does not fit. The coach is asked once to shorten it, and its
-    own shorter words are what the person reads — nothing here cuts them."""
+def test_one_label_over_the_limit_is_asked_for_again_on_its_own(discussion, family):
+    # R-0654
+    """Twenty-nine does not fit. The coach is asked once for that label alone,
+    and its new label goes into the reply it already wrote; anything else in
+    its answer is not used."""
     long_label = "a" * (chips.CHIP_MAX + 1)
     model = Model(
         said(f"[[event:10|{long_label}]] is where it starts."),
-        said("[[event:10|the move]] is where it starts."),
+        said("Here it is: [[event:10|the move]], and it was hard."),
     )
     reply = run(discussion, "Tell me about that.", model)
 
     assert reply["statement"] == "[[event:10|the move]] is where it starts."
     assert model.offered[-1] == []
-    assert long_label in model.histories[-1][-1]["content"]
+    assert f"[[event:10|{long_label}]]" in model.histories[-1][-1]["content"]
     assert discussion.statements[-1].text == reply["statement"]
 
 
@@ -644,22 +644,30 @@ def test_a_reply_that_stays_a_list_of_chips_fails(discussion, family):
         run(discussion, "Walk me through it.", Model(said(BARE), said(BARE)))
 
 
-def test_a_label_that_stays_too_long_fails_rather_than_being_cut(discussion, family):
-    # R-0169
-    long_label = "a" * (chips.CHIP_MAX + 1)
-    with pytest.raises(LabelTooLong):
-        run(
-            discussion,
-            "Tell me about that.",
-            Model(
-                said(f"[[event:10|{long_label}]]."),
-                said(f"[[event:10|{long_label}]] still."),
-            ),
-        )
+@pytest.mark.parametrize(
+    "long_label, kept",
+    [
+        ("the summer he finally left home for good", "the summer he finally left"),
+        ("a" * (chips.CHIP_MAX + 1), "a" * chips.CHIP_MAX),
+    ],
+)
+def test_a_label_that_stays_too_long_is_cut_at_a_word_and_the_reply_kept(
+    discussion, family, long_label, kept
+):
+    # R-0654
+    reply = run(
+        discussion,
+        "Tell me about that.",
+        Model(
+            said(f"[[event:10|{long_label}]] is where it starts."),
+            said(f"[[event:10|{long_label}]]"),
+        ),
+    )
+    assert reply["statement"] == f"[[event:10|{kept}]] is where it starts."
 
 
 def test_a_label_is_measured_in_what_a_reader_sees(discussion, family):
-    # R-0169
+    # R-0654
     """An accented letter is two code points and one character to read, so a
     label of accents at the limit fits."""
     label = "e\u0301" * chips.CHIP_MAX
@@ -990,7 +998,7 @@ def test_a_read_tells_the_page_which_events_it_read(discussion, family):
 
 
 def test_sitting_title_and_summary_run_on_the_extraction_model(discussion, monkeypatch):
-    # R-0388
+    # R-0388, R-0661
     asked = []
 
     def flash(*a, **k):

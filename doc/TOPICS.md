@@ -42,7 +42,7 @@ before the pill strip with snap points rounded to whole pixels (R-0381, R-0577, 
 reusing a cluster's last play-by-play telling until its events or the play prompt change
 (R-0576); and the observations queue feeding the quality dashboard's new "Tuning queue" panel
 from refused tool calls, refused or failed plays, failed turns, step caps and declined turns
-(R-0578, R-0579).
+(R-0578, R-0579). On 2026-10-02 two releases went out from branch FD-368 (PR #147): commit ac878f9b at about 09:24 UTC with migration 1b00000000c1, and 9e1ccd95 at about 16:33 UTC. They carried voting on coach replies in the chat (its own topic below), Send turning into Stop while the coach replies, moving dots while the coach composes, the sitting before retitled when a new one opens, the add person and add event buttons taken out of the chat app and the coding screen, every event kind word emphasised in the events list, the picture header holding still under a thumb drag, and a session opened from its own link opening the app instead of raw data. PR #147 is out of draft with CI green and waits for his squash-merge. Master was rewritten on 2026-10-01 at his request so FD-365 and FD-366 are one commit each, and FD-368 was rebased onto it.
 **Decided:** one server for Pro, training and the chat app; old Pro diagrams stay pickle and
 new rows are JSON in the same column [Oracle: R-0241]; the beta users are the app working
 group of three clinicians [R-0079]; sign-in is passwordless with Face ID on a capable phone;
@@ -57,7 +57,7 @@ Added 2026-09-25, not yet numbered: a build for him to test goes to the box by a
 dispatched from the ticket branch, never by a merge, and only after the 14-point pre-deploy
 test bar passes; production and testing run on separate keys. The deploy credentials live in a
 GitHub environment only branch FD-363 may use, deploying only on a manual dispatch [R-0530]; a
-paid response is paid for once and replayed after [R-0531].
+paid response is paid for once and replayed after [R-0531]. Added 2026-10-01 and 02: nothing goes to production until his message names the release [R-0670], and a release from a ticket branch makes no git tag [R-0651]; a person or an event is added by telling the coach, with the two forms kept for editing [R-0663]; a reload never changes what any screen shows [R-0652]; Send is Stop while the coach replies, a message typed meanwhile goes when the reply ends, and a stopped turn's record edits are taken back and seen to be gone [R-0674]; the events list emphasises the kind word on every row [R-0675]; the coach composing shows moving dots [R-0653].
 **Open:** (1) [ruling] whether the 4 questions the backfill found in his whole history
 are too few; (2) [build] production's
 title bar reads "Free Diagram" instead of the diagram's real name; (3) [build] onboarding the
@@ -76,14 +76,13 @@ superseded until he says so (R-0381 is resolved: it stands, unchanged by the pil
 [R-0577]); (12) [ruling] a candidate with no id yet needs his yes: "after a deploy, the
 home-screen app loads the new release when it comes back to the front"; its tests cite R-0486
 until then; (13) [verify] the 8ad08dc batch — the restored timeline zoom, explain's caching,
-and the tuning queue — is deployed but untested by him.
+and the tuning queue — is deployed but untested by him. (14) [waiting] PR #147 waits for his squash-merge.
 **Lives in:** btcopilot PR #138 (branch FD-363, open, not merged); doc/STATE.md; the private
 corpus's PREDEPLOY_TESTING_RULES.md, session-dc02180f/ and
 session-b147ab7f/; deploy/; .github/workflows/release.yml; btcopilot/tests/live/replay.py; the
 backup prod-2026-09-26-0540-pre-fd363-5b2a6bb.dump in btcopilot-sources.
-**Next action:** he tests the 8ad08dc batch in his own thread, including the pill strip, the
-restored timeline zoom, and the tuning queue on the quality dashboard.
-**Updated:** 2026-09-28.
+**Next action:** he squash-merges PR #147.
+**Updated:** 2026-10-02.
 
 ## T-2 · The coach knows the clinical definitions, and we can measure it
 
@@ -116,7 +115,7 @@ with no provisional label and judged by F1 after coding [R-0519]. The coach stat
 of each turn through a notes tool, not a field in a structured reply, and whether it is on track
 stays a judgement, never a code check [R-0520, R-0485]. Anything an agent proposes about the
 coach or the picture starts from his clinical frame, not the model's training, and the frame is
-built and checked in a separate Fable session [R-0524, R-0525].
+built and checked in a separate Fable session [R-0524, R-0525]. Added 2026-10-01 and 02: a chip label over 28 characters gets one retry for the labels alone and is then cut at a word, so no turn fails on a label [R-0654, in place of R-0169]; a notes call from the coach that lacks a required field is refused and no later turn reads it [R-0520]; the descriptions on tool parameters stay whole, and any change to tool text is worked out with him first [R-0625]; the coach offers the coder and reviewer screens only to someone signed in as one [R-0626]; sitting titles and summaries stay on Gemini [R-0661], and the sitting before is retitled from all of its content when a new one opens [R-0662]; a failed title or summary call no longer loses the coach's reply.
 **Open:** (1) [ruling] the date-certainty rule (exact day certain, month or year approximate,
 hedge unknown) was built without words of his and needs his yes; (2) [ruling] his review of the
 "What goes in the record" section of the prompt; (3) [waiting] every clinical-coding eval waits
@@ -130,14 +129,17 @@ event's old words; (9) [ruling] whether the separate Fable session on the frame 
 this session's draft or from nothing; (10) [build] the frame itself: one document of the theory
 as requirements, passed when a fresh session reading only it and one cluster names the key shift
 the way he does, across about ten of his and clinic clusters; (11) [verify] the coach's notes
-were proven on the real model for one first turn; the read-back is proven by a unit test only.
+were proven on the real model for one first turn; the read-back is proven by a unit test only; (12) [waiting] the evaluation suite for the coach
+is parked since 2026-10-02 until Patrick asks for it, concept drafted and direction not yet approved,
+nothing built, two new tables and one new field his to rule first [R-0669]; its files are in the
+private corpus folder private/eval-suite/. (13) [waiting] the turn that takes one request instead of two is built and parked on branch FD-368-one-request; dropped for now because it raises the risk of bugs [R-0664]; picked up only when he asks; (14) [ruling] whether to spend more thinking on the variables: measured 2026-09-30 on 8 turns with noise of about 0.10, variables scored 0.49 at low thinking against 0.60 to 0.70 at medium, while events scored 0.75 against 0.55; there is no free way to test it, so it waits for his word.
 **Lives in:** btcopilot/{record.py,toolbox.py,recordtext.py,timeline.py}; the prompts under
 private/prompts/; btcopilot/tests/live (the paid suite and its waiting list in README.md);
 doc/PROMPT_ENGINEERING_LOG.md; doc/HOW_THIS_PROJECT_WORKS.md (spend and eval rules); the frame
 draft doc/FRAME_OF_REFERENCE.md in the FD-363 worktree (uncommitted) and its copy in the private
 corpus's session-b147ab7f/.
 **Next action:** his word on the frame draft, then the separate Fable session builds the frame.
-**Updated:** 2026-09-26.
+**Updated:** 2026-10-02.
 
 ## T-3 · One app: Pro and Training as thin layers on the chat
 
@@ -569,7 +571,7 @@ any coach behaviour is proposed; testing does not spend on every run, and a paid
 saved and replayed [R-0531]; design starts from his clinical frame, not the model's training
 [R-0524]. Added 2026-09-28: development stays in a single worktree per ticket rather than
 spinning up many branches; parallel builds are fine, but the merge rules exist only to guard
-master, not to justify multiplying branches [R-0575].
+master, not to justify multiplying branches [R-0575]. Added 2026-10-01 and 02: a release happens only on his message naming it [R-0670]; a PR description lists user-facing changes then developer-facing ones [R-0650] and says what changed, with status and updates in PR comments [R-0671]; the default test suite runs on SQLite with no Postgres server, and tests that need Postgres are a separate integration suite run with `--integration` [R-0627]; confirmed rulings are appended to the store by the session itself [R-0667]; every sandbox comes with one reusable link that signs him in as an admin [R-0678]; the clone under theapp is deprecated and kept only for the legacy app, and ticket worktrees for this project belong under the standalone clone [R-0677] (this session's worktree was made in the deprecated clone by mistake); the commit hook for builders takes a base branch and keeps one file list per builder [R-0575].
 **Open:** (1) [build] the permission checks still refuse production reads, a test sign-in
 link on the box and reads of personal data; the answer so far is that he restarts in bypass
 mode, which his settings already default to; (2) [ruling] five rulings of this session were
@@ -578,7 +580,7 @@ RULINGS_TO_APPEND_2026-09-25.md).
 **Lives in:** doc/HOW_THIS_PROJECT_WORKS.md; the private corpus's PREDEPLOY_TESTING_RULES.md; doc/TEST_STRATEGY.md;
 btcopilot/CLAUDE.md; .claude/skills/two-clocks/SKILL.md; bin/flushcheck.py; bin/t.
 **Next action:** he restarts in bypass mode.
-**Updated:** 2026-09-28.
+**Updated:** 2026-10-02.
 
 ## T-10 · Project memory: the two clocks, the flush, the trace
 
@@ -785,17 +787,15 @@ are right.
 
 ## T-14 · Feedback loops: every place the project collects something to drive an action
 
-**Status:** the ledger and the `/product-owner` skill are in the repo, pushed after the last
-release; the skill has run once (2026-09-30).
+**Status:** the ledger and the `/product-owner` skill are in the repo; the skill has run once (2026-09-30). Since 2026-10-02 the ledger has a status Open for a loop that collects data with no automated way yet to improve the product from it, and two loops carry it: the notes people write with a vote in the chat, and the acceptable and best marks on those votes.
 **Decided:** every signal a loop is needed is tracked, dashboarded and queued for his yes or no
 [R-0578]; no automated digest (2026-09-28), so the skill runs only when he asks, with one Fable
-call ranking at most five recommendations toward product-market fit.
-**Open:** (1) [ruling] the first run's proposed ledger diff awaits his yes; (2) [build] nothing
-collects whether anyone felt a shift, the goal's own test.
+call ranking at most five recommendations toward product-market fit. Added 2026-10-02: the learning loops run on what real beta users do, not on synthetic clients [R-0665]; a loop with data and no automated step to act on it is named Open in the ledger, parked, and others like it are watched for [R-0668].
+**Open:** (1) [ruling] the first run's proposed ledger diff awaits his yes; (2) [build] nothing collects whether anyone felt a shift, the goal's own test; (3) [waiting] turning the notes on votes into a rubric is parked until he asks [R-0668]; (4) [waiting] nothing yet turns the acceptable and best marks into a product change; parked the same way.
 **Lives in:** doc/FEEDBACK_LOOPS.md; btcopilot/tests/test_feedbackloops.py;
 .claude/skills/product-owner/SKILL.md; doc/log/product-owner/.
 **Next action:** he reads the first run's five lines and rules on its ledger diff.
-**Updated:** 2026-09-30.
+**Updated:** 2026-10-02.
 
 ## T-15 · Notices and notifications
 
@@ -804,13 +804,13 @@ collects whether anyone felt a shift, the goal's own test.
 row per delivery); an in-app notice is a card above the message box, never in the thread, then a
 Notices page in the account view [queued R-0613]; every notification is first a coach message
 when it comes from the coach [queued R-0608]; auditors get task notices and reminders [queued
-R-0612].
+R-0612]. Added 2026-10-02: every message the app sends a person, emails and notifications alike, gets a design pass and must not look dated [R-0619].
 **Open:** (1) [build] someone who joins an audience after a notice was sent gets it in the app
-only; (2) [waiting] the queued rulings wait for his key.
+only; (2) [waiting] the queued rulings wait for his key. (3) [build] the design pass for emails and notifications is owed and parked until he asks [R-0619].
 **Lives in:** doc/API.md (Notifications); doc/SCREENS.md; `flask admin notice send` and `notice
 list`; doc/FEEDBACK_LOOPS.md row 9.
 **Next action:** he sends the first real notice.
-**Updated:** 2026-09-30.
+**Updated:** 2026-10-02.
 
 ## T-16 · Bug reports and feedback
 
@@ -819,7 +819,7 @@ production yet.
 **Decided:** a modal sheet from the bottom, only from the coach's offers, never touching the
 thread; one row per answer in the `reports` table, sent or declined; errors in the code are
 Grafana's (Faro and Alloy), never a report [queued R-0615].
-**Open:** (1) [deploy] the beta's forced send, "Don't send" disabled on the bug sheet and a declined
+**Open:** (1) [build] the beta's forced send, "Don't send" disabled on the bug sheet and a declined
 bug refused by the server, is on branch FD-365, not deployed; (2) [build] the report route's limit
 is held in server memory; (3) [verify] a real turn on production offering a report.
 **Lives in:** doc/API.md (Reports); doc/SCREENS.md (Bug reports and feedback); doc/KNOWN_DEFECTS.md;
@@ -836,3 +836,50 @@ address opens its drawer and rings the item [queued R-0616].
 **Lives in:** doc/SCREENS.md (Addresses).
 **Next action:** his walk on the `walk` stack.
 **Updated:** 2026-09-30.
+
+## T-18 · Choosing the coach's model: votes on coach replies in the chat, and the cost of a turn
+
+**Status:** voting on coach replies in the chat is on production since 2026-10-02 (branch FD-368,
+PR #147). An admin or an auditor turns on the Conversation Feedback switch on the Coach page of the
+account view, behind a confirm dialog; only admins see the cost lines. While it is on, a strip in
+the chat says so, each coach reply is shown beside one other model's reply with neither named, and
+the person marks which are acceptable and which is best, may add a short note, and taps Vote. The
+message box is locked until the vote, and the coach's notes mark is hidden while voting. After the
+vote the real reply is labelled Coach and the other is folded away. A reload keeps open and past
+votes. The switch turns itself off 5 minutes after the latest of it going on, the coach's reply or
+a vote. Replies made with it on are amber. Votes are rows in the picks table with the acceptable
+marks, the source chat and which reply was shown first. The candidate models are an admin setting,
+Sonnet by default. Every coach reply and every other-model reply records its prompt version.
+Measured on the sandbox on 2026-10-01 and 02, his own votes with Opus as the coach: 17 votes,
+Opus best in 11 and acceptable in 13; Sonnet in 9 comparisons, acceptable in 8 and best in 2;
+Gemini Pro in 8 comparisons, acceptable in 8 and best in 2; chips on 11 shared turns: Opus 4,
+Sonnet 1, Gemini Pro 1; about 11 cents a turn for Opus and 7 for Sonnet on short threads.
+**Decided:** voting happens in the chat, unnamed, with the real reply always landing [R-0636]; the
+switch is a preference for admins and auditors, costs shown to admins only [R-0637, R-0642,
+R-0643]; the vote is a gate [R-0638]; acceptable marks and one best, an optional short note
+[R-0639, R-0645]; model names never shown after a vote [R-0644]; the notes mark hidden while
+voting [R-0646]; votes stored in the picks table [R-0640]; the switch's name, the strip and the
+amber replies [R-0673]; it turns itself off after 5 minutes [R-0672]; a small sample is enough for
+a directional choice [R-0641]; Gemini Flash, Gemini Pro and Haiku-class models are out as
+candidates [R-0635, R-0656, R-0659]; no new model and no outside key until he asks [R-0660]; the
+next step is his own Opus-against-Sonnet votes on production [R-0657], with no pass rule and
+nothing tracked until he has data [R-0666]; no synthetic clients for the choice, the synthetic
+client code and learnings kept for later [R-0655, R-0665]; the voting framework stays reusable for
+new models and for A/B tests of reply features [R-0658]; the models page is a dashboard ranking
+every candidate and the token-optimization skill keeps it current [R-0676].
+**Open:** (1) [waiting] his own Opus-against-Sonnet votes on production; nothing is tracked or
+judged until he has data [R-0666]; (2) [build] rows written on production before the fallback
+column existed do not carry it; (3) [build] fourteen older replies have no other-model answer to
+compare; (4) [verify] the prompt line telling the coach to ask one item this turn is to be watched
+in real turns; (5) [verify] the share of a cold turn read from the cache is unmeasured since the
+last prompt change; (6) [build] the persona generator and the realism scorer write no rows in the
+model-calls ledger; left as is while synthetic work is parked [R-0665].
+**Lives in:** PR #147 (https://github.com/patrickkidd/btcopilot/pull/147); web/src/vote.ts and
+web/tests/visual/vote.spec.ts; btcopilot/tests/test_shadow.py, test_coachmodels.py and
+test_settings.py; `flask admin coach-model shadows show` and `set`; doc/FEEDBACK_LOOPS.md rows 17,
+25 and 26; the models page https://claude.ai/artifact/2dHnrTjSaD2cTyzdjue5GL (kept by the
+token-optimization skill) and the cost page https://claude.ai/artifact/WMnou7A3UcZcUhAgZujQre
+(with the cache-lifetime comparison).
+**Next action:** he turns Conversation Feedback on in his own production thread and votes Opus
+against Sonnet for a while.
+**Updated:** 2026-10-02.

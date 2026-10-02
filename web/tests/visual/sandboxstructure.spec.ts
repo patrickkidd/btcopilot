@@ -1,5 +1,6 @@
 import { test } from "@playwright/test";
 import { need, sandboxOnly, walker } from "./sandbox";
+import { addForm } from "./setup";
 
 // A walk of the three screens people and family structure reach: the person
 // editor, the ballot with a person on it, and the meeting with the same person.
@@ -28,7 +29,7 @@ test.describe(() => {
     await page.waitForTimeout(700);
     // A person of this walk's own, so the run starts from somebody with nobody.
     const who = `Corinne${Date.now() % 1000}`;
-    await page.locator("#menu-add").click();
+    await addForm(page, "person");
     await page.waitForTimeout(700);
     await page.locator('.editor [data-name="name"]').fill(who);
     await page.locator(".editor .save").click();
@@ -66,7 +67,7 @@ test.describe(() => {
 
     // ── 1b. a bond of their own, made in the bond's own editor ────────────
     const partner = `Theo${Date.now() % 1000}`;
-    await page.locator("#menu-add").click();
+    await addForm(page, "person");
     await page.waitForTimeout(700);
     await page.locator('.editor [data-name="name"]').fill(partner);
     await page.locator(".editor .save").click();

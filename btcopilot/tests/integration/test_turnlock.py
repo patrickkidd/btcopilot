@@ -5,7 +5,6 @@ shows a turn that waits on itself."""
 
 from types import SimpleNamespace
 
-import pgserver
 import pytest
 
 from btcopilot.coachturn import CoachTurn
@@ -17,26 +16,26 @@ from btcopilot.tests.conftest import Model, called, said, wrote
 from btcopilot.tests.fixtures import make_app
 from btcopilot.toolbox import ToolName
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.fixture
-def flask_app(tmp_path):
-    with pgserver.get_server(tmp_path / "pg", cleanup_mode="delete") as server:
-        uri = server.get_uri()
-        # a turn that waits on itself fails here in seconds instead of hanging
-        waits = {"connect_args": {"options": "-c lock_timeout=5s"}}
-        app = make_app(
-            SimpleNamespace(
-                param={"SQLALCHEMY_DATABASE_URI": uri, "SQLALCHEMY_ENGINE_OPTIONS": waits}
-            ),
-            tmp_path,
-            TABLES,
-        )
-        yield next(app)
-        # the database goes with the server; dropping its tables one by one
-        # trips on the cycle between sessions and speakers
-        db.session.remove()
-        db.engine.dispose()
-        app.close()
+def flask_app(tmp_path, postgres):
+    # a turn that waits on itself fails here in seconds instead of hanging
+    waits = {"connect_args": {"options": "-c lock_timeout=5s"}}
+    app = make_app(
+        SimpleNamespace(
+            param={"SQLALCHEMY_DATABASE_URI": postgres, "SQLALCHEMY_ENGINE_OPTIONS": waits}
+        ),
+        tmp_path,
+        TABLES,
+    )
+    yield next(app)
+    # the database is dropped whole; dropping its tables one by one trips on
+    # the cycle between sessions and speakers
+    db.session.remove()
+    db.engine.dispose()
+    app.close()
 
 
 @pytest.fixture(autouse=True)
@@ -58,7 +57,7 @@ def wren(test_user):
 
 
 def test_a_refused_write_does_not_stall_the_next_model_call(discussion, wren):
-    # R-0388, R-0597
+    # R-0388, R-0597, R-0628
     reply = CoachTurn(
         discussion,
         "My dad moved out in 1994.",
@@ -77,4 +76,5 @@ def test_a_refused_write_does_not_stall_the_next_model_call(discussion, wren):
         scratch=True,
     ).run()
     assert reply["statement"] == "What changed for you when he left?"
-    assert ModelCall.query.filter_by(purpose=Purpose.Replay).count() == 2
+    # the coach's two calls, then the session's title and summary
+    assert ModelCall.query.filter_by(purpose=Purpose.Replay).count() == 4

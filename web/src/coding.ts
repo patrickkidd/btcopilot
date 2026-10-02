@@ -85,7 +85,6 @@ export class Coding {
     private panel: HTMLElement,
     private search: HTMLInputElement,
     private tabs: HTMLElement,
-    private addRow: HTMLElement,
     view: HTMLElement,
     private overlay: HTMLElement,
     private handlers: CodingHandlers,
@@ -247,7 +246,6 @@ export class Coding {
     this.search.addEventListener("input", () =>
       this.drawer?.search(this.search.value),
     );
-    this.addRow.addEventListener("click", () => this.drawer?.add());
     this.panel
       .querySelector(".backbtn")
       ?.addEventListener("click", () => this.showRows(false));
@@ -267,7 +265,6 @@ export class Coding {
   private markTab(which: Tab): void {
     const people = which === Tab.People;
     this.search.placeholder = people ? "Search people" : "Search events";
-    this.addRow.textContent = people ? "+ Add person" : "+ Add event";
     for (const one of this.tabs.querySelectorAll<HTMLElement>(".tab")) {
       const on = one.id.endsWith("people") === (which === Tab.People);
       one.classList.toggle("on", on);

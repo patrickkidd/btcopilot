@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { CASES, drawings, freeze } from "./drawings";
-import { inside, lists, openList, PARKED, stateFor } from "./setup";
+import { PARKED, addForm, inside, lists, openList, stateFor } from "./setup";
 
 /** The move language, one drawing per move: each draws its people, named, inside
  * its cell. Pixels are not compared here (R-0416).
@@ -71,7 +71,7 @@ test.describe("the timeline behind the menu", () => {
   test("the editor's fields, text centred in the box", async ({ page }) => {
     await page.goto("/app/");
     await openList(page);
-    await page.locator("#menu-add").click();
+    await addForm(page, "event");
     await expect(page.locator(".editor .segs").first()).toBeVisible();
     await inside(page.locator(".editor").first(), page.locator("#add-sheet"), true);
   });
@@ -85,8 +85,8 @@ test.describe("the editor's fields by kind", () => {
   const openEditor = async (page: import("@playwright/test").Page) => {
     await page.goto("/app/");
     await openList(page);
-    // the form is reached only to add an event while it is parked (PARKED)
-    await page.locator("#menu-add").click();
+    // the form is parked (PARKED) and reached only by its address
+    await addForm(page, "event");
     await expect(page.locator(".editor .segs").first()).toBeVisible();
   };
   const pick = (page: import("@playwright/test").Page, group: string, value: string) =>

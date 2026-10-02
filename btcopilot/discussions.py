@@ -162,6 +162,16 @@ def newest(found) -> list[Discussion]:
     return sorted(found, key=lambda d: (last_activity(d), d.id), reverse=True)
 
 
+def previous(discussion: Discussion) -> Discussion | None:
+    """The sitting spoken in before this one, on the same family."""
+    earlier = [
+        d
+        for d in chats(discussion.user, discussion.diagram_id)
+        if d.id != discussion.id and d.statements
+    ]
+    return newest(earlier)[0] if earlier else None
+
+
 def family(user, diagram: Diagram | None) -> Diagram:
     """A caller that knows which diagram the session belongs on says so; the
     personal app's own routes do not, and get the free one, made on first use."""

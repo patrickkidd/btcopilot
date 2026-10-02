@@ -22,6 +22,7 @@ from btcopilot.models import (
     Diagram,
     Discussion,
     DiscussionKind,
+    ShadowTurn,
     Statement,
     StatementKind,
 )
@@ -46,15 +47,35 @@ MATCH_CUT = 90
 def statements_payload(statements: list[Statement], user) -> list[dict]:
     """Each message with the tool calls of its turn: a coach reply carries the
     calls that led to it, and the words of a turn that never answered carry the
-    calls it made before it failed, marked unfinished with why it stopped."""
-    kept = turnstore.kept({s.turn_id for s in statements if s.turn_id})
+    calls it made before it failed, marked unfinished with why it stopped. A
+    coach reply also says how many shadow replies its turn has, and the words
+    of a turn the person stopped say so (R-0636)."""
+    turn_ids = {s.turn_id for s in statements if s.turn_id}
+    kept = turnstore.kept(turn_ids)
+    shadowed = dict(
+        db.session.query(ShadowTurn.turn_id, func.count())
+        .filter(ShadowTurn.turn_id.in_(turn_ids))
+        .group_by(ShadowTurn.turn_id)
+    )
     out = []
     for s in statements:
         coach = s.speaker_id == s.discussion.chat_ai_speaker_id
         events = kept.get(s.turn_id, []) if s.turn_id else []
         unfinished = not coach and turnstore.failed(events)
+        stopped = next(
+            (
+                e
+                for e in events
+                if not coach
+                and e["type"] == TurnEventKind.Done.value
+                and e.get("stopped")
+            ),
+            None,
+        )
         out.append(
             {
+                "stopped": stopped is not None,
+                "conflict": stopped.get("conflict") if stopped else None,
                 "id": s.id,
                 "session_id": s.discussion_id,
                 "role": "coach" if coach else "user",
@@ -64,6 +85,7 @@ def statements_payload(statements: list[Statement], user) -> list[dict]:
                 "case": s.told_case,
                 "digest": s.digest,
                 "turn_id": s.turn_id,
+                "feedback": shadowed.get(s.turn_id, 0) if coach else 0,
                 "tools": (
                     [
                         {

@@ -12,7 +12,8 @@ import pytest
 import btcopilot
 from btcopilot.discussions import open_session
 from btcopilot.extensions import db
-from btcopilot.models import TurnEvent
+from btcopilot.coachturn import last_notes
+from btcopilot.models import Statement, TurnEvent
 from btcopilot.schema import Person, asdict
 from btcopilot.toolbox import Register, ToolName, Variable, schemas
 from btcopilot.turnlog import TurnEventKind
@@ -138,3 +139,15 @@ def test_an_auditor_or_admin_sees_the_notes(web, family, monkeypatch, roles):
     events = streamed(web, body["turn_id"])
     assert events[0]["name"] == ToolName.CoachNotes
     assert events[-1]["events"][0]["args"] == NOTES
+
+
+def test_notes_without_a_plateau_are_refused_and_not_kept(web, family, monkeypatch):
+    # R-0520
+    web.user.roles = btcopilot.ROLE_ADMIN
+    db.session.commit()
+    bare = {k: v for k, v in NOTES.items() if k != "plateau"}
+    coach(monkeypatch, Model(called(ToolName.CoachNotes, **bare), said("Tell me more.")))
+    body = post(web)
+    kept = [e.payload for e in TurnEvent.query.filter_by(turn_id=body["turn_id"])]
+    assert all(e["refusal"] for e in kept if e.get("name") == ToolName.CoachNotes)
+    assert last_notes(Statement.query.order_by(Statement.id.desc()).first()) is None

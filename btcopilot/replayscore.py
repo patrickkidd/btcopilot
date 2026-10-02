@@ -5,7 +5,6 @@ replay passes table and one line in the eval ledger [Oracle: R-0597]."""
 
 import contextlib
 import datetime
-import hashlib
 import time
 from collections import Counter
 from decimal import Decimal
@@ -14,7 +13,7 @@ from pathlib import Path
 from sqlalchemy import func
 
 import btcopilot
-from btcopilot import ledger, prompts, shadow
+from btcopilot import coachturn, ledger, prompts, shadow
 from btcopilot.coachmodel import COACH_EFFORT, model_for
 from btcopilot.extensions import db
 from btcopilot.llmutil import resolve_model
@@ -269,7 +268,7 @@ def anchor(diagram: Diagram, said: Statement | None) -> tuple[bytes, int]:
 
 def prompt_version(path: Path | None) -> str:
     with agent_prompt_from(path):
-        return hashlib.sha256(prompts.get_agent_prompt().encode()).hexdigest()[:12]
+        return coachturn.prompt_version()
 
 
 def kept(case: str, prompt: str, model: str, thinking: str) -> list[ReplayPass]:

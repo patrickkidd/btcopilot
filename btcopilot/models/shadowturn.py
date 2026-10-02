@@ -45,3 +45,4 @@ class ShadowTurn(db.Model, ModelMixin):
     cost_usd = Column(Numeric(10, 6), nullable=True)
     duration_ms = Column(Integer, nullable=True)
     error = Column(Text, nullable=True)
+    prompt_version = Column(String(16), nullable=True)

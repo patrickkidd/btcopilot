@@ -1,3 +1,5 @@
+import datetime
+
 import pytest
 from mock import Mock, patch
 
@@ -7,7 +9,7 @@ from btcopilot import diagramjson, extensions, record, shadow, turns
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
 from btcopilot.coachmodel import Spent
-from btcopilot.coachturn import CoachTurn, EmptyReply
+from btcopilot.coachturn import CoachTurn, EmptyReply, prompt_version
 from btcopilot.discussions import open_session
 from btcopilot.extensions import db
 from btcopilot.models import (
@@ -23,6 +25,7 @@ from btcopilot.models import (
     TokenMeter,
 )
 from btcopilot.models.change import Author
+from btcopilot.models.preferences import PrefKey
 from btcopilot.models.diagram import diagram_data
 from btcopilot.routes.diagrams import readable
 from btcopilot.schema import ItemKind
@@ -71,6 +74,11 @@ def coach(monkeypatch, where, model):
     return model
 
 
+def shadows(user, *models):
+    shadow.switch(user, list(models), datetime.datetime.utcnow())
+    db.session.commit()
+
+
 def test_each_person_gets_their_own_coach_model_or_the_default(web, token, test_user):
     # R-0596
     asked = []
@@ -117,7 +125,7 @@ def test_a_shadow_turn_is_kept_apart_from_the_real_one(
         "btcopilot.shadow.model_for",
         Model(named, said("Thank you, Wren.")),
     )
-    setting.write(SettingKey.ShadowModel, ["haiku-4.5"], test_user.id)
+    shadows(test_user, "sonnet")
     with patch("btcopilot.shadow.enqueue", shadow.run):
         second = post(web, token, "She is older.")
 
@@ -125,7 +133,7 @@ def test_a_shadow_turn_is_kept_apart_from_the_real_one(
     assert (row.turn_id, row.statement_id, row.model) == (
         second["turn_id"],
         second["statement_id"],
-        "haiku-4.5",
+        "sonnet",
     )
     assert row.text == "Thank you, Wren."
     assert [(c["name"], c["refusal"]) for c in row.tool_calls] == [
@@ -150,6 +158,8 @@ def test_a_shadow_turn_is_kept_apart_from_the_real_one(
         "She is older.",
         "How much older?",
     ]
+    assert discussion.statements[-1].prompt_version == row.prompt_version
+    assert row.prompt_version == prompt_version()
     db.session.refresh(diagram)
     assert diagram.data == record
     assert Change.query.filter_by(diagram_id=diagram.id).count() == changes
@@ -164,6 +174,34 @@ def test_a_shadow_turn_is_kept_apart_from_the_real_one(
     }
     assert TokenMeter.query.one().input_tokens == 10
     assert test_user.first_name == "Unit"
+
+
+@pytest.mark.parametrize(
+    "replied, asked, ran",
+    [(6, 6, False), (4, 4, True), (4, 7, True)],
+    ids=["quiet", "soon", "slow-to-vote"],
+)
+def test_a_turn_five_minutes_after_the_coach_last_replied_runs_no_shadow_and_turns_them_off(
+    web, token, test_user, monkeypatch, replied, asked, ran
+):
+    # R-0637
+    coach(
+        monkeypatch,
+        "btcopilot.turns.model_for",
+        Model(said("Tell me about Nell."), said("How much older?")),
+    )
+    coach(monkeypatch, "btcopilot.shadow.model_for", Model(said("Older by how much?")))
+    first = post(web, token, "My sister is Nell.")
+    now = datetime.datetime.utcnow()
+    question, reply = db.session.get(Discussion, first["discussion_id"]).statements
+    question.created_at = now - datetime.timedelta(minutes=asked)
+    reply.created_at = now - datetime.timedelta(minutes=replied)
+    shadow.switch(test_user, ["sonnet"], now - datetime.timedelta(minutes=12))
+    db.session.commit()
+    with patch("btcopilot.shadow.enqueue", shadow.run):
+        post(web, token, "She is older.")
+    assert ShadowTurn.query.count() == ran
+    assert bool(test_user.pref(PrefKey.ShadowModels)) == ran
 
 
 def test_a_shadow_turn_reads_the_words_of_every_session_as_the_real_one_did(
@@ -183,7 +221,7 @@ def test_a_shadow_turn_reads_the_words_of_every_session_as_the_real_one_did(
     candidate = coach(
         monkeypatch, "btcopilot.shadow.model_for", Model(said("Older by how much?"))
     )
-    setting.write(SettingKey.ShadowModel, ["haiku-4.5"], test_user.id)
+    shadows(test_user, "sonnet")
     with patch("btcopilot.shadow.enqueue", shadow.run):
         web.post(
             f"/app/sessions/{later.id}/statements",
@@ -203,11 +241,12 @@ def test_each_shadow_model_runs_the_turn_again_on_its_own(
 ):
     # R-0596
     coach(monkeypatch, "btcopilot.turns.model_for", Model(said("Tell me about Nell.")))
-    replies = {"gemini-flash": "How much older is she?", "sonnet": "Older by how much?"}
+    replies = {"gemini-pro": "How much older is she?", "sonnet": "Older by how much?"}
     monkeypatch.setattr(
         "btcopilot.shadow.model_for", lambda name: Model(said(replies[name]))
     )
-    setting.write(SettingKey.ShadowModel, list(replies), test_user.id)
+    setting.write(SettingKey.ShadowCandidates, list(replies))
+    shadows(test_user, *replies)
     with patch("btcopilot.shadow.enqueue", shadow.run):
         body = post(web, token, "My sister is Nell.")
     rows = ShadowTurn.query.order_by(ShadowTurn.id).all()
@@ -226,7 +265,7 @@ def test_a_broken_shadow_keeps_its_error_and_leaves_no_scratch(
     # R-0596
     coach(monkeypatch, "btcopilot.turns.model_for", Model(said("Tell me about Nell.")))
     coach(monkeypatch, "btcopilot.shadow.model_for", Model())
-    setting.write(SettingKey.ShadowModel, ["haiku-4.5"], test_user.id)
+    shadows(test_user, "sonnet")
     diagrams = Diagram.query.count()
     with patch("btcopilot.shadow.enqueue"):
         body = post(web, token, "My sister is Nell.")
@@ -243,7 +282,7 @@ def test_a_broken_shadow_keeps_its_error_and_leaves_no_scratch(
 def test_a_failed_real_turn_starts_no_shadow(web, token, test_user, monkeypatch):
     # R-0596
     coach(monkeypatch, "btcopilot.turns.model_for", Model(said("")))
-    setting.write(SettingKey.ShadowModel, ["haiku-4.5"], test_user.id)
+    shadows(test_user, "sonnet")
     with patch("btcopilot.turns.enqueue"):
         body = post(web, token, "My sister is Nell.")
     enqueue = Mock()
@@ -286,7 +325,7 @@ def test_the_user_never_sees_the_scratch_record(web, token, test_user, monkeypat
     looks = coach(
         monkeypatch, "btcopilot.shadow.model_for", Looks(test_user, said("Go on."))
     )
-    setting.write(SettingKey.ShadowModel, ["haiku-4.5"], test_user.id)
+    shadows(test_user, "sonnet")
     with patch("btcopilot.shadow.enqueue", shadow.run):
         post(web, token, "My sister is Nell.")
     assert looks.scratch[0]
@@ -313,11 +352,11 @@ def test_a_backfill_rebuilds_the_record_the_real_turn_found(
     coach(monkeypatch, "btcopilot.turns.model_for", Model(said("Tell me about Nell.")))
     first = post(web, token, "My sister is Nell.")
     diagram = db.session.get(Discussion, first["discussion_id"]).diagram
-    setting.write(SettingKey.ShadowModel, ["haiku-4.5"], test_user.id)
+    shadows(test_user, "sonnet")
     coach(monkeypatch, "btcopilot.turns.model_for", renamed(diagram, "Wren"))
     with patch("btcopilot.shadow.enqueue"):
         second = post(web, token, "I am Wren.")
-    setting.clear(SettingKey.ShadowModel, test_user.id)
+    shadows(test_user)
     coach(monkeypatch, "btcopilot.turns.model_for", renamed(diagram, "Wrenn"))
     post(web, token, "Two n's.")
     record.apply(
@@ -346,10 +385,10 @@ def test_a_backfill_runs_only_the_turns_not_yet_run(web, token, test_user, monke
     )
     real.turns[0].spent = Spent(input=1_000_000, output=0)
     first = post(web, token, "My sister is Nell.")
-    setting.write(SettingKey.ShadowModel, ["haiku-4.5"], test_user.id)
+    shadows(test_user, "sonnet")
     with patch("btcopilot.shadow.enqueue"):
         second = post(web, token, "She is older.")
-    setting.clear(SettingKey.ShadowModel, test_user.id)
+    shadows(test_user)
     post(web, token, "By two years.")
     discussion = db.session.get(Discussion, first["discussion_id"])
     discussion.statements[-1].turn_id = None
@@ -366,8 +405,8 @@ def test_a_backfill_runs_only_the_turns_not_yet_run(web, token, test_user, monke
     assert (usd, unpriced) == (Decimal("0.75"), 0)
     enqueue = Mock()
     with patch("btcopilot.shadow.enqueue", enqueue):
-        assert shadow.backfill(test_user, "haiku-4.5") == 1
-    rows = ShadowTurn.query.filter_by(model="haiku-4.5").order_by(ShadowTurn.id).all()
+        assert shadow.backfill(test_user, "sonnet") == 1
+    rows = ShadowTurn.query.filter_by(model="sonnet").order_by(ShadowTurn.id).all()
     assert [(r.turn_id, r.statement_id) for r in rows] == [
         (second["turn_id"], second["statement_id"]),
         (first["turn_id"], first["statement_id"]),

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { EXACT, flask, placeCut, shell, stateFor, toTheirDiagram, backToMine, username, boxOf } from "./setup";
+import { EXACT, flask, placeCut, shell, stateFor, toTheirDiagram, backToMine, username, boxOf, inside } from "./setup";
 
 /** The settings stack: the avatar in the title row, and the pages it pushes.
  * Every value has one home, and the chat view's speak-replies row is the one
@@ -414,9 +414,6 @@ test.describe("an admin finds a person on the diagrams view", () => {
     await expect(page.locator("#viewing-who")).toHaveText(/^Viewing .+'s diagram, read-only$/);
     await expect(page.locator("#composer")).toBeHidden();
     await expect(page.locator("#send")).toBeHidden();
-    const shown = (selector: string) =>
-      page.locator(selector).evaluate((n) => getComputedStyle(n).display);
-    expect(await shown("#menu-foot")).toBe("none");
     await expect(page.locator("#viewing-cut")).toHaveText("Select a cut");
     await expect(page.locator("#cut-strip")).toBeHidden();
 
@@ -431,7 +428,6 @@ test.describe("an admin finds a person on the diagrams view", () => {
     await expect(page.locator("#viewing")).toBeHidden();
     await expect(page.locator("#title")).not.toHaveText(name);
     await expect(page.locator("#composer")).toBeVisible();
-    expect(await shown("#menu-foot")).not.toBe("none");
   });
 
   // R-0630, R-0631
@@ -603,6 +599,55 @@ test.describe("the coding and quality sections", () => {
     }
   });
 
+  // R-0259, R-0271
+  test("the coding screen opened from the task card is titled with the conversation and how far it runs, all of it inside the title row", async ({
+    page,
+  }) => {
+    await as(page, "auditor");
+    const coded = await page.evaluate(
+      () => (window as unknown as { BOOTSTRAP: { diagram: { id: number } } }).BOOTSTRAP.diagram.id,
+    );
+    const session = "The long conversation about the move to the coast";
+    await page.route(
+      (url) => url.pathname === "/review/tasks",
+      (route) =>
+        route.fulfill({
+          json: {
+            task: { kind: "code", cut_id: 1, coding_id: 7, meeting_date: null, title: `Code ${session}`, detail: "", ready: true },
+            done: [],
+          },
+        }),
+    );
+    await page.route(
+      (url) => url.pathname === "/review/codings/7/thread",
+      (route) =>
+        route.fulfill({
+          json: { coding_id: 7, cut_id: 1, diagram_id: coded, done_at: null, meeting_date: null, session, cut_day: "Sep 29", agreed: null, turns: [] },
+        }),
+    );
+    await row(page, "Your coding task").click();
+    await page.locator(".sn-pane.in #task-screen .addbtn").click();
+    await expect(page.locator("#coding-screen")).toBeVisible();
+    const title = page.locator("#title");
+    const name = title.locator(".ttl-name");
+    const tail = title.locator(".ttl-tail");
+    const cut = () => name.evaluate((el) => el.scrollWidth > el.clientWidth);
+    const size = page.viewportSize()!;
+    for (const [width, shortened] of [[390, true], [1024, false]] as const) {
+      await page.setViewportSize({ width, height: size.height });
+      await expect(name).toHaveText(session);
+      await expect(tail).toHaveText(" · up to Sep 29");
+      await inside(title, page.locator(".titlerow"));
+      await inside(tail, title);
+      const [end, next] = [await boxOf(title), await boxOf(page.locator("#coding-info"))];
+      expect(end.x + end.width).toBeLessThanOrEqual(next.x);
+      // at phone width the name gives way with an ellipsis and the tail stays
+      expect(await cut()).toBe(shortened);
+      await expect(name).toHaveCSS("text-overflow", "ellipsis");
+    }
+    await page.setViewportSize(size);
+  });
+
   // R-0250, R-0258
   test("two cuts on one meeting date are one meeting with one run button, and its page says who has submitted each", async ({
     page,
@@ -737,5 +782,52 @@ test.describe("the Auditor's Coding Guide row", () => {
     await page.goto("/app/");
     await openSettings(page);
     await expect(row(page)).toHaveCount(0);
+  });
+});
+
+test.describe("the Conversation Feedback switch", () => {
+  test.use({ storageState: stateFor("empty") });
+  const roles = (...names: string[]) =>
+    flask("admin", "run", "--", "users", "roles", username("empty"), ...names, "--yes");
+  test.afterAll(() => roles("subscriber"));
+
+  // R-0637, R-0642, R-0643
+  test("an admin sees it with what it costs, and turning it on asks first", async ({ page }) => {
+    roles("admin", "subscriber");
+    const patched: unknown[] = [];
+    await page.route(/\/app\/preferences$/, async (route) => {
+      const prefs = await (await page.request.get("/app/preferences")).json();
+      const cost = { per_turn_usd: 0.19, month_usd: 3.42 };
+      if (route.request().method() !== "PATCH")
+        return route.fulfill({ json: { ...prefs, shadow_models: [], shadow_cost: cost } });
+      patched.push(route.request().postDataJSON());
+      await route.fulfill({ json: { ...prefs, shadow_models: prefs.shadow_candidates, shadow_cost: cost } });
+    });
+    await page.goto("/app/");
+    await openSettings(page);
+    await page.locator(".sn-pane.in .sn-row.push", { hasText: "Coach" }).click();
+    const pane = page.locator('.sn-pane.in[data-page="coach"]');
+    await expect(pane.locator(".sn-hd", { hasText: "Admin" })).toBeVisible();
+    await expect(pane.locator(".sn-row", { hasText: "Extra cost" })).toContainText("about 19¢ a turn");
+    await expect(pane.locator(".sn-row", { hasText: "Spent this month" })).toContainText("$3.42");
+    await page.waitForTimeout(300);
+    await expect(pane).toHaveScreenshot("settings-shadows.png");
+
+    const toggle = () => page.locator('.sn-pane.in[data-page="coach"] [role="switch"][aria-label="Conversation Feedback"]');
+    await toggle().click();
+    const sheet = page.locator(".fs-sheet.sh");
+    await expect(sheet).toBeVisible();
+    await expect(sheet.locator(".cf-p")).toContainText("It costs Patrick money.");
+    await sheet.getByRole("button", { name: "Cancel" }).click();
+    await expect(sheet).toBeHidden();
+    expect(patched).toEqual([]);
+    const lapse = pane.locator(".sn-hint", { hasText: "Turns off" });
+    await expect(lapse).toHaveCount(0);
+
+    await toggle().click();
+    await sheet.getByRole("button", { name: "Turn on" }).click();
+    await expect(toggle()).toHaveAttribute("aria-checked", "true");
+    expect(patched).toEqual([{ shadow_models: ["sonnet"] }]);
+    await expect(lapse).toHaveText("Turns off 5 minutes after the coach's last reply or your last vote");
   });
 });

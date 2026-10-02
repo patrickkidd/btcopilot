@@ -9,16 +9,21 @@ page can move the picture with the same reply it types out.
 """
 
 import datetime
+import hashlib
 import itertools
 import logging
 import uuid
 from typing import Callable
 
+import aiohttp
+import regex
+from google.genai.errors import APIError as GeminiError
 from opentelemetry import trace
 
 from btcopilot.extensions import ai_log, db
-from btcopilot import chips, clusters, coverage, profile, recordtext, turnstore
+from btcopilot import chips, clusters, coverage, profile, recordtext, turnlog, turnstore
 from btcopilot.coachmodel import CoachModel, marked_ends
+from btcopilot.discussions import previous
 from btcopilot.metered import Metered
 from btcopilot.models import (
     Change,
@@ -30,7 +35,7 @@ from btcopilot.models import (
     TokenMeter,
     TurnEvent,
 )
-from btcopilot.prompts import agent_prompt, note_register, onboarding
+from btcopilot.prompts import agent_prompt, get_agent_prompt, note_register, onboarding
 from btcopilot.interactions import recent
 from btcopilot.toolbox import (
     LOOKUPS,
@@ -72,10 +77,10 @@ SPEAK = (
 
 
 SHORTEN = (
-    "These chip labels are too long for the chip they go on: {labels}. Write "
-    "your reply again with every label at most {limit} characters — a noun "
-    "phrase, not a clause. Keep the same ids, the same events and the same "
-    "words around them; only the labels change."
+    "These chips have labels too long for the chip they go on: {chips}. Send "
+    "back only these chips, one per line, with the same kind and id and a label "
+    "of at most {limit} characters — a noun phrase, not a clause. Write nothing "
+    "else: the rest of your reply stays as it is."
 )
 
 
@@ -107,10 +112,8 @@ class EmptyReply(Exception):
     words is a bare bubble on the page, so the turn fails instead."""
 
 
-class LabelTooLong(Exception):
-    """A chip label will not fit and the coach would not shorten it. Trimming
-    it here would hide a prompt that has stopped holding, and the page has no
-    truncation left to cover it."""
+class Stopped(Exception):
+    """The person stopped the turn; it ends at its next model or tool call."""
 
 
 class BareList(Exception):
@@ -140,8 +143,7 @@ def run_call(toolbox: Toolbox, call) -> tuple[str, dict | None, str | None]:
 
 
 def _again(model, system, messages: list[dict], spoken: str, ask: str, turn_id: str):
-    """Ask once for the reply again. The words are the coach's own, so nothing
-    here rewrites them — it asks the coach to."""
+    """Ask the coach once more, with no tools."""
     asked = messages + [
         {"role": "assistant", "content": spoken},
         {"role": "user", "content": ask},
@@ -149,28 +151,68 @@ def _again(model, system, messages: list[dict], spoken: str, ask: str, turn_id: 
     return drain(model.turn(system, asked, [], turn_id)).text
 
 
+def _shown(match) -> str:
+    return (match.group(3) or match.group(2)).strip()
+
+
+def cut(label: str) -> str:
+    """The label within the limit, ended at the last whole word that fits, or
+    at the limit when no word does."""
+    shown = regex.findall(r"\X", label)
+    if len(shown) <= chips.CHIP_MAX:
+        return label
+    head = "".join(shown[: chips.CHIP_MAX])
+    if not (head[-1].isspace() or shown[chips.CHIP_MAX].isspace()):
+        words = head.rsplit(None, 1)
+        head = words[0] if len(words) > 1 else head
+    return head.rstrip(" ,;:—–-")
+
+
 def shorten_labels(
     model, system, messages: list[dict], spoken: str, data, diagram_id: int | None, turn_id=""
 ) -> str:
-    """Ask once for shorter chip labels."""
-    over = chips.too_long(spoken, data, diagram_id)
-    if not over:
+    """Ask once for shorter labels for the chips that will not fit, and only
+    for those labels: the words and the events around them stay as they are.
+    A label still too long after that is cut at a word."""
+
+    def over(match) -> bool:
+        kind, target = chips.ChipKind(match.group(1)), match.group(2).strip()
+        return (
+            chips.resolves(kind, target, data, diagram_id)
+            and chips.length(_shown(match)) > chips.CHIP_MAX
+        )
+
+    long = [m.group(0) for m in chips.TOKEN.finditer(spoken) if over(m)]
+    if not long:
         return spoken
-    _log.warning(f"Chip labels too long, asking again: {over}")
-    shortened = _again(
+    _log.warning(f"Chip labels too long, asking for new ones: {long}")
+    told = _again(
         model,
         system,
         messages,
         spoken,
-        SHORTEN.format(
-            labels="; ".join(repr(label) for label in over), limit=chips.CHIP_MAX
-        ),
+        SHORTEN.format(chips="; ".join(long), limit=chips.CHIP_MAX),
         turn_id,
     )
-    still = chips.too_long(shortened, data, diagram_id)
-    if still:
-        raise LabelTooLong(f"Chip labels still too long after asking again: {still}")
-    return shortened
+    given: dict[tuple[str, str], list[str]] = {}
+    for m in chips.TOKEN.finditer(told):
+        if (m.group(3) or "").strip():
+            given.setdefault((m.group(1), m.group(2).strip()), []).append(
+                m.group(3).strip()
+            )
+
+    def relabel(match) -> str:
+        if not over(match):
+            return match.group(0)
+        kind, target = match.group(1), match.group(2).strip()
+        offered = given.get((kind, target))
+        label = offered.pop(0) if offered else _shown(match)
+        if chips.length(label) > chips.CHIP_MAX:
+            _log.warning(f"Chip label still too long, cut at a word: {label!r}")
+            label = cut(label)
+        return chips.token(chips.ChipKind(kind), target, label)
+
+    return chips.TOKEN.sub(relabel, spoken)
 
 
 def narrate(model, system, messages: list[dict], spoken: str, turn_id="") -> str:
@@ -182,6 +224,12 @@ def narrate(model, system, messages: list[dict], spoken: str, turn_id="") -> str
     if chips.bare_list(told):
         raise BareList("Reply is still a bare list of chips after asking again")
     return told
+
+
+def prompt_version() -> str:
+    """The coach's prompt as the replay ledger names it: its text with nothing
+    filled in, hashed."""
+    return hashlib.sha256(get_agent_prompt().encode()).hexdigest()[:12]
 
 
 def record_of(discussion: Discussion) -> DiagramData:
@@ -334,6 +382,7 @@ class CoachTurn:
 
             results = []
             for call in turn.calls:
+                self._halt()
                 asked = toolcall(self.toolbox.data, call.name, call.args)
                 text, event, refusal = run_call(self.toolbox, call)
                 asked["refusal"] = refusal
@@ -382,12 +431,14 @@ class CoachTurn:
             messages.append({"role": "user", "content": FINISH})
             spoken = self._say(system, messages, [], stream=True).text
 
+        self._halt()
         if not spoken.strip():
             raise EmptyReply(f"Turn {self.turn_id} produced no words for the user")
         spoken = shorten_labels(
             self.model, system, messages, spoken, self.data, self.discussion.diagram_id, self.turn_id
         )
         spoken = narrate(self.model, system, messages, spoken, self.turn_id)
+        self._halt()
 
         reply = chips.validate(spoken.strip(), self.data, self.discussion.diagram_id)
         # What was typed out live is the words as the model first said them. A
@@ -405,6 +456,7 @@ class CoachTurn:
             views=self.toolbox.views or None,
             kind=StatementKind.Turn,
             turn_id=self.turn_id,
+            prompt_version=prompt_version(),
         )
         db.session.add(coach_statement)
         db.session.flush()
@@ -412,11 +464,8 @@ class CoachTurn:
             {"statement_id": coach_statement.id}
         )
         if self.discussion.title is None:
-            summary = Metered(
-                self.discussion.user_id, self.diagram.id, self.turn_id, Purpose.Summary
-            )
-            self.discussion.update_title(summary)
-            self.discussion.update_summary(summary)
+            self._title()
+        self._halt()
         if not self.scratch:
             profile.mirror(self.discussion.user, self.data)
             TokenMeter.charge(self.discussion.user_id, self.model.spent)
@@ -429,6 +478,24 @@ class CoachTurn:
             "events": events,
             "turn_id": self.turn_id,
         }
+
+    def _title(self) -> None:
+        """Naming the sitting is not the reply: when that call fails the
+        sitting stays unnamed and the next turn names it, whether Gemini
+        answered with an error, could not be reached or took too long. The
+        summary is written first, so a named sitting always has one. A
+        sitting is named from its opening words, so the one before it, now
+        over, is named once more from all of it; when that call fails its
+        title stays."""
+        summary = self.model.aside(Purpose.Summary)
+        try:
+            self.discussion.update_summary(summary)
+            self.discussion.update_title(summary)
+            before = previous(self.discussion)
+            if before:
+                before.update_title(summary)
+        except (GeminiError, aiohttp.ClientError, TimeoutError) as failed:
+            _log.warning(f"Turn {self.turn_id} left a sitting's title as it was: {failed}")
 
     def _regroup(self, events: list[dict]) -> list[str]:
         """Re-group the line when the turn has moved an event, before the coach
@@ -446,6 +513,7 @@ class CoachTurn:
                 turn_id=self.turn_id,
                 user_id=self.discussion.user_id,
                 session_id=self.discussion.id,
+                metered=self.model.aside(Purpose.Cluster),
             )
         except clusters.ClusterError as rejected:
             _log.warning(
@@ -471,6 +539,10 @@ class CoachTurn:
                 },
             )
         return regrouped.sentences
+
+    def _halt(self) -> None:
+        if turnlog.halted(self.turn_id):
+            raise Stopped(f"turn {self.turn_id} was stopped")
 
     def _send(self, event: dict) -> None:
         """Tell whoever is watching, as it happens."""
@@ -506,6 +578,7 @@ class CoachTurn:
     def _say(self, system, messages: list[dict], tools: list[dict], stream=False):
         """One model call. The words go out as they arrive; a step that ends in
         a tool call was the coach thinking aloud, so those words are dropped."""
+        self._halt()
         words = self.model.turn(system, messages, tools, self.turn_id)
         sent = False
         while True:
@@ -578,6 +651,7 @@ def _notes(said: Statement):
         .filter(
             TurnEvent.kind == TurnEventKind.ToolCall.value,
             TurnEvent.payload["name"].as_string() == ToolName.CoachNotes.value,
+            TurnEvent.payload["refusal"].as_string().is_(None),
         )
         .order_by(TurnEvent.id.desc())
     )

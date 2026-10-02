@@ -7,20 +7,31 @@ got to.
 
 import json
 
+import aiohttp
 import pytest
+from google.genai.errors import ServerError
 from mock import patch
 
 import btcopilot
 
 from btcopilot.extensions import db
-from btcopilot import turnlog, turns
+from btcopilot import record, turnlog, turns
 from btcopilot.coachmodel import Refusal
-from btcopilot.coachturn import EmptyReply
-from btcopilot.models import Discussion, Statement, TurnEvent
+from btcopilot.coachturn import EmptyReply, run_call
+from btcopilot.discussions import SITTING_GAP
+from btcopilot.models import Author, Change, Discussion, Statement, TurnEvent
 from btcopilot.toolbox import ToolName
 from btcopilot.turnlog import TurnEventKind
-from btcopilot.schema import Person, asdict
-from btcopilot.tests.conftest import Model, called, calling, csrf_token, said, wrote
+from btcopilot.schema import ItemKind, Person, asdict
+from btcopilot.tests.conftest import (
+    Model,
+    called,
+    calling,
+    csrf_token,
+    run_then_stop,
+    said,
+    wrote,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -100,6 +111,76 @@ def test_the_turn_writes_what_it_did_in_order_and_ends_in_done(
     ]
     assert events[-1]["statement"] == "Added Nell."
     assert events[-1]["session"]["id"] == body["discussion_id"]
+
+
+@pytest.mark.parametrize(
+    "down",
+    [
+        ServerError(503, {"error": {"message": "unavailable"}}),
+        aiohttp.ClientConnectionError("unreachable"),
+        TimeoutError(),
+    ],
+    ids=["error", "unreachable", "timeout"],
+)
+def test_a_title_call_that_fails_leaves_the_reply_and_the_sitting_unnamed(
+    web, token, family, monkeypatch, down
+):
+    # R-0097, R-0661
+    coach(monkeypatch, said("Tell me about Nell."))
+    with patch("btcopilot.metered.gemini_text_sync", side_effect=down):
+        body = post(web, token).get_json()
+
+    discussion = db.session.get(Discussion, body["discussion_id"])
+    assert [s.text for s in discussion.statements] == [
+        "My sister is Nell.",
+        "Tell me about Nell.",
+    ]
+    assert discussion.title is None
+    assert logged(body["turn_id"])[-1]["type"] == TurnEventKind.Done.value
+
+
+def test_a_sitting_is_not_named_until_its_summary_is_written(
+    web, token, family, monkeypatch
+):
+    # R-0097, R-0661
+    coach(monkeypatch, said("Tell me about Nell."), said("Go on."))
+    calls = [wrote("A summary"), TimeoutError(), wrote("A summary"), wrote("Nell")]
+    with patch("btcopilot.metered.gemini_text_sync", side_effect=calls):
+        body = post(web, token).get_json()
+        discussion = db.session.get(Discussion, body["discussion_id"])
+        assert discussion.title is None
+
+        post(web, token, "She is older.")
+    db.session.refresh(discussion)
+    assert (discussion.title, discussion.summary) == ("Nell", "A summary")
+
+
+def test_the_sitting_before_is_titled_again_from_all_of_it_when_the_next_opens(
+    web, token, family, monkeypatch
+):
+    # R-0097, R-0662
+    coach(monkeypatch, said("Tell me more."), said("Go on."), said("And then?"))
+    first = post(web, token, "My dad called last night.").get_json()["discussion_id"]
+    for statement in Statement.query:
+        statement.created_at -= 2 * SITTING_GAP
+    db.session.commit()
+    titles = [
+        wrote("A summary"),
+        wrote("The move"),
+        wrote("Conflict with father over care of mother"),
+    ]
+    with patch("btcopilot.metered.gemini_text_sync", side_effect=titles) as gemini:
+        second = post(web, token, "We moved in May.").get_json()["discussion_id"]
+        post(web, token, "It was hard.")
+
+    assert gemini.call_count == 3
+    assert "My dad called last night." in gemini.call_args.kwargs["prompt"]
+    assert second != first
+    assert db.session.get(Discussion, second).title == "The move"
+    assert (
+        db.session.get(Discussion, first).title
+        == "Conflict with father over care of mother"
+    )
 
 
 def test_the_turns_done_row_carries_the_release_it_ran_on(
@@ -255,10 +336,115 @@ def test_a_page_that_stops_listening_mid_turn_leaves_the_turn_to_finish(
         "My sister is Nell.",
         "Tell me about Nell.",
     ]
-    assert TurnEvent.query.filter_by(
-        turn_id=body["turn_id"], kind=TurnEventKind.Done.value
-    ).count() == 1
+    assert (
+        TurnEvent.query.filter_by(
+            turn_id=body["turn_id"], kind=TurnEventKind.Done.value
+        ).count()
+        == 1
+    )
     assert turnlog.running(discussion.id) is None
+
+
+def test_stop_ends_a_turn_before_its_next_model_call_with_no_reply(
+    web, token, family, monkeypatch
+):
+    # R-0636
+    coach(monkeypatch, said("Tell me about Nell."))
+    with patch("btcopilot.turns.enqueue"):
+        body = post(web, token).get_json()
+    turn_id = body["turn_id"]
+    response = web.post(f"/app/turns/{turn_id}/stop", headers={"X-CSRFToken": token})
+    assert response.status_code == 202
+
+    with patch("btcopilot.shadow.start") as shadowed:
+        turns.run(turn_id, body["discussion_id"], body["statement_id"])
+    shadowed.assert_not_called()
+    discussion = db.session.get(Discussion, body["discussion_id"])
+    assert [s.text for s in discussion.statements] == ["My sister is Nell."]
+    done = logged(turn_id)[-1]
+    assert (done["type"], done["stopped"]) == (TurnEventKind.Done.value, True)
+    assert turnlog.running(discussion.id) is None
+    again = web.post(f"/app/turns/{turn_id}/stop", headers={"X-CSRFToken": token})
+    assert again.status_code == 409
+
+
+def test_a_turn_stopped_between_two_tool_calls_takes_its_edits_back(
+    web, token, family, monkeypatch
+):
+    # R-0636
+    coach(
+        monkeypatch,
+        calling(
+            (ToolName.EditPerson, {"name": "Nell"}),
+            (ToolName.EditPerson, {"name": "Finn"}),
+        ),
+        said("Added both."),
+    )
+
+    monkeypatch.setattr("btcopilot.coachturn.run_call", run_then_stop)
+    body = post(web, token).get_json()
+
+    db.session.refresh(family)
+    assert [p["name"] for p in family.get_diagram_data().people] == ["Wren"]
+    changes = Change.query.filter_by(diagram_id=family.id).order_by(Change.id).all()
+    assert [c.turn_id for c in changes] == [
+        body["turn_id"],
+        f"undo:{body['turn_id']}",
+    ]
+    discussion = db.session.get(Discussion, body["discussion_id"])
+    assert [s.text for s in discussion.statements] == ["My sister is Nell."]
+    done = logged(body["turn_id"])[-1]
+    assert (done["type"], done["stopped"], done["version"]) == (
+        TurnEventKind.Done.value,
+        True,
+        family.version,
+    )
+    assert "conflict" not in done
+    kept = TurnEvent.query.filter_by(turn_id=body["turn_id"]).all()
+    assert [k.kind for k in kept] == [TurnEventKind.Done.value]
+
+
+def test_a_turn_stopped_while_its_sitting_is_named_keeps_no_reply(
+    web, token, family, monkeypatch
+):
+    # R-0636
+    coach(monkeypatch, said("Tell me about Nell."))
+
+    def stop(turn):
+        turnlog.halt(turn.turn_id)
+
+    monkeypatch.setattr("btcopilot.coachturn.CoachTurn._title", stop)
+    body = post(web, token).get_json()
+
+    discussion = db.session.get(Discussion, body["discussion_id"])
+    assert [s.text for s in discussion.statements] == ["My sister is Nell."]
+    done = logged(body["turn_id"])[-1]
+    assert (done["type"], done["stopped"]) == (TurnEventKind.Done.value, True)
+
+
+def test_a_stopped_turn_keeps_edits_changed_since_and_says_so(
+    web, token, family, monkeypatch
+):
+    # R-0636
+    coach(monkeypatch, called(ToolName.EditPerson, name="Nell"), said("Added Nell."))
+
+    def run_change_stop(toolbox, call):
+        answer = run_call(toolbox, call)
+        nell = {"item_kind": ItemKind.Person.value, "item_id": 2, "field": "name"}
+        record.apply(
+            family.id, [dict(nell, after="Nelly")], author=Author.User, turn_id="by-hand"
+        )
+        turnlog.halt(toolbox.turn_id)
+        return answer
+
+    monkeypatch.setattr("btcopilot.coachturn.run_call", run_change_stop)
+    body = post(web, token).get_json()
+
+    db.session.refresh(family)
+    assert [p["name"] for p in family.get_diagram_data().people] == ["Wren", "Nelly"]
+    done = logged(body["turn_id"])[-1]
+    assert (done["stopped"], done["version"]) == (True, family.version)
+    assert "Nelly" in done["conflict"]
 
 
 def test_another_users_turn_is_not_found(web, token, family, monkeypatch, test_user_2):

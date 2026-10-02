@@ -146,15 +146,6 @@ def length(words: str) -> int:
     return len(regex.findall(r"\X", words))
 
 
-def too_long(text: str, data: DiagramData, diagram_id: int | None) -> list[str]:
-    """The labels in `text` that will not fit on a chip."""
-    return [
-        label or target
-        for kind, target, label in parse(text, data, diagram_id)
-        if length(label or target) > CHIP_MAX
-    ]
-
-
 # The coach speaks; a comma list of chips is not speech. Three chips with only
 # punctuation and a joining word between them is a list, however it is dressed.
 BARE_RUN = 3

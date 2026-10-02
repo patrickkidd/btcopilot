@@ -58,6 +58,27 @@ would save two to three seconds as the suite stands, and introduces leak-between
 bugs that cost debugging hours the first time they bite. In-memory already beats a file.
 Recommendation: leave it. Revisit past thirty seconds.
 
+Every test in the default suite runs on SQLite, with no database server to start (Patrick,
+2026-10-02). The Alembic chain is run from empty on a SQLite file: `test_db.py` compares
+the tables and columns it built with the ones the models declare, and
+`test_migrationchain.py` checks, as each table is made, that no foreign key names a table
+not made yet, which Postgres refuses and SQLite lets by.
+
+A test that needs a real Postgres is an integration test and lives in the integration
+suite: the folder `btcopilot/tests/integration/`, marker `integration`. Today it holds the
+migration chain run on Postgres and the turn lock test (row locks exist only on Postgres).
+The default run collects these and skips them. They run with one command, on CI as its own
+step and on a Mac that has Docker running:
+
+```
+uv run pytest --integration btcopilot/tests/integration
+```
+
+The run starts one `postgres:16` container on a port Docker picks, gives each test an empty
+database of its own, and removes the container when it ends. No shared-memory setting is
+needed: the limit that failed on the Mac was the host's, hit by a Postgres started outside
+Docker, and a container has its own.
+
 ## 4. Where a test should live
 
 - **Unit** if it can be decided by calling a function with records in hand: scribe

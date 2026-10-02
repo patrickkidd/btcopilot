@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { NO_LIST, lists, openList, PARKED, pinned, stateFor } from "./setup";
+import { NO_LIST, PARKED, addForm, lists, openList, pinned, stateFor } from "./setup";
 
 /** The list behind the picture, and the button that opens it.
  *
@@ -17,8 +17,8 @@ const personEditor = async (page: Page) => {
   await settle(page);
   await openList(page);
   await page.locator("#tab-people").click();
-  // the form is reached only to add someone while it is parked (PARKED)
-  await page.locator("#menu-add").click();
+  // the form is parked (PARKED) and reached only by its address
+  await addForm(page, "person");
   await expect(page.locator("#add-sheet .editor")).toBeVisible();
 };
 
@@ -116,7 +116,8 @@ test.describe("the two lists behind it", () => {
 
     await page.locator("#tab-people").click();
     await expect(page.locator("#tab-people")).toHaveClass(/on/);
-    await expect(page.locator("#menu-add")).toHaveText("+ Add someone");
+    // nothing here adds anyone: that is said to the coach
+    await expect(page.locator(".addbtn:visible")).toHaveCount(0);
     // the moves record holds three people
     await expect(page.locator("#menu-body .row")).toHaveCount(3);
     await expect(page.locator("#menu-body .row").first()).toContainText("Ada");
@@ -300,9 +301,9 @@ test.describe("the list views and their editors", () => {
   }) => {
     await settle(page);
     await openList(page);
-    // the form is reached only to add an event while it is parked (PARKED);
-    // a new event starts as a shift
-    await page.locator("#menu-add").click();
+    // the form is parked (PARKED) and reached only by its address; a new
+    // event starts as a shift
+    await addForm(page, "event");
     const block = page.locator('#add-sheet .editor [data-block="shift"]');
     await expect(block).toBeVisible();
     await expect(block.locator(".sec")).toHaveText(["Shifts"]);
@@ -416,5 +417,7 @@ test.describe("an event's kind in the events list", () => {
     expect(seen.slashes).toBe(2);
     expect(seen.shapes).toBe(2);
     await expect(lists(page).locator('.row[data-event="203"] .kw')).toHaveCount(0);
+    // R-0636
+    await expect(lists(page).locator(".row[data-event]:has(.kmark .shape):not(:has(.r1 .kw))")).toHaveCount(0);
   });
 });

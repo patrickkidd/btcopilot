@@ -13,7 +13,7 @@ import btcopilot
 from btcopilot.extensions import db
 from btcopilot.llmutil import EXTRACTION_MODEL, Served, Spent, Text
 from btcopilot.coachmodel import ModelTurn, ToolCall
-from btcopilot.coachturn import SPEAK
+from btcopilot.coachturn import SPEAK, run_call
 from btcopilot.models import Diagram, Discussion, Statement, Speaker, SpeakerType
 from btcopilot.promptdir import missing
 from btcopilot.toolbox import ToolName
@@ -49,6 +49,12 @@ def pytest_terminal_summary(terminalreporter):
 
 def pytest_addoption(parser):
     add_e2e_option(parser)
+    parser.addoption(
+        "--integration",
+        action="store_true",
+        default=False,
+        help="Run the tests that need a real Postgres (starts a container with Docker)",
+    )
 
 
 def pytest_configure(config):
@@ -112,6 +118,12 @@ def calling(*wanted: tuple[ToolName, dict], text: str = "") -> ModelTurn:
             {"type": "tool_use", "id": call.id, "name": call.name, "input": call.args}
         )
     return turn
+
+
+def run_then_stop(toolbox, call):
+    answer = run_call(toolbox, call)
+    turnlog.halt(toolbox.turn_id)
+    return answer
 
 
 def opening(messages: list[dict]) -> str:

@@ -14,12 +14,13 @@ names; a proxy's own error page has none.
 | | |
 |---|---|
 | `POST /chat` | `{statement}` into the family's current sitting: the session last spoken in, or a new one once its last statement is 12 hours old |
-| `GET /statements` | the family's one thread across its sessions, 50 statements at a time, oldest first; `?before=<statement id>` reads the page just older. Each carries `session_id`; a session's first statement carries `sitting: {id, started, previous_started}`, the last being when the sitting before it started, or null for the first |
+| `GET /statements` | the family's one thread across its sessions, 50 statements at a time, oldest first; `?before=<statement id>` reads the page just older. Each carries `session_id`; a session's first statement carries `sitting: {id, started, previous_started}`, the last being when the sitting before it started, or null for the first. Each also carries `feedback`, the number of shadow replies its turn has on a coach reply, 0 on the user's words and on a reply made with Conversation Feedback off, and `stopped`, true on the user's words whose turn was ended with Stop, with `conflict`, why that turn's edits stayed in the record, or null when they were taken back (R-0636) |
 | `POST /sessions/<id>/statements` | `{statement}` into a named session |
 | `GET /sessions` | the user's sessions on the family the app is on (`?diagram_id=` another readable one, or the one an admin is viewing, whose sessions are its owner's), most recently active first; `?all=true`, admins only (403 otherwise), is every session on every family, whoever had it, each with `family`, its family's name (every row carries `diagram_id`), which is what the meeting page puts one on the agenda from; `?words=` keeps those where something said carries every word, the coach's chat search, each with `match`, the newest line that does, chips shown as their words |
 | `POST /sessions` | new empty session, 201 |
 | `GET /sessions/<id>` | one session plus `statements: [{id, role, text}]`, role is `user` or `coach` |
 | `PATCH /sessions/<id>` | `{title}` only |
+| `POST /turns/<id>/stop` | 202 `{turn_id}`: asks the running turn to end; the worker checks before each model call and each tool call, writes no reply (the words typed out so far are dropped), takes the turn's edits back as one change, and runs no shadow replies. Its last event is done with `stopped: true`, `statement: null`, `statement_id` (the person's own message), `version` (the record's version after the edits were taken back), `views: []`, `events: []`, `turn_id`, `discussion_id`, `kind`, `session`, `release`; and `conflict` (a sentence) only when an edit had been changed since and the turn's edits were left in place. A turn already past its last call finishes as usual. A stopped turn does not count for the Conversation Feedback timer. 409 when the turn is not running (R-0636) |
 
 A session reads `{id, title, summary, last_activity, message_count}`. The title
 and summary are written by the coach after the first exchange and are editable
@@ -57,6 +58,20 @@ in …" reads. Events never traced are absent.
 `GET /preferences`, `PATCH /preferences` — one object: `speak`, `proactive`,
 `mode`, `theme`, `bug_reports` (`ask` or `always`), `first_name`, `last_name`,
 `birthdate`. PATCH takes any subset; an unknown key or a bad value is a 400.
+`shadow_models` (the Conversation Feedback switch, a list of names from
+`shadow_candidates`; empty is off; turning it on is auditors only, 403
+otherwise; a name not in `shadow_candidates` is a 400) turns itself off 5 minutes after the latest of the coach's last
+reply being written, the person's last vote (a pick saved with a choice) and
+the switch going on [Oracle: R-0637]. `shadow_since` (UTC ISO time
+it went on, null when off) is set by the server and is a 400 in a PATCH;
+`shadow_expires_at` (UTC ISO time it turns off: 5 minutes after the latest of
+those three, null when off) is read-only.
+GET, PATCH and every coach turn turn an expired switch off and store that; a
+turn sent more than 5 minutes after all three runs no shadow replies.
+`shadow_candidates` is the admin setting `shadow_candidates` (set with
+`flask admin coach-model shadows set`), `["sonnet"]` when unset; GET, PATCH
+and every coach turn first drop from `shadow_models` any name no longer in it,
+and turn the switch off when none is left [Oracle: R-0637].
 
 ## Reports
 
@@ -128,3 +143,18 @@ Saving normalizes rather than refusing: a non-shift kind clears the four shift
 values, targets need a relationship kind, triangles survive only for inside and
 outside. So a stored event can never break the editor's rules, and switching a
 shift to a death clears its shift values.
+
+## Review picks (`/review`, the model_picks table)
+
+| | |
+|---|---|
+| `GET /review/pairs` | admins only: every pick not yet made, each `{id, source, context, left, right}`; a pair seen for the first time gets its pick row and its random side order here; replay pairs come from the eval ledger file, and a line is used only when the replay passes table of this database holds that replay (same scratch record, turns and token counts) |
+| `GET /review/picks` | admins only: each model's `{model, won, lost, tied}` over the picks made |
+| `GET /review/picks?turn=<turn id>` | the owner of that turn's session, admin or auditor (403 otherwise): `{replies: [{key, text}], real_key, picks: [{id, left_key, right_key, choice, left_acceptable, right_acceptable, note, shown}], pending, expected}`, a pick's last five null until it is voted, the real reply and each finished shadow reply keyed `a`, `b`, `c` in a random order, and one pick per shadow against the real reply, made here if missing as `GET /review/pairs` makes it; a shadow with an error is left out and no model is named; `expected` counts the shadow replies started for the turn and `pending` those with neither text nor error yet |
+| `PUT /review/picks/<id>` | `{choice, note, left_acceptable, right_acceptable, source, shown}`, `shown` (`left` or `right`, optional) the side shown first on screen, kept as `shown_first` in that side's ref [Oracle: R-0640]; an admin, or an auditor on their own session's pick; answers the pick with both model names |
+
+`choice` is `left`, `right` or `tie`; the client sends it already resolved. A
+reply marked unacceptable never wins; with only one acceptable, that one wins;
+with neither, it is a tie; any other `choice` is a 400. The two flags are
+optional, true or false. `source` is optional and may only be `chat`, which a
+pick voted in the chat sets. `note` is optional, at most 200 characters.

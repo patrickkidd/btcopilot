@@ -2032,3 +2032,58 @@ Released from FD-366: cut selection in chat, Diagrams page drill-down, agenda co
 
 Released from FD-366: fix for the coach's turn crashing after a death recorded with no cause, replay start-turn option, replay passes kept when a run stops early.
 PR #145 ready for review with CI green; follow-on work goes to FD-368.
+
+## 2026-10-02 — FD-368: voting on coach replies in the chat, Stop, and the model choice narrowed to Opus against Sonnet [T-1, T-2, T-9, T-14, T-15, T-18]
+<!-- session: 77dfc4b3-86f9-4747-9a8e-bf741fb460d9 · flushed: 2026-10-02T22:00Z -->
+
+The session ran 2026-10-01 and 02 on ticket FD-368, PR #147, and released to production twice on
+2026-10-02 from the branch: commit ac878f9b at about 09:24 UTC with migration 1b00000000c1, and
+9e1ccd95 at about 16:33 UTC. PR #147 is out of draft with CI green and waits for Patrick's
+squash-merge. Master was rewritten on 2026-10-01 at his request so FD-365 and FD-366 are one
+commit each; FD-368 was rebased onto it.
+
+It began as planning for the model choice. Patrick wanted the blind comparison of replies moved
+out of its own screen and into the chat, switched on per account from the app instead of from the
+command line. That became Conversation Feedback: a switch on the Coach page for admins and
+auditors with a confirm dialog, a strip in the chat while it is on, the coach's reply beside one
+other model's reply with neither named, acceptable and best marks, an optional note, and a vote
+that must be cast before the next message. He tested it on a sandbox through many rounds and each
+thing he hit was fixed in turn: the switch turning itself off while he was still reading and
+voting (it now counts 5 minutes from the latest of the switch, the coach's reply or a vote), a
+reload losing the open vote (state now survives a reload, as a rule for every screen), replies
+shown twice, the thread jumping under his thumb, the dark-mode colours, a slow model's reply left
+out of the vote. A release pushed without his word early on drew a hard correction: nothing goes
+to production until he names it.
+
+His sandbox votes, 17 of them with Opus as the coach, put Opus best in 11; Sonnet and Gemini Pro
+were each acceptable in 8 of their comparisons and best in 2. On that he dropped Gemini and
+Haiku-class models as candidates, ruled out new models and outside keys until he asks, and chose
+to run Opus against Sonnet himself on production with no pass rule. Synthetic clients are not
+used for the choice; their code and what was learned are kept for later, and the learning loops
+run on real beta users for now.
+
+Beside the voting the session built: Send turning into Stop while the coach replies, with a
+message typed meanwhile sent when the reply ends and a stopped turn's record edits taken back,
+leaving a "Stopped" line that survives a reload; moving dots while the coach composes; the sitting
+before retitled from its whole content when a new one opens, and a failed title call no longer
+losing the reply; the add person and add event buttons removed from the chat app and the coding
+screen, the forms kept for editing; a chip label over 28 characters retried once for the labels
+alone and then cut at a word, after a 29-character label failed a turn; a coach notes call
+missing a required field refused; every event kind word emphasised in the events list; a session
+opened from its own link opening the app; the coding screen's header showing the conversation's
+name; the replay tool's spending cap holding within a turn; Better replies on a sandbox reading
+only its own database's results; the default test suite on SQLite with the Postgres tests moved to
+a separate integration suite; no git tag for a release from a ticket branch; the sandbox kit
+seeding one admin with a fixed sign-in link and an empty case; and the commit hook for builders
+taking a base branch and one file list per builder. The models page became a dashboard ranking
+the candidates, now kept by the token-optimization skill, and the cost page gained the
+cache-lifetime comparison.
+
+Parked by him, each to be picked up when he asks: the evaluation suite for the coach (concept
+drafted, nothing built), the rubric from vote notes, the turn that takes one request (built, on
+branch FD-368-one-request, dropped because it raises the risk of bugs), more thinking on the
+variables, and the design pass for emails and notifications. He named a new category, the open
+learning loop, for a loop that collects data with no automated way yet to act on it; the loops
+ledger lists two. The flush added nine rulings he had said and the store lacked (R-0670 to
+R-0678). One working fact: this session's worktree was made in the deprecated clone by mistake;
+ticket worktrees belong under the standalone clone.

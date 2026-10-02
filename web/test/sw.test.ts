@@ -25,7 +25,7 @@ function worker(release: string, held: string[] = [], windows: ReturnType<typeof
     self: {
       location: { href: `https://familydiagram.com/app/sw.js?release=${release}` },
       addEventListener: (kind: string, run: (e: unknown) => void) => (on[kind] = run),
-      registration: { showNotification: shown },
+      registration: { showNotification: shown, navigationPreload: { enable: async () => undefined } },
       clients: { claim: async () => undefined, matchAll: async () => windows, openWindow },
     },
   });

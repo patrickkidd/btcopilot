@@ -136,6 +136,12 @@ class RedisLog:
     def forget(self, turn_id: str) -> None:
         self.redis.delete(f"turn:{turn_id}")
 
+    def halt(self, turn_id: str) -> None:
+        self.redis.set(f"turn:{turn_id}:stop", 1, ex=TTL)
+
+    def halted(self, turn_id: str) -> bool:
+        return bool(self.redis.exists(f"turn:{turn_id}:stop"))
+
 
 class MemoryLog:
     """The same log in one process, which is what the tests read and write."""
@@ -144,6 +150,7 @@ class MemoryLog:
         self.events: dict[str, list[dict]] = {}
         self.turns: dict[int, tuple[str, float]] = {}
         self.owners: dict[str, int] = {}
+        self.stops: set[str] = set()
         self.readers: dict[str, list[queue.Queue]] = {}
         self.lock = threading.Lock()
 
@@ -212,6 +219,12 @@ class MemoryLog:
         with self.lock:
             self.events.pop(turn_id, None)
 
+    def halt(self, turn_id: str) -> None:
+        self.stops.add(turn_id)
+
+    def halted(self, turn_id: str) -> bool:
+        return turn_id in self.stops
+
 
 _store = None
 
@@ -267,3 +280,12 @@ def clear(discussion_id: int) -> None:
 
 def forget(turn_id: str) -> None:
     store().forget(turn_id)
+
+
+def halt(turn_id: str) -> None:
+    """Ask the running turn to end at its next model or tool call (R-0636)."""
+    store().halt(turn_id)
+
+
+def halted(turn_id: str) -> bool:
+    return store().halted(turn_id)

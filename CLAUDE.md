@@ -52,7 +52,7 @@ slug), created from the main clone with
 
 ## Production
 
-The box is reached as `ssh familydiagram` (Patrick's ssh config; never the raw IP). Deploys: the release workflow builds and tags the image; the rollout runs on the box from `/var/www/btcopilot/deploy` with `--env-file /etc/fd/secrets.env`. Grafana Cloud is administered through its API with `GRAFANA_SA_TOKEN` and `GRAFANA_URL` from `.env` at the clone root. The deploy lock moves to the ticket branch when Patrick says so, by Claude, never by him [Oracle: R-0623].
+The box is reached as `ssh familydiagram` (Patrick's ssh config; never the raw IP). Deploys: the release workflow builds the image, tagged `<branch>-g<sha7>`, and makes a git tag only for a release from master after the PR merges, never from a ticket branch; the rollout runs on the box from `/var/www/btcopilot/deploy` with `--env-file /etc/fd/secrets.env`. Grafana Cloud is administered through its API with `GRAFANA_SA_TOKEN` and `GRAFANA_URL` from `.env` at the clone root. The deploy lock moves to the ticket branch when Patrick says so, by Claude, never by him [Oracle: R-0623].
 
 ## Deploy and spend
 
@@ -379,6 +379,7 @@ package is incompatible (symptom: `create_app() takes 0 to 1 positional argument
 ### Testing
 - **Local run**: `uv run pytest -m "not conventions" btcopilot/tests -q`
 - **Oracle guards** (`btcopilot/tests/conventions/`, marker `conventions`) read the sops-encrypted rulings store and run on CI only, where the key is; locally run `uv run pytest -m "not conventions" ...`. Without a key they fail, never skip.
+- **Integration suite** (`btcopilot/tests/integration/`, marker `integration`): tests that need a real Postgres; skipped in the local run; run with `uv run pytest --integration btcopilot/tests/integration`, which starts a Postgres container with Docker; CI runs it as its own step.
 - **E2e tests** (real LLM calls): `uv run pytest --e2e -m e2e` — requires `GOOGLE_GEMINI_API_KEY` from `.env` at the clone root
 - **Async**: `--asyncio-mode=auto` (configured in `btcopilot/tests/pytest.ini`)
 - **Directories**: `btcopilot/tests/` (the chat app's suite), `btcopilot/tests/schema/`, `btcopilot/tests/test_*.py`

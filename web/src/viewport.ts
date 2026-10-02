@@ -72,22 +72,28 @@ export const fold = (
   let tall = seen.height;
   let typing = false;
   let scrolled = false;
+  let full = "";
   const set = () => {
     const on = typing || scrolled;
     if (on === screen.classList.contains("folded")) return;
     const a = look();
+    if (on && !pic.getAnimations().length) full = a.height;
     const [top, shown] = [a.label.marginTop, a.label.opacity];
     // turned back halfway, it sets out from where it is
     for (const one of [pic, label, view]) for (const motion of one.getAnimations()) motion.cancel();
     screen.classList.toggle("folded", on);
     if (still()) return pic.classList.remove("folding");
-    const b = look();
+    // each motion names only where it starts and ends on the new style, which
+    // is not measured, because measuring it lays the thread out at its final
+    // size for a frame and the browser clamps a reader near its last words
+    // down by the difference; the open picture's height is auto, so the one
+    // height that cannot be left to the style is the one it had when it folded
     const timing = { duration: FOLD_MS, easing: "ease" };
     pic.classList.add("folding");
-    label.animate([{ marginTop: top, opacity: shown }, { marginTop: b.label.marginTop, opacity: b.label.opacity }], timing);
-    view.animate([{ marginTop: a.view }, { marginTop: b.view }], timing);
-    pic.animate([{ height: a.height }, { height: b.height }], timing).onfinish = () =>
-      pic.classList.remove("folding");
+    label.animate([{ offset: 0, marginTop: top, opacity: shown }], timing);
+    view.animate([{ offset: 0, marginTop: a.view }], timing);
+    const to = on ? [] : [{ offset: 1, height: full }];
+    pic.animate([{ offset: 0, height: a.height }, ...to], timing).onfinish = () => pic.classList.remove("folding");
   };
   const check = () => {
     if (seen.scale > 1) return;
@@ -124,12 +130,34 @@ export const fold = (
   pic.addEventListener("click", () => {
     if (screen.classList.contains("folded")) open();
   });
+  // While a finger is on the thread the picture stays as it is: folding or
+  // opening it then moves the thread's box under the finger, and at the foot
+  // of the thread, where a vote is read up and down, it would open and fold
+  // on every turn of the drag. It follows the scroll once the finger lifts.
+  let held = false;
+  screen.querySelector(".chat")!.addEventListener(
+    "touchstart",
+    (e) => {
+      held = true;
+      // heard on what was touched, which a thread drawn again under the finger
+      // has taken out of the thread
+      const lifted = new AbortController();
+      const lift = (up: Event) => {
+        lifted.abort();
+        held = (up as TouchEvent).touches.length > 0;
+        if (!held) set();
+      };
+      for (const end of ["touchend", "touchcancel"])
+        e.target!.addEventListener(end, lift, { passive: true, signal: lifted.signal });
+    },
+    { passive: true },
+  );
   return {
     open,
     scrolled: (stuck, away) => {
       if (stuck) scrolled = false;
       else if (away) scrolled = true;
-      set();
+      if (!held) set();
     },
   };
 };

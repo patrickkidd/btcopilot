@@ -13,12 +13,27 @@ from mock import patch
 from btcopilot.extensions import db
 from btcopilot import record, turnlog, turns
 from btcopilot.coachmodel import CACHE
+from btcopilot.coachturn import run_call
 from btcopilot.discussions import open_session
-from btcopilot.models import Author, Change, Discussion, Statement, TurnEvent
+from btcopilot.models import (
+    Author,
+    Change,
+    Discussion,
+    ShadowTurn,
+    Statement,
+    TurnEvent,
+)
 from btcopilot.schema import ItemKind, Person, asdict
 from btcopilot.toolbox import ToolName
 from btcopilot.turnlog import TurnEventKind
-from btcopilot.tests.conftest import Model, called, csrf_token, said, wrote
+from btcopilot.tests.conftest import (
+    Model,
+    called,
+    csrf_token,
+    run_then_stop,
+    said,
+    wrote,
+)
 
 
 NELL = [
@@ -127,6 +142,69 @@ def test_a_replys_tool_calls_are_on_the_thread_after_the_live_log_is_gone(
     assert [s["role"] for s in shown] == ["user", "coach"]
     assert shown[1]["tools"] == NELL
     assert shown[0]["tools"] == []
+
+
+def test_a_coach_reply_says_how_many_shadow_replies_its_turn_has(
+    web, token, family, test_user, monkeypatch
+):
+    # R-0636
+    coach(monkeypatch, Model(said("Tell me about Nell."), said("How much older?")))
+    body = post(web, token).get_json()
+    post(web, token, "She is older.")
+    for model in ("sonnet", "gemini-pro"):
+        db.session.add(
+            ShadowTurn(
+                turn_id=body["turn_id"],
+                user_id=test_user.id,
+                diagram_id=family.id,
+                discussion_id=body["discussion_id"],
+                statement_id=body["statement_id"],
+                model=model,
+            )
+        )
+    db.session.commit()
+
+    shown = statements(web, body["discussion_id"])
+    assert [s["feedback"] for s in shown] == [0, 2, 0, 0]
+
+
+def test_the_words_of_a_stopped_turn_say_so_on_the_thread(
+    web, token, family, monkeypatch
+):
+    # R-0636
+    coach(
+        monkeypatch,
+        Model(
+            called(ToolName.EditPerson, name="Nell"),
+            called(ToolName.EditPerson, name="Finn"),
+            said("Tell me about Finn."),
+        ),
+    )
+
+    def run_change_stop(toolbox, call):
+        answer = run_then_stop(toolbox, call)
+        finn = {"item_kind": ItemKind.Person.value, "item_id": 2, "field": "name"}
+        record.apply(
+            family.id, [dict(finn, after="Finley")], author=Author.User, turn_id="by-hand"
+        )
+        return answer
+
+    monkeypatch.setattr("btcopilot.coachturn.run_call", run_then_stop)
+    body = post(web, token).get_json()
+    monkeypatch.setattr("btcopilot.coachturn.run_call", run_change_stop)
+    post(web, token, "My brother is Finn.")
+    monkeypatch.setattr("btcopilot.coachturn.run_call", run_call)
+    post(web, token, "He is older.")
+
+    shown = statements(web, body["discussion_id"])
+    assert [(s["role"], s["stopped"]) for s in shown] == [
+        ("user", True),
+        ("user", True),
+        ("user", False),
+        ("coach", False),
+    ]
+    assert shown[0]["conflict"] is None
+    assert "Finley" in shown[1]["conflict"]
 
 
 def test_a_refused_call_stays_on_the_thread_with_why_in_plain_words(
