@@ -80,7 +80,7 @@ export function below(told: Told, i: number, statement: number | null): string {
   ).join("");
   return (
     `<div class="step">${stepBtn("‹ Back", `data-act="${Act.Back}"`, i === 0)}` +
-    `<div class="dots" aria-hidden="true">${dots}</div><span class="count">${i + 1} of ${n}</span>` +
+    `<div class="dots" aria-hidden="true">${dots}</div>` +
     `${stepBtn("Next ›", `data-act="${Act.Next}"`, i === n - 1)}</div>` +
     `<div class="cap" aria-live="polite"><div class="when"><span class="date">${esc(shot.date)}</span>` +
     (shot.gap ? `<span class="gap">${esc(shot.gap)}</span>` : "") +

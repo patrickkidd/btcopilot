@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor, boxOf } from "./setup";
+import { stateFor, boxOf, step } from "./setup";
 import { colours } from "./gate";
 import { mockTurn } from "./turn";
 
@@ -20,7 +20,6 @@ const settle = async (page: Page) => {
 };
 
 const drawer = (page: Page) => page.locator("#pbp");
-const count = (page: Page) => drawer(page).locator(".count");
 
 /** The stored play message, the one the session already holds. */
 const stored = (page: Page) => page.locator(".bub.coach[data-play]").last();
@@ -34,7 +33,7 @@ test.describe("the play-by-play drawer", () => {
     await expect(drawer(page)).toBeHidden();
     await stored(page).click();
     await expect(drawer(page)).toBeVisible();
-    await expect(count(page)).toHaveText("1 of 4");
+    await expect.poll(() => step(page)).toBe("1 of 4");
     await expect(drawer(page).locator(".point")).toContainText("Ada moved toward Ben");
     await expect(drawer(page).locator(".path .here")).toHaveText("explain");
   });
@@ -51,7 +50,7 @@ test.describe("the play-by-play drawer", () => {
     await expect(chip).toHaveText("The walk");
     await chip.click();
     await expect(drawer(page)).toBeVisible();
-    await expect(count(page)).toHaveText("1 of 4");
+    await expect.poll(() => step(page)).toBe("1 of 4");
     await expect(drawer(page).locator(".point")).toContainText("Ada moved toward Ben");
     expect(plays).toEqual([]);
   });
@@ -78,7 +77,7 @@ test.describe("the play-by-play drawer", () => {
     });
     await stored(page).locator('button.chip[data-kind="cluster"]').click();
     await expect(drawer(page)).toBeVisible();
-    await expect(count(page)).toHaveText("1 of 4");
+    await expect.poll(() => step(page)).toBe("1 of 4");
     expect(plays).toEqual([JSON.stringify({ cluster_id: play.cluster_id })]);
   });
 
@@ -153,14 +152,14 @@ test.describe("the play-by-play drawer", () => {
     await settle(page);
     await stored(page).click();
     await page.waitForTimeout(3000);
-    await expect(count(page)).toHaveText("1 of 4");
+    await expect.poll(() => step(page)).toBe("1 of 4");
     await drawer(page).locator('[data-act="next"]').click();
-    await expect(count(page)).toHaveText("2 of 4");
+    await expect.poll(() => step(page)).toBe("2 of 4");
     await drawer(page).locator('[data-act="jump"][data-i="3"]').first().click();
-    await expect(count(page)).toHaveText("4 of 4");
+    await expect.poll(() => step(page)).toBe("4 of 4");
     await expect(drawer(page).locator("p.ask")).toHaveText("Where was Cal in the year Ada stopped speaking to Ben?");
     await drawer(page).locator('[data-act="back"]').click();
-    await expect(count(page)).toHaveText("3 of 4");
+    await expect.poll(() => step(page)).toBe("3 of 4");
     await expect(drawer(page).locator(".guess")).toHaveText(/^My guess: /);
   });
 
@@ -195,7 +194,7 @@ test.describe("the play-by-play drawer", () => {
     await expect(drawer(page)).toBeVisible();
     await expect(page.locator("#view .ss.board")).toHaveCount(0);
     await expect(drawer(page).locator(".path")).toHaveText(/^Timeline › .+ › explain$/);
-    await expect(count(page)).toHaveText("1 of 4");
+    await expect.poll(() => step(page)).toBe("1 of 4");
     await drawer(page).locator('.path [data-step="1"]').click();
     await expect(drawer(page)).toBeHidden();
     await expect(page.locator("#path .here")).not.toHaveText("Timeline");
@@ -307,7 +306,7 @@ test.describe("what the coach aims at with people and moves", () => {
   // R-0570, R-0075
   test("a sequence opens the play-by-play told by nobody: the events' own words, no point and no question", async ({ page }) => {
     await aim(page, { kind: "sequence", events: [20, 22, 23] });
-    await expect(count(page)).toHaveText("1 of 3");
+    await expect.poll(() => step(page)).toBe("1 of 3");
     await expect(drawer(page).locator(".point")).toHaveCount(0);
     await drawer(page).locator('[data-act="jump"]').last().click();
     await expect(drawer(page).locator(".ask")).toHaveCount(0);
@@ -317,7 +316,7 @@ test.describe("what the coach aims at with people and moves", () => {
   // R-0570, R-0076
   test("a triangle opens the play-by-play of the events between its people", async ({ page }) => {
     await aim(page, { kind: "triangle", persons: [1, 2, 3] });
-    await expect(count(page)).toContainText(" of ");
+    await expect(drawer(page).locator(".dots .dot.on")).toHaveCount(1);
     await expect(page.locator("#view .ss.board")).toHaveCount(0);
   });
 });

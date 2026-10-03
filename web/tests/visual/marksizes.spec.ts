@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor } from "./setup";
+import { stateFor, step } from "./setup";
 
 /** Every mark the play-by-play draws, one step each, on the Pemberton stand-in
  * family (`everymark` in btcopilot/routes/fixtures.py), read off the real
@@ -172,12 +172,12 @@ async function steps(page: Page, n: number): Promise<string[]> {
   await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.locator(".bub.coach[data-play]").last().click();
-  await expect(page.locator("#pbp .count")).toHaveText(`1 of ${n}`);
+  await expect.poll(() => step(page)).toBe(`1 of ${n}`);
   await page.addStyleTag({ content: "#pbp *, #pbp { animation: none !important; transition: none !important; }" });
   const svgs: string[] = [];
   for (let i = 0; i < n; i++) {
     if (i) await page.locator('#pbp [data-act="next"]').click();
-    await expect(page.locator("#pbp .count")).toHaveText(`${i + 1} of ${n}`);
+    await expect.poll(() => step(page)).toBe(`${i + 1} of ${n}`);
     svgs.push(await page.locator("#pbp .draw svg").evaluate((svg) => svg.outerHTML));
   }
   return svgs;
@@ -283,16 +283,17 @@ test.describe("every mark", () => {
   });
 
   // R-0679
-  test("an event on the years line jumps to its step, and the dots only say where the reader is", async ({ page }) => {
+  test("an event on the years line jumps to its step, and the dots alone say where the reader is", async ({ page }) => {
     await steps(page, STEPS.length);
-    const count = page.locator("#pbp .count");
     await page.locator('#pbp .wire [data-act="jump"][data-i="20"]').click();
-    await expect(count).toHaveText(`21 of ${STEPS.length}`);
+    await expect.poll(() => step(page)).toBe(`21 of ${STEPS.length}`);
     await page.locator('#pbp .wire [data-act="jump"][data-i="6"]').click();
-    await expect(count).toHaveText(`7 of ${STEPS.length}`);
+    await expect.poll(() => step(page)).toBe(`7 of ${STEPS.length}`);
     await page.locator("#pbp .dots .dot").nth(15).click();
-    await expect(count).toHaveText(`7 of ${STEPS.length}`);
+    await expect.poll(() => step(page)).toBe(`7 of ${STEPS.length}`);
     expect(await page.locator("#pbp .dots button, #pbp .dots [data-act]").count()).toBe(0);
+    // no "7 of 27" beside Next: the lit dot is the only sign of where the reader is
+    await expect(page.locator("#pbp div.step")).not.toContainText(" of ");
   });
 
   // R-0679
