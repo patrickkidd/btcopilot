@@ -595,7 +595,7 @@ export class Picture {
    * mid-flight can finish it early rather than stack a second pair of layers. */
   private landing: (() => void) | null = null;
   private landed: () => void = () => undefined;
-  /** Kept once the level on screen has finished sliding in or out. */
+  /** Kept once the about page has finished sliding in or out. */
   settled: Promise<void> = Promise.resolve();
 
   constructor(

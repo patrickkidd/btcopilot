@@ -330,11 +330,13 @@ button { font-family: inherit; }
    Safari count the padding again past it, and the strip scrolled sideways. */
 .caption .listglyph { margin-left: auto; padding-left: 8px; }
 .view { position: relative; transition: height 0.25s ease; }
-/* One level in or one level out. The two views stand side by side for the
-   length of the slide, so nothing under the picture moves while they travel;
-   the about page hangs over the chat at its full height the whole way, never
-   cut to the region's and then let out (Patrick, 2026-10-02), so the region
-   clips the slide only at its sides, and the live page waits under the copy. */
+/* The about page of a cluster slides in over the timeline and back out; it is
+   the only thing that slides, since showing a cluster redraws the timeline in
+   place. The two stand side by side for the length of the slide, so nothing
+   under the picture moves while they travel; the about page hangs over the
+   chat at its full height the whole way, never cut to the region's and then
+   let out (Patrick, 2026-10-02), so the region clips the slide only at its
+   sides, and the live page waits under the copy. */
 .pic.sliding { overflow-x: clip; overflow-y: visible; }
 .pic.sliding .view { transition: none; }
 .pic.sliding > .view .card { visibility: hidden; }
