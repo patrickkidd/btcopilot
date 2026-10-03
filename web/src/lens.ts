@@ -4,7 +4,7 @@ import { CLUSTER, pathRow } from "./dom";
 import { Picture, Target, Via, type Tap } from "./picture";
 import { ASK_MARK, IN_CHAT_MARK, listButton, PLAY_MARK, tok } from "./tokens";
 import { Feature } from "./track";
-import { ChipTone, InteractionKind, ItemKind, Spotlight, type Chip, type Cluster, type Timeline } from "./types";
+import { ChipKind, ChipTone, InteractionKind, ItemKind, Spotlight, type Chip, type Cluster, type Timeline } from "./types";
 
 /** The picture and the row under it, as one controller: a tap on the line, a
  * chip in the words, the path over the line and the (i) all come through here
@@ -132,8 +132,9 @@ export class Lens {
    * never changes the picture's level, so nothing below it moves (the owner:
    * chat bubbles must never move from a tap on a chip). */
   aim(chip: Chip): void {
-    const clusters = this.hooks.timeline().clusters;
-    const ids = aimedEvents(chip, clusters);
+    const { clusters, events } = this.hooks.timeline();
+    // a person's chip names that person's dated events on the line
+    const ids = chip.kind === ChipKind.Person ? events.filter((e) => e.person === Number(chip.target) && e.dateTime).map((e) => e.id) : aimedEvents(chip, clusters);
     if (!ids.length) return;
     // A chip in the coach's words does exactly what a tap on the picture does:
     // there is one selection, wherever the reader touched it. A chip naming an
