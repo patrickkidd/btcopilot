@@ -2088,8 +2088,8 @@ ledger lists two. The flush added nine rulings he had said and the store lacked 
 R-0678). One working fact: this session's worktree was made in the deprecated clone by mistake;
 ticket worktrees belong under the standalone clone.
 
-## 2026-10-01 and 02 — FD-367: setup on a Bedrock laptop, the second reading round on how a case is presented and Patrick's ruling on the page's order, the app's model calls through Bedrock with Gemini dropped, the mockup round begun [T-19, T-11, T-9, T-10, T-2]
-<!-- session: 103f44c5 · flushed: 2026-10-02T00:55:00-08:00 -->
+## 2026-10-01 and 02 — FD-367: setup on a Bedrock laptop, the second reading round and Patrick's ruling on the case page's order, the app's model calls through Bedrock with Gemini dropped, mockup versions 4 and 5 on the app's own code with his notes and three decisions open, the rule that nothing implies more than the record holds, the skills merge, the rebase onto master [T-19, T-11, T-9, T-10, T-2]
+<!-- session: 103f44c5 · flushed: 2026-10-02T22:57:15-08:00 -->
 
 **Setup.** A Micron laptop signed in to Bedrock, with no Documents folder and no sops key: the
 code worktree on FD-367, the private corpus clone checked out on FD-367 (Patrick commits it by
@@ -2106,7 +2106,7 @@ research folder: SYNTHESIS-v2.md, MENTAL_MODEL.md, PLAY-BY-PLAY-DESKTOP.md and
 VERIFY-corpus-citations.md; to the theory corpus: seven notes files, a paragraph in REFERENCE.md
 section 6b, OPEN_QUESTIONS item 41 (the reading at the top or the end of a presented page, tried
 both ways), and SOURCES.md and MANIFEST.tsv rows. The theory checker went from 451 to 237 quote
-problems, all older than today and not repaired; today's one stale item was cleared.
+problems, all older than that day and not repaired; the day's one stale item was cleared.
 
 **Patrick ruled (2026-10-01)** that the case page follows the ten-level order in MENTAL_MODEL.md —
 the people on a picture; what brought them, dated; the couple since they met; each parent's own
@@ -2120,30 +2120,77 @@ traceable; the death-reaction anchor not usable rather than partial), and the th
 agreement on six eval items and is not a facts card, so a re-run does not apply. Nothing was
 overwritten; the stale items stay for his judgment.
 
-**The Bedrock path (commit 666486bb).** A provider setting, BTCOPILOT_MODEL_PROVIDER (anthropic by
-default, or bedrock), with Bedrock chosen by itself when CLAUDE_CODE_USE_BEDROCK is set; the
-AnthropicBedrock client on the AWS credential chain; the models mapped to us-west-2 inference
-profiles, the sonnet alias included; fail-early with no key fallback. Gemini is removed from the
-coach and from side-by-side (shadow) testing (geminimodel.py deleted); the Gemini-named helper
-calls for cluster grouping, the coach eval judge and the synthetic suite run on Sonnet 5.5 on a
-Bedrock machine and still on Gemini on production; a stored shadow list naming a Gemini alias is
-filtered with a warning; the sandbox's real mode needs no key on a Bedrock machine; docs in
-SETUP.md, HOW_THIS_PROJECT_WORKS.md and the deploy files. Proof: one real Opus 5.5 call through
-the coach path on Bedrock answered (E2E-DONE); 949 unit tests pass; the sandbox turn is NOT-DONE on
-this laptop because the kit starts a local redis-server binary that is not installed (needs sudo).
-The new tests cite R-0000 until a session with the key assigns the id, and CI's citation guard
-fails until then. Patrick (2026-10-01): batch work into this ticket's branch; drop Gemini; never
-prompt a human during an unattended run.
+**The Bedrock path (commit 666486bb, c14e053b after the rebase).** A provider setting,
+BTCOPILOT_MODEL_PROVIDER (anthropic by default, or bedrock), with Bedrock chosen by itself when
+CLAUDE_CODE_USE_BEDROCK is set; the AnthropicBedrock client on the AWS credential chain; the
+models mapped to us-west-2 inference profiles, the sonnet alias included; fail-early with no key
+fallback. Gemini is removed from the coach and from side-by-side (shadow) testing (geminimodel.py
+deleted); the Gemini-named helper calls for cluster grouping, the coach eval judge and the
+synthetic suite run on Sonnet 5.5 on a Bedrock machine and still on Gemini on production; a
+stored shadow list naming an alias the app no longer offers is dropped with a warning; the
+sandbox's real mode needs no key on a Bedrock machine; docs in SETUP.md,
+HOW_THIS_PROJECT_WORKS.md and the deploy files. Proof: one real Opus 5.5 call through the coach
+path on Bedrock answered (E2E-DONE); 949 unit tests passed; the sandbox turn is NOT-DONE on this
+laptop because the kit starts a local redis-server binary that is not installed (needs sudo). The
+new tests cite R-0000 until a session with the key assigns the id, and CI's citation guard fails
+until then. Patrick (2026-10-01): batch work into this ticket's branch; drop Gemini; never prompt
+a human during an unattended run.
 
 **Method corrections**, recorded in CLAUDE.md: the coordinator reads only briefs; no placeholder
-chatter lines; unattended runs never prompt; mockups are the app's own code pixel for pixel. Also
-learned: never message an agent inside a Workflow run (it forks a copy); changing a shared prompt
-text in a Workflow script changes earlier stages' cache keys and restarts them.
+chatter lines; unattended runs never prompt; mockups are the app's own code pixel for pixel.
 
-**Mockup round** in progress — a Vite mockup entry under web/ renders the case page gallery from
-the app's own diagram, timeline and move code; the three case files live in the corpus's
-fd336/cases/ and never in this repo; the page is served locally and will be attached to Jira
-FD-367. See the FD-367 section of doc/STATE.md, its next entry.
+**Mockup version 4 (2026-10-02, commit a86038c1).** Built on the app's own code: the household
+picture, the timeline and the told drawer come from the app's modules and match the app's output
+byte for byte; seven frames (Patrick's record twice, the desktop, the telling mid-step, Client L
+twice, Anna) with three decisions on the page; served from this laptop and attached to Jira
+FD-367. The chat screen's own files were not refactored: the extraction is saved as a patch in
+the worktree's ignored scratch folder and main.ts, menu.ts and pro.ts were restored, for his
+decision. Patrick's notes (his words in the private corpus): the direction is right; the app must
+explain itself with no wall of text carrying the meaning; the ten levels headlined and opened one
+at a time while the page still scrolls; one simple coverage picture so a viewer feels the gaps
+first; lean on the app's own drawing of family segments; test whether the diagram is the page's
+centrepiece (a dashboard on the desktop, a slide-out on the phone); every frame says proposal,
+view or alternative; an executive summary explains the thesis across the sections, qualified by
+coverage; nothing may imply more than the record holds — recorded in CLAUDE.md as a binding rule
+(commit 1dd16d2a, with the frame labels and prose as the flag for a visual form); piled-up prose
+in a feature is the flag for a visual form, while a first iteration may carry some reading;
+desktop frames in galleries at full size. The timeline pinned on the phone with chips lighting
+their event is a brainstorm input he said of frame P3, not a ruling. Version 4's difference
+between presenting one's own record and a professional presenting a client's was attribution only
+(whose account, whose guess, whom the questions address), proposed by the synthesis and neither
+sourced nor ruled; the self form ships first, for his seminar one week out.
 
-**master was squashed** by Patrick (FD-365 and FD-366 are single commits on master); FD-367 is
-rebased onto origin/master before PR #146 merges, scheduled after the mockup commit.
+**Mockup version 5 (2026-10-02, commit d8ec66d4).** Section A variations on his whole record:
+twelve panes, phone and desktop, each labelled proposal, view or alternative, in four groups —
+the ten levels as collapsed headlines (a rail on the desktop); a summary box qualified by
+coverage, or the same lines under each level; coverage on the family picture, on a grid of the
+people, or as three numbers; the picture as the dashboard, pinned on the desktop and one tap away
+on the phone, or the first card. The critic found the coverage pictures counting a selection, so
+the case file was regenerated from the whole record (36 people, 84 events, 16 tracked questions).
+Four critique rounds, the last gate clean. Served from this laptop, attached to FD-367 as
+attachment 10086, and copied by the mailbox session on Patrick's word to the private corpus branch
+worker-mailbox at mailbox/FD-367/gallery-v5.html. Three decisions wait for him: the summary's
+form, the coverage picture's form, the picture as the dashboard. Left small: the three-numbers
+frame shown alone; two cards with 40 to 80 words of prose. Found on the way, for its own ticket:
+the app's snapshot draws Sam at age minus four in the 1994 picture (chat-screen code, untouched).
+
+**Skills and corpus.** The private corpus clone on FD-367 merged master at abccc30, bringing
+Patrick's new efficiency skill and the token-optimization skill. The efficiency check ran in its
+new form; criteria 66 to 68 were added from this session's failures (no message to an agent that
+runs inside a Workflow, because it forks a copy that edits the same files; a Workflow script's
+shared prompt text frozen once a stage has run, because editing it restarts the earlier stages;
+unattended runs never prompt) and bindings written. Its rule 60 ends this session after this
+flush; the next round starts in a new session from the notes. At this flush the corpus clone
+stood four commits ahead of its remote with five files modified and uncommitted (the efficiency
+skill's criteria and corrections, the whole-record case build script, the case file,
+gallery-v5.html); Patrick commits and pushes the corpus by hand.
+
+**Rebase.** Patrick squashed master on 2026-10-01 (FD-365 and FD-366 are single commits there);
+FD-367 was rebased onto master at cde55050 on 2026-10-02 (head 1dd16d2a; the Bedrock commit is
+c14e053b). After master's FD-368 work the shadow filter moved into the shadow expiry check, where
+a stale alias is dropped with a warning and the setting written back clean; 1086 unit tests pass;
+the web build is green. The force push of the rebased branch is Patrick's (the repo guard).
+
+**Next round, queued and not started:** his rulings on the three version 5 decisions; the
+pinned-timeline trial; then the case page built as a real screen for the seminar, released under
+the deploy lock and the project's release rules.

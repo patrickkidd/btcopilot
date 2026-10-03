@@ -520,7 +520,7 @@ btcopilot/review/.
 
 ## T-9 · How sessions run (process)
 
-**Status:** binding; extended 2026-09-12/13/14, 2026-09-24/25 and 2026-10-01.
+**Status:** binding; extended 2026-09-12/13/14, 2026-09-24/25, 2026-10-01 and 02.
 **Decided:** everything in doc/HOW_THIS_PROJECT_WORKS.md plus: never coin a term;
 build only on an explicit go; mockups are drawn with the app's own stylesheet; the flush at
 session end is `/two-clocks` and is idempotent; sub-agents do the work, one status line only
@@ -591,13 +591,28 @@ code running, pixel for pixel, never a drawn stand-in; a status line carries no 
 chatter. Learned the same day about the Workflow tool: never message an agent inside a Workflow
 run, because that forks a copy of it; changing a shared prompt text in a Workflow script changes
 the earlier stages' cache keys and restarts them.
+Added 2026-10-02, in CLAUDE.md, no ids yet: nothing implies more than the record holds — a reading
+carries what it rests on and the record's coverage, and a thin record gets "not enough in the
+record to choose a reading", never a thesis; every mockup frame says proposal, view or
+alternative; piled-up prose in a feature is the flag for a visual form, while a first iteration
+may carry some reading; desktop frames in galleries at full size. The efficiency skill in
+Patrick's new form (merged into the private corpus clone from master together with the
+token-optimization skill, abccc30) ran its check this session and gained criteria 66 to 68 from
+this session's own failures — no message to an agent that runs inside a Workflow, because it
+forks a copy that edits the same files; a Workflow script's shared prompt text is frozen once a
+stage has run, because editing it restarts the earlier stages; unattended runs never prompt —
+with bindings written for the session. Its rule 60 says a session ends after its flush and the
+next round starts in a new session from the notes on the branch; the FD-367 session ended that
+way on 2026-10-02.
 **Open:** (1) [build] the permission checks still refuse production reads, a test sign-in
 link on the box and reads of personal data; the answer so far is that he restarts in bypass
 mode, which his settings already default to; (2) [ruling] five rulings of this session were
 decided by an agent under his general yes and wait on his word (listed in the private corpus's
 RULINGS_TO_APPEND_2026-09-25.md).
 **Lives in:** doc/HOW_THIS_PROJECT_WORKS.md; the private corpus's PREDEPLOY_TESTING_RULES.md; doc/TEST_STRATEGY.md;
-btcopilot/CLAUDE.md; .claude/skills/two-clocks/SKILL.md; bin/flushcheck.py; bin/t.
+btcopilot/CLAUDE.md; .claude/skills/two-clocks/SKILL.md; bin/flushcheck.py; bin/t; the efficiency
+skill at ~/.claude/skills/efficiency/ (ACCEPTANCE_CRITERIA.md, references/corrections.md), mirrored
+in the private corpus under claude-user/skills/efficiency/.
 **Next action:** he restarts in bypass mode.
 **Updated:** 2026-10-02.
 
@@ -610,7 +625,9 @@ work moved to a standalone clone on 2026-09-28; the private corpus is an optiona
 it, and doc/SETUP.md is how a new machine or a cloud session gets going. On a machine with no
 sops key (the Bedrock laptop, 2026-10-01) rulings cannot be appended either: the session's ruling
 candidates are recorded in doc/STATE.md and decisions/log.md, and new tests cite R-0000 until a
-keyed session assigns ids.
+keyed session assigns ids. A sops key file has been on this machine since 2026-10-02; it has not
+been tried against the store (agents may not decrypt it), so the appends still wait for the
+session Patrick directs.
 **Decided:** one thought-and-decision trace in the order of Patrick's own statements, mined
 from the transcripts; the flush is idempotent and topics are picked up by name; he never runs a
 command — he reads pages or files; the register and dashboard pages are retired, his word
@@ -627,9 +644,11 @@ move itself, after those choices; (4) [build] the word lists still leave records
 cannot assign to a topic, and every trace name no flush has rewritten is a machine guess;
 (5) [build] revision chains between rulings do not draw; (6) [verify] whether the ledger and
 trace scripts run against the encrypted store has not been checked since the move into this repo;
-(7) [waiting] the 2026-10-01 ruling candidates — the case page's order (T-19), the app's model
-calls through Bedrock on a Bedrock machine, Gemini dropped, batching into the ticket branch,
-unattended runs never prompting — wait for a session with the key; the tests citing R-0000 are
+(7) [waiting] the 2026-10-01 and 02 ruling candidates — the case page's order (T-19), the app's
+model calls through Bedrock on a Bedrock machine, Gemini dropped, batching into the ticket branch,
+unattended runs never prompting, nothing implying more than the record holds, every mockup frame
+labelled proposal, view or alternative, prose as the flag for a visual form, and his version 4
+notes on the case page — wait for a session with the key; the tests citing R-0000 are
 re-cited then, and CI's citation guard fails until they are.
 **Lives in:** .claude/skills/two-clocks/; doc/{TOPICS.md,HISTORY.md}; private/oracle/
 (encrypted); the private corpus's HANDOVER_2026-09-25-FD363.md (with the session list),
@@ -647,7 +666,8 @@ live in its place. Every coach call now reads most of its words from the model's
 what it cost to a table. fdserver is out of this ticket and the Pro backend has its own
 maintenance branch. A second session owns the dashboards, the command line the bot drives and the
 per-call cost rows; it shares this branch and commits within minutes of each change. Since
-2026-10-01 (commit 666486bb on FD-367, not deployed) the app's model calls go through Amazon
+2026-10-01 (commit 666486bb on FD-367, c14e053b after the 2026-10-02 rebase, not deployed) the
+app's model calls go through Amazon
 Bedrock on a machine signed in to Bedrock, and Gemini is out of the coach and the side-by-side
 testing; on production Gemini still only groups events into clusters.
 **Decided:** one public repo; every prompt is one encrypted file with shared fragments, one key
@@ -678,9 +698,11 @@ a Bedrock machine, the models mapped to us-west-2 inference profiles, the sonnet
 Gemini is dropped from the coach and from side-by-side (shadow) testing because it matched
 Sonnet in performance and cost, and Gemini-named helper calls (cluster grouping, the coach eval
 judge, the synthetic suite) run on Sonnet 5.5 on a Bedrock machine; a stored shadow list naming
-a Gemini alias is skipped with a warning, never a failed turn; the sandbox's real mode needs no
+an alias the app no longer offers is cleaned at that person's next turn — the alias dropped with a
+warning and the setting written back without it (the check sits in the shadow expiry function
+since the rebase onto master's FD-368 work), never a failed turn; the sandbox's real mode needs no
 key on a Bedrock machine. Proof: one real Opus 5.5 call through the coach path on Bedrock
-answered, and 949 unit tests pass.
+answered; 949 unit tests passed at the build and 1086 after the rebase, with the web build green.
 **Live on the box:** droplet familydiagram-app at 209.38.135.250 in sfo3; five containers — the
 web app, the worker, Postgres, Redis and Caddy; secrets in a root-owned file every compose
 command passes; the migration chain rewritten in dependency order because Postgres refuses a
@@ -740,7 +762,8 @@ Those run at the top level on Patrick's direct grant.
 **Lives in:** deploy/ (compose, Caddyfile, secrets template, README, the release workflow
 and the four appcast feeds); doc/PLATFORM_BUILD.md; doc/archive/2026-09-DATADOG.md;
 private/prompts/ and private/oracle/, encrypted; the Bedrock path in btcopilot/provider.py,
-btcopilot/llmutil.py, btcopilot/tests/test_provider.py, doc/SETUP.md section 6,
+btcopilot/llmutil.py, btcopilot/shadow.py (the expiry check that cleans a stale alias),
+btcopilot/tests/test_provider.py, doc/SETUP.md section 6,
 deploy/secrets.env.example, on branch FD-367 (draft PR #146).
 **Deploys, 2026-09-26:** the release workflow's deploy job reads the host, user and key from a
 GitHub environment named production that only branch FD-363 may use, runs only on a manual
@@ -755,20 +778,20 @@ by hand. Open: (9) [build] the release workflow should prune old docker images i
 disk does not stop a deploy again; (10) [build] a later ticket branch needs the environment's
 branch rule widened before it can deploy. Added 2026-10-01: (11) [verify] one coach turn through
 the whole sandbox stack on a Bedrock machine is unproven — the kit starts a local redis-server
-binary the Bedrock laptop lacks, and installing it needs sudo; (12) [build] before FD-367 rolls
-out, every shadow list on the box naming a Gemini alias is reset to sonnet or off (the command
-is in doc/STATE.md's Bedrock section); (13) [build] Patrick squashed master on 2026-10-01
-(FD-365 and FD-366 are single commits there), so FD-367 is rebased onto origin/master before
-PR #146 merges, keeping master's newer rules in CLAUDE.md (R-0622 to R-0624, the builder hook);
-scheduled after the mockup commit (T-19); (14) [waiting] the Bedrock tests cite R-0000 until a
+binary the Bedrock laptop lacks, and installing it needs sudo; (12) [verify] after FD-367 rolls
+out, a shadow list on the box naming a Gemini alias is cleaned by the app at that person's next
+turn (the command in doc/STATE.md's Bedrock section resets one by hand if wanted); (13) [waiting]
+FD-367 was rebased onto master at cde55050 on 2026-10-02 (head 1dd16d2a), keeping master's newer
+rules in CLAUDE.md; the force push of the rebased branch is Patrick's (the repo guard refuses it
+to agents), and until it lands origin/FD-367 and PR #146 show the old history; (14) [waiting] the Bedrock tests cite R-0000 until a
 keyed session assigns the id (T-10).
 **Deploy, 2026-09-28: commit 8ad08dc, database 1b00000000b4, run 36443507214.** Carried the
 restored timeline zoom, explain's per-cluster caching, and the observations table feeding the
 tuning queue on the quality dashboard.
 **Next action:** he sets a spend limit on the testing workspace in the Anthropic console; he
 puts the Grafana token on the box and refreshes the dependency lock so the observability commit
-can deploy; the release workflow gets automatic image pruning; FD-367 is rebased onto the
-squashed master after the mockup commit.
+can deploy; the release workflow gets automatic image pruning; he force-pushes the rebased
+FD-367.
 **Updated:** 2026-10-02.
 
 ## T-12 · The learning loop: a scout that looks outward and a review of the scout
@@ -933,6 +956,7 @@ token-optimization skill) and the cost page https://claude.ai/artifact/WMnou7A3U
 (with the cache-lifetime comparison).
 **Next action:** he turns Conversation Feedback on in his own production thread and votes Opus
 against Sonnet for a while.
+**Updated:** 2026-10-02.
 
 ## T-19 · The case page: presenting a case to peers
 
@@ -941,30 +965,73 @@ ticket FD-367. The first gallery (version 3) was judged the wrong shape: period 
 level, prose-heavy, no formulation line, no nuclear and extended split, no play-by-play. Two
 rounds of reading in the Bowen literature found the order a case is presented in and wrote it up
 as ten levels in MENTAL_MODEL.md in the private corpus; Patrick ruled on 2026-10-01 that the page
-follows that order. A mockup round on the app's own code is in progress (see the FD-367 section
-of doc/STATE.md, its next entry).
+follows that order. Mockup version 4 (2026-10-02) was built on the app's own picture, timeline
+and drawer code, byte-identical to the app's output; Patrick judged the direction right and gave
+notes (under Decided). Mockup version 5, the same day, tried what his notes asked for on his whole
+record (36 people, 84 events, 16 tracked questions): twelve panes, phone and desktop, each
+labelled proposal, view or alternative, in four groups — the ten levels as collapsed headlines (a
+rail on the desktop); a summary box qualified by coverage, or the same lines under each level;
+coverage drawn on the family picture, on a grid of the people, or as three numbers; the picture
+as the dashboard, pinned on the desktop and one tap away on the phone, or the first card. Four
+critique rounds, the last gate clean; attached to Jira FD-367 as attachment 10086. Three
+decisions wait for his word. The form where a person presents their own record ships first, for
+his seminar one week from 2026-10-02. The session ended at this flush; the next round starts in a
+new session from these notes.
 **Decided:** the page follows the ten-level order of MENTAL_MODEL.md — the people on a picture;
 what brought them, dated; the couple since they met; each parent's own family; one calendar; the
 formulation; the person's own part; where there was a choice; what to work on and expect; the
-effort (Patrick, 2026-10-01; ruling candidate, no id yet: no key on this machine). The missing
-books (Titelman 1998, Papero 1990 and 2018, Kerr 2019, Frost, the Family Systems case conferences)
-stay thin rather than holding the work. A mockup is the app's own diagram, timeline and
-play-by-play code, pixel for pixel, never a drawn stand-in [T-9]. Case material for mockups stays
-in the private corpus, never in this repo.
-**Open:** (1) [ruling] the order ruling needs its id in the store, appended by a session with
-the key; (2) [ruling] whether the reading (the formulation) sits at the top of the page or at the
-end — tried both ways in the mockup round, not ruled (theory OPEN_QUESTIONS item 41); (3) [build]
-the mockup round: the gallery rendered from the app's own code on three cases (his record,
-Client L, Anna), phone and desktop, a separate critique agent, then attached to Jira FD-367 — in
-progress; (4) [waiting] what the missing books add stays unknown until they are on a machine the
-readers can reach; (5) [build] the page itself, after the mockup round and his word on it.
-**Lives in:** Jira FD-367 (hand-off, gallery, research attachments); doc/STATE.md "FD-367";
-decisions/log.md 2026-10-01; the private corpus fd-corpus/design/fd336/ (gallery.html,
-gallery-v4.html, verdict.md; research/SYNTHESIS-v2.md, MENTAL_MODEL.md, PLAY-BY-PLAY-DESKTOP.md,
-VERIFY-corpus-citations.md and the six reader notes; cases/ with the three case files and
-PROVENANCE.md); the theory corpus btcopilot-sources/theory/ (the case-presentation notes,
-REFERENCE.md section 6b, OPEN_QUESTIONS item 41, SOURCES.md and MANIFEST.tsv rows); the mockup
-entry under web/ on branch FD-367 (uncommitted at this flush).
-**Next action:** finish the mockup round and attach it to FD-367; he picks between reading-first
-and reading-last on the mockups.
+effort (Patrick, 2026-10-01; ruling candidate, no id yet). The missing books (Titelman 1998,
+Papero 1990 and 2018, Kerr 2019, Frost, the Family Systems case conferences) stay thin rather
+than holding the work. A mockup is the app's own diagram, timeline and play-by-play code, pixel
+for pixel, never a drawn stand-in [T-9]. Case material for mockups stays in the private corpus,
+never in this repo. Patrick's notes on version 4 (2026-10-02; his words in the private corpus):
+the direction is right; the app must explain itself, with no wall of text carrying the meaning;
+the ten levels are headlined and opened one at a time while the page still scrolls; one simple
+coverage picture so a viewer feels the gaps first; the page leans on the app's own drawing of
+family segments; whether the diagram is the page's centrepiece is to be tested (a dashboard on
+the desktop; a slide-out on the phone); every frame says proposal, view or alternative; an
+executive summary explains the thesis across the sections, qualified by coverage; nothing may
+imply more than the record holds — now a binding project rule in CLAUDE.md (a reading carries
+what it rests on and the record's coverage; a thin record gets "not enough in the record to
+choose a reading", never a thesis); piled-up prose in a feature is the flag for a visual form,
+though a first iteration may carry some reading; desktop frames in galleries at full size.
+Not ruled: the timeline pinned at the top on the phone too, every chip lighting its event on it
+when tapped — a brainstorm input he said of frame P3, tried in the next round. Version 4's
+difference between presenting one's own record and a professional presenting a client's was
+attribution only (whose account, whose guess, whom the questions address); it came from the
+synthesis, not from a source or a ruling.
+**Open:** (1) [ruling] the order ruling needs its id in the store; (2) [ruling] whether the
+reading (the formulation) sits at the top of the page or at the end — tried both ways, not ruled
+(theory OPEN_QUESTIONS item 41); (3) [ruling] version 5's summary: one box at the top qualified
+by coverage, or the same lines under each level (the page's S1 against S2); (4) [ruling] version
+5's coverage picture: which of its forms — on the family picture, on a grid of the people, or as
+three numbers (the page's C4 against C1); (5) [ruling] version 5's picture as the dashboard:
+pinned on the desktop and one tap away on the phone, or the first card (the page's D1 against
+D2); (6) [ruling] whether the chat screen shares its picture, timeline and drawer code with the
+case page — the extraction is saved as a patch in the worktree's ignored scratch folder and the
+chat screen's own files (main.ts, menu.ts, pro.ts) were restored; (7) [build] the pinned-timeline
+trial on the phone, with chips lighting their event; (8) [build] the case page as a real screen
+for the seminar, after his word on the three version 5 decisions, released under the deploy lock
+and the project's release rules; (9) [build] two small items left in version 5: the three-numbers frame is shown
+alone, and two cards carry 40 to 80 words of prose; (10) [build] an app defect for its own
+ticket: the picture's snapshot draws Sam at age minus four in the 1994 frame (chat-screen code,
+untouched by this work); (11) [waiting] what the missing books add stays unknown until they are
+on a machine the readers can reach; (12) [ruling] what, if anything, separates a professional's
+presentation of a client's record from the self form, once a source or his word says.
+**Lives in:** Jira FD-367 (hand-off, galleries, research attachments; version 5 is attachment
+10086); doc/STATE.md "FD-367"; decisions/log.md 2026-10-01 and 02; CLAUDE.md (the rule that
+nothing implies more than the record holds; frames labelled proposal, view or alternative; prose
+as the flag for a visual form); the private corpus fd-corpus/design/fd336/ (gallery.html,
+gallery-v4.html, gallery-v5.html with their shots, verdict.md; research/SYNTHESIS-v2.md,
+MENTAL_MODEL.md, PLAY-BY-PLAY-DESKTOP.md, VERIFY-corpus-citations.md and the six reader notes;
+cases/ with the three case files, the whole-record build script and PROVENANCE.md), and the
+corpus branch worker-mailbox at mailbox/FD-367/gallery-v5.html; the theory corpus
+btcopilot-sources/theory/ (the case-presentation notes, REFERENCE.md section 6b, OPEN_QUESTIONS
+item 41, SOURCES.md and MANIFEST.tsv rows); on branch FD-367, commits a86038c1 (version 4: the
+gallery build mode under web/mockup/, the case page modules web/src/case.ts, casepage.ts, lens.ts,
+viewport.ts, the mockup sources under web/src/mockup/), d8ec66d4 (version 5: coverage.ts,
+report.ts, gallery5.ts, main5.ts, the whole-record case data read at build time) and 1dd16d2a
+(the three CLAUDE.md rules); the extraction patch tmp-fd367/lens-extraction.patch (ignored).
+**Next action:** his word on the three version 5 decisions; then the pinned-timeline trial; then
+the real screen for the seminar, in a new session started from these notes.
 **Updated:** 2026-10-02.
