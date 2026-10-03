@@ -323,7 +323,7 @@ test.describe("every mark", () => {
   });
 
   // R-0679
-  test("a wall's loop runs in five seconds, its own slide and the field's pace kept, the field on screen throughout", async ({ page }) => {
+  test("a wall's loop runs in five seconds from the moment its step comes up, its own slide and the field's pace kept, the field on screen throughout", async ({ page }) => {
     await page.goto("/app/");
     await expect(page.locator("#view .ss")).toBeVisible();
     await page.locator(".bub.coach[data-play]").last().click();
@@ -355,12 +355,11 @@ test.describe("every mark", () => {
         const at = `${name} at ${ms}ms`;
         if (seen.loop !== "5s") wrong.push(`${at}: loop ${seen.loop}`);
         if (seen.pace.some((d) => d !== "1.65s")) wrong.push(`${at}: rings at ${seen.pace}`);
-        // the wall waits 1.3s, then takes its own 1.4s to slide in
-        if (ms <= 1300 && seen.shown > 0) wrong.push(`${at}: wall showing before 1.3s`);
-        if (ms > 1300 && ms < 2700 && !(seen.shift < 0)) wrong.push(`${at}: wall not sliding`);
-        if (ms >= 2700 && Math.abs(seen.shift) > 0.01) wrong.push(`${at}: wall not landed`);
+        // the wall sets off at once and takes its own 1.4s to slide in
+        if (ms > 0 && ms < 1400 && !(seen.shift < 0 && seen.shown > 0)) wrong.push(`${at}: wall not sliding`);
+        if (ms >= 1400 && Math.abs(seen.shift) > 0.01) wrong.push(`${at}: wall not landed`);
         if (!seen.rings.length) wrong.push(`${at}: no rings`);
-        if (ms >= 2900 && seen.rings.includes("open")) wrong.push(`${at}: open rings behind the wall`);
+        if (ms >= 1600 && seen.rings.includes("open")) wrong.push(`${at}: open rings behind the wall`);
       }
     }
     expect(wrong).toEqual([]);
@@ -448,10 +447,12 @@ test.describe("every mark", () => {
       );
     expect(gaps[0].length).toBe(6);
     expect(Math.min(...gaps[0])).toBeGreaterThan(5);
+    // the bands set off the moment the step comes up
+    expect(gaps[1].every((v, j) => v < gaps[0][j])).toBe(true);
     const grew = gaps.slice(1).every((g, i) => g.every((v, j) => v <= gaps[i][j] + 0.01));
     expect(grew).toBe(true);
     // joined once the shared grow time has run, and held there to its end
-    expect(gaps.filter((_, i) => i * 400 >= 3000).flat().every((v) => v < 0.01)).toBe(true);
+    expect(gaps.filter((_, i) => i * 400 >= 1400).flat().every((v) => v < 0.01)).toBe(true);
   });
 
   // R-0679
@@ -515,11 +516,82 @@ test.describe("every mark", () => {
         const s = (sel: string) => new DOMMatrix(getComputedStyle(document.querySelector(`#pbp .draw svg .fore ${sel}`)!).transform).a;
         return [s(".spk.s-out"), s(".spk.s-in")];
       }, at);
-    // the change starts at 15% of its 8s loop and is done one grow time later
-    expect(await scale(1200)).toEqual([1, expect.closeTo(0.12, 2)]);
-    const done = await scale(1200 + grow);
+    // the change starts the moment the step comes up and is done one grow time later
+    expect(await scale(0)).toEqual([1, expect.closeTo(0.12, 2)]);
+    const done = await scale(grow);
     expect(done[0]).toBeCloseTo(0.12, 2);
     expect(done[1]).toBeCloseTo(1, 2);
+  });
+
+  // R-0679
+  test("only the step's own marks move; everything carried from before is still", async ({ page }) => {
+    await live(page);
+    const moving: string[] = [];
+    for (let i = 0; i < STEPS.length; i++) {
+      await page.locator(`#pbp .wire [data-act="jump"][data-i="${i}"]`).click();
+      const found = await page.evaluate(() => {
+        const svg = document.querySelector("#pbp .draw svg")!;
+        return [...svg.children]
+          .filter((el) => !el.matches(".fore"))
+          .flatMap((el) => [el, ...el.querySelectorAll("*")])
+          .filter((el) => el.tagName.startsWith("animate") || el.getAnimations().some((a) => a.playState === "running"))
+          .map((el) => el.closest("[data-mark], [data-bond]")?.getAttribute("data-mark") ?? el.getAttribute("class") ?? el.tagName);
+      });
+      if (found.length) moving.push(`${STEPS[i].name}: ${[...new Set(found)].join(", ")}`);
+    }
+    expect(moving).toEqual([]);
+  });
+
+  // R-0679
+  test("every mark a step adds is already moving a tenth of a second after the step comes up", async ({ page }) => {
+    await live(page);
+    const late: string[] = [];
+    for (let i = 0; i < STEPS.length; i++) {
+      await page.locator(`#pbp .wire [data-act="jump"][data-i="${i}"]`).click();
+      const looks = (at: number) =>
+        page.evaluate((at) => {
+          const svg = document.querySelector<SVGSVGElement>("#pbp .draw svg")!;
+          svg.pauseAnimations();
+          svg.setCurrentTime(at / 1000);
+          for (const a of document.getAnimations()) {
+            a.pause();
+            a.currentTime = at;
+          }
+          const fore = svg.querySelector(".fore")!;
+          const marks: Record<string, string> = {};
+          for (const el of fore.querySelectorAll<SVGGraphicsElement>("line, polyline, polygon, path, circle, rect")) {
+            if (el.closest("defs")) continue;
+            const key = el.closest("[data-mark], [data-bond]")?.getAttribute("data-mark") ?? el.closest("[data-bond]")?.getAttribute("data-bond") ?? "?";
+            const chain: string[] = [];
+            for (let e: Element | null = el; e && e !== fore; e = e.parentElement) {
+              const cs = getComputedStyle(e);
+              chain.push(`${cs.transform}|${cs.opacity}|${cs.strokeDashoffset}`);
+            }
+            const anim = (n: "r" | "x1" | "x2") => ((el as unknown as Record<string, SVGAnimatedLength>)[n]?.animVal.value ?? 0).toFixed(2);
+            marks[key] = (marks[key] ?? "") + chain.join("/") + anim("r") + anim("x1") + anim("x2") + (el.getAttribute("opacity") ?? "");
+          }
+          return marks;
+        }, at);
+      const [a, b] = [await looks(0), await looks(100)];
+      Object.keys(a)
+        .filter((k) => a[k] === b[k])
+        .forEach((k) => late.push(`${STEPS[i].name}: ${k}`));
+    }
+    expect(late).toEqual([]);
+  });
+
+  // R-0679
+  test("anxiety flickers in place, a slash pops again and again, and defined self shows both people", async ({ page }) => {
+    await live(page);
+    const at = (name: string) => page.locator(`#pbp .wire [data-act="jump"][data-i="${STEPS.findIndex((s) => s.name === name)}"]`).click();
+    await at("anxiety up");
+    expect(await page.locator("#pbp .draw svg .fore .spikes .spk").evaluate((g) => g.getAnimations().length)).toBe(0);
+    await at("separated");
+    expect(await page.locator("#pbp .draw svg .fore .slash.now").evaluate((l) => l.getAnimations()[0].effect!.getComputedTiming().iterations)).toBe(Infinity);
+    await at("defined self");
+    // Ivy, who holds her ground, lit and clearing; Rosa's storm around her
+    await expect(page.locator('#pbp .draw svg .fore [data-mark="hl:5"]')).toHaveCount(1);
+    expect(await page.locator("#pbp .draw svg .fore .mv-clear animate").first().getAttribute("repeatCount")).toBe("indefinite");
   });
 
   // R-0546

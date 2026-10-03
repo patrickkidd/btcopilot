@@ -301,7 +301,8 @@ function wall(frm: Frame, mover: Figure, struck: boolean): string {
     rings(L, 0, "preA", "", 2.4, FIELD * tall(mover)) +
     rings(L, 0, "postA", ` clip-path="url(#${shadow})"`, 2.4, FIELD * tall(mover)) +
     `<line class="mv-trace" x1="${n1(rad(mover) + 2)}" y1="0" x2="${n1(wx - 3)}" y2="0" ` +
-    `opacity="0">${animate("opacity", "0;0;.55;.55", "0;.4;.46;1", "8s")}</line>` +
+    // where the people stay put the wall's loop is 5s and it lands at 28%
+    `opacity="0">${mover.still ? animate("opacity", "0;0;.55;.55", "0;.28;.32;1", "5s") : animate("opacity", "0;0;.55;.55", "0;.4;.46;1", "8s")}</line>` +
     strike +
     `<line class="mv-wall" x1="${n1(wx)}" y1="${-arm}" x2="${n1(wx)}" y2="${arm}"/>`
   );
@@ -485,8 +486,9 @@ function bands(frm: Frame, a: Figure, b: Figure, closeBy: number): string {
   const [from1, to1] = a.still ? [mid, x1] : [x1, closeBy + rad(a) + 1];
   const [from2, to2] = a.still ? [mid, x2] : [x2, L - closeBy - rad(b) - 1];
   // where the two cannot move, the bands take the shared grow time, not the walk's
-  const joined = a.still ? 0.2 + SPEED.grow / 8 : 0.55;
-  const times = `0;.2;${String(joined).replace(/^0/, "")};1`;
+  // where the two cannot move, the bands set off at once and take the grow time
+  const joined = a.still ? SPEED.grow / 8 : 0.55;
+  const times = a.still ? `0;0;${joined};1` : "0;.2;.55;1";
   const ringTimes = `0;${joined - 0.01};${joined};${joined + SPEED.ring / 8};1`;
   // the shared field: on the board it pulses throughout; where the two cannot
   // move it spreads once, at the ring speed, when the bands have joined them
@@ -727,8 +729,13 @@ function move(
               storm(target) +
               `<circle class="mv-clear" cx="${n1(actor.x)}" cy="${n1(actor.y)}" ` +
               `r="20" opacity="0">` +
-              `<animate attributeName="r" values="18;120" dur="${s_(SPEED.ring)}" begin="3.2s;11.2s"/>` +
-              `<animate attributeName="opacity" values=".95;0" dur="${s_(SPEED.ring)}" begin="3.2s;11.2s"/>` +
+              // on the board the one who holds still clears once they have; where
+              // the people stay put the clearing keeps coming, from the start
+              (actor.still
+                ? `<animate attributeName="r" values="18;120" dur="${s_(SPEED.ring)}" repeatCount="indefinite"/>` +
+                  `<animate attributeName="opacity" values=".95;0" dur="${s_(SPEED.ring)}" repeatCount="indefinite"/>`
+                : `<animate attributeName="r" values="18;120" dur="${s_(SPEED.ring)}" begin="3.2s;11.2s"/>` +
+                  `<animate attributeName="opacity" values=".95;0" dur="${s_(SPEED.ring)}" begin="3.2s;11.2s"/>`) +
               `</circle>`,
           }
         : { ...NONE, actor: "dself" };

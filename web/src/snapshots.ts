@@ -191,9 +191,10 @@ function marksOf(r: Family, e: TimelineEvent): Step["marks"] {
     const to = e.relationshipTargets.map(key);
     if (to.length) to.forEach((t) => drawn.push({ k: Mark.Move, kind: move as Move, from: who, to: t }));
     else if (ALONE.has(move)) drawn.push({ k: Mark.Move, kind: move as Move, from: who, to: null });
-    // the parent's agitation is drawn inside their shape, so the shape itself
-    // is lit too, as the person an event is about is (Patrick, 2026-10-03)
-    if (move === Move.Projection) drawn.push({ k: Mark.Emphasis, who });
+    // the parent's agitation is drawn inside their shape, and the one who
+    // holds still turns green on the board, so the shape itself is lit too, as
+    // the person an event is about is (Patrick, 2026-10-03)
+    if (move === Move.Projection || move === Move.DefinedSelf) drawn.push({ k: Mark.Emphasis, who });
   }
   if (drawn.length) return drawn;
   return [

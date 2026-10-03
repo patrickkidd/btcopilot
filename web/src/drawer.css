@@ -81,38 +81,41 @@
 .pbp .evw.was { fill: var(--faint); }
 .pbp .hl { fill: none; stroke: var(--move); stroke-width: 2.8; }
 .pbp .hl.was { stroke: var(--faint); }
-/* carried from an earlier date: the same mark in grey and still */
+/* Only the current step's marks move. Everything carried from an earlier date
+   is drawn below the step's own layer, grey and still (Patrick, 2026-10-03). */
+.pbp .draw svg > :not(.fore), .pbp .draw svg > :not(.fore) * { animation: none !important; }
 .pbp .mk.was .tipfill { fill: var(--faint); }
 .pbp .mk.was .mv-dir { stroke: var(--faint); }
-.pbp .mk.was .sym-arrow { animation: none; }
+/* the symptom arrow sets off the moment its step comes up, with no wait first */
+.pbp .mk .sym-arrow.worse { animation-name: pbp-symworse; }
+.pbp .mk .sym-arrow.better { animation-name: pbp-symbetter; }
+@keyframes pbp-symworse { 0% { transform: translateY(2.5px); } 6%, 40% { transform: translateY(-2px); } 46%, 100% { transform: translateY(2.5px); } }
+@keyframes pbp-symbetter { 0% { transform: translateY(-2.5px); } 6%, 40% { transform: translateY(2px); } 46%, 100% { transform: translateY(-2.5px); } }
 /* the moves board's way (Q1b): the flowing dashed arrow */
 .pbp .arr line { stroke: var(--move); stroke-width: 2.4; stroke-dasharray: 10 8; fill: none; animation: pbp-flow var(--speed-arrow) linear infinite; }
 /* an away arrow is drawn from the mover outward, so its dashes run that way too */
 .pbp .arr polygon { fill: var(--move); }
 .pbp .arr { animation: pbp-fade var(--speed-pop) ease both; }
-.pbp .arr.was, .pbp .arr.was line { animation: none; }
 .pbp .arr.was line { stroke: var(--faint); }
 .pbp .arr.was polygon { fill: var(--faint); }
 /* the wall stands a person tall here, not the ratified 68, so its ratified 6 scales with it */
 .pbp .mvk .mv-wall { stroke-width: 4; }
-/* A wall's loop runs in 5s, not the board's 10s: the wait before the wall
-   comes up and the hold after it are halved, while the wall's own 1.4s slide
-   and the rings' own pace are kept (Patrick, 2026-10-03). The wall starts at
-   1.3s and lands at 2.7s. The field keeps showing while it comes up: the open
-   rings hold until the shadowed ones arrive, so the space the wall protects
-   never goes blank. */
+/* A wall's loop runs in 5s, not the board's 10s, and starts the moment its
+   step comes up: the wall's own 1.4s slide from the start, landing at 28%, and
+   the rings' own pace kept (Patrick, 2026-10-03). The field keeps showing while
+   it comes up: the open rings hold until the shadowed ones arrive, so the
+   space the wall protects never goes blank. */
 .pbp .mvk .mv-wall { animation: pbp-wall 5s ease-in-out infinite; }
 .pbp .mvk .preA { animation: pbp-preA 5s infinite; }
 .pbp .mvk .postA { animation: pbp-postA 5s infinite; }
 @keyframes pbp-wall {
-  0%, 26% { transform: translateX(-48px); opacity: 0; }
-  34% { opacity: 1; }
-  54%, 100% { transform: translateX(0); opacity: 1; }
+  0% { transform: translateX(-48px); opacity: 0; }
+  8% { opacity: 1; }
+  28%, 100% { transform: translateX(0); opacity: 1; }
 }
-@keyframes pbp-preA { 0%, 50% { opacity: 1; } 58%, 100% { opacity: 0; } }
-@keyframes pbp-postA { 0%, 50% { opacity: 0; } 58%, 100% { opacity: 1; } }
+@keyframes pbp-preA { 0%, 24% { opacity: 1; } 32%, 100% { opacity: 0; } }
+@keyframes pbp-postA { 0%, 24% { opacity: 0; } 32%, 100% { opacity: 1; } }
 /* the other moves keep the board's own drawing (theme.css .ss .mv-*); carried, grey and still */
-.pbp .mvk.was *, .pbp .spikes.was * { animation: none; }
 .pbp .mvk.was * { stroke: var(--faint); }
 /* the conflict's zigzag pulses as its burst does, since the two people cannot buzz here */
 .pbp .mvk .mv-spark { animation: sparkp 0.5s infinite; transform-box: fill-box; transform-origin: center; }
@@ -120,6 +123,18 @@
 /* a new mark is on screen the moment Next is tapped, at full strength within 200ms */
 .pbp .pop, .pbp .mvk.now .tipfill { transform-box: fill-box; transform-origin: center; animation: pbp-pop var(--speed-pop) cubic-bezier(0.2, 1.5, 0.4, 1) both; }
 @keyframes pbp-pop { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+/* a slash has no other motion, so its pop comes round again, one pop each
+   ten pops' time (Patrick, 2026-10-03) */
+.pbp .slash.now { animation: pbp-repop calc(var(--speed-pop) * 10) cubic-bezier(0.2, 1.5, 0.4, 1) infinite both; }
+@keyframes pbp-repop { 0% { transform: scale(0.2); opacity: 0; } 10%, 100% { transform: scale(1); opacity: 1; } }
+/* anxiety's spikes flicker in place outside the person, never growing in and
+   out of them (Patrick, 2026-10-03) */
+.pbp .spikes .spk.s-solo { animation: none; }
+/* projection's change sets off the moment its step comes up */
+.pbp .mvk .spk.s-out { animation-name: pbp-spikeout; }
+.pbp .mvk .spk.s-in { animation-name: pbp-spikein; }
+@keyframes pbp-spikeout { 0% { transform: scale(1); } 17.5%, 100% { transform: scale(0.12); } }
+@keyframes pbp-spikein { 0% { transform: scale(0.12); } 17.5%, 100% { transform: scale(1); } }
 @keyframes pbp-flow { to { stroke-dashoffset: -36; } }
 @keyframes pbp-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
