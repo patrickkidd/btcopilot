@@ -185,6 +185,7 @@ WORRY = {
     "person": 1,
     "dateTime": "2019-03-01",
     "anxiety": "up",
+    "title": "Worried after the move",
     "description": "Worried after the move",
 }
 AGAIN = "Like I said, I was really worried after we moved in 2019, I couldn't sleep."
@@ -223,6 +224,7 @@ INSOMNIA = {
     "person": 1,
     "dateTime": "2000-03-01",
     "symptom": "up",
+    "title": "Stopped sleeping",
     "description": "Stopped sleeping",
 }
 MOVED = "We moved to Arizona in early 2000."

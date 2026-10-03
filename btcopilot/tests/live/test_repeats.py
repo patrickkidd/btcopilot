@@ -93,6 +93,7 @@ BROTHER_LEFT = {
     "kind": "noted",
     "person": 4,
     "dateTime": "2015-08-01",
+    "title": "Moved to Denver",
     "description": "Moved to Denver",
 }
 
