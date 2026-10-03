@@ -86,10 +86,10 @@
 .pbp .mk.was .mv-dir { stroke: var(--faint); }
 .pbp .mk.was .sym-arrow { animation: none; }
 /* the moves board's way (Q1b): the flowing dashed arrow */
-.pbp .arr line { stroke: var(--move); stroke-width: 2.4; stroke-dasharray: 10 8; fill: none; animation: pbp-flow 1s linear infinite; }
-.pbp .arr.back line { animation-direction: reverse; }
+.pbp .arr line { stroke: var(--move); stroke-width: 2.4; stroke-dasharray: 10 8; fill: none; animation: pbp-flow var(--speed-arrow) linear infinite; }
+/* an away arrow is drawn from the mover outward, so its dashes run that way too */
 .pbp .arr polygon { fill: var(--move); }
-.pbp .arr { animation: pbp-fade 0.2s ease both; }
+.pbp .arr { animation: pbp-fade var(--speed-pop) ease both; }
 .pbp .arr.was, .pbp .arr.was line { animation: none; }
 .pbp .arr.was line { stroke: var(--faint); }
 .pbp .arr.was polygon { fill: var(--faint); }
@@ -112,10 +112,13 @@
 @keyframes pbp-preA { 0%, 50% { opacity: 1; } 58%, 100% { opacity: 0; } }
 @keyframes pbp-postA { 0%, 50% { opacity: 0; } 58%, 100% { opacity: 1; } }
 /* the other moves keep the board's own drawing (theme.css .ss .mv-*); carried, grey and still */
-.pbp .mvk.was * { stroke: var(--faint); animation: none; }
+.pbp .mvk.was *, .pbp .spikes.was * { animation: none; }
+.pbp .mvk.was * { stroke: var(--faint); }
+/* the conflict's zigzag pulses as its burst does, since the two people cannot buzz here */
+.pbp .mvk .mv-spark { animation: sparkp 0.5s infinite; transform-box: fill-box; transform-origin: center; }
 .pbp .mvk.was .tipfill { fill: var(--faint); }
 /* a new mark is on screen the moment Next is tapped, at full strength within 200ms */
-.pbp .pop { transform-box: fill-box; transform-origin: center; animation: pbp-pop 0.2s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+.pbp .pop, .pbp .mvk.now .tipfill { transform-box: fill-box; transform-origin: center; animation: pbp-pop var(--speed-pop) cubic-bezier(0.2, 1.5, 0.4, 1) both; }
 @keyframes pbp-pop { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes pbp-flow { to { stroke-dashoffset: -36; } }
 @keyframes pbp-fade { from { opacity: 0; } to { opacity: 1; } }

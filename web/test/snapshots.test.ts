@@ -323,7 +323,7 @@ describe("emphasis and carry", () => {
   it("draws a death X in the emphasis colour on its date and in plain ink after", () => {
     const t = told(death());
     const x = (i: number) => els(t.shot(i).svg, "path", "xd").map((e) => e.class);
-    expect(x(0)).toContain("xd now");
+    expect(x(0)).toContain("xd now pop");
     expect(x(1).every((c) => c === "xd")).toBe(true);
   });
 

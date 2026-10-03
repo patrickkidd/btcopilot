@@ -183,6 +183,14 @@ async function steps(page: Page, n: number): Promise<string[]> {
   return svgs;
 }
 
+/** The case's stored play-by-play opened with its animations running. */
+async function live(page: Page) {
+  await page.goto("/app/");
+  await expect(page.locator("#view .ss")).toBeVisible();
+  await page.locator(".bub.coach[data-play]").last().click();
+  await expect(page.locator("#pbp .draw svg")).toBeVisible();
+}
+
 /** A colour the page names, as the browser writes a computed colour. */
 const paint = (page: Page, name: string) =>
   page.evaluate((v) => {
@@ -442,8 +450,76 @@ test.describe("every mark", () => {
     expect(Math.min(...gaps[0])).toBeGreaterThan(5);
     const grew = gaps.slice(1).every((g, i) => g.every((v, j) => v <= gaps[i][j] + 0.01));
     expect(grew).toBe(true);
-    // joined by 55% of the loop, and held there to its end
-    expect(gaps.filter((_, i) => i * 400 >= 4400).flat().every((v) => v < 0.01)).toBe(true);
+    // joined once the shared grow time has run, and held there to its end
+    expect(gaps.filter((_, i) => i * 400 >= 3000).flat().every((v) => v < 0.01)).toBe(true);
+  });
+
+  // R-0679
+  test("every mark a step adds is animated, its words aside", async ({ page }) => {
+    await live(page);
+    const still: string[] = [];
+    for (let i = 0; i < STEPS.length; i++) {
+      await page.locator(`#pbp .wire [data-act="jump"][data-i="${i}"]`).click();
+      const none = await page.evaluate(() => {
+        const fore = document.querySelector("#pbp .draw svg > .fore")!;
+        const moving = (el: Element | null): boolean =>
+          !!el &&
+          el !== fore &&
+          (el.getAnimations().length > 0 || [...el.children].some((c) => c.tagName.startsWith("animate")) || moving(el.parentElement));
+        return [...fore.querySelectorAll("line, polyline, polygon, path, circle, rect")]
+          .filter((el) => !el.closest("defs") && !moving(el))
+          .map((el) => el.closest("[data-mark], [data-bond]")?.getAttribute("data-mark") ?? el.getAttribute("class"));
+      });
+      if (none.length) still.push(`${STEPS[i].name}: ${[...new Set(none)].join(", ")}`);
+    }
+    expect(still).toEqual([]);
+  });
+
+  // R-0679
+  test("every arrow's dashes travel at the one arrow speed, an away arrow's away from the other person", async ({ page }) => {
+    await live(page);
+    const speed = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--speed-arrow")) * 1000);
+    const seen: string[] = [];
+    for (const [name, sel] of [["toward", ".arr line"], ["away", ".arr line"], ["projection", ".mv-flow"]]) {
+      await page.locator(`#pbp .wire [data-act="jump"][data-i="${STEPS.findIndex((s) => s.name === name)}"]`).click();
+      const [ms, dir] = await page.locator(`#pbp .draw svg .fore ${sel}`).first().evaluate((el) => {
+        const t = el.getAnimations()[0].effect!.getComputedTiming();
+        return [t.duration, t.direction];
+      });
+      seen.push(`${name} ${ms} ${dir}`);
+    }
+    expect(seen).toEqual([`toward ${speed} normal`, `away ${speed} normal`, `projection ${speed} normal`]);
+    // the away arrow is drawn from Walter outward, so normal dashes run away from Rosa
+    await page.locator(`#pbp .wire [data-act="jump"][data-i="${STEPS.findIndex((s) => s.name === "away")}"]`).click();
+    const ends = await page.evaluate(() => {
+      const line = document.querySelector<SVGLineElement>("#pbp .draw svg .fore .arr line")!;
+      const rosa = document.querySelector<SVGGraphicsElement>('#pbp .draw svg .p[data-id="4"] .shape')!.getBBox();
+      const [cx, cy] = [rosa.x + rosa.width / 2, rosa.y + rosa.height / 2];
+      const far = (x: number, y: number) => Math.hypot(x - cx, y - cy);
+      return [far(line.x1.baseVal.value, line.y1.baseVal.value), far(line.x2.baseVal.value, line.y2.baseVal.value)];
+    });
+    expect(ends[1]).toBeGreaterThan(ends[0]);
+  });
+
+  // R-0679
+  test("projection moves the anxiety from parent to child within the one grow time", async ({ page }) => {
+    await live(page);
+    await page.locator(`#pbp .wire [data-act="jump"][data-i="${STEPS.findIndex((s) => s.name === "projection")}"]`).click();
+    const grow = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--speed-grow")) * 1000);
+    const scale = (at: number) =>
+      page.evaluate((at) => {
+        for (const a of document.getAnimations()) {
+          a.pause();
+          a.currentTime = at;
+        }
+        const s = (sel: string) => new DOMMatrix(getComputedStyle(document.querySelector(`#pbp .draw svg .fore ${sel}`)!).transform).a;
+        return [s(".spk.s-out"), s(".spk.s-in")];
+      }, at);
+    // the change starts at 15% of its 8s loop and is done one grow time later
+    expect(await scale(1200)).toEqual([1, expect.closeTo(0.12, 2)]);
+    const done = await scale(1200 + grow);
+    expect(done[0]).toBeCloseTo(0.12, 2);
+    expect(done[1]).toBeCloseTo(1, 2);
   });
 
   // R-0546

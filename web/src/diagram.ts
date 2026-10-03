@@ -1,5 +1,5 @@
 import { esc } from "./dom";
-import { CROSS, cross as healthCross, DEMO, draw as moveMarks, FIELD, FLANK, Move, Shift, SPIKES, WALL } from "./moves";
+import { CROSS, cross as healthCross, DEMO, draw as moveMarks, FIELD, FLANK, Move, Shift, SPIKES, spikes as anxious, WALL } from "./moves";
 
 /** A small family diagram generated from a cast, to FAMILY_DIAGRAM_VISUAL_SPEC.md,
  * ported from the approved play-by-play reference (design/playbyplay-snapshots,
@@ -1024,18 +1024,13 @@ export function crossOut(x: number, y: number, e: number, age: boolean, cls: str
   }"/>`;
 }
 
-/** Anxiety: eight spikes of static around the person. */
+/** Anxiety: the moves board's eight flickering spikes around the person.
+ * Carried from an earlier snapshot they stand still and grey. */
 function spikes(L: Layout, id: string, cls: Tone): string {
-  const r = dimsOf(L).half(L.P[id]);
-  let s = "";
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2;
-    const n = 6 + (i % 3) * 3;
-    s +=
-      `<line x1="${f(L.x[id] + Math.cos(a) * (r + 2))}" y1="${f(L.y[id] + Math.sin(a) * (r + 2))}" ` +
-      `x2="${f(L.x[id] + Math.cos(a) * (r + 2 + n))}" y2="${f(L.y[id] + Math.sin(a) * (r + 2 + n))}"/>`;
-  }
-  return `<g class="spikes ${cls}" data-mark="anx:${esc(id)}">${s}</g>`;
+  const fig = { id: 0, name: L.P[id].name, x: L.x[id], y: L.y[id], r: dimsOf(L).half(L.P[id]) };
+  const marks = anxious(fig, "solo");
+  const still = marks.replace(/<animate(Transform)?\b[^>]*\/>/g, "").replace(/ opacity="0"/g, "");
+  return `<g class="spikes ${cls}" data-mark="anx:${esc(id)}">${cls === Tone.Was ? still : marks}</g>`;
 }
 
 /** Ruled 2026-09-26: an event with no drawing of its own is a short word beside
@@ -1213,7 +1208,7 @@ export function draw(L: Layout, s: Frame): string {
       L.y[k.b] + d.half(P[k.b]),
       k.y,
       b.married,
-      b.hot ? " now" : "",
+      b.hot ? " now pop" : "",
       ` data-bond="${esc(`${b.a}|${b.b}`)}"`,
     ), b.hot);
     const n = b.st === Tie.Separated ? 1 : b.st === Tie.Divorced ? 2 : 0;
@@ -1254,7 +1249,7 @@ export function draw(L: Layout, s: Frame): string {
     else if (p.g === Sex.Unknown) g += `<text class="age" x="${f(x)}" y="${f(y + 4.5)}">?</text>`;
     if (dead) {
       // a death X is in the emphasis colour on its date, plain ink after
-      if (s.died.has(id)) top += crossOut(x, y, e, age != null, "xd now");
+      if (s.died.has(id)) top += crossOut(x, y, e, age != null, "xd now pop");
       else g += crossOut(x, y, e, age != null, "xd");
     }
     const l = lines(p, s.t);
@@ -1296,7 +1291,7 @@ export function draw(L: Layout, s: Frame): string {
       ), lit(m.cls));
     // functioning: down breaks the outline into pieces, up is one continuous green line
     else if (m.k === Mark.FnUp || m.k === Mark.FnDown)
-      put(outline(P[m.who], L.x[m.who], L.y[m.who], E, `fn ${m.k === Mark.FnUp ? "up" : "down"} ${m.cls ?? Tone.Now}`).replace(
+      put(outline(P[m.who], L.x[m.who], L.y[m.who], E, `fn ${m.k === Mark.FnUp ? "up" : "down"} ${lit(m.cls) ? "now pop" : m.cls}`).replace(
         "/>",
         ` data-mark="${m.k}:${esc(m.who)}"/>`,
       ), lit(m.cls));

@@ -67,6 +67,13 @@ export const R = 17;
 /** The moves board, as the ratified board drawing sizes people. */
 export const BOARD_R = 13;
 
+/** The one set of speeds every mark moves at (Patrick, 2026-10-03), in
+ * seconds: an arrow's dashes travelling, a field's rings spreading, a new mark
+ * popping in, and a mark growing or shrinking. theme.css carries the same
+ * numbers as --speed-* for the marks drawn by CSS; a test holds them equal. */
+export const SPEED = { arrow: 1, ring: 1.65, pop: 0.2, grow: 1.4 };
+const s_ = (v: number) => `${v}s`;
+
 /** How far anxiety's spikes reach past a figure's edge: their gap and the
  * longest of them. */
 export const SPIKES = 2 + 12;
@@ -251,7 +258,7 @@ function rings(
   clip = "",
   width = 2.4,
   to = FIELD,
-  dur = "1.65s",
+  dur = s_(SPEED.ring),
   fade = ".75;.45;0",
 ): string {
   to = Math.round(to);
@@ -377,7 +384,7 @@ function arrow(
 
 /** Anxiety, in the one language it uses everywhere: eight spikes of static
  * around the figure, each flickering to its own beat. */
-function spikes(person: Figure, phase: "out" | "in" | "solo"): string {
+export function spikes(person: Figure, phase: "out" | "in" | "solo"): string {
   const r = rad(person);
   const flicker = {
     out: [0.44, 0.4, 0.29, 0.39, 0.3, 0.45, 0.27, 0.45],
@@ -477,19 +484,23 @@ function bands(frm: Frame, a: Figure, b: Figure, closeBy: number): string {
   // the bands grow out from the middle until they hold both (Patrick, 2026-10-03)
   const [from1, to1] = a.still ? [mid, x1] : [x1, closeBy + rad(a) + 1];
   const [from2, to2] = a.still ? [mid, x2] : [x2, L - closeBy - rad(b) - 1];
+  // where the two cannot move, the bands take the shared grow time, not the walk's
+  const joined = a.still ? 0.2 + SPEED.grow / 8 : 0.55;
+  const times = `0;.2;${String(joined).replace(/^0/, "")};1`;
+  const ringTimes = `0;${joined - 0.01};${joined};${joined + SPEED.ring / 8};1`;
   // the shared field: on the board it pulses throughout; where the two cannot
-  // move it pulses once the bands have joined them
+  // move it spreads once, at the ring speed, when the bands have joined them
   const ring = a.still
-    ? animate("r", "26;26;26;60;60", "0;.54;.55;.8;1", "8s") + animate("opacity", "0;0;.5;0;0", "0;.54;.55;.8;1", "8s")
-    : `<animate attributeName="r" values="26;60" dur="1.8s" repeatCount="indefinite"/>` +
-      `<animate attributeName="opacity" values=".5;0" dur="1.8s" repeatCount="indefinite"/>`;
+    ? animate("r", "26;26;26;60;60", ringTimes, "8s") + animate("opacity", "0;0;.5;0;0", ringTimes, "8s")
+    : `<animate attributeName="r" values="26;60" dur="${s_(SPEED.ring)}" repeatCount="indefinite"/>` +
+      `<animate attributeName="opacity" values=".5;0" dur="${s_(SPEED.ring)}" repeatCount="indefinite"/>`;
   return (
     [-6, 0, 6]
       .map(
         (dy) =>
           `<line class="mv-band" x1="${n1(x1)}" y1="${dy}" x2="${n1(x2)}" y2="${dy}">` +
-          animate("x1", `${n1(from1)};${n1(from1)};${n1(to1)};${n1(to1)}`, "0;.2;.55;1", "8s") +
-          animate("x2", `${n1(from2)};${n1(from2)};${n1(to2)};${n1(to2)}`, "0;.2;.55;1", "8s") +
+          animate("x1", `${n1(from1)};${n1(from1)};${n1(to1)};${n1(to1)}`, times, "8s") +
+          animate("x2", `${n1(from2)};${n1(from2)};${n1(to2)};${n1(to2)}`, times, "8s") +
           `</line>`,
       )
       .join("") +
@@ -546,8 +557,8 @@ function storm(other: Figure): string {
         (begin) =>
           `<circle class="fld" cx="${n1(other.x)}" cy="${n1(other.y)}" r="24" ` +
           `stroke-width="2.6" opacity="0">` +
-          `<animate attributeName="r" values="18;${loud}" dur="1.1s" begin="${begin}s" repeatCount="indefinite"/>` +
-          `<animate attributeName="opacity" values=".8;.5;0" keyTimes="0;.7;1" dur="1.1s" ` +
+          `<animate attributeName="r" values="18;${loud}" dur="${s_(SPEED.ring)}" begin="${begin}s" repeatCount="indefinite"/>` +
+          `<animate attributeName="opacity" values=".8;.5;0" keyTimes="0;.7;1" dur="${s_(SPEED.ring)}" ` +
           `begin="${begin}s" repeatCount="indefinite"/></circle>`,
       )
       .join("") +
@@ -555,8 +566,8 @@ function storm(other: Figure): string {
     `<g class="stormcalm">` +
     `<circle class="fld" cx="${n1(other.x)}" cy="${n1(other.y)}" r="24" ` +
     `stroke-width="1.6" opacity="0">` +
-    `<animate attributeName="r" values="18;${calm}" dur="2.8s" repeatCount="indefinite"/>` +
-    `<animate attributeName="opacity" values=".35;.2;0" keyTimes="0;.7;1" dur="2.8s" repeatCount="indefinite"/>` +
+    `<animate attributeName="r" values="18;${calm}" dur="${s_(SPEED.ring)}" repeatCount="indefinite"/>` +
+    `<animate attributeName="opacity" values=".35;.2;0" keyTimes="0;.7;1" dur="${s_(SPEED.ring)}" repeatCount="indefinite"/>` +
     `</circle></g>`
   );
 }
@@ -716,8 +727,8 @@ function move(
               storm(target) +
               `<circle class="mv-clear" cx="${n1(actor.x)}" cy="${n1(actor.y)}" ` +
               `r="20" opacity="0">` +
-              `<animate attributeName="r" values="18;120" dur="2s" begin="3.2s;11.2s"/>` +
-              `<animate attributeName="opacity" values=".95;0" dur="2s" begin="3.2s;11.2s"/>` +
+              `<animate attributeName="r" values="18;120" dur="${s_(SPEED.ring)}" begin="3.2s;11.2s"/>` +
+              `<animate attributeName="opacity" values=".95;0" dur="${s_(SPEED.ring)}" begin="3.2s;11.2s"/>` +
               `</circle>`,
           }
         : { ...NONE, actor: "dself" };
