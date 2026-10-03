@@ -216,7 +216,12 @@ def hostile() -> DiagramData:
     """Labels and names long enough to break a chip out of its bubble."""
     people = [_person(1, LONG_NAME, primary=True), _person(2, "Bo", PersonKind.Male)]
     events = [
-        _event(10 + i, f"200{i}-0{i + 1}-01", f"{LONG_LABEL} — part {i + 1}")
+        _event(
+            10 + i,
+            f"200{i}-0{i + 1}-01",
+            f"Long story, part {i + 1}",
+            description=f"{LONG_LABEL} — part {i + 1}",
+        )
         for i in range(6)
     ]
     clusters = [
@@ -238,29 +243,29 @@ def hostile() -> DiagramData:
 PLAY_CLUSTER = "walk"
 
 MOVES = (
-    ("toward", dict(relationship="toward", relationshipTargets=[2])),
-    ("away", dict(relationship="away", relationshipTargets=[2])),
-    ("distance", dict(relationship="distance", relationshipTargets=[2])),
-    ("cutoff", dict(relationship="cutoff", relationshipTargets=[2])),
-    ("conflict", dict(relationship="conflict", relationshipTargets=[2])),
-    ("fusion", dict(relationship="fusion", relationshipTargets=[2])),
-    ("defined self", dict(relationship="defined-self")),
+    ("Reached out", dict(relationship="toward", relationshipTargets=[2])),
+    ("Pulled away", dict(relationship="away", relationshipTargets=[2])),
+    ("Kept her distance", dict(relationship="distance", relationshipTargets=[2])),
+    ("Cut off contact", dict(relationship="cutoff", relationshipTargets=[2])),
+    ("Fought it out", dict(relationship="conflict", relationshipTargets=[2])),
+    ("Too close to him", dict(relationship="fusion", relationshipTargets=[2])),
+    ("Held her ground", dict(relationship="defined-self")),
     (
-        "inside",
+        "Took a side",
         dict(relationship="inside", relationshipTargets=[2], relationshipTriangles=[3]),
     ),
     (
-        "outside",
+        "Stayed out of it",
         dict(relationship="outside", relationshipTargets=[2], relationshipTriangles=[3]),
     ),
-    ("overfunctioning", dict(relationship="overfunctioning", relationshipTargets=[2])),
-    ("underfunctioning", dict(relationship="underfunctioning", relationshipTargets=[2])),
-    ("projection", dict(relationship="projection", relationshipTargets=[3])),
-    ("anxiety up", dict(anxiety=VariableShift.Up)),
-    ("symptom up", dict(symptom=VariableShift.Up)),
-    ("symptom down", dict(symptom=VariableShift.Down)),
-    ("functioning down", dict(functioning=VariableShift.Down)),
-    ("functioning up", dict(functioning=VariableShift.Up)),
+    ("Did too much", dict(relationship="overfunctioning", relationshipTargets=[2])),
+    ("Let her do it", dict(relationship="underfunctioning", relationshipTargets=[2])),
+    ("Worried about him", dict(relationship="projection", relationshipTargets=[3])),
+    ("Anxiety went up", dict(anxiety=VariableShift.Up)),
+    ("Symptoms got worse", dict(symptom=VariableShift.Up)),
+    ("Symptoms eased", dict(symptom=VariableShift.Down)),
+    ("Functioning slipped", dict(functioning=VariableShift.Down)),
+    ("Functioning improved", dict(functioning=VariableShift.Up)),
 )
 
 
@@ -272,8 +277,8 @@ def moves() -> DiagramData:
         _person(3, "Cal", PersonKind.Male),
     ]
     events = [
-        _event(20 + i, f"{1990 + i}-04-01", words, **kwargs)
-        for i, (words, kwargs) in enumerate(MOVES)
+        _event(20 + i, f"{1990 + i}-04-01", title, **kwargs)
+        for i, (title, kwargs) in enumerate(MOVES)
     ]
     clusters = [
         asdict(
