@@ -57,6 +57,9 @@ export interface Figure {
    * unless the drawing holds all its marks to one size of its own, as the
    * play-by-play does. */
   mark?: number;
+  /** The drawing's people never move, as in the play-by-play (R-0546), so a
+   * move's drawing in is carried by its marks alone. */
+  still?: boolean;
 }
 
 /** The play-by-play stage, where pane A is the fidelity standard. */
@@ -468,25 +471,29 @@ function bands(frm: Frame, a: Figure, b: Figure, closeBy: number): string {
   const L = frm.length;
   const x1 = rad(a) + 1;
   const x2 = L - rad(b) - 1;
-  // once the two are drawn in they overlap the bands, which then run between
-  // their centres rather than between their edges
-  const x1b = closeBy + rad(a) + 1;
-  const x2b = L - closeBy - rad(b) - 1;
   const mid = L / 2;
+  // once the two are drawn in they overlap the bands, which then run between
+  // their centres rather than between their edges; where the two cannot move,
+  // the bands grow out from the middle until they hold both (Patrick, 2026-10-03)
+  const [from1, to1] = a.still ? [mid, x1] : [x1, closeBy + rad(a) + 1];
+  const [from2, to2] = a.still ? [mid, x2] : [x2, L - closeBy - rad(b) - 1];
+  // the shared field: on the board it pulses throughout; where the two cannot
+  // move it pulses once the bands have joined them
+  const ring = a.still
+    ? animate("r", "26;26;26;60;60", "0;.54;.55;.8;1", "8s") + animate("opacity", "0;0;.5;0;0", "0;.54;.55;.8;1", "8s")
+    : `<animate attributeName="r" values="26;60" dur="1.8s" repeatCount="indefinite"/>` +
+      `<animate attributeName="opacity" values=".5;0" dur="1.8s" repeatCount="indefinite"/>`;
   return (
     [-6, 0, 6]
       .map(
         (dy) =>
           `<line class="mv-band" x1="${n1(x1)}" y1="${dy}" x2="${n1(x2)}" y2="${dy}">` +
-          animate("x1", `${n1(x1)};${n1(x1)};${n1(x1b)};${n1(x1b)}`, "0;.2;.55;1", "8s") +
-          animate("x2", `${n1(x2)};${n1(x2)};${n1(x2b)};${n1(x2b)}`, "0;.2;.55;1", "8s") +
+          animate("x1", `${n1(from1)};${n1(from1)};${n1(to1)};${n1(to1)}`, "0;.2;.55;1", "8s") +
+          animate("x2", `${n1(from2)};${n1(from2)};${n1(to2)};${n1(to2)}`, "0;.2;.55;1", "8s") +
           `</line>`,
       )
       .join("") +
-    `<circle class="mv-shared" cx="${n1(mid)}" cy="0" r="24" opacity="0">` +
-    `<animate attributeName="r" values="26;60" dur="1.8s" repeatCount="indefinite"/>` +
-    `<animate attributeName="opacity" values=".5;0" dur="1.8s" repeatCount="indefinite"/>` +
-    `</circle>`
+    `<circle class="mv-shared" cx="${n1(mid)}" cy="0" r="24" opacity="0">${ring}</circle>`
   );
 }
 

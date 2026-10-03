@@ -105,8 +105,6 @@ export interface Cast {
   marked: string[];
   cross: string[];
   words: Record<string, number>;
-  /** The longest event word each person is given on each step. */
-  said: Record<string, number>[];
   moves: Arrow[];
   /** The moves drawn the moves board's way, and who shows anxiety, so names and
    * words stand clear of their marks. */
@@ -147,6 +145,9 @@ export enum Side {
 enum Reach {
   Bare,
   Words,
+  /** The marks that stay beside a shape, the health cross; not a step's words,
+   * which find their own room on their step. */
+  Marks,
   All,
 }
 
@@ -445,14 +446,9 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   const off = (id: string) => offset(d, ring[id]);
   const words = cast.words;
   // how far a person's longest event word reaches past the shape
-  // a word shows on its own step only (R-0682), so its room is reckoned per step
-  // where given one, and as the longest word otherwise
-  const ww = (id: string, step?: number) => {
-    const n = step === undefined ? words[id] : cast.said[step][id];
-    return n ? inset[id] + n * NAME * CH : 0;
-  };
+  const ww = (id: string) => (words[id] ? inset[id] + words[id] * NAME * CH : 0);
   // how far a person's marks reach past the shape: the cross and its arrow, or the word
-  const zw = (id: string, step?: number) => Math.max(crossed.has(id) ? d.ZONE : 0, ww(id, step));
+  const zw = (id: string, reach: Reach) => Math.max(crossed.has(id) ? d.ZONE : 0, reach === Reach.All ? ww(id) : 0);
 
   // ---- the order of each row, top to bottom ----
   const placed = new Set<string>();
@@ -550,31 +546,28 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   });
 
   // how far past a person's shape the given reach runs, on the marks' side
-  const marks = (id: string, reach: Reach, step?: number) =>
-    reach === Reach.All ? zw(id, step) : reach === Reach.Words ? ww(id, step) : 0;
-  function rightExt(id: string, reach = Reach.All, step?: number): number {
+  const marks = (id: string, reach: Reach) =>
+    reach === Reach.All || reach === Reach.Marks ? zw(id, reach) : reach === Reach.Words ? ww(id) : 0;
+  function rightExt(id: string, reach = Reach.All): number {
     const e = half(id);
     let r = e;
     if (side[id] === Side.Under || side[id] === Side.Top) r = Math.max(r, lw[id] / 2);
     if (side[id] === Side.Right) r = Math.max(r, e + off(id) + lw[id]);
     if (side[id] === Side.Above) r = Math.max(r, 5 + lw[id]);
-    if (zone[id] === 1) r = Math.max(r, e + marks(id, reach, step));
+    if (zone[id] === 1) r = Math.max(r, e + marks(id, reach));
     return r;
   }
-  function leftExt(id: string, reach = Reach.All, step?: number): number {
+  function leftExt(id: string, reach = Reach.All): number {
     const e = half(id);
     let r = e;
     if (side[id] === Side.Under || side[id] === Side.Top) r = Math.max(r, lw[id] / 2);
     if (side[id] === Side.Left) r = Math.max(r, e + off(id) + lw[id]);
-    if (zone[id] === -1) r = Math.max(r, e + marks(id, reach, step));
+    if (zone[id] === -1) r = Math.max(r, e + marks(id, reach));
     return r;
   }
-  // what two neighbours need between them: the most any one step puts there,
-  // since two words that never show together never need room together
-  const between = (a: string, b: string) =>
-    cast.said.length
-      ? Math.max(...cast.said.map((_, s) => rightExt(a, Reach.All, s) + leftExt(b, Reach.All, s)))
-      : rightExt(a) + leftExt(b);
+  // a step's words never push neighbours apart: each finds room of its own on
+  // its step (word placement in draw), so only names and lasting marks count
+  const between = (a: string, b: string) => rightExt(a, Reach.Marks) + leftExt(b, Reach.Marks);
   function gapFor(a: string, b: string): number {
     if (cast.bonds.some((k) => (k.a === a && k.b === b) || (k.a === b && k.b === a))) return d.COUPLE;
     if (parents[a] && parents[a] === parents[b]) return d.SIB;
@@ -599,7 +592,7 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
       const e = half(id);
       const q = row[i + 1];
       const l = row[i - 1];
-      const edge = q ? x[q] - leftExt(q) : Infinity;
+      const edge = q ? x[q] - leftExt(q, Reach.Marks) : Infinity;
       const need = off(id) + lw[id] + PAD;
       if (under) {
         side[id] = Side.Under;
@@ -627,7 +620,7 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
       if (
         dist >= T &&
         dist <= 2 * T &&
-        x[last] - half(last) - off(last) - lw[last] - PAD >= x[prev] + rightExt(prev)
+        x[last] - half(last) - off(last) - lw[last] - PAD >= x[prev] + rightExt(prev, Reach.Marks)
       )
         side[last] = Side.Left;
     }
@@ -816,6 +809,8 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
     said.x0 = Math.min(said.x0, x[id] - leftExt(id, Reach.Words));
     said.x1 = Math.max(said.x1, x[id] + rightExt(id, Reach.Words));
     if (zone[id]) grow(x[id], y[id] - 16);
+    // room under the person for a step's word that finds none beside them
+    if (words[id]) fam(x[id], y[id] + below[id] + (side[id] === Side.Under ? LEAD * nl[id] : 0) + 4);
     if (side[id] === Side.Above || side[id] === Side.Top) fam(x[id], y[id] - e - rise(ring[id]) - LEAD * (nl[id] - 1) - 14);
     else if (side[id] === Side.Under) fam(x[id], y[id] + below[id] + LEAD * (nl[id] - 1) + 3);
     else {
@@ -1045,24 +1040,66 @@ function spikes(L: Layout, id: string, cls: Tone): string {
 
 /** Ruled 2026-09-26: an event with no drawing of its own is a short word beside
  * the person, below where a cross sits. */
-function event(L: Layout, m: Placed): string {
-  const w = word(L, m);
+interface Spot {
+  x: number;
+  y: number;
+  /** Which way the word runs from x: 1 rightward, -1 leftward, 0 centred. */
+  sd: number;
+  box: Box;
+}
+
+function event(m: Placed, w: Spot): string {
   return (
     `<text class="evw${m.cls === Tone.Was ? " was" : " pop"}" data-mark="word:${esc(`${m.who}:${m.word}`)}" ` +
-    `x="${f(w.x)}" y="${f(w.y)}" text-anchor="${w.sd > 0 ? "start" : "end"}">${esc(m.word!)}</text>`
+    `x="${f(w.x)}" y="${f(w.y)}" text-anchor="${w.sd > 0 ? "start" : w.sd < 0 ? "end" : "middle"}">${esc(m.word!)}</text>`
   );
 }
 
-/** Where an event's word starts, which side it runs, and the room it takes. */
-function word(L: Layout, m: Placed): { x: number; y: number; sd: number; box: Box } {
+/** Where a step's word goes: beside its person on their marks' side, else on
+ * the other side when their name is not there, else under them, the first that
+ * crosses nothing already taken and stays in the picture. A word never moves
+ * people apart (Patrick, 2026-10-03), so the last resort is its own side. */
+function spot(L: Layout, m: Placed, taken: Box[]): Spot {
   if (!m.word) throw new Error(`an event mark with no word, for ${m.who}`);
   const d = dimsOf(L);
-  const sd = L.zone[m.who] || (L.side[m.who] === Side.Right ? -1 : 1);
-  const e = d.half(L.P[m.who]);
-  const x = L.x[m.who] + sd * (e + L.inset[m.who]);
-  const y = L.y[m.who] + e * 0.55 + 6 + (m.row ?? 0) * LEAD;
+  const id = m.who;
+  const e = d.half(L.P[id]);
   const w = m.word.length * NAME * CH;
-  return { x, y, sd, box: { x0: sd > 0 ? x : x - w, x1: sd > 0 ? x + w : x, y0: y - ASCENT, y1: y + 4 } };
+  const row = (m.row ?? 0) * LEAD;
+  const beside = (sd: number): Spot => {
+    const x = L.x[id] + sd * (e + L.inset[id]);
+    const y = L.y[id] + e * 0.55 + 6 + row;
+    return { x, y, sd, box: { x0: sd > 0 ? x : x - w, x1: sd > 0 ? x + w : x, y0: y - ASCENT, y1: y + 4 } };
+  };
+  const under = (): Spot => {
+    const y = L.y[id] + L.below[id] + (L.side[id] === Side.Under ? LEAD * lines(L.P[id], Infinity).length : 0) + row;
+    return { x: L.x[id], y, sd: 0, box: { x0: L.x[id] - w / 2, x1: L.x[id] + w / 2, y0: y - ASCENT, y1: y + 4 } };
+  };
+  const own = L.zone[id] || (L.side[id] === Side.Right ? -1 : 1);
+  const named = L.side[id] === Side.Right ? 1 : L.side[id] === Side.Left ? -1 : 0;
+  const tries = [beside(own), ...(named === -own ? [] : [beside(-own)]), under()];
+  const free = (t: Spot) =>
+    t.box.x0 >= 0 && t.box.x1 <= L.vw && !taken.some((b) => t.box.x0 < b.x1 && b.x0 < t.box.x1 && t.box.y0 < b.y1 && b.y0 < t.box.y1);
+  return tries.find(free) ?? tries[0];
+}
+
+/** What a step's words must keep clear of: every name, every shape, and every
+ * health cross on the picture. */
+function ground(L: Layout, s: Frame): Box[] {
+  const d = dimsOf(L);
+  const shapes = Object.keys(L.P).map((id) => {
+    const e = d.half(L.P[id]) + 2;
+    return { x0: L.x[id] - e, x1: L.x[id] + e, y0: L.y[id] - e, y1: L.y[id] + e };
+  });
+  const crosses = s.marks
+    .filter((m) => m.k === Mark.Up || m.k === Mark.Down)
+    .map((m) => {
+      const z = L.zone[m.who] || 1;
+      const e = d.half(L.P[m.who]);
+      const [a, b] = [L.x[m.who] + z * (e + d.GAP), L.x[m.who] + z * (e + d.ZONE)];
+      return { x0: Math.min(a, b), x1: Math.max(a, b), y0: L.y[m.who] - 15, y1: L.y[m.who] + 4 };
+    });
+  return [...L.names, ...shapes, ...crosses];
 }
 
 const STILL = { symptom: null, anxiety: null, functioning: null };
@@ -1087,6 +1124,7 @@ function kin(L: Layout, m: Kin): string {
     gender: L.P[id].g === Sex.Female ? "female" : null,
     stage,
     mark: d.MARK,
+    still: true,
   });
   const marks = moveMarks(m.kind, at(m.from), m.to ? at(m.to) : null, STILL).marks;
   const was = m.cls === Tone.Was;
@@ -1134,7 +1172,16 @@ export function draw(L: Layout, s: Frame): string {
   const d = dimsOf(L);
   const { E } = d;
   const P = L.P;
-  const texts = [...L.names, ...s.marks.filter((m) => m.k === Mark.Event).map((m) => word(L, m).box)];
+  const taken = ground(L, s);
+  const spots = new Map<Placed, Spot>();
+  s.marks
+    .filter((m) => m.k === Mark.Event)
+    .forEach((m) => {
+      const w = spot(L, m, taken);
+      spots.set(m, w);
+      taken.push(w.box);
+    });
+  const texts = [...L.names, ...[...spots.values()].map((w) => w.box)];
   let out = "";
   // what this snapshot adds is drawn last, over everything carried from before
   let top = "";
@@ -1241,7 +1288,7 @@ export function draw(L: Layout, s: Frame): string {
   s.marks.forEach((m) => {
     if (m.k === Mark.Up || m.k === Mark.Down)
       put(cross(L, m.who, m.k === Mark.Up ? Shift.Up : Shift.Down, m.cls ?? Tone.Now), lit(m.cls));
-    else if (m.k === Mark.Event) put(event(L, m), lit(m.cls));
+    else if (m.k === Mark.Event) put(event(m, spots.get(m)!), lit(m.cls));
     else if (m.k === Mark.Emphasis)
       put(outline(P[m.who], L.x[m.who], L.y[m.who], E, m.cls === Tone.Was ? "hl was" : "hl now pop").replace(
         "/>",

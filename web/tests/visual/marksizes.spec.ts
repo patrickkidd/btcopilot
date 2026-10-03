@@ -229,11 +229,11 @@ const apart = (page: Page, a: number, b: number) =>
     [a, b],
   );
 
-/** A couple stands at the ruled three widths apart, and further only by the
- * most that one step puts between them: their children, and a word that shows
- * there on its own step (R-0682). Eight widths is that, with room to spare;
- * the Pembertons stood eleven apart while every word took room at once. */
-const COUPLE_MOST = 8;
+/** A couple stands at the ruled three widths apart, and further only by what
+ * their children under them need; a step's words find room of their own and
+ * never push anyone apart. The Pembertons stood eleven apart while every word
+ * took room at once. */
+const COUPLE_MOST = 4;
 
 /** Every crossing of a mark and a word, step by step. */
 async function over(page: Page, svgs: string[]): Promise<string[]> {
@@ -414,10 +414,36 @@ test.describe("every mark", () => {
   });
 
   // R-0679
-  test("Walter and Rosa sit within eight shape widths of each other", async ({ page }) => {
+  test("Walter and Rosa sit within four shape widths of each other", async ({ page }) => {
     await steps(page, STEPS.length);
     const gap = await apart(page, 3, 4);
     expect(gap).toBeLessThanOrEqual(COUPLE_MOST);
+  });
+
+  // R-0121, R-0679
+  test("fusion's bands grow out from the middle until they hold both people, never coming away from them", async ({ page }) => {
+    await steps(page, STEPS.length);
+    await page.locator(`#pbp .wire [data-act="jump"][data-i="${STEPS.findIndex((s) => s.name === "fusion")}"]`).click();
+    const gaps: number[][] = [];
+    for (let ms = 0; ms < 8000; ms += 400)
+      gaps.push(
+        await page.evaluate((at) => {
+          const svg = document.querySelector<SVGSVGElement>("#pbp .draw svg")!;
+          svg.pauseAnimations();
+          svg.setCurrentTime(at / 1000);
+          // each band's two ends against where they rest, at the people's edges
+          return [...svg.querySelectorAll<SVGLineElement>(".fore .mv-band")].flatMap((b) => [
+            Math.abs(b.x1.animVal.value - b.x1.baseVal.value),
+            Math.abs(b.x2.animVal.value - b.x2.baseVal.value),
+          ]);
+        }, ms),
+      );
+    expect(gaps[0].length).toBe(6);
+    expect(Math.min(...gaps[0])).toBeGreaterThan(5);
+    const grew = gaps.slice(1).every((g, i) => g.every((v, j) => v <= gaps[i][j] + 0.01));
+    expect(grew).toBe(true);
+    // joined by 55% of the loop, and held there to its end
+    expect(gaps.filter((_, i) => i * 400 >= 4400).flat().every((v) => v < 0.01)).toBe(true);
   });
 
   // R-0546
@@ -451,7 +477,7 @@ test.describe("the Whitlock family's years apart", () => {
   });
 
   // R-0679
-  test("Marcus and Delphine sit within eight shape widths of each other", async ({ page }) => {
+  test("Marcus and Delphine sit within four shape widths of each other", async ({ page }) => {
     await steps(page, 5);
     const gap = await apart(page, 3, 4);
     expect(gap).toBeLessThanOrEqual(COUPLE_MOST);
