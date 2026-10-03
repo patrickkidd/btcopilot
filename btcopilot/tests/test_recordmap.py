@@ -26,7 +26,7 @@ def family(test_user):
     diagram = test_user.free_diagram
     data = diagram.get_diagram_data()
     data.people = [asdict(Person(id=1, name="Wren")), asdict(Person(id=2, name="Bo"))]
-    data.events = [{"id": 3, "kind": "noted", "person": 1, "dateTime": "1990-01-01"}]
+    data.events = [{"id": 3, "kind": "noted", "person": 1, "title": "Changed jobs", "dateTime": "1990-01-01"}]
     data.lastItemId = 3
     diagram.set_diagram_data(data)
     db.session.commit()
@@ -94,6 +94,7 @@ def test_the_coach_reads_chosen_events_with_the_words_they_came_from(
                 person=2,
                 date="1994-06-01",
                 date_certainty="certain",
+                title="Left home",
                 description="left",
                 notes="He took the car",
                 location="Tulsa",
@@ -121,7 +122,7 @@ def test_the_coach_reads_chosen_events_with_the_words_they_came_from(
         ToolName.ReadEvents.value, {"ids": [4], "fields": ["words", "notes", "location"]}
     )
     assert text.splitlines()[:3] == [
-        '4 1995-06-01 [noted] person=2 "left" (has notes) location="Tulsa"',
+        '4 1995-06-01 [noted] person=2 title="Left home" "left" (has notes) location="Tulsa"',
         "  words: My dad left in 1994.",
         "  notes: He took the car",
     ]

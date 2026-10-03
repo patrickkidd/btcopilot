@@ -305,12 +305,15 @@ export enum Level {
 const TOLD_CH = 20;
 
 /** A moment picked, as the path names it: the first name and what happened,
- * "Delphine died", and whatever of its words that leaves over, which the line
+ * "Delphine died" or, from the title "Stopped calling", "Ben stopped calling",
+ * and whatever of its words that leaves over, which the line
  * writes instead (R-0540). The path's words end on a whole word, and never on
  * a small one. */
 export function told(who: string, label: string): [string, string] {
   const first = who.split(" ")[0];
-  const all = (!first || label.startsWith(first) ? label : `${first} ${label}`).split(" ");
+  // a title reads on its own (R-0681); after a name it runs on as one sentence
+  const run = /^[A-Z][a-z]/.test(label) ? label.charAt(0).toLowerCase() + label.slice(1) : label;
+  const all = (!first || label.startsWith(first) ? label : `${first} ${run}`).split(" ");
   let n = 1;
   while (n < all.length && all.slice(0, n + 1).join(" ").length <= TOLD_CH) n += 1;
   while (n > 1 && n < all.length && all[n - 1].length <= 2) n -= 1;
@@ -594,6 +597,9 @@ export class Picture {
   /** What is left to do once the slide is over, held so a render arriving
    * mid-flight can finish it early rather than stack a second pair of layers. */
   private landing: (() => void) | null = null;
+  private landed: () => void = () => undefined;
+  /** Kept once the about page has finished sliding in or out. */
+  settled: Promise<void> = Promise.resolve();
 
   constructor(
     private host: HTMLElement,
@@ -1203,11 +1209,13 @@ export class Picture {
 
   /** One level in or one level out. Drilling down, the arriving view slides in
    * from the right over the one it came from; going back, the view being left
-   * slides out to the right and uncovers it. Both stand at the height the
-   * region already had, so nothing under the picture moves while they travel;
-   * a level with a height of its own takes it once the slide is over
-   * (owner ruling 2026-09-08). */
+   * slides out to the right and uncovers it. The region keeps its height, so
+   * nothing under the picture moves while they travel (owner ruling
+   * 2026-09-08), and the about page travels at its full height over the chat,
+   * never let out to it after landing (Patrick, 2026-10-02). */
   private slide(dir: 1 | -1): void {
+    this.landed();
+    this.settled = new Promise((done) => (this.landed = done));
     // The card is the whole picture region — title line, drawing and the row
     // of chips — not the drawing alone (owner, 2026-09-09). The level that is
     // leaving is photographed now; the one arriving is photographed once the
@@ -1251,6 +1259,7 @@ export class Picture {
     this.flight?.cancel();
     this.flight = null;
     finish();
+    this.landed();
   }
 
   private draw(): void {

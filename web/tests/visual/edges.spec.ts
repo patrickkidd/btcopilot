@@ -62,7 +62,7 @@ test.describe("the timeline's views", () => {
   // R-0234, R-0540
   test("the path over an event picked on the whole line", async ({ page }) => {
     await settle(page);
-    await tap(page, `#view .ss-hit[data-target="zone"][aria-label="Ben stopped calling"]`);
+    await tap(page, `#view .ss-hit[data-target="zone"][aria-label="Stopped calling"]`);
     await lined(page, "picked at rest", { line: true, ask: true });
   });
 

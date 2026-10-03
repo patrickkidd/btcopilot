@@ -421,6 +421,7 @@ def test_only_a_noted_event_names_the_item_it_records(family):
         "id": 2,
         "kind": "noted",
         "person": ME,
+        "title": "Started at the bakery",
         "description": "Started at the bakery",
         "dateTime": "2019-03-01",
         "dateCertainty": "certain",

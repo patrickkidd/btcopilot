@@ -70,7 +70,7 @@ def _person(id, name, gender=PersonKind.Female, primary=False):
     return chunk
 
 
-def _event(id, date, description, person=1, certainty=CERTAIN, **kwargs):
+def _event(id, date, title, person=1, certainty=CERTAIN, **kwargs):
     return asdict(
         Event(
             id=id,
@@ -78,7 +78,7 @@ def _event(id, date, description, person=1, certainty=CERTAIN, **kwargs):
             person=person,
             dateTime=date,
             dateCertainty=certainty,
-            description=description,
+            title=title,
             **kwargs,
         )
     )
@@ -94,6 +94,7 @@ def empty() -> DiagramData:
                     id=10,
                     kind=EventKind.Shift,
                     person=1,
+                    title="Nobody sleeps well",
                     description="Nobody in the family sleeps well",
                 )
             ),
@@ -104,6 +105,7 @@ def empty() -> DiagramData:
                     person=1,
                     dateTime="1990-01-01",
                     dateCertainty=UNKNOWN,
+                    title="Trouble with the house",
                     description="Something happened with the house",
                 )
             ),
@@ -115,7 +117,7 @@ def empty() -> DiagramData:
 def one() -> DiagramData:
     return DiagramData(
         people=[_person(1, "Ada", primary=True)],
-        events=[_event(10, "2014-03-02", "Moved out on her own")],
+        events=[_event(10, "2014-03-02", "Moved out", description="Moved out on her own")],
         lastItemId=20,
     )
 
@@ -139,17 +141,18 @@ def three_over_forty() -> DiagramData:
             _event(
                 11,
                 "1994-02-14",
-                "The winter she stopped calling home",
+                "Stopped calling home",
+                description="The winter she stopped calling home",
                 relationship="distance",
                 relationshipTargets=[2],
             ),
             _event(
                 12,
                 "2003-09-10",
-                "The move across the country",
+                "Moved across the country",
                 functioning=VariableShift.Down,
             ),
-            _event(13, "2021-11-02", "Ben stopped calling", person=2),
+            _event(13, "2021-11-02", "Stopped calling", person=2),
         ],
         clusters=[
             asdict(
@@ -464,13 +467,13 @@ def whitlock() -> DiagramData:
     ]
     apart = [
         event(201, EventKind.Separated, "1980-09-15", person=3, spouse=4),
-        event(202, EventKind.Noted, "1980-09-15", person=3, description="Took a room over the hardware store"),
-        event(203, EventKind.Shift, "1981-01-15", person=3, symptom=VariableShift.Up, description="Drinking most nights"),
+        event(202, EventKind.Noted, "1980-09-15", person=3, title="Moved out", description="Took a room over the hardware store"),
+        event(203, EventKind.Shift, "1981-01-15", person=3, symptom=VariableShift.Up, title="Drinking most nights", description="Drinking most nights after the separation"),
         event(204, EventKind.Divorced, "1981-06-15", person=3, spouse=4),
-        event(205, EventKind.Noted, "1981-09-15", person=6, description="Started at the church day care"),
-        event(206, EventKind.Shift, "1982-04-15", person=3, symptom=VariableShift.Down, description="Stopped drinking"),
-        event(207, EventKind.Noted, "1982-09-15", person=5, description="Started school"),
-        event(208, EventKind.Shift, "1982-11-15", person=5, symptom=VariableShift.Up, description="Her teacher called Delphine"),
+        event(205, EventKind.Noted, "1981-09-15", person=6, title="Started day care", description="Started at the church day care"),
+        event(206, EventKind.Shift, "1982-04-15", person=3, symptom=VariableShift.Down, title="Stopped drinking", description="Stopped drinking for good"),
+        event(207, EventKind.Noted, "1982-09-15", person=5, title="Started school", description="Started first grade"),
+        event(208, EventKind.Shift, "1982-11-15", person=5, symptom=VariableShift.Up, title="Trouble at school", description="Her teacher called Delphine"),
     ]
     return DiagramData(
         people=people,
@@ -528,6 +531,147 @@ WHITLOCK_CHAT = [
     ),
 ]
 
+
+def every_mark() -> DiagramData:
+    """The Pemberton stand-in family, wholly invented, whose one stored cluster
+    holds one event for every mark the play-by-play can draw, in date order, so
+    each can be looked at on its own step."""
+
+    def kin(id, name, gender, primary=False, **fields):
+        return dict(_person(id, name, gender, primary=primary), **fields)
+
+    def event(id, kind, date, **fields):
+        return asdict(Event(id=id, kind=kind, dateTime=date, dateCertainty=CERTAIN, **fields))
+
+    def shift(id, date, person, title, description, **fields):
+        return event(id, EventKind.Shift, date, person=person, title=title, description=description, **fields)
+
+    male, female = PersonKind.Male, PersonKind.Female
+    up, down = VariableShift.Up, VariableShift.Down
+    people = [
+        kin(1, "Harold", male, last_name="Pemberton"),
+        kin(2, "June", female, last_name="Pemberton"),
+        kin(3, "Walter", male, last_name="Pemberton", parents=20),
+        kin(4, "Rosa", female, last_name="Quint"),
+        kin(5, "Ivy", female, primary=True, last_name="Pemberton", parents=21),
+        kin(6, "Leo", male, last_name="Pemberton", parents=21),
+        kin(7, "Sam", male, last_name="Okoro"),
+    ]
+    born = [
+        event(101, EventKind.Birth, "1922-02-01", child=1),
+        event(102, EventKind.Birth, "1925-07-01", child=2),
+        event(103, EventKind.Married, "1946-06-01", person=1, spouse=2),
+        event(104, EventKind.Birth, "1948-04-01", person=1, spouse=2, child=3),
+        event(105, EventKind.Birth, "1950-10-01", child=4),
+        event(106, EventKind.Birth, "1973-01-01", child=7),
+        event(107, EventKind.Birth, "1977-05-01", child=6),
+    ]
+    marks = [
+        event(301, EventKind.Married, "1972-06-10", person=3, spouse=4),
+        event(302, EventKind.Birth, "1975-03-02", person=3, spouse=4, child=5),
+        event(303, EventKind.Adopted, "1978-09-20", person=3, spouse=4, child=6),
+        shift(304, "1979-05-01", 4, "Kept her close", "Kept Ivy close", relationship="toward", relationshipTargets=[5]),
+        shift(305, "1980-02-01", 3, "Took long road trips", "Took long road trips alone", relationship="away", relationshipTargets=[4]),
+        shift(306, "1980-11-01", 3, "Fought about money", "Fought about money most weekends", relationship="conflict", relationshipTargets=[4]),
+        shift(307, "1981-06-01", 4, "Went quiet at dinner", "Stopped talking at dinner", relationship="distance", relationshipTargets=[3]),
+        event(308, EventKind.Separated, "1982-01-15", person=3, spouse=4),
+        shift(309, "1982-04-01", 3, "Drinking most nights", "Drinking most nights after the separation", symptom=up),
+        shift(310, "1982-09-01", 4, "Could not sleep", "Could not sleep through the night", anxiety=up),
+        shift(311, "1983-03-01", 4, "Slept again", "Slept through the night again", anxiety=down),
+        event(312, EventKind.Divorced, "1983-08-01", person=3, spouse=4),
+        shift(313, "1984-02-01", 3, "Stopped calling home", "Stopped calling his father", relationship="cutoff", relationshipTargets=[1]),
+        shift(314, "1985-05-01", 4, "Worried over grades", "Worried over Leo's grades", relationship="projection", relationshipTargets=[6]),
+        shift(315, "1986-01-01", 4, "Told her everything", "Told Ivy everything", relationship="fusion", relationshipTargets=[5]),
+        shift(316, "1987-03-01", 5, "Did his homework", "Did Leo's homework", relationship="overfunctioning", relationshipTargets=[6]),
+        shift(317, "1987-09-01", 6, "Let her handle school", "Let Ivy handle school", relationship="underfunctioning", relationshipTargets=[5]),
+        shift(318, "1988-04-01", 3, "Lost his job", "Lost his job at the plant", functioning=down),
+        shift(319, "1989-06-01", 3, "Opened his own shop", "Opened his own repair shop", functioning=up),
+        shift(320, "1990-01-01", 3, "Stopped drinking", "Stopped drinking for good", symptom=down),
+        shift(321, "1991-05-01", 5, "Held her ground", "Held her ground with Rosa", relationship="defined-self", relationshipTargets=[4]),
+        shift(322, "1992-08-01", 6, "Sided with his mother", "Sided with Rosa", relationship="inside", relationshipTargets=[4], relationshipTriangles=[5]),
+        shift(323, "1993-02-01", 6, "Stayed out of it", "Stayed out of their fight", relationship="outside", relationshipTargets=[4], relationshipTriangles=[5]),
+        event(324, EventKind.Noted, "1994-07-01", person=5, title="Moved to Chicago", description="Moved to Chicago for work"),
+        event(325, EventKind.Death, "1996-11-01", person=1),
+        event(326, EventKind.Bonded, "1998-06-01", person=5, spouse=7),
+        shift(327, "1999-09-01", None, "Sold the farm", "The family sold the farm"),
+    ]
+    return DiagramData(
+        people=people,
+        pair_bonds=[
+            {"id": 20, "person_a": 1, "person_b": 2, "married": True},
+            {"id": 21, "person_a": 3, "person_b": 4, "married": True},
+            {"id": 22, "person_a": 5, "person_b": 7, "married": False},
+        ],
+        events=born + marks,
+        clusters=[
+            asdict(
+                Cluster(
+                    id=EVERY_MARK_CLUSTER,
+                    reason="Every mark the play-by-play draws, one event at a time.",
+                    title="Every mark",
+                    summary="One event for each mark.",
+                    eventIds=[e["id"] for e in marks],
+                    name="Every mark",
+                )
+            )
+        ],
+        lastItemId=400,
+    )
+
+
+EVERY_MARK_CLUSTER = "everymark"
+# each step's words name the mark it shows first, so a reader can check the drawing
+EVERY_MARK_FACTS = {
+    301: "Married: Walter and Rosa married.",
+    302: "Birth: Ivy was born.",
+    303: "Adopted: Walter and Rosa adopted Leo.",
+    304: "Toward: Rosa kept Ivy close.",
+    305: "Away: Walter took long road trips away from Rosa.",
+    306: "Conflict: Walter and Rosa fought about money.",
+    307: "Distance: Rosa stopped talking to Walter at dinner.",
+    308: "Separated: Walter and Rosa separated.",
+    309: "Symptom up: Walter was drinking most nights.",
+    310: "Anxiety up: Rosa could not sleep.",
+    311: "Anxiety down: Rosa slept again.",
+    312: "Divorced: Walter and Rosa divorced.",
+    313: "Cutoff: Walter stopped calling his father.",
+    314: "Projection: Rosa worried over Leo's grades.",
+    315: "Fusion: Rosa told Ivy everything.",
+    316: "Overfunctioning: Ivy did Leo's homework.",
+    317: "Underfunctioning: Leo let Ivy handle school.",
+    318: "Functioning down: Walter lost his job.",
+    319: "Functioning up: Walter opened his own shop.",
+    320: "Symptom down: Walter stopped drinking.",
+    321: "Defined self: Ivy held her ground with Rosa.",
+    322: "Inside: Leo sided with Rosa, leaving Ivy out.",
+    323: "Outside: Leo stayed out of it.",
+    324: "An event with no drawing of its own: Ivy moved to Chicago.",
+    325: "Death: Harold died.",
+    326: "Bonded: Ivy and Sam got together.",
+    327: "An event about the whole family: they sold the farm.",
+}
+EVERY_MARK_CASE = Case(
+    cluster_id=EVERY_MARK_CLUSTER,
+    point="Every mark the play-by-play draws, one step each.",
+    snapshots=[
+        Snapshot(e["dateTime"], [e["id"]], EVERY_MARK_FACTS[e["id"]], None)
+        for e in every_mark().events
+        if e["id"] in EVERY_MARK_FACTS
+    ],
+    question="Which of these marks is hard to read?",
+)
+EVERY_MARK_CHAT = [
+    ("user", "show me every mark"),
+    (
+        "coach",
+        EVERY_MARK_CASE.point,
+        {
+            "kind": StatementKind.Play,
+            "cluster_id": EVERY_MARK_CLUSTER,
+            "told_case": EVERY_MARK_CASE.asdict(),
+        },
+    ),
+]
 
 def editable() -> DiagramData:
     """A copy of the sparse record for the tests that write through the editor.
@@ -631,6 +775,7 @@ FIXTURES = {
     "longname": (long_name, None),
     "editable": (editable, None),
     "whitlock": (whitlock, WHITLOCK_CHAT),
+    "everymark": (every_mark, EVERY_MARK_CHAT),
     "sitting": (one, None),
     "sittings": (one, None),
     "sameday": (one, None),

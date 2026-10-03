@@ -363,6 +363,7 @@ class Event:
     person: int | None = None
     spouse: int | None = None
     child: int | None = None
+    title: str | None = None
     description: str | None = None
     notes: str | None = None
     location: str | None = None
@@ -557,6 +558,37 @@ def enum_val(x):
     their string values depending on the writer — same dual-type situation
     as QDateTime dates. Normalize to the string value for compare/display."""
     return x.value if isinstance(x, enum.Enum) else x
+
+
+# How many words a title has (R-0681): enough to read alone, few enough to sit
+# beside a person in the picture.
+TITLE_WORDS = (2, 4)
+# Words a complete phrase does not end on: "Stayed out of" is cut off.
+LOOSE_ENDS = {
+    "a", "about", "and", "at", "but", "for", "from", "her", "his", "into",
+    "my", "of", "or", "our", "the", "their", "to", "with", "without",
+}
+
+
+def plain_title(words: str | None) -> str | None:
+    """Words that already serve as a title as they stand: 2 to 4 words not
+    ending mid-phrase. None when someone has to write one."""
+    said = (words or "").strip().rstrip(".")
+    split = said.split()
+    if not TITLE_WORDS[0] <= len(split) <= TITLE_WORDS[1]:
+        return None
+    if split[-1].lower().strip(",;:") in LOOSE_ENDS or any(w.endswith(",") for w in split):
+        return None
+    return said[0].upper() + said[1:]
+
+
+def event_title(event: dict) -> str:
+    """The few words a noted event or a shift is shown by (R-0681); it always
+    has them."""
+    title = (event.get("title") or "").strip()
+    if not title:
+        raise ValueError(f"event {event.get('id')} is a {enum_val(event.get('kind'))} event with no title")
+    return title
 
 
 def parse_date(s):

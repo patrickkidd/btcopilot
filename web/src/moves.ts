@@ -53,12 +53,29 @@ export interface Figure {
   stage?: { w: number; h: number };
   /** The board writes names above its people; the stage writes them below. */
   above?: boolean;
+  /** How tall a wall stands, and the conflict burst with it: the ratified 68,
+   * unless the drawing holds all its marks to one size of its own, as the
+   * play-by-play does. */
+  mark?: number;
+  /** The drawing's people never move, as in the play-by-play (R-0546), so a
+   * move's drawing in is carried by its marks alone. */
+  still?: boolean;
 }
 
 /** The play-by-play stage, where pane A is the fidelity standard. */
 export const R = 17;
 /** The moves board, as the ratified board drawing sizes people. */
 export const BOARD_R = 13;
+
+/** How far anxiety's spikes reach past a figure's edge: their gap and the
+ * longest of them. */
+export const SPIKES = 2 + 12;
+/** The flank arrow beside a person: how far past their edge it stands, how
+ * wide its head spreads, and how far it reaches above and below their middle. */
+export const FLANK = { at: 13, wing: 7, half: 11 };
+/** Where a wall stands, as a share of the way from the mover to the other:
+ * further in front of the actor, as ratified. */
+export const WALL = 0.4375;
 
 /** The ratified story loop. Heavier marks run a multiple of it. */
 export const LOOP = 8;
@@ -258,16 +275,16 @@ function rings(
  * through the wall. */
 function wall(frm: Frame, mover: Figure, struck: boolean): string {
   const L = frm.length;
-  // the wall stands further in front of the actor than the other, as ratified
-  const wx = L * 0.4375;
-  const arm = 34;
+  const wx = L * WALL;
+  const arm = (mover.mark ?? 68) / 2;
   const shadow = uid("csh");
   // the wedge behind the wall widens as it runs back, so the rings wrap the
   // wall's ends instead of stopping at a straight line
   const back = -L;
   const spread = arm + 0.419 * (wx - back);
   const strike = struck
-    ? `<line class="mv-strike postA" x1="${n1(wx - 13)}" y1="22" x2="${n1(wx + 13)}" y2="-22"/>`
+    ? `<line class="mv-strike postA" x1="${n1(wx - arm * (13 / 34))}" y1="${n1(arm * (22 / 34))}" ` +
+      `x2="${n1(wx + arm * (13 / 34))}" y2="${n1(-arm * (22 / 34))}"/>`
     : "";
   return (
     `<defs><clipPath id="${shadow}"><path clip-rule="evenodd" ` +
@@ -295,6 +312,8 @@ function sparks(frm: Frame, mover: Figure, other: Figure): string {
     return `${n1(x)},${y}`;
   }).join(" ");
   const mid = (x0 + x1) / 2;
+  // the burst keeps its ratified proportion to a wall, at whatever size the drawing holds walls to
+  const k = (mover.mark ?? 68) / 68;
   const burst = [
     [0, -17, 0, -29],
     [0, 17, 0, 29],
@@ -305,7 +324,7 @@ function sparks(frm: Frame, mover: Figure, other: Figure): string {
   ]
     .map(
       ([ax, ay, bx, by]) =>
-        `<line class="mv-burst" x1="${n1(mid + ax)}" y1="${ay}" x2="${n1(mid + bx)}" y2="${by}"/>`,
+        `<line class="mv-burst" x1="${n1(mid + ax * k)}" y1="${n1(ay * k)}" x2="${n1(mid + bx * k)}" y2="${n1(by * k)}"/>`,
     )
     .join("");
   return (
@@ -411,12 +430,17 @@ function drainArrow(from: Figure, to: Figure): string {
  * below is that sheet's, halved; the stroke is the sheet's, unscaled. */
 const ARROW = 0.5;
 
-/** The health cross, and the arrow that says which way it went. */
+/** The health cross's own width and height. */
+export const CROSS = 16;
+
+/** The health cross, and the arrow that says which way it went. Each keeps its
+ * own size in a square cell as tall as the cross, the two cells side by side,
+ * so the gap between them is even (Patrick, 2026-10-03). */
 export function cross(person: Figure, direction: Shift): string {
   const side = person.mirror ? -1 : 1;
   const cx = person.x + side * (rad(person) + 29);
   const cy = person.y - 6;
-  const ax = cx + side * 26;
+  const ax = cx + side * CROSS;
   const up = (offset: number) => n1(cy + offset * ARROW);
   const across = (offset: number) => n1(ax + offset * ARROW);
   const worse =
@@ -433,8 +457,8 @@ export function cross(person: Figure, direction: Shift): string {
     direction === Shift.Up ? worse : direction === Shift.Down ? better : "";
   return (
     `<g class="mv-sym" transform="translate(${n1(cx)} ${n1(cy)})">` +
-    `<rect class="tipfill" x="-8" y="-3" width="16" height="6" rx="1"/>` +
-    `<rect class="tipfill" x="-3" y="-8" width="6" height="16" rx="1"/>` +
+    `<rect class="tipfill" x="${-CROSS / 2}" y="-3" width="${CROSS}" height="6" rx="1"/>` +
+    `<rect class="tipfill" x="-3" y="${-CROSS / 2}" width="6" height="${CROSS}" rx="1"/>` +
     `</g>` +
     arrow
   );
@@ -447,25 +471,29 @@ function bands(frm: Frame, a: Figure, b: Figure, closeBy: number): string {
   const L = frm.length;
   const x1 = rad(a) + 1;
   const x2 = L - rad(b) - 1;
-  // once the two are drawn in they overlap the bands, which then run between
-  // their centres rather than between their edges
-  const x1b = closeBy + rad(a) + 1;
-  const x2b = L - closeBy - rad(b) - 1;
   const mid = L / 2;
+  // once the two are drawn in they overlap the bands, which then run between
+  // their centres rather than between their edges; where the two cannot move,
+  // the bands grow out from the middle until they hold both (Patrick, 2026-10-03)
+  const [from1, to1] = a.still ? [mid, x1] : [x1, closeBy + rad(a) + 1];
+  const [from2, to2] = a.still ? [mid, x2] : [x2, L - closeBy - rad(b) - 1];
+  // the shared field: on the board it pulses throughout; where the two cannot
+  // move it pulses once the bands have joined them
+  const ring = a.still
+    ? animate("r", "26;26;26;60;60", "0;.54;.55;.8;1", "8s") + animate("opacity", "0;0;.5;0;0", "0;.54;.55;.8;1", "8s")
+    : `<animate attributeName="r" values="26;60" dur="1.8s" repeatCount="indefinite"/>` +
+      `<animate attributeName="opacity" values=".5;0" dur="1.8s" repeatCount="indefinite"/>`;
   return (
     [-6, 0, 6]
       .map(
         (dy) =>
           `<line class="mv-band" x1="${n1(x1)}" y1="${dy}" x2="${n1(x2)}" y2="${dy}">` +
-          animate("x1", `${n1(x1)};${n1(x1)};${n1(x1b)};${n1(x1b)}`, "0;.2;.55;1", "8s") +
-          animate("x2", `${n1(x2)};${n1(x2)};${n1(x2b)};${n1(x2b)}`, "0;.2;.55;1", "8s") +
+          animate("x1", `${n1(from1)};${n1(from1)};${n1(to1)};${n1(to1)}`, "0;.2;.55;1", "8s") +
+          animate("x2", `${n1(from2)};${n1(from2)};${n1(to2)};${n1(to2)}`, "0;.2;.55;1", "8s") +
           `</line>`,
       )
       .join("") +
-    `<circle class="mv-shared" cx="${n1(mid)}" cy="0" r="24" opacity="0">` +
-    `<animate attributeName="r" values="26;60" dur="1.8s" repeatCount="indefinite"/>` +
-    `<animate attributeName="opacity" values=".5;0" dur="1.8s" repeatCount="indefinite"/>` +
-    `</circle>`
+    `<circle class="mv-shared" cx="${n1(mid)}" cy="0" r="24" opacity="0">${ring}</circle>`
   );
 }
 
@@ -473,16 +501,16 @@ function bands(frm: Frame, a: Figure, b: Figure, closeBy: number): string {
  * thirds the size of the person, never as movement. */
 function flank(person: Figure, up: boolean): string {
   const side = person.mirror ? -1 : 1;
-  const x = person.x + side * (rad(person) + 13);
-  const top = person.y - 11;
-  const bottom = person.y + 11;
+  const x = person.x + side * (rad(person) + FLANK.at);
+  const top = person.y - FLANK.half;
+  const bottom = person.y + FLANK.half;
   const tip = up ? top : bottom;
   const back = up ? top + 8 : bottom - 8;
   return (
     `<g class="mv-flank ${up ? "up" : "down"}">` +
     `<line x1="${n1(x)}" y1="${n1(top)}" x2="${n1(x)}" y2="${n1(bottom)}"/>` +
-    `<line x1="${n1(x)}" y1="${n1(tip)}" x2="${n1(x - 7)}" y2="${n1(back)}"/>` +
-    `<line x1="${n1(x)}" y1="${n1(tip)}" x2="${n1(x + 7)}" y2="${n1(back)}"/>` +
+    `<line x1="${n1(x)}" y1="${n1(tip)}" x2="${n1(x - FLANK.wing)}" y2="${n1(back)}"/>` +
+    `<line x1="${n1(x)}" y1="${n1(tip)}" x2="${n1(x + FLANK.wing)}" y2="${n1(back)}"/>` +
     `</g>`
   );
 }

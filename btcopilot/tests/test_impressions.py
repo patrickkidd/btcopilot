@@ -54,6 +54,7 @@ def event(toolbox, description="Moved out", person=1, date="1994-06-01") -> str:
         ToolName.EditEvent,
         {
             "kind": "noted",
+            "title": description,
             "description": description,
             "person": person,
             "date": date,

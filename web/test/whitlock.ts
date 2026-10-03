@@ -68,6 +68,7 @@ export const event = (
   endDateTime: null,
   dateCertainty: "certain",
   kind,
+  title: null,
   description: null,
   notes: null,
   location: null,
@@ -88,28 +89,30 @@ export const events = (): TimelineEvent[] => [
   event(119, "1989-06-01", "death", ERROL),
   // 1980–82: a couple comes apart, and the trouble lands on one person
   event(201, "1980-09-15", "separated", MARCUS, { spouse: DELPHINE }),
-  event(202, "1980-09-15", "noted", MARCUS, { description: "Took a room over the hardware store" }),
-  event(203, "1981-01-15", "shift", MARCUS, { symptom: "up", description: "Drinking most nights" }),
+  event(202, "1980-09-15", "noted", MARCUS, { title: "Moved out", description: "Took a room over the hardware store" }),
+  event(203, "1981-01-15", "shift", MARCUS, { symptom: "up", title: "Drinking most nights", description: "Drinking most nights" }),
   event(204, "1981-06-15", "divorced", MARCUS, { spouse: DELPHINE }),
-  event(205, "1981-09-15", "shift", THEO, { description: "Started at the church day care" }),
-  event(206, "1982-04-15", "shift", MARCUS, { symptom: "down", description: "Stopped drinking" }),
-  event(207, "1982-09-15", "shift", CORINNE, { description: "Started school" }),
-  event(208, "1982-11-15", "shift", CORINNE, { symptom: "up", description: "Her teacher called Delphine" }),
+  event(205, "1981-09-15", "shift", THEO, { title: "Started day care", description: "Started at the church day care" }),
+  event(206, "1982-04-15", "shift", MARCUS, { symptom: "down", title: "Stopped drinking", description: "Stopped drinking" }),
+  event(207, "1982-09-15", "shift", CORINNE, { title: "Started school", description: "Started school" }),
+  event(208, "1982-11-15", "shift", CORINNE, { symptom: "up", title: "Trouble at school", description: "Her teacher called Delphine" }),
   // 1998–99: three people after a death
   event(130, "1998-03-15", "death", ODILE),
   event(131, "1998-05-15", "shift", DELPHINE, {
     relationship: "toward",
     relationshipTargets: [CORINNE],
+    title: "Called Corinne nightly",
     description: "Started calling Corinne every night",
   }),
   event(132, "1998-07-15", "shift", CORINNE, {
     relationship: "away",
     relationshipTargets: [MARCUS],
+    title: "Stopped opening letters",
     description: "Stopped opening Marcus's letters",
   }),
-  event(133, "1998-09-15", "shift", null, { description: "The family left the house on Bluff Street" }),
-  event(135, "1999-02-15", "shift", DELPHINE, { symptom: "down", description: "Scans came back clear" }),
-  event(136, "1999-05-15", "shift", MARCUS, { symptom: "up", description: "In the hospital with chest pains" }),
+  event(133, "1998-09-15", "shift", null, { title: "Left Bluff Street", description: "The family left the house on Bluff Street" }),
+  event(135, "1999-02-15", "shift", DELPHINE, { symptom: "down", title: "Scans came back clear", description: "Scans came back clear" }),
+  event(136, "1999-05-15", "shift", MARCUS, { symptom: "up", title: "In the hospital", description: "In the hospital with chest pains" }),
 ];
 
 export const timeline = (): Timeline => ({
@@ -201,8 +204,8 @@ export const sparse = (): Timeline => ({
   ],
   pair_bonds: [],
   events: [
-    event(301, "2019-03-15", "shift", CORINNE, { symptom: "up", description: "Couldn't sleep" }),
-    event(302, "2019-10-15", "shift", DELPHINE, { description: "Moved in with her sister" }),
+    event(301, "2019-03-15", "shift", CORINNE, { symptom: "up", title: "Couldn't sleep", description: "Couldn't sleep" }),
+    event(302, "2019-10-15", "shift", DELPHINE, { title: "Moved in with her sister", description: "Moved in with her sister" }),
   ],
   clusters: [
     {

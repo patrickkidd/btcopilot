@@ -58,7 +58,7 @@ def edited(data):
 
 
 def added(data):
-    data.events.append(asdict(Event(id=209, kind=EventKind.Noted, person=5, dateTime="1983-02-15", description="Changed schools")))
+    data.events.append(asdict(Event(id=209, kind=EventKind.Noted, person=5, dateTime="1983-02-15", title="Changed schools", description="Changed schools")))
     data.clusters[0]["eventIds"].append(209)
     return told()
 

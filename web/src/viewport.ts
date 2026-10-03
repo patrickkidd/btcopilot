@@ -56,6 +56,10 @@ export const fold = (
   composer: HTMLElement,
   screen: HTMLElement,
   toEnd: () => void,
+  /** Puts away what hangs over the picture, kept once it has gone: the about
+   * page slides back out at its full height before the picture folds, never
+   * squashed with it (Patrick, 2026-10-02). */
+  clear: () => Promise<void>,
 ): Fold => {
   const seen = window.visualViewport!;
   const pic = screen.querySelector<HTMLElement>(":scope > .pic")!;
@@ -74,6 +78,10 @@ export const fold = (
   let scrolled = false;
   let full = "";
   const set = () => {
+    if (typing || scrolled) void clear().then(shift);
+    else shift();
+  };
+  const shift = () => {
     const on = typing || scrolled;
     if (on === screen.classList.contains("folded")) return;
     const a = look();

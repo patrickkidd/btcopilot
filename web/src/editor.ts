@@ -196,6 +196,7 @@ export function openEditor(
       `<div class="lab">Child</div>` +
       chips("child", persons(true), event?.child ?? "") +
       `</div><div class="sec">Words</div>` +
+      field("Title", "title", event?.title) +
       field("Summary", "description", event?.description, "text") +
       field("Notes", "notes", event?.notes, "text") +
       `<div class="hint">${NOTES_HINT}</div>` +
@@ -294,16 +295,9 @@ export function openEditor(
 
   editor.querySelector(".save")?.addEventListener("click", () => {
     const body = values(editor);
-    // A noted event is only its own words: with none it says nothing (R-0363).
-    if (body.kind === EventKind.Noted && !body.description) {
-      refuse(editor, "A noted event needs a few words saying what happened.");
-      return;
-    }
-    if (body.kind === EventKind.Shift && !moved(body)) {
-      refuse(
-        editor,
-        "A shift needs to say what moved and which way: symptom, anxiety, functioning or a relationship.",
-      );
+    const why = unsaid(body);
+    if (why) {
+      refuse(editor, why);
       return;
     }
     tap(Feature.EventSave);
@@ -376,6 +370,7 @@ export function values(editor: HTMLElement): Partial<TimelineEvent> {
     person: number("person"),
     spouse: number("spouse"),
     child: number("child"),
+    title: text("title"),
     description: text("description"),
     notes: text("notes"),
     location: text("location"),
@@ -397,6 +392,25 @@ export const moved = (body: Partial<TimelineEvent>): boolean =>
   [body.symptom, body.anxiety, body.functioning].some((value) =>
     Object.values<string | null | undefined>(Direction).includes(value),
   ) || Object.values<string | null | undefined>(Relationship).includes(body.relationship);
+
+/** How many words a title has (TITLE_WORDS in schema.py). */
+const TITLE = [2, 4];
+
+/** What an event still has to say before it can be saved, or null, in the
+ * record's own words for a hand edit. A noted event or a shift is shown
+ * everywhere by its title (R-0681) and says what happened in a sentence
+ * (R-0363), and a shift says what moved. */
+export function unsaid(body: Partial<TimelineEvent>): string | null {
+  const worded = body.kind === EventKind.Noted || body.kind === EventKind.Shift;
+  const name = body.kind === EventKind.Noted ? "noted" : "shift";
+  if (worded && !body.description?.trim()) return `A ${name} event needs a few words saying what happened.`;
+  const n = (body.title ?? "").split(/\s+/).filter(Boolean).length;
+  if (worded && (n < TITLE[0] || n > TITLE[1]))
+    return `A ${name} event needs a title of ${TITLE[0]} to ${TITLE[1]} words, such as "Lost his job".`;
+  if (body.kind === EventKind.Shift && !moved(body))
+    return "A shift needs to say what moved and which way: symptom, anxiety, functioning or a relationship.";
+  return null;
+}
 
 /** A write that does not go in leaves the editor open with the reason shown,
  * in the plain words the record gives a hand edit. */

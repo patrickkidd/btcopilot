@@ -43,6 +43,7 @@ class ToolText(enum.StrEnum):
     """The tool parameters whose wording the private prompts may replace."""
 
     EventKind = "kind"
+    Title = "title"
     Description = "description"
     Notes = "notes"
     EndDate = "end_date"

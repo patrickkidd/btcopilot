@@ -17,7 +17,8 @@ from btcopilot import record
 from btcopilot.extensions import db
 from btcopilot.models import SpeakerType, Statement
 from btcopilot.recordtext import date_text
-from btcopilot.schema import DiagramData, enum_val
+from btcopilot.schema import DiagramData
+from btcopilot.timeline import event_label
 
 _log = logging.getLogger(__name__)
 
@@ -211,7 +212,7 @@ def _describe(kind: ChipKind, target: str, data: DiagramData, diagram_id: int | 
         )
     if kind is ChipKind.Event:
         event = next(e for e in data.events if str(e.get("id")) == target)
-        words = event.get("description") or enum_val(event.get("kind")) or ""
+        words = event_label(event, {p.get("id"): p for p in data.people})
         when = date_text(event.get("dateTime")) or "undated"
         return f"event {target}: {when} {words}".strip()
     if kind in (ChipKind.Question, ChipKind.Impression):

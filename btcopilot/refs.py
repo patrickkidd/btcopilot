@@ -17,7 +17,14 @@ import logging
 import re
 from dataclasses import dataclass, field
 
-from btcopilot.schema import DateCertainty, DiagramData, EventKind, enum_val, parse_date
+from btcopilot.schema import (
+    DateCertainty,
+    DiagramData,
+    EventKind,
+    enum_val,
+    event_title,
+    parse_date,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -142,9 +149,11 @@ def _dated(event: dict) -> datetime.date | None:
 
 
 def _event_words(event: dict, people: dict) -> str:
+    kind = enum_val(event.get("kind"))
+    if kind in (EventKind.Noted.value, EventKind.Shift.value):
+        return event_title(event)[:_LABEL_CHARS]
     words = (event.get("description") or "").strip()
     if not words:
-        kind = enum_val(event.get("kind"))
         key = (
             "child"
             if kind in (EventKind.Birth.value, EventKind.Adopted.value)

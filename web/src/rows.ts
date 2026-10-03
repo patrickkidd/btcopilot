@@ -105,20 +105,59 @@ const KIND_FORMS: Record<string, RegExp> = {
   [EventKind.Death]: forms("died", "dies", "death", "dead", "passed"),
 };
 
+/** The words that say a shift's move or the variable it shifts. */
+const SHIFT_FORMS: Record<string, RegExp> = {
+  toward: forms("toward"),
+  away: forms("away"),
+  distance: forms("distance"),
+  cutoff: forms("cutoff", "cut off"),
+  conflict: forms("conflict"),
+  fusion: forms("fusion"),
+  projection: forms("projection"),
+  overfunctioning: forms("overfunctioning"),
+  underfunctioning: forms("underfunctioning"),
+  "defined-self": forms("defined self", "defined-self"),
+  inside: forms("inside"),
+  outside: forms("outside"),
+  symptom: forms("symptom"),
+  anxiety: forms("anxiety"),
+  functioning: forms("functioning"),
+};
+
+/** The forms that can say what kind of thing an event is: its kind, and for a
+ * shift its move and each variable it shifts. */
+export const kindForms = (e: TimelineEvent): RegExp[] =>
+  [
+    KIND_FORMS[e.kind ?? ""],
+    SHIFT_FORMS[e.relationship ?? ""],
+    ...(["symptom", "anxiety", "functioning"] as const).filter((v) => e[v]).map((v) => SHIFT_FORMS[v]),
+  ].filter((re): re is RegExp => !!re);
+
+/** Text with the first word saying each form in the data colour, the one way
+ * a kind word is shown in the list and under the play-by-play. */
+export function withKind(text: string, said: RegExp[]): string {
+  const spans = said
+    .map((re) => re.exec(text))
+    .filter((m): m is RegExpExecArray => !!m)
+    .map((m) => [m.index + m[1].length, m.index + m[1].length + m[2].length])
+    .sort((a, b) => a[0] - b[0])
+    .filter((s, i, all) => !i || s[0] >= all[i - 1][1]);
+  let out = "";
+  let at = 0;
+  spans.forEach(([a, b]) => {
+    out += esc(text.slice(at, a)) + `<span class="kw">${esc(text.slice(a, b))}</span>`;
+    at = b;
+  });
+  return out + esc(text.slice(at));
+}
+
 /** The first line: the server's words for the event, with the word that says
  * its kind in the data colour, on every row of a kind that has one. */
 function title(event: TimelineEvent): string {
   const said = KIND_FORMS[event.kind ?? ""];
   if (!said) return esc(event.label);
-  const found = said.exec(event.label);
-  if (!found) throw new Error(`event ${event.id} is ${event.kind} but its label "${event.label}" does not say so`);
-  const start = found.index + found[1].length;
-  const end = start + found[2].length;
-  return (
-    esc(event.label.slice(0, start)) +
-    `<span class="kw">${esc(found[2])}</span>` +
-    esc(event.label.slice(end))
-  );
+  if (!said.test(event.label)) throw new Error(`event ${event.id} is ${event.kind} but its label "${event.label}" does not say so`);
+  return withKind(event.label, [said]);
 }
 
 export function eventRow(

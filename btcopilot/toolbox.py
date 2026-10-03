@@ -294,8 +294,9 @@ def schemas(coder: bool = False) -> list[dict]:
             "description": (
                 "Add an event, or change one. Give id to change an existing event; "
                 "leave it out to add one. Only a shift carries a variable or a "
-                "relationship, and a shift always says in its description what "
-                "happened. No one is both a target and a third person of one move."
+                "relationship, and a noted event or a shift always has a title and "
+                "says in its description what happened. No one is both a target "
+                "and a third person of one move."
             ),
             "input_schema": {
                 "type": "object",
@@ -315,6 +316,10 @@ def schemas(coder: bool = False) -> list[dict]:
                         "it stays as it is. Never leave the date itself out: a vague "
                         "date beats none.",
                     ),
+                    "title": {
+                        "type": "string",
+                        "description": means[prompts.ToolText.Title],
+                    },
                     "description": {
                         "type": "string",
                         "description": means[prompts.ToolText.Description],
@@ -1204,9 +1209,7 @@ class Toolbox:
                 f"Say how sure the date is with date_certainty: {CERTAINTY}",
                 f"Say how sure the date is: {CERTAINTY}.",
             )
-        if args.get("description"):
-            fields["description"] = args["description"]
-        for key in ("notes", "location"):
+        for key in ("title", "description", "notes", "location"):
             if args.get(key):
                 fields[key] = args[key]
         if args.get("item"):

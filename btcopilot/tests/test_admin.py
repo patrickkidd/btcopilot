@@ -9,14 +9,14 @@ import pytest
 from alembic.script import ScriptDirectory
 
 import btcopilot
-from btcopilot import tuning, turnlog
+from btcopilot import diagramjson, tuning, turnlog
 from btcopilot.admin import admin
 from btcopilot.admin import guard, setting, skill
 from btcopilot.admin.database import config
 from btcopilot.tests import olddump
 from btcopilot.admin.setting import SettingKey
 from btcopilot.extensions import db
-from btcopilot.models import Observation, ObservationKind
+from btcopilot.models import Diagram, Observation, ObservationKind
 from btcopilot.models.preferences import PrefKey, Spotlight
 
 
@@ -268,3 +268,33 @@ def test_report_offer_goes_on_the_persons_running_turn(run, test_user, discussio
     assert turnlog.read_from("t1", 0) == [
         (1, {"type": "report", "report": {"kind": "feedback", "words": "Let me import my GEDCOM file"}})
     ]
+
+
+def test_titles_fill_keeps_words_that_serve_and_takes_the_rest_from_the_file(
+    run, test_user, tmp_path
+):
+    # R-0681
+    diagram = db.session.get(Diagram, test_user.free_diagram_id)
+    data = diagramjson.loads(diagram.data)
+    data["people"] = [{"id": 1, "name": "Wren"}]
+    data["events"] = [
+        {"id": 2, "kind": "noted", "person": 1, "description": "Moved to Leeds"},
+        {"id": 3, "kind": "shift", "person": 1, "anxiety": "up",
+         "description": "stopped calling after the funeral that spring"},
+        {"id": 4, "kind": "death", "person": 1},
+    ]
+    diagram.data = diagramjson.encode(data, diagram.data)
+    db.session.commit()
+    version = diagram.version
+
+    preview = rows(run("titles", "fill", "--diagram", str(diagram.id), "--json"))
+    assert [(r["event"], r["title"]) for r in preview] == [(2, "Moved to Leeds"), (3, "")]
+
+    preview[1]["title"] = "Stopped calling"
+    reviewed = tmp_path / "titles.json"
+    reviewed.write_text(json.dumps(preview))
+    run("titles", "fill", "--diagram", str(diagram.id), "--file", str(reviewed), "--yes")
+    db.session.refresh(diagram)
+    events = diagramjson.loads(diagram.data)["events"]
+    assert [e.get("title") for e in events] == ["Moved to Leeds", "Stopped calling", None]
+    assert diagram.version == version + 1

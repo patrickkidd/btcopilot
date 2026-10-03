@@ -26,6 +26,7 @@ def _shift(id, person, dateTime, variable, direction, certainty=DateCertainty.Ce
             person=person,
             dateTime=dateTime,
             dateCertainty=certainty,
+            title=f"{variable.capitalize()} went {direction.value}",
             **kwargs,
         )
     )
@@ -149,6 +150,7 @@ def test_no_question_for_distant_ranges():
                 id=11,
                 kind=EventKind.Noted,
                 person=1,
+                title="Moved out",
                 description="moved out",
                 dateTime="2010-01-01",
                 dateCertainty=DateCertainty.Certain,
@@ -323,7 +325,7 @@ def test_every_event_carries_the_words_the_list_shows():
 
 def test_an_event_carries_the_fields_whoever_stored_it_left_out():
     # R-0318
-    events = [{"id": 10, "kind": EventKind.Shift.value, "dateTime": "1990-01-01"}]
+    events = [{"id": 10, "kind": EventKind.Shift.value, "title": "Felt the strain", "dateTime": "1990-01-01"}]
     event = build_timeline(_data([1], events))["events"][0]
     assert event["relationshipTargets"] == []
     assert event["relationshipTriangles"] == []
@@ -369,6 +371,7 @@ def test_a_moment_says_who_from_its_links_and_what_without_the_name():
                 spouse=3,
                 anxiety=VariableShift.Up,
                 dateTime="1992-01-01",
+                title="Grew more anxious",
             )
         ),
         asdict(
@@ -379,6 +382,7 @@ def test_a_moment_says_who_from_its_links_and_what_without_the_name():
                 relationship=RelationshipKind.Conflict,
                 relationshipTargets=[2],
                 dateTime="1994-01-01",
+                title="Started fighting",
             )
         ),
     ]
@@ -389,8 +393,8 @@ def test_a_moment_says_who_from_its_links_and_what_without_the_name():
     }
     assert said[10] == ("Elizabeth", "born · in Anchorage, AK")
     assert said[11] == ("Ray & Nora", "divorced")
-    assert said[12] == ("Elizabeth & Nora", "anxiety went up")
-    assert said[13] == ("Elizabeth → Ray", "conflict")
+    assert said[12] == ("Elizabeth & Nora", "Grew more anxious")
+    assert said[13] == ("Elizabeth → Ray", "Started fighting")
 
 
 @pytest.mark.parametrize(
@@ -424,7 +428,6 @@ def test_a_moment_says_who_from_its_links_and_what_without_the_name():
         (EventKind.Birth, "Robert was born at home", "Robert was born at home"),
         (EventKind.Death, "Ann died", "died \u00b7 Ann died"),
         (EventKind.Death, "", "died"),
-        (EventKind.Shift, "Moved to Anchorage", "Moved to Anchorage"),
     ],
 )
 def test_a_label_says_the_kind_once(kind, description, label):
@@ -442,6 +445,24 @@ def test_a_label_says_the_kind_once(kind, description, label):
     ]
     said = build_timeline(_named([(1, "Robert Belgard")], events))["events"][0]
     assert said["label"] == label
+
+
+def test_a_noted_event_is_labelled_by_its_title_not_its_description():
+    # R-0681
+    events = [
+        asdict(
+            Event(
+                id=1,
+                kind=EventKind.Noted,
+                person=1,
+                dateTime="1990-07-04",
+                title="Moved to Anchorage",
+                description="Took the job up north and left the family home",
+            )
+        )
+    ]
+    said = build_timeline(_named([(1, "Robert Belgard")], events))["events"][0]
+    assert said["label"] == "Moved to Anchorage"
 
 
 def test_a_pair_bond_names_the_speaker_and_the_partner():
@@ -482,6 +503,7 @@ def test_a_noted_event_near_a_shift_is_a_lead_and_raises_the_question():
                 id=11,
                 kind=EventKind.Noted,
                 person=1,
+                title="Moved to Arizona",
                 description="moved to Arizona",
                 location="Arizona",
                 dateTime="2000-01-01",

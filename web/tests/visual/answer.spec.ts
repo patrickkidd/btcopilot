@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor, boxOf } from "./setup";
+import { stateFor, boxOf, openList } from "./setup";
 import { mockTurn, SEND } from "./turn";
 
 /** A question the coach asked is an amber chip that goes into the message box
@@ -73,7 +73,7 @@ test.describe("the play-by-play's question", () => {
     const id = await play.getAttribute("data-statement");
     await play.click();
     const drawer = page.locator("#pbp");
-    await drawer.locator('[data-act="dot"]').last().click();
+    await drawer.locator('[data-act="jump"]').last().click();
     const chip = drawer.locator(".ask .chip");
     await expect(chip).toHaveText("Theo started day care that autumn. Who was looking after the two of you?");
     expect(await amber(chip)).toBe(true);
@@ -100,7 +100,8 @@ test.describe("a question on the list of what the coach asked", () => {
       await route.fulfill({ json: tl });
     });
     await settle(page);
-    await page.locator("#menu-open").click();
+    // a wide window pins the lists beside the thread and draws no list button (R-0352)
+    await openList(page);
     await page.locator("#tab-questions").click();
     await page.locator(".qrow .chip").filter({ hasText: text }).click();
   };
@@ -192,7 +193,7 @@ test.describe("the chat box once a chip is in it", () => {
     await settle(page);
     const play = page.locator(".bub.coach[data-play]").last();
     await play.click();
-    await page.locator("#pbp").locator('[data-act="dot"]').last().click();
+    await page.locator("#pbp").locator('[data-act="jump"]').last().click();
     await page.locator("#pbp .ask .chip").click();
     await expect(page.locator("#pbp")).toBeHidden();
     return composer(page).locator(".chip");

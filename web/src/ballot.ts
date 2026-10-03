@@ -48,6 +48,7 @@ export const TELLING = [
   "dateTime",
   "person_name",
   "kind",
+  "title",
   "description",
   "symptom",
   "anxiety",
@@ -165,12 +166,13 @@ const KIND_WORDS: Record<string, string> = {
   death: "a death",
 };
 
-/** What happened, never a placeholder: with no description the kind is said in
- * words (R-0318). */
+/** What happened, never a placeholder: a noted event or a shift by its title
+ * (R-0681), another kind by its description, and with neither the kind is said
+ * in words (R-0318). */
 export function what(item: BallotItem): string {
   const first = item.opinions[0];
   const kind = String(first?.item.kind ?? "");
-  return String(first?.item.description ?? "") || KIND_WORDS[kind] || kind;
+  return String(first?.item.title ?? first?.item.description ?? "") || KIND_WORDS[kind] || kind;
 }
 
 /** Who a row is about and what happened, which is what every row of the meeting

@@ -87,6 +87,8 @@ def _event_head(event: dict) -> list[str]:
 
 def event_line(event: dict) -> str:
     parts = _event_head(event)
+    if event.get("title"):
+        parts.append(f'title="{event["title"]}"')
     if event.get("description"):
         parts.append(f'"{event["description"]}"')
     if event.get("notes"):
