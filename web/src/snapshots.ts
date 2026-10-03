@@ -459,6 +459,12 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[]): Cast 
     moves,
     kin,
     anxious: [...anxious],
+    said: steps.map((s) =>
+      s.marks.filter(isPlaced).reduce<Record<string, number>>((o, m) => {
+        if (m.k === Mark.Event) o[m.who] = Math.max(o[m.who] ?? 0, m.word!.length);
+        return o;
+      }, {}),
+    ),
     assoc,
     until,
   };

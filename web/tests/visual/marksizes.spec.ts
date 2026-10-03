@@ -218,6 +218,23 @@ async function under(page: Page, svgs: string[]): Promise<string[]> {
   return found;
 }
 
+/** How far apart the couple's two shapes stand, in widths of a shape. */
+const apart = (page: Page, a: number, b: number) =>
+  page.evaluate(
+    ([a, b]) => {
+      const at = (id: number) => document.querySelector<SVGGraphicsElement>(`#pbp .draw svg .p[data-id="${id}"] .shape`)!.getBBox();
+      const [p, q] = [at(a), at(b)];
+      return Math.abs(q.x - p.x) / p.width;
+    },
+    [a, b],
+  );
+
+/** A couple stands at the ruled three widths apart, and further only by the
+ * most that one step puts between them: their children, and a word that shows
+ * there on its own step (R-0682). Eight widths is that, with room to spare;
+ * the Pembertons stood eleven apart while every word took room at once. */
+const COUPLE_MOST = 8;
+
 /** Every crossing of a mark and a word, step by step. */
 async function over(page: Page, svgs: string[]): Promise<string[]> {
   const found: string[] = [];
@@ -396,6 +413,13 @@ test.describe("every mark", () => {
     expect(seen).toEqual([]);
   });
 
+  // R-0679
+  test("Walter and Rosa sit within eight shape widths of each other", async ({ page }) => {
+    await steps(page, STEPS.length);
+    const gap = await apart(page, 3, 4);
+    expect(gap).toBeLessThanOrEqual(COUPLE_MOST);
+  });
+
   // R-0546
   test("someone not yet born keeps their place with no age in their shape", async ({ page }) => {
     const svgs = await steps(page, STEPS.length);
@@ -424,5 +448,12 @@ test.describe("the Whitlock family's years apart", () => {
   // R-0679
   test("each step's lit marks are drawn over every grey one", async ({ page }) => {
     expect(await under(page, await steps(page, 5))).toEqual([]);
+  });
+
+  // R-0679
+  test("Marcus and Delphine sit within eight shape widths of each other", async ({ page }) => {
+    await steps(page, 5);
+    const gap = await apart(page, 3, 4);
+    expect(gap).toBeLessThanOrEqual(COUPLE_MOST);
   });
 });

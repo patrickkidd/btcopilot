@@ -105,6 +105,8 @@ export interface Cast {
   marked: string[];
   cross: string[];
   words: Record<string, number>;
+  /** The longest event word each person is given on each step. */
+  said: Record<string, number>[];
   moves: Arrow[];
   /** The moves drawn the moves board's way, and who shows anxiety, so names and
    * words stand clear of their marks. */
@@ -443,9 +445,14 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   const off = (id: string) => offset(d, ring[id]);
   const words = cast.words;
   // how far a person's longest event word reaches past the shape
-  const ww = (id: string) => (words[id] ? inset[id] + words[id] * NAME * CH : 0);
+  // a word shows on its own step only (R-0682), so its room is reckoned per step
+  // where given one, and as the longest word otherwise
+  const ww = (id: string, step?: number) => {
+    const n = step === undefined ? words[id] : cast.said[step][id];
+    return n ? inset[id] + n * NAME * CH : 0;
+  };
   // how far a person's marks reach past the shape: the cross and its arrow, or the word
-  const zw = (id: string) => Math.max(crossed.has(id) ? d.ZONE : 0, ww(id));
+  const zw = (id: string, step?: number) => Math.max(crossed.has(id) ? d.ZONE : 0, ww(id, step));
 
   // ---- the order of each row, top to bottom ----
   const placed = new Set<string>();
@@ -543,25 +550,31 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   });
 
   // how far past a person's shape the given reach runs, on the marks' side
-  const marks = (id: string, reach: Reach) =>
-    reach === Reach.All ? zw(id) : reach === Reach.Words ? ww(id) : 0;
-  function rightExt(id: string, reach = Reach.All): number {
+  const marks = (id: string, reach: Reach, step?: number) =>
+    reach === Reach.All ? zw(id, step) : reach === Reach.Words ? ww(id, step) : 0;
+  function rightExt(id: string, reach = Reach.All, step?: number): number {
     const e = half(id);
     let r = e;
     if (side[id] === Side.Under || side[id] === Side.Top) r = Math.max(r, lw[id] / 2);
     if (side[id] === Side.Right) r = Math.max(r, e + off(id) + lw[id]);
     if (side[id] === Side.Above) r = Math.max(r, 5 + lw[id]);
-    if (zone[id] === 1) r = Math.max(r, e + marks(id, reach));
+    if (zone[id] === 1) r = Math.max(r, e + marks(id, reach, step));
     return r;
   }
-  function leftExt(id: string, reach = Reach.All): number {
+  function leftExt(id: string, reach = Reach.All, step?: number): number {
     const e = half(id);
     let r = e;
     if (side[id] === Side.Under || side[id] === Side.Top) r = Math.max(r, lw[id] / 2);
     if (side[id] === Side.Left) r = Math.max(r, e + off(id) + lw[id]);
-    if (zone[id] === -1) r = Math.max(r, e + marks(id, reach));
+    if (zone[id] === -1) r = Math.max(r, e + marks(id, reach, step));
     return r;
   }
+  // what two neighbours need between them: the most any one step puts there,
+  // since two words that never show together never need room together
+  const between = (a: string, b: string) =>
+    cast.said.length
+      ? Math.max(...cast.said.map((_, s) => rightExt(a, Reach.All, s) + leftExt(b, Reach.All, s)))
+      : rightExt(a) + leftExt(b);
   function gapFor(a: string, b: string): number {
     if (cast.bonds.some((k) => (k.a === a && k.b === b) || (k.a === b && k.b === a))) return d.COUPLE;
     if (parents[a] && parents[a] === parents[b]) return d.SIB;
@@ -629,7 +642,7 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
       const b = row[i];
       // a mark between two people stays nearer its own
       const facing = zone[a] === 1 || zone[b] === -1 ? 2 * PAD : 0;
-      const need = Math.max(gapFor(a, b), rightExt(a) + leftExt(b) + PAD + facing) - (x[b] - x[a]);
+      const need = Math.max(gapFor(a, b), between(a, b) + PAD + facing) - (x[b] - x[a]);
       if (need > 0) shift(row, b, need);
     }
   }
