@@ -277,14 +277,14 @@ test.describe("every mark", () => {
   });
 
   // R-0679
-  test("the field stays on screen the whole loop while a wall comes up, shadowed once it has", async ({ page }) => {
+  test("a wall's loop runs in five seconds, its own slide and the field's pace kept, the field on screen throughout", async ({ page }) => {
     await page.goto("/app/");
     await expect(page.locator("#view .ss")).toBeVisible();
     await page.locator(".bub.coach[data-play]").last().click();
-    const blank: string[] = [];
+    const wrong: string[] = [];
     for (const name of ["distance", "cutoff"]) {
       await page.locator(`#pbp .wire [data-act="jump"][data-i="${STEPS.findIndex((s) => s.name === name)}"]`).click();
-      for (let ms = 0; ms < 10000; ms += 500) {
+      for (let ms = 0; ms < 5000; ms += 100) {
         const seen = await page.evaluate((at) => {
           for (const svg of document.querySelectorAll("svg")) {
             svg.pauseAnimations();
@@ -294,16 +294,30 @@ test.describe("every mark", () => {
             a.pause();
             a.currentTime = at;
           }
-          return [...document.querySelectorAll("#pbp .draw .fore .mvk circle.fld")]
-            .filter((c) => +getComputedStyle(c).opacity > 0.05)
-            .map((c) => (c.classList.contains("postA") ? "shadowed" : "open"));
+          const g = document.querySelector("#pbp .draw .fore .mvk")!;
+          const wall = getComputedStyle(g.querySelector(".mv-wall")!);
+          return {
+            loop: getComputedStyle(g.querySelector(".mv-wall")!).animationDuration,
+            pace: [...g.querySelectorAll("circle.fld animate[attributeName='r']")].map((a) => a.getAttribute("dur")),
+            shift: new DOMMatrix(wall.transform).e,
+            shown: +wall.opacity,
+            rings: [...g.querySelectorAll("circle.fld")]
+              .filter((c) => +getComputedStyle(c).opacity > 0.05)
+              .map((c) => (c.classList.contains("postA") ? "shadowed" : "open")),
+          };
         }, ms);
-        if (!seen.length) blank.push(`${name} at ${ms}ms: no rings`);
-        // the wall has landed by 42% of its ten-second loop
-        if (ms >= 4500 && seen.includes("open")) blank.push(`${name} at ${ms}ms: open rings behind the wall`);
+        const at = `${name} at ${ms}ms`;
+        if (seen.loop !== "5s") wrong.push(`${at}: loop ${seen.loop}`);
+        if (seen.pace.some((d) => d !== "1.65s")) wrong.push(`${at}: rings at ${seen.pace}`);
+        // the wall waits 1.3s, then takes its own 1.4s to slide in
+        if (ms <= 1300 && seen.shown > 0) wrong.push(`${at}: wall showing before 1.3s`);
+        if (ms > 1300 && ms < 2700 && !(seen.shift < 0)) wrong.push(`${at}: wall not sliding`);
+        if (ms >= 2700 && Math.abs(seen.shift) > 0.01) wrong.push(`${at}: wall not landed`);
+        if (!seen.rings.length) wrong.push(`${at}: no rings`);
+        if (ms >= 2900 && seen.rings.includes("open")) wrong.push(`${at}: open rings behind the wall`);
       }
     }
-    expect(blank).toEqual([]);
+    expect(wrong).toEqual([]);
   });
 
   // R-0679
