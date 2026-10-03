@@ -1,0 +1,7 @@
+Job 008 done. Work branch: btcopilot-sources `worker/job-008-own-part`, last commit 99c8680 (two commits), based on origin/FD-367 at 3810744; one file, fd-corpus/design/fd336/theory-answers-own-part.md (83 lines, force-added past the folder's ignore rule).
+Judgement ran on Claude Fable 5.1. Three Opus readers walked the proposal's three cards in a real browser at 393 by 852 with the design-freeze rulings, gathered the sources on a person's own part, points of choice and the effort to change with what follows it, and inventoried what the app stores. An independent Opus verifier opened 78 citations (1 off, fixed) and found no blocking defect; its nine should-fix items were applied and rechecked.
+Items for Patrick to rule: 4, each with its options and one recommended.
+Question 2, one line: merge the two cards "Patrick's own part" and "Where there was a choice" into one.
+Card 10 may rest on both the person's stated aim, drawn as an event chip, and the coach's guess in its bubble; as built, the bubbles on cards 8 and 10 hold sentences the designer wrote, not stored coach guesses, which the design-freeze rulings forbid. The file names the stored guesses that already rest on the person's own moves.
+Not stored today, named only: which card a stored guess belongs to; and, under one option, a place for what the person says they are working on.
+Tests: none (the brief allows none). No code changed; nothing in patrickkidd/btcopilot changed; no theory file changed; no ruling written.
