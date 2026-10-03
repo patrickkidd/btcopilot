@@ -120,6 +120,8 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
 
 - **Never correct what the model wrote in a record unless a code change would break it (Patrick, 2026-09-28: "Your job is not to go and start correcting what the model did unless we make a code change that what the model did would break").** A suspected duplicate or odd coding the model produced is left alone; a repair is proposed only where a new rule or code path refuses or breaks that data.
 
+- **Nothing implies more than the record holds (Patrick, 2026-10-02: "It is critical that we do not produce anything that implies we know more than we really do. And llms are notorious for breaking that rule").** Every reading on a page or in a reply carries what it rests on and the record's coverage; a thin record gets "not enough in the record to choose a reading", never a thesis.
+
 - **Every tuning signal feeds the learning loop, automatically (2026-09-28, Patrick: "Remember this always").** Anything that shows the coach or the app needs tuning (tool refusals and retries, failed turns, rejected play-by-play tellings, model errors) is written to the observations table, counted on the quality dashboard, and grouped into the short improvement queue he accepts or rejects. Be aggressive about what is tracked; keep the queue he reads to about ten items; real-model spend still needs his yes [R-0517].
 
 - **His terms, verified 2026-09-22 on the round-6 mockups: "cluster" (never "stretch"), "event"
@@ -142,10 +144,10 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
   mockup's tap does what the app's tap does — the ruled tap language (pick, words on the picture,
   chip lights, second tap speaks) — built on the app's own picture code, never reinvented. (3)
   Title and citation only under a concept. (4) If a stranger cannot read the frame unaided, the
-  concept fails; users never see prose. (5) A mockup is the app's own code running, pixel for pixel, interactive, never a drawn stand-in (Patrick, 2026-10-01: "real pixel for pixel interactive code, not with cartoon replacements ... they have to be exact").
+  concept fails; users never see prose. (5) A mockup is the app's own code running, pixel for pixel, interactive, never a drawn stand-in (Patrick, 2026-10-01: "real pixel for pixel interactive code, not with cartoon replacements ... they have to be exact"). (6) Every gallery says, per frame, whether it is the proposal, another view of the same proposal, or an alternative (Patrick, 2026-10-02: "Always clearly differentiate what is an alternative proposal from what is a second view of the same proposal"). (7) No wall of text or data is load-bearing in a mockup; the page is self-explanatory (Patrick, 2026-10-02).
 - **A picture that needs that much prose does not speak (2026-09-23, Patrick, R-0398: a
   concept that needs a lot of text to explain it is not visual enough; a little text is fine).** What he sees: the frames, one sentence per concept, the
-  decisions. Gates, passages, costs and checks live in the verdict file, never on his page.
+  decisions. Gates, passages, costs and checks live in the verdict file, never on his page. Prose piling up in a new feature is itself the flag: stop and brainstorm the visual or UI form that tells the story instead (Patrick, 2026-10-02: "It is easy to just jam a bunch of prose in there, which is what you usually do").
 - **Every gallery passes a visual critique before Patrick sees it (2026-09-22, his words: "there
   are so many obvious, visual and aesthetic errors in these").** A separate agent, not the
   designer, reviews every frame: what is the message, is every mark explained in the caption, is
