@@ -15,7 +15,7 @@ def test_each_dashboard_is_put_over_what_grafana_holds(monkeypatch):
     # R-0517
     sent = []
 
-    def urlopen(request):
+    def urlopen(request, timeout):
         sent.append(json.loads(request.data))
         return io.BytesIO(json.dumps({"uid": "fd-quality", "version": 3}).encode())
 
@@ -31,7 +31,7 @@ def test_each_dashboard_is_put_over_what_grafana_holds(monkeypatch):
 
 def test_a_refused_dashboard_stops_the_release_step(monkeypatch):
     # R-0517
-    def urlopen(request):
+    def urlopen(request, timeout):
         raise urllib.error.HTTPError(request.full_url, 403, "Forbidden", {}, None)
 
     monkeypatch.setattr(grafanapush, "urlopen", urlopen)
@@ -39,6 +39,38 @@ def test_a_refused_dashboard_stops_the_release_step(monkeypatch):
     monkeypatch.setenv("GRAFANA_SA_TOKEN", "token")
     with pytest.raises(urllib.error.HTTPError):
         grafanapush.main()
+
+
+def test_a_sleeping_stack_is_waited_for(monkeypatch):
+    # R-0517
+    calls, sleeps = [], []
+
+    def urlopen(request, timeout):
+        calls.append(timeout)
+        if len(calls) < 3:
+            raise urllib.error.HTTPError(request.full_url, 503, "Loading", {"Retry-After": "7"}, None)
+        return io.BytesIO(json.dumps({"uid": "fd-quality", "version": 3}).encode())
+
+    monkeypatch.setattr(grafanapush, "urlopen", urlopen)
+    monkeypatch.setattr(grafanapush.time, "sleep", sleeps.append)
+    path = next(grafanapush.DASHBOARDS.glob("*.json"))
+    assert grafanapush.push("https://stack.grafana.net", "token", path)["uid"] == "fd-quality"
+    assert (calls, sleeps) == ([30, 30, 30], [7, 7])
+
+
+def test_a_server_error_is_not_retried(monkeypatch):
+    # R-0517
+    calls = []
+
+    def urlopen(request, timeout):
+        calls.append(request)
+        raise urllib.error.HTTPError(request.full_url, 500, "Internal Server Error", {}, None)
+
+    monkeypatch.setattr(grafanapush, "urlopen", urlopen)
+    monkeypatch.setattr(grafanapush.time, "sleep", pytest.fail)
+    with pytest.raises(urllib.error.HTTPError):
+        grafanapush.push("https://stack.grafana.net", "token", next(grafanapush.DASHBOARDS.glob("*.json")))
+    assert len(calls) == 1
 
 
 def test_the_release_pushes_the_dashboards_after_the_deploy():
