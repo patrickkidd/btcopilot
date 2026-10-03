@@ -88,6 +88,7 @@ class Event:
     person: int | None = None
     spouse: int | None = None
     child: int | None = None
+    title: str | None = None
     description: str | None = None
     dateTime: str | None = None
     endDateTime: str | None = None
@@ -283,6 +284,15 @@ ID collisions across entity types.
   auto-generated from kind name. `noted` says its own description, which is required.
   User-typed description not required.
 - **`shift`**: description **required** — describes what happened
+
+### Event.title Rules [Oracle: R-0681]
+- **`noted` and `shift`**: title **required** — a complete phrase of 2 to 4 words,
+  readable alone, naming no one the event links. It is the words beside the person
+  in the picture and every short label (the list, chips, tool lines). The
+  description is one short sentence of what happened; the notes hold any length.
+- Self-describing kinds carry no title. Readers never cut a description into a
+  title; an event that needs one and has none fails (`schema.event_title`).
+- Events older than titles get theirs from `flask admin titles fill`.
 
 ### Confidence Levels
 - 1.0 = committed diagram item

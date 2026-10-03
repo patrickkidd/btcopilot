@@ -465,6 +465,22 @@ Write the skill file an agent reads before running these commands.
 | `--out` | Write somewhere else. |
 | `--print` | Print the file instead of writing it. |
 
+### `flask admin titles`
+
+The short titles of noted events and shifts.
+
+### `flask admin titles fill`
+
+Give each noted event and shift with no title one: from --file when it has one, else its description when that is already 2 to 4 words ending on a whole phrase and naming no one the event links. Without --yes it prints every event still without a title and the title it would get, blank where someone has to write one, and writes nothing.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--diagram` | Only this record. |
+| `--file` | Titles read and approved: a JSON list of {diagram, event, title}, the shape --json prints. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin token-cap`
 
 The monthly ceiling on coach use.

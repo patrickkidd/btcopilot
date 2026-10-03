@@ -13,10 +13,10 @@ from btcopilot.schema import (
     DiagramData,
     Event,
     EventKind,
-    RelationshipKind,
     TraceKey,
     VariableShift,
     enum_val,
+    event_title,
     parse_date,
 )
 
@@ -179,8 +179,9 @@ def _event_defaults():
 
 def event_label(event: dict, people_by_id: dict) -> str:
     """What happened, the one wording every view names an event by: the list,
-    the picture, the board, chips and tool lines. The who is said by the
-    event's links, not here (owner ruling, 2026-09-09)."""
+    the picture, the board, chips and tool lines. A noted event or a shift is
+    named by its title (R-0681). The who is said by the event's links, not here
+    (owner ruling, 2026-09-09)."""
     description = (event.get("description") or "").strip()
     kind = enum_val(event.get("kind"))
     if kind in KIND_WORDS:
@@ -197,16 +198,7 @@ def event_label(event: dict, people_by_id: dict) -> str:
         if opening in KIND_FORMS[kind]:
             return description
         return f"{word} \u00b7 {description}"
-    for variable, _ in VARIABLES:
-        direction = enum_val(event.get(variable))
-        if direction:
-            return description or _shift_words(variable, direction)
-    if description:
-        return description
-    relationship = enum_val(event.get("relationship"))
-    if relationship:
-        return RelationshipKind(relationship).menuLabel().lower()
-    return "Something happened"
+    return event_title(event)
 
 
 def _who(event: dict, people_by_id: dict) -> str:

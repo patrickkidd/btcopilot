@@ -247,6 +247,7 @@ def test_chat_keeps_the_chips_the_record_resolves(web, token, family):
             "id": 10,
             "kind": EventKind.Shift.value,
             "person": 1,
+            "title": "Slept badly",
             "dateTime": "2010-03-01",
         }
     ]
@@ -278,6 +279,7 @@ def dated(family):
             "id": 10,
             "kind": EventKind.Shift.value,
             "person": 1,
+            "title": "Slept badly",
             "dateTime": "2010-03-01",
         },
         {
@@ -613,6 +615,7 @@ def test_only_an_admin_finds_people_or_lists_their_diagrams(web, test_user_2):
 SHIFT = {
     "kind": EventKind.Shift.value,
     "person": 1,
+    "title": "Slept badly",
     "description": "Sleep got worse",
     "dateTime": "2019-04-02",
     "dateCertainty": DateCertainty.Approximate.value,
@@ -890,6 +893,7 @@ def test_timeline_reports_where_an_event_was_coded(web, family):
             "id": 10,
             "kind": EventKind.Shift.value,
             "person": 1,
+            "title": "Slept badly",
             "dateTime": "2019-04-02",
             "symptom": VariableShift.Up.value,
         }
@@ -910,6 +914,7 @@ def test_timeline_omits_events_never_traced(web, family):
             "id": 10,
             "kind": EventKind.Shift.value,
             "person": 1,
+            "title": "Slept badly",
             "dateTime": "2010-03-01",
         }
     ]

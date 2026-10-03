@@ -48,7 +48,7 @@ def test_notes_fold_into_the_existing_event(subscriber):
         date="2019-03-01",
         person=1,
         anxiety="up",
-        description="Worried after the move",
+        title="Worried after moving", description="Worried after the move",
     )
     changed = _event(diagram, id=added["id"], notes='"I never slept that spring"')
     assert changed["notes"] == '"I never slept that spring"'
@@ -60,14 +60,14 @@ def test_notes_are_read_by_tool_not_shown_in_the_record(subscriber):
     # R-0446, R-0649
     diagram = _diagram(subscriber.user)
     first = _event(
-        diagram, kind="noted", date="2019-03-01", person=1, description="Moved",
+        diagram, kind="noted", date="2019-03-01", person=1, title="Moved for work", description="Moved",
         notes="Took the job in Tulsa",
     )
     second = _event(
-        diagram, kind="noted", date="2020-05-01", person=2, description="Retired",
+        diagram, kind="noted", date="2020-05-01", person=2, title="Retired from work", description="Retired",
         notes='"Finally some quiet"',
     )
-    _event(diagram, kind="noted", date="2021-01-01", person=1, description="Sold house")
+    _event(diagram, kind="noted", date="2021-01-01", person=1, title="Sold the house", description="Sold house")
     record = render(diagram.get_diagram_data())
     assert "Tulsa" not in record and "quiet" not in record
     assert record.count("(has notes)") == 2
@@ -87,7 +87,7 @@ def test_a_wrong_field_is_cleared_and_the_rest_stays(subscriber):
     # R-0533, R-0649
     diagram = _diagram(subscriber.user)
     added = _event(
-        diagram, kind="shift", date="2019-03-01", person=1, description="Stopped calling",
+        diagram, kind="shift", date="2019-03-01", person=1, title="Stopped calling", description="Stopped calling",
         anxiety="up", relationship="distance", relationship_targets=[2],
         location="Tulsa", end_date="2019-06-01",
     )
@@ -103,7 +103,7 @@ def test_a_wrong_field_is_cleared_and_the_rest_stays(subscriber):
 def test_a_field_both_set_and_cleared_is_refused(subscriber):
     # R-0533
     diagram = _diagram(subscriber.user)
-    added = _event(diagram, kind="noted", date="2019-03-01", person=1, description="Moved")
+    added = _event(diagram, kind="noted", date="2019-03-01", person=1, title="Moved for work", description="Moved")
     with pytest.raises(ToolError, match="both set and cleared"):
         _event(diagram, id=added["id"], location="Tulsa", clear=["location"])
 
@@ -117,7 +117,7 @@ def test_two_same_day_shifts_on_one_person_land_when_the_variables_differ(subscr
         date="2019-03-01",
         person=1,
         symptom="up",
-        description="Trouble sleeping",
+        title="Trouble sleeping", description="Trouble sleeping",
     )
     _event(
         diagram,
@@ -125,7 +125,7 @@ def test_two_same_day_shifts_on_one_person_land_when_the_variables_differ(subscr
         date="2019-03-01",
         person=1,
         anxiety="up",
-        description="On edge",
+        title="On edge", description="On edge",
     )
     assert len(diagram.get_diagram_data().events) == 2
 
@@ -151,7 +151,7 @@ def test_a_move_with_no_target_is_refused_to_the_coach_naming_the_rule(subscribe
             date="2013-06-01",
             person=1,
             relationship="toward",
-            description="Told her about the new plan",
+            title="Shared the new plan", description="Told her about the new plan",
         )
     assert refused.value.plain == "Toward needs the person it was aimed at."
     assert diagram.get_diagram_data().events == []
@@ -166,7 +166,7 @@ def test_a_same_day_shift_moving_the_same_variable_is_refused(subscriber):
         date="2019-03-01",
         person=1,
         symptom="up",
-        description="Trouble sleeping",
+        title="Trouble sleeping", description="Trouble sleeping",
     )
     with pytest.raises(ToolError, match=f"already event {first['id']}"):
         _event(
@@ -175,7 +175,7 @@ def test_a_same_day_shift_moving_the_same_variable_is_refused(subscriber):
             date="2019-03-01",
             person=1,
             symptom="up",
-            description="Drinking more",
+            title="Drinking more", description="Drinking more",
         )
 
 
@@ -188,13 +188,13 @@ def test_a_date_with_no_certainty_is_refused_and_a_change_leaves_it(subscriber):
         date="2019-03-01",
         person=1,
         anxiety="up",
-        description="On edge",
+        title="On edge", description="On edge",
         date_certainty="approximate",
     )
     changed = _event(diagram, id=added["id"], description="On edge at work")
     assert changed["dateCertainty"] == "approximate"
     for args in (
-        {"kind": "shift", "date": "2001-01-01", "person": 2, "symptom": "up", "description": "Back pain"},
+        {"kind": "shift", "date": "2001-01-01", "person": 2, "symptom": "up", "title": "Back pain", "description": "Back pain"},
         {"id": added["id"], "version": version(diagram), "date": "2019-04-01"},
     ):
         with pytest.raises(ToolError) as refused:
@@ -274,7 +274,7 @@ def test_an_event_carries_its_end_into_the_record_and_the_picture(subscriber):
         person=1,
         relationship="cutoff",
         relationship_targets=[2],
-        description="Stopped speaking",
+        title="Stopped speaking", description="Stopped speaking",
     )
     assert added["endDateTime"] == "2019-06-01"
     assert "2015-01-01 to 2019-06-01" in event_line(added)
@@ -293,7 +293,7 @@ def test_an_end_before_the_start_is_refused(subscriber):
             end_date="2015-01-01",
             person=1,
             anxiety="up",
-            description="On edge",
+            title="On edge", description="On edge",
         )
 
 
@@ -321,7 +321,7 @@ def test_a_triangle_move_keeps_its_third_people_on_the_record(subscriber):
         relationship="inside",
         relationship_targets=[2],
         relationship_triangles=[3],
-        description="Sided with her against him",
+        title="Took a side", description="Sided with her against him",
     )
     assert added["relationship"] == "inside"
     assert added["relationshipTriangles"] == [3]
@@ -340,12 +340,12 @@ def test_saying_a_recorded_shift_again_is_refused_and_points_at_the_event(subscr
     diagram = _diagram(subscriber.user)
     first = _event(
         diagram, kind="shift", date="2019-03-01", person=1, anxiety="up",
-        description="Worried after the move",
+        title="Worried after moving", description="Worried after the move",
     )
     with pytest.raises(ToolError, match=rf"edit_event\(id={first['id']}\)"):
         _event(
             diagram, kind="shift", date="2019-03-01", person=1, anxiety="up",
-            description="Anxious that spring",
+            title="Anxious that spring", description="Anxious that spring",
         )
     assert len(diagram.get_diagram_data().events) == 1
 
@@ -355,7 +355,7 @@ def test_a_re_mention_changes_the_recorded_shift_in_place(subscriber):
     diagram = _diagram(subscriber.user)
     first = _event(
         diagram, kind="shift", date="2019-03-01", person=1, anxiety="up",
-        description="Worried after the move",
+        title="Worried after moving", description="Worried after the move",
     )
     changed = _event(
         diagram, id=first["id"], description="Worried after the move to Tulsa",
@@ -372,7 +372,7 @@ def test_a_correction_changes_the_record_at_once_with_nothing_held_pending(subsc
     diagram = _diagram(subscriber.user)
     added = _event(
         diagram, kind="shift", date="2019-03-01", person=1, anxiety="up",
-        description="Worried after the move",
+        title="Worried after moving", description="Worried after the move",
     )
     Toolbox(diagram.id, "t2").call(
         ToolName.EditEvent.value,
@@ -415,7 +415,7 @@ RULES = {
     ],
     "lastItemId": 22,
 }
-MOVE = {"kind": "shift", "date": "2001-02-03", "person": 1, "description": "Stopped calling"}
+MOVE = {"kind": "shift", "date": "2001-02-03", "person": 1, "title": "Stopped calling", "description": "Stopped calling"}
 
 
 @pytest.mark.parametrize(

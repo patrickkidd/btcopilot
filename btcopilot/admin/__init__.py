@@ -18,6 +18,7 @@ from btcopilot.admin.questions import impressions_group, questions_group
 from btcopilot.admin.reports import report_group
 from btcopilot.admin.review import review
 from btcopilot.admin.skill import write_skill
+from btcopilot.admin.titles import titles_group
 from btcopilot.admin.tokens import token_cap
 from btcopilot.admin.users import users
 
@@ -38,6 +39,7 @@ for group in (
     quality,
     questions_group,
     impressions_group,
+    titles_group,
     report_group,
     imports,
     token_cap,

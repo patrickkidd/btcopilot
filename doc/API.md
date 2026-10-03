@@ -135,6 +135,8 @@ The body may carry `**bold**`, `_italics_`, `[words](https://…)` or `[words](/
 `POST /events`, `PATCH /events/<id>`, `DELETE /events/<id>` (204). The body
 carries any field `btcopilot.schema.Event` has except `id`; an unknown name is a
 400, as is a person id that is not in the diagram. Dates are ISO in and out.
+A noted event or a shift needs a `title` of 2 to 4 words (R-0681); a write
+leaving one without it is a 400.
 
 Every write takes the diagram's optimistic lock, so an edit racing a background
 extraction re-reads instead of clobbering; sustained contention is a 409.
