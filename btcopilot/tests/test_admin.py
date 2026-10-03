@@ -288,7 +288,10 @@ def test_titles_fill_keeps_words_that_serve_and_takes_the_rest_from_the_file(
     version = diagram.version
 
     preview = rows(run("titles", "fill", "--diagram", str(diagram.id), "--json"))
-    assert [(r["event"], r["title"]) for r in preview] == [(2, "Moved to Leeds"), (3, "")]
+    assert [(r["event"], r["title"], r["from"]) for r in preview] == [
+        (2, "Moved to Leeds", "description"),
+        (3, "", "still untitled"),
+    ]
 
     preview[1]["title"] = "Stopped calling"
     reviewed = tmp_path / "titles.json"

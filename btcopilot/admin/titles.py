@@ -2,6 +2,7 @@
 title (R-0681): words that already serve as one are kept as they stand, and the
 rest come from a file of titles someone wrote and Patrick read."""
 
+import enum
 import json
 
 import click
@@ -15,6 +16,12 @@ from btcopilot.models import Diagram
 from btcopilot.schema import TITLE_WORDS, EventKind, enum_val, plain_title
 
 WORDED = (EventKind.Noted.value, EventKind.Shift.value)
+
+
+class Source(enum.StrEnum):
+    File = "file"
+    Description = "description"
+    Nobody = "still untitled"
 
 
 def untitled(data: dict) -> list[dict]:
@@ -61,9 +68,10 @@ def written(path: str) -> dict[tuple[int, int], str]:
 def fill(diagram_id, path, yes):
     """Give each noted event and shift with no title one: from --file when it
     has one, else its description when that is already 2 to 4 words ending on a
-    whole phrase and naming no one the event links. Without --yes it prints
-    every event still without a title and the title it would get, blank where
-    someone has to write one, and writes nothing."""
+    whole phrase and naming no one the event links, which also covers events
+    written after the file was made. Prints every event it found without a
+    title, the title it gets and where that came from; "still untitled" ones
+    need someone to write a title. Without --yes it writes nothing."""
     titles = written(path) if path else {}
     diagrams = [find(diagram_id)] if diagram_id else Diagram.query.order_by(Diagram.id).all()
     rows = []
@@ -71,7 +79,11 @@ def fill(diagram_id, path, yes):
         data = diagramjson.loads(diagram.data)
         changed = False
         for event in untitled(data):
-            title = titles.get((diagram.id, event["id"])) or proposed(data, event)
+            title = titles.get((diagram.id, event["id"]))
+            source = Source.File if title else None
+            if not title:
+                title = proposed(data, event)
+                source = Source.Description if title else Source.Nobody
             rows.append(
                 {
                     "diagram": diagram.id,
@@ -79,6 +91,7 @@ def fill(diagram_id, path, yes):
                     "kind": enum_val(event.get("kind")),
                     "description": event.get("description") or "",
                     "title": title or "",
+                    "from": source.value,
                 }
             )
             if yes and title:
