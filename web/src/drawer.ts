@@ -2,6 +2,7 @@ import "./drawer.css";
 import { askedChip, chipOf } from "./chips";
 import { CLUSTER, closeX, esc, flash, pathRow, slideOver, stepBtn } from "./dom";
 import { NAME, type Layout } from "./diagram";
+import { kindForms, withKind } from "./rows";
 import { when, Told } from "./snapshots";
 import type { Case, Chip, Timeline } from "./types";
 
@@ -67,6 +68,10 @@ export function yearsLine(tl: Timeline, told: Told, i: number): string {
   return s + "</svg>";
 }
 
+/** What can say the kind of each of snapshot `i`'s events (Patrick, 2026-10-03). */
+const saying = (told: Told, i: number) =>
+  told.told.snapshots[i].event_ids.map((id) => told.tl.events.find((e) => e.id === id)!).flatMap(kindForms);
+
 /** The controls and the caption under the picture for snapshot `i`. The
  * question of a play kept as a message is the amber chip that answers it
  * (R-0587); a play kept nowhere has no message to point at. */
@@ -84,7 +89,7 @@ export function below(told: Told, i: number, statement: number | null): string {
     `${stepBtn("Next ›", `data-act="${Act.Next}"`, i === n - 1)}</div>` +
     `<div class="cap" aria-live="polite"><div class="when"><span class="date">${esc(shot.date)}</span>` +
     (shot.gap ? `<span class="gap">${esc(shot.gap)}</span>` : "") +
-    `</div><p class="fact">${esc(shot.fact)}</p>` +
+    `</div><p class="fact">${withKind(shot.fact, saying(told, i))}</p>` +
     (shot.guess ? `<p class="guess">${esc(shot.guess)}</p>` : "") +
     (shot.question
       ? `<p class="ask">${statement === null ? esc(shot.question) : askedChip(statement, shot.question)}</p>`

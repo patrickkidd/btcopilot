@@ -19,6 +19,11 @@ it("steps by hand: Back is off on the first snapshot, Next on the last, and only
   expect(last).not.toContain(" of 5");
 });
 
+// R-0679
+it("shows the kind word in a step's text the way the list does", () => {
+  expect(below(told, 2, null)).toContain('<p class="fact">The <span class="kw">divorce</span> went through in June.</p>');
+});
+
 // R-0563
 it("keeps the guess apart from the fact, and asks the question only on the last snapshot", () => {
   const last = below(told, 4, null);

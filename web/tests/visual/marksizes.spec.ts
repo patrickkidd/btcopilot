@@ -376,6 +376,26 @@ test.describe("every mark", () => {
     await expect(page.locator('#pbp .draw svg > .fore [data-mark="hl:4"]')).toHaveCount(0);
   });
 
+  // R-0679
+  test("every step's text shows its kind word in the data colour, as the list does", async ({ page }) => {
+    await steps(page, STEPS.length);
+    const data = await paint(page, "--data");
+    const seen: string[] = [];
+    for (let i = 0; i < STEPS.length; i++) {
+      await page.locator(`#pbp .wire [data-act="jump"][data-i="${i}"]`).click();
+      const kw = page.locator("#pbp .cap .fact .kw");
+      // a noted event and an event about the whole family name no kind
+      if (["noted", "family"].includes(STEPS[i].name)) {
+        await expect(kw).toHaveCount(0);
+        continue;
+      }
+      await expect(kw.first()).toBeVisible();
+      const [text, colour] = await kw.first().evaluate((el) => [el.textContent!, getComputedStyle(el).color]);
+      if (colour !== data) seen.push(`${STEPS[i].name}: ${text} in ${colour}`);
+    }
+    expect(seen).toEqual([]);
+  });
+
   // R-0546
   test("someone not yet born keeps their place with no age in their shape", async ({ page }) => {
     const svgs = await steps(page, STEPS.length);
