@@ -504,7 +504,7 @@ test.describe("every mark", () => {
   });
 
   // R-0679
-  test("projection moves the anxiety from parent to child within the one grow time", async ({ page }) => {
+  test("projection holds the anxiety in the parent for a second, then moves it to the child within the one grow time", async ({ page }) => {
     await live(page);
     await page.locator(`#pbp .wire [data-act="jump"][data-i="${STEPS.findIndex((s) => s.name === "projection")}"]`).click();
     const grow = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--speed-grow")) * 1000);
@@ -517,9 +517,10 @@ test.describe("every mark", () => {
         const s = (sel: string) => new DOMMatrix(getComputedStyle(document.querySelector(`#pbp .draw svg .fore ${sel}`)!).transform).a;
         return [s(".spk.s-out"), s(".spk.s-in")];
       }, at);
-    // the change starts the moment the step comes up and is done one grow time later
+    // the anxiety sits in the parent for over a second, then drains over one grow time
     expect(await scale(0)).toEqual([1, expect.closeTo(0.12, 2)]);
-    const done = await scale(grow);
+    expect(await scale(1000)).toEqual([1, expect.closeTo(0.12, 2)]);
+    const done = await scale(1100 + grow);
     expect(done[0]).toBeCloseTo(0.12, 2);
     expect(done[1]).toBeCloseTo(1, 2);
   });
@@ -611,7 +612,7 @@ test.describe("every mark", () => {
   });
 
   // R-0679
-  test("projection rests in the child twice as long as it drains from the parent", async ({ page }) => {
+  test("projection rests in the child twice as long as the parent's whole phase", async ({ page }) => {
     await live(page);
     await page.locator(`#pbp .wire [data-act="jump"][data-i="${STEPS.findIndex((s) => s.name === "projection")}"]`).click();
     const [loop, drained] = await page.evaluate(() => {
@@ -626,7 +627,8 @@ test.describe("every mark", () => {
       }
       return [loop, t];
     });
-    expect(drained).toBeGreaterThanOrEqual(1300);
+    // the parent's whole phase, the anxiety sitting in her and draining, is about 2.5s
+    expect(drained).toBeGreaterThanOrEqual(2400);
     expect((loop - drained) / drained).toBeCloseTo(2, 0);
     expect(Math.abs((loop - drained) / drained - 2)).toBeLessThan(0.2);
   });
