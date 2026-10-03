@@ -45,6 +45,10 @@ we take the stricter number. Nothing ships below these. No exceptions without a 
   so an inner list never scrolls the page behind it.
 - Nothing programmatic may scroll the outer page: focus with `{preventScroll: true}`,
   set `scrollTop` on the container, never `scrollIntoView`.
+- A strip of items above a list of cards: tapping an item scrolls the cards to it with
+  an animated scroll, never a jump, so the person keeps their place in the hierarchy.
+  This holds for this pattern everywhere in the app (Patrick, 2026-10-03, FD-367).
+  Every card has an item in the strip, in the cards' order.
 
 ## Content
 - **One home per setting.** A setting appears in exactly one place; a second appearance
