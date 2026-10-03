@@ -15,7 +15,7 @@ it("steps by hand: Back is off on the first snapshot, Next on the last, and only
   expect(first).toMatch(/data-act="back" disabled/);
   const last = below(told, 4, null);
   expect(last).toMatch(/data-act="next" disabled/);
-  expect([...last.matchAll(/class="dot( on)?"/g).map((m) => !!m[1])]).toEqual([false, false, false, false, true]);
+  expect([...last.matchAll(/class="dot( on)?"/g)].map((m) => !!m[1])).toEqual([false, false, false, false, true]);
   expect(last).not.toContain(" of 5");
 });
 

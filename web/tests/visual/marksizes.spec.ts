@@ -266,7 +266,7 @@ test.describe("every mark", () => {
     expect(await under(page, await steps(page, STEPS.length))).toEqual([]);
   });
 
-  // R-0682
+  // R-0682, R-0681
   test("an event's words show on its own step only, the functioning ones too", async ({ page }) => {
     const svgs = await steps(page, STEPS.length);
     const words: string[][] = [];
@@ -276,7 +276,8 @@ test.describe("every mark", () => {
     }
     const at = (name: string) => words[STEPS.findIndex((s) => s.name === name)];
     expect(at("functioning down")).toEqual(["Lost his job"]);
-    expect(at("functioning up")).toEqual(["Opened his own"]);
+    // the whole title, never cut to three words (R-0681)
+    expect(at("functioning up")).toEqual(["Opened his own shop"]);
     expect(at("noted")).toEqual(["Moved to Chicago"]);
     // the next step never still shows a word from the one before
     expect(words.slice(1).filter((w, i) => w.some((t) => words[i].includes(t)))).toEqual([]);

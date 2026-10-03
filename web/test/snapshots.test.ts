@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { arrange, crosses, draw, Mark, Side, VIEW, layout, Sex, Tie, type Cast } from "../src/diagram";
-import { among, gapText, shortWord, Told, untold } from "../src/snapshots";
+import { among, gapText, Told, untold } from "../src/snapshots";
 import type { Case, Timeline } from "../src/types";
 import {
   apart,
@@ -20,7 +20,7 @@ import {
 /** The play-by-play drawing, read off the markup each snapshot draws for the
  * Whitlock stand-in family. */
 
-const ROOM = "Took a room";
+const ROOM = "Moved out";
 
 type El = Record<string, string>;
 const els = (svg: string, tag: string, klass?: string): El[] =>
@@ -360,21 +360,14 @@ describe("emphasis and carry", () => {
     expect(marks(svg)).toEqual(expect.arrayContaining([`word:${MARCUS}:${ROOM}`, `hl:${MARCUS}`]));
   });
 
-  // R-0551
-  it("writes a move of residence out in full", () => {
+  // R-0681
+  it("writes an event's whole title beside the person, never cut", () => {
     const c = apart();
     const tl = timeline();
-    tl.events.find((e) => e.id === 202)!.description = "to Nome";
-    expect(marks(told(c, tl).shot(0).svg)).toContain(`word:${MARCUS}:moved to Nome`);
+    tl.events.find((e) => e.id === 202)!.title = "Moved to the coast";
+    expect(marks(told(c, tl).shot(0).svg)).toContain(`word:${MARCUS}:Moved to the coast`);
   });
 
-  // R-0551
-  it("refuses an event with no drawing and no words of its own", () => {
-    const c = apart();
-    const tl = timeline();
-    tl.events.find((e) => e.id === 202)!.description = null;
-    expect(() => told(c, tl)).toThrow(/no words of its own/);
-  });
 });
 
 describe("the captions", () => {
@@ -635,7 +628,7 @@ describe("moves other than toward and away", () => {
   it("writes inside and outside as words, since they have no still drawing", () => {
     const svg = moved("inside").shot(1).svg;
     expect(svg).not.toContain('class="mvk');
-    expect(marks(svg)).toContain(`word:${DELPHINE}:Started calling Corinne`);
+    expect(marks(svg)).toContain(`word:${DELPHINE}:Called Corinne nightly`);
   });
 });
 
@@ -647,25 +640,21 @@ it("shows an event's words on its own step only, and takes them away on the next
 });
 
 describe("an event about the whole family", () => {
-  // R-0552, R-0551
-  it("puts everyone alive then in the emphasis colour, and a word beside the reader only when it fits", () => {
+  // R-0552, R-0681
+  it("puts everyone alive then in the emphasis colour, and the event's title beside the reader", () => {
     const c = death();
     c.snapshots[3] = { date: "1998-09-15", event_ids: [133], fact: "The family left Bluff Street.", guess: null };
     const svg = told(c).shot(3).svg;
     expect(marks(svg).filter((m) => m.startsWith("hl:")).sort()).toEqual([MARCUS, DELPHINE, CORINNE].map((id) => `hl:${id}`).sort());
-    expect(marks(svg).some((m) => m.startsWith("word:"))).toBe(false);
-    const tl = timeline();
-    tl.events.find((e) => e.id === 133)!.description = "Left Tucson";
-    expect(marks(told(c, tl).shot(3).svg)).toContain(`word:${CORINNE}:Left Tucson`);
+    expect(marks(svg).filter((m) => m.startsWith("word:"))).toEqual([`word:${CORINNE}:Left Bluff Street`]);
   });
 });
 
-// R-0551
-it("cuts an event's own words to its first three, between words and never inside one", () => {
-  expect(shortWord("Took a room over the hardware store")).toBe("Took a room");
-  expect(shortWord("Started at the church day care")).toBe("Started at the");
-  expect(shortWord("to Anchorage")).toBe("moved to Anchorage");
-  expect(shortWord("Retired")).toBe("Retired");
+// R-0681
+it("refuses to draw a noted event or a shift that has no title, rather than cut its description", () => {
+  const tl = timeline();
+  tl.events.find((e) => e.id === 202)!.title = null;
+  expect(() => told(apart(), tl)).toThrow("event 202 is a noted event with no title");
 });
 
 // R-0560
@@ -699,7 +688,7 @@ it("draws someone a case names only in words beside whoever the event names them
   ];
   tl.events = [
     event(20, "1990-04-01", "shift", 1, { relationship: "toward", relationshipTargets: [2] }),
-    event(21, "1991-04-01", "shift", 1, { relationship: "inside", relationshipTargets: [2], relationshipTriangles: [3], description: "Close in with Ben" }),
+    event(21, "1991-04-01", "shift", 1, { relationship: "inside", relationshipTargets: [2], relationshipTriangles: [3], title: "Close in with Ben" }),
     event(22, "1992-04-01", "shift", 1, { relationship: "distance", relationshipTargets: [2] }),
   ];
   tl.clusters = [{ ...tl.clusters[0], id: "walk", event_ids: [20, 21, 22] }];

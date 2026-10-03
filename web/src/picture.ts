@@ -305,12 +305,15 @@ export enum Level {
 const TOLD_CH = 20;
 
 /** A moment picked, as the path names it: the first name and what happened,
- * "Delphine died", and whatever of its words that leaves over, which the line
+ * "Delphine died" or, from the title "Stopped calling", "Ben stopped calling",
+ * and whatever of its words that leaves over, which the line
  * writes instead (R-0540). The path's words end on a whole word, and never on
  * a small one. */
 export function told(who: string, label: string): [string, string] {
   const first = who.split(" ")[0];
-  const all = (!first || label.startsWith(first) ? label : `${first} ${label}`).split(" ");
+  // a title reads on its own (R-0681); after a name it runs on as one sentence
+  const run = /^[A-Z][a-z]/.test(label) ? label.charAt(0).toLowerCase() + label.slice(1) : label;
+  const all = (!first || label.startsWith(first) ? label : `${first} ${run}`).split(" ");
   let n = 1;
   while (n < all.length && all.slice(0, n + 1).join(" ").length <= TOLD_CH) n += 1;
   while (n > 1 && n < all.length && all[n - 1].length <= 2) n -= 1;

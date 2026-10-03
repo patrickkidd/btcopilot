@@ -339,10 +339,11 @@ describe("the path row over the line", () => {
     expect(trail(Level.Compare, null, null)).toEqual(["Timeline", "compare"]);
   });
 
-  // R-0540
+  // R-0540, R-0681
   it("names a moment picked by the first name and what happened, the rest left over", () => {
     expect(told("Delphine Reyes", "died")).toEqual(["Delphine died", ""]);
     expect(told("Ben", "Ben stopped calling")).toEqual(["Ben stopped calling", ""]);
+    expect(told("Ben", "Stopped calling")).toEqual(["Ben stopped calling", ""]);
     expect(told("", "Moved to Denver")).toEqual(["Moved to Denver", ""]);
     // a long one keeps its first words, never ending on a small word
     expect(told("Delphine Reyes", "died of breast cancer")).toEqual([

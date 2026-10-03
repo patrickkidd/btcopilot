@@ -235,9 +235,9 @@ test.describe("an event's words at the drawing's edge", () => {
   test("beside the rightmost person keep the family's margin from the drawing's side", async ({ page }) => {
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
-      const e = tl.events.find((e: { description?: string }) => e.description?.startsWith("Took a room"));
+      const e = tl.events.find((e: { title?: string }) => e.title === "Moved out");
       const right = tl.people.find((p: { name: string }) => p.name === "Delphine");
-      Object.assign(e, { description: "Started prerequisites at", person: right.id, person_name: right.name });
+      Object.assign(e, { title: "Started prerequisites at", person: right.id, person_name: right.name });
       await route.fulfill({ json: tl });
     });
     await settle(page);
