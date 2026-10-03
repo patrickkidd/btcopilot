@@ -1,10 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { stateFor } from "./setup";
 
-/** The cluster's about page, behind the i at the end of the path, slides in at
- * its full height and slides back out the same way, whether the reader closes
- * it or scrolls up the chat, which folds the picture once the page has gone
- * (Patrick, 2026-10-02). Its height is read on every frame of the motion. */
+/** How tall the about card stands on screen while it travels: read on every
+ * frame as it opens, and as a scroll up the chat takes it away before the
+ * picture folds. */
 
 test.use({ storageState: stateFor("hostile"), hasTouch: true });
 
