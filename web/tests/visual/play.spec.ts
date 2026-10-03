@@ -149,14 +149,14 @@ test.describe("the play-by-play drawer", () => {
   });
 
   // R-0562, R-0071
-  test("steps only when tapped, and Back and the dots step it too", async ({ page }) => {
+  test("steps only when tapped, and Back and the years line step it too", async ({ page }) => {
     await settle(page);
     await stored(page).click();
     await page.waitForTimeout(3000);
     await expect(count(page)).toHaveText("1 of 4");
     await drawer(page).locator('[data-act="next"]').click();
     await expect(count(page)).toHaveText("2 of 4");
-    await drawer(page).locator('[data-act="dot"]').nth(3).click();
+    await drawer(page).locator('[data-act="jump"][data-i="3"]').first().click();
     await expect(count(page)).toHaveText("4 of 4");
     await expect(drawer(page).locator("p.ask")).toHaveText("Where was Cal in the year Ada stopped speaking to Ben?");
     await drawer(page).locator('[data-act="back"]').click();
@@ -209,7 +209,7 @@ test.describe("the drawer on a small phone", () => {
   test("stops shrinking at 13px labels, 36px shapes and a 20px margin, and scrolls instead", async ({ page }) => {
     await settle(page);
     await stored(page).click();
-    await drawer(page).locator('[data-act="dot"]').last().click();
+    await drawer(page).locator('[data-act="jump"]').last().click();
     const seen = await drawer(page).evaluate((p) => {
       const svg = p.querySelector<SVGSVGElement>(".draw svg")!;
       const top = p.querySelector(".draw")!.getBoundingClientRect().top;
@@ -309,7 +309,7 @@ test.describe("what the coach aims at with people and moves", () => {
     await aim(page, { kind: "sequence", events: [20, 22, 23] });
     await expect(count(page)).toHaveText("1 of 3");
     await expect(drawer(page).locator(".point")).toHaveCount(0);
-    await drawer(page).locator('[data-act="dot"]').last().click();
+    await drawer(page).locator('[data-act="jump"]').last().click();
     await expect(drawer(page).locator(".ask")).toHaveCount(0);
     await expect(page.locator(".bub.coach").last()).toContainText("Look at these.");
   });

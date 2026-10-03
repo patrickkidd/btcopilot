@@ -7,13 +7,15 @@ import type { Case, Chip, Timeline } from "./types";
 
 /** The play-by-play drawer: a real drill-down that slides over the timeline and
  * the chat (R-0542). The path row with the close button at its right, the
- * coach's point, the years line, the picture, then the caption and the controls. Tapped through by hand with Back,
- * the dots and Next; it never plays itself. The message box is covered. */
+ * coach's point, the years line, the picture, then the caption and the controls. Tapped through by hand with Back
+ * and Next, or straight to a step by its event on the years line, the one way
+ * in at random (Patrick, 2026-10-03); the dots only say where the reader is. It
+ * never plays itself. The message box is covered. */
 
 enum Act {
   Back = "back",
   Next = "next",
-  Dot = "dot",
+  Jump = "jump",
 }
 
 const f = (v: number) => v.toFixed(1);
@@ -46,6 +48,18 @@ export function yearsLine(tl: Timeline, told: Told, i: number): string {
     else if (j > i) s += `<circle class="wahead" cx="${x}" cy="${y}" r="4.4"/>`;
     else s += `<circle class="wring" cx="${x}" cy="${y}" r="10"/><circle class="wnow" cx="${x}" cy="${y}" r="6.5"/>`;
   });
+  // each step's events answer a tap across the line's height, halfway to the
+  // events on either side
+  const hits = dated
+    .filter((e) => own.has(e.id))
+    .map((e) => ({ x: X(e.t), j: own.get(e.id)! }))
+    .sort((a, b) => a.x - b.x);
+  hits.forEach((h, k) => {
+    const a = k ? (hits[k - 1].x + h.x) / 2 : 0;
+    const b = k < hits.length - 1 ? (h.x + hits[k + 1].x) / 2 : 390;
+    s +=
+      `<rect class="whit" x="${f(a)}" y="0" width="${f(b - a)}" height="62" data-act="${Act.Jump}" data-i="${h.j}"/>`;
+  });
   const cx = Math.min(Math.max(X(told.steps[i].t), 40), 350);
   s += `<text class="wlab" x="${f(cx)}" y="15" text-anchor="middle">${esc(told.steps[i].date)}</text>`;
   s += `<text class="wyr" x="${x0}" y="57">${Math.floor(t0)}</text>`;
@@ -62,11 +76,11 @@ export function below(told: Told, i: number, statement: number | null): string {
   const dots = Array.from(
     { length: n },
     (_, j) =>
-      `<button class="dot${j === i ? " on" : ""}" type="button" data-act="${Act.Dot}" data-i="${j}" aria-label="Snapshot ${j + 1}"${j === i ? ' aria-current="step"' : ""}></button>`,
+      `<span class="dot${j === i ? " on" : ""}"></span>`,
   ).join("");
   return (
     `<div class="step">${stepBtn("‹ Back", `data-act="${Act.Back}"`, i === 0)}` +
-    `<div class="dots">${dots}</div><span class="count">${i + 1} of ${n}</span>` +
+    `<div class="dots" aria-hidden="true">${dots}</div><span class="count">${i + 1} of ${n}</span>` +
     `${stepBtn("Next ›", `data-act="${Act.Next}"`, i === n - 1)}</div>` +
     `<div class="cap" aria-live="polite"><div class="when"><span class="date">${esc(shot.date)}</span>` +
     (shot.gap ? `<span class="gap">${esc(shot.gap)}</span>` : "") +
@@ -219,7 +233,7 @@ export class Drawer {
     const n = this.told.length;
     if (act === Act.Next) this.i = Math.min(this.i + 1, n - 1);
     else if (act === Act.Back) this.i = Math.max(this.i - 1, 0);
-    else if (act === Act.Dot) this.i = Number(b.dataset.i);
+    else if (act === Act.Jump) this.i = Number(b.dataset.i);
     this.render();
     // a keyboard tap keeps its place
     if ((e as MouseEvent).detail === 0)

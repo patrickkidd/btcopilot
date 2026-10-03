@@ -263,6 +263,49 @@ test.describe("every mark", () => {
     expect(await under(page, await steps(page, STEPS.length))).toEqual([]);
   });
 
+  // R-0679
+  test("an event on the years line jumps to its step, and the dots only say where the reader is", async ({ page }) => {
+    await steps(page, STEPS.length);
+    const count = page.locator("#pbp .count");
+    await page.locator('#pbp .wire [data-act="jump"][data-i="20"]').click();
+    await expect(count).toHaveText(`21 of ${STEPS.length}`);
+    await page.locator('#pbp .wire [data-act="jump"][data-i="6"]').click();
+    await expect(count).toHaveText(`7 of ${STEPS.length}`);
+    await page.locator("#pbp .dots .dot").nth(15).click();
+    await expect(count).toHaveText(`7 of ${STEPS.length}`);
+    expect(await page.locator("#pbp .dots button, #pbp .dots [data-act]").count()).toBe(0);
+  });
+
+  // R-0679
+  test("the field stays on screen the whole loop while a wall comes up, shadowed once it has", async ({ page }) => {
+    await page.goto("/app/");
+    await expect(page.locator("#view .ss")).toBeVisible();
+    await page.locator(".bub.coach[data-play]").last().click();
+    const blank: string[] = [];
+    for (const name of ["distance", "cutoff"]) {
+      await page.locator(`#pbp .wire [data-act="jump"][data-i="${STEPS.findIndex((s) => s.name === name)}"]`).click();
+      for (let ms = 0; ms < 10000; ms += 500) {
+        const seen = await page.evaluate((at) => {
+          for (const svg of document.querySelectorAll("svg")) {
+            svg.pauseAnimations();
+            svg.setCurrentTime(at / 1000);
+          }
+          for (const a of document.getAnimations()) {
+            a.pause();
+            a.currentTime = at;
+          }
+          return [...document.querySelectorAll("#pbp .draw .fore .mvk circle.fld")]
+            .filter((c) => +getComputedStyle(c).opacity > 0.05)
+            .map((c) => (c.classList.contains("postA") ? "shadowed" : "open"));
+        }, ms);
+        if (!seen.length) blank.push(`${name} at ${ms}ms: no rings`);
+        // the wall has landed by 42% of its ten-second loop
+        if (ms >= 4500 && seen.includes("open")) blank.push(`${name} at ${ms}ms: open rings behind the wall`);
+      }
+    }
+    expect(blank).toEqual([]);
+  });
+
   // R-0546
   test("someone not yet born keeps their place with no age in their shape", async ({ page }) => {
     const svgs = await steps(page, STEPS.length);

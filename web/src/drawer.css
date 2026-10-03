@@ -21,19 +21,22 @@
 .pbp .path { flex: none; height: 44px; padding: 0 52px 0 16px; font: 400 13px/1.2 var(--mono); color: var(--faint); }
 .pbp > .cardx { top: 0; }
 .pbp .point { flex: none; padding: 0 16px; font: 400 13px/20px var(--sans); color: var(--ink); }
-.pbp .path .step:focus-visible, .pbp .stepbtn:focus-visible, .pbp .dot:focus-visible { outline: 2px solid var(--data); outline-offset: 2px; }
+.pbp .path .step:focus-visible, .pbp .stepbtn:focus-visible { outline: 2px solid var(--data); outline-offset: 2px; }
 
 /* Q6: the picture shrinks so the caption fits; when even that does not fit, the whole drawer scrolls */
 .pbp .lv { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
 .pbp .wire, .pbp .draw, .pbp .scroll { flex: none; }
 .pbp .wire svg { display: block; width: 100%; height: auto; }
+/* an event on the years line takes a tap to its step */
+.pbp .whit { fill: transparent; cursor: pointer; }
 .pbp .draw { padding: 4px 0 0; border-top: 1px solid var(--line); }
 .pbp .draw svg { display: block; width: 100%; height: 100%; }
 
 .pbp .scroll .step { display: flex; align-items: center; gap: 4px; padding: 4px 10px 8px; }
 .pbp .dots { flex: 1; min-width: 0; display: flex; justify-content: center; }
-/* a play told in more snapshots than the row holds draws its dots smaller, never over Back or Next */
-.pbp .dot { flex: 0 1 22px; min-width: 0; width: 22px; height: 40px; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+/* the dots only say where the reader is; a play told in more snapshots than
+   the row holds draws them smaller, never over Back or Next */
+.pbp .dot { flex: 0 1 22px; min-width: 0; width: 22px; height: 40px; display: flex; align-items: center; justify-content: center; }
 .pbp .dot::after { content: ""; width: 9px; max-width: 80%; aspect-ratio: 1; border-radius: 50%; border: 1.5px solid var(--data); box-sizing: border-box; }
 .pbp .dot.on::after { background: var(--data); }
 .pbp .count { flex: none; min-width: 48px; text-align: center; font: 400 13px var(--mono); color: var(--faint); }
@@ -93,6 +96,11 @@
 .pbp .arr.was polygon { fill: var(--faint); }
 /* the wall stands a person tall here, not the ratified 68, so its ratified 6 scales with it */
 .pbp .mvk .mv-wall { stroke-width: 4; }
+/* the field keeps showing while the wall comes up: the open rings hold until
+   the shadowed ones arrive, so the space the wall protects never goes blank
+   (Patrick, 2026-10-03) */
+.pbp .mvk .preA { animation-name: pbp-preA; }
+@keyframes pbp-preA { 0%, 38% { opacity: 1; } 42%, 100% { opacity: 0; } }
 /* the other moves keep the board's own drawing (theme.css .ss .mv-*); carried, grey and still */
 .pbp .mvk.was * { stroke: var(--faint); animation: none; }
 .pbp .mvk.was .tipfill { fill: var(--faint); }
