@@ -96,12 +96,8 @@ export class Lens {
     // is the one level change the reader makes for themselves.
     if (tap.target === Target.Cluster) {
       const cluster = picture.clusterAt(tap.index);
-      if (cluster) {
-        picture.open(cluster.event_ids);
-        // opening a cluster is a look at it, recorded like any other (R-0065)
-        this.hooks.record(InteractionKind.Look, ItemKind.Cluster, cluster.id);
-      }
-      this.rest();
+      if (cluster) this.openCluster(cluster);
+      else this.rest();
       return;
     }
     // A label names one event: tapping it picks that event, and where a zone
@@ -146,10 +142,19 @@ export class Lens {
     // mark of its own on the line (R-0543).
     const cluster = clusters.find((c) => ids.every((id) => c.event_ids.includes(id)));
     if (cluster) {
-      this.apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Cluster, id: cluster.id }));
+      this.openCluster(cluster);
       // a chip may name a cluster off screen, so the line goes to it
       this.picture.spotlight(cluster.event_ids);
     } else this.apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(ids[0]) }), ids);
+  }
+
+  /** A cluster opened, from its pill or from a chip that names it: the one
+   * selection both paths share, so the row offers the same explain. */
+  private openCluster(cluster: Cluster): void {
+    this.picture.open(cluster.event_ids);
+    // opening a cluster is a look at it, recorded like any other (R-0065)
+    this.hooks.record(InteractionKind.Look, ItemKind.Cluster, cluster.id);
+    this.rest();
   }
 
   /** One place turns a picture tap into its consequences: what the picture shows,
