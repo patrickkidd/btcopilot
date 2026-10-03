@@ -363,6 +363,19 @@ test.describe("every mark", () => {
     }
   });
 
+  // R-0679
+  test("the projecting parent is lit on the projection step, over the grey marks", async ({ page }) => {
+    const svgs = await steps(page, STEPS.length);
+    const i = STEPS.findIndex((s) => s.name === "projection");
+    await show(page, svgs[i]);
+    // Rosa, who projects onto Leo
+    const lit = page.locator('#pbp .draw svg > .fore [data-mark="hl:4"]');
+    await expect(lit).toHaveCount(1);
+    expect(await lit.evaluate((el) => getComputedStyle(el).stroke)).toBe(await paint(page, "--move"));
+    await show(page, svgs[i + 1]);
+    await expect(page.locator('#pbp .draw svg > .fore [data-mark="hl:4"]')).toHaveCount(0);
+  });
+
   // R-0546
   test("someone not yet born keeps their place with no age in their shape", async ({ page }) => {
     const svgs = await steps(page, STEPS.length);
