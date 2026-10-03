@@ -1,5 +1,5 @@
 import { esc } from "./dom";
-import { cross as healthCross, DEMO, draw as moveMarks, FIELD, FLANK, Move, Shift, SPIKES, WALL } from "./moves";
+import { CROSS, cross as healthCross, DEMO, draw as moveMarks, FIELD, FLANK, Move, Shift, SPIKES, WALL } from "./moves";
 
 /** A small family diagram generated from a cast, to FAMILY_DIAGRAM_VISUAL_SPEC.md,
  * ported from the approved play-by-play reference (design/playbyplay-snapshots,
@@ -247,8 +247,8 @@ class Dims {
     this.GAP = w / 8;
     // a mark that stands on its own, a slash or a wall, is as tall as a person
     this.MARK = w;
-    // how far the cross and its arrow reach past the shape
-    this.ZONE = this.GAP + 38;
+    // how far the cross and its arrow reach past the shape: two square cells
+    this.ZONE = this.GAP + 2 * CROSS;
   }
 
   half(p: Shape): number {
@@ -967,7 +967,7 @@ function cross(L: Layout, id: string, dir: Shift, cls: Tone): string {
     name: L.P[id].name,
     x: L.x[id],
     y: L.y[id],
-    r: d.half(L.P[id]) + d.GAP + 8 - 29,
+    r: d.half(L.P[id]) + d.GAP + CROSS / 2 - 29,
     mirror: L.zone[id] < 0,
   };
   return (

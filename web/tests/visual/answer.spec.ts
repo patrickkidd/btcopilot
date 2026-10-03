@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { stateFor, boxOf } from "./setup";
+import { stateFor, boxOf, openList } from "./setup";
 import { mockTurn, SEND } from "./turn";
 
 /** A question the coach asked is an amber chip that goes into the message box
@@ -100,7 +100,8 @@ test.describe("a question on the list of what the coach asked", () => {
       await route.fulfill({ json: tl });
     });
     await settle(page);
-    await page.locator("#menu-open").click();
+    // a wide window pins the lists beside the thread and draws no list button (R-0352)
+    await openList(page);
     await page.locator("#tab-questions").click();
     await page.locator(".qrow .chip").filter({ hasText: text }).click();
   };

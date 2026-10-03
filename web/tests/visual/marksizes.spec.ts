@@ -306,6 +306,28 @@ test.describe("every mark", () => {
     expect(blank).toEqual([]);
   });
 
+  // R-0679
+  test("the health cross and its arrow sit in two square cells side by side", async ({ page }) => {
+    const svgs = await steps(page, STEPS.length);
+    for (const name of ["symptom up", "symptom down"]) {
+      await show(page, svgs[STEPS.findIndex((s) => s.name === name)]);
+      const [plus, arrow] = await Promise.all(
+        [".fore .mv-sym", ".fore .sym-arrow"].map((sel) =>
+          page.locator(`#pbp .draw svg ${sel}`).evaluate((el) => {
+            const b = el.getBoundingClientRect();
+            return { x: b.x + b.width / 2, w: b.width, h: b.height };
+          }),
+        ),
+      );
+      const side = plus.h;
+      expect(Math.abs(plus.w - side)).toBeLessThan(0.5);
+      expect(Math.abs(arrow.h - side)).toBeLessThan(0.5);
+      expect(arrow.w).toBeLessThanOrEqual(side);
+      // the arrow's cell starts where the cross's ends, so their middles are one cell apart
+      expect(Math.abs(Math.abs(arrow.x - plus.x) - side)).toBeLessThan(0.5);
+    }
+  });
+
   // R-0546
   test("someone not yet born keeps their place with no age in their shape", async ({ page }) => {
     const svgs = await steps(page, STEPS.length);

@@ -427,12 +427,17 @@ function drainArrow(from: Figure, to: Figure): string {
  * below is that sheet's, halved; the stroke is the sheet's, unscaled. */
 const ARROW = 0.5;
 
-/** The health cross, and the arrow that says which way it went. */
+/** The health cross's own width and height. */
+export const CROSS = 16;
+
+/** The health cross, and the arrow that says which way it went. Each keeps its
+ * own size in a square cell as tall as the cross, the two cells side by side,
+ * so the gap between them is even (Patrick, 2026-10-03). */
 export function cross(person: Figure, direction: Shift): string {
   const side = person.mirror ? -1 : 1;
   const cx = person.x + side * (rad(person) + 29);
   const cy = person.y - 6;
-  const ax = cx + side * 26;
+  const ax = cx + side * CROSS;
   const up = (offset: number) => n1(cy + offset * ARROW);
   const across = (offset: number) => n1(ax + offset * ARROW);
   const worse =
@@ -449,8 +454,8 @@ export function cross(person: Figure, direction: Shift): string {
     direction === Shift.Up ? worse : direction === Shift.Down ? better : "";
   return (
     `<g class="mv-sym" transform="translate(${n1(cx)} ${n1(cy)})">` +
-    `<rect class="tipfill" x="-8" y="-3" width="16" height="6" rx="1"/>` +
-    `<rect class="tipfill" x="-3" y="-8" width="6" height="16" rx="1"/>` +
+    `<rect class="tipfill" x="${-CROSS / 2}" y="-3" width="${CROSS}" height="6" rx="1"/>` +
+    `<rect class="tipfill" x="-3" y="${-CROSS / 2}" width="6" height="${CROSS}" rx="1"/>` +
     `</g>` +
     arrow
   );
