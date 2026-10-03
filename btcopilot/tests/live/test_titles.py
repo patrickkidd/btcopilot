@@ -2,10 +2,12 @@
 complete phrase of 2 to 4 words, readable alone beside the person in the
 picture (R-0681).
 
-The old prompt fails this: the old event tool had no title field, so no event
-it wrote carries one; and the description it was told to keep to about three
-words, never more than five, is what the picture cut to its first three
-("Stayed out of").
+The old prompt fails this by construction: the old event tool had no title
+field, so no event it wrote carries one; and the description it was told to
+keep to about three words, never more than five, is what the picture cut to its
+first three ("Stayed out of"). The old prompt's words on today's code pass it
+too (subscription, 2026-10-03, 3 of 3 on each case): the tool's own field text
+and the refusal of an untitled write are enough to get titles.
 
 Invented names only.
 """
