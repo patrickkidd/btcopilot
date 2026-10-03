@@ -1,23 +1,39 @@
 #!/usr/bin/env bash
 # PreToolUse guard: master is PR-only. Reads the hook JSON on stdin; exit 2 blocks the command.
 # The private corpus repo (btcopilot-sources) is master-only by design, so the master rules skip it.
+# One force form passes (Patrick, 2026-10-03): `git [-C <repo>] push --force-with-lease=<branch>:<sha> origin <branch>`
+# alone on the line, where <branch> is the branch checked out in <repo> (the -C path, else the hook's cwd),
+# never master or master-legacy, and <sha> is the current origin/<branch>. Every other force form is refused.
 in=$(cat)
 c=$(printf '%s' "$in" | jq -r '.tool_input.command // empty')
 cwd=$(printf '%s' "$in" | jq -r '.cwd // empty')
 git='(^|[;&|[:space:]])git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+'
 tok='(^|[[:space:]:=])master([[:space:]]|$)'
+lease='^[[:space:]]*git([[:space:]]+-C[[:space:]]+([^[:space:]]+))?[[:space:]]+push[[:space:]]+--force-with-lease=([^[:space:]:]+):([0-9a-f]{7,40})[[:space:]]+origin[[:space:]]+([^[:space:]]+)[[:space:]]*$'
 corpus=0
 if printf '%s' "$c" | grep -Eq '(^|[;&|[:space:]])git[[:space:]]+-C[[:space:]]+[^[:space:]]*btcopilot-sources'; then
   corpus=1
 elif ! printf '%s' "$c" | grep -Eq '(^|[;&|[:space:]])git[[:space:]]+-C[[:space:]]' && [[ "$cwd" == *btcopilot-sources* ]]; then
   corpus=1
 fi
+# The one allowed force push: a lease on the repo's own checked-out branch at its current remote tip.
+lease_ok() {
+  [[ "$c" =~ $lease ]] || return 1
+  local repo="${BASH_REMATCH[2]:-$cwd}" branch="${BASH_REMATCH[3]}" sha="${BASH_REMATCH[4]}" target="${BASH_REMATCH[5]}"
+  [ "$target" = "$branch" ] || return 1
+  case "$branch" in master|master-legacy|'') return 1;; esac
+  [ -n "$repo" ] || return 1
+  [ "$(git -C "$repo" rev-parse --abbrev-ref HEAD 2>/dev/null)" = "$branch" ] || return 1
+  local tip; tip=$(git -C "$repo" rev-parse --verify --quiet "refs/remotes/origin/$branch") || return 1
+  [ "$(git -C "$repo" rev-parse --verify --quiet "${sha}^{commit}" 2>/dev/null)" = "$tip" ] || return 1
+}
 block=0
 if [ "$corpus" = 0 ] && { printf '%s' "$c" | grep -Eq "${git}push([[:space:]].*)?${tok}" \
 || printf '%s' "$c" | grep -Eq "${git}(checkout|switch)[[:space:]]+master([[:space:]]|$)" \
 || printf '%s' "$c" | grep -Eq "${git}branch[[:space:]]+(-D|-d|--delete)[[:space:]]+master([[:space:]]|$)"; }; then block=1; fi
 if printf '%s' "$c" | grep -Eq "${git}push[[:space:]]+(.*[[:space:]])?(--force|--force-with-lease(=[^[:space:]]*)?|-f)([[:space:]]|$)" \
-|| printf '%s' "$c" | grep -Eq '(^|[;&|[:space:]])gh[[:space:]]+pr[[:space:]]+merge([[:space:]]|$)'; then block=1; fi
+&& ! lease_ok; then block=1; fi
+if printf '%s' "$c" | grep -Eq '(^|[;&|[:space:]])gh[[:space:]]+pr[[:space:]]+merge([[:space:]]|$)'; then block=1; fi
 if [ "$block" = 1 ]; then
   echo "git-guard: master is PR-only — no pushes to master, force pushes, or PR merges from Claude" >&2
   exit 2
