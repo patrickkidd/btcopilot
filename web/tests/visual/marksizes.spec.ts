@@ -95,14 +95,16 @@ const measure = (page: Page, name: string, selector: string, tone: "now" | "was"
         });
       });
       // the lit one of a divorce's two slashes is the second
-      const paint = getComputedStyle(els[els.length - 1]);
+      const last = els[els.length - 1];
+      const paint = getComputedStyle(last);
       const r = (v: number) => Math.round(v * scale * 10) / 10;
       return {
         name,
         tone,
         w: r(x1 - x0),
         h: r(y1 - y0),
-        colour: paint.stroke !== "none" ? paint.stroke : paint.fill,
+        // a word is painted by its fill; its stroke is the halo behind it
+        colour: last instanceof SVGTextElement || paint.stroke === "none" ? paint.fill : paint.stroke,
       };
     },
     { name, selector, tone },
@@ -114,8 +116,7 @@ const crossings = (page: Page, marks: string, words: string) =>
   page.evaluate(
     ({ marks, words }) => {
       const root = document.querySelector<SVGSVGElement>("#pbp .draw svg")!;
-      const fore = root.querySelector(".fore")!;
-      const boxes = [...root.querySelectorAll<SVGTextElement>(words)].map((t) => ({ text: t.textContent, b: t.getBBox(), lit: fore.contains(t) }));
+      const boxes = [...root.querySelectorAll<SVGTextElement>(words)].map((t) => ({ text: t.textContent, b: t.getBBox() }));
       const cut = (a: DOMPoint, z: DOMPoint, b: DOMRect, pad: number) => {
         const [bx0, by0, bx1, by1] = [b.x - pad, b.y - pad, b.x + b.width + pad, b.y + b.height + pad];
         let [t0, t1] = [0, 1];
@@ -154,10 +155,9 @@ const crossings = (page: Page, marks: string, words: string) =>
         const edges = pts.slice(1).map((p, i) => [pts[i], p]);
         if (closed) edges.push([pts[pts.length - 1], pts[0]]);
         const pad = (parseFloat(getComputedStyle(el).strokeWidth) || 0) / 2;
-        // a lit word is drawn over the grey marks it crosses, which is allowed (R-0682)
-        const under = !fore.contains(el);
-        for (const { text, b, lit } of boxes)
-          if (!(lit && under) && edges.some(([a, z]) => cut(a, z, b, pad))) {
+        // a word keeps clear of every mark, the grey ones carried from before too
+        for (const { text, b } of boxes)
+          if (edges.some(([a, z]) => cut(a, z, b, pad))) {
             const mark = el.closest("[data-mark]")?.getAttribute("data-mark") ?? el.getAttribute("class");
             out.push(`${mark} over "${text}"`);
           }
@@ -207,17 +207,17 @@ const median = (xs: number[]) => {
   return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
 };
 
-/** Every step whose lit marks are not all in the layer drawn last, over the
- * grey ones carried from earlier steps. */
+/** Every step whose lit marks are not all in the last layer of marks, over the
+ * grey ones carried from earlier steps; only the names and words come after. */
 async function under(page: Page, svgs: string[]): Promise<string[]> {
   const found: string[] = [];
   for (const [i, svg] of svgs.entries()) {
     await show(page, svg);
     const wrong = await page.evaluate(() => {
       const root = document.querySelector<SVGSVGElement>("#pbp .draw svg")!;
-      const fore = root.lastElementChild;
-      if (!fore?.matches("g.fore")) return ["no layer drawn last"];
-      const lit = [...root.querySelectorAll(".now, .pop")].filter((el) => !fore.contains(el));
+      const [fore, said] = [root.lastElementChild?.previousElementSibling, root.lastElementChild];
+      if (!fore?.matches("g.fore") || !said?.matches("g.said")) return ["no layer of lit marks under the names"];
+      const lit = [...root.querySelectorAll(".now, .pop")].filter((el) => !fore.contains(el) && !said.contains(el));
       const grey = [...fore.querySelectorAll(".was")];
       return [...lit, ...grey].map((el) => el.closest("[data-mark], [data-bond]")?.outerHTML.slice(0, 60) ?? el.getAttribute("class")!);
     });
@@ -703,6 +703,27 @@ test.describe("every mark", () => {
     expect(at.loop - at.gone).toBeCloseTo(3600, -2);
   });
 
+  // R-0679
+  test("every name, age and word sits over the field's rings on a halo of the page", async ({ page }) => {
+    const svgs = await steps(page, STEPS.length);
+    const wrong: string[] = [];
+    for (const [i, svg] of svgs.entries()) {
+      await show(page, svg);
+      const found = await page.evaluate(() => {
+        const root = document.querySelector<SVGSVGElement>("#pbp .draw svg")!;
+        const rings = [...root.querySelectorAll("circle.fld, .mv-shared, .mv-clear")];
+        return [...root.querySelectorAll<SVGTextElement>("text")].flatMap((t) => {
+          const cs = getComputedStyle(t);
+          const under = rings.some((r) => r.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_PRECEDING);
+          const bare = cs.paintOrder.split(" ")[0] !== "stroke" || parseFloat(cs.strokeWidth) < 2;
+          return under || bare ? [`${t.textContent}${under ? " under a ring" : ""}${bare ? " with no halo" : ""}`] : [];
+        });
+      });
+      found.forEach((f) => wrong.push(`step ${i + 1}: ${f}`));
+    }
+    expect([...new Set(wrong)]).toEqual([]);
+  });
+
   // R-0546
   test("someone not yet born keeps their place with no age in their shape", async ({ page }) => {
     const svgs = await steps(page, STEPS.length);
@@ -715,8 +736,8 @@ test.describe("every mark", () => {
     await show(page, svgs[0]);
     // Ivy, Leo and Sam are drawn before they were born, and Walter, born 1948, is 24 at the wedding
     expect(await page.locator("#pbp .draw svg .p").count()).toBe(7);
-    expect(await page.locator('#pbp .draw svg .p[data-id="5"] text.age').count()).toBe(0);
-    expect(await page.locator('#pbp .draw svg .p[data-id="3"] text.age').textContent()).toBe("24");
+    expect(await page.locator('#pbp .draw svg .pt[data-id="5"] text.age').count()).toBe(0);
+    expect(await page.locator('#pbp .draw svg .pt[data-id="3"] text.age').textContent()).toBe("24");
   });
 });
 

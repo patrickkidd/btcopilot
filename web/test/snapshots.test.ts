@@ -544,9 +544,9 @@ describe("the drawing's marks", () => {
     tl.pair_bonds.push({ id: 23, person_a: DELPHINE, person_b: null, married: false });
     tl.people.push({ ...tl.people[5], id: 8, name: "Lena", gender: "female", parents: 23, primary: false });
     tl.events.find((e) => e.id === 131)!.relationshipTargets = [8];
-    const stand = told(death(), tl).shot(1).svg.match(/<g class="p" data-id="unknown-4">(.*?)<\/g>/)![1];
-    expect(stand).toMatch(/<rect class="shape"[^>]* rx="/);
-    expect(stand).toContain(">?</text>");
+    const svg = told(death(), tl).shot(1).svg;
+    expect(svg.match(/<g class="p" data-id="unknown-4">(.*?)<\/g>/)![1]).toMatch(/<rect class="shape"[^>]* rx="/);
+    expect(svg.match(/<g class="pt" data-id="unknown-4">(.*?)<\/g>/)![1]).toContain(">?</text>");
   });
 
   // R-0554

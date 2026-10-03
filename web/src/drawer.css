@@ -69,7 +69,9 @@
 .pbp .slash.now { stroke: var(--move); stroke-width: 2.4; }
 .pbp .lbn { font-size: 13px; fill: var(--ink); }
 .pbp .lbd { font-size: 13px; fill: var(--faint); }
-.pbp .nh { paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; }
+/* names, ages and words sit over every mark, a field's rings too, on a halo
+   of the page's ground so they stay legible (Patrick, 2026-10-03) */
+.pbp .said text { paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; }
 .pbp .xd, .kmark .xd { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
 .pbp .xd.now { stroke: var(--move); stroke-width: 2.2; }
 .pbp .fn { fill: none; stroke: var(--move); stroke-width: 2.6; }

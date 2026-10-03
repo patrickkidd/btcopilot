@@ -285,7 +285,7 @@ test.describe("a chip in a walk told the old way", () => {
     await old.locator(".chip.data").first().click();
     // every event of this record is in the one cluster, so the chip opens the
     // cluster with the event picked and its title at the end of the path
-    await expect(page.locator("#path .here")).toHaveText("Ada toward");
+    await expect(page.locator("#path .here")).toHaveText("Ada reached out");
     await expect(page.locator("#path .here.on")).toHaveCount(1);
     await expect(page.locator("#view rect.pill.on")).toHaveCount(1);
     await expect(drawer(page)).toBeHidden();

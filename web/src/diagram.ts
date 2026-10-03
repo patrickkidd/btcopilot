@@ -1054,36 +1054,47 @@ function event(m: Placed, w: Spot): string {
  * the other side when their name is not there, else under them, the first that
  * crosses nothing already taken and stays in the picture. A word never moves
  * people apart (Patrick, 2026-10-03), so the last resort is its own side. */
-function spot(L: Layout, m: Placed, taken: Box[]): Spot {
+function spot(L: Layout, m: Placed, taken: Box[], drawn: Segment[]): Spot {
   if (!m.word) throw new Error(`an event mark with no word, for ${m.who}`);
   const d = dimsOf(L);
   const id = m.who;
   const e = d.half(L.P[id]);
   const w = m.word.length * NAME * CH;
   const row = (m.row ?? 0) * LEAD;
-  const beside = (sd: number): Spot => {
+  const beside = (sd: number, more = 0): Spot => {
     const x = L.x[id] + sd * (e + L.inset[id]);
-    const y = L.y[id] + e * 0.55 + 6 + row;
+    const y = L.y[id] + e * 0.55 + 6 + row + more;
     return { x, y, sd, box: { x0: sd > 0 ? x : x - w, x1: sd > 0 ? x + w : x, y0: y - ASCENT, y1: y + 4 } };
   };
-  const under = (): Spot => {
-    const y = L.y[id] + L.below[id] + (L.side[id] === Side.Under ? LEAD * lines(L.P[id], Infinity).length : 0) + row;
-    return { x: L.x[id], y, sd: 0, box: { x0: L.x[id] - w / 2, x1: L.x[id] + w / 2, y0: y - ASCENT, y1: y + 4 } };
-  };
+  const centred = (y: number): Spot => ({ x: L.x[id], y, sd: 0, box: { x0: L.x[id] - w / 2, x1: L.x[id] + w / 2, y0: y - ASCENT, y1: y + 4 } });
+  const under = (more: number) =>
+    centred(L.y[id] + L.below[id] + (L.side[id] === Side.Under ? LEAD * lines(L.P[id], Infinity).length : 0) + row + more);
+  // over the person, above their name when it is there
+  const top = Math.min(L.y[id] - e - L.ring[id], ...L.names.filter((b) => b.x0 <= L.x[id] && L.x[id] <= b.x1 && b.y1 <= L.y[id]).map((b) => b.y0));
+  const over = centred(top - 6 - row);
   const own = L.zone[id] || (L.side[id] === Side.Right ? -1 : 1);
   const named = L.side[id] === Side.Right ? 1 : L.side[id] === Side.Left ? -1 : 0;
-  const tries = [beside(own), ...(named === -own ? [] : [beside(-own)]), under()];
+  const sides = named === -own ? [own] : [own, -own];
+  // beside, then a line lower beside, clear of a move along the row, then
+  // under, over, and further under
+  const tries = [...sides.map((sd) => beside(sd)), ...sides.map((sd) => beside(sd, LEAD)), under(0), over, under(LEAD)];
   const free = (t: Spot) =>
-    t.box.x0 >= 0 && t.box.x1 <= L.vw && !taken.some((b) => t.box.x0 < b.x1 && b.x0 < t.box.x1 && t.box.y0 < b.y1 && b.y0 < t.box.y1);
+    t.box.x0 >= 0 &&
+    t.box.x1 <= L.vw &&
+    t.box.y0 >= 0 &&
+    t.box.y1 <= L.h &&
+    !taken.some((b) => t.box.x0 < b.x1 && b.x0 < t.box.x1 && t.box.y0 < b.y1 && b.y0 < t.box.y1) &&
+    !drawn.some((sg) => crosses(sg, { x0: t.box.x0 - 2, x1: t.box.x1 + 2, y0: t.box.y0 - 2, y1: t.box.y1 + 2 }));
   return tries.find(free) ?? tries[0];
 }
 
-/** What a step's words must keep clear of: every name, every shape, and every
- * health cross on the picture. */
-function ground(L: Layout, s: Frame): Box[] {
+/** What a step's words must keep clear of: every name, every shape with the
+ * spikes around it, every health cross, and every move drawn, the step's own and
+ * those carried from before. */
+function ground(L: Layout, s: Frame): { boxes: Box[]; lines: Segment[] } {
   const d = dimsOf(L);
   const shapes = Object.keys(L.P).map((id) => {
-    const e = d.half(L.P[id]) + 2;
+    const e = d.half(L.P[id]) + L.ring[id] + 2;
     return { x0: L.x[id] - e, x1: L.x[id] + e, y0: L.y[id] - e, y1: L.y[id] + e };
   });
   const crosses = s.marks
@@ -1094,7 +1105,9 @@ function ground(L: Layout, s: Frame): Box[] {
       const [a, b] = [L.x[m.who] + z * (e + d.GAP), L.x[m.who] + z * (e + d.ZONE)];
       return { x0: Math.min(a, b), x1: Math.max(a, b), y0: L.y[m.who] - 15, y1: L.y[m.who] + 4 };
     });
-  return [...L.names, ...shapes, ...crosses];
+  const where = { P: L.P, x: L.x, y: L.y, d };
+  const lines = [...s.moves.map((mv) => ends(where, mv)), ...s.kin.flatMap((k) => across(where, k))];
+  return { boxes: [...L.names, ...shapes, ...crosses], lines };
 }
 
 const STILL = { symptom: null, anxiety: null, functioning: null };
@@ -1167,19 +1180,21 @@ export function draw(L: Layout, s: Frame): string {
   const d = dimsOf(L);
   const { E } = d;
   const P = L.P;
-  const taken = ground(L, s);
+  const { boxes: taken, lines: drawn } = ground(L, s);
   const spots = new Map<Placed, Spot>();
   s.marks
     .filter((m) => m.k === Mark.Event)
     .forEach((m) => {
-      const w = spot(L, m, taken);
+      const w = spot(L, m, taken, drawn);
       spots.set(m, w);
       taken.push(w.box);
     });
   const texts = [...L.names, ...[...spots.values()].map((w) => w.box)];
   let out = "";
-  // what this snapshot adds is drawn last, over everything carried from before
+  // what this snapshot adds is drawn over everything carried from before, and
+  // every name, age and word over all of it, haloed so a ring cannot hide it
   let top = "";
+  let said = "";
   const put = (markup: string, now: boolean) => (now ? (top += markup) : (out += markup));
   const lit = (cls?: Tone) => (cls ?? Tone.Now) === Tone.Now;
   s.bonds.forEach((b) => {
@@ -1243,10 +1258,11 @@ export function draw(L: Layout, s: Frame): string {
     // someone not yet born keeps their place (R-0546) but has no age to show
     const age = p.born == null || p.born > s.t + 1e-6 ? null : yr((dead ? p.died! : s.t) - p.born + 1e-6);
     let g = `<g class="p" data-id="${esc(id)}">`;
+    let t = `<g class="pt" data-id="${esc(id)}">`;
     if (p.you) g += outline(p, x, y, e, "you");
     g += outline(p, x, y, E, "shape");
-    if (age != null) g += `<text class="age" x="${f(x)}" y="${f(y + 4.5)}">${age}</text>`;
-    else if (p.g === Sex.Unknown) g += `<text class="age" x="${f(x)}" y="${f(y + 4.5)}">?</text>`;
+    if (age != null) t += `<text class="age" x="${f(x)}" y="${f(y + 4.5)}">${age}</text>`;
+    else if (p.g === Sex.Unknown) t += `<text class="age" x="${f(x)}" y="${f(y + 4.5)}">?</text>`;
     if (dead) {
       // a death X is in the emphasis colour on its date, plain ink after
       if (s.died.has(id)) top += crossOut(x, y, e, age != null, "xd now pop");
@@ -1273,17 +1289,18 @@ export function draw(L: Layout, s: Frame): string {
       anchor = sd === Side.Right ? "start" : "end";
       y0 = y - e + 9;
     }
-    l.forEach((t, i) => {
-      if (t)
-        g += `<text class="${i ? "lbd" : "lbn"}${sd === Side.Under ? " nh" : ""}" x="${f(lx)}" y="${f(y0 + i * LEAD)}" text-anchor="${anchor}">${esc(t)}</text>`;
+    l.forEach((line, i) => {
+      if (line)
+        t += `<text class="${i ? "lbd" : "lbn"}" x="${f(lx)}" y="${f(y0 + i * LEAD)}" text-anchor="${anchor}">${esc(line)}</text>`;
     });
     out += g + "</g>";
+    said += t + "</g>";
   });
 
   s.marks.forEach((m) => {
     if (m.k === Mark.Up || m.k === Mark.Down)
       put(cross(L, m.who, m.k === Mark.Up ? Shift.Up : Shift.Down, m.cls ?? Tone.Now), lit(m.cls));
-    else if (m.k === Mark.Event) put(event(m, spots.get(m)!), lit(m.cls));
+    else if (m.k === Mark.Event) said += event(m, spots.get(m)!);
     else if (m.k === Mark.Emphasis)
       put(outline(P[m.who], L.x[m.who], L.y[m.who], E, m.cls === Tone.Was ? "hl was" : "hl now pop").replace(
         "/>",
@@ -1299,5 +1316,5 @@ export function draw(L: Layout, s: Frame): string {
   });
   s.kin.forEach((m) => put(kin(L, m), lit(m.cls)));
   s.moves.forEach((mv) => put(boardMove(L, mv), lit(mv.cls)));
-  return `<svg class="ss" viewBox="0 0 ${f(L.vw)} ${L.h}" role="img" aria-label="${esc(s.label)}">${out}<g class="fore">${top}</g></svg>`;
+  return `<svg class="ss" viewBox="0 0 ${f(L.vw)} ${L.h}" role="img" aria-label="${esc(s.label)}">${out}<g class="fore">${top}</g><g class="said">${said}</g></svg>`;
 }
