@@ -2162,3 +2162,36 @@ Patrick, 2026-10-01 [in CLAUDE.md, no ids]. Until he says otherwise, new work go
 session's open ticket branch (FD-367 now), not a new ticket or PR. An unattended run never prompts
 a human: no rm -rf, sudo, kill or interactive command in any brief, because one prompt kills an
 overnight run. A mockup is the app's own code running, pixel for pixel, never a drawn stand-in.
+
+## 2026-10-02: FD-367 — nothing implies more than the record holds
+
+Patrick, 2026-10-02 [in CLAUDE.md, no id]. Every reading on a page or in a reply carries what it
+rests on and the record's coverage; a thin record gets "not enough in the record to choose a
+reading", never a thesis. Raised on the case page mockups; binding across the project. With it,
+in CLAUDE.md: every mockup frame says proposal, view or alternative; piled-up prose in a feature
+is the flag for a visual form, while a first iteration may carry some reading.
+
+## 2026-10-02: FD-367 — Patrick's direction on the case page from mockup version 4
+
+Patrick, 2026-10-02 [his words in the private corpus, no ids]. The direction is right. The page
+explains itself with no wall of text carrying the meaning; the ten levels are headlined and opened
+one at a time while the page still scrolls; one simple coverage picture comes first so a viewer
+feels the gaps; the page leans on the app's own drawing of family segments; whether the diagram is
+the page's centrepiece is tested (a dashboard on the desktop, a slide-out on the phone); an
+executive summary explains the thesis across the sections, qualified by coverage; desktop frames
+in galleries at full size. Not a ruling: the timeline pinned on the phone with chips lighting their
+event, said of one frame while brainstorming, tried in the next round. Version 4's difference
+between the self and the professional presentation (attribution only) came from the synthesis, not
+a source or a ruling; the self form ships first, for his seminar one week out. Version 5 puts
+three decisions to him: the summary as one box or the same lines per level; the coverage picture's
+form; the picture as the dashboard or the first card.
+
+## 2026-10-02: FD-367 — the session ends at its flush; the next round starts in a new session
+
+Efficiency skill rule 60, from the 2026-10-02 audit of FD-368: a long session's own context is its
+largest cost, so after a release or a flush the session stops and the next round starts from the
+notes on the branch. Criteria 66 to 68 were added the same day from this session's failures: no
+message to an agent that runs inside a Workflow (it forks a copy that edits the same files); a
+Workflow script's shared prompt text is frozen once a stage has run (editing it restarts the
+earlier stages); unattended runs never prompt. The private corpus clone merged master to pick up
+the new efficiency and token-optimization skills (abccc30).
