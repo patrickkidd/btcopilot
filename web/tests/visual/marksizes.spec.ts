@@ -431,8 +431,9 @@ test.describe("every mark", () => {
   test("fusion's bands grow out from the middle until they hold both people, never coming away from them", async ({ page }) => {
     await steps(page, STEPS.length);
     await page.locator(`#pbp .wire [data-act="jump"][data-i="${STEPS.findIndex((s) => s.name === "fusion")}"]`).click();
+    const loop = 1000 * parseFloat((await page.locator("#pbp .draw svg .fore .mv-band animate").first().getAttribute("dur"))!);
     const gaps: number[][] = [];
-    for (let ms = 0; ms < 8000; ms += 400)
+    for (let ms = 0; ms < loop; ms += 400)
       gaps.push(
         await page.evaluate((at) => {
           const svg = document.querySelector<SVGSVGElement>("#pbp .draw svg")!;
@@ -607,6 +608,66 @@ test.describe("every mark", () => {
     await show(page, svgs[i + 1]);
     await expect(page.locator('#pbp .draw svg > .fore [data-mark="hl:1"]')).toHaveCount(0);
     await expect(page.locator('#pbp .draw svg [data-mark="hl:1"].was')).toHaveCount(1);
+  });
+
+  // R-0679
+  test("projection rests in the child twice as long as it drains from the parent", async ({ page }) => {
+    await live(page);
+    await page.locator(`#pbp .wire [data-act="jump"][data-i="${STEPS.findIndex((s) => s.name === "projection")}"]`).click();
+    const [loop, drained] = await page.evaluate(() => {
+      const out = document.querySelector("#pbp .draw svg .fore .spk.s-out")!;
+      const a = out.getAnimations()[0];
+      const loop = a.effect!.getComputedTiming().duration as number;
+      a.pause();
+      let t = 0;
+      for (; t < loop; t += 10) {
+        a.currentTime = t;
+        if (new DOMMatrix(getComputedStyle(out).transform).a <= 0.121) break;
+      }
+      return [loop, t];
+    });
+    expect(drained).toBeGreaterThanOrEqual(1300);
+    expect((loop - drained) / drained).toBeCloseTo(2, 0);
+    expect(Math.abs((loop - drained) / drained - 2)).toBeLessThan(0.2);
+  });
+
+  // R-0679
+  test("fusion holds half as long after its ring as it did: 2.5s, not 5s", async ({ page }) => {
+    await live(page);
+    await page.locator(`#pbp .wire [data-act="jump"][data-i="${STEPS.findIndex((s) => s.name === "fusion")}"]`).click();
+    const [loop, ringEnd] = await page.evaluate(() => {
+      const ring = document.querySelector("#pbp .draw svg .fore .mv-shared animate")!;
+      const loop = parseFloat(ring.getAttribute("dur")!);
+      const times = ring.getAttribute("keyTimes")!.split(";").map(Number);
+      return [loop, times[3] * loop];
+    });
+    // the bands' grow time and the ring's spread, then the hold
+    expect(ringEnd).toBeCloseTo(1.4 + 1.65, 2);
+    expect(loop - ringEnd).toBeCloseTo((8 - 3.05) / 2, 2);
+  });
+
+  // R-0679
+  test("defined self's loud storm lasts a third of the board's, the rest unchanged", async ({ page }) => {
+    await live(page);
+    await page.locator(`#pbp .wire [data-act="jump"][data-i="${STEPS.findIndex((s) => s.name === "defined self")}"]`).click();
+    const at = await page.evaluate(() => {
+      const loud = document.querySelector("#pbp .draw svg .fore .stormlong")!;
+      const a = loud.getAnimations()[0];
+      const loop = a.effect!.getComputedTiming().duration as number;
+      a.pause();
+      const opacity = (t: number) => ((a.currentTime = t), +getComputedStyle(loud).opacity);
+      let fades = 0;
+      while (opacity(fades) >= 0.999) fades += 10;
+      let gone = fades;
+      while (opacity(gone) > 0.001) gone += 10;
+      return { loop, fades, gone };
+    });
+    // loud for 2.56s (was 7.68s), dying over 0.72s, then calm for 3.6s
+    expect(at.fades).toBeGreaterThan(2500);
+    expect(at.fades).toBeLessThan(2620);
+    expect(at.gone - at.fades).toBeGreaterThan(650);
+    expect(at.gone - at.fades).toBeLessThan(800);
+    expect(at.loop - at.gone).toBeCloseTo(3600, -2);
   });
 
   // R-0546

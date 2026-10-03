@@ -130,11 +130,20 @@
 /* anxiety's spikes flicker in place outside the person, never growing in and
    out of them (Patrick, 2026-10-03) */
 .pbp .spikes .spk.s-solo { animation: none; }
-/* projection's change sets off the moment its step comes up */
-.pbp .mvk .spk.s-out { animation-name: pbp-spikeout; }
-.pbp .mvk .spk.s-in { animation-name: pbp-spikein; }
-@keyframes pbp-spikeout { 0% { transform: scale(1); } 17.5%, 100% { transform: scale(0.12); } }
-@keyframes pbp-spikein { 0% { transform: scale(0.12); } 17.5%, 100% { transform: scale(1); } }
+/* projection's change sets off the moment its step comes up: the anxiety
+   drains from the parent over one grow time, then rests in the child for two,
+   so both halves are seen (Patrick, 2026-10-03) */
+.pbp .mvk .spk.s-out { animation: pbp-spikeout calc(var(--speed-grow) * 3) infinite; }
+.pbp .mvk .spk.s-in { animation: pbp-spikein calc(var(--speed-grow) * 3) infinite; }
+@keyframes pbp-spikeout { 0% { transform: scale(1); } 33.333%, 100% { transform: scale(0.12); } }
+@keyframes pbp-spikein { 0% { transform: scale(0.12); } 33.333%, 100% { transform: scale(1); } }
+/* defined self: the other's loud storm runs a third as long as the board's
+   7.68s before it dies down; its fall and the calm after keep the board's
+   0.72s and 3.6s (Patrick, 2026-10-03). Loop 2.56 + 0.72 + 3.6 = 6.88s. */
+.pbp .mvk .stormlong { animation: pbp-stormlong 6.88s infinite; }
+.pbp .mvk .stormcalm { animation: pbp-stormcalm 6.88s infinite; }
+@keyframes pbp-stormlong { 0%, 37.21% { opacity: 1; } 47.67%, 100% { opacity: 0; } }
+@keyframes pbp-stormcalm { 0%, 44.19% { opacity: 0; } 54.65%, 100% { opacity: 1; } }
 @keyframes pbp-flow { to { stroke-dashoffset: -36; } }
 @keyframes pbp-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {

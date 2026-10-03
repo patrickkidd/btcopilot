@@ -485,15 +485,18 @@ function bands(frm: Frame, a: Figure, b: Figure, closeBy: number): string {
   // the bands grow out from the middle until they hold both (Patrick, 2026-10-03)
   const [from1, to1] = a.still ? [mid, x1] : [x1, closeBy + rad(a) + 1];
   const [from2, to2] = a.still ? [mid, x2] : [x2, L - closeBy - rad(b) - 1];
-  // where the two cannot move, the bands take the shared grow time, not the walk's
-  // where the two cannot move, the bands set off at once and take the grow time
-  const joined = a.still ? SPEED.grow / 8 : 0.55;
+  // where the two cannot move, the bands set off at once and take the grow
+  // time, the ring spreads once, and the loop then holds for half of what the
+  // board's 8s leaves over (Patrick, 2026-10-03)
+  const busy = SPEED.grow + SPEED.ring;
+  const loop = a.still ? busy + (8 - busy) / 2 : 8;
+  const joined = SPEED.grow / loop;
   const times = a.still ? `0;0;${joined};1` : "0;.2;.55;1";
-  const ringTimes = `0;${joined - 0.01};${joined};${joined + SPEED.ring / 8};1`;
+  const ringTimes = `0;${joined - 0.001};${joined};${busy / loop};1`;
   // the shared field: on the board it pulses throughout; where the two cannot
   // move it spreads once, at the ring speed, when the bands have joined them
   const ring = a.still
-    ? animate("r", "26;26;26;60;60", ringTimes, "8s") + animate("opacity", "0;0;.5;0;0", ringTimes, "8s")
+    ? animate("r", "26;26;26;60;60", ringTimes, s_(loop)) + animate("opacity", "0;0;.5;0;0", ringTimes, s_(loop))
     : `<animate attributeName="r" values="26;60" dur="${s_(SPEED.ring)}" repeatCount="indefinite"/>` +
       `<animate attributeName="opacity" values=".5;0" dur="${s_(SPEED.ring)}" repeatCount="indefinite"/>`;
   return (
@@ -501,8 +504,8 @@ function bands(frm: Frame, a: Figure, b: Figure, closeBy: number): string {
       .map(
         (dy) =>
           `<line class="mv-band" x1="${n1(x1)}" y1="${dy}" x2="${n1(x2)}" y2="${dy}">` +
-          animate("x1", `${n1(from1)};${n1(from1)};${n1(to1)};${n1(to1)}`, times, "8s") +
-          animate("x2", `${n1(from2)};${n1(from2)};${n1(to2)};${n1(to2)}`, times, "8s") +
+          animate("x1", `${n1(from1)};${n1(from1)};${n1(to1)};${n1(to1)}`, times, s_(loop)) +
+          animate("x2", `${n1(from2)};${n1(from2)};${n1(to2)};${n1(to2)}`, times, s_(loop)) +
           `</line>`,
       )
       .join("") +
