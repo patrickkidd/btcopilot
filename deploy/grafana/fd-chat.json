@@ -465,7 +465,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select case when u.username like 'claude-test%' then 'claude-test account' when dg.scratch then mc.purpose || ' on a scratch record' else mc.purpose end as \"Spent on\", count(*) as \"Calls\", coalesce(sum(mc.cost_usd),0) as \"Dollars\" from model_calls mc left join users u on u.id=mc.user_id left join diagrams dg on dg.id=mc.diagram_id where $__timeFilter(mc.created_at) group by 1 order by 3 desc",
+          "rawSql": "select case when u.username like 'claude-test%' then 'claude-test account' when dg.scratch then mc.purpose::text || ' on a scratch record' else mc.purpose::text end as \"Spent on\", count(*) as \"Calls\", coalesce(sum(mc.cost_usd),0) as \"Dollars\" from model_calls mc left join users u on u.id=mc.user_id left join diagrams dg on dg.id=mc.diagram_id where $__timeFilter(mc.created_at) group by 1 order by 3 desc",
           "refId": "A"
         }
       ],
