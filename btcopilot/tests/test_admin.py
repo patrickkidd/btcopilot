@@ -270,8 +270,8 @@ def test_report_offer_goes_on_the_persons_running_turn(run, test_user, discussio
     ]
 
 
-def test_titles_fill_keeps_words_that_serve_and_takes_the_rest_from_the_file(
-    run, test_user, tmp_path
+def test_titles_fill_keeps_words_that_serve_takes_the_rest_from_the_file_and_leaves_none(
+    run, flask_app, test_user, tmp_path
 ):
     # R-0681
     diagram = db.session.get(Diagram, test_user.free_diagram_id)
@@ -292,6 +292,13 @@ def test_titles_fill_keeps_words_that_serve_and_takes_the_rest_from_the_file(
         (2, "Moved to Leeds", "description"),
         (3, "", "still untitled"),
     ]
+
+    refused = flask_app.test_cli_runner().invoke(
+        admin, ["titles", "fill", "--diagram", str(diagram.id), "--yes"]
+    )
+    assert refused.exit_code != 0 and "record" in refused.output
+    db.session.refresh(diagram)
+    assert diagram.version == version
 
     preview[1]["title"] = "Stopped calling"
     reviewed = tmp_path / "titles.json"

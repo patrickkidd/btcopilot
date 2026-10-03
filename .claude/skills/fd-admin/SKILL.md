@@ -471,7 +471,7 @@ The short titles of noted events and shifts.
 
 ### `flask admin titles fill`
 
-Give each noted event and shift with no title one: from --file when it has one, else its description when that is already 2 to 4 words ending on a whole phrase and naming no one the event links, which also covers events written after the file was made. Prints every event it found without a title, the title it gets and where that came from; "still untitled" ones need someone to write a title. Without --yes it writes nothing.
+Give each noted event and shift with no title one: from --file when it has one, else its description when that is already 2 to 4 words ending on a whole phrase and naming no one the event links, which also covers events written after the file was made. Prints every event it found without a title, the title it gets and where that came from. With --yes it writes every title, and refuses, writing nothing, while any event would be left "still untitled": a record holding one does not load.
 
 Changes something: needs `--yes`.
 

@@ -70,15 +70,16 @@ def fill(diagram_id, path, yes):
     has one, else its description when that is already 2 to 4 words ending on a
     whole phrase and naming no one the event links, which also covers events
     written after the file was made. Prints every event it found without a
-    title, the title it gets and where that came from; "still untitled" ones
-    need someone to write a title. Without --yes it writes nothing."""
+    title, the title it gets and where that came from. With --yes it writes
+    every title, and refuses, writing nothing, while any event would be left
+    "still untitled": a record holding one does not load."""
     titles = written(path) if path else {}
     diagrams = [find(diagram_id)] if diagram_id else Diagram.query.order_by(Diagram.id).all()
-    rows = []
+    rows, filled = [], []
     for diagram in diagrams:
         data = diagramjson.loads(diagram.data)
-        changed = False
-        for event in untitled(data):
+        found = untitled(data)
+        for event in found:
             title = titles.get((diagram.id, event["id"]))
             source = Source.File if title else None
             if not title:
@@ -94,13 +95,20 @@ def fill(diagram_id, path, yes):
                     "from": source.value,
                 }
             )
-            if yes and title:
-                event["title"] = title
-                changed = True
-        if changed:
+            event["title"] = title
+        if found:
+            filled.append((diagram, data))
+    left = [r for r in rows if not r["title"]]
+    if yes and left:
+        raise click.ClickException(
+            f"{len(left)} events would be left untitled and their records would not "
+            "load; nothing written. Add their titles to --file: "
+            + ", ".join(f"record {r['diagram']} event {r['event']}" for r in left)
+        )
+    if yes:
+        for diagram, data in filled:
             diagram.data = diagramjson.encode(data, diagram.data)
             diagram.version += 1
-    if yes:
         db.session.commit()
     return rows
 
