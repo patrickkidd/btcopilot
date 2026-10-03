@@ -402,7 +402,10 @@ export function spikes(person: Figure, phase: "out" | "in" | "solo"): string {
       const by = Math.sin(angle) * (r + 2 + length);
       return (
         `<line class="mv-spike" x1="${n1(ax)}" y1="${n1(ay)}" x2="${n1(bx)}" y2="${n1(by)}" opacity="0">` +
-        `<animate attributeName="opacity" values="0;1;.2;1;0" dur="${dur}s" repeatCount="indefinite"/>` +
+        // where the people stay put, the anxiety a parent passes on is there at
+        // full strength from the first frame and never goes out, so the eye
+        // sees it before it drains (Patrick, 2026-10-03)
+        `<animate attributeName="opacity" values="${person.still && phase === "out" ? "1;.6;1;.6;1" : "0;1;.2;1;0"}" dur="${dur}s" repeatCount="indefinite"/>` +
         `</line>`
       );
     })

@@ -130,13 +130,15 @@
 /* anxiety's spikes flicker in place outside the person, never growing in and
    out of them (Patrick, 2026-10-03) */
 .pbp .spikes .spk.s-solo { animation: none; }
-/* projection: the anxiety sits in the parent for 1.1s, drains over the
-   shared 1.4s grow time, then rests in the child for twice the parent's 2.5s
-   (Patrick, 2026-10-03). Loop 7.5s; the parent's phase ends at a third. */
-.pbp .mvk .spk.s-out { animation: pbp-spikeout calc((1.1s + var(--speed-grow)) * 3) infinite; }
-.pbp .mvk .spk.s-in { animation: pbp-spikein calc((1.1s + var(--speed-grow)) * 3) infinite; }
-@keyframes pbp-spikeout { 0%, 14.667% { transform: scale(1); } 33.333%, 100% { transform: scale(0.12); } }
-@keyframes pbp-spikein { 0%, 14.667% { transform: scale(0.12); } 33.333%, 100% { transform: scale(1); } }
+/* projection: the anxiety sits in the parent for 2s, drains over the shared
+   1.4s grow time, then rests in the child for twice the parent's 3.4s, and
+   the parent's lines are drawn heavier, to read against her lit outline
+   (Patrick, 2026-10-03). Loop 10.2s; the hold ends at 2/10.2, the drain at a third. */
+.pbp .mvk .spk.s-out { animation: pbp-spikeout calc((2s + var(--speed-grow)) * 3) infinite; }
+.pbp .mvk .spk.s-in { animation: pbp-spikein calc((2s + var(--speed-grow)) * 3) infinite; }
+.pbp .mvk .spk.s-out .mv-spike { stroke-width: 2.8; }
+@keyframes pbp-spikeout { 0%, 19.608% { transform: scale(1); } 33.333%, 100% { transform: scale(0.12); } }
+@keyframes pbp-spikein { 0%, 19.608% { transform: scale(0.12); } 33.333%, 100% { transform: scale(1); } }
 /* defined self: the other's loud storm runs a third as long as the board's
    7.68s before it dies down; its fall and the calm after keep the board's
    0.72s and 3.6s (Patrick, 2026-10-03). Loop 2.56 + 0.72 + 3.6 = 6.88s. */
