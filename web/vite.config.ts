@@ -186,7 +186,8 @@ export default defineConfig({
         cssCodeSplit: false,
         modulePreload: false,
         rollupOptions: {
-          input: { mockup: new URL("./mockup.html", import.meta.url).pathname },
+          // MOCKUP_ENTRY names another gallery's page (mockup5.html for version 5)
+          input: { mockup: new URL(`./${process.env.MOCKUP_ENTRY ?? "mockup.html"}`, import.meta.url).pathname },
           output: { inlineDynamicImports: true },
         },
       }

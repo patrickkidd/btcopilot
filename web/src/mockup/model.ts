@@ -4,7 +4,7 @@ import { spanYears } from "../picture";
 import { Family, tieBefore, Told, when } from "../snapshots";
 import { DateCertainty } from "../certainty";
 import { ChipKind, EventKind, type Case, type Cluster, type PairBond, type Person, type Timeline, type TimelineEvent } from "../types";
-import { known, num, UNKNOWN, type CaseFile, type CaseInput, type CBond, type CEvent, type CLevel, type CPerson, type CCluster, type CStep, type PageFile } from "./casefile";
+import { known, num, UNKNOWN, type CaseFile, type CaseInput, type CBond, type CEvent, type CLevel, type CPerson, type CCluster, type CQuestion, type CStep, type PageFile } from "./casefile";
 import { at, dated, endOf, fullDate, lastIso, type Dated } from "./dates";
 import { Wording } from "./words";
 
@@ -54,6 +54,8 @@ export interface Model {
   subject: CPerson;
   people: Map<string, CPerson>;
   bonds: Map<string, CBond>;
+  /** The coach's tracked questions, as the questions file holds them; none when the gallery reads none. */
+  questions: CQuestion[];
   parentsOf: (id: string) => CBond | null;
   dates: Map<string, Dated | null>;
   tl: Timeline;
@@ -90,6 +92,14 @@ const BOND_DATES: [keyof CBond, EventKind][] = [
 ];
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** A couple's event in plain words: the record's "bonded" is "got together" on the page. */
+const COUPLE_WORD: Record<string, string> = { [EventKind.Bonded]: "got together", [EventKind.Married]: "married", [EventKind.Separated]: "separated", [EventKind.Divorced]: "divorced" };
+
+/** An event's words as the page shows them; an event with no words of its
+ * own (the record's wedding with an empty description) takes its kind's name,
+ * as the app's line labels a self-describing event. */
+export const labelOf = (m: { words: Wording }, e: CEvent): string => m.words.plain(e.text) || cap(e.kind);
 
 /** The day before an iso date. */
 function dayBefore(iso: string): string {
@@ -290,6 +300,7 @@ export function build(input: CaseInput): Model {
     subject,
     people,
     bonds,
+    questions: input.questions?.questions ?? [],
     parentsOf,
     dates,
     tl,
@@ -313,10 +324,12 @@ function eventRow(e: CEvent, d: Dated | null, people: Map<string, CPerson>, plai
   const who = people.get(e.person)?.name ?? "";
   const text = plain(e.text);
   const label = text || cap(e.kind);
-  const sentence = text
-    ? `${who} ${text}`.trim()
-    : couple
-      ? `${who} and ${people.get(e.others[0])?.name ?? ""} ${e.kind}`
+  // a couple's event names both partners before the description, so the pair
+  // appears before any supplementary details, never one partner alone
+  const sentence = couple
+    ? `${who} and ${people.get(e.others[0])?.name ?? ""} ${COUPLE_WORD[e.kind] ?? e.kind}${text ? ` (${text})` : ""}`
+    : text
+      ? `${who} ${text}`.trim()
       : `${who} ${e.kind === EventKind.Death ? "died" : e.kind}`;
   return {
     id: num(e.id),
@@ -325,12 +338,12 @@ function eventRow(e: CEvent, d: Dated | null, people: Map<string, CPerson>, plai
     person_name: who,
     person: num(e.person),
     dateTime: d?.iso ?? null,
-    endDateTime: null,
+    endDateTime: dated(e.end)?.iso ?? null,
     dateCertainty: d?.certainty ?? DateCertainty.Unknown,
     kind: e.kind,
     description: text || null,
     notes: null,
-    location: null,
+    location: e.location ?? null,
     symptom: e.symptom ?? null,
     anxiety: e.anxiety ?? null,
     functioning: e.functioning ?? null,
@@ -342,11 +355,14 @@ function eventRow(e: CEvent, d: Dated | null, people: Map<string, CPerson>, plai
   };
 }
 
-/** Who stands on the person's own picture: the person, their partners and
- * children, their parents with the parents' other partners, and every brother,
- * sister, half-brother and half-sister. One line of descent: the app's layout
- * refuses a couple whose both sets of parents are drawn, so a partner's family
- * is a picture of its own under level 4. */
+/** Who stands on the person's own picture: the person, the partners the record
+ * holds them with at its last date (an earlier partner, separated or divorced,
+ * is said in words at level 3: the app's layout places at most two partners
+ * beside a person with no brother or sister in the row), their children, their
+ * parents with the parents' other partners, and every brother, sister,
+ * half-brother and half-sister. One line of descent: the app's layout refuses a
+ * couple whose both sets of parents are drawn, so a partner's family is a
+ * picture of its own under level 4. */
 function household(subject: CPerson, file: CaseFile, bonds: Map<string, CBond>, parentsOf: (id: string) => CBond | null): string[] {
   const ids = new Set<string>([subject.id]);
   const partnersOf = (id: string) =>
@@ -354,7 +370,10 @@ function household(subject: CPerson, file: CaseFile, bonds: Map<string, CBond>, 
       .filter((b) => b.a === id || b.b === id)
       .map((b) => (b.a === id ? b.b : b.a))
       .filter((x): x is string => !!x);
-  partnersOf(subject.id).forEach((p) => ids.add(p));
+  [...bonds.values()]
+    .filter((b) => (b.a === subject.id || b.b === subject.id) && !b.separated && !b.divorced)
+    .map((b) => (b.a === subject.id ? b.b : b.a))
+    .forEach((p) => p && ids.add(p));
   file.people.forEach((p) => {
     const pb = parentsOf(p.id);
     if (pb && (pb.a === subject.id || pb.b === subject.id)) ids.add(p.id);
@@ -529,6 +548,15 @@ export function sideOf(m: M, id: string): number | null {
   return i < 0 ? null : i;
 }
 
+/** The date the coach asked the person about their brothers and sisters, where
+ * the record holds such a question attached to the person and answered. */
+function siblingsAsked(m: M): string | null {
+  const q = m.questions.find(
+    (x) => x.state === "resolved" && x.attached?.kind === "person" && x.attached.id === m.subject.id && /\b(brothers?|sisters?|siblings?)\b/i.test(x.text),
+  );
+  return q?.askedAt ?? null;
+}
+
 /** The subject's place among brothers and sisters, from the record's links. */
 export function siblingLine(m: M): string {
   const s = m.subject;
@@ -542,10 +570,13 @@ export function siblingLine(m: M): string {
     return p.id !== s.id && q && q.id !== pb.id && [q.a, q.b].some((x) => x && [pb.a, pb.b].includes(x));
   });
   const parts: string[] = [];
-  // a record with no brother or sister in it is a gap, never "only child": a
-  // case file may hold a few of the record's people
-  if (!sibs.length) parts.push(`${s.name}'s place among brothers and sisters: not in the record.`);
-  else {
+  // the record holds no full brother or sister: a fact about the record, with
+  // the date the coach asked where it holds that question answered; never
+  // "only child", which the record does not say
+  if (!sibs.length) {
+    const asked = siblingsAsked(m);
+    parts.push(`Full brothers or sisters of ${s.name}: none in the record${asked ? ` (asked ${asked}, answered)` : ""}.`);
+  } else {
     const ordered = sibs.every((p) => p.siblingOrder != null) && s.siblingOrder != null;
     const list = sibs.map((p) => `${p.name}${known(p.birth) ? ` (born ${fullDate(dated(p.birth)!)})` : ""}`).join(", ");
     parts.push(
@@ -589,7 +620,7 @@ export function restsOf(m: M, ids: string[] | undefined): Ref[] {
     const e = m.file.events.find((x) => x.id === id);
     if (!e) return [];
     const d = m.dates.get(e.id);
-    return [{ kind: ChipKind.Event, id: pkey(id), label: `${d ? fullDate(d) : "no date"} · ${m.words.plain(e.text)}` }];
+    return [{ kind: ChipKind.Event, id: pkey(id), label: `${d ? fullDate(d) : "no date"} · ${labelOf(m, e)}` }];
   });
 }
 
@@ -616,28 +647,68 @@ function say(p: CPerson): string {
 }
 
 /** The people the record holds and no picture here draws, each with the link
- * the record holds to someone drawn: a parent, a brother or sister, or none. */
+ * the record holds to someone drawn: a parent, a brother or sister, a partner
+ * and the children of that couple; then couples and people the record links to
+ * no one drawn. */
 function undrawn(m: M): string | null {
   const shown = [...new Set<string>([...m.householdIds, ...m.sides.flatMap((s) => s.pics.flatMap((p) => p.people))])];
   const rest = m.file.people.filter((p) => !shown.includes(p.id));
   if (!rest.length) return null;
   const done = new Set<string>();
+  const left = (id: string) => rest.some((p) => p.id === id) && !done.has(id);
   const said: string[] = [];
   const kin = (sex: CPerson["sex"], one: boolean) => (one ? (sex === "F" ? "sister" : sex === "M" ? "brother" : "sibling") : "siblings");
+  const childrenOf = (b: CBond) => m.file.people.filter((p) => m.parentsOf(p.id)?.id === b.id);
+  const take = (ids: string[]) => ids.forEach((id) => done.add(id));
+  // a drawn person's parents and brothers and sisters
   shown.forEach((q) => {
     const pb = m.parentsOf(q);
     if (!pb) return;
-    const folks = [pb.a, pb.b].filter((x): x is string => !!x && rest.some((p) => p.id === x) && !done.has(x));
-    const sibs = rest.filter((p) => !done.has(p.id) && !folks.includes(p.id) && m.parentsOf(p.id)?.id === pb.id);
+    const folks = [pb.a, pb.b].filter((x): x is string => !!x && left(x));
+    const sibs = rest.filter((p) => left(p.id) && !folks.includes(p.id) && m.parentsOf(p.id)?.id === pb.id);
     if (!folks.length && !sibs.length) return;
-    [...folks, ...sibs.map((p) => p.id)].forEach((id) => done.add(id));
+    take([...folks, ...sibs.map((p) => p.id)]);
     const her = m.people.get(q)?.sex === "F" ? "her" : m.people.get(q)?.sex === "M" ? "his" : "their";
     const parts: string[] = [];
     if (folks.length) parts.push(`${nameOf(m, q)}'s ${folks.length === 2 ? "parents" : "parent"} ${folks.map((id) => say(m.people.get(id)!)).join(" and ")}`);
     if (sibs.length) parts.push(`${folks.length ? her : `${nameOf(m, q)}'s`} ${kin(sibs[0].sex, sibs.length === 1)} ${sibs.map(say).join(", ")}`);
     said.push(parts.join(" and "));
   });
-  rest.filter((p) => !done.has(p.id)).forEach((p) => said.push(`${say(p)}, the link to the family is not in the record`));
+  // a placed person's other partner, with the children of that couple; again
+  // while a newly placed person has a partner of their own
+  for (let placed = [...shown, ...done]; placed.length; ) {
+    const before = done.size;
+    placed.forEach((q) => {
+      [...m.bonds.values()].forEach((b) => {
+        if (!b.a || !b.b || (b.a !== q && b.b !== q)) return;
+        const other = b.a === q ? b.b : b.a;
+        if (!left(other)) return;
+        const kids = childrenOf(b).filter((p) => left(p.id));
+        take([other, ...kids.map((p) => p.id)]);
+        // a couple the record separates or divorces is an earlier partner, with the record's dates
+        const earlier = !!(b.separated || b.divorced);
+        const when = earlier && bondDates(b) ? ` (${bondDates(b)})` : "";
+        said.push(`${nameOf(m, q)}'s ${earlier ? "earlier partner" : "partner"} ${say(m.people.get(other)!)}${when}${kids.length ? ` and their ${kids.length === 1 ? "child" : "children"} ${kids.map(say).join(", ")}` : ""}`);
+      });
+    });
+    placed = done.size > before ? [...done] : [];
+  }
+  // a couple neither of whom is drawn, with their children; whose partner one
+  // is, where the record links them to someone said above
+  [...m.bonds.values()].forEach((b) => {
+    if (!b.a || !b.b || !left(b.a) || !left(b.b)) return;
+    const kids = childrenOf(b).filter((p) => left(p.id));
+    take([b.a, b.b, ...kids.map((p) => p.id)]);
+    const tie = [b.a, b.b].map((id) => {
+      const pb = m.parentsOf(id);
+      const folks = pb ? [pb.a, pb.b].filter((x): x is string => !!x) : [];
+      return folks.length ? `${nameOf(m, id)}, child of ${folks.map((f) => nameOf(m, f)).join(" and ")}` : null;
+    });
+    const who = tie.find((t) => t) ? `${tie[0] ?? nameOf(m, b.a)}, and ${tie[1] ?? nameOf(m, b.b)}` : `${nameOf(m, b.a)} and ${nameOf(m, b.b)}, a couple; the link to the family is not in the record`;
+    said.push(`${who}${kids.length ? `; their ${kids.length === 1 ? "child" : "children"} ${kids.map(say).join(", ")}` : ""}`);
+  });
+  const loose = rest.filter((p) => left(p.id));
+  if (loose.length) said.push(`${loose.map(say).join(", ")}: the link to the family is not in the record`);
   return `Also in the record, not on a picture here: ${said.join("; ")}.`;
 }
 
@@ -668,7 +739,7 @@ const undatedLine = (m: M, e: CEvent) => `No date in the record: ${e.person === 
 
 const still = (pic: Picture, label: string): Still => ({ layout: pic.layout, fault: pic.fault, label, unknownParent: drawsUnknown(pic) });
 
-const row = (m: M, e: CEvent): Row => ({ date: fullDate(m.dates.get(e.id)!), text: m.words.plain(e.text) });
+const row = (m: M, e: CEvent): Row => ({ date: fullDate(m.dates.get(e.id)!), text: labelOf(m, e) });
 
 /** The case as the page reads it (case.ts CaseView), every string as the page shows it. */
 export function viewOf(m: M): CaseView {

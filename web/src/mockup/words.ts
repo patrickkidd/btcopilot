@@ -12,9 +12,10 @@ import type { PageFile } from "./casefile";
 export const FORBIDDEN = /\b(differentiat\w*|triangl\w*|triangulat\w*|fusion|cut[- ]?off|anxiety|anxious|nuclear|projection|because)\b/gi;
 
 /** Words this page once coined and may not use: Patrick's word for a set of
- * events on the line is "cluster" (ruled 2026-09-22), and he said "chalkboard",
- * never "board" on its own. */
-export const COINED = /\b(spans?|board)\b/gi;
+ * events on the line is "cluster" (ruled 2026-09-22; never "span" or
+ * "stretch"), a thing that happened is an "event" (never "moment"), and he said
+ * "chalkboard", never "board" on its own. */
+export const COINED = /\b(spans?|stretch(es)?|moments?|board)\b/gi;
 
 export function scan(text: string, re: RegExp = FORBIDDEN): string[] {
   return [...new Set((text.match(re) ?? []).map((w) => w.toLowerCase()))];

@@ -15,7 +15,10 @@ export const UNKNOWN = "unknown";
 
 export interface CPerson {
   id: string;
+  /** The name the page draws: the first name where no one else in the record shares it. */
   name: string;
+  /** The name as the record stores it, where it differs. */
+  fullName?: string;
   sex: "M" | "F" | "unknown";
   birth: CDate;
   death: CDate;
@@ -38,6 +41,8 @@ export interface CBond {
 export interface CEvent {
   id: string;
   date: CDate;
+  /** Where the record holds one, the date the event ran to. */
+  end?: CDate;
   kind: string;
   person: string;
   others: string[];
@@ -50,6 +55,8 @@ export interface CEvent {
   anxiety?: string | null;
   functioning?: string | null;
   relationship?: string | null;
+  /** The place the record notes on the event, as stored. */
+  location?: string | null;
 }
 
 /** One of several sayings a level quotes (the coach's impressions), each with
@@ -198,10 +205,43 @@ export interface PageFile {
   published?: Record<string, { cluster?: string; step?: number; speak?: boolean; rests?: number }>;
 }
 
-/** A case as the gallery is given it: the record and the page beside it. */
+/** What the record attaches a tracked question to: an event, a person or a
+ * pair bond, by this file's id for it. */
+export interface CAttached {
+  kind: "event" | "person" | "pairBond";
+  id: string;
+}
+
+/** One of the coach's tracked questions, as the record stores it (kind fact or
+ * thought; state raised, asked or resolved), with what it is attached to and
+ * that thing's own people and event, by this file's ids. */
+export interface CQuestion {
+  id: string;
+  kind: "fact" | "thought";
+  state: "raised" | "asked" | "resolved";
+  outcome: string | null;
+  askedAt: string;
+  attached: CAttached | null;
+  text: string;
+  people: string[];
+  events: string[];
+}
+
+/** The questions file beside a case file (<case>.questions.json): the coach's
+ * tracked questions, and how many impressions the record holds besides. */
+export interface QuestionsFile {
+  case: string;
+  source: string;
+  impressions: number;
+  questions: CQuestion[];
+}
+
+/** A case as the gallery is given it: the record, the page beside it, and the
+ * coach's tracked questions where the gallery reads them (version 5). */
 export interface CaseInput {
   file: CaseFile;
   page: PageFile;
+  questions?: QuestionsFile;
 }
 
 /** "p12" → 12, "e7" → 7, "pb3" → 3: the app's ids are numbers. */
