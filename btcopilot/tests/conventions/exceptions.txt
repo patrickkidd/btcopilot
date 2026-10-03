@@ -153,3 +153,7 @@ R-0665 | TEST OWED | appended from the queue on 2026-10-02; 0 of 2 citing tests 
 R-0666 | TEST OWED | appended from the queue on 2026-10-02; 0 of 2 citing tests exist
 R-0655 | TEST OWED | appended from the queue on 2026-10-02; 0 of 2 citing tests exist
 R-0669 | TEST OWED | appended from the queue on 2026-10-02; 0 of 2 citing tests exist
+R-0683 | TEST OWED | coverage of the essentials is not built yet; tests come with that build
+R-0684 | TEST OWED | coverage of the essentials is not built yet; tests come with that build
+R-0685 | TEST OWED | coverage of the essentials is not built yet; tests come with that build
+R-0686 | TEST OWED | coverage of the essentials is not built yet; tests come with that build
