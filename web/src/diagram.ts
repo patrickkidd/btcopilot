@@ -1177,7 +1177,8 @@ export function draw(L: Layout, s: Frame): string {
     const y = L.y[id];
     const e = d.half(p);
     const dead = p.died != null && p.died <= s.t + 1e-6;
-    const age = p.born == null ? null : yr((dead ? p.died! : s.t) - p.born + 1e-6);
+    // someone not yet born keeps their place (R-0546) but has no age to show
+    const age = p.born == null || p.born > s.t + 1e-6 ? null : yr((dead ? p.died! : s.t) - p.born + 1e-6);
     let g = `<g class="p" data-id="${esc(id)}">`;
     if (p.you) g += outline(p, x, y, e, "you");
     g += outline(p, x, y, E, "shape");

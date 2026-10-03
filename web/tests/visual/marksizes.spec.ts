@@ -238,6 +238,22 @@ test.describe("every mark", () => {
   test("no mark runs over a name or a word", async ({ page }) => {
     expect(await over(page, await steps(page, STEPS.length))).toEqual([]);
   });
+
+  // R-0546
+  test("someone not yet born keeps their place with no age in their shape", async ({ page }) => {
+    const svgs = await steps(page, STEPS.length);
+    const ages: string[] = [];
+    for (const svg of svgs) {
+      await show(page, svg);
+      ages.push(...(await page.locator("#pbp .draw svg text.age").allTextContents()));
+    }
+    expect(ages.filter((a) => a.startsWith("-"))).toEqual([]);
+    await show(page, svgs[0]);
+    // Ivy, Leo and Sam are drawn before they were born, and Walter, born 1948, is 24 at the wedding
+    expect(await page.locator("#pbp .draw svg .p").count()).toBe(7);
+    expect(await page.locator('#pbp .draw svg .p[data-id="5"] text.age').count()).toBe(0);
+    expect(await page.locator('#pbp .draw svg .p[data-id="3"] text.age').textContent()).toBe("24");
+  });
 });
 
 test.describe("the Whitlock family's years apart", () => {
