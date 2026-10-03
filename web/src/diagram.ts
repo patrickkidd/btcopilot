@@ -993,14 +993,16 @@ export const tie = (x0: number, y0: number, x1: number, y1: number, y: number, m
 
 /** One slash for a separation, two for a divorce, upright because custody is
  * not recorded, centred on x across the couple's line at y. */
-export function slashes(n: number, x: number, y: number, W: number, fresh = false): string {
-  let out = "";
-  for (let i = 0; i < n; i++) {
+export const slashes = (n: number, x: number, y: number, W: number, fresh = false): string =>
+  slashLines(n, x, y, W, fresh).join("");
+
+/** The same slashes one by one, so a fresh one can be drawn over the rest. */
+function slashLines(n: number, x: number, y: number, W: number, fresh = false): string[] {
+  return Array.from({ length: n }, (_, i) => {
     const sx = x - (n - 1) * 0.05 * W + i * 0.1 * W;
     const pop = fresh && i === n - 1 ? " now pop" : "";
-    out += `<line class="slash${pop}" x1="${f(sx)}" y1="${f(y + 0.15 * W)}" x2="${f(sx)}" y2="${f(y - 0.25 * W)}"/>`;
-  }
-  return out;
+    return `<line class="slash${pop}" x1="${f(sx)}" y1="${f(y + 0.15 * W)}" x2="${f(sx)}" y2="${f(y - 0.25 * W)}"/>`;
+  });
 }
 
 /** The death X: corner to corner, or only its corners when an age sits inside. */
@@ -1121,6 +1123,10 @@ export function draw(L: Layout, s: Frame): string {
   const P = L.P;
   const texts = [...L.names, ...s.marks.filter((m) => m.k === Mark.Event).map((m) => word(L, m).box)];
   let out = "";
+  // what this snapshot adds is drawn last, over everything carried from before
+  let top = "";
+  const put = (markup: string, now: boolean) => (now ? (top += markup) : (out += markup));
+  const lit = (cls?: Tone) => (cls ?? Tone.Now) === Tone.Now;
   s.bonds.forEach((b) => {
     const kids = L.kids.find((c) => c.of.includes(b.a) && c.of.includes(b.b));
     if (kids) out += childLines(L, bar(L, b), kids.kids);
@@ -1140,7 +1146,7 @@ export function draw(L: Layout, s: Frame): string {
     // ruled 2026-09-26: only a marriage makes the line solid, and only a marriage can be divorced
     if (b.st === Tie.Divorced && !b.married)
       throw new Error(`a divorce for a couple that never married: ${b.a} and ${b.b}`);
-    out += tie(
+    put(tie(
       k.x0,
       L.y[k.a] + d.half(P[k.a]),
       k.x1,
@@ -1149,7 +1155,7 @@ export function draw(L: Layout, s: Frame): string {
       b.married,
       b.hot ? " now" : "",
       ` data-bond="${esc(`${b.a}|${b.b}`)}"`,
-    );
+    ), b.hot);
     const n = b.st === Tie.Separated ? 1 : b.st === Tie.Divorced ? 2 : 0;
     if (!n) return;
     // the slashes sit in an open stretch of the line, never on a child's line,
@@ -1168,7 +1174,9 @@ export function draw(L: Layout, s: Frame): string {
         return Array.from({ length: room + 1 }, (_, i) => [(p + q) / 2 - 2 * i, (p + q) / 2 + 2 * i]).flat();
       })
       .find(clear);
-    out += slashes(n, at ?? (open[0][0] + open[0][1]) / 2, k.y, len, b.fresh);
+    slashLines(n, at ?? (open[0][0] + open[0][1]) / 2, k.y, len, b.fresh).forEach((l, i) =>
+      put(l, b.fresh && i === n - 1),
+    );
   });
 
   Object.keys(P).forEach((id) => {
@@ -1186,7 +1194,8 @@ export function draw(L: Layout, s: Frame): string {
     else if (p.g === Sex.Unknown) g += `<text class="age" x="${f(x)}" y="${f(y + 4.5)}">?</text>`;
     if (dead) {
       // a death X is in the emphasis colour on its date, plain ink after
-      g += crossOut(x, y, e, age != null, s.died.has(id) ? "xd now" : "xd");
+      if (s.died.has(id)) top += crossOut(x, y, e, age != null, "xd now");
+      else g += crossOut(x, y, e, age != null, "xd");
     }
     const l = lines(p, s.t);
     const sd = L.side[id];
@@ -1218,22 +1227,22 @@ export function draw(L: Layout, s: Frame): string {
 
   s.marks.forEach((m) => {
     if (m.k === Mark.Up || m.k === Mark.Down)
-      out += cross(L, m.who, m.k === Mark.Up ? Shift.Up : Shift.Down, m.cls ?? Tone.Now);
-    else if (m.k === Mark.Event) out += event(L, m);
+      put(cross(L, m.who, m.k === Mark.Up ? Shift.Up : Shift.Down, m.cls ?? Tone.Now), lit(m.cls));
+    else if (m.k === Mark.Event) put(event(L, m), lit(m.cls));
     else if (m.k === Mark.Emphasis)
-      out += outline(P[m.who], L.x[m.who], L.y[m.who], E, m.cls === Tone.Was ? "hl was" : "hl now pop").replace(
+      put(outline(P[m.who], L.x[m.who], L.y[m.who], E, m.cls === Tone.Was ? "hl was" : "hl now pop").replace(
         "/>",
         ` data-mark="hl:${esc(m.who)}"/>`,
-      );
+      ), lit(m.cls));
     // functioning: down breaks the outline into pieces, up is one continuous green line
     else if (m.k === Mark.FnUp || m.k === Mark.FnDown)
-      out += outline(P[m.who], L.x[m.who], L.y[m.who], E, `fn ${m.k === Mark.FnUp ? "up" : "down"} ${m.cls ?? Tone.Now}`).replace(
+      put(outline(P[m.who], L.x[m.who], L.y[m.who], E, `fn ${m.k === Mark.FnUp ? "up" : "down"} ${m.cls ?? Tone.Now}`).replace(
         "/>",
         ` data-mark="${m.k}:${esc(m.who)}"/>`,
-      );
-    else if (m.k === Mark.Anxiety) out += spikes(L, m.who, m.cls ?? Tone.Now);
+      ), lit(m.cls));
+    else if (m.k === Mark.Anxiety) put(spikes(L, m.who, m.cls ?? Tone.Now), lit(m.cls));
   });
-  s.kin.forEach((m) => (out += kin(L, m)));
-  s.moves.forEach((mv) => (out += boardMove(L, mv)));
-  return `<svg class="ss" viewBox="0 0 ${f(L.vw)} ${L.h}" role="img" aria-label="${esc(s.label)}">${out}</svg>`;
+  s.kin.forEach((m) => put(kin(L, m), lit(m.cls)));
+  s.moves.forEach((mv) => put(boardMove(L, mv), lit(mv.cls)));
+  return `<svg class="ss" viewBox="0 0 ${f(L.vw)} ${L.h}" role="img" aria-label="${esc(s.label)}">${out}<g class="fore">${top}</g></svg>`;
 }

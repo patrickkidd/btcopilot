@@ -196,6 +196,25 @@ const median = (xs: number[]) => {
   return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
 };
 
+/** Every step whose lit marks are not all in the layer drawn last, over the
+ * grey ones carried from earlier steps. */
+async function under(page: Page, svgs: string[]): Promise<string[]> {
+  const found: string[] = [];
+  for (const [i, svg] of svgs.entries()) {
+    await show(page, svg);
+    const wrong = await page.evaluate(() => {
+      const root = document.querySelector<SVGSVGElement>("#pbp .draw svg")!;
+      const fore = root.lastElementChild;
+      if (!fore?.matches("g.fore")) return ["no layer drawn last"];
+      const lit = [...root.querySelectorAll(".now, .pop")].filter((el) => !fore.contains(el));
+      const grey = [...fore.querySelectorAll(".was")];
+      return [...lit, ...grey].map((el) => el.closest("[data-mark], [data-bond]")?.outerHTML.slice(0, 60) ?? el.getAttribute("class")!);
+    });
+    wrong.forEach((w) => found.push(`step ${i + 1}: ${w}`));
+  }
+  return found;
+}
+
 /** Every crossing of a mark and a word, step by step. */
 async function over(page: Page, svgs: string[]): Promise<string[]> {
   const found: string[] = [];
@@ -239,6 +258,11 @@ test.describe("every mark", () => {
     expect(await over(page, await steps(page, STEPS.length))).toEqual([]);
   });
 
+  // R-0679
+  test("each step's lit marks are drawn over every grey one", async ({ page }) => {
+    expect(await under(page, await steps(page, STEPS.length))).toEqual([]);
+  });
+
   // R-0546
   test("someone not yet born keeps their place with no age in their shape", async ({ page }) => {
     const svgs = await steps(page, STEPS.length);
@@ -262,5 +286,10 @@ test.describe("the Whitlock family's years apart", () => {
   // R-0679
   test("no mark runs over a name or a word", async ({ page }) => {
     expect(await over(page, await steps(page, 5))).toEqual([]);
+  });
+
+  // R-0679
+  test("each step's lit marks are drawn over every grey one", async ({ page }) => {
+    expect(await under(page, await steps(page, 5))).toEqual([]);
   });
 });
