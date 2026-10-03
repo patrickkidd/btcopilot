@@ -118,6 +118,8 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
 
 ## Owner corrections that bind every reply (2026-09-09)
 
+- **Rulings come as drawn variations; the reply is a link and one line (2026-10-03, FD-367; Patrick: "You gave me another wall of text instead of speaking to me and mock ups ... I am managing up to six parallel sessions at a time ... roll it all up like a professional and just let me direct and not micromanage").** Anything he must rule on is a mockup artifact with one frame per option, live where taps matter; the reply carries only the link and the one question, and nothing he must remember from earlier.
+
 - **Never correct what the model wrote in a record unless a code change would break it (Patrick, 2026-09-28: "Your job is not to go and start correcting what the model did unless we make a code change that what the model did would break").** A suspected duplicate or odd coding the model produced is left alone; a repair is proposed only where a new rule or code path refuses or breaks that data.
 
 - **Nothing implies more than the record holds (Patrick, 2026-10-02: "It is critical that we do not produce anything that implies we know more than we really do. And llms are notorious for breaking that rule").** Every reading on a page or in a reply carries what it rests on and the record's coverage; a thin record gets "not enough in the record to choose a reading", never a thesis.
