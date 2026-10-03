@@ -531,7 +531,10 @@ def schemas(coder: bool = False) -> list[dict]:
                 "properties": {
                     "text": {
                         "type": "string",
-                        "description": "The words the reply will say.",
+                        "description": (
+                            "The words the reply will say: what came first and how "
+                            "close in time, never that one thing caused another."
+                        ),
                     },
                     "evidence": {
                         "type": "array",

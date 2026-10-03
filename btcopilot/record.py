@@ -1242,6 +1242,8 @@ def _questions(data: dict, deltas: list[dict], author: Author):
             Pushback(question["pushback"])
         if rules is IMPRESSION:
             _rests(data, question, question_id, added)
+            if added:
+                _uncaused(question, question_id)
         else:
             _linked(data, question, question_id)
             _names(question, question_id)
@@ -1311,6 +1313,28 @@ def _rests(data: dict, impression: dict, impression_id: str, added: bool):
                 "not in the record",
                 GONE,
             )
+
+
+# Words that say one thing brought about another. An impression notes what
+# came first and how close in time (R-0569, R-0504); Bowen never went beyond
+# "a striking time sequence".
+CAUSE = re.compile(
+    r"\b(caus(e|es|ed|ing)|drove|drives|driven|(led|leads|leading) to|because of"
+    r"|made (him|her|them)|result(ed|s)? in|trigger(ed|s)?)\b",
+    re.IGNORECASE,
+)
+
+
+def _uncaused(impression: dict, impression_id: str):
+    found = CAUSE.search(impression.get("text") or "")
+    if found:
+        raise Invalid(
+            f"impression {impression_id} says one thing brought about another "
+            f"({found.group(0)!r}): say what came first and how close in time, "
+            "and claim no more than what it rests on holds",
+            "The impression says one thing caused another. Say what came first "
+            "and how close in time instead.",
+        )
 
 
 def _commit(
