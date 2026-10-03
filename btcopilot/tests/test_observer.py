@@ -9,6 +9,7 @@ import pytest
 from mock import patch
 
 from btcopilot.coachmodel import Refusal
+from btcopilot.llmutil import Served, Spent
 from btcopilot.extensions import db
 from btcopilot import turns
 from btcopilot.models import Observation, ObservationKind
@@ -281,7 +282,7 @@ def test_a_turn_that_used_every_step_is_written_down(
 
 class Declines(Model):
     def turn(self, system, messages, tools, turn_id=""):
-        raise Refusal("declined", "cyber")
+        raise Refusal("declined", "cyber", Served("claude-opus-5-5"), Spent())
         yield
 
 

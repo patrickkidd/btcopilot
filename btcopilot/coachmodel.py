@@ -140,6 +140,8 @@ class CoachModel:
                     f"Coach model {answered.model} turn {turn_id} refused, "
                     f"with every fallback: {category}",
                     category,
+                    answered,
+                    claude_spent(message.usage),
                 )
 
             # Echo back only the fields the API accepts: a whole block dump carries

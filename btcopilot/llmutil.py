@@ -74,10 +74,6 @@ def _is_claude_model(model: str) -> bool:
     return model.startswith("claude-")
 
 
-class OutputTruncatedError(Exception):
-    pass
-
-
 # --- JSON Schema generation for Gemini structured output ---
 
 
@@ -342,6 +338,25 @@ class Spent:
         self.output += other.output
         self.cache_creation += other.cache_creation
         self.cache_read += other.cache_read
+
+
+class Billed(Exception):
+    """The provider answered and charged for the call, and then the call
+    failed. What it served and spent ride on the error, so the ledger still
+    gets the call's row (R-0628)."""
+
+    def __init__(self, message: str, served: "Served", spent: Spent):
+        super().__init__(message)
+        self.served = served
+        self.spent = spent
+
+
+class OutputTruncatedError(Billed):
+    pass
+
+
+class Unreadable(Billed):
+    """The answer was not the JSON asked for."""
 
 
 def claude_spent(usage) -> Spent:
@@ -632,19 +647,20 @@ async def gemini_structured(prompt, response_format, large=False, model=None):
     _log.debug(f"gemini_structured() finish_reason: {finish_reason}")
     _log.debug(f"gemini_structured() raw: {response.text}")
 
+    answered = Served(model=response.model_version)
+    spent = gemini_spent(response.usage_metadata)
     if finish_reason == "MAX_TOKENS":
         raise OutputTruncatedError(
-            "LLM response truncated due to token limit. Input data too large."
+            "LLM response truncated due to token limit. Input data too large.",
+            answered,
+            spent,
         )
-
-    data = json.loads(response.text)
-    result = from_dict(response_format, data)
+    try:
+        result = from_dict(response_format, json.loads(response.text))
+    except (ValueError, TypeError, KeyError) as error:
+        raise Unreadable(f"gemini_structured {model}: {error}", answered, spent) from error
     _log.debug(f"gemini_structured(): --> {result}")
-    return Parsed(
-        result,
-        gemini_spent(response.usage_metadata),
-        Served(model=response.model_version),
-    )
+    return Parsed(result, spent, answered)
 
 
 def gemini_structured_sync(prompt, response_format, large=False):
@@ -689,22 +705,26 @@ async def claude_structured(prompt, response_format, model):
         f"in={response.usage.input_tokens} out={response.usage.output_tokens}"
     )
 
+    answered = served(response, f"claude_structured {model}")
+    spent = claude_spent(response.usage)
     if response.stop_reason == "max_tokens":
         raise OutputTruncatedError(
-            "LLM response truncated due to token limit. Input data too large."
+            "LLM response truncated due to token limit. Input data too large.",
+            answered,
+            spent,
         )
     if response.stop_reason == "refusal":
-        raise RuntimeError(f"claude_structured refusal: {response.stop_details}")
+        raise Billed(f"claude_structured refusal: {response.stop_details}", answered, spent)
 
     text = next(b.text for b in response.content if b.type == "text").strip()
     if text.startswith("```"):
         text = text.split("\n", 1)[1].rsplit("```", 1)[0]
-    data = json.loads(text)
-    result = from_dict(response_format, data)
+    try:
+        result = from_dict(response_format, json.loads(text))
+    except (ValueError, TypeError, KeyError) as error:
+        raise Unreadable(f"claude_structured {model}: {error}", answered, spent) from error
     _log.debug(f"claude_structured(): --> {result}")
-    return Parsed(
-        result, claude_spent(response.usage), served(response, f"claude_structured {model}")
-    )
+    return Parsed(result, spent, answered)
 
 
 async def gemini_text(prompt=None, **kwargs):

@@ -171,6 +171,8 @@ class OpenAIModel:
                 raise Refusal(
                     f"Coach model {self.model} turn {turn_id} refused: {FILTERED}",
                     FILTERED,
+                    Served(model=response.model),
+                    openai_spent(response.usage),
                 )
 
             turn = ModelTurn(
@@ -193,6 +195,8 @@ class OpenAIModel:
                                 f"Coach model {self.model} turn {turn_id} "
                                 f"refused: {part.refusal}",
                                 None,
+                                turn.served,
+                                turn.spent,
                             )
                         turn.text += part.text
                         turn.blocks.append({"type": Block.Text.value, "text": part.text})
