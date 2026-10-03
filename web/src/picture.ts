@@ -594,6 +594,9 @@ export class Picture {
   /** What is left to do once the slide is over, held so a render arriving
    * mid-flight can finish it early rather than stack a second pair of layers. */
   private landing: (() => void) | null = null;
+  private landed: () => void = () => undefined;
+  /** Kept once the level on screen has finished sliding in or out. */
+  settled: Promise<void> = Promise.resolve();
 
   constructor(
     private host: HTMLElement,
@@ -1203,11 +1206,13 @@ export class Picture {
 
   /** One level in or one level out. Drilling down, the arriving view slides in
    * from the right over the one it came from; going back, the view being left
-   * slides out to the right and uncovers it. Both stand at the height the
-   * region already had, so nothing under the picture moves while they travel;
-   * a level with a height of its own takes it once the slide is over
-   * (owner ruling 2026-09-08). */
+   * slides out to the right and uncovers it. The region keeps its height, so
+   * nothing under the picture moves while they travel (owner ruling
+   * 2026-09-08), and the about page travels at its full height over the chat,
+   * never let out to it after landing (Patrick, 2026-10-02). */
   private slide(dir: 1 | -1): void {
+    this.landed();
+    this.settled = new Promise((done) => (this.landed = done));
     // The card is the whole picture region — title line, drawing and the row
     // of chips — not the drawing alone (owner, 2026-09-09). The level that is
     // leaving is photographed now; the one arriving is photographed once the
@@ -1251,6 +1256,7 @@ export class Picture {
     this.flight?.cancel();
     this.flight = null;
     finish();
+    this.landed();
   }
 
   private draw(): void {

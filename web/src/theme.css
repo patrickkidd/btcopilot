@@ -331,11 +331,13 @@ button { font-family: inherit; }
 .caption .listglyph { margin-left: auto; padding-left: 8px; }
 .view { position: relative; transition: height 0.25s ease; }
 /* One level in or one level out. The two views stand side by side for the
-   length of the slide, each at the height the region already had, so nothing
-   under the picture moves while they travel; the region takes a new height
-   only once they have landed. */
-.pic.sliding { overflow: hidden; }
+   length of the slide, so nothing under the picture moves while they travel;
+   the about page hangs over the chat at its full height the whole way, never
+   cut to the region's and then let out (Patrick, 2026-10-02), so the region
+   clips the slide only at its sides, and the live page waits under the copy. */
+.pic.sliding { overflow-x: clip; overflow-y: visible; }
 .pic.sliding .view { transition: none; }
+.pic.sliding > .view .card { visibility: hidden; }
 /* a level arrives as a card over the one it came from: the whole region, on
    the picture's own ground, so its words never cross the other level's words */
 .pic .slide-lay {
