@@ -53,6 +53,9 @@ export interface Figure {
   stage?: { w: number; h: number };
   /** The board writes names above its people; the stage writes them below. */
   above?: boolean;
+  /** How tall a wall stands: the ratified 68, unless the drawing holds all its
+   * marks to one size of its own, as the play-by-play does. */
+  mark?: number;
 }
 
 /** The play-by-play stage, where pane A is the fidelity standard. */
@@ -260,14 +263,15 @@ function wall(frm: Frame, mover: Figure, struck: boolean): string {
   const L = frm.length;
   // the wall stands further in front of the actor than the other, as ratified
   const wx = L * 0.4375;
-  const arm = 34;
+  const arm = (mover.mark ?? 68) / 2;
   const shadow = uid("csh");
   // the wedge behind the wall widens as it runs back, so the rings wrap the
   // wall's ends instead of stopping at a straight line
   const back = -L;
   const spread = arm + 0.419 * (wx - back);
   const strike = struck
-    ? `<line class="mv-strike postA" x1="${n1(wx - 13)}" y1="22" x2="${n1(wx + 13)}" y2="-22"/>`
+    ? `<line class="mv-strike postA" x1="${n1(wx - arm * (13 / 34))}" y1="${n1(arm * (22 / 34))}" ` +
+      `x2="${n1(wx + arm * (13 / 34))}" y2="${n1(-arm * (22 / 34))}"/>`
     : "";
   return (
     `<defs><clipPath id="${shadow}"><path clip-rule="evenodd" ` +

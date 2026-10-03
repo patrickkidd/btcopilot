@@ -213,6 +213,7 @@ class Dims {
   COUPLE: number;
   OFF: number;
   GAP: number;
+  MARK: number;
   ZONE: number;
 
   constructor(w: number, compact = false) {
@@ -227,6 +228,8 @@ class Dims {
     this.OFF = 0.2 * w;
     // ruled 2026-09-26: a mark sits within an eighth of a width of its person
     this.GAP = w / 8;
+    // a mark that stands on its own, a slash or a wall, is as tall as a person
+    this.MARK = w;
     // how far the cross and its arrow reach past the shape
     this.ZONE = this.GAP + 38;
   }
@@ -1015,6 +1018,7 @@ function kin(L: Layout, m: Kin): string {
     mirror: L.zone[id] < 0,
     gender: L.P[id].g === Sex.Female ? "female" : null,
     stage,
+    mark: d.MARK,
   });
   const marks = moveMarks(m.kind, at(m.from), m.to ? at(m.to) : null, STILL).marks;
   const was = m.cls === Tone.Was;
@@ -1060,7 +1064,7 @@ function childLines(L: Layout, k: { x0: number; x1: number; y: number }, kids: s
 /** One snapshot on the case's fixed layout. */
 export function draw(L: Layout, s: Frame): string {
   const d = dimsOf(L);
-  const { W, E } = d;
+  const { E } = d;
   const P = L.P;
   let out = "";
   s.bonds.forEach((b) => {
@@ -1097,7 +1101,8 @@ export function draw(L: Layout, s: Frame): string {
     const kids = L.kids.find((c) => c.of.includes(b.a) && c.of.includes(b.b));
     const stops = [k.x0, ...(kids?.kids ?? []).map((id) => L.x[id]).filter((x) => x > k.x0 && x < k.x1), k.x1].sort((p, q) => p - q);
     const open = stops.slice(1).map((x, i) => [stops[i], x]).sort((p, q) => q[1] - q[0] - (p[1] - p[0]))[0];
-    out += slashes(n, (open[0] + open[1]) / 2, k.y, W, b.fresh);
+    // a slash is 0.4 of the width it is given
+    out += slashes(n, (open[0] + open[1]) / 2, k.y, d.MARK / 0.4, b.fresh);
   });
 
   Object.keys(P).forEach((id) => {

@@ -90,6 +90,8 @@
 .pbp .arr.was, .pbp .arr.was line { animation: none; }
 .pbp .arr.was line { stroke: var(--faint); }
 .pbp .arr.was polygon { fill: var(--faint); }
+/* the wall stands a person tall here, not the ratified 68, so its ratified 6 scales with it */
+.pbp .mvk .mv-wall { stroke-width: 4; }
 /* the other moves keep the board's own drawing (theme.css .ss .mv-*); carried, grey and still */
 .pbp .mvk.was * { stroke: var(--faint); animation: none; }
 .pbp .mvk.was .tipfill { fill: var(--faint); }
