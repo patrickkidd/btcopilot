@@ -190,6 +190,9 @@ function marksOf(r: Family, e: TimelineEvent): Step["marks"] {
     if (shift === Shift.Up) drawn.push({ k: up, who });
     if (shift === Shift.Down) drawn.push({ k: down, who });
   }
+  // an outline that breaks or holds says little on its own, so it carries its
+  // event's words as an event with no drawing does (Patrick, 2026-10-03)
+  if (e.functioning && e.description) drawn.push({ k: Mark.Event, who, word: shortWord(e.description) });
   if (e.anxiety === Shift.Up) drawn.push({ k: Mark.Anxiety, who });
   const move = e.relationship ?? "";
   if (move === Move.Toward || move === Move.Away)
@@ -314,15 +317,15 @@ export class Told {
     placed
       .filter((m) => m.k === Mark.FnUp || m.k === Mark.FnDown || m.k === Mark.Anxiety)
       .forEach((m) => marks.push({ ...m, cls: Tone.Now }));
+    // an event's words show on its own step only, the one mark that does not
+    // carry (R-0682, an exception to R-0552)
     const rows = new Map<string, number>();
-    this.steps.slice(0, i + 1).forEach((s, j) =>
-      s.marks.filter(isPlaced).forEach((m) => {
-        if (m.k !== Mark.Event) return;
-        const row = rows.get(m.who) ?? 0;
-        rows.set(m.who, row + 1);
-        marks.push({ ...m, cls: j < i ? Tone.Was : Tone.Now, row });
-      }),
-    );
+    placed.forEach((m) => {
+      if (m.k !== Mark.Event) return;
+      const row = rows.get(m.who) ?? 0;
+      rows.set(m.who, row + 1);
+      marks.push({ ...m, cls: Tone.Now, row });
+    });
     const moves = [
       ...before.flatMap((s) => s.marks.filter(isArrow)).map((m) => ({ ...m, cls: Tone.Was })),
       ...now.marks.filter(isArrow).map((m) => ({ ...m, cls: Tone.Now })),

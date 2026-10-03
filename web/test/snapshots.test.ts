@@ -276,17 +276,17 @@ describe("emphasis and carry", () => {
     const t = told(apart());
     expect(markClass(t.shot(1).svg, `cross:${MARCUS}`)).toContain("now");
     expect(markClass(t.shot(2).svg, `cross:${MARCUS}`)).toContain("was");
-    expect(markClass(t.shot(1).svg, `word:${MARCUS}:${ROOM}`)).toContain("was");
     expect(markClass(t.shot(0).svg, `hl:${MARCUS}`)).toContain("now");
     expect(markClass(t.shot(1).svg, `hl:${MARCUS}`)).toContain("was");
   });
 
-  // R-0556
+  // R-0556, R-0682
   it("never loses anything already drawn across a tap", () => {
     for (const c of [apart(), death()]) {
       const t = told(c);
       for (let i = 1; i < t.length; i++) {
-        const had = new Set(marks(t.shot(i - 1).svg));
+        // an event's words are the one exception: they show on their own step only (R-0682)
+        const had = new Set(marks(t.shot(i - 1).svg).filter((m) => !m.startsWith("word:")));
         const has = new Set(marks(t.shot(i).svg));
         had.forEach((m) => expect(has, `${c.cluster_id} snapshot ${i + 1} lost ${m}`).toContain(m));
       }
@@ -637,6 +637,13 @@ describe("moves other than toward and away", () => {
     expect(svg).not.toContain('class="mvk');
     expect(marks(svg)).toContain(`word:${DELPHINE}:Started calling Corinne`);
   });
+});
+
+// R-0682
+it("shows an event's words on its own step only, and takes them away on the next", () => {
+  const t = told(apart());
+  expect(markClass(t.shot(0).svg, `word:${MARCUS}:${ROOM}`)).toContain("pop");
+  expect(marks(t.shot(1).svg)).not.toContain(`word:${MARCUS}:${ROOM}`);
 });
 
 describe("an event about the whole family", () => {

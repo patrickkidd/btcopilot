@@ -114,7 +114,8 @@ const crossings = (page: Page, marks: string, words: string) =>
   page.evaluate(
     ({ marks, words }) => {
       const root = document.querySelector<SVGSVGElement>("#pbp .draw svg")!;
-      const boxes = [...root.querySelectorAll<SVGTextElement>(words)].map((t) => ({ text: t.textContent, b: t.getBBox() }));
+      const fore = root.querySelector(".fore")!;
+      const boxes = [...root.querySelectorAll<SVGTextElement>(words)].map((t) => ({ text: t.textContent, b: t.getBBox(), lit: fore.contains(t) }));
       const cut = (a: DOMPoint, z: DOMPoint, b: DOMRect, pad: number) => {
         const [bx0, by0, bx1, by1] = [b.x - pad, b.y - pad, b.x + b.width + pad, b.y + b.height + pad];
         let [t0, t1] = [0, 1];
@@ -153,8 +154,10 @@ const crossings = (page: Page, marks: string, words: string) =>
         const edges = pts.slice(1).map((p, i) => [pts[i], p]);
         if (closed) edges.push([pts[pts.length - 1], pts[0]]);
         const pad = (parseFloat(getComputedStyle(el).strokeWidth) || 0) / 2;
-        for (const { text, b } of boxes)
-          if (edges.some(([a, z]) => cut(a, z, b, pad))) {
+        // a lit word is drawn over the grey marks it crosses, which is allowed (R-0682)
+        const under = !fore.contains(el);
+        for (const { text, b, lit } of boxes)
+          if (!(lit && under) && edges.some(([a, z]) => cut(a, z, b, pad))) {
             const mark = el.closest("[data-mark]")?.getAttribute("data-mark") ?? el.getAttribute("class");
             out.push(`${mark} over "${text}"`);
           }
@@ -261,6 +264,22 @@ test.describe("every mark", () => {
   // R-0679
   test("each step's lit marks are drawn over every grey one", async ({ page }) => {
     expect(await under(page, await steps(page, STEPS.length))).toEqual([]);
+  });
+
+  // R-0682
+  test("an event's words show on its own step only, the functioning ones too", async ({ page }) => {
+    const svgs = await steps(page, STEPS.length);
+    const words: string[][] = [];
+    for (const svg of svgs) {
+      await show(page, svg);
+      words.push(await page.locator("#pbp .draw svg .evw").allTextContents());
+    }
+    const at = (name: string) => words[STEPS.findIndex((s) => s.name === name)];
+    expect(at("functioning down")).toEqual(["Lost his job"]);
+    expect(at("functioning up")).toEqual(["Opened his own"]);
+    expect(at("noted")).toEqual(["Moved to Chicago"]);
+    // the next step never still shows a word from the one before
+    expect(words.slice(1).filter((w, i) => w.some((t) => words[i].includes(t)))).toEqual([]);
   });
 
   // R-0679
