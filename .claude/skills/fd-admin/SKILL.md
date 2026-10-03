@@ -471,14 +471,15 @@ The short titles of noted events and shifts.
 
 ### `flask admin titles fill`
 
-Give each noted event and shift with no title one: from --file when it has one, else its description when that is already 2 to 4 words ending on a whole phrase and naming no one the event links, which also covers events written after the file was made. Prints every event it found without a title, the title it gets and where that came from. With --yes it writes every title, and refuses, writing nothing, while any event would be left "still untitled": a record holding one does not load.
+Give each noted event and shift with no title one: from --file when it has one; else its description when that is already 2 to 4 words ending on a whole phrase and naming no one the event links, which also covers events written after the file was made; else, for a shift with no words and no notes, what moved; else, with --ask, the app's own model. Prints every event it found without a title, the title it gets and where that came from; the model is asked only with --yes. With --yes it refuses, before any model call and writing nothing, while an event would be left "still untitled": a record holding one does not load.
 
 Changes something: needs `--yes`.
 
 | Argument | What it is |
 |---|---|
-| `--diagram` | Only this record. |
+| `--diagram` | Only these records. |
 | `--file` | Titles read and approved: a JSON list of {diagram, event, title}, the shape --json prints. |
+| `--ask` | Have the app's own model write the titles nothing else gives, one short call per event, each written to the model-calls ledger. |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin token-cap`

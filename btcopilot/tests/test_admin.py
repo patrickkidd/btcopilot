@@ -16,7 +16,9 @@ from btcopilot.admin.database import config
 from btcopilot.tests import olddump
 from btcopilot.admin.setting import SettingKey
 from btcopilot.extensions import db
-from btcopilot.models import Diagram, Observation, ObservationKind
+from btcopilot.llmutil import EXTRACTION_MODEL, Served, Spent, Text
+from btcopilot.models import Diagram, ModelCall, Observation, ObservationKind
+from btcopilot.models.modelcall import Purpose
 from btcopilot.models.preferences import PrefKey, Spotlight
 
 
@@ -270,10 +272,7 @@ def test_report_offer_goes_on_the_persons_running_turn(run, test_user, discussio
     ]
 
 
-def test_titles_fill_keeps_words_that_serve_takes_the_rest_from_the_file_and_leaves_none(
-    run, flask_app, test_user, tmp_path
-):
-    # R-0681
+def untitled_record(test_user) -> Diagram:
     diagram = db.session.get(Diagram, test_user.free_diagram_id)
     data = diagramjson.loads(diagram.data)
     data["people"] = [{"id": 1, "name": "Wren"}]
@@ -282,15 +281,30 @@ def test_titles_fill_keeps_words_that_serve_takes_the_rest_from_the_file_and_lea
         {"id": 3, "kind": "shift", "person": 1, "anxiety": "up",
          "description": "stopped calling after the funeral that spring"},
         {"id": 4, "kind": "death", "person": 1},
+        {"id": 5, "kind": "shift", "person": 1, "symptom": "up"},
     ]
     diagram.data = diagramjson.encode(data, diagram.data)
     db.session.commit()
+    return diagram
+
+
+def titles_of(diagram) -> list:
+    db.session.refresh(diagram)
+    return [e.get("title") for e in diagramjson.loads(diagram.data)["events"]]
+
+
+def test_titles_fill_keeps_words_that_serve_takes_the_rest_from_the_file_and_leaves_none(
+    run, flask_app, test_user, tmp_path
+):
+    # R-0681
+    diagram = untitled_record(test_user)
     version = diagram.version
 
     preview = rows(run("titles", "fill", "--diagram", str(diagram.id), "--json"))
     assert [(r["event"], r["title"], r["from"]) for r in preview] == [
         (2, "Moved to Leeds", "description"),
         (3, "", "still untitled"),
+        (5, "Symptoms got worse", "what moved"),
     ]
 
     refused = flask_app.test_cli_runner().invoke(
@@ -304,7 +318,49 @@ def test_titles_fill_keeps_words_that_serve_takes_the_rest_from_the_file_and_lea
     reviewed = tmp_path / "titles.json"
     reviewed.write_text(json.dumps(preview))
     run("titles", "fill", "--diagram", str(diagram.id), "--file", str(reviewed), "--yes")
-    db.session.refresh(diagram)
-    events = diagramjson.loads(diagram.data)["events"]
-    assert [e.get("title") for e in events] == ["Moved to Leeds", "Stopped calling", None]
+    assert titles_of(diagram) == [
+        "Moved to Leeds", "Stopped calling", None, "Symptoms got worse"
+    ]
     assert diagram.version == version + 1
+
+
+def test_titles_fill_asks_the_apps_model_only_on_yes_and_writes_its_ledger_row(
+    run, flask_app, test_user, monkeypatch
+):
+    # R-0681, R-0628
+    asked = []
+
+    def flash(**kwargs):
+        asked.append(kwargs["model"])
+        return Text("Stopped calling home.", Spent(input=300, output=4), Served(kwargs["model"]))
+
+    monkeypatch.setattr("btcopilot.metered.gemini_text_sync", flash)
+    diagram = untitled_record(test_user)
+    preview = rows(run("titles", "fill", "--diagram", str(diagram.id), "--ask", "--json"))
+    assert [r["from"] for r in preview] == ["description", "the app's model", "what moved"]
+    assert asked == []
+
+    run("titles", "fill", "--diagram", str(diagram.id), "--ask", "--yes")
+    assert titles_of(diagram) == [
+        "Moved to Leeds", "Stopped calling home", None, "Symptoms got worse"
+    ]
+    (call,) = ModelCall.query.all()
+    assert (call.purpose, call.diagram_id, call.model) == (
+        Purpose.Backfill, diagram.id, EXTRACTION_MODEL
+    )
+
+
+def test_titles_fill_refuses_a_model_title_that_is_not_a_whole_phrase(
+    flask_app, test_user, monkeypatch
+):
+    # R-0681
+    monkeypatch.setattr(
+        "btcopilot.metered.gemini_text_sync",
+        lambda **k: Text("Stopped calling after the", Spent(input=300), Served(k["model"])),
+    )
+    diagram = untitled_record(test_user)
+    refused = flask_app.test_cli_runner().invoke(
+        admin, ["titles", "fill", "--diagram", str(diagram.id), "--ask", "--yes"]
+    )
+    assert refused.exit_code != 0
+    assert titles_of(diagram) == [None, None, None, None]

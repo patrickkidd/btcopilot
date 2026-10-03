@@ -193,6 +193,12 @@ def impression_backfill(map: str, transcript: str) -> str:
     return files().text("impression_backfill", map=map, transcript=transcript)
 
 
+def event_title(kind: str, description: str, notes: str) -> str:
+    """Asks for one event's title, for the one pass over events older than
+    titles (R-0681)."""
+    return files().text("event_title", kind=kind, description=description, notes=notes)
+
+
 def note_register() -> str:
     """What changes when the session is a clinician's note rather than a chat
     about their own family (R-0281)."""
