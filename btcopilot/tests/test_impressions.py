@@ -405,7 +405,7 @@ def test_a_reply_that_hardly_holds_the_impression_it_raised_is_observed(web, fam
     ],
 )
 def test_an_impression_that_says_one_thing_caused_another_is_refused(family, text):
-    # R-0569, R-0504
+    # R-0687, R-0569, R-0504
     with pytest.raises(ToolError) as refused:
         impress(box(family), text=text)
     assert "caused another" in refused.value.plain
@@ -413,6 +413,6 @@ def test_an_impression_that_says_one_thing_caused_another_is_refused(family, tex
 
 
 def test_an_impression_that_says_what_came_first_and_how_close_is_kept(family):
-    # R-0569, R-0504
+    # R-0687, R-0569, R-0504
     impress(box(family), text="The drinking started within a year of losing the job.")
     assert list(stored(family).values())[0]["text"].startswith("The drinking")
