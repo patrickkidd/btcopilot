@@ -2120,3 +2120,78 @@ default and runs with `--integration`, with its own CI step.
 Patrick [R-0677]. It is kept only to maintain the legacy app. Ticket worktrees for this project
 belong under the standalone clone; this session's worktree was made in the deprecated one by
 mistake.
+
+## 2026-10-01: FD-367 — the case page follows the sources' top-down order, pending Patrick's ruling
+
+Ruled later the same day; see the entry below. The seven-item order here was refined to ten
+levels by the second reading round before he ruled.
+
+No ruling yet at the time of writing; nothing is redrawn until Patrick rules. The page for presenting a case to peers
+follows the order the theory sources present a case in: the people on the diagram, the symptom on a
+calendar, the nuclear family dated with a fix at each event, each extended side, the person's own
+part, the formulation last, then the effort to change. The "Where there was a choice" box stays, in
+the only shape the sources allow: a dated move of the person's own, their part in it, one opening as
+a question, the facts under it, and a guess to reject. It never holds a plan or a level. A
+professional presenting a client's record gets their own header, their own reading box, and
+questions addressed to the professional.
+
+## 2026-10-01: FD-367 — Patrick ruled the case page's order: the ten levels of MENTAL_MODEL.md
+
+Patrick, 2026-10-01 [ruling candidate, no id: no key on this machine]. The page for presenting a
+case to peers follows the ten levels the second reading round found in the sources and wrote up in
+MENTAL_MODEL.md in the private corpus: the people on a picture; what brought them, dated; the
+couple since they met; each parent's own family; one calendar; the formulation; the person's own
+part; where there was a choice; what to work on and expect; the effort. Whether the reading comes
+first or last is tried both ways in mockups, not ruled. The books not on this machine (Titelman
+1998, Papero 1990 and 2018, Kerr 2019, Frost, the Family Systems case conferences) stay thin
+rather than holding the work.
+
+## 2026-10-01: FD-367 — the app's model calls go through Bedrock on a Bedrock machine; Gemini is dropped
+
+Patrick, 2026-10-01 [ruling candidate, no id]. On a machine signed in to Bedrock every model call
+the app makes in testing goes through Bedrock on the machine's AWS sign-in, with no key and no key
+fallback; a provider setting picks the path and Bedrock is chosen by itself on such a machine.
+Gemini is dropped from the coach and from side-by-side testing because it matched Sonnet in
+performance and cost; its helper calls run on Sonnet on a Bedrock machine and still on Gemini on
+production. Built as commit 666486bb on FD-367, not deployed; the shadow lists on the box naming a
+Gemini alias are reset before the rollout.
+
+## 2026-10-01: process — work is batched into the open ticket branch; unattended runs never prompt
+
+Patrick, 2026-10-01 [in CLAUDE.md, no ids]. Until he says otherwise, new work goes into the
+session's open ticket branch (FD-367 now), not a new ticket or PR. An unattended run never prompts
+a human: no rm -rf, sudo, kill or interactive command in any brief, because one prompt kills an
+overnight run. A mockup is the app's own code running, pixel for pixel, never a drawn stand-in.
+
+## 2026-10-02: FD-367 — nothing implies more than the record holds
+
+Patrick, 2026-10-02 [in CLAUDE.md, no id]. Every reading on a page or in a reply carries what it
+rests on and the record's coverage; a thin record gets "not enough in the record to choose a
+reading", never a thesis. Raised on the case page mockups; binding across the project. With it,
+in CLAUDE.md: every mockup frame says proposal, view or alternative; piled-up prose in a feature
+is the flag for a visual form, while a first iteration may carry some reading.
+
+## 2026-10-02: FD-367 — Patrick's direction on the case page from mockup version 4
+
+Patrick, 2026-10-02 [his words in the private corpus, no ids]. The direction is right. The page
+explains itself with no wall of text carrying the meaning; the ten levels are headlined and opened
+one at a time while the page still scrolls; one simple coverage picture comes first so a viewer
+feels the gaps; the page leans on the app's own drawing of family segments; whether the diagram is
+the page's centrepiece is tested (a dashboard on the desktop, a slide-out on the phone); an
+executive summary explains the thesis across the sections, qualified by coverage; desktop frames
+in galleries at full size. Not a ruling: the timeline pinned on the phone with chips lighting their
+event, said of one frame while brainstorming, tried in the next round. Version 4's difference
+between the self and the professional presentation (attribution only) came from the synthesis, not
+a source or a ruling; the self form ships first, for his seminar one week out. Version 5 puts
+three decisions to him: the summary as one box or the same lines per level; the coverage picture's
+form; the picture as the dashboard or the first card.
+
+## 2026-10-02: FD-367 — the session ends at its flush; the next round starts in a new session
+
+Efficiency skill rule 60, from the 2026-10-02 audit of FD-368: a long session's own context is its
+largest cost, so after a release or a flush the session stops and the next round starts from the
+notes on the branch. Criteria 66 to 68 were added the same day from this session's failures: no
+message to an agent that runs inside a Workflow (it forks a copy that edits the same files); a
+Workflow script's shared prompt text is frozen once a stage has run (editing it restarts the
+earlier stages); unattended runs never prompt. The private corpus clone merged master to pick up
+the new efficiency and token-optimization skills (abccc30).

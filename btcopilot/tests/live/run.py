@@ -13,6 +13,7 @@ import pytest
 
 from btcopilot import ledger
 from btcopilot.coachmodel import Spent
+from btcopilot.llmutil import anthropic_client
 from btcopilot.pricing import cost
 from btcopilot.quality import Outcome, Source, Status
 
@@ -82,13 +83,14 @@ class Run:
     def stop(self, reason: str) -> None:
         self.reason = self.reason or reason
 
-    def open(self, key: str) -> None:
+    def open(self, key: str | None) -> None:
         """Before any spend: today's ledger is under its cap, and the API takes
-        one 1-token call on the testing key. Otherwise the run stops here."""
+        one 1-token call on the testing key, or through Bedrock with no key.
+        Otherwise the run stops here."""
         if self.today() >= DAILY_CAP:
             self.stop(f"today's cap of ${DAILY_CAP} is already spent")
         else:
-            client = anthropic.Anthropic(api_key=key)
+            client = anthropic.Anthropic(api_key=key) if key else anthropic_client()
             try:
                 message = client.messages.create(
                     model=self.model,

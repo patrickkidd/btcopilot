@@ -22,7 +22,10 @@
 # Tailscale name, with the certificate that name has in ~/btcopilot-sandbox/certs
 # (web/devcerts.sh makes it); one certificate serves every stack on that name.
 # --real puts the coach on Anthropic with the testing key from .env at
-# the main clone's root; ask Patrick before spending. Without a sops key, up
+# the main clone's root; ask Patrick before spending. On a Bedrock machine
+# (CLAUDE_CODE_USE_BEDROCK or BTCOPILOT_MODEL_PROVIDER=bedrock in the shell) --real
+# goes through Bedrock with the machine's AWS sign-in and AWS_REGION instead, and
+# needs no key. Without a sops key, up
 # refuses to start unless --open-prompts says the open-source prompts will do.
 # --autologin signs every visitor with no session in as that account, so a
 # home-screen app needs no code; without it the sign-in page lists every
@@ -55,7 +58,7 @@ at() {
 loaded() {
   at "$1"
   [ -f "$D/instance.sh" ] || die "no instance named $NAME; start it with: sandbox up $NAME <port>"
-  DEV_HOST=turin
+  DEV_HOST=turin PROVIDER=anthropic
   . "$D/instance.sh"
   PY=${SANDBOX_PYTHON:-$REPO/.venv/bin/python}
 }
@@ -102,6 +105,7 @@ DEV=$DEV
 DEV_HOST=$DEV_HOST
 MODEL=$MODEL
 REAL=$REAL
+PROVIDER=$PROVIDER
 SETTINGS
   local db=sandbox_${NAME//-/_}
   cat > "$D/env.sh" <<SETTINGS
@@ -117,6 +121,7 @@ export FLASK_ADMIN_EMAIL= FLASK_INVITATION_REUSABLE=1
 export BTCOPILOT_SOURCES=$SOURCES
 export SANDBOX_URL=http://127.0.0.1:$PORT
 export FIXTURE_CMD="$REPO/.venv/bin/python -m flask app fixtures" FIXTURE_CWD=$REPO
+export BTCOPILOT_MODEL_PROVIDER=$PROVIDER
 SETTINGS
   [ -z "$OPEN" ] || echo "export FD_OPEN_PROMPTS=1" >> "$D/env.sh"
   [ -z "$AUTOLOGIN" ] || echo "export FLASK_DEV_AUTOLOGIN=$(printf %q "$AUTOLOGIN")" >> "$D/env.sh"
@@ -125,9 +130,14 @@ SETTINGS
   fi
 }
 
-# The paid keys reach the server and the worker only, never a file.
+# The paid keys reach the server and the worker only, never a file. A Bedrock
+# machine has none: its calls are signed with the AWS sign-in of this shell.
 keys() {
   [ -n "$REAL" ] || return 0
+  if [ "$PROVIDER" = bedrock ]; then
+    [ -n "${AWS_REGION:-}" ] || die "--real on a Bedrock machine needs AWS_REGION in this shell"
+    return 0
+  fi
   [ -f "$DOTENV" ] || die "--real reads its keys from $DOTENV, which is missing"
   ANTHROPIC_API_KEY=$(grep '^ANTHROPIC_TESTING_KEY=' "$DOTENV" | cut -d= -f2-)
   GOOGLE_GEMINI_API_KEY=$(grep '^GOOGLE_GEMINI_API_KEY=' "$DOTENV" | cut -d= -f2-)
@@ -285,6 +295,8 @@ cmd_up() {
   [[ $PORT =~ ^[0-9]+$ ]] || usage
   shift 2
   DEV= DEV_HOST=turin REAL= OPEN= AUTOLOGIN= MODEL=qwen3:8b
+  PROVIDER=${BTCOPILOT_MODEL_PROVIDER:-anthropic}
+  [ -z "${CLAUDE_CODE_USE_BEDROCK:-}" ] || PROVIDER=bedrock
   local build=
   while [ $# -gt 0 ]; do
     case $1 in

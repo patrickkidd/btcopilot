@@ -476,7 +476,7 @@ function sortedIn(r: Family, ids: string[]): string[] {
  * married. Only the bond's own mark makes the line solid; a marriage or divorce
  * event on a couple not marked married is a fault in the record, refused here
  * as the server refuses it, never drawn solid from the event. */
-function tieBefore(r: Family, pb: PairBond, t: number): { st: Tie; married: boolean } {
+export function tieBefore(r: Family, pb: PairBond, t: number): { st: Tie; married: boolean } {
   const own = r.tl.events.filter(
     (e) =>
       (e.person === pb.person_a && e.spouse === pb.person_b) ||

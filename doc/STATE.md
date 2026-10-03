@@ -449,7 +449,8 @@ cluster instead of grouping it wrong silently. A command installs a stand-in tes
 review. The coach can raise, close and read impressions in the same way it handles open
 questions, shown to the user in the drawer with what each rests on and two ways to push back.
 The live suite now counts its own spend, stops at its hard caps, and keeps a results row per
-run. A local model can stand in for Anthropic and Gemini, so the sandbox runs free by default.
+run. A local model can stand in for Anthropic and Gemini, so the sandbox runs free by default;
+on a Bedrock machine the sandbox's real mode goes through Bedrock with no key (FD-367).
 The paid suite holds behaviour evals only; the clinical-coding cases wait for ground truth from
 the IRR review group. Every test path spends the testing key; the box runs on the new
 production key, and the old key is off it.
@@ -767,7 +768,8 @@ the ledger; the reference record is one Patrick corrected himself, never a model
 [R-0597]. A Gemini Flash coach model is wired in (google-genai, Vertex by default, aliases
 gemini-flash, gemini-3.8-flash, gemini-3.6-flash, gemini-2.5-flash), because Patrick holds a
 business associate agreement with Google [R-0598]; a real call on it awaits Vertex credentials
-on the box and his confirmation of what the agreement covers. The review app's Compare replies
+on the box and his confirmation of what the agreement covers (dropped on FD-367, 2026-10-01:
+Gemini is out of the coach and the shadow list, see "The app's model calls on a Bedrock machine"). The review app's Compare replies
 page serves blind pairs from shadow rows and replays and records Patrick's picks in a new
 model_picks table [R-0599]. Live eval runs append one Live line per case to the ledger
 (`btcopilot/ledger.py`, `ledger.jsonl`, gitignored). One migration, 1b00000000b5, squashed for
@@ -855,7 +857,8 @@ Open:
 - The live eval run against the moved prompt (branch FD-363-cost) awaits Patrick's spend
   approval.
 - A real Gemini call for the new coach model awaits Vertex credentials on the box and Patrick's
-  confirmation of what his Google business associate agreement covers.
+  confirmation of what his Google business associate agreement covers. Overtaken 2026-10-01: the
+  Gemini coach model is dropped on FD-367.
 
 **Patrick's actions.**
 1. Test the 5b2a6bb batch in his own thread, including a long message on his iPhone and the (i)
@@ -1753,6 +1756,62 @@ Kept for when there are enough users to run one.
   so the switch reaches across repositories into familydiagram's scene code and its
   file-manager field lists.
 
+## FD-367 — Case page for presenting a case to peers
+
+Brainstormed 2026-10-01 beside FD-336. Mockup gallery, version 3: private artifact
+(https://claude.ai/artifact/KM74THMGmR13YG96yUwZPS). Patrick judged it the wrong shape: period cards
+with no top level, prose-heavy, no formulation line, no nuclear and extended split, no play-by-play.
+Theory research found the order a Bowen case is presented in; the second round refined it to the
+ten levels of MENTAL_MODEL.md, which Patrick ruled on 2026-10-01 (below). Hand-off, research,
+gallery source: Jira FD-367
+(https://alaskafamilysystems.atlassian.net/browse/FD-367). Theory notes: btcopilot-sources PR FD-367.
+
+Research round two, 2026-10-01, on this machine (no ~/Documents here; Family Evaluation, Family Therapy in Clinical Practice, the seven Basic Series tapes and six Bowen Center recordings read in full as text; Titelman 1998, Papero 1990 and 2018, Kerr 2019, Frost and the Family Systems case conferences not on this machine, marked thin; Brown 1999 retrieved from the web). Written in the private corpus under fd-corpus/design/fd336/research/: SYNTHESIS-v2.md (the first synthesis corrected line by line), MENTAL_MODEL.md (the levels a presented case follows, each with its source; the deliverable for Patrick's ruling on the order), PLAY-BY-PLAY-DESKTOP.md, VERIFY-corpus-citations.md; in the theory corpus: six reader notes and notes/case-presentation.md, one paragraph in REFERENCE.md section 6b, OPEN_QUESTIONS item 41 (reading at the top or the end of a presented page; trying both ways in the next mockup round, not ruled), SOURCES.md and MANIFEST.tsv rows. Patrick, 2026-10-01: deliver from what is here with the missing books thin; "outcome first" is tried in mockups on his record, not ruled. The theory checker failed before today's edits (451 problems, baseline 2026-09-30) and was not repaired; only items caused today are to be resolved; it stood at 237 after the day's edits, with today's one stale item cleared.
+
+**Ruled 2026-10-01 (ruling candidate, no id yet — no key on this machine):** the case page follows
+the ten-level order in MENTAL_MODEL.md — the people on a picture; what brought them, dated; the
+couple since they met; each parent's own family; one calendar; the formulation; the person's own
+part; where there was a choice; what to work on and expect; the effort. "Outcome first" (the
+reading at the top or the end) is tried both ways in mockups, not ruled; the missing books stay
+thin. The three case files for mockups (his record, Client L, Anna) live in the corpus at
+fd-corpus/design/fd336/cases/ with PROVENANCE.md, never in this repo. Three theory case cards
+flagged for re-run were re-run the same day; none matched the recorded verdict cleanly and nothing
+was overwritten (T-2 in doc/TOPICS.md). Mockup round: in progress, see this section's next entry.
+
+Mockup version 4 built on the app's own code: the household picture, the timeline and the told drawer come from the app's modules and are byte-identical to the app's output; seven frames (Patrick's record twice, desktop, the telling mid-step, Client L twice, Anna) with three decisions on the page; served from this laptop and attached to Jira FD-367; source under web/ as a separate Vite mode plus the case page modules case.ts, casepage.ts, lens.ts, viewport.ts; the chat screen's own files were not refactored (the extraction is saved as a patch in the worktree's scratch folder for Patrick's decision); the three case files live only in the corpus design folder; the app's drawer controls (Back, dots, Next) stand for the play-by-play controls; the app's font links stay.
+Patrick's notes on version 4 (2026-10-02; his words in the private corpus): the direction is right; the app must explain itself, with no wall of text carrying the meaning; the ten levels are headlined and opened one at a time while the page still scrolls; one simple coverage picture so a viewer feels the gaps first; lean on the app's own drawing of family segments; whether the diagram is the page's centrepiece is to be tested (a dashboard on the desktop, a slide-out on the phone); every frame says proposal, view or alternative; an executive summary explains the thesis across the sections, qualified by coverage; nothing may imply more than the record holds (a binding project rule in CLAUDE.md since commit 1dd16d2a: a reading carries what it rests on and the record's coverage, and a thin record gets "not enough in the record to choose a reading", never a thesis); piled-up prose in a feature is the flag for a visual form, though a first iteration may carry some reading; desktop frames in galleries at full size. Version 4's difference between presenting one's own record and a professional presenting a client's was attribution only (whose account, whose guess, whom the questions address), proposed by the synthesis and neither sourced nor ruled; the self form ships first, for his seminar one week from 2026-10-02.
+Trying in the next mockup round, not ruled (Patrick, 2026-10-02, said of frame P3 while still brainstorming): the timeline pinned at the top on the phone as well, collapsing and expanding with the scroll as the app's strip does, and every chip on the report lighting its event on that pinned timeline when tapped.
+
+Mockup version 5 (2026-10-02, Section A variations on Patrick's whole record): twelve panes, each phone and desktop, labelled proposal, view or alternative, tabs per group; groups: the hierarchy headline (ten collapsed headlines, desktop rail), the summary box qualified by coverage, the coverage visual (on the family picture; a people grid; three numbers), the picture as the dashboard; three decisions on the page; the case file regenerated from the whole record (36 people, 84 events, 16 tracked questions); four critique rounds, the last gate clean; served from this laptop, attached to FD-367 (attachment 10086), and on the private corpus branch worker-mailbox at mailbox/FD-367/gallery-v5.html. Open for Patrick: the three decisions; the chat screen sharing code with the case page (patch saved in the worktree scratch); the app's picture drawing Sam at age minus four in the 1994 frame (chat-screen snapshot code, own ticket). Known small items left in version 5: the three-numbers frame is shown alone; two cards carry 40 to 80 words of prose.
+Next round, queued and not started: his rulings on the three version 5 decisions; the pinned-timeline trial; then the case page built as a real screen for the seminar, released under the deploy lock and the project's release rules. The FD-367 session ended at the flush of 2026-10-02; the next round starts in a new session from these notes and T-19 in doc/TOPICS.md.
+
+## The app's model calls on a Bedrock machine (built 2026-10-01, commit c14e053b on FD-367 after the 2026-10-02 rebase, not deployed)
+
+Patrick, 2026-10-01: build the Anthropic-on-Bedrock path on FD-367; Gemini is dropped, side-by-side
+testing included. Built: a provider setting, BTCOPILOT_MODEL_PROVIDER (anthropic by default, or
+bedrock), with Bedrock chosen by itself when CLAUDE_CODE_USE_BEDROCK is set; the AnthropicBedrock
+client on the AWS credential chain; the models mapped to us-west-2 inference profiles, the sonnet
+alias included; fail-early with no key fallback, so a missing sign-in stops the app at startup.
+Gemini is out of the coach and of side-by-side (shadow) testing (geminimodel.py deleted); the
+Gemini-named helper calls for cluster grouping, the coach eval judge and the synthetic suite run on
+Sonnet 5.5 on a Bedrock machine and still on Gemini on production; a stored shadow list naming an
+alias the app no longer offers is cleaned at that person's next turn, the alias dropped with a
+warning and the setting written back without it (the check sits in the shadow expiry function
+since the 2026-10-02 rebase onto master's FD-368 work); `bin/sandbox/sandbox up --real` needs no
+key on a Bedrock machine (doc/SETUP.md section 6). Proof: one real Opus 5.5 call through the coach
+path on Bedrock answered (E2E-DONE); 949 unit tests passed at the build, 1086 after the rebase,
+web build green. NOT-DONE: one coach turn through the whole sandbox stack
+on the Bedrock laptop, because the kit starts a local redis-server binary that is not installed
+there (needs sudo). The new tests cite R-0000 until a session with the key assigns the ruling's
+id; CI's citation guard fails until then.
+
+After the rollout, nothing need be done by hand about a shadow list stored under FD-365 that still
+names a Gemini alias the app no longer offers: the app drops it with a warning at that person's
+next turn and writes the setting back without it. To see or reset one anyway, on the box, `docker compose --env-file /etc/fd/secrets.env exec fd-app flask admin coach-model show`
+lists every person whose shadow list differs from off; for each one naming a Gemini alias, run
+`docker compose --env-file /etc/fd/secrets.env exec fd-app flask admin coach-model shadow <email> sonnet` (or `off`). The worker also
+skips an alias it no longer offers, one warning each, so an old setting never fails a turn.
+
 ## Jira / branches
 
 - FD-359 epic (chat-first web app) with FD-360 (built, draft PR #133) and FD-361
@@ -1764,7 +1823,12 @@ Kept for when there are enough users to run one.
   btcopilot #136 is merged; fdserver #30 was closed unmerged (#135 and #29 are closed
   predecessors). The first fast-follow, FD-363 (PR #138), is merged. The second is FD-365,
   **draft PR #142**, with the sittings work (PR #144) and the landing page (PR #143) merged into
-  it; everything for this work goes into Jira FD-365, with no new ticket.
+  it; everything for this work goes into Jira FD-365, with no new ticket. The third is FD-367,
+  **draft PR #146**, carrying the case page work and the Bedrock path; new work is batched into it
+  (Patrick, 2026-10-01). Patrick squashed master on 2026-10-01 (FD-365 and FD-366 are single
+  commits there); FD-367 was rebased onto master at cde55050 on 2026-10-02 (head 1dd16d2a); the
+  force push of the rebased branch is his, and until it lands origin/FD-367 and #146 show the old
+  history.
 
 ## Open security items (Patrick's calls, untouched)
 

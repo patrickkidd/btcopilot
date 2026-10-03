@@ -527,6 +527,24 @@ What it is for: a professional's several client records.
 - People and events keep a notes field in their editors, the same notes the desktop app already stores. [built] {R-0281}
 - The drawn family diagram stays in the plan and arrives once auto-arrange proves itself on real data. [drawn] {R-0240, R-0281}
 
+## The case page (presenting a case to peers)
+
+What it is for: one page to present a case from, in the order the Bowen literature presents a case. Mockup versions 4 and 5 are on Jira FD-367, built from the app's own picture, timeline and drawer code; the form where you present your own record comes first, for Patrick's seminar.
+
+- The page follows ten levels in order: the people on a picture; what brought them, dated; the couple since they met; each parent's own family; one calendar; the formulation; the person's own part; where there was a choice; what to work on and expect; the effort. [drawn] {ruled 2026-10-01, id pending}
+- The page explains itself: no wall of text carries the meaning, and prose piling up in one place is the sign that part needs a picture instead. [drawn] {Patrick, 2026-10-02, id pending}
+- The ten levels show as headlines you open one at a time, and the page still scrolls as one page. [drawn] {Patrick, 2026-10-02, id pending}
+- One simple picture of how much of the family the record covers comes first, so a viewer feels the gaps before reading anything. [drawn] {Patrick, 2026-10-02, id pending}
+- A summary explains the whole across the sections and says how much of the record it rests on. [drawn] {Patrick, 2026-10-02, id pending}
+- Nothing on the page implies more than the record holds; a thin record says there is not enough in the record to choose a reading. [drawn] {Patrick, 2026-10-02, id pending}
+- Every mockup frame is labelled proposal, view or alternative. [drawn] {Patrick, 2026-10-02, id pending}
+- Whether the formulation reads at the top of the page or at the end is being tried both ways in mockups. [open]
+- The summary: one box at the top, or the same lines repeated under each level. [open]
+- The coverage picture: drawn on the family picture, on a grid of the people, or as three numbers. [open]
+- The family picture as the page's dashboard: pinned on a desktop and one tap away on the phone, or the first card on the page. [open]
+- The timeline pinned at the top of the phone screen too, each chip lighting its event when tapped: a brainstorm input, to be tried. [open]
+- How a professional's presentation of a client's record differs from presenting your own is not decided; the attribution-only difference drawn in version 4 came from no source. [open]
+
 ## Upload a recording (Pro)
 
 @frame pro#f3 | The sessions sheet gains one button for putting a recording in.

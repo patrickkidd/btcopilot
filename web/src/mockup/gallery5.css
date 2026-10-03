@@ -1,0 +1,49 @@
+/* The gallery's own sheet, version 5, in the gallery's window only: the page
+   around the frames. Each frame is the app in a window of its own (an iframe at
+   a phone's 390 by 844 or a desktop's 1024 by 800, full size), styled by
+   theme.css and drawer.css; the gallery scales a window down only where the
+   page gives it less room than its own width. */
+
+html, body { height: auto; overflow: visible; background: var(--bg); }
+body { margin: 0; color: var(--ink); font: 400 16px/1.5 var(--sans); -webkit-font-smoothing: antialiased; }
+main { max-width: 1480px; margin: 0 auto; padding: 32px 20px 72px; }
+h1 { font: 600 26px/1.25 var(--sans); margin: 0 0 8px; text-wrap: balance; }
+.lede, .how { margin: 0 0 10px; max-width: 84ch; }
+.how { color: var(--faint); font-size: 15px; }
+.decide { margin: 12px 0 36px; padding-left: 22px; max-width: 92ch; }
+.decide li { margin: 0 0 10px; }
+section { padding-top: 24px; border-top: 1px solid var(--line); margin: 0 0 36px; }
+section > h2 { font: 600 20px/1.3 var(--sans); margin: 0 0 6px; }
+.gline { margin: 0 0 12px; max-width: 92ch; }
+/* the tab strip: the frame ids, each with its label */
+.tabs5 { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 14px; }
+.tabs5 button { display: inline-flex; align-items: center; gap: 8px; font: 500 14px var(--mono); min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); cursor: pointer; }
+.tabs5 button[aria-selected="true"] { border-color: var(--data); color: var(--data); background: var(--tint); }
+.panes { position: relative; }
+.pane { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+/* a frame not on its tab keeps its size off to the side, so the app inside lays out as on screen */
+.pane:not(.on) { position: absolute; left: 0; top: 0; width: 100%; visibility: hidden; pointer-events: none; }
+.lab { display: inline-block; font: 600 11px/18px var(--mono); letter-spacing: 0.08em; padding: 0 8px; border-radius: 6px; vertical-align: middle; }
+.lab.proposal { background: var(--move); color: var(--onaccent); }
+.lab.view { background: var(--tint); color: var(--data); border: 1px solid var(--data); line-height: 16px; }
+.lab.alternative { background: var(--ask-tint); color: var(--ask-text); border: 1px solid var(--ask); line-height: 16px; }
+figcaption { max-width: 84ch; }
+figcaption .lab { margin-right: 10px; }
+figcaption h3 { display: inline; font: 600 17px/1.3 var(--sans); margin: 0; }
+figcaption p { margin: 4px 0 0; font-size: 15px; line-height: 1.45; }
+.pair { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+/* phone and desktop side by side only from 1480px; under that they stack, and
+   from 1100px the desktop, at full size, comes first (a 1280px laptop) */
+@media (min-width: 1100px) and (max-width: 1479px) { .pair .dv { order: -1; } }
+.pv, .dv { display: flex; flex-direction: column; gap: 6px; min-width: 0; overflow: hidden; }
+.pv { --scale: 1; flex: 0 1 390px; width: 390px; max-width: 100%; }
+.dv { --scale: 1; flex: 1 1 1024px; max-width: 1024px; }
+iframe { display: block; border: 0; outline: 1px solid var(--line); transform: scale(var(--scale)); transform-origin: top left; }
+.pv iframe { width: 390px; height: 844px; margin-bottom: calc(-844px * (1 - var(--scale))); }
+.dv iframe { width: 1024px; height: 800px; margin-bottom: calc(-800px * (1 - var(--scale))); }
+.vlab { font: 400 12px var(--mono); color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; }
+@media (max-width: 430px) { main { padding: 20px 12px 56px; } }
+
+/* the gallery's own guard, shown only when it fires */
+.fault { margin: 0 0 16px; padding: 8px 12px; border: 1px solid var(--remove); border-radius: 8px; color: var(--remove); font: 500 13px var(--mono); }
+
