@@ -103,6 +103,7 @@ export const KEYS = [
   "longname",
   "editable",
   "whitlock",
+  "everymark",
   "sitting",
   "sittings",
   "sameday",

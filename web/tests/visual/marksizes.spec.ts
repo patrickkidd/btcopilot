@@ -1,111 +1,86 @@
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
 import { stateFor } from "./setup";
 
-/** Every mark the play-by-play draws for one event, each on its own snapshot of
- * the Whitlock stand-in family, measured on screen in the real drawer: on its
- * own date in the emphasis colour, and on the next snapshot carried in grey.
- * The snapshots are drawn by the real `snapshots.ts`, bundled for the page. */
+/** Every mark the play-by-play draws, one step each, on the Pemberton stand-in
+ * family (`everymark` in btcopilot/routes/fixtures.py), read off the real
+ * drawer: its size on its own step in the emphasis colour, its grey once
+ * carried to the next, and that no mark runs over a name or a word. */
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-const WEB = join(HERE, "..", "..");
-
-/** The event behind each snapshot, and where its mark is found once drawn.
- * Marks drawn around a person (the death X, anxiety's spikes) take the
- * person's size, and an arrow or the fusion bands take the distance between
- * two people, so only the marks that stand on their own are held to one size. */
-const SHOWN = [
-  { name: "separated", id: 201, marks: ".slash", sized: true },
-  { name: "symptom", id: 203, marks: '[data-mark^="cross:"] :is(rect, line, polygon)', sized: true },
-  { name: "divorced", id: 204, marks: ".slash", sized: true },
-  { name: "cutoff", id: 301, marks: '[data-mark$=":cutoff"] :is(.mv-wall, .mv-strike)', sized: true },
-  { name: "distance", id: 302, marks: '[data-mark$=":distance"] .mv-wall', sized: true },
-  { name: "conflict", id: 303, marks: '[data-mark$=":conflict"] .mv-burst', sized: true },
-  { name: "projection", id: 304, marks: '[data-mark$=":projection"] .s-out line', sized: false },
-  { name: "fusion", id: 305, marks: '[data-mark$=":fusion"] .mv-band', sized: false },
-  { name: "anxiety", id: 306, marks: ".spikes line", sized: false },
-  { name: "death", id: 119, marks: '.p[data-id="1"] .xd', sized: false },
-  { name: "toward", id: 131, marks: '[data-mark$=":toward"] :is(line, polygon)', sized: false },
-  { name: "away", id: 132, marks: '[data-mark$=":away"] :is(line, polygon)', sized: false },
+/** Each step in order, and where its mark is found once drawn. Marks drawn
+ * around a person (the death X, anxiety's spikes, an outline) take the
+ * person's size, and an arrow, a couple's line or the fusion bands take the
+ * distance between two people, so only the marks that stand on their own are
+ * held to one size. A word is lit in the emphasis colour meant for words. */
+const STEPS: { name: string; marks: string; sized?: boolean; word?: boolean }[] = [
+  { name: "married", marks: '[data-bond="3|4"]' },
+  { name: "birth", marks: '[data-mark^="hl:"]' },
+  { name: "adopted", marks: '[data-mark^="hl:"]' },
+  { name: "toward", marks: '[data-mark$=":toward"] :is(line, polygon)' },
+  { name: "away", marks: '[data-mark$=":away"] :is(line, polygon)' },
+  { name: "conflict", marks: '[data-mark$=":conflict"] .mv-burst', sized: true },
+  { name: "distance", marks: '[data-mark$=":distance"] .mv-wall', sized: true },
+  { name: "separated", marks: ".slash", sized: true },
+  { name: "symptom up", marks: '[data-mark^="cross:"] :is(rect, line, polygon)', sized: true },
+  { name: "anxiety up", marks: ".spikes line" },
+  { name: "anxiety down", marks: ".evw", word: true },
+  { name: "divorced", marks: ".slash", sized: true },
+  { name: "cutoff", marks: '[data-mark$=":cutoff"] :is(.mv-wall, .mv-strike)', sized: true },
+  { name: "projection", marks: '[data-mark$=":projection"] .s-out line' },
+  { name: "fusion", marks: '[data-mark$=":fusion"] .mv-band' },
+  { name: "overfunctioning", marks: '[data-mark$=":overfunctioning"] .mv-flank line' },
+  { name: "underfunctioning", marks: '[data-mark$=":underfunctioning"] .mv-flank line' },
+  { name: "functioning down", marks: '[data-mark^="fdown:"]' },
+  { name: "functioning up", marks: '[data-mark^="fup:"]' },
+  { name: "symptom down", marks: '[data-mark^="cross:"] :is(rect, line, polygon)', sized: true },
+  { name: "defined self", marks: '[data-mark$=":defined-self"] .mv-clear' },
+  { name: "inside", marks: ".evw", word: true },
+  { name: "outside", marks: ".evw", word: true },
+  { name: "noted", marks: ".evw", word: true },
+  { name: "death", marks: ".xd" },
+  { name: "bonded", marks: '[data-bond="5|7"]' },
+  { name: "family", marks: '[data-mark^="hl:"]' },
 ];
 
-/** The Whitlock record with one event per move it lacks, told one event a
- * snapshot in date order: each snapshot's svg, and the next one's. */
-function bundle(): string {
-  const out = mkdtempSync(join(tmpdir(), "fd-symbols-"));
-  const entry = join(out, "entry.ts");
-  writeFileSync(
-    entry,
-    `import { Told } from ${JSON.stringify(join(WEB, "src", "snapshots.ts"))};
-import { CORINNE, DELPHINE, ERROL, MARCUS, event, timeline } from ${JSON.stringify(join(WEB, "test", "whitlock.ts"))};
-const tl = timeline();
-const added = [
-  [301, MARCUS, { relationship: "cutoff", relationshipTargets: [ERROL] }],
-  [302, MARCUS, { relationship: "distance", relationshipTargets: [DELPHINE] }],
-  [303, MARCUS, { relationship: "conflict", relationshipTargets: [DELPHINE] }],
-  [304, DELPHINE, { relationship: "projection", relationshipTargets: [CORINNE] }],
-  [305, DELPHINE, { relationship: "fusion", relationshipTargets: [CORINNE] }],
-  [306, MARCUS, { anxiety: "up" }],
-] as const;
-added.forEach(([id, who, over], i) => tl.events.push(event(id, "1983-0" + (i + 1) + "-15", "shift", who, over)));
-const at = (id: number) => tl.events.find((e) => e.id === id)!;
-const ids = ${JSON.stringify(SHOWN.map((s) => s.id))}.sort((a, b) => at(a).dateTime!.localeCompare(at(b).dateTime!));
-const t = new Told(tl, {
-  cluster_id: null,
-  point: "Every mark the play-by-play draws.",
-  snapshots: ids.map((id) => ({ date: at(id).dateTime!, event_ids: [id], fact: String(id), guess: null })),
-  question: null,
-});
-(window as any).SHOTS = Object.fromEntries(
-  ids.map((id, i) => [id, { now: t.shot(i).svg, was: i + 1 < ids.length ? t.shot(i + 1).svg : null }]),
-);
-`,
-  );
-  const js = join(out, "symbols.js");
-  execFileSync(join(WEB, "node_modules", ".bin", "esbuild"), [entry, "--bundle", "--format=iife", `--outfile=${js}`], {
-    stdio: "pipe",
-  });
-  return readFileSync(js, "utf8");
-}
+/** What a move mark is drawn with, and what words are; the field's rings and
+ * a couple's or a child's lines are ground, not marks. */
+const MARKS = ".slash, .mvk line, .mvk polyline, .mvk polygon, .arr line, .arr polygon, .mk rect, .mk line, .mk polygon, .spikes line";
+const WORDS = "text.lbn, text.lbd, text.evw";
 
 interface Size {
   name: string;
   tone: string;
   w: number;
   h: number;
-  stroke: number;
   colour: string;
 }
 
+/** Put one step's drawing in the drawer, every clock held at its start. */
+const show = (page: Page, svg: string) =>
+  page.evaluate((svg) => {
+    const draw = document.querySelector("#pbp .draw")!;
+    draw.querySelector("svg")!.outerHTML = svg;
+    draw.querySelector("svg")!.pauseAnimations();
+  }, svg);
+
 /** The marks' union box in their own drawing frame, so a mark keeps its size
  * whatever angle it is drawn at, scaled to the screen; strokes included. */
-const measure = (page: Page, id: number, name: string, selector: string, tone: "now" | "was") =>
+const measure = (page: Page, name: string, selector: string, tone: "now" | "was") =>
   page.evaluate(
-    ({ id, name, selector, tone }): Size | null => {
-      const svg = (window as any).SHOTS[id][tone];
-      if (!svg) return null;
-      const draw = document.querySelector("#pbp .draw")!;
-      draw.querySelector("svg")!.outerHTML = svg;
-      const root = draw.querySelector("svg")!;
+    ({ name, selector, tone }): Size => {
+      const root = document.querySelector<SVGSVGElement>("#pbp .draw svg")!;
       // a divorce's two slashes are one mark, whichever of them is lit
       const els = [...root.querySelectorAll<SVGGraphicsElement>(selector)].filter(
         (el) => el.matches(".slash") || !!el.closest(".now, .pop") === (tone === "now"),
       );
-      if (!els.length) throw new Error(`no ${selector} drawn for ${name}`);
+      if (!els.length) throw new Error(`no ${selector} drawn for ${name} (${tone})`);
       const ctm = root.getScreenCTM()!;
       const scale = Math.hypot(ctm.a, ctm.b);
       const frame = els[0].parentElement as unknown as SVGGraphicsElement;
       let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
-      let stroke = 0;
       els.forEach((el) => {
         const b = el.getBBox();
         const m = frame.getScreenCTM()!.inverse().multiply(el.getScreenCTM()!);
         const s = parseFloat(getComputedStyle(el).strokeWidth) || 0;
-        stroke = Math.max(stroke, s);
         [
           [b.x, b.y],
           [b.x + b.width, b.y],
@@ -127,59 +102,149 @@ const measure = (page: Page, id: number, name: string, selector: string, tone: "
         tone,
         w: r(x1 - x0),
         h: r(y1 - y0),
-        stroke: r(stroke),
         colour: paint.stroke !== "none" ? paint.stroke : paint.fill,
       };
     },
-    { id, name, selector, tone },
+    { name, selector, tone },
   );
 
-async function open(page: Page) {
+/** Every mark's stroke that crosses a name or a word, in the drawing's own
+ * units: each line, polyline and polygon edge against each word's box. */
+const crossings = (page: Page, marks: string, words: string) =>
+  page.evaluate(
+    ({ marks, words }) => {
+      const root = document.querySelector<SVGSVGElement>("#pbp .draw svg")!;
+      const boxes = [...root.querySelectorAll<SVGTextElement>(words)].map((t) => ({ text: t.textContent, b: t.getBBox() }));
+      const cut = (a: DOMPoint, z: DOMPoint, b: DOMRect, pad: number) => {
+        const [bx0, by0, bx1, by1] = [b.x - pad, b.y - pad, b.x + b.width + pad, b.y + b.height + pad];
+        let [t0, t1] = [0, 1];
+        const dx = z.x - a.x;
+        const dy = z.y - a.y;
+        for (const [p, q] of [
+          [-dx, a.x - bx0],
+          [dx, bx1 - a.x],
+          [-dy, a.y - by0],
+          [dy, by1 - a.y],
+        ]) {
+          if (p === 0) {
+            if (q < 0) return false;
+          } else if (p < 0) t0 = Math.max(t0, q / p);
+          else t1 = Math.min(t1, q / p);
+          if (t0 > t1) return false;
+        }
+        return true;
+      };
+      const out: string[] = [];
+      for (const el of root.querySelectorAll<SVGGraphicsElement>(marks)) {
+        if (getComputedStyle(el).opacity === "0" || getComputedStyle(el).visibility === "hidden") continue;
+        const m = root.getScreenCTM()!.inverse().multiply(el.getScreenCTM()!);
+        const at = (x: number, y: number) => new DOMPoint(x, y).matrixTransform(m);
+        let pts: DOMPoint[] = [];
+        let closed = false;
+        if (el instanceof SVGLineElement) pts = [at(el.x1.baseVal.value, el.y1.baseVal.value), at(el.x2.baseVal.value, el.y2.baseVal.value)];
+        else if (el instanceof SVGPolylineElement || el instanceof SVGPolygonElement) {
+          pts = [...el.points].map((p) => at(p.x, p.y));
+          closed = el instanceof SVGPolygonElement;
+        } else {
+          const b = el.getBBox();
+          pts = [at(b.x, b.y), at(b.x + b.width, b.y), at(b.x + b.width, b.y + b.height), at(b.x, b.y + b.height)];
+          closed = true;
+        }
+        const edges = pts.slice(1).map((p, i) => [pts[i], p]);
+        if (closed) edges.push([pts[pts.length - 1], pts[0]]);
+        const pad = (parseFloat(getComputedStyle(el).strokeWidth) || 0) / 2;
+        for (const { text, b } of boxes)
+          if (edges.some(([a, z]) => cut(a, z, b, pad))) {
+            const mark = el.closest("[data-mark]")?.getAttribute("data-mark") ?? el.getAttribute("class");
+            out.push(`${mark} over "${text}"`);
+          }
+      }
+      return [...new Set(out)];
+    },
+    { marks, words },
+  );
+
+/** The case's stored play-by-play opened, and each of its steps' drawing. */
+async function steps(page: Page, n: number): Promise<string[]> {
   await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
   await page.locator(".bub.coach[data-play]").last().click();
-  await expect(page.locator("#pbp .draw svg")).toBeVisible();
-  await page.addScriptTag({ content: bundle() });
+  await expect(page.locator("#pbp .count")).toHaveText(`1 of ${n}`);
   await page.addStyleTag({ content: "#pbp *, #pbp { animation: none !important; transition: none !important; }" });
+  const svgs: string[] = [];
+  for (let i = 0; i < n; i++) {
+    if (i) await page.locator('#pbp [data-act="next"]').click();
+    await expect(page.locator("#pbp .count")).toHaveText(`${i + 1} of ${n}`);
+    svgs.push(await page.locator("#pbp .draw svg").evaluate((svg) => svg.outerHTML));
+  }
+  return svgs;
 }
 
-/** The emphasis colour and the grey of a carried mark, as the page paints them. */
-const paints = (page: Page) =>
-  page.evaluate(() => {
+/** A colour the page names, as the browser writes a computed colour. */
+const paint = (page: Page, name: string) =>
+  page.evaluate((v) => {
     const probe = document.createElement("i");
     document.querySelector("#pbp")!.append(probe);
-    const read = (v: string) => ((probe.style.color = `var(${v})`), getComputedStyle(probe).color);
-    const out = { now: read("--move"), was: read("--faint") };
+    probe.style.color = `var(${v})`;
+    const out = getComputedStyle(probe).color;
     probe.remove();
     return out;
-  });
+  }, name);
 
 const median = (xs: number[]) => {
   const s = [...xs].sort((a, b) => a - b);
   return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
 };
 
-test.use({ storageState: stateFor("whitlock") });
+/** Every crossing of a mark and a word, step by step. */
+async function over(page: Page, svgs: string[]): Promise<string[]> {
+  const found: string[] = [];
+  for (const [i, svg] of svgs.entries()) {
+    await show(page, svg);
+    (await crossings(page, MARKS, WORDS)).forEach((c) => found.push(`step ${i + 1}: ${c}`));
+  }
+  return found;
+}
 
-// R-0679, R-0552
-test("every mark the play-by-play draws is of one size, the current one in the emphasis colour", async ({ page }) => {
-  await open(page);
-  const sizes: Size[] = [];
-  for (const s of SHOWN)
-    for (const tone of ["now", "was"] as const) {
-      const size = await measure(page, s.id, s.name, s.marks, tone);
-      if (size) sizes.push(size);
+test.describe("every mark", () => {
+  test.use({ storageState: stateFor("everymark") });
+
+  // R-0679, R-0552
+  test("every mark the play-by-play draws is of one size, the current one in the emphasis colour", async ({ page }) => {
+    const svgs = await steps(page, STEPS.length);
+    const sizes: Size[] = [];
+    for (const [i, s] of STEPS.entries()) {
+      await show(page, svgs[i]);
+      sizes.push(await measure(page, s.name, s.marks, "now"));
+      if (s.word || s.name === "death" || i + 1 === STEPS.length) continue;
+      await show(page, svgs[i + 1]);
+      sizes.push(await measure(page, s.name, s.marks, "was"));
     }
 
-  const sized = sizes.filter((s) => SHOWN.find((x) => x.name === s.name)!.sized);
-  const mid = median(sized.map((s) => Math.max(s.w, s.h)));
-  const off = sized.filter((s) => Math.max(s.w, s.h) < 0.75 * mid || Math.max(s.w, s.h) > 1.33 * mid);
-  expect(off.map((s) => `${s.name} ${s.tone} ${Math.max(s.w, s.h)} against ${mid}`)).toEqual([]);
+    const sized = sizes.filter((s) => STEPS.find((x) => x.name === s.name)!.sized);
+    const mid = median(sized.map((s) => Math.max(s.w, s.h)));
+    const off = sized.filter((s) => Math.max(s.w, s.h) < 0.75 * mid || Math.max(s.w, s.h) > 1.33 * mid);
+    expect(off.map((s) => `${s.name} ${s.tone} ${Math.max(s.w, s.h)} against ${mid}`)).toEqual([]);
 
-  const paint = await paints(page);
-  const now = sizes.filter((s) => s.tone === "now" && s.colour !== paint.now);
-  expect(now.map((s) => `${s.name} ${s.colour}`)).toEqual([]);
-  // a death X returns to plain ink after its date, not grey
-  const was = sizes.filter((s) => s.tone === "was" && s.name !== "death" && s.colour !== paint.was);
-  expect(was.map((s) => `${s.name} ${s.colour}`)).toEqual([]);
+    const lit = { mark: await paint(page, "--move"), word: await paint(page, "--move-text"), was: await paint(page, "--faint") };
+    const wrong = sizes.filter((s) => {
+      const want = s.tone === "was" ? lit.was : STEPS.find((x) => x.name === s.name)!.word ? lit.word : lit.mark;
+      return s.colour !== want;
+    });
+    expect(wrong.map((s) => `${s.name} ${s.tone} ${s.colour}`)).toEqual([]);
+  });
+
+  // R-0679
+  test("no mark runs over a name or a word", async ({ page }) => {
+    expect(await over(page, await steps(page, STEPS.length))).toEqual([]);
+  });
+});
+
+test.describe("the Whitlock family's years apart", () => {
+  test.use({ storageState: stateFor("whitlock") });
+
+  // R-0679
+  test("no mark runs over a name or a word", async ({ page }) => {
+    expect(await over(page, await steps(page, 5))).toEqual([]);
+  });
 });

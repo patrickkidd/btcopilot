@@ -53,8 +53,9 @@ export interface Figure {
   stage?: { w: number; h: number };
   /** The board writes names above its people; the stage writes them below. */
   above?: boolean;
-  /** How tall a wall stands: the ratified 68, unless the drawing holds all its
-   * marks to one size of its own, as the play-by-play does. */
+  /** How tall a wall stands, and the conflict burst with it: the ratified 68,
+   * unless the drawing holds all its marks to one size of its own, as the
+   * play-by-play does. */
   mark?: number;
 }
 
@@ -62,6 +63,16 @@ export interface Figure {
 export const R = 17;
 /** The moves board, as the ratified board drawing sizes people. */
 export const BOARD_R = 13;
+
+/** How far anxiety's spikes reach past a figure's edge: their gap and the
+ * longest of them. */
+export const SPIKES = 2 + 12;
+/** The flank arrow beside a person: how far past their edge it stands, how
+ * wide its head spreads, and how far it reaches above and below their middle. */
+export const FLANK = { at: 13, wing: 7, half: 11 };
+/** Where a wall stands, as a share of the way from the mover to the other:
+ * further in front of the actor, as ratified. */
+export const WALL = 0.4375;
 
 /** The ratified story loop. Heavier marks run a multiple of it. */
 export const LOOP = 8;
@@ -261,8 +272,7 @@ function rings(
  * through the wall. */
 function wall(frm: Frame, mover: Figure, struck: boolean): string {
   const L = frm.length;
-  // the wall stands further in front of the actor than the other, as ratified
-  const wx = L * 0.4375;
+  const wx = L * WALL;
   const arm = (mover.mark ?? 68) / 2;
   const shadow = uid("csh");
   // the wedge behind the wall widens as it runs back, so the rings wrap the
@@ -299,6 +309,8 @@ function sparks(frm: Frame, mover: Figure, other: Figure): string {
     return `${n1(x)},${y}`;
   }).join(" ");
   const mid = (x0 + x1) / 2;
+  // the burst keeps its ratified proportion to a wall, at whatever size the drawing holds walls to
+  const k = (mover.mark ?? 68) / 68;
   const burst = [
     [0, -17, 0, -29],
     [0, 17, 0, 29],
@@ -309,7 +321,7 @@ function sparks(frm: Frame, mover: Figure, other: Figure): string {
   ]
     .map(
       ([ax, ay, bx, by]) =>
-        `<line class="mv-burst" x1="${n1(mid + ax)}" y1="${ay}" x2="${n1(mid + bx)}" y2="${by}"/>`,
+        `<line class="mv-burst" x1="${n1(mid + ax * k)}" y1="${n1(ay * k)}" x2="${n1(mid + bx * k)}" y2="${n1(by * k)}"/>`,
     )
     .join("");
   return (
@@ -477,16 +489,16 @@ function bands(frm: Frame, a: Figure, b: Figure, closeBy: number): string {
  * thirds the size of the person, never as movement. */
 function flank(person: Figure, up: boolean): string {
   const side = person.mirror ? -1 : 1;
-  const x = person.x + side * (rad(person) + 13);
-  const top = person.y - 11;
-  const bottom = person.y + 11;
+  const x = person.x + side * (rad(person) + FLANK.at);
+  const top = person.y - FLANK.half;
+  const bottom = person.y + FLANK.half;
   const tip = up ? top : bottom;
   const back = up ? top + 8 : bottom - 8;
   return (
     `<g class="mv-flank ${up ? "up" : "down"}">` +
     `<line x1="${n1(x)}" y1="${n1(top)}" x2="${n1(x)}" y2="${n1(bottom)}"/>` +
-    `<line x1="${n1(x)}" y1="${n1(tip)}" x2="${n1(x - 7)}" y2="${n1(back)}"/>` +
-    `<line x1="${n1(x)}" y1="${n1(tip)}" x2="${n1(x + 7)}" y2="${n1(back)}"/>` +
+    `<line x1="${n1(x)}" y1="${n1(tip)}" x2="${n1(x - FLANK.wing)}" y2="${n1(back)}"/>` +
+    `<line x1="${n1(x)}" y1="${n1(tip)}" x2="${n1(x + FLANK.wing)}" y2="${n1(back)}"/>` +
     `</g>`
   );
 }

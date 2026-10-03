@@ -32,8 +32,9 @@
 
 .pbp .scroll .step { display: flex; align-items: center; gap: 4px; padding: 4px 10px 8px; }
 .pbp .dots { flex: 1; min-width: 0; display: flex; justify-content: center; }
-.pbp .dot { flex: none; width: 22px; height: 40px; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.pbp .dot::after { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--data); box-sizing: border-box; }
+/* a play told in more snapshots than the row holds draws its dots smaller, never over Back or Next */
+.pbp .dot { flex: 0 1 22px; min-width: 0; width: 22px; height: 40px; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.pbp .dot::after { content: ""; width: 9px; max-width: 80%; aspect-ratio: 1; border-radius: 50%; border: 1.5px solid var(--data); box-sizing: border-box; }
 .pbp .dot.on::after { background: var(--data); }
 .pbp .count { flex: none; min-width: 48px; text-align: center; font: 400 13px var(--mono); color: var(--faint); }
 .pbp .cap { padding: 12px 16px 18px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 7px; }
