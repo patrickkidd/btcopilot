@@ -169,7 +169,8 @@ function marksOf(r: Family, e: TimelineEvent): Step["marks"] {
     return [{ k: ENDS[kind] ?? Mark.Couple, a, b }];
   }
   if (BIRTHS.has(kind)) return [{ k: Mark.Emphasis, who }];
-  if (kind === EventKind.Death) return [{ k: Mark.Died, who }];
+  // the one who died is lit too, not only crossed out (Patrick, 2026-10-03)
+  if (kind === EventKind.Death) return [{ k: Mark.Died, who }, { k: Mark.Emphasis, who }];
   const drawn: Step["marks"] = [];
   for (const [shift, [up, down]] of [
     [e.symptom, [Mark.Up, Mark.Down]],

@@ -594,6 +594,21 @@ test.describe("every mark", () => {
     expect(await page.locator("#pbp .draw svg .fore .mv-clear animate").first().getAttribute("repeatCount")).toBe("indefinite");
   });
 
+  // R-0679
+  test("the one who died is lit on their death step with the cross, grey after", async ({ page }) => {
+    const svgs = await steps(page, STEPS.length);
+    const i = STEPS.findIndex((s) => s.name === "death");
+    await show(page, svgs[i]);
+    // Harold
+    const lit = page.locator('#pbp .draw svg > .fore [data-mark="hl:1"]');
+    await expect(lit).toHaveCount(1);
+    expect(await lit.evaluate((el) => getComputedStyle(el).stroke)).toBe(await paint(page, "--move"));
+    await expect(page.locator("#pbp .draw svg > .fore .xd.now")).toHaveCount(1);
+    await show(page, svgs[i + 1]);
+    await expect(page.locator('#pbp .draw svg > .fore [data-mark="hl:1"]')).toHaveCount(0);
+    await expect(page.locator('#pbp .draw svg [data-mark="hl:1"].was')).toHaveCount(1);
+  });
+
   // R-0546
   test("someone not yet born keeps their place with no age in their shape", async ({ page }) => {
     const svgs = await steps(page, STEPS.length);

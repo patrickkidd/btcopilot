@@ -645,7 +645,8 @@ describe("an event about the whole family", () => {
     const c = death();
     c.snapshots[3] = { date: "1998-09-15", event_ids: [133], fact: "The family left Bluff Street.", guess: null };
     const svg = told(c).shot(3).svg;
-    expect(marks(svg).filter((m) => m.startsWith("hl:")).sort()).toEqual([MARCUS, DELPHINE, CORINNE].map((id) => `hl:${id}`).sort());
+    const lit = marks(svg).filter((m) => m.startsWith("hl:") && markClass(svg, m).includes("now"));
+    expect(lit.sort()).toEqual([MARCUS, DELPHINE, CORINNE].map((id) => `hl:${id}`).sort());
     expect(marks(svg).filter((m) => m.startsWith("word:"))).toEqual([`word:${CORINNE}:Left Bluff Street`]);
   });
 });
