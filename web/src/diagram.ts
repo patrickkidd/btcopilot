@@ -122,6 +122,8 @@ export interface Cast {
 export interface Cut {
   kid: string;
   parent: string;
+  /** How many generations up the loop the kid meets themselves: 2 is their own grandparent. */
+  up: number;
 }
 
 export enum Names {
@@ -395,7 +397,7 @@ function loop(kids: Brood[], cast: Cast): Cut | null {
   const walk = (id: string): Cut | null => {
     path.push(id);
     for (const k of kidsOf[id] ?? []) {
-      if (path.includes(k)) return { kid: k, parent: id };
+      if (path.includes(k)) return { kid: k, parent: id, up: path.length - path.indexOf(k) };
       const c = done.has(k) ? null : walk(k);
       if (c) return c;
     }
@@ -802,6 +804,8 @@ function looseOrder(cast: Cast, t: Ties, gen: Record<string, number>, comps: str
       for (let g = 1; g < n; g++) sweep(g, g - 1);
       for (let g = n - 2; g >= 0; g--) sweep(g, g + 1);
     }
+    // the last word goes to the parents, so each child stands under their own
+    for (let g = 1; g < n; g++) sweep(g, g - 1);
     cast.kids
       .filter((k) => own.has(k.kids[0]))
       .forEach((k) => {
@@ -971,13 +975,14 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   // the least distance between two neighbours in a row; a mark between them stays nearer its own
   const room = (a: string, b: string) =>
     Math.max(gapFor(a, b), between(a, b) + PAD + (zone[a] === 1 || zone[b] === -1 ? 2 * PAD : 0));
-  // a move pushes each neighbour only as far as keeps that distance (R-0749);
-  // the fallback carries the whole rest of the row, or its bars come apart
-  const shift = (row: string[], from: string, by: number) => {
+  // a move carries the rest of the row with it; centring a couple over their
+  // children pushes each neighbour only as far as keeps that distance (R-0749),
+  // except in the fallback, whose bars would come apart
+  const shift = (row: string[], from: string, by: number, least = false) => {
     const i = row.indexOf(from);
     x[from] += by;
     for (let j = i + 1; j < row.length; j++) {
-      const need = plan.loose ? by : x[row[j - 1]] + room(row[j - 1], row[j]) - x[row[j]];
+      const need = least && !plan.loose ? x[row[j - 1]] + room(row[j - 1], row[j]) - x[row[j]] : by;
       if (need <= 0) break;
       x[row[j]] += need;
     }
@@ -1027,7 +1032,7 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
           const w = u.of.length === 2 ? Math.max(b1 - b0, k1 - k0 + 2 * inset) : 0;
           const to = (k0 + k1) / 2 - w / 2;
           if (to - b0 > 0.5) {
-            shift(rowWith(lead), lead, to - b0);
+            shift(rowWith(lead), lead, to - b0, true);
             moved = true;
             hit.add(u);
           } else if (b0 - to > 0.5) {
@@ -1035,7 +1040,7 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
             moved = true;
             hit.add(u);
           } else if (w - (b1 - b0) > 0.5) {
-            shift(rowWith(last), last, w - (b1 - b0));
+            shift(rowWith(last), last, w - (b1 - b0), true);
             moved = true;
             hit.add(u);
           }
@@ -1137,11 +1142,26 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
     }
     return { x0: x0 - 2, x1: x0 + w + 2, y0: base - 12, y1: base + LEAD * (nl[id] - 1) + 4 };
   }
-  // no move crosses a name: each name takes the first side, right, left,
-  // above, below, that no move of the case crosses; the rows then widen and settle again
+  // in the fallback, a child's line that slants to their parents' bar
+  const slants = (): Segment[] =>
+    cast.bonds.flatMap((b) => {
+      const k = cast.kids.find((c) => c.of.length === 2 && c.of.includes(b.a) && c.of.includes(b.b));
+      if (!k) return [];
+      const [x0, x1] = [Math.min(x[b.a], x[b.b]), Math.max(x[b.a], x[b.b])];
+      const yb = Math.max(y[b.a] + half(b.a), y[b.b] + half(b.b)) + d.DROP + (level[`${b.a}|${b.b}`] ?? 0) * 6;
+      return k.kids
+        .filter((id) => x[id] < x0 || x[id] > x1)
+        .map((id): Segment => [[x[id], y[id] - half(id)], [x[id] < x0 ? x0 : x1, yb]]);
+    });
+  // no move or slanted child's line crosses a name: each name takes the first
+  // side, right, left, above, below, that none crosses; the rows then widen and settle again
   const where = { P, x, y, d };
   for (let pass = 0; pass < 4; pass++) {
-    const segs = [...cast.moves.map((mv) => ends(where, mv)), ...cast.kin.flatMap((k) => across(where, k))];
+    const segs = [
+      ...cast.moves.map((mv) => ends(where, mv)),
+      ...cast.kin.flatMap((k) => across(where, k)),
+      ...(plan.loose ? slants() : []),
+    ];
     let moved = false;
     ids.forEach((id) => {
       if (!segs.some((s) => crosses(s, nameBox(id, side[id])))) return;
@@ -1237,7 +1257,7 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   L.h = Math.ceil(Math.max(core.y1 + dy + MY, box.y1 + dy + 2));
   L.my = MY;
   if (L.cut.length) {
-    const said = L.cut.map((c) => `${P[c.kid].name} is recorded as ${P[c.parent].name}’s ancestor and child`);
+    const said = L.cut.map((c) => `${P[c.kid].name} is recorded as their own ${c.up === 2 ? "grandparent" : "ancestor"}`);
     const lines = wrap(said, Math.floor((L.vw - 2 * MX) / (NAME * CH)));
     L.note = { y: L.h - MY + ASCENT, lines };
     L.h = Math.ceil(L.note.y + LEAD * (lines.length - 1) + MY);

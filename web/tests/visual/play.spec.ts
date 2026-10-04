@@ -406,7 +406,7 @@ test.describe("a family the row rules cannot place", () => {
     expect(new Set(ids).size).toBe(ids.length);
     await expect(draw.locator("svg path.cut")).toHaveCount(1);
     const note = (await draw.locator("svg text.cutn").allTextContents()).join(" ");
-    expect(note).toBe("Hal is recorded as Hugo’s ancestor and child");
+    expect(note).toBe("Hal is recorded as their own grandparent");
     const colour = await draw.locator("svg path.cut").evaluate((p) => getComputedStyle(p).stroke);
     const red = await page.evaluate(() => {
       const probe = document.createElementNS("http://www.w3.org/2000/svg", "path");
