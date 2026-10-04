@@ -1290,6 +1290,26 @@ describe("the whole family stepped through dates", () => {
     ]);
   });
 
+  const fact = (tl: Timeline, id: number) => wholeFamily(tl).snapshots.find((s) => s.event_ids.includes(id))!.fact;
+
+  // R-0742
+  it("says what happened with who first and no date: a birth, a marriage, a couple's start, a shift", () => {
+    const tl = record();
+    tl.events.push(event(305, "2001-06-01", "bonded", PARTNER, { spouse: CORINNE }));
+    expect(fact(tl, 301)).toBe("Corinne was born");
+    expect(fact(tl, 103)).toBe("Errol and Odile married");
+    expect(fact(tl, 305)).toBe("partner and Corinne got together");
+    expect(fact(tl, 303)).toBe("Theo stopped speaking to Delphine");
+  });
+
+  // R-0742
+  it("says two people's same words on one date once each, by name, and an event recorded twice once", () => {
+    const tl = record();
+    const words = { relationship: "cutoff", relationshipTargets: [DELPHINE], title: "Cut off", description: "Stopped speaking to Delphine" };
+    tl.events.push(event(306, "2016-08-15", "shift", CORINNE, words), event(307, "2016-08-15", "shift", THEO, words));
+    expect(fact(tl, 303)).toBe("Theo stopped speaking to Delphine; Corinne stopped speaking to Delphine");
+  });
+
   // R-0742
   it("draws everyone in the record, the ones no step names too", () => {
     expect(cast(whole())).toEqual([ERROL, ODILE, MARCUS, DELPHINE, CORINNE, THEO, PARTNER]);

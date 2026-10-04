@@ -110,9 +110,9 @@ it("steps the whole family with Back and Next only, says where in its top line, 
   expect(top).toMatch(/data-step="0"><span>Timeline<.*<span class="here">Family</);
   expect(top).toContain(closeX(' data-step="0"'));
   expect(top).not.toContain('class="point"');
-  expect(topLine(whole, 0)).toBe('<span class="date">Jun 1948</span>');
+  expect(topLine(whole, 0)).toBe('<span class="date">June 1948</span><span class="words">— Errol and Odile <span class="kw">married</span></span>');
   const toward = whole.told.snapshots.findIndex((s) => s.event_ids.includes(131));
-  expect(topLine(whole, toward)).toBe('<span class="date">May 1998</span><span class="words">— Started calling Corinne every night</span>');
+  expect(topLine(whole, toward)).toBe('<span class="date">May 1998</span><span class="words">— Delphine started calling Corinne every night</span>');
 });
 
 // R-0742

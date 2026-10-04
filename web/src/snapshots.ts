@@ -67,6 +67,12 @@ const key = (id: number) => String(id);
 const caption = (e: TimelineEvent) =>
   e.dateCertainty === DateCertainty.Unknown ? "date unknown" : dateText(e.dateTime!, e.dateCertainty);
 
+/** The whole family's date, the month in full when the record is sure of it. */
+const spoken = (e: TimelineEvent) =>
+  e.dateCertainty === DateCertainty.Unknown || e.dateCertainty === DateCertainty.Approximate
+    ? caption(e)
+    : new Date(e.dateTime!.slice(0, 10)).toLocaleString("en", { month: "long", year: "numeric", timeZone: "UTC" });
+
 /** A date as a year with its fraction, so ages and gaps are arithmetic. */
 export function when(iso: string): number {
   const [y, m = 1, d = 1] = iso.slice(0, 10).split("-").map(Number);
@@ -241,7 +247,7 @@ export class Told {
       const first = events[0];
       return {
         t: when(first.dateTime!),
-        date: caption(first),
+        date: whole ? spoken(first) : caption(first),
         marks: events.flatMap((e) => marksOf(r, e)),
       };
     });
@@ -268,6 +274,13 @@ export class Told {
           .map(([who]) => who)
       : [];
     return [...new Set([...placed.filter((m) => m.k === Mark.Emphasis).map((m) => m.who), ...family])];
+  }
+
+  /** Who an event is about, when they are drawn, else the record's own person. */
+  private about(id: number): string {
+    const e = this.tl.events.find((e) => e.id === id)!;
+    const who = e.child ?? e.person;
+    return who != null && key(who) in this.cast.people ? key(who) : this.cast.index;
   }
 
   get length(): number {
@@ -358,7 +371,7 @@ export class Told {
     });
     return {
       svg,
-      who: lit[0] ?? this.cast.index,
+      who: lit[0] ?? this.about(snap.event_ids[0]),
       date: now.date,
       gap: i > 0 ? gapText(this.steps[i - 1].t, now.t) : null,
       fact: snap.fact,
@@ -558,14 +571,52 @@ export function untold(tl: Timeline, ids: number[]): Case {
 /** The kinds that change who is in the family or how a couple stands. */
 const TURNS = new Set<string>([...BIRTHS, ...COUPLE_KINDS, ...Object.keys(ENDS), EventKind.Death]);
 
+/** What a couple's event says they did; a couple's start is said in common words. */
+const COUPLED: Record<string, string> = {
+  [EventKind.Married]: "married",
+  [EventKind.Bonded]: "got together",
+  [EventKind.Separated]: "separated",
+  [EventKind.Divorced]: "divorced",
+};
+
+/** What happened, who first, the date left to the top line: "Rose was born",
+ * "Ray and June married", a shift in the record's own words after the name. */
+function happened(people: Map<number, Person>, e: TimelineEvent): string {
+  const name = (id: number) => {
+    const p = people.get(id);
+    if (!p) throw new Error(`event ${e.id} names person ${id}, who is not in the record`);
+    return p.name;
+  };
+  const kind = e.kind ?? "";
+  if (BIRTHS.has(kind) && e.child != null) return `${name(e.child)} was ${kind === EventKind.Birth ? "born" : "adopted"}`;
+  if (COUPLED[kind] && e.person != null && e.spouse != null) return `${name(e.person)} and ${name(e.spouse)} ${COUPLED[kind]}`;
+  if (kind === EventKind.Death && e.person != null) return `${name(e.person)} died`;
+  const words = e.description ?? e.title ?? e.label;
+  if (e.person == null) return words;
+  // the record's words go on lower case after the name, unless they start with a name
+  const lead = words.split(" ")[0];
+  const named = [...people.values()].some((p) => p.name === lead);
+  return `${name(e.person)} ${named || /^.[A-Z]/.test(words) ? words : words[0].toLowerCase() + words.slice(1)}`;
+}
+
 /** The whole family stepped through dates (R-0742): one step per date that
  * has a birth, an adoption, a couple's start or end, a death or a relationship
- * shift, in date order. */
-export const family = (tl: Timeline): Case =>
-  untold(
+ * shift, in date order, each said once with who did it. */
+export function family(tl: Timeline): Case {
+  const people = new Map(tl.people.map((p) => [p.id, p]));
+  const byId = new Map(tl.events.map((e) => [e.id, e]));
+  const told = untold(
     tl,
     tl.events.filter((e) => TURNS.has(e.kind ?? "") || e.relationship).map((e) => e.id),
   );
+  return {
+    ...told,
+    snapshots: told.snapshots.map((s) => ({
+      ...s,
+      fact: [...new Set(s.event_ids.map((id) => happened(people, byId.get(id)!)))].join("; "),
+    })),
+  };
+}
 
 /** The events a triangle is about: those naming two or more of its people. */
 export function among(tl: Timeline, persons: number[]): number[] {
