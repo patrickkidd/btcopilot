@@ -192,3 +192,15 @@ it("refuses a record whose couple has a marriage event but is not marked married
   tl.pair_bonds[2].married = false;
   expect(() => caseView(tl, ONE, "")).toThrow(/record fault/);
 });
+
+// R-0696
+it("keeps every date inside a chip: no lead line names a year or a month", () => {
+  const tl = halloran();
+  tl.people.find((p) => p.id === 2)!.birth_event = 106;
+  const v = caseView(tl, [{ last_activity: "2026-10-01T10:00:00" } as Session], "");
+  const parted = halloran();
+  parted.events.push(event(300, EventKind.Separated, "2020-01-01", { person: 1, spouse: 10 }));
+  const leads = [v.siblings, v.brought.lead, v.brought.asked, v.couple.lead, v.effort, ...v.sides.map((s) => s.lead), ...caseView(parted, ONE, "").stages.map((r) => r.label)];
+  for (const line of leads) expect(line).not.toMatch(/\b(1[89]|20)\d\d\b|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/);
+  expect(v.brought.lead).toBe("Nora's symptoms appear in 2 events in the record.");
+});

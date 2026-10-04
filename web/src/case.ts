@@ -163,8 +163,8 @@ function body(card: Card, v: CaseView): string {
     case Card.Brought: {
       const b = v.brought;
       const course = [
-        ...(b.first ? [chip(ChipKind.Event, b.first.id, `first · ${b.first.face}`)] : []),
-        ...(b.latest ? [chip(ChipKind.Event, b.latest.id, `latest · ${b.latest.face}`)] : []),
+        ...(b.first ? [factChip(b.first)] : []),
+        ...(b.latest ? [factChip(b.latest)] : []),
         ...b.clusters.map((c) => chip(ChipKind.Cluster, c.id, c.label)),
       ];
       return lead(b.lead) + (course.length ? sublabel("The trouble's course, dated") + chips(course) : "") + lead(b.asked);
@@ -172,7 +172,7 @@ function body(card: Card, v: CaseView): string {
     case Card.Couple:
       if (v.married) return lead(v.couple.lead) + chips(v.couple.facts.map(factChip));
       return v.stages
-        .map((row) => `<div class="stage">${sublabel(row.label)}${row.stages.map((st) => `<p class="when">${esc(`${st.date} · ${st.what}`)}</p>${chips(st.facts.map(factChip))}`).join("")}</div>`)
+        .map((row) => `<div class="stage">${sublabel(row.label)}${row.stages.map((st) => chips([factChip(st.head), ...st.facts.map(factChip)])).join("")}</div>`)
         .join("");
     case Card.Sides:
       return v.sides.map((s) => fold(s.label, lead(s.lead) + s.pics.map((p) => sublabel(p.sub) + picture(v, p.still, p.sub)).join(""))).join("");

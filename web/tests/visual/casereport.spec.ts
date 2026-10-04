@@ -42,6 +42,15 @@ for (const key of FIXTURES)
               strip: [...document.querySelectorAll<HTMLElement>("#case-rail [data-jump]")].map((b) => b.dataset.jump),
               cards: [...document.querySelectorAll<HTMLElement>("#case-body .level, #case-dash .level")].map((l) => l.dataset.card),
               wrapped: chips.filter((c) => c.getClientRects().length !== 1 || c.offsetHeight > 40).length,
+              // a stored title shows whole: no chip cut short with an ellipsis
+              cut: chips
+                .filter((c) => {
+                  const words = document.createRange();
+                  words.selectNodeContents(c);
+                  const pad = parseFloat(getComputedStyle(c).paddingLeft) + parseFloat(getComputedStyle(c).paddingRight);
+                  return words.getBoundingClientRect().width > c.clientWidth - pad + 1;
+                })
+                .map((c) => c.textContent),
               outside: chips.filter((c) => out(c.getBoundingClientRect(), c.closest(".level")!.getBoundingClientRect())).length,
               sideways: document.documentElement.scrollWidth > window.innerWidth,
               text: document.querySelector("#case-screen")!.textContent ?? "",
@@ -52,6 +61,7 @@ for (const key of FIXTURES)
           expect([...seen.cards].sort()).toEqual([...seen.strip].sort());
           expect(seen.strip).toHaveLength(10);
           expect(seen.wrapped).toBe(0);
+          expect(seen.cut).toEqual([]);
           expect(seen.outside).toBe(0);
           expect(seen.sideways).toBe(false);
           expect(seen.text).not.toMatch(/NaN|undefined|not in the record|From the record/);

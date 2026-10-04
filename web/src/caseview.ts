@@ -97,8 +97,8 @@ export interface Side {
 /** One stage of a couple: its date and what opened it, and the pair's own
  * dated events until the next stage. */
 export interface Stage {
-  date: string;
-  what: string;
+  /** The event that opened it, on a chip in what-it-opened words. */
+  head: Fact;
   facts: Fact[];
 }
 
@@ -276,18 +276,10 @@ class Reader {
 
   births = (ids: number[]) => ids.map((id) => this.people.get(id)!);
 
-  born(p: Person): string {
-    const e = p.birth_event == null ? undefined : this.event(p.birth_event);
-    return e?.dateTime ? dateText(e.dateTime, e.dateCertainty) : "";
-  }
-
   died(p: Person): string {
     const e = p.death_event == null ? undefined : this.event(p.death_event);
     return e?.dateTime ? dateText(e.dateTime, e.dateCertainty) : "";
   }
-
-  /** "Kate (born Jul 1986)": a name with the birth the record dates. */
-  withBirth = (p: Person) => (this.born(p) ? `${p.name} (born ${this.born(p)})` : p.name);
 
   /** Brothers and sisters ordered by birth when the record dates every one. */
   ordered(people: Person[]): Person[] {
@@ -305,7 +297,7 @@ class Reader {
     const sibs = all.filter((p) => p.id !== s.id);
     const lines: string[] = [];
     if (sibs.length) {
-      const others = sibs.map(this.withBirth).join(", ");
+      const others = sibs.map((p) => p.name).join(", ");
       lines.push(
         all.every((p) => p.birth)
           ? `${s.name} is child ${all.indexOf(s) + 1} of ${all.length} of ${parents}; the others: ${others}.`
@@ -319,7 +311,7 @@ class Reader {
           this.childrenOf(b).forEach((half) => {
             const word = half.gender === "female" ? "sister" : half.gender === "male" ? "brother" : "sibling";
             const via = this.people.get(parent)?.gender === "female" ? "mother" : "father";
-            lines.push(`Half-${word} ${this.withBirth(half)}, through ${pronouns(s).his} ${via}.`);
+            lines.push(`Half-${word} ${half.name}, through ${pronouns(s).his} ${via}.`);
           }),
         ),
     );
@@ -334,10 +326,9 @@ class Reader {
     const flares = this.tl.events.filter((e) => e.person === s.id && e.symptom && e.dateTime).sort(byDate);
     const ids = new Set(flares.map((e) => e.id));
     const clusters = this.tl.clusters.filter((c) => c.event_ids.some((id) => ids.has(id)));
-    const [from, to] = flares.length ? [flares[0], flares[flares.length - 1]].map((e) => e.dateTime!.slice(0, 4)) : ["", ""];
-    const times = flares.length === 1 ? "once" : flares.length === 2 ? "twice" : `${flares.length} times`;
+    // dates only inside chips: the lead counts, the chips date
     return {
-      lead: flares.length ? `${s.name}'s trouble flared ${times} in the record, ${from === to ? `in ${from}` : `from ${from} to ${to}`}.` : "",
+      lead: flares.length ? `${s.name}'s symptoms appear in ${flares.length === 1 ? "one event" : `${flares.length} events`} in the record.` : "",
       first: flares.length ? this.fact(flares[0]) : null,
       latest: flares.length > 1 ? this.fact(flares[flares.length - 1]) : null,
       clusters: clusters.map((c) => ({ id: c.id, label: `${c.label} · ${c.title}` })),
@@ -405,7 +396,7 @@ class Reader {
     return openers.map(({ e, what }, i) => {
       const next = openers[i + 1]?.e.dateTime;
       const under = theirs.filter((t) => t.dateTime! >= e.dateTime! && (!next || t.dateTime! < next));
-      return { date: dateText(e.dateTime!, e.dateCertainty), what, facts: under.map((t) => this.fact(t)!) };
+      return { head: { id: e.id, face: `${dateText(e.dateTime!, e.dateCertainty)} · ${what}` }, facts: under.map((t) => this.fact(t)!) };
     });
   }
 
@@ -422,16 +413,16 @@ class Reader {
     this.bondsOf(s.id)
       .filter((b) => this.other(b, s.id) != null)
       .map((b) => ({ label: `${s.name} and ${this.name(this.other(b, s.id)!)}`, stages: this.stagesOf(b) }))
-      .sort((p, q) => (p.stages[0]?.date ?? "").localeCompare(q.stages[0]?.date ?? ""))
+      .sort((p, q) => (this.event(p.stages[0]?.head.id)?.dateTime ?? "").localeCompare(this.event(q.stages[0]?.head.id)?.dateTime ?? ""))
       .forEach((row) => rows.push(row));
     return rows.filter((row) => row.stages.length);
   }
 
-  /** A parent in a few words, beside what the pictures under it draw: when
-   * they were born and died, and how much the record holds about the people
-   * on this side. */
+  /** A parent in a few words, beside what the pictures under it draw: whether
+   * they have died, and how much the record holds about the people on this
+   * side. The dates are on the pictures and the chips, never in the words. */
   personLine(p: Person, side: number[]): string {
-    const bits = [this.born(p) ? `born ${this.born(p)}` : "", this.died(p) ? `died ${this.died(p)}` : ""].filter(Boolean);
+    const bits = this.died(p) ? ["who has died"] : [];
     const told = this.tl.events.filter((e) => e.dateTime && !OPENERS.has(e.kind ?? "") && e.person != null && side.includes(e.person));
     const held = told.length ? ` The record holds ${told.length === 1 ? "one event" : `${told.length} events`} about this side of the family.` : "";
     return bits.length || held ? `${p.name}${bits.length ? `, ${bits.join(", ")}` : ""}.${held}` : "";
@@ -511,7 +502,6 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string): Case
   const answered = newest(questions.filter((q) => onCard(CaseReportCard.OwnPart)(q) && q.answer?.text));
   const wed = r.marriage();
   const { him, his } = pronouns(s);
-  const latest = sessions[0];
   return {
     name: s.name,
     him,
@@ -531,8 +521,8 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string): Case
     ownPart: { guess: own && r.guess(own), ask: answered ? null : askOn(CaseReportCard.OwnPart), answer: answered?.answer?.text ?? null },
     choice: { guess: choice && r.guess(choice), ask: askOn(CaseReportCard.Choice) },
     work: { aim: work[0]?.facts[0] ?? null, guesses: work },
-    effort: latest
-      ? `${s.name} has talked with the coach in ${sessions.length === 1 ? "one session" : `${sessions.length} sessions`}, the latest on ${dateText(latest.last_activity, null)}.`
+    effort: sessions.length
+      ? `${s.name} has talked with the coach in ${sessions.length === 1 ? "one session" : `${sessions.length} sessions`}.`
       : "",
   };
 }
