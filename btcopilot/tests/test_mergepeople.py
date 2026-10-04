@@ -32,7 +32,7 @@ FAMILY = {
     "events": [
         {"id": 30, "kind": "birth", "child": 3, "dateTime": "1942-01-01", "dateCertainty": "approximate"},
         {"id": 31, "kind": "birth", "child": 7, "dateTime": "1944-01-01", "dateCertainty": "approximate"},
-        {"id": 32, "kind": "noted", "person": 7, "description": "Moved to Fairbanks", "dateTime": "1981-06-01", "dateCertainty": "approximate"},
+        {"id": 32, "kind": "noted", "person": 7, "title": "Moved to Fairbanks", "description": "Moved to Fairbanks", "dateTime": "1981-06-01", "dateCertainty": "approximate"},
         {"id": 33, "kind": "married", "person": 7, "spouse": 1, "dateTime": "1980-05-01", "dateCertainty": "approximate"},
         {"id": 34, "kind": "birth", "child": 8, "person": 7, "spouse": 1, "dateTime": "1982-02-01", "dateCertainty": "approximate"},
     ],

@@ -10,7 +10,7 @@ vi.mock("../src/api", async (original) => ({
   },
 }));
 
-const { Direction, MAX_FIELD_LINES, Relationship, grownHeight, moved, save } =
+const { Direction, MAX_FIELD_LINES, Relationship, grownHeight, moved, save, unsaid } =
   await import("../src/editor");
 
 describe("grownHeight", () => {
@@ -27,12 +27,26 @@ describe("grownHeight", () => {
 
 const shift = (fields: Partial<TimelineEvent> = {}): Partial<TimelineEvent> => ({
   kind: EventKind.Shift,
+  title: "Moved nothing",
   description: "Shift that moved nothing",
   symptom: null,
   anxiety: null,
   functioning: null,
   relationship: null,
   ...fields,
+});
+
+describe("unsaid", () => {
+  // R-0681
+  it("refuses a noted event or a shift with no title of 2 to 4 words, as the record does", () => {
+    const noted = { kind: EventKind.Noted, description: "Took a room over the store" };
+    expect(unsaid(noted)).toBe('A noted event needs a title of 2 to 4 words, such as "Lost his job".');
+    expect(unsaid(shift({ title: "", symptom: Direction.Up }))).toBe('A shift event needs a title of 2 to 4 words, such as "Lost his job".');
+    expect(unsaid({ ...noted, title: "Took a room over the store" })).toBe('A noted event needs a title of 2 to 4 words, such as "Lost his job".');
+    expect(unsaid({ ...noted, title: "Moved out" })).toBeNull();
+    expect(unsaid({ kind: EventKind.Noted, title: "Moved out" })).toBe("A noted event needs a few words saying what happened.");
+    expect(unsaid({ kind: EventKind.Birth })).toBeNull();
+  });
 });
 
 describe("moved", () => {

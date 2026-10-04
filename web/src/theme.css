@@ -1,6 +1,11 @@
 /* Tokens only, so themes stay A/B-testable with stable semantics:
    teal = data, amber = asking (DRAWABILITY). */
 :root {
+  /* the one set of speeds every mark moves at, the same as SPEED in moves.ts */
+  --speed-arrow: 1s;
+  --speed-ring: 1.65s;
+  --speed-pop: 0.2s;
+  --speed-grow: 1.4s;
   --bg: #f7f6f2;
   --panel: #fff;
   --ink: #26312f;
@@ -330,12 +335,16 @@ button { font-family: inherit; }
    Safari count the padding again past it, and the strip scrolled sideways. */
 .caption .listglyph { margin-left: auto; padding-left: 8px; }
 .view { position: relative; transition: height 0.25s ease; }
-/* One level in or one level out. The two views stand side by side for the
-   length of the slide, each at the height the region already had, so nothing
-   under the picture moves while they travel; the region takes a new height
-   only once they have landed. */
-.pic.sliding { overflow: hidden; }
+/* The about page of a cluster slides in over the timeline and back out; it is
+   the only thing that slides, since showing a cluster redraws the timeline in
+   place. The two stand side by side for the length of the slide, so nothing
+   under the picture moves while they travel; the about page hangs over the
+   chat at its full height the whole way, never cut to the region's and then
+   let out (Patrick, 2026-10-02), so the region clips the slide only at its
+   sides, and the live page waits under the copy. */
+.pic.sliding { overflow-x: clip; overflow-y: visible; }
 .pic.sliding .view { transition: none; }
+.pic.sliding > .view .card { visibility: hidden; }
 /* a level arrives as a card over the one it came from: the whole region, on
    the picture's own ground, so its words never cross the other level's words */
 .pic .slide-lay {
@@ -553,9 +562,9 @@ button { font-family: inherit; }
   stroke: var(--move);
   stroke-width: 2.4;
   stroke-dasharray: 10 8;
-  animation: flow 1s linear infinite;
+  animation: flow var(--speed-arrow) linear infinite;
 }
-.ss .mv-arrow.back { animation: flow 1s linear infinite reverse; }
+.ss .mv-arrow.back { animation: flow var(--speed-arrow) linear infinite reverse; }
 .ss .tipfill { fill: var(--move); }
 
 .ss .mv-spark { fill: none; stroke: var(--move); stroke-width: 2.4; stroke-linejoin: round; }
@@ -573,7 +582,7 @@ button { font-family: inherit; }
   stroke: var(--move);
   stroke-width: 2.8;
   stroke-dasharray: 9 7;
-  animation: flow 0.45s linear infinite;
+  animation: flow var(--speed-arrow) linear infinite;
 }
 
 .ss .mv-band { stroke: var(--move); stroke-width: 2.6; }
@@ -712,15 +721,17 @@ button { font-family: inherit; }
 }
 
 /* the same key times as the ratified SVG animations, as CSS */
-@keyframes ghostout { 0%, 15% { opacity: 0.85; } 75%, 100% { opacity: 0; } }
-@keyframes ghostin { 0%, 15% { opacity: 0; } 75%, 100% { opacity: 0.85; } }
+/* projection's change takes the shared grow time, 1.4s of its 8s loop
+   (Patrick, 2026-10-03: the gradual change was too slow to see) */
+@keyframes ghostout { 0%, 15% { opacity: 0.85; } 32.5%, 100% { opacity: 0; } }
+@keyframes ghostin { 0%, 15% { opacity: 0; } 32.5%, 100% { opacity: 0.85; } }
 @keyframes ghostsolo {
   0%, 10% { opacity: 0; }
   28%, 60% { opacity: 0.85; }
   85%, 100% { opacity: 0; }
 }
-@keyframes spikeout { 0%, 15% { transform: scale(1); } 75%, 100% { transform: scale(0.12); } }
-@keyframes spikein { 0%, 15% { transform: scale(0.12); } 75%, 100% { transform: scale(1); } }
+@keyframes spikeout { 0%, 15% { transform: scale(1); } 32.5%, 100% { transform: scale(0.12); } }
+@keyframes spikein { 0%, 15% { transform: scale(0.12); } 32.5%, 100% { transform: scale(1); } }
 @keyframes spikesolo {
   0%, 10% { transform: scale(0.1); }
   28%, 60% { transform: scale(1); }

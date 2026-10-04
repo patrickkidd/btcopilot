@@ -1,4 +1,7 @@
-import importlib
+import json
+import os
+import subprocess
+import sys
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -9,24 +12,35 @@ from btcopilot.coachmodel import CoachModel, Spent
 from btcopilot.pricing import cost, price
 
 
-@pytest.fixture
-def unset(monkeypatch):
-    monkeypatch.delenv("BTCOPILOT_RESPONSE_MODEL", raising=False)
-    yield importlib.reload(llmutil)
-    monkeypatch.undo()
-    importlib.reload(llmutil)
+def unset() -> dict:
+    """What a fresh import chooses with no model named in the environment. Asked
+    in a process of its own: reloading the module here would give its error
+    and record classes a second identity for every test after it."""
+    env = {k: v for k, v in os.environ.items() if k != "BTCOPILOT_RESPONSE_MODEL"}
+    said = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import json; from btcopilot import llmutil as u; print(json.dumps(["
+            "u.RESPONSE_MODEL, u.resolve_model(u.DEFAULT_RESPONSE_MODEL_ALIAS), "
+            "u.resolve_model(None)]))",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return dict(zip(("model", "alias", "none"), json.loads(said.stdout.splitlines()[-1])))
 
 
-def test_the_conversation_runs_on_opus_5_5(unset):
+def test_the_conversation_runs_on_opus_5_5():
     # R-0405
-    assert unset.RESPONSE_MODEL == "claude-opus-5-5"
-    assert unset.resolve_model(unset.DEFAULT_RESPONSE_MODEL_ALIAS) == "claude-opus-5-5"
-    assert unset.resolve_model(None) == "claude-opus-5-5"
+    assert unset() == {"model": "claude-opus-5-5", "alias": "claude-opus-5-5", "none": "claude-opus-5-5"}
 
 
-def test_opus_5_5_costs_less_than_the_opus_it_replaced(unset):
+def test_opus_5_5_costs_less_than_the_opus_it_replaced():
     # R-0405
-    now, before = price(unset.RESPONSE_MODEL), price("claude-opus-5")
+    now, before = price(unset()["model"]), price("claude-opus-5")
     assert now.input < before.input
     assert now.output < before.output
 

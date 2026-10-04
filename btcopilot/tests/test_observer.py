@@ -9,6 +9,7 @@ import pytest
 from mock import patch
 
 from btcopilot.coachmodel import Refusal
+from btcopilot.llmutil import Served, Spent
 from btcopilot.extensions import db
 from btcopilot import turns
 from btcopilot.models import Observation, ObservationKind
@@ -25,6 +26,7 @@ MOVED = {
     "kind": "noted",
     "person": 1,
     "dateTime": "2000-03-01",
+    "title": "Moved to Arizona",
     "description": "Moved to Arizona",
 }
 
@@ -199,6 +201,7 @@ def test_a_refused_tool_call_is_written_down_with_whether_its_retry_worked(
                 ToolName.EditEvent,
                 kind="noted",
                 person=1,
+                title="Moved to Arizona",
                 description="Moved to Arizona",
                 date="2019-03-01",
                 date_certainty="certain",
@@ -232,6 +235,7 @@ def test_a_move_refused_for_no_target_is_retried_with_one(
         kind="shift",
         person=1,
         relationship="toward",
+        title="Shared the school plan",
         description="Told her about nursing school",
         date="2013-06-01",
         date_certainty="approximate",
@@ -278,7 +282,7 @@ def test_a_turn_that_used_every_step_is_written_down(
 
 class Declines(Model):
     def turn(self, system, messages, tools, turn_id=""):
-        raise Refusal("declined", "cyber")
+        raise Refusal("declined", "cyber", Served("claude-opus-5-5"), Spent())
         yield
 
 

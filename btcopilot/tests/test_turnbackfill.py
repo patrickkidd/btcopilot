@@ -167,7 +167,7 @@ def test_old_turns_get_their_tool_calls_and_a_turn_that_broke_is_marked_unfinish
         "description": "Moved to Leeds",
         "date": "1990-01-01",
     }
-    assert events[2][3]["names"] == {"it": "Moved to Leeds"}
+    assert events[2][3]["names"] == {"it": "a note about Someone"}
     assert events[3][3] == {"type": "failed", "message": "The coach did not finish that turn."}
 
 

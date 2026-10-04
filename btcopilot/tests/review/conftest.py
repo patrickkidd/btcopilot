@@ -141,6 +141,7 @@ def shift(event_id: int, person_id: int, description: str, date="2020-01-01") ->
         "id": event_id,
         "kind": "shift",
         "person": person_id,
+        "title": "Symptom got worse",
         "description": description,
         "symptom": "up",
         "dateTime": date,

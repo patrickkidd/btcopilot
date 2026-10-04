@@ -103,6 +103,7 @@ export const KEYS = [
   "longname",
   "editable",
   "whitlock",
+  "everymark",
   "sitting",
   "sittings",
   "sameday",
@@ -178,6 +179,13 @@ export const pinned = (page: Page) => page.locator("#chat-drawer").isVisible();
 /** Where the lists are: the drawer pinned beside the thread on a wide window,
  * the full-screen list on a phone. */
 export const lists = (page: Page) => page.locator("#chat-drawer:visible, #menu-screen:visible");
+
+/** Which step of the play-by-play is up, as "3 of 7", read off its lit dot. */
+export const step = (page: Page) =>
+  page.locator("#pbp .dots").evaluate((d) => {
+    const dots = [...d.querySelectorAll(".dot")];
+    return `${dots.findIndex((x) => x.classList.contains("on")) + 1} of ${dots.length}`;
+  });
 
 export const NO_LIST = "a wide window pins the drawer open and draws no list button (R-0352)";
 

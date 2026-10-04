@@ -29,6 +29,8 @@ export interface ChatHandlers {
   /** The message box opened again after a vote: a message held while the coach
    * was replying goes now. */
   onOpen(): void;
+  /** The picture is about to fold: what hangs over it goes first. */
+  onFold(): Promise<void>;
 }
 
 /** The beat after a chip's sentence has been written, before the next chip
@@ -191,7 +193,12 @@ export class Chat {
     });
     // the chat box stays above the phone's keyboard, however it came up
     fit();
-    this.strip = fold(this.composer, this.list.closest<HTMLElement>(".screen")!, () => this.toEnd());
+    this.strip = fold(
+      this.composer,
+      this.list.closest<HTMLElement>(".screen")!,
+      () => this.toEnd(),
+      () => this.handlers.onFold(),
+    );
     this.watchScrolling();
     // the thread's box changes size after it is put up — a phone's toolbar
     // collapsing, the picture taking its height or folding — and stays on its

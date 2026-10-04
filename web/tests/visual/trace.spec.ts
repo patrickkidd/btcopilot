@@ -33,7 +33,8 @@ test("tapping the picked event's words takes the chat to where it was said", asy
 test("the chat lands on the very words that recorded that event", async ({ page }) => {
   const label = await tapItsWords(page);
   const timeline = await (await page.request.get("/app/timeline")).json();
-  const event = timeline.events.find((e: { label: string }) => label.includes(e.label));
+  // the path runs the title on after the person's name, so it is matched without case (R-0681)
+  const event = timeline.events.find((e: { label: string }) => label.toLowerCase().includes(e.label.toLowerCase()));
   const where = timeline.coded_in[String(event.id)];
   await expect(page.locator(".bub.traced")).toHaveAttribute(
     "data-statement",

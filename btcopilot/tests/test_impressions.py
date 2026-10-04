@@ -54,6 +54,7 @@ def event(toolbox, description="Moved out", person=1, date="1994-06-01") -> str:
         ToolName.EditEvent,
         {
             "kind": "noted",
+            "title": description,
             "description": description,
             "person": person,
             "date": date,
@@ -392,3 +393,56 @@ def test_a_reply_that_hardly_holds_the_impression_it_raised_is_observed(web, fam
     post(web, csrf_token(web), "Dad works late.")
 
     assert [o.detail["question"] for o in Observation.query.filter_by(kind=ObservationKind.QuestionUnsaid)] == ["i1"]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "The sleep trouble drove everything that followed.",
+        "Losing the job led to the drinking.",
+        "The fights began because of the move.",
+        "The diagnosis triggered your brother stepping back.",
+    ],
+)
+def test_an_impression_that_says_one_thing_caused_another_is_refused(family, text):
+    # R-0687, R-0569, R-0504
+    with pytest.raises(ToolError) as refused:
+        impress(box(family), text=text)
+    assert "caused another" in refused.value.plain
+    assert stored(family) == {}
+
+
+def test_an_impression_that_says_what_came_first_and_how_close_is_kept(family):
+    # R-0687, R-0569, R-0504
+    impress(box(family), text="The drinking started within a year of losing the job.")
+    assert list(stored(family).values())[0]["text"].startswith("The drinking")
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "The books I go by would call this a cutoff.",
+        "In the literature this is a well-known pattern.",
+        "Research says first-borns often take this on.",
+        "Bowen would see your mother at the centre of this.",
+    ],
+)
+def test_an_impression_that_mentions_the_literature_is_refused(family, text):
+    # R-0688
+    with pytest.raises(ToolError) as refused:
+        impress(box(family), text=text)
+    assert "books or theory" in refused.value.plain
+    assert stored(family) == {}
+
+
+def test_a_family_member_who_shares_an_authors_name_is_not_the_literature(family):
+    # R-0688
+    toolbox = box(family)
+    toolbox.call(ToolName.EditPerson, {"name": "Gilbert"})
+    gilbert = next(p["id"] for p in toolbox.data.people if p.get("name") == "Gilbert")
+    impress(
+        toolbox,
+        text="It looks to me as if Gilbert steps in whenever things get tense.",
+        evidence=({"kind": "person", "id": str(gilbert)},),
+    )
+    assert list(stored(family).values())[0]["text"].startswith("It looks to me")

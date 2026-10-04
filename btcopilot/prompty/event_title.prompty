@@ -1,0 +1,16 @@
+---
+name: event_title
+description: Give one recorded event its short title.
+inputs:
+  kind:
+    type: string
+  description:
+    type: string
+  notes:
+    type: string
+---
+Write the title of one event in a family record: what a picture shows beside the person, a complete phrase of 2 to 4 words that makes sense read alone and says what changed for that person. Use no names. Good: "Lost his job", "Stayed out of it", "Started drinking again". Bad: "Stayed out of" (cut off), "Job" (says no change). Reply with the title only.
+
+Kind of event: {{ kind }}
+What happened: {{ description }}
+Notes: {{ notes }}

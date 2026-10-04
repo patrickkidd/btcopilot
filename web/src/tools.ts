@@ -43,6 +43,7 @@ const FIELD = new Map([
   ["date", "date"],
   ["end_date", "end date"],
   ["date_certainty", "date is"],
+  ["title", "title"],
   ["description", "description"],
   ["notes", "notes"],
   ["location", "place"],

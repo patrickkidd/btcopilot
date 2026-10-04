@@ -35,6 +35,7 @@ from btcopilot.schema import (
     QuestionOutcome,
     QuestionState,
     RelationshipKind,
+    TITLE_WORDS,
     VariableShift,
     parse_date,
 )
@@ -606,41 +607,46 @@ def _values(data: dict, deltas: list[dict]):
 
 
 def _words(data: dict, deltas: list[dict]):
-    """A moment's words are who and what (owner ruling, 2026-09-09): the
-    description says what happened and never names a person the event already
-    links. Checked on the events this write touches, the way the cluster floor
-    is."""
+    """A moment's words are who and what (owner ruling, 2026-09-09): the title
+    and the description say what happened and never name a person the event
+    already links. Checked on the events this write touches, the way the
+    cluster floor is."""
     for event_id in _touched(deltas):
         event = _find(data, ItemKind.Event, event_id)
         if event is None:
             continue
-        description = event.get("description") or ""
-        if not description:
+        for field, plain in (("title", "title"), ("description", "summary")):
+            named = linked_name(data, event, event.get(field) or "")
+            if named:
+                name, role = named
+                raise Invalid(
+                    f"event {event_id}'s {field} names {name}, who is already "
+                    f"its {role}; say what happened without the name",
+                    f"The {plain} names {name}, who is already on this event. "
+                    "Say what happened without the name.",
+                )
+
+
+def linked_name(data: dict, event: dict, words: str) -> tuple[str, str] | None:
+    """The name, and the role, of a person the event links whom its words name."""
+    for person in _collection(data, ItemKind.Person):
+        role = _role(event, person.get("id"))
+        if role is None:
             continue
-        for person in _collection(data, ItemKind.Person):
-            role = _role(event, person.get("id"))
-            if role is None:
-                continue
-            first = (person.get("name") or "").strip()
-            full = f"{first} {(person.get('last_name') or '').strip()}".strip()
-            for name in (full, first):
-                if name and re.search(
-                    rf"\b{re.escape(name)}\b", description, re.IGNORECASE
-                ):
-                    raise Invalid(
-                        f"event {event_id}'s description names {name}, who is "
-                        f"already its {role}; say what happened without the name",
-                        f"The summary names {name}, who is already on this event. "
-                        "Say what happened without the name.",
-                    )
+        first = (person.get("name") or "").strip()
+        full = f"{first} {(person.get('last_name') or '').strip()}".strip()
+        for name in (full, first):
+            if name and re.search(rf"\b{re.escape(name)}\b", words, re.IGNORECASE):
+                return name, role
+    return None
 
 
 def _moves(data: dict, deltas: list[dict]):
-    """A noted event and a shift say in words what happened, a shift says
-    which way something moved, and only a shift carries a move: a birth,
-    marriage or death is not itself a shift (R-0037, R-0364, R-0375). Dates are
-    dates, and an event ends after it begins. Checked on the events this write
-    touches, the way the cluster floor is."""
+    """A noted event and a shift say in words what happened under a short
+    title (R-0681), a shift says which way something moved, and only a shift
+    carries a move: a birth, marriage or death is not itself a shift (R-0037,
+    R-0364, R-0375). Dates are dates, and an event ends after it begins.
+    Checked on the events this write touches, the way the cluster floor is."""
     for event_id in _touched(deltas):
         event = _find(data, ItemKind.Event, event_id)
         if event is None:
@@ -652,6 +658,17 @@ def _moves(data: dict, deltas: list[dict]):
                 "happened",
                 f"A {EventKind(kind).menuLabel().lower()} event needs a few words "
                 "saying what happened.",
+            )
+        if kind in WORDED_KINDS and not TITLE_WORDS[0] <= len(
+            (event.get("title") or "").split()
+        ) <= TITLE_WORDS[1]:
+            raise Invalid(
+                f"event {event_id} is a {kind} event and needs a title: a "
+                f"complete phrase of {TITLE_WORDS[0]} to {TITLE_WORDS[1]} words "
+                "saying what changed, such as 'Lost his job'",
+                f"A {EventKind(kind).menuLabel().lower()} event needs a title of "
+                f"{TITLE_WORDS[0]} to {TITLE_WORDS[1]} words, such as "
+                "\"Lost his job\".",
             )
         if kind == EventKind.Shift.value and not _moved(event):
             raise Invalid(
@@ -1225,6 +1242,9 @@ def _questions(data: dict, deltas: list[dict], author: Author):
             Pushback(question["pushback"])
         if rules is IMPRESSION:
             _rests(data, question, question_id, added)
+            if added:
+                _uncaused(question, question_id)
+                _unsourced(data, question, question_id)
         else:
             _linked(data, question, question_id)
             _names(question, question_id)
@@ -1294,6 +1314,60 @@ def _rests(data: dict, impression: dict, impression_id: str, added: bool):
                 "not in the record",
                 GONE,
             )
+
+
+# Words that say one thing brought about another. An impression notes what
+# came first and how close in time (R-0569, R-0504); Bowen never went beyond
+# "a striking time sequence".
+CAUSE = re.compile(
+    r"\b(caus(e|es|ed|ing)|drove|drives|driven|(led|leads|leading) to|because of"
+    r"|made (him|her|them)|result(ed|s)? in|trigger(ed|s)?)\b",
+    re.IGNORECASE,
+)
+
+
+# Words that point a person away from their own story to sources behind the
+# coach (R-0688).
+LITERATURE = re.compile(
+    r"\b(books?|literature|the theory|theories|research|Bowen|Kerr|Havstad|Papero"
+    r"|Gilbert|Titelman)\b",
+    re.IGNORECASE,
+)
+
+
+def _uncaused(impression: dict, impression_id: str):
+    found = CAUSE.search(impression.get("text") or "")
+    if found:
+        raise Invalid(
+            f"impression {impression_id} says one thing brought about another "
+            f"({found.group(0)!r}): say what came first and how close in time, "
+            "and claim no more than what it rests on holds",
+            "The impression says one thing caused another. Say what came first "
+            "and how close in time instead.",
+        )
+
+
+def sourced(text: str, people: list[dict]) -> str | None:
+    """The first word of the text that points to the literature, or None. An
+    author's surname that is also a name in this family is the family's."""
+    names = {
+        (p.get(field) or "").lower() for p in people for field in ("name", "last_name")
+    }
+    return next(
+        (m.group(0) for m in LITERATURE.finditer(text) if m.group(0).lower() not in names),
+        None,
+    )
+
+
+def _unsourced(data: dict, impression: dict, impression_id: str):
+    found = sourced(impression.get("text") or "", _collection(data, ItemKind.Person))
+    if found:
+        raise Invalid(
+            f"impression {impression_id} mentions the literature ({found!r}): "
+            "speak from what this person has told you, never books, the theory, "
+            "research or an author",
+            "The impression mentions books or theory. Say it from what was told.",
+        )
 
 
 def _commit(

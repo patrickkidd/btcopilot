@@ -4,6 +4,8 @@ description: What each tool parameter means to the model.
 meanings:
   kind: |-
     Which kind of event this is. Use noted for anything worth writing down that no other kind covers — a move, a new job, finishing a course. A noted event must say what happened in its description.
+  title: |-
+    A noted event's or a shift's few words, shown beside the person: a complete phrase of 2 to 4 words that makes sense alone, with no names of the people this event links.
   description: |-
     What happened, with no names of the people this event links: the person, spouse, child and targets are said by their fields.
   notes: |-

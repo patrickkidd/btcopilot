@@ -7,16 +7,19 @@ import click
 
 import pytest
 from alembic.script import ScriptDirectory
+from sqlalchemy import update as sql_update
 
 import btcopilot
-from btcopilot import tuning, turnlog
+from btcopilot import diagramjson, tuning, turnlog
 from btcopilot.admin import admin
 from btcopilot.admin import guard, setting, skill
 from btcopilot.admin.database import config
 from btcopilot.tests import olddump
 from btcopilot.admin.setting import SettingKey
 from btcopilot.extensions import db
-from btcopilot.models import Observation, ObservationKind
+from btcopilot.llmutil import EXTRACTION_MODEL, Served, Spent, Text
+from btcopilot.models import Diagram, ModelCall, Observation, ObservationKind
+from btcopilot.models.modelcall import Purpose
 from btcopilot.models.preferences import PrefKey, Spotlight
 
 
@@ -268,3 +271,130 @@ def test_report_offer_goes_on_the_persons_running_turn(run, test_user, discussio
     assert turnlog.read_from("t1", 0) == [
         (1, {"type": "report", "report": {"kind": "feedback", "words": "Let me import my GEDCOM file"}})
     ]
+
+
+def untitled_record(test_user) -> Diagram:
+    diagram = db.session.get(Diagram, test_user.free_diagram_id)
+    data = diagramjson.loads(diagram.data)
+    data["people"] = [{"id": 1, "name": "Wren"}]
+    data["events"] = [
+        {"id": 2, "kind": "noted", "person": 1, "description": "Moved to Leeds"},
+        {"id": 3, "kind": "shift", "person": 1, "anxiety": "up",
+         "description": "stopped calling after the funeral that spring"},
+        {"id": 4, "kind": "death", "person": 1},
+        {"id": 5, "kind": "shift", "person": 1, "symptom": "up"},
+    ]
+    diagram.data = diagramjson.encode(data, diagram.data)
+    db.session.commit()
+    return diagram
+
+
+def titles_of(diagram) -> list:
+    db.session.refresh(diagram)
+    return [e.get("title") for e in diagramjson.loads(diagram.data)["events"]]
+
+
+def test_titles_fill_keeps_words_that_serve_takes_the_rest_from_the_file_and_leaves_none(
+    run, flask_app, test_user, tmp_path
+):
+    # R-0681
+    diagram = untitled_record(test_user)
+    version = diagram.version
+
+    preview = rows(run("titles", "fill", "--diagram", str(diagram.id), "--json"))
+    assert [(r["event"], r["title"], r["from"]) for r in preview] == [
+        (2, "Moved to Leeds", "description"),
+        (3, "", "still untitled"),
+        (5, "Symptoms got worse", "what moved"),
+    ]
+
+    refused = flask_app.test_cli_runner().invoke(
+        admin, ["titles", "fill", "--diagram", str(diagram.id), "--yes"]
+    )
+    assert refused.exit_code != 0 and "record" in refused.output
+    db.session.refresh(diagram)
+    assert diagram.version == version
+
+    preview[1]["title"] = "Stopped calling"
+    reviewed = tmp_path / "titles.json"
+    reviewed.write_text(json.dumps(preview))
+    run("titles", "fill", "--diagram", str(diagram.id), "--file", str(reviewed), "--yes")
+    assert titles_of(diagram) == [
+        "Moved to Leeds", "Stopped calling", None, "Symptoms got worse"
+    ]
+    assert diagram.version == version + 1
+
+
+def test_titles_fill_asks_the_apps_model_only_on_yes_and_writes_its_ledger_row(
+    run, flask_app, test_user, monkeypatch
+):
+    # R-0681, R-0628
+    asked = []
+
+    def flash(**kwargs):
+        asked.append(kwargs["model"])
+        return Text("Stopped calling home.", Spent(input=300, output=4), Served(kwargs["model"]))
+
+    monkeypatch.setattr("btcopilot.metered.gemini_text_sync", flash)
+    diagram = untitled_record(test_user)
+    preview = rows(run("titles", "fill", "--diagram", str(diagram.id), "--ask", "--json"))
+    assert [r["from"] for r in preview] == ["description", "the app's model", "what moved"]
+    assert asked == []
+
+    run("titles", "fill", "--diagram", str(diagram.id), "--ask", "--yes")
+    assert titles_of(diagram) == [
+        "Moved to Leeds", "Stopped calling home", None, "Symptoms got worse"
+    ]
+    (call,) = ModelCall.query.all()
+    assert (call.purpose, call.diagram_id, call.model) == (
+        Purpose.Backfill, diagram.id, EXTRACTION_MODEL
+    )
+
+
+def test_titles_fill_refuses_a_model_title_that_is_not_a_whole_phrase(
+    flask_app, test_user, monkeypatch
+):
+    # R-0681
+    monkeypatch.setattr(
+        "btcopilot.metered.gemini_text_sync",
+        lambda **k: Text("Stopped calling after the", Spent(input=300), Served(k["model"])),
+    )
+    diagram = untitled_record(test_user)
+    refused = flask_app.test_cli_runner().invoke(
+        admin, ["titles", "fill", "--diagram", str(diagram.id), "--ask", "--yes"]
+    )
+    assert refused.exit_code != 0
+    assert titles_of(diagram) == [None, None, None, None]
+
+
+def test_titles_fill_refuses_a_title_naming_someone_the_event_links(
+    flask_app, test_user, tmp_path
+):
+    # R-0681
+    diagram = untitled_record(test_user)
+    reviewed = tmp_path / "titles.json"
+    reviewed.write_text(json.dumps([{"diagram": diagram.id, "event": 3, "title": "Wren stopped calling"}]))
+    refused = flask_app.test_cli_runner().invoke(
+        admin, ["titles", "fill", "--diagram", str(diagram.id), "--file", str(reviewed), "--yes"]
+    )
+    assert refused.exit_code != 0 and "Wren" in refused.output
+    assert titles_of(diagram) == [None, None, None, None]
+
+
+def test_titles_fill_writes_nothing_over_an_edit_made_while_it_ran(
+    flask_app, test_user, monkeypatch
+):
+    # R-0681
+    def flash(**kwargs):
+        db.session.execute(
+            sql_update(Diagram).where(Diagram.id == diagram.id).values(version=Diagram.version + 1)
+        )
+        return Text("Stopped calling home", Spent(input=300), Served(kwargs["model"]))
+
+    monkeypatch.setattr("btcopilot.metered.gemini_text_sync", flash)
+    diagram = untitled_record(test_user)
+    refused = flask_app.test_cli_runner().invoke(
+        admin, ["titles", "fill", "--diagram", str(diagram.id), "--ask", "--yes"]
+    )
+    assert refused.exit_code != 0 and "edited" in refused.output
+    assert titles_of(diagram) == [None, None, None, None]

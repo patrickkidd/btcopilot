@@ -1,5 +1,6 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { draw, figure, Move, ring, type Drawn, type Figure } from "../src/moves";
+import { draw, figure, Move, ring, SPEED, type Drawn, type Figure } from "../src/moves";
 
 /** The move language as drawn: what each move puts on the board, read off the
  * markup `draw` returns for two or three people standing on the stage ring. */
@@ -394,4 +395,11 @@ describe("a moment with more than one mark", () => {
     expect(els(marks, "mv-func")).toHaveLength(1);
     expect(els(marks, "mv-arrow")).toHaveLength(1);
   });
+});
+
+// R-0679
+it("keeps one set of mark speeds, the same in the drawings and in the styles", () => {
+  const css = readFileSync(new URL("../src/theme.css", import.meta.url), "utf8");
+  const speed = (name: string) => parseFloat(css.match(new RegExp(`--speed-${name}: ([\\d.]+)s`))![1]);
+  expect({ arrow: speed("arrow"), ring: speed("ring"), pop: speed("pop"), grow: speed("grow") }).toEqual(SPEED);
 });

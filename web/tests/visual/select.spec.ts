@@ -75,6 +75,15 @@ test.describe("a label that runs onto a second line", () => {
 
   // R-0544
   test("answers on both of its lines, not just the first", async ({ page }) => {
+    // titles are short now (R-0681), so the loose event is given a title long
+    // enough to wrap on the phone, which is what this guards
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+      const tl = await (await route.fetch()).json();
+      const loose = new Set(tl.clusters.flatMap((c: { event_ids: number[] }) => c.event_ids));
+      const e = tl.events.find((e: { id: number; dateTime: string | null }) => !loose.has(e.id) && e.dateTime);
+      e.label = e.title = "Extraordinarily complicated reconciliation attempts";
+      await route.fulfill({ json: tl });
+    });
     const rows = page.locator("#view .ss-t");
     /** Pick the first loose event afresh: one inside a cluster takes no pick
      * (R-0543), and each line is tried on a thread nothing has traced yet. */

@@ -386,6 +386,7 @@ def test_the_write_refuses_a_shift_that_says_nothing_moved(subscriber):
                     "field": "description",
                     "after": "a hard week",
                 },
+                {"item_kind": ItemKind.Event, "item_id": 30, "field": "title", "after": "Hard week"},
             ],
             author=Author.Coach,
             turn_id="t1",
@@ -473,6 +474,7 @@ def test_a_shift_that_names_its_move_beside_an_anchoring_birth_commits(subscribe
         [
             {"item_kind": ItemKind.Event, "item_id": 33, "field": "kind", "after": "shift"},
                 {"item_kind": ItemKind.Event, "item_id": 33, "field": "description", "after": "Stopped calling"},
+                {"item_kind": ItemKind.Event, "item_id": 33, "field": "title", "after": "Stopped calling"},
             {"item_kind": ItemKind.Event, "item_id": 33, "field": "person", "after": 1},
             {"item_kind": ItemKind.Event, "item_id": 33, "field": "dateTime", "after": "1990-04-02"},
             {"item_kind": ItemKind.Event, "item_id": 33, "field": "anxiety", "after": "up"},
@@ -514,6 +516,23 @@ def test_the_write_refuses_a_noted_event_with_no_words(subscriber):
             turn_id="t1",
             user_id=subscriber.user.id,
         )
+
+
+def test_the_write_refuses_a_shift_with_no_title(subscriber):
+    # R-0681
+    diagram = _diagram(subscriber.user, RULES)
+    with pytest.raises(record.Invalid, match="event 40 is a shift event and needs a title") as refused:
+        _write(diagram, ItemKind.Event, 40, {k: v for k, v in SHIFT.items() if k != "title"})
+    assert "title" in refused.value.plain
+    assert diagram.get_diagram_data().events == RULES["events"]
+
+
+def test_the_write_refuses_a_title_naming_the_person_the_event_links(subscriber):
+    # R-0681
+    diagram = _diagram(subscriber.user, RULES)
+    with pytest.raises(record.Invalid, match="event 40's title names Ada, who is already its person"):
+        _write(diagram, ItemKind.Event, 40, dict(SHIFT, title="Ada stopped calling"))
+    assert diagram.get_diagram_data().events == RULES["events"]
 
 
 def test_a_thing_made_is_logged_whole_and_undo_takes_it_off(subscriber):
@@ -559,6 +578,7 @@ def test_undo_will_not_take_off_a_thing_something_since_hangs_on(subscriber):
             {"item_kind": ItemKind.Event, "item_id": 3, "field": "kind", "after": "noted"},
             {"item_kind": ItemKind.Event, "item_id": 3, "field": "person", "after": 2},
             {"item_kind": ItemKind.Event, "item_id": 3, "field": "description", "after": "Moved"},
+            {"item_kind": ItemKind.Event, "item_id": 3, "field": "title", "after": "Moved away"},
         ],
         author=Author.User,
         turn_id="t2",
@@ -589,6 +609,7 @@ def test_the_write_refuses_an_event_whose_mover_is_also_its_target(
             [
                 {"item_kind": ItemKind.Event, "item_id": 34, "field": "kind", "after": "shift"},
                 {"item_kind": ItemKind.Event, "item_id": 34, "field": "description", "after": "Stopped calling"},
+                {"item_kind": ItemKind.Event, "item_id": 34, "field": "title", "after": "Stopped calling"},
                 {"item_kind": ItemKind.Event, "item_id": 34, "field": "person", "after": 1},
                 {
                     "item_kind": ItemKind.Event,
@@ -620,6 +641,7 @@ def test_the_write_refuses_a_move_with_no_target(subscriber, move):
             [
                 {"item_kind": ItemKind.Event, "item_id": 36, "field": "kind", "after": "shift"},
                 {"item_kind": ItemKind.Event, "item_id": 36, "field": "description", "after": "Stopped calling"},
+                {"item_kind": ItemKind.Event, "item_id": 36, "field": "title", "after": "Stopped calling"},
                 {"item_kind": ItemKind.Event, "item_id": 36, "field": "person", "after": 1},
                 {"item_kind": ItemKind.Event, "item_id": 36, "field": "relationship", "after": move},
                 {"item_kind": ItemKind.Event, "item_id": 36, "field": "dateTime", "after": "1990-04-02"},
@@ -702,6 +724,7 @@ def test_the_write_refuses_an_event_whose_people_of_a_move_are_not_a_list(
             [
                 {"item_kind": ItemKind.Event, "item_id": 35, "field": "kind", "after": "shift"},
                 {"item_kind": ItemKind.Event, "item_id": 35, "field": "description", "after": "Stopped calling"},
+                {"item_kind": ItemKind.Event, "item_id": 35, "field": "title", "after": "Stopped calling"},
                 {"item_kind": ItemKind.Event, "item_id": 35, "field": "person", "after": 1},
                 {"item_kind": ItemKind.Event, "item_id": 35, "field": "relationship", "after": "distance"},
                 {"item_kind": ItemKind.Event, "item_id": 35, "field": field, "after": value},
@@ -738,6 +761,7 @@ SHIFT = {
     "kind": "shift",
     "person": 1,
     "dateTime": "2001-02-03",
+    "title": "Stopped calling",
     "description": "Stopped calling",
     "anxiety": "up",
 }
@@ -856,7 +880,7 @@ def test_taking_back_targets_set_on_an_event_leaves_an_empty_list(subscriber):
         subscriber.user,
         {
             "people": [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Lou"}],
-            "events": [{"id": 3, "kind": "shift", "person": 1, "description": "went into treatment"}],
+            "events": [{"id": 3, "kind": "shift", "person": 1, "title": "Went into treatment", "description": "went into treatment"}],
         },
     )
     change = record.apply(
