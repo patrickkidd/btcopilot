@@ -64,7 +64,7 @@ def test_adds_the_person_the_coder_names(coder, cut, turns):
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
     model = Scripted(
         [("edit_person", {"name": "James Cooper"})],
-        [("edit_event", {"date_certainty": "certain", "kind": "noted", "description": "moved to Ohio", "date": "1971-01-01", "person": "{person}"})],
+        [("edit_event", {"date_certainty": "certain", "kind": "noted", "title": "Moved to Ohio", "description": "moved to Ohio", "date": "1971-01-01", "person": "{person}"})],
     )
     response = scribe(
         coder, coding, turns[0], model, "James Cooper moved to Ohio in 1971"
@@ -101,7 +101,7 @@ def test_the_coders_words_stay_in_the_thread(coder, cut, turns):
     line they coded, with the scribe's line after them (R-0270)."""
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
     model = Scripted(
-        [("edit_event", {"date_certainty": "certain", "kind": "noted", "description": "moved to Ohio", "date": "1971-01-01", "person": "1"})]
+        [("edit_event", {"date_certainty": "certain", "kind": "noted", "title": "Moved to Ohio", "description": "moved to Ohio", "date": "1971-01-01", "person": "1"})]
     )
     scribe(coder, coding, turns[0], model, "Marcus moved to Ohio in 1971")
 
@@ -121,14 +121,14 @@ def test_two_things_said_about_one_turn_keep_their_own_lines(coder, cut, turns):
         coder,
         coding,
         turns[0],
-        Scripted([("edit_event", {"date_certainty": "certain", "kind": "noted", "description": "moved to Ohio", "date": "1971-01-01", "person": "1"})]),
+        Scripted([("edit_event", {"date_certainty": "certain", "kind": "noted", "title": "Moved to Ohio", "description": "moved to Ohio", "date": "1971-01-01", "person": "1"})]),
         "Marcus moved to Ohio in 1971",
     )
     scribe(
         coder,
         coding,
         turns[0],
-        Scripted([("edit_event", {"date_certainty": "certain", "kind": "noted", "description": "moved to Ohio", "date": "1972-01-01", "person": "1"})]),
+        Scripted([("edit_event", {"date_certainty": "certain", "kind": "noted", "title": "Moved to Ohio", "description": "moved to Ohio", "date": "1972-01-01", "person": "1"})]),
         "Marcus moved again the year after",
     )
 
@@ -348,7 +348,7 @@ def test_a_reopened_thread_says_which_events_each_line_wrote(coder, cut, turns):
     load, not only right after the scribe wrote them."""
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
     model = Scripted(
-        [("edit_event", {"date_certainty": "certain", "kind": "shift", "anxiety": "up", "date": "1971-01-01", "person": "1", "description": "got anxious"})]
+        [("edit_event", {"date_certainty": "certain", "kind": "shift", "anxiety": "up", "date": "1971-01-01", "person": "1", "title": "Got anxious", "description": "got anxious"})]
     )
     made = scribe(coder, coding, turns[0], model, "Marcus got anxious in 1971").json["made"]
 

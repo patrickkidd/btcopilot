@@ -336,9 +336,10 @@ test.describe("an event added by hand", () => {
     await editor.locator('.segs[data-name="person"] .seg:not([data-value=""])').first().click();
     // each project adds its own, a month apart: the record keeps what an
     // earlier project added, and refuses a second noted event on the same day
-    const words = `Moved back home (${info.project.name})`;
+    const words = `Moved back (${info.project.name})`;
     const month = 1 + info.config.projects.findIndex((p) => p.name === info.project.name);
-    await editor.locator('.f[data-name="description"]').fill(words);
+    await editor.locator('.f[data-name="title"]').fill(words);
+    await editor.locator('.f[data-name="description"]').fill("Moved back in with her parents");
     await editor.locator('.f[data-name="dateTime"]').fill(`2024-${String(month).padStart(2, "0")}-01`);
     await editor.locator(".save").click();
     await expect(page.locator("#menu-body")).toContainText(words);

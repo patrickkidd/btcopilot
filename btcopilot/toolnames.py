@@ -71,14 +71,11 @@ SUBJECT = {
 
 def _event(event: dict, people: dict) -> str:
     kind = enum_val(event.get("kind"))
-    said = event_label(event, people)
     if kind in KIND_WORDS:
-        return f"{_who(event, people)} \u00b7 {said}"
-    if (event.get("description") or "").strip():
-        return said
-    if record._moved(event):
-        return f"{_person_label(people.get(event.get('person')))}'s {said}"
-    return f"{UNSAID.get(kind, 'an event')} about {_who(event, people)}"
+        return f"{_who(event, people)} \u00b7 {event_label(event, people)}"
+    # A refused call, or one older than titles (R-0681), has none to name it by.
+    title = (event.get("title") or "").strip()
+    return title or f"{UNSAID.get(kind, 'an event')} about {_who(event, people)}"
 
 
 LABELS = {

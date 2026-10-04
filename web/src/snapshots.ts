@@ -80,10 +80,6 @@ export function gapText(a: number, b: number): string {
   return n === 1 ? "one month later" : `${NUM[n]} months later`;
 }
 
-/** Ruled 2026-09-27: a move of residence is written out, "moved to Anchorage";
- * "m." is kept for a marriage. */
-const bowen = (w: string) => w.replace(/^to /i, "moved to ");
-
 export class Family {
   readonly people = new Map<string, Person>();
   readonly events = new Map<number, TimelineEvent>();
@@ -146,31 +142,23 @@ const KIN = new Set<string>([
   Move.DefinedSelf,
 ]);
 const ALONE = new Set<string>([Move.Projection, Move.Overfunctioning, Move.Underfunctioning, Move.DefinedSelf]);
-/** Q201, decided 2026-09-27: the short word is the description's first few
- * words, cut between words and never inside one, until R-0534's short title
- * replaces it. */
-const WORDS = 3;
-
-const words = (text: string) => bowen(text.trim()).split(/\s+/);
-
-/** An event's own words, cut to its first three, with no mark of the cut. */
-export function shortWord(text: string): string {
-  const all = words(text);
-  return all.slice(0, WORDS).join(" ");
+/** The few words a noted event or a shift is shown by, whole (R-0681); every
+ * such event has them. */
+function titleOf(e: TimelineEvent): string {
+  if (!e.title) throw new Error(`event ${e.id} is a ${e.kind} event with no title`);
+  return e.title;
 }
 
 /** What an event draws on its date: its own drawing when it has one, else the
- * person in the emphasis colour and a short word beside them. An event about
+ * person in the emphasis colour and its title beside them. An event about
  * nobody in particular is about the family: everyone alive then is emphasised,
- * and a word goes beside the reader only when it fits whole. */
+ * and its title goes beside the reader. */
 function marksOf(r: Family, e: TimelineEvent): Step["marks"] {
-  if (e.person == null && e.child == null) {
-    const all = e.description ? words(e.description) : [];
+  if (e.person == null && e.child == null)
     return [
       { k: Mark.Family, who: r.you },
-      ...(all.length && all.length <= WORDS ? [{ k: Mark.Event, who: r.you, word: all.join(" ") }] : []),
+      { k: Mark.Event, who: r.you, word: titleOf(e) },
     ];
-  }
   const who = key((e.child ?? e.person)!);
   const kind = e.kind ?? "";
   if (COUPLE_KINDS.has(kind) || ENDS[kind]) {
@@ -181,7 +169,8 @@ function marksOf(r: Family, e: TimelineEvent): Step["marks"] {
     return [{ k: ENDS[kind] ?? Mark.Couple, a, b }];
   }
   if (BIRTHS.has(kind)) return [{ k: Mark.Emphasis, who }];
-  if (kind === EventKind.Death) return [{ k: Mark.Died, who }];
+  // the one who died is lit too, not only crossed out (Patrick, 2026-10-03)
+  if (kind === EventKind.Death) return [{ k: Mark.Died, who }, { k: Mark.Emphasis, who }];
   const drawn: Step["marks"] = [];
   for (const [shift, [up, down]] of [
     [e.symptom, [Mark.Up, Mark.Down]],
@@ -190,6 +179,9 @@ function marksOf(r: Family, e: TimelineEvent): Step["marks"] {
     if (shift === Shift.Up) drawn.push({ k: up, who });
     if (shift === Shift.Down) drawn.push({ k: down, who });
   }
+  // an outline that breaks or holds says little on its own, so it carries its
+  // event's words as an event with no drawing does (Patrick, 2026-10-03)
+  if (e.functioning) drawn.push({ k: Mark.Event, who, word: titleOf(e) });
   if (e.anxiety === Shift.Up) drawn.push({ k: Mark.Anxiety, who });
   const move = e.relationship ?? "";
   if (move === Move.Toward || move === Move.Away)
@@ -200,11 +192,14 @@ function marksOf(r: Family, e: TimelineEvent): Step["marks"] {
     const to = e.relationshipTargets.map(key);
     if (to.length) to.forEach((t) => drawn.push({ k: Mark.Move, kind: move as Move, from: who, to: t }));
     else if (ALONE.has(move)) drawn.push({ k: Mark.Move, kind: move as Move, from: who, to: null });
+    // the parent's agitation is drawn inside their shape, and the one who
+    // holds still turns green on the board, so the shape itself is lit too, as
+    // the person an event is about is (Patrick, 2026-10-03)
+    if (move === Move.Projection || move === Move.DefinedSelf) drawn.push({ k: Mark.Emphasis, who });
   }
   if (drawn.length) return drawn;
-  if (!e.description) throw new Error(`event ${e.id} has no drawing of its own and no words of its own`);
   return [
-    { k: Mark.Event, who, word: shortWord(e.description) },
+    { k: Mark.Event, who, word: titleOf(e) },
     { k: Mark.Emphasis, who },
   ];
 }
@@ -314,15 +309,15 @@ export class Told {
     placed
       .filter((m) => m.k === Mark.FnUp || m.k === Mark.FnDown || m.k === Mark.Anxiety)
       .forEach((m) => marks.push({ ...m, cls: Tone.Now }));
+    // an event's words show on its own step only, the one mark that does not
+    // carry (R-0682, an exception to R-0552)
     const rows = new Map<string, number>();
-    this.steps.slice(0, i + 1).forEach((s, j) =>
-      s.marks.filter(isPlaced).forEach((m) => {
-        if (m.k !== Mark.Event) return;
-        const row = rows.get(m.who) ?? 0;
-        rows.set(m.who, row + 1);
-        marks.push({ ...m, cls: j < i ? Tone.Was : Tone.Now, row });
-      }),
-    );
+    placed.forEach((m) => {
+      if (m.k !== Mark.Event) return;
+      const row = rows.get(m.who) ?? 0;
+      rows.set(m.who, row + 1);
+      marks.push({ ...m, cls: Tone.Now, row });
+    });
     const moves = [
       ...before.flatMap((s) => s.marks.filter(isArrow)).map((m) => ({ ...m, cls: Tone.Was })),
       ...now.marks.filter(isArrow).map((m) => ({ ...m, cls: Tone.Now })),
@@ -423,10 +418,14 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[]): Cast 
   const crossed = new Set<string>();
   const words: Record<string, number> = {};
   const moves: Arrow[] = [];
+  const kin: Kin[] = [];
+  const anxious = new Set<string>();
   steps.forEach((s) =>
     s.marks.forEach((m) => {
       if (isArrow(m)) moves.push(m);
+      if (isKin(m)) kin.push(m);
       if (!isPlaced(m)) return;
+      if (m.k === Mark.Anxiety) anxious.add(m.who);
       if (m.k === Mark.Up || m.k === Mark.Down) crossed.add(m.who);
       if (m.k === Mark.Up || m.k === Mark.Down || m.k === Mark.Event) marked.add(m.who);
       if (m.k === Mark.Event) words[m.who] = Math.max(words[m.who] ?? 0, m.word!.length);
@@ -460,6 +459,8 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[]): Cast 
     cross: [...crossed],
     words,
     moves,
+    kin,
+    anxious: [...anxious],
     assoc,
     until,
   };

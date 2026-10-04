@@ -348,6 +348,135 @@
         "type": "grafana-postgresql-datasource",
         "uid": "ffz1wy7unkdfke"
       },
+      "description": "Every row of the model-calls ledger: every purpose, scratch records, shadows and the claude-test account. Cost in range leaves those out.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 0
+      },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select coalesce(sum(mc.cost_usd),0) as value from model_calls mc left join users u on u.id=mc.user_id left join diagrams dg on dg.id=mc.diagram_id where $__timeFilter(mc.created_at)",
+          "refId": "A"
+        }
+      ],
+      "title": "All model spend",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "description": "Every row of the model-calls ledger by what it was for; together they add up to All model spend.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Dollars"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": 15,
+      "options": {
+        "showHeader": true,
+        "footer": {
+          "show": true,
+          "reducer": [
+            "sum"
+          ],
+          "fields": [
+            "Dollars",
+            "Calls"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select case when u.username like 'claude-test%' then 'claude-test account' when dg.scratch then mc.purpose::text || ' on a scratch record' else mc.purpose::text end as \"Spent on\", count(*) as \"Calls\", coalesce(sum(mc.cost_usd),0) as \"Dollars\" from model_calls mc left join users u on u.id=mc.user_id left join diagrams dg on dg.id=mc.diagram_id where $__timeFilter(mc.created_at) group by 1 order by 3 desc",
+          "refId": "A"
+        }
+      ],
+      "title": "All model spend, by purpose",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -378,7 +507,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 4
+        "y": 14
       },
       "id": 6,
       "options": {
@@ -439,7 +568,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 22
       },
       "id": 7,
       "options": {
@@ -500,7 +629,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 30
       },
       "id": 8,
       "options": {
@@ -561,7 +690,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 28
+        "y": 38
       },
       "id": 9,
       "options": {
@@ -626,7 +755,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 36
+        "y": 46
       },
       "id": 13,
       "options": {
@@ -725,7 +854,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 44
+        "y": 54
       },
       "id": 10,
       "options": {
@@ -811,7 +940,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 54
+        "y": 64
       },
       "id": 11,
       "options": {
@@ -875,7 +1004,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 62
+        "y": 72
       },
       "id": 12,
       "options": {
@@ -898,7 +1027,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), sum(mc.cache_creation_tokens*r.w)/1e6 as \"Cache write\", sum(mc.cache_read_tokens*r.c)/1e6 as \"Cache read\", sum(mc.output_tokens*r.o)/1e6 as \"Output\", sum(mc.input_tokens*r.i)/1e6 as \"Uncached input\" from model_calls mc join users u on u.id=mc.user_id join lateral (select i,o,w,c from (values ('claude-opus-4-6',5.00,25.00,6.25,0.50),('claude-opus-4-8',5.00,25.00,6.25,0.50),('claude-opus-5',5.00,25.00,6.25,0.50),('claude-opus-5-5',4.00,20.00,5.00,0.20),('claude-sonnet-5',2.00,10.00,2.50,0.20),('claude-haiku-4-5',1.00,5.00,1.25,0.10),('gemini-3.8-flash',0.75,3.75,0,0.075),('gemini-3.7-flash',0.75,3.75,0,0.075),('gemini-3.6-flash',0.75,3.75,0,0.075),('gemini-3.5-flash',1.50,9.00,0,0.15),('gemini-2.5-flash',0.30,2.50,0,0.03),('gemini-2.5-flash-lite',0.10,0.40,0,0.01)) v(p,i,o,w,c) where mc.model like v.p||'%' order by length(v.p) desc limit 1) r on true where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and mc.purpose = 'coach' and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1 order by 1",
+          "rawSql": "select $__timeGroupAlias(mc.created_at,'1d'), sum(mc.cache_creation_tokens*r.w)/1e6 as \"Cache write\", sum(mc.cache_read_tokens*r.c)/1e6 as \"Cache read\", sum(mc.output_tokens*r.o)/1e6 as \"Output\", sum(mc.input_tokens*r.i)/1e6 as \"Uncached input\" from model_calls mc join users u on u.id=mc.user_id join lateral (select i,o,w,c from (values ('claude-opus-4-6',5.00,25.00,6.25,0.50),('claude-opus-4-8',5.00,25.00,6.25,0.50),('claude-opus-5',5.00,25.00,6.25,0.50),('claude-opus-5-5',4.00,20.00,5.00,0.20),('claude-sonnet-5',2.00,10.00,2.50,0.20),('claude-haiku-4-5',1.00,5.00,1.25,0.10),('gemini-3.1-pro',2.00,12.00,0,0.20),('gemini-3.8-flash',0.75,3.75,0,0.075),('gemini-3.7-flash',0.75,3.75,0,0.075),('gemini-3.6-flash',0.75,3.75,0,0.075),('gemini-3.5-flash',1.50,9.00,0,0.15),('gemini-2.5-flash',0.30,2.50,0,0.03),('gemini-3.1-flash-lite',0.25,1.50,0,0.025),('gemini-2.5-flash-lite',0.10,0.40,0,0.01),('gpt-6.1-sol',2.00,10.00,2.50,0.10)) v(p,i,o,w,c) where mc.model like v.p||'%' order by length(v.p) desc limit 1) r on true where not exists (select 1 from diagrams dg where dg.id=mc.diagram_id and dg.scratch) and mc.purpose = 'coach' and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(mc.created_at) group by 1 order by 1",
           "refId": "A"
         }
       ],

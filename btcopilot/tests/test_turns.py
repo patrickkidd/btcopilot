@@ -17,6 +17,7 @@ import btcopilot
 from btcopilot.extensions import db
 from btcopilot import record, turnlog, turns
 from btcopilot.coachmodel import Refusal
+from btcopilot.llmutil import Served, Spent
 from btcopilot.coachturn import EmptyReply, run_call
 from btcopilot.discussions import SITTING_GAP
 from btcopilot.models import Author, Change, Discussion, Statement, TurnEvent
@@ -226,7 +227,7 @@ class Refuses:
 
     def turn(self, system, messages, tools, turn_id=""):
         self.calls += 1
-        raise Refusal("refused", "bio")
+        raise Refusal("refused", "bio", Served(self.model), Spent())
         yield
 
 

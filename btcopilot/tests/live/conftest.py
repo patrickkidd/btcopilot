@@ -37,9 +37,9 @@ import pytest
 from sqlalchemy import event
 
 from btcopilot.coachmodel import CoachModel
-from btcopilot import turnlog
+from btcopilot import diagramjson, turnlog
 from btcopilot.extensions import db
-from btcopilot.models import ModelCall
+from btcopilot.models import Diagram, ModelCall
 from btcopilot.pricing import cost
 from btcopilot.promptdir import key_present
 from btcopilot.schema import DiagramData
@@ -244,8 +244,15 @@ class Coach:
 
     def record(self, people=(), pair_bonds=(), events=()) -> None:
         """The speaker, their parents and their birth, plus what the test adds,
-        in a new session, so a case run again starts from nothing said. A person
-        the test adds replaces the one the record already has with that id."""
+        in a new record with one new session, so a case run again starts from
+        nothing said and no earlier session of its own runs. A person the test
+        adds replaces the one the record already has with that id."""
+        diagram = Diagram(user_id=self.user.id, name="Free Diagram", data=diagramjson.dumps({}))
+        db.session.add(diagram)
+        db.session.flush()
+        self.user.free_diagram_id = diagram.id
+        self.user.current_diagram_id = None
+        db.session.commit()
         response = self.web.post(
             "/app/sessions", json={}, headers={"X-CSRFToken": self.token}
         )

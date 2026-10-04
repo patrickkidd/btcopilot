@@ -166,6 +166,8 @@ class GeminiModel:
                 raise Refusal(
                     f"Coach model {self.model} turn {turn_id} refused: {category}",
                     category,
+                    Served(model=last.model_version),
+                    gemini_spent(last.usage_metadata),
                 )
 
             turn = ModelTurn(

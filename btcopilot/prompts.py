@@ -43,6 +43,7 @@ class ToolText(enum.StrEnum):
     """The tool parameters whose wording the private prompts may replace."""
 
     EventKind = "kind"
+    Title = "title"
     Description = "description"
     Notes = "notes"
     EndDate = "end_date"
@@ -190,6 +191,12 @@ def impression_backfill(map: str, transcript: str) -> str:
     """The system prompt for going back once over a past session to fill in the
     impressions given in it, numbered the same way as the question backfill's."""
     return files().text("impression_backfill", map=map, transcript=transcript)
+
+
+def event_title(kind: str, description: str, notes: str) -> str:
+    """Asks for one event's title, for the one pass over events older than
+    titles (R-0681)."""
+    return files().text("event_title", kind=kind, description=description, notes=notes)
 
 
 def note_register() -> str:

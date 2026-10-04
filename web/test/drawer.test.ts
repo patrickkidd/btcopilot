@@ -10,14 +10,18 @@ const tl = timeline();
 const told = new Told(tl, apart());
 
 // R-0562
-it("steps by hand: Back is off on the first snapshot, Next on the last, and the count says where", () => {
+it("steps by hand: Back is off on the first snapshot, Next on the last, and only the lit dot says where", () => {
   const first = below(told, 0, null);
   expect(first).toMatch(/data-act="back" disabled/);
-  expect(first).toContain("1 of 5");
   const last = below(told, 4, null);
   expect(last).toMatch(/data-act="next" disabled/);
-  expect(last).toContain("5 of 5");
-  expect([...last.matchAll(/class="dot( on)?"/g)]).toHaveLength(5);
+  expect([...last.matchAll(/class="dot( on)?"/g)].map((m) => !!m[1])).toEqual([false, false, false, false, true]);
+  expect(last).not.toContain(" of 5");
+});
+
+// R-0679
+it("shows the kind word in a step's text the way the list does", () => {
+  expect(below(told, 2, null)).toContain('<p class="fact">The <span class="kw">divorce</span> went through in June.</p>');
 });
 
 // R-0563

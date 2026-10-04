@@ -81,6 +81,7 @@ EVENT_FIELDS = (
     "child",
     "relationshipTargets",
     "relationshipTriangles",
+    "title",
     "description",
     "symptom",
     "functioning",

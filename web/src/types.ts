@@ -134,6 +134,9 @@ export interface TimelineEvent {
   endDateTime: string | null;
   dateCertainty: string | null;
   kind: string | null;
+  /** The few words a noted event or a shift is shown by (R-0681). */
+  title: string | null;
+  /** One short sentence saying what happened. */
   description: string | null;
   notes: string | null;
   location: string | null;

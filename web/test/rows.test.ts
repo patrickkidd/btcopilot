@@ -43,6 +43,7 @@ const coded: TimelineEvent = {
   endDateTime: null,
   dateCertainty: null,
   kind: "shift",
+  title: "Stopped calling home",
   description: null,
   notes: null,
   location: null,

@@ -68,7 +68,7 @@ def coach(monkeypatch):
         called(ToolName.ReadPeople),
         added,
         called(ToolName.EditPerson, name="Nell", last_name="Hale"),
-        called(ToolName.EditEvent, kind="noted", person=1, date_certainty="certain"),
+        called(ToolName.EditEvent, kind="noted", person=1, title="Moved away", date_certainty="certain"),
         said("Nell is in."),
     )
     monkeypatch.setattr("btcopilot.replayscore.model_for", lambda name, effort: model)
@@ -583,6 +583,7 @@ def test_the_cluster_sorting_of_a_replay_turn_is_replay_spend_in_its_total_and_c
             ToolName.EditEvent,
             kind="shift",
             date="1994-07-01",
+            title="Got sick",
             description="got sick",
             person=1,
             symptom="up",
@@ -606,6 +607,7 @@ def test_the_cluster_sorting_of_a_replay_turn_is_replay_spend_in_its_total_and_c
                     "person": 1,
                     "dateTime": f"1994-0{n + 1}-01",
                     "dateCertainty": "certain",
+                    "title": f"Felt anxious {n}",
                     "description": f"event {n}",
                     "anxiety": "up",
                 }

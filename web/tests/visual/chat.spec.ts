@@ -574,9 +574,12 @@ test.describe("the message box while the coach replies", () => {
       stops(json);
       await route.fulfill({ response, json });
     });
-    const read = page.waitForResponse(/\/app\/statements\?diagram_id=\d+$/);
     await page.goto("/app/");
     await expect(page.locator("#view .ss")).toBeVisible();
+    // the page reads the thread again as it comes to the front; a load alone
+    // does not always make that read, so the page is brought to the front
+    const read = page.waitForResponse(/\/app\/statements\?diagram_id=\d+$/);
+    await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
     await read;
 
     const lines = page.locator("#chat .bub.user + .sys");

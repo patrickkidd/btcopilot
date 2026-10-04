@@ -31,10 +31,10 @@ from btcopilot.tests.conftest import Model, called, csrf_token, said
 
 EVENTS = [
     Event(id=201, kind=Kind.Separated, person=3, spouse=4, dateTime="1980-09-15"),
-    Event(id=202, kind=Kind.Noted, person=3, dateTime="1980-09-15", description="Took a room"),
-    Event(id=203, kind=Kind.Shift, person=3, dateTime="1981-01-15", symptom=VariableShift.Up),
+    Event(id=202, kind=Kind.Noted, person=3, dateTime="1980-09-15", title="Took a room", description="Took a room"),
+    Event(id=203, kind=Kind.Shift, person=3, dateTime="1981-01-15", title="Stopped sleeping", symptom=VariableShift.Up),
     Event(id=204, kind=Kind.Divorced, person=3, spouse=4, dateTime="1981-06-15"),
-    Event(id=208, kind=Kind.Shift, person=5, dateTime="1982-11-15", symptom=VariableShift.Up),
+    Event(id=208, kind=Kind.Shift, person=5, dateTime="1982-11-15", title="Headaches got worse", symptom=VariableShift.Up),
 ]
 
 

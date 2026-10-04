@@ -1,5 +1,5 @@
 import { esc } from "./dom";
-import { cross as healthCross, DEMO, draw as moveMarks, FIELD, Move, Shift } from "./moves";
+import { CROSS, cross as healthCross, DEMO, draw as moveMarks, FIELD, FLANK, Move, Shift, SPIKES, spikes as anxious, WALL } from "./moves";
 
 /** A small family diagram generated from a cast, to FAMILY_DIAGRAM_VISUAL_SPEC.md,
  * ported from the approved play-by-play reference (design/playbyplay-snapshots,
@@ -106,6 +106,10 @@ export interface Cast {
   cross: string[];
   words: Record<string, number>;
   moves: Arrow[];
+  /** The moves drawn the moves board's way, and who shows anxiety, so names and
+   * words stand clear of their marks. */
+  kin: Kin[];
+  anxious: string[];
   /** A person with no family tie stands on the row of the one they move with. */
   assoc: Record<string, string>;
   until: number;
@@ -141,6 +145,9 @@ export enum Side {
 enum Reach {
   Bare,
   Words,
+  /** The marks that stay beside a shape, the health cross; not a step's words,
+   * which find their own room on their step. */
+  Marks,
   All,
 }
 
@@ -170,6 +177,12 @@ export interface Layout {
   wide: number;
   /** The margin kept above and below the family, in the drawing's own units. */
   my: number;
+  /** How far past each shape the person's own marks reach all round: anxiety's
+   * spikes. Their name stands clear of it. */
+  ring: Record<string, number>;
+  /** How far past each shape the person's event words start: clear of the
+   * spikes and of the flank arrow beside them. */
+  inset: Record<string, number>;
 }
 
 export interface DrawnBond {
@@ -199,6 +212,13 @@ const PAD = 10;
 export const NAME = 13;
 const CH = 0.6;
 const LEAD = 15;
+/** How far a label's box reaches above its line. */
+const ASCENT = 18;
+
+/** How far a name stands from its shape, clear of what the person's own marks reach. */
+const offset = (d: Dims, ring: number) => Math.max(d.OFF, ring + 2);
+/** How far above its shape a name above it ends, clear of the same. */
+const rise = (ring: number) => Math.max(4, ring + 4);
 /** The spec's size steps, largest first. Ruled 2026-09-26: people 44 across
  * where a row fits, never below 36. */
 const STEPS = [44, 40, 36];
@@ -213,6 +233,7 @@ class Dims {
   COUPLE: number;
   OFF: number;
   GAP: number;
+  MARK: number;
   ZONE: number;
 
   constructor(w: number, compact = false) {
@@ -227,8 +248,10 @@ class Dims {
     this.OFF = 0.2 * w;
     // ruled 2026-09-26: a mark sits within an eighth of a width of its person
     this.GAP = w / 8;
-    // how far the cross and its arrow reach past the shape
-    this.ZONE = this.GAP + 38;
+    // a mark that stands on its own, a slash or a wall, is as tall as a person
+    this.MARK = w;
+    // how far the cross and its arrow reach past the shape: two square cells
+    this.ZONE = this.GAP + 2 * CROSS;
   }
 
   half(p: Shape): number {
@@ -310,7 +333,7 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
     );
   }
   const d = new Dims(opts.w, opts.compact);
-  const { E, OFF } = d;
+  const { E } = d;
   const tight = opts.names === Names.Above;
   const under = opts.names === Names.Under;
   let P = cast.people;
@@ -410,11 +433,22 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   });
   const marked = new Set(cast.marked);
   const crossed = new Set(cast.cross);
+  const whoIn = (kinds: Move[]) =>
+    cast.kin.filter((k) => kinds.includes(k.kind)).flatMap((k) => (k.to ? [k.from, k.to] : [k.from]));
+  const spiked = new Set([...cast.anxious, ...whoIn([Move.Projection])]);
+  const flanked = new Set(whoIn([Move.Overfunctioning, Move.Underfunctioning]));
+  const ring: Record<string, number> = {};
+  const inset: Record<string, number> = {};
+  ids.forEach((id) => {
+    ring[id] = spiked.has(id) ? SPIKES + 1 : 0;
+    inset[id] = Math.max(d.GAP, ring[id] + 2, flanked.has(id) ? FLANK.at + FLANK.wing + 3 : 0);
+  });
+  const off = (id: string) => offset(d, ring[id]);
   const words = cast.words;
   // how far a person's longest event word reaches past the shape
-  const ww = (id: string) => (words[id] ? 6 + words[id] * NAME * CH : 0);
+  const ww = (id: string) => (words[id] ? inset[id] + words[id] * NAME * CH : 0);
   // how far a person's marks reach past the shape: the cross and its arrow, or the word
-  const zw = (id: string) => Math.max(crossed.has(id) ? d.ZONE : 0, ww(id));
+  const zw = (id: string, reach: Reach) => Math.max(crossed.has(id) ? d.ZONE : 0, reach === Reach.All ? ww(id) : 0);
 
   // ---- the order of each row, top to bottom ----
   const placed = new Set<string>();
@@ -513,12 +547,12 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
 
   // how far past a person's shape the given reach runs, on the marks' side
   const marks = (id: string, reach: Reach) =>
-    reach === Reach.All ? zw(id) : reach === Reach.Words ? ww(id) : 0;
+    reach === Reach.All || reach === Reach.Marks ? zw(id, reach) : reach === Reach.Words ? ww(id) : 0;
   function rightExt(id: string, reach = Reach.All): number {
     const e = half(id);
     let r = e;
     if (side[id] === Side.Under || side[id] === Side.Top) r = Math.max(r, lw[id] / 2);
-    if (side[id] === Side.Right) r = Math.max(r, e + OFF + lw[id]);
+    if (side[id] === Side.Right) r = Math.max(r, e + off(id) + lw[id]);
     if (side[id] === Side.Above) r = Math.max(r, 5 + lw[id]);
     if (zone[id] === 1) r = Math.max(r, e + marks(id, reach));
     return r;
@@ -527,10 +561,13 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
     const e = half(id);
     let r = e;
     if (side[id] === Side.Under || side[id] === Side.Top) r = Math.max(r, lw[id] / 2);
-    if (side[id] === Side.Left) r = Math.max(r, e + OFF + lw[id]);
+    if (side[id] === Side.Left) r = Math.max(r, e + off(id) + lw[id]);
     if (zone[id] === -1) r = Math.max(r, e + marks(id, reach));
     return r;
   }
+  // a step's words never push neighbours apart: each finds room of its own on
+  // its step (word placement in draw), so only names and lasting marks count
+  const between = (a: string, b: string) => rightExt(a, Reach.Marks) + leftExt(b, Reach.Marks);
   function gapFor(a: string, b: string): number {
     if (cast.bonds.some((k) => (k.a === a && k.b === b) || (k.a === b && k.b === a))) return d.COUPLE;
     if (parents[a] && parents[a] === parents[b]) return d.SIB;
@@ -555,8 +592,8 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
       const e = half(id);
       const q = row[i + 1];
       const l = row[i - 1];
-      const edge = q ? x[q] - leftExt(q) : Infinity;
-      const need = OFF + lw[id] + PAD;
+      const edge = q ? x[q] - leftExt(q, Reach.Marks) : Infinity;
+      const need = off(id) + lw[id] + PAD;
       if (under) {
         side[id] = Side.Under;
         zone[id] = marked.has(id) ? (!l && q ? -1 : 1) : 0;
@@ -583,7 +620,7 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
       if (
         dist >= T &&
         dist <= 2 * T &&
-        x[last] - half(last) - OFF - lw[last] - PAD >= x[prev] + rightExt(prev)
+        x[last] - half(last) - off(last) - lw[last] - PAD >= x[prev] + rightExt(prev, Reach.Marks)
       )
         side[last] = Side.Left;
     }
@@ -598,7 +635,7 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
       const b = row[i];
       // a mark between two people stays nearer its own
       const facing = zone[a] === 1 || zone[b] === -1 ? 2 * PAD : 0;
-      const need = Math.max(gapFor(a, b), rightExt(a) + leftExt(b) + PAD + facing) - (x[b] - x[a]);
+      const need = Math.max(gapFor(a, b), between(a, b) + PAD + facing) - (x[b] - x[a]);
       if (need > 0) shift(row, b, need);
     }
   }
@@ -696,7 +733,7 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
     });
     ids.forEach((id) => {
       const lv = Math.max(-1, ...bondsOf[id].map((b) => level[`${b.a}|${b.b}`]));
-      below[id] = half(id) + (lv < 0 ? 11 : d.DROP + lv * 6 + 13);
+      below[id] = half(id) + Math.max(lv < 0 ? 11 : d.DROP + lv * 6 + 13, ring[id] + ASCENT);
     });
   }
   levels();
@@ -707,28 +744,28 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
     let base: number;
     let x0: number;
     if (sd === Side.Right) {
-      x0 = x[id] + e + OFF;
+      x0 = x[id] + e + off(id);
       base = y[id] - e + 9;
     } else if (sd === Side.Left) {
-      x0 = x[id] - e - OFF - w;
+      x0 = x[id] - e - off(id) - w;
       base = y[id] - e + 9;
     } else if (sd === Side.Above) {
       x0 = x[id] + 5;
-      base = y[id] - e - 4 - LEAD * (nl[id] - 1);
+      base = y[id] - e - rise(ring[id]) - LEAD * (nl[id] - 1);
     } else if (sd === Side.Top) {
       x0 = x[id] - w / 2;
-      base = y[id] - e - 4 - LEAD * (nl[id] - 1);
+      base = y[id] - e - rise(ring[id]) - LEAD * (nl[id] - 1);
     } else {
       x0 = x[id] - w / 2;
       base = y[id] + below[id];
     }
     return { x0: x0 - 2, x1: x0 + w + 2, y0: base - 12, y1: base + LEAD * (nl[id] - 1) + 4 };
   }
-  // no move arrow crosses a name: each name takes the first side, right, left,
-  // above, below, that no arrow of the case crosses; the rows then widen and settle again
+  // no move crosses a name: each name takes the first side, right, left,
+  // above, below, that no move of the case crosses; the rows then widen and settle again
   const where = { P, x, y, d };
   for (let pass = 0; pass < 4; pass++) {
-    const segs = cast.moves.map((mv) => ends(where, mv));
+    const segs = [...cast.moves.map((mv) => ends(where, mv)), ...cast.kin.flatMap((k) => across(where, k))];
     let moved = false;
     ids.forEach((id) => {
       if (!segs.some((s) => crosses(s, nameBox(id, side[id])))) return;
@@ -772,7 +809,9 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
     said.x0 = Math.min(said.x0, x[id] - leftExt(id, Reach.Words));
     said.x1 = Math.max(said.x1, x[id] + rightExt(id, Reach.Words));
     if (zone[id]) grow(x[id], y[id] - 16);
-    if (side[id] === Side.Above || side[id] === Side.Top) fam(x[id], y[id] - e - 4 - LEAD * (nl[id] - 1) - 14);
+    // room under the person for a step's word that finds none beside them
+    if (words[id]) fam(x[id], y[id] + below[id] + (side[id] === Side.Under ? LEAD * nl[id] : 0) + 4);
+    if (side[id] === Side.Above || side[id] === Side.Top) fam(x[id], y[id] - e - rise(ring[id]) - LEAD * (nl[id] - 1) - 14);
     else if (side[id] === Side.Under) fam(x[id], y[id] + below[id] + LEAD * (nl[id] - 1) + 3);
     else {
       fam(x[id], y[id] - e - 5);
@@ -781,7 +820,7 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   });
   const L: Layout = {
     P, x, y, side, zone, bonds: cast.bonds, kids: cast.kids, gen, w: opts.w, level, below,
-    names: [], h: 0, vw: VIEW, px: d.W, wide: 0, my: 0,
+    names: [], h: 0, vw: VIEW, px: d.W, wide: 0, my: 0, ring, inset,
   };
   cast.bonds.forEach((b) => fam(x[b.a], bar(L, b).y + 4));
   cast.moves.forEach((mv) => awayTip(L, mv).forEach(([ax, ay]) => grow(ax, ay)));
@@ -860,6 +899,23 @@ export function ends(L: Where, mv: Arrow): Segment {
 }
 
 /** Where along a segment, from 0 to 1, it first enters a box; null if it never does. */
+/** Where a move drawn the moves board's way runs (moves.ts): the line between
+ * the two, as wide as the zigzag or the bands along it, and the wall across it. */
+function across(L: Where, k: Kin): Segment[] {
+  if (!k.to) return [];
+  const A: Point = [L.x[k.from], L.y[k.from]];
+  const B: Point = [L.x[k.to], L.y[k.to]];
+  const n = Math.hypot(B[0] - A[0], B[1] - A[1]);
+  const u = [(B[0] - A[0]) / n, (B[1] - A[1]) / n];
+  const at = (t: number, s = 0): Point => [A[0] + u[0] * t - u[1] * s, A[1] + u[1] * t + u[0] * s];
+  const a = L.d.half(L.P[k.from]);
+  const b = n - L.d.half(L.P[k.to]);
+  const out: Segment[] = [-7, 0, 7].map((s) => [at(a, s), at(b, s)]);
+  if (k.kind === Move.Distance || k.kind === Move.Cutoff)
+    out.push([at(n * WALL, -L.d.MARK / 2), at(n * WALL, L.d.MARK / 2)]);
+  return out;
+}
+
 function enter(sg: Segment, bx: Box): number | null {
   let t0 = 0;
   let t1 = 1;
@@ -919,7 +975,7 @@ function cross(L: Layout, id: string, dir: Shift, cls: Tone): string {
     name: L.P[id].name,
     x: L.x[id],
     y: L.y[id],
-    r: d.half(L.P[id]) + d.GAP + 8 - 29,
+    r: d.half(L.P[id]) + d.GAP + CROSS / 2 - 29,
     mirror: L.zone[id] < 0,
   };
   return (
@@ -945,14 +1001,16 @@ export const tie = (x0: number, y0: number, x1: number, y1: number, y: number, m
 
 /** One slash for a separation, two for a divorce, upright because custody is
  * not recorded, centred on x across the couple's line at y. */
-export function slashes(n: number, x: number, y: number, W: number, fresh = false): string {
-  let out = "";
-  for (let i = 0; i < n; i++) {
+export const slashes = (n: number, x: number, y: number, W: number, fresh = false): string =>
+  slashLines(n, x, y, W, fresh).join("");
+
+/** The same slashes one by one, so a fresh one can be drawn over the rest. */
+function slashLines(n: number, x: number, y: number, W: number, fresh = false): string[] {
+  return Array.from({ length: n }, (_, i) => {
     const sx = x - (n - 1) * 0.05 * W + i * 0.1 * W;
     const pop = fresh && i === n - 1 ? " now pop" : "";
-    out += `<line class="slash${pop}" x1="${f(sx)}" y1="${f(y + 0.15 * W)}" x2="${f(sx)}" y2="${f(y - 0.25 * W)}"/>`;
-  }
-  return out;
+    return `<line class="slash${pop}" x1="${f(sx)}" y1="${f(y + 0.15 * W)}" x2="${f(sx)}" y2="${f(y - 0.25 * W)}"/>`;
+  });
 }
 
 /** The death X: corner to corner, or only its corners when an age sits inside. */
@@ -966,32 +1024,90 @@ export function crossOut(x: number, y: number, e: number, age: boolean, cls: str
   }"/>`;
 }
 
-/** Anxiety: eight spikes of static around the person. */
+/** Anxiety: the moves board's eight flickering spikes around the person.
+ * Carried from an earlier snapshot they stand still and grey. */
 function spikes(L: Layout, id: string, cls: Tone): string {
-  const r = dimsOf(L).half(L.P[id]);
-  let s = "";
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2;
-    const n = 6 + (i % 3) * 3;
-    s +=
-      `<line x1="${f(L.x[id] + Math.cos(a) * (r + 2))}" y1="${f(L.y[id] + Math.sin(a) * (r + 2))}" ` +
-      `x2="${f(L.x[id] + Math.cos(a) * (r + 2 + n))}" y2="${f(L.y[id] + Math.sin(a) * (r + 2 + n))}"/>`;
-  }
-  return `<g class="spikes ${cls}" data-mark="anx:${esc(id)}">${s}</g>`;
+  const fig = { id: 0, name: L.P[id].name, x: L.x[id], y: L.y[id], r: dimsOf(L).half(L.P[id]) };
+  const marks = anxious(fig, "solo");
+  const still = marks.replace(/<animate(Transform)?\b[^>]*\/>/g, "").replace(/ opacity="0"/g, "");
+  return `<g class="spikes ${cls}" data-mark="anx:${esc(id)}">${cls === Tone.Was ? still : marks}</g>`;
 }
 
 /** Ruled 2026-09-26: an event with no drawing of its own is a short word beside
  * the person, below where a cross sits. */
-function event(L: Layout, m: Placed): string {
-  if (!m.word) throw new Error(`an event mark with no word, for ${m.who}`);
-  const d = dimsOf(L);
-  const sd = L.zone[m.who] || (L.side[m.who] === Side.Right ? -1 : 1);
-  const e = d.half(L.P[m.who]);
+interface Spot {
+  x: number;
+  y: number;
+  /** Which way the word runs from x: 1 rightward, -1 leftward, 0 centred. */
+  sd: number;
+  box: Box;
+}
+
+function event(m: Placed, w: Spot): string {
   return (
     `<text class="evw${m.cls === Tone.Was ? " was" : " pop"}" data-mark="word:${esc(`${m.who}:${m.word}`)}" ` +
-    `x="${f(L.x[m.who] + sd * (e + d.GAP))}" y="${f(L.y[m.who] + e * 0.55 + 6 + (m.row ?? 0) * LEAD)}" ` +
-    `text-anchor="${sd > 0 ? "start" : "end"}">${esc(m.word)}</text>`
+    `x="${f(w.x)}" y="${f(w.y)}" text-anchor="${w.sd > 0 ? "start" : w.sd < 0 ? "end" : "middle"}">${esc(m.word!)}</text>`
   );
+}
+
+/** Where a step's word goes: beside its person on their marks' side, else on
+ * the other side when their name is not there, else under them, the first that
+ * crosses nothing already taken and stays in the picture. A word never moves
+ * people apart (Patrick, 2026-10-03), so the last resort is its own side. */
+function spot(L: Layout, m: Placed, taken: Box[], drawn: Segment[]): Spot {
+  if (!m.word) throw new Error(`an event mark with no word, for ${m.who}`);
+  const d = dimsOf(L);
+  const id = m.who;
+  const e = d.half(L.P[id]);
+  const w = m.word.length * NAME * CH;
+  const row = (m.row ?? 0) * LEAD;
+  const beside = (sd: number, more = 0): Spot => {
+    const x = L.x[id] + sd * (e + L.inset[id]);
+    const y = L.y[id] + e * 0.55 + 6 + row + more;
+    return { x, y, sd, box: { x0: sd > 0 ? x : x - w, x1: sd > 0 ? x + w : x, y0: y - ASCENT, y1: y + 4 } };
+  };
+  const centred = (y: number): Spot => ({ x: L.x[id], y, sd: 0, box: { x0: L.x[id] - w / 2, x1: L.x[id] + w / 2, y0: y - ASCENT, y1: y + 4 } });
+  const under = (more: number) =>
+    centred(L.y[id] + L.below[id] + (L.side[id] === Side.Under ? LEAD * lines(L.P[id], Infinity).length : 0) + row + more);
+  // over the person, above their name when it is there
+  const top = Math.min(L.y[id] - e - L.ring[id], ...L.names.filter((b) => b.x0 <= L.x[id] && L.x[id] <= b.x1 && b.y1 <= L.y[id]).map((b) => b.y0));
+  const over = centred(top - 6 - row);
+  const own = L.zone[id] || (L.side[id] === Side.Right ? -1 : 1);
+  const named = L.side[id] === Side.Right ? 1 : L.side[id] === Side.Left ? -1 : 0;
+  const sides = named === -own ? [own] : [own, -own];
+  // beside, then a line lower beside, clear of a move along the row, then
+  // under, over, and further under
+  const tries = [...sides.map((sd) => beside(sd)), ...sides.map((sd) => beside(sd, LEAD)), under(0), over, under(LEAD)];
+  const free = (t: Spot) =>
+    t.box.x0 >= 0 &&
+    t.box.x1 <= L.vw &&
+    t.box.y0 >= 0 &&
+    t.box.y1 <= L.h &&
+    !taken.some((b) => t.box.x0 < b.x1 && b.x0 < t.box.x1 && t.box.y0 < b.y1 && b.y0 < t.box.y1) &&
+    !drawn.some((sg) => crosses(sg, { x0: t.box.x0 - 2, x1: t.box.x1 + 2, y0: t.box.y0 - 2, y1: t.box.y1 + 2 }));
+  return tries.find(free) ?? tries[0];
+}
+
+/** What a step's words must keep clear of: every name, every shape with the
+ * spikes around it, every health cross, and every move drawn, the step's own and
+ * those carried from before. */
+function ground(L: Layout, s: Frame): { boxes: Box[]; lines: Segment[] } {
+  const d = dimsOf(L);
+  const shapes = Object.keys(L.P).map((id) => {
+    const e = d.half(L.P[id]) + L.ring[id] + 2;
+    return { x0: L.x[id] - e, x1: L.x[id] + e, y0: L.y[id] - e, y1: L.y[id] + e };
+  });
+  const crosses = s.marks
+    .filter((m) => m.k === Mark.Up || m.k === Mark.Down)
+    .map((m) => {
+      const z = L.zone[m.who] || 1;
+      const e = d.half(L.P[m.who]);
+      const [a, b] = [L.x[m.who] + z * (e + d.GAP), L.x[m.who] + z * (e + d.ZONE)];
+      return { x0: Math.min(a, b), x1: Math.max(a, b), y0: L.y[m.who] - 15, y1: L.y[m.who] + 4 };
+    });
+  const where = { P: L.P, x: L.x, y: L.y, d };
+  const lines = [...s.moves.map((mv) => ends(where, mv)), ...s.kin.flatMap((k) => across(where, k))];
+  return { boxes: [...L.names, ...shapes, ...crosses], lines };
 }
 
 const STILL = { symptom: null, anxiety: null, functioning: null };
@@ -1015,6 +1131,8 @@ function kin(L: Layout, m: Kin): string {
     mirror: L.zone[id] < 0,
     gender: L.P[id].g === Sex.Female ? "female" : null,
     stage,
+    mark: d.MARK,
+    still: true,
   });
   const marks = moveMarks(m.kind, at(m.from), m.to ? at(m.to) : null, STILL).marks;
   const was = m.cls === Tone.Was;
@@ -1060,9 +1178,25 @@ function childLines(L: Layout, k: { x0: number; x1: number; y: number }, kids: s
 /** One snapshot on the case's fixed layout. */
 export function draw(L: Layout, s: Frame): string {
   const d = dimsOf(L);
-  const { W, E } = d;
+  const { E } = d;
   const P = L.P;
+  const { boxes: taken, lines: drawn } = ground(L, s);
+  const spots = new Map<Placed, Spot>();
+  s.marks
+    .filter((m) => m.k === Mark.Event)
+    .forEach((m) => {
+      const w = spot(L, m, taken, drawn);
+      spots.set(m, w);
+      taken.push(w.box);
+    });
+  const texts = [...L.names, ...[...spots.values()].map((w) => w.box)];
   let out = "";
+  // what this snapshot adds is drawn over everything carried from before, and
+  // every name, age and word over all of it, haloed so a ring cannot hide it
+  let top = "";
+  let said = "";
+  const put = (markup: string, now: boolean) => (now ? (top += markup) : (out += markup));
+  const lit = (cls?: Tone) => (cls ?? Tone.Now) === Tone.Now;
   s.bonds.forEach((b) => {
     const kids = L.kids.find((c) => c.of.includes(b.a) && c.of.includes(b.b));
     if (kids) out += childLines(L, bar(L, b), kids.kids);
@@ -1082,22 +1216,37 @@ export function draw(L: Layout, s: Frame): string {
     // ruled 2026-09-26: only a marriage makes the line solid, and only a marriage can be divorced
     if (b.st === Tie.Divorced && !b.married)
       throw new Error(`a divorce for a couple that never married: ${b.a} and ${b.b}`);
-    out += tie(
+    put(tie(
       k.x0,
       L.y[k.a] + d.half(P[k.a]),
       k.x1,
       L.y[k.b] + d.half(P[k.b]),
       k.y,
       b.married,
-      b.hot ? " now" : "",
+      b.hot ? " now pop" : "",
       ` data-bond="${esc(`${b.a}|${b.b}`)}"`,
-    );
+    ), b.hot);
     const n = b.st === Tie.Separated ? 1 : b.st === Tie.Divorced ? 2 : 0;
-    // the slashes sit in the widest open stretch of the line, never on a child's line
+    if (!n) return;
+    // the slashes sit in an open stretch of the line, never on a child's line,
+    // nearest the middle of the widest one where they cross no name or word
     const kids = L.kids.find((c) => c.of.includes(b.a) && c.of.includes(b.b));
     const stops = [k.x0, ...(kids?.kids ?? []).map((id) => L.x[id]).filter((x) => x > k.x0 && x < k.x1), k.x1].sort((p, q) => p - q);
-    const open = stops.slice(1).map((x, i) => [stops[i], x]).sort((p, q) => q[1] - q[0] - (p[1] - p[0]))[0];
-    out += slashes(n, (open[0] + open[1]) / 2, k.y, W, b.fresh);
+    const open = stops.slice(1).map((x, i) => [stops[i], x]).sort((p, q) => q[1] - q[0] - (p[1] - p[0]));
+    // a slash is 0.4 of the width it is given
+    const len = d.MARK / 0.4;
+    const hw = (n - 1) * 0.05 * len + 3;
+    const clear = (cx: number) =>
+      !texts.some((t) => t.x0 < cx + hw && cx - hw < t.x1 && t.y0 < k.y + 0.15 * len && k.y - 0.25 * len < t.y1);
+    const at = open
+      .flatMap(([p, q]) => {
+        const room = Math.max(0, Math.floor(((q - p) / 2 - hw) / 2));
+        return Array.from({ length: room + 1 }, (_, i) => [(p + q) / 2 - 2 * i, (p + q) / 2 + 2 * i]).flat();
+      })
+      .find(clear);
+    slashLines(n, at ?? (open[0][0] + open[0][1]) / 2, k.y, len, b.fresh).forEach((l, i) =>
+      put(l, b.fresh && i === n - 1),
+    );
   });
 
   Object.keys(P).forEach((id) => {
@@ -1106,15 +1255,18 @@ export function draw(L: Layout, s: Frame): string {
     const y = L.y[id];
     const e = d.half(p);
     const dead = p.died != null && p.died <= s.t + 1e-6;
-    const age = p.born == null ? null : yr((dead ? p.died! : s.t) - p.born + 1e-6);
+    // someone not yet born keeps their place (R-0546) but has no age to show
+    const age = p.born == null || p.born > s.t + 1e-6 ? null : yr((dead ? p.died! : s.t) - p.born + 1e-6);
     let g = `<g class="p" data-id="${esc(id)}">`;
+    let t = `<g class="pt" data-id="${esc(id)}">`;
     if (p.you) g += outline(p, x, y, e, "you");
     g += outline(p, x, y, E, "shape");
-    if (age != null) g += `<text class="age" x="${f(x)}" y="${f(y + 4.5)}">${age}</text>`;
-    else if (p.g === Sex.Unknown) g += `<text class="age" x="${f(x)}" y="${f(y + 4.5)}">?</text>`;
+    if (age != null) t += `<text class="age" x="${f(x)}" y="${f(y + 4.5)}">${age}</text>`;
+    else if (p.g === Sex.Unknown) t += `<text class="age" x="${f(x)}" y="${f(y + 4.5)}">?</text>`;
     if (dead) {
       // a death X is in the emphasis colour on its date, plain ink after
-      g += crossOut(x, y, e, age != null, s.died.has(id) ? "xd now" : "xd");
+      if (s.died.has(id)) top += crossOut(x, y, e, age != null, "xd now pop");
+      else g += crossOut(x, y, e, age != null, "xd");
     }
     const l = lines(p, s.t);
     const sd = L.side[id];
@@ -1123,45 +1275,46 @@ export function draw(L: Layout, s: Frame): string {
     let y0: number;
     if (sd === Side.Above) {
       lx = x + 5;
-      y0 = y - e - 4 - LEAD * (l.length - 1);
+      y0 = y - e - rise(L.ring[id]) - LEAD * (l.length - 1);
     } else if (sd === Side.Top) {
       lx = x;
       anchor = "middle";
-      y0 = y - e - 4 - LEAD * (l.length - 1);
+      y0 = y - e - rise(L.ring[id]) - LEAD * (l.length - 1);
     } else if (sd === Side.Under) {
       lx = x;
       anchor = "middle";
       y0 = y + L.below[id];
     } else {
-      lx = sd === Side.Right ? x + e + d.OFF : x - e - d.OFF;
+      lx = sd === Side.Right ? x + e + offset(d, L.ring[id]) : x - e - offset(d, L.ring[id]);
       anchor = sd === Side.Right ? "start" : "end";
       y0 = y - e + 9;
     }
-    l.forEach((t, i) => {
-      if (t)
-        g += `<text class="${i ? "lbd" : "lbn"}${sd === Side.Under ? " nh" : ""}" x="${f(lx)}" y="${f(y0 + i * LEAD)}" text-anchor="${anchor}">${esc(t)}</text>`;
+    l.forEach((line, i) => {
+      if (line)
+        t += `<text class="${i ? "lbd" : "lbn"}" x="${f(lx)}" y="${f(y0 + i * LEAD)}" text-anchor="${anchor}">${esc(line)}</text>`;
     });
     out += g + "</g>";
+    said += t + "</g>";
   });
 
   s.marks.forEach((m) => {
     if (m.k === Mark.Up || m.k === Mark.Down)
-      out += cross(L, m.who, m.k === Mark.Up ? Shift.Up : Shift.Down, m.cls ?? Tone.Now);
-    else if (m.k === Mark.Event) out += event(L, m);
+      put(cross(L, m.who, m.k === Mark.Up ? Shift.Up : Shift.Down, m.cls ?? Tone.Now), lit(m.cls));
+    else if (m.k === Mark.Event) said += event(m, spots.get(m)!);
     else if (m.k === Mark.Emphasis)
-      out += outline(P[m.who], L.x[m.who], L.y[m.who], E, m.cls === Tone.Was ? "hl was" : "hl now pop").replace(
+      put(outline(P[m.who], L.x[m.who], L.y[m.who], E, m.cls === Tone.Was ? "hl was" : "hl now pop").replace(
         "/>",
         ` data-mark="hl:${esc(m.who)}"/>`,
-      );
+      ), lit(m.cls));
     // functioning: down breaks the outline into pieces, up is one continuous green line
     else if (m.k === Mark.FnUp || m.k === Mark.FnDown)
-      out += outline(P[m.who], L.x[m.who], L.y[m.who], E, `fn ${m.k === Mark.FnUp ? "up" : "down"} ${m.cls ?? Tone.Now}`).replace(
+      put(outline(P[m.who], L.x[m.who], L.y[m.who], E, `fn ${m.k === Mark.FnUp ? "up" : "down"} ${lit(m.cls) ? "now pop" : m.cls}`).replace(
         "/>",
         ` data-mark="${m.k}:${esc(m.who)}"/>`,
-      );
-    else if (m.k === Mark.Anxiety) out += spikes(L, m.who, m.cls ?? Tone.Now);
+      ), lit(m.cls));
+    else if (m.k === Mark.Anxiety) put(spikes(L, m.who, m.cls ?? Tone.Now), lit(m.cls));
   });
-  s.kin.forEach((m) => (out += kin(L, m)));
-  s.moves.forEach((mv) => (out += boardMove(L, mv)));
-  return `<svg class="ss" viewBox="0 0 ${f(L.vw)} ${L.h}" role="img" aria-label="${esc(s.label)}">${out}</svg>`;
+  s.kin.forEach((m) => put(kin(L, m), lit(m.cls)));
+  s.moves.forEach((mv) => put(boardMove(L, mv), lit(mv.cls)));
+  return `<svg class="ss" viewBox="0 0 ${f(L.vw)} ${L.h}" role="img" aria-label="${esc(s.label)}">${out}<g class="fore">${top}</g><g class="said">${said}</g></svg>`;
 }

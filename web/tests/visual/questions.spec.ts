@@ -118,8 +118,9 @@ test("an event chip under Based on picks the event on the picture, opening it wh
   await page.waitForTimeout(700);
   await expect(page.locator("#chat")).toBeVisible();
   expect(await height(page)).toBeGreaterThan(42);
-  // the path writes the event as the picture does, its person's name first
-  await expect(page.locator("#path .here.on")).toContainText(event.split(" ").slice(0, 3).join(" "));
+  // the path writes the event as the picture does, its person's name first and
+  // the title running on as one sentence (R-0681)
+  await expect(page.locator("#path .here.on")).toContainText(event.split(" ").slice(0, 3).join(" "), { ignoreCase: true });
   await expect(page.locator("#composer .chip")).toHaveCount(0);
   expect(w.bad).toEqual([]);
 });

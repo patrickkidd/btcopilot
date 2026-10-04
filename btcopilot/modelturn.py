@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 
-from btcopilot.llmutil import Served, Spent
+from btcopilot.llmutil import Billed, Served, Spent
 
 # Thinking counts toward the cap even though its text is not returned.
 MAX_TOKENS = 16000
@@ -24,10 +24,11 @@ class ModelTurn:
     served: Served | None = None
 
 
-class Refusal(Exception):
+class Refusal(Billed):
     """Every model in the fallback chain declined the call on safety grounds.
-    The turn fails with the category it named rather than ending in silence."""
+    The turn fails with the category it named rather than ending in silence.
+    The refusal was still paid for."""
 
-    def __init__(self, message: str, category: str | None):
-        super().__init__(message)
+    def __init__(self, message: str, category: str | None, served: Served, spent: Spent):
+        super().__init__(message, served, spent)
         self.category = category

@@ -1,11 +1,13 @@
 import time
 from collections.abc import Callable
+from contextlib import contextmanager
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
 from btcopilot.extensions import db
 from btcopilot.llmutil import (
+    Billed,
     Served,
     Spent,
     gemini_structured_sync,
@@ -59,25 +61,29 @@ class Metered:
 
     def turn(self, system, messages: list[dict], tools: list[dict], turn_id: str = ""):
         started = self._begin()
-        turn = yield from self.model.turn(system, messages, tools, turn_id)
+        with self._billed(started):
+            turn = yield from self.model.turn(system, messages, tools, turn_id)
         self._write(turn.served, turn.spent, started, len(turn.calls))
         return turn
 
     def text(self, prompt: str) -> str:
         started = self._begin()
-        said = response_text_sync(prompt)
+        with self._billed(started):
+            said = response_text_sync(prompt)
         self._write(said.served, said.spent, started, 0)
         return said.words
 
     def structured(self, prompt: str, response_format):
         started = self._begin()
-        parsed = gemini_structured_sync(prompt, response_format)
+        with self._billed(started):
+            parsed = gemini_structured_sync(prompt, response_format)
         self._write(parsed.served, parsed.spent, started, 0)
         return parsed.value
 
     def gemini(self, **kwargs) -> str:
         started = self._begin()
-        said = gemini_text_sync(**kwargs)
+        with self._billed(started):
+            said = gemini_text_sync(**kwargs)
         self._write(said.served, said.spent, started, 0)
         return said.words
 
@@ -85,6 +91,16 @@ class Metered:
         if self.afford:
             self.afford()
         return time.monotonic()
+
+    @contextmanager
+    def _billed(self, started: float):
+        """A call that was answered and paid for, then failed, still gets its
+        row; the failure goes on as it was (R-0628)."""
+        try:
+            yield
+        except Billed as paid:
+            self._write(paid.served, paid.spent, started, 0)
+            raise
 
     def transcribed(self, model: str, seconds: float):
         """A transcription, billed by the length of the audio, not by tokens."""

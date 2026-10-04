@@ -308,6 +308,11 @@ const chat = new Chat($("chat"), $("composer"), {
   },
   onPlay: replay,
   onOpen: () => flush(),
+  // the about page slides back out, as its close button does, before the picture folds
+  onFold: () => {
+    if (picture.aboutOpen()) climb(CLUSTER);
+    return picture.settled;
+  },
 });
 
 /** An event or a person carried from its detail card into the message box:

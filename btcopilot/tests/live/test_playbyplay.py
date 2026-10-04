@@ -40,13 +40,13 @@ CASE_2 = [
     event(107, "birth", "1975-06-01", person=3, spouse=4, child=5),
     event(108, "birth", "1979-06-01", person=3, spouse=4, child=6),
     event(201, "separated", "1980-09-15", person=3, spouse=4),
-    event(202, "noted", "1980-09-15", person=3, description="Took a room over the hardware store"),
-    event(203, "shift", "1981-01-15", person=3, symptom="up", description="Drinking most nights, as Delphine put it"),
+    event(202, "noted", "1980-09-15", person=3, title="Moved out", description="Took a room over the hardware store"),
+    event(203, "shift", "1981-01-15", person=3, symptom="up", title="Drinking most nights", description="Drinking most nights, as Delphine put it"),
     event(204, "divorced", "1981-06-15", person=3, spouse=4),
-    event(205, "noted", "1981-09-15", person=6, description="Started at the church day care"),
-    event(206, "shift", "1982-04-15", person=3, symptom="down", description="Hadn't had a drink since Easter"),
-    event(207, "noted", "1982-09-15", person=5, description="Started school"),
-    event(208, "shift", "1982-11-15", person=5, symptom="up", description="Her teacher called Delphine: she had stopped talking in class"),
+    event(205, "noted", "1981-09-15", person=6, title="Started day care", description="Started at the church day care"),
+    event(206, "shift", "1982-04-15", person=3, symptom="down", title="Stopped drinking", description="Hadn't had a drink since Easter"),
+    event(207, "noted", "1982-09-15", person=5, title="Started school", description="Started school"),
+    event(208, "shift", "1982-11-15", person=5, symptom="up", title="Stopped talking in class", description="Her teacher called Delphine: she had stopped talking in class"),
 ]
 CAUSE = re.compile(r"\b(because|caused|made you|why)\b", re.I)
 
@@ -55,8 +55,8 @@ CAUSE = re.compile(r"\b(because|caused|made you|why)\b", re.I)
 SAME_DAY = [
     event(107, "birth", "1975-06-01", person=3, spouse=4, child=5),
     event(301, "death", "1998-03-15", person=2),
-    event(302, "shift", "1998-03-15", person=4, relationship="toward", relationshipTargets=[5], description="Called Corinne the night Odile died"),
-    event(303, "shift", "1998-07-15", person=5, relationship="away", relationshipTargets=[3], description="Stopped opening Marcus's letters"),
+    event(302, "shift", "1998-03-15", person=4, relationship="toward", relationshipTargets=[5], title="Reached out to her", description="Called Corinne the night Odile died"),
+    event(303, "shift", "1998-07-15", person=5, relationship="away", relationshipTargets=[3], title="Stopped opening letters", description="Stopped opening Marcus's letters"),
 ]
 ODILE = {"id": 2, "name": "Odile", "last_name": "Whitlock", "gender": "female"}
 
