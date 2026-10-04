@@ -9,6 +9,7 @@ import {
   type AskedQuestion,
   type PairBond,
   type Person,
+  SessionKind,
   type Session,
   type Timeline,
   type TimelineEvent,
@@ -444,6 +445,8 @@ const newest = (all: AskedQuestion[]) => all[all.length - 1] ?? null;
 export function caseView(tl: Timeline, sessions: Session[], owner: string | null): CaseView {
   const r = new Reader(tl);
   const s = r.subject;
+  // a note or a recording is not the person talking with the coach
+  const chats = sessions.filter((one) => one.kind === SessionKind.Chat);
   const asked = tl.asked_questions;
   const guesses = asked.filter((q) => open(q) && isGuess(q));
   const questions = asked.filter((q) => !isGuess(q));
@@ -468,7 +471,7 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string | null
     now: r.now,
     household: r.still(r.household(), s.id),
     main: main && r.guess(main),
-    brought: r.brought(sessions),
+    brought: r.brought(chats),
     married: !!wed,
     couple: wed ? r.couple(wed) : { lead: "", facts: [] },
     stages: wed ? [] : r.stages(),
@@ -479,8 +482,8 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string | null
     ownPart: { guess: own && r.guess(own), ask: answered ? null : askOn(CaseReportCard.OwnPart), answer: answered?.answer?.text ?? null },
     choice: { guess: choice && r.guess(choice), ask: askOn(CaseReportCard.Choice) },
     work: { aim: aimed ? r.fact(aimed) : null, guesses: work },
-    effort: sessions.length
-      ? `${s.name} has talked with the coach in ${sessions.length === 1 ? "one session" : `${sessions.length} sessions`}.`
+    effort: chats.length
+      ? `${s.name} has talked with the coach in ${chats.length === 1 ? "one session" : `${chats.length} sessions`}.`
       : "",
   };
 }

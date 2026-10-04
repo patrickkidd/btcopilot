@@ -14,8 +14,21 @@ const SIZES = [
 ];
 const SCHEMES = ["light", "dark"] as const;
 
+/** The passages are private and CI has no key to the corpus, so the page is
+ * answered with made-up ones for every card; `fail` refuses that many reads first. */
+const PASSAGES = Object.fromEntries(
+  ["main", "family", "brought", "couple", "sides", "guesses", "own_part", "choice", "work_on", "effort"].map((card) => [card, [{ text: `A made-up passage for ${card}.`, by: "A made-up author" }]]),
+);
+
+async function answer(page: Page, fail = 0): Promise<void> {
+  await page.route("**/case-report-passages*", (route) =>
+    fail-- > 0 ? route.fulfill({ status: 503, body: "" }) : route.fulfill({ json: PASSAGES }),
+  );
+}
+
 /** The report opened at its address, every console error kept. */
-async function open(page: Page): Promise<string[]> {
+async function open(page: Page, fail = 0): Promise<string[]> {
+  await answer(page, fail);
   const errors: string[] = [];
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   page.on("pageerror", (e) => errors.push(String(e)));
@@ -233,6 +246,13 @@ test.describe("the case report's taps", () => {
     await page.locator('#case-body .level[data-card="brought"] .book').click();
     await expect(page.locator(".fs-sheet.bk")).toHaveClass(/in/, { timeout: 1000 });
     expect(Date.now() - tapped).toBeLessThan(1000);
+  });
+
+  // R-0691
+  test("a book whose passages could not be read asks again at its tap", async ({ page }) => {
+    await open(page, 1);
+    await page.locator('#case-body .level[data-card="main"] .book').click();
+    await expect(page.locator(".fs-sheet.bk blockquote").first()).toBeVisible();
   });
 
   // R-0691

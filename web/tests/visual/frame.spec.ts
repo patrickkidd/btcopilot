@@ -94,8 +94,16 @@ for (const key of KEYS) {
       expect(collisions(await boxes(page))).toEqual([]);
       expect(await escaped(page)).toEqual([]);
 
-      const dot = page.locator('.ss-hit[data-target="zone"]').first();
-      if (!(await dot.isVisible().catch(() => false))) return;
+      // with a cluster open, the dots of events outside it lie beyond the picture's edge
+      const dots = page.locator('.ss-hit[data-target="zone"]');
+      const at = await dots.evaluateAll((els) =>
+        els.findIndex((e) => {
+          const r = e.getBoundingClientRect();
+          return r.width > 0 && r.right > 0 && r.left < innerWidth && r.bottom > 0 && r.top < innerHeight;
+        }),
+      );
+      if (at < 0) return;
+      const dot = dots.nth(at);
       await dot.click();
       await page.waitForTimeout(300);
       expect(collisions(await boxes(page))).toEqual([]);
