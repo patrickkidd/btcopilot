@@ -203,18 +203,27 @@ test.describe("the case report's taps", () => {
     await open(page);
     await page.locator('#case-body .level[data-card="main"] .book').click();
     const sheet = page.locator(".fs-sheet.bk");
-    // the server's first read of the passages goes to the private corpus on GitHub
-    await expect(sheet).toHaveClass(/in/, { timeout: 20_000 });
+    await expect(sheet).toHaveClass(/in/);
     await expect(sheet.locator("blockquote").first()).toBeVisible();
     await sheet.locator(".cardx").click();
     await expect(sheet).not.toHaveClass(/in/);
   });
 
   // R-0691
+  test("a book opens within a second once the screen has been open a few seconds", async ({ page }) => {
+    await open(page);
+    await page.waitForTimeout(3000);
+    const tapped = Date.now();
+    await page.locator('#case-body .level[data-card="brought"] .book').click();
+    await expect(page.locator(".fs-sheet.bk")).toHaveClass(/in/, { timeout: 1000 });
+    expect(Date.now() - tapped).toBeLessThan(1000);
+  });
+
+  // R-0691
   test("Escape puts the book's passages away", async ({ page }) => {
     await open(page);
     await page.locator('#case-body .level[data-card="main"] .book').click();
-    await expect(page.locator(".fs-sheet.bk")).toHaveClass(/in/, { timeout: 20_000 });
+    await expect(page.locator(".fs-sheet.bk")).toHaveClass(/in/);
     await page.keyboard.press("Escape");
     await expect(page.locator(".fs-sheet.bk")).not.toHaveClass(/in/);
   });

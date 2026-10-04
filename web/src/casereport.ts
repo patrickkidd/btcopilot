@@ -57,7 +57,8 @@ export class CaseReport implements View {
   private opened: Opened | null = null;
   /** Drawn from the record the store last gave, or to be drawn when shown. */
   private stale = true;
-  private passages: Passages | null = null;
+  /** The passages, asked for once when the screen opens, so a book opens at once. */
+  private passages: Promise<Passages | null> | null = null;
   /** The card a strip tap asked for, lit while the cards glide to it and while they rest at their foot. */
   private asked: Card | null = null;
   private gliding = false;
@@ -160,6 +161,7 @@ export class CaseReport implements View {
     const opened = this.opened;
     if (!opened) return;
     this.stale = false;
+    this.passages ??= this.hooks.fetch(api.casePassages);
     this.drawer.close();
     const wide = this.hooks.wide();
     q(this.root, "case-family").hidden = wide;
@@ -266,9 +268,10 @@ export class CaseReport implements View {
   }
 
   private async book(button: HTMLElement): Promise<void> {
-    this.passages ??= await this.hooks.fetch(api.casePassages);
-    if (!this.passages) return;
-    this.sheet.show(passages(this.passages, button.dataset.book!, button.dataset.title!));
+    this.passages ??= this.hooks.fetch(api.casePassages);
+    const all = await this.passages;
+    if (!all) return;
+    this.sheet.show(passages(all, button.dataset.book!, button.dataset.title!));
   }
 
   private tap(e: Event): void {
