@@ -5,7 +5,7 @@ import { cards, dashboard, familyIcon, passages, rail } from "./case";
 import { Card, caseView } from "./caseview";
 import { chipOf } from "./chips";
 import { BACK } from "./tokens";
-import { esc, flash, slideOver } from "./dom";
+import { CLUSTER, esc, flash, slideOver } from "./dom";
 import { Drawer } from "./drawer";
 import { Lens } from "./lens";
 import { Sheet } from "./sheet";
@@ -13,6 +13,7 @@ import { untold } from "./snapshots";
 import type { Opened, Part, View } from "./store";
 import { ChipKind, ChipTone, InteractionKind, ItemKind, type Chip, type Passages, type Timeline } from "./types";
 import { Feature } from "./track";
+import { AWAY_PX, fold, type Fold } from "./viewport";
 
 /** The case report screen: the cards drawn from the store's open diagram
  * (doc/UI_STANDARDS.md), the chat screen's own timeline pinned over them
@@ -45,6 +46,10 @@ export class CaseReport implements View {
   private readonly lens: Lens;
   private readonly drawer: Drawer;
   private readonly sheet: Sheet;
+  /** The chat's own fold of the timeline (R-0696): a strip while the cards are read, the full line at their top or on a chip's tap. */
+  private readonly strip: Fold;
+  /** Where the cards stood when a tap opened the line. */
+  private openedAt: number | null = null;
   private readonly body: HTMLElement;
   private readonly rail: HTMLElement;
   private readonly column: HTMLElement;
@@ -95,8 +100,29 @@ export class CaseReport implements View {
       (chip) => this.chip(chip),
     );
     this.sheet = new Sheet(root, "bk");
+    // the about page slides back out at its full height before the line folds, as on the chat screen
+    this.strip = fold(null, root, () => {}, () => {
+      if (this.lens.picture.aboutOpen()) this.lens.climb(CLUSTER);
+      return this.lens.picture.settled;
+    });
+    // a tap on the folded strip opens it, and the cards moving as it opens fold nothing
+    root.querySelector(":scope > .pic")!.addEventListener("pointerdown", () => {
+      if (root.classList.contains("folded")) this.openedAt = this.body.scrollTop;
+    });
     root.addEventListener("click", (e) => this.tap(e));
-    this.body.addEventListener("scroll", () => this.follow(), { passive: true });
+    this.body.addEventListener(
+      "scroll",
+      () => {
+        this.follow();
+        const at = this.body.scrollTop;
+        // the line opened by a tap stays open until the reader scrolls on by
+        // hand; the cards moving as it opens is not that
+        if (this.openedAt !== null && Math.abs(at - this.openedAt) <= AWAY_PX) return;
+        this.openedAt = null;
+        this.strip.scrolled(at <= 0, at > AWAY_PX);
+      },
+      { passive: true },
+    );
   }
 
   reset(): void {
@@ -161,6 +187,9 @@ export class CaseReport implements View {
    * timeline the way its pill does, so explain is offered (R-0700). */
   private chip(chip: Chip): void {
     const tl = this.opened!.record;
+    // what a chip names is shown on the full line, so a folded line opens first
+    this.openedAt = this.body.scrollTop;
+    this.strip.open();
     if (chip.kind === ChipKind.Person) {
       const ids = tl.events.filter((e) => e.dateTime && [e.person, e.child, e.spouse].includes(Number(chip.target))).map((e) => e.id);
       if (ids.length) this.lens.apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(ids[0]) }), ids);
@@ -254,7 +283,7 @@ export class CaseReport implements View {
     const book = hit(".book[data-book]");
     if (book) return void this.book(book);
     const all = hit(".who.lall[data-target]");
-    if (all) return this.lens.aim({ kind: ChipKind.Event, target: all.dataset.target!, label: "Coach", tone: ChipTone.Data, bare: false });
+    if (all) return this.chip({ kind: ChipKind.Event, target: all.dataset.target!, label: "Coach", tone: ChipTone.Data, bare: false });
     const jump = hit("[data-jump]");
     if (jump) return this.jump(jump.dataset.jump as Card);
     if (hit("#case-family, .famcard")) return slideOver(this.famout, true);

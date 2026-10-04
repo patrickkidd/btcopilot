@@ -111,14 +111,49 @@ test.describe("the case report's taps", () => {
   });
 
   // R-0696
-  test("the timeline stays pinned at its full height while the cards scroll", async ({ page }) => {
+  test("the timeline folds to the chat's strip while the cards are read, and opens at their top and on a chip", async ({ page }) => {
     await open(page);
     const pic = page.locator("#case-screen > .pic");
-    const before = (await pic.boundingBox())!.height;
-    await page.locator("#case-body").evaluate((b) => (b.scrollTop = b.scrollHeight));
-    await page.waitForTimeout(500);
-    expect((await pic.boundingBox())!.height).toBe(before);
-    await expect(page.locator("#case-view .ss")).toBeVisible();
+    const full = (await pic.boundingBox())!.height;
+    await page.locator("#case-body").evaluate((b) => (b.scrollTop = 600));
+    await expect.poll(async () => (await pic.boundingBox())!.height).toBeLessThan(full);
+    await expect(page.locator("#case-screen")).toHaveClass(/folded/);
+    // still on screen, pinned at the top
+    expect((await pic.boundingBox())!.y).toBeLessThan(120);
+    await page.locator('#case-body .chip[data-kind="event"]:visible').first().click();
+    await expect(page.locator("#case-screen")).not.toHaveClass(/folded/);
+    await page.locator("#case-body").evaluate((b) => (b.scrollTop = 600));
+    await expect(page.locator("#case-screen")).toHaveClass(/folded/);
+    await page.locator("#case-body").evaluate((b) => (b.scrollTop = 0));
+    await expect(page.locator("#case-screen")).not.toHaveClass(/folded/);
+  });
+
+  // R-0700
+  test("putting the cluster away closes its play-by-play", async ({ page }) => {
+    await open(page);
+    await page.locator('#case-view .ss-hit[data-target="cluster"]').first().click();
+    await page.locator("#case-caption #cap-play").click();
+    await expect(page.locator("#case-pbp")).toHaveClass(/in/);
+    await page.locator('#case-path [data-step="0"]').click();
+    await expect(page.locator("#case-pbp")).not.toHaveClass(/in/);
+  });
+
+  // R-0698
+  test("a guess is the chat's coach bubble with no guess heading over it", async ({ page }) => {
+    await open(page);
+    const main = page.locator('#case-body .level[data-card="main"]');
+    await expect(main.locator(".bub.coach .who")).toHaveText("Coach");
+    await expect(page.locator("#case-body")).not.toContainText(/A guess, yours to reject|Rests on|The record covers|open questions|Left off this page/i);
+  });
+
+  // R-0702
+  test("the family card is one button, the same as the strip's family item", async ({ page }) => {
+    await open(page);
+    const card = page.locator('#case-body .level[data-card="family"]');
+    await expect(card.locator("> *")).toHaveCount(1);
+    await expect(card.locator("button.famcard")).toHaveText((await page.locator('#case-rail [data-jump="family"]').textContent())!);
+    await card.locator("button.famcard").click();
+    await expect(page.locator("#case-famout")).toHaveClass(/in/);
   });
 
   // R-0700, R-0696
