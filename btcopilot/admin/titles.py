@@ -165,7 +165,7 @@ def fill(diagram_ids, path, ask, yes):
                     "from": source.value,
                 }
             )
-            found.append((diagram, event, rows[-1]))
+            found.append((diagram, data, event, rows[-1]))
     left = [r for r in rows if r["from"] == Source.Nobody]
     if yes and left:
         raise click.ClickException(
@@ -175,7 +175,7 @@ def fill(diagram_ids, path, ask, yes):
         )
     if not yes:
         return rows
-    for diagram, event, row in found:
+    for diagram, data, event, row in found:
         if row["from"] == Source.Model:
             meter = Metered(diagram.user_id, diagram.id, f"titles-{diagram.id}", Purpose.Backfill)
             row["title"] = asked(meter, data, event, f"record {diagram.id} event {event['id']}")

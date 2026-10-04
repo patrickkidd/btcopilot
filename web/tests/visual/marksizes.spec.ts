@@ -6,6 +6,10 @@ import { stateFor, step } from "./setup";
  * drawer: its size on its own step in the emphasis colour, its grey once
  * carried to the next, and that no mark runs over a name or a word. */
 
+// Linux Chromium rounds each glyph's advance to whole pixels, so a word runs
+// 9% wider there than on a phone; with hinting off it measures as a phone does.
+test.use({ launchOptions: { args: ["--font-render-hinting=none"] } });
+
 /** Each step in order, and where its mark is found once drawn. Marks drawn
  * around a person (the death X, anxiety's spikes, an outline) take the
  * person's size, and an arrow, a couple's line or the fusion bands take the
