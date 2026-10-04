@@ -872,10 +872,10 @@ def _case_report_family(names=None) -> DiagramData:
             asdict(
                 Cluster(
                     id="mother-ill",
-                    reason="Elaine was in hospital, and Nora worried and stayed away.",
+                    reason="Elaine was in hospital, Nora worried and stayed away, and then the panic attacks began.",
                     title="Her mother's illness",
-                    summary="Hospital to staying away.",
-                    eventIds=[207, 208, 209],
+                    summary="Hospital to panic attacks.",
+                    eventIds=[207, 208, 209, 210],
                     name="Her mother's illness",
                 )
             )
