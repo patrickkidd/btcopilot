@@ -172,7 +172,7 @@ function body(card: Card, v: CaseView): string {
         .map((row) => `<div class="stage">${sublabel(row.label)}${row.stages.map((st) => chips([factChip(st.head), ...st.facts.map(factChip)])).join("")}</div>`)
         .join("");
     case Card.Sides:
-      return v.sides.map((s) => fold(s.label, lead(s.lead) + s.pics.map((p) => sublabel(p.sub) + picture(v, p.still, p.sub)).join(""))).join("");
+      return v.sides.map((s) => fold(s.label, lead(s.lead) + picture(v, s.still, s.label))).join("");
     case Card.Guesses: {
       const ask = v.ask ? `<div class="gbub">${bubble("", [], v.ask)}</div>` : "";
       return `<div class="glist">${v.guesses.length ? v.guesses.map((g) => guessBlock(g)).join("") : notEnough()}${ask}</div>`;
@@ -218,7 +218,7 @@ export function cards(v: CaseView, wide: boolean): string {
 /** The family card for the column or the slide-out, as the approved proposal
  * draws it: the person's family, then each parent's side (R-0697). */
 export function dashboard(v: CaseView): string {
-  const sides = v.sides.map((s) => `<div class="side"><p class="sub">${esc(s.label)}</p>${s.pics.map((p) => picture(v, p.still, p.sub)).join("")}</div>`);
+  const sides = v.sides.map((s) => `<div class="side"><p class="sub">${esc(s.label)}</p>${picture(v, s.still, s.label)}</div>`);
   return `<div class="case dash">${card(Card.Family, v, sides.join(""))}</div>`;
 }
 

@@ -126,9 +126,10 @@ it("shows the couple card only for a marriage the picture draws solid, with both
 it("gives each parent a side, the father's first, with the parent's own parents drawn", () => {
   const v = caseView(halloran(), ONE, "");
   expect(v.sides.map((s) => s.label)).toEqual(["Her father's side", "Her mother's side"]);
-  expect(v.sides[0].pics.map((p) => p.sub)).toEqual(["Walter and June, Frank's parents"]);
-  expect(v.sides[0].pics[0].still.layout).not.toBeNull();
-  expect(v.sides[1].pics).toEqual([]);
+  // R-0733: one picture a side, the parent once, the other parent joined to them
+  const drawn = (i: number) => Object.keys(v.sides[i].still.layout!.P).sort();
+  expect(drawn(0)).toEqual(["2", "3", "4", "5"]);
+  expect(drawn(1)).toEqual(["2", "3"]);
 });
 
 // R-0699, R-0713

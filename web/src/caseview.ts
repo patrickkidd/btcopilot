@@ -83,15 +83,12 @@ export interface Still {
   fault: string | null;
 }
 
-export interface SidePicture {
-  sub: string;
-  still: Still;
-}
-
+/** One parent's side: one picture of the parent among their brothers and
+ * sisters under their own parents, their partners joined to them (R-0733). */
 export interface Side {
   label: string;
   lead: string;
-  pics: SidePicture[];
+  still: Still;
 }
 
 /** One stage of a couple: its date and what opened it, and the pair's own
@@ -156,9 +153,6 @@ function pronouns(p: Person): { him: string; his: string } {
   if (p.gender === "male") return { him: "him", his: "his" };
   return { him: "them", his: "their" };
 }
-
-const listed = (names: string[]) =>
-  names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 
 class Reader {
   readonly family: Family;
@@ -392,8 +386,10 @@ class Reader {
     return bits.length || held ? `${p.name}${bits.length ? `, ${bits.join(", ")}` : ""}.${held}` : "";
   }
 
-  /** Each parent's own family: the parent's parents and their children, then
-   * the parent's own other couples, each a picture of its own. */
+  /** Each parent's own family, one picture a side: the parent's parents and
+   * their children, and the parent's partners joined to the parent, the other
+   * parent among them, so no one is drawn twice (R-0733). A partner's own
+   * parents are on no side's picture. */
   sides(): Side[] {
     const s = this.subject;
     const pb = this.parentsOf(s.id);
@@ -405,22 +401,16 @@ class Reader {
       .sort((a, b) => (a.gender === "male" ? 0 : 1) - (b.gender === "male" ? 0 : 1))
       .map((parent) => {
         const role = parent.gender === "female" ? "mother" : parent.gender === "male" ? "father" : "parent";
-        const pics: SidePicture[] = [];
-        const side = new Set<number>([parent.id]);
         const up = this.parentsOf(parent.id);
-        if (up && this.pair(up).length) {
-          const ids = [...this.pair(up), ...this.childrenOf(up).map((c) => c.id)];
-          ids.forEach((id) => side.add(id));
-          pics.push({ sub: `${listed(this.pair(up).map(this.name))}, ${parent.name}'s parents`, still: this.still(ids, parent.id) });
-        }
-        this.bondsOf(parent.id)
-          .filter((b) => b.id !== pb.id && this.other(b, parent.id) != null)
-          .forEach((b) => {
-            const ids = [...this.pair(b), ...this.childrenOf(b).map((c) => c.id)];
-            ids.forEach((id) => side.add(id));
-            pics.push({ sub: `${parent.name} and ${this.name(this.other(b, parent.id)!)}`, still: this.still(ids, parent.id) });
-          });
-        return { label: `${His} ${role}'s side`, lead: this.personLine(parent, [...side]), pics };
+        const kin = new Set<number>([parent.id, ...(up ? [...this.pair(up), ...this.childrenOf(up).map((c) => c.id)] : [])]);
+        const partners = this.bondsOf(parent.id)
+          .map((b) => this.other(b, parent.id))
+          .filter((id): id is number => id != null);
+        return {
+          label: `${His} ${role}'s side`,
+          lead: this.personLine(parent, [...kin]),
+          still: this.still([...kin, ...partners], parent.id),
+        };
       });
   }
 

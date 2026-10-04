@@ -57,6 +57,8 @@ for (const key of FIXTURES)
               text: document.querySelector("#case-screen")!.textContent ?? "",
               folds: document.querySelectorAll("#case-body details").length,
               sides: document.querySelectorAll("#case-body details.side").length,
+              sideCount: document.querySelectorAll("#case-body details.side").length,
+              sidePictures: document.querySelectorAll("#case-body details.side .fam").length,
             };
           });
           expect([...seen.cards].sort()).toEqual([...seen.strip].sort());
@@ -67,6 +69,9 @@ for (const key of FIXTURES)
           expect(seen.outside).toBe(0);
           expect(seen.sideways).toBe(false);
           expect(seen.text).not.toMatch(/NaN|undefined|not in the record|From the record/);
+          // every family picture is drawn; each side is one picture (R-0733)
+          expect(seen.text).not.toContain("cannot be drawn");
+          expect(seen.sidePictures).toEqual(seen.sideCount);
           // only each side of the family folds (R-0689)
           expect(seen.folds).toBe(seen.sides);
           expect(errors).toEqual([]);
