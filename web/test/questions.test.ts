@@ -29,6 +29,8 @@ const asked = (
   asked_in: { discussion_id: 7, statement_id: 70 },
   evidence: [],
   pushback: null,
+  case_report_card: null,
+  answer: null,
 });
 
 const FAMILY = [

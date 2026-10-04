@@ -527,23 +527,26 @@ What it is for: a professional's several client records.
 - People and events keep a notes field in their editors, the same notes the desktop app already stores. [built] {R-0281}
 - The drawn family diagram stays in the plan and arrives once auto-arrange proves itself on real data. [drawn] {R-0240, R-0281}
 
-## The case page (presenting a case to peers)
+## The case report
 
-What it is for: one page to present a case from, in the order the Bowen literature presents a case. Mockup versions 4 and 5 are on Jira FD-367, built from the app's own picture, timeline and drawer code; the form where you present your own record comes first, for Patrick's seminar.
+What it is for: one screen to present your own record from, in the order the Bowen literature presents a case, opened from the icon in the title row at /app/case-report (Patrick's seminar, 16 October 2026). It reads the record the chat reads and draws again after every coach turn.
 
-- The page follows ten levels in order: the people on a picture; what brought them, dated; the couple since they met; each parent's own family; one calendar; the formulation; the person's own part; where there was a choice; what to work on and expect; the effort. [drawn] {ruled 2026-10-01, id pending}
-- The page explains itself: no wall of text carries the meaning, and prose piling up in one place is the sign that part needs a picture instead. [drawn] {Patrick, 2026-10-02, id pending}
-- The ten levels show as headlines you open one at a time, and the page still scrolls as one page. [drawn] {Patrick, 2026-10-02, id pending}
-- One simple picture of how much of the family the record covers comes first, so a viewer feels the gaps before reading anything. [drawn] {Patrick, 2026-10-02, id pending}
-- A summary explains the whole across the sections and says how much of the record it rests on. [drawn] {Patrick, 2026-10-02, id pending}
-- Nothing on the page implies more than the record holds; a thin record says there is not enough in the record to choose a reading. [drawn] {Patrick, 2026-10-02, id pending}
-- Every mockup frame is labelled proposal, view or alternative. [drawn] {Patrick, 2026-10-02, id pending}
-- Whether the formulation reads at the top of the page or at the end is being tried both ways in mockups. [open]
-- The summary: one box at the top, or the same lines repeated under each level. [open]
-- The coverage picture: drawn on the family picture, on a grid of the people, or as three numbers. [open]
-- The family picture as the page's dashboard: pinned on a desktop and one tap away on the phone, or the first card on the page. [open]
-- The timeline pinned at the top of the phone screen too, each chip lighting its event when tapped: a brainstorm input, to be tried. [open]
-- How a professional's presentation of a client's record differs from presenting your own is not decided; the attribution-only difference drawn in version 4 came from no source. [open]
+- It opens from an icon in the title row over the chat, and the coach opens it when asked; it is a full screen with a back arrow to the chat. [built] {R-0714}
+- Any user can open it on a diagram they have open; sharing it with others comes later. [built] {R-0715}
+- Ten cards in the approved order: the coach's main guess, who is in the family, what brought the person, the couple since they met (or the person's parents and partners, stage by stage, when not married), each parent's own family, the coach's guess, the person's own part, where there was a choice, what to work on, the effort. The titles are the ones Patrick reviewed. [built] {R-0713, R-0716}
+- A strip under the timeline has one item per card in the same order; a tap glides the cards to that card, rings it, and puts an open play-by-play away. [built] {R-0702}
+- Text never folds and cards never collapse; only each side of the family folds. [built] {R-0689, R-0690}
+- The timeline is pinned at the top; every chip lights what it names on it. A person's chip lights that person's events; a cluster's chip opens the cluster with explain offered, and explain opens the play-by-play of the cluster's own dated events. [built] {R-0696, R-0700}
+- A coach's guess is the chat's own coach bubble, straight on the white card, with the dated facts it rests on as one-line chips under it; its "Coach" label lights them all. [built] {R-0698}
+- The main guess, the own part, the choice and what to work on (up to three) are the guesses the coach put on those cards; the newest replaces the one before. The screen never picks a guess itself. [built] {R-0709, R-0713}
+- A guess card the coach has put nothing on says in the coach's bubble that there is not enough in the record yet, and to chat more with the coach. A record card with nothing in it keeps its title and its book. [built] {R-0699, R-0710}
+- The own part card shows the coach's guess and, once the person has answered the coach's question, the person's own words under their name as their own view. [built] {R-0708}
+- The lines under the card titles are written by the app from the record: the person's place among brothers and sisters, how often their trouble flared, the couple, each parent, the sessions with the coach. [built] {R-0716}
+- The couple card shows only for a marriage the picture draws solid, with no later separation or divorce and both partners alive. [built] {R-0694}
+- The family picture opens from the family button on the phone and stands as a left column on a desktop, with the key under the person's family and under each side. No shading by coverage. [built] {R-0697, R-0705}
+- Every card has a book button at its foot that raises the passages behind the card, word for word, read from the private corpus by the server; the strip has one for the order of the cards. [built] {R-0691, R-0692}
+- No count line under a guess, no years band, no row of people squares, and no words of the screen's own about certainty. [built] {R-0693, R-0699, R-0703}
+- A record the report cannot be drawn from shows the reason on the screen and in the console, never a blank page. [built] {R-0711}
 
 ## Upload a recording (Pro)
 

@@ -372,7 +372,13 @@ const AGENDA: Sub = {
 };
 /** The page of one meeting takes its address from the meeting it opens on. */
 const MEET: Sub = { title: "Meeting", screen: $("meet-screen") };
-store.watch(new CaseReport($("case-body")));
+const caseReport = new CaseReport($("case-screen"), {
+  record: tapped,
+  track: (feature) => track.tap(feature),
+  wide: () => pinned(),
+  fetch: (ask) => store.fetch(ask),
+});
+store.watch(caseReport);
 const PAIRS: Sub = {
   title: "Better replies",
   screen: $("pairs-screen"),
@@ -961,6 +967,7 @@ function pinDrawer(): void {
 wide.addEventListener("change", () => {
   pinDrawer();
   lens.actions();
+  caseReport.refit();
 });
 
 /** What the coach aimed the picture at. A triangle or a sequence has people
@@ -1407,7 +1414,9 @@ function widen(which: Screen, sub?: Sub): void {
     .querySelector<HTMLElement>(".app")!
     .classList.toggle(
       "wide",
-      which === Screen.Coding || (which === Screen.Chat && pinned()) || !!sub?.wide,
+      which === Screen.Coding ||
+        ((which === Screen.Chat || which === Screen.CaseReport) && pinned()) ||
+        !!sub?.wide,
     );
 }
 
@@ -1752,6 +1761,7 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
   [Place.CaseReport]: () => {
     uncover();
     screen(Screen.CaseReport);
+    caseReport.show();
   },
   [Place.Play]: async ([id]) => {
     await toPlay(Number(id));

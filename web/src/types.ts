@@ -246,7 +246,23 @@ export interface AskedQuestion {
   /** What an impression rests on; a question rests on nothing. */
   evidence: Evidence[];
   pushback: Pushback | null;
+  /** The case report card the coach put it on, or null for none (R-0709). */
+  case_report_card: CaseReportCard | null;
+  /** The person's message that answered it, in their own words (R-0708). */
+  answer: (Evidence & { text: string | null }) | null;
 }
+
+/** The case report cards a guess or a question can be on. Mirrors
+ * `CaseReportCard` on the server (R-0709). */
+export enum CaseReportCard {
+  MainGuess = "main_guess",
+  OwnPart = "own_part",
+  Choice = "choice",
+  WorkOn = "work_on",
+}
+
+/** The passages behind each case report card's book button, by card (R-0691). */
+export type Passages = Record<string, { text: string; by: string }[]>;
 
 export interface Timeline {
   people: Person[];

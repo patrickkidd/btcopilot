@@ -40,6 +40,7 @@ import type {
   Delivery,
   Tally,
   Statement,
+  Passages,
   Timeline,
   TimelineEvent,
   User,
@@ -174,6 +175,10 @@ const onDiagram = (path: string, diagramId?: number | null) =>
 /** The record of the diagram open, or of the one a coding is of. */
 export const timeline = (diagramId: number | null, signal?: AbortSignal) =>
   call<Timeline>("GET", onDiagram("/timeline", diagramId), undefined, undefined, signal);
+
+/** The passages behind the case report's book buttons (R-0692). */
+export const casePassages = (diagramId: number | null, signal?: AbortSignal) =>
+  call<Passages>("GET", onDiagram("/case-report-passages", diagramId), undefined, undefined, signal);
 
 /** One agent-loop turn. The send is short: it stores the words and hands the
  * turn to the coach, which answers on the turn's own stream. The server puts
