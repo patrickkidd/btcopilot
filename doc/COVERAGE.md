@@ -17,7 +17,12 @@ as the record does, in Kerr's loose order:
 
 1. The person, each partner, each child. The person also needs who their
    parents are and the family's periods of major stress; each of the person's
-   couples needs when the two met and how many children they had.
+   couples needs when the two met and how many children they had. Right after
+   their birth date the person needs the two or three times when the most was
+   going on, which opens the history and does not replace it [Oracle: R-0735].
+   It is known only from a fact question naming it, never from clusters or
+   events, so on a thread where it was never asked it heads the list; a time
+   named with nothing in it yet answers it.
 2. Parents (each needing who their own parents are), step-parents, full, half
    and step siblings, and the siblings' children. The parents' couple needs how
    many children it had, so siblings not yet named still show as a gap.
@@ -49,7 +54,7 @@ children and the partner's family when not attached need neither.
 
 | State | From |
 |---|---|
-| Known | The record: a name; a dated birth; a death event (alive), its date and its description (cause); a shift with a symptom, or a noted event naming health (health); a noted event naming schooling or work; a dated bond, marriage, separation or divorce (marriages); a noted event with a place, or naming places lived (places lived); a man or woman (sex); a parents' couple (parents); every child of the parents with a dated birth, two or more of them or their number known (birth order); a dated bond or marriage on the couple (met); any cluster (periods of stress). Or a fact question naming the item, closed as a fact or answered. |
+| Known | The record: a name; a dated birth; a death event (alive), its date and its description (cause); a shift with a symptom, or a noted event naming health (health); a noted event naming schooling or work; a dated bond, marriage, separation or divorce (marriages); a noted event with a place, or naming places lived (places lived); a man or woman (sex); a parents' couple (parents); every child of the parents with a dated birth, two or more of them or their number known (birth order); a dated bond or marriage on the couple (met); any cluster (periods of stress; never the times the most was going on). Or a fact question naming the item, closed as a fact or answered. |
 | Asked | A fact question naming the item, asked and not yet closed. |
 | Said unknown | A fact question naming the item, closed as unknown. |
 | Declined | A fact question naming the item, closed as declined, by the person or in the chat. |

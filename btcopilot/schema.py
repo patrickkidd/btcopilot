@@ -344,6 +344,8 @@ class Fact(enum.StrEnum):
     Met = "met"
     # On the person: the nuclear family's periods of major stress.
     Stress = "stress"
+    # On the person: the two or three times they say the most was going on.
+    MostGoingOn = "most_going_on"
 
 
 class NotedFact(enum.StrEnum):
