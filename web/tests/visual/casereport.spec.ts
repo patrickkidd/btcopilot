@@ -198,7 +198,8 @@ test.describe("the case report's taps", () => {
     await open(page);
     await page.locator('#case-body .level[data-card="main"] .book').click();
     const sheet = page.locator(".fs-sheet.bk");
-    await expect(sheet).toHaveClass(/in/);
+    // the server's first read of the passages goes to the private corpus on GitHub
+    await expect(sheet).toHaveClass(/in/, { timeout: 20_000 });
     await expect(sheet.locator("blockquote").first()).toBeVisible();
     await sheet.locator(".cardx").click();
     await expect(sheet).not.toHaveClass(/in/);
@@ -208,9 +209,22 @@ test.describe("the case report's taps", () => {
   test("Escape puts the book's passages away", async ({ page }) => {
     await open(page);
     await page.locator('#case-body .level[data-card="main"] .book').click();
-    await expect(page.locator(".fs-sheet.bk")).toHaveClass(/in/);
+    await expect(page.locator(".fs-sheet.bk")).toHaveClass(/in/, { timeout: 20_000 });
     await page.keyboard.press("Escape");
     await expect(page.locator(".fs-sheet.bk")).not.toHaveClass(/in/);
+  });
+
+  // R-0709
+  test("the coach's guess card holds only the guesses the coach chose for it", async ({ page }) => {
+    await open(page);
+    const record = await (await page.request.get("/app/timeline")).json();
+    const chosen = record.asked_questions.filter((q: { open: boolean; kind: string; case_report_card: string | null }) => q.open && q.kind === "impression" && q.case_report_card === "coach_guess");
+    const card = page.locator('#case-body .level[data-card="guesses"]');
+    const words = await card.locator(".bub.coach").allTextContents();
+    for (const q of record.asked_questions.filter((q: { kind: string; case_report_card: string | null }) => q.kind === "impression" && q.case_report_card === null))
+      expect(words.join(" ")).not.toContain(q.text);
+    if (!chosen.length) await expect(card).toContainText("Not enough in the record to make a guess yet");
+    else for (const q of chosen.slice(-3)) await expect(card).toContainText(q.text);
   });
 
   // R-0697

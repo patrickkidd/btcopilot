@@ -259,6 +259,7 @@ export enum CaseReportCard {
   OwnPart = "own_part",
   Choice = "choice",
   WorkOn = "work_on",
+  CoachGuess = "coach_guess",
 }
 
 /** The passages behind each case report card's book button, by card (R-0691). */

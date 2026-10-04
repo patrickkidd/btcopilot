@@ -209,3 +209,14 @@ it("keeps every date inside a chip: no lead line names a year or a month", () =>
   for (const line of leads) expect(line).not.toMatch(/\b(1[89]|20)\d\d\b|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/);
   expect(v.brought.lead).toBe("Nora's symptoms appear in 2 events in the record.");
 });
+
+// R-0709
+it("shows on the coach's guess card only the guesses the coach chose for it", () => {
+  const tl = halloran();
+  tl.asked_questions = [...Array(13).keys()].map((n) => guess(`i${n}`, `Guess ${n}.`, n === 4 || n === 9 ? CaseReportCard.CoachGuess : null, [202]));
+  expect(caseView(tl, ONE, "").guesses.map((g) => g.text)).toEqual(["Guess 4.", "Guess 9."]);
+  tl.asked_questions = tl.asked_questions.map((q) => ({ ...q, case_report_card: null }));
+  const none = caseView(tl, ONE, "");
+  expect(none.guesses).toEqual([]);
+  expect(cards(none, false).split(`data-card="${Card.Guesses}"`)[1].split("</section>")[0]).toContain(NOT_ENOUGH);
+});

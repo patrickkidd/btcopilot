@@ -132,8 +132,9 @@ export interface CaseView {
   effort: string;
 }
 
-/** The most guesses the card on what to work on holds (R-0709). */
+/** The most guesses the card on what to work on, and the card of the coach's guess, hold (R-0709). */
 const WORK_ON_MAX = 3;
+const COACH_GUESS_MAX = 3;
 
 const SELF_DESCRIBING = new Set<string>([
   EventKind.Birth,
@@ -482,7 +483,8 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string | null
     couple: wed ? r.couple(wed) : { lead: "", facts: [] },
     stages: wed ? [] : r.stages(),
     sides: r.sides(),
-    guesses: guesses.filter(onCard(null)).map((q) => r.guess(q)),
+    // only what the coach chose for this card, never every guess it holds (Patrick, 2026-10-04)
+    guesses: guesses.filter(onCard(CaseReportCard.CoachGuess)).slice(-COACH_GUESS_MAX).map((q) => r.guess(q)),
     ask: questions.find((q) => open(q) && onCard(null)(q))?.text ?? null,
     ownPart: { guess: own && r.guess(own), ask: answered ? null : askOn(CaseReportCard.OwnPart), answer: answered?.answer?.text ?? null },
     choice: { guess: choice && r.guess(choice), ask: askOn(CaseReportCard.Choice) },

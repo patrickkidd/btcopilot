@@ -173,10 +173,10 @@ function body(card: Card, v: CaseView): string {
         .join("");
     case Card.Sides:
       return v.sides.map((s) => fold(s.label, lead(s.lead) + s.pics.map((p) => sublabel(p.sub) + picture(v, p.still, p.sub)).join(""))).join("");
-    case Card.Guesses:
-      return v.guesses.length || v.ask
-        ? `<div class="glist">${v.guesses.map((g) => guessBlock(g)).join("")}${v.ask ? `<div class="gbub">${bubble("", [], v.ask)}</div>` : ""}</div>`
-        : notEnough();
+    case Card.Guesses: {
+      const ask = v.ask ? `<div class="gbub">${bubble("", [], v.ask)}</div>` : "";
+      return `<div class="glist">${v.guesses.length ? v.guesses.map((g) => guessBlock(g)).join("") : notEnough()}${ask}</div>`;
+    }
     case Card.OwnPart: {
       const o = v.ownPart;
       const coach = o.guess ? guessBlock(o.guess, o.ask) : o.ask ? `<div class="gbub">${bubble("", [], o.ask)}</div>` : "";
