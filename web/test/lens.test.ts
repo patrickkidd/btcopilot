@@ -12,6 +12,6 @@ it("leaves the chat screen with no picture controller of its own", () => {
 
 // R-0711
 it("keeps one width at which the app widens", () => {
-  const all = ["main.ts", "pro.ts", "viewport.ts", "lens.ts", "casereport.ts"].map(source).join("\n");
+  const all = ["main.ts", "pro.ts", "viewport.ts", "pairs.ts", "lens.ts", "casereport.ts"].map(source).join("\n");
   expect(all.match(/min-width: 840px/g)).toHaveLength(1);
 });

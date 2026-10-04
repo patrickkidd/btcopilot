@@ -372,12 +372,10 @@ const AGENDA: Sub = {
 };
 /** The page of one meeting takes its address from the meeting it opens on. */
 const MEET: Sub = { title: "Meeting", screen: $("meet-screen") };
-const caseReport = new CaseReport();
-$("pairs-screen").after(caseReport.screen);
-store.watch(caseReport);
+store.watch(new CaseReport($("case-body")));
 const CASE: Sub = {
   title: "Case report",
-  screen: caseReport.screen,
+  screen: $("case-screen"),
   at: address(Place.CaseReport),
 };
 const PAIRS: Sub = {
@@ -700,6 +698,7 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
     if (title === null) retitle();
     else setTitle(title);
     $("account").hidden = title !== null;
+    caseDoor();
     // the guidelines are read from the task card too (R-0275, R-0278)
     $("coding-info").hidden = sub !== TASK && here !== Screen.Coding;
     widen(here, sub);
@@ -1388,8 +1387,16 @@ function screen(which: Screen): void {
   // carries the back arrow the frames draw instead.
   $("sessions-open").hidden = which !== Screen.Chat || !sessions.door;
   here = which;
+  caseDoor();
   sync();
 }
+
+/** The case report opens from the title row over the chat, and from nowhere
+ * else on screen (R-0714). */
+function caseDoor(): void {
+  $("case-open").hidden = here !== Screen.Chat || settings.top() !== null;
+}
+$("case-open").addEventListener("click", () => void navigate(address(Place.CaseReport)));
 
 /** The app is a phone everywhere else; it widens only where something stands
  * beside the thread — the coding screen, the chat screen for a professional
