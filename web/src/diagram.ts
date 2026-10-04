@@ -467,15 +467,30 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
     inner[other(wed, left)] = -1;
   }
   const isJoin = (p: string, q: string) => !!wed && inner[p] != null && inner[q] != null && p !== q;
+  // each joining spouse's forebears in the record, and the side of each sibship they stand at
+  const anc: Record<string, Set<string>> = {};
+  const edge: Record<string, number> = {};
+  Object.keys(inner).forEach((sp) => {
+    anc[sp] = new Set();
+    const up = (id: string) =>
+      (parents[id] || []).forEach((q) => {
+        if (anc[sp].has(q)) return;
+        anc[sp].add(q);
+        edge[q] = inner[sp];
+        up(q);
+      });
+    up(sp);
+  });
+  const ofSpouse = (id: string) => Object.keys(anc).find((sp) => anc[sp].has(id));
   // spec 5: siblings oldest-left; with no dates, the record's order
   const sibOrder = (kids: string[]) => {
     const o = kids.every((id) => P[id].born != null)
       ? kids.slice().sort((a, b) => P[a].born! - P[b].born!)
       : kids.slice();
-    const j = o.find((id) => inner[id] != null);
+    const j = o.find((id) => inner[id] != null || edge[id] != null);
     if (j == null) return o;
     const rest = o.filter((id) => id !== j);
-    return inner[j] === 1 ? [...rest, j] : [j, ...rest];
+    return (inner[j] ?? edge[j]) === 1 ? [...rest, j] : [j, ...rest];
   };
   /* spec 5, multiple partnerships: a person with no brothers or sisters in the
    * row keeps the first partner on one side and the next on the other; with
@@ -523,13 +538,15 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
         sibs.forEach((s) => placed.add(s));
         const n = sibs.length;
         sibs.forEach((s, i) =>
-          inner[s] != null ? lay(s, -inner[s], seq, false) : lay(s, n > 1 && i === 0 ? -1 : n > 1 && i === n - 1 ? 1 : manSide(s), seq, n === 1),
+          inner[s] != null
+            ? lay(s, -inner[s], seq, false)
+            : edge[s] != null
+              ? lay(s, edge[s], seq, false)
+              : lay(s, n > 1 && i === 0 ? -1 : n > 1 && i === n - 1 ? 1 : manSide(s), seq, n === 1),
         );
       });
     const roots = ids.filter((id) => gen[id] === g && !placed.has(id) && tied(id));
     if (roots.length) {
-      if (seq.length)
-        throw new Unplaceable("a couple in a row beside another family, with nothing to say which side it goes on");
       const pick = (rs: string[]) =>
         rs
           .slice()
@@ -538,23 +555,18 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
               bondsOf[b].length - bondsOf[a].length ||
               cast.bonds.indexOf(bondsOf[a][0]) - cast.bonds.indexOf(bondsOf[b][0]),
           )[0];
-      const anchor = pick(roots);
-      placed.add(anchor);
-      const first: string[] = [];
-      lay(anchor, P[anchor].g === Sex.Female ? -1 : 1, first, true);
-      const rest = roots.filter((id) => !placed.has(id));
-      if (!rest.length) seq.push(...first);
+      const comps: { a: string; out: string[] }[] = [];
+      for (let rest = roots; rest.length; rest = roots.filter((id) => !placed.has(id))) {
+        const a = pick(rest);
+        placed.add(a);
+        const out: string[] = [];
+        lay(a, comps.length || P[a].g !== Sex.Female ? 1 : -1, out, true);
+        comps.push({ a, out });
+      }
+      if (comps.length === 1 && !seq.length) seq.push(...comps[0].out);
       else {
-        const ofSpouse = (id: string) => (wed ? [wed.a, wed.b].find((s) => inner[s] != null && parents[s].includes(id)) : undefined);
-        const sp1 = first.map(ofSpouse).find((s) => s);
-        const anchor2 = pick(rest);
-        const probe: string[] = [];
-        placed.add(anchor2);
-        lay(anchor2, 1, probe, true);
-        const sp2 = probe.map(ofSpouse).find((s) => s);
-        if (!sp1 || !sp2 || sp1 === sp2 || roots.some((id) => !placed.has(id)))
-          throw new Unplaceable("two separate families side by side in one row");
-        // each side laid so the joining spouse's parents stand at its inner end
+        const spOf = (out: string[]) => out.map(ofSpouse).find((s) => s);
+        // each side laid so the joining spouse's forebears stand at its inner end
         const side = (a: string, sp: string, comp: string[]): string[] => {
           const tryDir = (dir: number) => {
             const out: string[] = [];
@@ -564,19 +576,28 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
             return out;
           };
           const ok = (out: string[]) => {
-            const n = parents[sp].filter((id) => out.includes(id)).length;
-            const idx = parents[sp].filter((id) => out.includes(id)).map((id) => out.indexOf(id));
+            const idx = out.map((id, i) => (anc[sp].has(id) ? i : -1)).filter((i) => i >= 0);
+            const n = idx.length;
             return idx.every((i) => (inner[sp] === 1 ? i >= out.length - n : i < n));
           };
           const r = tryDir(1);
           return ok(r) ? r : tryDir(-1);
         };
         const parts = [
-          { a: anchor, sp: sp1, out: first },
-          { a: anchor2, sp: sp2, out: probe },
-        ].sort((p, q) => inner[q.sp] - inner[p.sp]);
-        parts.forEach((pt) => (pt.out = side(pt.a, pt.sp, pt.out)));
-        seq.push(...parts[0].out, ...parts[1].out);
+          ...(seq.length ? [{ sp: spOf(seq), out: seq.slice() }] : []),
+          ...comps.map((c) => {
+            const sp = spOf(c.out);
+            return { sp, out: sp ? side(c.a, sp, c.out) : c.out };
+          }),
+        ];
+        if (parts.length !== 2 || !parts[0].sp || !parts[1].sp || parts[0].sp === parts[1].sp)
+          throw new Unplaceable(
+            seq.length
+              ? "a couple in a row beside another family, with nothing to say which side it goes on"
+              : "two separate families side by side in one row",
+          );
+        parts.sort((p, q) => inner[q.sp!] - inner[p.sp!]);
+        seq.splice(0, seq.length, ...parts[0].out, ...parts[1].out);
       }
     }
     // a reader with no family drawn stands first, the others at the end beside them

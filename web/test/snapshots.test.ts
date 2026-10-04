@@ -834,6 +834,57 @@ describe("a couple where both partners' parents are in the record", () => {
     expect(Math.abs(row.indexOf("h") - row.indexOf("w"))).toBe(1);
   });
 
+  const sound = (L: ReturnType<typeof layout>, cast: Cast) => {
+    const { x, y } = L;
+    const ids = Object.keys(x);
+    expect(ids.sort()).toEqual(Object.keys(cast.people).sort());
+    ids.forEach((a) =>
+      ids.forEach((b) => {
+        if (a !== b && y[a] === y[b]) expect(Math.abs(x[a] - x[b])).toBeGreaterThanOrEqual(L.w);
+      }),
+    );
+    cast.bonds.forEach(({ a, b }) => {
+      expect(y[a]).toBe(y[b]);
+      expect(ids.filter((id) => y[id] === y[a] && x[id] > Math.min(x[a], x[b]) && x[id] < Math.max(x[a], x[b]))).toEqual([]);
+    });
+    cast.kids.forEach(({ of, kids }) =>
+      kids.forEach((k) => {
+        expect(y[k]).toBeGreaterThan(y[of[0]]);
+        expect(Math.min(...of.map((o) => x[o])) <= x[k] && x[k] <= Math.max(...of.map((o) => x[o]))).toBe(true);
+      }),
+    );
+    expect(x.h).toBeLessThan(x.w);
+  };
+  const above = (sides: ("h" | "w")[]): Cast => {
+    const c = joined();
+    sides.forEach((s) => {
+      const m = s === "h" ? "hm" : "wm";
+      c.people[`${s}g`] = shape(`${s.toUpperCase()}gramps`, Sex.Male, 1890);
+      c.people[`${s}n`] = shape(`${s.toUpperCase()}nana`, Sex.Female, 1892);
+      c.bonds.push(wed(`${s}g`, `${s}n`));
+      c.kids.push({ of: [`${s}g`, `${s}n`], kids: [m] });
+    });
+    return c;
+  };
+
+  // R-0545, R-0187
+  it("joins the families with great-grandparents above the wife's side", () => {
+    const c = above(["w"]);
+    sound(layout(c), c);
+  });
+
+  // R-0545, R-0187
+  it("joins the families with great-grandparents above the husband's side", () => {
+    const c = above(["h"]);
+    sound(layout(c), c);
+  });
+
+  // R-0545, R-0187
+  it("joins the families with great-grandparents above both sides", () => {
+    const c = above(["h", "w"]);
+    sound(layout(c), c);
+  });
+
   // R-0545
   it("refuses two couples each joining two families", () => {
     expect(() =>
