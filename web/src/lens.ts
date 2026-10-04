@@ -40,6 +40,8 @@ export interface LensHooks {
   list: { shown(): boolean; open(): void } | null;
   /** After every redraw of the row, for whatever follows the picture (the address bar). */
   changed?(): void;
+  /** Before a chip aims the picture, for whatever must show it first (the folded picture). */
+  aiming?(): void;
 }
 
 // Hidden for now (Patrick, 2026-09-29: "the design is too busy and I'm not sure what value that brings yet").
@@ -128,25 +130,27 @@ export class Lens {
   }
 
   /** The coach pointing: the events its words name become the spotlight, and
-   * everything else on the wire recedes. A chip only ever aims the picture; it
-   * never changes the picture's level, so nothing below it moves (the owner:
-   * chat bubbles must never move from a tap on a chip). */
+   * everything else on the wire recedes. A chip never changes the picture's
+   * height, so nothing below it moves (the owner: chat bubbles must never move
+   * from a tap on a chip). */
   aim(chip: Chip): void {
-    const { clusters, events } = this.hooks.timeline();
-    // a person's chip names that person's dated events on the line
-    const ids = chip.kind === ChipKind.Person ? events.filter((e) => e.person === Number(chip.target) && e.dateTime).map((e) => e.id) : aimedEvents(chip, clusters);
+    const { clusters } = this.hooks.timeline();
+    const ids = aimedEvents(chip, clusters);
     if (!ids.length) return;
+    this.hooks.aiming?.();
     // A chip in the coach's words does exactly what a tap on the picture does:
     // there is one selection, wherever the reader touched it. A chip naming an
-    // event no cluster claims selects that event; a chip naming a cluster, or an
-    // event inside one, selects the cluster, since an event in a cluster has no
-    // mark of its own on the line (R-0543).
+    // event selects that event, opening the cluster it belongs to (Patrick,
+    // 2026-10-01); a chip naming a cluster selects the cluster (R-0543).
+    if (chip.kind === ChipKind.Event) {
+      this.apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(ids[0]) }), ids);
+      return;
+    }
     const cluster = clusters.find((c) => ids.every((id) => c.event_ids.includes(id)));
-    if (cluster) {
-      this.openCluster(cluster);
-      // a chip may name a cluster off screen, so the line goes to it
-      this.picture.spotlight(cluster.event_ids);
-    } else this.apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(ids[0]) }), ids);
+    if (!cluster) return;
+    this.apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Cluster, id: cluster.id }));
+    // a chip may name a cluster off screen, so the line goes to it
+    this.picture.spotlight(cluster.event_ids);
   }
 
   /** A cluster opened, from its pill or from a chip that names it: the one
@@ -264,7 +268,7 @@ export class Lens {
   /** The path over the line: where the reader is, from the whole timeline
    * down, each earlier step the way back to it (R-0540). */
   crumb(): void {
-    this.hosts.path.innerHTML = pathRow(this.picture.path());
+    this.hosts.path.innerHTML = pathRow(this.picture.path(), this.picture.picked());
     this.hosts.info.hidden = !this.picture.opened();
   }
 
