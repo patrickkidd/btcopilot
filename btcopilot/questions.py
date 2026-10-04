@@ -64,6 +64,8 @@ def asked(diagram_id: int, data: DiagramData) -> list[dict]:
             "asked_in": where.get(q["id"]),
             "evidence": [_shown(data, one) for one in q.get("evidence") or []],
             "pushback": q.get("pushback"),
+            "case_report_card": q.get(record.CARD),
+            "answer": q.get("answer") and _answer(data, q["answer"]),
         }
         for q in data.questions
         if q["asked_at"] is not None
@@ -79,6 +81,13 @@ def _shown(data: DiagramData, one: dict) -> dict:
         out["discussion_id"] = statement and statement.discussion_id
         out["at"] = statement and statement.created_at.date().isoformat()
     return out
+
+
+def _answer(data: DiagramData, one: dict) -> dict:
+    """The person's message that answered a question, in their own words, or
+    with no words once its session is gone (R-0708)."""
+    statement = db.session.get(Statement, one["id"])
+    return {**_shown(data, one), "text": statement and statement.text}
 
 
 def sessions(diagram: Diagram) -> list[Discussion]:

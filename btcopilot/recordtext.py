@@ -161,6 +161,10 @@ def note_line(question: dict) -> str:
             line += f" about {question['item_kind']} {question['item_id']}"
     if status == QuestionState.Resolved:
         line += f" outcome={question['outcome']}"
+    if question.get("answer"):
+        line += f" answer=message {question['answer']['id']}"
+    if question.get(record.CARD):
+        line += f" card={question[record.CARD]}"
     return line
 
 

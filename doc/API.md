@@ -53,6 +53,24 @@ resolves.
 statement_id}}` for events whose coding session is known, which is what "coded
 in …" reads. Events never traced are absent.
 
+Each entry of `asked_questions` also carries `case_report_card`: `main_guess`,
+`own_part`, `choice`, `work_on` or null, the case report card the coach put it
+on (R-0709). One guess is on each card, the newest; `work_on` holds up to three,
+in record order. A question is only ever on `own_part` or `choice`. And
+`answer`: null, or the person's own message that answered the question,
+`{kind: "statement", id, label, discussion_id, at, text}`, with `text` their
+words (null once the session is gone); on the `own_part` question it is the
+person's view of their own part (R-0708). The case report reads this same
+`/timeline`; there is no case report endpoint.
+
+## Case report
+
+`GET /case-report-passages?diagram_id=` — the passages behind each card's book
+button, `{key: [{text, by}]}`, read from `case-report/passages.json` in the
+private corpus the way the theory pages are, and given only to a signed-in user
+who may open the diagram; any other is a 404 (R-0692, R-0715). The keys are the
+mockup's: `why`, `1` to `6`, `7a`, `9a`, `10`, `3s` and `order`.
+
 ## Preferences
 
 `GET /preferences`, `PATCH /preferences` — one object: `speak`, `proactive`,

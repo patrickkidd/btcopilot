@@ -454,6 +454,8 @@ def test_the_page_gets_asked_questions_only_each_with_where_it_was_asked(web, fa
             },
             "evidence": [],
             "pushback": None,
+            "case_report_card": None,
+            "answer": None,
         }
     ]
 

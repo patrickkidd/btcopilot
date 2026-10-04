@@ -527,6 +527,15 @@ class FactState(enum.StrEnum):
     NotAsked = "not_asked"
 
 
+class CaseReportCard(enum.StrEnum):
+    """The case report card a question or an impression is on (R-0709)."""
+
+    MainGuess = "main_guess"
+    OwnPart = "own_part"
+    Choice = "choice"
+    WorkOn = "work_on"
+
+
 class Pushback(enum.StrEnum):
     Partly = "partly"
 

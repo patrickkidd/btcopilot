@@ -66,6 +66,8 @@ class ToolText(enum.StrEnum):
     Keep = "keep"
     Drop = "drop"
     Take = "take"
+    CaseReportCard = "case_report_card"
+    Answer = "answer"
 
 
 class Role(enum.StrEnum):

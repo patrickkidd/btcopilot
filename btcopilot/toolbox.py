@@ -32,6 +32,7 @@ from btcopilot.extensions import db
 from btcopilot.models import Diagram, User
 from btcopilot.schema import (
     MIN_CLUSTER_EVENTS,
+    CaseReportCard,
     ClusterSource,
     DateCertainty,
     ITEM_COLLECTIONS,
@@ -187,6 +188,14 @@ ASKED_IN = {
         "that said it."
     ),
 }
+
+
+def _card_param(cards, means: str, clear: bool = False) -> dict:
+    values = [card.value for card in cards]
+    if clear:
+        return {"type": ["string", "null"], "enum": [*values, None], "description": means}
+    return {"type": "string", "enum": values, "description": means}
+
 
 VERSION = {
     "type": "integer",
@@ -484,13 +493,19 @@ def schemas(coder: bool = False) -> list[dict]:
                         "description": means[prompts.ToolText.Fact],
                     },
                     "asked_in": ASKED_IN,
+                    "case_report_card": _card_param(
+                        record.QUESTION_CARDS, means[prompts.ToolText.CaseReportCard]
+                    ),
                 },
                 "required": ["text", "kind", "state"],
             },
         },
         {
             "name": ToolName.SetQuestion.value,
-            "description": "Mark a kept question asked, or close it saying how it ended.",
+            "description": (
+                "Mark a kept question asked, close it saying how it ended, or put "
+                "it on a case report card or take it off one."
+            ),
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -505,8 +520,17 @@ def schemas(coder: bool = False) -> list[dict]:
                         "enum": [o.value for o in record.QUESTION.ours],
                         "description": "How it ended; only with resolved.",
                     },
+                    "answer": {
+                        "type": "integer",
+                        "description": means[prompts.ToolText.Answer],
+                    },
+                    "case_report_card": _card_param(
+                        record.QUESTION_CARDS,
+                        means[prompts.ToolText.CaseReportCard],
+                        clear=True,
+                    ),
                 },
-                "required": ["id", "version", "state"],
+                "required": ["id", "version"],
             },
         },
         {
@@ -553,6 +577,9 @@ def schemas(coder: bool = False) -> list[dict]:
                         "enum": [QuestionState.Held.value, QuestionState.Raised.value],
                     },
                     "asked_in": ASKED_IN,
+                    "case_report_card": _card_param(
+                        CaseReportCard, means[prompts.ToolText.CaseReportCard]
+                    ),
                 },
                 "required": ["text", "evidence", "state"],
             },
@@ -560,8 +587,9 @@ def schemas(coder: bool = False) -> list[dict]:
         {
             "name": ToolName.SetImpression.value,
             "description": (
-                "Raise a kept impression, or close one: revised when you raise new "
-                "words for it, let go when you drop it."
+                "Raise a kept impression, close one (revised when you raise new "
+                "words for it, let go when you drop it), or put it on a case "
+                "report card or take it off one."
             ),
             "input_schema": {
                 "type": "object",
@@ -577,8 +605,11 @@ def schemas(coder: bool = False) -> list[dict]:
                         "enum": [o.value for o in record.IMPRESSION.ours],
                         "description": "How it ended; only with resolved.",
                     },
+                    "case_report_card": _card_param(
+                        CaseReportCard, means[prompts.ToolText.CaseReportCard], clear=True
+                    ),
                 },
-                "required": ["id", "version", "state"],
+                "required": ["id", "version"],
             },
         },
         {
@@ -1530,6 +1561,8 @@ class Toolbox:
                 )
         if state is rules.shown:
             fields.update(self._asked(said))
+        if args.get(record.CARD) is not None:
+            fields[record.CARD] = choice(CaseReportCard, args[record.CARD], "cards").value
         return self._write(ItemKind.Question, None, fields, said and said.id)
 
     def _set_question(self, args: dict) -> tuple[str, dict]:
@@ -1542,12 +1575,25 @@ class Toolbox:
         found = next((q for q in self.data.questions if q["id"] == str(args["id"])), None)
         if found is None or record.note(found) is not rules:
             raise ToolError(f"No {rules.noun} {args['id']} in the record", GONE)
-        state = choice(QuestionState, args["state"], "states")
-        fields = {"state": state.value}
+        fields = {}
+        if args.get("state") is not None:
+            state = choice(QuestionState, args["state"], "states")
+            fields["state"] = state.value
+            if state is rules.shown:
+                fields.update(self._asked(None))
         if args.get("outcome") is not None:
             fields["outcome"] = choice(QuestionOutcome, args["outcome"], "outcomes").value
-        if state is rules.shown:
-            fields.update(self._asked(None))
+        if args.get("answer") is not None:
+            fields["answer"] = self._cited(self._mine(args["answer"]))
+        elif (
+            fields.get("outcome") == QuestionOutcome.Answered
+            and found.get(record.CARD)
+            and self.said is not None
+        ):
+            fields["answer"] = self._cited(self._mine(self.said.id))
+        if record.CARD in args:
+            card = args[record.CARD]
+            fields[record.CARD] = card and choice(CaseReportCard, card, "cards").value
         return self._write(ItemKind.Question, args["id"], fields)
 
     def _evidence(self, one: dict) -> dict:
@@ -1564,7 +1610,34 @@ class Toolbox:
         )
         if statement is None:
             raise ToolError(f"No message {one['id']} in this family's sessions", GONE)
-        return {"kind": kind.value, "id": statement.id, "label": said_label(statement)}
+        return self._cited(statement)
+
+    @staticmethod
+    def _cited(statement: Statement) -> dict:
+        """A message as the record keeps it: what an impression rests on, or
+        the person's own answer to a question (R-0708)."""
+        return {
+            "kind": EvidenceKind.Statement.value,
+            "id": statement.id,
+            "label": said_label(statement),
+        }
+
+    def _mine(self, statement_id: int) -> Statement:
+        statement = (
+            Statement.query.join(Discussion)
+            .filter(
+                Statement.id == statement_id,
+                Discussion.diagram_id == self.diagram_id,
+                Statement.speaker_id == Discussion.chat_user_speaker_id,
+            )
+            .one_or_none()
+        )
+        if statement is None:
+            raise ToolError(
+                f"Message {statement_id} is not one the person wrote in this family's sessions",
+                "That is not something the person said in this family's sessions.",
+            )
+        return statement
 
     def _asked(self, said: Statement | None) -> dict:
         """The session a question is asked in and the day: this turn's, or the

@@ -246,6 +246,7 @@ def edit(deltas: list[dict]):
 
 
 from btcopilot.routes import (  # noqa: E402  bp must exist first
+    casereport,
     diagrams,
     events,
     fixtures,
@@ -272,6 +273,12 @@ def init_app(app):
         repo=app.config["THEORY_REPO"],
         ref=app.config["THEORY_REF"],
         path=app.config["THEORY_PATH"],
+        token=app.config.get("THEORY_GITHUB_TOKEN"),
+    )
+    app.extensions["passages"] = TheoryPages(
+        repo=app.config["THEORY_REPO"],
+        ref=app.config["THEORY_REF"],
+        path=app.config["PASSAGES_PATH"],
         token=app.config.get("THEORY_GITHUB_TOKEN"),
     )
     # the reports each sender made in the last hour

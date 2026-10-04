@@ -313,6 +313,8 @@ def test_the_page_gets_raised_impressions_with_labelled_evidence_and_never_a_hel
                 },
             ],
             "pushback": None,
+            "case_report_card": None,
+            "answer": None,
         }
     ]
     everything = [

@@ -12,7 +12,8 @@ class Unavailable(Exception):
 
 
 class TheoryPages:
-    """The theory's concept pages, read from the GitHub contents API. Each
+    """Pages of the private corpus (the theory's concept pages, the case
+    report's passages), read from the GitHub contents API. Each
     file is held for `ttl` seconds and then revalidated by its ETag, so a push
     to the theory repo shows without a deploy, and nothing older than `ttl` is
     served once GitHub stops answering (FD-364)."""
@@ -61,7 +62,7 @@ class TheoryPages:
         url = f"{GITHUB_API}/repos/{self.repo}/contents/{self.path}/{key}".rstrip("/")
         if not self.token:
             raise Unavailable(
-                f"The concept pages cannot be read from {url}: "
+                f"The private corpus cannot be read from {url}: "
                 "FLASK_THEORY_GITHUB_TOKEN is not set."
             )
         headers = {"Accept": accept, "Authorization": f"Bearer {self.token}"}
@@ -75,7 +76,7 @@ class TheoryPages:
                 response.raise_for_status()
         except requests.RequestException as e:
             raise Unavailable(
-                f"The concept pages cannot be read from GitHub ({url}): {e}"
+                f"The private corpus cannot be read from GitHub ({url}): {e}"
             ) from e
         return response
 
