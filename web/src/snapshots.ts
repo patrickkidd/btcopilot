@@ -353,7 +353,8 @@ export class Told {
       moves,
       kin,
       label: `${now.date}: ${snap.fact}`,
-      place: { now: placeOf(now), was: i > 0 ? placeOf(this.steps[i - 1]) : null },
+      // the whole family moves no one out of their own place for a step
+      place: this.whole ? undefined : { now: placeOf(now), was: i > 0 ? placeOf(this.steps[i - 1]) : null },
     });
     return {
       svg,
@@ -426,7 +427,10 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[], everyo
   r.tl.pair_bonds.forEach((pb) => {
     const pair = [pb.person_a, pb.person_b].filter((p): p is number => p != null).map(key);
     const inCast = pair.filter((id) => cast.has(id));
-    if (pair.length === 2 && inCast.length === 2) bonds.push({ a: pair[0], b: pair[1], ...tieBefore(r, pb, firstT) });
+    if (pair.length === 2 && inCast.length === 2) {
+      const bond = { a: pair[0], b: pair[1], ...tieBefore(r, pb, firstT), from: bondFrom(r, pb) };
+      bonds.push(bond);
+    }
     const children = r.tl.people.filter((p) => p.parents === pb.id && cast.has(key(p.id))).map((p) => key(p.id));
     if (children.length && inCast.length === pair.length) kids.push({ of: pair, kids: sortedIn(r, children) });
   });
@@ -496,6 +500,13 @@ function sortedIn(r: Family, ids: string[]): string[] {
   const order = [...r.people.keys()];
   return ids.slice().sort((a, b) => order.indexOf(a) - order.indexOf(b));
 }
+
+/** The year of a couple's first dated marriage, start, separation or divorce. */
+const bondFrom = (r: Family, pb: PairBond): number | undefined =>
+  r.tl.events
+    .filter((e) => e.dateTime && (COUPLE_KINDS.has(e.kind ?? "") || ENDS[e.kind ?? ""]) && r.bondOf(e.person, e.spouse) === pb)
+    .map((e) => Number(e.dateTime!.slice(0, 4)))
+    .sort((a, b) => a - b)[0];
 
 /** How a couple stood before the case's first snapshot, and whether they
  * married. Only the bond's own mark makes the line solid; a marriage or divorce
