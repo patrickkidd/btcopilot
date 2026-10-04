@@ -29,12 +29,6 @@ const SERVER_PATHS = [
   "/static",
 ];
 
-/** The case page gallery (FD-367): `MOCKUP=1 vite build` builds mockup.html
- * alone, into mockup/dist, with no source maps and nothing under the app's
- * static folder; web/mockup/build.mjs then inlines it into one HTML file. The
- * app's own build is untouched when MOCKUP is unset. */
-const MOCKUP = !!process.env.MOCKUP;
-
 const CERT_DIR = process.env.DEV_CERT_DIR ?? new URL("./certs/", import.meta.url).pathname;
 const DEV_HOST = process.env.DEV_HOST ?? "turin.local";
 function certs(): { key: Buffer; cert: Buffer } | undefined {
@@ -139,7 +133,7 @@ function page(): Plugin {
 }
 
 export default defineConfig({
-  base: MOCKUP ? "./" : BASE,
+  base: BASE,
   plugins: [
     page(),
     {
@@ -157,8 +151,7 @@ export default defineConfig({
     },
     {
       name: "fd-source-maps",
-      // the mockup build makes no maps and must not empty the app's folder of them
-      apply: (_, env) => env.command === "build" && !MOCKUP,
+      apply: "build",
       writeBundle({ dir }, bundle) {
         rmSync(MAPS, { recursive: true, force: true });
         mkdirSync(MAPS, { recursive: true });
@@ -178,25 +171,12 @@ export default defineConfig({
       },
     },
   ],
-  build: MOCKUP
-    ? {
-        outDir: "mockup/dist",
-        emptyOutDir: true,
-        sourcemap: false,
-        cssCodeSplit: false,
-        modulePreload: false,
-        rollupOptions: {
-          // MOCKUP_ENTRY names another gallery's page (mockup5.html for version 5)
-          input: { mockup: new URL(`./${process.env.MOCKUP_ENTRY ?? "mockup.html"}`, import.meta.url).pathname },
-          output: { inlineDynamicImports: true },
-        },
-      }
-    : {
-        outDir: "../btcopilot/static/web",
-        emptyOutDir: true,
-        // made, but never named in the bundle, and moved out of what is served
-        sourcemap: "hidden",
-      },
+  build: {
+    outDir: "../btcopilot/static/web",
+    emptyOutDir: true,
+    // made, but never named in the bundle, and moved out of what is served
+    sourcemap: "hidden",
+  },
   server: {
     host: "0.0.0.0",
     port: 8891,
