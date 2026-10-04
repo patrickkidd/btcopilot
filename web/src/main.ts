@@ -373,11 +373,6 @@ const AGENDA: Sub = {
 /** The page of one meeting takes its address from the meeting it opens on. */
 const MEET: Sub = { title: "Meeting", screen: $("meet-screen") };
 store.watch(new CaseReport($("case-body")));
-const CASE: Sub = {
-  title: "Case report",
-  screen: $("case-screen"),
-  at: address(Place.CaseReport),
-};
 const PAIRS: Sub = {
   title: "Better replies",
   screen: $("pairs-screen"),
@@ -1366,9 +1361,11 @@ function screen(which: Screen): void {
   $("result-screen").hidden = which !== Screen.Result;
   $("coding-screen").hidden = which !== Screen.Coding;
   $("rules-screen").hidden = which !== Screen.Rules;
+  $("case-screen").hidden = which !== Screen.CaseReport;
   // The list covers the title row rather than taking its place: it is over
   // everything, with its own back arrow.
-  document.querySelector<HTMLElement>(".titlerow")!.hidden = which === Screen.Rules;
+  document.querySelector<HTMLElement>(".titlerow")!.hidden =
+    which === Screen.Rules || which === Screen.CaseReport;
   widen(which);
   // Done and the guidelines belong to the coding screen.
   // A submitted coding is read, not added to: no Done and nothing to type
@@ -1381,7 +1378,7 @@ function screen(which: Screen): void {
   // R-0278).
   $("coding-info").hidden = which !== Screen.Coding;
   $("coding-back").hidden = !CODING_SCREENS.includes(which);
-  $("account").hidden = which === Screen.Rules;
+  $("account").hidden = which === Screen.Rules || which === Screen.CaseReport;
   // The sheet's door stands in the chat's own input bar, so it is only on the
   // chat, and only for those with something in the sheet; every other screen
   // carries the back arrow the frames draw instead.
@@ -1397,6 +1394,10 @@ function caseDoor(): void {
   $("case-open").hidden = here !== Screen.Chat || settings.top() !== null;
 }
 $("case-open").addEventListener("click", () => void navigate(address(Place.CaseReport)));
+$("case-close").addEventListener("click", () => {
+  track.tap(Feature.Back);
+  void navigate(address(Place.Chat));
+});
 
 /** The app is a phone everywhere else; it widens only where something stands
  * beside the thread — the coding screen, the chat screen for a professional
@@ -1556,6 +1557,7 @@ function current(): string {
   }
   if (adding()) return address(menu.showing() === Tab.People ? Place.NewPerson : Place.NewEvent);
   if (CODING_SCREENS.includes(here)) return screenAt;
+  if (here === Screen.CaseReport) return address(Place.CaseReport);
   if (sessions.up) return address(Place.Sessions);
   const play = pbp.at();
   if (play !== null) return address(Place.Play, play);
@@ -1747,7 +1749,10 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
   [Place.Events]: () => toList(Tab.Events),
   [Place.People]: () => toList(Tab.People),
   [Place.Questions]: () => toList(Tab.Questions),
-  [Place.CaseReport]: () => toAccount(CASE),
+  [Place.CaseReport]: () => {
+    uncover();
+    screen(Screen.CaseReport);
+  },
   [Place.Play]: async ([id]) => {
     await toPlay(Number(id));
   },

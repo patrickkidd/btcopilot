@@ -16,6 +16,7 @@ export enum Screen {
   Meeting = "meeting",
   Result = "result",
   Pairs = "pairs",
+  CaseReport = "case_report",
 }
 
 export enum Feature {
