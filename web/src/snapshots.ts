@@ -1,6 +1,6 @@
 import {
   arrange,
-  Unplaceable,
+  Undrawable,
   draw,
   Mark,
   Sex,
@@ -250,7 +250,7 @@ export class Told {
       try {
         return arrange(this.cast);
       } catch (e) {
-        if (!(e instanceof Unplaceable)) throw e;
+        if (!(e instanceof Undrawable)) throw e;
         return null;
       }
     })();
@@ -405,7 +405,8 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[]): Cast 
       const next = [...path, ...of];
       of.forEach((p) => {
         if (cast.has(p)) next.forEach(add);
-        climb(p, next);
+        // someone recorded as their own forebear ends the climb; the picture refuses them
+        if (!path.includes(p)) climb(p, next);
       });
     };
     [...cast].forEach((id) => climb(id, []));

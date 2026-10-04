@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { arrange, crosses, draw, Mark, Side, VIEW, layout, Sex, Tie, type Cast } from "../src/diagram";
+import { arrange, bar, crosses, draw, Mark, Side, Undrawable, VIEW, layout, Sex, Tie, type Cast, type Layout } from "../src/diagram";
 import { among, gapText, Told, untold } from "../src/snapshots";
 import type { Case, Timeline } from "../src/types";
 import {
@@ -927,5 +927,123 @@ describe("a couple where both partners' parents are in the record", () => {
         { fit: false },
       ),
     ).toThrow(/two couples each joining two families/);
+  });
+
+  // R-0545
+  it("never reaches the fallback for a family the row rules place", () => {
+    const casts = [family(), brood(2), brood(5), joined(), above(["h"]), above(["w"]), above(["h", "w"])];
+    casts.forEach((c) => expect(arrange(c).loose).toBe(false));
+    [death(), apart()].forEach((c) => expect(told(c).layout.loose).toBe(false));
+  });
+});
+
+describe("a family the row rules cannot place", () => {
+  const sh = shape;
+  const { Male: M, Female: F } = Sex;
+  const wed = (a: string, b: string) => ({ a, b, st: Tie.Married, married: true });
+  const cast = (people: Cast["people"], bonds: Cast["bonds"], kids: Cast["kids"], index: string): Cast => ({
+    ...base(people),
+    bonds,
+    kids,
+    index,
+  });
+  const joined = (people: Cast["people"], bonds: Cast["bonds"], kids: Cast["kids"]) =>
+    cast(
+      { hf: sh("Hal", M, 1920), hm: sh("Hope", F, 1922), wf: sh("Walt", M, 1921), wm: sh("Wren", F, 1923), h: sh("Hugo", M, 1950), w: sh("Wanda", F, 1952), c: { ...sh("Cleo", F, 1975), you: true }, ...people },
+      [wed("hf", "hm"), wed("wf", "wm"), wed("h", "w"), ...bonds],
+      [{ of: ["hf", "hm"], kids: ["h"] }, { of: ["wf", "wm"], kids: ["w"] }, { of: ["h", "w"], kids: ["c"] }, ...kids],
+      "c",
+    );
+  const families: Record<string, Cast> = {
+    "three partners for one person with nothing beside": cast(
+      { a: { ...sh("Al", M, 1950), you: true }, b: sh("Bea", F, 1951), c: sh("Cy", F, 1952), e: sh("Eve", F, 1953) },
+      [wed("a", "b"), wed("a", "c"), wed("a", "e")],
+      [],
+      "a",
+    ),
+    "a couple across generations": cast(
+      { g1: sh("Gus", M, 1900), g2: sh("Gia", F, 1902), b: sh("Bea", F, 1930), p: sh("Pat", M, 1932), q: sh("Quin", F, 1933), a: sh("Al", M, 1928), c: { ...sh("Cy", F, 1955), you: true }, n: sh("Nia", F, 1958) },
+      [wed("g1", "g2"), wed("a", "b"), wed("p", "q"), wed("a", "n")],
+      [{ of: ["g1", "g2"], kids: ["b", "p"] }, { of: ["p", "q"], kids: ["n"] }, { of: ["a", "b"], kids: ["c"] }],
+      "c",
+    ),
+    "two separate families in one row": joined(
+      { hs: sh("Sue", F, 1918), k: sh("Kit", M, 1945), s1: sh("Sam", M, 1890), s2: sh("Sal", F, 1892), w1: sh("Will", M, 1895), w2: sh("Wilma", F, 1897) },
+      [wed("hf", "hs"), wed("s1", "s2"), wed("w1", "w2")],
+      [{ of: ["hf", "hs"], kids: ["k"] }, { of: ["s1", "s2"], kids: ["hs"] }, { of: ["w1", "w2"], kids: ["wm"] }],
+    ),
+    "two joining couples": (() => {
+      const c = joined({ h3: sh("Ivo", M, 1955), w2: sh("Una", F, 1956) }, [wed("h3", "w2")], []);
+      c.kids[0].kids.push("h3");
+      c.kids[1].kids.push("w2");
+      return c;
+    })(),
+    "another family between a joining couple": joined({ q: sh("Quin", M, 1951) }, [wed("hm", "wf")], [{ of: ["hm", "wf"], kids: ["q"] }]),
+    "a couple not connected to the reader's family": cast(
+      { ...family().people, x: sh("Xan", M, 1960), y: sh("Yva", F, 1962) },
+      [...family().bonds, wed("x", "y")],
+      family().kids,
+      "c",
+    ),
+  };
+  const frame = (L: Layout) => ({
+    t: 2000,
+    bonds: L.bonds.map((b) => ({ ...b, fresh: false, hot: false })),
+    marks: [],
+    died: new Set<string>(),
+    moves: [],
+    kin: [],
+    label: "",
+  });
+
+  Object.entries(families).forEach(([what, c]) => {
+    // R-0545
+    it(`draws ${what}, everyone once, no shapes overlapping, each child's line on their parents' bar`, () => {
+      expect(() => layout(c)).toThrow(/cannot place/);
+      const L = arrange(c);
+      expect(L.loose).toBe(true);
+      const svg = draw(L, frame(L));
+      Object.keys(c.people).forEach((id) => expect(svg.split(`class="p" data-id="${id}"`)).toHaveLength(2));
+      const ids = Object.keys(c.people);
+      const e = (id: string) => (L.w / 2) * (L.P[id].you ? 1.2 : 1);
+      ids.forEach((a) =>
+        ids.forEach((b) => {
+          if (a === b) return;
+          const apart = Math.abs(L.x[a] - L.x[b]) >= e(a) + e(b) || Math.abs(L.y[a] - L.y[b]) >= e(a) + e(b);
+          expect(apart, `${a} and ${b} overlap`).toBe(true);
+        }),
+      );
+      const kin = els(svg, "path", "kin").map((p) => p.d.match(/^M(\S+) (\S+)L(\S+) (\S+)$/)!.slice(1).map(Number));
+      c.kids.forEach((k) => {
+        const b = bar(L, { a: k.of[0], b: k.of[1] });
+        k.kids.forEach((id) => {
+          const line = kin.find(([x0, y0]) => x0 === Number(L.x[id].toFixed(1)) && Math.abs(y0 - (L.y[id] - e(id))) < 0.2);
+          expect(line, `${id} has a line`).toBeDefined();
+          const [, , x1, y1] = line!;
+          expect(y1).toBe(Number(b.y.toFixed(1)));
+          expect(x1).toBeGreaterThanOrEqual(Number(b.x0.toFixed(1)));
+          expect(x1).toBeLessThanOrEqual(Number(b.x1.toFixed(1)));
+        });
+      });
+      expect(draw(arrange(c), frame(L))).toBe(svg);
+    });
+  });
+
+  // R-0545
+  it("draws a family with no tie to the reader's to the right of it", () => {
+    const L = arrange(families["a couple not connected to the reader's family"]);
+    expect(Math.min(L.x.x, L.x.y)).toBeGreaterThan(Math.max(L.x.a, L.x.b, L.x.c, L.x.d));
+  });
+
+  // R-0545
+  it("refuses only a family where someone is their own forebear, naming them", () => {
+    const c = cast(
+      { a: sh("Al", M, 1950), b: sh("Bea", F, 1951), c: { ...sh("Cy", M, 1975), you: true }, d: sh("Di", F, 1976) },
+      [wed("a", "b"), wed("c", "d")],
+      [{ of: ["a", "b"], kids: ["c"] }, { of: ["c", "d"], kids: ["a"] }],
+      "c",
+    );
+    expect(() => arrange(c)).toThrow(Undrawable);
+    expect(() => arrange(c)).toThrow(/Al, Cy|Cy, Al/);
   });
 });

@@ -325,8 +325,9 @@ test.describe("what the coach aims at with people and moves", () => {
  * his parents' children on the left, hers on the right, their daughter the
  * reader; each pair is [his side's child, her side's child] married to each
  * other; the cluster's events are about `about`, toward `toward`, and name
- * everyone, so the whole family is drawn. */
-const joinedFamily = (pairs: [string, string][], sibs: number, about: string, toward: string) =>
+ * everyone, so the whole family is drawn. With `loop`, Hal is recorded as the
+ * first couple's child, so he is his own forebear. */
+const joinedFamily = (pairs: [string, string][], sibs: number, about: string, toward: string, loop = false) =>
   async (route: import("@playwright/test").Route) => {
     const tl = await (await route.fetch()).json();
     let id = 9000;
@@ -358,23 +359,46 @@ const joinedFamily = (pairs: [string, string][], sibs: number, about: string, to
     }
     const pbs = pairs.map(([h, w]) => bond(h, w));
     add("Cleo", "female", 1975, pbs[0], true);
+    if (loop) people.find((p) => p.name === "Hal")!.parents = pbs[0];
     for (const e of tl.events) Object.assign(e, { person: ids[about], person_name: about, spouse: null, child: null, relationshipTargets: [ids[toward]], relationshipTriangles: Object.values(ids) });
     Object.assign(tl, { people, pair_bonds });
     await route.fulfill({ json: tl });
   };
 
-test.describe("a family the picture cannot draw", () => {
+test.describe("a family the row rules cannot place", () => {
   test.use({ storageState: stateFor("play") });
 
-  // R-0545
-  test("opens the play-by-play with its words and one plain line where the picture would be", async ({ page }) => {
+  const opened = async (page: Page, route: ReturnType<typeof joinedFamily>) => {
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(e.message));
     page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, joinedFamily([["Hugo", "Wanda"], ["Ivo", "Una"]], 0, "Hugo", "Wanda"));
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, route);
     await settle(page);
     await stored(page).click();
     await expect(drawer(page)).toBeVisible();
+    return errors;
+  };
+
+  // R-0545
+  // ruled 2026-10-04: laid out generation by generation instead of refused
+  test("draws two couples each joining two families, everyone once", async ({ page }) => {
+    const errors = await opened(page, joinedFamily([["Hugo", "Wanda"], ["Ivo", "Una"]], 0, "Hugo", "Wanda"));
+    const draw = drawer(page).locator(".draw");
+    await expect(draw.locator("svg")).toBeVisible();
+    await expect(draw.locator(".none")).toHaveCount(0);
+    const ids = await draw.locator("svg .p").evaluateAll((gs) => gs.map((g) => (g as SVGGElement).dataset.id));
+    expect(ids).toHaveLength(9);
+    expect(new Set(ids).size).toBe(ids.length);
+    await expect.poll(() => step(page)).toBe("1 of 4");
+    await drawer(page).locator('[data-act="next"]').click();
+    await expect.poll(() => step(page)).toBe("2 of 4");
+    await expect(draw.locator("svg")).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  // R-0545
+  test("refuses only someone recorded as their own forebear: its words, and one plain line where the picture would be", async ({ page }) => {
+    const errors = await opened(page, joinedFamily([["Hugo", "Wanda"]], 0, "Hugo", "Wanda", true));
     await expect(drawer(page).locator(".draw")).toHaveText("This family can’t be drawn here yet.");
     await expect.poll(() => step(page)).toBe("1 of 4");
     const words = await drawer(page).locator(".scroll").innerText();
