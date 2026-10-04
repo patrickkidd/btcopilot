@@ -453,11 +453,30 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   // ---- the order of each row, top to bottom ----
   const placed = new Set<string>();
   const at: Record<string, number> = {};
+  // men on the left, so a woman's partners go to her left
+  const manSide = (id: string) => (P[id].g === Sex.Female ? -1 : 1);
+  // Kerr fig. 14: a couple where both partners' parents are in the record joins
+  // the two families, the man's on the left, each spouse at the inner end of their sibship
+  const join = cast.bonds.filter((b) => parents[b.a] && parents[b.b]);
+  if (join.length > 1) throw new Unplaceable("two couples each joining two families");
+  const inner: Record<string, number> = {};
+  const wed = join[0];
+  if (wed) {
+    const left = P[wed.b].g === Sex.Male && P[wed.a].g !== Sex.Male ? wed.b : wed.a;
+    inner[left] = 1;
+    inner[other(wed, left)] = -1;
+  }
+  const isJoin = (p: string, q: string) => !!wed && inner[p] != null && inner[q] != null && p !== q;
   // spec 5: siblings oldest-left; with no dates, the record's order
-  const sibOrder = (kids: string[]) =>
-    kids.every((id) => P[id].born != null)
+  const sibOrder = (kids: string[]) => {
+    const o = kids.every((id) => P[id].born != null)
       ? kids.slice().sort((a, b) => P[a].born! - P[b].born!)
       : kids.slice();
+    const j = o.find((id) => inner[id] != null);
+    if (j == null) return o;
+    const rest = o.filter((id) => id !== j);
+    return inner[j] === 1 ? [...rest, j] : [j, ...rest];
+  };
   /* spec 5, multiple partnerships: a person with no brothers or sisters in the
    * row keeps the first partner on one side and the next on the other; with
    * family beside them, every partner goes on the side away from it. Each
@@ -474,6 +493,7 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
     bondsOf[anchor]
       .map((b) => other(b, anchor))
       .filter((q) => !placed.has(q) && gen[q] === gen[anchor])
+      .filter((q) => !isJoin(anchor, q))
       .forEach((q, i) => {
         if (parents[q] && parents[anchor])
           throw new Unplaceable("a couple where both partners’ parents are in the record");
@@ -484,7 +504,7 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
       const [p, s] = queue.shift()!;
       bondsOf[p].forEach((b) => {
         const q = other(b, p);
-        if (placed.has(q) || gen[q] !== gen[p]) return;
+        if (placed.has(q) || gen[q] !== gen[p] || isJoin(p, q)) return;
         if (parents[q] && parents[p])
           throw new Unplaceable("a couple where both partners’ parents are in the record");
         put(q, s);
@@ -492,8 +512,6 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
     }
     seq.push(...sides[-1].reverse(), anchor, ...sides[1]);
   }
-  // men on the left, so a woman's partners go to her left
-  const manSide = (id: string) => (P[id].g === Sex.Female ? -1 : 1);
   for (let g = 0; g <= hi - lo; g++) {
     const seq: string[] = [];
     cast.kids
@@ -505,23 +523,61 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
         sibs.forEach((s) => placed.add(s));
         const n = sibs.length;
         sibs.forEach((s, i) =>
-          lay(s, n > 1 && i === 0 ? -1 : n > 1 && i === n - 1 ? 1 : manSide(s), seq, n === 1),
+          inner[s] != null ? lay(s, -inner[s], seq, false) : lay(s, n > 1 && i === 0 ? -1 : n > 1 && i === n - 1 ? 1 : manSide(s), seq, n === 1),
         );
       });
     const roots = ids.filter((id) => gen[id] === g && !placed.has(id) && tied(id));
     if (roots.length) {
       if (seq.length)
         throw new Unplaceable("a couple in a row beside another family, with nothing to say which side it goes on");
-      const anchor = roots
-        .slice()
-        .sort(
-          (a, b) =>
-            bondsOf[b].length - bondsOf[a].length ||
-            cast.bonds.indexOf(bondsOf[a][0]) - cast.bonds.indexOf(bondsOf[b][0]),
-        )[0];
+      const pick = (rs: string[]) =>
+        rs
+          .slice()
+          .sort(
+            (a, b) =>
+              bondsOf[b].length - bondsOf[a].length ||
+              cast.bonds.indexOf(bondsOf[a][0]) - cast.bonds.indexOf(bondsOf[b][0]),
+          )[0];
+      const anchor = pick(roots);
       placed.add(anchor);
-      lay(anchor, P[anchor].g === Sex.Female ? -1 : 1, seq, true);
-      if (roots.some((id) => !placed.has(id))) throw new Unplaceable("two separate families side by side in one row");
+      const first: string[] = [];
+      lay(anchor, P[anchor].g === Sex.Female ? -1 : 1, first, true);
+      const rest = roots.filter((id) => !placed.has(id));
+      if (!rest.length) seq.push(...first);
+      else {
+        const ofSpouse = (id: string) => (wed ? [wed.a, wed.b].find((s) => inner[s] != null && parents[s].includes(id)) : undefined);
+        const sp1 = first.map(ofSpouse).find((s) => s);
+        const anchor2 = pick(rest);
+        const probe: string[] = [];
+        placed.add(anchor2);
+        lay(anchor2, 1, probe, true);
+        const sp2 = probe.map(ofSpouse).find((s) => s);
+        if (!sp1 || !sp2 || sp1 === sp2 || roots.some((id) => !placed.has(id)))
+          throw new Unplaceable("two separate families side by side in one row");
+        // each side laid so the joining spouse's parents stand at its inner end
+        const side = (a: string, sp: string, comp: string[]): string[] => {
+          const tryDir = (dir: number) => {
+            const out: string[] = [];
+            comp.forEach((id) => placed.delete(id));
+            placed.add(a);
+            lay(a, dir, out, true);
+            return out;
+          };
+          const ok = (out: string[]) => {
+            const n = parents[sp].filter((id) => out.includes(id)).length;
+            const idx = parents[sp].filter((id) => out.includes(id)).map((id) => out.indexOf(id));
+            return idx.every((i) => (inner[sp] === 1 ? i >= out.length - n : i < n));
+          };
+          const r = tryDir(1);
+          return ok(r) ? r : tryDir(-1);
+        };
+        const parts = [
+          { a: anchor, sp: sp1, out: first },
+          { a: anchor2, sp: sp2, out: probe },
+        ].sort((p, q) => inner[q.sp] - inner[p.sp]);
+        parts.forEach((pt) => (pt.out = side(pt.a, pt.sp, pt.out)));
+        seq.push(...parts[0].out, ...parts[1].out);
+      }
     }
     // a reader with no family drawn stands first, the others at the end beside them
     if (gen[cast.index] === g && !tied(cast.index)) {
@@ -539,6 +595,8 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
         placed.add(id);
       });
     seq.forEach((id, i) => (at[id] = i));
+    if (wed && gen[wed.a] === g && Math.abs(at[wed.a] - at[wed.b]) !== 1)
+      throw new Unplaceable("a couple where both partners’ parents are in the record, with another family between them");
     rows.push(seq);
   }
   ids.forEach((id) => {

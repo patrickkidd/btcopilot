@@ -743,3 +743,114 @@ describe("a play-by-play nobody told", () => {
     expect(ids).not.toContain(203);
   });
 });
+
+describe("a couple where both partners' parents are in the record", () => {
+  const wed = (a: string, b: string) => ({ a, b, st: Tie.Married, married: true });
+  const joined = (extra: Partial<Cast> = {}, more: Cast["people"] = {}): Cast => ({
+    ...family(),
+    people: {
+      hf: shape("Hal", Sex.Male, 1920),
+      hm: shape("Hope", Sex.Female, 1922),
+      wf: shape("Walt", Sex.Male, 1921),
+      wm: shape("Wren", Sex.Female, 1923),
+      h: shape("Hugo", Sex.Male, 1950),
+      w: shape("Wanda", Sex.Female, 1952),
+      c: { ...shape("Cleo", Sex.Female, 1975), you: true },
+      ...more,
+    },
+    bonds: [wed("hf", "hm"), wed("wf", "wm"), wed("h", "w")],
+    kids: [
+      { of: ["hf", "hm"], kids: ["h"] },
+      { of: ["wf", "wm"], kids: ["w"] },
+      { of: ["h", "w"], kids: ["c"] },
+    ],
+    index: "c",
+    ...extra,
+  });
+  const order = (L: ReturnType<typeof layout>, ids: string[]) => ids.slice().sort((a, b) => L.x[a] - L.x[b]);
+
+  // R-0545, R-0187
+  it("joins the two families in one picture, his on the left, hers on the right", () => {
+    const L = layout(joined());
+    const { x, y } = L;
+    expect(Object.keys(x)).toHaveLength(7);
+    const ids = Object.keys(x);
+    ids.forEach((a) =>
+      ids.forEach((b) => {
+        if (a !== b && y[a] === y[b]) expect(Math.abs(x[a] - x[b])).toBeGreaterThanOrEqual(L.w);
+      }),
+    );
+    expect(y.hf).toBe(y.wf);
+    expect(y.h).toBe(y.w);
+    expect(y.hf).toBeLessThan(y.h);
+    expect(y.h).toBeLessThan(y.c);
+    expect(x.hm).toBeLessThan(x.wf);
+    expect(x.h).toBeLessThan(x.w);
+    expect(ids.filter((id) => y[id] === y.h && x[id] > x.h && x[id] < x.w)).toEqual([]);
+    expect(Math.min(x.hf, x.hm) <= x.h && x.h <= Math.max(x.hf, x.hm)).toBe(true);
+    expect(Math.min(x.wf, x.wm) <= x.w && x.w <= Math.max(x.wf, x.wm)).toBe(true);
+    expect(x.h <= x.c && x.c <= x.w).toBe(true);
+  });
+
+  // R-0545, R-0187
+  it("stands each spouse at the inner end of their brothers and sisters, the rest oldest-left", () => {
+    const L = layout(
+      joined(
+        {
+          kids: [
+            { of: ["hf", "hm"], kids: ["h1", "h", "h3"] },
+            { of: ["wf", "wm"], kids: ["w", "w2"] },
+            { of: ["h", "w"], kids: ["c"] },
+          ],
+        },
+        {
+          h1: shape("Ida", Sex.Female, 1948),
+          h3: shape("Ivo", Sex.Male, 1955),
+          w2: shape("Una", Sex.Female, 1956),
+        },
+      ),
+    );
+    expect(order(L, ["h1", "h", "h3", "w", "w2"])).toEqual(["h1", "h3", "h", "w", "w2"]);
+  });
+
+  // R-0545, R-0559
+  it("puts a remarried parent's other partner on the outside", () => {
+    const L = layout(
+      joined(
+        {
+          bonds: [wed("hf", "hm"), wed("wf", "wm"), wed("h", "w"), wed("hf", "hs")],
+          kids: [
+            { of: ["hf", "hm"], kids: ["h"] },
+            { of: ["wf", "wm"], kids: ["w"] },
+            { of: ["h", "w"], kids: ["c"] },
+            { of: ["hf", "hs"], kids: ["k"] },
+          ],
+        },
+        { hs: shape("Sue", Sex.Female, 1925), k: shape("Kit", Sex.Male, 1945) },
+      ),
+    );
+    expect(order(L, ["hs", "hf", "hm", "wf", "wm"])).toEqual(["hs", "hf", "hm", "wf", "wm"]);
+    const row = order(L, ["k", "h", "w"]);
+    expect(Math.abs(row.indexOf("h") - row.indexOf("w"))).toBe(1);
+  });
+
+  // R-0545
+  it("refuses two couples each joining two families", () => {
+    expect(() =>
+      layout(
+        joined(
+          {
+            bonds: [wed("hf", "hm"), wed("wf", "wm"), wed("h", "w"), wed("h3", "w2")],
+            kids: [
+              { of: ["hf", "hm"], kids: ["h", "h3"] },
+              { of: ["wf", "wm"], kids: ["w", "w2"] },
+              { of: ["h", "w"], kids: ["c"] },
+            ],
+          },
+          { h3: shape("Ivo", Sex.Male, 1955), w2: shape("Una", Sex.Female, 1956) },
+        ),
+        { fit: false },
+      ),
+    ).toThrow(/two couples each joining two families/);
+  });
+});
