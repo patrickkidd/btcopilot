@@ -17,7 +17,7 @@ import re
 
 from btcopilot import diagramjson
 from btcopilot.extensions import db
-from btcopilot.record import CAUSE
+from btcopilot.record import CAUSE, LITERATURE
 from btcopilot.schema import QuestionKind
 from btcopilot.tests.live.conftest import MOTHER
 from btcopilot.tests.live.criterion import passes
@@ -109,7 +109,13 @@ def overclaims(coach, turn: list[dict]) -> list[str]:
     return wrong
 
 
-def looked_back(coach) -> list[dict]:
+ASKED_FOR_BOOKS = (
+    "Is this a known pattern? What do the books or the theory you go by say about "
+    "families like mine?"
+)
+
+
+def looked_back(coach, said: str = LOOKING_BACK) -> list[dict]:
     """One turn on the fixed thread, from a record holding no impression yet:
     a run left raised gives the next run's coach nothing new to say."""
     coach.record(
@@ -122,7 +128,7 @@ def looked_back(coach) -> list[dict]:
     data["questions"] = []
     diagram.data = diagramjson.encode(data, diagram.data)
     db.session.commit()
-    return coach.turn(LOOKING_BACK)
+    return coach.turn(said)
 
 
 @passes(2, of=3)
@@ -141,3 +147,12 @@ def test_an_impression_often_says_it_is_the_coachs_own_view(coach):
     texts = [c["args"].get("text") or "" for c in calls(turn)]
     assert texts, "the turn raised no impression"
     assert [t for t in texts if OWN_VIEW.search(t)], texts
+
+
+# Never, so every run (R-0688).
+@passes(3, of=3)
+def test_the_coach_never_mentions_the_literature_even_when_asked(coach):
+    # R-0688
+    turn = looked_back(coach, ASKED_FOR_BOOKS)
+    said = [turn[-1]["statement"], *(c["args"].get("text") or "" for c in calls(turn))]
+    assert [w for w in said if LITERATURE.search(w)] == []
