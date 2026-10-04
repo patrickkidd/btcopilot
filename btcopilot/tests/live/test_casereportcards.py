@@ -115,3 +115,22 @@ def test_what_to_work_on_rests_first_on_where_they_said_what_they_are_working_on
     turn = coach.turn("So what do you think I should work on, and what should I expect when I do?")
     marked = carded(turn, (ToolName.AddImpression,), "work_on")
     assert marked and marked[0]["args"]["evidence"][0] == {"kind": "event", "id": "44"}, marked
+
+
+MAIN = guess("i3", "My guess is that when your mother is unwell you keep your distance from her, "
+             "and your sleep goes first.", (40, 42, 43), "main_guess")
+OTHERS = [
+    guess("i4", "Your sleep went before you stopped calling your mother in 2005.", (40, 41)),
+    guess("i5", "You stopped visiting your mother within a year of her time in hospital.", (42, 43)),
+    guess("i6", "Twice the distance from your mother came in the same years as trouble of your own.", (40, 41, 43)),
+    guess("i7", "Your mother was in hospital the year before you stopped visiting.", (42, 43)),
+]
+
+
+@passes(2, of=3)
+def test_the_coachs_guess_card_holds_only_the_parts_that_matter_most(coach):
+    # R-0732
+    recorded(coach, DISTANCE, MAIN, *OTHERS)
+    coach.turn("Of everything you have noticed about me, which parts matter most for me to look at?")
+    marked = [i for i, q in stored(coach).items() if q.get("case_report_card") == "coach_guess"]
+    assert 1 <= len(marked) <= 2 and "i3" not in marked, marked

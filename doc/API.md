@@ -54,9 +54,9 @@ statement_id}}` for events whose coding session is known, which is what "coded
 in …" reads. Events never traced are absent.
 
 Each entry of `asked_questions` also carries `case_report_card`: `main_guess`,
-`own_part`, `choice`, `work_on` or null, the case report card the coach put it
-on (R-0709). One guess is on each card, the newest; `work_on` holds up to three,
-in record order. A question is only ever on `own_part` or `choice`. And
+`own_part`, `choice`, `work_on`, `coach_guess` or null, the case report card the
+coach put it on (R-0709, R-0732). One guess is on each card, the newest;
+`work_on` and `coach_guess` hold up to three, in record order. A question is only ever on `own_part` or `choice`. And
 `answer`: null, or the person's own message that answered the question,
 `{kind: "statement", id, label, discussion_id, at, text}`, with `text` their
 words (null once the session is gone); on the `own_part` question it is the

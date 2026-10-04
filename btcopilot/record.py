@@ -319,9 +319,9 @@ def _apply(data: dict, delta: dict) -> list[dict]:
 
 # The case report card a guess or a question is on: the newest on a card
 # replaces the one before it, except that up to three guesses are on what to
-# work on (R-0709).
+# work on and on the coach's guess (R-0709, R-0732).
 CARD = "case_report_card"
-CARD_HOLDS = {CaseReportCard.WorkOn: 3}
+CARD_HOLDS = {CaseReportCard.WorkOn: 3, CaseReportCard.CoachGuess: 3}
 QUESTION_CARDS = (CaseReportCard.OwnPart, CaseReportCard.Choice)
 
 

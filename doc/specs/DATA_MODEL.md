@@ -254,11 +254,11 @@ declined; one held or let go says nothing. The last such question wins. Removing
 link and the `fact` together.
 
 A question or an impression carries `case_report_card`, a `CaseReportCard`
-(`main_guess`, `own_part`, `choice`, `work_on`) or null: the case report card
+(`main_guess`, `own_part`, `choice`, `work_on`, `coach_guess`) or null: the case report card
 the coach put it on (R-0709). Only the coach writes it. A question goes only on
 `own_part` or `choice`, and an entry kept for later (held) on none. Putting an
 entry on a card takes the card off the entry of the same kind that held it, in
-the same change; `work_on` keeps the three newest impressions. A question
+the same change; `work_on` and `coach_guess` keep the three newest impressions. A question
 closed as `answered` may carry `answer`, `{kind: "statement", id, label}`, the
 person's own message that answered it, kept the way an impression keeps a
 message it rests on; on the `own_part` question it is the person's view of

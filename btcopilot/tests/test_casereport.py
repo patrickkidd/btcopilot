@@ -62,6 +62,15 @@ def test_what_to_work_on_keeps_the_three_newest(family):
     assert cards(family) == {"i1": None, "i2": "work_on", "i3": "work_on", "i4": "work_on"}
 
 
+def test_the_coachs_guess_card_keeps_the_three_newest(family):
+    # R-0732
+    raised(family, TENSE, LATCH, QUIET, CLOSE)
+    for n, entry in enumerate(["i1", "i2", "i3", "i4"]):
+        card(family, entry, "coach_guess", f"c{n}")
+
+    assert cards(family) == {"i1": None, "i2": "coach_guess", "i3": "coach_guess", "i4": "coach_guess"}
+
+
 def test_a_card_is_set_without_moving_the_state_and_taken_off_with_null(family):
     # R-0709
     raised(family, TENSE)

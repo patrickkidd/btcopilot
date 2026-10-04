@@ -534,6 +534,7 @@ class CaseReportCard(enum.StrEnum):
     OwnPart = "own_part"
     Choice = "choice"
     WorkOn = "work_on"
+    CoachGuess = "coach_guess"
 
 
 class Pushback(enum.StrEnum):
