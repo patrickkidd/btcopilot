@@ -441,7 +441,8 @@ describe("a crowded row", () => {
     expect(arrange(brood(2))).toMatchObject({ w: 44, px: 44, vw: VIEW });
     const L = arrange(brood(5));
     expect(L.px).toBeLessThan(44);
-    const margin = (24 * L.vw) / 393;
+    // the margin keeps its size on the screen, whatever the picture's scale
+    const margin = ((24 * VIEW) / 393) * (L.w / L.px);
     L.names.forEach((b) => {
       expect(b.x0 + 2).toBeGreaterThanOrEqual(margin - 0.5);
       expect(b.x1 - 2).toBeLessThanOrEqual(L.vw - margin + 0.5);
@@ -1154,6 +1155,17 @@ describe("a family the row rules cannot place", () => {
     const ls = lines(draw(L, frame(L)));
     ls.forEach((a, i) => ls.slice(i + 1).forEach((b) => expect(cuts(a, b)).toBe(false)));
     expect(L.x.h).toBeLessThan(L.x.w);
+  });
+
+  // R-0745, R-0744
+  it("keeps a generated family of 50 near the width of its widest row and its margin fixed as it widens", () => {
+    const sprawl = JSON.parse(readFileSync(new URL("./family50.json", import.meta.url), "utf8"));
+    const L = arrange({ ...base(sprawl.people), ...sprawl });
+    const rows = new Map<number, number>();
+    Object.values(L.y).forEach((y) => rows.set(y, (rows.get(y) ?? 0) + 1));
+    // each person a shape and at most the sibling gap of three widths beside it
+    expect(L.vw).toBeLessThanOrEqual(2 * Math.max(...rows.values()) * 4 * L.w);
+    expect(L.h).toBeLessThanOrEqual(rows.size * 3 * L.w + 100);
   });
 
   // R-0751

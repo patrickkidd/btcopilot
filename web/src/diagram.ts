@@ -1011,10 +1011,14 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   // in the fallback, a parents' bar that keeps the rows pushing each other apart
   // is let go: its children's lines may cross, the rest still settle
   let active = units;
+  // ...or that keeps them drifting right past twice the rows packed side by side
+  let most = Infinity;
+  const width = () => Math.max(...ids.map((id) => x[id])) - Math.min(...ids.map((id) => x[id]));
   function settle(): void {
     const keep = { ...x };
     const hit = new Set<(typeof units)[number]>();
-    for (let it = 0; it < 200; it++) {
+    const cap = Math.max(most, width());
+    for (let it = 0; it < 200 && width() <= cap; it++) {
       let moved = false;
       hit.clear();
       for (const u of active) {
@@ -1076,6 +1080,7 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
     });
     base = right + 2 * d.LOOSE;
   });
+  if (plan.loose) most = 2 * width();
   settle();
   rows
     .slice()
@@ -1239,12 +1244,21 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   if (wide > VIEW && !tight && !under) return place(cast, { ...opts, names: Names.Above }, t, plan);
   L.wide = wide;
   if (wide > VIEW && opts.fit) {
-    // scaled down to fit the phone, the margin kept at its size on the screen
-    // re-ruled 2026-10-04: the shapes keep the drawer's floor and the picture scrolls sideways
+    // scaled down to fit the phone, the margin kept at its size on the screen;
+    // re-ruled 2026-10-04: the shapes keep the drawer's floor and the picture scrolls sideways,
+    // its margin still the same size on the screen, never growing with the width
     L.vw = Math.max(reach, span / (1 - (2 * MX) / VIEW));
-    L.px = d.W * Math.max(VIEW / L.vw, LEAST.label / NAME, LEAST.shape / d.W);
-    MX *= L.vw / VIEW;
-    MY *= L.vw / VIEW;
+    const least = Math.max(LEAST.label / NAME, LEAST.shape / d.W);
+    if (VIEW / L.vw >= least) {
+      L.px = d.W * (VIEW / L.vw);
+      MX *= L.vw / VIEW;
+      MY *= L.vw / VIEW;
+    } else {
+      L.px = d.W * least;
+      MX /= least;
+      MY /= least;
+      L.vw = Math.max(reach, span + 2 * MX);
+    }
   } else if (wide > VIEW)
     throw new Unplaceable(`the drawing is ${Math.round(wide)} wide, wider than the phone’s ${VIEW}`, true);
   const dx = L.vw / 2 - mid;
