@@ -10,6 +10,7 @@ import pytest
 from btcopilot import diagramjson, questions, record
 from btcopilot.extensions import db
 from btcopilot.models import Author, Change, Diagram, Statement
+from btcopilot.routes.diagrams import diagram_payload
 from btcopilot.routes.fixtures import CASE_REPORT_CHAT, install
 from btcopilot.tests.conftest import version
 from btcopilot.tests.test_impressions import LATCH, TENSE, first, impress  # noqa: F401
@@ -222,3 +223,13 @@ def test_the_thin_and_dense_case_report_fixtures_install(flask_app):
     assert (len(thin.people), thin.questions) == (1, [])
     assert (len(dense.people), len(dense.events)) == (125, 281)
     assert any(e["dateTime"] is None for e in dense.events)
+
+
+def test_the_case_report_names_its_owner_by_name_and_never_by_email(flask_app):
+    # R-0715
+    named = install("case-report")
+    nameless = install("one")
+
+    assert diagram_payload(named.free_diagram, named)["owner_name"] == "Nora Halloran"
+    assert diagram_payload(nameless.free_diagram, nameless)["owner_name"] is None
+    assert diagram_payload(nameless.free_diagram, nameless)["owner"] == nameless.username

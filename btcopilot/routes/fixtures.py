@@ -983,6 +983,12 @@ FIXTURES = {
 
 # the diagram name each fixture's record carries, when it is not the default
 DIAGRAM_NAMES = {"longname": LONG_DIAGRAM_NAME}
+# the account's own name, for the fixtures whose screen shows it
+OWNER_NAMES = {
+    "case-report": ("Nora", "Halloran"),
+    "case-report-thin": ("Ines", "Varga"),
+    "case-report-dense": ("Margaret-Anne", "Fitzgerald-Winterbottom"),
+}
 
 
 DIAGRAM_ROWS = (AccessRight, Change, Interaction, ModelCall, Observation, ProductEvent)
@@ -1016,6 +1022,7 @@ def install(key: str):
         user = User(username=name, status="confirmed", password="x")
         db.session.add(user)
         db.session.flush()
+    user.first_name, user.last_name = OWNER_NAMES.get(key, ("", ""))
     Notification.query.filter_by(user_id=user.id).delete()
     for notice in Notice.query.filter_by(audience=Audience.People):
         if notice.user_ids == [user.id]:
