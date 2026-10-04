@@ -105,6 +105,15 @@ test.describe("the case report's taps", () => {
     await expect(page.locator("#case-pbp")).not.toHaveClass(/in/);
   });
 
+  // R-0700
+  test("a cluster's chip on a card opens it on the timeline with explain offered, and explain opens the play-by-play", async ({ page }) => {
+    await open(page);
+    await page.locator('#case-body .chip[data-kind="cluster"]').first().click();
+    await expect(page.locator("#case-path [data-step]").first()).toBeVisible();
+    await page.locator("#case-caption #cap-play").click();
+    await expect(page.locator("#case-pbp")).toHaveClass(/in/);
+  });
+
   // R-0691, R-0692
   test("a card's book raises its passages and puts them away", async ({ page }) => {
     await open(page);
