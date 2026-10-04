@@ -44,8 +44,8 @@
 .pbp > .when { flex: none; padding: 0 16px 8px; }
 .pbp .when .words { color: var(--faint); font-weight: 400; }
 .pbp.whole .scroll .step { justify-content: space-between; }
-/* someone not yet born at the step keeps their place, faded */
-.pbp.whole .p.yet, .pbp.whole .pt.yet { opacity: 0.3; }
+/* someone not yet born at the step, and a couple or child line before its date, keeps its place, faded (R-0756) */
+.pbp.whole .yet { opacity: 0.3; }
 .pbp .cap { padding: 12px 16px 18px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 7px; }
 .pbp .when { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; font: 500 13px var(--mono); }
 .pbp .when .date { color: var(--data); }

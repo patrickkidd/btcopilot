@@ -37,6 +37,8 @@ export interface Bond {
   st: Tie;
   /** Only a marriage makes the line solid, and only a marriage can be divorced. */
   married: boolean;
+  /** The year of the couple's first dated event: before it their line is faded (R-0756). */
+  from?: number;
 }
 
 export interface Brood {
@@ -1637,17 +1639,21 @@ export function bar(L: Layout, b: { a: string; b: string }): Bar {
   return { a: A, b: B, x0: L.x[A], x1: L.x[B], y: yb };
 }
 
-function childLines(L: Layout, k: { x0: number; x1: number; y: number }, kids: string[]): string {
+function childLines(L: Layout, k: { x0: number; x1: number; y: number }, kids: string[], t: number): string {
   const d = dimsOf(L);
   return kids
     .map((id) => {
       const top: Point = [L.x[id], L.y[id] - d.half(L.P[id])];
       const end: Point =
         top[0] >= k.x0 && top[0] <= k.x1 ? [top[0], k.y] : [top[0] < k.x0 ? k.x0 : k.x1, k.y];
-      return `<path class="kin" d="${seg(top, end)}"/>`;
+      return `<path class="kin${unborn(L.P[id], t)}" d="${seg(top, end)}"/>`;
     })
     .join("");
 }
+
+/** Someone not yet born, or a couple not yet together, keeps their place faded (R-0756). */
+const yet = (since: number | null | undefined, t: number) => (since != null && since > t + 1e-6 ? " yet" : "");
+const unborn = (p: Shape, t: number) => yet(p.born, t);
 
 type Offset = [number, number];
 
@@ -1758,7 +1764,7 @@ export function draw(L: Layout, s: Frame): string {
   L.kids.forEach((c) => c.kids.forEach((id) => (out += stretch(id, L.x[id], L.y[id] - d.half(P[id])))));
   s.bonds.forEach((b) => {
     const kids = L.kids.find((c) => c.of.includes(b.a) && c.of.includes(b.b));
-    if (kids) out += childLines(L, bar(L, b), kids.kids);
+    if (kids) out += childLines(L, bar(L, b), kids.kids, s.t);
   });
   L.kids
     .filter((c) => c.of.length === 1)
@@ -1768,7 +1774,7 @@ export function draw(L: Layout, s: Frame): string {
       const k = { x0: Math.min(...xs), x1: Math.max(...xs), y: L.y[p] + d.half(P[p]) + d.DROP };
       out +=
         `<path class="tie" d="M${f(L.x[p])} ${f(L.y[p] + d.half(P[p]))}V${f(k.y)}M${f(k.x0)} ${f(k.y)}H${f(k.x1)}"/>` +
-        childLines(L, k, c.kids);
+        childLines(L, k, c.kids, s.t);
     });
   s.bonds.forEach((b) => {
     const k = bar(L, b);
@@ -1782,7 +1788,7 @@ export function draw(L: Layout, s: Frame): string {
       L.y[k.b] + d.half(P[k.b]),
       k.y,
       b.married,
-      b.hot ? " now pop" : "",
+      (b.hot ? " now pop" : "") + yet(L.bonds.find((o) => o.a === b.a && o.b === b.b)?.from, s.t),
       ` data-bond="${esc(`${b.a}|${b.b}`)}"`,
     ), b.hot);
     const n = b.st === Tie.Separated ? 1 : b.st === Tie.Divorced ? 2 : 0;
@@ -1815,9 +1821,8 @@ export function draw(L: Layout, s: Frame): string {
     const e = d.half(p);
     const dead = p.died != null && p.died <= s.t + 1e-6;
     // someone not yet born keeps their place (R-0546) but has no age to show
-    const yet = p.born != null && p.born > s.t + 1e-6;
-    const age = p.born == null || yet ? null : yr((dead ? p.died! : s.t) - p.born + 1e-6);
-    const born = yet ? " yet" : "";
+    const born = unborn(p, s.t);
+    const age = p.born == null || born ? null : yr((dead ? p.died! : s.t) - p.born + 1e-6);
     let g = `<g class="p${born}" data-id="${esc(id)}">`;
     let t = `<g class="pt${born}" data-id="${esc(id)}">`;
     if (p.you) g += outline(p, x, y, e, "you");
