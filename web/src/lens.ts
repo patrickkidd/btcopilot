@@ -155,7 +155,7 @@ export class Lens {
 
   /** A cluster opened, from its pill or from a chip that names it: the one
    * selection both paths share, so the row offers the same explain. */
-  private openCluster(cluster: Cluster): void {
+  openCluster(cluster: Cluster): void {
     this.picture.open(cluster.event_ids);
     // opening a cluster is a look at it, recorded like any other (R-0065)
     this.hooks.record(InteractionKind.Look, ItemKind.Cluster, cluster.id);

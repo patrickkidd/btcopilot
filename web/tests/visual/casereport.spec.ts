@@ -198,6 +198,22 @@ test.describe("the case report's taps", () => {
     await expect(page.locator("#case-by")).toHaveText("presented by Nora");
   });
 
+  // R-0700
+  test("a card's chip naming an event inside a cluster opens that cluster as a tap on it does, explain offered", async ({ page }) => {
+    await open(page);
+    const record = await (await page.request.get("/app/timeline")).json();
+    const inside: number[] = record.clusters.flatMap((c: { event_ids: number[] }) => c.event_ids);
+    const target = await page.locator("#case-body .chip[data-kind=\"event\"]").evaluateAll(
+      (els, inside) => els.map((e) => (e as HTMLElement).dataset.target).find((t) => inside.includes(Number(t))),
+      inside,
+    );
+    expect(target).toBeTruthy();
+    await page.locator(`#case-body .chip[data-kind="event"][data-target="${target}"]`).first().click();
+    await expect(page.locator("#case-caption #cap-play")).toBeEnabled();
+    await page.locator("#case-caption #cap-play").click();
+    await expect(page.locator("#case-pbp")).toHaveClass(/in/);
+  });
+
   // R-0691, R-0692
   test("a card's book raises its passages and puts them away", async ({ page }) => {
     await open(page);
