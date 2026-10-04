@@ -6,10 +6,9 @@ names only.
 
 import re
 
-from btcopilot import prompts
 from btcopilot.schema import EventKind
 from btcopilot.tests.live.criterion import once, passes, waiting
-from btcopilot.toolbox import ToolName
+from btcopilot.toolbox import ToolName, schemas
 from btcopilot.turnlog import TurnEventKind
 
 NOTHING = ("", None)
@@ -95,7 +94,10 @@ def test_things_rocky_since_the_divorce_is_functioning_down_on_the_speaker(coach
 @once
 def test_the_coach_prompt_defines_functioning_in_the_spec_words():
     # R-0428
-    assert re.search(r"balanc\w* emotion and intellect", prompts.get_agent_prompt())
+    # The prompt leaves what the variables mean to edit_event's fields (FD-366).
+    (tool,) = [t for t in schemas() if t["name"] == ToolName.EditEvent]
+    words = tool["input_schema"]["properties"]["functioning"]["description"]
+    assert re.search(r"balanc\w* emotion and intellect", words)
 
 
 BROTHER = {"id": 4, "name": "Colm", "gender": "male", "parents": 10}
