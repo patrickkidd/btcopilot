@@ -404,6 +404,24 @@ describe("the captions", () => {
 
 
 /** Parents and `n` sons in one row, the oldest the reader. */
+/** A picture with nothing marked on it. */
+const frame = (L: Layout) => ({
+  t: 2000,
+  bonds: L.bonds.map((b) => ({ ...b, fresh: false, hot: false })),
+  marks: [],
+  died: new Set<string>(),
+  moves: [],
+  kin: [],
+  label: "",
+});
+
+/** The family's lines in a drawing, each as its two ends. */
+const lines = (svg: string) =>
+  els(svg, "path", "kin").map((p) => {
+    const [x0, y0, x1, y1] = p.d.match(/^M(\S+) (\S+)L(\S+) (\S+)$/)!.slice(1).map(Number);
+    return [[x0, y0], [x1, y1]] as [[number, number], [number, number]];
+  });
+
 const brood = (n: number): Cast => {
   const kids = Array.from({ length: n }, (_, i) => `k${i}`);
   const people: Cast["people"] = { a: shape("Abe", Sex.Male, 1940), b: shape("Bea", Sex.Female, 1942) };
@@ -421,7 +439,11 @@ describe("a crowded row", () => {
   // R-0566
   it("puts names under the shapes only when neither beside nor above fits", () => {
     const L = arrange(brood(4));
-    expect(Object.values(L.side).every((s) => s === Side.Under)).toBe(true);
+    expect(["k0", "k1", "k2", "k3"].every((id) => L.side[id] === Side.Under)).toBe(true);
+    // the children's lines never run through their parents' names
+    const drawn = lines(draw(L, frame(L)));
+    expect(drawn.length).toBeGreaterThanOrEqual(4);
+    drawn.forEach((sg) => L.names.forEach((b) => expect(crosses(sg, b)).toBe(false)));
     expect(L.vw).toBe(VIEW);
   });
 
@@ -1035,15 +1057,6 @@ describe("a family the row rules cannot place", () => {
       "c",
     ),
   };
-  const frame = (L: Layout) => ({
-    t: 2000,
-    bonds: L.bonds.map((b) => ({ ...b, fresh: false, hot: false })),
-    marks: [],
-    died: new Set<string>(),
-    moves: [],
-    kin: [],
-    label: "",
-  });
 
   const placed = (c: Cast) => {
     expect(() => layout(c)).toThrow(/cannot place/);
@@ -1131,11 +1144,6 @@ describe("a family the row rules cannot place", () => {
     expect(x.wf <= x.w && x.w <= x.wm).toBe(true);
   });
 
-  const lines = (svg: string) =>
-    els(svg, "path", "kin").map((p) => {
-      const [x0, y0, x1, y1] = p.d.match(/^M(\S+) (\S+)L(\S+) (\S+)$/)!.slice(1).map(Number);
-      return [[x0, y0], [x1, y1]] as [[number, number], [number, number]];
-    });
   const cuts = (a: number[][], b: number[][]) => {
     const [[px, py], [qx, qy]] = a;
     const [[rx, ry], [sx, sy]] = b;
