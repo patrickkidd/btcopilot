@@ -210,6 +210,8 @@ export const VIEW = 360;
 const PAD = 10;
 /** Ruled 2026-09-26: labels at least 13px. */
 export const NAME = 13;
+/** Decided 2026-09-27: labels never under 13px, shapes never under 36px, the family's margin never under 20px. */
+export const LEAST = { label: 13, shape: 36, margin: 20 };
 const CH = 0.6;
 const LEAD = 15;
 /** How far a label's box reaches above its line. */
@@ -259,7 +261,7 @@ class Dims {
   }
 }
 
-class Unplaceable extends Error {
+export class Unplaceable extends Error {
   constructor(
     rule: string,
     readonly wide = false,
@@ -918,8 +920,9 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   L.wide = wide;
   if (wide > VIEW && opts.fit) {
     // scaled down to fit the phone, the margin kept at its size on the screen
+    // re-ruled 2026-10-04: the shapes keep the drawer's floor and the picture scrolls sideways
     L.vw = Math.max(reach, span / (1 - (2 * MX) / VIEW));
-    L.px = (d.W * VIEW) / L.vw;
+    L.px = d.W * Math.max(VIEW / L.vw, LEAST.label / NAME, LEAST.shape / d.W);
     MX *= L.vw / VIEW;
     MY *= L.vw / VIEW;
   } else if (wide > VIEW)

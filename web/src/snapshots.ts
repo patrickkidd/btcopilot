@@ -1,5 +1,6 @@
 import {
   arrange,
+  Unplaceable,
   draw,
   Mark,
   Sex,
@@ -32,6 +33,8 @@ export interface Shot {
   fact: string;
   guess: string | null;
   question: string | null;
+  /** Who the snapshot is about, or the record's own person. */
+  who: string;
 }
 
 interface Step {
@@ -214,7 +217,8 @@ const isPlaced = (m: Step["marks"][number]): m is Placed => !isArrow(m) && !isPa
 export class Told {
   readonly steps: Step[];
   readonly cast: Cast;
-  readonly layout: Layout;
+  /** None when the family cannot be drawn: the words still play. */
+  private readonly laid: Layout | null;
   /** The events the case is about: its cluster's, or the ones it was given. */
   readonly eventIds: number[];
   private readonly start = new Map<string, Tie>();
@@ -242,7 +246,14 @@ export class Told {
     }
     this.cast = castOf(r, this.steps, this.eventIds.map((id) => r.event(id)));
     this.cast.bonds.forEach((b) => this.start.set(`${b.a}|${b.b}`, b.st));
-    this.layout = arrange(this.cast);
+    this.laid = (() => {
+      try {
+        return arrange(this.cast);
+      } catch (e) {
+        if (!(e instanceof Unplaceable)) throw e;
+        return null;
+      }
+    })();
   }
 
   /** Who a snapshot puts in the emphasis colour: the people its events are
@@ -250,11 +261,20 @@ export class Told {
   private emphasised(s: Step): string[] {
     const placed = s.marks.filter(isPlaced);
     const family = placed.some((m) => m.k === Mark.Family)
-      ? Object.entries(this.layout.P)
+      ? Object.entries(this.cast.people)
           .filter(([, p]) => (p.born == null || p.born <= s.t) && (p.died == null || p.died > s.t))
           .map(([who]) => who)
       : [];
     return [...new Set([...placed.filter((m) => m.k === Mark.Emphasis).map((m) => m.who), ...family])];
+  }
+
+  get drawable(): boolean {
+    return this.laid !== null;
+  }
+
+  get layout(): Layout {
+    if (!this.laid) throw new Error("this family cannot be drawn");
+    return this.laid;
   }
 
   get length(): number {
@@ -275,7 +295,7 @@ export class Told {
       }),
     );
     const pairs = now.marks.filter(isPair);
-    const bonds = this.layout.bonds.map((b) => {
+    const bonds = (this.laid?.bonds ?? []).map((b) => {
       const k = `${b.a}|${b.b}`;
       const hit = pairs.filter((m) => pairKey(this.cast, m) === k);
       const fresh = hit.find((m) => m.k !== Mark.Couple);
@@ -290,7 +310,7 @@ export class Told {
     });
     const placed = now.marks.filter(isPlaced);
     const marks: Placed[] = [];
-    Object.keys(this.layout.P).forEach((id) => {
+    Object.keys(this.cast.people).forEach((id) => {
       const cur = placed.find((m) => (m.k === Mark.Up || m.k === Mark.Down) && m.who === id);
       const was = trouble.get(id);
       if (cur) marks.push({ ...cur, cls: Tone.Now });
@@ -327,7 +347,7 @@ export class Told {
       ...now.marks.filter(isKin).map((m) => ({ ...m, cls: Tone.Now })),
     ];
     const snap = this.told.snapshots[i];
-    const svg = draw(this.layout, {
+    const svg = this.laid && draw(this.laid, {
       t: now.t,
       bonds,
       marks,
@@ -337,7 +357,8 @@ export class Told {
       label: `${now.date}: ${snap.fact}`,
     });
     return {
-      svg,
+      svg: svg ?? "",
+      who: lit[0] ?? this.cast.index,
       date: now.date,
       gap: i > 0 ? gapText(this.steps[i - 1].t, now.t) : null,
       fact: snap.fact,

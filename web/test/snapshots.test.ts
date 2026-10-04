@@ -426,12 +426,14 @@ describe("a crowded row", () => {
   });
 
   // R-0547
-  it("shrinks a row of five or more to the phone's width, never scrolling sideways", () => {
+  // re-ruled 2026-10-04, scroll below the floor
+  it("keeps a row of five or more at the drawer's least size and scrolls its frame sideways", () => {
     const L = arrange(brood(5));
     expect(Object.keys(L.P)).toHaveLength(7);
     expect(L.vw).toBeGreaterThan(VIEW);
+    expect(L.px).toBeGreaterThanOrEqual(36);
     const css = readFileSync(new URL("../src/drawer.css", import.meta.url), "utf8");
-    expect(css).toMatch(/\.pbp \.draw svg \{[^}]*width: 100%/);
+    expect(css).toMatch(/\.pbp \.draw \{[^}]*overflow-x: auto/);
   });
 
   // R-0547, R-0558
@@ -883,6 +885,28 @@ describe("a couple where both partners' parents are in the record", () => {
   it("joins the families with great-grandparents above both sides", () => {
     const c = above(["h", "w"]);
     sound(layout(c), c);
+  });
+
+  // R-0547
+  // re-ruled 2026-10-04, scroll below the floor
+  it("keeps a wide joined family at least 36 across, wider than the frame", () => {
+    const sibs = (s: string, n: number) => Array.from({ length: n }, (_, i) => `${s}${i}`);
+    const more: Cast["people"] = {};
+    [...sibs("hs", 6), ...sibs("ws", 6)].forEach((id, i) => (more[id] = shape(`Sib${i}`, i % 2 ? Sex.Male : Sex.Female, 1940 + i)));
+    const L = arrange(
+      joined(
+        {
+          kids: [
+            { of: ["hf", "hm"], kids: ["h", ...sibs("hs", 6)] },
+            { of: ["wf", "wm"], kids: ["w", ...sibs("ws", 6)] },
+            { of: ["h", "w"], kids: ["c"] },
+          ],
+        },
+        more,
+      ),
+    );
+    expect(L.px).toBeGreaterThanOrEqual(36);
+    expect((L.vw * L.px) / L.w).toBeGreaterThan(VIEW);
   });
 
   // R-0545

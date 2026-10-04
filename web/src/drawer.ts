@@ -1,7 +1,7 @@
 import "./drawer.css";
 import { askedChip, chipOf } from "./chips";
 import { CLUSTER, closeX, esc, flash, pathRow, slideOver, stepBtn } from "./dom";
-import { NAME, type Layout } from "./diagram";
+import { LEAST, NAME, type Layout } from "./diagram";
 import { kindForms, withKind } from "./rows";
 import { when, Told } from "./snapshots";
 import type { Case, Chip, Timeline } from "./types";
@@ -124,7 +124,7 @@ export const pictureHeight = (natural: number, room: number, captions: number[],
 /** Decided 2026-09-27: the shrink stops where labels would go under 13px,
  * shapes under 36px or the family's margin under 20px; below that the drawer
  * scrolls. A row already shrunk to fit the phone's width stays as it is. */
-const LEAST = { label: 13, shape: 36, margin: 20 };
+/** Re-ruled 2026-10-04: a picture wider than the drawer keeps this size and scrolls sideways in its own frame. */
 export const leastScale = (L: Layout, padding: number) =>
   Math.max(LEAST.label / NAME, LEAST.shape / L.w, (LEAST.margin - padding) / L.my);
 
@@ -134,6 +134,7 @@ export class Drawer {
   private i = 0;
   private height: number | null = null;
   private edge = 0;
+  private scale = 1;
 
   constructor(
     readonly panel: HTMLElement,
@@ -196,15 +197,29 @@ export class Drawer {
     const told = this.told!;
     const q = (sel: string) => this.panel.querySelector<HTMLElement>(sel)!;
     q(".wire").innerHTML = yearsLine(told.tl, told, this.i);
-    q(".draw").innerHTML = told.shot(this.i).svg;
+    const shot = told.shot(this.i);
+    q(".draw").innerHTML = told.drawable ? shot.svg : `<p class="none">This family can’t be drawn here yet.</p>`;
     q(".scroll").innerHTML = below(told, this.i, this.statement);
     this.fit();
+    if (told.drawable) this.centre(shot.who);
+  }
+
+  /** The person the step is about in the middle of the frame, when the picture is wider than it. */
+  private centre(who: string): void {
+    const draw = this.panel.querySelector<HTMLElement>(".draw")!;
+    if (draw.scrollWidth <= draw.clientWidth) return;
+    draw.scrollTo({ left: this.told!.layout.x[who] * this.scale - draw.clientWidth / 2, behavior: "smooth" });
   }
 
   private fit(): void {
     const told = this.told!;
     const lv = this.panel.querySelector<HTMLElement>(".lv")!;
     const draw = lv.querySelector<HTMLElement>(".draw")!;
+    if (!told.drawable) {
+      draw.style.height = "";
+      return;
+    }
+    const L = told.layout;
     if (this.height === null) {
       const sc = lv.querySelector<HTMLElement>(".scroll")!;
       const keep = sc.innerHTML;
@@ -217,11 +232,15 @@ export class Drawer {
       const style = getComputedStyle(draw);
       const padding = parseFloat(style.paddingTop);
       this.edge = padding + parseFloat(style.paddingBottom) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
-      const natural = (lv.clientWidth * told.layout.h) / told.layout.vw;
+      const least = leastScale(L, padding);
+      this.scale = Math.max(lv.clientWidth / L.vw, least);
       const room = lv.clientHeight - lv.querySelector<HTMLElement>(".wire")!.offsetHeight - this.edge;
-      this.height = pictureHeight(natural, room, captions, told.layout.h * leastScale(told.layout, padding));
+      this.height = pictureHeight(L.h * this.scale, room, captions, L.h * least);
+      this.scale = Math.min(this.scale, this.height / L.h);
     }
     draw.style.height = `${this.height + this.edge}px`;
+    const svg = draw.querySelector<SVGSVGElement>("svg")!;
+    svg.style.width = L.vw * this.scale > lv.clientWidth ? `${Math.ceil(L.vw * this.scale)}px` : "";
   }
 
   private tap(e: Event): void {
