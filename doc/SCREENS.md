@@ -543,7 +543,7 @@ What it is for: one screen to present your own record from, in the order the Bow
 - The own part card shows the coach's guess and, once the person has answered the coach's question, the person's own words under their name as their own view. [built] {R-0708}
 - The lines under the card titles are written by the app from the record: the person's place among brothers and sisters, how many events hold their symptoms, the couple, each parent, the sessions with the coach; dates stand only inside chips. [built] {R-0716}
 - The couple card shows only for a marriage the picture draws solid, with no later separation or divorce and both partners alive. [built] {R-0694}
-- The family picture opens from the family button on the phone and stands as a left column on a desktop, with the key under the person's family and under each side. No shading by coverage. [built] {R-0697, R-0705}
+- The family picture opens from the family button on the phone and stands as a left column on a desktop: the person's family, then each parent's side, as the approved proposal draws it. No shading by coverage. [built] {R-0697, R-0705}
 - Every card has a book button at its foot that raises the passages behind the card, word for word, read from the private corpus by the server; the strip has one for the order of the cards. [built] {R-0691, R-0692}
 - No count line under a guess, no years band, no row of people squares, and no words of the screen's own about certainty. [built] {R-0693, R-0699, R-0703}
 - A record the report cannot be drawn from shows the reason on the screen and in the console, never a blank page. [built] {R-0711}

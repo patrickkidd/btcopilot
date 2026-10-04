@@ -57,9 +57,9 @@
 .case.dash { padding: 12px; }
 .case.dash .side { display: flex; flex-direction: column; align-items: stretch; flex-wrap: nowrap; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
 .case.dash .side > p.sub { margin: 0; font: 600 15px/1.3 var(--sans); color: var(--ink); }
-/* a row of chips: each one line inside its card, its words cut to the card's width */
+/* a row of chips: each inside its card with its stored words whole, wrapping when they cannot fit on one line */
 .case .chips { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
-.case .chips .chip { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+.case .chips .chip { display: block; max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-align: left; }
 /* a guess: the coach's own bubble straight on the white card, its facts under it */
 .case .glist { display: flex; flex-direction: column; gap: 10px; }
 .case .gbub { display: flex; flex-direction: column; gap: 6px; min-width: 0; }

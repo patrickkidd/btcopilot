@@ -110,6 +110,9 @@ export class CaseReport implements View {
       if (root.classList.contains("folded")) this.openedAt = this.body.scrollTop;
     });
     root.addEventListener("click", (e) => this.tap(e));
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && this.sheet.up) this.sheet.lower();
+    });
     this.body.addEventListener(
       "scroll",
       () => {

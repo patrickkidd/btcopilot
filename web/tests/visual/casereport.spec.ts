@@ -32,7 +32,7 @@ for (const key of FIXTURES)
         test.use({ storageState: stateFor(key), viewport: size, colorScheme: scheme });
 
         // R-0702, R-0689, R-0690
-        test("draws every card with its strip item, each chip one line inside its card, nothing sideways", async ({ page }) => {
+        test("draws every card with its strip item, each chip whole and inside its card, nothing sideways", async ({ page }) => {
           const errors = await open(page);
           const seen = await page.evaluate(() => {
             const out = (inner: DOMRect, outer: DOMRect) =>
@@ -41,8 +41,8 @@ for (const key of FIXTURES)
             return {
               strip: [...document.querySelectorAll<HTMLElement>("#case-rail [data-jump]")].map((b) => b.dataset.jump),
               cards: [...document.querySelectorAll<HTMLElement>("#case-body .level, #case-dash .level")].map((l) => l.dataset.card),
-              wrapped: chips.filter((c) => c.getClientRects().length !== 1 || c.offsetHeight > 40).length,
-              // a stored title shows whole: no chip cut short with an ellipsis
+              // a stored title shows whole: no chip cut short, none with an ellipsis
+              ellipsis: chips.filter((c) => getComputedStyle(c).textOverflow === "ellipsis").length,
               cut: chips
                 .filter((c) => {
                   const words = document.createRange();
@@ -62,8 +62,8 @@ for (const key of FIXTURES)
           expect([...seen.cards].sort()).toEqual([...seen.strip].sort());
           expect(seen.strip).toHaveLength(10);
           expect(seen.stripRows).toBe(1);
-          expect(seen.wrapped).toBe(0);
           expect(seen.cut).toEqual([]);
+          expect(seen.ellipsis).toBe(0);
           expect(seen.outside).toBe(0);
           expect(seen.sideways).toBe(false);
           expect(seen.text).not.toMatch(/NaN|undefined|not in the record|From the record/);
@@ -202,6 +202,15 @@ test.describe("the case report's taps", () => {
     await expect(sheet.locator("blockquote").first()).toBeVisible();
     await sheet.locator(".cardx").click();
     await expect(sheet).not.toHaveClass(/in/);
+  });
+
+  // R-0691
+  test("Escape puts the book's passages away", async ({ page }) => {
+    await open(page);
+    await page.locator('#case-body .level[data-card="main"] .book').click();
+    await expect(page.locator(".fs-sheet.bk")).toHaveClass(/in/);
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".fs-sheet.bk")).not.toHaveClass(/in/);
   });
 
   // R-0697
