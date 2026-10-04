@@ -215,6 +215,7 @@ def test_the_case_report_fixture_holds_every_card_and_the_persons_own_answer(fla
         "i3": "choice",
         "i4": "work_on",
         "i5": "work_on",
+        "i6": "coach_guess",
         "q1": "own_part",
         "q2": "choice",
     }
