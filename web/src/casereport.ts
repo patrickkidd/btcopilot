@@ -3,7 +3,7 @@ import "./casereport.css";
 import { PicEvent, REST, SelKind, reduce } from "./caption";
 import { cards, dashboard, familyIcon, passages, rail } from "./case";
 import { Card, caseView } from "./caseview";
-import { chipOf } from "./chips";
+import { aimedEvents, chipOf } from "./chips";
 import { BACK } from "./tokens";
 import { CLUSTER, esc, flash, slideOver } from "./dom";
 import { Drawer } from "./drawer";
@@ -200,14 +200,14 @@ export class CaseReport implements View {
       if (ids.length) this.lens.apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(ids[0]) }), ids);
       return;
     }
-    if (chip.kind === ChipKind.Cluster) {
-      const cluster = tl.clusters.find((c) => c.id === chip.target);
-      if (!cluster) return;
-      this.lens.picture.open(cluster.event_ids);
-      this.lens.picture.spotlight(cluster.event_ids);
-      // opening a cluster is a look at it, recorded like any other (R-0065)
-      this.hooks.record(InteractionKind.Look, ItemKind.Cluster, cluster.id);
-      this.lens.rest();
+    // a chip naming a cluster, or events inside one, opens that cluster the
+    // way a tap on it on the timeline does, so explain is offered (R-0700),
+    // and lights what it names there
+    const ids = aimedEvents(chip, tl.clusters);
+    const cluster = ids.length ? tl.clusters.find((c) => ids.every((id) => c.event_ids.includes(id))) : undefined;
+    if (cluster) {
+      this.lens.openCluster(cluster);
+      this.lens.picture.spotlight(ids);
       return;
     }
     this.lens.aim(chip);

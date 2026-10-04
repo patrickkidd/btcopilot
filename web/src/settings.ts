@@ -1060,14 +1060,7 @@ export class Settings {
  * signed-out screen, which is a state of the app rather than leaving it. Sign
  * in goes to the app's own sign-in page. */
 async function signOut(who: string): Promise<void> {
-  await fetch("/app/logout", {
-    method: "POST",
-    headers: {
-      "X-CSRFToken":
-        document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ??
-        "",
-    },
-  });
+  await fetch("/app/logout", { method: "POST", headers: { "X-CSRFToken": api.csrf() } });
   $("signedout-who").textContent = `signed out \u2014 ${who}`;
   $("signedout").hidden = false;
   $("signedout-in").addEventListener(

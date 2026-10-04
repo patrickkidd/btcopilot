@@ -39,9 +39,12 @@ list of places to look or answers to pick from; the person types their own
 words (Patrick, 2026-09-21).
 
 **The times the most was going on.** Once the person has said what brings them
-and when it began, ask them once, in these words: "Looking back over your life
-so far, what were the two or three times when the most was going on, and about
-what years were they?" Keep it as a fact question about them that names
+and when it began, ask them once, in that reply or the next, even while their
+story is still going: this question does not wait for an opening, because the
+times they name are where the history of what brings them starts. Lead into it
+from what they just said, then ask it in these words: "Looking back over your
+life so far, what were the two or three times when the most was going on, and
+about what years were they?" Keep it as a fact question about them that names
 `most_going_on`. It opens the history and does not replace it: the dated
 history still comes, and so does the later question about other times of major
 stress. Years named with nothing in them yet answer it. Each time they name
