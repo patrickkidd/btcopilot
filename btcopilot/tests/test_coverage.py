@@ -11,6 +11,7 @@ from btcopilot.extensions import db
 from btcopilot.models import Author, TurnEvent
 from btcopilot.modelturn import ModelTurn
 from btcopilot.schema import (
+    Cluster,
     DiagramData,
     Fact,
     FactState,
@@ -28,6 +29,7 @@ from btcopilot.toolbox import ToolName
 from btcopilot.turnlog import TurnEventKind
 
 BORN = "When were you born?"
+MOST = "the two or three times when the most was going on"
 ME = 1
 ADA, TOM, HOME, NELL = 2, 3, 4, 5
 SAM, BOND = 6, 7
@@ -97,8 +99,8 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     assert shown(model) == "\n".join(
         [
             coverage.HEAD,
-            "1 Wren (the person): birth date, schooling, work",
-            RESOLVED.format(known=2, resolved=2, required=13),
+            f"1 Wren (the person): birth date, {MOST}, schooling",
+            RESOLVED.format(known=2, resolved=2, required=14),
         ]
     )
 
@@ -106,7 +108,7 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     assert coverage.required(data) == [
         (fact, ItemKind.Person, ME)
         for fact in (
-            *coverage.SIBLING[0],
+            *coverage.OWN[0],
             Fact.Parents,
             Fact.Stress,
         )
@@ -117,8 +119,8 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     # the person chatting is alive
     assert coverage.states(data)[(Fact.Alive, ItemKind.Person, ME)] is FactState.Known
     assert done(first["turn_id"]) == {
-        "before": counts(13, 2),
-        "after": counts(13, 2, asked=1),
+        "before": counts(14, 2),
+        "after": counts(14, 2, asked=1),
     }
 
     at = version(family)
@@ -159,8 +161,8 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     assert shown(model) == "\n".join(
         [
             coverage.HEAD,
-            "1 Wren (the person): schooling, work, health",
-            RESOLVED.format(known=2, resolved=2, required=13),
+            f"1 Wren (the person): {MOST}, schooling, work",
+            RESOLVED.format(known=2, resolved=2, required=14),
         ]
     )
 
@@ -180,8 +182,8 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     # the person, each parent with who their parents are, the parents'
     # number of children, the sister
     assert done(second["turn_id"]) == {
-        "before": counts(13, 2, asked=1),
-        "after": counts(49, 10, 1),
+        "before": counts(14, 2, asked=1),
+        "after": counts(50, 10, 1),
     }
 
     at = version(family)
@@ -211,11 +213,11 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     assert shown(model) == "\n".join(
         [
             coverage.HEAD,
-            "1 Wren (the person): schooling, work, health",
+            f"1 Wren (the person): {MOST}, schooling, work",
             "2 Ada (mother): birth date, alive or not, schooling",
             "3 Tom (father): birth date, alive or not",
             "Said unknown: 1 Wren (the person): birth date",
-            RESOLVED.format(known=10, resolved=11, required=49),
+            RESOLVED.format(known=10, resolved=11, required=50),
         ]
     )
 
@@ -225,8 +227,8 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     assert found[(Fact.Parents, ItemKind.Person, SAM)] is FactState.NotAsked
     # Sam with who his parents are, and when they met and how many children
     assert done(third["turn_id"]) == {
-        "before": counts(49, 10, 1),
-        "after": counts(63, 15, 1),
+        "before": counts(50, 10, 1),
+        "after": counts(64, 15, 1),
     }
 
 
@@ -344,7 +346,7 @@ def test_under_a_plateau_the_list_is_cut_to_the_nearest_few(family):
     assert coverage.block(data, plateau=2).splitlines() == [
         coverage.HEAD,
         "Your plateau note holds, turn 2 of 5: the nearest 3 only.",
-        "1 Wren (the person): birth date, schooling, work",
+        f"1 Wren (the person): birth date, {MOST}, schooling",
         full[-1],
     ]
 
@@ -371,7 +373,7 @@ def test_a_plateau_note_lapses_after_five_turns(web, token, family, monkeypatch)
         f"Your plateau note holds, turn {turn} of 5: the nearest 3 only."
         for turn in range(1, coverage.PLATEAU_TURNS + 1)
     ]
-    assert seen[0] == seen[-1] == "1 Wren (the person): birth date, schooling, work"
+    assert seen[0] == seen[-1] == f"1 Wren (the person): birth date, {MOST}, schooling"
 
 
 def test_a_new_person_ends_the_plateau(web, token, family, monkeypatch):
@@ -394,6 +396,44 @@ def test_a_new_person_ends_the_plateau(web, token, family, monkeypatch):
     model = coach(monkeypatch, Model(plateaued(True), said("Go on.")))
     post(web, token, "Go on.")
     assert not held(model).startswith("Your plateau note holds")
+
+
+def test_the_times_the_most_was_going_on_lead_until_a_question_on_them_closes(family):
+    # R-0735
+    data = family.get_diagram_data()
+    data.events = [
+        {
+            "id": 2,
+            "kind": "birth",
+            "child": ME,
+            "dateTime": "1980-04-02",
+            "dateCertainty": "certain",
+        }
+    ]
+    data.clusters = [
+        asdict(Cluster(id="c1", title="The move", summary="", eventIds=[3, 4, 5]))
+    ]
+    most = (Fact.MostGoingOn, ItemKind.Person, ME)
+    assert coverage.block(data).splitlines()[1] == (
+        f"1 Wren (the person): {MOST}, schooling, work"
+    )
+    # the clusters make the periods of major stress known, never these times
+    assert coverage.states(data)[most] is FactState.NotAsked
+
+    data.questions = [
+        {
+            "id": "q1",
+            "text": "What were the two or three times when the most was going on?",
+            "kind": "fact",
+            "state": "resolved",
+            "outcome": "answered",
+            "item_kind": "person",
+            "item_id": "1",
+            "fact": "most_going_on",
+        }
+    ]
+    assert coverage.states(data)[most] is FactState.Known
+    assert MOST not in coverage.block(data)
 
 
 def test_a_job_told_unasked_and_noted_as_work_counts_as_known(family):

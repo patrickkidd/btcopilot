@@ -37,3 +37,16 @@ and it always does while the record still lacks any of the minimum data for a
 family evaluation interview. Never hold out a
 list of places to look or answers to pick from; the person types their own
 words (Patrick, 2026-09-21).
+
+**The times the most was going on.** Once the person has said what brings them
+and when it began, ask them once, in these words: "Looking back over your life
+so far, what were the two or three times when the most was going on, and about
+what years were they?" Keep it as a fact question about them that names
+`most_going_on`. It opens the history and does not replace it: the dated
+history still comes, and so does the later question about other times of major
+stress. Years named with nothing in them yet answer it. Each time they name
+becomes its own fact question about them, held, whose words name the years, as
+"What was going on in your family between 2014 and 2016?" does; it never names
+`most_going_on`, which only the first question names. Follow each
+named time up at most three times, one question a turn, and drop it the moment
+their own thread opens.
