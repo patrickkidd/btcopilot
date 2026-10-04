@@ -574,7 +574,9 @@ test.describe("the message box while the coach replies", () => {
       stops(json);
       await route.fulfill({ response, json });
     });
-    const read = page.waitForResponse(/\/app\/statements\?diagram_id=\d+$/);
+    // the read is dropped, with no response, when the page's own open begins
+    // after it
+    const read = page.waitForRequest(/\/app\/statements\?diagram_id=\d+$/).then((r) => r.response());
     await page.goto("/app/");
     await expect(page.locator("#view .ss")).toBeVisible();
     await read;
