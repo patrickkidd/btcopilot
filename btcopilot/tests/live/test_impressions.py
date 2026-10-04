@@ -15,8 +15,6 @@ Invented names only.
 
 import re
 
-from btcopilot import diagramjson
-from btcopilot.extensions import db
 from btcopilot.record import CAUSE, LITERATURE
 from btcopilot.schema import QuestionKind
 from btcopilot.tests.live.conftest import MOTHER
@@ -116,18 +114,12 @@ ASKED_FOR_BOOKS = (
 
 
 def looked_back(coach, said: str = LOOKING_BACK) -> list[dict]:
-    """One turn on the fixed thread, from a record holding no impression yet:
-    a run left raised gives the next run's coach nothing new to say."""
+    """One turn on the fixed thread, on a record of its own."""
     coach.record(
         people=[EDITH, WALT, dict(MOTHER, parents=11)],
         pair_bonds=[GRANDPARENTS],
         events=EVENTS,
     )
-    diagram = coach.user.free_diagram
-    data = diagramjson.loads(diagram.data)
-    data["questions"] = []
-    diagram.data = diagramjson.encode(data, diagram.data)
-    db.session.commit()
     return coach.turn(said)
 
 

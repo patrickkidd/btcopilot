@@ -433,3 +433,16 @@ def test_an_impression_that_mentions_the_literature_is_refused(family, text):
         impress(box(family), text=text)
     assert "books or theory" in refused.value.plain
     assert stored(family) == {}
+
+
+def test_a_family_member_who_shares_an_authors_name_is_not_the_literature(family):
+    # R-0688
+    toolbox = box(family)
+    toolbox.call(ToolName.EditPerson, {"name": "Gilbert"})
+    gilbert = next(p["id"] for p in toolbox.data.people if p.get("name") == "Gilbert")
+    impress(
+        toolbox,
+        text="It looks to me as if Gilbert steps in whenever things get tense.",
+        evidence=({"kind": "person", "id": str(gilbert)},),
+    )
+    assert list(stored(family).values())[0]["text"].startswith("It looks to me")

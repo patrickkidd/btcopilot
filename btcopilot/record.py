@@ -1244,7 +1244,7 @@ def _questions(data: dict, deltas: list[dict], author: Author):
             _rests(data, question, question_id, added)
             if added:
                 _uncaused(question, question_id)
-                _unsourced(question, question_id)
+                _unsourced(data, question, question_id)
         else:
             _linked(data, question, question_id)
             _names(question, question_id)
@@ -1347,11 +1347,23 @@ def _uncaused(impression: dict, impression_id: str):
         )
 
 
-def _unsourced(impression: dict, impression_id: str):
-    found = LITERATURE.search(impression.get("text") or "")
+def sourced(text: str, people: list[dict]) -> str | None:
+    """The first word of the text that points to the literature, or None. An
+    author's surname that is also a name in this family is the family's."""
+    names = {
+        (p.get(field) or "").lower() for p in people for field in ("name", "last_name")
+    }
+    return next(
+        (m.group(0) for m in LITERATURE.finditer(text) if m.group(0).lower() not in names),
+        None,
+    )
+
+
+def _unsourced(data: dict, impression: dict, impression_id: str):
+    found = sourced(impression.get("text") or "", _collection(data, ItemKind.Person))
     if found:
         raise Invalid(
-            f"impression {impression_id} mentions the literature ({found.group(0)!r}): "
+            f"impression {impression_id} mentions the literature ({found!r}): "
             "speak from what this person has told you, never books, the theory, "
             "research or an author",
             "The impression mentions books or theory. Say it from what was told.",
