@@ -196,3 +196,4 @@ R-0729 | TEST OWED | the play-by-play drawings are not built yet; tests come wit
 R-0730 | TEST OWED | the play-by-play drawings are not built yet; tests come with that build
 R-0732 | TEST OWED | the case report screen's card 6 test comes with the screen
 R-0733 | TEST OWED | the case report screen's family sides test comes with the screen
+R-0734 | TEST OWED | the play-by-play words placement is not built yet; tests come with that build
