@@ -327,9 +327,8 @@ test.describe("what the coach aims at with people and moves", () => {
  * other; the cluster's events are about `about`, toward `toward`, and name
  * everyone, so the whole family is drawn. With `loop`, Hal is recorded as the
  * first couple's child, so he is his own forebear. */
-const joinedFamily = (pairs: [string, string][], sibs: number, about: string, toward: string, loop = false) =>
-  async (route: import("@playwright/test").Route) => {
-    const tl = await (await route.fetch()).json();
+/** A family of two joined lines laid into the record `tl`; the ids by name. */
+const joined = (tl: Record<string, any>, pairs: [string, string][], sibs: number, about: string, toward: string, loop = false) => {
     let id = 9000;
     const ids: Record<string, number> = {};
     const people: Record<string, unknown>[] = [];
@@ -362,6 +361,13 @@ const joinedFamily = (pairs: [string, string][], sibs: number, about: string, to
     if (loop) people.find((p) => p.name === "Hal")!.parents = pbs[0];
     for (const e of tl.events) Object.assign(e, { person: ids[about], person_name: about, spouse: null, child: null, relationshipTargets: [ids[toward]], relationshipTriangles: Object.values(ids) });
     Object.assign(tl, { people, pair_bonds });
+    return ids;
+  };
+
+const joinedFamily = (pairs: [string, string][], sibs: number, about: string, toward: string, loop = false) =>
+  async (route: import("@playwright/test").Route) => {
+    const tl = await (await route.fetch()).json();
+    joined(tl, pairs, sibs, about, toward, loop);
     await route.fulfill({ json: tl });
   };
 
@@ -513,6 +519,18 @@ test.describe("the whole family stepped through dates", () => {
     } else expect(row!.x + row!.width - (at.x + at.width)).toBeLessThan(24);
   });
 
+  // R-0755
+  test("has no Family button on a record with no dated birth, couple, death or relationship shift", async ({ page }) => {
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+      const tl = await (await route.fetch()).json();
+      tl.events.forEach((e: Record<string, unknown>) => Object.assign(e, { kind: "noted", relationship: null, spouse: null, title: e.title ?? "Noted" }));
+      await route.fulfill({ json: tl });
+    });
+    await settle(page);
+    await expect(page.locator("#caption .cta")).toBeVisible();
+    await expect(page.locator("#caption #cap-family")).toHaveCount(0);
+  });
+
   // R-0742, R-0755, R-0756
   test("opens on the record today and steps back through its history, the not yet born faded, and browser back returns to the timeline", async ({ page }) => {
     const errors = watched(page);
@@ -525,7 +543,7 @@ test.describe("the whole family stepped through dates", () => {
     await expect(drawer(page).locator(".dots")).toHaveCount(0);
     await expect(drawer(page).locator('[data-act="next"]')).toBeDisabled();
     const top = drawer(page).locator(".when");
-    await expect(top).toHaveText("Feb 2010— Ben died");
+    await expect(top).toHaveText("February 2010— Ben died");
     const picture = () => drawer(page).locator(".draw").innerHTML();
     const dot = drawer(page).locator('.draw .p[data-id="9100"]');
     await expect(dot).not.toHaveClass(/\byet\b/);
@@ -539,12 +557,12 @@ test.describe("the whole family stepped through dates", () => {
       expect(now).not.toBe(was);
       was = now;
     };
-    await tap("back", "Sep 2001— Dot was born");
+    await tap("back", "September 2001— Dot was born");
     // the last move before Dot was born
     await tap("back", "");
     await expect(dot).toHaveClass(/\byet\b/);
     expect(Number(await dot.evaluate((g) => getComputedStyle(g).opacity))).toBeCloseTo(0.3);
-    await tap("next", "Sep 2001— Dot was born");
+    await tap("next", "September 2001— Dot was born");
     await expect(dot).not.toHaveClass(/\byet\b/);
     expect(await sideways(page)).toBe(false);
     await page.goBack();
@@ -568,6 +586,50 @@ test.describe("the whole family wider than the phone", () => {
     expect(await frame.evaluate((d) => d.scrollWidth > d.clientWidth)).toBe(true);
     expect(await sideways(page)).toBe(false);
     await drawer(page).locator('[data-act="back"]').click();
+    expect(await sideways(page)).toBe(false);
+    expect(errors).toEqual([]);
+  });
+
+  // R-0744, R-0742
+  test("glides its frame to each step's person on Back and Next", async ({ page }) => {
+    const errors = watched(page);
+    let ids: Record<string, number> = {};
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+      const tl = await (await route.fetch()).json();
+      ids = joined(tl, [["Hugo", "Wanda"]], 6, "Hs5", "Hugo");
+      const blank = { ...tl.events[0], relationship: null, relationshipTargets: [], relationshipTriangles: [], symptom: null, anxiety: null, functioning: null, title: null, description: null, person: null, spouse: null };
+      // two births, and two shifts that light no one
+      ["Hs0", "Ws5", "Hs1", "Ws4"].forEach((k, i) =>
+        tl.events.push(
+          i % 2
+            ? { ...blank, id: 9500 + i, kind: "shift", label: "Cut off", dateTime: `203${i}-01-01`, person: ids[k], relationship: "cutoff", relationshipTargets: [ids.Hugo], title: "Cut off", description: "Left home", person_name: k, sentence: `${k} left home` }
+            : { ...blank, id: 9500 + i, kind: "birth", label: "Born", dateTime: `203${i}-01-01`, child: ids[k], person_name: k, sentence: `${k} was born` },
+        ),
+      );
+      await route.fulfill({ json: tl });
+    });
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+    const frame = drawer(page).locator(".draw");
+    expect(await frame.evaluate((d) => d.scrollWidth > d.clientWidth)).toBe(true);
+    const inFrame = (id: number) =>
+      page.evaluate((id) => {
+        const d = document.querySelector(".pbp .draw")!.getBoundingClientRect();
+        const p = document.querySelector(`.pbp .draw .p[data-id="${id}"] .shape`)!.getBoundingClientRect();
+        return p.left >= d.left && p.right <= d.right;
+      }, id);
+    const shown = async (name: string, what: string) => {
+      await expect(drawer(page).locator(".when")).toContainText(`${name} ${what}`);
+      await expect.poll(() => inFrame(ids[name])).toBe(true);
+    };
+    await shown("Ws4", "left home");
+    for (const [name, what] of [["Hs1", "was born"], ["Ws5", "left home"], ["Hs0", "was born"]]) {
+      await drawer(page).locator('[data-act="back"]').click();
+      await shown(name, what);
+    }
+    await drawer(page).locator('[data-act="next"]').click();
+    await shown("Ws5", "left home");
     expect(await sideways(page)).toBe(false);
     expect(errors).toEqual([]);
   });
