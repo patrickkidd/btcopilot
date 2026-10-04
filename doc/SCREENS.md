@@ -532,7 +532,7 @@ What it is for: a professional's several client records.
 What it is for: one screen to present your own record from, in the order the Bowen literature presents a case, opened from the icon in the title row at /app/case-report (Patrick's seminar, 16 October 2026). It reads the record the chat reads and draws again after every coach turn.
 
 - It opens from an icon in the title row over the chat, and the coach opens it when asked; it is a full screen with a back arrow to the chat. [built] {R-0714}
-- Any user can open it on a diagram they have open; sharing it with others comes later. [built] {R-0715}
+- Every user can show the case report of the family the app is on; letting other people see it is for later. [built] {R-0715}
 - Ten cards in the approved order: the coach's main guess, who is in the family, what brought the person, the couple since they met (or the person's parents and partners, stage by stage, when not married), each parent's own family, the coach's guess, the person's own part, where there was a choice, what to work on, the effort. The titles are the ones Patrick reviewed. [built] {R-0713, R-0716}
 - A strip under the timeline has one item per card in the same order; a tap glides the cards to that card, rings it, and puts an open play-by-play away. [built] {R-0702}
 - Text never folds and cards never collapse; only each side of the family folds. [built] {R-0689, R-0690}
