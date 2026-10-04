@@ -124,6 +124,13 @@ test.describe("the case report's taps", () => {
     await expect(page.locator("#case-pbp")).toHaveClass(/in/);
   });
 
+  // R-0715
+  test("the header names who presents, by name and never by email", async ({ page }) => {
+    await open(page);
+    await expect(page.locator("#case-title")).toHaveText("Nora · Case report");
+    await expect(page.locator("#case-by")).toHaveText("presented by Nora Halloran");
+  });
+
   // R-0691, R-0692
   test("a card's book raises its passages and puts them away", async ({ page }) => {
     await open(page);

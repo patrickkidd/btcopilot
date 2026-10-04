@@ -137,7 +137,7 @@ export class CaseReport implements View {
     this.column.hidden = !wide;
     let v;
     try {
-      v = caseView(opened.record, opened.sittings, opened.diagram?.owner ?? "");
+      v = caseView(opened.record, opened.sittings, opened.diagram?.owner_name ?? null);
     } catch (error) {
       console.error(error);
       this.body.innerHTML = `<p class="fault">The case report cannot be drawn from this record: ${esc((error as Error).message)}</p>`;

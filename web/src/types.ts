@@ -535,6 +535,8 @@ export interface Diagram {
   access: Access;
   /** The full name of the person the diagram belongs to, or their email. */
   owner: string;
+  /** The owner's full name, or null when the account has none; never an email. */
+  owner_name: string | null;
 }
 
 /** Someone with an account, as an admin's search finds them. */

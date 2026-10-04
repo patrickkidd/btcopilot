@@ -111,7 +111,8 @@ export interface CaseView {
   name: string;
   him: string;
   his: string;
-  owner: string;
+  /** Who presents: the owner's name, or null for an account with no name. */
+  owner: string | null;
   /** Today, as a year with its fraction: the date the pictures stand at. */
   now: number;
   household: Still;
@@ -487,7 +488,7 @@ const onCard = (card: CaseReportCard | null) => (q: AskedQuestion) => q.case_rep
  * before (R-0709), so a stale second is never shown. */
 const newest = (all: AskedQuestion[]) => all[all.length - 1] ?? null;
 
-export function caseView(tl: Timeline, sessions: Session[], owner: string): CaseView {
+export function caseView(tl: Timeline, sessions: Session[], owner: string | null): CaseView {
   const r = new Reader(tl);
   const s = r.subject;
   const asked = tl.asked_questions;
