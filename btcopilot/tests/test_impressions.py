@@ -416,3 +416,20 @@ def test_an_impression_that_says_what_came_first_and_how_close_is_kept(family):
     # R-0687, R-0569, R-0504
     impress(box(family), text="The drinking started within a year of losing the job.")
     assert list(stored(family).values())[0]["text"].startswith("The drinking")
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "The books I go by would call this a cutoff.",
+        "In the literature this is a well-known pattern.",
+        "Research says first-borns often take this on.",
+        "Bowen would see your mother at the centre of this.",
+    ],
+)
+def test_an_impression_that_mentions_the_literature_is_refused(family, text):
+    # R-0688
+    with pytest.raises(ToolError) as refused:
+        impress(box(family), text=text)
+    assert "books or theory" in refused.value.plain
+    assert stored(family) == {}

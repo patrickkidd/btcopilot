@@ -1244,6 +1244,7 @@ def _questions(data: dict, deltas: list[dict], author: Author):
             _rests(data, question, question_id, added)
             if added:
                 _uncaused(question, question_id)
+                _unsourced(question, question_id)
         else:
             _linked(data, question, question_id)
             _names(question, question_id)
@@ -1325,6 +1326,15 @@ CAUSE = re.compile(
 )
 
 
+# Words that point a person away from their own story to sources behind the
+# coach (R-0688).
+LITERATURE = re.compile(
+    r"\b(books?|literature|the theory|theories|research|Bowen|Kerr|Havstad|Papero"
+    r"|Gilbert|Titelman)\b",
+    re.IGNORECASE,
+)
+
+
 def _uncaused(impression: dict, impression_id: str):
     found = CAUSE.search(impression.get("text") or "")
     if found:
@@ -1334,6 +1344,17 @@ def _uncaused(impression: dict, impression_id: str):
             "and claim no more than what it rests on holds",
             "The impression says one thing caused another. Say what came first "
             "and how close in time instead.",
+        )
+
+
+def _unsourced(impression: dict, impression_id: str):
+    found = LITERATURE.search(impression.get("text") or "")
+    if found:
+        raise Invalid(
+            f"impression {impression_id} mentions the literature ({found.group(0)!r}): "
+            "speak from what this person has told you, never books, the theory, "
+            "research or an author",
+            "The impression mentions books or theory. Say it from what was told.",
         )
 
 
