@@ -230,6 +230,6 @@ def test_the_case_report_names_its_owner_by_name_and_never_by_email(flask_app):
     named = install("case-report")
     nameless = install("one")
 
-    assert diagram_payload(named.free_diagram, named)["owner_name"] == "Nora Halloran"
+    assert diagram_payload(named.free_diagram, named)["owner_name"] == "Nora"
     assert diagram_payload(nameless.free_diagram, nameless)["owner_name"] is None
     assert diagram_payload(nameless.free_diagram, nameless)["owner"] == nameless.username

@@ -57,8 +57,8 @@ def diagram_payload(diagram: Diagram, user) -> dict:
         "owned": diagram.user_id == user.id,
         "access": access(diagram, user),
         "owner": diagram.user.full_name().strip() or diagram.user.username,
-        # the owner's name alone, for the case report's header, never an email
-        "owner_name": diagram.user.full_name().strip() or None,
+        # the owner's first name, for the case report's header, never an email
+        "owner_name": diagram.user.first_name or None,
     }
 
 

@@ -101,3 +101,17 @@ def test_their_answer_about_their_own_part_is_kept_as_their_view(coach):
     coach.turn("Honestly, I think I go quiet and stay away instead of telling her what I need.")
     answered = stored(coach)["q1"]
     assert (answered["outcome"], bool(answered.get("answer"))) == ("answered", True), answered
+
+
+AIM = {"id": 44, "kind": "noted", "person": 1, "dateTime": "2026-09-01",
+       "title": "Working on visiting more", "description": "Said she is working on visiting her mother more",
+       "dateCertainty": "approximate"}
+
+
+@passes(2, of=3)
+def test_what_to_work_on_rests_first_on_where_they_said_what_they_are_working_on(coach):
+    # R-0707
+    coach.record(people=[dict(MOTHER)], events=[*EVENTS, AIM])
+    turn = coach.turn("So what do you think I should work on, and what should I expect when I do?")
+    marked = carded(turn, (ToolName.AddImpression,), "work_on")
+    assert marked and marked[0]["args"]["evidence"][0] == {"kind": "event", "id": "44"}, marked
