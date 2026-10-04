@@ -6,7 +6,6 @@ from decimal import Decimal
 
 from btcopilot.modelturn import Spent
 from btcopilot.llmutil import local_model
-from btcopilot.provider import app_model
 
 MILLION = Decimal(1_000_000)
 
@@ -23,7 +22,6 @@ FREE = Price(Decimal(0), Decimal(0), Decimal(0), Decimal(0))
 OPUS = Price(Decimal("5.00"), Decimal("25.00"), Decimal("6.25"), Decimal("0.50"))
 FLASH = Price(Decimal("0.75"), Decimal("3.75"), Decimal(0), Decimal("0.075"))
 
-# Anthropic's own rates; a Bedrock call is charged the same.
 PRICES = {
     "claude-opus-4-6": OPUS,
     "claude-opus-4-8": OPUS,
@@ -39,9 +37,7 @@ PRICES = {
     ),
     # Google's paid-tier text rates, ai.google.dev/gemini-api/docs/pricing, read
     # 2026-09-28. The 3.6 to 3.8 Flash rates double on 2027-01-01. Gemini keeps
-    # its cache without a write charge; thinking is billed as output. Gemini
-    # no longer coaches, but the extraction, clustering and evaluation calls
-    # still run on it off Bedrock, and every call is priced.
+    # its cache without a write charge; thinking is billed as output.
     "gemini-3.1-pro": Price(
         Decimal("2.00"), Decimal("12.00"), Decimal(0), Decimal("0.20")
     ),
@@ -85,7 +81,6 @@ def heard(model: str, seconds: float) -> Decimal:
 def price(model: str) -> Price:
     if model == local_model():
         return FREE
-    model = app_model(model)
     matches = [prefix for prefix in PRICES if model.startswith(prefix)]
     if not matches:
         raise KeyError(f"No price for model {model}")

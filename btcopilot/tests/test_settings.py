@@ -74,10 +74,10 @@ def test_an_auditor_turns_shadows_on_and_only_an_admin_sees_their_cost(
 ):
     # R-0637, R-0642, R-0643
     test_user.roles = btcopilot.ROLE_AUDITOR
-    setting.write(SettingKey.ShadowCandidates, ["sonnet", "haiku-4.5"])
-    body = shadows(web, token, ["sonnet", "haiku-4.5"]).get_json()
-    assert body[PrefKey.ShadowModels.value] == ["sonnet", "haiku-4.5"]
-    assert body["shadow_candidates"] == ["sonnet", "haiku-4.5"]
+    setting.write(SettingKey.ShadowCandidates, ["sonnet", "gemini-pro"])
+    body = shadows(web, token, ["sonnet", "gemini-pro"]).get_json()
+    assert body[PrefKey.ShadowModels.value] == ["sonnet", "gemini-pro"]
+    assert body["shadow_candidates"] == ["sonnet", "gemini-pro"]
     assert "shadow_cost" not in body
 
     test_user.roles = btcopilot.ROLE_ADMIN
@@ -89,7 +89,7 @@ def test_an_auditor_turns_shadows_on_and_only_an_admin_sees_their_cost(
     db.session.flush()
     # the first turn ran on both models, the second on one
     ran(said, "t1", "sonnet", "0.30")
-    ran(said, "t1", "haiku-4.5", "0.10")
+    ran(said, "t1", "gemini-pro", "0.10")
     ran(said, "t2", "sonnet", "0.20")
     db.session.commit()
     body = web.get("/app/preferences").get_json()
@@ -103,7 +103,7 @@ def test_only_sonnet_is_a_shadow_model_until_an_admin_sets_others(
     test_user.roles = btcopilot.ROLE_AUDITOR
     db.session.commit()
     assert web.get("/app/preferences").get_json()["shadow_candidates"] == ["sonnet"]
-    assert shadows(web, token, ["haiku-4.5"]).status_code == 400
+    assert shadows(web, token, ["gemini-pro"]).status_code == 400
     assert test_user.pref(PrefKey.ShadowModels) == ()
 
 
@@ -115,8 +115,8 @@ def test_a_model_taken_off_the_shadow_models_is_dropped_from_whoever_had_it(
 ):
     # R-0637
     test_user.roles = btcopilot.ROLE_AUDITOR
-    setting.write(SettingKey.ShadowCandidates, ["sonnet", "haiku-4.5"])
-    shadows(web, token, ["sonnet", "haiku-4.5"])
+    setting.write(SettingKey.ShadowCandidates, ["sonnet", "gemini-pro"])
+    shadows(web, token, ["sonnet", "gemini-pro"])
     setting.write(SettingKey.ShadowCandidates, candidates)
     body = web.get("/app/preferences").get_json()
     assert body[PrefKey.ShadowModels.value] == left

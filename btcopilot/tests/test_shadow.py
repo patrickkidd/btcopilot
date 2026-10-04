@@ -241,7 +241,7 @@ def test_each_shadow_model_runs_the_turn_again_on_its_own(
 ):
     # R-0596
     coach(monkeypatch, "btcopilot.turns.model_for", Model(said("Tell me about Nell.")))
-    replies = {"haiku-4.5": "How much older is she?", "sonnet": "Older by how much?"}
+    replies = {"gemini-pro": "How much older is she?", "sonnet": "Older by how much?"}
     monkeypatch.setattr(
         "btcopilot.shadow.model_for", lambda name: Model(said(replies[name]))
     )
@@ -257,25 +257,6 @@ def test_each_shadow_model_runs_the_turn_again_on_its_own(
         body["turn_id"],
         *(f"shadow-{row.id}" for row in rows),
     }
-
-
-def test_a_stored_shadow_the_app_no_longer_offers_is_skipped(
-    web, token, test_user, monkeypatch
-):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
-    coach(monkeypatch, "btcopilot.turns.model_for", Model(said("Tell me about Nell.")))
-    coach(monkeypatch, "btcopilot.shadow.model_for", Model(said("Older by how much?")))
-    setting.write(SettingKey.ShadowCandidates, ["gemini-flash", "sonnet"])
-    shadows(test_user, "sonnet")
-    # stored before the app dropped the model, so it never met the setting's check
-    test_user.preferences = dict(
-        test_user.preferences, shadow_models=["gemini-flash", "sonnet"]
-    )
-    db.session.commit()
-    with patch("btcopilot.shadow.enqueue", shadow.run):
-        post(web, token, "My sister is Nell.")
-    assert [row.model for row in ShadowTurn.query] == ["sonnet"]
-    assert test_user.pref(PrefKey.ShadowModels) == ("sonnet",)
 
 
 def test_a_broken_shadow_keeps_its_error_and_leaves_no_scratch(
@@ -404,8 +385,7 @@ def test_a_backfill_runs_only_the_turns_not_yet_run(web, token, test_user, monke
     )
     real.turns[0].spent = Spent(input=1_000_000, output=0)
     first = post(web, token, "My sister is Nell.")
-    setting.write(SettingKey.ShadowCandidates, ["sonnet", "haiku-4.5"])
-    shadows(test_user, "haiku-4.5")
+    shadows(test_user, "sonnet")
     with patch("btcopilot.shadow.enqueue"):
         second = post(web, token, "She is older.")
     shadows(test_user)
@@ -415,16 +395,18 @@ def test_a_backfill_runs_only_the_turns_not_yet_run(web, token, test_user, monke
     db.session.commit()
 
     assert shadow.untraced(test_user) == 1
-    assert [s.turn_id for s in shadow.pending(test_user, "sonnet")] == [
+    assert [s.turn_id for s in shadow.pending(test_user, "gemini-flash")] == [
         first["turn_id"],
         second["turn_id"],
     ]
-    usd, unpriced = shadow.estimate(shadow.pending(test_user, "sonnet")[:1], "sonnet")
-    assert (usd, unpriced) == (Decimal("2.00"), 0)
+    usd, unpriced = shadow.estimate(
+        shadow.pending(test_user, "gemini-flash")[:1], "gemini-flash"
+    )
+    assert (usd, unpriced) == (Decimal("0.75"), 0)
     enqueue = Mock()
     with patch("btcopilot.shadow.enqueue", enqueue):
-        assert shadow.backfill(test_user, "haiku-4.5") == 1
-    rows = ShadowTurn.query.filter_by(model="haiku-4.5").order_by(ShadowTurn.id).all()
+        assert shadow.backfill(test_user, "sonnet") == 1
+    rows = ShadowTurn.query.filter_by(model="sonnet").order_by(ShadowTurn.id).all()
     assert [(r.turn_id, r.statement_id) for r in rows] == [
         (second["turn_id"], second["statement_id"]),
         (first["turn_id"], first["statement_id"]),

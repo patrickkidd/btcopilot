@@ -19,6 +19,9 @@ x-app-env: &app-env
   OTEL_EXPORTER_OTLP_ENDPOINT: http://fd-alloy:4318
   OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
   OTEL_RESOURCE_ATTRIBUTES: deployment.environment=production
+  # Read by Google's library, not by the app's code, and only when
+  # BTCOPILOT_GEMINI_ENDPOINT is vertex (README.md, "Gemini settings").
+  GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp-sa.json
 
 # No container_name on the app and the worker: `docker rollout <service>` starts the
 # new container beside the old one and stops the old one only once the new one is
@@ -30,6 +33,7 @@ x-app: &app
   volumes:
     - ./instance:/app/instance
     - /etc/fd/age.key:/run/secrets/age.key:ro
+    - ${GCP_SA_FILE:-/etc/fd/gcp-sa.json}:/run/secrets/gcp-sa.json:ro
   depends_on:
     fd-postgres:
       condition: service_healthy

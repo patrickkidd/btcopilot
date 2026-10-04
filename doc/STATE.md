@@ -1785,32 +1785,9 @@ Trying in the next mockup round, not ruled (Patrick, 2026-10-02, said of frame P
 Mockup version 5 (2026-10-02, Section A variations on Patrick's whole record): twelve panes, each phone and desktop, labelled proposal, view or alternative, tabs per group; groups: the hierarchy headline (ten collapsed headlines, desktop rail), the summary box qualified by coverage, the coverage visual (on the family picture; a people grid; three numbers), the picture as the dashboard; three decisions on the page; the case file regenerated from the whole record (36 people, 84 events, 16 tracked questions); four critique rounds, the last gate clean; served from this laptop, attached to FD-367 (attachment 10086), and on the private corpus branch worker-mailbox at mailbox/FD-367/gallery-v5.html. Open for Patrick: the three decisions; the chat screen sharing code with the case page (patch saved in the worktree scratch); the app's picture drawing Sam at age minus four in the 1994 frame (chat-screen snapshot code, own ticket). Known small items left in version 5: the three-numbers frame is shown alone; two cards carry 40 to 80 words of prose.
 Next round, queued and not started: his rulings on the three version 5 decisions; the pinned-timeline trial; then the case page built as a real screen for the seminar, released under the deploy lock and the project's release rules. The FD-367 session ended at the flush of 2026-10-02; the next round starts in a new session from these notes and T-19 in doc/TOPICS.md.
 
-## The app's model calls on a Bedrock machine (built 2026-10-01, commit c14e053b on FD-367 after the 2026-10-02 rebase, not deployed)
+## The app's model calls on a Bedrock machine (built 2026-10-01, not deployed, held off FD-367)
 
-Patrick, 2026-10-01: build the Anthropic-on-Bedrock path on FD-367; Gemini is dropped, side-by-side
-testing included. Built: a provider setting, BTCOPILOT_MODEL_PROVIDER (anthropic by default, or
-bedrock), with Bedrock chosen by itself when CLAUDE_CODE_USE_BEDROCK is set; the AnthropicBedrock
-client on the AWS credential chain; the models mapped to us-west-2 inference profiles, the sonnet
-alias included; fail-early with no key fallback, so a missing sign-in stops the app at startup.
-Gemini is out of the coach and of side-by-side (shadow) testing (geminimodel.py deleted); the
-Gemini-named helper calls for cluster grouping, the coach eval judge and the synthetic suite run on
-Sonnet 5.5 on a Bedrock machine and still on Gemini on production; a stored shadow list naming an
-alias the app no longer offers is cleaned at that person's next turn, the alias dropped with a
-warning and the setting written back without it (the check sits in the shadow expiry function
-since the 2026-10-02 rebase onto master's FD-368 work); `bin/sandbox/sandbox up --real` needs no
-key on a Bedrock machine (doc/SETUP.md section 6). Proof: one real Opus 5.5 call through the coach
-path on Bedrock answered (E2E-DONE); 949 unit tests passed at the build, 1086 after the rebase,
-web build green. NOT-DONE: one coach turn through the whole sandbox stack
-on the Bedrock laptop, because the kit starts a local redis-server binary that is not installed
-there (needs sudo). The new tests cite R-0000 until a session with the key assigns the ruling's
-id; CI's citation guard fails until then.
-
-After the rollout, nothing need be done by hand about a shadow list stored under FD-365 that still
-names a Gemini alias the app no longer offers: the app drops it with a warning at that person's
-next turn and writes the setting back without it. To see or reset one anyway, on the box, `docker compose --env-file /etc/fd/secrets.env exec fd-app flask admin coach-model show`
-lists every person whose shadow list differs from off; for each one naming a Gemini alias, run
-`docker compose --env-file /etc/fd/secrets.env exec fd-app flask admin coach-model shadow <email> sonnet` (or `off`). The worker also
-skips an alias it no longer offers, one warning each, so an old setting never fails a turn.
+The Bedrock build (provider setting, AnthropicBedrock client, Gemini dropped from the coach and side-by-side testing) was reverted on FD-367 on 2026-10-03 and is kept on branch FD-367-bedrock, on top of master, for a later decision. Its notes are in doc/STATE.md on that branch.
 
 ## Jira / branches
 

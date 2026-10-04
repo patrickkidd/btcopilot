@@ -103,7 +103,7 @@ class Wire:
 def wire(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "not-a-key")
     sent = Wire()
-    with patch("btcopilot.llmutil.anthropic.Anthropic", lambda **k: sent):
+    with patch("btcopilot.coachmodel.anthropic.Anthropic", lambda **k: sent):
         yield sent
 
 
@@ -445,7 +445,7 @@ def test_what_a_call_writes_to_the_wire_the_next_call_and_turn_read_back(
         Reply([Block(type="text", text="What was she like?")]),
         Reply([Block(type="text", text="And your father?")]),
     )
-    with patch("btcopilot.llmutil.anthropic.Anthropic", lambda **k: script):
+    with patch("btcopilot.coachmodel.anthropic.Anthropic", lambda **k: script):
         for words in ["My sister is Nell.", "She was kind.", "He left."]:
             CoachTurn(
                 discussion, words, purpose=Purpose.Coach, model=CoachModel()

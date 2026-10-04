@@ -97,8 +97,8 @@ work; the file on Patrick's Mac also carries keys for his other projects.
 
 | Name | Needed for | Where it comes from |
 |---|---|---|
-| `ANTHROPIC_TESTING_KEY` | needed for `sandbox up --real` and the live evals, except on a Bedrock machine (section 6); spends real money, ask Patrick first | Anthropic console, the testing workspace |
-| `GOOGLE_GEMINI_API_KEY` | needed for `pytest --e2e` and `--real`, except on a Bedrock machine | Google AI Studio |
+| `ANTHROPIC_TESTING_KEY` | needed for `sandbox up --real` and the live evals; spends real money, ask Patrick first | Anthropic console, the testing workspace |
+| `GOOGLE_GEMINI_API_KEY` | needed for `pytest --e2e` and `--real` | Google AI Studio |
 | `ATLASSIAN_TOKEN` | needed for Jira reads and writes | Atlassian account, API tokens |
 | `GRAFANA_SA_TOKEN`, `GRAFANA_URL` | pushing dashboards (`bin/grafanapush.py`) | Grafana Cloud service account |
 | `DIGITALOCEAN_ADMIN` | box administration, confirmed with Patrick each time | DigitalOcean API tokens |
@@ -131,27 +131,6 @@ It needs Docker, `redis-server`, Ollama with the model (or `--real`), and the ag
 lives in `~/btcopilot-sandbox/<name>/` (override with `SANDBOX_HOME`); `.env` is read from the
 main clone's root (override with `SANDBOX_DOTENV`). `bin/sandbox/sandbox` with no arguments
 prints every command. Port 8888 is Patrick's own server: never use it.
-
-**A Bedrock machine.** Where Anthropic's API is unreachable and Claude is reached through Amazon
-Bedrock (Claude Code sets `CLAUDE_CODE_USE_BEDROCK` there), every model call the app makes goes
-through Bedrock with the machine's own AWS sign-in; no Anthropic or Google key is read, and a
-Gemini-named call is answered by Sonnet. The app picks Bedrock when `CLAUDE_CODE_USE_BEDROCK` is
-set or `BTCOPILOT_MODEL_PROVIDER=bedrock`; production leaves both unset and runs on the Anthropic
-key. Without a usable sign-in the app stops at startup and says so. Sign in yourself, once a day:
-
-```bash
-export AWS_PROFILE=default
-aws sso login
-export AWS_REGION=us-west-2
-export BTCOPILOT_MODEL_PROVIDER=bedrock
-bin/sandbox/sandbox up mine 8912 --real
-```
-
-The sandbox kit copies `BTCOPILOT_MODEL_PROVIDER` from the shell into the instance's settings file
-(Bedrock whenever `CLAUDE_CODE_USE_BEDROCK` is set, as it is inside Claude Code; in a plain
-terminal export it yourself, as above) and, with `--real`, needs `AWS_REGION` in the shell and no key. Without `--real` the coach stays on the
-local Ollama model. Not every Claude model has a Bedrock inference profile: the table is
-`BEDROCK_MODELS` in `btcopilot/provider.py`, and a model missing from it is named at startup.
 
 ## 7. Tests
 

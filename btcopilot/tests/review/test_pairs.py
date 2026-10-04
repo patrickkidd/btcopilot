@@ -21,7 +21,7 @@ from btcopilot.review.models import Pick, PickChoice, PickSource
 from btcopilot.review.models.pick import NOTE_CAP
 
 REAL = "claude-opus-5-5"
-SHADOW = "claude-sonnet-5-5"
+SHADOW = "gemini-3-flash"
 REPLY = "Your aunt Zoë moved to Tromsø the spring your father fell ill, yes?"
 
 
