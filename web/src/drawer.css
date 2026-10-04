@@ -32,7 +32,6 @@
 /* re-ruled 2026-10-04: a family wider than the drawer keeps its least size and scrolls sideways in its own frame */
 .pbp .draw { padding: 4px 0 0; border-top: 1px solid var(--line); overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
 .pbp .draw svg { display: block; width: 100%; height: 100%; }
-.pbp .draw .none { margin: 0; padding: 12px 16px; font: 400 15px/1.42 var(--sans); color: var(--faint); }
 
 .pbp .scroll .step { display: flex; align-items: center; gap: 4px; padding: 4px 10px 8px; }
 .pbp .dots { flex: 1; min-width: 0; display: flex; justify-content: center; }
@@ -67,6 +66,9 @@
 .pbp .tie.dash, .kmark .tie.dash { stroke-dasharray: 5 4; }
 .pbp .tie.now { stroke: var(--move); stroke-width: 2.2; }
 .pbp .kin { stroke: var(--faint); stroke-width: 1.3; fill: none; }
+/* a parent link that closes a parentage cycle, and the note naming it (R-0751) */
+.pbp .cut { stroke: var(--remove); stroke-width: 2; fill: none; }
+.pbp .cutn { font-size: 13px; fill: var(--remove); }
 .pbp .slash, .kmark .slash { stroke: var(--faint); stroke-width: 1.8; stroke-linecap: round; }
 .pbp .slash.now { stroke: var(--move); stroke-width: 2.4; }
 .pbp .lbn { font-size: 13px; fill: var(--ink); }

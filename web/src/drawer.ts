@@ -198,10 +198,10 @@ export class Drawer {
     const q = (sel: string) => this.panel.querySelector<HTMLElement>(sel)!;
     q(".wire").innerHTML = yearsLine(told.tl, told, this.i);
     const shot = told.shot(this.i);
-    q(".draw").innerHTML = told.drawable ? shot.svg : `<p class="none">This family can’t be drawn here yet.</p>`;
+    q(".draw").innerHTML = shot.svg;
     q(".scroll").innerHTML = below(told, this.i, this.statement);
     this.fit();
-    if (told.drawable) this.centre(shot.who);
+    this.centre(shot.who);
   }
 
   /** The person the step is about in the middle of the frame, when the picture is wider than it. */
@@ -215,10 +215,6 @@ export class Drawer {
     const told = this.told!;
     const lv = this.panel.querySelector<HTMLElement>(".lv")!;
     const draw = lv.querySelector<HTMLElement>(".draw")!;
-    if (!told.drawable) {
-      draw.style.height = "";
-      return;
-    }
     const L = told.layout;
     if (this.height === null) {
       const sc = lv.querySelector<HTMLElement>(".scroll")!;

@@ -1,6 +1,5 @@
 import {
   arrange,
-  Undrawable,
   draw,
   Mark,
   Sex,
@@ -217,8 +216,7 @@ const isPlaced = (m: Step["marks"][number]): m is Placed => !isArrow(m) && !isPa
 export class Told {
   readonly steps: Step[];
   readonly cast: Cast;
-  /** None when the family cannot be drawn: the words still play. */
-  private readonly laid: Layout | null;
+  readonly layout: Layout;
   /** The events the case is about: its cluster's, or the ones it was given. */
   readonly eventIds: number[];
   private readonly start = new Map<string, Tie>();
@@ -246,14 +244,7 @@ export class Told {
     }
     this.cast = castOf(r, this.steps, this.eventIds.map((id) => r.event(id)));
     this.cast.bonds.forEach((b) => this.start.set(`${b.a}|${b.b}`, b.st));
-    this.laid = (() => {
-      try {
-        return arrange(this.cast);
-      } catch (e) {
-        if (!(e instanceof Undrawable)) throw e;
-        return null;
-      }
-    })();
+    this.layout = arrange(this.cast);
   }
 
   /** Who a snapshot puts in the emphasis colour: the people its events are
@@ -266,15 +257,6 @@ export class Told {
           .map(([who]) => who)
       : [];
     return [...new Set([...placed.filter((m) => m.k === Mark.Emphasis).map((m) => m.who), ...family])];
-  }
-
-  get drawable(): boolean {
-    return this.laid !== null;
-  }
-
-  get layout(): Layout {
-    if (!this.laid) throw new Error("this family cannot be drawn");
-    return this.laid;
   }
 
   get length(): number {
@@ -295,7 +277,7 @@ export class Told {
       }),
     );
     const pairs = now.marks.filter(isPair);
-    const bonds = (this.laid?.bonds ?? []).map((b) => {
+    const bonds = this.layout.bonds.map((b) => {
       const k = `${b.a}|${b.b}`;
       const hit = pairs.filter((m) => pairKey(this.cast, m) === k);
       const fresh = hit.find((m) => m.k !== Mark.Couple);
@@ -347,7 +329,7 @@ export class Told {
       ...now.marks.filter(isKin).map((m) => ({ ...m, cls: Tone.Now })),
     ];
     const snap = this.told.snapshots[i];
-    const svg = this.laid && draw(this.laid, {
+    const svg = draw(this.layout, {
       t: now.t,
       bonds,
       marks,
@@ -357,7 +339,7 @@ export class Told {
       label: `${now.date}: ${snap.fact}`,
     });
     return {
-      svg: svg ?? "",
+      svg,
       who: lit[0] ?? this.cast.index,
       date: now.date,
       gap: i > 0 ? gapText(this.steps[i - 1].t, now.t) : null,

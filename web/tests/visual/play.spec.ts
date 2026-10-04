@@ -396,10 +396,27 @@ test.describe("a family the row rules cannot place", () => {
     expect(errors).toEqual([]);
   });
 
-  // R-0545
-  test("refuses only someone recorded as their own forebear: its words, and one plain line where the picture would be", async ({ page }) => {
+  // R-0751
+  test("draws someone recorded as their own forebear, the link closing the loop in the error colour with a note", async ({ page }) => {
     const errors = await opened(page, joinedFamily([["Hugo", "Wanda"]], 0, "Hugo", "Wanda", true));
-    await expect(drawer(page).locator(".draw")).toHaveText("This family can’t be drawn here yet.");
+    const draw = drawer(page).locator(".draw");
+    await expect(draw.locator("svg")).toBeVisible();
+    const ids = await draw.locator("svg .p").evaluateAll((gs) => gs.map((g) => (g as SVGGElement).dataset.id));
+    expect(ids).toHaveLength(7);
+    expect(new Set(ids).size).toBe(ids.length);
+    await expect(draw.locator("svg path.cut")).toHaveCount(1);
+    const note = (await draw.locator("svg text.cutn").allTextContents()).join(" ");
+    expect(note).toBe("Hal is recorded as Hugo’s ancestor and child");
+    const colour = await draw.locator("svg path.cut").evaluate((p) => getComputedStyle(p).stroke);
+    const red = await page.evaluate(() => {
+      const probe = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      probe.style.stroke = "var(--remove)";
+      document.querySelector(".pbp svg")!.append(probe);
+      const c = getComputedStyle(probe).stroke;
+      probe.remove();
+      return c;
+    });
+    expect(colour).toBe(red);
     await expect.poll(() => step(page)).toBe("1 of 4");
     const words = await drawer(page).locator(".scroll").innerText();
     await drawer(page).locator('[data-act="next"]').click();

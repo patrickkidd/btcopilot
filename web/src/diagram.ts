@@ -113,6 +113,15 @@ export interface Cast {
   /** A person with no family tie stands on the row of the one they move with. */
   assoc: Record<string, string>;
   until: number;
+  /** Parent links left out to break a parentage cycle; set by arrange. */
+  cut?: Cut[];
+}
+
+/** A parent link that closes a parentage cycle: left out of the layout and
+ * drawn in the error colour with a note (R-0751). */
+export interface Cut {
+  kid: string;
+  parent: string;
 }
 
 export enum Names {
@@ -185,6 +194,9 @@ export interface Layout {
   inset: Record<string, number>;
   /** Laid out by the fallback, generation by generation (ruled 2026-10-04). */
   loose: boolean;
+  cut: Cut[];
+  /** The note under the family naming each cut link, and its first line's baseline. */
+  note: { y: number; lines: string[] } | null;
 }
 
 export interface DrawnBond {
@@ -293,13 +305,6 @@ export const DEFAULTS: Options = {
   compact: false,
 };
 
-/** A family no rule can draw: someone is their own forebear. */
-export class Undrawable extends Error {
-  constructor(readonly who: string[]) {
-    super(`cannot draw: a parentage cycle through ${who.join(", ")}`);
-  }
-}
-
 /** Each person's parents and couples, read once from the cast. */
 interface Ties {
   parents: Record<string, string[]>;
@@ -344,9 +349,10 @@ interface Plan {
 /** The layout the approved page uses: names beside or above, and under the
  * shapes only when nothing else fits; scaled down as the last resort. A family
  * the row rules cannot place is laid out generation by generation instead
- * (Patrick, 2026-10-04); only a cycle in parentage is refused. */
-export function arrange(cast: Cast): Layout {
-  cycle(cast);
+ * (Patrick, 2026-10-04). Someone recorded as their own forebear is drawn
+ * too, the link that closes the loop left out and shown as an error. */
+export function arrange(given: Cast): Layout {
+  const cast = uncycle(given);
   try {
     return strict(cast);
   } catch (e) {
@@ -366,20 +372,42 @@ function strict(cast: Cast): Layout {
   }
 }
 
-function cycle(cast: Cast): void {
-  const { kidsOf } = ties(cast);
+/** The cast with each parentage cycle broken at its closing link (R-0751). */
+function uncycle(cast: Cast): Cast {
+  const cut: Cut[] = [];
+  let kids = cast.kids;
+  for (let c = loop(kids, cast); c; c = loop(kids, cast)) {
+    const { kid, parent } = c;
+    cut.push(c);
+    kids = kids
+      .map((k) => (k.of.includes(parent) ? { ...k, kids: k.kids.filter((id) => id !== kid) } : k))
+      .filter((k) => k.kids.length);
+  }
+  return cut.length ? { ...cast, kids, cut } : cast;
+}
+
+/** The first link the walk finds back to someone already on its path: the
+ * kid is that person, the parent the one found last. */
+function loop(kids: Brood[], cast: Cast): Cut | null {
+  const { kidsOf } = ties({ ...cast, kids });
   const done = new Set<string>();
   const path: string[] = [];
-  const walk = (id: string): void => {
+  const walk = (id: string): Cut | null => {
     path.push(id);
-    (kidsOf[id] ?? []).forEach((k) => {
-      if (path.includes(k)) throw new Undrawable(path.slice(path.indexOf(k)).map((p) => cast.people[p].name));
-      if (!done.has(k)) walk(k);
-    });
+    for (const k of kidsOf[id] ?? []) {
+      if (path.includes(k)) return { kid: k, parent: id };
+      const c = done.has(k) ? null : walk(k);
+      if (c) return c;
+    }
     path.pop();
     done.add(id);
+    return null;
   };
-  Object.keys(cast.people).forEach((id) => done.has(id) || walk(id));
+  for (const id of Object.keys(cast.people)) {
+    const c = done.has(id) ? null : walk(id);
+    if (c) return c;
+  }
+  return null;
 }
 
 export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
@@ -761,11 +789,9 @@ function looseOrder(cast: Cast, t: Ties, gen: Record<string, number>, comps: str
       const here = sub[g];
       const key: Record<string, number> = {};
       here.forEach((id, i) => {
+        // a partner in the same row is left out, or each pass swaps the couple (R-0747)
         const v = near(id, r).map((q) => there.indexOf(q));
-        const w = partners(id)
-          .filter((q) => gen[q] === g)
-          .map((q) => here.indexOf(q));
-        key[id] = v.length ? [...v, ...w].reduce((s, a) => s + a, 0) / (v.length + w.length) : i;
+        key[id] = v.length ? v.reduce((s, a) => s + a, 0) / v.length : i;
       });
       sub[g] = here
         .map((id, i) => ({ id, i }))
@@ -881,7 +907,11 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   // a step's words never push neighbours apart: each finds room of its own on
   // its step (word placement in draw), so only names and lasting marks count
   const between = (a: string, b: string) => rightExt(a, Reach.Marks) + leftExt(b, Reach.Marks);
+  const group: Record<string, number> = {};
+  plan.comps.forEach((c, i) => c.forEach((id) => (group[id] = i)));
   function gapFor(a: string, b: string): number {
+    // a family with no tie to the person's stands clearly apart (R-0750)
+    if (group[a] !== group[b]) return 2 * d.LOOSE;
     if (cast.bonds.some((k) => (k.a === a && k.b === b) || (k.a === b && k.b === a))) return d.COUPLE;
     if (parents[a] && parents[a] === parents[b]) return d.SIB;
     return d.LOOSE;
@@ -938,18 +968,25 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
         side[last] = Side.Left;
     }
   }
+  // the least distance between two neighbours in a row; a mark between them stays nearer its own
+  const room = (a: string, b: string) =>
+    Math.max(gapFor(a, b), between(a, b) + PAD + (zone[a] === 1 || zone[b] === -1 ? 2 * PAD : 0));
+  // a move pushes each neighbour only as far as keeps that distance (R-0749);
+  // the fallback carries the whole rest of the row, or its bars come apart
   const shift = (row: string[], from: string, by: number) => {
-    for (let j = row.indexOf(from); j < row.length; j++) x[row[j]] += by;
+    const i = row.indexOf(from);
+    x[from] += by;
+    for (let j = i + 1; j < row.length; j++) {
+      const need = plan.loose ? by : x[row[j - 1]] + room(row[j - 1], row[j]) - x[row[j]];
+      if (need <= 0) break;
+      x[row[j]] += need;
+    }
   };
   // spec 8, collision step 1: widen the spacing until nothing in the row touches
   function widen(row: string[]): void {
     for (let i = 1; i < row.length; i++) {
-      const a = row[i - 1];
-      const b = row[i];
-      // a mark between two people stays nearer its own
-      const facing = zone[a] === 1 || zone[b] === -1 ? 2 * PAD : 0;
-      const need = Math.max(gapFor(a, b), between(a, b) + PAD + facing) - (x[b] - x[a]);
-      if (need > 0) shift(row, b, need);
+      const need = room(row[i - 1], row[i]) - (x[row[i]] - x[row[i - 1]]);
+      if (need > 0) shift(row, row[i], need);
     }
   }
   const rowWith = (id: string) => rows[gen[id]];
@@ -1032,7 +1069,7 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
       row.forEach((id, i) => (x[id] = i ? x[row[i - 1]] + gapFor(row[i - 1], id) : base));
       if (row.length) right = Math.max(right, x[row[row.length - 1]]);
     });
-    base = right + d.LOOSE;
+    base = right + 2 * d.LOOSE;
   });
   settle();
   rows
@@ -1160,9 +1197,14 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   const L: Layout = {
     P, x, y, side, zone, bonds: cast.bonds, kids: cast.kids, gen, w: opts.w, level, below,
     names: [], h: 0, vw: VIEW, px: d.W, wide: 0, my: 0, ring, inset, loose: plan.loose,
+    cut: cast.cut ?? [], note: null,
   };
   cast.bonds.forEach((b) => fam(x[b.a], bar(L, b).y + 4));
   cast.moves.forEach((mv) => awayTip(L, mv).forEach(([ax, ay]) => grow(ax, ay)));
+  L.cut.forEach((c) => {
+    const [a, q, b] = bend(where, c);
+    fam((a[0] + 2 * q[0] + b[0]) / 4, (a[1] + 2 * q[1] + b[1]) / 4);
+  });
 
   // ruled 2026-09-26: the people and their names are centred; marks and arrows may reach into the
   // margin, and the words keep out of it as the names do, so no word runs to the phone's edge
@@ -1194,6 +1236,12 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   L.names = ids.map((id) => nameBox(id, side[id]));
   L.h = Math.ceil(Math.max(core.y1 + dy + MY, box.y1 + dy + 2));
   L.my = MY;
+  if (L.cut.length) {
+    const said = L.cut.map((c) => `${P[c.kid].name} is recorded as ${P[c.parent].name}’s ancestor and child`);
+    const lines = wrap(said, Math.floor((L.vw - 2 * MX) / (NAME * CH)));
+    L.note = { y: L.h - MY + ASCENT, lines };
+    L.h = Math.ceil(L.note.y + LEAD * (lines.length - 1) + MY);
+  }
   return L;
 }
 
@@ -1215,6 +1263,35 @@ function ray(o: Point, to: Point, dist: number): Point {
   const p = c > 0 ? dist / c : 0;
   return [o[0] + p * a, o[1] + p * b];
 }
+/** A cut link's curve, from the parent's side out past both shapes and back
+ * to the kid's, so it lies on no line of the family: its ends and control point. */
+function bend(L: Where, c: Cut): [Point, Point, Point] {
+  const { P, x, y, d } = L;
+  const s = x[c.kid] <= x[c.parent] ? -1 : 1;
+  const a: Point = [x[c.parent] + s * d.half(P[c.parent]), y[c.parent]];
+  const b: Point = [x[c.kid] + s * d.half(P[c.kid]), y[c.kid]];
+  return [a, [(s < 0 ? Math.min(a[0], b[0]) : Math.max(a[0], b[0])) + 2 * s * d.W, (a[1] + b[1]) / 2], b];
+}
+
+/** A sentence broken at spaces into lines of at most `n` characters. */
+const fill = (t: string, n: number) =>
+  t.split(" ").reduce<string[]>((ls, w) => {
+    const l = ls[ls.length - 1];
+    if (l != null && l.length + 1 + w.length <= n) ls[ls.length - 1] = `${l} ${w}`;
+    else ls.push(w);
+    return ls;
+  }, []);
+
+/** Sentences in as few lines as fit `n` characters, the lines of each about even. */
+function wrap(said: string[], n: number): string[] {
+  return said.flatMap((t) => {
+    const k = fill(t, n).length;
+    let m = Math.ceil(t.length / k);
+    while (fill(t, m).length > k) m++;
+    return fill(t, m);
+  });
+}
+
 const seg = (p: Point, q: Point) => `M${f(p[0])} ${f(p[1])}L${f(q[0])} ${f(q[1])}`;
 
 /** moves.ts arrow(): toward runs mover to target; away leads out behind the mover. */
@@ -1656,5 +1733,13 @@ export function draw(L: Layout, s: Frame): string {
   });
   s.kin.forEach((m) => put(kin(L, m), lit(m.cls)));
   s.moves.forEach((mv) => put(boardMove(L, mv), lit(mv.cls)));
+  L.cut.forEach((c) => {
+    const [a, q, b] = bend({ P, x: L.x, y: L.y, d }, c);
+    out += `<path class="cut" data-cut="${esc(`${c.kid}|${c.parent}`)}" d="M${f(a[0])} ${f(a[1])}Q${f(q[0])} ${f(q[1])} ${f(b[0])} ${f(b[1])}"/>`;
+  });
+  if (L.note)
+    said += L.note.lines
+      .map((l, i) => `<text class="cutn" x="${f(L.vw / 2)}" y="${f(L.note!.y + i * LEAD)}" text-anchor="middle">${esc(l)}</text>`)
+      .join("");
   return `<svg class="ss" viewBox="0 0 ${f(L.vw)} ${L.h}" role="img" aria-label="${esc(s.label)}">${out}<g class="fore">${top}</g><g class="said">${said}</g></svg>`;
 }

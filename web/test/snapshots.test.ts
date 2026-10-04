@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { arrange, bar, crosses, draw, Mark, Side, Undrawable, VIEW, layout, Sex, Tie, type Cast, type Layout } from "../src/diagram";
+import { arrange, bar, crosses, draw, Mark, Side, VIEW, layout, Sex, Tie, type Cast, type Layout } from "../src/diagram";
 import { among, gapText, Told, untold } from "../src/snapshots";
 import type { Case, Timeline } from "../src/types";
 import {
@@ -909,6 +909,32 @@ describe("a couple where both partners' parents are in the record", () => {
     expect((L.vw * L.px) / L.w).toBeGreaterThan(VIEW);
   });
 
+  // R-0749, R-0545
+  it("keeps a joining couple at the usual distance when each has six brothers and sisters with partners", () => {
+    const more: Cast["people"] = {};
+    const bonds = [wed("hf", "hm"), wed("wf", "wm"), wed("h", "w")];
+    const side = (s: string, joiner: string) =>
+      Array.from({ length: 6 }, (_, i) => {
+        if (i === 2) return joiner;
+        const id = `${s}${i}`;
+        more[id] = shape(`${s}${i}`, i % 2 ? Sex.Female : Sex.Male, 1960 + i);
+        more[`${id}p`] = shape(`${s}${i}p`, i % 2 ? Sex.Male : Sex.Female, 1961 + i);
+        bonds.push(i % 2 ? wed(`${id}p`, id) : wed(id, `${id}p`));
+        return id;
+      });
+    const kids = [
+      { of: ["hf", "hm"], kids: side("hs", "h") },
+      { of: ["wf", "wm"], kids: side("ws", "w") },
+      { of: ["h", "w"], kids: ["c"] },
+    ];
+    const L = arrange(joined({ bonds, kids }, more));
+    expect(L.loose).toBe(false);
+    const row = Object.keys(L.x).filter((id) => L.y[id] === L.y.h).sort((a, b) => L.x[a] - L.x[b]);
+    expect(row[row.indexOf("h") + 1]).toBe("w");
+    const gaps = row.slice(1).map((id, i) => L.x[id] - L.x[row[i]]);
+    expect(L.x.w - L.x.h).toBeLessThanOrEqual(Math.max(...gaps.filter((_, i) => row[i] !== "h")));
+  });
+
   // R-0545
   it("refuses two couples each joining two families", () => {
     expect(() =>
@@ -1035,15 +1061,75 @@ describe("a family the row rules cannot place", () => {
     expect(Math.min(L.x.x, L.x.y)).toBeGreaterThan(Math.max(L.x.a, L.x.b, L.x.c, L.x.d));
   });
 
-  // R-0545
-  it("refuses only a family where someone is their own forebear, naming them", () => {
+  // R-0747, R-0745
+  it("draws four generations on both sides with no line crossing and each man left of his wife", () => {
+    const p: Cast["people"] = { c: { ...sh("Ivy", F, 1985), you: true }, h: sh("Gil", M, 1955), w: sh("Hope", F, 1957) };
+    const bonds = [wed("h", "w")];
+    const kids: Cast["kids"] = [{ of: ["h", "w"], kids: ["c"] }];
+    ["p1", "p2", "p3", "p4"].forEach((k, i) => {
+      p[k] = sh(`P${i}`, i % 2 ? F : M, 1930 + i);
+      p[`${k}f`] = sh(`G${2 * i}`, M, 1900 + i);
+      p[`${k}m`] = sh(`G${2 * i + 1}`, F, 1902 + i);
+      bonds.push(wed(`${k}f`, `${k}m`));
+      kids.push({ of: [`${k}f`, `${k}m`], kids: [k] });
+    });
+    bonds.push(wed("p1", "p2"), wed("p3", "p4"));
+    kids.push({ of: ["p1", "p2"], kids: ["h"] }, { of: ["p3", "p4"], kids: ["w"] });
+    const L = arrange(cast(p, bonds, kids, "c"));
+    const { x, y } = L;
+    bonds.forEach(({ a, b }) => {
+      expect(x[a]).toBeLessThan(x[b]);
+      expect(Object.keys(x).filter((id) => y[id] === y[a] && x[id] > x[a] && x[id] < x[b])).toEqual([]);
+    });
+    kids.forEach(({ of, kids }) => kids.forEach((k) => expect(x[of[0]] <= x[k] && x[k] <= x[of[1]]).toBe(true)));
+  });
+
+  // R-0750, R-0745
+  it("stands a couple with no tie to the family twice as far off as two unrelated families in a row", () => {
+    const L = arrange(joined({ q1: sh("Vince", M, 1960), q2: sh("Wendy", F, 1962) }, [wed("q1", "q2")], []));
+    const { x } = L;
+    expect(x.q1 - x.wm).toBeGreaterThanOrEqual(2 * (x.wf - x.hm));
+    expect(x.hf <= x.h && x.h <= x.hm).toBe(true);
+    expect(x.wf <= x.w && x.w <= x.wm).toBe(true);
+  });
+
+  // R-0751
+  it("draws someone recorded as their own forebear, the link closing the loop in the error colour with a note", () => {
     const c = cast(
       { a: sh("Al", M, 1950), b: sh("Bea", F, 1951), c: { ...sh("Cy", M, 1975), you: true }, d: sh("Di", F, 1976) },
       [wed("a", "b"), wed("c", "d")],
       [{ of: ["a", "b"], kids: ["c"] }, { of: ["c", "d"], kids: ["a"] }],
       "c",
     );
-    expect(() => arrange(c)).toThrow(Undrawable);
-    expect(() => arrange(c)).toThrow(/Al, Cy|Cy, Al/);
+    const L = arrange(c);
+    expect(L.cut).toEqual([{ kid: "a", parent: "c" }]);
+    const svg = draw(L, frame(L));
+    Object.keys(c.people).forEach((id) => expect(svg.split(`class="p" data-id="${id}"`)).toHaveLength(2));
+    const cuts = els(svg, "path", "cut");
+    expect(cuts).toHaveLength(1);
+    expect(els(svg, "text", "cutn").length).toBeGreaterThan(0);
+    expect(svg.replace(/<\/text><text class="cutn"[^>]*>/g, " ")).toContain("Al is recorded as Cy’s ancestor and child");
+    const [x0, y0, cx, cy, x1, y1] = cuts[0].d.match(/^M(\S+) (\S+)Q(\S+) (\S+) (\S+) (\S+)$/)!.slice(1).map(Number);
+    const at = (t: number) => [
+      (1 - t) ** 2 * x0 + 2 * t * (1 - t) * cx + t ** 2 * x1,
+      (1 - t) ** 2 * y0 + 2 * t * (1 - t) * cy + t ** 2 * y1,
+    ];
+    const normal = [...els(svg, "path", "kin"), ...els(svg, "path", "tie")].flatMap((p) => {
+      const pts: number[][] = [];
+      let cur = [0, 0];
+      for (const [, op, a, b] of p.d.matchAll(/([MLVH])([-\d.]+)(?: ([-\d.]+))?/g)) {
+        cur = op === "V" ? [cur[0], +a] : op === "H" ? [+a, cur[1]] : [+a, +b];
+        pts.push(op === "M" ? [NaN, NaN, ...cur] : cur);
+      }
+      return pts.flatMap((q, i) => (i && !isNaN(q[0]) ? [[pts[i - 1].slice(-2), q]] : []));
+    });
+    const dist = ([px, py]: number[], [[ax, ay], [bx, by]]: number[][]) => {
+      const l = (bx - ax) ** 2 + (by - ay) ** 2;
+      const t = l ? Math.max(0, Math.min(1, ((px - ax) * (bx - ax) + (py - ay) * (by - ay)) / l)) : 0;
+      return Math.hypot(px - ax - t * (bx - ax), py - ay - t * (by - ay));
+    };
+    expect(normal.length).toBeGreaterThan(0);
+    const near = Array.from({ length: 41 }, (_, i) => at(0.05 + (0.9 * i) / 40)).filter((q) => normal.some((sg) => dist(q, sg) < 2));
+    expect(near.length).toBeLessThanOrEqual(1);
   });
 });
