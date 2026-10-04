@@ -156,6 +156,11 @@ it("shows the coach's newest guess on a card, and at most three on what to work 
   expect(v.main?.text).toBe("The newer main guess.");
   expect(v.work.guesses.map((g) => g.text)).toEqual(["Work 2.", "Work 3.", "Work 4."]);
   expect(v.work.aim?.id).toBe(210);
+  // the aim is the first guess's first evidence, not its earliest event
+  tl.asked_questions = [guess("w1", "Work.", CaseReportCard.WorkOn, [210, 202])];
+  expect(caseView(tl, ONE, "").work.aim?.id).toBe(210);
+  tl.asked_questions = [guess("w1", "Work.", CaseReportCard.WorkOn, [211, 202])];
+  expect(caseView(tl, ONE, "").work.aim).toBeNull();
 });
 
 // R-0708

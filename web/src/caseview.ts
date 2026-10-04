@@ -461,7 +461,11 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string | null
   const main = guessOn(CaseReportCard.MainGuess);
   const own = guessOn(CaseReportCard.OwnPart);
   const choice = guessOn(CaseReportCard.Choice);
-  const work = guesses.filter(onCard(CaseReportCard.WorkOn)).slice(-WORK_ON_MAX).map((q) => r.guess(q));
+  const workOn = guesses.filter(onCard(CaseReportCard.WorkOn)).slice(-WORK_ON_MAX);
+  const work = workOn.map((q) => r.guess(q));
+  // what the person said they are working on: the first guess's first evidence (the coach's prompt)
+  const said = workOn[0]?.evidence[0];
+  const aimed = said?.kind === EvidenceKind.Event ? r.event(Number(said.id)) : undefined;
   const answered = newest(questions.filter((q) => onCard(CaseReportCard.OwnPart)(q) && q.answer?.text));
   const wed = r.marriage();
   const { him, his } = pronouns(s);
@@ -482,7 +486,7 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string | null
     ask: questions.find((q) => open(q) && onCard(null)(q))?.text ?? null,
     ownPart: { guess: own && r.guess(own), ask: answered ? null : askOn(CaseReportCard.OwnPart), answer: answered?.answer?.text ?? null },
     choice: { guess: choice && r.guess(choice), ask: askOn(CaseReportCard.Choice) },
-    work: { aim: work[0]?.facts[0] ?? null, guesses: work },
+    work: { aim: aimed ? r.fact(aimed) : null, guesses: work },
     effort: sessions.length
       ? `${s.name} has talked with the coach in ${sessions.length === 1 ? "one session" : `${sessions.length} sessions`}.`
       : "",

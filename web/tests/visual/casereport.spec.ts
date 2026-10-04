@@ -187,10 +187,10 @@ test.describe("the case report's taps", () => {
   });
 
   // R-0715
-  test("the header names who presents, by name and never by email", async ({ page }) => {
+  test("the header names who presents by first name, never by email", async ({ page }) => {
     await open(page);
     await expect(page.locator("#case-title")).toHaveText("Nora · Case report");
-    await expect(page.locator("#case-by")).toHaveText("presented by Nora Halloran");
+    await expect(page.locator("#case-by")).toHaveText("presented by Nora");
   });
 
   // R-0691, R-0692
