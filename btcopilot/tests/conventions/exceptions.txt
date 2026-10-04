@@ -184,3 +184,13 @@ R-0713 | TEST OWED | the case report is not built yet; tests come with that buil
 R-0714 | TEST OWED | the case report is not built yet; tests come with that build
 R-0715 | TEST OWED | the case report is not built yet; tests come with that build
 R-0716 | TEST OWED | the case report is not built yet; tests come with that build
+R-0718 | TEST OWED | the case report screen is being built; its tests come with that build
+R-0719 | TEST OWED | the case report screen is being built; its tests come with that build
+R-0720 | TEST OWED | the case report screen is being built; its tests come with that build
+R-0721 | TEST OWED | the case report screen is being built; its tests come with that build
+R-0722 | TEST OWED | the case report screen is being built; its tests come with that build
+R-0723 | TEST OWED | the case report screen is being built; its tests come with that build
+R-0724 | TEST OWED | the case report screen is being built; its tests come with that build
+R-0728 | TEST OWED | the play-by-play drawings are not built yet; tests come with that build
+R-0729 | TEST OWED | the play-by-play drawings are not built yet; tests come with that build
+R-0730 | TEST OWED | the play-by-play drawings are not built yet; tests come with that build
