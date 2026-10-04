@@ -223,11 +223,11 @@ export class Lens {
       // the about page is words already, and an empty picture has nothing to
       // tap; no hint under either
       const hint = picture.aboutOpen() || picture.empty() ? "" : "tap a cluster";
-      const family = this.hooks.family;
-      const live = !!family?.live();
+      // a record with no dated step has no Family button at all
+      const family = this.hooks.family?.live() ? this.hooks.family : null;
       host.innerHTML =
-        `<span class="cta">${hint}</span>` + (family ? tok("cap-family", "g", FAMILY_MARK, "Family", live) : "") + list;
-      if (live) host.querySelector<HTMLElement>("#cap-family")!.addEventListener("click", () => family!.open());
+        `<span class="cta">${hint}</span>` + (family ? tok("cap-family", "g", FAMILY_MARK, "Family", true) : "") + list;
+      if (family) host.querySelector<HTMLElement>("#cap-family")!.addEventListener("click", () => family.open());
       this.wireList();
       return;
     }
