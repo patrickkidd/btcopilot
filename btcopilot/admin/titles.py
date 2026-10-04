@@ -7,6 +7,7 @@ import enum
 import json
 
 import click
+from sqlalchemy import update as sql_update
 
 from btcopilot import diagramjson, prompts, record
 from btcopilot.admin.diagrams import find
@@ -68,13 +69,16 @@ def moved(event: dict) -> str | None:
     return None
 
 
-def checked(title: str, where: str) -> str:
+def checked(data: dict, event: dict, title: str, where: str) -> str:
     words = title.split()
     if not TITLE_WORDS[0] <= len(words) <= TITLE_WORDS[1] or words[-1].lower() in LOOSE_ENDS:
         raise click.ClickException(
             f"{where}: {title!r} is not a whole phrase of {TITLE_WORDS[0]} to "
             f"{TITLE_WORDS[1]} words"
         )
+    named = record.linked_name(data, event, title)
+    if named:
+        raise click.ClickException(f"{where}: {title!r} names {named[0]}, the event's {named[1]}")
     return title
 
 
@@ -83,12 +87,11 @@ def written(path: str) -> dict[tuple[int, int], str]:
     for row in json.loads(open(path).read()):
         title = (row.get("title") or "").strip()
         if title:
-            where = f"record {row['diagram']} event {row['event']}"
-            out[(int(row["diagram"]), int(row["event"]))] = checked(title, where)
+            out[(int(row["diagram"]), int(row["event"]))] = title
     return out
 
 
-def asked(meter: Metered, event: dict, where: str) -> str:
+def asked(meter: Metered, data: dict, event: dict, where: str) -> str:
     said = meter.gemini(
         prompt=prompts.event_title(
             kind=enum_val(event.get("kind")),
@@ -98,7 +101,7 @@ def asked(meter: Metered, event: dict, where: str) -> str:
         model=EXTRACTION_MODEL,
         thinking_budget=0,
     )
-    return checked(said.strip().strip('"').rstrip("."), where)
+    return checked(data, event, said.strip().strip('"').rstrip("."), where)
 
 
 @click.command("fill")
@@ -140,9 +143,11 @@ def fill(diagram_ids, path, ask, yes):
     for diagram in diagrams:
         data = diagramjson.loads(diagram.data)
         if untitled(data):
-            records.append((diagram, data))
+            records.append((diagram, data, diagram.version))
         for event in untitled(data):
             title = titles.get((diagram.id, event["id"]))
+            if title:
+                checked(data, event, title, f"record {diagram.id} event {event['id']}")
             source = Source.File
             if not title:
                 title, source = proposed(data, event), Source.Description
@@ -173,11 +178,20 @@ def fill(diagram_ids, path, ask, yes):
     for diagram, event, row in found:
         if row["from"] == Source.Model:
             meter = Metered(diagram.user_id, diagram.id, f"titles-{diagram.id}", Purpose.Backfill)
-            row["title"] = asked(meter, event, f"record {diagram.id} event {event['id']}")
+            row["title"] = asked(meter, data, event, f"record {diagram.id} event {event['id']}")
         event["title"] = row["title"]
-    for diagram, data in records:
-        diagram.data = diagramjson.encode(data, diagram.data)
-        diagram.version += 1
+    for diagram, data, seen in records:
+        saved = db.session.execute(
+            sql_update(Diagram)
+            .where(Diagram.id == diagram.id, Diagram.version == seen)
+            .values(data=diagramjson.encode(data, diagram.data), version=seen + 1)
+        ).rowcount
+        if not saved:
+            db.session.rollback()
+            raise click.ClickException(
+                f"record {diagram.id} was edited while the titles were made; nothing "
+                "written. Run it again."
+            )
     db.session.commit()
     return rows
 

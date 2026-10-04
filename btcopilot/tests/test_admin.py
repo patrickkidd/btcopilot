@@ -7,6 +7,7 @@ import click
 
 import pytest
 from alembic.script import ScriptDirectory
+from sqlalchemy import update as sql_update
 
 import btcopilot
 from btcopilot import diagramjson, tuning, turnlog
@@ -363,4 +364,37 @@ def test_titles_fill_refuses_a_model_title_that_is_not_a_whole_phrase(
         admin, ["titles", "fill", "--diagram", str(diagram.id), "--ask", "--yes"]
     )
     assert refused.exit_code != 0
+    assert titles_of(diagram) == [None, None, None, None]
+
+
+def test_titles_fill_refuses_a_title_naming_someone_the_event_links(
+    flask_app, test_user, tmp_path
+):
+    # R-0681
+    diagram = untitled_record(test_user)
+    reviewed = tmp_path / "titles.json"
+    reviewed.write_text(json.dumps([{"diagram": diagram.id, "event": 3, "title": "Wren stopped calling"}]))
+    refused = flask_app.test_cli_runner().invoke(
+        admin, ["titles", "fill", "--diagram", str(diagram.id), "--file", str(reviewed), "--yes"]
+    )
+    assert refused.exit_code != 0 and "Wren" in refused.output
+    assert titles_of(diagram) == [None, None, None, None]
+
+
+def test_titles_fill_writes_nothing_over_an_edit_made_while_it_ran(
+    flask_app, test_user, monkeypatch
+):
+    # R-0681
+    def flash(**kwargs):
+        db.session.execute(
+            sql_update(Diagram).where(Diagram.id == diagram.id).values(version=Diagram.version + 1)
+        )
+        return Text("Stopped calling home", Spent(input=300), Served(kwargs["model"]))
+
+    monkeypatch.setattr("btcopilot.metered.gemini_text_sync", flash)
+    diagram = untitled_record(test_user)
+    refused = flask_app.test_cli_runner().invoke(
+        admin, ["titles", "fill", "--diagram", str(diagram.id), "--ask", "--yes"]
+    )
+    assert refused.exit_code != 0 and "edited" in refused.output
     assert titles_of(diagram) == [None, None, None, None]
