@@ -31,8 +31,10 @@ class Breaks:
 
 
 def repeats() -> list[Observation]:
+    """What the observer wrote down, less the read it was not asked about and
+    the failure a case breaks on purpose."""
     return Observation.query.filter(
-        Observation.kind != ObservationKind.AddWithoutRead
+        Observation.kind.notin_([ObservationKind.AddWithoutRead, ObservationKind.TurnFailed])
     ).all()
 
 
