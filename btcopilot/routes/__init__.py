@@ -119,6 +119,16 @@ def _same_origin():
         abort(403)
 
 
+@bp.after_request
+def _token(response):
+    """Every answer carries the session's current token, so the page always
+    posts with the newest one it has (R-0738). A file fetched without the
+    cookie gets none, since it has no session to hold one."""
+    if not public():
+        response.headers["X-CSRFToken"] = generate_csrf()
+    return response
+
+
 @bp.errorhandler(CSRFError)
 def _csrf_error(e):
     _log.warning(f"CSRF error: {e.description} from {request.remote_addr}")
