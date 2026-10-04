@@ -401,7 +401,8 @@ export function spikes(person: Figure, phase: "out" | "in" | "solo"): string {
       const bx = Math.cos(angle) * (r + 2 + length);
       const by = Math.sin(angle) * (r + 2 + length);
       return (
-        `<line class="mv-spike" x1="${n1(ax)}" y1="${n1(ay)}" x2="${n1(bx)}" y2="${n1(by)}" opacity="0">` +
+        // measured as one from the rim out, so a spike grows from the rim and shortens back to it (R-0729)
+        `<line class="mv-spike" x1="${n1(ax)}" y1="${n1(ay)}" x2="${n1(bx)}" y2="${n1(by)}" pathLength="1" opacity="0">` +
         // where the people stay put, the anxiety a parent passes on is there at
         // full strength from the first frame and never goes out, so the eye
         // sees it before it drains (Patrick, 2026-10-03)

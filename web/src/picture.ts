@@ -307,13 +307,17 @@ const TOLD_CH = 20;
 /** A moment picked, as the path names it: the first name and what happened,
  * "Delphine died" or, from the title "Stopped calling", "Ben stopped calling",
  * and whatever of its words that leaves over, which the line
- * writes instead (R-0540). The path's words end on a whole word, and never on
- * a small one. */
-export function told(who: string, label: string): [string, string] {
+ * writes instead (R-0540). A title that starts with someone else's name in
+ * the family gets the name, a colon, then the title as written: "Ben: Marcus
+ * moved out" (R-0730). The path's words end on a whole word, and never on a
+ * small one. */
+export function told(who: string, label: string, family: string[] = []): [string, string] {
   const first = who.split(" ")[0];
   // a title reads on its own (R-0681); after a name it runs on as one sentence
   const run = /^[A-Z][a-z]/.test(label) ? label.charAt(0).toLowerCase() + label.slice(1) : label;
-  const all = (!first || label.startsWith(first) ? label : `${first} ${run}`).split(" ");
+  const lead = label.split(" ")[0].replace(/[^\p{L}'-]/gu, "");
+  const named = family.includes(lead) ? `${first}: ${label}` : `${first} ${run}`;
+  const all = (!first || label.startsWith(first) ? label : named).split(" ");
   let n = 1;
   while (n < all.length && all.slice(0, n + 1).join(" ").length <= TOLD_CH) n += 1;
   while (n > 1 && n < all.length && all[n - 1].length <= 2) n -= 1;
@@ -825,13 +829,18 @@ export class Picture {
     return this.shown() !== null;
   }
 
+  /** Everyone's first name in the record, which a title may start with (R-0730). */
+  private firstNames(): string[] {
+    return (this.data?.people ?? []).map((p) => p.name.split(" ")[0]);
+  }
+
   /** The path from the whole timeline to where the reader is (R-0540). */
   path(): string[] {
     const picked = this.shown();
     return trail(
       this.level,
       this.level === Level.Rest ? null : this.focus,
-      picked && told(picked.person_name, picked.label)[0],
+      picked && told(picked.person_name, picked.label, this.firstNames())[0],
     );
   }
 
@@ -1293,7 +1302,7 @@ export class Picture {
       // it leaves out, the date first (no word twice)
       const said = [
         dateText(event.dateTime as string, event.dateCertainty),
-        told(event.person_name, event.label)[1],
+        told(event.person_name, event.label, this.firstNames())[1],
       ]
         .filter(Boolean)
         .join(" \u00b7 ");

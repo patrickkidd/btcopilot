@@ -507,7 +507,7 @@ test.describe("every mark", () => {
     expect(ends[1]).toBeGreaterThan(ends[0]);
   });
 
-  // R-0679
+  // R-0679, R-0729
   test("projection holds the anxiety in the parent for two seconds, then moves it to the child within the one grow time", async ({ page }) => {
     await live(page);
     await page.locator(`#pbp .wire [data-act="jump"][data-i="${STEPS.findIndex((s) => s.name === "projection")}"]`).click();
@@ -518,14 +518,15 @@ test.describe("every mark", () => {
           a.pause();
           a.currentTime = at;
         }
-        const s = (sel: string) => new DOMMatrix(getComputedStyle(document.querySelector(`#pbp .draw svg .fore ${sel}`)!).transform).a;
+        // how much of each spike is drawn, from the rim out (R-0729)
+        const s = (sel: string) => 1 - parseFloat(getComputedStyle(document.querySelector(`#pbp .draw svg .fore ${sel} .mv-spike`)!).strokeDashoffset);
         return [s(".spk.s-out"), s(".spk.s-in")];
       }, at);
     // the anxiety sits in the parent for two seconds, then drains over one grow time
-    expect(await scale(0)).toEqual([1, expect.closeTo(0.12, 2)]);
-    expect(await scale(2000)).toEqual([1, expect.closeTo(0.12, 2)]);
+    expect(await scale(0)).toEqual([1, expect.closeTo(0, 2)]);
+    expect(await scale(2000)).toEqual([1, expect.closeTo(0, 2)]);
     const done = await scale(2000 + grow);
-    expect(done[0]).toBeCloseTo(0.12, 2);
+    expect(done[0]).toBeCloseTo(0, 2);
     expect(done[1]).toBeCloseTo(1, 2);
   });
 
@@ -586,12 +587,22 @@ test.describe("every mark", () => {
     expect(late).toEqual([]);
   });
 
-  // R-0679
-  test("anxiety flickers in place, a slash pops again and again, and defined self shows both people", async ({ page }) => {
+  // R-0679, R-0729
+  test("anxiety up grows out from the rim over the grow time, a slash pops again and again, and defined self shows both people", async ({ page }) => {
     await live(page);
     const at = (name: string) => page.locator(`#pbp .wire [data-act="jump"][data-i="${STEPS.findIndex((s) => s.name === name)}"]`).click();
     await at("anxiety up");
-    expect(await page.locator("#pbp .draw svg .fore .spikes .spk").evaluate((g) => g.getAnimations().length)).toBe(0);
+    const grown = await page.locator("#pbp .draw svg .fore .spikes .mv-spike").first().evaluate((l) => {
+      const a = l.getAnimations()[0];
+      const drawn = (t: number) => {
+        a.pause();
+        a.currentTime = t;
+        return 1 - parseFloat(getComputedStyle(l).strokeDashoffset);
+      };
+      const grow = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--speed-grow")) * 1000;
+      return [drawn(0), drawn(grow)];
+    });
+    expect(grown).toEqual([expect.closeTo(0, 2), expect.closeTo(1, 2)]);
     await at("separated");
     expect(await page.locator("#pbp .draw svg .fore .slash.now").evaluate((l) => l.getAnimations()[0].effect!.getComputedTiming().iterations)).toBe(Infinity);
     await at("defined self");
@@ -615,19 +626,19 @@ test.describe("every mark", () => {
     await expect(page.locator('#pbp .draw svg [data-mark="hl:1"].was')).toHaveCount(1);
   });
 
-  // R-0679
+  // R-0679, R-0729
   test("projection rests in the child twice as long as the parent's whole phase", async ({ page }) => {
     await live(page);
     await page.locator(`#pbp .wire [data-act="jump"][data-i="${STEPS.findIndex((s) => s.name === "projection")}"]`).click();
     const [loop, drained] = await page.evaluate(() => {
-      const out = document.querySelector("#pbp .draw svg .fore .spk.s-out")!;
+      const out = document.querySelector("#pbp .draw svg .fore .spk.s-out .mv-spike")!;
       const a = out.getAnimations()[0];
       const loop = a.effect!.getComputedTiming().duration as number;
       a.pause();
       let t = 0;
       for (; t < loop; t += 10) {
         a.currentTime = t;
-        if (new DOMMatrix(getComputedStyle(out).transform).a <= 0.121) break;
+        if (parseFloat(getComputedStyle(out).strokeDashoffset) >= 0.999) break;
       }
       return [loop, t];
     });

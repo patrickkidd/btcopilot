@@ -571,11 +571,12 @@ button { font-family: inherit; }
 .ss .mv-burst { stroke: var(--move); stroke-width: 2; stroke-linecap: round; }
 .ss .mv-sparks { animation: sparkp 0.5s infinite; }
 
-.ss .mv-spike { stroke: var(--move); stroke-width: 1.8; stroke-linecap: round; }
-.ss .spk { transform-box: view-box; transform-origin: 0 0; }
-.ss .spk.s-out { animation: spikeout 8s infinite; }
-.ss .spk.s-in { animation: spikein 8s infinite; }
-.ss .spk.s-solo { animation: spikesolo 8s infinite; }
+/* anxiety, one standard everywhere (R-0729): going up, the spikes grow out
+   from the rim; going down, they shorten back to it, never crossing the shape */
+.ss .mv-spike { stroke: var(--move); stroke-width: 1.8; stroke-linecap: round; stroke-dasharray: 1 1; }
+.ss .spk.s-out .mv-spike { animation: spikeout 8s infinite; }
+.ss .spk.s-in .mv-spike { animation: spikein 8s infinite; }
+.ss .spk.s-solo .mv-spike { animation: spikesolo 8s infinite; }
 
 .ss .mv-flow {
   fill: none;
@@ -730,12 +731,13 @@ button { font-family: inherit; }
   28%, 60% { opacity: 0.85; }
   85%, 100% { opacity: 0; }
 }
-@keyframes spikeout { 0%, 15% { transform: scale(1); } 32.5%, 100% { transform: scale(0.12); } }
-@keyframes spikein { 0%, 15% { transform: scale(0.12); } 32.5%, 100% { transform: scale(1); } }
+@keyframes spikeout { 0%, 15% { stroke-dashoffset: 0; visibility: visible; } 32.5%, 100% { stroke-dashoffset: 1; visibility: hidden; } }
+@keyframes spikein { 0%, 15% { stroke-dashoffset: 1; visibility: hidden; } 15.1%, 32.5% { visibility: visible; } 32.5%, 100% { stroke-dashoffset: 0; } }
 @keyframes spikesolo {
-  0%, 10% { transform: scale(0.1); }
-  28%, 60% { transform: scale(1); }
-  85%, 100% { transform: scale(0.1); }
+  0%, 10% { stroke-dashoffset: 1; visibility: hidden; }
+  10.1% { visibility: visible; }
+  28%, 60% { stroke-dashoffset: 0; visibility: visible; }
+  85%, 100% { stroke-dashoffset: 1; visibility: hidden; }
 }
 @keyframes selfswap {
   0%, 37.5% { stroke: var(--ink); stroke-width: 2.2; }

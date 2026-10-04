@@ -129,18 +129,22 @@
    ten pops' time (Patrick, 2026-10-03) */
 .pbp .slash.now { animation: pbp-repop calc(var(--speed-pop) * 10) cubic-bezier(0.2, 1.5, 0.4, 1) infinite both; }
 @keyframes pbp-repop { 0% { transform: scale(0.2); opacity: 0; } 10%, 100% { transform: scale(1); opacity: 1; } }
-/* anxiety's spikes flicker in place outside the person, never growing in and
-   out of them (Patrick, 2026-10-03) */
-.pbp .spikes .spk.s-solo { animation: none; }
+/* anxiety up: the spikes grow out from the rim over the grow time, then
+   flicker, as the projection's child does (R-0729); carried, grey and still */
+.pbp .spikes .spk.s-solo .mv-spike { animation: pbp-grow var(--speed-grow) ease both; }
+.pbp .spikes.was .mv-spike { animation: none; stroke-dashoffset: 0; }
+@keyframes pbp-grow { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 /* projection: the anxiety sits in the parent for 2s, drains over the shared
    1.4s grow time, then rests in the child for twice the parent's 3.4s, and
    the parent's lines are drawn heavier, to read against her lit outline
    (Patrick, 2026-10-03). Loop 10.2s; the hold ends at 2/10.2, the drain at a third. */
-.pbp .mvk .spk.s-out { animation: pbp-spikeout calc((2s + var(--speed-grow)) * 3) infinite; }
-.pbp .mvk .spk.s-in { animation: pbp-spikein calc((2s + var(--speed-grow)) * 3) infinite; }
+/* the parent's spikes shorten back to her rim and the child's grow out from
+   his, never crossing either shape (R-0729) */
+.pbp .mvk .spk.s-out .mv-spike { animation: pbp-spikeout calc((2s + var(--speed-grow)) * 3) infinite; }
+.pbp .mvk .spk.s-in .mv-spike { animation: pbp-spikein calc((2s + var(--speed-grow)) * 3) infinite; }
 .pbp .mvk .spk.s-out .mv-spike { stroke-width: 2.8; }
-@keyframes pbp-spikeout { 0%, 19.608% { transform: scale(1); } 33.333%, 100% { transform: scale(0.12); } }
-@keyframes pbp-spikein { 0%, 19.608% { transform: scale(0.12); } 33.333%, 100% { transform: scale(1); } }
+@keyframes pbp-spikeout { 0%, 19.608% { stroke-dashoffset: 0; visibility: visible; } 33.333%, 100% { stroke-dashoffset: 1; visibility: hidden; } }
+@keyframes pbp-spikein { 0%, 19.608% { stroke-dashoffset: 1; visibility: hidden; } 19.7% { visibility: visible; } 33.333%, 100% { stroke-dashoffset: 0; visibility: visible; } }
 /* defined self: the other's loud storm runs a third as long as the board's
    7.68s before it dies down; its fall and the calm after keep the board's
    0.72s and 3.6s (Patrick, 2026-10-03). Loop 2.56 + 0.72 + 3.6 = 6.88s. */
