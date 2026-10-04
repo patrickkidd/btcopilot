@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { arrange, crosses, draw, Mark, Side, VIEW, layout, Sex, Tie, type Cast } from "../src/diagram";
+import { arrange, bar, crosses, draw, Mark, Side, VIEW, layout, Sex, Tie, type Cast, type Layout } from "../src/diagram";
 import { among, gapText, Told, untold } from "../src/snapshots";
 import type { Case, Timeline } from "../src/types";
 import {
@@ -426,12 +426,14 @@ describe("a crowded row", () => {
   });
 
   // R-0547
-  it("shrinks a row of five or more to the phone's width, never scrolling sideways", () => {
+  // re-ruled 2026-10-04, scroll below the floor
+  it("keeps a row of five or more at the drawer's least size and scrolls its frame sideways", () => {
     const L = arrange(brood(5));
     expect(Object.keys(L.P)).toHaveLength(7);
     expect(L.vw).toBeGreaterThan(VIEW);
+    expect(L.px).toBeGreaterThanOrEqual(36);
     const css = readFileSync(new URL("../src/drawer.css", import.meta.url), "utf8");
-    expect(css).toMatch(/\.pbp \.draw svg \{[^}]*width: 100%/);
+    expect(css).toMatch(/\.pbp \.draw \{[^}]*overflow-x: auto/);
   });
 
   // R-0547, R-0558
@@ -439,7 +441,8 @@ describe("a crowded row", () => {
     expect(arrange(brood(2))).toMatchObject({ w: 44, px: 44, vw: VIEW });
     const L = arrange(brood(5));
     expect(L.px).toBeLessThan(44);
-    const margin = (24 * L.vw) / 393;
+    // the margin keeps its size on the screen, whatever the picture's scale
+    const margin = ((24 * VIEW) / 393) * (L.w / L.px);
     L.names.forEach((b) => {
       expect(b.x0 + 2).toBeGreaterThanOrEqual(margin - 0.5);
       expect(b.x1 - 2).toBeLessThanOrEqual(L.vw - margin + 0.5);
@@ -741,5 +744,479 @@ describe("a play-by-play nobody told", () => {
     const ids = among(timeline(), [MARCUS, DELPHINE, CORINNE]);
     expect(ids).toEqual(expect.arrayContaining([109, 201, 204]));
     expect(ids).not.toContain(203);
+  });
+});
+
+describe("a couple where both partners' parents are in the record", () => {
+  const wed = (a: string, b: string) => ({ a, b, st: Tie.Married, married: true });
+  const joined = (extra: Partial<Cast> = {}, more: Cast["people"] = {}): Cast => ({
+    ...family(),
+    people: {
+      hf: shape("Hal", Sex.Male, 1920),
+      hm: shape("Hope", Sex.Female, 1922),
+      wf: shape("Walt", Sex.Male, 1921),
+      wm: shape("Wren", Sex.Female, 1923),
+      h: shape("Hugo", Sex.Male, 1950),
+      w: shape("Wanda", Sex.Female, 1952),
+      c: { ...shape("Cleo", Sex.Female, 1975), you: true },
+      ...more,
+    },
+    bonds: [wed("hf", "hm"), wed("wf", "wm"), wed("h", "w")],
+    kids: [
+      { of: ["hf", "hm"], kids: ["h"] },
+      { of: ["wf", "wm"], kids: ["w"] },
+      { of: ["h", "w"], kids: ["c"] },
+    ],
+    index: "c",
+    ...extra,
+  });
+  const order = (L: ReturnType<typeof layout>, ids: string[]) => ids.slice().sort((a, b) => L.x[a] - L.x[b]);
+
+  // R-0545, R-0187
+  it("joins the two families in one picture, his on the left, hers on the right", () => {
+    const L = layout(joined());
+    const { x, y } = L;
+    expect(Object.keys(x)).toHaveLength(7);
+    const ids = Object.keys(x);
+    ids.forEach((a) =>
+      ids.forEach((b) => {
+        if (a !== b && y[a] === y[b]) expect(Math.abs(x[a] - x[b])).toBeGreaterThanOrEqual(L.w);
+      }),
+    );
+    expect(y.hf).toBe(y.wf);
+    expect(y.h).toBe(y.w);
+    expect(y.hf).toBeLessThan(y.h);
+    expect(y.h).toBeLessThan(y.c);
+    expect(x.hm).toBeLessThan(x.wf);
+    expect(x.h).toBeLessThan(x.w);
+    expect(ids.filter((id) => y[id] === y.h && x[id] > x.h && x[id] < x.w)).toEqual([]);
+    expect(Math.min(x.hf, x.hm) <= x.h && x.h <= Math.max(x.hf, x.hm)).toBe(true);
+    expect(Math.min(x.wf, x.wm) <= x.w && x.w <= Math.max(x.wf, x.wm)).toBe(true);
+    expect(x.h <= x.c && x.c <= x.w).toBe(true);
+  });
+
+  // R-0545, R-0187
+  it("stands each spouse at the inner end of their brothers and sisters, the rest oldest-left", () => {
+    const L = layout(
+      joined(
+        {
+          kids: [
+            { of: ["hf", "hm"], kids: ["h1", "h", "h3"] },
+            { of: ["wf", "wm"], kids: ["w", "w2"] },
+            { of: ["h", "w"], kids: ["c"] },
+          ],
+        },
+        {
+          h1: shape("Ida", Sex.Female, 1948),
+          h3: shape("Ivo", Sex.Male, 1955),
+          w2: shape("Una", Sex.Female, 1956),
+        },
+      ),
+    );
+    expect(order(L, ["h1", "h", "h3", "w", "w2"])).toEqual(["h1", "h3", "h", "w", "w2"]);
+  });
+
+  // R-0545, R-0559
+  it("puts a remarried parent's other partner on the outside", () => {
+    const L = layout(
+      joined(
+        {
+          bonds: [wed("hf", "hm"), wed("wf", "wm"), wed("h", "w"), wed("hf", "hs")],
+          kids: [
+            { of: ["hf", "hm"], kids: ["h"] },
+            { of: ["wf", "wm"], kids: ["w"] },
+            { of: ["h", "w"], kids: ["c"] },
+            { of: ["hf", "hs"], kids: ["k"] },
+          ],
+        },
+        { hs: shape("Sue", Sex.Female, 1925), k: shape("Kit", Sex.Male, 1945) },
+      ),
+    );
+    expect(order(L, ["hs", "hf", "hm", "wf", "wm"])).toEqual(["hs", "hf", "hm", "wf", "wm"]);
+    const row = order(L, ["k", "h", "w"]);
+    expect(Math.abs(row.indexOf("h") - row.indexOf("w"))).toBe(1);
+  });
+
+  const sound = (L: ReturnType<typeof layout>, cast: Cast) => {
+    const { x, y } = L;
+    const ids = Object.keys(x);
+    expect(ids.sort()).toEqual(Object.keys(cast.people).sort());
+    ids.forEach((a) =>
+      ids.forEach((b) => {
+        if (a !== b && y[a] === y[b]) expect(Math.abs(x[a] - x[b])).toBeGreaterThanOrEqual(L.w);
+      }),
+    );
+    cast.bonds.forEach(({ a, b }) => {
+      expect(y[a]).toBe(y[b]);
+      expect(ids.filter((id) => y[id] === y[a] && x[id] > Math.min(x[a], x[b]) && x[id] < Math.max(x[a], x[b]))).toEqual([]);
+    });
+    cast.kids.forEach(({ of, kids }) =>
+      kids.forEach((k) => {
+        expect(y[k]).toBeGreaterThan(y[of[0]]);
+        expect(Math.min(...of.map((o) => x[o])) <= x[k] && x[k] <= Math.max(...of.map((o) => x[o]))).toBe(true);
+      }),
+    );
+    expect(x.h).toBeLessThan(x.w);
+  };
+  const above = (sides: ("h" | "w")[]): Cast => {
+    const c = joined();
+    sides.forEach((s) => {
+      const m = s === "h" ? "hm" : "wm";
+      c.people[`${s}g`] = shape(`${s.toUpperCase()}gramps`, Sex.Male, 1890);
+      c.people[`${s}n`] = shape(`${s.toUpperCase()}nana`, Sex.Female, 1892);
+      c.bonds.push(wed(`${s}g`, `${s}n`));
+      c.kids.push({ of: [`${s}g`, `${s}n`], kids: [m] });
+    });
+    return c;
+  };
+
+  // R-0545, R-0187
+  it("joins the families with great-grandparents above the wife's side", () => {
+    const c = above(["w"]);
+    sound(layout(c), c);
+  });
+
+  // R-0545, R-0187
+  it("joins the families with great-grandparents above the husband's side", () => {
+    const c = above(["h"]);
+    sound(layout(c), c);
+  });
+
+  // R-0545, R-0187
+  it("joins the families with great-grandparents above both sides", () => {
+    const c = above(["h", "w"]);
+    sound(layout(c), c);
+  });
+
+  // R-0547
+  // re-ruled 2026-10-04, scroll below the floor
+  it("keeps a wide joined family at least 36 across, wider than the frame", () => {
+    const sibs = (s: string, n: number) => Array.from({ length: n }, (_, i) => `${s}${i}`);
+    const more: Cast["people"] = {};
+    [...sibs("hs", 6), ...sibs("ws", 6)].forEach((id, i) => (more[id] = shape(`Sib${i}`, i % 2 ? Sex.Male : Sex.Female, 1940 + i)));
+    const L = arrange(
+      joined(
+        {
+          kids: [
+            { of: ["hf", "hm"], kids: ["h", ...sibs("hs", 6)] },
+            { of: ["wf", "wm"], kids: ["w", ...sibs("ws", 6)] },
+            { of: ["h", "w"], kids: ["c"] },
+          ],
+        },
+        more,
+      ),
+    );
+    expect(L.px).toBeGreaterThanOrEqual(36);
+    expect((L.vw * L.px) / L.w).toBeGreaterThan(VIEW);
+  });
+
+  // R-0749, R-0545
+  it("keeps a joining couple at the usual distance when each has six brothers and sisters with partners", () => {
+    const more: Cast["people"] = {};
+    const bonds = [wed("hf", "hm"), wed("wf", "wm"), wed("h", "w")];
+    const side = (s: string, joiner: string) =>
+      Array.from({ length: 6 }, (_, i) => {
+        if (i === 2) return joiner;
+        const id = `${s}${i}`;
+        more[id] = shape(`${s}${i}`, i % 2 ? Sex.Female : Sex.Male, 1960 + i);
+        more[`${id}p`] = shape(`${s}${i}p`, i % 2 ? Sex.Male : Sex.Female, 1961 + i);
+        bonds.push(i % 2 ? wed(`${id}p`, id) : wed(id, `${id}p`));
+        return id;
+      });
+    const kids = [
+      { of: ["hf", "hm"], kids: side("hs", "h") },
+      { of: ["wf", "wm"], kids: side("ws", "w") },
+      { of: ["h", "w"], kids: ["c"] },
+    ];
+    const L = arrange(joined({ bonds, kids }, more));
+    expect(L.loose).toBe(false);
+    const row = Object.keys(L.x).filter((id) => L.y[id] === L.y.h).sort((a, b) => L.x[a] - L.x[b]);
+    expect(row[row.indexOf("h") + 1]).toBe("w");
+    const gaps = row.slice(1).map((id, i) => L.x[id] - L.x[row[i]]);
+    expect(L.x.w - L.x.h).toBeLessThanOrEqual(Math.max(...gaps.filter((_, i) => row[i] !== "h")));
+  });
+
+  // R-0545
+  it("refuses two couples each joining two families", () => {
+    expect(() =>
+      layout(
+        joined(
+          {
+            bonds: [wed("hf", "hm"), wed("wf", "wm"), wed("h", "w"), wed("h3", "w2")],
+            kids: [
+              { of: ["hf", "hm"], kids: ["h", "h3"] },
+              { of: ["wf", "wm"], kids: ["w", "w2"] },
+              { of: ["h", "w"], kids: ["c"] },
+            ],
+          },
+          { h3: shape("Ivo", Sex.Male, 1955), w2: shape("Una", Sex.Female, 1956) },
+        ),
+        { fit: false },
+      ),
+    ).toThrow(/two couples each joining two families/);
+  });
+
+  // R-0545
+  it("never reaches the fallback for a family the row rules place", () => {
+    const casts = [family(), brood(2), brood(5), joined(), above(["h"]), above(["w"]), above(["h", "w"])];
+    casts.forEach((c) => expect(arrange(c).loose).toBe(false));
+    [death(), apart()].forEach((c) => expect(told(c).layout.loose).toBe(false));
+  });
+});
+
+describe("a family the row rules cannot place", () => {
+  const sh = shape;
+  const { Male: M, Female: F } = Sex;
+  const wed = (a: string, b: string) => ({ a, b, st: Tie.Married, married: true });
+  const cast = (people: Cast["people"], bonds: Cast["bonds"], kids: Cast["kids"], index: string): Cast => ({
+    ...base(people),
+    bonds,
+    kids,
+    index,
+  });
+  const joined = (people: Cast["people"], bonds: Cast["bonds"], kids: Cast["kids"]) =>
+    cast(
+      { hf: sh("Hal", M, 1920), hm: sh("Hope", F, 1922), wf: sh("Walt", M, 1921), wm: sh("Wren", F, 1923), h: sh("Hugo", M, 1950), w: sh("Wanda", F, 1952), c: { ...sh("Cleo", F, 1975), you: true }, ...people },
+      [wed("hf", "hm"), wed("wf", "wm"), wed("h", "w"), ...bonds],
+      [{ of: ["hf", "hm"], kids: ["h"] }, { of: ["wf", "wm"], kids: ["w"] }, { of: ["h", "w"], kids: ["c"] }, ...kids],
+      "c",
+    );
+  const families: Record<string, Cast> = {
+    "three partners for one person with nothing beside": cast(
+      { a: { ...sh("Al", M, 1950), you: true }, b: sh("Bea", F, 1951), c: sh("Cy", F, 1952), e: sh("Eve", F, 1953) },
+      [wed("a", "b"), wed("a", "c"), wed("a", "e")],
+      [],
+      "a",
+    ),
+    "a couple across generations": cast(
+      { g1: sh("Gus", M, 1900), g2: sh("Gia", F, 1902), b: sh("Bea", F, 1930), p: sh("Pat", M, 1932), q: sh("Quin", F, 1933), a: sh("Al", M, 1928), c: { ...sh("Cy", F, 1955), you: true }, n: sh("Nia", F, 1958) },
+      [wed("g1", "g2"), wed("a", "b"), wed("p", "q"), wed("a", "n")],
+      [{ of: ["g1", "g2"], kids: ["b", "p"] }, { of: ["p", "q"], kids: ["n"] }, { of: ["a", "b"], kids: ["c"] }],
+      "c",
+    ),
+    "two separate families in one row": joined(
+      { hs: sh("Sue", F, 1918), k: sh("Kit", M, 1945), s1: sh("Sam", M, 1890), s2: sh("Sal", F, 1892), w1: sh("Will", M, 1895), w2: sh("Wilma", F, 1897) },
+      [wed("hf", "hs"), wed("s1", "s2"), wed("w1", "w2")],
+      [{ of: ["hf", "hs"], kids: ["k"] }, { of: ["s1", "s2"], kids: ["hs"] }, { of: ["w1", "w2"], kids: ["wm"] }],
+    ),
+    "two joining couples": (() => {
+      const c = joined({ h3: sh("Ivo", M, 1955), w2: sh("Una", F, 1956) }, [wed("h3", "w2")], []);
+      c.kids[0].kids.push("h3");
+      c.kids[1].kids.push("w2");
+      return c;
+    })(),
+    "another family between a joining couple": joined({ q: sh("Quin", M, 1951) }, [wed("hm", "wf")], [{ of: ["hm", "wf"], kids: ["q"] }]),
+    "a couple not connected to the reader's family": cast(
+      { ...family().people, x: sh("Xan", M, 1960), y: sh("Yva", F, 1962) },
+      [...family().bonds, wed("x", "y")],
+      family().kids,
+      "c",
+    ),
+  };
+  const frame = (L: Layout) => ({
+    t: 2000,
+    bonds: L.bonds.map((b) => ({ ...b, fresh: false, hot: false })),
+    marks: [],
+    died: new Set<string>(),
+    moves: [],
+    kin: [],
+    label: "",
+  });
+
+  Object.entries(families).forEach(([what, c]) => {
+    // R-0545
+    it(`draws ${what}, everyone once, no shapes overlapping, each child's line on their parents' bar`, () => {
+      expect(() => layout(c)).toThrow(/cannot place/);
+      const L = arrange(c);
+      expect(L.loose).toBe(true);
+      const svg = draw(L, frame(L));
+      Object.keys(c.people).forEach((id) => expect(svg.split(`class="p" data-id="${id}"`)).toHaveLength(2));
+      const ids = Object.keys(c.people);
+      const e = (id: string) => (L.w / 2) * (L.P[id].you ? 1.2 : 1);
+      ids.forEach((a) =>
+        ids.forEach((b) => {
+          if (a === b) return;
+          const apart = Math.abs(L.x[a] - L.x[b]) >= e(a) + e(b) || Math.abs(L.y[a] - L.y[b]) >= e(a) + e(b);
+          expect(apart, `${a} and ${b} overlap`).toBe(true);
+        }),
+      );
+      const kin = els(svg, "path", "kin").map((p) => p.d.match(/^M(\S+) (\S+)L(\S+) (\S+)$/)!.slice(1).map(Number));
+      c.kids.forEach((k) => {
+        const b = bar(L, { a: k.of[0], b: k.of[1] });
+        k.kids.forEach((id) => {
+          const line = kin.find(([x0, y0]) => x0 === Number(L.x[id].toFixed(1)) && Math.abs(y0 - (L.y[id] - e(id))) < 0.2);
+          expect(line, `${id} has a line`).toBeDefined();
+          const [, , x1, y1] = line!;
+          expect(y1).toBe(Number(b.y.toFixed(1)));
+          expect(x1).toBeGreaterThanOrEqual(Number(b.x0.toFixed(1)));
+          expect(x1).toBeLessThanOrEqual(Number(b.x1.toFixed(1)));
+        });
+      });
+      expect(draw(arrange(c), frame(L))).toBe(svg);
+    });
+  });
+
+  // R-0545
+  it("draws a family with no tie to the reader's to the right of it", () => {
+    const L = arrange(families["a couple not connected to the reader's family"]);
+    expect(Math.min(L.x.x, L.x.y)).toBeGreaterThan(Math.max(L.x.a, L.x.b, L.x.c, L.x.d));
+  });
+
+  // R-0747, R-0745
+  it("draws four generations on both sides with no line crossing and each man left of his wife", () => {
+    const p: Cast["people"] = { c: { ...sh("Ivy", F, 1985), you: true }, h: sh("Gil", M, 1955), w: sh("Hope", F, 1957) };
+    const bonds = [wed("h", "w")];
+    const kids: Cast["kids"] = [{ of: ["h", "w"], kids: ["c"] }];
+    ["p1", "p2", "p3", "p4"].forEach((k, i) => {
+      p[k] = sh(`P${i}`, i % 2 ? F : M, 1930 + i);
+      p[`${k}f`] = sh(`G${2 * i}`, M, 1900 + i);
+      p[`${k}m`] = sh(`G${2 * i + 1}`, F, 1902 + i);
+      bonds.push(wed(`${k}f`, `${k}m`));
+      kids.push({ of: [`${k}f`, `${k}m`], kids: [k] });
+    });
+    bonds.push(wed("p1", "p2"), wed("p3", "p4"));
+    kids.push({ of: ["p1", "p2"], kids: ["h"] }, { of: ["p3", "p4"], kids: ["w"] });
+    const L = arrange(cast(p, bonds, kids, "c"));
+    const { x, y } = L;
+    bonds.forEach(({ a, b }) => {
+      expect(x[a]).toBeLessThan(x[b]);
+      expect(Object.keys(x).filter((id) => y[id] === y[a] && x[id] > x[a] && x[id] < x[b])).toEqual([]);
+    });
+    kids.forEach(({ of, kids }) => kids.forEach((k) => expect(x[of[0]] <= x[k] && x[k] <= x[of[1]]).toBe(true)));
+  });
+
+  // R-0750, R-0745
+  it("stands a couple with no tie to the family twice as far off as two unrelated families in a row", () => {
+    const L = arrange(joined({ q1: sh("Vince", M, 1960), q2: sh("Wendy", F, 1962) }, [wed("q1", "q2")], []));
+    const { x } = L;
+    expect(x.q1 - x.wm).toBeGreaterThanOrEqual(2 * (x.wf - x.hm));
+    expect(x.hf <= x.h && x.h <= x.hm).toBe(true);
+    expect(x.wf <= x.w && x.w <= x.wm).toBe(true);
+  });
+
+  const lines = (svg: string) =>
+    els(svg, "path", "kin").map((p) => {
+      const [x0, y0, x1, y1] = p.d.match(/^M(\S+) (\S+)L(\S+) (\S+)$/)!.slice(1).map(Number);
+      return [[x0, y0], [x1, y1]] as [[number, number], [number, number]];
+    });
+  const cuts = (a: number[][], b: number[][]) => {
+    const [[px, py], [qx, qy]] = a;
+    const [[rx, ry], [sx, sy]] = b;
+    const dd = (qx - px) * (sy - ry) - (qy - py) * (sx - rx);
+    if (!dd) return false;
+    const t = ((rx - px) * (sy - ry) - (ry - py) * (sx - rx)) / dd;
+    const u = ((rx - px) * (qy - py) - (ry - py) * (qx - px)) / dd;
+    return t > 0.01 && t < 0.99 && u > 0.01 && u < 0.99;
+  };
+  const between = joined(
+    { hs: sh("Ulla", F, 1971), ws: sh("Max", M, 1972), xf: sh("Rolf", M, 1943), xm: sh("Sara", F, 1945), x1: sh("Tom", M, 1969), x2: sh("Una", F, 1973) },
+    [wed("xf", "xm"), wed("x1", "hs"), wed("ws", "x2")],
+    [{ of: ["xf", "xm"], kids: ["x1", "x2"] }],
+  );
+  between.kids[0].kids.push("hs");
+  between.kids[1].kids.push("ws");
+  const prior = joined({ h0: sh("Clara", F, 1969), hc: sh("Tobias", M, 1990) }, [{ a: "h", b: "h0", st: Tie.Divorced, married: true }], [{ of: ["h", "h0"], kids: ["hc"] }]);
+  const shapes: Record<string, Cast> = {
+    "two couples each joining both families": cast(
+      { af: sh("Abe", M, 1930), am: sh("Bea", F, 1932), bf: sh("Cal", M, 1931), bm: sh("Dot", F, 1933), a1: sh("Eddie", M, 1955), a2: sh("Flora", F, 1957), b1: sh("Gina", F, 1956), b2: sh("Hal", M, 1958), c1: { ...sh("Iris", F, 1982), you: true }, c2: sh("Jack", M, 1984) },
+      [wed("af", "am"), wed("bf", "bm"), wed("a1", "b1"), wed("b2", "a2")],
+      [{ of: ["af", "am"], kids: ["a1", "a2"] }, { of: ["bf", "bm"], kids: ["b1", "b2"] }, { of: ["a1", "b1"], kids: ["c1"] }, { of: ["b2", "a2"], kids: ["c2"] }],
+      "c1",
+    ),
+    "three marriages, half-siblings and a cousin marriage": cast(
+      { gf: sh("Alan", M, 1925), gm: sh("Bess", F, 1927), f: sh("Cliff", M, 1950), u: sh("Dale", M, 1953), ua: sh("Erin", F, 1955), w1: sh("Gail", F, 1951), w2: sh("Hana", F, 1958), w3: sh("Inez", F, 1962), h1: sh("Jake", M, 1972), h2: sh("Kara", F, 1980), y: { ...sh("Lola", F, 1988), you: true }, cz: sh("Milo", M, 1986), w3x: sh("Nate", M, 1960), hr: sh("Opal", F, 1984), yc: sh("Pip", M, 2012) },
+      [wed("gf", "gm"), wed("u", "ua"), { a: "f", b: "w1", st: Tie.Divorced, married: true }, { a: "f", b: "w2", st: Tie.Divorced, married: true }, wed("f", "w3"), { a: "w3x", b: "w3", st: Tie.Divorced, married: true }, wed("cz", "y")],
+      [{ of: ["gf", "gm"], kids: ["f", "u"] }, { of: ["u", "ua"], kids: ["cz"] }, { of: ["f", "w1"], kids: ["h1"] }, { of: ["f", "w2"], kids: ["h2"] }, { of: ["f", "w3"], kids: ["y"] }, { of: ["w3x", "w3"], kids: ["hr"] }, { of: ["cz", "y"], kids: ["yc"] }],
+      "y",
+    ),
+    "another family between a joining couple, both families married into it": between,
+  };
+
+  Object.entries(shapes).forEach(([what, c]) => {
+    // R-0752, R-0748, R-0745
+    it(`draws ${what} generation by generation with no child's line through a name`, () => {
+      const L = arrange(c);
+      expect(L.loose).toBe(true);
+      lines(draw(L, frame(L))).forEach((sg) => L.names.forEach((b) => expect(crosses(sg, b)).toBe(false)));
+    });
+  });
+
+  // R-0752
+  it("keeps the child of a father's second marriage clear of his name, as approved", () => {
+    const L = arrange(prior);
+    expect(L.loose).toBe(false);
+    expect(L.x.c - L.x.h).toBeGreaterThanOrEqual(L.w);
+    expect(L.x.c).toBeLessThan(L.x.w);
+  });
+
+  // R-0752, R-0745
+  it("draws another family between a joining couple with no two children's lines crossing", () => {
+    const L = arrange(between);
+    const ls = lines(draw(L, frame(L)));
+    ls.forEach((a, i) => ls.slice(i + 1).forEach((b) => expect(cuts(a, b)).toBe(false)));
+    expect(L.x.h).toBeLessThan(L.x.w);
+  });
+
+  // R-0745, R-0744
+  it("keeps a generated family of 50 near the width of its widest row and its margin fixed as it widens", () => {
+    const sprawl = JSON.parse(readFileSync(new URL("./family50.json", import.meta.url), "utf8"));
+    const L = arrange({ ...base(sprawl.people), ...sprawl });
+    const rows = new Map<number, number>();
+    Object.values(L.y).forEach((y) => rows.set(y, (rows.get(y) ?? 0) + 1));
+    // each person a shape and at most the sibling gap of three widths beside it
+    expect(L.vw).toBeLessThanOrEqual(2 * Math.max(...rows.values()) * 4 * L.w);
+    expect(L.h).toBeLessThanOrEqual(rows.size * 3 * L.w + 100);
+  });
+
+  // R-0751
+  it("says someone further up a loop is recorded as their own ancestor", () => {
+    const c = cast(
+      { a: sh("Al", M, 1950), b: sh("Bea", F, 1951), c: { ...sh("Cy", M, 1975), you: true }, e: sh("Eve", F, 2000) },
+      [wed("a", "b")],
+      [{ of: ["a", "b"], kids: ["c"] }, { of: ["c"], kids: ["e"] }, { of: ["e"], kids: ["a"] }],
+      "c",
+    );
+    const L = arrange(c);
+    expect(L.note!.lines.join(" ")).toBe("Al is recorded as their own ancestor");
+  });
+
+  // R-0751
+  it("draws someone recorded as their own forebear, the link closing the loop in the error colour with a note", () => {
+    const c = cast(
+      { a: sh("Al", M, 1950), b: sh("Bea", F, 1951), c: { ...sh("Cy", M, 1975), you: true }, d: sh("Di", F, 1976) },
+      [wed("a", "b"), wed("c", "d")],
+      [{ of: ["a", "b"], kids: ["c"] }, { of: ["c", "d"], kids: ["a"] }],
+      "c",
+    );
+    const L = arrange(c);
+    expect(L.cut).toEqual([{ kid: "a", parent: "c", up: 2 }]);
+    const svg = draw(L, frame(L));
+    Object.keys(c.people).forEach((id) => expect(svg.split(`class="p" data-id="${id}"`)).toHaveLength(2));
+    const cuts = els(svg, "path", "cut");
+    expect(cuts).toHaveLength(1);
+    expect(els(svg, "text", "cutn").length).toBeGreaterThan(0);
+    expect(svg.replace(/<\/text><text class="cutn"[^>]*>/g, " ")).toContain("Al is recorded as their own grandparent");
+    const [x0, y0, cx, cy, x1, y1] = cuts[0].d.match(/^M(\S+) (\S+)Q(\S+) (\S+) (\S+) (\S+)$/)!.slice(1).map(Number);
+    const at = (t: number) => [
+      (1 - t) ** 2 * x0 + 2 * t * (1 - t) * cx + t ** 2 * x1,
+      (1 - t) ** 2 * y0 + 2 * t * (1 - t) * cy + t ** 2 * y1,
+    ];
+    const normal = [...els(svg, "path", "kin"), ...els(svg, "path", "tie")].flatMap((p) => {
+      const pts: number[][] = [];
+      let cur = [0, 0];
+      for (const [, op, a, b] of p.d.matchAll(/([MLVH])([-\d.]+)(?: ([-\d.]+))?/g)) {
+        cur = op === "V" ? [cur[0], +a] : op === "H" ? [+a, cur[1]] : [+a, +b];
+        pts.push(op === "M" ? [NaN, NaN, ...cur] : cur);
+      }
+      return pts.flatMap((q, i) => (i && !isNaN(q[0]) ? [[pts[i - 1].slice(-2), q]] : []));
+    });
+    const dist = ([px, py]: number[], [[ax, ay], [bx, by]]: number[][]) => {
+      const l = (bx - ax) ** 2 + (by - ay) ** 2;
+      const t = l ? Math.max(0, Math.min(1, ((px - ax) * (bx - ax) + (py - ay) * (by - ay)) / l)) : 0;
+      return Math.hypot(px - ax - t * (bx - ax), py - ay - t * (by - ay));
+    };
+    expect(normal.length).toBeGreaterThan(0);
+    const near = Array.from({ length: 41 }, (_, i) => at(0.05 + (0.9 * i) / 40)).filter((q) => normal.some((sg) => dist(q, sg) < 2));
+    expect(near.length).toBeLessThanOrEqual(1);
   });
 });
