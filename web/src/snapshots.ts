@@ -33,6 +33,8 @@ export interface Shot {
   fact: string;
   guess: string | null;
   question: string | null;
+  /** Who the snapshot is about, or the record's own person. */
+  who: string;
 }
 
 interface Step {
@@ -257,7 +259,7 @@ export class Told {
   private emphasised(s: Step): string[] {
     const placed = s.marks.filter(isPlaced);
     const family = placed.some((m) => m.k === Mark.Family)
-      ? Object.entries(this.layout.P)
+      ? Object.entries(this.cast.people)
           .filter(([, p]) => (p.born == null || p.born <= s.t) && (p.died == null || p.died > s.t))
           .map(([who]) => who)
       : [];
@@ -297,7 +299,7 @@ export class Told {
     });
     const placed = now.marks.filter(isPlaced);
     const marks: Placed[] = [];
-    Object.keys(this.layout.P).forEach((id) => {
+    Object.keys(this.cast.people).forEach((id) => {
       const cur = placed.find((m) => (m.k === Mark.Up || m.k === Mark.Down) && m.who === id);
       const was = trouble.get(id);
       if (cur) marks.push({ ...cur, cls: Tone.Now });
@@ -349,6 +351,7 @@ export class Told {
     });
     return {
       svg,
+      who: lit[0] ?? this.cast.index,
       date: now.date,
       gap: i > 0 ? gapText(this.steps[i - 1].t, now.t) : null,
       fact: snap.fact,
@@ -398,7 +401,8 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[]): Cast 
       const next = [...path, ...of];
       of.forEach((p) => {
         if (cast.has(p)) next.forEach(add);
-        climb(p, next);
+        // someone recorded as their own forebear ends the climb; the picture refuses them
+        if (!path.includes(p)) climb(p, next);
       });
     };
     [...cast].forEach((id) => climb(id, []));

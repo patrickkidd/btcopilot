@@ -128,6 +128,17 @@ export interface Cast {
   /** A person with no family tie stands on the row of the one they move with. */
   assoc: Record<string, string>;
   until: number;
+  /** Parent links left out to break a parentage cycle; set by arrange. */
+  cut?: Cut[];
+}
+
+/** A parent link that closes a parentage cycle: left out of the layout and
+ * drawn in the error colour with a note (R-0751). */
+export interface Cut {
+  kid: string;
+  parent: string;
+  /** How many generations up the loop the kid meets themselves: 2 is their own grandparent. */
+  up: number;
 }
 
 export enum Names {
@@ -198,6 +209,11 @@ export interface Layout {
   /** How far past each shape the person's event words start: clear of the
    * spikes and of the flank arrow beside them. */
   inset: Record<string, number>;
+  /** Laid out by the fallback, generation by generation (ruled 2026-10-04). */
+  loose: boolean;
+  cut: Cut[];
+  /** The note under the family naming each cut link, and its first line's baseline. */
+  note: { y: number; lines: string[] } | null;
 }
 
 export interface DrawnBond {
@@ -228,6 +244,8 @@ export const VIEW = 360;
 const PAD = 10;
 /** Ruled 2026-09-26: labels at least 13px. */
 export const NAME = 13;
+/** Decided 2026-09-27: labels never under 13px, shapes never under 36px, the family's margin never under 20px. */
+export const LEAST = { label: 13, shape: 36, margin: 20 };
 const CH = 0.6;
 const LEAD = 15;
 /** How far a label's box reaches above its line. */
@@ -277,7 +295,7 @@ class Dims {
   }
 }
 
-class Unplaceable extends Error {
+export class Unplaceable extends Error {
   constructor(
     rule: string,
     readonly wide = false,
@@ -307,9 +325,63 @@ export const DEFAULTS: Options = {
   compact: false,
 };
 
+/** Each person's parents and couples, read once from the cast. */
+interface Ties {
+  parents: Record<string, string[]>;
+  kidsOf: Record<string, string[]>;
+  bondsOf: Record<string, Bond[]>;
+  other: (b: Bond, id: string) => string;
+  tied: (id: string) => boolean;
+}
+
+function ties(cast: Cast): Ties {
+  const parents: Record<string, string[]> = {};
+  const kidsOf: Record<string, string[]> = {};
+  const bondsOf: Record<string, Bond[]> = {};
+  Object.keys(cast.people).forEach((id) => (bondsOf[id] = []));
+  cast.bonds.forEach((b) => {
+    bondsOf[b.a].push(b);
+    bondsOf[b.b].push(b);
+  });
+  cast.kids.forEach((k) => {
+    k.kids.forEach((id) => (parents[id] = k.of));
+    k.of.forEach((p) => (kidsOf[p] ??= []).push(...k.kids));
+  });
+  return {
+    parents,
+    kidsOf,
+    bondsOf,
+    other: (b, id) => (b.a === id ? b.b : b.a),
+    tied: (id) => bondsOf[id].length > 0 || !!parents[id] || !!kidsOf[id],
+  };
+}
+
+/** The generation of each person and the order of each row, top to bottom. */
+interface Plan {
+  gen: Record<string, number>;
+  rows: string[][];
+  /** Families with no tie between them, each drawn to the right of the one before. */
+  comps: string[][];
+  /** Laid out by the fallback: rows may cross and settling may give up. */
+  loose: boolean;
+}
+
 /** The layout the approved page uses: names beside or above, and under the
- * shapes only when nothing else fits; scaled down as the last resort. */
-export function arrange(cast: Cast): Layout {
+ * shapes only when nothing else fits; scaled down as the last resort. A family
+ * the row rules cannot place is laid out generation by generation instead
+ * (Patrick, 2026-10-04). Someone recorded as their own forebear is drawn
+ * too, the link that closes the loop left out and shown as an error. */
+export function arrange(given: Cast): Layout {
+  const cast = uncycle(given);
+  try {
+    return strict(cast);
+  } catch (e) {
+    if (!(e instanceof Unplaceable)) throw e;
+    return fallback(cast);
+  }
+}
+
+function strict(cast: Cast): Layout {
   const L = layout(cast);
   if (L.vw <= VIEW) return L;
   try {
@@ -318,6 +390,44 @@ export function arrange(cast: Cast): Layout {
     if (!(e instanceof Unplaceable)) throw e;
     return L;
   }
+}
+
+/** The cast with each parentage cycle broken at its closing link (R-0751). */
+function uncycle(cast: Cast): Cast {
+  const cut: Cut[] = [];
+  let kids = cast.kids;
+  for (let c = loop(kids, cast); c; c = loop(kids, cast)) {
+    const { kid, parent } = c;
+    cut.push(c);
+    kids = kids
+      .map((k) => (k.of.includes(parent) ? { ...k, kids: k.kids.filter((id) => id !== kid) } : k))
+      .filter((k) => k.kids.length);
+  }
+  return cut.length ? { ...cast, kids, cut } : cast;
+}
+
+/** The first link the walk finds back to someone already on its path: the
+ * kid is that person, the parent the one found last. */
+function loop(kids: Brood[], cast: Cast): Cut | null {
+  const { kidsOf } = ties({ ...cast, kids });
+  const done = new Set<string>();
+  const path: string[] = [];
+  const walk = (id: string): Cut | null => {
+    path.push(id);
+    for (const k of kidsOf[id] ?? []) {
+      if (path.includes(k)) return { kid: k, parent: id, up: path.length - path.indexOf(k) };
+      const c = done.has(k) ? null : walk(k);
+      if (c) return c;
+    }
+    path.pop();
+    done.add(id);
+    return null;
+  };
+  for (const id of Object.keys(cast.people)) {
+    const c = done.has(id) ? null : walk(id);
+    if (c) return c;
+  }
+  return null;
 }
 
 export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
@@ -350,27 +460,25 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
       true,
     );
   }
-  const d = new Dims(opts.w, opts.compact);
-  const { E } = d;
-  const tight = opts.names === Names.Above;
-  const under = opts.names === Names.Under;
-  let P = cast.people;
-  const ids = Object.keys(P);
-  const assoc = cast.assoc;
-  const gen: Record<string, number> = {};
-  const parents: Record<string, string[]> = {};
-  const bondsOf: Record<string, Bond[]> = {};
-  ids.forEach((id) => (bondsOf[id] = []));
-  cast.bonds.forEach((b) => {
-    bondsOf[b.a].push(b);
-    bondsOf[b.b].push(b);
-  });
-  cast.kids.forEach((k) => k.kids.forEach((id) => (parents[id] = k.of)));
-  const other = (b: Bond, id: string) => (b.a === id ? b.b : b.a);
-  const tied = (id: string) =>
-    bondsOf[id].length > 0 || !!parents[id] || cast.kids.some((k) => k.of.includes(id));
-  const half = (id: string) => d.half(P[id]);
+  const t = ties(cast);
+  const { gen, anchor } = gens(cast, t);
+  return place(cast, opts, t, { gen, rows: order(cast, t, gen, anchor), comps: [Object.keys(cast.people)], loose: false });
+}
 
+/** Ruled 2026-10-04: generation by generation on a larger picture that scrolls;
+ * lines may cross where they must, and nobody is drawn twice. */
+function fallback(cast: Cast): Layout {
+  const t = ties(cast);
+  const { gen, comps } = looseGens(cast, t);
+  const rows = looseOrder(cast, t, gen, comps);
+  return place(cast, { ...DEFAULTS, inset: true, steps: false }, t, { gen, rows, comps, loose: true });
+}
+
+function gens(cast: Cast, t: Ties): { gen: Record<string, number>; anchor: Record<string, string> } {
+  const P = cast.people;
+  const ids = Object.keys(P);
+  const { tied } = t;
+  const gen: Record<string, number> = {};
   gen[cast.index] = 0;
   for (let pass = 0; pass <= ids.length; pass++) {
     cast.bonds.forEach((b) => {
@@ -398,24 +506,355 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   // spec 8.4: someone with no family tie stands on the row of the person they
   // relate to, and failing anyone placed, at the end of the reader's row: a
   // sparse record's missing link is the coach's question, not a failed drawing
-  const loose: Record<string, string> = {};
+  const anchor: Record<string, string> = {};
   ids.forEach((id) => {
     // the reader stands on row 0 even with no family drawn beside them
     if (tied(id) || gen[id] != null) return;
-    loose[id] = assoc[id] != null && gen[assoc[id]] != null ? assoc[id] : cast.index;
-    gen[id] = gen[loose[id]];
+    anchor[id] = cast.assoc[id] != null && gen[cast.assoc[id]] != null ? cast.assoc[id] : cast.index;
+    gen[id] = gen[anchor[id]];
   });
   let lo = Infinity;
-  let hi = -Infinity;
   ids.forEach((id) => {
     if (gen[id] == null) throw new Unplaceable(`a person not connected to the rest of the family (${P[id].name})`);
     lo = Math.min(lo, gen[id]);
-    hi = Math.max(hi, gen[id]);
   });
   cast.bonds.forEach((b) => {
     if (gen[b.a] !== gen[b.b]) throw new Unplaceable("a couple across generations");
   });
+  ids.forEach((id) => (gen[id] -= lo));
+  return { gen, anchor };
+}
 
+// men on the left, so a woman's partners go to her left
+const manSide = (p: Shape) => (p.g === Sex.Female ? -1 : 1);
+
+function order(cast: Cast, t: Ties, gen: Record<string, number>, loose: Record<string, string>): string[][] {
+  const P = cast.people;
+  const ids = Object.keys(P);
+  const { parents, bondsOf, other, tied } = t;
+  const rows: string[][] = [];
+  const top = Math.max(...ids.map((id) => gen[id]));
+  // ---- the order of each row, top to bottom ----
+  const placed = new Set<string>();
+  const at: Record<string, number> = {};
+  
+  // Kerr fig. 14: a couple where both partners' parents are in the record joins
+  // the two families, the man's on the left, each spouse at the inner end of their sibship
+  const join = cast.bonds.filter((b) => parents[b.a] && parents[b.b]);
+  if (join.length > 1) throw new Unplaceable("two couples each joining two families");
+  const inner: Record<string, number> = {};
+  const wed = join[0];
+  if (wed) {
+    const left = P[wed.b].g === Sex.Male && P[wed.a].g !== Sex.Male ? wed.b : wed.a;
+    inner[left] = 1;
+    inner[other(wed, left)] = -1;
+  }
+  const isJoin = (p: string, q: string) => !!wed && inner[p] != null && inner[q] != null && p !== q;
+  // each joining spouse's forebears in the record, and the side of each sibship they stand at
+  const anc: Record<string, Set<string>> = {};
+  const edge: Record<string, number> = {};
+  Object.keys(inner).forEach((sp) => {
+    anc[sp] = new Set();
+    const up = (id: string) =>
+      (parents[id] || []).forEach((q) => {
+        if (anc[sp].has(q)) return;
+        anc[sp].add(q);
+        edge[q] = inner[sp];
+        up(q);
+      });
+    up(sp);
+  });
+  const ofSpouse = (id: string) => Object.keys(anc).find((sp) => anc[sp].has(id));
+  // spec 5: siblings oldest-left; with no dates, the record's order
+  const sibOrder = (kids: string[]) => {
+    const o = kids.every((id) => P[id].born != null)
+      ? kids.slice().sort((a, b) => P[a].born! - P[b].born!)
+      : kids.slice();
+    const j = o.find((id) => inner[id] != null || edge[id] != null);
+    if (j == null) return o;
+    const rest = o.filter((id) => id !== j);
+    return (inner[j] ?? edge[j]) === 1 ? [...rest, j] : [j, ...rest];
+  };
+  /* spec 5, multiple partnerships: a person with no brothers or sisters in the
+   * row keeps the first partner on one side and the next on the other; with
+   * family beside them, every partner goes on the side away from it. Each
+   * partner's own other partners continue outward from that couple, so no
+   * couple line passes under anyone outside it. */
+  function lay(anchor: string, dir: number, seq: string[], split: boolean): void {
+    const sides: Record<number, string[]> = { 1: [], [-1]: [] };
+    const queue: [string, number][] = [];
+    const put = (q: string, s: number) => {
+      placed.add(q);
+      sides[s].push(q);
+      queue.push([q, s]);
+    };
+    bondsOf[anchor]
+      .map((b) => other(b, anchor))
+      .filter((q) => !placed.has(q) && gen[q] === gen[anchor])
+      .filter((q) => !isJoin(anchor, q))
+      .forEach((q, i) => {
+        if (parents[q] && parents[anchor])
+          throw new Unplaceable("a couple where both partners’ parents are in the record");
+        if (split && i > 1) throw new Unplaceable("three or more partners for one person with no family beside them");
+        put(q, split && i === 1 ? -dir : dir);
+      });
+    while (queue.length) {
+      const [p, s] = queue.shift()!;
+      bondsOf[p].forEach((b) => {
+        const q = other(b, p);
+        if (placed.has(q) || gen[q] !== gen[p] || isJoin(p, q)) return;
+        if (parents[q] && parents[p])
+          throw new Unplaceable("a couple where both partners’ parents are in the record");
+        put(q, s);
+      });
+    }
+    seq.push(...sides[-1].reverse(), anchor, ...sides[1]);
+  }
+  for (let g = 0; g <= top; g++) {
+    const seq: string[] = [];
+    cast.kids
+      .filter((k) => gen[k.kids[0]] === g)
+      .map((k) => ({ k, key: k.of.reduce((s, id) => s + at[id], 0) / k.of.length }))
+      .sort((a, b) => a.key - b.key)
+      .forEach(({ k }) => {
+        const sibs = sibOrder(k.kids);
+        sibs.forEach((s) => placed.add(s));
+        const n = sibs.length;
+        sibs.forEach((s, i) =>
+          inner[s] != null
+            ? lay(s, -inner[s], seq, false)
+            : edge[s] != null
+              ? lay(s, edge[s], seq, false)
+              : lay(s, n > 1 && i === 0 ? -1 : n > 1 && i === n - 1 ? 1 : manSide(P[s]), seq, n === 1),
+        );
+      });
+    const roots = ids.filter((id) => gen[id] === g && !placed.has(id) && tied(id));
+    if (roots.length) {
+      const pick = (rs: string[]) =>
+        rs
+          .slice()
+          .sort(
+            (a, b) =>
+              bondsOf[b].length - bondsOf[a].length ||
+              cast.bonds.indexOf(bondsOf[a][0]) - cast.bonds.indexOf(bondsOf[b][0]),
+          )[0];
+      const comps: { a: string; out: string[] }[] = [];
+      for (let rest = roots; rest.length; rest = roots.filter((id) => !placed.has(id))) {
+        const a = pick(rest);
+        placed.add(a);
+        const out: string[] = [];
+        lay(a, comps.length || P[a].g !== Sex.Female ? 1 : -1, out, true);
+        comps.push({ a, out });
+      }
+      if (comps.length === 1 && !seq.length) seq.push(...comps[0].out);
+      else {
+        const spOf = (out: string[]) => out.map(ofSpouse).find((s) => s);
+        // each side laid so the joining spouse's forebears stand at its inner end
+        const side = (a: string, sp: string, comp: string[]): string[] => {
+          const tryDir = (dir: number) => {
+            const out: string[] = [];
+            comp.forEach((id) => placed.delete(id));
+            placed.add(a);
+            lay(a, dir, out, true);
+            return out;
+          };
+          const ok = (out: string[]) => {
+            const idx = out.map((id, i) => (anc[sp].has(id) ? i : -1)).filter((i) => i >= 0);
+            const n = idx.length;
+            return idx.every((i) => (inner[sp] === 1 ? i >= out.length - n : i < n));
+          };
+          const r = tryDir(1);
+          return ok(r) ? r : tryDir(-1);
+        };
+        const parts = [
+          ...(seq.length ? [{ sp: spOf(seq), out: seq.slice() }] : []),
+          ...comps.map((c) => {
+            const sp = spOf(c.out);
+            return { sp, out: sp ? side(c.a, sp, c.out) : c.out };
+          }),
+        ];
+        if (parts.length !== 2 || !parts[0].sp || !parts[1].sp || parts[0].sp === parts[1].sp)
+          throw new Unplaceable(
+            seq.length
+              ? "a couple in a row beside another family, with nothing to say which side it goes on"
+              : "two separate families side by side in one row",
+          );
+        parts.sort((p, q) => inner[q.sp!] - inner[p.sp!]);
+        seq.splice(0, seq.length, ...parts[0].out, ...parts[1].out);
+      }
+    }
+    // a reader with no family drawn stands first, the others at the end beside them
+    if (gen[cast.index] === g && !tied(cast.index)) {
+      seq.push(cast.index);
+      placed.add(cast.index);
+    }
+    ids
+      .filter((id) => gen[id] === g && !tied(id) && id !== cast.index)
+      .forEach((id) => {
+        const a = loose[id];
+        const i = seq.indexOf(a);
+        const right = bondsOf[a].some((b) => seq.indexOf(other(b, a)) > i);
+        if (right) seq.unshift(id);
+        else seq.push(id);
+        placed.add(id);
+      });
+    seq.forEach((id, i) => (at[id] = i));
+    if (wed && gen[wed.a] === g && Math.abs(at[wed.a] - at[wed.b]) !== 1)
+      throw new Unplaceable("a couple where both partners’ parents are in the record, with another family between them");
+    rows.push(seq);
+  }
+  ids.forEach((id) => {
+    if (!placed.has(id)) throw new Unplaceable(`a person the row rules do not reach (${P[id].name})`);
+  });
+  return rows;
+}
+
+/** Generations by the longest line of descent: a child a row below the lower
+ * of its parents; a partner with no parents on their partner's row; someone
+ * with no family tie on the row of the one they move with. A family with no
+ * tie to the reader's is its own group, each group's top row the picture's. */
+function looseGens(cast: Cast, t: Ties): { gen: Record<string, number>; comps: string[][] } {
+  const ids = Object.keys(cast.people);
+  const { parents, kidsOf, other, tied } = t;
+  const gen: Record<string, number> = {};
+  ids.forEach((id) => (gen[id] = 0));
+  const topo: string[] = [];
+  const seen = new Set<string>();
+  const visit = (id: string): void => {
+    if (seen.has(id)) return;
+    seen.add(id);
+    (parents[id] ?? []).forEach(visit);
+    topo.push(id);
+  };
+  ids.forEach(visit);
+  const down = () =>
+    topo.forEach((id) => {
+      if (parents[id]) gen[id] = Math.max(gen[id], ...parents[id].map((p) => gen[p] + 1));
+    });
+  const below = (p: string, q: string): boolean => (kidsOf[p] ?? []).some((k) => k === q || below(k, q));
+  down();
+  for (let pass = 0; pass < ids.length; pass++) {
+    let moved = false;
+    cast.bonds.forEach((b) =>
+      [b.a, b.b].forEach((p) => {
+        const q = other(b, p);
+        if (parents[p] || gen[q] <= gen[p] || below(p, q)) return;
+        gen[p] = gen[q];
+        moved = true;
+      }),
+    );
+    if (!moved) break;
+    down();
+  }
+  const near = (id: string) => (cast.assoc[id] != null && tied(cast.assoc[id]) ? cast.assoc[id] : cast.index);
+  ids.forEach((id) => {
+    if (!tied(id)) gen[id] = gen[near(id)];
+  });
+  const root: Record<string, string> = {};
+  const find = (id: string): string => (root[id] === id ? id : (root[id] = find(root[id])));
+  ids.forEach((id) => (root[id] = id));
+  const join = (a: string, b: string) => (root[find(a)] = find(b));
+  cast.bonds.forEach((b) => join(b.a, b.b));
+  cast.kids.forEach((k) => [...k.of, ...k.kids].forEach((id) => join(id, k.kids[0] ?? k.of[0])));
+  ids.forEach((id) => tied(id) || join(id, near(id)));
+  const groups = new Map<string, string[]>();
+  [find(cast.index), ...ids.map(find)].forEach((r) => groups.has(r) || groups.set(r, []));
+  ids.forEach((id) => groups.get(find(id))!.push(id));
+  const comps = [...groups.values()];
+  comps.forEach((c) => {
+    const lo = Math.min(...c.map((id) => gen[id]));
+    c.forEach((id) => (gen[id] -= lo));
+  });
+  return { gen, comps };
+}
+
+/** Siblings oldest-left; with no dates, the record's order (spec 5). */
+const byAge = (P: Record<string, Shape>, kids: string[]) =>
+  kids.every((id) => P[id].born != null) ? kids.slice().sort((a, b) => P[a].born! - P[b].born!) : kids.slice();
+
+/** Each group's rows: the top row in the cast's order with partners together,
+ * each lower row by where its parents stand, then four sweeps down and up that
+ * move each person toward the mean place of their family in the next row. */
+function looseOrder(cast: Cast, t: Ties, gen: Record<string, number>, comps: string[][]): string[][] {
+  const P = cast.people;
+  const { parents, kidsOf, bondsOf, other } = t;
+  const n = Math.max(...Object.keys(P).map((id) => gen[id])) + 1;
+  const rows: string[][] = Array.from({ length: n }, () => []);
+  const partners = (id: string) => bondsOf[id].map((b) => other(b, id));
+  comps.forEach((comp) => {
+    const own = new Set(comp);
+    const sub: string[][] = rows.map(() => []);
+    const placed = new Set<string>();
+    const put = (id: string): void => {
+      if (placed.has(id)) return;
+      placed.add(id);
+      sub[gen[id]].push(id);
+      partners(id)
+        .filter((q) => gen[q] === gen[id] && !parents[q])
+        .forEach(put);
+    };
+    for (let g = 0; g < n; g++) {
+      const at = (id: string) => sub[gen[id]].indexOf(id);
+      cast.kids
+        .filter((k) => own.has(k.kids[0]) && gen[k.kids[0]] === g)
+        .map((k) => ({ k, key: k.of.reduce((s, id) => s + at(id), 0) / k.of.length }))
+        .sort((a, b) => a.key - b.key)
+        .forEach(({ k }) => byAge(P, k.kids).forEach(put));
+      comp.filter((id) => gen[id] === g).forEach(put);
+    }
+    const near = (id: string, r: number) =>
+      [...(parents[id] ?? []), ...(kidsOf[id] ?? []), ...partners(id)].filter((q) => own.has(q) && gen[q] === r);
+    const sweep = (g: number, r: number) => {
+      const there = sub[r];
+      const here = sub[g];
+      const key: Record<string, number> = {};
+      here.forEach((id, i) => {
+        // a partner in the same row is left out, or each pass swaps the couple (R-0747)
+        const v = near(id, r).map((q) => there.indexOf(q));
+        key[id] = v.length ? v.reduce((s, a) => s + a, 0) / v.length : i;
+      });
+      sub[g] = here
+        .map((id, i) => ({ id, i }))
+        .sort((a, b) => key[a.id] - key[b.id] || a.i - b.i)
+        .map((e) => e.id);
+    };
+    for (let s = 0; s < 4; s++) {
+      for (let g = 1; g < n; g++) sweep(g, g - 1);
+      for (let g = n - 2; g >= 0; g--) sweep(g, g + 1);
+    }
+    // the last word goes to the parents, so each child stands under their own
+    for (let g = 1; g < n; g++) sweep(g, g - 1);
+    cast.kids
+      .filter((k) => own.has(k.kids[0]))
+      .forEach((k) => {
+        const row = sub[gen[k.kids[0]]];
+        const slots = k.kids.map((id) => row.indexOf(id)).sort((a, b) => a - b);
+        byAge(P, k.kids).forEach((id, i) => (row[slots[i]] = id));
+      });
+    comp.forEach((id) => {
+      if (parents[id] || bondsOf[id].length !== 1) return;
+      const q = partners(id)[0];
+      const row = sub[gen[id]];
+      if (gen[q] !== gen[id]) return;
+      row.splice(row.indexOf(id), 1);
+      const i = row.indexOf(q);
+      row.splice(manSide(P[q]) < 0 ? i : i + 1, 0, id);
+    });
+    sub.forEach((row, g) => rows[g].push(...row));
+  });
+  return rows;
+}
+
+function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
+  const d = new Dims(opts.w, opts.compact);
+  const { E } = d;
+  const tight = opts.names === Names.Above;
+  const under = opts.names === Names.Under;
+  let P = cast.people;
+  const ids = Object.keys(P);
+  const { parents, bondsOf } = t;
+  const { gen, rows } = plan;
+  const half = (id: string) => d.half(P[id]);
   // ruled 2026-09-26: first names; a surname initial only for two people in one
   // row who share a first name. A stand-in such as "Delphine's mother" is kept whole.
   const shown: Record<string, string> = {};
@@ -440,10 +879,8 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   const zone: Record<string, number> = {};
   const lw: Record<string, number> = {};
   const nl: Record<string, number> = {};
-  const rows: string[][] = [];
   const ROW = Math.max(3 * d.W, under ? 100 : 66);
   ids.forEach((id) => {
-    gen[id] -= lo;
     y[id] = gen[id] * ROW;
     const l = lines(P[id], cast.until);
     lw[id] = textWidth(l);
@@ -470,100 +907,6 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   // how far a person's marks reach past the shape: the cross and its arrow, or the word
   const zw = (id: string, reach: Reach) => Math.max(crossed.has(id) ? d.ZONE : 0, reach === Reach.All ? ww(id) : 0);
 
-  // ---- the order of each row, top to bottom ----
-  const placed = new Set<string>();
-  const at: Record<string, number> = {};
-  // spec 5: siblings oldest-left; with no dates, the record's order
-  const sibOrder = (kids: string[]) =>
-    kids.every((id) => P[id].born != null)
-      ? kids.slice().sort((a, b) => P[a].born! - P[b].born!)
-      : kids.slice();
-  /* spec 5, multiple partnerships: a person with no brothers or sisters in the
-   * row keeps the first partner on one side and the next on the other; with
-   * family beside them, every partner goes on the side away from it. Each
-   * partner's own other partners continue outward from that couple, so no
-   * couple line passes under anyone outside it. */
-  function lay(anchor: string, dir: number, seq: string[], split: boolean): void {
-    const sides: Record<number, string[]> = { 1: [], [-1]: [] };
-    const queue: [string, number][] = [];
-    const put = (q: string, s: number) => {
-      placed.add(q);
-      sides[s].push(q);
-      queue.push([q, s]);
-    };
-    bondsOf[anchor]
-      .map((b) => other(b, anchor))
-      .filter((q) => !placed.has(q) && gen[q] === gen[anchor])
-      .forEach((q, i) => {
-        if (parents[q] && parents[anchor])
-          throw new Unplaceable("a couple where both partners’ parents are in the record");
-        if (split && i > 1) throw new Unplaceable("three or more partners for one person with no family beside them");
-        put(q, split && i === 1 ? -dir : dir);
-      });
-    while (queue.length) {
-      const [p, s] = queue.shift()!;
-      bondsOf[p].forEach((b) => {
-        const q = other(b, p);
-        if (placed.has(q) || gen[q] !== gen[p]) return;
-        if (parents[q] && parents[p])
-          throw new Unplaceable("a couple where both partners’ parents are in the record");
-        put(q, s);
-      });
-    }
-    seq.push(...sides[-1].reverse(), anchor, ...sides[1]);
-  }
-  // men on the left, so a woman's partners go to her left
-  const manSide = (id: string) => (P[id].g === Sex.Female ? -1 : 1);
-  for (let g = 0; g <= hi - lo; g++) {
-    const seq: string[] = [];
-    cast.kids
-      .filter((k) => gen[k.kids[0]] === g)
-      .map((k) => ({ k, key: k.of.reduce((s, id) => s + at[id], 0) / k.of.length }))
-      .sort((a, b) => a.key - b.key)
-      .forEach(({ k }) => {
-        const sibs = sibOrder(k.kids);
-        sibs.forEach((s) => placed.add(s));
-        const n = sibs.length;
-        sibs.forEach((s, i) =>
-          lay(s, n > 1 && i === 0 ? -1 : n > 1 && i === n - 1 ? 1 : manSide(s), seq, n === 1),
-        );
-      });
-    const roots = ids.filter((id) => gen[id] === g && !placed.has(id) && tied(id));
-    if (roots.length) {
-      if (seq.length)
-        throw new Unplaceable("a couple in a row beside another family, with nothing to say which side it goes on");
-      const anchor = roots
-        .slice()
-        .sort(
-          (a, b) =>
-            bondsOf[b].length - bondsOf[a].length ||
-            cast.bonds.indexOf(bondsOf[a][0]) - cast.bonds.indexOf(bondsOf[b][0]),
-        )[0];
-      placed.add(anchor);
-      lay(anchor, P[anchor].g === Sex.Female ? -1 : 1, seq, true);
-      if (roots.some((id) => !placed.has(id))) throw new Unplaceable("two separate families side by side in one row");
-    }
-    // a reader with no family drawn stands first, the others at the end beside them
-    if (gen[cast.index] === g && !tied(cast.index)) {
-      seq.push(cast.index);
-      placed.add(cast.index);
-    }
-    ids
-      .filter((id) => gen[id] === g && !tied(id) && id !== cast.index)
-      .forEach((id) => {
-        const a = loose[id];
-        const i = seq.indexOf(a);
-        const right = bondsOf[a].some((b) => seq.indexOf(other(b, a)) > i);
-        if (right) seq.unshift(id);
-        else seq.push(id);
-        placed.add(id);
-      });
-    seq.forEach((id, i) => (at[id] = i));
-    rows.push(seq);
-  }
-  ids.forEach((id) => {
-    if (!placed.has(id)) throw new Unplaceable(`a person the row rules do not reach (${P[id].name})`);
-  });
 
   // how far past a person's shape the given reach runs, on the marks' side
   const marks = (id: string, reach: Reach) =>
@@ -588,7 +931,11 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   // a step's words never push neighbours apart: each finds room of its own on
   // its step (word placement in draw), so only names and lasting marks count
   const between = (a: string, b: string) => rightExt(a, Reach.Marks) + leftExt(b, Reach.Marks);
+  const group: Record<string, number> = {};
+  plan.comps.forEach((c, i) => c.forEach((id) => (group[id] = i)));
   function gapFor(a: string, b: string): number {
+    // a family with no tie to the person's stands clearly apart (R-0750)
+    if (group[a] !== group[b]) return 2 * d.LOOSE;
     if (cast.bonds.some((k) => (k.a === a && k.b === b) || (k.a === b && k.b === a))) return d.COUPLE;
     if (parents[a] && parents[a] === parents[b]) return d.SIB;
     return d.LOOSE;
@@ -645,18 +992,26 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
         side[last] = Side.Left;
     }
   }
-  const shift = (row: string[], from: string, by: number) => {
-    for (let j = row.indexOf(from); j < row.length; j++) x[row[j]] += by;
+  // the least distance between two neighbours in a row; a mark between them stays nearer its own
+  const room = (a: string, b: string) =>
+    Math.max(gapFor(a, b), between(a, b) + PAD + (zone[a] === 1 || zone[b] === -1 ? 2 * PAD : 0));
+  // a move carries the rest of the row with it; centring a couple over their
+  // children pushes each neighbour only as far as keeps that distance (R-0749),
+  // except in the fallback, whose bars would come apart
+  const shift = (row: string[], from: string, by: number, least = false) => {
+    const i = row.indexOf(from);
+    x[from] += by;
+    for (let j = i + 1; j < row.length; j++) {
+      const need = least && !plan.loose ? x[row[j - 1]] + room(row[j - 1], row[j]) - x[row[j]] : by;
+      if (need <= 0) break;
+      x[row[j]] += need;
+    }
   };
   // spec 8, collision step 1: widen the spacing until nothing in the row touches
   function widen(row: string[]): void {
     for (let i = 1; i < row.length; i++) {
-      const a = row[i - 1];
-      const b = row[i];
-      // a mark between two people stays nearer its own
-      const facing = zone[a] === 1 || zone[b] === -1 ? 2 * PAD : 0;
-      const need = Math.max(gapFor(a, b), between(a, b) + PAD + facing) - (x[b] - x[a]);
-      if (need > 0) shift(row, b, need);
+      const need = room(row[i - 1], row[i]) - (x[row[i]] - x[row[i - 1]]);
+      if (need > 0) shift(row, row[i], need);
     }
   }
   const rowWith = (id: string) => rows[gen[id]];
@@ -673,10 +1028,20 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
       .filter((k) => k.of.length === 1)
       .map((k) => ({ of: k.of, kids: k.kids, alone: bondsOf[k.of[0]].length === 0 })),
   ];
+  // in the fallback, a parents' bar that keeps the rows pushing each other apart
+  // is let go: its children's lines may cross, the rest still settle
+  let active = units;
+  // ...or that keeps them drifting right past twice the rows packed side by side
+  let most = Infinity;
+  const width = () => Math.max(...ids.map((id) => x[id])) - Math.min(...ids.map((id) => x[id]));
   function settle(): void {
-    for (let it = 0; it < 200; it++) {
+    const keep = { ...x };
+    const hit = new Set<(typeof units)[number]>();
+    const cap = Math.max(most, width());
+    for (let it = 0; it < 200 && width() <= cap; it++) {
       let moved = false;
-      for (const u of units) {
+      hit.clear();
+      for (const u of active) {
         const px = u.of.map((id) => x[id]);
         const kx = u.kids.map((id) => x[id]);
         const b0 = Math.min(...px);
@@ -691,33 +1056,51 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
           const w = u.of.length === 2 ? Math.max(b1 - b0, k1 - k0 + 2 * inset) : 0;
           const to = (k0 + k1) / 2 - w / 2;
           if (to - b0 > 0.5) {
-            shift(rowWith(lead), lead, to - b0);
+            shift(rowWith(lead), lead, to - b0, true);
             moved = true;
+            hit.add(u);
           } else if (b0 - to > 0.5) {
             shift(rowWith(first), first, b0 - to);
             moved = true;
+            hit.add(u);
           } else if (w - (b1 - b0) > 0.5) {
-            shift(rowWith(last), last, w - (b1 - b0));
+            shift(rowWith(last), last, w - (b1 - b0), true);
             moved = true;
+            hit.add(u);
           }
           continue;
         }
         if (b0 - (k0 - inset) > 0.5) {
           shift(rowWith(first), first, b0 - (k0 - inset));
           moved = true;
+          hit.add(u);
         } else if (k1 + inset - b1 > 0.5) {
           shift(rowWith(last), last, k1 + inset - b1);
           moved = true;
+          hit.add(u);
         }
       }
       if (!moved) return;
     }
-    throw new Unplaceable("children under their parents’ bar: the rows keep pushing each other apart");
+    if (!plan.loose) throw new Unplaceable("children under their parents’ bar: the rows keep pushing each other apart");
+    Object.assign(x, keep);
+    active = active.filter((u) => !hit.has(u));
+    settle();
   }
 
-  rows.forEach((row) =>
-    row.forEach((id, i) => (x[id] = i ? x[row[i - 1]] + gapFor(row[i - 1], id) : 0)),
-  );
+  // each family with no tie to the one before starts to the right of it
+  let base = 0;
+  plan.comps.forEach((comp) => {
+    const own = new Set(comp);
+    let right = base;
+    rows.forEach((all) => {
+      const row = all.filter((id) => own.has(id));
+      row.forEach((id, i) => (x[id] = i ? x[row[i - 1]] + gapFor(row[i - 1], id) : base));
+      if (row.length) right = Math.max(right, x[row[row.length - 1]]);
+    });
+    base = right + 2 * d.LOOSE;
+  });
+  if (plan.loose) most = 2 * width();
   settle();
   rows
     .slice()
@@ -740,15 +1123,18 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   function levels(): void {
     level = {};
     below = {};
+    // a couple across two rows (the fallback's) stacks with the bars of both
     rows.forEach((_, g) => {
+      const here: Record<string, number> = {};
       cast.bonds
-        .filter((b) => gen[b.a] === g)
+        .filter((b) => gen[b.a] === g || gen[b.b] === g)
         .map((b) => ({ key: `${b.a}|${b.b}`, x0: Math.min(x[b.a], x[b.b]), x1: Math.max(x[b.a], x[b.b]) }))
         .sort((a, b) => a.x1 - a.x0 - (b.x1 - b.x0))
         .forEach((r, i, all) => {
           let l = 0;
-          while (all.slice(0, i).some((o) => level[o.key] === l && o.x0 <= r.x1 && r.x0 <= o.x1)) l++;
-          level[r.key] = l;
+          while (all.slice(0, i).some((o) => here[o.key] === l && o.x0 <= r.x1 && r.x0 <= o.x1)) l++;
+          here[r.key] = l;
+          level[r.key] = Math.max(level[r.key] ?? 0, l);
         });
     });
     ids.forEach((id) => {
@@ -781,11 +1167,26 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
     }
     return { x0: x0 - 2, x1: x0 + w + 2, y0: base - 12, y1: base + LEAD * (nl[id] - 1) + 4 };
   }
-  // no move crosses a name: each name takes the first side, right, left,
-  // above, below, that no move of the case crosses; the rows then widen and settle again
+  // in the fallback, a child's line that slants to their parents' bar
+  const slants = (): Segment[] =>
+    cast.bonds.flatMap((b) => {
+      const k = cast.kids.find((c) => c.of.length === 2 && c.of.includes(b.a) && c.of.includes(b.b));
+      if (!k) return [];
+      const [x0, x1] = [Math.min(x[b.a], x[b.b]), Math.max(x[b.a], x[b.b])];
+      const yb = Math.max(y[b.a] + half(b.a), y[b.b] + half(b.b)) + d.DROP + (level[`${b.a}|${b.b}`] ?? 0) * 6;
+      return k.kids
+        .filter((id) => x[id] < x0 || x[id] > x1)
+        .map((id): Segment => [[x[id], y[id] - half(id)], [x[id] < x0 ? x0 : x1, yb]]);
+    });
+  // no move or slanted child's line crosses a name: each name takes the first
+  // side, right, left, above, below, that none crosses; the rows then widen and settle again
   const where = { P, x, y, d };
   for (let pass = 0; pass < 4; pass++) {
-    const segs = [...cast.moves.map((mv) => ends(where, mv)), ...cast.kin.flatMap((k) => across(where, k))];
+    const segs = [
+      ...cast.moves.map((mv) => ends(where, mv)),
+      ...cast.kin.flatMap((k) => across(where, k)),
+      ...(plan.loose ? slants() : []),
+    ];
     let moved = false;
     ids.forEach((id) => {
       if (!segs.some((s) => crosses(s, nameBox(id, side[id])))) return;
@@ -840,10 +1241,15 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   });
   const L: Layout = {
     P, x, y, side, zone, bonds: cast.bonds, kids: cast.kids, gen, w: opts.w, level, below,
-    names: [], h: 0, vw: VIEW, px: d.W, wide: 0, my: 0, ring, inset,
+    names: [], h: 0, vw: VIEW, px: d.W, wide: 0, my: 0, ring, inset, loose: plan.loose,
+    cut: cast.cut ?? [], note: null,
   };
   cast.bonds.forEach((b) => fam(x[b.a], bar(L, b).y + 4));
   cast.moves.forEach((mv) => awayTip(L, mv).forEach(([ax, ay]) => grow(ax, ay)));
+  L.cut.forEach((c) => {
+    const [a, q, b] = bend(where, c);
+    fam((a[0] + 2 * q[0] + b[0]) / 4, (a[1] + 2 * q[1] + b[1]) / 4);
+  });
 
   // ruled 2026-09-26: the people and their names are centred; marks and arrows may reach into the
   // margin, and the words keep out of it as the names do, so no word runs to the phone's edge
@@ -855,14 +1261,24 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   let MY = (20 * VIEW) / 393;
   const wide = Math.max(span + 2 * MX, reach);
   // no room to widen: names may go above
-  if (wide > VIEW && !tight && !under) return layout(cast, { ...opts, names: Names.Above });
+  if (wide > VIEW && !tight && !under) return place(cast, { ...opts, names: Names.Above }, t, plan);
   L.wide = wide;
   if (wide > VIEW && opts.fit) {
-    // scaled down to fit the phone, the margin kept at its size on the screen
+    // scaled down to fit the phone, the margin kept at its size on the screen;
+    // re-ruled 2026-10-04: the shapes keep the drawer's floor and the picture scrolls sideways,
+    // its margin still the same size on the screen, never growing with the width
     L.vw = Math.max(reach, span / (1 - (2 * MX) / VIEW));
-    L.px = (d.W * VIEW) / L.vw;
-    MX *= L.vw / VIEW;
-    MY *= L.vw / VIEW;
+    const least = Math.max(LEAST.label / NAME, LEAST.shape / d.W);
+    if (VIEW / L.vw >= least) {
+      L.px = d.W * (VIEW / L.vw);
+      MX *= L.vw / VIEW;
+      MY *= L.vw / VIEW;
+    } else {
+      L.px = d.W * least;
+      MX /= least;
+      MY /= least;
+      L.vw = Math.max(reach, span + 2 * MX);
+    }
   } else if (wide > VIEW)
     throw new Unplaceable(`the drawing is ${Math.round(wide)} wide, wider than the phone’s ${VIEW}`, true);
   const dx = L.vw / 2 - mid;
@@ -874,6 +1290,12 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
   L.names = ids.map((id) => nameBox(id, side[id]));
   L.h = Math.ceil(Math.max(core.y1 + dy + MY, box.y1 + dy + 2));
   L.my = MY;
+  if (L.cut.length) {
+    const said = L.cut.map((c) => `${P[c.kid].name} is recorded as their own ${c.up === 2 ? "grandparent" : "ancestor"}`);
+    const lines = wrap(said, Math.floor((L.vw - 2 * MX) / (NAME * CH)));
+    L.note = { y: L.h - MY + ASCENT, lines };
+    L.h = Math.ceil(L.note.y + LEAD * (lines.length - 1) + MY);
+  }
   return L;
 }
 
@@ -895,6 +1317,35 @@ function ray(o: Point, to: Point, dist: number): Point {
   const p = c > 0 ? dist / c : 0;
   return [o[0] + p * a, o[1] + p * b];
 }
+/** A cut link's curve, from the parent's side out past both shapes and back
+ * to the kid's, so it lies on no line of the family: its ends and control point. */
+function bend(L: Where, c: Cut): [Point, Point, Point] {
+  const { P, x, y, d } = L;
+  const s = x[c.kid] <= x[c.parent] ? -1 : 1;
+  const a: Point = [x[c.parent] + s * d.half(P[c.parent]), y[c.parent]];
+  const b: Point = [x[c.kid] + s * d.half(P[c.kid]), y[c.kid]];
+  return [a, [(s < 0 ? Math.min(a[0], b[0]) : Math.max(a[0], b[0])) + 2 * s * d.W, (a[1] + b[1]) / 2], b];
+}
+
+/** A sentence broken at spaces into lines of at most `n` characters. */
+const fill = (t: string, n: number) =>
+  t.split(" ").reduce<string[]>((ls, w) => {
+    const l = ls[ls.length - 1];
+    if (l != null && l.length + 1 + w.length <= n) ls[ls.length - 1] = `${l} ${w}`;
+    else ls.push(w);
+    return ls;
+  }, []);
+
+/** Sentences in as few lines as fit `n` characters, the lines of each about even. */
+function wrap(said: string[], n: number): string[] {
+  return said.flatMap((t) => {
+    const k = fill(t, n).length;
+    let m = Math.ceil(t.length / k);
+    while (fill(t, m).length > k) m++;
+    return fill(t, m);
+  });
+}
+
 const seg = (p: Point, q: Point) => `M${f(p[0])} ${f(p[1])}L${f(q[0])} ${f(q[1])}`;
 
 /** moves.ts arrow(): toward runs mover to target; away leads out behind the mover. */
@@ -1428,5 +1879,13 @@ export function draw(L: Layout, s: Frame): string {
   });
   s.kin.forEach((m) => put(kin(L, m), lit(m.cls)));
   s.moves.forEach((mv) => put(boardMove(L, mv), lit(mv.cls)));
+  L.cut.forEach((c) => {
+    const [a, q, b] = bend({ P, x: L.x, y: L.y, d }, c);
+    out += `<path class="cut" data-cut="${esc(`${c.kid}|${c.parent}`)}" d="M${f(a[0])} ${f(a[1])}Q${f(q[0])} ${f(q[1])} ${f(b[0])} ${f(b[1])}"/>`;
+  });
+  if (L.note)
+    said += L.note.lines
+      .map((l, i) => `<text class="cutn" x="${f(L.vw / 2)}" y="${f(L.note!.y + i * LEAD)}" text-anchor="middle">${esc(l)}</text>`)
+      .join("");
   return `<svg class="ss" viewBox="0 0 ${f(L.vw)} ${L.h}" role="img" aria-label="${esc(s.label)}">${out}<g class="fore">${top}</g><g class="said">${said}</g></svg>`;
 }

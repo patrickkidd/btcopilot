@@ -320,3 +320,146 @@ test.describe("what the coach aims at with people and moves", () => {
     await expect(page.locator("#view .ss.board")).toHaveCount(0);
   });
 });
+
+/** The `play` record's timeline with its people swapped for a joined family:
+ * his parents' children on the left, hers on the right, their daughter the
+ * reader; each pair is [his side's child, her side's child] married to each
+ * other; the cluster's events are about `about`, toward `toward`, and name
+ * everyone, so the whole family is drawn. With `loop`, Hal is recorded as the
+ * first couple's child, so he is his own forebear. */
+const joinedFamily = (pairs: [string, string][], sibs: number, about: string, toward: string, loop = false) =>
+  async (route: import("@playwright/test").Route) => {
+    const tl = await (await route.fetch()).json();
+    let id = 9000;
+    const ids: Record<string, number> = {};
+    const people: Record<string, unknown>[] = [];
+    const pair_bonds: Record<string, unknown>[] = [];
+    const bond = (a: string, b: string) => {
+      const pb = { id: id++, person_a: ids[a], person_b: ids[b], married: true };
+      pair_bonds.push(pb);
+      return pb.id;
+    };
+    const add = (k: string, gender: string, year: number, parents: number | null = null, primary = false) => {
+      ids[k] = id++;
+      people.push({ ...tl.people[0], id: ids[k], name: k, last_name: null, gender, primary, parents, birth: `${year}-01-01`, birth_event: null, death_event: null });
+    };
+    add("Hal", "male", 1920);
+    add("Hope", "female", 1922);
+    add("Walt", "male", 1921);
+    add("Wren", "female", 1923);
+    const his = bond("Hal", "Hope");
+    const hers = bond("Walt", "Wren");
+    pairs.forEach(([h, w], i) => {
+      add(h, "male", 1950 + i, his);
+      add(w, "female", 1951 + i, hers);
+    });
+    for (let i = 0; i < sibs; i++) {
+      add(`Hs${i}`, i % 2 ? "male" : "female", 1940 + i, his);
+      add(`Ws${i}`, i % 2 ? "female" : "male", 1940 + i, hers);
+    }
+    const pbs = pairs.map(([h, w]) => bond(h, w));
+    add("Cleo", "female", 1975, pbs[0], true);
+    if (loop) people.find((p) => p.name === "Hal")!.parents = pbs[0];
+    for (const e of tl.events) Object.assign(e, { person: ids[about], person_name: about, spouse: null, child: null, relationshipTargets: [ids[toward]], relationshipTriangles: Object.values(ids) });
+    Object.assign(tl, { people, pair_bonds });
+    await route.fulfill({ json: tl });
+  };
+
+test.describe("a family the row rules cannot place", () => {
+  test.use({ storageState: stateFor("play") });
+
+  const opened = async (page: Page, route: ReturnType<typeof joinedFamily>) => {
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, route);
+    await settle(page);
+    await stored(page).click();
+    await expect(drawer(page)).toBeVisible();
+    return errors;
+  };
+
+  // R-0545
+  // ruled 2026-10-04: laid out generation by generation instead of refused
+  test("draws two couples each joining two families, everyone once", async ({ page }) => {
+    const errors = await opened(page, joinedFamily([["Hugo", "Wanda"], ["Ivo", "Una"]], 0, "Hugo", "Wanda"));
+    const draw = drawer(page).locator(".draw");
+    await expect(draw.locator("svg")).toBeVisible();
+    await expect(draw.locator(".none")).toHaveCount(0);
+    const ids = await draw.locator("svg .p").evaluateAll((gs) => gs.map((g) => (g as SVGGElement).dataset.id));
+    expect(ids).toHaveLength(9);
+    expect(new Set(ids).size).toBe(ids.length);
+    await expect.poll(() => step(page)).toBe("1 of 4");
+    await drawer(page).locator('[data-act="next"]').click();
+    await expect.poll(() => step(page)).toBe("2 of 4");
+    await expect(draw.locator("svg")).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  // R-0751
+  test("draws someone recorded as their own forebear, the link closing the loop in the error colour with a note", async ({ page }) => {
+    const errors = await opened(page, joinedFamily([["Hugo", "Wanda"]], 0, "Hugo", "Wanda", true));
+    const draw = drawer(page).locator(".draw");
+    await expect(draw.locator("svg")).toBeVisible();
+    const ids = await draw.locator("svg .p").evaluateAll((gs) => gs.map((g) => (g as SVGGElement).dataset.id));
+    expect(ids).toHaveLength(7);
+    expect(new Set(ids).size).toBe(ids.length);
+    await expect(draw.locator("svg path.cut")).toHaveCount(1);
+    const note = (await draw.locator("svg text.cutn").allTextContents()).join(" ");
+    expect(note).toBe("Hal is recorded as their own grandparent");
+    const colour = await draw.locator("svg path.cut").evaluate((p) => getComputedStyle(p).stroke);
+    const red = await page.evaluate(() => {
+      const probe = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      probe.style.stroke = "var(--remove)";
+      document.querySelector(".pbp svg")!.append(probe);
+      const c = getComputedStyle(probe).stroke;
+      probe.remove();
+      return c;
+    });
+    expect(colour).toBe(red);
+    await expect.poll(() => step(page)).toBe("1 of 4");
+    const words = await drawer(page).locator(".scroll").innerText();
+    await drawer(page).locator('[data-act="next"]').click();
+    await expect.poll(() => step(page)).toBe("2 of 4");
+    expect(await drawer(page).locator(".scroll").innerText()).not.toBe(words);
+    expect(errors).toEqual([]);
+  });
+});
+
+test.describe("a family wider than the phone", () => {
+  test.use({ storageState: stateFor("play"), viewport: { width: 390, height: 844 } });
+
+  // R-0547
+  // re-ruled 2026-10-04, scroll below the floor
+  test("keeps its least size, scrolls in its own frame and centres the step's person", async ({ page }) => {
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, joinedFamily([["Hugo", "Wanda"]], 6, "Hs5", "Hugo"));
+    await settle(page);
+    await stored(page).click();
+    await expect(drawer(page)).toBeVisible();
+    const seen = () =>
+      drawer(page).evaluate((p) => {
+        const draw = p.querySelector<HTMLElement>(".draw")!;
+        const svg = draw.querySelector<SVGSVGElement>("svg")!;
+        const name = [...svg.querySelectorAll<SVGGElement>(".pt")].find((g) => g.textContent?.includes("Hs5"))!;
+        const r = svg.querySelector(`.p[data-id="${name.dataset.id}"]`)!.getBoundingClientRect();
+        const f = draw.getBoundingClientRect();
+        return {
+          page: document.documentElement.scrollWidth,
+          frame: draw.scrollWidth > draw.clientWidth,
+          label: 13 * svg.getScreenCTM()!.a,
+          inside: r.left >= f.left && r.right <= f.right,
+        };
+      });
+    await page.waitForTimeout(800);
+    const first = await seen();
+    expect(first.page).toBeLessThanOrEqual(390);
+    expect(first.frame).toBe(true);
+    expect(first.label).toBeGreaterThanOrEqual(13);
+    expect(first.inside).toBe(true);
+    await drawer(page).locator('[data-act="next"]').click();
+    await page.waitForTimeout(800);
+    const next = await seen();
+    expect(next.page).toBeLessThanOrEqual(390);
+    expect(next.inside).toBe(true);
+  });
+});
