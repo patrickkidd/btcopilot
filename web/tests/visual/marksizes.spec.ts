@@ -25,7 +25,8 @@ const STEPS: { name: string; marks: string; sized?: boolean; word?: boolean; gon
   { name: "distance", marks: '[data-mark$=":distance"] .mv-wall', sized: true },
   { name: "separated", marks: ".slash", sized: true },
   { name: "symptom up", marks: '[data-mark^="cross:"] :is(rect, line, polygon)', sized: true },
-  { name: "anxiety up", marks: ".spikes line" },
+  // the next step, anxiety down, ends it: nothing of it is grey there (R-0729)
+  { name: "anxiety up", marks: ".spikes line", gone: true },
   // gone: nothing of the step is grey on the next one; going down leaves nothing behind (R-0729)
   { name: "anxiety down", marks: ".spikes.down line", gone: true },
   { name: "divorced", marks: ".slash", sized: true },
@@ -288,6 +289,48 @@ test.describe("every mark", () => {
       return s.colour !== want;
     });
     expect(wrong.map((s) => `${s.name} ${s.tone} ${s.colour}`)).toEqual([]);
+  });
+
+  // R-0729
+  test("anxiety going down ends the grey spikes of its going up on every later step", async ({ page }) => {
+    const svgs = await steps(page, STEPS.length);
+    const up = STEPS.findIndex((s) => s.name === "anxiety up");
+    await show(page, svgs[up]);
+    const mark = await page.locator("#pbp .draw svg .spikes.now").first().getAttribute("data-mark");
+    const left: number[] = [];
+    for (let i = STEPS.findIndex((s) => s.name === "anxiety down") + 1; i < STEPS.length; i++) {
+      await show(page, svgs[i]);
+      if (await page.locator(`#pbp .draw svg [data-mark="${mark}"]`).count()) left.push(i + 1);
+    }
+    expect(left).toEqual([]);
+  });
+
+  // R-0728
+  test("outside right after inside starts the three from their own places", async ({ page }) => {
+    const svgs = await steps(page, STEPS.length);
+    await show(page, svgs[STEPS.findIndex((s) => s.name === "outside")]);
+    const starts = await page.locator("#pbp .draw svg .slid > animateTransform").evaluateAll((a) => a.map((t) => t.getAttribute("from")));
+    expect(starts.length).toBeGreaterThan(0);
+    expect(new Set(starts)).toEqual(new Set(["0.0 0.0"]));
+  });
+
+  // R-0729
+  test("anxiety moves the same way wherever a family is drawn, from one definition", async ({ page }) => {
+    await live(page);
+    const timing = await page.evaluate(() => {
+      const make = (host: Element) => {
+        host.insertAdjacentHTML("beforeend", '<svg class="ss probe"><g class="fore"><g class="spk s-out"><line class="mv-spike" pathLength="1"/></g><g class="spk s-solo"><line class="mv-spike" pathLength="1"/></g></g></svg>');
+        const svg = host.lastElementChild!;
+        const out = [...svg.querySelectorAll(".mv-spike")].map((l) => {
+          const a = l.getAnimations()[0] as CSSAnimation | undefined;
+          return a ? `${a.animationName} ${a.effect!.getComputedTiming().duration} ${a.effect!.getComputedTiming().iterations}` : `none (${getComputedStyle(l).animationName})`;
+        });
+        svg.remove();
+        return out;
+      };
+      return { board: make(document.querySelector("#view")!), pbp: make(document.querySelector("#pbp .draw")!) };
+    });
+    expect(timing.board).toEqual(timing.pbp);
   });
 
   // R-0734

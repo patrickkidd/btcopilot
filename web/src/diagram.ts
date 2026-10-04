@@ -1232,11 +1232,13 @@ function placed(L: Layout, m: Place): Record<string, Offset> {
   return out;
 }
 
-/** Each moved person's way this step: from where the step before left them
- * to where this step puts them, home when it puts them nowhere. */
+/** Each moved person's way this step: to where this step puts them, or home
+ * from where the step before left them when it puts them nowhere. */
 function shifts(L: Layout, s: Frame): Record<string, { from: Offset; to: Offset }> {
   const to = s.place?.now ? placed(L, s.place.now) : {};
-  const from = s.place?.was ? placed(L, s.place.was) : {};
+  // a step that places people starts them from their own places; a step that
+  // places no one brings them home from the step before's (approved frame 1B4)
+  const from = s.place?.was && !s.place.now ? placed(L, s.place.was) : {};
   const out: Record<string, { from: Offset; to: Offset }> = {};
   for (const id of new Set([...Object.keys(to), ...Object.keys(from)]))
     out[id] = { from: from[id] ?? [0, 0], to: to[id] ?? [0, 0] };

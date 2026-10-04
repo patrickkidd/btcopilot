@@ -307,10 +307,13 @@ export class Told {
     const litBefore = new Set(before.flatMap((s) => this.emphasised(s)));
     lit.forEach((who) => marks.push({ k: Mark.Emphasis, who, cls: Tone.Now }));
     litBefore.forEach((who) => lit.includes(who) || marks.push({ k: Mark.Emphasis, who, cls: Tone.Was }));
-    before.forEach((s) =>
+    // anxiety going down ends what was carried of it going up, until it goes up again (R-0729)
+    const calmed = (who: string, from: number) =>
+      [...this.steps.slice(from + 1, i + 1)].some((s) => s.marks.some((m) => m.k === Mark.AnxietyDown && (m as Placed).who === who));
+    before.forEach((s, at) =>
       s.marks
         .filter(isPlaced)
-        .filter((m) => m.k === Mark.FnUp || m.k === Mark.FnDown || m.k === Mark.Anxiety || m.k === Mark.AnxietyDown)
+        .filter((m) => m.k === Mark.FnUp || m.k === Mark.FnDown || (m.k === Mark.Anxiety && !calmed(m.who, at)))
         .forEach((m) => marks.push({ ...m, cls: Tone.Was })),
     );
     placed
