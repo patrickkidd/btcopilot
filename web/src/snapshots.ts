@@ -12,6 +12,7 @@ import {
   type Brood,
   type Cast,
   type Layout,
+  type Place,
   type Placed,
   type Shape,
 } from "./diagram";
@@ -183,8 +184,14 @@ function marksOf(r: Family, e: TimelineEvent): Step["marks"] {
   // event's words as an event with no drawing does (Patrick, 2026-10-03)
   if (e.functioning) drawn.push({ k: Mark.Event, who, word: titleOf(e) });
   if (e.anxiety === Shift.Up) drawn.push({ k: Mark.Anxiety, who });
+  if (e.anxiety === Shift.Down) drawn.push({ k: Mark.AnxietyDown, who });
   const move = e.relationship ?? "";
-  if (move === Move.Toward || move === Move.Away)
+  // inside and outside move the three people for the step, all three lit (R-0728)
+  if ((move === Move.Inside || move === Move.Outside) && e.relationshipTargets.length) {
+    const [to, third = null] = [key(e.relationshipTargets[0]), e.relationshipTriangles.length ? key(e.relationshipTriangles[0]) : null];
+    const place: Place = { k: Mark.Place, kind: move, who, to, third };
+    drawn.push(place, ...[who, to, third].flatMap((id) => (id ? [{ k: Mark.Emphasis, who: id }] : [])));
+  } else if (move === Move.Toward || move === Move.Away)
     e.relationshipTargets.forEach((t) =>
       drawn.push({ k: move === Move.Away ? Mark.Away : Mark.Toward, from: who, to: key(t) }),
     );
@@ -303,11 +310,11 @@ export class Told {
     before.forEach((s) =>
       s.marks
         .filter(isPlaced)
-        .filter((m) => m.k === Mark.FnUp || m.k === Mark.FnDown || m.k === Mark.Anxiety)
+        .filter((m) => m.k === Mark.FnUp || m.k === Mark.FnDown || m.k === Mark.Anxiety || m.k === Mark.AnxietyDown)
         .forEach((m) => marks.push({ ...m, cls: Tone.Was })),
     );
     placed
-      .filter((m) => m.k === Mark.FnUp || m.k === Mark.FnDown || m.k === Mark.Anxiety)
+      .filter((m) => m.k === Mark.FnUp || m.k === Mark.FnDown || m.k === Mark.Anxiety || m.k === Mark.AnxietyDown)
       .forEach((m) => marks.push({ ...m, cls: Tone.Now }));
     // an event's words show on its own step only, the one mark that does not
     // carry (R-0682, an exception to R-0552)
@@ -335,6 +342,7 @@ export class Told {
       moves,
       kin,
       label: `${now.date}: ${snap.fact}`,
+      place: { now: placeOf(now), was: i > 0 ? placeOf(this.steps[i - 1]) : null },
     });
     return {
       svg,
@@ -346,6 +354,9 @@ export class Told {
     };
   }
 }
+
+/** The step's inside or outside, if it has one. */
+const placeOf = (s: Step) => (s.marks.find((m) => m.k === Mark.Place) as Place | undefined) ?? null;
 
 function pairKey(cast: Cast, m: Pair): string {
   const b = cast.bonds.find((b) => (b.a === m.a && b.b === m.b) || (b.a === m.b && b.b === m.a));
@@ -425,7 +436,7 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[]): Cast 
       if (isArrow(m)) moves.push(m);
       if (isKin(m)) kin.push(m);
       if (!isPlaced(m)) return;
-      if (m.k === Mark.Anxiety) anxious.add(m.who);
+      if (m.k === Mark.Anxiety || m.k === Mark.AnxietyDown) anxious.add(m.who);
       if (m.k === Mark.Up || m.k === Mark.Down) crossed.add(m.who);
       if (m.k === Mark.Up || m.k === Mark.Down || m.k === Mark.Event) marked.add(m.who);
       if (m.k === Mark.Event) words[m.who] = Math.max(words[m.who] ?? 0, m.word!.length);

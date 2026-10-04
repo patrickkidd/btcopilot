@@ -624,11 +624,21 @@ describe("moves other than toward and away", () => {
     expect(carried.slice(0, carried.indexOf("</svg>"))).not.toMatch(/<animate/);
   });
 
-  // R-0555, R-0551
-  it("writes inside and outside as words, since they have no still drawing", () => {
-    const svg = moved("inside").shot(1).svg;
+  // R-0728
+  it.each(["inside", "outside"])("moves the three people of %s for its step, all three lit, their family lines stretched, and brings them home on the next", (kind) => {
+    const tl = moved(kind).tl;
+    tl.events.find((e) => e.id === 131)!.relationshipTriangles = [Number(MARCUS)];
+    const three = told(death(), tl);
+    const svg = three.shot(1).svg;
     expect(svg).not.toContain('class="mvk');
-    expect(marks(svg)).toContain(`word:${DELPHINE}:Called Corinne nightly`);
+    expect(marks(svg)).not.toContain(`word:${DELPHINE}:Called Corinne nightly`);
+    const lit = marks(svg).filter((m) => m.startsWith("hl:") && markClass(svg, m).includes("now"));
+    expect(lit.sort()).toEqual([DELPHINE, CORINNE, MARCUS].map((id) => `hl:${id}`).sort());
+    expect(svg).toContain('class="slid"');
+    expect(svg).toContain('class="tie stretch"');
+    // the next step slides them home: the move starts where they were and ends at home
+    const next = three.shot(2).svg;
+    expect(next).toMatch(/<g class="slid" transform="translate\(0\.0 0\.0\)"><animateTransform[^>]*from="(?!0\.0 0\.0")/);
   });
 });
 
@@ -742,4 +752,16 @@ describe("a play-by-play nobody told", () => {
     expect(ids).toEqual(expect.arrayContaining([109, 201, 204]));
     expect(ids).not.toContain(203);
   });
+});
+
+// R-0729
+it("draws anxiety going down as spikes that shorten to the rim on its step, and nothing once it is carried", () => {
+  const tl = timeline();
+  const e = tl.events.find((e) => e.id === 131)!;
+  e.relationship = null;
+  e.relationshipTargets = [];
+  e.anxiety = "down";
+  const t = told(death(), tl);
+  expect(t.shot(1).svg).toContain(`data-mark="anxd:${DELPHINE}"`);
+  expect(t.shot(2).svg).not.toContain(`data-mark="anxd:`);
 });

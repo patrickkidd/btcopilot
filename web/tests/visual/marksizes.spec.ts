@@ -15,7 +15,7 @@ test.use({ launchOptions: { args: ["--font-render-hinting=none"] } });
  * person's size, and an arrow, a couple's line or the fusion bands take the
  * distance between two people, so only the marks that stand on their own are
  * held to one size. A word is lit in the emphasis colour meant for words. */
-const STEPS: { name: string; marks: string; sized?: boolean; word?: boolean }[] = [
+const STEPS: { name: string; marks: string; sized?: boolean; word?: boolean; gone?: boolean }[] = [
   { name: "married", marks: '[data-bond="3|4"]' },
   { name: "birth", marks: '[data-mark^="hl:"]' },
   { name: "adopted", marks: '[data-mark^="hl:"]' },
@@ -26,7 +26,8 @@ const STEPS: { name: string; marks: string; sized?: boolean; word?: boolean }[] 
   { name: "separated", marks: ".slash", sized: true },
   { name: "symptom up", marks: '[data-mark^="cross:"] :is(rect, line, polygon)', sized: true },
   { name: "anxiety up", marks: ".spikes line" },
-  { name: "anxiety down", marks: ".evw", word: true },
+  // gone: nothing of the step is grey on the next one; going down leaves nothing behind (R-0729)
+  { name: "anxiety down", marks: ".spikes.down line", gone: true },
   { name: "divorced", marks: ".slash", sized: true },
   { name: "cutoff", marks: '[data-mark$=":cutoff"] :is(.mv-wall, .mv-strike)', sized: true },
   { name: "projection", marks: '[data-mark$=":projection"] .s-out line' },
@@ -37,8 +38,9 @@ const STEPS: { name: string; marks: string; sized?: boolean; word?: boolean }[] 
   { name: "functioning up", marks: '[data-mark^="fup:"]' },
   { name: "symptom down", marks: '[data-mark^="cross:"] :is(rect, line, polygon)', sized: true },
   { name: "defined self", marks: '[data-mark$=":defined-self"] .mv-clear' },
-  { name: "inside", marks: ".evw", word: true },
-  { name: "outside", marks: ".evw", word: true },
+  // the next step, outside, lights the same three again, so nothing of inside is grey there
+  { name: "inside", marks: '[data-mark^="hl:"]', gone: true },
+  { name: "outside", marks: '[data-mark^="hl:"]' },
   { name: "noted", marks: ".evw", word: true },
   { name: "death", marks: ".xd" },
   { name: "bonded", marks: '[data-bond="5|7"]' },
@@ -120,7 +122,8 @@ const crossings = (page: Page, marks: string, words: string) =>
   page.evaluate(
     ({ marks, words }) => {
       const root = document.querySelector<SVGSVGElement>("#pbp .draw svg")!;
-      const boxes = [...root.querySelectorAll<SVGTextElement>(words)].map((t) => ({ text: t.textContent, b: t.getBBox() }));
+      // a step's own word, lit with its coloured stroke, may lie on top of what is grey
+      const boxes = [...root.querySelectorAll<SVGTextElement>(words)].map((t) => ({ text: t.textContent, b: t.getBBox(), lit: t.matches("text.evw:not(.was)") }));
       const cut = (a: DOMPoint, z: DOMPoint, b: DOMRect, pad: number) => {
         const [bx0, by0, bx1, by1] = [b.x - pad, b.y - pad, b.x + b.width + pad, b.y + b.height + pad];
         let [t0, t1] = [0, 1];
@@ -159,9 +162,11 @@ const crossings = (page: Page, marks: string, words: string) =>
         const edges = pts.slice(1).map((p, i) => [pts[i], p]);
         if (closed) edges.push([pts[pts.length - 1], pts[0]]);
         const pad = (parseFloat(getComputedStyle(el).strokeWidth) || 0) / 2;
-        // a word keeps clear of every mark, the grey ones carried from before too
-        for (const { text, b } of boxes)
-          if (edges.some(([a, z]) => cut(a, z, b, pad))) {
+        // a word keeps clear of every mark, the grey ones carried from before too,
+        // except that a lit word may lie over a grey mark; never over a lit one
+        const grey = !el.closest(".now, .pop");
+        for (const { text, b, lit } of boxes)
+          if (!(lit && grey) && edges.some(([a, z]) => cut(a, z, b, pad))) {
             const mark = el.closest("[data-mark]")?.getAttribute("data-mark") ?? el.getAttribute("class");
             out.push(`${mark} over "${text}"`);
           }
@@ -267,7 +272,7 @@ test.describe("every mark", () => {
     for (const [i, s] of STEPS.entries()) {
       await show(page, svgs[i]);
       sizes.push(await measure(page, s.name, s.marks, "now"));
-      if (s.word || s.name === "death" || i + 1 === STEPS.length) continue;
+      if (s.word || s.gone || s.name === "death" || i + 1 === STEPS.length) continue;
       await show(page, svgs[i + 1]);
       sizes.push(await measure(page, s.name, s.marks, "was"));
     }
@@ -285,7 +290,57 @@ test.describe("every mark", () => {
     expect(wrong.map((s) => `${s.name} ${s.tone} ${s.colour}`)).toEqual([]);
   });
 
-  // R-0679
+  // R-0734
+  test("a lit word with no free place lies on the fewest things at its usual distance from its person", async ({ page }) => {
+    const svgs = await steps(page, STEPS.length);
+    await show(page, svgs[STEPS.findIndex((s) => s.name === "functioning up")]);
+    const seen = await page.evaluate((marks) => {
+      const root = document.querySelector<SVGSVGElement>("#pbp .draw svg")!;
+      const word = root.querySelector<SVGTextElement>("text.evw:not(.was)")!;
+      const id = word.dataset.mark!.split(":")[1];
+      const shape = root.querySelector<SVGGraphicsElement>(`.p[data-id="${id}"] .shape`)!.getBBox();
+      const b = word.getBBox();
+      const [cx, cy] = [shape.x + shape.width / 2, shape.y + shape.height / 2];
+      const segs: [number, number, number, number][] = [];
+      for (const el of root.querySelectorAll<SVGGraphicsElement>(marks)) {
+        const m = root.getScreenCTM()!.inverse().multiply(el.getScreenCTM()!);
+        const at = (x: number, y: number) => new DOMPoint(x, y).matrixTransform(m);
+        const pts =
+          el instanceof SVGLineElement
+            ? [at(el.x1.baseVal.value, el.y1.baseVal.value), at(el.x2.baseVal.value, el.y2.baseVal.value)]
+            : el instanceof SVGPolylineElement || el instanceof SVGPolygonElement
+              ? [...el.points].map((p) => at(p.x, p.y))
+              : [];
+        pts.slice(1).forEach((p, i) => segs.push([pts[i].x, pts[i].y, p.x, p.y]));
+      }
+      const names = [...root.querySelectorAll<SVGTextElement>("text.lbn, text.lbd")].map((t) => t.getBBox());
+      // how many marks' strokes and names a box of the word's size lies on
+      const covers = (x0: number, y0: number) => {
+        const [x1, y1] = [x0 + b.width, y0 + b.height];
+        const hit = (s: number[]) => {
+          for (let k = 0; k <= 20; k++) {
+            const [x, y] = [s[0] + ((s[2] - s[0]) * k) / 20, s[1] + ((s[3] - s[1]) * k) / 20];
+            if (x >= x0 && x <= x1 && y >= y0 && y <= y1) return true;
+          }
+          return false;
+        };
+        return segs.filter(hit).length + names.filter((n) => n.x < x1 && x0 < n.x + n.width && n.y < y1 && y0 < n.y + n.height).length;
+      };
+      const view = root.viewBox.baseVal;
+      // the word's own place, and the same box mirrored to the person's other side, under and over them
+      const gap = Math.abs(b.x - cx) < Math.abs(b.x + b.width - cx) ? b.x - cx : cx - (b.x + b.width);
+      const places = [
+        [b.x, b.y],
+        [2 * cx - b.x - b.width, b.y],
+        [cx - b.width / 2, cy + shape.height / 2 + gap],
+        [cx - b.width / 2, cy - shape.height / 2 - gap - b.height],
+      ].filter(([x, y]) => x >= 0 && x + b.width <= view.width && y >= 0 && y + b.height <= view.height);
+      return places.map(([x, y]) => covers(x, y));
+    }, MARKS);
+    expect(seen[0]).toBe(Math.min(...seen));
+  });
+
+  // R-0679, R-0734
   test("no mark runs over a name or a word", async ({ page }) => {
     expect(await over(page, await steps(page, STEPS.length))).toEqual([]);
   });
@@ -530,7 +585,7 @@ test.describe("every mark", () => {
     expect(done[1]).toBeCloseTo(1, 2);
   });
 
-  // R-0679
+  // R-0679, R-0728
   test("only the step's own marks move; everything carried from before is still", async ({ page }) => {
     await live(page);
     const moving: string[] = [];
@@ -541,6 +596,8 @@ test.describe("every mark", () => {
         return [...svg.children]
           .filter((el) => !el.matches(".fore"))
           .flatMap((el) => [el, ...el.querySelectorAll("*")])
+          // people moving for an inside or outside, or coming home after one, are the step's own (R-0728)
+          .filter((el) => !el.closest(".slid, .stretch"))
           .filter((el) => el.tagName.startsWith("animate") || el.getAnimations().some((a) => a.playState === "running"))
           .map((el) => el.closest("[data-mark], [data-bond]")?.getAttribute("data-mark") ?? el.getAttribute("class") ?? el.tagName);
       });
@@ -759,7 +816,7 @@ test.describe("every mark", () => {
 test.describe("the Whitlock family's years apart", () => {
   test.use({ storageState: stateFor("whitlock") });
 
-  // R-0679
+  // R-0679, R-0734
   test("no mark runs over a name or a word", async ({ page }) => {
     expect(await over(page, await steps(page, 5))).toEqual([]);
   });
