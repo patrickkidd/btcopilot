@@ -381,6 +381,32 @@ def test_titles_fill_refuses_a_title_naming_someone_the_event_links(
     assert titles_of(diagram) == [None, None, None, None]
 
 
+def test_titles_fill_checks_a_model_title_against_its_own_records_people(
+    flask_app, test_user, monkeypatch
+):
+    # R-0681
+    monkeypatch.setattr(
+        "btcopilot.metered.gemini_text_sync",
+        lambda **k: Text("Wren stopped calling", Spent(input=300), Served(k["model"])),
+    )
+    diagram = untitled_record(test_user)
+    other = Diagram(
+        user_id=test_user.id,
+        name="Other",
+        data=diagramjson.dumps({
+            "people": [{"id": 1, "name": "Ivo"}],
+            "events": [{"id": 2, "kind": "shift", "person": 1, "description": "stopped calling after the funeral that spring"}],
+        }),
+    )
+    db.session.add(other)
+    db.session.commit()
+    refused = flask_app.test_cli_runner().invoke(
+        admin, ["titles", "fill", "--diagram", str(diagram.id), "--diagram", str(other.id), "--ask", "--yes"]
+    )
+    assert refused.exit_code != 0 and "Wren" in refused.output
+    assert titles_of(diagram) == [None, None, None, None]
+
+
 def test_titles_fill_writes_nothing_over_an_edit_made_while_it_ran(
     flask_app, test_user, monkeypatch
 ):
