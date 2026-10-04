@@ -904,13 +904,13 @@ describe("a couple where both partners' parents are in the record", () => {
     sound(layout(c), c);
   });
 
-  // R-0545, R-0187
+  // R-0545, R-0187, R-0747
   it("joins the families with great-grandparents above both sides", () => {
     const c = above(["h", "w"]);
     sound(layout(c), c);
   });
 
-  // R-0547
+  // R-0547, R-0744, R-0749
   // re-ruled 2026-10-04, scroll below the floor
   it("keeps a wide joined family at least 36 across, wider than the frame", () => {
     const sibs = (s: string, n: number) => Array.from({ length: n }, (_, i) => `${s}${i}`);
@@ -1045,38 +1045,53 @@ describe("a family the row rules cannot place", () => {
     label: "",
   });
 
-  Object.entries(families).forEach(([what, c]) => {
-    // R-0545
-    it(`draws ${what}, everyone once, no shapes overlapping, each child's line on their parents' bar`, () => {
-      expect(() => layout(c)).toThrow(/cannot place/);
-      const L = arrange(c);
-      expect(L.loose).toBe(true);
-      const svg = draw(L, frame(L));
-      Object.keys(c.people).forEach((id) => expect(svg.split(`class="p" data-id="${id}"`)).toHaveLength(2));
-      const ids = Object.keys(c.people);
-      const e = (id: string) => (L.w / 2) * (L.P[id].you ? 1.2 : 1);
-      ids.forEach((a) =>
-        ids.forEach((b) => {
-          if (a === b) return;
-          const apart = Math.abs(L.x[a] - L.x[b]) >= e(a) + e(b) || Math.abs(L.y[a] - L.y[b]) >= e(a) + e(b);
-          expect(apart, `${a} and ${b} overlap`).toBe(true);
-        }),
-      );
-      const kin = els(svg, "path", "kin").map((p) => p.d.match(/^M(\S+) (\S+)L(\S+) (\S+)$/)!.slice(1).map(Number));
-      c.kids.forEach((k) => {
-        const b = bar(L, { a: k.of[0], b: k.of[1] });
-        k.kids.forEach((id) => {
-          const line = kin.find(([x0, y0]) => x0 === Number(L.x[id].toFixed(1)) && Math.abs(y0 - (L.y[id] - e(id))) < 0.2);
-          expect(line, `${id} has a line`).toBeDefined();
-          const [, , x1, y1] = line!;
-          expect(y1).toBe(Number(b.y.toFixed(1)));
-          expect(x1).toBeGreaterThanOrEqual(Number(b.x0.toFixed(1)));
-          expect(x1).toBeLessThanOrEqual(Number(b.x1.toFixed(1)));
-        });
+  const placed = (c: Cast) => {
+    expect(() => layout(c)).toThrow(/cannot place/);
+    const L = arrange(c);
+    expect(L.loose).toBe(true);
+    const svg = draw(L, frame(L));
+    Object.keys(c.people).forEach((id) => expect(svg.split(`class="p" data-id="${id}"`)).toHaveLength(2));
+    const ids = Object.keys(c.people);
+    const e = (id: string) => (L.w / 2) * (L.P[id].you ? 1.2 : 1);
+    ids.forEach((a) =>
+      ids.forEach((b) => {
+        if (a === b) return;
+        const apart = Math.abs(L.x[a] - L.x[b]) >= e(a) + e(b) || Math.abs(L.y[a] - L.y[b]) >= e(a) + e(b);
+        expect(apart, `${a} and ${b} overlap`).toBe(true);
+      }),
+    );
+    const kin = els(svg, "path", "kin").map((p) => p.d.match(/^M(\S+) (\S+)L(\S+) (\S+)$/)!.slice(1).map(Number));
+    c.kids.forEach((k) => {
+      const b = bar(L, { a: k.of[0], b: k.of[1] });
+      k.kids.forEach((id) => {
+        const line = kin.find(([x0, y0]) => x0 === Number(L.x[id].toFixed(1)) && Math.abs(y0 - (L.y[id] - e(id))) < 0.2);
+        expect(line, `${id} has a line`).toBeDefined();
+        const [, , x1, y1] = line!;
+        expect(y1).toBe(Number(b.y.toFixed(1)));
+        expect(x1).toBeGreaterThanOrEqual(Number(b.x0.toFixed(1)));
+        expect(x1).toBeLessThanOrEqual(Number(b.x1.toFixed(1)));
       });
-      expect(draw(arrange(c), frame(L))).toBe(svg);
     });
-  });
+    expect(draw(arrange(c), frame(L))).toBe(svg);
+  };
+
+  // R-0545, R-0745, R-0752
+  it("draws three partners for one person with nothing beside, everyone once, no shapes overlapping, each child's line on their parents' bar", () => placed(families["three partners for one person with nothing beside"]));
+
+  // R-0545, R-0745, R-0752
+  it("draws a couple across generations, everyone once, no shapes overlapping, each child's line on their parents' bar", () => placed(families["a couple across generations"]));
+
+  // R-0545, R-0745, R-0752
+  it("draws two separate families in one row, everyone once, no shapes overlapping, each child's line on their parents' bar", () => placed(families["two separate families in one row"]));
+
+  // R-0545, R-0745
+  it("draws two joining couples, everyone once, no shapes overlapping, each child's line on their parents' bar", () => placed(families["two joining couples"]));
+
+  // R-0545, R-0745, R-0752
+  it("draws another family between a joining couple, everyone once, no shapes overlapping, each child's line on their parents' bar", () => placed(families["another family between a joining couple"]));
+
+  // R-0545, R-0745, R-0750, R-0754
+  it("draws a couple not connected to the reader's family, everyone once, no shapes overlapping, each child's line on their parents' bar", () => placed(families["a couple not connected to the reader's family"]));
 
   // R-0545
   it("draws a family with no tie to the reader's to the right of it", () => {
@@ -1084,7 +1099,7 @@ describe("a family the row rules cannot place", () => {
     expect(Math.min(L.x.x, L.x.y)).toBeGreaterThan(Math.max(L.x.a, L.x.b, L.x.c, L.x.d));
   });
 
-  // R-0747, R-0745
+  // R-0747, R-0745, R-0754
   it("draws four generations on both sides with no line crossing and each man left of his wife", () => {
     const p: Cast["people"] = { c: { ...sh("Ivy", F, 1985), you: true }, h: sh("Gil", M, 1955), w: sh("Hope", F, 1957) };
     const bonds = [wed("h", "w")];
@@ -1154,14 +1169,23 @@ describe("a family the row rules cannot place", () => {
     "another family between a joining couple, both families married into it": between,
   };
 
-  Object.entries(shapes).forEach(([what, c]) => {
-    // R-0752, R-0748, R-0745
-    it(`draws ${what} generation by generation with no child's line through a name`, () => {
-      const L = arrange(c);
-      expect(L.loose).toBe(true);
-      lines(draw(L, frame(L))).forEach((sg) => L.names.forEach((b) => expect(crosses(sg, b)).toBe(false)));
-    });
-  });
+  const clear = (c: Cast) => {
+    const L = arrange(c);
+    expect(L.loose).toBe(true);
+    lines(draw(L, frame(L))).forEach((sg) => L.names.forEach((b) => expect(crosses(sg, b)).toBe(false)));
+  };
+
+  // R-0745
+  it("draws two couples each joining both families generation by generation with no child's line through a name", () =>
+    clear(shapes["two couples each joining both families"]));
+
+  // R-0748, R-0745
+  it("draws three marriages, half-siblings and a cousin marriage generation by generation with no child's line through a name", () =>
+    clear(shapes["three marriages, half-siblings and a cousin marriage"]));
+
+  // R-0752, R-0745
+  it("draws another family between a joining couple, both families married into it generation by generation with no child's line through a name", () =>
+    clear(shapes["another family between a joining couple, both families married into it"]));
 
   // R-0752
   it("keeps the child of a father's second marriage clear of his name, as approved", () => {
@@ -1202,7 +1226,7 @@ describe("a family the row rules cannot place", () => {
     expect(L.note!.lines.join(" ")).toBe("Al is recorded as their own ancestor");
   });
 
-  // R-0751
+  // R-0751, R-0754
   it("draws someone recorded as their own forebear, the link closing the loop in the error colour with a note", () => {
     const c = cast(
       { a: sh("Al", M, 1950), b: sh("Bea", F, 1951), c: { ...sh("Cy", M, 1975), you: true }, d: sh("Di", F, 1976) },

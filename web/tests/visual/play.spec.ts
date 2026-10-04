@@ -429,7 +429,7 @@ test.describe("a family the row rules cannot place", () => {
 test.describe("a family wider than the phone", () => {
   test.use({ storageState: stateFor("play"), viewport: { width: 390, height: 844 } });
 
-  // R-0547
+  // R-0547, R-0744, R-0749
   // re-ruled 2026-10-04, scroll below the floor
   test("keeps its least size, scrolls in its own frame and centres the step's person", async ({ page }) => {
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, joinedFamily([["Hugo", "Wanda"]], 6, "Hs5", "Hugo"));
