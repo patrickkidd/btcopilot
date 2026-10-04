@@ -116,7 +116,6 @@ export interface CaseView {
   /** Today, as a year with its fraction: the date the pictures stand at. */
   now: number;
   household: Still;
-  siblings: string;
   main: Guess | null;
   brought: { lead: string; first: Fact | null; latest: Fact | null; clusters: ClusterRef[]; asked: string };
   /** Married now: the picture's solid line with no later separation or divorce, both partners alive (R-0694). */
@@ -280,43 +279,6 @@ class Reader {
   died(p: Person): string {
     const e = p.death_event == null ? undefined : this.event(p.death_event);
     return e?.dateTime ? dateText(e.dateTime, e.dateCertainty) : "";
-  }
-
-  /** Brothers and sisters ordered by birth when the record dates every one. */
-  ordered(people: Person[]): Person[] {
-    if (!people.every((p) => p.birth)) return people;
-    return people.slice().sort((a, b) => a.birth!.localeCompare(b.birth!));
-  }
-
-  /** The person's place among brothers and sisters, from the record's links. */
-  siblings(): string {
-    const s = this.subject;
-    const pb = this.parentsOf(s.id);
-    if (!pb) return "";
-    const parents = listed(this.pair(pb).map(this.name));
-    const all = this.ordered(this.childrenOf(pb));
-    const sibs = all.filter((p) => p.id !== s.id);
-    const lines: string[] = [];
-    if (sibs.length) {
-      const others = sibs.map((p) => p.name).join(", ");
-      lines.push(
-        all.every((p) => p.birth)
-          ? `${s.name} is child ${all.indexOf(s) + 1} of ${all.length} of ${parents}; the others: ${others}.`
-          : `${s.name} has ${sibs.length === 1 ? "one brother or sister" : `${sibs.length} brothers and sisters`} in the record: ${others}.`,
-      );
-    }
-    this.pair(pb).forEach((parent) =>
-      this.bondsOf(parent)
-        .filter((b) => b.id !== pb.id)
-        .forEach((b) =>
-          this.childrenOf(b).forEach((half) => {
-            const word = half.gender === "female" ? "sister" : half.gender === "male" ? "brother" : "sibling";
-            const via = this.people.get(parent)?.gender === "female" ? "mother" : "father";
-            lines.push(`Half-${word} ${half.name}, through ${pronouns(s).his} ${via}.`);
-          }),
-        ),
-    );
-    return lines.join(" ");
   }
 
   /** What brought the person: the record's own events of theirs that carry a
@@ -510,7 +472,6 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string | null
     owner,
     now: r.now,
     household: r.still(r.household(), s.id),
-    siblings: r.siblings(),
     main: main && r.guess(main),
     brought: r.brought(sessions),
     married: !!wed,

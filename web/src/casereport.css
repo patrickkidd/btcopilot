@@ -8,21 +8,26 @@
 .screen.report > .ovbar #case-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .screen.report > .ovbar .by { font: 400 12px/1.2 var(--mono); color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .screen.report > .ovbar .by:empty { display: none; }
-.screen.report > .ovbar .iconbtn { color: var(--data); }
+/* the report's header as the proposal draws it: a title row's height, the round family button on the phone */
+.screen.report > .ovbar { height: 56px; padding-right: 12px; }
+.screen.report > .ovbar #case-family { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--data); padding: 0; }
+.screen.report > .ovbar #case-family:active { background: var(--tint); }
+/* on a desktop the name and who presents share the one line */
+.app.wide .screen.report > .ovbar .ovt { flex-direction: row; align-items: baseline; justify-content: space-between; gap: 12px; }
+.app.wide .screen.report > .ovbar .by { font-size: 13px; }
 .screen.report .split { position: relative; }
 .screen.report .split > .screen { position: relative; display: flex; flex-direction: column; min-height: 0; }
 #case-column[hidden] { display: none; }
 @media (min-width: 840px) {
   .app.wide:has(#case-screen:not([hidden])) { max-width: 1024px; }
-  .screen.report .pinned.left { width: 420px; border-left: 0; border-right: 1px solid var(--line); }
+  .screen.report .pinned.left { width: 460px; border-left: 0; border-right: 1px solid var(--line); }
   .screen.report .pinned .scroller { overflow-y: auto; min-height: 0; }
   .screen.report .chat > .case { width: 100%; max-width: 600px; margin: 0 auto; box-sizing: border-box; }
   .screen.report .pbp { left: auto; width: 393px; border-left: 1px solid var(--line); box-shadow: -8px 0 24px var(--shadow); }
 }
-.screen.report .chat { padding: 12px; }
 .screen.report .fault { margin: 12px; font: 400 15px/1.45 var(--sans); color: var(--remove); }
 
-/* the strip: one item per card; on a wide window it wraps so every item is in view */
+/* the strip: one item per card, one button high, scrolled sideways (Patrick, 2026-10-04) */
 .rail { flex: none; display: flex; gap: 6px; overflow-x: auto; padding: 8px 12px; border-bottom: 1px solid var(--line); scrollbar-width: none; }
 .rail::-webkit-scrollbar { display: none; }
 .rail button[data-jump], .case .famcard { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); font: 400 13px var(--sans); cursor: pointer; white-space: nowrap; }
@@ -30,11 +35,10 @@
 .rail button svg { flex: none; }
 .rail button.on { border-color: var(--data); background: var(--tint); color: var(--data); }
 .rail .book { flex: none; width: 36px; min-height: 32px; padding: 0; border: 0; background: none; color: var(--data); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.app.wide .rail { flex-wrap: wrap; overflow: visible; row-gap: 6px; }
 
 /* the cards */
 .case { display: flex; flex-direction: column; gap: 14px; }
-.case .level { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.case .level { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .case .level > p, .case .sidein > p, .case .stage > p { margin: 0; font: 400 15px/1.45 var(--sans); color: var(--ink); }
 .case .famcard { align-self: flex-start; }
 .case .fam { margin: 0 -16px; padding: 4px 0 0; }
@@ -51,7 +55,7 @@
 .case details.side:not([open]) > summary.sub::before { content: "›\00a0"; }
 .case .sidein, .case .stage { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; min-width: 0; }
 .case.dash { padding: 12px; }
-.case.dash .side { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.case.dash .side { display: flex; flex-direction: column; align-items: stretch; flex-wrap: nowrap; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
 .case.dash .side > p.sub { margin: 0; font: 600 15px/1.3 var(--sans); color: var(--ink); }
 /* a row of chips: each one line inside its card, its words cut to the card's width */
 .case .chips { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
@@ -59,7 +63,6 @@
 /* a guess: the coach's own bubble straight on the white card, its facts under it */
 .case .glist { display: flex; flex-direction: column; gap: 10px; }
 .case .gbub { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.case .bub { max-width: 100%; }
 .case .bub .who.lall { display: block; border: 0; background: none; padding: 0; text-align: left; cursor: pointer; }
 .case .chip.qmark { display: inline-block; height: auto; min-height: 32px; white-space: normal; text-align: left; }
 .case .bub.user { align-self: flex-end; }

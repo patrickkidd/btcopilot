@@ -99,9 +99,6 @@ const lead = (text: string) => (text ? `<p class="lead">${esc(text)}</p>` : "");
 const sublabel = (text: string) => `<p class="sublabel">${esc(text)}</p>`;
 const faint = (text: string) => `<p class="faint">${esc(text)}</p>`;
 
-const LEGEND =
-  "Solid line: married; dashed: together, not married. One slash: separated; two: divorced. X: died. " +
-  "The number is the age now, or at death for someone marked X, where the record holds a birth date.";
 const UNKNOWN_NOTE = "?: the other parent, unnamed.";
 
 export const BOOK_ICON =
@@ -159,7 +156,7 @@ function body(card: Card, v: CaseView): string {
     case Card.Main:
       return v.main ? guessBlock(v.main) : notEnough();
     case Card.Family:
-      return picture(v, v.household, `${v.name}'s family`) + lead(v.siblings) + faint(LEGEND);
+      return picture(v, v.household, `${v.name}'s family`);
     case Card.Brought: {
       const b = v.brought;
       const course = [
@@ -218,10 +215,10 @@ export function cards(v: CaseView, wide: boolean): string {
   return `<div class="case">${ORDER.map((c) => (c === Card.Family ? family : card(c, v))).join("")}</div>`;
 }
 
-/** The family card for the column or the slide-out: the person's family, its
- * key under it, and each parent's side with its key under it (R-0697). */
+/** The family card for the column or the slide-out, as the approved proposal
+ * draws it: the person's family, then each parent's side (R-0697). */
 export function dashboard(v: CaseView): string {
-  const sides = v.sides.map((s) => `<div class="side"><p class="sub">${esc(s.label)}</p>${s.pics.map((p) => picture(v, p.still, p.sub)).join("")}${faint(LEGEND)}</div>`);
+  const sides = v.sides.map((s) => `<div class="side"><p class="sub">${esc(s.label)}</p>${s.pics.map((p) => picture(v, p.still, p.sub)).join("")}</div>`);
   return `<div class="case dash">${card(Card.Family, v, sides.join(""))}</div>`;
 }
 

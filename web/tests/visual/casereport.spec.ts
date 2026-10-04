@@ -53,6 +53,7 @@ for (const key of FIXTURES)
                 .map((c) => c.textContent),
               outside: chips.filter((c) => out(c.getBoundingClientRect(), c.closest(".level")!.getBoundingClientRect())).length,
               sideways: document.documentElement.scrollWidth > window.innerWidth,
+              stripRows: new Set([...document.querySelectorAll<HTMLElement>("#case-rail [data-jump]")].map((b) => b.offsetTop)).size,
               text: document.querySelector("#case-screen")!.textContent ?? "",
               folds: document.querySelectorAll("#case-body details").length,
               sides: document.querySelectorAll("#case-body details.side").length,
@@ -60,6 +61,7 @@ for (const key of FIXTURES)
           });
           expect([...seen.cards].sort()).toEqual([...seen.strip].sort());
           expect(seen.strip).toHaveLength(10);
+          expect(seen.stripRows).toBe(1);
           expect(seen.wrapped).toBe(0);
           expect(seen.cut).toEqual([]);
           expect(seen.outside).toBe(0);
@@ -92,6 +94,31 @@ test.describe("the case report's taps", () => {
     const bodyBox = await body.boundingBox();
     expect(card!.y).toBeLessThan(bodyBox!.y + bodyBox!.height);
     await expect(page.locator('#case-rail [data-jump="effort"]')).toHaveClass(/on/);
+  });
+
+  // R-0702
+  test("the strip is one button high and scrolls sideways", async ({ page }) => {
+    await open(page);
+    const strip = await page.locator("#case-rail").evaluate((rail) => {
+      const button = rail.querySelector<HTMLElement>("[data-jump]")!;
+      const pad = parseFloat(getComputedStyle(rail).paddingTop) + parseFloat(getComputedStyle(rail).paddingBottom);
+      const tops = new Set([...rail.querySelectorAll<HTMLElement>("[data-jump]")].map((b) => b.offsetTop));
+      return { inner: rail.clientHeight - pad, button: button.offsetHeight, rows: tops.size, wider: rail.scrollWidth > rail.clientWidth };
+    });
+    expect(strip.rows).toBe(1);
+    expect(strip.inner).toBe(strip.button);
+    expect(strip.wider).toBe(true);
+  });
+
+  // R-0696
+  test("the timeline stays pinned at its full height while the cards scroll", async ({ page }) => {
+    await open(page);
+    const pic = page.locator("#case-screen > .pic");
+    const before = (await pic.boundingBox())!.height;
+    await page.locator("#case-body").evaluate((b) => (b.scrollTop = b.scrollHeight));
+    await page.waitForTimeout(500);
+    expect((await pic.boundingBox())!.height).toBe(before);
+    await expect(page.locator("#case-view .ss")).toBeVisible();
   });
 
   // R-0700, R-0696
