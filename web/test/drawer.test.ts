@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { closeX, pathRow } from "../src/dom";
-import { below, head, leastScale, pictureHeight, pointLine, yearsLine } from "../src/drawer";
-import { Told, untold } from "../src/snapshots";
+import { below, head, leastScale, pictureHeight, pointLine, topLine, yearsLine } from "../src/drawer";
+import { family, Told, untold } from "../src/snapshots";
 import { alone, apart, CORINNE, DELPHINE, sparse, timeline } from "./whitlock";
 
 /** The play-by-play drawer's own words and controls, read off its markup. */
@@ -96,4 +96,33 @@ it("draws a sparse record's person with no family tie beside the reader, and end
   expect(L.x[String(DELPHINE)]).toBeGreaterThan(L.x[String(CORINNE)]);
   expect(below(thin, 1, null)).toMatch(/<p class="ask">Who else was in the house that year\?/);
   expect(below(thin, 0, null)).not.toContain('class="ask"');
+});
+
+// R-0742
+it("steps the whole family with Back and Next only, says where in its top line, and closes back to the timeline", () => {
+  const whole = new Told(tl, family(tl), true);
+  const last = whole.length - 1;
+  expect(below(whole, last, null)).not.toContain('class="dot');
+  expect(below(whole, last, null)).toMatch(/data-act="next" disabled/);
+  expect(below(whole, 0, null)).toMatch(/data-act="back" disabled/);
+  expect(below(whole, last, null)).not.toContain('class="fact"');
+  const top = head(whole, "");
+  expect(top).toMatch(/data-step="0"><span>Timeline<.*<span class="here">Family</);
+  expect(top).toContain(closeX(' data-step="0"'));
+  expect(top).not.toContain('class="point"');
+  expect(topLine(whole, 0)).toBe('<span class="date">Jun 1948</span>');
+  const toward = whole.told.snapshots.findIndex((s) => s.event_ids.includes(131));
+  expect(topLine(whole, toward)).toBe('<span class="date">May 1998</span><span class="words">— Started calling Corinne every night</span>');
+});
+
+// R-0742
+it("spans the whole family's years line over every dated event, this step ringed, earlier solid, later hollow", () => {
+  const whole = new Told(tl, family(tl), true);
+  const line = yearsLine(tl, whole, 3);
+  expect([...line.matchAll(/class="wnow"/g)]).toHaveLength(1);
+  expect([...line.matchAll(/class="wd"/g)]).toHaveLength(3);
+  expect([...line.matchAll(/class="wahead"/g)]).toHaveLength(whole.length - 4);
+  expect([...line.matchAll(/class="wd dim"/g)]).toHaveLength(tl.events.length - whole.length);
+  expect(line).toContain(">1948</text>");
+  expect(line).toContain(">1999</text>");
 });

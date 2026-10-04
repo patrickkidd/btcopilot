@@ -42,6 +42,8 @@ class Place(enum.StrEnum):
     CaseReport = "case-report"
     Play = "play/:n"
     PlayStep = "play/:n/:n"
+    Family = "family"
+    FamilyStep = "family/:n"
     Coding = "coding/:n"
     Vote = "vote/:n"
     Meeting = "meeting/:n"
@@ -101,6 +103,8 @@ WORDS = {
     Place.CaseReport: "the case report",
     Place.Play: "the play-by-play",
     Place.PlayStep: "the play-by-play",
+    Place.Family: "the whole family",
+    Place.FamilyStep: "the whole family",
     Place.Coding: "the coding",
     Place.Vote: "the vote",
     Place.Meeting: "the meeting",

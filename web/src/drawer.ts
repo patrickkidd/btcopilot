@@ -3,7 +3,7 @@ import { askedChip, chipOf } from "./chips";
 import { CLUSTER, closeX, esc, flash, pathRow, slideOver, stepBtn } from "./dom";
 import { LEAST, NAME, type Layout } from "./diagram";
 import { kindForms, withKind } from "./rows";
-import { when, Told } from "./snapshots";
+import { family, when, Told } from "./snapshots";
 import type { Case, Chip, Timeline } from "./types";
 
 /** The play-by-play drawer: a real drill-down that slides over the timeline and
@@ -77,6 +77,10 @@ const saying = (told: Told, i: number) =>
  * (R-0587); a play kept nowhere has no message to point at. */
 export function below(told: Told, i: number, statement: number | null): string {
   const n = told.length;
+  const back = stepBtn("‹ Back", `data-act="${Act.Back}"`, i === 0);
+  const next = stepBtn("Next ›", `data-act="${Act.Next}"`, i === n - 1);
+  // the whole family's top line says where the reader is, so it has no dots (R-0742)
+  if (told.whole) return `<div class="step">${back}${next}</div>`;
   const shot = told.shot(i);
   const dots = Array.from(
     { length: n },
@@ -84,9 +88,9 @@ export function below(told: Told, i: number, statement: number | null): string {
       `<span class="dot${j === i ? " on" : ""}"></span>`,
   ).join("");
   return (
-    `<div class="step">${stepBtn("‹ Back", `data-act="${Act.Back}"`, i === 0)}` +
+    `<div class="step">${back}` +
     `<div class="dots" aria-hidden="true">${dots}</div>` +
-    `${stepBtn("Next ›", `data-act="${Act.Next}"`, i === n - 1)}</div>` +
+    `${next}</div>` +
     `<div class="cap" aria-live="polite"><div class="when"><span class="date">${esc(shot.date)}</span>` +
     (shot.gap ? `<span class="gap">${esc(shot.gap)}</span>` : "") +
     `</div><p class="fact">${withKind(shot.fact, saying(told, i))}</p>` +
@@ -112,11 +116,22 @@ const spanOf = (told: Told) => {
 };
 
 /** The drawer's top: the path row, the close button, which goes where the
- * path's cluster step goes, then the coach's point. */
+ * path's cluster step goes, then the coach's point. The whole family hangs off
+ * the timeline itself, and its close goes back there. */
 export const head = (told: Told, years: string) =>
-  `<div class="path">${pathRow(["Timeline", years, "explain"])}</div>` +
-  closeX(` data-step="${CLUSTER}"`) +
-  pointLine(told);
+  told.whole
+    ? `<div class="path">${pathRow(["Timeline", "Family"])}</div>` + closeX(` data-step="0"`) + `<div class="when"></div>`
+    : `<div class="path">${pathRow(["Timeline", years, "explain"])}</div>` +
+      closeX(` data-step="${CLUSTER}"`) +
+      pointLine(told);
+
+/** The whole family's top line: the step's date and what happened then, in
+ * the events' own words. */
+export const topLine = (told: Told, i: number) => {
+  const snap = told.told.snapshots[i];
+  const words = snap.fact ? `<span class="words">— ${withKind(snap.fact, saying(told, i))}</span>` : "";
+  return `<span class="date">${esc(told.steps[i].date)}</span>${words}`;
+};
 
 export const pictureHeight = (natural: number, room: number, captions: number[], floor: number) =>
   Math.max(Math.min(natural, floor), Math.min(natural, room - Math.max(...captions)));
@@ -154,11 +169,28 @@ export class Drawer {
   /** Slide the drawer in on the first snapshot of a told case, and the message
    * it was kept as. */
   open(tl: Timeline, told: Case, statement: number | null): void {
-    this.told = new Told(tl, told);
+    this.show(new Told(tl, told), statement, 0);
+  }
+
+  /** Slide the drawer in on the whole family as the record stands today, its
+   * last step; Back steps into its history (R-0742). */
+  openFamily(tl: Timeline): void {
+    const told = new Told(tl, family(tl), true);
+    this.show(told, null, told.length - 1);
+  }
+
+  /** Whether the whole family is up. */
+  family(): boolean {
+    return this.panel.classList.contains("in") && !!this.told?.whole;
+  }
+
+  private show(told: Told, statement: number | null, i: number): void {
+    this.told = told;
     this.statement = statement;
-    this.i = 0;
+    this.i = i;
     this.height = null;
-    const years = tl.clusters.find((c) => c.id === told.cluster_id)?.label ?? spanOf(this.told);
+    const years = told.tl.clusters.find((c) => c.id === told.told.cluster_id)?.label ?? spanOf(told);
+    this.panel.classList.toggle("whole", told.whole);
     this.panel.innerHTML =
       head(this.told, years) +
       `<div class="lv"><div class="wire"></div><div class="draw"></div><div class="scroll"></div></div>`;
@@ -177,7 +209,7 @@ export class Drawer {
 
   /** The message whose telling is up, while the drawer is. */
   at(): number | null {
-    return this.panel.classList.contains("in") ? this.statement : null;
+    return this.panel.classList.contains("in") && !this.told?.whole ? this.statement : null;
   }
 
   /** One snapshot of the telling that is up, its caption lit the way a
@@ -191,13 +223,14 @@ export class Drawer {
 
   /** Put away from outside, as its cross puts it away. */
   leave(): void {
-    if (this.told && this.panel.classList.contains("in")) this.back(CLUSTER, this.told.eventIds);
+    if (this.told && this.panel.classList.contains("in")) this.back(this.told.whole ? 0 : CLUSTER, this.told.eventIds);
   }
 
   private render(): void {
     const told = this.told!;
     const q = (sel: string) => this.panel.querySelector<HTMLElement>(sel)!;
     q(".wire").innerHTML = yearsLine(told.tl, told, this.i);
+    if (told.whole) q(".when").innerHTML = topLine(told, this.i);
     const shot = told.shot(this.i);
     q(".draw").innerHTML = shot.svg;
     q(".scroll").innerHTML = below(told, this.i, this.statement);

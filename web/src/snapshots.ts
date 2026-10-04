@@ -231,6 +231,9 @@ export class Told {
   constructor(
     readonly tl: Timeline,
     readonly told: Case,
+    /** The whole family stepped through dates (R-0742): everyone in the record
+     * is drawn, and the years line spans every dated event in it. */
+    readonly whole = false,
   ) {
     const r = new Family(tl);
     this.steps = told.snapshots.map((s) => {
@@ -243,13 +246,14 @@ export class Told {
       };
     });
     // everyone the case's events name is drawn, the ones no snapshot shows too
-    if (told.cluster_id === null) this.eventIds = told.snapshots.flatMap((s) => s.event_ids);
+    if (whole) this.eventIds = tl.events.filter((e) => e.dateTime).map((e) => e.id);
+    else if (told.cluster_id === null) this.eventIds = told.snapshots.flatMap((s) => s.event_ids);
     else {
       const cluster = tl.clusters.find((c) => c.id === told.cluster_id);
       if (!cluster) throw new Error(`no cluster ${told.cluster_id} on the line`);
       this.eventIds = cluster.event_ids;
     }
-    this.cast = castOf(r, this.steps, this.eventIds.map((id) => r.event(id)));
+    this.cast = castOf(r, this.steps, this.eventIds.map((id) => r.event(id)), whole);
     this.cast.bonds.forEach((b) => this.start.set(`${b.a}|${b.b}`, b.st));
     this.layout = arrange(this.cast);
   }
@@ -306,7 +310,9 @@ export class Told {
       else if (was) marks.push({ k: was, who: id, cls: Tone.Was });
     });
     const lit = this.emphasised(now);
-    const litBefore = new Set(before.flatMap((s) => this.emphasised(s)));
+    // the whole family carries no one lit from an earlier date: a lifetime of
+    // births would outline everyone
+    const litBefore = new Set(this.whole ? [] : before.flatMap((s) => this.emphasised(s)));
     lit.forEach((who) => marks.push({ k: Mark.Emphasis, who, cls: Tone.Now }));
     litBefore.forEach((who) => lit.includes(who) || marks.push({ k: Mark.Emphasis, who, cls: Tone.Was }));
     // anxiety going down ends what was carried of it going up, until it goes up again (R-0729)
@@ -373,8 +379,8 @@ function pairKey(cast: Cast, m: Pair): string {
 /** The cast: you, everyone the case's events name, both partners of any couple
  * whose line changes, and the parents needed to connect them, following descent
  * through as many generations as it takes. Nobody else. */
-export function castOf(r: Family, steps: Step[], events: TimelineEvent[]): Cast {
-  const cast = new Set<string>([r.you]);
+export function castOf(r: Family, steps: Step[], events: TimelineEvent[], everyone = false): Cast {
+  const cast = new Set<string>(everyone ? r.people.keys() : [r.you]);
   events.forEach((e) => r.named(e).forEach((id) => cast.add(id)));
   steps.forEach((s) =>
     s.marks.forEach((m) => {
@@ -388,7 +394,7 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[]): Cast 
     const pb = ofBond.get(r.people.get(id)?.parents ?? -1);
     return pb ? [pb.person_a, pb.person_b].filter((p): p is number => p != null).map(key) : [];
   };
-  for (let grew = true; grew; ) {
+  for (let grew = !everyone; grew; ) {
     grew = false;
     const add = (id: string) => {
       if (!cast.has(id)) {
@@ -537,6 +543,18 @@ export function untold(tl: Timeline, ids: number[]): Case {
     question: "",
   };
 }
+
+/** The kinds that change who is in the family or how a couple stands. */
+const TURNS = new Set<string>([...BIRTHS, ...COUPLE_KINDS, ...Object.keys(ENDS), EventKind.Death]);
+
+/** The whole family stepped through dates (R-0742): one step per date that
+ * has a birth, an adoption, a couple's start or end, a death or a relationship
+ * shift, in date order. */
+export const family = (tl: Timeline): Case =>
+  untold(
+    tl,
+    tl.events.filter((e) => TURNS.has(e.kind ?? "") || e.relationship).map((e) => e.id),
+  );
 
 /** The events a triangle is about: those naming two or more of its people. */
 export function among(tl: Timeline, persons: number[]): number[] {

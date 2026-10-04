@@ -40,6 +40,8 @@ export enum Place {
   CaseReport = "case-report",
   Play = "play/:n",
   PlayStep = "play/:n/:n",
+  Family = "family",
+  FamilyStep = "family/:n",
   Coding = "coding/:n",
   Vote = "vote/:n",
   Meeting = "meeting/:n",
@@ -99,6 +101,7 @@ const SETTLES: Partial<Record<Place, (args: string[]) => Spot>> = {
   [Place.Notice]: () => ({ place: Place.Notices, args: [] }),
   [Place.MeetingCut]: ([day]) => ({ place: Place.MeetingDay, args: [day] }),
   [Place.PlayStep]: ([statement]) => ({ place: Place.Play, args: [statement] }),
+  [Place.FamilyStep]: () => ({ place: Place.Family, args: [] }),
 };
 
 export function settled(path: string): string | null {
@@ -159,6 +162,8 @@ export const NAMES: Record<Place, string> = {
   [Place.CaseReport]: "Case report",
   [Place.Play]: "Play-by-play",
   [Place.PlayStep]: "Play-by-play",
+  [Place.Family]: "Family",
+  [Place.FamilyStep]: "Family",
   [Place.Coding]: "Coding",
   [Place.Vote]: "Vote",
   [Place.Meeting]: "Meeting",

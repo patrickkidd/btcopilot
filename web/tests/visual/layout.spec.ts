@@ -433,7 +433,7 @@ test.describe("the row under the picture from one view to the next", () => {
   // a record with a loose event, the only kind a tap picks (R-0543)
   test.use({ storageState: stateFor("three40") });
 
-  // R-0450, R-0543
+  // R-0450, R-0543, R-0755
   test("the picture stays put while the row's buttons change", async ({ page }) => {
     await settle(page);
     await expect(page.locator('#view .ss-hit[data-target="cluster"]').first()).toBeVisible();
@@ -449,7 +449,7 @@ test.describe("the row under the picture from one view to the next", () => {
     const picked = { at: await frame(page), live: await live(page) };
 
     // what can be pressed follows what is on the picture
-    expect(rest.live).toEqual([]);
+    expect(rest.live).toEqual(["cap-family"]);
     expect(open.live).toEqual(["cap-play"]);
     expect(picked.live).toEqual(["cap-trace"]);
     // and nothing above or around the row moves for it

@@ -34,7 +34,7 @@ import { $, CLUSTER, el, flash, setTitle, slideOver, type Title } from "./dom";
 import { address, beyond, linked, parse, PICTURE, Place, settled, UNDATED } from "./place";
 import { Return, returnKey, touch } from "./keyboard";
 import { Drawer } from "./drawer";
-import { among, untold } from "./snapshots";
+import { among, family, untold } from "./snapshots";
 import { reopen, type Kept } from "./plays";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
@@ -156,6 +156,10 @@ const lens = new Lens(
         track.tap(Feature.OpenMenu);
         screen(Screen.Menu);
       },
+    },
+    family: {
+      live: () => family(record()).snapshots.length > 0,
+      open: () => void navigate(address(Place.Family)),
     },
     changed: sync,
     aiming: () => chat.unfold(),
@@ -1570,6 +1574,7 @@ function current(): string {
   if (sessions.up) return address(Place.Sessions);
   const play = pbp.at();
   if (play !== null) return address(Place.Play, play);
+  if (pbp.family()) return address(Place.Family);
   const edited = menu.edited();
   if (edited !== null && (here === Screen.Menu || pinned()))
     return address(menu.showing() === Tab.People ? Place.Person : Place.EventEditor, edited);
@@ -1677,6 +1682,13 @@ async function toPlay(statement: number): Promise<boolean> {
   return false;
 }
 
+/** The whole family stepped through dates, opened on the record today (R-0742). */
+function toFamily(): void {
+  uncover();
+  lens.putDown();
+  pbp.openFamily(record());
+}
+
 /** How the app gets to each place from wherever it is. */
 const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
   [Place.Chat]: () => {
@@ -1768,6 +1780,11 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
   },
   [Place.PlayStep]: async ([id, step]) => {
     if (await toPlay(Number(id))) pbp.to(Number(step));
+  },
+  [Place.Family]: () => toFamily(),
+  [Place.FamilyStep]: ([step]) => {
+    toFamily();
+    pbp.to(Number(step));
   },
   [Place.Coding]: async ([id]) => {
     uncover();

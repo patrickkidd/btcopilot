@@ -1815,9 +1815,11 @@ export function draw(L: Layout, s: Frame): string {
     const e = d.half(p);
     const dead = p.died != null && p.died <= s.t + 1e-6;
     // someone not yet born keeps their place (R-0546) but has no age to show
-    const age = p.born == null || p.born > s.t + 1e-6 ? null : yr((dead ? p.died! : s.t) - p.born + 1e-6);
-    let g = `<g class="p" data-id="${esc(id)}">`;
-    let t = `<g class="pt" data-id="${esc(id)}">`;
+    const yet = p.born != null && p.born > s.t + 1e-6;
+    const age = p.born == null || yet ? null : yr((dead ? p.died! : s.t) - p.born + 1e-6);
+    const born = yet ? " yet" : "";
+    let g = `<g class="p${born}" data-id="${esc(id)}">`;
+    let t = `<g class="pt${born}" data-id="${esc(id)}">`;
     if (p.you) g += outline(p, x, y, e, "you");
     g += outline(p, x, y, E, "shape");
     if (age != null) t += `<text class="age" x="${f(x)}" y="${f(y + 4.5)}">${age}</text>`;

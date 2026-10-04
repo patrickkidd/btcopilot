@@ -334,6 +334,9 @@ button { font-family: inherit; }
    drawing sits at the target's end: a target pulled out into the padding made
    Safari count the padding again past it, and the strip scrolled sideways. */
 .caption .listglyph { margin-left: auto; padding-left: 8px; }
+/* the Family button sits at the end of the row, beside the list button (R-0742) */
+.caption #cap-family { margin-left: auto; }
+.caption #cap-family + .listglyph { margin-left: 0; }
 .view { position: relative; transition: height 0.25s ease; }
 /* The about page of a cluster slides in over the timeline and back out; it is
    the only thing that slides, since showing a cluster redraws the timeline in

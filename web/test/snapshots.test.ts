@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { arrange, bar, crosses, draw, Mark, Side, VIEW, layout, Sex, Tie, type Cast, type Layout } from "../src/diagram";
-import { among, gapText, Told, untold } from "../src/snapshots";
+import { among, family as wholeFamily, gapText, Told, untold } from "../src/snapshots";
 import type { Case, Timeline } from "../src/types";
 import {
   apart,
@@ -1264,5 +1264,68 @@ describe("a family the row rules cannot place", () => {
     expect(normal.length).toBeGreaterThan(0);
     const near = Array.from({ length: 41 }, (_, i) => at(0.05 + (0.9 * i) / 40)).filter((q) => normal.some((sg) => dist(q, sg) < 2));
     expect(near.length).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("the whole family stepped through dates", () => {
+  const record = (): Timeline => {
+    const tl = timeline();
+    tl.events.push(
+      event(301, "1975-06-01", "birth", null, { child: CORINNE }),
+      event(302, "1979-06-01", "birth", null, { child: THEO }),
+      event(303, "2016-08-15", "shift", THEO, { relationship: "cutoff", relationshipTargets: [DELPHINE], title: "Cut off", description: "Stopped speaking to Delphine" }),
+      event(304, null as unknown as string, "death", MARCUS),
+    );
+    return tl;
+  };
+  const whole = (tl = record()) => new Told(tl, wholeFamily(tl), true);
+  const stepOf = (t: Told, id: number) => t.told.snapshots.findIndex((s) => s.event_ids.includes(id));
+  const group = (svg: string, id: number) =>
+    svg.match(new RegExp(`<g class="(p[^"]*)" data-id="${id}">(?:(?!</g>).)*?class="shape" (?:x|cx)="([\\d.]+)" (?:y|cy)="([\\d.]+)"`))!;
+
+  // R-0742
+  it("steps through every dated birth, couple, death and relationship shift in date order, and nothing else", () => {
+    expect(wholeFamily(record()).snapshots.map((s) => s.event_ids)).toEqual([
+      [103], [109], [301], [302], [201], [204], [119], [130], [131], [132], [303],
+    ]);
+  });
+
+  // R-0742
+  it("draws everyone in the record, the ones no step names too", () => {
+    expect(cast(whole())).toEqual([ERROL, ODILE, MARCUS, DELPHINE, CORINNE, THEO, PARTNER]);
+  });
+
+  // R-0756, R-0742
+  it("fades someone not yet born at a step, in the place they keep, and draws them plainly from their birth", () => {
+    const t = whole();
+    const before = t.shot(stepOf(t, 109)).svg;
+    const born = t.shot(stepOf(t, 301)).svg;
+    const [, was, x, y] = group(before, CORINNE);
+    const [, now, x2, y2] = group(born, CORINNE);
+    expect(was).toBe("p yet");
+    expect(now).toBe("p");
+    expect([x2, y2]).toEqual([x, y]);
+    expect(before).toContain(`<g class="pt yet" data-id="${CORINNE}">`);
+    // someone with no birth date is there from the first step
+    expect(group(t.shot(0).svg, PARTNER)[1]).toBe("p");
+  });
+
+  // R-0742
+  it("crosses out the dead on their death's date in the emphasis colour, and plainly after", () => {
+    const t = whole();
+    const on = t.shot(stepOf(t, 119)).svg;
+    const after = t.shot(stepOf(t, 130)).svg;
+    expect(els(on, "path", "xd").filter((e) => e.class.includes("now"))).toHaveLength(1);
+    expect(els(after, "path", "xd").filter((e) => e.class.includes("now"))).toHaveLength(1);
+    expect(els(after, "path", "xd").filter((e) => !e.class.includes("now"))).toHaveLength(1);
+  });
+
+  // R-0742
+  it("draws a relationship shift's still mark on its own step and carries it grey after, with no one lit from before", () => {
+    const t = whole();
+    const cut = t.shot(stepOf(t, 303)).svg;
+    expect(markClass(cut, `move:${THEO}>${DELPHINE}:cutoff`)).toMatch(/\bnow\b/);
+    expect(markClass(cut, `move:${DELPHINE}>${CORINNE}:toward`)).toMatch(/\bwas\b/);
+    expect(marks(cut).filter((m) => m.startsWith("hl:"))).toEqual([]);
   });
 });

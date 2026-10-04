@@ -2,7 +2,7 @@ import { CHIP_KIND, PicEvent, REST, SelKind, reduce, type Outcome, type PicState
 import { aimedEvents, Lead } from "./chips";
 import { CLUSTER, pathRow } from "./dom";
 import { Picture, Target, Via, type Tap } from "./picture";
-import { ASK_MARK, IN_CHAT_MARK, listButton, PLAY_MARK, tok } from "./tokens";
+import { ASK_MARK, FAMILY_MARK, IN_CHAT_MARK, listButton, PLAY_MARK, tok } from "./tokens";
 import { Feature } from "./track";
 import { ChipKind, ChipTone, InteractionKind, ItemKind, Spotlight, type Chip, type Cluster, type Timeline } from "./types";
 
@@ -38,6 +38,9 @@ export interface LensHooks {
   /** The list glyph at the end of the row: whether to draw it, and what it
    * opens. Null where there is no list to open. */
   list: { shown(): boolean; open(): void } | null;
+  /** The Family button beside the list at rest: whether the record has a
+   * dated step to show, and what it opens (R-0742). Absent where there is none. */
+  family?: { live(): boolean; open(): void };
   /** After every redraw of the row, for whatever follows the picture (the address bar). */
   changed?(): void;
   /** Before a chip aims the picture, for whatever must show it first (the folded picture). */
@@ -220,7 +223,11 @@ export class Lens {
       // the about page is words already, and an empty picture has nothing to
       // tap; no hint under either
       const hint = picture.aboutOpen() || picture.empty() ? "" : "tap a cluster";
-      host.innerHTML = `<span class="cta">${hint}</span>` + list;
+      const family = this.hooks.family;
+      const live = !!family?.live();
+      host.innerHTML =
+        `<span class="cta">${hint}</span>` + (family ? tok("cap-family", "g", FAMILY_MARK, "Family", live) : "") + list;
+      if (live) host.querySelector<HTMLElement>("#cap-family")!.addEventListener("click", () => family!.open());
       this.wireList();
       return;
     }

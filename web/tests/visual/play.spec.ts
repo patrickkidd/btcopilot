@@ -463,3 +463,112 @@ test.describe("a family wider than the phone", () => {
     expect(next.inside).toBe(true);
   });
 });
+
+/** The play record with a lifetime around its moves: births for its three
+ * people and a fourth born after them, and a death, so the whole family has
+ * births, a death and relationship shifts to step through. */
+const lifetime = async (route: import("@playwright/test").Route) => {
+  const tl = await (await route.fetch()).json();
+  const [ada, ben, cal] = tl.people;
+  const dot = { ...ada, id: 9100, name: "Dot", primary: false, gender: "female", parents: null, birth_event: null, death_event: null };
+  const born: [Record<string, unknown>, string][] = [[ada, "1960-03-01"], [ben, "1958-07-01"], [cal, "1975-05-01"], [dot, "2001-09-01"]];
+  const blank = { ...tl.events[0], relationship: null, relationshipTargets: [], relationshipTriangles: [], symptom: null, anxiety: null, functioning: null, title: null, description: null, spouse: null, codedInDiscussion: null, codedInStatement: null };
+  born.forEach(([p, date], i) => {
+    p.birth = date;
+    tl.events.push({ ...blank, id: 9200 + i, kind: "birth", label: "Born", dateTime: date, person: null, child: p.id, person_name: p.name, sentence: `${p.name} was born` });
+  });
+  tl.events.push({ ...blank, id: 9300, kind: "death", label: "Died", dateTime: "2010-02-01", person: ben.id, child: null, person_name: ben.name, sentence: "Ben died" });
+  tl.people.push(dot);
+  await route.fulfill({ json: tl });
+};
+
+const watched = (page: Page) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+  page.on("requestfailed", (r) => errors.push(`failed ${r.url()}`));
+  page.on("response", (r) => r.status() >= 400 && errors.push(`${r.status()} ${r.url()}`));
+  return errors;
+};
+
+const sideways = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+
+test.describe("the whole family stepped through dates", () => {
+  test.use({ storageState: stateFor("play") });
+
+  // R-0755
+  test("offers its Family button at the end of the row when nothing is picked, next to the lists", async ({ page }) => {
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, lifetime);
+    await settle(page);
+    const family = page.locator("#caption #cap-family");
+    await expect(family).toHaveText("Family");
+    await expect(family).toBeEnabled();
+    const row = await page.locator("#caption").boundingBox();
+    const at = (await family.boundingBox())!;
+    const list = page.locator("#caption #menu-open");
+    if (await list.count()) {
+      const by = (await list.boundingBox())!;
+      expect(at.x + at.width).toBeLessThanOrEqual(by.x);
+      expect(by.x - (at.x + at.width)).toBeLessThan(24);
+    } else expect(row!.x + row!.width - (at.x + at.width)).toBeLessThan(24);
+  });
+
+  // R-0742, R-0755, R-0756
+  test("opens on the record today and steps back through its history, the not yet born faded, and browser back returns to the timeline", async ({ page }) => {
+    const errors = watched(page);
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, lifetime);
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+    await expect(page).toHaveURL(/\/app\/family$/);
+    await expect(drawer(page).locator(".path")).toHaveText("Timeline › Family");
+    await expect(drawer(page).locator(".dots")).toHaveCount(0);
+    await expect(drawer(page).locator('[data-act="next"]')).toBeDisabled();
+    const top = drawer(page).locator(".when");
+    await expect(top).toHaveText("Feb 2010— Ben died");
+    const picture = () => drawer(page).locator(".draw").innerHTML();
+    const dot = drawer(page).locator('.draw .p[data-id="9100"]');
+    await expect(dot).not.toHaveClass(/\byet\b/);
+    let was = await picture();
+    const tap = async (act: string, said: string) => {
+      const before = await top.innerText();
+      await drawer(page).locator(`[data-act="${act}"]`).click();
+      if (said) await expect(top).toHaveText(said);
+      else await expect(top).not.toHaveText(before);
+      const now = await picture();
+      expect(now).not.toBe(was);
+      was = now;
+    };
+    await tap("back", "Sep 2001— Dot was born");
+    // the last move before Dot was born
+    await tap("back", "");
+    await expect(dot).toHaveClass(/\byet\b/);
+    expect(Number(await dot.evaluate((g) => getComputedStyle(g).opacity))).toBeCloseTo(0.3);
+    await tap("next", "Sep 2001— Dot was born");
+    await expect(dot).not.toHaveClass(/\byet\b/);
+    expect(await sideways(page)).toBe(false);
+    await page.goBack();
+    await expect(drawer(page)).toBeHidden();
+    await expect(page).toHaveURL(/\/app\/$/);
+    expect(errors).toEqual([]);
+  });
+});
+
+test.describe("the whole family wider than the phone", () => {
+  test.use({ storageState: stateFor("play"), viewport: { width: 390, height: 844 } });
+
+  // R-0744, R-0742
+  test("scrolls inside its own frame, never the page", async ({ page }) => {
+    const errors = watched(page);
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, joinedFamily([["Hugo", "Wanda"]], 6, "Hs5", "Hugo"));
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+    const frame = drawer(page).locator(".draw");
+    expect(await frame.evaluate((d) => d.scrollWidth > d.clientWidth)).toBe(true);
+    expect(await sideways(page)).toBe(false);
+    await drawer(page).locator('[data-act="back"]').click();
+    expect(await sideways(page)).toBe(false);
+    expect(errors).toEqual([]);
+  });
+});
