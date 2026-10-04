@@ -198,3 +198,4 @@ R-0732 | TEST OWED | the case report screen's card 6 test comes with the screen
 R-0733 | TEST OWED | the case report screen's family sides test comes with the screen
 R-0734 | TEST OWED | the play-by-play words placement is not built yet; tests come with that build
 R-0736 | TEST OWED | storing and querying in place of the conversation's history is not built yet
+R-0737 | TEST OWED | asking who is alive at any age is not built yet
