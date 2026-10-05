@@ -10,7 +10,8 @@ from typing import get_origin, get_args, Union
 import openai
 from google import genai
 from google.genai import types
-from google.genai.errors import ClientError, ServerError
+import aiohttp
+from google.genai.errors import APIError, ClientError, ServerError
 
 from btcopilot.schema import from_dict
 
@@ -355,6 +356,11 @@ class OutputTruncatedError(Billed):
     pass
 
 
+# A call that never came back with an answer: the provider's error, the
+# connection, or the wait.
+UNANSWERED = (APIError, aiohttp.ClientError, TimeoutError)
+
+
 class Unreadable(Billed):
     """The answer was not the JSON asked for."""
 
@@ -604,10 +610,11 @@ def response_text_sync(prompt=None, model=None, **kwargs):
 
 
 async def gemini_structured(
-    prompt, response_format, large=False, model=None, schema=None
+    prompt, response_format, large=False, model=None, schema=None, limit=None
 ):
     """`schema`, when given, narrows the answer's shape beyond what the
-    dataclass says, such as the values a field may take."""
+    dataclass says, such as the values a field may take. `limit` caps the
+    answer's tokens, thinking included."""
     from google.genai import types
 
     model = model or (EXTRACTION_MODEL_LARGE if large else EXTRACTION_MODEL)
@@ -615,14 +622,16 @@ async def gemini_structured(
         response_format, PDP_SCHEMA_DESCRIPTIONS, PDP_FORCE_REQUIRED
     )
     if _is_claude_model(model) or local_model():
-        return await claude_structured(prompt, response_format, model, response_schema)
+        return await claude_structured(
+            prompt, response_format, model, response_schema, limit or 32000
+        )
 
     start_time = time.time()
 
     client = _client()
     config = types.GenerateContentConfig(
         temperature=0.1,
-        max_output_tokens=65536,
+        max_output_tokens=limit or 65536,
         response_mime_type="application/json",
         response_schema=response_schema,
         thinking_config=types.ThinkingConfig(thinking_budget=1024),
@@ -667,9 +676,13 @@ async def gemini_structured(
     return Parsed(result, spent, answered)
 
 
-def gemini_structured_sync(prompt, response_format, large=False, schema=None):
+def gemini_structured_sync(
+    prompt, response_format, large=False, schema=None, limit=None
+):
     return asyncio.run(
-        gemini_structured(prompt, response_format, large=large, schema=schema)
+        gemini_structured(
+            prompt, response_format, large=large, schema=schema, limit=limit
+        )
     )
 
 
@@ -686,14 +699,14 @@ OUTPUT FORMAT: Respond with ONLY a single valid JSON object conforming to this J
 {schema}"""
 
 
-async def claude_structured(prompt, response_format, model, schema):
+async def claude_structured(prompt, response_format, model, schema, limit):
     start_time = time.time()
     full_prompt = prompt + CLAUDE_JSON_INSTRUCTION.format(schema=json.dumps(schema))
 
     client = _extraction_anthropic_client()
     async with client.messages.stream(
         model=wire_model(model),
-        max_tokens=32000,
+        max_tokens=limit,
         thinking={"type": "adaptive"},
         output_config={"effort": STRUCTURED_EFFORT},
         messages=[{"role": "user", "content": full_prompt}],

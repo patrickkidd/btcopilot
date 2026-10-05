@@ -14,9 +14,7 @@ import logging
 import uuid
 from typing import Callable
 
-import aiohttp
 import regex
-from google.genai.errors import APIError as GeminiError
 from opentelemetry import trace
 
 from btcopilot.extensions import ai_log, db
@@ -32,6 +30,7 @@ from btcopilot import (
 )
 from btcopilot.coachmodel import CoachModel, marked_ends
 from btcopilot.discussions import previous
+from btcopilot.llmutil import UNANSWERED
 from btcopilot.metered import Metered
 from btcopilot.models import (
     Change,
@@ -508,7 +507,7 @@ class CoachTurn:
             before = previous(self.discussion)
             if before:
                 before.update_title(summary)
-        except (GeminiError, aiohttp.ClientError, TimeoutError) as failed:
+        except UNANSWERED as failed:
             _log.warning(f"Turn {self.turn_id} left a sitting's title as it was: {failed}")
 
     def _regroup(self, events: list[dict]) -> list[str]:

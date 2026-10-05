@@ -16,7 +16,7 @@ from btcopilot.clusters import (
     sync,
 )
 from btcopilot.coachturn import CoachTurn
-from btcopilot.llmutil import Parsed, Served, Spent
+from btcopilot.llmutil import OutputTruncatedError, Parsed, Served, Spent
 from btcopilot.models import (
     Author,
     Change,
@@ -127,7 +127,7 @@ def flashlite(*answers: ClusterListResponse):
     one for each group, made up when the record holds none."""
     script = list(answers)
 
-    def answer(prompt, response_format, large=False, schema=None):
+    def answer(prompt, response_format, large=False, schema=None, limit=None):
         said = script.pop(0)
         fields = schema["properties"]["clusters"]["items"]["properties"]
         for n, group in enumerate(said.clusters):
@@ -739,3 +739,56 @@ def test_a_model_that_fills_every_offered_field_still_groups_a_new_record(family
         sync(family.id, turn_id="t1", user_id=family.user_id)
     assert [c["title"] for c in clusters_of(family).values()] == ["A hard year"]
     assert Observation.query.count() == 0
+
+
+def test_an_answer_cut_off_at_its_limit_is_refused_and_asked_again(family):
+    # R-0517, R-0780
+    """A grouping answer once repeated a sentence until it hit the limit. The
+    limit is set from the record's size, and a cut-off answer is refused and
+    asked again like any other."""
+    cut = OutputTruncatedError(
+        "truncated", Served("gemini-3.1-flash-lite"), Spent(input=900, output=4000)
+    )
+    with patch(
+        "btcopilot.metered.gemini_structured_sync",
+        side_effect=[cut, parsed(GROUPED)],
+    ) as asked:
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    assert [c.kwargs["limit"] for c in asked.call_args_list] == [4096 + 24 * 6] * 2
+    assert noted(ObservationKind.ClusterRefused) == [(1, "cut_off", 0, 0)]
+    assert [c["title"] for c in clusters_of(family).values()] == ["A hard year"]
+    assert ModelCall.query.filter_by(purpose=Purpose.Cluster).count() == 2
+
+
+def test_a_grouping_call_that_fails_twice_never_fails_the_turn(discussion, family):
+    # R-0517, R-0780
+    with patch(
+        "btcopilot.metered.gemini_structured_sync",
+        side_effect=[TimeoutError(), TimeoutError()],
+    ):
+        reply = CoachTurn(
+            discussion,
+            "That winter she got sick too.",
+            purpose=Purpose.Coach,
+            model=Model(
+                called(
+                    ToolName.EditEvent,
+                    kind="shift",
+                    date="1994-07-01",
+                    title="Got sick",
+                    description="got sick",
+                    person=1,
+                    symptom="up",
+                    date_certainty="certain",
+                ),
+                said("I put that down."),
+            ),
+        ).run()
+    assert reply["statement"] == "I put that down."
+    assert noted(ObservationKind.ClusterRefused) == [
+        (1, "call_failed", 0, 0),
+        (2, "call_failed", 0, 0),
+    ]
+    failed = Observation.query.filter_by(kind=ObservationKind.ClusterFailed).one()
+    assert (failed.detail["check"], failed.detail["fallback"]) == ("call_failed", True)
+    assert [c["title"] for c in clusters_of(family).values()] == ["1994"]

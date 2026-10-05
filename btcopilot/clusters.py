@@ -18,6 +18,10 @@ from btcopilot.extensions import db
 from btcopilot.llmutil import (
     PDP_FORCE_REQUIRED,
     PDP_SCHEMA_DESCRIPTIONS,
+    UNANSWERED,
+    Billed,
+    OutputTruncatedError,
+    Unreadable,
     dataclass_to_json_schema,
 )
 from btcopilot.metered import Metered
@@ -59,6 +63,13 @@ SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
 # floor of three events is the one number that is ruled and enforced
 # (MIN_CLUSTER_EVENTS in schema.py), at the model's answer and again at the write.
 SPAN_DAYS = 548
+# The grouping answer's token limit, thinking included: room for the thinking
+# (its budget is 1024, yet calls on a 91-event record used up to 2454) and, per
+# event the record may group, its id in the answer and its share of the names,
+# reasons and changes (accepted answers used about 9). 89 groupable events get
+# 6232 tokens; with no limit, one answer repeated a sentence for 63000.
+THINKING_ROOM = 4096
+PER_EVENT = 24
 CALM_GAP_DAYS = 730
 
 # Diagnostic and popular-psychology words the definitions the model is given do
@@ -98,6 +109,9 @@ class ClusterCheck(enum.StrEnum):
     NoChangeReason = "no_change_reason"
     OutsideWords = "outside_words"
     LeftOut = "left_out"
+    CutOff = "cut_off"
+    Unreadable = "unreadable"
+    CallFailed = "call_failed"
 
 
 class ClusterError(Exception):
@@ -447,10 +461,32 @@ def answer_schema(stored: dict[str, dict]) -> dict:
     return schema
 
 
+def _answered(ask, prompt: str, schema: dict, limit: int) -> "ClusterListResponse":
+    """An answer cut off at its limit, unreadable, or never given is refused
+    like any other, so grouping never fails the turn."""
+    try:
+        return ask(prompt, schema, limit)
+    except OutputTruncatedError as cut:
+        raise ClusterError(
+            "Your answer ran past its length limit. Give each name, reason and "
+            "change in one short sentence.",
+            ClusterCheck.CutOff,
+        ) from cut
+    except Unreadable as garbled:
+        raise ClusterError(
+            "Your answer was not the JSON asked for.", ClusterCheck.Unreadable
+        ) from garbled
+    except (Billed, *UNANSWERED) as failed:
+        raise ClusterError(
+            f"The grouping call failed: {type(failed).__name__}",
+            ClusterCheck.CallFailed,
+        ) from failed
+
+
 def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
-    """`ask` takes the prompt and the answer's schema and returns the model's
-    ClusterListResponse; `refused`, when given, hears each refused answer with
-    its attempt number."""
+    """`ask` takes the prompt, the answer's schema and its token limit and
+    returns the model's ClusterListResponse; `refused`, when given, hears each
+    refused answer with its attempt number."""
     cache_key = compute_cache_key(_dated(data))
     cands = candidates(data)
     if not cands:
@@ -465,19 +501,27 @@ def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
     }
     prompt = _prompt(cands, free, mine)
     schema = answer_schema(mine)
+    limit = THINKING_ROOM + PER_EVENT * len(free)
     _log.info(
         f"Grouping {len(free)} events: {len(mine)} groups already there, "
         f"{len(cands)} proposed"
     )
-    answer = ask(prompt, schema)
+    answer = None
     try:
+        answer = _answered(ask, prompt, schema, limit)
         named = _check(answer, cands, free, mine)
     except ClusterError as rejected:
         _log.warning(f"Grouping sent back: {rejected}")
         if refused:
             refused(1, rejected, answer)
-        answer = ask(prompt + prompts.CLUSTER_REJECTED.format(why=rejected), schema)
+        answer = None
         try:
+            answer = _answered(
+                ask,
+                prompt + prompts.CLUSTER_REJECTED.format(why=rejected),
+                schema,
+                limit,
+            )
             named = _check(answer, cands, free, mine)
         except ClusterError as again:
             if refused:
@@ -703,8 +747,8 @@ def sync(
     try:
         result = detect_clusters(
             data,
-            lambda prompt, schema: metered.structured(
-                prompt, ClusterListResponse, schema
+            lambda prompt, schema, limit: metered.structured(
+                prompt, ClusterListResponse, schema, limit
             ),
             refused,
         )
