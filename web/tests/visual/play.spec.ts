@@ -57,8 +57,8 @@ test.describe("the play-by-play drawer", () => {
     expect(away.y).toBeLessThanOrEqual(-away.h + 1);
   });
 
+  // R-0768
   test("lands where it rests without passing it and settling back", async ({ page }) => {
-    // R-0768
     await settle(page);
     await page.evaluate(() => {
       const seen: number[] = [];
@@ -239,8 +239,8 @@ test.describe("the play-by-play drawer", () => {
     await expect(page.locator("#path .here")).not.toHaveText("Timeline");
   });
 
+  // R-0456
   test("a move that also names a child is drawn from its person, never from the child", async ({ page }) => {
-    // R-0456
     let ids = { ada: 0, ben: 0, kid: 0 };
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
@@ -536,8 +536,8 @@ test.describe("a family wider than the phone", () => {
 test.describe("a move between two people further apart than the phone is wide", () => {
   test.use({ storageState: stateFor("play"), viewport: { width: 393, height: 852 } });
 
+  // R-0759, R-0744
   test("settles each step with whoever moves whole in the frame and their mark reaching into it from them", async ({ page }) => {
-    // R-0759, R-0744
     let ids: Record<string, number> = {};
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
@@ -611,8 +611,8 @@ test.describe("a move between two people further apart than the phone is wide", 
 test.describe("the Family view's three generations", () => {
   test.use({ storageState: stateFor("play"), viewport: { width: 393, height: 852 } });
 
+  // R-0779
   test("draws each step's people with their parents, partners, brothers and sisters and children; a tap puts it on someone else's; Next goes back to the step's", async ({ page }) => {
-    // R-0779
     const errors = watched(page);
     let ids: Record<string, number> = {};
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
@@ -641,8 +641,8 @@ test.describe("the Family view's three generations", () => {
     expect(errors).toEqual([]);
   });
 
+  // R-0779, R-0691
   test("raises the passages on what the family diagram is for from its book", async ({ page }) => {
-    // R-0779, R-0691
     await page.route(/\/app\/case-report-passages(\?.*)?$/, (route) =>
       route.fulfill({ json: { family: [{ text: "it is usually not necessary for a therapist to put so much information on his or her diagram", by: "Kerr & Bowen, Family Evaluation, ch. 10" }] } }),
     );
@@ -957,8 +957,8 @@ for (const viewport of [{ width: 393, height: 852 }, { width: 1280, height: 800 
 test.describe("a play-by-play a little wider than the phone", () => {
   test.use({ storageState: stateFor("everymark"), viewport: { width: 393, height: 852 } });
 
+  // R-0759
   test("lands each step where no name or word is cut by the frame, whenever they all fit in it", async ({ page }) => {
-    // R-0759
     await settle(page);
     await stored(page).click();
     await expect(drawer(page)).toBeVisible();
@@ -1002,8 +1002,8 @@ for (const viewport of [{ width: 393, height: 852 }, { width: 1440, height: 900 
   test.describe(`the whole family of a wide record at ${viewport.width} wide`, () => {
     test.use({ storageState: stateFor("case-report-dense"), viewport });
 
+    // R-0759, R-0766, R-0775, R-0779
     test("opens on the first date holding more than births, its person whole in the frame, and no name touches another", async ({ page }, info) => {
-      // R-0759, R-0766, R-0775, R-0779
       test.skip(info.project.name !== "phone", "the size is the describe's own");
       await settle(page);
       await page.locator("#cap-family").click();

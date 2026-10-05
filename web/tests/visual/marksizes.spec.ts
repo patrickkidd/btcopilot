@@ -779,8 +779,8 @@ test.describe("every mark", () => {
     expect(await page.locator("#pbp .draw svg .fore .mv-clear animate").first().getAttribute("repeatCount")).toBe("indefinite");
   });
 
+  // R-0763
   test("functioning up's continuous outline pops again and again, as a slash does", async ({ page }) => {
-    // R-0763
     await live(page);
     for (let i = 0; i < STEPS.findIndex((s) => s.name === "functioning up"); i++) await page.locator('#pbp [data-act="next"]').click();
     const outline = page.locator('#pbp .draw svg .fore [data-mark^="fup:"]');

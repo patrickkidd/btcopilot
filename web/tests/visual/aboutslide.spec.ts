@@ -104,8 +104,8 @@ test("scrolling up the chat slides the about page out at its full height before 
 test.describe("a record whose coach has spoken under the picture", () => {
   test.use({ storageState: stateFor("everymark") });
 
+  // R-0768
   test("no chat bubble shows through the about page while it comes down", async ({ page }) => {
-    // R-0768
     await open(page);
     await page.evaluate(() => {
       const pic = document.querySelector<HTMLElement>("#chat-screen > .pic")!;
