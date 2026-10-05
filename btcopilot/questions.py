@@ -143,18 +143,33 @@ def pending(diagram: Diagram, kind: Kind) -> tuple[list[Discussion], list[Discus
     return todo, finished
 
 
-def transcript(discussion: Discussion, said: list[Statement]) -> str:
-    """The statements as the backfill reads them, each coach message numbered
-    by its statement id."""
-    lines = []
+READ = "Already gone through, for context only; act on none of it:"
+NEW = "New since then; go through only these:"
+
+
+def lines(discussion: Discussion, said: list[Statement], numbered: bool) -> str:
+    out = []
     for statement in said:
         if not statement.text:
             continue
-        if statement.speaker_id == discussion.chat_ai_speaker_id:
-            lines.append(f"[coach message {statement.id}] {statement.text}")
+        if statement.speaker_id != discussion.chat_ai_speaker_id:
+            out.append(f"[person] {statement.text}")
+        elif numbered:
+            out.append(f"[coach message {statement.id}] {statement.text}")
         else:
-            lines.append(f"[person] {statement.text}")
-    return "\n\n".join(lines)
+            out.append(f"[coach] {statement.text}")
+    return "\n\n".join(out)
+
+
+def transcript(discussion: Discussion, said: list[Statement]) -> str:
+    """The statements as the backfill reads them, each coach message to go
+    through numbered by its statement id. When only later statements are to
+    be gone through, the earlier ones come first, marked as context."""
+    new = lines(discussion, said, numbered=True)
+    earlier = [s for s in sorted(discussion.statements, key=order) if s not in said]
+    if not earlier:
+        return new
+    return f"{READ}\n\n{lines(discussion, earlier, numbered=False)}\n\n{NEW}\n\n{new}"
 
 
 def backfill(diagram: Diagram, discussion: Discussion, model, kind: Kind) -> int:

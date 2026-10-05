@@ -9,7 +9,7 @@ import datetime
 
 import pytest
 
-from btcopilot import chips, record, turnlog
+from btcopilot import chips, questions, record, turnlog
 from btcopilot.extensions import db
 from btcopilot.interactions import recent
 from btcopilot.models import Author, Change, InteractionKind, Observation, ObservationKind, Statement
@@ -481,8 +481,11 @@ def test_a_session_that_grew_after_its_backfill_is_gone_through_again_only_from_
         group="impressions",
     )
     assert done == [{"diagram": family.id, "session": past["session"], "model_calls": 2}]
-    assert "My sister moved away." in model.systems[0]
-    assert "My grandmother raised me." not in model.systems[0]
+    read, new = model.systems[0].split(questions.NEW)
+    assert (questions.READ in read, "My grandmother raised me." in read, "My grandmother raised me." in new) == (
+        True, True, False
+    )
+    assert "My sister moved away." in new
     db.session.expire_all()
     data = family.get_diagram_data()
     assert [q["text"] for q in data.questions if q["kind"] == "impression"] == [noticed]
