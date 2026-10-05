@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { leastName, wordsOutside } from "./gate";
 import { stateFor, type Key } from "./setup";
 
 /** The case report on the three case report fixtures at a phone's and a
@@ -265,5 +266,25 @@ test.describe("the case report's taps", () => {
     await expect(page.locator("#case-famout .fam svg").first()).toBeVisible();
     await page.locator("#case-famout-close").click();
     await expect(page.locator("#case-famout")).not.toHaveClass(/in/);
+  });
+});
+
+test.describe("the case report's family pictures of a family many phones wide", () => {
+  test.use({ storageState: stateFor("case-report-dense"), viewport: SIZES[0] });
+
+  // R-0759, R-0744
+  test("draw names at 13px or more and pan in their own frames, every word inside what the frame scrolls to", async ({ page }) => {
+    const errors = await open(page);
+    const pictures = "#case-body .fam svg";
+    expect(await leastName(page, pictures)).toBeGreaterThanOrEqual(13);
+    expect(await wordsOutside(page, pictures)).toEqual([]);
+    expect(await page.locator("#case-body .fam").evaluateAll((f) => f.some((d) => d.scrollWidth > d.clientWidth))).toBe(true);
+    await page.locator("#case-family").click();
+    await expect(page.locator("#case-famout")).toHaveClass(/in/);
+    const slid = "#case-famout .fam svg";
+    expect(await leastName(page, slid)).toBeGreaterThanOrEqual(13);
+    expect(await wordsOutside(page, slid)).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    expect(errors).toEqual([]);
   });
 });

@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import { closeX, pathRow } from "../src/dom";
-import { below, head, leastScale, pictureHeight, pointLine, topLine, yearsLine } from "../src/drawer";
+import { leastScale } from "../src/diagram";
+import { below, head, pictureHeight, pointLine, topLine, yearsLine } from "../src/drawer";
 import { family, Told, untold } from "../src/snapshots";
 import { alone, apart, CORINNE, DELPHINE, sparse, timeline } from "./whitlock";
 

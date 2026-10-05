@@ -21,6 +21,7 @@ const cast = (): Cast => ({
   words: {},
   moves: [],
   kin: [],
+  places: [],
   anxious: [],
   assoc: {},
   until: 2000,
@@ -100,7 +101,7 @@ it("moves no one on an inside or outside step of the whole family", () => {
  * generations with a granddaughter under the reader. */
 const p = (name: string, g: Sex, born: number | null, you = false) => ({ name, g, born, you });
 const wed = (a: string, b: string, from: number) => ({ a, b, st: Tie.Married, married: true, from });
-const rest = { marked: [], cross: [], words: {}, moves: [], anxious: [] };
+const rest = { marked: [], cross: [], words: {}, moves: [], places: [], anxious: [] };
 const remarried = (): Cast => ({
   ...rest,
   people: {

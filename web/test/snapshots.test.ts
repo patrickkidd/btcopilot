@@ -45,6 +45,7 @@ const base = (people: Cast["people"]): Cast => ({
   words: {},
   moves: [],
   kin: [],
+  places: [],
   anxious: [],
   assoc: {},
   until: 2000,

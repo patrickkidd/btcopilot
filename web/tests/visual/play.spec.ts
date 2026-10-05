@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { stateFor, boxOf, step } from "./setup";
-import { colours } from "./gate";
+import { colours, leastName, wordsOutside } from "./gate";
 import { mockTurn } from "./turn";
 
 /** The play-by-play drawer (R-0542, R-0562, R-0563). The `play` record holds
@@ -674,5 +674,53 @@ test.describe("the whole family wider than the phone", () => {
     await shown("Ws5", "left home");
     expect(await sideways(page)).toBe(false);
     expect(errors).toEqual([]);
+  });
+});
+
+/** The `case-report-dense` record: a family many phones wide, the step's
+ * person far from either end. */
+test.describe("the whole family of a family many phones wide", () => {
+  test.use({ storageState: stateFor("case-report-dense"), viewport: { width: 393, height: 852 } });
+
+  // R-0759, R-0744, R-0749
+  test("opens with the step's person in the frame, names at 13px or more, every word inside what the frame scrolls to", async ({ page }) => {
+    const errors = watched(page);
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+    // opened, not glided: the frame is already on the step's person
+    const at = await drawer(page).evaluate((p) => {
+      const draw = p.querySelector<HTMLElement>(".draw")!;
+      const name = [...draw.querySelectorAll<SVGGElement>(".pt")].find((g) => g.textContent?.includes("Margaret-Anne"))!;
+      const shape = draw.querySelector(`.p[data-id="${name.dataset.id}"] .shape`)!.getBoundingClientRect();
+      const f = draw.getBoundingClientRect();
+      return { wide: draw.scrollWidth > 4 * draw.clientWidth, inside: shape.left >= f.left && shape.right <= f.right };
+    });
+    expect(await drawer(page).locator(".when").textContent()).toContain("Margaret-Anne");
+    expect(at).toEqual({ wide: true, inside: true });
+    expect(await leastName(page, "#pbp .draw svg")).toBeGreaterThanOrEqual(13);
+    expect(await wordsOutside(page, "#pbp .draw svg")).toEqual([]);
+    expect(await sideways(page)).toBe(false);
+    expect(errors).toEqual([]);
+  });
+});
+
+/** The `everymark` record's play-by-play is wider than the phone at every step. */
+test.describe("a play-by-play wider than the phone", () => {
+  test.use({ storageState: stateFor("everymark"), viewport: { width: 393, height: 852 } });
+
+  // R-0759, R-0744
+  test("keeps every word inside what its frame scrolls to, at every step", async ({ page }) => {
+    await settle(page);
+    await stored(page).click();
+    await expect(drawer(page)).toBeVisible();
+    const draw = drawer(page).locator(".draw");
+    expect(await draw.evaluate((d) => d.scrollWidth > d.clientWidth)).toBe(true);
+    for (;;) {
+      expect(await wordsOutside(page, "#pbp .draw svg")).toEqual([]);
+      const next = drawer(page).locator('[data-act="next"]:not([disabled])');
+      if (!(await next.count())) break;
+      await next.click();
+    }
   });
 });

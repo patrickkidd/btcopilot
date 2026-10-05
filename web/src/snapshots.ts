@@ -459,11 +459,14 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[], everyo
   const crossed = new Set<string>();
   const words: Record<string, number> = {};
   const moves: Arrow[] = [];
+  const places: Place[] = [];
   const kin: Kin[] = [];
   const anxious = new Set<string>();
   steps.forEach((s) =>
     s.marks.forEach((m) => {
       if (isArrow(m)) moves.push(m);
+      // the whole family moves no one out of their own place for a step
+      if (m.k === Mark.Place && !everyone) places.push(m as Place);
       if (isKin(m)) kin.push(m);
       if (!isPlaced(m)) return;
       if (m.k === Mark.Anxiety || m.k === Mark.AnxietyDown) anxious.add(m.who);
@@ -500,6 +503,7 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[], everyo
     cross: [...crossed],
     words,
     moves,
+    places,
     kin,
     anxious: [...anxious],
     assoc,
