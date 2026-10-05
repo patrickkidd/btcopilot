@@ -1,11 +1,14 @@
 """The one pass that brings each family's case report to where it would stand
 had the report been there from the family's first session, and no further
 (R-0739): one call to the family's coach, with its own prompt and map, which
-may only put a raised guess on a card and add the question about the
-person's own part when the record has none. Any other call is refused and
-writes nothing."""
+may only put a raised guess or an existing question on a card, and add the
+question about the person's own part when the record has none. Any other call
+is refused and writes nothing. The dry run saves what it would write; the
+apply writes that saved plan and calls no model."""
 
 import datetime
+import json
+import pathlib
 
 import click
 
@@ -27,19 +30,20 @@ from btcopilot.toolbox import ToolError, ToolName, Toolbox, schemas
 CARD = record.CARD
 ALLOWED = {
     ToolName.SetImpression: ("id", CARD),
+    ToolName.SetQuestion: ("id", CARD),
     ToolName.AddQuestion: ("text", "kind", "state", CARD),
 }
 SHORT = 60
 START = (
     "This is not a chat; nobody reads your words. The case report is new: none "
     "of the guesses and questions on the map is on one of its cards yet. Put "
-    "each raised guess that belongs on a card on it, by the same rules you "
-    "follow in a chat, with set_impression giving only its id and "
-    "case_report_card; leave a guess that belongs on no card as it is. Then, "
-    "only if no open question already asks about the person's own part, add "
-    "one with add_question on the own_part card, in state asked. Change "
-    "nothing else: no new guesses, no rewording, no closing, no people, events "
-    "or notes."
+    "each raised guess and each question that belongs on a card on it, by the "
+    "same rules you follow in a chat, with set_impression or set_question "
+    "giving only its id and case_report_card; leave one that belongs on no card "
+    "as it is. Then, only if no question, open or answered, already asks about "
+    "the person's own part, add one with add_question on the own_part card, in "
+    "state asked. Change nothing else: no new guesses, no rewording, no "
+    "closing, no people, events or notes."
 )
 
 
@@ -56,7 +60,7 @@ def raised(data: DiagramData) -> list[dict]:
 
 
 def offered() -> list[dict]:
-    """The two tools, with only the fields the pass may give."""
+    """The three tools, with only the fields the pass may give."""
     out = []
     for schema in schemas():
         if schema["name"] not in ALLOWED:
@@ -76,8 +80,10 @@ def offered() -> list[dict]:
     return out
 
 
-def allowed(name: str, args: dict, data: DiagramData, version: int, added: bool) -> dict:
-    """The call as it will run, or ToolError when the pass may not make it."""
+def allowed(name: str, args: dict, data: DiagramData, owned: bool) -> dict:
+    """The call as it will run, or ToolError when the pass may not make it.
+    `owned` is whether a question is already on the own part card, in the
+    record or by this pass's own earlier calls."""
     tool = next((t for t in ALLOWED if t.value == name), None)
     if tool is None:
         raise ToolError(f"{name} is not part of this pass", "Only cards are set here.")
@@ -90,29 +96,63 @@ def allowed(name: str, args: dict, data: DiagramData, version: int, added: bool)
             raise ToolError(f"No raised guess {args.get('id')}", "Only raised guesses go on cards.")
         if card not in tuple(CaseReportCard):
             raise ToolError(f"No case report card {card}", "There is no such card.")
-        return {"id": str(args["id"]), CARD: card, "version": version}
+        return {"id": str(args["id"]), CARD: card}
+    if tool is ToolName.SetQuestion:
+        found = next((q for q in data.questions if q["id"] == str(args.get("id"))), None)
+        if found is None or record.note(found) is not record.QUESTION:
+            raise ToolError(f"No question {args.get('id')}", "Only questions already there go on cards.")
+        if card not in record.QUESTION_CARDS:
+            raise ToolError(f"a question goes on own_part or choice, not {card}", "Not that card.")
+        return {"id": found["id"], CARD: card}
     if card != CaseReportCard.OwnPart:
         raise ToolError("the one question added here is on the own_part card", "Only the own part question is added here.")
-    if added or any(
-        record.note(q) is record.QUESTION and q.get(CARD) == CaseReportCard.OwnPart
-        for q in data.questions
-    ):
-        raise ToolError("the record already has its own part question", "There is one already.")
+    if owned:
+        raise ToolError("a question is already on the own_part card", "There is one already.")
     if args.get("state") != QuestionState.Asked:
         raise ToolError("the own part question is added asked", "It must be asked.")
     return dict(args)
+
+
+def checked(diagram: Diagram, data: DiagramData, calls: list[tuple[str, dict]]) -> list[dict]:
+    """Each call with what it would write, or why it is refused. Cards on what
+    is already there go first, so a question put on the own part card bars a
+    new one."""
+    before = {q["id"]: q for q in data.questions}
+    owned = any(
+        record.note(q) is record.QUESTION and q.get(CARD) == CaseReportCard.OwnPart
+        for q in data.questions
+    )
+    rows = []
+    for name, args in sorted(calls, key=lambda c: c[0] == ToolName.AddQuestion):
+        entry = before.get(str(args.get("id")), {})
+        row = {
+            "diagram": diagram.id,
+            "owner": diagram.user_id,
+            "tool": name,
+            "entry": entry.get("id", "new"),
+            "text": short(entry.get("text") or args.get("text") or ""),
+            "card_before": entry.get(CARD),
+            "card_after": args.get(CARD),
+        }
+        try:
+            row["args"] = allowed(name, args, data, owned)
+        except ToolError as e:
+            row.update(card_after=entry.get(CARD), refused=str(e))
+        else:
+            owned = owned or (
+                name != ToolName.SetImpression and row["card_after"] == CaseReportCard.OwnPart
+            )
+        rows.append(row)
+    return rows
 
 
 def short(text: str) -> str:
     return text if len(text) <= SHORT else text[: SHORT - 1] + "…"
 
 
-def pass_over(diagram: Diagram, apply: bool) -> list[dict]:
-    """One model call for this family; the cards it would set, or did."""
+def planned(diagram: Diagram, plans: pathlib.Path) -> list[dict]:
+    """The one model call for this family; the cards it would set, saved."""
     data = diagram.get_diagram_data()
-    version = diagram.version
-    found = questions.sessions(diagram)
-    session = found[-1].id if found else None
     turn_id = f"case-report-backfill:{diagram.id}"
     meter = Metered(
         diagram.user_id,
@@ -123,50 +163,63 @@ def pass_over(diagram: Diagram, apply: bool) -> list[dict]:
     )
     own = profile.own(data)
     system = get_agent_prompt(
-        record=outline(data, version, own and own["id"]),
+        record=outline(data, diagram.version, own and own["id"]),
         today=datetime.date.today().isoformat(),
         coverage=coverage.block(data),
     )
     turn = drain(meter.turn(system, [{"role": "user", "content": START}], offered(), turn_id))
-    toolbox = Toolbox(
-        diagram.id, turn_id, user_id=diagram.user_id, session_id=session, author=Author.Coach
-    )
-    before = {q["id"]: q for q in data.questions}
-    rows, added = [], False
-    for call in turn.calls:
-        entry = before.get(str(call.args.get("id")), {})
-        rows.append(
-            {
-                "diagram": diagram.id,
-                "owner": diagram.user_id,
-                "tool": call.name,
-                "entry": entry.get("id", "new"),
-                "text": short(entry.get("text") or call.args.get("text") or ""),
-                "card_before": entry.get(CARD),
-                "card_after": call.args.get(CARD),
-            }
+    rows = checked(diagram, data, [(c.name, c.args) for c in turn.calls])
+    path = plans / f"case-report-{diagram.id}.json"
+    plans.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {"diagram": diagram.id, "calls": [[r["tool"], r["args"]] for r in rows if "args" in r]},
+            indent=2,
         )
-        try:
-            if call.name == ToolName.AddQuestion and session is None:
-                raise ToolError("the family has no session to ask it in", "No session.")
-            args = allowed(call.name, call.args, data, version, added)
-        except ToolError as e:
-            rows[-1].update(card_after=entry.get(CARD), refused=str(e))
+    )
+    for row in rows:
+        row["plan"] = str(path)
+    return rows
+
+
+def applied(path: pathlib.Path) -> list[dict]:
+    """A saved plan written through the same checks, against the record as it
+    stands now; no model call."""
+    plan = json.loads(path.read_text())
+    diagram = find(plan["diagram"])
+    data = diagram.get_diagram_data()
+    if marked(data):
+        return [{"diagram": diagram.id, "owner": diagram.user_id, "refused": "already on cards"}]
+    rows = checked(diagram, data, [tuple(call) for call in plan["calls"]])
+    found = questions.sessions(diagram)
+    toolbox = Toolbox(
+        diagram.id,
+        f"case-report-backfill:{diagram.id}",
+        user_id=diagram.user_id,
+        session_id=found[-1].id if found else None,
+        author=Author.Coach,
+    )
+    version = diagram.version
+    for n, row in enumerate(rows):
+        args = row.get("args")
+        if args is None:
             continue
-        added = added or call.name == ToolName.AddQuestion
-        if apply:
-            _, _, refusal = run_call(toolbox, ToolCall(id=call.id, name=call.name, args=args))
-            if refusal:
-                rows[-1]["refused"] = refusal
-    if apply:
-        after = {q["id"]: q for q in toolbox.data.questions}
-        new = next((i for i in after if i not in before), None)
-        for row in rows:
-            if row["entry"] == "new" and new and not row.get("refused"):
-                row["entry"] = new
-            if row.get("entry") in after:
-                row["card_after"] = after[row["entry"]].get(CARD)
-    return rows or [{"diagram": diagram.id, "owner": diagram.user_id, "refused": "no cards set"}]
+        if row["tool"] == ToolName.AddQuestion and toolbox.session_id is None:
+            row["refused"] = "the family has no session to ask it in"
+            continue
+        if row["tool"] != ToolName.AddQuestion:
+            args = {**args, "version": version}
+        _, _, refusal = run_call(toolbox, ToolCall(id=f"plan-{n}", name=row["tool"], args=args))
+        if refusal:
+            row["refused"] = refusal
+    after = {q["id"]: q for q in toolbox.data.questions}
+    new = next((i for i in after if i not in {q["id"] for q in data.questions}), None)
+    for row in rows:
+        if row["entry"] == "new" and new and not row.get("refused"):
+            row["entry"] = new
+        if row["entry"] in after:
+            row["card_after"] = after[row["entry"]].get(CARD)
+    return rows
 
 
 @click.command("backfill")
@@ -174,26 +227,48 @@ def pass_over(diagram: Diagram, apply: bool) -> list[dict]:
 @click.option(
     "--apply/--dry-run",
     default=False,
-    help="Write the cards; the default, --dry-run, makes the same model call and writes nothing to the record.",
+    help="Write saved plans; the default, --dry-run, makes the model call and saves "
+    "the plan, writing nothing to the record.",
+)
+@click.option(
+    "--plan",
+    "plan_paths",
+    type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
+    multiple=True,
+    help="With --apply: a plan file the dry run printed.",
+)
+@click.option(
+    "--plans",
+    type=click.Path(file_okay=False, path_type=pathlib.Path),
+    default="case-report-plans",
+    show_default=True,
+    help="Where the dry run saves its plans.",
 )
 @rows_option
-def backfill(diagram_id, apply):
-    """Put each family's raised guesses on the case report's cards, and add the
-    question about the person's own part where the record has none, as the
-    coach would have had the report been there from the start. One model call
-    per family that has a raised guess and nothing on a card yet; a family
-    with anything on a card is skipped. Every call goes to the model-calls
-    ledger. Prints, per guess, the card before and after."""
-    diagrams = (
-        [find(diagram_id)] if diagram_id else Diagram.query.order_by(Diagram.id).all()
-    )
-    rows = []
-    for diagram in diagrams:
-        data = diagram.get_diagram_data()
-        if raised(data) and not marked(data):
-            rows += pass_over(diagram, apply)
+def backfill(diagram_id, apply, plan_paths, plans):
+    """Put each family's raised guesses and its questions on the case report's
+    cards, and add the question about the person's own part where the record
+    has none, as the coach would have had the report been there from the
+    start. The dry run makes one model call per family that has a raised
+    guess and nothing on a card yet, goes to the model-calls ledger, prints
+    each card before and after, and saves the plan to a file; --apply --plan
+    writes exactly that plan, checked again, with no model call."""
     columns = ["diagram", "owner", "tool", "entry", "text", "card_before", "card_after", "refused"]
-    return columns, rows
+    if apply:
+        if not plan_paths:
+            raise click.ClickException("--apply writes a saved plan: give --plan, from a dry run")
+        rows = [row for path in plan_paths for row in applied(path)]
+    else:
+        columns.append("plan")
+        rows = [
+            row
+            for diagram in (
+                [find(diagram_id)] if diagram_id else Diagram.query.order_by(Diagram.id).all()
+            )
+            if raised(diagram.get_diagram_data()) and not marked(diagram.get_diagram_data())
+            for row in planned(diagram, plans)
+        ]
+    return columns, [{k: v for k, v in row.items() if k != "args"} for row in rows]
 
 
 @click.group("case-report")

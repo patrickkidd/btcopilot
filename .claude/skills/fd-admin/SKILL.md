@@ -32,14 +32,16 @@ The case report's cards in each record.
 
 ### `flask admin case-report backfill`
 
-Put each family's raised guesses on the case report's cards, and add the question about the person's own part where the record has none, as the coach would have had the report been there from the start. One model call per family that has a raised guess and nothing on a card yet; a family with anything on a card is skipped. Every call goes to the model-calls ledger. Prints, per guess, the card before and after.
+Put each family's raised guesses and its questions on the case report's cards, and add the question about the person's own part where the record has none, as the coach would have had the report been there from the start. The dry run makes one model call per family that has a raised guess and nothing on a card yet, goes to the model-calls ledger, prints each card before and after, and saves the plan to a file; --apply --plan writes exactly that plan, checked again, with no model call.
 
 Changes something: needs `--yes`.
 
 | Argument | What it is |
 |---|---|
 | `--diagram` | Only this record. |
-| `--apply` | Write the cards; the default, --dry-run, makes the same model call and writes nothing to the record. |
+| `--apply` | Write saved plans; the default, --dry-run, makes the model call and saves the plan, writing nothing to the record. |
+| `--plan` | With --apply: a plan file the dry run printed. |
+| `--plans` | Where the dry run saves its plans. |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin coach-model`
