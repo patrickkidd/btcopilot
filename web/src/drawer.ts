@@ -167,10 +167,10 @@ function reach(frame: HTMLElement, svg: SVGSVGElement, marks: Iterable<SVGGraphi
  * and ages whole inside the frame; when they reach wider than it, on `who`
  * and their words, as near the rest as that allows (R-0759). The play-by-play,
  * the Family drawer and the case report's pictures all open this way. */
-export function frameOn(frame: HTMLElement, ids: string[], who: string, glide: boolean): void {
+export function frameOn(frame: HTMLElement, ids: string[], who: string, glide: boolean, marks: SVGGraphicsElement[] = []): void {
   if (frame.scrollWidth <= frame.clientWidth) return;
   const svg = frame.querySelector<SVGSVGElement>("svg")!;
-  const spans = ids.map((id) => span(frame, svg, id));
+  const spans = [...ids.map((id) => span(frame, svg, id)), ...marks.map((m) => reach(frame, svg, [m]))];
   const lo = Math.min(...spans.map((s) => s[0]));
   const hi = Math.max(...spans.map((s) => s[1]));
   const w = frame.clientWidth;
@@ -325,10 +325,15 @@ export class Drawer {
     this.fit();
     draw.scrollLeft = was;
     const lit = [...draw.querySelectorAll<SVGElement>('.hl.now[data-mark^="hl:"]')].map((m) => m.dataset.mark!.slice(3));
-    draw.dataset.who = shot.who;
+    // a step with a move is framed on whoever makes it, whole, with as much of
+    // the move as the frame holds, and everyone it reaches when they fit
+    const who = shot.mover ?? shot.who;
+    draw.dataset.who = who;
+    const ids = shot.mover ? [shot.mover, ...shot.reach, ...lit] : lit.length ? lit : [shot.who];
     // the whole family opens on the record's own person, at every width (R-0759)
     if (told.whole && !glide) frameOn(draw, [told.cast.index], told.cast.index, false);
-    else frameOn(draw, lit.length ? lit : [shot.who], shot.who, glide);
+    else
+      frameOn(draw, [...new Set(ids)], who, glide, shot.mover ? [...draw.querySelectorAll<SVGGraphicsElement>(`.fore [data-mark^="move:${CSS.escape(shot.mover)}>"]`)] : []);
   }
 
   private fit(): void {

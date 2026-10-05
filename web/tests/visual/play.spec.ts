@@ -533,6 +533,81 @@ test.describe("a family wider than the phone", () => {
   });
 });
 
+test.describe("a move between two people further apart than the phone is wide", () => {
+  test.use({ storageState: stateFor("play"), viewport: { width: 393, height: 852 } });
+
+  test("settles each step with whoever moves whole in the frame and their mark reaching into it from them", async ({ page }) => {
+    // R-0759, R-0744
+    let ids: Record<string, number> = {};
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+      const tl = await (await route.fetch()).json();
+      ids = joined(tl, [["Hugo", "Wanda"]], 6, "Ws5", "Hs5");
+      // the first move's date also holds a divorce, told first, as "Louann and
+      // Wally divorced; Wally estranged from family" is
+      const first = tl.events
+        .filter((e: { dateTime: string | null }) => e.dateTime)
+        .sort((a: { dateTime: string }, b: { dateTime: string }) => a.dateTime.localeCompare(b.dateTime))[0];
+      tl.events.unshift({
+        ...first, id: 9700, kind: "divorced", label: "Divorced", relationship: null, relationshipTargets: [], relationshipTriangles: [],
+        symptom: null, anxiety: null, functioning: null, title: null, description: null,
+        person: ids.Hugo, spouse: ids.Wanda, person_name: "Hugo", sentence: "Hugo and Wanda divorced",
+      });
+      await route.fulfill({ json: tl });
+    });
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+    const draw = drawer(page).locator(".draw");
+    const [mover, target] = [String(ids.Ws5), String(ids.Hs5)];
+    const far = await draw.evaluate((d, [a, b]) => {
+      const x = (id: string) => d.querySelector(`.p[data-id="${id}"] .shape`)!.getBoundingClientRect().left;
+      return Math.abs(x(a) - x(b)) > d.clientWidth;
+    }, [mover, target]);
+    expect(far).toBe(true);
+    // the view opens on the record's own person; every step is then reached
+    // with Back and Next, from the first
+    await drawer(page).locator('[data-act="next"]').click();
+    const back = drawer(page).locator('[data-act="back"]:not([disabled])');
+    while (await back.count()) await back.click();
+    let moved = 0;
+    let divorced = false;
+    for (;;) {
+      let last = -1;
+      await expect.poll(async () => {
+        const at = await draw.evaluate((d) => d.scrollLeft);
+        const still = at === last;
+        last = at;
+        return still;
+      }, { intervals: [400] }).toBe(true);
+      const mark = `.fore [data-mark^="move:${mover}>"]`;
+      if (await draw.locator(mark).count()) {
+        moved++;
+        const at = await drawer(page).locator(".when").innerText();
+        divorced ||= at.includes("divorced");
+        expect((await cutInFrame(page, "#pbp .draw", [mover])).cut, `${at}: the one who moves`).toEqual({});
+        // the mark starts at the mover: all of a short one, and a good part of a long one, is in the frame,
+        // read once it has grown to its full length in its loop
+        const shown = await draw.evaluate((d, sel) => {
+          const svg = d.querySelector<SVGSVGElement>("svg")!;
+          svg.pauseAnimations();
+          svg.setCurrentTime(4.5);
+          const f = d.getBoundingClientRect();
+          return [...d.querySelectorAll(sel)].map((m) => {
+            const b = m.getBoundingClientRect();
+            return { in: Math.min(b.right, f.right) - Math.max(b.left, f.left), w: b.width };
+          });
+        }, mark);
+        expect(shown.every((s) => s.in >= Math.min(60, s.w - 1)), `${at}: the move ${JSON.stringify(shown)}`).toBe(true);
+      }
+      const next = drawer(page).locator('[data-act="next"]:not([disabled])');
+      if (!(await next.count())) break;
+      await next.click();
+    }
+    expect(moved).toBeGreaterThan(1);
+    expect(divorced).toBe(true);
+  });
+});
+
 /** The play record with a lifetime around its moves: births for its three
  * people and a fourth born after them, and a death, so the whole family has
  * births, a death and relationship shifts to step through. */

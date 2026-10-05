@@ -35,6 +35,9 @@ export interface Shot {
   question: string | null;
   /** Who the snapshot is about, or the record's own person. */
   who: string;
+  /** Who makes the step's move, if it has one, and everyone the move reaches. */
+  mover: string | null;
+  reach: string[];
 }
 
 interface Step {
@@ -376,6 +379,9 @@ export class Told {
     return {
       svg,
       who: lit[0] ?? this.about(snap.event_ids[0]),
+      mover: [...now.marks.filter(isArrow), ...now.marks.filter(isKin)][0]?.from ?? null,
+      // a move away runs off the far side of its mover, not toward the other
+      reach: [...now.marks.filter(isArrow), ...now.marks.filter(isKin)].flatMap((m) => (m.to && m.k !== Mark.Away ? [m.to] : [])),
       date: now.date,
       gap: i > 0 ? gapText(this.steps[i - 1].t, now.t) : null,
       fact: snap.fact,
