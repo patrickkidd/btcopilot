@@ -1,10 +1,11 @@
 """The one pass that brings each family's case report to where it would stand
 had the report been there from the family's first session, and no further
 (R-0739): one call to the family's coach, with its own prompt and map, which
-may only put a raised guess or an existing question on a card, and add the
-question about the person's own part when the record has none. Any other call
-is refused and writes nothing. The dry run saves what it would write; the
-apply writes that saved plan and calls no model."""
+may only put a raised guess or an existing question that came in after the
+newest card was set on a card, and add the question about the person's own
+part when the record has none. Cards already set stay, under the record's own
+card rules. Any other call is refused and writes nothing. The dry run saves
+what it would write; the apply writes that saved plan and calls no model."""
 
 import datetime
 import json
@@ -21,10 +22,10 @@ from btcopilot.admin.setting import SettingKey
 from btcopilot.coachmodel import ToolCall, model_for
 from btcopilot.coachturn import drain, run_call
 from btcopilot.metered import Metered
-from btcopilot.models import Author, Diagram, Purpose
+from btcopilot.models import Author, Change, Diagram, Purpose
 from btcopilot.prompts import get_agent_prompt
 from btcopilot.recordtext import note_line, on_map, outline, question_order
-from btcopilot.schema import CaseReportCard, DiagramData, QuestionState
+from btcopilot.schema import CaseReportCard, DiagramData, ItemKind, QuestionState
 from btcopilot.toolbox import ToolError, ToolName, Toolbox, schemas
 
 CARD = record.CARD
@@ -36,20 +37,16 @@ ALLOWED = {
 SHORT = 60
 CLOSED = "CLOSED QUESTIONS"
 START = (
-    "This is not a chat; nobody reads your words. The case report is new: none "
-    "of the guesses and questions on the map is on one of its cards yet. Put "
-    "each raised guess and each open question that belongs on a card on it, by the "
-    "same rules you follow in a chat, with set_impression or set_question "
-    "giving only its id and case_report_card; leave one that belongs on no card "
-    "as it is. Then, only if no question, open or answered, already asks about "
-    "the person's own part, add one with add_question on the own_part card, in "
-    "state asked. Change nothing else: no new guesses, no rewording, no "
-    "closing, no people, events or notes."
+    "This is not a chat; nobody reads your words. The case report's cards "
+    "stay as the map shows them. These guesses and questions came in since a "
+    "card was last set and are on no card: {ids}. Put each one that belongs on "
+    "a card on it, by the same rules you follow in a chat, with set_impression "
+    "or set_question giving only its id and case_report_card; leave one that "
+    "belongs on no card as it is. Then, only if no question, open or answered, "
+    "already asks about the person's own part, add one with add_question on "
+    "the own_part card, in state asked. Change nothing else: no new guesses, "
+    "no rewording, no closing, no people, events or notes."
 )
-
-
-def marked(data: DiagramData) -> bool:
-    return any(q.get(CARD) for q in data.questions)
 
 
 def raised(data: DiagramData) -> list[dict]:
@@ -58,6 +55,27 @@ def raised(data: DiagramData) -> list[dict]:
         for q in data.questions
         if record.note(q) is record.IMPRESSION and q["state"] == QuestionState.Raised
     ]
+
+
+def fresh(diagram: Diagram, data: DiagramData) -> set[str]:
+    """The ids of the raised guesses and the questions on no card that came
+    into the record after the newest card was set, from the change log; every
+    one of them before any card was."""
+    added, last = {}, 0
+    for change in Change.query.filter_by(diagram_id=diagram.id).order_by(Change.id):
+        for delta in change.deltas:
+            if delta["item_kind"] != ItemKind.Question.value:
+                continue
+            whole = delta["field"] is None and delta.get("before") is None and delta["after"]
+            if whole:
+                added[str(delta["item_id"])] = change.id
+            if (whole and whole.get(CARD)) or (delta["field"] == CARD and delta["after"]):
+                last = change.id
+    return {
+        q["id"]
+        for q in raised(data) + [q for q in data.questions if record.note(q) is record.QUESTION]
+        if not q.get(CARD) and (not last or added.get(q["id"], 0) > last)
+    }
 
 
 def closed(data: DiagramData) -> str:
@@ -92,10 +110,11 @@ def offered() -> list[dict]:
     return out
 
 
-def allowed(name: str, args: dict, data: DiagramData, owned: bool) -> dict:
+def allowed(name: str, args: dict, data: DiagramData, new: set[str], owned: bool) -> dict:
     """The call as it will run, or ToolError when the pass may not make it.
-    `owned` is whether a question is already on the own part card, in the
-    record or by this pass's own earlier calls."""
+    `new` is what came in since a card was last set; `owned` is whether a
+    question is already on the own part card, in the record or by this pass's
+    own earlier calls."""
     tool = next((t for t in ALLOWED if t.value == name), None)
     if tool is None:
         raise ToolError(f"{name} is not part of this pass", "Only cards are set here.")
@@ -106,6 +125,8 @@ def allowed(name: str, args: dict, data: DiagramData, owned: bool) -> dict:
     if tool is ToolName.SetImpression:
         if not any(q["id"] == str(args.get("id")) for q in raised(data)):
             raise ToolError(f"No raised guess {args.get('id')}", "Only raised guesses go on cards.")
+        if str(args["id"]) not in new:
+            raise ToolError(f"{args['id']} came in before the cards were set", "Cards already set stay.")
         if card not in tuple(CaseReportCard):
             raise ToolError(f"No case report card {card}", "There is no such card.")
         return {"id": str(args["id"]), CARD: card}
@@ -113,6 +134,8 @@ def allowed(name: str, args: dict, data: DiagramData, owned: bool) -> dict:
         found = next((q for q in data.questions if q["id"] == str(args.get("id"))), None)
         if found is None or record.note(found) is not record.QUESTION:
             raise ToolError(f"No question {args.get('id')}", "Only questions already there go on cards.")
+        if found["id"] not in new:
+            raise ToolError(f"{found['id']} came in before the cards were set", "Cards already set stay.")
         if card not in record.QUESTION_CARDS:
             raise ToolError(f"a question goes on own_part or choice, not {card}", "Not that card.")
         return {"id": found["id"], CARD: card}
@@ -130,6 +153,7 @@ def checked(diagram: Diagram, data: DiagramData, calls: list[tuple[str, dict]]) 
     is already there go first, so a question put on the own part card bars a
     new one."""
     before = {q["id"]: q for q in data.questions}
+    new = fresh(diagram, data)
     owned = any(
         record.note(q) is record.QUESTION and q.get(CARD) == CaseReportCard.OwnPart
         for q in data.questions
@@ -147,7 +171,7 @@ def checked(diagram: Diagram, data: DiagramData, calls: list[tuple[str, dict]]) 
             "card_after": args.get(CARD),
         }
         try:
-            row["args"] = allowed(name, args, data, owned)
+            row["args"] = allowed(name, args, data, new, owned)
         except ToolError as e:
             row.update(card_after=entry.get(CARD), refused=str(e))
         else:
@@ -179,7 +203,8 @@ def planned(diagram: Diagram, plans: pathlib.Path) -> list[dict]:
         today=datetime.date.today().isoformat(),
         coverage=coverage.block(data),
     )
-    turn = drain(meter.turn(system, [{"role": "user", "content": START}], offered(), turn_id))
+    start = START.format(ids=", ".join(sorted(fresh(diagram, data))))
+    turn = drain(meter.turn(system, [{"role": "user", "content": start}], offered(), turn_id))
     rows = checked(diagram, data, [(c.name, c.args) for c in turn.calls])
     path = plans / f"case-report-{diagram.id}.json"
     plans.mkdir(parents=True, exist_ok=True)
@@ -200,8 +225,6 @@ def applied(path: pathlib.Path) -> list[dict]:
     plan = json.loads(path.read_text())
     diagram = find(plan["diagram"])
     data = diagram.get_diagram_data()
-    if marked(data):
-        return [{"diagram": diagram.id, "owner": diagram.user_id, "refused": "already on cards"}]
     rows = checked(diagram, data, [tuple(call) for call in plan["calls"]])
     found = questions.sessions(diagram)
     toolbox = Toolbox(
@@ -262,7 +285,8 @@ def backfill(diagram_id, apply, plan_paths, plans):
     cards, and add the question about the person's own part where the record
     has none, as the coach would have had the report been there from the
     start. The dry run makes one model call per family that has a raised
-    guess and nothing on a card yet, goes to the model-calls ledger, prints
+    guess or question on no card that came in after the newest card was set,
+    goes to the model-calls ledger, prints
     each card before and after, and saves the plan to a file; --apply --plan
     writes exactly that plan, checked again, with no model call."""
     columns = ["diagram", "owner", "tool", "entry", "text", "card_before", "card_after", "refused"]
@@ -277,7 +301,7 @@ def backfill(diagram_id, apply, plan_paths, plans):
             for diagram in (
                 [find(diagram_id)] if diagram_id else Diagram.query.order_by(Diagram.id).all()
             )
-            if raised(diagram.get_diagram_data()) and not marked(diagram.get_diagram_data())
+            if fresh(diagram, diagram.get_diagram_data())
             for row in planned(diagram, plans)
         ]
     return columns, [{k: v for k, v in row.items() if k != "args"} for row in rows]

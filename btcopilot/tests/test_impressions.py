@@ -16,8 +16,9 @@ from btcopilot.models import Author, Change, InteractionKind, Observation, Obser
 from btcopilot.recordtext import outline
 from btcopilot.schema import DiagramData, ItemKind
 from btcopilot.tests.conftest import Model, called, calling, csrf_token, said, version
+from btcopilot.tests.test_questionbackfill import backfill, past  # noqa: F401
 from btcopilot.tests.test_questions import TODAY, box, clock, stored  # noqa: F401
-from btcopilot.tests.test_turnhistory import coach, family, post, statements, titles  # noqa: F401
+from btcopilot.tests.test_turnhistory import coach, family, post, say_in, statements, titles  # noqa: F401
 from btcopilot.toolbox import ToolError, ToolName
 
 TENSE = "When things get tense, your father gets busy and your mother goes quiet."
@@ -448,3 +449,45 @@ def test_a_family_member_who_shares_an_authors_name_is_not_the_literature(family
         evidence=({"kind": "person", "id": str(gilbert)},),
     )
     assert list(stored(family).values())[0]["text"].startswith("It looks to me")
+
+
+def test_a_session_that_grew_after_its_backfill_is_gone_through_again_only_from_where_it_left_off(
+    flask_app, web, family, past, monkeypatch
+):
+    # R-0006
+    backfill(flask_app, said(""), group="impressions")
+    coach(monkeypatch, Model(said("Where did she go?")))
+    say_in(web, csrf_token(web), past["session"], "My sister moved away.")
+    later = statements(web, past["session"])[-2]["id"]
+    rows = Change.query.count()
+    noticed = "Your sister leaving is still close for you."
+
+    preview, _ = backfill(flask_app, args=(), group="impressions")
+    assert (preview[0]["sessions_to_do"], Change.query.count()) == (1, rows)
+
+    done, model = backfill(
+        flask_app,
+        calling(
+            (
+                ToolName.AddImpression,
+                {
+                    "text": noticed,
+                    "state": "raised",
+                    "evidence": [{"kind": "statement", "id": str(later)}],
+                },
+            )
+        ),
+        said(""),
+        group="impressions",
+    )
+    assert done == [{"diagram": family.id, "session": past["session"], "model_calls": 2}]
+    assert "My sister moved away." in model.systems[0]
+    assert "My grandmother raised me." not in model.systems[0]
+    db.session.expire_all()
+    data = family.get_diagram_data()
+    assert [q["text"] for q in data.questions if q["kind"] == "impression"] == [noticed]
+    assert data.impressions_backfilled == [past["session"]]
+
+    before = version(family)
+    again, model = backfill(flask_app, group="impressions")
+    assert (again, model.systems, version(family)) == ([], [], before)

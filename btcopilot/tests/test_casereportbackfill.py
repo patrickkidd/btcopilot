@@ -1,8 +1,9 @@
 """The one pass that puts each family's guesses and questions on the case
 report's cards: the dry run makes the one model call and saves its plan; the
 apply writes that plan and nothing else, with no model call; every other call
-is refused, a family with a card already is skipped, and the own part question
-is added only when no question is on that card.
+is refused, only what came in since a card was last set goes on a card, cards
+already set stay, and the own part question is added only when no question is
+on that card.
 
 Invented names only.
 """
@@ -17,7 +18,7 @@ from btcopilot.extensions import db
 from btcopilot.models import Change, ModelCall, Purpose
 from btcopilot.tests.conftest import Model, calling
 from btcopilot.tests.test_casereport import OWN, card, cards, raised
-from btcopilot.tests.test_impressions import LATCH, TENSE
+from btcopilot.tests.test_impressions import LATCH, TENSE, impress
 from btcopilot.tests.test_questionbackfill import past  # noqa: F401
 from btcopilot.tests.test_questions import add, box, settle, stored
 from btcopilot.tests.test_turnhistory import family  # noqa: F401
@@ -121,10 +122,45 @@ def test_every_other_call_is_refused_and_writes_nothing(flask_app, tmp_path, fam
     assert family.get_diagram_data() == data
 
 
-def test_a_family_with_a_card_already_is_skipped(flask_app, tmp_path, family, guesses):
+def test_a_family_with_nothing_new_since_its_cards_is_skipped(flask_app, tmp_path, family, guesses):
     # R-0739
     card(family, "i2", "work_on")
 
+    assert dry(flask_app, tmp_path) == []
+
+
+def test_a_guess_raised_after_the_cards_is_carded_and_the_cards_set_stay(
+    flask_app, tmp_path, family, guesses
+):
+    # R-0739
+    card(family, "i1", "main_guess", "c1")
+    card(family, "i2", "work_on", "c2")
+    impress(box(family, "r9"), text="You go quiet when your sister calls.")
+    before = stored(family)
+    model = Model(
+        calling(
+            (ToolName.SetImpression, {"id": "i3", "case_report_card": "work_on"}),
+            (ToolName.SetImpression, {"id": "i1", "case_report_card": "coach_guess"}),
+        )
+    )
+    result = backfill(flask_app, "--plans", str(tmp_path), model=model)
+    assert result.exit_code == 0, result.output
+    rows = json.loads(result.output)
+    assert "are on no card: i3." in model.histories[0][0]["content"]
+    assert [bool(r.get("refused")) for r in rows] == [False, True]
+
+    apply(flask_app, rows)
+    after = stored(family)
+    assert cards(family) == {"i1": "main_guess", "i2": "work_on", "i3": "work_on"}
+    assert {i: q for i, q in after.items() if i != "i3"} == {
+        i: q for i, q in before.items() if i != "i3"
+    }
+    assert {k: v for k, v in after["i3"].items() if k != "case_report_card"} == before["i3"]
+
+    changes = Change.query.count()
+    again = apply(flask_app, rows)
+    assert all(r["refused"] for r in again)
+    assert (stored(family), Change.query.count()) == (after, changes)
     assert dry(flask_app, tmp_path) == []
 
 

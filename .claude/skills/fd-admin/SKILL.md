@@ -32,7 +32,7 @@ The case report's cards in each record.
 
 ### `flask admin case-report backfill`
 
-Put each family's raised guesses and its questions on the case report's cards, and add the question about the person's own part where the record has none, as the coach would have had the report been there from the start. The dry run makes one model call per family that has a raised guess and nothing on a card yet, goes to the model-calls ledger, prints each card before and after, and saves the plan to a file; --apply --plan writes exactly that plan, checked again, with no model call.
+Put each family's raised guesses and its questions on the case report's cards, and add the question about the person's own part where the record has none, as the coach would have had the report been there from the start. The dry run makes one model call per family that has a raised guess or question on no card that came in after the newest card was set, goes to the model-calls ledger, prints each card before and after, and saves the plan to a file; --apply --plan writes exactly that plan, checked again, with no model call.
 
 Changes something: needs `--yes`.
 
@@ -179,7 +179,7 @@ The impressions the coach keeps in each record.
 
 ### `flask admin impressions backfill`
 
-Go back once through every past session not yet gone through and fill in the impressions said in it. Makes model calls. Without --yes it prints what it would do and writes nothing.
+Go back once through every past session not yet gone through, and through what a session gone through holds after the last message its pass read, and fill in the impressions said there. Makes model calls. Without --yes it prints what it would do and writes nothing.
 
 Changes something: needs `--yes`.
 
@@ -374,7 +374,7 @@ The questions the coach keeps in each record.
 
 ### `flask admin questions backfill`
 
-Go back once through every past session not yet gone through and fill in the questions said in it. Makes model calls. Without --yes it prints what it would do and writes nothing.
+Go back once through every past session not yet gone through, and through what a session gone through holds after the last message its pass read, and fill in the questions said there. Makes model calls. Without --yes it prints what it would do and writes nothing.
 
 Changes something: needs `--yes`.
 

@@ -11,7 +11,7 @@ from btcopilot.coachmodel import CoachModel
 from btcopilot.coachturn import MAX_STEPS, drain, run_call
 from btcopilot.metered import Metered
 from btcopilot.extensions import db
-from btcopilot.models import Author, Diagram, Discussion, Purpose, Statement
+from btcopilot.models import Author, Change, Diagram, Discussion, Purpose, Statement
 from btcopilot.recordtext import outline
 from btcopilot.schema import DiagramData, EvidenceKind, ItemKind
 from btcopilot.toolbox import READS, ToolName, Toolbox, schemas
@@ -105,18 +105,49 @@ def sessions(diagram: Diagram) -> list[Discussion]:
     )
 
 
+def order(statement: Statement) -> tuple[int, int]:
+    return statement.order or 0, statement.id
+
+
+def unread(discussion: Discussion, kind: Kind, done: list[int]) -> list[Statement]:
+    """The session's statements the backfill has not gone through: all of
+    them, or, once gone through, those after the last message the newest pass
+    read, as the change that marked it gone through links it."""
+    said = sorted(discussion.statements, key=order)
+    if discussion.id not in done:
+        return said
+    marked = next(
+        (
+            change
+            for change in Change.query.filter_by(
+                diagram_id=discussion.diagram_id, turn_id=f"{kind.turn}:{discussion.id}"
+            ).order_by(Change.id.desc())
+            if any(delta["field"] == kind.done for delta in change.deltas)
+        ),
+        None,
+    )
+    if marked is None or marked.statement is None:
+        raise ValueError(f"No change links the last message read in session {discussion.id}")
+    return [s for s in said if order(s) > order(marked.statement)]
+
+
 def pending(diagram: Diagram, kind: Kind) -> tuple[list[Discussion], list[Discussion]]:
-    """The sessions still to go through, and the ones already gone through."""
-    done = set(getattr(diagram.get_diagram_data(), kind.done))
-    found = sessions(diagram)
-    return [s for s in found if s.id not in done], [s for s in found if s.id in done]
+    """The sessions with a coach message still to go through, and the ones
+    gone through to their end."""
+    done = getattr(diagram.get_diagram_data(), kind.done)
+    todo, finished = [], []
+    for discussion in sessions(diagram):
+        coach = discussion.chat_ai_speaker_id
+        later = any(s.speaker_id == coach for s in unread(discussion, kind, done))
+        (todo if later else finished).append(discussion)
+    return todo, finished
 
 
-def transcript(discussion: Discussion) -> str:
-    """The session as the backfill reads it, each coach message numbered by
-    its statement id."""
+def transcript(discussion: Discussion, said: list[Statement]) -> str:
+    """The statements as the backfill reads them, each coach message numbered
+    by its statement id."""
     lines = []
-    for statement in sorted(discussion.statements, key=lambda s: (s.order or 0, s.id)):
+    for statement in said:
         if not statement.text:
             continue
         if statement.speaker_id == discussion.chat_ai_speaker_id:
@@ -127,16 +158,11 @@ def transcript(discussion: Discussion) -> str:
 
 
 def backfill(diagram: Diagram, discussion: Discussion, model, kind: Kind) -> int:
-    """Go through one past session once, then mark it gone through. Returns
-    how many model calls it made."""
-    last = max(
-        (
-            s
-            for s in discussion.statements
-            if s.speaker_id == discussion.chat_ai_speaker_id
-        ),
-        key=lambda s: (s.order or 0, s.id),
-    )
+    """Go through what one past session holds that was not gone through yet,
+    then mark it gone through. Returns how many model calls it made."""
+    done = getattr(diagram.get_diagram_data(), kind.done)
+    said = unread(discussion, kind, done)
+    last = max((s for s in said if s.speaker_id == discussion.chat_ai_speaker_id), key=order)
     turn_id = f"{kind.turn}:{discussion.id}"
     toolbox = Toolbox(
         diagram.id,
@@ -151,7 +177,7 @@ def backfill(diagram: Diagram, discussion: Discussion, model, kind: Kind) -> int
     )
     system = kind.prompt(
         map=outline(toolbox.data, toolbox.diagram.version),
-        transcript=transcript(discussion),
+        transcript=transcript(discussion, said),
     )
     tools = [schema for schema in schemas() if schema["name"] in kind.tools]
     messages = [{"role": "user", "content": START}]
@@ -187,7 +213,7 @@ def backfill(diagram: Diagram, discussion: Discussion, model, kind: Kind) -> int
                 "item_kind": ItemKind.Diagram.value,
                 "item_id": None,
                 "field": kind.done,
-                "after": [*getattr(toolbox.data, kind.done), discussion.id],
+                "after": done if discussion.id in done else [*done, discussion.id],
             }
         ],
         author=Author.Coach,
