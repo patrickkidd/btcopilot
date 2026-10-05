@@ -14,7 +14,7 @@ own shapes, couple lines, child lines, slashes, death crosses, names and ages, a
 they have against each other in every other picture of the app (`web/src/diagram.ts`, sized
 by the one `.diagram` rule set in `web/src/drawer.css`). The stroke, slash, name and age
 sizes below are the desktop app's and are kept as history. Where the fragment places
-things is still this sheet's, except that the slashes, now a person tall, sit 0.25 `u`
+things is still this sheet's, except that the slashes, now two thirds of a person tall, sit 0.25 `u`
 right of the bond's centre, clear of the child's line and of the right-hand shape.
 
 Everywhere this sheet once said a rule was open, Patrick has now ruled (R-0325) and the
