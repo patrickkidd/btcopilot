@@ -1623,7 +1623,7 @@ class Toolbox:
         self, args: dict, fields: dict, state: QuestionState
     ) -> tuple[str, list[str]] | None:
         """What the record and the chat already hold of the item a fact question
-        names, before it is kept (R-0758). An asked question on an item the
+        names, before it is kept (R-0760). An asked question on an item the
         record answers is refused with the stored answer, and so is a second
         open question on one item; one added closed keeps the person's own
         words as its answer; and what the chat said of the item before comes
@@ -1684,7 +1684,7 @@ class Toolbox:
     def _closed_at_birth(self, args: dict, fields: dict) -> None:
         """A fact question kept already answered, or said unknown, as soon as
         the person says it: it carries their message as the answer and this
-        session and day, so it shows where closed questions show (R-0758)."""
+        session and day, so it shows where closed questions show (R-0760)."""
         if args.get("outcome") is None:
             raise ToolError(
                 "Say how it ended: answered when the person said it, unknown when they "

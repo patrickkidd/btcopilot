@@ -228,7 +228,7 @@ def test_chat_requires_json(web, token):
 
 @pytest.mark.chat_flow
 def test_chat_hands_the_turn_the_time_zone_sent_with_the_words(web, token, monkeypatch):
-    # R-0758
+    # R-0760
     """The browser's zone rides beside the words and reaches the worker's task;
     a name the server does not know, or none, is handed on as none (UTC)."""
     handed = []

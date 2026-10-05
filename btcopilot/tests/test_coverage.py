@@ -499,7 +499,7 @@ def test_only_a_noted_event_names_the_item_it_records(family):
 
 
 def test_a_closed_children_or_alive_question_makes_the_item_known(family):
-    # R-0758
+    # R-0760
     data = parents(family.get_diagram_data())
     children = (Fact.Children, ItemKind.PairBond, HOME)
     alive = (Fact.Alive, ItemKind.Person, TOM)
@@ -554,7 +554,7 @@ def test_a_closed_children_or_alive_question_makes_the_item_known(family):
 
 
 def test_the_chat_is_searched_for_a_relative_by_name_and_by_what_they_are_called(family):
-    # R-0758
+    # R-0760
     data = parents(family.get_diagram_data())
     assert coverage.spoken_as(data, ItemKind.Person, ME) is None
     # a father is one of "my parents" too

@@ -117,7 +117,7 @@ COUPLE_FACTS = (Fact.Children, Fact.Met)
 # The everyday words the chat is searched for before a fact question is asked,
 # each matched at the start of a word, so "child" finds "children" and "die"
 # finds "died". The tool searches with these, not the coach, which may not know
-# the words the person used (Patrick, 2026-10-04) [R-0758].
+# the words the person used (Patrick, 2026-10-04) [R-0760].
 SEARCH_WORDS = {
     Fact.Name: ("name", "called"),
     Fact.BirthDate: ("born", "birthday", "birth", "years old", "turned", "turns"),
@@ -339,7 +339,7 @@ def fits(fact: Fact, kind: ItemKind) -> bool:
 
 def state_of(data: DiagramData, fact: Fact, kind: ItemKind, iid: int) -> FactState:
     """One item's state, by the rules of `states`, whether or not the
-    checklist requires it [R-0758]."""
+    checklist requires it [R-0760]."""
     answers = _answers(data)
     item = (fact, kind, iid)
     if _recorded(data, item, answers):
@@ -350,7 +350,7 @@ def state_of(data: DiagramData, fact: Fact, kind: ItemKind, iid: int) -> FactSta
 def evidence(data: DiagramData, fact: Fact, kind: ItemKind, iid: int) -> str | None:
     """What makes an item known, as the map writes it: the record entry that
     records it, or the closed question naming it; None while it is not known
-    [R-0758]."""
+    [R-0760]."""
     item = (fact, kind, iid)
     answers = _answers(data)
     if _recorded(data, item, answers):

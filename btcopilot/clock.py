@@ -1,4 +1,4 @@
-"""The person's day, not the server's [Oracle: R-0758].
+"""The person's day, not the server's [Oracle: R-0760].
 
 The server keeps UTC and every stored time stays naive UTC. The page sends the
 browser's IANA zone with each message, and the coach's "today", the follow-up

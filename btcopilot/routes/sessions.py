@@ -185,7 +185,7 @@ def _start(discussion: Discussion, statement: str, zone: str | None):
 def _statement_text() -> tuple[str, str | None]:
     """The words, and the browser's IANA time zone sent beside them, so the
     coach's day is the person's; a zone the server does not know is left out
-    and the day is UTC's [Oracle: R-0758]."""
+    and the day is UTC's [Oracle: R-0760]."""
     if request.headers.get("Content-Type") != "application/json":
         abort(415, description="Only 'Content-Type: application/json' is supported")
     return request.json["statement"], clock.zone(request.json.get("time_zone"))

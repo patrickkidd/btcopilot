@@ -302,7 +302,7 @@ def test_the_sandbox_will_not_start_on_the_open_prompts_unasked(tmp_path):
 
 
 def test_the_coach_keeps_a_fact_told_unasked_as_a_question_already_answered(public):
-    # R-0758
+    # R-0760
     prompt = " ".join(public.get_agent_prompt(record=RECORD, coverage=COVERAGE).split())
     assert "**Facts told before you ask.**" in prompt
     assert (

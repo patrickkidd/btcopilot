@@ -102,7 +102,7 @@ def told_today(model: Model) -> str:
 def test_today_is_the_persons_day_in_the_zone_sent_with_the_message(
     anchorage_evening, web, token, family, monkeypatch
 ):
-    # R-0758
+    # R-0760
     """An evening in Alaska when UTC is already tomorrow: the coach is told the
     Alaska date, so "turns 70 tomorrow" is not said a day early."""
     model = Model(said("Go on."))
@@ -120,7 +120,7 @@ def test_today_is_the_persons_day_in_the_zone_sent_with_the_message(
 def test_a_message_with_no_zone_or_one_the_server_does_not_know_gets_the_servers_day(
     anchorage_evening, web, token, family, monkeypatch, body
 ):
-    # R-0758
+    # R-0760
     """The server's own day, UTC on the box, as before the zone was sent."""
     model = Model(said("Go on."))
     monkeypatch.setattr("btcopilot.turns.model_for", lambda *a, **k: model)
@@ -132,7 +132,7 @@ def test_a_message_with_no_zone_or_one_the_server_does_not_know_gets_the_servers
 def test_the_task_run_with_no_zone_keeps_the_servers_day(
     anchorage_evening, discussion, family, monkeypatch
 ):
-    # R-0758
+    # R-0760
     """A resumed turn is re-run from the stored words, with no zone: its day is
     the server's own, UTC on the box, as it always was."""
     model = Model(said("Go on."))
@@ -153,7 +153,7 @@ def test_the_task_run_with_no_zone_keeps_the_servers_day(
 def test_a_question_asked_in_the_evening_in_anchorage_is_dated_that_day(
     anchorage_evening, web, token, family, monkeypatch
 ):
-    # R-0758
+    # R-0760
     coach(
         monkeypatch,
         calling(
@@ -179,7 +179,7 @@ def test_a_question_asked_in_the_evening_in_anchorage_is_dated_that_day(
 def test_a_follow_up_for_tomorrow_in_anchorage_is_not_refused_as_today(
     anchorage_evening, web, token, family, monkeypatch
 ):
-    # R-0758
+    # R-0760
     """The 28th is tomorrow in Anchorage at 21:30 on the 27th; UTC's clock
     already says the 28th and would refuse it as not after today."""
     coach(

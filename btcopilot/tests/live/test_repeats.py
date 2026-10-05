@@ -125,7 +125,7 @@ ABOUT_US = "What else do you want to know about Sam and me?"
 ABOUT_PARENTS = "Anything else about my parents you need?"
 # One sitting of other talk, long enough that what was said before it has
 # left the words the coach reads back each turn, as 205 messages did on the
-# thread this guards (R-0758).
+# thread this guards (R-0760).
 FILLER = [
     "Work has been relentless this month.",
     "What makes it relentless?",
@@ -206,7 +206,7 @@ def state(coach, fact: Fact, kind: ItemKind, iid: int) -> FactState:
 
 @passes(3, of=3)
 def test_a_person_who_said_they_cannot_have_children_is_not_asked_about_children(coach):
-    # R-0758
+    # R-0760
     coach.record([PARTNER], pair_bonds=[COUPLE])
     coach.say(NO_CHILDREN)
     assert state(coach, Fact.Children, ItemKind.PairBond, 11) is FactState.Known
@@ -221,7 +221,7 @@ def test_a_person_who_said_they_cannot_have_children_is_not_asked_about_children
 
 @passes(3, of=3)
 def test_a_father_given_a_birth_date_and_still_married_is_not_asked_if_alive_or_his_age(coach):
-    # R-0758
+    # R-0760
     coach.record()
     coach.say(FATHER_BORN)
     assert state(coach, Fact.BirthDate, ItemKind.Person, 3) is FactState.Known
@@ -240,7 +240,7 @@ def test_a_father_given_a_birth_date_and_still_married_is_not_asked_if_alive_or_
 
 @passes(3, of=3)
 def test_what_a_past_sitting_said_of_children_is_found_before_the_coach_asks(coach):
-    # R-0758
+    # R-0760
     """The thread as it stood before questions were kept closed: the person said
     it in other words, nothing was stored, and the question tool's own search
     must find it (the paraphrase "start a family" is on the children word list)."""

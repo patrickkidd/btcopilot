@@ -573,7 +573,7 @@ def speaking(family, user, text="What else do you want to know?"):
 
 
 def test_an_asked_fact_question_the_record_answers_is_refused_with_the_answer(family):
-    # R-0758
+    # R-0760
     grown(family)
     with_record(
         family,
@@ -618,7 +618,7 @@ def test_an_asked_fact_question_the_record_answers_is_refused_with_the_answer(fa
 
 
 def test_a_fact_question_can_be_added_already_answered_in_one_call(family, test_user):
-    # R-0758
+    # R-0760
     grown(family)
     toolbox, said_ = speaking(family, test_user, "We can't have children.")
 
@@ -658,7 +658,7 @@ def test_a_fact_question_can_be_added_already_answered_in_one_call(family, test_
 
 
 def test_a_fact_question_can_be_added_already_said_unknown_citing_an_older_message(family, test_user):
-    # R-0758
+    # R-0760
     grown(family)
     toolbox, said_ = speaking(family, test_user)
     earlier = says(said_.discussion, "I don't know when Dad was born.", "2026-09-20T10:00")
@@ -693,7 +693,7 @@ BORN_CLOSED = [
 
 @pytest.mark.parametrize("args,plain", BORN_CLOSED)
 def test_a_question_born_closed_needs_an_outcome_a_fact_and_its_item(family, args, plain):
-    # R-0758
+    # R-0760
     grown(family)
     with pytest.raises(ToolError) as refused:
         box(family).call(ToolName.AddQuestion, {"text": CHILDREN, "state": "resolved", **args})
@@ -702,7 +702,7 @@ def test_a_question_born_closed_needs_an_outcome_a_fact_and_its_item(family, arg
 
 
 def test_a_second_open_fact_question_on_the_same_item_is_refused(family):
-    # R-0758
+    # R-0760
     grown(family)
     toolbox = box(family)
     add(toolbox, ALIVE, fact="alive", item_kind="person", item_id=str(HUGH))
@@ -724,7 +724,7 @@ def test_a_second_open_fact_question_on_the_same_item_is_refused(family):
 
 
 def test_an_asked_fact_question_carries_what_the_person_said_before_about_it(family, test_user):
-    # R-0758
+    # R-0760
     grown(family)
     toolbox, said_ = speaking(family, test_user)
     session = said_.discussion

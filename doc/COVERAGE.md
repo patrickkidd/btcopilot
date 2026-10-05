@@ -69,7 +69,7 @@ When several questions name one item, the last one sets its state.
 A said unknown about parents or grandparents is one fact for a hypothesis about
 cutoff in the parents' generation, never a fact about the person.
 
-## What the coach was already told [Oracle: R-0758]
+## What the coach was already told [Oracle: R-0760]
 
 The coach never asks for what the person already said. Four rules on the
 question tool hold it to that; the chat stays free text, so each steers the
