@@ -41,6 +41,12 @@ class User(db.Model, ModelMixin):
 
     preferences = Column(JSON, nullable=False, default=dict, server_default="{}")
 
+    # The IANA zone name the browser last sent with a message, such as
+    # America/Anchorage: the day a follow-up the person agreed to falls on, and
+    # the hours it may be sent in, are theirs, not the server's. Null until a
+    # message has carried one, until then the day is UTC's (R-0758).
+    timezone = Column(String(64))
+
     stripe_id = Column(String(200))
 
     licenses = relationship("License", back_populates="user")

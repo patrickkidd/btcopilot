@@ -191,9 +191,22 @@ def _statement_text() -> tuple[str, str | None]:
     return request.json["statement"], clock.zone(request.json.get("time_zone"))
 
 
+def _keep_zone(zone: str | None) -> None:
+    """The zone the browser sent is kept on the person's row when it is new, so
+    a follow-up they agreed to falls on their day with no message in hand
+    (R-0758). Written before the sitting is found and flushed at once: the
+    person's row and a diagram's each name the other, so the two cannot be
+    flushed together."""
+    user = auth.current_user()
+    if zone is not None and zone != user.timezone:
+        user.timezone = zone
+        db.session.flush()
+
+
 @bp.route("/chat", methods=["POST"])
 def chat():
     statement, zone = _statement_text()
+    _keep_zone(zone)
     return _start(current_session(auth.current_user(), create=True), statement, zone)
 
 
@@ -317,4 +330,5 @@ def session_delete(session_id: int):
 @bp.route("/sessions/<int:session_id>/statements", methods=["POST"])
 def add_statement(session_id: int):
     statement, zone = _statement_text()
+    _keep_zone(zone)
     return _start(owned_session(session_id), statement, zone)

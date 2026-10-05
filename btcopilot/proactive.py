@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 
 from pywebpush import WebPushException
 
-from btcopilot import correlation, prompts, push
+from btcopilot import clock, correlation, prompts, push
 from btcopilot.discussions import chats, sitting, sync_chat_speakers
 from btcopilot.extensions import db
 from btcopilot.metered import Metered
@@ -56,7 +56,8 @@ REPLIED_WITHIN = datetime.timedelta(hours=48)
 RETURNED_WITHIN = datetime.timedelta(days=7)
 # How long after sending the loop's counts are still looked for.
 COUNTED_FOR = datetime.timedelta(days=14)
-# No one's time zone is kept yet, so every message waits for the day in one.
+# Where the meeting is: the coders' reminders wait for the day there. The
+# coach's own messages wait for the day where the person is (users.timezone).
 ZONE = ZoneInfo("America/Anchorage")
 HOURS = range(9, 20)
 # Words that broke the shape this many times for one pattern end its tries.
@@ -72,7 +73,8 @@ class Reason(enum.StrEnum):
     """Why nothing went to a person on a run, as the run prints it."""
 
     Night = (
-        f"outside sending hours, {HOURS.start}:00 to {HOURS.stop - 1}:59 Alaska time"
+        f"outside sending hours, {HOURS.start}:00 to {HOURS.stop - 1}:59 where the "
+        "person is"
     )
     Waiting = "the last message is still waiting for an answer"
     Ignored = "the last two of its kind went unanswered; it waits for a reply"
@@ -87,33 +89,41 @@ class Unsendable(ValueError):
     cause of the other."""
 
 
+def zone_of(user: User) -> datetime.tzinfo:
+    """Where the person is: the zone the page last sent with a message, kept
+    on their row; UTC until a message has carried one (R-0758)."""
+    name = clock.zone(user.timezone)
+    return ZoneInfo(name) if name else clock.UTC
+
+
 def ask_later(user_id: int, diagram_id: int, when: datetime.date, question: str):
+    """The question waits for the morning of that day where the person is."""
+    zone = zone_of(db.session.get(User, user_id))
     message = ProactiveMessage(
         user_id=user_id,
         diagram_id=diagram_id,
         trigger=Trigger.FollowUp,
         question=question,
-        due_at=_utc(datetime.datetime.combine(when, datetime.time(HOURS.start), ZONE)),
+        due_at=_utc(datetime.datetime.combine(when, datetime.time(HOURS.start), zone)),
     )
     db.session.add(message)
     return message
 
 
 def run(now: datetime.datetime | None = None, dry_run: bool = False) -> list[dict]:
-    """At most one message per person per run, and only in the day. Each
+    """At most one message per person per run, and only in their day. Each
     person gets a row: the words written, or the reason none were. A dry run
     keeps nothing and sends nothing, and stops before the model: a pattern
     becomes a row saying the words would be written about it."""
     now = now or datetime.datetime.utcnow()
     rows = []
-    day = daytime(now)
     asked = _asked()
     for user in User.query.order_by(User.id):
         if user.id not in asked and user.pref(PrefKey.Proactive) is Proactive.Never:
             found = Reason.Off
         else:
             _answers(user, now)
-            found = _pick(user, now) if day else Reason.Night
+            found = _pick(user, now) if daytime(now, zone_of(user)) else Reason.Night
         if isinstance(found, Reason):
             rows.append(_row(user, reason=found.value))
             continue
@@ -168,12 +178,12 @@ def _utc(moment: datetime.datetime) -> datetime.datetime:
     return moment.astimezone(datetime.timezone.utc).replace(tzinfo=None)
 
 
-def daytime(moment: datetime.datetime) -> bool:
-    return local(moment).hour in HOURS
+def daytime(moment: datetime.datetime, zone: datetime.tzinfo = ZONE) -> bool:
+    return local(moment, zone).hour in HOURS
 
 
-def local(moment: datetime.datetime) -> datetime.datetime:
-    return moment.replace(tzinfo=datetime.timezone.utc).astimezone(ZONE)
+def local(moment: datetime.datetime, zone: datetime.tzinfo = ZONE) -> datetime.datetime:
+    return moment.replace(tzinfo=datetime.timezone.utc).astimezone(zone)
 
 
 def _asked() -> set[int]:

@@ -314,6 +314,17 @@ ID collisions across entity types.
 
 ## Persistence
 
+### Users
+
+`btcopilot/models/user.py`
+
+A `users` row's `timezone` holds the IANA zone name the browser last sent with
+a message (`America/Anchorage`), written by `POST /chat` and `POST /sessions/<id>/statements` when it differs from
+the one kept; null until a message has carried one. A follow-up the coach
+agreed to (`proactive_messages`, trigger `follow_up`) is due at 9:00 on the
+agreed day in that zone and goes only in its daytime hours; with null the day
+is UTC's [Oracle: R-0758].
+
 ### Diagram Model
 
 `btcopilot/pro/models/diagram.py`

@@ -4,6 +4,7 @@ import datetime
 
 import flask
 import pytest
+import sqlalchemy as sa
 
 import btcopilot
 from btcopilot import diagramjson, turns
@@ -12,7 +13,7 @@ from btcopilot.models.etc import AccessRight
 from btcopilot.routes import Access
 from btcopilot.routes.settings import PLAN_PLACEHOLDER
 from btcopilot.extensions import db
-from btcopilot.models import Author, Change, Discussion, Interaction, Statement
+from btcopilot.models import Author, Change, Discussion, Interaction, Statement, User
 from btcopilot.models.interaction import InteractionKind
 from btcopilot.models import Diagram, License, Policy
 from btcopilot.models.license import LicenseStatus
@@ -245,6 +246,52 @@ def test_chat_hands_the_turn_the_time_zone_sent_with_the_words(web, token, monke
     ):
         assert post(web, token, "/app/chat", body).status_code == 202
     assert handed == ["America/Anchorage", None, None]
+
+
+@pytest.fixture
+def zone_writes():
+    """Each time a user's row is flushed with its time zone changed, the value
+    written: the one write a new zone makes, and none for the same one again."""
+    written = []
+
+    def note(session, context, instances):
+        written.extend(
+            user.timezone
+            for user in session.dirty
+            if isinstance(user, User)
+            and sa.inspect(user).attrs.timezone.history.has_changes()
+        )
+
+    sa.event.listen(db.session, "before_flush", note)
+    yield written
+    sa.event.remove(db.session, "before_flush", note)
+
+
+@pytest.mark.chat_flow
+def test_chat_keeps_the_zone_sent_on_the_persons_row_when_it_is_new(
+    web, token, monkeypatch, zone_writes
+):
+    # R-0758
+    """The browser's zone is stored on the user's row when it differs from the
+    one kept, so a follow-up falls on their day with no message in hand; the
+    same one again, a name the server does not know, or none leaves the row
+    alone."""
+    monkeypatch.setattr("btcopilot.turns.enqueue", turns.run)
+    user = web.user
+    assert user.timezone is None
+    kept = []
+    for body in (
+        {"statement": "hi", "time_zone": "America/Anchorage"},
+        {"statement": "hi", "time_zone": "America/Anchorage"},
+        {"statement": "hi", "time_zone": "Mars/Olympus"},
+        {"statement": "hi"},
+        {"statement": "hi", "time_zone": "Europe/Paris"},
+    ):
+        assert post(web, token, "/app/chat", body).status_code == 202
+        db.session.refresh(user)
+        kept.append(user.timezone)
+    assert kept == ["America/Anchorage"] * 4 + ["Europe/Paris"]
+    assert zone_writes == ["America/Anchorage", "Europe/Paris"]
 
 
 def test_session_of_another_user_is_not_found(web, token, test_user_2):
