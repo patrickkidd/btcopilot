@@ -22,7 +22,7 @@ beforeEach(() => {
         const one: Asked = {
           url,
           answer: (body) =>
-            resolve({ ok: true, status: 200, json: async () => body } as Response),
+            resolve(new Response(JSON.stringify(body), { status: 200 })),
           aborted: false,
         };
         init.signal?.addEventListener("abort", () => {

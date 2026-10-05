@@ -1,0 +1,84 @@
+/* ---- the case report (casereport.ts, case.ts): the cards over the chat's own ground ----
+   A column of white cards, the timeline pinned over them, the strip of cards
+   under the timeline, the family in a column on a wide window. A coach's guess
+   is the chat's own coach bubble on the white card (R-0698). The small labels
+   come last, so they beat the cards' own paragraph rules. */
+.screen.report { position: relative; }
+.screen.report > .ovbar .ovt { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.screen.report > .ovbar #case-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.screen.report > .ovbar .by { font: 400 12px/1.2 var(--mono); color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.screen.report > .ovbar .by:empty { display: none; }
+/* the report's header as the proposal draws it: a title row's height, the round family button on the phone */
+.screen.report > .ovbar { height: 56px; padding-right: 12px; }
+.screen.report > .ovbar #case-family { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--data); padding: 0; }
+.screen.report > .ovbar #case-family:active { background: var(--tint); }
+/* on a desktop the name and who presents share the one line */
+.app.wide .screen.report > .ovbar .ovt { flex-direction: row; align-items: baseline; justify-content: space-between; gap: 12px; }
+.app.wide .screen.report > .ovbar .by { font-size: 13px; }
+.screen.report .split { position: relative; }
+.screen.report .split > .screen { position: relative; display: flex; flex-direction: column; min-height: 0; }
+#case-column[hidden] { display: none; }
+@media (min-width: 840px) {
+  .app.wide:has(#case-screen:not([hidden])) { max-width: 1024px; }
+  .screen.report .pinned.left { width: 460px; border-left: 0; border-right: 1px solid var(--line); }
+  .screen.report .pinned .scroller { overflow-y: auto; min-height: 0; }
+  .screen.report .chat > .case { width: 100%; max-width: 600px; margin: 0 auto; box-sizing: border-box; }
+  .screen.report .pbp { left: auto; width: 393px; border-left: 1px solid var(--line); box-shadow: -8px 0 24px var(--shadow); }
+}
+.screen.report .fault { margin: 12px; font: 400 15px/1.45 var(--sans); color: var(--remove); }
+
+/* the strip: one item per card, one button high, scrolled sideways (Patrick, 2026-10-04) */
+.rail { flex: none; display: flex; gap: 6px; overflow-x: auto; padding: 8px 12px; border-bottom: 1px solid var(--line); scrollbar-width: none; }
+.rail::-webkit-scrollbar { display: none; }
+.rail button[data-jump], .case .famcard { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); font: 400 13px var(--sans); cursor: pointer; white-space: nowrap; }
+.rail button b, .case .famcard b { font: 500 13px var(--mono); color: var(--data); }
+.rail button svg { flex: none; }
+.rail button.on { border-color: var(--data); background: var(--tint); color: var(--data); }
+.rail .book { flex: none; width: 36px; min-height: 32px; padding: 0; border: 0; background: none; color: var(--data); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+/* the cards */
+.case { display: flex; flex-direction: column; gap: 14px; }
+.case .level { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.case .level > p, .case .sidein > p, .case .stage > p { margin: 0; font: 400 15px/1.45 var(--sans); color: var(--ink); }
+.case .famcard { align-self: flex-start; }
+.case .fam { margin: 0 -16px; padding: 4px 0 0; }
+.case .fam svg { display: block; width: 100%; max-width: 460px; height: auto; margin: 0 auto; }
+.case .side .fam, .case .sidein .fam { margin: 0; }
+.case .book { align-self: flex-end; flex: none; width: 44px; height: 44px; margin: -10px -12px -12px 0; padding: 0; border: 0; background: none; color: var(--data); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.case .book:active { color: var(--data-press); }
+/* each side of the family: the one fold, its words under its heading (R-0689) */
+.case details.side { display: block; padding-top: 10px; border-top: 1px solid var(--line); }
+.case details.side:first-of-type { padding-top: 0; border-top: 0; }
+.case details.side > summary.sub { margin: 0; font: 600 15px/1.3 var(--sans); color: var(--ink); cursor: pointer; min-height: 32px; display: flex; align-items: center; }
+.case details.side > summary.sub::-webkit-details-marker { display: none; }
+.case details.side > summary.sub::before { content: "˅\00a0"; color: var(--data); }
+.case details.side:not([open]) > summary.sub::before { content: "›\00a0"; }
+.case .sidein, .case .stage { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; min-width: 0; }
+.case.dash { padding: 12px; }
+.case.dash .side { display: flex; flex-direction: column; align-items: stretch; flex-wrap: nowrap; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.case.dash .side > p.sub { margin: 0; font: 600 15px/1.3 var(--sans); color: var(--ink); }
+/* a row of chips: each inside its card with its stored words whole, wrapping when they cannot fit on one line */
+.case .chips { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.case .chips .chip { display: block; max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-align: left; }
+/* a guess: the coach's own bubble straight on the white card, its facts under it */
+.case .glist { display: flex; flex-direction: column; gap: 10px; }
+.case .gbub { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.case .bub .who.lall { display: block; border: 0; background: none; padding: 0; text-align: left; cursor: pointer; }
+.case .chip.qmark { display: inline-block; height: auto; min-height: 32px; white-space: normal; text-align: left; }
+.case .bub.user { align-self: flex-end; }
+/* the small labels and the quiet lines */
+.case p.label, .case p.sublabel { margin: 0; font: 400 13px/1.2 var(--mono); color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; }
+.case p.faint { margin: 0; font: 400 13px/1.4 var(--sans); color: var(--faint); }
+
+/* the family slid out over the report on the phone */
+.famout .scroller { flex: 1; min-height: 0; overflow-y: auto; }
+
+/* the sheet of passages behind a card: the app's modal sheet with the passages as quotes */
+.fs-scrim.bk, .fs-sheet.bk { z-index: 70; }
+.fs-sheet.bk { max-height: 85%; max-width: 480px; margin: 0 auto; }
+.fs-sheet.bk:focus-visible { outline: none; }
+.fs-sheet.bk .cf-t { padding-right: 44px; }
+.bk-sub { margin: 0 0 6px; font: 400 13px/1.4 var(--mono); color: var(--faint); }
+.bk-list { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.bk-list blockquote { margin: 12px 0 2px; padding-left: 12px; border-left: 2px solid var(--line); font: 400 15px/1.45 var(--sans); color: var(--ink); overflow-wrap: anywhere; }
+.bk-list .bk-by { margin: 0; padding-left: 14px; font: 400 12px/1.4 var(--mono); color: var(--faint); }

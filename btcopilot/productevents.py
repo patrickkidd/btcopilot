@@ -22,6 +22,7 @@ class Screen(enum.StrEnum):
     Meeting = "meeting"
     Result = "result"
     Pairs = "pairs"
+    CaseReport = "case_report"
 
 
 class Feature(enum.StrEnum):

@@ -16,7 +16,7 @@ Invented names only.
 import re
 
 from btcopilot.record import CAUSE, LITERATURE
-from btcopilot.schema import QuestionKind
+from btcopilot.schema import QuestionKind, QuestionState
 from btcopilot.tests.live.conftest import MOTHER
 from btcopilot.tests.live.criterion import passes
 from btcopilot.toolbox import ToolName
@@ -148,3 +148,24 @@ def test_the_coach_never_mentions_the_literature_even_when_asked(coach):
     turn = looked_back(coach, ASKED_FOR_BOOKS)
     said = [turn[-1]["statement"], *(c["args"].get("text") or "" for c in calls(turn))]
     assert [w for w in said if LITERATURE.search(w)] == []
+
+
+# The logged case: 110 turns on production, many replies connecting two events
+# ("grief and a new baby at once"), and no impression ever raised, so the case
+# report's guess cards stayed empty. The person asks for nothing here; they
+# only tell a fact that sits in the same year as a death already in the record.
+FATHER_DIED = {"id": 45, "kind": "death", "person": 3, "dateTime": "2017-02-20",
+               "dateCertainty": "certain"}
+FIRST_GRANDCHILD = (
+    "My daughter Lily was born in August 2017. She was my parents' first grandchild, "
+    "and Dad never got to meet her."
+)
+
+
+@passes(2, of=3)
+def test_an_observation_the_coach_makes_unasked_is_raised_as_an_impression(coach):
+    # R-0504
+    coach.record(events=[FATHER_DIED])
+    turn = coach.turn(FIRST_GRANDCHILD)
+    raised = [c for c in calls(turn) if c["args"].get("state") == QuestionState.Raised]
+    assert raised, turn[-1]["statement"]

@@ -2,6 +2,7 @@ import * as api from "./api";
 import { Feature, tap } from "./track";
 import { esc } from "./dom";
 import { toast } from "./toast";
+import { WIDE } from "./viewport";
 import { PickChoice, Who, type ModelPicks, type Pair } from "./types";
 
 /** Blind pairs: two replies to the same words, the conversation before them
@@ -9,8 +10,6 @@ import { PickChoice, Who, type ModelPicks, type Pair } from "./types";
  * a one-line note (R-0599). Under it, each model's picks so far. */
 
 export const NOTE_CAP = 200;
-/** Where the app widens and the two replies stand side by side (theme.css). */
-const WIDE = "(min-width: 840px)";
 
 /** A side is named left and right where the two stand side by side, and first
  * and second where a phone stacks them. */

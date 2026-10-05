@@ -36,6 +36,7 @@ from btcopilot.models import (
 from btcopilot.review.models import Coding, Cut, Item, Note, Vote
 from btcopilot.routes import bp
 from btcopilot.timeline import build_timeline
+from btcopilot.toolbox import said_label
 from btcopilot.schema import (
     Cluster,
     DateCertainty,
@@ -767,6 +768,196 @@ NOTICES = (
     ),
 )
 
+def _case_report_family(names=None) -> DiagramData:
+    """The Halloran stand-in family, wholly invented: Nora, her husband and
+    daughter, her parents and both her parents' families, the events that
+    brought her, and the coach's guesses and questions on every case report
+    card that takes one (R-0709, R-0708). `names` renames anyone by id."""
+    names = names or {}
+    male, female = PersonKind.Male, PersonKind.Female
+
+    def kin(id, name, last, gender, parents=None, primary=False):
+        return dict(
+            _person(id, names.get(id, name), gender, primary=primary),
+            last_name=last,
+            parents=parents,
+        )
+
+    def bond(id, a, b):
+        return {"id": id, "person_a": a, "person_b": b, "married": True}
+
+    def event(id, kind, date, **fields):
+        return asdict(Event(id=id, kind=kind, dateTime=date, dateCertainty=CERTAIN, **fields))
+
+    def shift(id, date, person, title, **fields):
+        return event(id, EventKind.Shift, date, person=person, title=title, description=title, **fields)
+
+    up, down = VariableShift.Up, VariableShift.Down
+    people = [
+        kin(1, "Nora", "Halloran", female, parents=30, primary=True),
+        kin(2, "Frank", "Halloran", male, parents=31),
+        kin(3, "Elaine", "Halloran", female, parents=32),
+        kin(4, "Walter", "Halloran", male),
+        kin(5, "June", "Halloran", female),
+        kin(6, "Harold", "Price", male),
+        kin(7, "Ruth", "Price", female),
+        kin(8, "Sean", "Halloran", male, parents=30),
+        kin(9, "Kate", "Halloran", female, parents=30),
+        kin(10, "Daniel", "Moreau", male),
+        kin(11, "Lily", "Moreau", female, parents=33),
+        kin(12, "Peter", "Halloran", male, parents=31),
+        kin(13, "Carol", "Price", female, parents=32),
+    ]
+    structure = [
+        event(100, EventKind.Married, "1945-06-01", person=6, spouse=7),
+        event(101, EventKind.Married, "1947-05-01", person=4, spouse=5),
+        event(102, EventKind.Birth, "1948-03-01", person=4, spouse=5, child=12),
+        event(103, EventKind.Birth, "1950-08-01", person=4, spouse=5, child=2),
+        event(104, EventKind.Birth, "1953-01-01", person=6, spouse=7, child=3),
+        event(105, EventKind.Birth, "1956-11-01", person=6, spouse=7, child=13),
+        event(106, EventKind.Married, "1976-09-01", person=2, spouse=3),
+        event(107, EventKind.Birth, "1979-04-01", person=2, spouse=3, child=8),
+        event(108, EventKind.Birth, "1982-02-01", person=2, spouse=3, child=1),
+        event(109, EventKind.Birth, "1986-07-01", person=2, spouse=3, child=9),
+        event(110, EventKind.Death, "1990-03-01", person=4),
+        event(111, EventKind.Married, "2009-06-01", person=1, spouse=10),
+        event(112, EventKind.Birth, "2012-05-01", person=1, spouse=10, child=11),
+    ]
+    told = [
+        shift(200, "1991-02-01", 2, "Drinking heavily", symptom=up),
+        shift(201, "1992-09-01", 3, "Ran the whole household", functioning=up),
+        shift(202, "2004-09-01", 1, "Stopped sleeping well", symptom=up),
+        shift(203, "2005-02-01", 1, "Stopped calling her mother", relationship="distance", relationshipTargets=[3]),
+        shift(204, "2005-06-01", 1, "Left graduate school", functioning=down),
+        shift(205, "2011-06-01", 1, "Fights over money", relationship="conflict", relationshipTargets=[10]),
+        shift(206, "2014-02-01", 10, "Lost his job", functioning=down),
+        shift(207, "2018-04-01", 3, "Hospitalized with pneumonia", symptom=up),
+        shift(208, "2018-05-01", 1, "Worried every night", anxiety=up),
+        shift(209, "2019-01-01", 1, "Stopped visiting her mother", relationship="distance", relationshipTargets=[3]),
+        shift(210, "2021-10-01", 1, "Panic attacks at work", symptom=up),
+        event(211, EventKind.Noted, "2022-03-01", person=1, title="Started seeing a counselor", description="Started seeing a counselor"),
+    ]
+
+    def note(id, text, kind, state, card=None, evidence=(), outcome=None):
+        return {
+            "id": id,
+            "text": text,
+            "kind": kind,
+            "state": state,
+            "outcome": outcome,
+            "session_id": None,
+            "asked_at": None if state == "held" else "2026-09-20",
+            "evidence": [{"kind": "event", "id": str(e)} for e in evidence],
+            "pushback": None,
+            "case_report_card": card,
+        }
+
+    questions = [
+        note("i1", "My guess is that when your mother is unwell you keep your distance from her, and your sleep goes first.", "impression", "raised", "main_guess", (202, 207, 209)),
+        note("i2", "It looks to me as if your part has been to stop visiting when things with your mother get tense.", "impression", "raised", "own_part", (203, 209)),
+        note("i3", "Twice you stopped being in touch with your mother within months of a worry about her.", "impression", "raised", "choice", (203, 209)),
+        note("i4", "Staying in touch with your mother the next time she is unwell, and expecting her to push back at first.", "impression", "raised", "work_on", (207, 209)),
+        note("i5", "Noticing when your sleep slips, as an early sign that things are tense at home.", "impression", "raised", "work_on", (202, 210)),
+        note("i6", "Your father's drinking got heavy the year after his own father died.", "impression", "raised", "coach_guess", (110, 200)),
+        note("i7", "Your mother ran the household much as her own mother did.", "impression", "held", None, (201,)),
+        note("q1", "What do you think your own part was?", "thought", "resolved", "own_part", outcome="answered"),
+        note("q2", "What would it look like to visit her the next time she is unwell?", "thought", "asked", "choice"),
+        note("q3", "When did your grandmother June die?", "fact", "asked"),
+    ]
+    return DiagramData(
+        people=people,
+        pair_bonds=[bond(30, 2, 3), bond(31, 4, 5), bond(32, 6, 7), bond(33, 1, 10)],
+        events=structure + told,
+        clusters=[
+            asdict(
+                Cluster(
+                    id="mother-ill",
+                    reason="Elaine was in hospital, Nora worried and stayed away, and then the panic attacks began.",
+                    title="Her mother's illness",
+                    summary="Hospital to panic attacks.",
+                    eventIds=[207, 208, 209, 210],
+                    name="Her mother's illness",
+                )
+            )
+        ],
+        questions=questions,
+        lastItemId=400,
+    )
+
+
+def case_report() -> DiagramData:
+    return _case_report_family()
+
+
+def case_report_thin() -> DiagramData:
+    """A record the coach has barely begun: no card has anything on it."""
+    return DiagramData(
+        people=[dict(_person(1, "Ines", primary=True), last_name="Varga")],
+        events=[_event(100, "2024-01-01", "Trouble sleeping", symptom=VariableShift.Up)],
+        lastItemId=200,
+    )
+
+
+def case_report_dense() -> DiagramData:
+    """The Halloran family ten times over: every aunt and uncle with a partner
+    and children, long names, events with no date, and thirty open guesses."""
+    data = _case_report_family({1: LONG_NAME, 2: "Francis-Xavier Halloran-Montgomery"})
+    next_id = iter(range(1000, 10000))
+
+    def event(kind, date, **fields):
+        certainty = CERTAIN if date else UNKNOWN
+        return asdict(Event(id=next(next_id), kind=kind, dateTime=date, dateCertainty=certainty, **fields))
+
+    for parent_bond in (31, 32):
+        for n in range(8):
+            aunt = next(next_id)
+            partner = next(next_id)
+            couple = next(next_id)
+            data.people += [
+                dict(_person(aunt, f"Bartholomew-Alexander {n} Fitzgerald-Winterbottom", PersonKind.Male), parents=parent_bond),
+                dict(_person(partner, f"Anastasia-Josephine {n} Montgomery-Whitfield", PersonKind.Female)),
+            ]
+            data.pair_bonds.append({"id": couple, "person_a": aunt, "person_b": partner, "married": True})
+            data.events.append(event(EventKind.Married, f"19{70 + n}-06-01", person=aunt, spouse=partner))
+            for k in range(5):
+                cousin = next(next_id)
+                data.people.append(dict(_person(cousin, f"Maximiliana-Theodora {n}{k} Fitzgerald-Winterbottom"), parents=couple))
+                moved = "Moved across the country without telling anyone"
+                gone = "Stopped speaking to the family for years"
+                data.events += [
+                    event(EventKind.Birth, f"19{80 + k}-0{1 + n % 9}-15", person=aunt, spouse=partner, child=cousin),
+                    event(EventKind.Noted, None, person=cousin, title=moved, description=moved),
+                    event(EventKind.Shift, f"20{10 + k}-0{1 + n % 9}-01", person=cousin, title=gone, description=gone, relationship="cutoff", relationshipTargets=[aunt]),
+                ]
+    for n in range(30):
+        data.questions.append(
+            {
+                "id": f"i{100 + n}",
+                "text": f"Guess {n + 1}: around the year your cousins moved away, your mother and her sister stopped speaking for a while.",
+                "kind": "impression",
+                "state": "raised",
+                "outcome": None,
+                "session_id": None,
+                "asked_at": "2026-09-21",
+                "evidence": [{"kind": "event", "id": "207"}],
+                "pushback": None,
+                "case_report_card": None,
+            }
+        )
+    data.lastItemId = 10000
+    return data
+
+
+CASE_REPORT_CHAT = [
+    ("user", "My mother was in hospital again and I could not face going."),
+    ("coach", "That sounds hard. What do you think your own part was, when you stayed away?"),
+    ("user", "I think I go quiet and stay away instead of telling her what I need."),
+    ("coach", "Thank you. That is your own view, and it will stand on your case report beside mine."),
+]
+# the question each fixture's person answered, by the line of the chat that answers it
+CASE_REPORT_ANSWERS = {"case-report": ("q1", 2), "case-report-dense": ("q1", 2)}
+
+
 # key -> (builder, chat, diagram name)
 FIXTURES = {
     "empty": (empty, None),
@@ -785,10 +976,19 @@ FIXTURES = {
     "sittings": (one, None),
     "sameday": (one, None),
     "notice": (one, NOTICE_CHAT),
+    "case-report": (case_report, CASE_REPORT_CHAT),
+    "case-report-thin": (case_report_thin, None),
+    "case-report-dense": (case_report_dense, CASE_REPORT_CHAT),
 }
 
 # the diagram name each fixture's record carries, when it is not the default
 DIAGRAM_NAMES = {"longname": LONG_DIAGRAM_NAME}
+# the account's own name, for the fixtures whose screen shows it
+OWNER_NAMES = {
+    "case-report": ("Nora", "Halloran"),
+    "case-report-thin": ("Ines", "Varga"),
+    "case-report-dense": ("Margaret-Anne", "Fitzgerald-Winterbottom"),
+}
 
 
 DIAGRAM_ROWS = (AccessRight, Change, Interaction, ModelCall, Observation, ProductEvent)
@@ -822,6 +1022,7 @@ def install(key: str):
         user = User(username=name, status="confirmed", password="x")
         db.session.add(user)
         db.session.flush()
+    user.first_name, user.last_name = OWNER_NAMES.get(key, ("", ""))
     Notification.query.filter_by(user_id=user.id).delete()
     for notice in Notice.query.filter_by(audience=Audience.People):
         if notice.user_ids == [user.id]:
@@ -845,12 +1046,14 @@ def install(key: str):
         db.session.delete(old)
     db.session.flush()
 
+    data = builder()
+    # the coach's questions and guesses are kept in the record but not by
+    # set_diagram_data, which writes only what the Pro app edits
     diagram = Diagram(
         user_id=user.id,
         name=DIAGRAM_NAMES.get(key, DIAGRAM_NAME),
-        data=diagramjson.dumps({}),
+        data=diagramjson.dumps({"questions": data.questions}),
     )
-    data = builder()
     diagram.set_diagram_data(data)
     db.session.add(diagram)
     db.session.flush()
@@ -862,6 +1065,8 @@ def install(key: str):
         _stamp_coded_in(diagram, discussion)
         if key == "notice":
             _notify(user, discussion)
+        if key in CASE_REPORT_ANSWERS:
+            _answered(diagram, discussion, *CASE_REPORT_ANSWERS[key])
     for ago, summary, said in SITTINGS.get(key, []):
         _replay(user, diagram, data, said, ago, summary)
     return user
@@ -937,6 +1142,17 @@ def _replay(user, diagram, data, chat, ago=datetime.timedelta(0), summary=None):
         )
     db.session.commit()
     return discussion
+
+
+def _answered(diagram, discussion, question_id: str, line: int):
+    """The person's own message that answered a question, kept on it the way
+    the coach keeps it (R-0708)."""
+    said = next(s for s in discussion.statements if s.order == line)
+    data = diagramjson.loads(diagram.data)
+    question = next(q for q in data["questions"] if q["id"] == question_id)
+    question["answer"] = {"kind": "statement", "id": said.id, "label": said_label(said)}
+    diagram.data = diagramjson.dumps(data)
+    db.session.commit()
 
 
 def _stamp_coded_in(diagram, discussion):

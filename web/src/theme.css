@@ -571,11 +571,19 @@ button { font-family: inherit; }
 .ss .mv-burst { stroke: var(--move); stroke-width: 2; stroke-linecap: round; }
 .ss .mv-sparks { animation: sparkp 0.5s infinite; }
 
-.ss .mv-spike { stroke: var(--move); stroke-width: 1.8; stroke-linecap: round; }
-.ss .spk { transform-box: view-box; transform-origin: 0 0; }
-.ss .spk.s-out { animation: spikeout 8s infinite; }
-.ss .spk.s-in { animation: spikein 8s infinite; }
-.ss .spk.s-solo { animation: spikesolo 8s infinite; }
+/* anxiety, one standard everywhere (R-0729): going up, the spikes grow out
+   from the rim; going down, they shorten back to it, never crossing the shape */
+.ss .mv-spike { stroke: var(--move); stroke-width: 1.8; stroke-linecap: round; stroke-dasharray: 1 1; }
+/* projection: the anxiety sits in the parent for 2s, drains over the grow
+   time, then rests in the child for twice the parent's 3.4s (Patrick,
+   2026-10-03); loop 10.2s, the hold ending at 2/10.2 and the drain at a third */
+.ss .spk.s-out .mv-spike { animation: spikeout calc((2s + var(--speed-grow)) * 3) infinite; }
+.ss .spk.s-in .mv-spike { animation: spikein calc((2s + var(--speed-grow)) * 3) infinite; }
+/* anxiety up: grows out from the rim over the grow time, then flickers */
+.ss .spk.s-solo .mv-spike { animation: spikegrow var(--speed-grow) ease both; }
+/* anxiety down: full strength for 2s, then shortens back to the rim; carried, grey and still */
+.ss .spikes.down .spk .mv-spike { animation: spikecalm calc(2s + var(--speed-grow)) linear both; }
+.ss .spikes.was .mv-spike { animation: none; stroke-dashoffset: 0; }
 
 .ss .mv-flow {
   fill: none;
@@ -730,13 +738,10 @@ button { font-family: inherit; }
   28%, 60% { opacity: 0.85; }
   85%, 100% { opacity: 0; }
 }
-@keyframes spikeout { 0%, 15% { transform: scale(1); } 32.5%, 100% { transform: scale(0.12); } }
-@keyframes spikein { 0%, 15% { transform: scale(0.12); } 32.5%, 100% { transform: scale(1); } }
-@keyframes spikesolo {
-  0%, 10% { transform: scale(0.1); }
-  28%, 60% { transform: scale(1); }
-  85%, 100% { transform: scale(0.1); }
-}
+@keyframes spikeout { 0%, 19.608% { stroke-dashoffset: 0; visibility: visible; } 33.333%, 100% { stroke-dashoffset: 1; visibility: hidden; } }
+@keyframes spikein { 0%, 19.608% { stroke-dashoffset: 1; visibility: hidden; } 19.7% { visibility: visible; } 33.333%, 100% { stroke-dashoffset: 0; visibility: visible; } }
+@keyframes spikegrow { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes spikecalm { 0%, 58.824% { stroke-dashoffset: 0; visibility: visible; } 99.9% { stroke-dashoffset: 1; visibility: visible; } 100% { stroke-dashoffset: 1; visibility: hidden; } }
 @keyframes selfswap {
   0%, 37.5% { stroke: var(--ink); stroke-width: 2.2; }
   38.5%, 100% { stroke: var(--move); stroke-width: 2.6; }
@@ -3503,3 +3508,4 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .ct-go[disabled] { opacity: 0.4; cursor: default; }
 /* The lines inside the cut are lit in the cut's own colour. */
 .bub.lit { box-shadow: 0 0 0 2px var(--ask); }
+

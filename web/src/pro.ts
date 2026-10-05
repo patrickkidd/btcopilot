@@ -14,6 +14,4 @@ const upper = (word: string) => word[0].toUpperCase() + word.slice(1);
 export const Record = upper(RECORD);
 export const Records = upper(RECORDS);
 
-/** The drawer stands beside the thread rather than sliding over it once the
- * window is this wide, which is the width the desktop drawings are drawn at. */
-export const WIDE = "(min-width: 840px)";
+export { WIDE } from "./viewport";

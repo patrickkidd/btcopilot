@@ -6,6 +6,9 @@ import flask.testing
 
 from btcopilot import place
 from btcopilot.place import Place
+from btcopilot.tests.test_questions import box
+from btcopilot.tests.test_turnhistory import family  # noqa: F401
+from btcopilot.toolbox import ToolName
 
 TABLE = Path(__file__).parents[2] / "web" / "src" / "place.ts"
 OPENED = {"Sec-Fetch-Dest": "document"}
@@ -29,6 +32,15 @@ def test_an_address_reads_back_as_its_place_and_values():
     assert place.parse("/app/event/5/edit") == (Place.EventEditor, ["5"])
     assert place.parse("/app/nowhere") is None
     assert place.parse("/elsewhere/account") is None
+
+
+def test_the_case_report_has_an_address_the_coach_may_open(family):
+    # R-0714
+    assert place.parse("/app/case-report") == (Place.CaseReport, [])
+    assert box(family).call(ToolName.Navigate, {"address": "/app/case-report"}) == (
+        "The app is at /app/case-report.",
+        {"address": "/app/case-report"},
+    )
 
 
 def test_a_browser_opening_an_address_in_the_app_gets_the_page_there(web):

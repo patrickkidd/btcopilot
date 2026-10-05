@@ -57,6 +57,8 @@ def create_app(config: dict = None, **kwargs):
         THEORY_REPO="patrickkidd/btcopilot-sources",
         THEORY_REF="master",
         THEORY_PATH="theory/CONCEPTS",
+        # The case report's book passages, in the same repository (R-0692).
+        PASSAGES_PATH="case-report",
         # How often celery beat looks for a message the coach may write first.
         PROACTIVE_EVERY_S=15 * 60,
     )

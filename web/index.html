@@ -46,6 +46,9 @@
       <svg viewBox="0 0 22 22" width="22" height="22" aria-hidden="true"><circle cx="11" cy="11" r="9" fill="none" stroke="currentColor" stroke-width="1.5"></circle><circle cx="11" cy="6.6" r="1.15" fill="currentColor"></circle><rect x="10.1" y="9.4" width="1.8" height="7" rx="0.9" fill="currentColor"></rect></svg>
     </button>
     <button class="donebtn" id="coding-done" type="button" hidden>Done</button>
+    <button class="iconbtn" id="case-open" type="button" aria-label="Case report" hidden>
+      <svg viewBox="0 0 22 22" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="2.5" width="13" height="17" rx="1.5"/><path d="M8 7h6M8 10.5h6M8 14h3.5"/></svg>
+    </button>
     <button class="avatar homescreen" id="homescreen" type="button" aria-label="Put Family Diagram on your home screen" hidden>
       <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="10" height="18" rx="2"/><path d="M9.5 17.5h3"/><path d="M11 6.5v6M8.8 10.3 11 12.5l2.2-2.2"/></svg>
     </button>
@@ -158,6 +161,39 @@
 
   <div class="screen" id="pairs-screen" hidden>
     <div class="fs-body" id="pairs-body"></div>
+  </div>
+
+  <div class="screen report" id="case-screen" hidden>
+    <div class="ovbar">
+      <button class="backbtn" id="case-close" type="button" aria-label="back"></button>
+      <span class="ovt"><span id="case-title">Case report</span><span class="by" id="case-by"></span></span>
+      <button class="iconbtn" id="case-family" type="button" aria-label="Who is in the family"></button>
+    </div>
+    <div class="pic">
+      <div class="pin-label">
+        <nav class="path" id="case-path" aria-label="where you are on the timeline"><span class="here">Timeline</span></nav>
+        <button class="pl-btn" id="case-info" type="button" aria-label="about this cluster" hidden>
+          <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="6.4" r="1.1" fill="currentColor"/><path d="M10 9v5.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="view" id="case-view"></div>
+      <div class="caption" id="case-caption"></div>
+    </div>
+    <nav class="rail" id="case-rail" aria-label="the cards"></nav>
+    <div class="split">
+      <aside class="pinned left" id="case-column" hidden><div class="scroller" id="case-dash"></div></aside>
+      <div class="screen">
+        <div class="chat" id="case-body"></div>
+        <div id="case-pbp" hidden></div>
+      </div>
+    </div>
+    <div class="screen slideover famout" id="case-famout" hidden>
+      <div class="ovbar">
+        <button class="backbtn" id="case-famout-close" type="button" aria-label="back to the case report"></button>
+        <span class="ovt">Who is in the family</span>
+      </div>
+      <div class="scroller" id="case-famout-body"></div>
+    </div>
   </div>
 
   <div class="split" id="coding-screen" hidden>

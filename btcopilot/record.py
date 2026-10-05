@@ -21,6 +21,7 @@ from btcopilot.prompts import Role
 from btcopilot.models import Diagram
 from btcopilot.schema import (
     ITEM_COLLECTIONS,
+    CaseReportCard,
     LIST_FIELDS,
     MIN_CLUSTER_EVENTS,
     DateCertainty,
@@ -185,12 +186,7 @@ def rewind(data: dict, deltas: list[dict]):
     add or, as rows written before adds were logged whole did, as field sets on
     a new id, which once taken back leave it holding nothing but that id."""
     for delta in reversed(deltas):
-        if delta["field"] is not None:
-            _set(data, _inverse(delta))
-        elif delta["after"] is None:
-            _restore(data, _inverse(delta))
-        else:
-            _drop(data, ItemKind(delta["item_kind"]), delta["item_id"])
+        _back(data, delta)
     for kind, item_id in {
         (ItemKind(d["item_kind"]), str(d["item_id"]))
         for d in deltas
@@ -199,6 +195,88 @@ def rewind(data: dict, deltas: list[dict]):
         item = _find(data, kind, item_id)
         if all(value in (None, []) for field, value in item.items() if field != "id"):
             _collection(data, kind).remove(item)
+
+
+def _back(data: dict, delta: dict) -> dict:
+    if delta["field"] is not None:
+        return _set(data, _inverse(delta))
+    if delta["after"] is None:
+        return _restore(data, _inverse(delta))
+    return _drop(data, ItemKind(delta["item_kind"]), delta["item_id"])
+
+
+def taking_back(data: dict, changes: list[Change]) -> list[tuple[Change, list[dict]]]:
+    """Each change row taken back off `data` one for one, newest first, with
+    the deltas that logs; a value changed since it was written is a Conflict."""
+    out = []
+    for change in sorted(changes, key=lambda c: c.id, reverse=True):
+        # taking back an undo would put its row back while the log still
+        # names that row as taken back
+        if change.turn_id.startswith("undo:"):
+            raise ValueError(f"change {change.id} is itself an undo and cannot be taken back")
+        done = []
+        for delta in reversed(change.deltas):
+            # It changed nothing, so taking it back changes nothing.
+            if delta["before"] == delta["after"]:
+                continue
+            inverse = _inverse(delta)
+            actual = _get(data, inverse)
+            if _set_fields(actual) != _set_fields(inverse["before"]):
+                raise Conflict(inverse, actual)
+            done.append(_back(data, delta))
+        out.append((change, done))
+    return out
+
+
+def _set_fields(value):
+    """A whole item without the fields that hold nothing, which a field taken
+    back to empty leaves behind."""
+    if isinstance(value, dict):
+        return {field: held for field, held in value.items() if held is not None}
+    return value
+
+
+def undo_changes(
+    diagram_id: int, ids: list[int], *, author: Author, user_id: int | None = None
+) -> list[Change]:
+    """Take these change rows back, newest first, each logged as its own
+    change `undo:<turn>#<row id>` so the log names the row taken back. Unlike
+    `undo`, which takes back a whole turn, it also takes off the questions and
+    impressions a row added. Every row is checked before any is written."""
+    changes = (
+        Change.query.filter(Change.diagram_id == diagram_id, Change.id.in_(ids)).all()
+    )
+    missing = set(ids) - {change.id for change in changes}
+    if missing:
+        raise ValueError(f"no changes {sorted(missing)} on diagram {diagram_id}")
+    taking_back(diagramjson.loads(db.session.get(Diagram, diagram_id).data), changes)
+    out = []
+    for change in sorted(changes, key=lambda c: c.id, reverse=True):
+        with _locked(diagram_id) as diagram:
+            data = diagramjson.loads(diagram.data)
+            [(_, deltas)] = taking_back(data, [change])
+            out.append(
+                _commit(
+                    diagram,
+                    data,
+                    deltas,
+                    author,
+                    f"undo:{change.turn_id}#{change.id}",
+                    user_id,
+                    change.session_id,
+                    None,
+                    undoing=True,
+                )
+            )
+    return out
+
+
+def undone(diagram_id: int) -> set[int]:
+    """The ids of the change rows `undo_changes` took back."""
+    rows = Change.query.filter(
+        Change.diagram_id == diagram_id, Change.turn_id.like("undo:%#%")
+    )
+    return {int(row.turn_id.rpartition("#")[2]) for row in rows}
 
 
 def _inverse(delta: dict) -> dict:
@@ -304,9 +382,9 @@ def _apply(data: dict, delta: dict) -> list[dict]:
     kind = ItemKind(delta["item_kind"])
     if delta["field"] is not None:
         if kind is ItemKind.Diagram or _find(data, kind, delta["item_id"]) is not None:
-            return [_set(data, delta)]
+            return [_set(data, delta), *_carded(data, delta)]
         made = dict(delta, field=None, after={"id": delta["item_id"]})
-        return [_restore(data, made), _set(data, delta)]
+        return [_restore(data, made), _set(data, delta), *_carded(data, delta)]
     if kind is ItemKind.Diagram:
         raise ValueError("the diagram itself cannot be removed by a delta")
     if delta["after"] is None:
@@ -314,6 +392,34 @@ def _apply(data: dict, delta: dict) -> list[dict]:
             raise Invalid(*NEVER_REMOVED)
         return _remove(data, kind, delta["item_id"])
     return [_restore(data, delta)]
+
+
+# The case report card a guess or a question is on: the newest on a card
+# replaces the one before it, except that up to three guesses are on what to
+# work on and on the coach's guess (R-0709, R-0732).
+CARD = "case_report_card"
+CARD_HOLDS = {CaseReportCard.WorkOn: 3, CaseReportCard.CoachGuess: 3}
+QUESTION_CARDS = (CaseReportCard.OwnPart, CaseReportCard.Choice)
+
+
+def _carded(data: dict, delta: dict) -> list[dict]:
+    """Taking a card off the entries that held it before, in the same change."""
+    if delta["item_kind"] != ItemKind.Question.value or delta["field"] != CARD:
+        return []
+    card = delta["after"]
+    if card is None:
+        return []
+    item = _item(data, delta)
+    others = [
+        q
+        for q in _collection(data, ItemKind.Question)
+        if q is not item and q.get(CARD) == card and note(q) is note(item)
+    ]
+    keep = CARD_HOLDS.get(CaseReportCard(card), 1) - 1
+    return [
+        _set(data, {"item_kind": ItemKind.Question, "item_id": q["id"], "field": CARD, "after": None})
+        for q in others[: max(len(others) - keep, 0)]
+    ]
 
 
 def _set(data: dict, delta: dict) -> dict:
@@ -1193,6 +1299,12 @@ def _questions(data: dict, deltas: list[dict], author: Author):
         state = QuestionState(_val(question.get("state")))
         outcome = question.get("outcome") and QuestionOutcome(_val(question["outcome"]))
         QuestionKind(_val(question.get("kind")))
+        written = {d["field"] for d in mine}
+        # taken off a card, by the coach or by a newer entry on that card, on
+        # an entry in any state
+        if written == {CARD} and question.get(CARD) is None:
+            _card(question, question_id, rules, state, written, author)
+            continue
         moved = [d for d in mine if d["field"] == "state"]
         added = any(d["field"] is None for d in mine)
         was = None if added else QuestionState(moved[0]["before"] if moved else state)
@@ -1221,7 +1333,6 @@ def _questions(data: dict, deltas: list[dict], author: Author):
                 f"{noun} {question_id}: give an outcome exactly when it is resolved",
                 f"It did not say how the {noun} ended.",
             )
-        written = {d["field"] for d in mine}
         theirs = outcome in rules.theirs or "pushback" in written
         if user != theirs or (user and not written <= set(rules.fields)):
             raise Invalid(
@@ -1240,6 +1351,15 @@ def _questions(data: dict, deltas: list[dict], author: Author):
             )
         if question.get("pushback") is not None:
             Pushback(question["pushback"])
+        _card(question, question_id, rules, state, written, author)
+        if question.get("answer") is not None and (
+            rules is IMPRESSION or outcome is not QuestionOutcome.Answered
+        ):
+            raise Invalid(
+                f"{noun} {question_id}: give the message that answers it only when "
+                "closing a question as answered",
+                "It kept an answer on something that was not answered.",
+            )
         if rules is IMPRESSION:
             _rests(data, question, question_id, added)
             if added:
@@ -1262,6 +1382,32 @@ def _questions(data: dict, deltas: list[dict], author: Author):
                 )
             if other["state"] != QuestionState.Resolved:
                 raise Invalid(f"that {noun} is already {other['id']}", f"That {noun} is already there.")
+
+
+def _card(question: dict, question_id: str, rules, state, written: set, author: Author):
+    """Only the coach puts an entry on a case report card; a question goes only
+    on the own part card or the choice card; and an entry kept for later is on
+    none, since the page never sees it (R-0709)."""
+    noun = rules.noun
+    if CARD in written and Author(author) is not Author.Coach:
+        raise Invalid(
+            f"only the coach puts {noun} {question_id} on a case report card",
+            "Only the coach chooses what goes on the case report.",
+        )
+    if question.get(CARD) is None:
+        return
+    card = CaseReportCard(question[CARD])
+    if rules is QUESTION and card not in QUESTION_CARDS:
+        raise Invalid(
+            f"question {question_id} cannot be on the {card.value} card: a question "
+            f"goes only on {' or '.join(c.value for c in QUESTION_CARDS)}",
+            "A question cannot go on that card of the case report.",
+        )
+    if state is QuestionState.Held:
+        raise Invalid(
+            f"{noun} {question_id} is held: put it on a card when it is {rules.shown.value}",
+            f"A {noun} kept for later cannot go on the case report.",
+        )
 
 
 def _linked(data: dict, question: dict, question_id: str):

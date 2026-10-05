@@ -344,6 +344,8 @@ class Fact(enum.StrEnum):
     Met = "met"
     # On the person: the nuclear family's periods of major stress.
     Stress = "stress"
+    # On the person: the two or three times they say the most was going on.
+    MostGoingOn = "most_going_on"
 
 
 class NotedFact(enum.StrEnum):
@@ -525,6 +527,16 @@ class FactState(enum.StrEnum):
     SaidUnknown = "said_unknown"
     Declined = "declined"
     NotAsked = "not_asked"
+
+
+class CaseReportCard(enum.StrEnum):
+    """The case report card a question or an impression is on (R-0709)."""
+
+    MainGuess = "main_guess"
+    OwnPart = "own_part"
+    Choice = "choice"
+    WorkOn = "work_on"
+    CoachGuess = "coach_guess"
 
 
 class Pushback(enum.StrEnum):

@@ -53,7 +53,8 @@ const FOLD_MS = 250;
  * whether the reader moved up past the strip's threshold — and what opens the
  * full picture. */
 export const fold = (
-  composer: HTMLElement,
+  /** The message box whose keyboard folds the picture; null on a screen with none. */
+  composer: HTMLElement | null,
   screen: HTMLElement,
   toEnd: () => void,
   /** Puts away what hangs over the picture, kept once it has gone: the about
@@ -115,11 +116,11 @@ export const fold = (
     if (up) toEnd();
   };
   seen.addEventListener("resize", check);
-  composer.addEventListener("focus", check);
-  composer.addEventListener("blur", check);
+  composer?.addEventListener("focus", check);
+  composer?.addEventListener("blur", check);
   const open = () => {
     scrolled = false;
-    composer.blur();
+    composer?.blur();
     set();
   };
   // A mark on the strip is picked as the full picture picks it, and the picture
@@ -169,3 +170,9 @@ export const fold = (
     },
   };
 };
+
+/** Where the app widens: the drawer stands beside the thread rather than
+ * sliding over it, and the pinned column stands beside the screen, once the
+ * window is this wide, which is the width the desktop drawings are drawn at.
+ * Kept here, with no side effect at load, so every screen reads one value. */
+export const WIDE = "(min-width: 840px)";

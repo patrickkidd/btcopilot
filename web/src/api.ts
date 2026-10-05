@@ -40,6 +40,7 @@ import type {
   Delivery,
   Tally,
   Statement,
+  Passages,
   Timeline,
   TimelineEvent,
   User,
@@ -58,10 +59,19 @@ const PATIENCE_MS = 60_000;
  * (btcopilot/playturn.py WAIT), so a slow model fails with the server's error. */
 export const PLAY_WAIT_S = 390;
 
-function csrf(): string {
-  return (
-    document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? ""
-  );
+/** The session's newest CSRF token: the server sends it on every answer, so
+ * a token replaced on the server reaches the page with the next answer, not
+ * only on a reload; until one comes, the one the page was served with. */
+let token: string | null = null;
+
+export function csrf(): string {
+  return token ?? document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? "";
+}
+
+/** Keep the token an answer carries, for every write after it. */
+function keepToken(response: Response): void {
+  const fresh = response.headers.get("X-CSRFToken");
+  if (fresh) token = fresh;
 }
 
 /** A request that did not come back with an answer. It keeps the status so the
@@ -143,6 +153,7 @@ async function send<T>(
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: signal ? AbortSignal.any([signal, waited]) : waited,
     });
+    keepToken(response);
     if (!response.ok)
       throw new Failed(response.status, `${method} ${url}`, await response.text());
     // an empty answer left unread is logged by the browser as aborted
@@ -174,6 +185,10 @@ const onDiagram = (path: string, diagramId?: number | null) =>
 /** The record of the diagram open, or of the one a coding is of. */
 export const timeline = (diagramId: number | null, signal?: AbortSignal) =>
   call<Timeline>("GET", onDiagram("/timeline", diagramId), undefined, undefined, signal);
+
+/** The passages behind the case report's book buttons (R-0692). */
+export const casePassages = (diagramId: number | null, signal?: AbortSignal) =>
+  call<Passages>("GET", onDiagram("/case-report-passages", diagramId), undefined, undefined, signal);
 
 /** One agent-loop turn. The send is short: it stores the words and hands the
  * turn to the coach, which answers on the turn's own stream. The server puts
@@ -386,6 +401,7 @@ export async function startTranscription(file: File): Promise<string> {
     headers: { "X-CSRFToken": csrf() },
     body: form,
   });
+  keepToken(response);
   if (!response.ok) throw new Error(await response.text());
   return ((await response.json()) as { id: string }).id;
 }

@@ -2,6 +2,7 @@
 
 import datetime
 
+import flask
 import pytest
 
 import btcopilot
@@ -35,7 +36,8 @@ from btcopilot.schema import (
     VariableShift,
     asdict,
 )
-from btcopilot.tests.conftest import csrf_token, replied, version
+from btcopilot.tests.conftest import Model, csrf_token, replied, said, version
+from btcopilot.tests.test_turnhistory import coach
 from btcopilot.toolbox import ToolName, Toolbox
 
 
@@ -922,3 +924,17 @@ def test_timeline_omits_events_never_traced(web, family):
     db.session.commit()
 
     assert web.get("/app/timeline").get_json()["coded_in"] == {}
+
+
+def test_a_page_whose_token_went_stale_posts_with_the_one_any_answer_carries(web, monkeypatch):
+    # R-0738
+    coach(monkeypatch, Model(said("Tell me more.")))
+    csrf_token(web)
+    with web.session_transaction() as session:
+        session.pop("csrf_token")
+    # the test's one app context would otherwise hand back the token it cached
+    flask.g.pop("csrf_token", None)
+
+    fresh = web.get("/app/sessions").headers.get("X-CSRFToken")
+    response = web.post("/app/chat", json={"statement": "My sister is Nell."}, headers={"X-CSRFToken": fresh})
+    assert response.status_code != 400, response.get_data(as_text=True)

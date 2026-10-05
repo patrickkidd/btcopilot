@@ -1197,3 +1197,12 @@ both a target and a third person. Not yet measured live: no model calls were mad
 **Reason**: a 29-character label failed a turn on 2026-10-01. The queued R-0654 replaces R-0169: a labels-only retry, then a cut at a word boundary.
 **Modelled cost**: nothing; the coach's prompt is unchanged.
 **Decision**: Patrick, 2026-10-01.
+
+### October 2026: Every observation the coach offers is raised as an impression (FD-367)
+
+**Change** (2026-10-04): the impressions paragraph now counts a connection noticed between two things the person told (a death and a first grandchild in the same year) as an impression, asked for or not, to be raised before it is said; the private reply-style section's observation turns say the same.
+**Reason**: on production one account had 110 coach turns over two days with many replies connecting two events and not one `add_impression` call, so no impression was stored and the case report's guess cards stayed empty. The prompt taught observation turns as plain talk and defined an impression only as a pattern across chapters of a life or a reading of years.
+**Measured** on the subscription ($0), the new live case where the person tells a birth in the same year as a death already in the record and asks nothing: 1 of 3 runs raised an impression on the old prompt, 3 of 3 on the new. The other impression and case report cases pass as before; the literature case was 2 of 3 on both prompts.
+[R-0504]
+
+**Follow-up** (2026-10-04): the failing literature runs refused in words ("I won't speak for any book", "I can't tell you what the books say"), which still names them. The paragraph now gives those two as bad examples and a good opening that starts straight from the person's story. Measured on the subscription: every impression and case report case passes, the literature case 3 of 3. Public and private prompt goldens re-captured. [R-0688]

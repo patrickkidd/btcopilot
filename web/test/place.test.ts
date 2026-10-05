@@ -37,6 +37,11 @@ describe("the addresses of the app", () => {
     expect(new Set(all).size).toBe(all.length);
   });
 
+  // R-0714
+  it("gives the case report its own address", () => {
+    expect(address(Place.CaseReport)).toBe("/app/case-report");
+  });
+
   // R-0055
   it("reads no place from an address the app does not have", () => {
     for (const path of ["/app/nowhere", "/app/chat/abc", "/elsewhere/", "/app/account/meeting/soon"])

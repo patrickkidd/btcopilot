@@ -42,6 +42,9 @@ FULL = (
     (Fact.DeathDate, Fact.CauseOfDeath),
 )
 SIBLING = ((*FULL[0], Fact.Order, Fact.Sex), FULL[1])
+# The person's own: what a sibling needs, with the times they say the most was
+# going on right after their birth date.
+OWN = ((*SIBLING[0][:2], Fact.MostGoingOn, *SIBLING[0][2:]), SIBLING[1])
 # Bowen's list for each sibling of each parent (FTiCP ch. 9).
 AUNT = (
     (
@@ -103,6 +106,7 @@ WORDS = {
     Fact.Children: "how many children",
     Fact.Met: "when they met",
     Fact.Stress: "periods of major stress",
+    Fact.MostGoingOn: "the two or three times when the most was going on",
 }
 
 # How many unasked items the coach's summary lists, and how many while its
@@ -162,7 +166,7 @@ def _walk(data: DiagramData) -> dict[Item, str]:
             items.setdefault((fact, ItemKind.PairBond, bid), role)
 
     me = own["id"]
-    person(me, SELF, SIBLING, Fact.Parents, Fact.Stress)
+    person(me, SELF, OWN, Fact.Parents, Fact.Stress)
     mine = _couples(data, me)
     for bid in mine:
         person(_other(data, bid, me), PARTNER, SIBLING, Fact.Parents)

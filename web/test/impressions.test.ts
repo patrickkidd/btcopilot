@@ -39,6 +39,8 @@ const note = (
         ]
       : [],
   pushback: null,
+  case_report_card: null,
+  answer: null,
 });
 
 const IMPRESSION = "When things get tense, your uncle gets busy and your aunt goes quiet.";

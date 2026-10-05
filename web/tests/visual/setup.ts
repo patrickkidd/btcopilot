@@ -108,6 +108,9 @@ export const KEYS = [
   "sittings",
   "sameday",
   "notice",
+  "case-report",
+  "case-report-thin",
+  "case-report-dense",
 ] as const;
 export type Key = (typeof KEYS)[number];
 

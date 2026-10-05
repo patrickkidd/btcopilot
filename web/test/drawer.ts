@@ -5,7 +5,7 @@ import type { AskedQuestion } from "../src/types";
 /** Just enough of the drawer's list for its own taps: the clicks it listens
  * for, rows that know which item they hold, and the requests it makes. */
 
-export const fetched = vi.fn(async () => ({ ok: true, status: 204, text: async () => "" }));
+export const fetched = vi.fn(async () => new Response(null, { status: 204 }));
 
 beforeEach(() => {
   fetched.mockClear();

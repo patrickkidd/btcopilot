@@ -26,6 +26,24 @@ not edit it by hand; change the commands and generate it again.
 
 ## The commands
 
+### `flask admin case-report`
+
+The case report's cards in each record.
+
+### `flask admin case-report backfill`
+
+Put each family's raised guesses and its questions on the case report's cards, and add the question about the person's own part where the record has none, as the coach would have had the report been there from the start. The dry run makes one model call per family that has a raised guess or question on no card that came in after the newest card was set, goes to the model-calls ledger, prints each card before and after, and saves the plan to a file; --apply --plan writes exactly that plan, checked again, with no model call.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--diagram` | Only this record. |
+| `--apply` | Write saved plans; the default, --dry-run, makes the model call and saves the plan, writing nothing to the record. |
+| `--plan` | With --apply: a plan file the dry run printed. |
+| `--plans` | Where the dry run saves its plans. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin coach-model`
 
 The coach model and the shadow models of one person, and the shadow models anyone may have.
@@ -131,6 +149,18 @@ One record's counts.
 | `diagram_id` | required |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin diagrams undo <diagram_id> <change_ids>`
+
+Take these change rows of one record back off it, newest first, each logged as its own undo naming the row; the questions and impressions they added come off too. A value changed since stops it before anything is written. Without --yes it prints what each row would take back and writes nothing.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `diagram_id` | required |
+| `change_ids` | required |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin imports`
 
 The one-time read of the old Pro database.
@@ -161,7 +191,7 @@ The impressions the coach keeps in each record.
 
 ### `flask admin impressions backfill`
 
-Go back once through every past session not yet gone through and fill in the impressions said in it. Makes model calls. Without --yes it prints what it would do and writes nothing.
+Go back once through every past session not yet gone through, and through what a session gone through holds after the last message its pass read, and fill in the impressions said there. Makes model calls. Without --yes it prints what it would do and writes nothing.
 
 Changes something: needs `--yes`.
 
@@ -356,7 +386,7 @@ The questions the coach keeps in each record.
 
 ### `flask admin questions backfill`
 
-Go back once through every past session not yet gone through and fill in the questions said in it. Makes model calls. Without --yes it prints what it would do and writes nothing.
+Go back once through every past session not yet gone through, and through what a session gone through holds after the last message its pass read, and fill in the questions said there. Makes model calls. Without --yes it prints what it would do and writes nothing.
 
 Changes something: needs `--yes`.
 

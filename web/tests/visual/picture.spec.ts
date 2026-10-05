@@ -11,6 +11,9 @@ import { addForm, boxOf, inside, openList, pinned, stateFor, steady, type Key } 
 const settle = async (page: import("@playwright/test").Page) => {
   await page.goto("/app/");
   await expect(page.locator("#view .ss")).toBeVisible();
+  // the page's fonts arrive after its first paint; a picture taken before they
+  // land draws its words in the fallback face, a few pixels off the golden
+  await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(400);
 };
 

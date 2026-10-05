@@ -44,9 +44,10 @@ def backfill_command(kind: questions.Kind, noun: str) -> click.Command:
         return rows
 
     backfill.__doc__ = (
-        f"Go back once through every past session not yet gone through and fill in "
-        f"the {noun} said in it. Makes model calls. Without --yes it prints what it "
-        "would do and writes nothing."
+        f"Go back once through every past session not yet gone through, and through "
+        f"what a session gone through holds after the last message its pass read, "
+        f"and fill in the {noun} said there. Makes model calls. Without --yes it "
+        "prints what it would do and writes nothing."
     )
     return writes(click.command("backfill")(backfill))
 

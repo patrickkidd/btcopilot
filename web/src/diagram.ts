@@ -50,6 +50,8 @@ export enum Mark {
   FnUp = "fup",
   FnDown = "fdown",
   Anxiety = "anx",
+  /** Anxiety going down: the spikes hold, then shorten back to the rim (R-0729). */
+  AnxietyDown = "anxd",
   Event = "event",
   Emphasis = "hl",
   Couple = "couple",
@@ -62,6 +64,8 @@ export enum Mark {
   Move = "move",
   /** An event about the whole family: everyone alive then, emphasised. */
   Family = "family",
+  /** Inside or outside: the three people move to new places for the step (R-0728). */
+  Place = "place",
 }
 
 /** Drawn in the emphasis colour on its own date, grey once carried. */
@@ -93,6 +97,17 @@ export interface Placed {
   word?: string;
   cls?: Tone;
   row?: number;
+}
+
+/** Inside or outside: who moved, the one they were with, and the third. On
+ * inside the mover comes in beside the one they were with and the third is
+ * pushed out; on outside the mover walks out and the other two draw together
+ * (R-0728). */
+export interface Place extends Placed {
+  k: Mark.Place;
+  kind: Move.Inside | Move.Outside;
+  to: string;
+  third: string | null;
 }
 
 export interface Cast {
@@ -202,6 +217,9 @@ export interface Frame {
   moves: Arrow[];
   kin: Kin[];
   label: string;
+  /** The places this step moves people to, and the step before's, which they
+   * come home from: each lasts its own step only (R-0728). */
+  place?: { now: Place | null; was: Place | null };
 }
 
 /** The drawing is laid out in a box this wide; the page scales it to the phone. */
@@ -437,6 +455,8 @@ export function layout(cast: Cast, given: Partial<Options> = {}): Layout {
     cast.kin.filter((k) => kinds.includes(k.kind)).flatMap((k) => (k.to ? [k.from, k.to] : [k.from]));
   const spiked = new Set([...cast.anxious, ...whoIn([Move.Projection])]);
   const flanked = new Set(whoIn([Move.Overfunctioning, Move.Underfunctioning]));
+  // a flank arrow stands beside its person as a cross or a word does, on the side away from the name
+  flanked.forEach((id) => marked.add(id));
   const ring: Record<string, number> = {};
   const inset: Record<string, number> = {};
   ids.forEach((id) => {
@@ -1026,11 +1046,12 @@ export function crossOut(x: number, y: number, e: number, age: boolean, cls: str
 
 /** Anxiety: the moves board's eight flickering spikes around the person.
  * Carried from an earlier snapshot they stand still and grey. */
-function spikes(L: Layout, id: string, cls: Tone): string {
-  const fig = { id: 0, name: L.P[id].name, x: L.x[id], y: L.y[id], r: dimsOf(L).half(L.P[id]) };
-  const marks = anxious(fig, "solo");
+function spikes(L: Layout, id: string, cls: Tone, down = false): string {
+  const fig = { id: 0, name: L.P[id].name, x: L.x[id], y: L.y[id], r: dimsOf(L).half(L.P[id]), still: down };
+  // going down the spikes are there at full strength from the first frame, as the projection's parent's are
+  const marks = anxious(fig, down ? "out" : "solo");
   const still = marks.replace(/<animate(Transform)?\b[^>]*\/>/g, "").replace(/ opacity="0"/g, "");
-  return `<g class="spikes ${cls}" data-mark="anx:${esc(id)}">${cls === Tone.Was ? still : marks}</g>`;
+  return `<g class="spikes ${cls}${down ? " down" : ""}" data-mark="${down ? "anxd" : "anx"}:${esc(id)}">${cls === Tone.Was ? still : marks}</g>`;
 }
 
 /** Ruled 2026-09-26: an event with no drawing of its own is a short word beside
@@ -1078,14 +1099,16 @@ function spot(L: Layout, m: Placed, taken: Box[], drawn: Segment[]): Spot {
   // beside, then a line lower beside, clear of a move along the row, then
   // under, over, and further under
   const tries = [...sides.map((sd) => beside(sd)), ...sides.map((sd) => beside(sd, LEAD)), under(0), over, under(LEAD)];
-  const free = (t: Spot) =>
-    t.box.x0 >= 0 &&
-    t.box.x1 <= L.vw &&
-    t.box.y0 >= 0 &&
-    t.box.y1 <= L.h &&
-    !taken.some((b) => t.box.x0 < b.x1 && b.x0 < t.box.x1 && t.box.y0 < b.y1 && b.y0 < t.box.y1) &&
-    !drawn.some((sg) => crosses(sg, { x0: t.box.x0 - 2, x1: t.box.x1 + 2, y0: t.box.y0 - 2, y1: t.box.y1 + 2 }));
-  return tries.find(free) ?? tries[0];
+  const inPicture = (t: Spot) => t.box.x0 >= 0 && t.box.x1 <= L.vw && t.box.y0 >= 0 && t.box.y1 <= L.h;
+  // how many of what is already drawn the word would lie on
+  const covers = (t: Spot) =>
+    taken.filter((b) => t.box.x0 < b.x1 && b.x0 < t.box.x1 && t.box.y0 < b.y1 && b.y0 < t.box.y1).length +
+    drawn.filter((sg) => crosses(sg, { x0: t.box.x0 - 2, x1: t.box.x1 + 2, y0: t.box.y0 - 2, y1: t.box.y1 + 2 })).length;
+  const free = (t: Spot) => inPicture(t) && !covers(t);
+  // no free place: the lit word lies on top of the fewest things at its
+  // usual distance from its person, beside, under or over (R-0734)
+  const near = [...sides.map((sd) => beside(sd)), under(0), over].filter(inPicture);
+  return tries.find(free) ?? near.sort((p, q) => covers(p) - covers(q))[0] ?? tries[0];
 }
 
 /** What a step's words must keep clear of: every name, every shape with the
@@ -1175,6 +1198,56 @@ function childLines(L: Layout, k: { x0: number; x1: number; y: number }, kids: s
     .join("");
 }
 
+type Offset = [number, number];
+
+/** How far each person stands from their own place while a step's inside or
+ * outside lasts, as the approved drawing places them: the two who end up
+ * close overlap by half a shape, the third stands a shape's width further
+ * out from them (R-0728). */
+function placed(L: Layout, m: Place): Record<string, Offset> {
+  const R = dimsOf(L).half(L.P[m.who]);
+  const at = (id: string): Offset => [L.x[id], L.y[id]];
+  const unit = (a: Offset, b: Offset): Offset => {
+    const l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    return [(b[0] - a[0]) / l, (b[1] - a[1]) / l];
+  };
+  const by = (u: Offset, k: number): Offset => [u[0] * k, u[1] * k];
+  const gap = (a: Offset, b: Offset) => Math.hypot(b[0] - a[0], b[1] - a[1]);
+  const mid = (a: Offset, b: Offset): Offset => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const [CLOSE, OUT] = [1.5 * R, 2 * R];
+  const [a, b] = [at(m.who), at(m.to)];
+  const out: Record<string, Offset> = {};
+  if (m.kind === Move.Inside) {
+    out[m.who] = by(unit(a, b), Math.max(0, gap(a, b) - CLOSE));
+    if (m.third) out[m.third] = by(unit(mid(a, b), at(m.third)), OUT);
+  } else {
+    if (m.third) {
+      const c = at(m.third);
+      out[m.who] = by(unit(mid(b, c), a), OUT);
+      const half = Math.max(0, (gap(b, c) - CLOSE) / 2);
+      out[m.to] = by(unit(b, c), half);
+      out[m.third] = by(unit(c, b), half);
+    } else out[m.who] = by(unit(b, a), OUT);
+  }
+  return out;
+}
+
+/** Each moved person's way this step: to where this step puts them, or home
+ * from where the step before left them when it puts them nowhere. */
+function shifts(L: Layout, s: Frame): Record<string, { from: Offset; to: Offset }> {
+  const to = s.place?.now ? placed(L, s.place.now) : {};
+  // a step that places people starts them from their own places; a step that
+  // places no one brings them home from the step before's (approved frame 1B4)
+  const from = s.place?.was && !s.place.now ? placed(L, s.place.was) : {};
+  const out: Record<string, { from: Offset; to: Offset }> = {};
+  for (const id of new Set([...Object.keys(to), ...Object.keys(from)]))
+    out[id] = { from: from[id] ?? [0, 0], to: to[id] ?? [0, 0] };
+  return out;
+}
+
+/** The step's slide: the grow time, eased in and out (R-0728). */
+const SLIDE = `dur="1.4s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines="0.42 0 0.58 1"`;
+
 /** One snapshot on the case's fixed layout. */
 export function draw(L: Layout, s: Frame): string {
   const d = dimsOf(L);
@@ -1197,6 +1270,41 @@ export function draw(L: Layout, s: Frame): string {
   let said = "";
   const put = (markup: string, now: boolean) => (now ? (top += markup) : (out += markup));
   const lit = (cls?: Tone) => (cls ?? Tone.Now) === Tone.Now;
+  // inside and outside: a moved person's shape, words and marks slide together
+  // to their place for the step, and their family lines stay anchored where
+  // they were, a straight stretch running on to them (R-0728)
+  const moved = shifts(L, s);
+  const slid = (id: string, markup: string) => {
+    const m = moved[id];
+    if (!m) return markup;
+    const xy = (o: Offset) => `${f(o[0])} ${f(o[1])}`;
+    return (
+      `<g class="slid" transform="translate(${xy(m.to)})">` +
+      `<animateTransform attributeName="transform" type="translate" from="${xy(m.from)}" to="${xy(m.to)}" ${SLIDE}/>` +
+      `${markup}</g>`
+    );
+  };
+  const stretch = (id: string, ax: number, ay: number) => {
+    const m = moved[id];
+    if (!m) return "";
+    const half = d.half(P[id]);
+    // the point on the moved shape's rim nearest the anchor
+    const rim = (o: Offset) => {
+      const [cx, cy] = [L.x[id] + o[0], L.y[id] + o[1]];
+      const l = Math.hypot(ax - cx, ay - cy) || 1;
+      const [ux, uy] = [(ax - cx) / l, (ay - cy) / l];
+      const e = P[id].g === Sex.Female ? half : half / Math.max(Math.abs(ux), Math.abs(uy));
+      return [cx + ux * e, cy + uy * e];
+    };
+    const [a, b] = [rim(m.from), rim(m.to)];
+    return (
+      `<line class="tie stretch" data-stretch="${esc(id)}" x1="${f(ax)}" y1="${f(ay)}" x2="${f(b[0])}" y2="${f(b[1])}">` +
+      `<animate attributeName="x2" from="${f(a[0])}" to="${f(b[0])}" ${SLIDE}/>` +
+      `<animate attributeName="y2" from="${f(a[1])}" to="${f(b[1])}" ${SLIDE}/></line>`
+    );
+  };
+  s.bonds.forEach((b) => [b.a, b.b].forEach((id) => (out += stretch(id, L.x[id], L.y[id] + d.half(P[id])))));
+  L.kids.forEach((c) => c.kids.forEach((id) => (out += stretch(id, L.x[id], L.y[id] - d.half(P[id])))));
   s.bonds.forEach((b) => {
     const kids = L.kids.find((c) => c.of.includes(b.a) && c.of.includes(b.b));
     if (kids) out += childLines(L, bar(L, b), kids.kids);
@@ -1293,11 +1401,13 @@ export function draw(L: Layout, s: Frame): string {
       if (line)
         t += `<text class="${i ? "lbd" : "lbn"}" x="${f(lx)}" y="${f(y0 + i * LEAD)}" text-anchor="${anchor}">${esc(line)}</text>`;
     });
-    out += g + "</g>";
-    said += t + "</g>";
+    out += slid(id, g + "</g>");
+    said += slid(id, t + "</g>");
   });
 
+  const own = put;
   s.marks.forEach((m) => {
+    const put = (markup: string, now: boolean) => own(slid(m.who, markup), now);
     if (m.k === Mark.Up || m.k === Mark.Down)
       put(cross(L, m.who, m.k === Mark.Up ? Shift.Up : Shift.Down, m.cls ?? Tone.Now), lit(m.cls));
     else if (m.k === Mark.Event) said += event(m, spots.get(m)!);
@@ -1313,6 +1423,8 @@ export function draw(L: Layout, s: Frame): string {
         ` data-mark="${m.k}:${esc(m.who)}"/>`,
       ), lit(m.cls));
     else if (m.k === Mark.Anxiety) put(spikes(L, m.who, m.cls ?? Tone.Now), lit(m.cls));
+    // going down leaves nothing to carry: grey, it is not drawn (R-0729)
+    else if (m.k === Mark.AnxietyDown && lit(m.cls)) put(spikes(L, m.who, Tone.Now, true), true);
   });
   s.kin.forEach((m) => put(kin(L, m), lit(m.cls)));
   s.moves.forEach((mv) => put(boardMove(L, mv), lit(mv.cls)));

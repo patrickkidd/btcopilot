@@ -359,3 +359,14 @@ describe("the path row over the line", () => {
     expect(spanYears("1981-05-01", "1989-11-20")).toBe("1981–89");
   });
 });
+
+// R-0730
+it("names an event whose title starts with someone else in the family with a colon, and leaves the rest as today", () => {
+  const family = ["Ben", "Marcus", "James"];
+  expect(told("Ben Holt", "Marcus left", family)[0]).toBe("Ben: Marcus left");
+  expect(told("Ben Holt", "Ben stopped calling", family)[0]).toBe("Ben stopped calling");
+  expect(told("Ben Holt", "Stopped calling", family)[0]).toBe("Ben stopped calling");
+  expect(told("Ben Holt", "Christmas at home", family)[0]).toBe("Ben christmas");
+  // the 20-letter cut still applies
+  expect(told("Ben Holt", "Marcus moved out of the flat in Oslo", family)).toEqual(["Ben: Marcus moved", "out of the flat in Oslo"]);
+});

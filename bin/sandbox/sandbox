@@ -219,7 +219,7 @@ fill_db() {
   flask_ app fixtures > "$D/fixtures.out" 2> "$D/fixtures.log" || { tails; stop_all; die "the fixtures failed"; }
   local base
   base=$(. "$D/env.sh" && echo "$FLASK_SITE_URL")
-  grep -E '^[a-z0-9]+ [A-Za-z0-9_-]{20,}$' "$D/fixtures.out" \
+  grep -E '^[a-z0-9-]+ [A-Za-z0-9_-]{20,}$' "$D/fixtures.out" \
     | awk -v base="$base" '{ print $1, base "/app/invite/" $2 }' > "$D/links.txt"
   chmod 600 "$D/links.txt"
   echo "  database migrated, $(wc -l < "$D/links.txt" | tr -d ' ') fixture records installed (${SECONDS}s)"

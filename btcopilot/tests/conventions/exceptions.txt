@@ -158,3 +158,44 @@ R-0684 | TEST OWED | coverage of the essentials is not built yet; tests come wit
 R-0685 | TEST OWED | coverage of the essentials is not built yet; tests come with that build
 R-0686 | TEST OWED | coverage of the essentials is not built yet; tests come with that build
 R-0355 | TEST OWED | returns with the one-way Pro app import
+R-0689 | TEST OWED | the case report is not built yet; tests come with that build
+R-0690 | TEST OWED | the case report is not built yet; tests come with that build
+R-0691 | TEST OWED | the case report is not built yet; tests come with that build
+R-0692 | TEST OWED | the case report is not built yet; tests come with that build
+R-0693 | TEST OWED | the case report is not built yet; tests come with that build
+R-0694 | TEST OWED | the case report is not built yet; tests come with that build
+R-0695 | TEST OWED | the case report is not built yet; tests come with that build
+R-0696 | TEST OWED | the case report is not built yet; tests come with that build
+R-0697 | TEST OWED | the case report is not built yet; tests come with that build
+R-0698 | TEST OWED | the case report is not built yet; tests come with that build
+R-0699 | TEST OWED | the case report is not built yet; tests come with that build
+R-0700 | TEST OWED | the case report is not built yet; tests come with that build
+R-0701 | TEST OWED | the case report is not built yet; tests come with that build
+R-0702 | TEST OWED | the case report is not built yet; tests come with that build
+R-0703 | TEST OWED | the case report is not built yet; tests come with that build
+R-0705 | TEST OWED | the case report is not built yet; tests come with that build
+R-0706 | TEST OWED | the case report is not built yet; tests come with that build
+R-0707 | TEST OWED | the case report is not built yet; tests come with that build
+R-0708 | TEST OWED | the case report is not built yet; tests come with that build
+R-0709 | TEST OWED | the case report is not built yet; tests come with that build
+R-0710 | TEST OWED | the case report is not built yet; tests come with that build
+R-0711 | TEST OWED | the case report is not built yet; tests come with that build
+R-0713 | TEST OWED | the case report is not built yet; tests come with that build
+R-0714 | TEST OWED | the case report is not built yet; tests come with that build
+R-0715 | TEST OWED | the case report is not built yet; tests come with that build
+R-0716 | TEST OWED | the case report is not built yet; tests come with that build
+R-0718 | TEST OWED | the case report screen is being built; its tests come with that build
+R-0719 | TEST OWED | the case report screen is being built; its tests come with that build
+R-0720 | TEST OWED | the case report screen is being built; its tests come with that build
+R-0721 | TEST OWED | the case report screen is being built; its tests come with that build
+R-0722 | TEST OWED | the case report screen is being built; its tests come with that build
+R-0723 | TEST OWED | the case report screen is being built; its tests come with that build
+R-0724 | TEST OWED | the case report screen is being built; its tests come with that build
+R-0728 | TEST OWED | the play-by-play drawings are not built yet; tests come with that build
+R-0729 | TEST OWED | the play-by-play drawings are not built yet; tests come with that build
+R-0730 | TEST OWED | the play-by-play drawings are not built yet; tests come with that build
+R-0732 | TEST OWED | the case report screen's card 6 test comes with the screen
+R-0733 | TEST OWED | the case report screen's family sides test comes with the screen
+R-0734 | TEST OWED | the play-by-play words placement is not built yet; tests come with that build
+R-0736 | TEST OWED | storing and querying in place of the conversation's history is not built yet
+R-0737 | TEST OWED | asking who is alive at any age is not built yet
