@@ -533,27 +533,6 @@ describe("the drawing's marks", () => {
     kin.forEach((x) => expect(Math.abs(Number(slash[0].x1) - x)).toBeGreaterThan(S.w / 4));
   });
 
-  // R-0758
-  it("draws a divorce's slashes two thirds as tall as a person, crossing the couple line where they always did", () => {
-    const S = layout(family());
-    const svg = draw(S, {
-      t: 2000,
-      bonds: [{ a: "a", b: "b", st: Tie.Divorced, married: true, fresh: false, hot: false }],
-      marks: [],
-      died: new Set(),
-      moves: [],
-      kin: [],
-      label: "",
-    });
-    const line = Number(svg.match(/<path class="tie[^"]*"[^>]* d="M[\d.]+ [\d.]+V([\d.]+)H/)![1]);
-    const slash = els(svg, "line", "slash");
-    expect(slash).toHaveLength(2);
-    slash.forEach((l) => {
-      expect(Number(l.y1) - Number(l.y2)).toBeCloseTo((2 / 3) * S.w, 0);
-      expect((Number(l.y1) - line) / (line - Number(l.y2))).toBeCloseTo(0.15 / 0.25, 1);
-    });
-  });
-
   // R-0551
   it("writes an event's word clear of the couple line", () => {
     for (const c of [apart(), death()]) {

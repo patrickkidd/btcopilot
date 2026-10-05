@@ -204,3 +204,4 @@ R-0741 | WAIVED | the product's aim; no surface to assert on
 R-0743 | TEST OWED | not built: the coach calling out a connection across generations
 R-0748 | WAIVED | one test proves F18 is drawn with no line through a name; the rest is a judgement that marriages inside a family are rare
 R-0757 | WAIVED | deferred to how coverage is shown; nothing is built to assert
+R-0759 | TEST OWED | the shared drawing is one code path for every view; a test that the play-by-play and the other views draw equal relative sizes is not yet written

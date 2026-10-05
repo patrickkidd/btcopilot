@@ -14,30 +14,30 @@ test.use({ launchOptions: { args: ["--font-render-hinting=none"] } });
  * around a person (the death X, anxiety's spikes, an outline) take the
  * person's size, and an arrow, a couple's line or the fusion bands take the
  * distance between two people, so only the marks that stand on their own are
- * held to one size, a slash to two thirds of it. A word is lit in the emphasis colour meant for words. */
-const STEPS: { name: string; marks: string; sized?: number; word?: boolean; gone?: boolean }[] = [
+ * held to one size. A word is lit in the emphasis colour meant for words. */
+const STEPS: { name: string; marks: string; sized?: boolean; word?: boolean; gone?: boolean }[] = [
   { name: "married", marks: '[data-bond="3|4"]' },
   { name: "birth", marks: '[data-mark^="hl:"]' },
   { name: "adopted", marks: '[data-mark^="hl:"]' },
   { name: "toward", marks: '[data-mark$=":toward"] :is(line, polygon)' },
   { name: "away", marks: '[data-mark$=":away"] :is(line, polygon)' },
-  { name: "conflict", marks: '[data-mark$=":conflict"] .mv-burst', sized: 1 },
-  { name: "distance", marks: '[data-mark$=":distance"] .mv-wall', sized: 1 },
-  { name: "separated", marks: ".slash", sized: 2 / 3 },
-  { name: "symptom up", marks: '[data-mark^="cross:"] :is(rect, line, polygon)', sized: 1 },
+  { name: "conflict", marks: '[data-mark$=":conflict"] .mv-burst', sized: true },
+  { name: "distance", marks: '[data-mark$=":distance"] .mv-wall', sized: true },
+  { name: "separated", marks: ".slash", sized: true },
+  { name: "symptom up", marks: '[data-mark^="cross:"] :is(rect, line, polygon)', sized: true },
   // the next step, anxiety down, ends it: nothing of it is grey there (R-0729)
   { name: "anxiety up", marks: ".spikes line", gone: true },
   // gone: nothing of the step is grey on the next one; going down leaves nothing behind (R-0729)
   { name: "anxiety down", marks: ".spikes.down line", gone: true },
-  { name: "divorced", marks: ".slash", sized: 2 / 3 },
-  { name: "cutoff", marks: '[data-mark$=":cutoff"] :is(.mv-wall, .mv-strike)', sized: 1 },
+  { name: "divorced", marks: ".slash", sized: true },
+  { name: "cutoff", marks: '[data-mark$=":cutoff"] :is(.mv-wall, .mv-strike)', sized: true },
   { name: "projection", marks: '[data-mark$=":projection"] .s-out line' },
   { name: "fusion", marks: '[data-mark$=":fusion"] .mv-band' },
   { name: "overfunctioning", marks: '[data-mark$=":overfunctioning"] .mv-flank line' },
   { name: "underfunctioning", marks: '[data-mark$=":underfunctioning"] .mv-flank line' },
   { name: "functioning down", marks: '[data-mark^="fdown:"]' },
   { name: "functioning up", marks: '[data-mark^="fup:"]' },
-  { name: "symptom down", marks: '[data-mark^="cross:"] :is(rect, line, polygon)', sized: 1 },
+  { name: "symptom down", marks: '[data-mark^="cross:"] :is(rect, line, polygon)', sized: true },
   { name: "defined self", marks: '[data-mark$=":defined-self"] .mv-clear' },
   // the next step, outside, lights the same three again, so nothing of inside is grey there
   { name: "inside", marks: '[data-mark^="hl:"]', gone: true },
@@ -58,8 +58,6 @@ interface Size {
   tone: string;
   w: number;
   h: number;
-  /** the widest stroke, which a mark drawn smaller keeps whole */
-  s: number;
   colour: string;
 }
 
@@ -85,12 +83,11 @@ const measure = (page: Page, name: string, selector: string, tone: "now" | "was"
       const ctm = root.getScreenCTM()!;
       const scale = Math.hypot(ctm.a, ctm.b);
       const frame = els[0].parentElement as unknown as SVGGraphicsElement;
-      let [x0, y0, x1, y1, sw] = [Infinity, Infinity, -Infinity, -Infinity, 0];
+      let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
       els.forEach((el) => {
         const b = el.getBBox();
         const m = frame.getScreenCTM()!.inverse().multiply(el.getScreenCTM()!);
         const s = parseFloat(getComputedStyle(el).strokeWidth) || 0;
-        sw = Math.max(sw, s);
         [
           [b.x, b.y],
           [b.x + b.width, b.y],
@@ -113,7 +110,6 @@ const measure = (page: Page, name: string, selector: string, tone: "now" | "was"
         tone,
         w: r(x1 - x0),
         h: r(y1 - y0),
-        s: r(sw),
         // a word is painted by its fill; its stroke is the halo behind it
         colour: last instanceof SVGTextElement || paint.stroke === "none" ? paint.fill : paint.stroke,
       };
@@ -270,7 +266,7 @@ async function over(page: Page, svgs: string[]): Promise<string[]> {
 test.describe("every mark", () => {
   test.use({ storageState: stateFor("everymark") });
 
-  // R-0679, R-0552, R-0758
+  // R-0679, R-0552
   test("every mark the play-by-play draws is of one size, the current one in the emphasis colour", async ({ page }) => {
     const svgs = await steps(page, STEPS.length);
     const sizes: Size[] = [];
@@ -282,12 +278,10 @@ test.describe("every mark", () => {
       sizes.push(await measure(page, s.name, s.marks, "was"));
     }
 
-    const share = (s: Size) => STEPS.find((x) => x.name === s.name)!.sized;
-    const sized = sizes.filter(share);
-    const size = (s: Size) => (Math.max(s.w, s.h) - s.s) / share(s)! + s.s;
-    const mid = median(sized.map(size));
-    const off = sized.filter((s) => size(s) < 0.75 * mid || size(s) > 1.33 * mid);
-    expect(off.map((s) => `${s.name} ${s.tone} ${Math.max(s.w, s.h)} against ${mid * share(s)!}`)).toEqual([]);
+    const sized = sizes.filter((s) => STEPS.find((x) => x.name === s.name)!.sized);
+    const mid = median(sized.map((s) => Math.max(s.w, s.h)));
+    const off = sized.filter((s) => Math.max(s.w, s.h) < 0.75 * mid || Math.max(s.w, s.h) > 1.33 * mid);
+    expect(off.map((s) => `${s.name} ${s.tone} ${Math.max(s.w, s.h)} against ${mid}`)).toEqual([]);
 
     const lit = { mark: await paint(page, "--move"), word: await paint(page, "--move-text"), was: await paint(page, "--faint") };
     const wrong = sizes.filter((s) => {

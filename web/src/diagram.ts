@@ -287,7 +287,7 @@ class Dims {
     this.OFF = 0.2 * w;
     // ruled 2026-09-26: a mark sits within an eighth of a width of its person
     this.GAP = w / 8;
-    // a mark that stands on its own, a wall, is as tall as a person; a slash is two thirds of that
+    // a mark that stands on its own, a slash or a wall, is as tall as a person
     this.MARK = w;
     // how far the cross and its arrow reach past the shape: two square cells
     this.ZONE = this.GAP + 2 * CROSS;
@@ -1508,16 +1508,12 @@ export const tie = (x0: number, y0: number, x1: number, y1: number, y: number, m
 export const slashes = (n: number, x: number, y: number, W: number, fresh = false): string =>
   slashLines(n, x, y, W, fresh).join("");
 
-/** How far a slash reaches below and above the couple's line, in the width it
- * is given: two thirds of 0.15 and 0.25, so it crosses the line where it did. */
-const SLASH = { below: 0.1, above: 0.5 / 3 };
-
 /** The same slashes one by one, so a fresh one can be drawn over the rest. */
 function slashLines(n: number, x: number, y: number, W: number, fresh = false): string[] {
   return Array.from({ length: n }, (_, i) => {
     const sx = x - (n - 1) * 0.05 * W + i * 0.1 * W;
     const pop = fresh && i === n - 1 ? " now pop" : "";
-    return `<line class="slash${pop}" x1="${f(sx)}" y1="${f(y + SLASH.below * W)}" x2="${f(sx)}" y2="${f(y - SLASH.above * W)}"/>`;
+    return `<line class="slash${pop}" x1="${f(sx)}" y1="${f(y + 0.15 * W)}" x2="${f(sx)}" y2="${f(y - 0.25 * W)}"/>`;
   });
 }
 
@@ -1833,11 +1829,11 @@ export function draw(L: Layout, s: Frame): string {
     const kids = L.kids.find((c) => c.of.includes(b.a) && c.of.includes(b.b));
     const stops = [k.x0, ...(kids?.kids ?? []).map((id) => L.x[id]).filter((x) => x > k.x0 && x < k.x1), k.x1].sort((p, q) => p - q);
     const open = stops.slice(1).map((x, i) => [stops[i], x]).sort((p, q) => q[1] - q[0] - (p[1] - p[0]));
-    // given the width that once made a slash as tall as a person, it is two thirds of that
+    // a slash is 0.4 of the width it is given
     const len = d.MARK / 0.4;
     const hw = (n - 1) * 0.05 * len + 3;
     const clear = (cx: number) =>
-      !texts.some((t) => t.x0 < cx + hw && cx - hw < t.x1 && t.y0 < k.y + SLASH.below * len && k.y - SLASH.above * len < t.y1);
+      !texts.some((t) => t.x0 < cx + hw && cx - hw < t.x1 && t.y0 < k.y + 0.15 * len && k.y - 0.25 * len < t.y1);
     const at = open
       .flatMap(([p, q]) => {
         const room = Math.max(0, Math.floor(((q - p) / 2 - hw) / 2));
