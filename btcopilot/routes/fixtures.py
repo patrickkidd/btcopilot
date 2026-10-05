@@ -858,7 +858,7 @@ def _case_report_family(names=None) -> DiagramData:
         note("i3", "Twice you stopped being in touch with your mother within months of a worry about her.", "impression", "raised", "choice", (203, 209)),
         note("i4", "Staying in touch with your mother the next time she is unwell, and expecting her to push back at first.", "impression", "raised", "work_on", (207, 209)),
         note("i5", "Noticing when your sleep slips, as an early sign that things are tense at home.", "impression", "raised", "work_on", (202, 210)),
-        note("i6", "Your father started drinking heavily the year after his own father died.", "impression", "raised", "coach_guess", (110, 200)),
+        note("i6", "Your father's drinking got heavy the year after his own father died.", "impression", "raised", "coach_guess", (110, 200)),
         note("i7", "Your mother ran the household much as her own mother did.", "impression", "held", None, (201,)),
         note("q1", "What do you think your own part was?", "thought", "resolved", "own_part", outcome="answered"),
         note("q2", "What would it look like to visit her the next time she is unwell?", "thought", "asked", "choice"),

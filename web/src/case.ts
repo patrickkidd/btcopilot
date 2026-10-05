@@ -94,6 +94,8 @@ export const ORDER_TITLE = "Why these cards, in this order";
 
 /** What a guess card says when the coach has put nothing on it (R-0699, Patrick, 2026-10-04). */
 export const NOT_ENOUGH = "Not enough in the record to make a guess yet. Chat more with me so I have more to go on.";
+/** What the work card says when the person has not said what they are working on (R-0740). */
+export const NOT_SAID = "You haven't said yet what you're working on. Chat more with me about it.";
 
 const lead = (text: string) => (text ? `<p class="lead">${esc(text)}</p>` : "");
 const sublabel = (text: string) => `<p class="sublabel">${esc(text)}</p>`;
@@ -133,7 +135,7 @@ function bubble(words: string, facts: Fact[] = [], ask: string | null = null): s
 const guessBlock = (g: Guess, ask: string | null = null) =>
   `<div class="gbub">${bubble(g.text, g.facts, ask)}${chips([...g.facts.map(factChip), ...g.people.map(personChip)])}</div>`;
 
-const notEnough = () => `<div class="gbub">${bubble(NOT_ENOUGH)}</div>`;
+const notEnough = (words = NOT_ENOUGH) => `<div class="gbub">${bubble(words)}</div>`;
 
 /** The top padding of a family's frame on the report, as casereport.css gives it. */
 const FAM_PAD = 4;
@@ -195,7 +197,7 @@ function body(card: Card, v: CaseView): string {
     case Card.WorkOn:
       return v.work.guesses.length
         ? chips(v.work.aim ? [factChip(v.work.aim)] : []) + `<div class="glist">${v.work.guesses.map((g) => guessBlock(g)).join("")}</div>`
-        : notEnough();
+        : notEnough(NOT_SAID);
     case Card.Effort:
       return lead(v.effort);
   }

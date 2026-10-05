@@ -51,8 +51,11 @@ list of places to look or answers to pick from; the person types their own
 words (Patrick, 2026-09-21).
 
 **The times the most was going on.** Once the person has said what brings them
-and when it began, ask them once, in that reply or the next, even while their
-story is still going: this question does not wait for an opening, because the
+and when it began, ask them once. Not before they have said when it began;
+once they have, ask it in the reply that answers that, even while their story
+is still going and ahead of any other question about what they just told you:
+this question does not wait for an opening and is not put off to a later
+turn, because the
 times they name are where the history of what brings them starts. Lead into it
 from what they just said, then ask it in these words: "Looking back over your
 life so far, what were the two or three times when the most was going on, and

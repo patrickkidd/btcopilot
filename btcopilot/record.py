@@ -186,12 +186,7 @@ def rewind(data: dict, deltas: list[dict]):
     add or, as rows written before adds were logged whole did, as field sets on
     a new id, which once taken back leave it holding nothing but that id."""
     for delta in reversed(deltas):
-        if delta["field"] is not None:
-            _set(data, _inverse(delta))
-        elif delta["after"] is None:
-            _restore(data, _inverse(delta))
-        else:
-            _drop(data, ItemKind(delta["item_kind"]), delta["item_id"])
+        _back(data, delta)
     for kind, item_id in {
         (ItemKind(d["item_kind"]), str(d["item_id"]))
         for d in deltas
@@ -200,6 +195,88 @@ def rewind(data: dict, deltas: list[dict]):
         item = _find(data, kind, item_id)
         if all(value in (None, []) for field, value in item.items() if field != "id"):
             _collection(data, kind).remove(item)
+
+
+def _back(data: dict, delta: dict) -> dict:
+    if delta["field"] is not None:
+        return _set(data, _inverse(delta))
+    if delta["after"] is None:
+        return _restore(data, _inverse(delta))
+    return _drop(data, ItemKind(delta["item_kind"]), delta["item_id"])
+
+
+def taking_back(data: dict, changes: list[Change]) -> list[tuple[Change, list[dict]]]:
+    """Each change row taken back off `data` one for one, newest first, with
+    the deltas that logs; a value changed since it was written is a Conflict."""
+    out = []
+    for change in sorted(changes, key=lambda c: c.id, reverse=True):
+        # taking back an undo would put its row back while the log still
+        # names that row as taken back
+        if change.turn_id.startswith("undo:"):
+            raise ValueError(f"change {change.id} is itself an undo and cannot be taken back")
+        done = []
+        for delta in reversed(change.deltas):
+            # It changed nothing, so taking it back changes nothing.
+            if delta["before"] == delta["after"]:
+                continue
+            inverse = _inverse(delta)
+            actual = _get(data, inverse)
+            if _set_fields(actual) != _set_fields(inverse["before"]):
+                raise Conflict(inverse, actual)
+            done.append(_back(data, delta))
+        out.append((change, done))
+    return out
+
+
+def _set_fields(value):
+    """A whole item without the fields that hold nothing, which a field taken
+    back to empty leaves behind."""
+    if isinstance(value, dict):
+        return {field: held for field, held in value.items() if held is not None}
+    return value
+
+
+def undo_changes(
+    diagram_id: int, ids: list[int], *, author: Author, user_id: int | None = None
+) -> list[Change]:
+    """Take these change rows back, newest first, each logged as its own
+    change `undo:<turn>#<row id>` so the log names the row taken back. Unlike
+    `undo`, which takes back a whole turn, it also takes off the questions and
+    impressions a row added. Every row is checked before any is written."""
+    changes = (
+        Change.query.filter(Change.diagram_id == diagram_id, Change.id.in_(ids)).all()
+    )
+    missing = set(ids) - {change.id for change in changes}
+    if missing:
+        raise ValueError(f"no changes {sorted(missing)} on diagram {diagram_id}")
+    taking_back(diagramjson.loads(db.session.get(Diagram, diagram_id).data), changes)
+    out = []
+    for change in sorted(changes, key=lambda c: c.id, reverse=True):
+        with _locked(diagram_id) as diagram:
+            data = diagramjson.loads(diagram.data)
+            [(_, deltas)] = taking_back(data, [change])
+            out.append(
+                _commit(
+                    diagram,
+                    data,
+                    deltas,
+                    author,
+                    f"undo:{change.turn_id}#{change.id}",
+                    user_id,
+                    change.session_id,
+                    None,
+                    undoing=True,
+                )
+            )
+    return out
+
+
+def undone(diagram_id: int) -> set[int]:
+    """The ids of the change rows `undo_changes` took back."""
+    rows = Change.query.filter(
+        Change.diagram_id == diagram_id, Change.turn_id.like("undo:%#%")
+    )
+    return {int(row.turn_id.rpartition("#")[2]) for row in rows}
 
 
 def _inverse(delta: dict) -> dict:

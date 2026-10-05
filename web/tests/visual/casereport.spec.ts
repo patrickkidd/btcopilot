@@ -15,8 +15,22 @@ const SIZES = [
 ];
 const SCHEMES = ["light", "dark"] as const;
 
+/** The passages are private and CI has no key to the corpus, so the page is
+ * answered with made-up ones for every book, keyed as the corpus keys them;
+ * `fail` refuses that many reads first. */
+const PASSAGES = Object.fromEntries(
+  ["why", "1", "2", "3", "3s", "4", "6", "7a", "9a", "10", "order"].map((book) => [book, [{ text: `A made-up passage for ${book}.`, by: "A made-up author" }]]),
+);
+
+async function answer(page: Page, fail = 0): Promise<void> {
+  await page.route("**/case-report-passages*", (route) =>
+    fail-- > 0 ? route.fulfill({ status: 503, body: "" }) : route.fulfill({ json: PASSAGES }),
+  );
+}
+
 /** The report opened at its address, every console error kept. */
-async function open(page: Page): Promise<string[]> {
+async function open(page: Page, fail = 0): Promise<string[]> {
+  await answer(page, fail);
   const errors: string[] = [];
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   page.on("pageerror", (e) => errors.push(String(e)));
@@ -70,6 +84,8 @@ for (const key of FIXTURES)
           expect(seen.outside).toBe(0);
           expect(seen.sideways).toBe(false);
           expect(seen.text).not.toMatch(/NaN|undefined|not in the record|From the record/);
+          // stored words show as written: an apostrophe is never escaped code
+          expect(seen.text).not.toMatch(/&#39;|&#x27;|&apos;|&amp;|&quot;/);
           // every family picture is drawn; each side is one picture (R-0733)
           expect(seen.text).not.toContain("cannot be drawn");
           expect(seen.sidePictures).toEqual(seen.sideCount);
@@ -78,6 +94,32 @@ for (const key of FIXTURES)
           expect(errors).toEqual([]);
         });
       });
+
+test.describe("the case report with little in the record", () => {
+  test.use({ storageState: stateFor("case-report-thin"), viewport: SIZES[0] });
+
+  // R-0740
+  test("what to work on says the person has not said yet what they are working on", async ({ page }) => {
+    await open(page);
+    const record = await (await page.request.get("/app/timeline")).json();
+    expect(record.asked_questions.filter((q: { open: boolean; kind: string; case_report_card: string | null }) => q.open && q.kind === "impression" && q.case_report_card === "work_on")).toEqual([]);
+    const card = page.locator('#case-body .level[data-card="work_on"]');
+    await expect(card.locator(".bub.coach")).toHaveText(/You haven't said yet what you're working on\. Chat more with me about it\./);
+    await expect(card).not.toContainText("Not enough in the record to make a guess yet");
+  });
+});
+
+test.describe("the case report's words", () => {
+  test.use({ storageState: stateFor("case-report"), viewport: SIZES[0] });
+
+  // R-0740
+  test("a guess with an apostrophe shows the apostrophe, never escaped code", async ({ page }) => {
+    await open(page);
+    const card = page.locator('#case-body .level[data-card="guesses"]');
+    await expect(card.locator(".bub.coach").first()).toContainText("Your father's drinking got heavy");
+    await expect(card).not.toContainText("&#39;");
+  });
+});
 
 test.describe("the case report's taps", () => {
   test.use({ storageState: stateFor("case-report"), viewport: SIZES[0] });
@@ -234,6 +276,13 @@ test.describe("the case report's taps", () => {
     await page.locator('#case-body .level[data-card="brought"] .book').click();
     await expect(page.locator(".fs-sheet.bk")).toHaveClass(/in/, { timeout: 1000 });
     expect(Date.now() - tapped).toBeLessThan(1000);
+  });
+
+  // R-0691
+  test("a book whose passages could not be read asks again at its tap", async ({ page }) => {
+    await open(page, 1);
+    await page.locator('#case-body .level[data-card="main"] .book').click();
+    await expect(page.locator(".fs-sheet.bk blockquote").first()).toBeVisible();
   });
 
   // R-0691

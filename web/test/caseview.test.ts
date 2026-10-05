@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
-import { cards, NOT_ENOUGH, rail } from "../src/case";
+import { cards, NOT_ENOUGH, NOT_SAID, rail } from "../src/case";
 import { Card, caseView, ORDER } from "../src/caseview";
+import { esc } from "../src/dom";
 import {
   CaseReportCard,
   EventKind,
@@ -9,6 +10,7 @@ import {
   emptyTimeline,
   type AskedQuestion,
   type Person,
+  SessionKind,
   type Session,
   type Timeline,
   type TimelineEvent,
@@ -139,10 +141,19 @@ it("says on every guess card that there is not enough yet, and never picks a mai
   const v = caseView(tl, ONE, "");
   expect(v.main).toBeNull();
   const html = cards(v, false);
-  const guessCards = [Card.Main, Card.OwnPart, Card.Choice, Card.WorkOn];
+  const guessCards = [Card.Main, Card.OwnPart, Card.Choice];
   for (const card of guessCards) expect(html.split(`data-card="${card}"`)[1].split("</section>")[0]).toContain(NOT_ENOUGH);
   const thin = cards(caseView({ ...emptyTimeline(), people: [person(1, "Ines", "female", null, true)] }, ONE, ""), false);
   expect(thin.split(`data-card="${Card.Couple}"`)[1].split("</section>")[0]).not.toContain("<p class=\"lead\">");
+});
+
+// R-0740
+it("says on what to work on that the person has not said yet what they are working on", () => {
+  const tl = halloran();
+  tl.asked_questions = [guess("i9", "A guess on no card.", null, [202])];
+  const work = cards(caseView(tl, ONE, ""), false).split(`data-card="${Card.WorkOn}"`)[1].split("</section>")[0];
+  expect(work).toContain(esc(NOT_SAID));
+  expect(work).not.toContain(NOT_ENOUGH);
 });
 
 // R-0709
@@ -203,7 +214,7 @@ it("refuses a record whose couple has a marriage event but is not marked married
 it("keeps every date inside a chip: no lead line names a year or a month", () => {
   const tl = halloran();
   tl.people.find((p) => p.id === 2)!.birth_event = 106;
-  const v = caseView(tl, [{ last_activity: "2026-10-01T10:00:00" } as Session], "");
+  const v = caseView(tl, [{ kind: SessionKind.Chat, last_activity: "2026-10-01T10:00:00" } as Session], "");
   const parted = halloran();
   parted.events.push(event(300, EventKind.Separated, "2020-01-01", { person: 1, spouse: 10 }));
   const leads = [v.brought.lead, v.brought.asked, v.couple.lead, v.effort, ...v.sides.map((s) => s.lead), ...caseView(parted, ONE, "").stages.map((r) => r.label)];
@@ -220,4 +231,13 @@ it("shows on the coach's guess card only the guesses the coach chose for it", ()
   const none = caseView(tl, ONE, "");
   expect(none.guesses).toEqual([]);
   expect(cards(none, false).split(`data-card="${Card.Guesses}"`)[1].split("</section>")[0]).toContain(NOT_ENOUGH);
+});
+
+// R-0711
+it("counts only chats as the person talking with the coach, never a note or a recording", () => {
+  const notes = [SessionKind.Note, SessionKind.Recording].map((kind) => ({ kind }) as Session);
+  const v = caseView(halloran(), notes, "");
+  expect([v.brought.asked, v.effort]).toEqual(["", ""]);
+  const chatted = caseView(halloran(), [...notes, { kind: SessionKind.Chat } as Session], "");
+  expect(chatted.effort).toBe("Nora has talked with the coach in one session.");
 });

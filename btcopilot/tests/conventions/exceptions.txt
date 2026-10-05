@@ -199,7 +199,7 @@ R-0733 | TEST OWED | the case report screen's family sides test comes with the s
 R-0734 | TEST OWED | the play-by-play words placement is not built yet; tests come with that build
 R-0736 | TEST OWED | storing and querying in place of the conversation's history is not built yet
 R-0737 | TEST OWED | asking who is alive at any age is not built yet
-R-0740 | TEST OWED | not built: the coach showing patterns across generations side by side; the rest is a direction for the picture with nothing to assert
+R-0761 | TEST OWED | not built: the coach showing patterns across generations side by side; the rest is a direction for the picture with nothing to assert
 R-0741 | WAIVED | the product's aim; no surface to assert on
 R-0743 | TEST OWED | not built: the coach calling out a connection across generations
 R-0748 | WAIVED | one test proves F18 is drawn with no line through a name; the rest is a judgement that marriages inside a family are rare

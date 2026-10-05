@@ -161,7 +161,8 @@ export class CaseReport implements View {
     const opened = this.opened;
     if (!opened) return;
     this.stale = false;
-    this.passages ??= this.hooks.fetch(api.casePassages);
+    // asked for early so a book opens at once; a failure shows at the book's tap
+    this.ask().catch(() => {});
     this.drawer.close();
     const wide = this.hooks.wide();
     q(this.root, "case-family").hidden = wide;
@@ -277,9 +278,17 @@ export class CaseReport implements View {
     within.querySelectorAll<HTMLElement>(".fam[data-who]").forEach((f) => frameOn(f, [f.dataset.who!], f.dataset.who!, false));
   }
 
+  /** The passages, read once; a failed read is asked again at the next tap. */
+  private ask(): Promise<Passages | null> {
+    this.passages ??= this.hooks.fetch(api.casePassages).catch((error) => {
+      this.passages = null;
+      throw error;
+    });
+    return this.passages;
+  }
+
   private async book(button: HTMLElement): Promise<void> {
-    this.passages ??= this.hooks.fetch(api.casePassages);
-    const all = await this.passages;
+    const all = await this.ask();
     if (!all) return;
     this.sheet.show(passages(all, button.dataset.book!, button.dataset.title!));
   }
