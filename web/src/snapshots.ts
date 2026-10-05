@@ -56,6 +56,10 @@ export const ENDS: Record<string, Pair["k"]> = {
 };
 export const BIRTHS = new Set<string>([EventKind.Birth, EventKind.Adopted]);
 
+/** Who an event is about: the child for a birth or an adoption, the person
+ * for every other kind. */
+export const aboutOf = (e: TimelineEvent): number | null => (BIRTHS.has(e.kind ?? "") ? e.child ?? e.person : e.person);
+
 /** The one bond there ever is between two people (R-0326). */
 export const bondOf = (bonds: PairBond[], a: number | null, b: number | null) =>
   bonds.find((pb) => (pb.person_a === a && pb.person_b === b) || (pb.person_a === b && pb.person_b === a));
@@ -163,12 +167,13 @@ function titleOf(e: TimelineEvent): string {
  * nobody in particular is about the family: everyone alive then is emphasised,
  * and its title goes beside the reader. */
 function marksOf(r: Family, e: TimelineEvent): Step["marks"] {
-  if (e.person == null && e.child == null)
+  const about = aboutOf(e);
+  if (about == null)
     return [
       { k: Mark.Family, who: r.you },
       { k: Mark.Event, who: r.you, word: titleOf(e) },
     ];
-  const who = key((e.child ?? e.person)!);
+  const who = key(about);
   const kind = e.kind ?? "";
   if (COUPLE_KINDS.has(kind) || ENDS[kind]) {
     const pb = r.bondOf(e.person, e.spouse);
@@ -279,7 +284,7 @@ export class Told {
   /** Who an event is about, when they are drawn, else the record's own person. */
   private about(id: number): string {
     const e = this.tl.events.find((e) => e.id === id)!;
-    const who = e.child ?? e.person;
+    const who = aboutOf(e);
     return who != null && key(who) in this.cast.people ? key(who) : this.cast.index;
   }
 

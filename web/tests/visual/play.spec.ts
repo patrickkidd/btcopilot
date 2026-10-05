@@ -218,6 +218,25 @@ test.describe("the play-by-play drawer", () => {
     await expect(drawer(page)).toBeHidden();
     await expect(page.locator("#path .here")).not.toHaveText("Timeline");
   });
+
+  test("a move that also names a child is drawn from its person, never from the child", async ({ page }) => {
+    // R-0456
+    let ids = { ada: 0, ben: 0, kid: 0 };
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+      const tl = await (await route.fetch()).json();
+      const e = tl.events.find((e: { title: string | null }) => e.title?.startsWith("Ada moved toward Ben") || e.relationship === "toward");
+      const kid = tl.people.find((p: { id: number }) => p.id !== e.person && !e.relationshipTargets.includes(p.id));
+      ids = { ada: e.person, ben: e.relationshipTargets[0], kid: kid.id };
+      e.child = kid.id;
+      await route.fulfill({ json: tl });
+    });
+    await settle(page);
+    await stored(page).click();
+    await expect.poll(() => step(page)).toBe("1 of 4");
+    const svg = drawer(page).locator(".draw svg");
+    await expect(svg.locator(`[data-mark="move:${ids.ada}>${ids.ben}:toward"]`)).toHaveCount(1);
+    await expect(svg.locator(`[data-mark^="move:${ids.kid}>"]`)).toHaveCount(0);
+  });
 });
 
 test.describe("the drawer on a small phone", () => {
