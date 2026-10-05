@@ -100,3 +100,43 @@ test("scrolling up the chat slides the about page out at its full height before 
   expect(seen.filter((s) => s.h > 0 && s.folded)).toEqual([]);
   expect(seen[seen.length - 1]).toEqual({ h: 0, sliding: false, top: null, folded: true });
 });
+
+test.describe("a record whose coach has spoken under the picture", () => {
+  test.use({ storageState: stateFor("everymark") });
+
+  test("no chat bubble shows through the about page while it comes down", async ({ page }) => {
+    // R-0768
+    await open(page);
+    await page.evaluate(() => {
+      const pic = document.querySelector<HTMLElement>("#chat-screen > .pic")!;
+      const seen = { covered: 0, through: [] as string[] };
+      (window as unknown as { SEEN: typeof seen }).SEEN = seen;
+      let n = 0;
+      const read = () => {
+        const lay = pic.querySelector<HTMLElement>(".slide-lay:has(.card)");
+        if (lay) {
+          const c = lay.querySelector(".card")!.getBoundingClientRect();
+          // the moving copy takes no taps; that is lifted for the reading, to find what is drawn on top
+          lay.inert = false;
+          lay.style.pointerEvents = "auto";
+          for (const bub of document.querySelectorAll<HTMLElement>("#chat .bub")) {
+            const b = bub.getBoundingClientRect();
+            const [x, y] = [b.left + b.width / 2, b.top + b.height / 2];
+            if (x < c.left || x > c.right || y < c.top || y > c.bottom || y > innerHeight) continue;
+            seen.covered++;
+            if (!pic.contains(document.elementFromPoint(x, y))) seen.through.push(bub.textContent!.slice(0, 30));
+          }
+          lay.inert = true;
+          lay.style.pointerEvents = "";
+        }
+        if (++n < 90) requestAnimationFrame(read);
+      };
+      requestAnimationFrame(read);
+    });
+    await page.locator("#info").click();
+    await page.waitForTimeout(1600);
+    const seen = await page.evaluate(() => (window as unknown as { SEEN: { covered: number; through: string[] } }).SEEN);
+    expect(seen.covered).toBeGreaterThan(0);
+    expect(seen.through).toEqual([]);
+  });
+});

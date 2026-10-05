@@ -57,6 +57,26 @@ test.describe("the play-by-play drawer", () => {
     expect(away.y).toBeLessThanOrEqual(-away.h + 1);
   });
 
+  test("lands where it rests without passing it and settling back", async ({ page }) => {
+    // R-0768
+    await settle(page);
+    await page.evaluate(() => {
+      const seen: number[] = [];
+      (window as unknown as { SEEN: number[] }).SEEN = seen;
+      const read = () => {
+        const p = document.querySelector<HTMLElement>("#pbp");
+        if (p && !p.hidden) seen.push(new DOMMatrix(getComputedStyle(p).transform).f);
+        if (seen.length < 60) requestAnimationFrame(read);
+      };
+      requestAnimationFrame(read);
+    });
+    await stored(page).click();
+    await page.waitForTimeout(1000);
+    const seen = await page.evaluate(() => (window as unknown as { SEEN: number[] }).SEEN);
+    expect(seen.filter((y) => y < -1).length).toBeGreaterThan(2);
+    expect(Math.max(...seen)).toBeLessThanOrEqual(0.5);
+  });
+
   // R-0590, R-0545, R-0563
   test("the teal cluster chip in the play message replays its stored telling, with no call to the coach", async ({ page }) => {
     await settle(page);

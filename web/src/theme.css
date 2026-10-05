@@ -350,8 +350,10 @@ button { font-family: inherit; }
    under the picture moves while they travel; the about page hangs over the
    chat at its full height the whole way, never cut to the region's and then
    let out (Patrick, 2026-10-02), so the region clips the slide at its top and
-   sides only, and the live page waits under the copy. */
-.pic.sliding { overflow-x: clip; overflow-y: visible; clip-path: inset(0 0 -100vh 0); }
+   sides only, and the live page waits under the copy. The chat comes later in
+   the page, so the sliding region stands above it, or its bubbles would show
+   through the about page on its way down. */
+.pic.sliding { overflow-x: clip; overflow-y: visible; clip-path: inset(0 0 -100vh 0); z-index: 6; }
 .pic.sliding .view { transition: none; }
 .pic.sliding > .view .card { visibility: hidden; }
 /* a level arrives as a card over the one it came from: the whole region, on
