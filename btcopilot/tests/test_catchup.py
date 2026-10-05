@@ -254,6 +254,19 @@ def test_a_closed_persons_fact_on_a_pair_bond_becomes_one_question_per_partner(
     assert stored(kin) == before
 
 
+def test_a_fact_a_planned_move_makes_known_is_not_proposed_again(flask_app, tmp_path, kin, past):
+    # R-0773, R-0760
+    filed(kin, "q1", "alive", "pair_bond", "3")
+    plan = dry(flask_app, tmp_path, calling(fact(past, iid="2")))
+    assert [d["reason"] for d in plan["dropped"]] == ["the record already holds it"]
+
+    apply(flask_app, plan)
+    alive = [
+        (q["item_kind"], q["item_id"]) for q in stored(kin).values() if q.get("fact") == "alive"
+    ]
+    assert sorted(alive) == [("person", "1"), ("person", "2")]
+
+
 def test_only_the_catch_up_moves_a_closed_question(kin):
     # R-0773
     filed(kin, "q1", "birth_date", "pair_bond", "3")

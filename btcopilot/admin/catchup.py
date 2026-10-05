@@ -266,11 +266,16 @@ def part_of(args: dict) -> Part | None:
 
 
 def proposals(
-    diagram: Diagram, data: DiagramData, calls: list[tuple[str, dict]], mine: dict[int, Statement]
+    diagram: Diagram,
+    data: DiagramData,
+    moved: list[dict],
+    calls: list[tuple[str, dict]],
+    mine: dict[int, Statement],
 ) -> tuple[list[dict], list[dict], list[dict]]:
-    """The facts and stories the coach's tool would keep, in order, and every
-    other proposal with why it was dropped."""
-    held = copy.deepcopy(data)
+    """The facts and stories the coach's tool would keep, in order, checked
+    against the record with the planned moves made, and every other proposal
+    with why it was dropped."""
+    held = after_moves(data, moved)
     cited = kept_from(diagram)
     facts, stories, dropped = [], [], []
     for name, args in calls:
@@ -324,7 +329,7 @@ def planned(diagram: Diagram, plans: pathlib.Path) -> pathlib.Path | None:
         start = START.replace("{transcript}", transcript)
         turn = drain(meter.turn(system, [{"role": "user", "content": start}], offered(), turn_id))
         facts, stories, dropped = proposals(
-            diagram, data, [(c.name, c.args) for c in turn.calls], mine
+            diagram, data, moved, [(c.name, c.args) for c in turn.calls], mine
         )
     plan = {
         "diagram": diagram.id,
@@ -374,6 +379,35 @@ def shown(plan: dict, path: pathlib.Path | None = None) -> list[dict]:
     return rows
 
 
+def refiled(questions: list[dict], q: dict, links: list[list[str]]) -> list[tuple[str, dict]]:
+    """The fields each question takes in a move: the question itself to the
+    first link, and a whole copy under a new id to each other link."""
+    first, *rest = links
+    taken = {x["id"] for x in questions if x["id"].startswith("q")}
+    filed = [(q["id"], dict(zip(record.REFILED, first)))]
+    for link in rest:
+        copy_id = record.next_key("q", taken)
+        taken.add(copy_id)
+        whole = {k: v for k, v in q.items() if k != "id" and v is not None}
+        filed.append((copy_id, {**whole, **dict(zip(record.REFILED, link))}))
+    return filed
+
+
+def after_moves(data: DiagramData, moved: list[dict]) -> DiagramData:
+    """A copy of the record with the planned moves made, so proposals are
+    checked against the record the apply leaves."""
+    held = copy.deepcopy(data)
+    for one in moved:
+        q = next(x for x in held.questions if x["id"] == one["question"])
+        for qid, fields in refiled(held.questions, q, one["links"]):
+            mine = next((x for x in held.questions if x["id"] == qid), None)
+            if mine is None:
+                held.questions.append({"id": qid, **fields})
+            else:
+                mine.update(fields)
+    return held
+
+
 def move(diagram: Diagram, one: dict) -> str | None:
     """One wrong-kind question to its right target, and a copy of it to each
     other target, as one change row; why not, when the question changed since
@@ -382,14 +416,7 @@ def move(diagram: Diagram, one: dict) -> str | None:
     q = next((q for q in questions if q["id"] == one["question"]), None)
     if q is None or {k: q.get(k) for k in one["before"]} != one["before"]:
         return "the question changed since the dry run"
-    first, *rest = one["links"]
-    taken = {x["id"] for x in questions if x["id"].startswith("q")}
-    filed = [(q["id"], dict(zip(record.REFILED, first)))]
-    for link in rest:
-        copy_id = record.next_key("q", taken)
-        taken.add(copy_id)
-        whole = {k: v for k, v in q.items() if k != "id" and v is not None}
-        filed.append((copy_id, {**whole, **dict(zip(record.REFILED, link))}))
+    filed = refiled(questions, q, one["links"])
     try:
         record.apply(
             diagram.id,
