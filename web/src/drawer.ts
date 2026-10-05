@@ -175,9 +175,13 @@ export function frameOn(frame: HTMLElement, ids: string[], who: string, glide: b
   pan(frame, Math.round(left), glide && !still());
 }
 
-/** How long the frame takes to travel to a step's people, eased in and out,
- * from where it stood to exactly where it lands, never past it (R-0778). */
-export const PAN = { ms: 900, ease: (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (2 - 2 * t) ** 3 / 2) };
+/** How long the frame takes to travel to a step's people: about 1,200 px a
+ * second, never under half a second nor over two, eased in and out, from where
+ * it stood to exactly where it lands, never past it (R-0778). */
+export const PAN = {
+  ms: (px: number) => Math.min(Math.max(Math.abs(px) / 1.2, 500), 2000),
+  ease: (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (2 - 2 * t) ** 3 / 2),
+};
 const panning = new WeakMap<HTMLElement, number>();
 
 function pan(frame: HTMLElement, to: number, glide: boolean): void {
@@ -192,8 +196,9 @@ function pan(frame: HTMLElement, to: number, glide: boolean): void {
     for (const kind of ["pointerdown", "touchstart", "wheel"])
       frame.addEventListener(kind, () => cancelAnimationFrame(panning.get(frame)!), { passive: true });
   const t0 = performance.now();
+  const ms = PAN.ms(to - from);
   const tick = (now: number) => {
-    const t = Math.min((now - t0) / PAN.ms, 1);
+    const t = Math.min((now - t0) / ms, 1);
     frame.scrollLeft = from + (to - from) * PAN.ease(t);
     if (t < 1) panning.set(frame, requestAnimationFrame(tick));
   };

@@ -145,9 +145,9 @@ it("says each whole family step's date once, over the years line, whole inside i
 });
 
 // R-0778
-it("travels to a step's people over most of a second, setting off and landing gently and never passing where it lands", () => {
+it("travels to a step's people at about 1,200 px a second, from half a second to two, setting off and landing gently and never passing where it lands", () => {
   const at = Array.from({ length: 101 }, (_, i) => PAN.ease(i / 100));
-  expect(PAN.ms).toBeGreaterThanOrEqual(800);
+  expect([PAN.ms(60), PAN.ms(-600), PAN.ms(1200), PAN.ms(2369), PAN.ms(9000)]).toEqual([500, 500, 1000, expect.closeTo(1974, 0), 2000]);
   expect([at[0], at[100]]).toEqual([0, 1]);
   expect(at.every((v, i) => v >= 0 && v <= 1 && (i === 0 || v >= at[i - 1]))).toBe(true);
   expect(at[5]).toBeLessThan(0.01);

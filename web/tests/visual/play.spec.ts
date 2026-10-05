@@ -904,7 +904,7 @@ test.describe("the frame's travel to a step's people", () => {
   test.use({ storageState: stateFor("case-report-dense"), viewport: { width: 393, height: 852 } });
 
   // R-0778
-  test("sets off from where the frame stood, eases to exactly where it lands without passing it, and takes most of a second", async ({ page }) => {
+  test("sets off from where the frame stood, eases to exactly where it lands without passing it, taking longer the further it goes", async ({ page }) => {
     await settle(page);
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
@@ -919,12 +919,12 @@ test.describe("the frame's travel to a step's people", () => {
         const t0 = performance.now();
         const tick = () => {
           seen.push([performance.now() - t0, document.querySelector<HTMLElement>("#pbp .draw")!.scrollLeft]);
-          if (performance.now() - t0 < 1800) requestAnimationFrame(tick);
+          if (performance.now() - t0 < 2800) requestAnimationFrame(tick);
         };
         requestAnimationFrame(tick);
       });
       await button.click();
-      await page.waitForTimeout(1900);
+      await page.waitForTimeout(2900);
       trips.push(await page.evaluate(() => (window as unknown as { seen: number[][] }).seen));
     }
     const moving = trips.filter((t) => Math.abs(t.at(-1)![1] - t[0][1]) > 40);
@@ -936,8 +936,13 @@ test.describe("the frame's travel to a step's people", () => {
       expect(t.every(([, x]) => dir * (x - from) >= -1 && dir * (to - x) >= -1)).toBe(true);
       // each frame on from the last, never back
       expect(t.slice(1).every(([, x], i) => dir * (x - t[i][1]) >= -1)).toBe(true);
-      const landed = t.find(([, x]) => Math.abs(x - to) <= 1)![0];
-      expect(landed).toBeGreaterThan(700);
+      // about 1,200 px a second, never under half a second nor over two
+      const set = t.find(([, x]) => Math.abs(x - from) > 0)![0];
+      const landed = t.find(([, x]) => Math.abs(x - to) <= 1)![0] - set;
+      const ms = Math.min(Math.max(Math.abs(to - from) / 1.2, 500), 2000);
+      // the ease is within a pixel of its end for its last few hundredths
+      expect(landed).toBeGreaterThan(ms * 0.85);
+      expect(landed).toBeLessThan(ms + 150);
     }
   });
 });
