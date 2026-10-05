@@ -158,6 +158,11 @@ def note_line(question: dict) -> str:
     else:
         if question["state"] == QuestionState.Asked and question.get("asked_at"):
             status += f" {question['asked_at']}"
+            again = question.get(record.ASKED_AGAIN) or []
+            if again:
+                status += f", again {', '.join(again)}"
+            if len(again) >= record.PASSES:
+                status += ", passed over: not waiting, asked only if the person brings it up"
         line = f'{question["id"]} {status} {question["kind"]} "{question["text"]}"'
         if question.get("item_kind"):
             line += f" about {question['item_kind']} {question['item_id']}"

@@ -551,6 +551,13 @@ def schemas(coder: bool = False) -> list[dict]:
                         means[prompts.ToolText.CaseReportCard],
                         clear=True,
                     ),
+                    "raised_in": {
+                        "type": "integer",
+                        "description": (
+                            "Asking again a question the person passed over twice: their "
+                            "message that brought its topic back up."
+                        ),
+                    },
                 },
                 "required": ["id", "version"],
             },
@@ -1660,8 +1667,8 @@ class Toolbox:
         if asked is not None and state is not QuestionState.Held:
             raise ToolError(
                 f"Question {asked['id']} already asks {coverage.WORDS[fact]} for {where} and "
-                "is open. To ask it now, ask that one: one held is marked asked with "
-                "set_question, one already asked is asked again in your reply with no call. "
+                "is open. To ask it now, ask that one: mark it asked with set_question, "
+                "whether it is held or already asked, and ask it in your reply. "
                 "When the person has answered it, close it with set_question as answered",
                 "It asked the same thing twice.",
             )
@@ -1730,8 +1737,20 @@ class Toolbox:
         found = next((q for q in self.data.questions if q["id"] == str(args["id"])), None)
         if found is None or record.note(found) is not rules:
             raise ToolError(f"No {rules.noun} {args['id']} in the record", GONE)
-        fields = {}
-        if args.get("state") is not None:
+        again = (
+            rules is record.QUESTION
+            and args.get("state") == QuestionState.Asked
+            and found["state"] == QuestionState.Asked
+        )
+        if args.get("raised_in") is not None and not again:
+            raise ToolError(
+                "raised_in is only for asking again a question already asked",
+                "It named a message for nothing it asked again.",
+            )
+        fields, raised = {}, None
+        if again:
+            fields[record.ASKED_AGAIN], raised = self._asked_again(found, args)
+        elif args.get("state") is not None:
             state = choice(QuestionState, args["state"], "states")
             fields["state"] = state.value
             if state is rules.shown:
@@ -1749,7 +1768,32 @@ class Toolbox:
         if record.CARD in args:
             card = args[record.CARD]
             fields[record.CARD] = card and choice(CaseReportCard, card, "cards").value
-        return self._write(ItemKind.Question, args["id"], fields)
+        return self._write(ItemKind.Question, args["id"], fields, raised)
+
+    def _asked_again(self, found: dict, args: dict) -> tuple[list[str], int | None]:
+        """The days a question was put to the person again, with today's added.
+        Passed over twice, it is asked again only when the person brings its
+        topic back, and their message that did is logged on the change
+        (R-0774)."""
+        days = found.get(record.ASKED_AGAIN) or []
+        today = clock.day(datetime.datetime.utcnow(), self.zone).isoformat()
+        if len(days) < record.PASSES:
+            return [*days, today], None
+        if args.get("raised_in") is None:
+            raise ToolError(
+                f"Question {found['id']} was asked again on {', '.join(days)} and passed "
+                "over each time. It stays on the person's list and is asked again only if "
+                "the person brings its topic up; then give raised_in, their message that did",
+                "It was about to ask again a question the person has passed over twice.",
+            )
+        raised = self._mine(args["raised_in"])
+        if clock.day(raised.created_at, self.zone).isoformat() < days[-1]:
+            raise ToolError(
+                f"Message {raised.id} came before question {found['id']} was last asked; "
+                "name the person's message that brought its topic up since",
+                "That message came before the question was last asked.",
+            )
+        return [*days, today], raised.id
 
     def _evidence(self, one: dict) -> dict:
         """What an impression rests on. A message must be one of this family's

@@ -11,6 +11,7 @@ from btcopilot.tests.live.checks import (
     asks_father_alive_or_age,
     asks_most_first,
     asks_only_waiting,
+    asks_passed_over,
     title_retry,
 )
 
@@ -121,3 +122,29 @@ def test_only_a_retried_title_refusal_is_tolerated():
     assert title_retry({"refusal": refused, "retried": True})
     assert not title_retry({"refusal": refused, "retried": False})
     assert not title_retry({"refusal": "event 31 is already in the record", "retried": True})
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "What has your mother told you about growing up with her father's drinking?",
+        "That's fine. Did your grandfather's drinking ever come up at home?",
+        "No worries. How much did Walt drink when your mom was small?",
+    ],
+)
+def test_asking_the_question_passed_over_twice_fails(reply):
+    # R-0774
+    assert asks_passed_over(reply)
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "That's fine. When was your father born?",
+        "No worries. What did Theo say when you texted him?",
+        "It sounds like being left out of the trip hurt.",
+    ],
+)
+def test_following_the_person_or_asking_something_else_passes(reply):
+    # R-0774
+    assert asks_passed_over(reply) == []

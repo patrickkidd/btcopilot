@@ -181,9 +181,8 @@ REFUSED = [
      "It named what the question is about only halfway."),
     (ToolName.AddQuestion, {"text": ASK, "kind": "fact", "state": "asked", "item_kind": "person", "item_id": "99"},
      "That is not in the record."),
-    (ToolName.SetQuestion, {"id": "q1", "state": "asked"}, "That question was already asked."),
     (ToolName.SetQuestion, {"id": "q1", "state": "resolved"}, "It did not say how the question ended."),
-    (ToolName.SetQuestion, {"id": "q1", "state": "asked", "outcome": "fact"}, "That question was already asked."),
+    (ToolName.SetQuestion, {"id": "q1", "state": "asked", "outcome": "fact"}, "It did not say how the question ended."),
     (ToolName.SetQuestion, {"id": "q1", "state": "resolved", "outcome": "declined_by_user"},
      "Only you can dismiss a question."),
     (ToolName.SetQuestion, {"id": "q2", "state": "resolved", "outcome": "answered"}, "That question is already closed."),
@@ -314,12 +313,87 @@ def test_a_waiting_question_is_asked_by_moving_it_never_by_keeping_it_twice(fami
 
     with pytest.raises(ToolError) as refused:
         add(toolbox, LATER)
-    assert "mark one held asked with set_question" in str(refused.value)
+    assert "mark it asked with set_question, whether it is held or already asked" in str(
+        refused.value
+    )
     settle(toolbox, family, "q1", state="asked")
     assert [(q["state"], q["asked_at"]) for q in stored(family).values()] == [("asked", TODAY)]
+
+
+ANOTHER_DAY = "2026-09-29"
+
+
+def test_a_question_asked_again_keeps_each_day_and_passed_over_twice_is_left_alone(
+    family, test_user
+):
+    # R-0774
+    toolbox = box(family)
+    add(toolbox, LATER)
+    settle(toolbox, family, "q1", state="asked")
+    with freeze_time(ANOTHER_DAY):
+        settle(toolbox, family, "q1", state="asked")
+    asked = stored(family)["q1"]
+    assert (asked["state"], asked["asked_at"], asked[record.ASKED_AGAIN]) == (
+        "asked",
+        TODAY,
+        [TODAY, ANOTHER_DAY],
+    )
+    assert (
+        f'q1 asked {TODAY}, again {TODAY}, {ANOTHER_DAY}, passed over: not waiting, asked '
+        "only if the person brings it up"
+    ) in outline(family.get_diagram_data(), 5)
+
     with pytest.raises(ToolError) as refused:
         settle(toolbox, family, "q1", state="asked")
-    assert "one already asked is said again in your reply with no call" in str(refused.value)
+    assert "stays on the person's list and is asked again only if the person brings" in str(
+        refused.value
+    )
+    assert refused.value.plain == (
+        "It was about to ask again a question the person has passed over twice."
+    )
+    page = questions.asked(family.id, family.get_diagram_data())
+    assert [(q["id"], q["open"], q["text"]) for q in page] == [("q1", True, LATER)]
+
+
+def test_a_question_passed_over_twice_is_asked_when_the_person_brings_it_up(family, test_user):
+    # R-0774
+    toolbox = box(family)
+    add(toolbox, LATER)
+    before = says(open_session(test_user, family), "My grandmother was sick.", "2026-09-27T09:00")
+    with freeze_time(ANOTHER_DAY):
+        settle(toolbox, family, "q1", state="asked")
+        settle(toolbox, family, "q1", state="asked")
+    with pytest.raises(ToolError) as refused:
+        settle(toolbox, family, "q1", state="asked", raised_in=before.id)
+    assert "came before question q1 was last asked" in str(refused.value)
+
+    raised = says(
+        open_session(test_user, family), "I keep thinking about grandma.", f"{ANOTHER_DAY}T15:00"
+    )
+    with freeze_time(ANOTHER_DAY):
+        settle(toolbox, family, "q1", state="asked", raised_in=raised.id)
+    assert stored(family)["q1"][record.ASKED_AGAIN] == [ANOTHER_DAY] * 3
+    assert Change.query.order_by(Change.id.desc()).first().statement_id == raised.id
+
+
+def test_asking_again_is_one_day_at_a_time_on_an_open_asked_question(family):
+    # R-0774
+    toolbox = box(family)
+    add(toolbox, LATER, state="held")
+    with pytest.raises(ToolError) as refused:
+        settle(toolbox, family, "q1", state="asked", raised_in=1)
+    assert "raised_in is only for asking again" in str(refused.value)
+    jumped = [
+        {"item_kind": "question", "item_id": "q1", "field": record.ASKED_AGAIN, "after": [TODAY]}
+    ]
+    with pytest.raises(record.Invalid) as refused:
+        record.apply(family.id, jumped, author=Author.Coach, turn_id="t2")
+    assert refused.value.plain == "Only an open question can be asked again."
+    settle(toolbox, family, "q1", state="asked")
+    jumped[0]["after"] = [TODAY, TODAY]
+    with pytest.raises(record.Invalid) as refused:
+        record.apply(family.id, jumped, author=Author.Coach, turn_id="t2")
+    assert refused.value.plain == "A question is asked again one day at a time."
 
 def test_reading_questions_gives_open_and_declined_and_closed_on_asking(family):
     # R-0479

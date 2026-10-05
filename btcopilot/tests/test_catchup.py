@@ -7,6 +7,7 @@ exactly the plan, each item a change row undo takes back.
 Invented names only.
 """
 
+import datetime
 import json
 from dataclasses import asdict
 
@@ -16,10 +17,11 @@ from mock import patch
 from btcopilot import record
 from btcopilot.admin import admin
 from btcopilot.extensions import db
-from btcopilot.models import Author, Change, ModelCall, Purpose
+from btcopilot.models import Author, Change, ModelCall, Purpose, Statement
 from btcopilot.schema import PairBond, Person
 from btcopilot.tests.conftest import Model, calling
 from btcopilot.tests.test_questionbackfill import past  # noqa: F401
+from btcopilot.recordtext import outline
 from btcopilot.tests.test_questions import stored
 from btcopilot.tests.test_turnhistory import family  # noqa: F401
 from btcopilot.toolbox import ToolName
@@ -120,7 +122,14 @@ def test_the_dry_run_saves_a_readable_plan_and_writes_nothing(flask_app, tmp_pat
     before, changes = stored(kin), Change.query.count()
     plan = dry(flask_app, tmp_path, calling(fact(past), story(past)))
 
-    assert plan["counts"] == {"moved": 1, "left_as_is": 0, "facts": 1, "stories": 1, "dropped": 0}
+    assert plan["counts"] == {
+        "moved": 1,
+        "left_as_is": 0,
+        "facts": 1,
+        "stories": 1,
+        "asked_again": 0,
+        "dropped": 0,
+    }
     assert plan["facts"][0]["said"] == "My grandmother raised me."
     assert plan["facts"][0]["target"].startswith("person 2")
     assert plan["stories"][0]["words"] == STORY
@@ -157,7 +166,14 @@ def test_a_second_pass_proposes_nothing_already_written(flask_app, tmp_path, kin
     apply(flask_app, dry(flask_app, tmp_path, calling(fact(past), story(past))))
     again = dry(flask_app, tmp_path, calling(fact(past), story(past, "The summer he left")))
 
-    assert again["counts"] == {"moved": 0, "left_as_is": 0, "facts": 0, "stories": 0, "dropped": 2}
+    assert again["counts"] == {
+        "moved": 0,
+        "left_as_is": 0,
+        "facts": 0,
+        "stories": 0,
+        "asked_again": 0,
+        "dropped": 2,
+    }
     assert [d["reason"] for d in again["dropped"]] == [
         "the record already holds it",
         "a question was already kept from that message",
@@ -314,3 +330,77 @@ def test_undo_takes_a_catch_up_row_back(flask_app, tmp_path, kin, past):
     )
     assert result.exit_code == 0, result.output
     assert stored(kin) == before
+
+
+def again(qid, statement):
+    return (ToolName.SetQuestion, {"id": qid, "state": "asked", "statement": statement})
+
+
+@pytest.fixture
+def asked_twice(kin, past) -> dict:
+    """An open question asked on 20 Sep, and the coach's two later messages
+    that asked it again, on 21 and 22 Sep."""
+    filed(kin, "q1", "met", "pair_bond", "3", state="asked")
+    later = Statement.query.filter_by(text="Tell me more.").one()
+    first = db.session.get(Statement, past["reply"])
+    first.created_at = datetime.datetime(2026, 9, 21, 12)
+    later.created_at = datetime.datetime(2026, 9, 22, 12)
+    db.session.commit()
+    return {"first": first.id, "later": later.id}
+
+
+def test_the_days_a_question_was_asked_again_are_planned_and_applied(
+    flask_app, tmp_path, kin, past, asked_twice
+):
+    # R-0774, R-0772
+    start = db.session.query(db.func.max(Change.id)).scalar() or 0
+    before = stored(kin)
+    plan = dry(
+        flask_app,
+        tmp_path,
+        calling(
+            again("q1", asked_twice["later"]),
+            again("q1", asked_twice["first"]),
+            again("q1", past["user"]),
+            again("q9", asked_twice["first"]),
+        ),
+    )
+
+    assert [(a["statement"], a["day"]) for a in plan["asked_again"]] == [
+        (asked_twice["first"], "2026-09-21"),
+        (asked_twice["later"], "2026-09-22"),
+    ]
+    assert [d["reason"] for d in plan["dropped"]] == [
+        "it names no message of the coach's in this record",
+        "only a question still asked is asked again",
+    ]
+    assert stored(kin) == before
+
+    rows = apply(flask_app, plan)
+    assert [(r["part"], r["entry"], r["refused"]) for r in rows] == [
+        ("asked again", "q1", None),
+        ("asked again", "q1", None),
+    ]
+    assert stored(kin)["q1"][record.ASKED_AGAIN] == ["2026-09-21", "2026-09-22"]
+    assert "passed over: not waiting" in outline(kin.get_diagram_data(), 5)
+    made = Change.query.filter(Change.id > start).all()
+    assert [c.statement_id for c in made] == [asked_twice["first"], asked_twice["later"]]
+
+    again_ = dry(flask_app, tmp_path, calling(again("q1", asked_twice["first"])))
+    assert [d["reason"] for d in again_["dropped"]] == ["the coach's message was already counted"]
+    result = flask_app.test_cli_runner().invoke(
+        admin, ["diagrams", "undo", str(kin.id), *[str(c.id) for c in made], "--yes"]
+    )
+    assert result.exit_code == 0, result.output
+    assert stored(kin)["q1"] == {**before["q1"], record.ASKED_AGAIN: None}
+
+
+def test_a_message_from_before_the_first_ask_is_not_counted(flask_app, tmp_path, kin, past, asked_twice):
+    # R-0774
+    db.session.get(Statement, asked_twice["first"]).created_at = datetime.datetime(2026, 9, 19)
+    db.session.commit()
+    plan = dry(flask_app, tmp_path, calling(again("q1", asked_twice["first"])))
+
+    assert [d["reason"] for d in plan["dropped"]] == [
+        "the coach's message is not after the question was first asked"
+    ]

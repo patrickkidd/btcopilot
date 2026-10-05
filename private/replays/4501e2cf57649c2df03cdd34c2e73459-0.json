@@ -1,0 +1,37 @@
+{
+	"text": "ENC[AES256_GCM,data:3sFL8NDAeC5a7zYuApocmBh5+qfZgHfSqyeB/8sItT75Wc9m2Ye4Qw8ZIFemP8LBHlWMOyc+gLbat81i9nUa/+525EZQ77YZlZDgLL7eCsvDJ913Rz6xPzfUSlbR8EA61ieadnojqtcVDun6/gC+7CgVsedMuhqcMq+qxvS70zE1zBOUD5yNOetvbbOh8OPRLA3Z6B95KxEHTUcf2msiEMKYrlNfcT61Qj+IMvTWiSKdjHQDiyquVg8CU8voEI/jOTy+SkT4d52Ei0ezs6+Ma6d7IQT+7GZyJQY6xQ0Y5aaY/98mlX5G8mTkPoQwoYAc1Y/Pob/Lkv2vwMwpma9kfoT/kKwEpqLriDa0x/HQP6sRcwUSGGL05ITN/SBQ3YPSAH1T9grvI2wB/BWdUgnopzzAvD32Iz1NWKCA/lmwlrWj0IdhrhXb9hqFfMRvArpq3OgvRrcxjdcqEel5nsaiyeyLohgU6lLjXz8W3oQjyqF9PdhplR++2rifmK3FyGsmEiLkv7WQlKo7ab1ycCNb9L/EKg5aduqCNj5wmBPj6/IGxAjND8Vzp0KqwYEqj+0EoO4vGQxx4fkO,iv:SGogW9r5TjMNP4rnN5h/pZKDQWwklS4P45WWiZY0vyM=,tag:3jpDMNpnX7OFlqCpAqCDtA==,type:str]",
+	"calls": [],
+	"blocks": [
+		{
+			"type": "ENC[AES256_GCM,data:ApSoJg==,iv:V/8CSKDd95+Rjq52OcTd971K4v8YnKH/vtd5LcSwjMo=,tag:/KaQHSq6zT9tH/IVxkwjag==,type:str]",
+			"text": "ENC[AES256_GCM,data:Gnm1Hhiq96JIpWdq/6iSkHRq3AHKe9IklC9WdovGCYAVbCKKpYYItJqY/inArAVCBHF6OmUAnTtaLQOrE+Sld/HSyuT9ywE/Q2XwXAiOM74eIZpVmf/ntR21tuTyjlabR1XHXySKLJIXVSxp2rF5/XRZQv+sv3/jEaCnkXgL5Z5YdQkXd/Cvrt2FhUszH2PQPRyEnbNZhU8PaV1NiWZLzHqWSWq2sq2QyiiFvcfuiDD97pWVECOijsyJSe/InG9nSx895BnbbaYQe1W8Y7F30YlQY5Vrrz7umV+WAf/PFeXDshDlu6tcCX9d55smKeCJasK4eQQ8zrj9VChOVEBeGU+ycltL9Y2jbxvSaJKGuRZWAl/GHAJjJ2sehISVpMFaPuv6CwF4MHiz6ga/VN76p/RNdHvXE+5/56Zh1iwaW/unLxS0iPEtgmAdKEQVFn+jMAmCJU18Gsv3PqjfujFJ7yyz+tNE+oJJbEbeRABNOWHKRSeMMqzvnNnv/R2FBuCU46ucbzJaDiAQYvW7a+Uv8MuMCMA/+w568lI+dAMSC7CFbIIoNMiSu3j+Sa+gRAVK6dPTo3r/MTyh,iv:2ztB+CPtD9AwE2u357CK6+Z4JJMSYPGxXnO2n43rzrA=,tag:ZngbW40fg30bj9qvckN+SQ==,type:str]"
+		}
+	],
+	"served": {
+		"model": "ENC[AES256_GCM,data:bHVb5eb8K4QITRJ1YfPc,iv:MflR9rzsFL2mk2r3/pGI+nxpjaRn/91qJnOm0sVPwlE=,tag:pDoYB4J+q+wLaB4xzy/BZw==,type:str]",
+		"hops": [],
+		"sticky": "ENC[AES256_GCM,data:4pVLW94=,iv:Kzpn2mbgi0rrP/n+qeV0DPuwe3YRe4lvqwNtwgwbM7Q=,tag:/jCO7wl7VsTVo5nP4sOW/g==,type:bool]"
+	},
+	"source": "ENC[AES256_GCM,data:ohzzbW9oFH3NpqSR,iv:hp37tqbTKqW24VnIUxveJpTOpUfR4AM07oORrJJeFdA=,tag:P5WCVLGO8AkHxDW/JqwhmQ==,type:str]",
+	"date": "ENC[AES256_GCM,data:drxerbC5N65Tzw==,iv:oi/k1J7SZzbfXYih7XaQmqIuzawJ01gk5IXIEvUW3Iw=,tag:R8pNJa/yJaweKxOTDmUKkw==,type:str]",
+	"sops": {
+		"age": [
+			{
+				"enc": "-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBsVi9oeVhPaEhJQ1EweTJh\ncXc4VTVES0Fxc0JRcncyUDJKeGlvK1ZGVlFrClVuZFVmWWx1VHZtTE4wdlV3OTZu\nQ0xMTEtCb0pPcEs2K2F6WnorQzdDeFUKLS0tIEdnaExoVjN1OWk3bWIxZ3R5REIr\nK2ttclFTQjBERlNsaVBMV2dsVzBHaDQKqkqLbjgzuZe/nILXiSqMeYPn4ou4eLtW\nQajk6xS/ATcYgjRFaFJr7saG6B9KkAbi5JdpE+YYo8Cv0668jAbLqQ==\n-----END AGE ENCRYPTED FILE-----\n",
+				"recipient": "age13p5vtq39x8vs6w43kdwsnkark3e6h40unmny76hxcsdy4mhp6ydqmma3yl"
+			},
+			{
+				"enc": "-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBaVlBLcTBFaXVQMS9FdkdU\nbjZNWUFCckV5Ylh5SHhQTllLekczWVJhbDM4CmRuK1lMbER4Z1kzbU0yaFgrdGV4\nNmxPd3FtblJGZndJUnM5U2p5bnBVYUEKLS0tIGZHcXJKSVF1cUk0NHpvTWdwQmdO\nYncrVkl3WExLbGl0RXZqZVRaNlNiSnMKM5gp0J4mmf+Y/OplVWuvABaSNpFZX9QQ\nKYUMBnEvnB0Fd7gUesMSEj0QXRfeDf2iLjKQN/UrRrvQJSAdNS412A==\n-----END AGE ENCRYPTED FILE-----\n",
+				"recipient": "age105g6wq3zc6xszu75ejeqryqjq69xrfm4hp8hktq89u3jpyafvq7sf23nqu"
+			},
+			{
+				"enc": "-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBTTGF4S1BmcENnRVFGSGhB\nbHczRGM5QjQ3Z0lvdVpsYnNjc1JIRmkyUkFzCkV2UHNiZG1hQ3puSUtWd0RYcTBq\nQXVvd1IyeEpwZ3dhS2VEUWVoZjVBL0kKLS0tIFBEVXM3QzFvTU82dG5pTVZ4YkM2\nQ1JNTEFKZWFmQ0pLZEFqN3BmRzZtR2MKPAo5iyj+QU85yQ2xoM/FbLmdgd2JaHVz\ntSz7PN6SQ9Ugkw3nBwPwhvSobkNlQZhjNCfQl8xu8mGvrrzGa8hqSQ==\n-----END AGE ENCRYPTED FILE-----\n",
+				"recipient": "age1hq5rwp5pjfk939xchnv5cycl9vtfqhuf0crcfaycrra6xjur85kst3lxzy"
+			}
+		],
+		"lastmodified": "2026-10-05T20:16:11Z",
+		"mac": "ENC[AES256_GCM,data:aHc9dNBjjnFV6spcCiSJglQzE2R5Jd8/dfNVzyDnbF7IaYXIdj2omgazjxGKiwBF0cEfQc88OvM8BQ/06d3dWEneaaPVNsyUiG2AWW+RX19pTU5Z670pvI6b6Hy/UyZZEzxEe3pjr0w711RnF2O+dYx+k8OGrlDR0IW1nyW2GZQ=,iv:L0vj6VWxehA0JyegPmXB9b5vKjij2iOP0ZgXi95Uf58=,tag:hTnohfnW+vxAvEEIYuxoLA==,type:str]",
+		"unencrypted_suffix": "_unencrypted",
+		"version": "3.13.3"
+	}
+}

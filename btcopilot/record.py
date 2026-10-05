@@ -7,6 +7,7 @@ compare-and-set on each value.
 """
 
 import contextlib
+import datetime
 import enum
 import logging
 import re
@@ -403,6 +404,10 @@ def _apply(data: dict, delta: dict) -> list[dict]:
 # replaces the one before it, except that up to three guesses are on what to
 # work on and on the coach's guess (R-0709, R-0732).
 CARD = "case_report_card"
+# The days the coach put a question to the person again after the first ask (R-0774).
+ASKED_AGAIN = "asked_again_on"
+# Asked again this many times and passed over, it is no longer waiting.
+PASSES = 2
 CARD_HOLDS = {CaseReportCard.WorkOn: 3, CaseReportCard.CoachGuess: 3}
 QUESTION_CARDS = (CaseReportCard.OwnPart, CaseReportCard.Choice)
 
@@ -1365,6 +1370,8 @@ def _questions(data: dict, deltas: list[dict], author: Author, refile: bool = Fa
             )
         if question.get("pushback") is not None:
             Pushback(question["pushback"])
+        if ASKED_AGAIN in written:
+            _asked_again(mine, question_id, rules, was, state)
         _card(question, question_id, rules, state, written, author)
         if question.get("answer") is not None and (
             rules is IMPRESSION or outcome is not QuestionOutcome.Answered
@@ -1414,9 +1421,32 @@ def _refiled(data: dict, question: dict, question_id: str, added: bool, written:
     _names(question, question_id)
 
 
+def _asked_again(mine: list[dict], question_id: str, rules, was, state) -> None:
+    """A question put to the person again adds one day to the days it was
+    asked again, while it stays asked and unanswered (R-0774)."""
+    delta = next(d for d in mine if d["field"] == ASKED_AGAIN)
+    before, after = delta.get("before") or [], delta["after"]
+    if rules is not QUESTION or was is not QuestionState.Asked or state is not QuestionState.Asked:
+        raise Invalid(
+            f"only a question already asked and still open is asked again, not {question_id}",
+            "Only an open question can be asked again.",
+        )
+    if not isinstance(after, list) or after[:-1] != before or len(after) != len(before) + 1:
+        raise Invalid(
+            f"{ASKED_AGAIN} of {question_id} only gains the one day it is asked again",
+            "A question is asked again one day at a time.",
+        )
+    datetime.date.fromisoformat(after[-1])
+
+
 def _again(rules) -> str:
     """How the coach comes back to a waiting one instead of keeping it twice (R-0771)."""
     shown = rules.shown.value
+    if rules is QUESTION:
+        return (
+            f"to ask it now, mark it {shown} with set_question, whether it is held or "
+            f"already {shown}, and ask it in your reply"
+        )
     return (
         f"to say it now, mark one held {shown} with set_{rules.noun}; "
         f"one already {shown} is said again in your reply with no call"

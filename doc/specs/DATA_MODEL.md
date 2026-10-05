@@ -265,6 +265,17 @@ message it rests on; on the `own_part` question it is the person's view of
 their own part (R-0708). Neither needs a column or a migration: the questions
 list lives in the diagram's data.
 
+A question carries `asked_again_on`, a list of ISO days or absent: each day the
+coach asked it once more, past the first time, whose day `asked_at` holds
+(R-0774). The coach asks again by marking an asked question asked with
+`set_question`, which adds that day; the record takes it only on a question
+still asked, one day at a time. With two days and no answer the question is
+passed over: the map stops showing it as waiting, it stays open and listed on
+the page, and the tool asks it again only with `raised_in`, the person's message
+that brought its topic back, which the change row keeps as its `statement_id`.
+The questions catch-up fills it for records from before, one change row per
+coach message that asked again.
+
 Each coach turn's done row in `turn_events` carries
 `coverage: {before: counts, after: counts}`, where counts is
 `{required, known, asked, said_unknown, declined, not_asked}`.

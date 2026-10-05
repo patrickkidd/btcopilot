@@ -18,6 +18,7 @@ ALIVE_OR_AGE = (
     r"|\bdeath\b|\bhow old\b|\bage\b|\baged\b|\bborn\b|\bbirthday\b|\bbirth ?date\b"
 )
 WAITING = r"\b(drink\w*|drank|drunk|alcohol\w*|grow(ing)? up|grew up|childhood)\b"
+DRINKING = r"\b(drink\w*|drank|drunk|alcohol\w*)\b"
 MOST = "two or three times when the most was going on"
 
 
@@ -42,6 +43,12 @@ def asks_only_waiting(reply: str) -> bool:
     drinking, and no other (R-0771)."""
     asked = questions(reply)
     return bool(asked) and all(re.search(WAITING, q, re.I) for q in asked)
+
+
+def asks_passed_over(reply: str) -> list[str]:
+    """The questions about the mother's father's drinking, which the person
+    has passed over twice (R-0774)."""
+    return [q for q in questions(reply) if re.search(DRINKING, q, re.I)]
 
 
 def asks_most_first(reply: str) -> bool:

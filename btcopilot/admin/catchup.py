@@ -3,7 +3,8 @@ had the coach's newest question rules been there from the first session: a
 question filed on the wrong kind of thing moves to the right person or
 pair-bond by fixed rules, a fact the person already said is kept as a question
 already answered (R-0760), and a story the talk moved past is kept to come
-back to (R-0770). The dry run makes the one model call per record and saves a
+back to (R-0770), and the days the coach asked an open question again and the
+person passed over it are kept on it (R-0774). The dry run makes the one model call per record and saves a
 plan a person can read; the apply writes exactly that plan, each item one
 change row, with no model call. Chat messages are never changed."""
 
@@ -15,7 +16,7 @@ import pathlib
 
 import click
 
-from btcopilot import coverage, profile, record
+from btcopilot import clock, coverage, profile, record
 from btcopilot.admin import setting
 from btcopilot.admin.diagrams import find
 from btcopilot.admin.guard import writes
@@ -49,10 +50,13 @@ STATEMENT = {
     "type": "integer",
     "description": "The id of the person's message this rests on.",
 }
+AGAIN = {
+    "type": "integer",
+    "description": "The id of the coach's message that asked it again.",
+}
 START = (
     "This is not a chat; nobody reads your words. Below is everything said in "
-    "this family's sessions, oldest first, each of the person's messages "
-    "numbered. Read it against the map and the checklist and propose, with "
+    "this family's sessions, oldest first, each message numbered. Read it against the map and the checklist and propose, with "
     "add_question, giving statement each time:\n"
     "1. Each fact on the checklist the person said outright that the map does "
     "not show as known: kind fact, state resolved, outcome answered, the fact, "
@@ -64,6 +68,10 @@ START = (
     "conflict they named. Kind thought, state held, worded the way the person "
     f"put it, statement the message that raised it. At most {STORIES}, the ones "
     "with the most behind them first.\n"
+    "3. Each question the map shows asked and still open that the coach put to "
+    "the person again after first asking it, and the person passed over: "
+    "set_question with its id, state asked, and statement the coach's message "
+    "that asked it again, once for each such message.\n"
     "Propose nothing the map already holds, open or closed. Change nothing "
     "else.\n\n{transcript}"
 )
@@ -74,14 +82,18 @@ class Part(enum.StrEnum):
     Left = "left as is"
     Fact = "fact said"
     Story = "story to come back to"
+    Again = "asked again"
     Dropped = "dropped"
 
 
 def offered() -> list[dict]:
     """The coach's add_question, without the fields this pass never gives,
-    and with the message each proposal rests on."""
-    tool = next(s for s in schemas() if s["name"] == ToolName.AddQuestion)
+    and with the message each proposal rests on; and its set_question as a
+    question asked again, with the coach's message that asked it."""
+    tools = {s["name"]: s for s in schemas()}
+    tool = tools[ToolName.AddQuestion]
     given = tool["input_schema"]
+    again = tools[ToolName.SetQuestion]
     return [
         {
             **tool,
@@ -93,14 +105,27 @@ def offered() -> list[dict]:
                 },
                 "required": [*given["required"], "statement"],
             },
-        }
+        },
+        {
+            **again,
+            "description": "A question the coach asked the person again, and they passed over.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": again["input_schema"]["properties"]["id"],
+                    "state": {"type": "string", "enum": [QuestionState.Asked.value]},
+                    "statement": AGAIN,
+                },
+                "required": ["id", "state", "statement"],
+            },
+        },
     ]
 
 
-def said(diagram: Diagram) -> tuple[str, dict[int, Statement]]:
-    """Every session's words, oldest first, the person's messages numbered,
-    and those messages by id."""
-    lines, mine = [], {}
+def said(diagram: Diagram) -> tuple[str, dict[int, Statement], dict[int, Statement]]:
+    """Every session's words, oldest first, each message numbered, and the
+    person's messages and the coach's by id."""
+    lines, mine, coach = [], {}, {}
     sessions = Discussion.query.filter_by(diagram_id=diagram.id).order_by(
         Discussion.created_at, Discussion.id
     )
@@ -112,8 +137,9 @@ def said(diagram: Diagram) -> tuple[str, dict[int, Statement]]:
                 mine[statement.id] = statement
                 lines.append(f"[person message {statement.id}] {statement.text}")
             else:
-                lines.append(f"[coach] {statement.text}")
-    return "\n\n".join(lines), mine
+                coach[statement.id] = statement
+                lines.append(f"[coach message {statement.id}] {statement.text}")
+    return "\n\n".join(lines), mine, coach
 
 
 def target(data: DiagramData, kind, iid) -> str | None:
@@ -228,6 +254,50 @@ def kept_from(diagram: Diagram) -> set[int]:
     }
 
 
+def counted_from(diagram: Diagram) -> set[int]:
+    """The coach's messages this pass already counted as a question asked
+    again."""
+    return {
+        change.statement_id
+        for change in Change.query.filter_by(diagram_id=diagram.id, turn_id=TURN.format(diagram.id))
+        if any(d["field"] == record.ASKED_AGAIN for d in change.deltas)
+    }
+
+
+def asked_again(
+    held: DiagramData,
+    args: dict,
+    coach: dict[int, Statement],
+    first: dict[str, dict],
+    counted: set[int],
+    zone: str | None,
+) -> tuple[dict, str | None]:
+    """A question the coach asked again, its day kept on the copy, or why
+    not (R-0774)."""
+    q = next((x for x in held.questions if x["id"] == args.get("id")), None)
+    statement = coach.get(args.get("statement"))
+    entry = {
+        "question": args.get("id"),
+        "words": q and q["text"],
+        "statement": args.get("statement"),
+        "said": statement and statement.text[:SAID],
+    }
+    if statement is None:
+        return entry, "it names no message of the coach's in this record"
+    if q is None or record.note(q) is not record.QUESTION or q["state"] != QuestionState.Asked:
+        return entry, "only a question still asked is asked again"
+    day = clock.day(statement.created_at, zone).isoformat()
+    asked = first.get(q["id"], {}).get("statement_id")
+    replies = sorted(i for i in coach if asked is not None and i > asked)
+    if day < q["asked_at"] or (replies and statement.id <= replies[0]):
+        return entry, "the coach's message is not after the question was first asked"
+    if statement.id in counted:
+        return entry, "the coach's message was already counted"
+    counted.add(statement.id)
+    q[record.ASKED_AGAIN] = [*(q.get(record.ASKED_AGAIN) or []), day]
+    return {**entry, "day": day}, None
+
+
 def refusal(held: DiagramData, args: dict, part: Part, stories: int, cited: set[int]) -> str | None:
     """Why this pass, before the tool, will not keep a proposal: the record's
     own rule on the same words, and this pass's own limits."""
@@ -271,14 +341,27 @@ def proposals(
     moved: list[dict],
     calls: list[tuple[str, dict]],
     mine: dict[int, Statement],
-) -> tuple[list[dict], list[dict], list[dict]]:
-    """The facts and stories the coach's tool would keep, in order, checked
-    against the record with the planned moves made, and every other proposal
-    with why it was dropped."""
+    coach: dict[int, Statement],
+) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
+    """The facts and stories the coach's tool would keep, in order, and the
+    questions asked again, by the coach's message, all checked against the
+    record with the planned moves made; and every other proposal with why it
+    was dropped."""
     held = after_moves(data, moved)
-    cited = kept_from(diagram)
-    facts, stories, dropped = [], [], []
-    for name, args in calls:
+    cited, counted = kept_from(diagram), counted_from(diagram)
+    first = record.asked_in(diagram.id)
+    zone = Toolbox(diagram.id, TURN.format(diagram.id), user_id=diagram.user_id).zone
+    facts, stories, again, dropped = [], [], [], []
+    ordered = sorted(
+        calls, key=lambda c: (c[0] == ToolName.SetQuestion and c[1].get("statement")) or 0
+    )
+    for name, args in ordered:
+        if name == ToolName.SetQuestion:
+            entry, reason = asked_again(held, args, coach, first, counted, zone)
+            (again if reason is None else dropped).append(
+                entry if reason is None else {**entry, "reason": reason}
+            )
+            continue
         entry = item(data, args, mine)
         part = part_of(args)
         if name != ToolName.AddQuestion or part is None:
@@ -299,7 +382,7 @@ def proposals(
                 (facts if part is Part.Fact else stories).append({**entry, "args": tool})
                 continue
         dropped.append({**entry, "reason": reason})
-    return facts, stories, dropped
+    return facts, stories, again, dropped
 
 
 def planned(diagram: Diagram, plans: pathlib.Path) -> pathlib.Path | None:
@@ -307,11 +390,11 @@ def planned(diagram: Diagram, plans: pathlib.Path) -> pathlib.Path | None:
     for a record with no session and nothing filed on the wrong kind."""
     data = diagram.get_diagram_data()
     turn_id = TURN.format(diagram.id)
-    transcript, mine = said(diagram)
+    transcript, mine, coach = said(diagram)
     moved, left = moves(data)
     if not (mine or moved or left):
         return None
-    facts, stories, dropped = [], [], []
+    facts, stories, again, dropped = [], [], [], []
     if mine:
         meter = Metered(
             diagram.user_id,
@@ -328,8 +411,8 @@ def planned(diagram: Diagram, plans: pathlib.Path) -> pathlib.Path | None:
         )
         start = START.replace("{transcript}", transcript)
         turn = drain(meter.turn(system, [{"role": "user", "content": start}], offered(), turn_id))
-        facts, stories, dropped = proposals(
-            diagram, data, moved, [(c.name, c.args) for c in turn.calls], mine
+        facts, stories, again, dropped = proposals(
+            diagram, data, moved, [(c.name, c.args) for c in turn.calls], mine, coach
         )
     plan = {
         "diagram": diagram.id,
@@ -339,12 +422,14 @@ def planned(diagram: Diagram, plans: pathlib.Path) -> pathlib.Path | None:
             "left_as_is": len(left),
             "facts": len(facts),
             "stories": len(stories),
+            "asked_again": len(again),
             "dropped": len(dropped),
         },
         "moved": moved,
         "left_as_is": left,
         "facts": facts,
         "stories": stories,
+        "asked_again": again,
         "dropped": dropped,
     }
     plans.mkdir(parents=True, exist_ok=True)
@@ -361,6 +446,7 @@ def shown(plan: dict, path: pathlib.Path | None = None) -> list[dict]:
         (Part.Left, "left_as_is"),
         (Part.Fact, "facts"),
         (Part.Story, "stories"),
+        (Part.Again, "asked_again"),
         (Part.Dropped, "dropped"),
     ):
         for one in plan[key]:
@@ -461,15 +547,49 @@ def keep(diagram: Diagram, one: dict) -> tuple[str | None, str | None]:
     return patch["deltas"][0]["item_id"], None
 
 
+def ask_again(diagram: Diagram, one: dict, counted: set[int]) -> str | None:
+    """One day a question was asked again, as one change row carrying the
+    coach's message that asked it; why not, when the record refuses."""
+    if one["statement"] in counted:
+        return "the coach's message was already counted"
+    q = next((q for q in diagram.get_diagram_data().questions if q["id"] == one["question"]), None)
+    if q is None:
+        return "the question is gone"
+    try:
+        record.apply(
+            diagram.id,
+            [
+                {
+                    "item_kind": ItemKind.Question.value,
+                    "item_id": q["id"],
+                    "field": record.ASKED_AGAIN,
+                    "after": [*(q.get(record.ASKED_AGAIN) or []), one["day"]],
+                }
+            ],
+            author=Author.Coach,
+            turn_id=TURN.format(diagram.id),
+            user_id=diagram.user_id,
+            statement_id=one["statement"],
+        )
+    except record.Invalid as e:
+        return str(e)
+    counted.add(one["statement"])
+    return None
+
+
 def applied(path: pathlib.Path) -> list[dict]:
     """A saved plan written as it stands: the moves, then the facts, then the
-    stories, each refused alone when the record no longer allows it."""
+    stories, then the questions asked again, each refused alone when the
+    record no longer allows it."""
     plan = json.loads(path.read_text())
     diagram = find(plan["diagram"])
     for one in plan["moved"]:
         one["reason"] = move(diagram, one)
     for one in plan["facts"] + plan["stories"]:
         one["question"], one["reason"] = keep(diagram, one)
+    counted = counted_from(diagram)
+    for one in plan["asked_again"]:
+        one["reason"] = ask_again(diagram, one, counted)
     return shown({**plan, "left_as_is": [], "dropped": []})
 
 
@@ -500,9 +620,10 @@ def catch_up(diagram_id, apply, plan_paths, plans):
     """Bring each record's questions to where they would stand had the coach's
     question rules been there from the first session: a fact question filed
     on the wrong kind of thing moves to the right person or pair-bond, a fact
-    the person already said is kept as a question already answered, and a
-    story the talk moved past is kept to come back to. Chat messages are never
-    changed. The dry run makes one model call per record with a session, goes
+    the person already said is kept as a question already answered, a story
+    the talk moved past is kept to come back to, and each day the coach asked
+    an open question again and the person passed over it is kept on that
+    question. Chat messages are never changed. The dry run makes one model call per record with a session, goes
     to the model-calls ledger, and saves a plan a person can read; --apply
     --plan writes exactly that plan, each item one change row that
     `diagrams undo` takes back, with no model call."""
