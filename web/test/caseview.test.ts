@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { cards, NOT_ENOUGH, rail } from "../src/case";
+import { cards, NOT_ENOUGH, NOT_SAID, rail } from "../src/case";
 import { Card, caseView, ORDER } from "../src/caseview";
 import {
   CaseReportCard,
@@ -140,10 +140,19 @@ it("says on every guess card that there is not enough yet, and never picks a mai
   const v = caseView(tl, ONE, "");
   expect(v.main).toBeNull();
   const html = cards(v, false);
-  const guessCards = [Card.Main, Card.OwnPart, Card.Choice, Card.WorkOn];
+  const guessCards = [Card.Main, Card.OwnPart, Card.Choice];
   for (const card of guessCards) expect(html.split(`data-card="${card}"`)[1].split("</section>")[0]).toContain(NOT_ENOUGH);
   const thin = cards(caseView({ ...emptyTimeline(), people: [person(1, "Ines", "female", null, true)] }, ONE, ""), false);
   expect(thin.split(`data-card="${Card.Couple}"`)[1].split("</section>")[0]).not.toContain("<p class=\"lead\">");
+});
+
+// R-0740
+it("says on what to work on that the person has not said yet what they are working on", () => {
+  const tl = halloran();
+  tl.asked_questions = [guess("i9", "A guess on no card.", null, [202])];
+  const work = cards(caseView(tl, ONE, ""), false).split(`data-card="${Card.WorkOn}"`)[1].split("</section>")[0];
+  expect(work).toContain(NOT_SAID);
+  expect(work).not.toContain(NOT_ENOUGH);
 });
 
 // R-0709

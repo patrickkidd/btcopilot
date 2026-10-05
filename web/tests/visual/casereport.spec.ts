@@ -92,6 +92,20 @@ for (const key of FIXTURES)
         });
       });
 
+test.describe("the case report with little in the record", () => {
+  test.use({ storageState: stateFor("case-report-thin"), viewport: SIZES[0] });
+
+  // R-0740
+  test("what to work on says the person has not said yet what they are working on", async ({ page }) => {
+    await open(page);
+    const record = await (await page.request.get("/app/timeline")).json();
+    expect(record.asked_questions.filter((q: { open: boolean; kind: string; case_report_card: string | null }) => q.open && q.kind === "impression" && q.case_report_card === "work_on")).toEqual([]);
+    const card = page.locator('#case-body .level[data-card="work_on"]');
+    await expect(card.locator(".bub.coach")).toHaveText(/You have not said yet what you are working on\. Chat more with me about it\./);
+    await expect(card).not.toContainText("Not enough in the record to make a guess yet");
+  });
+});
+
 test.describe("the case report's taps", () => {
   test.use({ storageState: stateFor("case-report"), viewport: SIZES[0] });
 
