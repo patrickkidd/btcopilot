@@ -12,3 +12,9 @@ So, on top of the brief:
 6. The seed list of measures is a floor. Add every criterion the research turns up, and say which source each comes from.
 7. Add `suite.md`, the design of a regression suite for conversational flow: one row per measure with its exact definition, the data it needs (the messages, the stored record, timestamps), how it is computed, which kind of check it is (a fixed-rule test on a made-up conversation; a replayed coach conversation scored k of n; a number tracked over real threads per model and prompt version), a starting threshold or the baseline still to be measured, and the source. Mark the ten you would build first and why. Baselines on real threads will be computed on the coordinator's machine; do not ask for real data.
 8. The hook itself: `early-value.md` ends with your three best candidates for what the coach does early that gives a person a reason to return in a stable way, each with its evidence, its fit with Bowen theory, how it would be tested, and the measure in `suite.md` that would show it working.
+
+Second addition from Patrick, 2026-10-05 (not a reply to a question).
+
+His words: "I definitely need high fable effort for the actual research tasks" and, asked high or xhigh: "Whatever yields the best quality".
+
+So: every Fable step still to run in this job (judgement, synthesis, inventing measures, the critic pass, grading findings, the three early-value candidates) runs at effort xhigh. Readers that search and fetch sources stay at their default. Do not redo finished steps for this. In report.md, say in one line which steps ran at xhigh and which had already finished at another level.
