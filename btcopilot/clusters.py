@@ -692,6 +692,19 @@ class Regroup:
     sentences: list[str]
 
 
+def _events(data: DiagramData) -> list[Event]:
+    return [
+        from_dict(Event, chunk)
+        for chunk in data.events
+        if isinstance(chunk, dict) and chunk.get("id") is not None
+    ]
+
+
+def behind(data: DiagramData) -> bool:
+    """Whether the record's events changed since its last grouping."""
+    return compute_cache_key(_events(data)) != data.clusterCacheKey
+
+
 def sync(
     diagram_id: int,
     *,
@@ -699,8 +712,10 @@ def sync(
     user_id: int,
     session_id: int | None = None,
     metered: Metered | None = None,
+    force: bool = False,
 ) -> Regroup | None:
-    """Re-group the record's events and store the grouping.
+    """Re-group the record's events and store the grouping. `force` regroups a
+    record whose events are as they were at its last grouping.
 
     Clusters are stored, not derived on read, so the coach can point at one and
     have it still be there next turn. The rules propose the groups; the model
@@ -711,13 +726,9 @@ def sync(
     """
     diagram = db.session.get(Diagram, diagram_id)
     data = diagram.get_diagram_data()
-    events = [
-        from_dict(Event, chunk)
-        for chunk in data.events
-        if isinstance(chunk, dict) and chunk.get("id") is not None
-    ]
+    events = _events(data)
     cache_key = compute_cache_key(events)
-    if cache_key == data.clusterCacheKey:
+    if not force and cache_key == data.clusterCacheKey:
         return None
 
     dates = {e.id: e.dateTime for e in events if e.dateTime}

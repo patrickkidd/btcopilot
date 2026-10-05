@@ -140,6 +140,18 @@ Every record, with how much is in it.
 | `--email` | Only the records one person owns. |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin diagrams regroup`
+
+Regroup each record whose events changed since its last grouping, or that has events to group and no groups. The dry run lists them and makes no model call; --apply makes the grouping calls a turn makes, one or two per record, each in the model-calls ledger, and writes each record's new grouping as one change row that `diagrams undo` takes back. A record whose answers are both refused gets the rules' groups under their years, and `failed` says so.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--diagram` | Only this record. |
+| `--apply` | Regroup the records listed; the default, --dry-run, lists them and makes no model call. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin diagrams show <diagram_id>`
 
 One record's counts.

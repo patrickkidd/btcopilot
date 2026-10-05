@@ -95,7 +95,10 @@ it holds none: offered a free-text id, the grouping model made one up for every 
 group and both answers were refused (production, 2026-10-05). An answer cut off at
 its token limit, one that is not the JSON asked for, and a call that errors are
 refused the same way, so grouping never fails the coach's turn; the limit is 4096
-tokens of room for thinking plus 24 per event the record may group.
+tokens of room for thinking plus 24 per event the record may group. After a fix to
+the grouping, `flask admin diagrams regroup` lists the records whose events changed
+since their last grouping or that have events and no groups, and `--apply` regroups
+them, each as one change row `diagrams undo` takes back [Oracle: R-0772].
 
 ## What is deliberately undefined
 

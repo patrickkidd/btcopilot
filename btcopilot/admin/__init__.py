@@ -17,6 +17,7 @@ from btcopilot.admin.observations import observations
 from btcopilot.admin.proactive import proactive_group
 from btcopilot.admin.quality import quality
 from btcopilot.admin.questions import impressions_group, questions_group
+from btcopilot.admin.regroup import regroup
 from btcopilot.admin.reports import report_group
 from btcopilot.admin.review import review
 from btcopilot.admin.skill import write_skill
@@ -56,6 +57,7 @@ for group in (
 
 
 questions_group.add_command(catch_up)
+diagrams.add_command(regroup)
 
 
 def init_app(app):
