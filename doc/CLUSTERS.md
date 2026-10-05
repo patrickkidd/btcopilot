@@ -86,7 +86,13 @@ group: `id` when the group already exists, `eventIds`, `name`, `reason`, and
   dropped instead, silently — those events go back to being dots.
 
 Validation rejects a violation with a sentence; the prompt is re-asked once with
-that sentence and then the failure propagates.
+that sentence. Each refused answer writes an observations row `cluster_refused`
+naming the check; when both are refused, a `cluster_failed` row is written and the
+rules' groups are stored titled with their years ("2024–2026"), unless the model's
+own groups are already there, which are kept [Oracle: R-0517, R-0780]. The answer's
+schema offers `id` only as one of the record's stored group ids, and not at all when
+it holds none: offered a free-text id, the grouping model made one up for every new
+group and both answers were refused (production, 2026-10-05).
 
 ## What is deliberately undefined
 

@@ -9,14 +9,20 @@ doc/CLUSTERS.md.
 """
 
 import datetime
+import enum
 import json
 import logging
 from dataclasses import dataclass, field
 
 from btcopilot.extensions import db
+from btcopilot.llmutil import (
+    PDP_FORCE_REQUIRED,
+    PDP_SCHEMA_DESCRIPTIONS,
+    dataclass_to_json_schema,
+)
 from btcopilot.metered import Metered
 from btcopilot import record
-from btcopilot.models import Author, Change, Purpose
+from btcopilot.models import Author, Change, Observation, ObservationKind, Purpose
 from btcopilot import prompts
 from btcopilot.models import Diagram
 from btcopilot.schema import (
@@ -78,8 +84,28 @@ OUTSIDE_WORDS = (
 )
 
 
+class ClusterCheck(enum.StrEnum):
+    """Which check refused a grouping, so refusals are counted by kind."""
+
+    Missing = "missing"
+    UnknownEvent = "unknown_event"
+    TooSmall = "too_small"
+    InTwoGroups = "in_two_groups"
+    NoName = "no_name"
+    NoReason = "no_reason"
+    UnknownGroup = "unknown_group"
+    GroupTwice = "group_twice"
+    NoChangeReason = "no_change_reason"
+    OutsideWords = "outside_words"
+    LeftOut = "left_out"
+
+
 class ClusterError(Exception):
     """The model's grouping is not a legal reworking of the candidates."""
+
+    def __init__(self, message: str, check: ClusterCheck):
+        super().__init__(message)
+        self.check = check
 
 
 def _enum_value(val):
@@ -323,7 +349,7 @@ def _check(
     stored: dict[str, dict],
 ) -> list[ModelCluster]:
     if response is None:
-        raise ClusterError("No grouping came back.")
+        raise ClusterError("No grouping came back.", ClusterCheck.Missing)
 
     known = {e.id for e in free}
     shapes = {frozenset(candidate.eventIds) for candidate in cands}
@@ -334,29 +360,37 @@ def _check(
         unknown = [event_id for event_id in cluster.eventIds if event_id not in known]
         if unknown:
             raise ClusterError(
-                f"Events {unknown} are not among the events you were given."
+                f"Events {unknown} are not among the events you were given.",
+                ClusterCheck.UnknownEvent,
             )
         if len(cluster.eventIds) < MIN_CLUSTER_EVENTS:
             raise ClusterError(
                 f"Group {cluster.eventIds} holds fewer than {MIN_CLUSTER_EVENTS} events; "
-                "anything smaller is never a cluster."
+                "anything smaller is never a cluster.",
+                ClusterCheck.TooSmall,
             )
         repeated = seen & set(cluster.eventIds)
         if repeated:
-            raise ClusterError(f"Events {sorted(repeated)} are in two clusters.")
+            raise ClusterError(
+                f"Events {sorted(repeated)} are in two clusters.",
+                ClusterCheck.InTwoGroups,
+            )
         seen.update(cluster.eventIds)
         if not cluster.name.strip():
-            raise ClusterError("Every cluster needs a name.")
+            raise ClusterError("Every cluster needs a name.", ClusterCheck.NoName)
         if not cluster.reason.strip():
-            raise ClusterError("Every cluster needs a reason.")
+            raise ClusterError("Every cluster needs a reason.", ClusterCheck.NoReason)
         if cluster.id is not None:
             if cluster.id not in stored:
                 raise ClusterError(
                     f"Group {cluster.id!r} is not one of the groups this record "
-                    "already has."
+                    "already has.",
+                    ClusterCheck.UnknownGroup,
                 )
             if cluster.id in claimed:
-                raise ClusterError(f"Group {cluster.id!r} came back twice.")
+                raise ClusterError(
+                    f"Group {cluster.id!r} came back twice.", ClusterCheck.GroupTwice
+                )
             claimed.add(cluster.id)
         was = stored.get(cluster.id) if cluster.id is not None else None
         changed = (
@@ -367,18 +401,22 @@ def _check(
         if changed and not (cluster.change or "").strip():
             raise ClusterError(
                 f"Cluster {cluster.name!r} is not the grouping you were given "
-                "and says no reason for the change."
+                "and says no reason for the change.",
+                ClusterCheck.NoChangeReason,
             )
         spoken = " ".join([cluster.name, cluster.reason, cluster.change or ""]).lower()
         outside = [word for word in OUTSIDE_WORDS if word in spoken]
         if outside:
             raise ClusterError(
                 f"Cluster {cluster.name!r} uses {outside}, which the definitions "
-                "you were given do not contain."
+                "you were given do not contain.",
+                ClusterCheck.OutsideWords,
             )
     dropped = marked - seen
     if dropped:
-        raise ClusterError(f"Events {sorted(dropped)} were left out.")
+        raise ClusterError(
+            f"Events {sorted(dropped)} were left out.", ClusterCheck.LeftOut
+        )
     return response.clusters
 
 
@@ -390,8 +428,29 @@ def _stored(data: DiagramData) -> list[dict]:
     ]
 
 
-def detect_clusters(data: DiagramData, ask) -> ClusterResult:
-    """`ask` takes the prompt and returns the model's ClusterListResponse."""
+def answer_schema(stored: dict[str, dict]) -> dict:
+    """The answer's shape, with `id` limited to the groups the record holds and
+    left out when it holds none, and every group's events, name and reason
+    required. Offered a free-text id, the grouping model wrote one for every
+    new group, and the check refused each answer; with nothing required, it
+    once left out every group's events."""
+    schema = dataclass_to_json_schema(
+        ClusterListResponse, PDP_SCHEMA_DESCRIPTIONS, PDP_FORCE_REQUIRED
+    )
+    group = schema["properties"]["clusters"]["items"]
+    group["required"] = ["eventIds", "name", "reason"]
+    fields = group["properties"]
+    if stored:
+        fields["id"]["enum"] = sorted(stored)
+    else:
+        del fields["id"]
+    return schema
+
+
+def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
+    """`ask` takes the prompt and the answer's schema and returns the model's
+    ClusterListResponse; `refused`, when given, hears each refused answer with
+    its attempt number."""
     cache_key = compute_cache_key(_dated(data))
     cands = candidates(data)
     if not cands:
@@ -405,20 +464,25 @@ def detect_clusters(data: DiagramData, ask) -> ClusterResult:
         if _regroupable(cluster)
     }
     prompt = _prompt(cands, free, mine)
+    schema = answer_schema(mine)
     _log.info(
         f"Grouping {len(free)} events: {len(mine)} groups already there, "
         f"{len(cands)} proposed"
     )
+    answer = ask(prompt, schema)
     try:
-        named = _check(ask(prompt), cands, free, mine)
+        named = _check(answer, cands, free, mine)
     except ClusterError as rejected:
         _log.warning(f"Grouping sent back: {rejected}")
-        named = _check(
-            ask(prompt + prompts.CLUSTER_REJECTED.format(why=rejected)),
-            cands,
-            free,
-            mine,
-        )
+        if refused:
+            refused(1, rejected, answer)
+        answer = ask(prompt + prompts.CLUSTER_REJECTED.format(why=rejected), schema)
+        try:
+            named = _check(answer, cands, free, mine)
+        except ClusterError as again:
+            if refused:
+                refused(2, again, answer)
+            raise
 
     when = {e.id: e.dateTime for e in free}
     clusters, changes = [], []
@@ -443,6 +507,35 @@ def detect_clusters(data: DiagramData, ask) -> ClusterResult:
             changes.append(cluster.change)
             _log.info(f"Regrouped {cluster.name!r}: {cluster.change}")
     return ClusterResult(clusters=clusters, cacheKey=cache_key, changes=changes)
+
+
+def years(start: str, end: str) -> str:
+    first, last = parse_date(start).year, parse_date(end).year
+    return str(first) if first == last else f"{first}–{last}"
+
+
+def by_years(data: DiagramData, cache_key: str) -> ClusterResult:
+    """The rules' groups, each titled with the years it spans, for a turn whose
+    grouping answers were all refused."""
+    taken = {str(cluster["id"]) for cluster in _stored(data)}
+    made = []
+    for candidate in candidates(data):
+        cluster_id = next_id(taken)
+        taken.add(cluster_id)
+        title = years(candidate.startDate, candidate.endDate)
+        made.append(
+            Cluster(
+                id=cluster_id,
+                title=title,
+                name=title,
+                summary="",
+                eventIds=list(candidate.eventIds),
+                startDate=candidate.startDate,
+                endDate=candidate.endDate,
+                source=ClusterSource.Model,
+            )
+        )
+    return ClusterResult(clusters=made, cacheKey=cache_key)
 
 
 STORED_FIELDS = (
@@ -494,7 +587,8 @@ def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
         if len(cluster.eventIds) < MIN_CLUSTER_EVENTS:
             raise ClusterError(
                 f"Grouping {cluster.eventIds} arrived holding fewer than "
-                f"{MIN_CLUSTER_EVENTS} events."
+                f"{MIN_CLUSTER_EVENTS} events.",
+                ClusterCheck.TooSmall,
             )
         event_ids = [e for e in cluster.eventIds if e in dates and e not in theirs]
         if len(event_ids) < MIN_CLUSTER_EVENTS:
@@ -507,7 +601,8 @@ def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
         cluster.id = str(cluster.id) if cluster.id else next_id(taken | set(kept))
         if cluster.id in others:
             raise ClusterError(
-                f"Grouping {cluster.id} is not one the model may write over."
+                f"Grouping {cluster.id} is not one the model may write over.",
+                ClusterCheck.UnknownGroup,
             )
         kept[cluster.id] = cluster
     return kept
@@ -583,9 +678,53 @@ def sync(
 
     dates = {e.id: e.dateTime for e in events if e.dateTime}
     metered = metered or Metered(user_id, diagram_id, turn_id, Purpose.Cluster)
-    result = detect_clusters(
-        data, lambda prompt: metered.structured(prompt, ClusterListResponse)
-    )
+
+    def observe(kind: ObservationKind, detail: dict) -> None:
+        db.session.add(
+            Observation(
+                diagram_id=diagram_id, turn_id=turn_id, kind=kind, detail=detail
+            )
+        )
+
+    def refused(attempt: int, error: ClusterError, answer) -> None:
+        groups = answer.clusters if answer else []
+        observe(
+            ObservationKind.ClusterRefused,
+            {
+                "attempt": attempt,
+                "check": error.check.value,
+                "detail": str(error),
+                "groups": len(groups),
+                "events": sum(len(g.eventIds) for g in groups),
+                "reason": error.check.value,
+            },
+        )
+
+    try:
+        result = detect_clusters(
+            data,
+            lambda prompt, schema: metered.structured(
+                prompt, ClusterListResponse, schema
+            ),
+            refused,
+        )
+    except ClusterError as failed:
+        # Both answers refused: the rules' groups go in under their years, unless
+        # the model's own groups are already there to keep [Oracle: R-0780].
+        fallback = not any(_regroupable(c) for c in _stored(data))
+        observe(
+            ObservationKind.ClusterFailed,
+            {
+                "check": failed.check.value,
+                "detail": str(failed),
+                "fallback": fallback,
+                "reason": failed.check.value,
+            },
+        )
+        _log.warning(f"Turn {turn_id} grouping refused twice: {failed}")
+        if not fallback:
+            return None
+        result = by_years(data, cache_key)
     deltas = _deltas(data.clusters, result.clusters, dates)
     deltas.append(
         {

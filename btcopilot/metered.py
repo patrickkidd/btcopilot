@@ -73,10 +73,10 @@ class Metered:
         self._write(said.served, said.spent, started, 0)
         return said.words
 
-    def structured(self, prompt: str, response_format):
+    def structured(self, prompt: str, response_format, schema: dict | None = None):
         started = self._begin()
         with self._billed(started):
-            parsed = gemini_structured_sync(prompt, response_format)
+            parsed = gemini_structured_sync(prompt, response_format, schema=schema)
         self._write(parsed.served, parsed.spent, started, 0)
         return parsed.value
 

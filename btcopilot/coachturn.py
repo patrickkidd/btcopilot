@@ -519,8 +519,9 @@ class CoachTurn:
             delta["item_kind"] == ItemKind.Event.value for delta in self.toolbox.deltas
         ):
             return []
-        # A grouping that fails its checks twice keeps the groups already there
-        # rather than kill the turn [Oracle: R-0410, R-0371].
+        # Refused answers are handled inside the regrouping; what reaches here is
+        # the record refusing a grouping at the write, which keeps the groups
+        # already there rather than kill the turn [Oracle: R-0410, R-0371].
         try:
             regrouped = clusters.sync(
                 self.diagram.id,

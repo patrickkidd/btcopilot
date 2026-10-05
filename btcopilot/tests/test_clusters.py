@@ -16,8 +16,10 @@ from btcopilot.clusters import (
     ClusterError,
     ClusterListResponse,
     ModelCluster,
+    answer_schema,
     candidates,
     detect_clusters,
+    years,
 )
 from btcopilot.llmutil import gemini_structured_sync
 from btcopilot.seed import seed_diagram_data
@@ -218,8 +220,8 @@ def replies(*responses):
     yield Mock(side_effect=list(responses))
 
 
-def real(prompt: str) -> ClusterListResponse:
-    return gemini_structured_sync(prompt, ClusterListResponse).value
+def real(prompt: str, schema: dict) -> ClusterListResponse:
+    return gemini_structured_sync(prompt, ClusterListResponse, schema=schema).value
 
 
 def test_the_model_names_the_candidates_it_was_given():
@@ -473,3 +475,18 @@ def test_an_event_years_outside_the_proposal_joins_when_the_model_says_why():
         result = detect_clusters(FAR, ask)
     assert [c.eventIds for c in result.clusters] == [[1, 2, 3, 7]]
     assert result.changes == [late]
+
+
+def test_the_answer_may_name_only_the_groups_the_record_holds():
+    # R-0517, R-0780
+    group = answer_schema({"c2": {}, "c1": {}})["properties"]["clusters"]["items"]
+    assert group["properties"]["id"]["enum"] == ["c1", "c2"]
+    assert group["required"] == ["eventIds", "name", "reason"]
+    fresh = answer_schema({})["properties"]["clusters"]["items"]
+    assert "id" not in fresh["properties"]
+
+
+def test_a_fallback_title_is_the_years_the_group_spans():
+    # R-0780
+    assert years("2024-03-01", "2026-01-09") == "2024\u20132026"
+    assert years("1994-01-01", "1994-06-01") == "1994"

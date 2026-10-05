@@ -100,7 +100,7 @@ def test_a_local_url_sends_gemini_extraction_to_the_local_model(anthropic_env):
     anthropic_env.delenv("GOOGLE_GEMINI_API_KEY", raising=False)
     asked = []
 
-    async def claude_structured(prompt, response_format, model):
+    async def claude_structured(prompt, response_format, model, schema):
         asked.append(model)
 
     anthropic_env.setattr(llmutil, "claude_structured", claude_structured)

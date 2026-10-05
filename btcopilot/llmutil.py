@@ -603,17 +603,21 @@ def response_text_sync(prompt=None, model=None, **kwargs):
 # --- Public API ---
 
 
-async def gemini_structured(prompt, response_format, large=False, model=None):
+async def gemini_structured(
+    prompt, response_format, large=False, model=None, schema=None
+):
+    """`schema`, when given, narrows the answer's shape beyond what the
+    dataclass says, such as the values a field may take."""
     from google.genai import types
 
     model = model or (EXTRACTION_MODEL_LARGE if large else EXTRACTION_MODEL)
-    if _is_claude_model(model) or local_model():
-        return await claude_structured(prompt, response_format, model)
-
-    start_time = time.time()
-    response_schema = dataclass_to_json_schema(
+    response_schema = schema or dataclass_to_json_schema(
         response_format, PDP_SCHEMA_DESCRIPTIONS, PDP_FORCE_REQUIRED
     )
+    if _is_claude_model(model) or local_model():
+        return await claude_structured(prompt, response_format, model, response_schema)
+
+    start_time = time.time()
 
     client = _client()
     config = types.GenerateContentConfig(
@@ -663,8 +667,10 @@ async def gemini_structured(prompt, response_format, large=False, model=None):
     return Parsed(result, spent, answered)
 
 
-def gemini_structured_sync(prompt, response_format, large=False):
-    return asyncio.run(gemini_structured(prompt, response_format, large=large))
+def gemini_structured_sync(prompt, response_format, large=False, schema=None):
+    return asyncio.run(
+        gemini_structured(prompt, response_format, large=large, schema=schema)
+    )
 
 
 CLAUDE_STRUCTURED_USAGE = {"calls": 0, "input_tokens": 0, "output_tokens": 0}
@@ -680,11 +686,8 @@ OUTPUT FORMAT: Respond with ONLY a single valid JSON object conforming to this J
 {schema}"""
 
 
-async def claude_structured(prompt, response_format, model):
+async def claude_structured(prompt, response_format, model, schema):
     start_time = time.time()
-    schema = dataclass_to_json_schema(
-        response_format, PDP_SCHEMA_DESCRIPTIONS, PDP_FORCE_REQUIRED
-    )
     full_prompt = prompt + CLAUDE_JSON_INSTRUCTION.format(schema=json.dumps(schema))
 
     client = _extraction_anthropic_client()
