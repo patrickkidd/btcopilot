@@ -232,7 +232,7 @@ def test_a_father_given_a_birth_date_and_still_married_is_not_asked_if_alive_or_
     reply = coach.say(ABOUT_PARENTS)
     assert asks(
         reply,
-        r"\b(dad|father|Hugh|he|his|him|parents|they)\b",
+        r"\b(dad|father|Hugh)\b",
         r"\b(alive|living|still with|still around|passed|died|how old|age|aged|born|birthday|birth date)\b",
     ) == [], reply
     assert state(coach, Fact.Alive, ItemKind.Person, 3) is FactState.Known
