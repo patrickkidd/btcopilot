@@ -1213,6 +1213,8 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
         .filter((id) => !outside || x[id] < x0 || x[id] > x1)
         .map((id): Segment => [[x[id], y[id] - half(id)], [Math.min(Math.max(x[id], x0), x1), yb]]);
     });
+  /** How far apart two names stand, above and below, so each reads as its own. */
+  const NAME_GAP = 6;
   const overlap = (a: Box, b: Box) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
   const shape = (o: string): Box => ({ x0: x[o] - half(o), x1: x[o] + half(o), y0: y[o] - half(o), y1: y[o] + half(o) });
   const tried = (id: string) => [Side.Right, Side.Left, parents[id] ? Side.Above : Side.Top, Side.Under];
@@ -1239,7 +1241,8 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
       return [
         lines.filter((s) => crosses(s, bx)).length + others.filter((o) => overlap(bx, shape(o))).length,
         Math.max(0, x0 - bx.x0) + Math.max(0, bx.x1 - x1),
-        others.filter((o) => overlap(bx, nameBox(o, at[o]))).length,
+        // two names that only touch read as one, so a name keeps a gap from the next
+        others.filter((o) => overlap({ x0: bx.x0, x1: bx.x1, y0: bx.y0 - NAME_GAP, y1: bx.y1 + NAME_GAP }, nameBox(o, at[o]))).length,
       ];
     };
     const less = (a: number[], b: number[]) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];

@@ -304,7 +304,9 @@ export class Drawer {
     draw.scrollLeft = was;
     const lit = [...draw.querySelectorAll<SVGElement>('.hl.now[data-mark^="hl:"]')].map((m) => m.dataset.mark!.slice(3));
     draw.dataset.who = shot.who;
-    frameOn(draw, lit.length ? lit : [shot.who], shot.who, glide);
+    // the whole family opens on the record's own person, at every width (R-0759)
+    if (told.whole && !glide) frameOn(draw, [told.cast.index], told.cast.index, false);
+    else frameOn(draw, lit.length ? lit : [shot.who], shot.who, glide);
   }
 
   private fit(): void {

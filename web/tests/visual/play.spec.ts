@@ -828,6 +828,36 @@ for (const viewport of [{ width: 393, height: 852 }, { width: 1280, height: 800 
     });
   });
 
+/** Margaret-Anne's wide family (`case-report-dense`), its whole family opened
+ * from the Family button at the phone's width and the desktop's. */
+for (const viewport of [{ width: 393, height: 852 }, { width: 1440, height: 900 }])
+  test.describe(`the whole family of a wide record at ${viewport.width} wide`, () => {
+    test.use({ storageState: stateFor("case-report-dense"), viewport });
+
+    test("opens on the record's own person, whole in the frame, and no name touches another", async ({ page }, info) => {
+      // R-0759, R-0766
+      test.skip(info.project.name !== "phone", "the size is the describe's own");
+      await settle(page);
+      await page.locator("#cap-family").click();
+      await expect(drawer(page)).toBeVisible();
+      await drawer(page).evaluate((p) => Promise.all(p.getAnimations().map((a) => a.finished)));
+      const own = (await drawer(page).locator('.draw .pt:has(text:text-is("Margaret-Anne"))').getAttribute("data-id"))!;
+      expect(await cutInFrame(page, "#pbp .draw", [own])).toEqual({ fits: true, cut: {} });
+      const touching = await drawer(page).evaluate((p) => {
+        const boxes = [...p.querySelectorAll<SVGGElement>(".draw .pt")]
+          .map((g) => ({ name: g.textContent!.slice(0, 16), b: g.getBoundingClientRect() }))
+          .filter((n) => n.b.width);
+        return boxes.flatMap((a, i) =>
+          boxes
+            .slice(i + 1)
+            .filter((c) => a.b.left < c.b.right && c.b.left < a.b.right && a.b.top < c.b.bottom + 4 && c.b.top < a.b.bottom + 4)
+            .map((c) => `${a.name} / ${c.name}`),
+        );
+      });
+      expect(touching).toEqual([]);
+    });
+  });
+
 /** Patrick's own way through on a phone, on the Pemberton stand-in family
  * (`everymark`): the drawer opened from its button or its message and stepped
  * with Next, never opened straight on a step, and what moves watched over
