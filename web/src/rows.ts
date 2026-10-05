@@ -1,4 +1,4 @@
-import { crossOut, DROP, Mark, outline, Sex, sexOf, slashes, tie, W } from "./diagram";
+import { crossOut, DROP, Mark, outline, Sex, sexOf, SLASH, slashes, tie, W } from "./diagram";
 import { esc } from "./dom";
 import { BIRTHS, bondOf, COUPLE_KINDS, ENDS } from "./snapshots";
 import { DateCertainty, EventKind, type Cluster, type Person, type Timeline, type TimelineEvent } from "./types";
@@ -64,9 +64,8 @@ const drawn = (kind: string) =>
 
 const E = W / 2;
 /** The row's mark is the family diagram's own drawing scaled whole into the
- * row (R-0759): a couple two widths apart, their line, and the slashes, which
- * reach 0.375 of a width below it. */
-const COUPLE = W + DROP * W + 0.375 * W;
+ * row (R-0759): a couple two widths apart, their line, and the slashes below it. */
+const COUPLE = W + DROP * W + SLASH.below * W;
 const ICON = 3 * W + 4;
 
 /** The event's kind as the family diagram draws it, at the size of a row

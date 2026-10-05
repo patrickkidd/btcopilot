@@ -73,7 +73,8 @@
 .diagram .cut { stroke: var(--remove); stroke-width: 2; fill: none; }
 .diagram .cutn { font-size: 13px; fill: var(--remove); }
 .diagram .slash { stroke: var(--faint); stroke-width: 1.8; stroke-linecap: round; }
-.diagram .slash.now { stroke: var(--move); stroke-width: 2.4; }
+/* lit, a slash keeps its resting size and place: only its colour and its pop differ */
+.diagram .slash.now { stroke: var(--move); }
 .diagram .lbn { font-size: 13px; fill: var(--ink); }
 .diagram .lbd { font-size: 13px; fill: var(--faint); }
 /* names, ages and words sit over every mark, a field's rings too, on a halo

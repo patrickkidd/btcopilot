@@ -1839,7 +1839,10 @@ button { font-family: inherit; }
 .row.side .rmain { flex: 1; min-width: 0; }
 /* an event row leads with the family diagram's own mark for its kind, and the
    kind that opens its words is in the data colour (R-0113) */
-.kmark { flex: none; width: 28px; height: 28px; }
+.kmark { flex: none; width: 28px; height: 28px; overflow: visible; }
+/* scaled whole into the row, the family diagram's lines would be a third of a
+   pixel; here each keeps its own width in screen pixels instead (R-0759) */
+.kmark * { vector-effect: non-scaling-stroke; }
 .kmark + .rmain { display: flex; flex-direction: column; gap: 3px; }
 .kw { color: var(--data); }
 .row.side .rwhen {

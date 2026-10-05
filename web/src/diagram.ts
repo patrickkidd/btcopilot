@@ -304,7 +304,7 @@ class Dims {
     this.OFF = 0.2 * w;
     // ruled 2026-09-26: a mark sits within an eighth of a width of its person
     this.GAP = w / 8;
-    // a mark that stands on its own, a slash or a wall, is as tall as a person
+    // a mark that stands on its own, a wall, is as tall as a person; a slash is two thirds of that
     this.MARK = w;
     // how far the cross and its arrow reach past the shape: two square cells
     this.ZONE = this.GAP + 2 * CROSS;
@@ -1522,11 +1522,14 @@ export function outline(p: Shape, x: number, y: number, e: number, cls: string):
 export const tie = (x0: number, y0: number, x1: number, y1: number, y: number, married: boolean, cls = "", attrs = "") =>
   `<path class="tie${married ? "" : " dash"}${cls}"${attrs} d="M${f(x0)} ${f(y0)}V${f(y)}H${f(x1)}V${f(y1)}"/>`;
 
-/** A slash is as tall as the person (d.MARK) and crosses the couple's line
- * 0.15 of its reach below it and 0.25 above, its reach being 2.5 slashes. */
-const REACH = 2.5;
+/** How far a slash reaches below and above the couple's line, in person
+ * widths: two thirds of a person in all, crossing the line a quarter of a
+ * person from its foot (R-0758, R-0759). */
+export const SLASH = { below: 0.25, above: 5 / 12 };
+/** How far apart a divorce's two slashes stand, in person widths. */
+const STEP = 0.25;
 /** How far either side of x a run of n slashes reaches, for a person w wide. */
-const slashSpan = (n: number, w: number) => (n - 1) * 0.05 * REACH * w;
+const slashSpan = (n: number, w: number) => ((n - 1) * STEP * w) / 2;
 
 /** One slash for a separation, two for a divorce, upright because custody is
  * not recorded, centred on x across the couple's line at y, for people w wide. */
@@ -1535,11 +1538,10 @@ export const slashes = (n: number, x: number, y: number, w: number, fresh = fals
 
 /** The same slashes one by one, so a fresh one can be drawn over the rest. */
 function slashLines(n: number, x: number, y: number, w: number, fresh = false): string[] {
-  const r = REACH * w;
   return Array.from({ length: n }, (_, i) => {
-    const sx = x - slashSpan(n, w) + i * 0.1 * r;
+    const sx = x - slashSpan(n, w) + i * STEP * w;
     const pop = fresh && i === n - 1 ? " now pop" : "";
-    return `<line class="slash${pop}" x1="${f(sx)}" y1="${f(y + 0.15 * r)}" x2="${f(sx)}" y2="${f(y - 0.25 * r)}"/>`;
+    return `<line class="slash${pop}" x1="${f(sx)}" y1="${f(y + SLASH.below * w)}" x2="${f(sx)}" y2="${f(y - SLASH.above * w)}"/>`;
   });
 }
 
@@ -1866,10 +1868,11 @@ export function draw(L: Layout, s: Frame): string {
     const kids = L.kids.find((c) => c.of.includes(b.a) && c.of.includes(b.b));
     const stops = [k.x0, ...(kids?.kids ?? []).map((id) => L.x[id]).filter((x) => x > k.x0 && x < k.x1), k.x1].sort((p, q) => p - q);
     const open = stops.slice(1).map((x, i) => [stops[i], x]).sort((p, q) => q[1] - q[0] - (p[1] - p[0]));
-    const len = REACH * d.MARK;
     const hw = slashSpan(n, d.MARK) + 3;
     const clear = (cx: number) =>
-      !texts.some((t) => t.x0 < cx + hw && cx - hw < t.x1 && t.y0 < k.y + 0.15 * len && k.y - 0.25 * len < t.y1);
+      !texts.some(
+        (t) => t.x0 < cx + hw && cx - hw < t.x1 && t.y0 < k.y + SLASH.below * d.MARK && k.y - SLASH.above * d.MARK < t.y1,
+      );
     const at = open
       .flatMap(([p, q]) => {
         const room = Math.max(0, Math.floor(((q - p) / 2 - hw) / 2));
