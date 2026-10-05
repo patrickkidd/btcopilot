@@ -397,7 +397,7 @@ Changes something: needs `--yes`.
 
 ### `flask admin questions catch-up`
 
-Bring each record's questions to where they would stand had the coach's question rules been there from the first session: a fact question filed on the wrong kind of thing moves to the right person or pair-bond, a fact the person already said is kept as a question already answered, and a story the talk moved past is kept to come back to. Chat messages are never changed. The dry run makes one model call per record with a session, goes to the model-calls ledger, and saves a plan a person can read; --apply --plan writes exactly that plan, each item one change row that `diagrams undo` takes back, with no model call.
+Bring each record's questions to where they would stand had the coach's question rules been there from the first session: a fact question filed on the wrong kind of thing moves to the right person or pair-bond, a fact the person already said is kept as a question already answered, a story the talk moved past is kept to come back to, and each day the coach asked an open question again and the person passed over it is kept on that question. Chat messages are never changed. The dry run makes one model call per record with a session, goes to the model-calls ledger, and saves a plan a person can read; --apply --plan writes exactly that plan, each item one change row that `diagrams undo` takes back, with no model call.
 
 Changes something: needs `--yes`.
 

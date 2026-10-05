@@ -1234,3 +1234,10 @@ both a target and a third person. Not yet measured live: no model calls were mad
 **Reason**: per R-0774. Until now a repeat ask left no trace, so the times a question was passed over could not be counted.
 **Measured** on the subscription ($0), the new live case (a question about the mother's father's drinking asked and passed over twice, then the person asks what to talk about next): 0 of 3 on the old code, where the coach closed the question each time instead of leaving it open, and 3 of 3 on the new. Whole live suite on the new text: 34 of 34 pass.
 [R-0774]
+
+### October 2026: The sentence under the still-unknown list is shorter (FD-371)
+
+**Change** (2026-10-05): the sentence that sends the coach to a waiting question before a list item was reworded 67 characters shorter, with the same instructions in the same order; public and private copies alike, both prompt goldens re-captured.
+**Reason**: that sentence sits after the record, outside the cached part of the prompt, so it is paid for in full on every turn; this week's additions had pushed the fixed text there to 1536 characters, over the 1500 the caching test allows. Now 1469.
+**Measured** on the subscription ($0), the four live cases for these rulings on the shorter text: the three 3 of 3 cases pass 3 of 3, the 2 of 3 case passes.
+[R-0392, R-0595, R-0762, R-0770, R-0771, R-0774]
