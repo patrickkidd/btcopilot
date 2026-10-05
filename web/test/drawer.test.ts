@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { closeX, pathRow } from "../src/dom";
 import { leastScale } from "../src/diagram";
-import { below, head, pictureHeight, pointLine, topLine, yearsLine } from "../src/drawer";
+import { below, head, PAN, pictureHeight, pointLine, topLine, yearsLine } from "../src/drawer";
 import { family, Told, untold } from "../src/snapshots";
 import { alone, apart, CORINNE, DELPHINE, sparse, timeline } from "./whitlock";
 
@@ -142,4 +142,14 @@ it("says each whole family step's date once, over the years line, whole inside i
     expect(x - (date.length * 7.2) / 2).toBeGreaterThanOrEqual(0);
     expect(x + (date.length * 7.2) / 2).toBeLessThanOrEqual(390);
   });
+});
+
+// R-0778
+it("travels to a step's people over most of a second, setting off and landing gently and never passing where it lands", () => {
+  const at = Array.from({ length: 101 }, (_, i) => PAN.ease(i / 100));
+  expect(PAN.ms).toBeGreaterThanOrEqual(800);
+  expect([at[0], at[100]]).toEqual([0, 1]);
+  expect(at.every((v, i) => v >= 0 && v <= 1 && (i === 0 || v >= at[i - 1]))).toBe(true);
+  expect(at[5]).toBeLessThan(0.01);
+  expect(1 - at[95]).toBeLessThan(0.01);
 });

@@ -1121,7 +1121,7 @@ export class Picture {
     const title =
       !said.text && open && !chosen
         ? `<div class="ss-t ss-name" style="left:${X_PAD}px;top:${ROWS[0]}px;` +
-          `width:${screen - 2 * X_PAD}px">${esc(open.title || open.label)} (${open.count})</div>`
+          `width:${screen - 2 * X_PAD}px"><span>${esc(open.title || open.label)}</span> <span class="ct">(${open.count})</span></div>`
         : "";
     // The band lies over the words and under the marks' own targets.
     const words = said.text ? said.text + bandHit(shows + X_PAD, screen - 2 * X_PAD) : "";

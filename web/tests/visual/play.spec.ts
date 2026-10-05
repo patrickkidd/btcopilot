@@ -555,8 +555,8 @@ test.describe("the whole family stepped through dates", () => {
     await expect(page.locator("#caption #cap-family")).toHaveCount(0);
   });
 
-  // R-0742, R-0755, R-0756
-  test("opens on the record today and steps back through its history, the not yet born faded, and browser back returns to the timeline", async ({ page }) => {
+  // R-0742, R-0755, R-0756, R-0775
+  test("steps on to the record today and back through its history, the not yet born faded, and browser back returns to the timeline", async ({ page }) => {
     const errors = watched(page);
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, lifetime);
     await settle(page);
@@ -565,7 +565,8 @@ test.describe("the whole family stepped through dates", () => {
     await expect(page).toHaveURL(/\/app\/family$/);
     await expect(drawer(page).locator(".path")).toHaveText("Timeline › Family");
     await expect(drawer(page).locator(".dots")).toHaveCount(0);
-    await expect(drawer(page).locator('[data-act="next"]')).toBeDisabled();
+    const next = drawer(page).locator('[data-act="next"]');
+    while (await next.isEnabled()) await next.click();
     const top = drawer(page).locator(".when");
     await expect(top).toHaveText("Ben died");
     await expect(drawer(page).locator(".wire .wlab")).toHaveText("February 2010");
@@ -648,7 +649,7 @@ test.describe("the whole family wider than the phone", () => {
     const frame = drawer(page).locator(".draw");
     expect(await frame.evaluate((d) => d.scrollWidth > d.clientWidth)).toBe(true);
     expect(await sideways(page)).toBe(false);
-    await drawer(page).locator('[data-act="back"]').click();
+    await drawer(page).locator('[data-act="next"]').click();
     expect(await sideways(page)).toBe(false);
     expect(errors).toEqual([]);
   });
@@ -686,6 +687,8 @@ test.describe("the whole family wider than the phone", () => {
       await expect(drawer(page).locator(".when")).toContainText(`${name} ${what}`);
       await expect.poll(() => inFrame(ids[name])).toBe(true);
     };
+    const next = drawer(page).locator('[data-act="next"]');
+    while (await next.isEnabled()) await next.click();
     await shown("Ws4", "left home");
     for (const [name, what] of [["Hs1", "was born"], ["Ws5", "left home"], ["Hs0", "was born"]]) {
       await drawer(page).locator('[data-act="back"]').click();
@@ -712,12 +715,10 @@ test.describe("the whole family of a family many phones wide", () => {
     // opened, not glided: the frame is already on the step's person
     const at = await drawer(page).evaluate((p) => {
       const draw = p.querySelector<HTMLElement>(".draw")!;
-      const name = [...draw.querySelectorAll<SVGGElement>(".pt")].find((g) => g.textContent?.includes("Margaret-Anne"))!;
-      const shape = draw.querySelector(`.p[data-id="${name.dataset.id}"] .shape`)!.getBoundingClientRect();
+      const shape = draw.querySelector(`.p[data-id="${draw.dataset.who}"] .shape`)!.getBoundingClientRect();
       const f = draw.getBoundingClientRect();
       return { wide: draw.scrollWidth > 4 * draw.clientWidth, inside: shape.left >= f.left && shape.right <= f.right };
     });
-    expect(await drawer(page).locator(".when").textContent()).toContain("Margaret-Anne");
     expect(at).toEqual({ wide: true, inside: true });
     // R-0766: everyone is named as briefly as the Pembertons are, so no name takes more width than the longest of the record's own people's
     const names = await drawer(page).locator(".draw .pt .lbn").allTextContents();
@@ -771,7 +772,7 @@ for (const viewport of [{ width: 393, height: 852 }, { width: 1280, height: 800 
           const still = at === last;
           last = at;
           return still;
-        }, { intervals: [150] }).toBe(true);
+        }, { intervals: [400] }).toBe(true);
         const who = (await draw.getAttribute("data-who"))!;
         const lit = await draw.evaluate((d) => [...d.querySelectorAll<SVGElement>('.hl.now[data-mark^="hl:"]')].map((m) => m.dataset.mark!.slice(3)));
         const seen = await cutInFrame(page, "#pbp .draw", [...new Set([who, ...lit])]);
@@ -787,3 +788,137 @@ for (const viewport of [{ width: 393, height: 852 }, { width: 1280, height: 800 
       expect(await sideways(page)).toBe(false);
     });
   });
+
+/** Patrick's own way through on a phone, on the Pemberton stand-in family
+ * (`everymark`): the drawer opened from its button or its message and stepped
+ * with Next, never opened straight on a step, and what moves watched over
+ * seconds rather than read off the markup. */
+test.describe("stepped by hand on a phone", () => {
+  test.use({ storageState: stateFor("everymark"), viewport: { width: 393, height: 852 } });
+
+  const family = async (page: Page) => {
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+  };
+  const played = async (page: Page) => {
+    await settle(page);
+    await stored(page).click();
+    await expect(drawer(page)).toBeVisible();
+  };
+  const nextTo = async (page: Page, words: string) => {
+    for (let i = 0; i < 60 && !(await drawer(page).innerText()).includes(words); i++) {
+      await drawer(page).locator('[data-act="next"]').click();
+      await page.waitForTimeout(150);
+    }
+    await expect(drawer(page)).toContainText(words);
+  };
+
+  // R-0775
+  test("the Family button opens on the first date holding more than births, Harold and June's marriage", async ({ page }) => {
+    await family(page);
+    await expect(drawer(page).locator(".when")).toHaveText("Harold and June married");
+    await expect(drawer(page).locator(".wire .wlab")).toHaveText("June 1946");
+  });
+
+  /** Where each moved person stands in the drawing, sampled over seven seconds. */
+  const watch = (page: Page) =>
+    page.evaluate(async () => {
+      const svg = () => document.querySelector("#pbp .draw svg")!.getBoundingClientRect();
+      const at = () => [...document.querySelectorAll("#pbp .draw svg .slid .shape")].map((s) => Math.round(s.getBoundingClientRect().x - svg().x));
+      const seen: number[][] = [];
+      for (let k = 0; k < 28; k++) {
+        seen.push(at());
+        await new Promise((r) => setTimeout(r, 250));
+      }
+      return seen;
+    });
+
+  for (const [view, open, words] of [
+    ["the Family view", family, "Leo sided with Rosa"],
+    ["the Family view", family, "Leo stayed out of their fight"],
+    ["the play-by-play", played, "Inside: Leo sided with Rosa"],
+    ["the play-by-play", played, "Outside: Leo stayed out of it"],
+  ] as const)
+    // R-0777, R-0763
+    test(`${view} moves the three people of "${words}" when stepped to with Next, and moves them again and again`, async ({ page }) => {
+      await open(page);
+      await nextTo(page, words);
+      const seen = await watch(page);
+      expect(seen[0].length).toBeGreaterThan(0);
+      const xs = seen.map((s) => s[0]);
+      // out from home, home again at the next loop's start, and out again
+      const out = (i: number) => Math.abs(xs[i] - xs[0]) > 20;
+      const first = xs.findIndex((_, i) => out(i));
+      const back = xs.findIndex((x, i) => i > first && Math.abs(x - xs[0]) <= 3);
+      expect(first).toBeGreaterThan(0);
+      expect(back).toBeGreaterThan(first);
+      expect(xs.some((_, i) => i > back && out(i))).toBe(true);
+    });
+
+  /** The furthest a step's field rings reach, against its person's width, on the screen. */
+  const reach = (page: Page) =>
+    page.evaluate(() => {
+      const ring = [...document.querySelectorAll<SVGCircleElement>("#pbp .draw svg .mvk.now circle.fld")].find((c) => c.querySelector("animate"))!;
+      const r = Math.max(...ring.querySelector('animate[attributeName="r"]')!.getAttribute("values")!.split(";").map(Number));
+      const m = ring.getScreenCTM()!;
+      const harold = document.querySelector('#pbp .draw svg .p[data-id="1"] .shape')!.getBoundingClientRect();
+      return { ring: r * Math.hypot(m.a, m.b), person: harold.width, width: parseFloat(getComputedStyle(ring).strokeWidth) * Math.hypot(m.a, m.b) };
+    });
+
+  // R-0776, R-0765
+  test("Walter's cutoff runs Harold's rings out as far against him in the Family view as in the play-by-play, past the wall", async ({ page }) => {
+    await played(page);
+    await nextTo(page, "Cutoff:");
+    const told = await reach(page);
+    await family(page);
+    await nextTo(page, "Walter stopped calling his father");
+    const whole = await reach(page);
+    expect(told.ring / told.person).toBeCloseTo(whole.ring / whole.person, 1);
+    expect(told.ring / told.person).toBeGreaterThan(3);
+    expect(told.width / told.person).toBeCloseTo(whole.width / whole.person, 2);
+  });
+});
+
+/** A family many phones wide, stepped with Next as Patrick steps it. */
+test.describe("the frame's travel to a step's people", () => {
+  test.use({ storageState: stateFor("case-report-dense"), viewport: { width: 393, height: 852 } });
+
+  // R-0778
+  test("sets off from where the frame stood, eases to exactly where it lands without passing it, and takes most of a second", async ({ page }) => {
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+    const trips: number[][][] = [];
+    for (const act of ["next", "next", "back", "next"]) {
+      const button = drawer(page).locator(`[data-act="${act}"]`);
+      if (!(await button.isEnabled())) continue;
+      await page.evaluate(() => {
+        const d = document.querySelector<HTMLElement>("#pbp .draw")!;
+        const seen: number[][] = [[0, d.scrollLeft]];
+        (window as unknown as { seen: number[][] }).seen = seen;
+        const t0 = performance.now();
+        const tick = () => {
+          seen.push([performance.now() - t0, document.querySelector<HTMLElement>("#pbp .draw")!.scrollLeft]);
+          if (performance.now() - t0 < 1800) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
+      await button.click();
+      await page.waitForTimeout(1900);
+      trips.push(await page.evaluate(() => (window as unknown as { seen: number[][] }).seen));
+    }
+    const moving = trips.filter((t) => Math.abs(t.at(-1)![1] - t[0][1]) > 40);
+    expect(moving.length).toBeGreaterThan(0);
+    for (const t of moving) {
+      const [from, to] = [t[0][1], t.at(-1)![1]];
+      const dir = Math.sign(to - from);
+      // never back to the start of the drawing, never past where it lands
+      expect(t.every(([, x]) => dir * (x - from) >= -1 && dir * (to - x) >= -1)).toBe(true);
+      // each frame on from the last, never back
+      expect(t.slice(1).every(([, x], i) => dir * (x - t[i][1]) >= -1)).toBe(true);
+      const landed = t.find(([, x]) => Math.abs(x - to) <= 1)![0];
+      expect(landed).toBeGreaterThan(700);
+    }
+  });
+});

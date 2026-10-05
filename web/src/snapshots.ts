@@ -366,8 +366,7 @@ export class Told {
       moves,
       kin,
       label: `${now.date}: ${snap.fact}`,
-      // the whole family moves no one out of their own place for a step
-      place: this.whole ? undefined : placeOf(now),
+      place: placeOf(now),
     });
     return {
       svg,
@@ -465,8 +464,8 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[], everyo
   steps.forEach((s) =>
     s.marks.forEach((m) => {
       if (isArrow(m)) moves.push(m);
-      // the whole family moves no one out of their own place for a step
-      if (m.k === Mark.Place && !everyone) places.push(m as Place);
+      // inside and outside move people in the whole family too (R-0777)
+      if (m.k === Mark.Place) places.push(m as Place);
       if (isKin(m)) kin.push(m);
       if (!isPlaced(m)) return;
       if (m.k === Mark.Anxiety || m.k === Mark.AnxietyDown) anxious.add(m.who);
@@ -602,6 +601,15 @@ function happened(people: Map<number, Person>, e: TimelineEvent): string {
   const named = [...people.values()].some((p) => p.name === lead);
   return `${name(e.person)} ${named || /^.[A-Z]/.test(words) ? words : words[0].toLowerCase() + words.slice(1)}`;
 }
+
+/** Where the whole family opens: the first date holding more than births,
+ * since the early births alone show little, or today when every date is only
+ * births (R-0742, R-0775). */
+export const familyStart = (tl: Timeline, c: Case): number => {
+  const kinds = new Map(tl.events.map((e) => [e.id, e.kind ?? ""]));
+  const i = c.snapshots.findIndex((s) => s.event_ids.some((id) => !BIRTHS.has(kinds.get(id)!)));
+  return i < 0 ? c.snapshots.length - 1 : i;
+};
 
 /** The whole family stepped through dates (R-0742): one step per date that
  * has a birth, an adoption, a couple's start or end, a death or a relationship

@@ -1,10 +1,10 @@
 import "./drawer.css";
 import { askedChip, chipOf } from "./chips";
-import { CLUSTER, closeX, esc, flash, pathRow, slideOver, stepBtn } from "./dom";
+import { CLUSTER, closeX, esc, flash, pathRow, slideOver, stepBtn, still } from "./dom";
 import { leastScale } from "./diagram";
 import { clusterStep } from "./picture";
 import { kindForms, withKind } from "./rows";
-import { family, when, Told } from "./snapshots";
+import { family, familyStart, when, Told } from "./snapshots";
 import type { Case, Chip, Timeline } from "./types";
 
 /** The play-by-play drawer: a real drill-down that slides over the timeline and
@@ -172,7 +172,32 @@ export function frameOn(frame: HTMLElement, ids: string[], who: string, glide: b
   const [wl, wh] = span(frame, svg, who);
   const mid = hi - lo <= w ? (lo + hi) / 2 : Math.min(Math.max((lo + hi) / 2, wh - w / 2), wl + w / 2);
   const left = Math.min(Math.max(mid - w / 2, 0), frame.scrollWidth - w);
-  frame.scrollTo({ left, behavior: glide ? "smooth" : "instant" });
+  pan(frame, Math.round(left), glide && !still());
+}
+
+/** How long the frame takes to travel to a step's people, eased in and out,
+ * from where it stood to exactly where it lands, never past it (R-0778). */
+export const PAN = { ms: 900, ease: (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (2 - 2 * t) ** 3 / 2) };
+const panning = new WeakMap<HTMLElement, number>();
+
+function pan(frame: HTMLElement, to: number, glide: boolean): void {
+  if (panning.has(frame)) cancelAnimationFrame(panning.get(frame)!);
+  const from = frame.scrollLeft;
+  if (!glide || from === to) {
+    frame.scrollLeft = to;
+    return;
+  }
+  // a reader who takes the frame in hand stops it
+  if (!panning.has(frame))
+    for (const kind of ["pointerdown", "touchstart", "wheel"])
+      frame.addEventListener(kind, () => cancelAnimationFrame(panning.get(frame)!), { passive: true });
+  const t0 = performance.now();
+  const tick = (now: number) => {
+    const t = Math.min((now - t0) / PAN.ms, 1);
+    frame.scrollLeft = from + (to - from) * PAN.ease(t);
+    if (t < 1) panning.set(frame, requestAnimationFrame(tick));
+  };
+  panning.set(frame, requestAnimationFrame(tick));
 }
 
 export class Drawer {
@@ -203,11 +228,11 @@ export class Drawer {
     this.show(new Told(tl, told), statement, 0);
   }
 
-  /** Slide the drawer in on the whole family as the record stands today, its
-   * last step; Back steps into its history (R-0742). */
+  /** Slide the drawer in on the whole family at the first date holding more
+   * than births; Back and Next step through its history (R-0742). */
   openFamily(tl: Timeline): void {
-    const told = new Told(tl, family(tl), true);
-    this.show(told, null, told.length - 1);
+    const c = family(tl);
+    this.show(new Told(tl, c, true), null, familyStart(tl, c));
   }
 
   /** Whether the whole family is up. */
@@ -265,10 +290,13 @@ export class Drawer {
     q(".wire").innerHTML = yearsLine(told.tl, told, this.i);
     if (told.whole) q(".when").innerHTML = topLine(told, this.i);
     const shot = told.shot(this.i);
-    q(".draw").innerHTML = shot.svg;
+    const draw = q(".draw");
+    // the new drawing is the same width, so the frame sets off from where it stood
+    const was = draw.scrollLeft;
+    draw.innerHTML = shot.svg;
     q(".scroll").innerHTML = below(told, this.i, this.statement);
     this.fit();
-    const draw = q(".draw");
+    draw.scrollLeft = was;
     const lit = [...draw.querySelectorAll<SVGElement>('.hl.now[data-mark^="hl:"]')].map((m) => m.dataset.mark!.slice(3));
     draw.dataset.who = shot.who;
     frameOn(draw, lit.length ? lit : [shot.who], shot.who, glide);

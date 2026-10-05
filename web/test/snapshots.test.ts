@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { arrange, bar, crosses, draw, Mark, Side, VIEW, layout, Sex, Tie, type Cast, type Layout } from "../src/diagram";
-import { Move } from "../src/moves";
-import { among, family as wholeFamily, gapText, Told, untold } from "../src/snapshots";
+import { FIELD, Move } from "../src/moves";
+import { among, family as wholeFamily, familyStart, gapText, Told, untold } from "../src/snapshots";
 import type { Case, Timeline } from "../src/types";
 import {
   apart,
@@ -648,28 +648,13 @@ describe("moves other than toward and away", () => {
     expect(group[0]).toMatch(drawn);
   });
 
-  // R-0558, R-0555
-  it("keeps every ring of a move inside the picture's edges", () => {
-    for (const kind of ["distance", "cutoff", "defined-self"]) {
-      const t = moved(kind);
-      const svg = t.shot(1).svg;
-      const rings = [...svg.matchAll(/<circle class="fld[^"]*" cx="([\d.-]+)" cy="([\d.-]+)"[^>]*>(?:<animate attributeName="r" values="[\d.]+;([\d.]+)")?/g)];
-      expect(rings.length).toBeGreaterThan(0);
-      const frames = [...svg.matchAll(/<g class="mv" transform="translate\(([\d.-]+) ([\d.-]+)\) rotate\(([\d.-]+)\)">/g)];
-      // a ring's centre is drawn in the move's own frame: back to the picture's
-      const [tx, ty, deg] = frames.length ? frames[0].slice(1).map(Number) : [0, 0, 0];
-      const a = (deg * Math.PI) / 180;
-      rings.forEach(([, cx, cy, reach]) => {
-        const [x, y] = frames.length
-          ? [tx + Number(cx) * Math.cos(a) - Number(cy) * Math.sin(a), ty + Number(cx) * Math.sin(a) + Number(cy) * Math.cos(a)]
-          : [Number(cx), Number(cy)];
-        const r = Number(reach ?? 24);
-        expect(x - r).toBeGreaterThanOrEqual(-0.5);
-        expect(y - r).toBeGreaterThanOrEqual(-0.5);
-        expect(x + r).toBeLessThanOrEqual(t.layout.vw + 0.5);
-        expect(y + r).toBeLessThanOrEqual(t.layout.h + 0.5);
-      });
-    }
+  // R-0776
+  it("runs every field's rings out to the one reach, however near its person stands to the picture's edge", () => {
+    const reaches = ["distance", "cutoff", "defined-self"].flatMap((kind) =>
+      [...moved(kind).shot(1).svg.matchAll(/<circle class="fld[^"]*"[^>]*><animate attributeName="r" values="[\d.]+;([\d.]+)"/g)].map((m) => `${kind} ${m[1]}`),
+    );
+    expect(reaches.length).toBeGreaterThan(0);
+    expect(reaches.filter((r) => !r.endsWith(` ${FIELD}`))).toEqual([]);
   });
 
   // R-0555, R-0556, R-0557
@@ -1413,6 +1398,30 @@ describe("the whole family stepped through dates", () => {
     expect(els(on, "path", "xd").filter((e) => e.class.includes("now"))).toHaveLength(1);
     expect(els(after, "path", "xd").filter((e) => e.class.includes("now"))).toHaveLength(1);
     expect(els(after, "path", "xd").filter((e) => !e.class.includes("now"))).toHaveLength(1);
+  });
+
+  // R-0775
+  it("opens on the first date holding more than births, past the early births alone, and on today when every date is births", () => {
+    const tl = record();
+    tl.events.push(event(308, "1920-02-01", "birth", null, { child: ERROL }), event(309, "1922-02-01", "birth", null, { child: ODILE }));
+    const c = wholeFamily(tl);
+    expect(c.snapshots[familyStart(tl, c)].event_ids).toEqual([103]);
+    const births = { ...c, snapshots: c.snapshots.slice(0, 2) };
+    expect(familyStart(tl, births)).toBe(1);
+  });
+
+  // R-0777, R-0763
+  it("moves the three people of an inside step over and over, as the play-by-play does", () => {
+    const tl = record();
+    tl.events.push(event(310, "2017-03-01", "shift", THEO, { relationship: "inside", relationshipTargets: [DELPHINE], relationshipTriangles: [CORINNE], title: "Sided with her", description: "Sided with Delphine" }));
+    const t = whole(tl);
+    const svg = t.shot(stepOf(t, 310)).svg;
+    const slides = [...svg.matchAll(/<g class="slid" transform="translate\(([^)]*)\)"><animateTransform ([^>]*)\/>/g)];
+    expect(slides.length).toBeGreaterThan(0);
+    slides.forEach(([, at, attrs]) => {
+      expect(at).not.toBe("0.0 0.0");
+      expect(attrs).toContain('repeatCount="indefinite"');
+    });
   });
 
   // R-0742

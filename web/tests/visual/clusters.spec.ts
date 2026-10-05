@@ -72,6 +72,27 @@ test.describe("the three levels on the moves record", () => {
     await expect(path(page)).toHaveText(`Timeline \u203a The walk \u00b7 ${span}`);
   });
 
+  // R-0767
+  test("an open cluster's name too long for the phone gives way to an ellipsis, never its count", async ({ page }, info) => {
+    test.skip(info.project.name !== "phone", "only the phone is too narrow for the name");
+    const long = "Pursuit of psychology and emotional regulation";
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+      const tl = await (await route.fetch()).json();
+      tl.clusters.forEach((c: { title: string }) => (c.title = long));
+      await route.fulfill({ json: tl });
+    });
+    await settle(page);
+    await toRest(page);
+    await openCluster(page);
+    await expect(name(page)).toContainText(long);
+    const seen = await name(page).evaluate((el) => {
+      const [nm, ct] = [...el.children].map((c) => c.getBoundingClientRect());
+      const box = el.getBoundingClientRect();
+      return { cut: el.firstElementChild!.scrollWidth > el.firstElementChild!.clientWidth, count: ct.right <= box.right + 0.5 && ct.width > 0, after: ct.left >= nm.right };
+    });
+    expect(seen).toEqual({ cut: true, count: true, after: true });
+  });
+
   // R-0376
   test("a crowded box at rest carries no number of events", async ({ page }) => {
     await settle(page);

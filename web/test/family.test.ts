@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { arrange, bar, crosses, draw, Mark, Sex, Tie, VIEW, type Box, type Cast, type Frame, type Layout } from "../src/diagram";
 import { Move } from "../src/moves";
 import { family as wholeFamily, Told } from "../src/snapshots";
-import { CORINNE, DELPHINE, event, MARCUS, timeline } from "./whitlock";
+import { DELPHINE, MARCUS, timeline } from "./whitlock";
 
 /** The whole family stepped through dates: lines before their date. */
 
@@ -82,18 +82,6 @@ it("fades a couple's line in the whole family until their first dated event", ()
   const line = (svg: string) => svg.match(new RegExp(`<path class="([^"]*)" data-bond="${MARCUS}\\|${DELPHINE}"`))![1];
   expect(line(at(103))).toBe("tie yet");
   expect(line(at(109))).toMatch(/^tie(?! yet)/);
-});
-
-// R-0742
-it("moves no one on an inside or outside step of the whole family", () => {
-  const tl = timeline();
-  tl.events.push(
-    event(305, "1985-06-01", "shift", CORINNE, { relationship: Move.Inside, relationshipTargets: [DELPHINE], relationshipTriangles: [MARCUS], title: "Sided with Delphine" }),
-  );
-  const t = new Told(tl, wholeFamily(tl), true);
-  const svg = t.shot(t.told.snapshots.findIndex((s) => s.event_ids.includes(305))).svg;
-  expect(svg).toContain(`data-mark="hl:${CORINNE}"`);
-  expect(svg).not.toContain("slid");
 });
 
 /** Two stand-in families whose names once lay on a child's line and on

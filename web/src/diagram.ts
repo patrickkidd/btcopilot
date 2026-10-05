@@ -1,5 +1,5 @@
 import { esc } from "./dom";
-import { CROSS, cross as healthCross, DEMO, draw as moveMarks, FIELD, FLANK, Move, Shift, SPIKES, spikes as anxious, WALL } from "./moves";
+import { CROSS, cross as healthCross, draw as moveMarks, FLANK, Move, Shift, SPIKES, spikes as anxious, WALL } from "./moves";
 
 /** A small family diagram generated from a cast, to FAMILY_DIAGRAM_VISUAL_SPEC.md,
  * ported from the approved play-by-play reference (design/playbyplay-snapshots,
@@ -1684,12 +1684,8 @@ const STILL = { symptom: null, anxiety: null, functioning: null };
  * Carried from an earlier snapshot it turns grey and stops moving. */
 function kin(L: Layout, m: Kin): string {
   const d = dimsOf(L);
-  // a field reaches as far as the nearest edge of the picture from either
-  // person and no further: the moves board scales it by the stage's height
-  const room = Math.min(
-    ...[m.from, m.to].flatMap((id) => (id ? [L.x[id], L.vw - L.x[id], L.y[id], L.h - L.y[id]] : [])),
-  );
-  const stage = { w: DEMO.w, h: (Math.min(room, FIELD) * DEMO.h) / FIELD };
+  // every field's rings reach the same distance, wherever its person stands;
+  // the picture's edge cuts them rather than shrinking them (R-0776)
   const at = (id: string) => ({
     id: 0,
     name: L.P[id].name,
@@ -1698,7 +1694,6 @@ function kin(L: Layout, m: Kin): string {
     r: d.half(L.P[id]),
     mirror: L.zone[id] < 0,
     gender: L.P[id].g === Sex.Female ? "female" : null,
-    stage,
     mark: d.MARK,
     still: true,
   });
