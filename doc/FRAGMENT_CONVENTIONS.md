@@ -9,6 +9,14 @@ Ground truth is the desktop app's drawing code under `pkdiagram/` in the familyd
 `btcopilot/doc/FAMILY_DIAGRAM_VISUAL_SPEC.md` is second. **Where they disagree the code
 wins**, and the line says so. One line per convention, each with its source.
 
+**Sizes are not this sheet's (R-0759).** The fragment is drawn with the family diagram's
+own shapes, couple lines, child lines, slashes, death crosses, names and ages, at the sizes
+they have against each other in every other picture of the app (`web/src/diagram.ts`, sized
+by the one `.diagram` rule set in `web/src/drawer.css`). The stroke, slash, name and age
+sizes below are the desktop app's and are kept as history. Where the fragment places
+things is still this sheet's, except that the slashes, now a person tall, sit 0.25 `u`
+right of the bond's centre, clear of the child's line and of the right-hand shape.
+
 Everywhere this sheet once said a rule was open, Patrick has now ruled (R-0325) and the
 renderer draws that one way only — there are no drawing options left in the code, only the
 size the picture is drawn at. `doc/mockups/fragment.html` is the record of the
