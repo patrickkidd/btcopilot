@@ -1660,8 +1660,9 @@ class Toolbox:
         if asked is not None and state is not QuestionState.Held:
             raise ToolError(
                 f"Question {asked['id']} already asks {coverage.WORDS[fact]} for {where} and "
-                "is open: close it with set_question first, as answered when the person "
-                "has answered it",
+                "is open. To ask it now, ask that one: one held is marked asked with "
+                "set_question, one already asked is asked again in your reply with no call. "
+                "When the person has answered it, close it with set_question as answered",
                 "It asked the same thing twice.",
             )
         if state is QuestionState.Resolved:

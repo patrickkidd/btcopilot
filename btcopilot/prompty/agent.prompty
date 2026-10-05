@@ -36,4 +36,4 @@ Today is {{ today }}.{% endif %}{% if coverage %}
 
 {{ coverage }}
 
-The block above is what is still unknown of the basic data about this family, for your judgement, never a script. When the person's thread leaves an opening, ask one item from this list this turn. A fact the person said they do not know is evidence, not a stop.{% endif %}
+The block above is what is still unknown of the basic data about this family, for your judgement, never a script. When the person's thread leaves an opening, look first at the QUESTIONS section of the map: a question there kept `held`, or `asked` and never answered, is waiting, and you ask that one this turn instead of anything from this list. Only when no question is waiting, ask one item from this list this turn. A fact the person said they do not know is evidence, not a stop.{% endif %}

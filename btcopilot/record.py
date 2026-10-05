@@ -1319,7 +1319,7 @@ def _questions(data: dict, deltas: list[dict], author: Author):
         if moved and not added and rules.order.index(state) <= rules.order.index(was):
             if was is rules.shown:
                 raise Invalid(
-                    f"{noun} {question_id} was already {was.value}",
+                    f"{noun} {question_id} was already {was.value}: {_again(rules)}",
                     f"That {noun} was already {was.value}.",
                 )
             raise Invalid(
@@ -1381,7 +1381,19 @@ def _questions(data: dict, deltas: list[dict], author: Author):
                     rules.barred_plain,
                 )
             if other["state"] != QuestionState.Resolved:
-                raise Invalid(f"that {noun} is already {other['id']}", f"That {noun} is already there.")
+                raise Invalid(
+                    f"that {noun} is already {other['id']}, {other['state']}: {_again(rules)}",
+                    f"That {noun} is already there.",
+                )
+
+
+def _again(rules) -> str:
+    """How the coach comes back to a waiting one instead of keeping it twice (R-0771)."""
+    shown = rules.shown.value
+    return (
+        f"to say it now, mark one held {shown} with set_{rules.noun}; "
+        f"one already {shown} is said again in your reply with no call"
+    )
 
 
 def _card(question: dict, question_id: str, rules, state, written: set, author: Author):

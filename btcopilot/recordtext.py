@@ -156,6 +156,8 @@ def note_line(question: dict) -> str:
         line = f'{question["id"]} {status} "{question["text"]}" on '
         line += ", ".join(f"{one['kind']} {one['id']}" for one in question["evidence"]) or "nothing"
     else:
+        if question["state"] == QuestionState.Asked and question.get("asked_at"):
+            status += f" {question['asked_at']}"
         line = f'{question["id"]} {status} {question["kind"]} "{question["text"]}"'
         if question.get("item_kind"):
             line += f" about {question['item_kind']} {question['item_id']}"

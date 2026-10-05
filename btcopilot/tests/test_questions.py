@@ -286,7 +286,7 @@ MAP = DiagramData(
         {"id": "q2", "text": ASK, "kind": "fact", "state": "held", "outcome": None,
          "item_kind": "person", "item_id": "1"},
         {"id": "q3", "text": "How does your father respond when he's anxious?", "kind": "thought",
-         "state": "asked", "outcome": None},
+         "state": "asked", "outcome": None, "asked_at": "2026-09-20"},
         {"id": "q4", "text": "Where did they live?", "kind": "fact", "state": "resolved", "outcome": "answered"},
         {"id": "q10", "text": "What would your mother say?", "kind": "thought", "state": "resolved",
          "outcome": "declined_in_chat"},
@@ -299,13 +299,27 @@ def test_the_map_lists_open_questions_then_declined_ones(family):
     assert (
         'QUESTIONS (open, then declined: never ask a declined one again)\n'
         f'q2 held fact "{ASK}" about person 1\n'
-        'q3 asked thought "How does your father respond when he\'s anxious?"\n'
+        'q3 asked 2026-09-20 thought "How does your father respond when he\'s anxious?"\n'
         f'q1 declined fact "{LATER}"\n'
         'q10 declined thought "What would your mother say?"'
     ) in outline(MAP, 5)
     assert "Where did they live?" not in outline(MAP, 5)
     assert "QUESTIONS" not in outline(DiagramData(), 5)
 
+
+def test_a_waiting_question_is_asked_by_moving_it_never_by_keeping_it_twice(family):
+    # R-0771
+    toolbox = box(family)
+    add(toolbox, LATER, state="held")
+
+    with pytest.raises(ToolError) as refused:
+        add(toolbox, LATER)
+    assert "mark one held asked with set_question" in str(refused.value)
+    settle(toolbox, family, "q1", state="asked")
+    assert [(q["state"], q["asked_at"]) for q in stored(family).values()] == [("asked", TODAY)]
+    with pytest.raises(ToolError) as refused:
+        settle(toolbox, family, "q1", state="asked")
+    assert "one already asked is said again in your reply with no call" in str(refused.value)
 
 def test_reading_questions_gives_open_and_declined_and_closed_on_asking(family):
     # R-0479
@@ -751,8 +765,8 @@ def test_a_second_open_fact_question_on_the_same_item_is_refused(family):
         add(toolbox, "Is Hugh living?", fact="alive", item_kind="person", item_id=str(HUGH))
     assert refused.value.plain == "It asked the same thing twice."
     assert str(refused.value).startswith(
-        "Question q1 already asks alive or not for 2 Hugh (father) and is open: close it "
-        "with set_question first"
+        "Question q1 already asks alive or not for 2 Hugh (father) and is open. To ask it "
+        "now, ask that one"
     )
     # the person's answer closes the open one; a new closed one is not the way
     with pytest.raises(ToolError) as refused:

@@ -323,12 +323,18 @@ def test_the_coach_asks_the_times_the_most_was_going_on_on_a_thread_that_never_a
     ) in prompt
 
 
+def test_the_coach_keeps_a_story_left_untold_and_asks_a_waiting_question_first(public):
+    # R-0770, R-0771
+    prompt = public.get_agent_prompt(record=RECORD)
+    assert "keep the story in that same turn as a question `held` for later" in prompt
+    assert "a waiting question comes before any new question about the basic data" in prompt
+    assert "never with a second `add_question`" in prompt
+
 def test_the_coach_asks_one_item_and_the_question_names_it(public):
-    # R-0006
+    # R-0006, R-0771
     prompt = public.get_agent_prompt(record=RECORD, coverage=COVERAGE)
     assert (
-        "When the person's thread leaves an opening, ask one item from this list "
-        "this turn."
+        "Only when no question is waiting, ask one item from this list this turn."
     ) in prompt
     fact = public.tool_meanings()[public.ToolText.Fact]
     assert "Name it whenever the question asks for one of the required facts." in fact
