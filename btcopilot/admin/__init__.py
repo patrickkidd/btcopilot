@@ -4,6 +4,7 @@ themselves (T-11)."""
 
 import click
 
+from btcopilot.admin.casereport import case_report_group
 from btcopilot.admin.coachmodels import coach_model
 from btcopilot.admin.database import database
 from btcopilot.admin.diagrams import diagrams
@@ -41,6 +42,7 @@ for group in (
     impressions_group,
     titles_group,
     report_group,
+    case_report_group,
     imports,
     token_cap,
     coach_model,
