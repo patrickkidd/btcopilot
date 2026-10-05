@@ -1206,3 +1206,10 @@ both a target and a third person. Not yet measured live: no model calls were mad
 [R-0504]
 
 **Follow-up** (2026-10-04): the failing literature runs refused in words ("I won't speak for any book", "I can't tell you what the books say"), which still names them. The paragraph now gives those two as bad examples and a good opening that starts straight from the person's story. Measured on the subscription: every impression and case report case passes, the literature case 3 of 3. Public and private prompt goldens re-captured. [R-0688]
+
+### October 2026: The times the most was going on are asked on a thread that never asked (FD-371)
+
+**Change** (2026-10-05): the fidelity paragraph on the times the most was going on now also says that where what brings the person and when it began are already in the record from an earlier sitting and the question was never kept, the coach's next reply asks it, ahead of any other question, whatever the person just said. The set wording, its storing as a fact question naming the item, and the follow-ups are unchanged; public and private copies carry the same paragraph.
+**Reason**: after the 2026-10-05 deploy Patrick's own thread had four coach turns with no such question, though the coverage list showed the item first among unknowns. The paragraph fired only in the reply right after the person says when the trouble began, which on his thread was weeks earlier.
+**Measured** on the subscription ($0), the new live case (a dated problem said in two earlier sittings, a new sitting opening on a birthday gift): 0 of 3 on the old prompt, 3 of 3 on the new. The live case's earlier sittings now mark the coach's lines as the coach's, so the history reads as a chat. Public and private prompt goldens re-captured.
+[R-0762]

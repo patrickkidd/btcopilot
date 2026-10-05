@@ -1,0 +1,37 @@
+{
+	"text": "ENC[AES256_GCM,data:oE8XLn6IDHtPE9e9vn0IixoGOkwzfbYOtZTExQvio3NrBLRoTd+HcN2u8//q9TL8rks99URm/P5gvB20bl702WSQnd9BeGddUW1jA3bDqA63AHLkuhBl0V4LkDhn38TucsFCQsI5uRJick2DHrchIGWWLc7kwIF4xuhALxH25mye+3aKufy1bDcux9h0WSjhKpxLKeuAAyF5idhKPh415ihFseQ/V5xWV3G5FbsFeYlO9ai8Tvp687TvVwvBH3SsEAVIp9WEXt8n4+PWVIbYyCApyDaxZxmnkA0WzelegiLFOCGYnf97d/SJrblILVULZLUilH+9dZokKQtJJ5aSS7OQ/dmbIdKEjnh3IlRHNkNRYs4MLfanhWyKRBSz/r9cKkgVCXW2JsyhJtdEKxIr+ZPrmuwurpZauefz/vPd1791SRlA3BbLaOu9UUtIlQ49b5QH7voepFvsaN3ii1xbHOTABNjEdiX79GwT/KLxVaJviSTRYyj2s532V9yNpb2mTAOqDDiYzTtDknC48PxtgHUrrEsjxzFww+eRccaq+1zhmzLTfEnD6A==,iv:fHhsl7frVJfxZFAZ6oJqcMspJk1mtWWivLXHJg4Y6I4=,tag:qUsSVVh1qbdGchJ5ubTqRg==,type:str]",
+	"calls": [],
+	"blocks": [
+		{
+			"type": "ENC[AES256_GCM,data:NCZv7g==,iv:tHN0XhGv4VjXwVa970FZKoFljsqpHotppudU/JtwpFM=,tag:Q+O3wOqiqbZ2Xdr+ARBOMA==,type:str]",
+			"text": "ENC[AES256_GCM,data:n26iChmzcgsBwzs8wdFLUXdvNcjUbSjE0Gry+v3q7HzuKQEViFpUqSOJjL37OJFrkGr+Kq5KIraTq1o/njzY8DwNLCB6TWlZEYH7+p0BTdzsWoHUzUExPi9UgLpK2sDWDWKkf2ewQ8LmPogOuAvT9m6AxOvBzRqYnkjnl/UQE6t4sqHSWZciuCanQYkPXXJVRTEmCFzKxhNHf9F5oiDD6nTILxLR2r7NonXAXejbOG2AsS3yD1fPL6OrS/vEEI59Obk8VXkv94uG1e13PvdqBW673d97U8lL9HFItV9LCarwP3YFzo+oGcxEwuPEvl6c7vRTKLNCscA81Ft6UK23eBkeeBQNiHUdxzruS3KmWgxmUkv8uTKHLK4eTvczYMtaTVo9oIH1xqFwCAcraEe4sj0JZB6Z2blbVIeoChE+ChXnrr3XoUqEEyfT+HKhP2EOm/uwRgh7hPZlC+ezK47FoqINhB1HL/Wd5VTlxWKfFMlEgQQ1UCTmn1UoB2r8yYy4vOc3WrFHc34tjLC+1iYIN2ba/a+5YBH45auzSm2oFNhrPFJeVSkA3Q==,iv:ZFajVwDCu0rFYMPz100azLi43ByFC0re8z+AjWA5G9k=,tag:Op7Fay1gkYpuaX3XxoczVA==,type:str]"
+		}
+	],
+	"served": {
+		"model": "ENC[AES256_GCM,data:Z1P/e11Khy/QdFge/hoH,iv:7QsYJIpvU+i2ZQ/vzYNCKKmgviFiyC0DWXL6AWY9Fvg=,tag:70IM9gZQNNyMMAO/A5+uyw==,type:str]",
+		"hops": [],
+		"sticky": "ENC[AES256_GCM,data:/+U5+cs=,iv:E3LY/h3qrG/UCk1WGx2dFl38q4zgDW32PrIzRNkZbsA=,tag:MSl2VK+M0lF3/31gS2wmfw==,type:bool]"
+	},
+	"source": "ENC[AES256_GCM,data:nWxFf8hTDJ+MfxrH,iv:NlVND9SRRatG/W4HCM7b//k//QzrX+oBSHTtdhHp6v0=,tag:KYwy7Fnr6CRgoj8VNe5MrQ==,type:str]",
+	"date": "ENC[AES256_GCM,data:7pkcIThuAlqqnA==,iv:wsmmnteowdTZulzfh8Dx92I6jXBqmRQfrkcWLV3/QEY=,tag:xEXMulpgMBOpXSVLK2hMpA==,type:str]",
+	"sops": {
+		"age": [
+			{
+				"enc": "-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBXUzMyNFAxbTBpS05EMzNj\nM05RV2VYRVVKTXFVMWcvU3lCRmZuRzdhZlhZClp4bllJU0h0VFBrQXV2M0RhRWlF\nWkk5ZFRlMmlqVWVTbjFSRUU0TTBaemMKLS0tIGg1a3RBMEJ2WVBoYjg1VHR6c2t4\nWHpFVlcwWTNyMGtCRjk0NEExczdxaW8KJKbvHflX/xgRRzGOImsz1j9CMHsmS4Z6\nwrJ3i9tL0oHgrlvzhbPfsDGYgndMn/xNK57S8lJUGqJU5CsmtVd25w==\n-----END AGE ENCRYPTED FILE-----\n",
+				"recipient": "age13p5vtq39x8vs6w43kdwsnkark3e6h40unmny76hxcsdy4mhp6ydqmma3yl"
+			},
+			{
+				"enc": "-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBlemlydEpnT3FwcFpJL2JR\nSjFjNTRTRmRVWlJHdGVZSzRyK1hHcm5vd2lBCnd6WmJkZjVlcFZmRWwrOHVvRHJp\nQWwrL1BMT2svM1U5cFU2VTFPYlZMeEkKLS0tIExnNzRLeEpoSmR3YVFXYlhKSzl5\na0Q3TzA2YVgrSHJYS3Y5NHdFTVNCQjgKbY0MFYg5MS24SvXhvxcrCeO633CUIh2c\nRGrFENeuM8z3Z8AbvJ1YHkFn00hLAiEkhkGDcr3ylaKQBPHa/g9ZFw==\n-----END AGE ENCRYPTED FILE-----\n",
+				"recipient": "age105g6wq3zc6xszu75ejeqryqjq69xrfm4hp8hktq89u3jpyafvq7sf23nqu"
+			},
+			{
+				"enc": "-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA1RFRWYndKeUpOdEhlcW9C\nbnhxQUVFS091OUZBb3k3TkpCczJtclR4SFRjCkdYbTlUTHRlVXc2ZXdsdHF3WnV4\nYzhsdDIrM05zMUxqY3ZacHpRa3RKcjAKLS0tIFdmNmJpQ2ZoRlhzL2V5ZWFoODZ5\nODdZNm9HUjZYSk1uOHJuZGtGam5scU0KRHFuEikaRMAehA++tUB5I1UkvUmmIAON\nUFW+210bXvJN1yadn5fOybPbA8Zej3UXQANMbM3df6lqvZP990PL6Q==\n-----END AGE ENCRYPTED FILE-----\n",
+				"recipient": "age1hq5rwp5pjfk939xchnv5cycl9vtfqhuf0crcfaycrra6xjur85kst3lxzy"
+			}
+		],
+		"lastmodified": "2026-10-05T08:12:45Z",
+		"mac": "ENC[AES256_GCM,data:3W4nR9FbCuvR3UQf3MIPGSp+Qa1qKAc+FhYrCLDxRwB7a6hnR96CcMaNxeFLqg6Lr+Z9XZQg+hSte4tsaZP+sDmQQqjWxpgtPtIVoAul/XKOiBYm+rJZOy67V1HgaC+P7UCYmyfoM6c/SygLwVPIarH0AJiV/JCQyIHtfHsm1Kc=,iv:T5axwaGRXnSp5voaY30LX56/wssktCbFRbFMk/u3OiQ=,tag:jXheSzUXPi+KuswkbCQwgw==,type:str]",
+		"unencrypted_suffix": "_unencrypted",
+		"version": "3.13.3"
+	}
+}

@@ -312,6 +312,17 @@ def test_the_coach_keeps_a_fact_told_unasked_as_a_question_already_answered(publ
     assert '"We can\'t have children" closes the couple\'s children item as answered' in prompt
 
 
+def test_the_coach_asks_the_times_the_most_was_going_on_on_a_thread_that_never_asked(public):
+    # R-0762
+    prompt = " ".join(public.get_agent_prompt(record=RECORD, coverage=COVERAGE).split())
+    assert (
+        "Where what brings them and when it began are already in the record from an "
+        "earlier sitting, and this question is not yet among the questions kept, the "
+        "reply you are writing now asks it, before any other question, whatever the "
+        "person has just said."
+    ) in prompt
+
+
 def test_the_coach_asks_one_item_and_the_question_names_it(public):
     # R-0006
     prompt = public.get_agent_prompt(record=RECORD, coverage=COVERAGE)
