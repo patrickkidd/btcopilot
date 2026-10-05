@@ -224,3 +224,21 @@ def test_an_answered_question_is_on_the_map_the_pass_reads(flask_app, tmp_path, 
     assert result.exit_code == 0, result.output
 
     assert f'{asked} resolved thought "{OWN}" outcome=answered' in model.systems[0]
+
+
+def test_a_card_taken_back_while_a_later_card_stays_is_carded_again(
+    flask_app, tmp_path, family, guesses
+):
+    # R-0739
+    start = db.session.query(db.func.max(Change.id)).scalar()
+    apply(flask_app, dry(flask_app, tmp_path, calling(MAIN)))
+    rows = [str(c.id) for c in Change.query.filter(Change.id > start)]
+    card(family, "i2", "work_on", "c2")
+
+    result = flask_app.test_cli_runner().invoke(
+        admin, ["diagrams", "undo", str(family.id), *rows, "--yes"]
+    )
+    assert result.exit_code == 0, result.output
+    model = Model(calling(MAIN))
+    backfill(flask_app, "--plans", str(tmp_path), model=model)
+    assert "are on no card: i1." in model.histories[0][0]["content"]

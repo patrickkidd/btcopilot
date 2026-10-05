@@ -4,6 +4,7 @@ import pickle
 import pytest
 
 from btcopilot import diagramjson
+from btcopilot.admin import admin
 from btcopilot.extensions import db
 from btcopilot import record
 from btcopilot.models import Author, Change
@@ -132,6 +133,53 @@ def test_undo_changes_takes_back_only_the_rows_named_each_logged_and_a_conflict_
     with pytest.raises(record.Conflict):
         record.undo_changes(diagram.id, [named[0].id], author=Author.Coach)
     assert (diagram.get_diagram_data().people[0]["name"], Change.query.count()) == ("Cy", rows)
+
+
+def _named(diagram, *fields) -> list[Change]:
+    return [
+        record.apply(
+            diagram.id,
+            [{"item_kind": ItemKind.Person, "item_id": 1, "field": field, "after": after}],
+            author=Author.Coach,
+            turn_id="t1",
+        )
+        for field, after in fields
+    ]
+
+
+def test_an_undo_row_is_not_taken_back(subscriber):
+    # R-0084
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
+    [named] = _named(diagram, ("name", "Bea"))
+    [undo] = record.undo_changes(diagram.id, [named.id], author=Author.Coach)
+
+    with pytest.raises(ValueError, match="itself an undo"):
+        record.undo_changes(diagram.id, [undo.id], author=Author.Coach)
+    assert (diagram.get_diagram_data().people[0]["name"], record.undone(diagram.id)) == ("Ada", {named.id})
+
+
+def test_a_write_between_undone_rows_stops_the_rest_and_says_which_were_taken_back(
+    flask_app, subscriber, monkeypatch
+):
+    # R-0084
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
+    first, second = _named(diagram, ("name", "Bea"), ("age", 40))
+    checked = record.taking_back
+    calls = []
+
+    def racing(data, changes):
+        calls.append(changes)
+        # the preview, the check of every row, the newest row: then the
+        # record read under the lock holds another writer's name
+        if len(calls) == 4:
+            data["people"][0]["name"] = "Cy"
+        return checked(data, changes)
+
+    monkeypatch.setattr(record, "taking_back", racing)
+    result = flask_app.test_cli_runner().invoke(
+        admin, ["diagrams", "undo", str(diagram.id), str(first.id), str(second.id), "--yes"]
+    )
+    assert (result.exit_code, f"taken back before it: [{second.id}]" in result.output) == (1, True)
 
 
 def test_undo_changes_passes_over_a_row_that_changed_nothing_and_a_field_emptied_since(

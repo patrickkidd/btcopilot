@@ -210,6 +210,10 @@ def taking_back(data: dict, changes: list[Change]) -> list[tuple[Change, list[di
     the deltas that logs; a value changed since it was written is a Conflict."""
     out = []
     for change in sorted(changes, key=lambda c: c.id, reverse=True):
+        # taking back an undo would put its row back while the log still
+        # names that row as taken back
+        if change.turn_id.startswith("undo:"):
+            raise ValueError(f"change {change.id} is itself an undo and cannot be taken back")
         done = []
         for delta in reversed(change.deltas):
             # It changed nothing, so taking it back changes nothing.

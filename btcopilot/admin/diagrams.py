@@ -96,8 +96,15 @@ def diagram_undo(diagram_id, change_ids, yes):
         taken = record.taking_back(diagramjson.loads(diagram.data), changes)
         if yes:
             record.undo_changes(diagram.id, list(change_ids), author=Author.Coach)
+    except ValueError as e:
+        raise click.ClickException(str(e))
     except record.Conflict as e:
-        raise click.ClickException(f"changed since it was written, nothing taken back: {e}")
+        # rows are written one at a time, so a write between them can stop the
+        # rest after some were taken back
+        done = sorted(record.undone(diagram.id) & set(change_ids))
+        raise click.ClickException(
+            f"changed since it was written: {e}; taken back before it: {done or 'nothing'}"
+        )
     return [
         {
             "change": change.id,

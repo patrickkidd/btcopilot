@@ -539,3 +539,37 @@ def test_a_grown_sessions_backfill_taken_back_row_by_row_is_gone_through_again_f
     _, model = backfill(flask_app, raising, said(""), group="impressions")
     read, new = model.systems[0].split(questions.NEW)
     assert ("My grandmother raised me." in read, "My sister moved away." in new) == (True, True)
+
+
+def test_a_middle_pass_taken_back_while_a_later_one_stays_is_read_again(
+    flask_app, web, family, past, monkeypatch
+):
+    # R-0006
+    backfill(flask_app, said(""), group="impressions")
+    coach(monkeypatch, Model(said("Where did she go?")))
+    say_in(web, csrf_token(web), past["session"], "My sister moved away.")
+    later = statements(web, past["session"])[-2]["id"]
+    start = db.session.query(db.func.max(Change.id)).scalar()
+    raising = calling(
+        (
+            ToolName.AddImpression,
+            {
+                "text": "Your sister leaving is still close for you.",
+                "state": "raised",
+                "evidence": [{"kind": "statement", "id": str(later)}],
+            },
+        )
+    )
+    backfill(flask_app, raising, said(""), group="impressions")
+    middle = [str(c.id) for c in Change.query.filter(Change.id > start)]
+    coach(monkeypatch, Model(said("And now?")))
+    say_in(web, csrf_token(web), past["session"], "She writes every week.")
+    backfill(flask_app, said(""), group="impressions")
+
+    done = flask_app.test_cli_runner().invoke(
+        admin, ["diagrams", "undo", str(family.id), *middle, "--yes", "--json"]
+    )
+    assert done.exit_code == 0, done.output
+    _, model = backfill(flask_app, raising, said(""), group="impressions")
+    _, new = model.systems[0].split(questions.NEW)
+    assert ("My sister moved away." in new, "She writes every week." in new) == (True, True)

@@ -118,17 +118,21 @@ def unread(discussion: Discussion, kind: Kind, done: list[int]) -> list[Statemen
     if discussion.id not in done:
         return said
     taken = record.undone(discussion.diagram_id)
+    passes = [
+        change
+        for change in Change.query.filter_by(
+            diagram_id=discussion.diagram_id, turn_id=f"{kind.turn}:{discussion.id}"
+        ).order_by(Change.id.desc())
+        if any(delta["field"] == kind.done for delta in change.deltas)
+    ]
+    # a pass taken back while a later one stays: read again from before it
+    first = min((c.id for c in passes if c.id in taken), default=None)
     marked = next(
-        (
-            change
-            for change in Change.query.filter_by(
-                diagram_id=discussion.diagram_id, turn_id=f"{kind.turn}:{discussion.id}"
-            ).order_by(Change.id.desc())
-            if change.id not in taken
-            and any(delta["field"] == kind.done for delta in change.deltas)
-        ),
+        (c for c in passes if c.id not in taken and (first is None or c.id < first)),
         None,
     )
+    if marked is None and first is not None:
+        return said
     if marked is None or marked.statement is None:
         raise ValueError(f"No change links the last message read in session {discussion.id}")
     return [s for s in said if order(s) > order(marked.statement)]

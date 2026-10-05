@@ -62,9 +62,16 @@ def fresh(diagram: Diagram, data: DiagramData) -> set[str]:
     into the record after the newest card was set, from the change log; every
     one of them before any card was. A change taken back, and the undo itself,
     set no card."""
-    added, last = {}, 0
+    added, last, uncarded = {}, 0, set()
     taken = record.undone(diagram.id)
     for change in Change.query.filter_by(diagram_id=diagram.id).order_by(Change.id):
+        if change.id in taken:
+            # a card taken back leaves its guess or question to be carded again
+            uncarded |= {
+                str(d["item_id"])
+                for d in change.deltas
+                if d["item_kind"] == ItemKind.Question.value and d["field"] == CARD
+            }
         if change.id in taken or change.turn_id.startswith("undo:"):
             continue
         for delta in change.deltas:
@@ -78,7 +85,7 @@ def fresh(diagram: Diagram, data: DiagramData) -> set[str]:
     return {
         q["id"]
         for q in raised(data) + [q for q in data.questions if record.note(q) is record.QUESTION]
-        if not q.get(CARD) and (not last or added.get(q["id"], 0) > last)
+        if not q.get(CARD) and (not last or added.get(q["id"], 0) > last or q["id"] in uncarded)
     }
 
 
