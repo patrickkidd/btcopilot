@@ -72,7 +72,7 @@ describe("an event row's kind", () => {
     expect(row.indexOf('<rect class="shape"')).toBeLessThan(row.indexOf('<circle class="shape"'));
     const shift = eventRow(coded, new Map([[2, "Mom"]]), tree);
     expect(shift).not.toContain('class="kw"');
-    expect(shift).toContain('<svg class="kmark" viewBox="0 0 28 28" aria-hidden="true"></svg>');
+    expect(shift).toContain('<svg class="kmark diagram" viewBox="0 0 136 136" aria-hidden="true"></svg>');
   });
 
   // R-0113, R-0636, R-0675

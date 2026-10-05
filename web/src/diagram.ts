@@ -11,10 +11,18 @@ export enum Sex {
   Male = "m",
   Female = "f",
   Unknown = "?",
+  Miscarriage = "x",
+  Abortion = "a",
 }
 
-export const sexOf = (gender: string | null): Sex =>
-  gender === "female" ? Sex.Female : gender === "male" ? Sex.Male : Sex.Unknown;
+const SEXES: Record<string, Sex> = {
+  female: Sex.Female,
+  male: Sex.Male,
+  miscarriage: Sex.Miscarriage,
+  abortion: Sex.Abortion,
+};
+
+export const sexOf = (gender: string | null): Sex => SEXES[gender ?? ""] ?? Sex.Unknown;
 
 export interface Shape {
   name: string;
@@ -247,9 +255,18 @@ export const VIEW = 360;
 const PAD = 10;
 /** Ruled 2026-09-26: labels at least 13px. */
 export const NAME = 13;
+/** The one size people are drawn at in every view; a view scales the whole
+ * drawing, never the people against their names and marks (R-0759). */
+export const W = 44;
+/** How far a couple's line drops below the lower of the two, in widths. */
+export const DROP = 1 / 2.2;
+/** How far the index person's outline reaches past their shape, in widths. */
+export const RIM = 0.1;
+/** Where an age sits below the centre of its shape. */
+const AGE_DROP = 4.5;
 /** Decided 2026-09-27: labels never under 13px, shapes never under 36px, the family's margin never under 20px. */
 export const LEAST = { label: 13, shape: 36, margin: 20 };
-const CH = 0.6;
+export const CH = 0.6;
 const LEAD = 15;
 /** How far a label's box reaches above its line. */
 const ASCENT = 18;
@@ -260,7 +277,7 @@ const offset = (d: Dims, ring: number) => Math.max(d.OFF, ring + 2);
 const rise = (ring: number) => Math.max(4, ring + 4);
 /** The spec's size steps, largest first. Ruled 2026-09-26: people 44 across
  * where a row fits, never below 36. */
-const STEPS = [44, 40, 36];
+const STEPS = [W, 40, 36];
 
 class Dims {
   W: number;
@@ -279,8 +296,8 @@ class Dims {
     this.W = w;
     this.E = w / 2;
     // the index outline: the Pro app adds a tenth of the width on each side
-    this.RIM = w * 0.1;
-    this.DROP = w / 2.2;
+    this.RIM = w * RIM;
+    this.DROP = w * DROP;
     this.SIB = (compact ? 2 : 3) * w;
     this.LOOSE = (compact ? 2 : 2.5) * w;
     this.COUPLE = this.SIB;
@@ -320,7 +337,7 @@ function lines(p: Shape, t: number): string[] {
 const textWidth = (l: string[]) => Math.max(...l.map((s) => s.length * NAME * CH));
 
 export const DEFAULTS: Options = {
-  w: 44,
+  w: W,
   inset: "auto",
   names: Names.Widen,
   steps: true,
@@ -1332,7 +1349,7 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   return L;
 }
 
-type Point = [number, number];
+export type Point = [number, number];
 type Segment = [Point, Point];
 interface Where {
   P: Record<string, Shape>;
@@ -1490,6 +1507,8 @@ function cross(L: Layout, id: string, dir: Shift, cls: Tone): string {
 }
 
 export function outline(p: Shape, x: number, y: number, e: number, cls: string): string {
+  if (p.g === Sex.Miscarriage || p.g === Sex.Abortion)
+    return `<path class="${cls}" d="M${f(x)} ${f(y - e)}L${f(x + e)} ${f(y + e)}H${f(x - e)}Z"/>`;
   if (p.g === Sex.Female) return `<circle class="${cls}" cx="${f(x)}" cy="${f(y)}" r="${f(e)}"/>`;
   return (
     `<rect class="${cls}" x="${f(x - e)}" y="${f(y - e)}" width="${f(2 * e)}" height="${f(2 * e)}"` +
@@ -1503,19 +1522,37 @@ export function outline(p: Shape, x: number, y: number, e: number, cls: string):
 export const tie = (x0: number, y0: number, x1: number, y1: number, y: number, married: boolean, cls = "", attrs = "") =>
   `<path class="tie${married ? "" : " dash"}${cls}"${attrs} d="M${f(x0)} ${f(y0)}V${f(y)}H${f(x1)}V${f(y1)}"/>`;
 
+/** A slash is as tall as the person (d.MARK) and crosses the couple's line
+ * 0.15 of its reach below it and 0.25 above, its reach being 2.5 slashes. */
+const REACH = 2.5;
+/** How far either side of x a run of n slashes reaches, for a person w wide. */
+const slashSpan = (n: number, w: number) => (n - 1) * 0.05 * REACH * w;
+
 /** One slash for a separation, two for a divorce, upright because custody is
- * not recorded, centred on x across the couple's line at y. */
-export const slashes = (n: number, x: number, y: number, W: number, fresh = false): string =>
-  slashLines(n, x, y, W, fresh).join("");
+ * not recorded, centred on x across the couple's line at y, for people w wide. */
+export const slashes = (n: number, x: number, y: number, w: number, fresh = false): string =>
+  slashLines(n, x, y, w, fresh).join("");
 
 /** The same slashes one by one, so a fresh one can be drawn over the rest. */
-function slashLines(n: number, x: number, y: number, W: number, fresh = false): string[] {
+function slashLines(n: number, x: number, y: number, w: number, fresh = false): string[] {
+  const r = REACH * w;
   return Array.from({ length: n }, (_, i) => {
-    const sx = x - (n - 1) * 0.05 * W + i * 0.1 * W;
+    const sx = x - slashSpan(n, w) + i * 0.1 * r;
     const pop = fresh && i === n - 1 ? " now pop" : "";
-    return `<line class="slash${pop}" x1="${f(sx)}" y1="${f(y + 0.15 * W)}" x2="${f(sx)}" y2="${f(y - 0.25 * W)}"/>`;
+    return `<line class="slash${pop}" x1="${f(sx)}" y1="${f(y + 0.15 * r)}" x2="${f(sx)}" y2="${f(y - 0.25 * r)}"/>`;
   });
 }
+
+/** A line from a child up to their parents' line, or between twins. */
+export const kinLine = (p: Point, q: Point, cls = "") => `<path class="kin${cls}" d="${seg(p, q)}"/>`;
+
+/** A person's age, or the question of their sex, inside their shape. */
+export const ageText = (x: number, y: number, said: string, cls = "") =>
+  `<text class="age${cls}" x="${f(x)}" y="${f(y + AGE_DROP)}">${esc(said)}</text>`;
+
+/** One line of a person's name and dates: the name first, the dates under it. */
+export const nameText = (x: number, y: number, line: string, anchor: string, first: boolean, cls = "") =>
+  `<text class="${first ? "lbn" : "lbd"}${cls}" x="${f(x)}" y="${f(y)}" text-anchor="${anchor}">${esc(line)}</text>`;
 
 /** The death X: corner to corner, or only its corners when an age sits inside. */
 export function crossOut(x: number, y: number, e: number, age: boolean, cls: string): string {
@@ -1677,7 +1714,7 @@ function childLines(L: Layout, k: { x0: number; x1: number; y: number }, kids: s
       const top: Point = [L.x[id], L.y[id] - d.half(L.P[id])];
       const end: Point =
         top[0] >= k.x0 && top[0] <= k.x1 ? [top[0], k.y] : [top[0] < k.x0 ? k.x0 : k.x1, k.y];
-      return `<path class="kin${unborn(L.P[id], t)}" d="${seg(top, end)}"/>`;
+      return kinLine(top, end, unborn(L.P[id], t));
     })
     .join("");
 }
@@ -1829,9 +1866,8 @@ export function draw(L: Layout, s: Frame): string {
     const kids = L.kids.find((c) => c.of.includes(b.a) && c.of.includes(b.b));
     const stops = [k.x0, ...(kids?.kids ?? []).map((id) => L.x[id]).filter((x) => x > k.x0 && x < k.x1), k.x1].sort((p, q) => p - q);
     const open = stops.slice(1).map((x, i) => [stops[i], x]).sort((p, q) => q[1] - q[0] - (p[1] - p[0]));
-    // a slash is 0.4 of the width it is given
-    const len = d.MARK / 0.4;
-    const hw = (n - 1) * 0.05 * len + 3;
+    const len = REACH * d.MARK;
+    const hw = slashSpan(n, d.MARK) + 3;
     const clear = (cx: number) =>
       !texts.some((t) => t.x0 < cx + hw && cx - hw < t.x1 && t.y0 < k.y + 0.15 * len && k.y - 0.25 * len < t.y1);
     const at = open
@@ -1840,7 +1876,7 @@ export function draw(L: Layout, s: Frame): string {
         return Array.from({ length: room + 1 }, (_, i) => [(p + q) / 2 - 2 * i, (p + q) / 2 + 2 * i]).flat();
       })
       .find(clear);
-    slashLines(n, at ?? (open[0][0] + open[0][1]) / 2, k.y, len, b.fresh).forEach((l, i) =>
+    slashLines(n, at ?? (open[0][0] + open[0][1]) / 2, k.y, d.MARK, b.fresh).forEach((l, i) =>
       put(l, b.fresh && i === n - 1),
     );
   });
@@ -1858,8 +1894,8 @@ export function draw(L: Layout, s: Frame): string {
     let t = `<g class="pt${born}" data-id="${esc(id)}">`;
     if (p.you) g += outline(p, x, y, e, "you");
     g += outline(p, x, y, E, "shape");
-    if (age != null) t += `<text class="age" x="${f(x)}" y="${f(y + 4.5)}">${age}</text>`;
-    else if (p.g === Sex.Unknown) t += `<text class="age" x="${f(x)}" y="${f(y + 4.5)}">?</text>`;
+    if (age != null) t += ageText(x, y, String(age));
+    else if (p.g === Sex.Unknown) t += ageText(x, y, "?");
     if (dead) {
       // a death X is in the emphasis colour on its date, plain ink after
       if (s.died.has(id)) top += crossOut(x, y, e, age != null, "xd now pop");
@@ -1890,8 +1926,7 @@ export function draw(L: Layout, s: Frame): string {
       y0 = y - e + 9;
     }
     l.forEach((line, i) => {
-      if (line)
-        t += `<text class="${i ? "lbd" : "lbn"}" x="${f(lx)}" y="${f(y0 + i * LEAD)}" text-anchor="${anchor}">${esc(line)}</text>`;
+      if (line) t += nameText(lx, y0 + i * LEAD, line, anchor, !i);
     });
     out += slid(id, g + "</g>");
     said += slid(id, t + "</g>");
@@ -1928,5 +1963,5 @@ export function draw(L: Layout, s: Frame): string {
     said += L.note.lines
       .map((l, i) => `<text class="cutn" x="${f(L.vw / 2)}" y="${f(L.note!.y + i * LEAD)}" text-anchor="middle">${esc(l)}</text>`)
       .join("");
-  return `<svg class="ss" viewBox="0 0 ${f(L.vw)} ${L.h}" role="img" aria-label="${esc(s.label)}">${out}<g class="fore">${top}</g><g class="said">${said}</g></svg>`;
+  return `<svg class="ss diagram" viewBox="0 0 ${f(L.vw)} ${L.h}" role="img" aria-label="${esc(s.label)}">${out}<g class="fore">${top}</g><g class="said">${said}</g></svg>`;
 }

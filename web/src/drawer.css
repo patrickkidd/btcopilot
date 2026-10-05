@@ -57,7 +57,46 @@
 .pbp p.ask { margin: 4px 0 0; font: 500 16px/1.42 var(--sans); color: var(--ask-text); }
 
 /* ---- the drawings ---- */
-.pbp svg text { font-family: var(--mono); }
+/* Every family drawing, in every view, takes its sizes from these rules alone:
+   the drawer, the case page's pictures, an event row's mark and a version on
+   the review. A view scales the whole drawing, never one part of it (R-0759). */
+.diagram text { font-family: var(--mono); }
+.diagram .shape { fill: var(--panel); stroke: var(--ink); stroke-width: 1.6; }
+.diagram .you { fill: none; stroke: var(--ink); stroke-width: 1.1; }
+.diagram .age { font-size: 13px; fill: var(--faint); text-anchor: middle; }
+.diagram .age.ask { fill: var(--ask); }
+.diagram .tie { stroke: var(--faint); stroke-width: 1.4; fill: none; }
+.diagram .tie.dash, .diagram .kin.dash { stroke-dasharray: 5 4; }
+.diagram .tie.now { stroke: var(--move); stroke-width: 2.2; }
+.diagram .kin { stroke: var(--faint); stroke-width: 1.3; fill: none; }
+/* a parent link that closes a parentage cycle, and the note naming it (R-0751) */
+.diagram .cut { stroke: var(--remove); stroke-width: 2; fill: none; }
+.diagram .cutn { font-size: 13px; fill: var(--remove); }
+.diagram .slash { stroke: var(--faint); stroke-width: 1.8; stroke-linecap: round; }
+.diagram .slash.now { stroke: var(--move); stroke-width: 2.4; }
+.diagram .lbn { font-size: 13px; fill: var(--ink); }
+.diagram .lbd { font-size: 13px; fill: var(--faint); }
+/* names, ages and words sit over every mark, a field's rings too, on a halo
+   of the page's ground so they stay legible (Patrick, 2026-10-03) */
+.diagram .said text { paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; }
+.diagram .xd { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
+.diagram .xd.now { stroke: var(--move); stroke-width: 2.2; }
+/* someone the record is unsure of, on the review */
+.diagram .faint { stroke: var(--faint); }
+.diagram text.faint { fill: var(--faint); }
+.diagram .fn { fill: none; stroke: var(--move); stroke-width: 2.6; }
+.diagram .fn.down { stroke-dasharray: 5 6; }
+.diagram .fn.was { stroke: var(--faint); }
+.diagram .spikes line { stroke: var(--move); stroke-width: 1.8; stroke-linecap: round; }
+.diagram .spikes.was line { stroke: var(--faint); }
+.diagram .evw { font-size: 13px; fill: var(--move-text); font-weight: 500; }
+.diagram .evw.was { fill: var(--faint); }
+.diagram .hl { fill: none; stroke: var(--move); stroke-width: 2.8; }
+.diagram .hl.was { stroke: var(--faint); }
+/* the wall stands a person tall here, not the ratified 68, so its ratified 6 scales with it */
+.diagram .mvk .mv-wall { stroke-width: 4; }
+/* the projecting parent's spikes are drawn heavier, to read against her lit outline (Patrick, 2026-10-03) */
+.diagram .mvk .spk.s-out .mv-spike { stroke-width: 2.8; }
 .pbp .wl { stroke: var(--line); stroke-width: 1.5; }
 .pbp .wgap { stroke: var(--data); stroke-width: 3; opacity: 0.45; stroke-linecap: round; }
 .pbp .wd { fill: var(--data); }
@@ -67,34 +106,6 @@
 .pbp .wring { fill: none; stroke: var(--move); stroke-width: 1.4; opacity: 0.5; }
 .pbp .wlab { font-size: 12px; fill: var(--data); font-weight: 500; }
 .pbp .wyr { font-size: 12px; fill: var(--faint); }
-.pbp .shape, .kmark .shape { fill: var(--panel); stroke: var(--ink); stroke-width: 1.6; }
-.pbp .you { fill: none; stroke: var(--ink); stroke-width: 1.1; }
-.pbp .age { font-size: 13px; fill: var(--faint); text-anchor: middle; }
-.pbp .tie, .kmark .tie { stroke: var(--faint); stroke-width: 1.4; fill: none; }
-.pbp .tie.dash, .kmark .tie.dash { stroke-dasharray: 5 4; }
-.pbp .tie.now { stroke: var(--move); stroke-width: 2.2; }
-.pbp .kin { stroke: var(--faint); stroke-width: 1.3; fill: none; }
-/* a parent link that closes a parentage cycle, and the note naming it (R-0751) */
-.pbp .cut { stroke: var(--remove); stroke-width: 2; fill: none; }
-.pbp .cutn { font-size: 13px; fill: var(--remove); }
-.pbp .slash, .kmark .slash { stroke: var(--faint); stroke-width: 1.8; stroke-linecap: round; }
-.pbp .slash.now { stroke: var(--move); stroke-width: 2.4; }
-.pbp .lbn { font-size: 13px; fill: var(--ink); }
-.pbp .lbd { font-size: 13px; fill: var(--faint); }
-/* names, ages and words sit over every mark, a field's rings too, on a halo
-   of the page's ground so they stay legible (Patrick, 2026-10-03) */
-.pbp .said text { paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; }
-.pbp .xd, .kmark .xd { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
-.pbp .xd.now { stroke: var(--move); stroke-width: 2.2; }
-.pbp .fn { fill: none; stroke: var(--move); stroke-width: 2.6; }
-.pbp .fn.down { stroke-dasharray: 5 6; }
-.pbp .fn.was { stroke: var(--faint); }
-.pbp .spikes line { stroke: var(--move); stroke-width: 1.8; stroke-linecap: round; }
-.pbp .spikes.was line { stroke: var(--faint); }
-.pbp .evw { font-size: 13px; fill: var(--move-text); font-weight: 500; }
-.pbp .evw.was { fill: var(--faint); }
-.pbp .hl { fill: none; stroke: var(--move); stroke-width: 2.8; }
-.pbp .hl.was { stroke: var(--faint); }
 /* Only the current step's marks move. Everything carried from an earlier date
    is drawn below the step's own layer, grey and still (Patrick, 2026-10-03). */
 .pbp .draw svg > :not(.fore), .pbp .draw svg > :not(.fore) * { animation: none !important; }
@@ -112,8 +123,6 @@
 .pbp .arr { animation: pbp-fade var(--speed-pop) ease both; }
 .pbp .arr.was line { stroke: var(--faint); }
 .pbp .arr.was polygon { fill: var(--faint); }
-/* the wall stands a person tall here, not the ratified 68, so its ratified 6 scales with it */
-.pbp .mvk .mv-wall { stroke-width: 4; }
 /* A wall's loop runs in 5s, not the board's 10s, and starts the moment its
    step comes up: the wall's own 1.4s slide from the start, landing at 28%, and
    the rings' own pace kept (Patrick, 2026-10-03). The field keeps showing while
@@ -142,9 +151,7 @@
 .pbp .slash.now { animation: pbp-repop calc(var(--speed-pop) * 10) cubic-bezier(0.2, 1.5, 0.4, 1) infinite both; }
 @keyframes pbp-repop { 0% { transform: scale(0.2); opacity: 0; } 10%, 100% { transform: scale(1); opacity: 1; } }
 /* inside and outside: a family line stretched to someone moved for the step (R-0728) */
-.pbp .tie.stretch { stroke-dasharray: none; }
-/* the projecting parent's spikes are drawn heavier, to read against her lit outline (Patrick, 2026-10-03) */
-.pbp .mvk .spk.s-out .mv-spike { stroke-width: 2.8; }
+.diagram .tie.stretch { stroke-dasharray: none; }
 /* defined self: the other's loud storm runs a third as long as the board's
    7.68s before it dies down; its fall and the calm after keep the board's
    0.72s and 3.6s (Patrick, 2026-10-03). Loop 2.56 + 0.72 + 3.6 = 6.88s. */
@@ -160,10 +167,8 @@
   .pbp .ss * { animation: none !important; transition: none !important; }
 }
 
-/* ---- the case page's still family picture (.fam, case.ts): the drawer's drawing
-   rules above, one .fam copy each, so the still picture reads as the told ones do.
-   Appended for the case page (FD-367); the drawer's own rules are untouched. ---- */
-.fam svg text { font-family: var(--mono); }
+/* ---- the case page's still family picture (.fam, case.ts): its sizes are the
+   .diagram rules above; only the motion is its own. ---- */
 .fam .wl { stroke: var(--line); stroke-width: 1.5; }
 .fam .wgap { stroke: var(--data); stroke-width: 3; opacity: 0.45; stroke-linecap: round; }
 .fam .wd { fill: var(--data); }
@@ -173,29 +178,6 @@
 .fam .wring { fill: none; stroke: var(--move); stroke-width: 1.4; opacity: 0.5; }
 .fam .wlab { font-size: 12px; fill: var(--data); font-weight: 500; }
 .fam .wyr { font-size: 12px; fill: var(--faint); }
-.fam .shape { fill: var(--panel); stroke: var(--ink); stroke-width: 1.6; }
-.fam .you { fill: none; stroke: var(--ink); stroke-width: 1.1; }
-.fam .age { font-size: 13px; fill: var(--faint); text-anchor: middle; }
-.fam .tie { stroke: var(--faint); stroke-width: 1.4; fill: none; }
-.fam .tie.dash { stroke-dasharray: 5 4; }
-.fam .tie.now { stroke: var(--move); stroke-width: 2.2; }
-.fam .kin { stroke: var(--faint); stroke-width: 1.3; fill: none; }
-.fam .slash { stroke: var(--faint); stroke-width: 1.8; stroke-linecap: round; }
-.fam .slash.now { stroke: var(--move); stroke-width: 2.4; }
-.fam .lbn { font-size: 13px; fill: var(--ink); }
-.fam .lbd { font-size: 13px; fill: var(--faint); }
-.fam .nh { paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; }
-.fam .xd { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
-.fam .xd.now { stroke: var(--move); stroke-width: 2.2; }
-.fam .fn { fill: none; stroke: var(--move); stroke-width: 2.6; }
-.fam .fn.down { stroke-dasharray: 5 6; }
-.fam .fn.was { stroke: var(--faint); }
-.fam .spikes line { stroke: var(--move); stroke-width: 1.8; stroke-linecap: round; }
-.fam .spikes.was line { stroke: var(--faint); }
-.fam .evw { font-size: 13px; fill: var(--move-text); font-weight: 500; }
-.fam .evw.was { fill: var(--faint); }
-.fam .hl { fill: none; stroke: var(--move); stroke-width: 2.8; }
-.fam .hl.was { stroke: var(--faint); }
 .fam .mk.was .tipfill { fill: var(--faint); }
 .fam .mk.was .mv-dir { stroke: var(--faint); }
 .fam .mk.was .sym-arrow { animation: none; }

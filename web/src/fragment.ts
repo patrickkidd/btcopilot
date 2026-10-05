@@ -1,9 +1,28 @@
 /** The family fragment: one person in the middle, their parents' bond above,
  * their own bond or bonds beside, the children under each bond. Fixed template
- * positions, no search, no crossing avoidance. Every measure is a fraction of
- * `u`, the person box, exactly as doc/FRAGMENT_CONVENTIONS.md sets
- * it out. Every rule the gallery put to Patrick is ruled (R-0325); there are no
- * drawing options left, only the size the picture is drawn at. */
+ * positions, no search, no crossing avoidance. Every place is a fraction of
+ * the person box, as doc/FRAGMENT_CONVENTIONS.md sets it out (R-0325); every
+ * shape, line, slash, name and age is the family diagram's own, at its own
+ * sizes against each other (R-0759). Only the size the picture is drawn at is
+ * left to choose. */
+
+import {
+  ageText,
+  CH,
+  crossOut,
+  DROP,
+  kinLine,
+  NAME,
+  nameText,
+  outline,
+  RIM,
+  Sex as Shape,
+  sexOf as shapeSex,
+  slashes,
+  tie,
+  W,
+  type Point,
+} from "./diagram";
 
 export enum Sex {
   Male = "male",
@@ -78,32 +97,24 @@ export interface Options {
 
 export const defaults: Options = { u: 44, names: NamePlace.Below };
 
-const STROKE = 0.03;
-const DEPTH = 0.45;
-const INDEX_GROW = 0.1;
-const SLASH_RIGHT = 0.75;
-const SLASH_RISE = 0.4;
-const SLASH_DROP = 0.15;
-const SLASH_STEP = 0.1;
+/** Every measure below is in person widths; the drawing is the family
+ * diagram's own, in its units (R-0759). */
+const S = W;
+const INDEX_GROW = RIM;
+/** The slashes sit midway between the middle of a couple's line and the right
+ * one's shape, clear of a child's line hanging from the middle. */
+const SLASH_RIGHT = 0.25;
 const TWIN_RISE = 0.34;
-const TICK = 0.3;
-const NAME_SIZE = 0.25;
-const AGE_SIZE = 0.3;
-const NAME_DROP = 0.78;
+const NAME_SIZE = NAME / W;
+const NAME_DROP = 0.82;
 const NAME_RISE = 0.66;
-const CHAR = 0.53;
+const ASK = { x: 0.62, y: -0.46 };
 /** Centre to centre, in person boxes. */
 const SIBLING_GAP = 2;
 const GENERATION_GAP = 2;
 const PARTNER_GAP = 2;
 
 type At = { p: FragPerson; x: number; y: number; index: boolean; faint: boolean };
-
-const esc = (text: string) =>
-  text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 
 const num = (value: number) => (Math.round(value * 100) / 100).toString();
 
@@ -119,14 +130,16 @@ const sexOf = (p: FragPerson): Sex =>
  * one sibling gap. */
 export const fitName = (name: string, size: number): string => {
   const given = [...name.trim().split(/\s+/)[0]];
-  const max = Math.max(3, Math.floor(SIBLING_GAP / (size * CHAR)));
+  const max = Math.max(3, Math.floor(SIBLING_GAP / (size * CH)));
   return given.length <= max
     ? given.join("")
     : given.slice(0, max - 1).join("") + "…";
 };
 
+/** The marks drawn, the words over them, and how far they reach, in person widths. */
 class Draw {
   parts: string[] = [];
+  said: string[] = [];
   min = { x: 0, y: 0 };
   max = { x: 0, y: 0 };
 
@@ -140,65 +153,10 @@ class Draw {
   add(markup: string) {
     this.parts.push(markup);
   }
-
-  line(
-    d: string,
-    opts: { faint?: boolean; dashed?: boolean; flat?: boolean; cls?: string } = {},
-  ) {
-    const cap = opts.flat ? "butt" : "round";
-    this.add(
-      `<path class="${opts.cls ?? "frag-line"}" d="${d}" fill="none" ` +
-        `stroke="var(--${opts.faint ? "faint" : "ink"})" stroke-width="${num(STROKE)}" ` +
-        `stroke-linecap="${cap}" stroke-linejoin="round"` +
-        (opts.dashed ? ` stroke-dasharray="${num(0.12)} ${num(0.09)}"` : "") +
-        ` />`,
-    );
-  }
-
-  text(
-    words: string,
-    x: number,
-    y: number,
-    size: number,
-    colour: string,
-    cls: string,
-  ) {
-    this.add(
-      `<text class="${cls}" x="${num(x)}" y="${num(y)}" font-size="${num(size)}" ` +
-        `text-anchor="middle" fill="var(--${colour})" stroke="var(--panel)" ` +
-        `stroke-width="${num(STROKE * 3)}" paint-order="stroke">${esc(words)}</text>`,
-    );
-  }
 }
 
-const shapePath = (sex: Sex, x: number, y: number, half: number) => {
-  if (sex === Sex.Miscarriage || sex === Sex.Abortion) {
-    return (
-      `M ${num(x)} ${num(y - half)} L ${num(x + half)} ${num(y + half)} ` +
-      `L ${num(x - half)} ${num(y + half)} Z`
-    );
-  }
-  if (sex === Sex.Female) {
-    return (
-      `M ${num(x - half)} ${num(y)} a ${num(half)} ${num(half)} 0 1 0 ${num(half * 2)} 0 ` +
-      `a ${num(half)} ${num(half)} 0 1 0 ${num(-half * 2)} 0 Z`
-    );
-  }
-  if (sex === Sex.Male) {
-    return (
-      `M ${num(x - half)} ${num(y - half)} H ${num(x + half)} V ${num(y + half)} ` +
-      `H ${num(x - half)} Z`
-    );
-  }
-  const r = half * 0.8;
-  return (
-    `M ${num(x - half + r)} ${num(y - half)} H ${num(x + half - r)} ` +
-    `a ${num(r)} ${num(r)} 0 0 1 ${num(r)} ${num(r)} V ${num(y + half - r)} ` +
-    `a ${num(r)} ${num(r)} 0 0 1 ${num(-r)} ${num(r)} H ${num(x - half + r)} ` +
-    `a ${num(r)} ${num(r)} 0 0 1 ${num(-r)} ${num(-r)} V ${num(y - half + r)} ` +
-    `a ${num(r)} ${num(r)} 0 0 1 ${num(r)} ${num(-r)} Z`
-  );
-};
+const faintly = (faint: boolean) => (faint ? " faint" : "");
+const at = (x: number, y: number): Point => [x * S, y * S];
 
 export const render = (fragment: Fragment, over: Partial<Options> = {}): string => {
   const o = { ...defaults, ...over };
@@ -238,9 +196,9 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
   const placed: At[] = [];
 
   const place = (p: FragPerson, x: number, y: number, index = false) => {
-    const at: At = { p, x, y, index, faint: unsureP.has(p.id) };
-    placed.push(at);
-    return at;
+    const one: At = { p, x, y, index, faint: unsureP.has(p.id) };
+    placed.push(one);
+    return one;
   };
 
   /** Both sides of a bond are people in the record: a parent or partner nobody
@@ -295,9 +253,8 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
     depth: number,
   ): { bar: number; x1: number; x2: number } => {
     const bar = Math.max(left.y, right.y) + 0.5 + depth;
-    draw.line(
-      `M ${num(left.x)} ${num(left.y + 0.5)} V ${num(bar)} H ${num(right.x)} V ${num(right.y + 0.5)}`,
-      { faint, dashed: bondDashed(bond) },
+    draw.add(
+      tie(left.x * S, (left.y + 0.5) * S, right.x * S, (right.y + 0.5) * S, bar * S, !bondDashed(bond), faintly(faint)),
     );
     return { bar, x1: Math.min(left.x, right.x), x2: Math.max(left.x, right.x) };
   };
@@ -307,13 +264,7 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
     const sep = eventFor(Kind.Separated, bond.person_a, bond.person_b);
     const div = eventFor(Kind.Divorced, bond.person_a, bond.person_b);
     const count = div ? 2 : sep ? 1 : 0;
-    const mid = (x1 + x2) / 2 + SLASH_RIGHT;
-    for (let i = 0; i < count; i += 1) {
-      const x = mid + i * SLASH_STEP;
-      draw.line(
-        `M ${num(x)} ${num(bar + SLASH_DROP)} L ${num(x)} ${num(bar + SLASH_DROP - SLASH_RISE)}`,
-      );
-    }
+    draw.add(slashes(count, ((x1 + x2) / 2 + SLASH_RIGHT) * S, bar * S, S));
   };
 
   const drawChildLine = (
@@ -324,65 +275,30 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
     dashed: boolean,
     faint: boolean,
   ) => {
-    const top = child.y - 0.5;
     const x = Math.min(Math.max(child.x, x1), x2);
-    draw.line(`M ${num(child.x)} ${num(top)} L ${num(x)} ${num(bar)}`, {
-      flat: true,
-      dashed,
-      faint,
-    });
+    draw.add(kinLine(at(child.x, child.y - 0.5), at(x, bar), (dashed ? " dash" : "") + faintly(faint)));
   };
 
-  const drawPerson = (at: At) => {
-    const sex = sexOf(at.p);
-    const colour = at.faint ? "faint" : "ink";
-    const paint = (half: number) =>
-      draw.add(
-        `<path class="frag-shape" d="${shapePath(sex, at.x, at.y, half)}" ` +
-          `fill="none" stroke="var(--${colour})" stroke-width="${num(STROKE)}" ` +
-          `stroke-linejoin="round" stroke-linecap="round" />`,
-      );
-    paint(0.5);
-    if (at.index) paint(0.5 + INDEX_GROW);
-    draw.seen(at.x - 0.75, at.y - 0.75);
-    draw.seen(at.x + 0.75, at.y + 0.75);
+  const drawPerson = (one: At) => {
+    const shape = { name: "", g: shapeSex(sexOf(one.p)), born: null };
+    const [x, y] = at(one.x, one.y);
+    const faint = faintly(one.faint);
+    if (one.index) draw.add(outline(shape, x, y, (0.5 + INDEX_GROW) * S, `you${faint}`));
+    draw.add(outline(shape, x, y, S / 2, `shape${faint}`));
+    draw.seen(one.x - 0.75, one.y - 0.75);
+    draw.seen(one.x + 0.75, one.y + 0.75);
 
-    const age = ageOf(at.p.id);
-    const dead = !!died(at.p.id);
-    if (age !== null && sex !== Sex.Miscarriage && sex !== Sex.Abortion)
-      draw.text(String(age), at.x, at.y + AGE_SIZE * 0.36, AGE_SIZE, colour, "frag-age");
-    if (dead) {
-      if (age !== null) {
-        for (const [sx, sy] of [
-          [-1, -1],
-          [1, -1],
-          [-1, 1],
-          [1, 1],
-        ]) {
-          const cx = at.x + sx * 0.5;
-          const cy = at.y + sy * 0.5;
-          draw.line(
-            `M ${num(cx)} ${num(cy)} L ${num(cx - sx * TICK)} ${num(cy - sy * TICK)}`,
-          );
-        }
-      } else {
-        draw.line(
-          `M ${num(at.x - 0.5)} ${num(at.y - 0.5)} L ${num(at.x + 0.5)} ${num(at.y + 0.5)}`,
-        );
-        draw.line(
-          `M ${num(at.x + 0.5)} ${num(at.y - 0.5)} L ${num(at.x - 0.5)} ${num(at.y + 0.5)}`,
-        );
-      }
-    }
+    const age = ageOf(one.p.id);
+    const lost = shape.g === Shape.Miscarriage || shape.g === Shape.Abortion;
+    if (age !== null && !lost) draw.said.push(ageText(x, y, String(age), faint));
+    if (died(one.p.id)) draw.add(crossOut(x, y, S / 2, age !== null, `xd${faint}`));
+    if (asked.has(one.p.id)) draw.said.push(ageText(x + ASK.x * S, y + ASK.y * S, "?", " ask"));
 
-    if (asked.has(at.p.id))
-      draw.text("?", at.x + 0.62, at.y - 0.46, AGE_SIZE, "ask", "frag-ask");
-
-    if (at.p.name) {
+    if (one.p.name) {
       const above = o.names === NamePlace.Above;
-      const y = above ? at.y - NAME_RISE : at.y + NAME_DROP;
-      draw.text(fitName(at.p.name, NAME_SIZE), at.x, y, NAME_SIZE, colour, "frag-name");
-      draw.seen(at.x, above ? y - NAME_SIZE : y + 0.2);
+      const ny = above ? one.y - NAME_RISE : one.y + NAME_DROP;
+      draw.said.push(nameText(x, ny * S, fitName(one.p.name, NAME_SIZE), "middle", true, faint));
+      draw.seen(one.x, above ? ny - NAME_SIZE : ny + 0.2);
     }
   };
 
@@ -399,7 +315,7 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
       place(l, -half, y),
       place(r, half, y),
       faint,
-      DEPTH,
+      DROP,
     );
     drawSlashes(parentBond, geom.bar, geom.x1, geom.x2);
     drawChildLine(centreAt, geom.bar, geom.x1, geom.x2, adoptedSet.has(centre.id), faint);
@@ -432,7 +348,7 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
       centreAt,
       place(partner, (i + 1) * PARTNER_GAP, 0),
       faint,
-      DEPTH + i * 0.5,
+      DROP + i * 0.5,
     );
     drawSlashes(bond, geom.bar, geom.x1, geom.x2);
 
@@ -474,22 +390,14 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
       const top = Math.min(...ats.map((a) => a.y - 0.5));
       const shared = top - TWIN_RISE;
       const xs = ats.map((a) => a.x);
-      draw.line(`M ${num(Math.min(...xs))} ${num(shared)} H ${num(Math.max(...xs))}`, {
-        flat: true,
-        faint,
-      });
+      draw.add(kinLine(at(Math.min(...xs), shared), at(Math.max(...xs), shared), faintly(faint)));
       for (const a of ats)
-        draw.line(`M ${num(a.x)} ${num(a.y - 0.5)} V ${num(shared)}`, {
-          flat: true,
-          faint,
-          dashed: adoptedSet.has(a.p.id),
-        });
+        draw.add(
+          kinLine(at(a.x, a.y - 0.5), at(a.x, shared), (adoptedSet.has(a.p.id) ? " dash" : "") + faintly(faint)),
+        );
       const centreX = (Math.min(...xs) + Math.max(...xs)) / 2;
       const riseX = Math.min(Math.max(centreX, geom.x1), geom.x2);
-      draw.line(`M ${num(centreX)} ${num(shared)} L ${num(riseX)} ${num(geom.bar)}`, {
-        flat: true,
-        faint,
-      });
+      draw.add(kinLine(at(centreX, shared), at(riseX, geom.bar), faintly(faint)));
     }
   });
 
@@ -511,10 +419,10 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
   const w = draw.max.x - draw.min.x + pad * 2;
   const h = draw.max.y - draw.min.y + pad * 2;
   return (
-    `<svg class="fragment" viewBox="${num(x)} ${num(y)} ${num(w)} ${num(h)}" ` +
+    `<svg class="fragment diagram" viewBox="${num(x * S)} ${num(y * S)} ${num(w * S)} ${num(h * S)}" ` +
     `width="${num(w * o.u)}" height="${num(h * o.u)}" ` +
-    `role="img" style="background:var(--panel);font-family:var(--sans)">` +
+    `role="img" style="background:var(--panel)">` +
     draw.parts.join("") +
-    `</svg>`
+    `<g class="said">${draw.said.join("")}</g></svg>`
   );
 };

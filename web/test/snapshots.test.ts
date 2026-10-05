@@ -586,7 +586,7 @@ describe("the drawing's marks", () => {
 it("styles a move as the board's flowing dashed arrow, and every label at 13px or more", () => {
   const css = readFileSync(new URL("../src/drawer.css", import.meta.url), "utf8");
   expect(css).toMatch(/\.pbp \.arr line \{[^}]*stroke: var\(--move\);[^}]*stroke-dasharray: 10 8;[^}]*animation: pbp-flow/);
-  const sizes = [...css.matchAll(/\.pbp \.(lbn|lbd|age|evw) \{[^}]*font-size: (\d+)px/g)].map((m) => Number(m[2]));
+  const sizes = [...css.matchAll(/\.diagram \.(lbn|lbd|age|evw) \{[^}]*font-size: (\d+)px/g)].map((m) => Number(m[2]));
   expect(sizes).toHaveLength(4);
   sizes.forEach((s) => expect(s).toBeGreaterThanOrEqual(13));
 });
