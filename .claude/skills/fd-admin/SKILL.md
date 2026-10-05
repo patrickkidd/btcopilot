@@ -26,6 +26,22 @@ not edit it by hand; change the commands and generate it again.
 
 ## The commands
 
+### `flask admin case-report`
+
+The case report's cards in each record.
+
+### `flask admin case-report backfill`
+
+Put each family's raised guesses on the case report's cards, and add the question about the person's own part where the record has none, as the coach would have had the report been there from the start. One model call per family that has a raised guess and nothing on a card yet; a family with anything on a card is skipped. Every call goes to the model-calls ledger. Prints, per guess, the card before and after.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--diagram` | Only this record. |
+| `--apply` | Write the cards; the default, --dry-run, makes the same model call and writes nothing to the record. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin coach-model`
 
 The coach model and the shadow models of one person, and the shadow models anyone may have.
