@@ -16,8 +16,7 @@ const boxes = (page: Page) => page.locator('#view .ss-hit[data-target="cluster"]
 /** One step of the path over the line: 0 is the whole timeline, 1 the cluster. */
 const step = (page: Page, i: number) => page.locator(`#path [data-step="${i}"]`);
 const path = (page: Page) => page.locator("#path");
-/** The open cluster's step of the path: its name and its years (R-0767). */
-const name = (page: Page) => page.locator(`#path [data-step="1"], #path .here`).last();
+const name = (page: Page) => page.locator("#view .ss-name");
 const zones = (page: Page) => page.locator('#view .ss-hit[data-target="zone"]');
 
 const openCluster = async (page: Page, index = 0) => {
@@ -52,26 +51,25 @@ test.describe("the three levels on the moves record", () => {
     await toRest(page);
     await expect(path(page)).toHaveText("Timeline");
     await openCluster(page);
-    await expect(name(page)).toContainText("The walk \u00b7 ");
+    await expect(name(page)).toHaveText("The walk (17)");
     await page.locator("#cap-play").click();
     await expect(page.locator("#pbp")).toBeVisible();
     await expect(page.locator("#view .ss.board")).toHaveCount(0);
   });
 
-  // R-0767
-  test("an open cluster is named in the path by its name and years, with no label of its own under it", async ({ page }) => {
+  // R-0213, R-0538, R-0583, R-0767
+  test("an open cluster's title ends with how many events it holds, and the path above names it with its years", async ({ page }) => {
     await tellWithoutModel(page);
     await settle(page);
     await toRest(page);
     const { clusters } = await (await page.request.get("/app/timeline")).json();
     const walk = clusters.find((c: { title: string; label: string }) => (c.title || c.label) === "The walk");
     await openCluster(page);
+    await expect(name(page)).toHaveText(`The walk (${walk.count})`);
     const years = (iso: string) => iso.slice(0, 4);
     const [a, b] = [years(walk.start), years(walk.end)];
     const span = a === b ? a : `${a}\u2013${a.slice(0, 2) === b.slice(0, 2) ? b.slice(2) : b}`;
     await expect(path(page)).toHaveText(`Timeline \u203a The walk \u00b7 ${span}`);
-    await expect(page.locator("#view .ss-name")).toHaveCount(0);
-    await expect(page.locator("#view")).not.toContainText(`(${walk.count})`);
   });
 
   // R-0376
@@ -138,7 +136,7 @@ test.describe("the boxes at rest", () => {
       const box = await boxOf(page.locator("#view rect.pill"));
       for (const x of [box.x + 4, box.x + box.width - 4]) {
         await page.mouse.click(x, box.y + box.height / 2);
-        await expect(path(page)).toHaveText("Timeline \u203a Leaving and losing \u00b7 1981\u20132003");
+        await expect(name(page)).toHaveText("Leaving and losing (3)");
         await step(page, 0).click();
         await expect(path(page)).toHaveText("Timeline");
         await page.waitForTimeout(400);
@@ -311,7 +309,9 @@ test.describe("a chip in the coach's words that names a cluster", () => {
     await settle(page);
     await expect(path(page)).toHaveText("Timeline");
     await page.locator(".bub.coach .chip.data").first().click();
-    await expect(name(page)).toContainText("the cluster when everybody stopped speaking about the house and the money \u00b7 ");
+    await expect(name(page)).toHaveText(
+      "the cluster when everybody stopped speaking about the house and the money (3)",
+    );
     await expect(step(page, 0)).toBeVisible();
   });
 });

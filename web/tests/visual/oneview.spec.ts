@@ -85,7 +85,7 @@ test.describe("a tap on a box", () => {
       [pill.x + pill.width / 2, pill.y + pill.height + 14],
     ]) {
       await page.mouse.click(x, y);
-      await expect(path(page)).toHaveText("Timeline › Leaving and losing · 1981–2003");
+      await expect(page.locator("#view .ss-name")).toHaveText("Leaving and losing (3)");
       await step(page, 0).click();
       await expect(path(page)).toHaveText("Timeline");
       await page.waitForTimeout(400);
@@ -118,12 +118,16 @@ test.describe("the path row", () => {
     await expect(page.locator("#path button")).toHaveCount(0);
     await openCluster(page);
     await expect(path(page)).toHaveText("Timeline › Leaving and losing · 1981–2003");
+    await expect(page.locator("#view .ss-name")).toHaveText("Leaving and losing (3)");
     await step(page, 0).click();
     await expect(path(page)).toHaveText("Timeline");
     await page.waitForTimeout(400);
     // an event is picked only where no cluster claims it (R-0543)
     await zones(page).first().click();
     await expect(path(page)).toHaveText("Timeline › Ben stopped calling");
+    // an event picked takes the words over the line; the chip row never
+    // carries the name
+    await expect(page.locator("#view .ss-name")).toHaveCount(0);
     // what the path says is not said again over the line: the date leads
     await expect(page.locator("#view .ss-t.on").first()).toHaveText("Nov 2021");
     await expect(page.locator("#view .ss-yr")).toHaveCount(0);
@@ -214,15 +218,15 @@ test.describe("the modes of a cluster", () => {
 test.describe("the open cluster's name on a crowded line", () => {
   test.use({ storageState: stateFor("dense60") });
 
-  // R-0538, R-0767
-  test("stays inside the path row over the picture, whichever cluster is open", async ({ page }) => {
+  // R-0538
+  test("stays inside the picture, whichever cluster is open", async ({ page }) => {
     await settle(page);
     for (const index of [1, 0]) {
       await boxes(page).nth(index).click();
-      await expect(page.locator("#path .here")).toBeVisible();
+      await expect(page.locator("#view .ss-name")).toBeVisible();
       await page.waitForTimeout(600);
       const [name, pic] = await Promise.all([
-        boxOf(page.locator("#path .here")),
+        boxOf(page.locator("#view .ss-name")),
         boxOf(page.locator("#chat-screen .pic")),
       ]);
       expect(name.x).toBeGreaterThanOrEqual(pic.x);

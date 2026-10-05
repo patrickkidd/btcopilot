@@ -432,6 +432,7 @@ button { font-family: inherit; }
 .ss-t.meta { color: var(--faint); }
 .ss-t.on { color: var(--data); font-weight: 500; }
 /* the open cluster's name, over the line while nothing in it is picked */
+.ss-t.ss-name { font-weight: 500; }
 /* why the moments in an open cluster are one episode, in the coach's sentence */
 .ss-t.why { color: var(--faint); }
 .ss-lead {

@@ -91,7 +91,7 @@ test.describe("on the fixture with three people over forty years", () => {
     await page.locator("#send").click();
 
     await expect(page.locator('#path [data-step="0"]')).toBeVisible();
-    await expect(page.locator("#path")).toContainText(cluster.title);
+    await expect(page.locator("#view .ss-name")).toContainText(cluster.title);
     await expect(page).toHaveURL(new RegExp(`${at}$`));
     const chip = page.locator('.bub .did button.chip[data-kind="place"]');
     await expect(chip).toHaveText(`the cluster ${cluster.title}`);
@@ -99,7 +99,7 @@ test.describe("on the fixture with three people over forty years", () => {
     await page.locator('#path [data-step="0"]').click();
     await expect(page).toHaveURL(/\/app\/$/);
     await chip.click();
-    await expect(page.locator("#path")).toContainText(cluster.title);
+    await expect(page.locator("#view .ss-name")).toContainText(cluster.title);
     await expect(page).toHaveURL(new RegExp(`${at}$`));
   });
 });
