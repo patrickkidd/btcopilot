@@ -15,9 +15,10 @@ const SIZES = [
 const SCHEMES = ["light", "dark"] as const;
 
 /** The passages are private and CI has no key to the corpus, so the page is
- * answered with made-up ones for every card; `fail` refuses that many reads first. */
+ * answered with made-up ones for every book, keyed as the corpus keys them;
+ * `fail` refuses that many reads first. */
 const PASSAGES = Object.fromEntries(
-  ["main", "family", "brought", "couple", "sides", "guesses", "own_part", "choice", "work_on", "effort"].map((card) => [card, [{ text: `A made-up passage for ${card}.`, by: "A made-up author" }]]),
+  ["why", "1", "2", "3", "3s", "4", "6", "7a", "9a", "10", "order"].map((book) => [book, [{ text: `A made-up passage for ${book}.`, by: "A made-up author" }]]),
 );
 
 async function answer(page: Page, fail = 0): Promise<void> {
