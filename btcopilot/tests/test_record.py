@@ -134,6 +134,30 @@ def test_undo_changes_takes_back_only_the_rows_named_each_logged_and_a_conflict_
     assert (diagram.get_diagram_data().people[0]["name"], Change.query.count()) == ("Cy", rows)
 
 
+def test_undo_changes_passes_over_a_row_that_changed_nothing_and_a_field_emptied_since(
+    subscriber,
+):
+    # R-0084
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
+
+    def put(item_id, field, after, turn="t1"):
+        return record.apply(
+            diagram.id,
+            [{"item_kind": ItemKind.Person, "item_id": item_id, "field": field, "after": after}],
+            author=Author.Coach,
+            turn_id=turn,
+        )
+
+    same = put(1, "name", "Ada")
+    put(1, "name", "Bo", turn="t2")
+    made = put(2, "name", "Cal")
+    aged = put(2, "age", 40)
+
+    record.undo_changes(diagram.id, [same.id, made.id, aged.id], author=Author.Coach)
+    assert diagram.get_diagram_data().people == [{"id": 1, "name": "Bo"}]
+    assert record.undone(diagram.id) == {same.id, made.id, aged.id}
+
+
 THREE = [
     {"id": i, "kind": "noted", "person": 1, "description": "Moved", "dateTime": f"200{i}-01-01"}
     for i in (1, 2, 3)

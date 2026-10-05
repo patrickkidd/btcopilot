@@ -212,13 +212,24 @@ def taking_back(data: dict, changes: list[Change]) -> list[tuple[Change, list[di
     for change in sorted(changes, key=lambda c: c.id, reverse=True):
         done = []
         for delta in reversed(change.deltas):
+            # It changed nothing, so taking it back changes nothing.
+            if delta["before"] == delta["after"]:
+                continue
             inverse = _inverse(delta)
             actual = _get(data, inverse)
-            if actual != inverse["before"]:
+            if _set_fields(actual) != _set_fields(inverse["before"]):
                 raise Conflict(inverse, actual)
             done.append(_back(data, delta))
         out.append((change, done))
     return out
+
+
+def _set_fields(value):
+    """A whole item without the fields that hold nothing, which a field taken
+    back to empty leaves behind."""
+    if isinstance(value, dict):
+        return {field: held for field, held in value.items() if held is not None}
+    return value
 
 
 def undo_changes(
