@@ -183,7 +183,9 @@ export function frameOn(frame: HTMLElement, ids: string[], who: string, glide: b
   // whole, the frame lands where it cuts the fewest other names, nearest
   // where it was headed: a name at the drawing's edge gets room (R-0759)
   const [a, b] = hi - lo <= w ? [hi - w, lo] : [wh - w, wl];
-  const [from, to] = [clamp(Math.min(a, b), 0, end), clamp(Math.max(a, b), 0, end)];
+  // never more than a sixth of the frame from where it was headed, so the
+  // people it was headed for stay near its middle
+  const [from, to] = [clamp(Math.max(Math.min(a, b), want - w / 6), 0, end), clamp(Math.min(Math.max(a, b), want + w / 6), 0, end)];
   const names = [
     ...[...svg.querySelectorAll<SVGGElement>(".p[data-id]")].map((g) => span(frame, svg, g.dataset.id!)),
     ...[...svg.querySelectorAll<SVGTextElement>("text.evw")].map((t) => reach(frame, svg, [t])),
