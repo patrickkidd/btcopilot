@@ -38,6 +38,25 @@ test.describe("the play-by-play drawer", () => {
     await expect(drawer(page).locator(".path .here")).toHaveText("explain");
   });
 
+  // R-0768
+  test("comes down from the top like a drawer and goes back up, never in from the side", async ({ page }) => {
+    await settle(page);
+    await stored(page).click();
+    await expect(drawer(page)).toBeVisible();
+    // where it stands when put away, read with its slide held still
+    const away = await drawer(page).evaluate((p) => {
+      p.style.transition = "none";
+      p.classList.remove("in");
+      const m = new DOMMatrix(getComputedStyle(p).transform);
+      const out = { x: m.e, y: m.f, h: p.getBoundingClientRect().height };
+      p.classList.add("in");
+      p.style.transition = "";
+      return out;
+    });
+    expect(away.x).toBe(0);
+    expect(away.y).toBeLessThanOrEqual(-away.h + 1);
+  });
+
   // R-0590, R-0545, R-0563
   test("the teal cluster chip in the play message replays its stored telling, with no call to the coach", async ({ page }) => {
     await settle(page);
@@ -592,6 +611,8 @@ test.describe("the whole family stepped through dates", () => {
     await settle(page);
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
+    // the drawer comes down from the top (R-0768): read the picture once it has landed
+    await drawer(page).evaluate((p) => Promise.all(p.getAnimations().map((a) => a.finished)));
     const top = drawer(page).locator(".when");
     const at = async () => (await boxOf(drawer(page).locator(".draw")))!.y;
     const still = await at();
@@ -682,8 +703,8 @@ test.describe("the whole family wider than the phone", () => {
 test.describe("the whole family of a family many phones wide", () => {
   test.use({ storageState: stateFor("case-report-dense"), viewport: { width: 393, height: 852 } });
 
-  // R-0759, R-0744, R-0749
-  test("opens with the step's person in the frame, names at 13px or more, every word inside what the frame scrolls to", async ({ page }) => {
+  // R-0759, R-0744, R-0749, R-0766
+  test("opens with the step's person in the frame, names at 13px or more and short, every word inside what the frame scrolls to", async ({ page }) => {
     const errors = watched(page);
     await settle(page);
     await page.locator("#cap-family").click();
@@ -698,6 +719,9 @@ test.describe("the whole family of a family many phones wide", () => {
     });
     expect(await drawer(page).locator(".when").textContent()).toContain("Margaret-Anne");
     expect(at).toEqual({ wide: true, inside: true });
+    // R-0766: everyone is named as briefly as the Pembertons are, so no name takes more width than the longest of the record's own people's
+    const names = await drawer(page).locator(".draw .pt .lbn").allTextContents();
+    expect(names.filter((n) => n.length > "Francis-Xavier".length)).toEqual([]);
     expect(await leastName(page, "#pbp .draw svg")).toBeGreaterThanOrEqual(13);
     expect(await wordsOutside(page, "#pbp .draw svg")).toEqual([]);
     expect(await sideways(page)).toBe(false);

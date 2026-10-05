@@ -330,18 +330,20 @@ const MODE: Partial<Record<Level, string>> = {
   [Level.Compare]: "compare",
 };
 
+type Named = { title: string; start: string; end: string };
+
+/** The open cluster as the path names it: its name and its years, "Every mark ·
+ * 1972–99", the years alone for a cluster with no name (R-0767). */
+export const clusterStep = (c: Named) => (c.title ? `${c.title} \u00b7 ${spanYears(c.start, c.end)}` : spanYears(c.start, c.end));
+
 /** The path over the line, from the whole timeline down to where the reader
- * is: the cluster open by its years, then the mode it is in or the moment
- * picked (R-0540). */
-export function trail(
-  level: Level,
-  cluster: { start: string; end: string } | null,
-  picked: string | null,
-): string[] {
+ * is: the cluster open by its name and years, then the mode it is in or the
+ * moment picked (R-0540, R-0767). */
+export function trail(level: Level, cluster: Named | null, picked: string | null): string[] {
   const last = MODE[level] ?? picked;
   return [
     "Timeline",
-    ...(cluster ? [spanYears(cluster.start, cluster.end)] : []),
+    ...(cluster ? [clusterStep(cluster)] : []),
     ...(last ? [last] : []),
   ];
 }
@@ -1112,15 +1114,6 @@ export class Picture {
     const shows = this.stands({ width, screen }, held, onX);
     const said = this.labels(marks, shows + X_PAD, shows + screen - X_PAD, WIRE);
     this.laid.rows = said.rowsLaid;
-    const chosen = marks.find((m) => m.event.id === this.selected);
-    // With a cluster open and nothing picked, the words over the line are the
-    // cluster's own name and how many events it holds, so the reader can find
-    // what is open (R-0538).
-    const title =
-      !said.text && open && !chosen
-        ? `<div class="ss-t ss-name" style="left:${X_PAD}px;top:${ROWS[0]}px;` +
-          `width:${screen - 2 * X_PAD}px">${esc(open.title || open.label)} (${open.count})</div>`
-        : "";
     // The band lies over the words and under the marks' own targets.
     const words = said.text ? said.text + bandHit(shows + X_PAD, screen - 2 * X_PAD) : "";
     const targets = restLayers(boxes, dotLayers(zoned)).map(hitButton).join("");
@@ -1141,7 +1134,7 @@ export class Picture {
 
     this.host.innerHTML =
       `<div class="ss"><div class="ss-scroll"><div class="ss-line" style="width:${width.toFixed(1)}px">` +
-      `${svg}${words}${targets}${snaps}</div></div>${title}${shelf}</div>`;
+      `${svg}${words}${targets}${snaps}</div></div>${shelf}</div>`;
     this.settle({ width, screen }, held, onX);
   }
 
@@ -1218,9 +1211,9 @@ export class Picture {
     this.slide(to > from ? 1 : -1);
   }
 
-  /** One level in or one level out. Drilling down, the arriving view slides in
-   * from the right over the one it came from; going back, the view being left
-   * slides out to the right and uncovers it. The region keeps its height, so
+  /** One level in or one level out. Drilling down, the arriving view comes down
+   * from the top over the one it came from, like a drawer; going back, the view
+   * being left goes back up and uncovers it (R-0768). The region keeps its height, so
    * nothing under the picture moves while they travel (owner ruling
    * 2026-09-08), and the about page travels at its full height over the chat,
    * never let out to it after landing (Patrick, 2026-10-02). */
@@ -1243,8 +1236,11 @@ export class Picture {
       region.append(dir === 1 ? arriving : leaving);
       keepScroll(arriving);
       const mover = dir === 1 ? arriving : leaving;
-      const off = { transform: "translateX(100%)" };
-      const on = { transform: "translateX(0)" };
+      // the about page hangs below the region, so it starts as far up as its own foot
+      const top = mover.getBoundingClientRect().top;
+      const foot = Math.max(mover.offsetHeight, ...[...mover.querySelectorAll(".card")].map((c) => c.getBoundingClientRect().bottom - top));
+      const off = { transform: `translateY(${-Math.ceil(foot)}px)` };
+      const on = { transform: "translateY(0)" };
       this.flight = mover.animate(dir === 1 ? [off, on] : [on, off], {
         duration: SLIDE_MS,
         easing: "ease",

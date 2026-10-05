@@ -367,7 +367,7 @@ export class Told {
       kin,
       label: `${now.date}: ${snap.fact}`,
       // the whole family moves no one out of their own place for a step
-      place: this.whole ? undefined : { now: placeOf(now), was: i > 0 ? placeOf(this.steps[i - 1]) : null },
+      place: this.whole ? undefined : placeOf(now),
     });
     return {
       svg,

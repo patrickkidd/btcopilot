@@ -284,11 +284,13 @@ button { font-family: inherit; }
   letter-spacing: 0;
 }
 .path .sep { flex: none; margin: 0 6px; }
-/* The last step keeps its words whole and the earlier steps give way first,
-   down to an ellipsis; it is cut only when it alone is wider than the row. */
+/* The last step keeps its words whole and the steps between give way first,
+   down to an ellipsis; it is cut only when it alone is wider than what the row
+   has left. The first step, the way back to the whole timeline, is never cut,
+   however long an open cluster's name runs (R-0767). */
 .path .here {
-  flex: none;
-  max-width: 100%;
+  flex: 0 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -313,6 +315,9 @@ button { font-family: inherit; }
   color: var(--data);
   cursor: pointer;
 }
+/* the steps between give way before the last, and the first never does */
+.path .step { flex-shrink: 1000; }
+.path .step:first-child { flex: none; }
 .path .step::before,
 .pl-btn::before {
   content: "";
@@ -338,14 +343,15 @@ button { font-family: inherit; }
 .caption #cap-family { margin-left: auto; }
 .caption #cap-family + .listglyph { margin-left: 0; }
 .view { position: relative; transition: height 0.25s ease; }
-/* The about page of a cluster slides in over the timeline and back out; it is
+/* The about page of a cluster comes down from the top over the timeline like a
+   drawer and goes back up (R-0768); it is
    the only thing that slides, since showing a cluster redraws the timeline in
    place. The two stand side by side for the length of the slide, so nothing
    under the picture moves while they travel; the about page hangs over the
    chat at its full height the whole way, never cut to the region's and then
-   let out (Patrick, 2026-10-02), so the region clips the slide only at its
-   sides, and the live page waits under the copy. */
-.pic.sliding { overflow-x: clip; overflow-y: visible; }
+   let out (Patrick, 2026-10-02), so the region clips the slide at its top and
+   sides only, and the live page waits under the copy. */
+.pic.sliding { overflow-x: clip; overflow-y: visible; clip-path: inset(0 0 -100vh 0); }
 .pic.sliding .view { transition: none; }
 .pic.sliding > .view .card { visibility: hidden; }
 /* a level arrives as a card over the one it came from: the whole region, on
@@ -426,7 +432,6 @@ button { font-family: inherit; }
 .ss-t.meta { color: var(--faint); }
 .ss-t.on { color: var(--data); font-weight: 500; }
 /* the open cluster's name, over the line while nothing in it is picked */
-.ss-t.ss-name { font-weight: 500; }
 /* why the moments in an open cluster are one episode, in the coach's sentence */
 .ss-t.why { color: var(--faint); }
 .ss-lead {
@@ -582,10 +587,12 @@ button { font-family: inherit; }
    2026-10-03); loop 10.2s, the hold ending at 2/10.2 and the drain at a third */
 .ss .spk.s-out .mv-spike { animation: spikeout calc((2s + var(--speed-grow)) * 3) infinite; }
 .ss .spk.s-in .mv-spike { animation: spikein calc((2s + var(--speed-grow)) * 3) infinite; }
-/* anxiety up: grows out from the rim over the grow time, then flickers */
-.ss .spk.s-solo .mv-spike { animation: spikegrow var(--speed-grow) ease both; }
-/* anxiety down: full strength for 2s, then shortens back to the rim; carried, grey and still */
-.ss .spikes.down .spk .mv-spike { animation: spikecalm calc(2s + var(--speed-grow)) linear both; }
+/* anxiety up: grows out from the rim over the grow time, then flickers; the
+   loop starts again from the rim at a jump, never shrinking back (R-0763) */
+.ss .spk.s-solo .mv-spike { animation: spikegrow calc(var(--speed-grow) / 0.28) infinite; }
+/* anxiety down: full strength for 2s, then shortens back to the rim, gone for
+   a beat, and full again at a jump (R-0763); carried, grey and still */
+.ss .spikes.down .spk .mv-spike { animation: spikecalm calc((2s + var(--speed-grow)) / 0.8) linear infinite; }
 .ss .spikes.was .mv-spike { animation: none; stroke-dashoffset: 0; }
 
 .ss .mv-flow {
@@ -743,8 +750,8 @@ button { font-family: inherit; }
 }
 @keyframes spikeout { 0%, 19.608% { stroke-dashoffset: 0; visibility: visible; } 33.333%, 100% { stroke-dashoffset: 1; visibility: hidden; } }
 @keyframes spikein { 0%, 19.608% { stroke-dashoffset: 1; visibility: hidden; } 19.7% { visibility: visible; } 33.333%, 100% { stroke-dashoffset: 0; visibility: visible; } }
-@keyframes spikegrow { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
-@keyframes spikecalm { 0%, 58.824% { stroke-dashoffset: 0; visibility: visible; } 99.9% { stroke-dashoffset: 1; visibility: visible; } 100% { stroke-dashoffset: 1; visibility: hidden; } }
+@keyframes spikegrow { 0% { stroke-dashoffset: 1; animation-timing-function: ease; } 28%, 100% { stroke-dashoffset: 0; } }
+@keyframes spikecalm { 0%, 47.059% { stroke-dashoffset: 0; visibility: visible; } 79.9% { stroke-dashoffset: 1; visibility: visible; } 80%, 100% { stroke-dashoffset: 1; visibility: hidden; } }
 @keyframes selfswap {
   0%, 37.5% { stroke: var(--ink); stroke-width: 2.2; }
   38.5%, 100% { stroke: var(--move); stroke-width: 2.6; }

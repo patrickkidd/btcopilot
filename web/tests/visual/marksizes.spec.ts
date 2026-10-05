@@ -315,13 +315,71 @@ test.describe("every mark", () => {
     expect(left).toEqual([]);
   });
 
-  // R-0728
-  test("outside right after inside starts the three from their own places", async ({ page }) => {
+  // R-0728, R-0764
+  test("outside right after inside starts the three from their own places, and the step after has them home in one frame", async ({ page }) => {
     const svgs = await steps(page, STEPS.length);
-    await show(page, svgs[STEPS.findIndex((s) => s.name === "outside")]);
-    const starts = await page.locator("#pbp .draw svg .slid > animateTransform").evaluateAll((a) => a.map((t) => t.getAttribute("from")));
+    const outside = STEPS.findIndex((s) => s.name === "outside");
+    await show(page, svgs[outside]);
+    const starts = await page.locator("#pbp .draw svg .slid > animateTransform").evaluateAll((a) => a.map((t) => t.getAttribute("values")!.split(";")[0]));
     expect(starts.length).toBeGreaterThan(0);
     expect(new Set(starts)).toEqual(new Set(["0.0 0.0"]));
+    await show(page, svgs[outside + 1]);
+    expect(await page.locator("#pbp .draw svg .slid, #pbp .draw svg .tie.stretch").count()).toBe(0);
+  });
+
+  // R-0763
+  test("every lit mark that moves loops, each loop starting again from its first frame at a jump", async ({ page }) => {
+    await live(page);
+    const wrong: string[] = [];
+    for (const [i, s] of STEPS.entries()) {
+      if (i) await page.locator('#pbp [data-act="next"]').click();
+      await expect.poll(() => step(page)).toBe(`${i + 1} of ${STEPS.length}`);
+      const seen = await page.evaluate(() => {
+        const root = document.querySelector<SVGSVGElement>("#pbp .draw svg")!;
+        const out: string[] = [];
+        // a new mark's pop and fade are how it arrives, and a spark's pulse has no way it goes
+        const ARRIVE = new Set(["pbp-pop", "pbp-fade", "sparkp"]);
+        const frame = (k: Keyframe) => JSON.stringify(Object.entries(k).filter(([p]) => !["offset", "computedOffset", "easing", "composite"].includes(p)));
+        for (const el of root.querySelectorAll(".fore *")) {
+          for (const a of el.getAnimations() as CSSAnimation[]) {
+            if (ARRIVE.has(a.animationName)) continue;
+            const ks = (a.effect as KeyframeEffect).getKeyframes();
+            if (a.effect!.getComputedTiming().iterations !== Infinity) out.push(`${a.animationName} runs once`);
+            else if (frame(ks[0]) === frame(ks[ks.length - 1])) out.push(`${a.animationName} eases back to its start`);
+          }
+        }
+        for (const a of root.querySelectorAll(".fore animate, .fore animateTransform, .slid > animateTransform, .stretch > animate"))
+          if (a.getAttribute("repeatCount") !== "indefinite") out.push(`${a.parentElement!.getAttribute("class")} ${a.getAttribute("attributeName")} runs once`);
+        return [...new Set(out)];
+      });
+      seen.forEach((w) => wrong.push(`${s.name}: ${w}`));
+    }
+    expect(wrong).toEqual([]);
+  });
+
+  // R-0765
+  test("every line that moves is drawn as wide as a field's rings", async ({ page }) => {
+    const svgs = await steps(page, STEPS.length);
+    const widths: Record<string, number[]> = {};
+    for (const [i, s] of STEPS.entries()) {
+      await show(page, svgs[i]);
+      const seen = await page.evaluate(() => {
+        const root = document.querySelector<SVGSVGElement>("#pbp .draw svg")!;
+        const lines = root.querySelectorAll<SVGGraphicsElement>(
+          ":is(.mvk, .spikes, .arr, .mk) :is(line, polyline, circle, path):not(.mv-wall):not(.mv-strike):not(defs *), .fn",
+        );
+        return [...lines].map((el) => {
+          const m = root.getScreenCTM()!.inverse().multiply(el.getScreenCTM()!);
+          const w = parseFloat(getComputedStyle(el).strokeWidth) * Math.hypot(m.a, m.b);
+          return [el.getAttribute("class") ?? el.parentElement!.getAttribute("class") ?? el.tagName, Math.round(w * 100) / 100] as const;
+        });
+      });
+      seen.forEach(([what, w]) => (widths[`${s.name} ${what}`] ??= []).push(w));
+    }
+    const rings = widths[`cutoff fld preA`];
+    expect(rings?.length).toBeGreaterThan(0);
+    const off = Object.entries(widths).filter(([, ws]) => ws.some((w) => Math.abs(w - rings[0]) > 0.01));
+    expect(off.map(([what, ws]) => `${what} ${[...new Set(ws)].join(",")} against ${rings[0]}`)).toEqual([]);
   });
 
   // R-0729
@@ -759,7 +817,7 @@ test.describe("every mark", () => {
   });
 
   // R-0679
-  test("the parent's anxiety is at full strength from the first frame, heavier than the child's", async ({ page }) => {
+  test("the parent's anxiety is at full strength from the first frame", async ({ page }) => {
     await live(page);
     await page.locator(`#pbp .wire [data-act="jump"][data-i="${STEPS.findIndex((s) => s.name === "projection")}"]`).click();
     const weak: string[] = [];
@@ -781,12 +839,6 @@ test.describe("every mark", () => {
       if (seen.scale < 0.999 || seen.faintest < 0.5) weak.push(`${ms}ms: scale ${seen.scale}, faintest ${seen.faintest}`);
     }
     expect(weak).toEqual([]);
-    const [rosa, leo] = await Promise.all(
-      [".s-out", ".s-in"].map((sel) =>
-        page.locator(`#pbp .draw svg .fore .spk${sel} .mv-spike`).first().evaluate((l) => parseFloat(getComputedStyle(l).strokeWidth)),
-      ),
-    );
-    expect(rosa).toBeGreaterThanOrEqual(1.5 * leo);
   });
 
   // R-0679

@@ -318,10 +318,17 @@ describe("a tap on the resting line", () => {
 });
 
 describe("the path row over the line", () => {
-  const cluster = { start: "2009-03-01", end: "2010-11-20" };
+  const cluster = { title: "", start: "2009-03-01", end: "2010-11-20" };
+
+  // R-0767
+  it("names an open cluster by its name and its years in one step", () => {
+    const named = { title: "Every mark", start: "1972-06-10", end: "1999-02-01" };
+    expect(trail(Level.Wire, named, null)).toEqual(["Timeline", "Every mark · 1972–99"]);
+    expect(trail(Level.About, named, null)).toEqual(["Timeline", "Every mark · 1972–99", "about"]);
+  });
 
   // R-0540
-  it("names each level from the whole line down, the cluster by its years", () => {
+  it("names each level from the whole line down, a cluster with no name by its years", () => {
     expect(trail(Level.Rest, null, null)).toEqual(["Timeline"]);
     expect(trail(Level.Rest, null, "Delphine died")).toEqual(["Timeline", "Delphine died"]);
     expect(trail(Level.Wire, null, null)).toEqual(["Timeline"]);

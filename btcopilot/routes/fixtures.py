@@ -898,9 +898,17 @@ def case_report_thin() -> DiagramData:
     )
 
 
+UNCLES = ["Bart", "Alex", "Hugh", "Ned", "Tom", "Abe", "Gus", "Lou"]
+AUNTS = ["Ana", "Jo", "Bea", "Kit", "Meg", "Ida", "Fay", "Viv"]
+COUSINS = ["Max", "Theo", "Mia", "Zoe", "Eli"]
+
+
 def case_report_dense() -> DiagramData:
     """The Halloran family ten times over: every aunt and uncle with a partner
-    and children, long names, events with no date, and thirty open guesses."""
+    and children, long full names, events with no date, and thirty open guesses.
+    The picture names everyone by their first name, so the relatives' first
+    names are as short as the Pembertons' and only the full names run long
+    (R-0766)."""
     data = _case_report_family({1: LONG_NAME, 2: "Francis-Xavier Halloran-Montgomery"})
     next_id = iter(range(1000, 10000))
 
@@ -914,14 +922,14 @@ def case_report_dense() -> DiagramData:
             partner = next(next_id)
             couple = next(next_id)
             data.people += [
-                dict(_person(aunt, f"Bartholomew-Alexander {n} Fitzgerald-Winterbottom", PersonKind.Male), parents=parent_bond),
-                dict(_person(partner, f"Anastasia-Josephine {n} Montgomery-Whitfield", PersonKind.Female)),
+                dict(_person(aunt, f"{UNCLES[n]} {n} Fitzgerald-Winterbottom", PersonKind.Male), parents=parent_bond),
+                dict(_person(partner, f"{AUNTS[n]} {n} Montgomery-Whitfield", PersonKind.Female)),
             ]
             data.pair_bonds.append({"id": couple, "person_a": aunt, "person_b": partner, "married": True})
             data.events.append(event(EventKind.Married, f"19{70 + n}-06-01", person=aunt, spouse=partner))
             for k in range(5):
                 cousin = next(next_id)
-                data.people.append(dict(_person(cousin, f"Maximiliana-Theodora {n}{k} Fitzgerald-Winterbottom"), parents=couple))
+                data.people.append(dict(_person(cousin, f"{COUSINS[k]} {n}{k} Fitzgerald-Winterbottom"), parents=couple))
                 moved = "Moved across the country without telling anyone"
                 gone = "Stopped speaking to the family for years"
                 data.events += [

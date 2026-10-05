@@ -315,7 +315,7 @@ test.describe("the coach's words drive the picture", () => {
   // R-0001, R-0055, R-0543
   test("it opens on what the coach's last message named", async ({ page }) => {
     await settle(page);
-    await expect(page.locator("#view .ss-name")).toHaveText("The walk (17)");
+    await expect(page.locator("#path")).toContainText("The walk \u00b7 ");
     await expect(page.locator('#path [data-step="0"]')).toBeVisible();
     // the two events it named are inside one cluster, so its pill is lit
     await expect(page.locator("#view rect.pill.on")).toHaveCount(1);

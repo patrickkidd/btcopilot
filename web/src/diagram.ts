@@ -246,9 +246,9 @@ export interface Frame {
   moves: Arrow[];
   kin: Kin[];
   label: string;
-  /** The places this step moves people to, and the step before's, which they
-   * come home from: each lasts its own step only (R-0728). */
-  place?: { now: Place | null; was: Place | null };
+  /** The places this step moves people to, for its own step only (R-0728);
+   * the next step has them home at once (R-0764). */
+  place?: Place | null;
 }
 
 /** The drawing is laid out in a box this wide; the page scales it to the phone. */
@@ -1522,7 +1522,7 @@ function cross(L: Layout, id: string, dir: Shift, cls: Tone): string {
   const fig = { id: 0, name: L.P[id].name, x: 0, y: 0, r: CROSS / 2 - 29, mirror };
   const x = L.x[id] + (mirror ? -1 : 1) * (d.half(L.P[id]) + d.GAP);
   return (
-    `<g class="mk ${cls}${cls === Tone.Now ? " pop" : ""}" data-mark="cross:${esc(id)}">` +
+    `<g class="mk ${cls}${cls === Tone.Now ? " pop" : ""}" data-mark="cross:${esc(id)}" style="--ck:${d.CK.toFixed(4)}">` +
     `<g transform="translate(${f(x)} ${f(L.y[id])}) scale(${d.CK.toFixed(4)})">${healthCross(fig, dir)}</g>` +
     `</g>`
   );
@@ -1781,21 +1781,10 @@ function placed(L: Layout, m: Place): Record<string, Offset> {
   return out;
 }
 
-/** Each moved person's way this step: to where this step puts them, or home
- * from where the step before left them when it puts them nowhere. */
-function shifts(L: Layout, s: Frame): Record<string, { from: Offset; to: Offset }> {
-  const to = s.place?.now ? placed(L, s.place.now) : {};
-  // a step that places people starts them from their own places; a step that
-  // places no one brings them home from the step before's (approved frame 1B4)
-  const from = s.place?.was && !s.place.now ? placed(L, s.place.was) : {};
-  const out: Record<string, { from: Offset; to: Offset }> = {};
-  for (const id of new Set([...Object.keys(to), ...Object.keys(from)]))
-    out[id] = { from: from[id] ?? [0, 0], to: to[id] ?? [0, 0] };
-  return out;
-}
-
-/** The step's slide: the grow time, eased in and out (R-0728). */
-const SLIDE = `dur="1.4s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines="0.42 0 0.58 1"`;
+/** The step's slide from home to its places, the grow time eased, held, and
+ * round again from home, jumping back rather than sliding (R-0763), in the
+ * wall's five seconds (R-0679). */
+const SLIDE = `dur="5s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.28;1" keySplines="0.42 0 0.58 1;0 0 1 1"`;
 
 /** One snapshot on the case's fixed layout. */
 export function draw(L: Layout, s: Frame): string {
@@ -1822,14 +1811,14 @@ export function draw(L: Layout, s: Frame): string {
   // inside and outside: a moved person's shape, words and marks slide together
   // to their place for the step, and their family lines stay anchored where
   // they were, a straight stretch running on to them (R-0728)
-  const moved = shifts(L, s);
+  const moved = s.place ? placed(L, s.place) : {};
   const slid = (id: string, markup: string) => {
     const m = moved[id];
     if (!m) return markup;
-    const xy = (o: Offset) => `${f(o[0])} ${f(o[1])}`;
+    const xy = `${f(m[0])} ${f(m[1])}`;
     return (
-      `<g class="slid" transform="translate(${xy(m.to)})">` +
-      `<animateTransform attributeName="transform" type="translate" from="${xy(m.from)}" to="${xy(m.to)}" ${SLIDE}/>` +
+      `<g class="slid" transform="translate(${xy})">` +
+      `<animateTransform attributeName="transform" type="translate" values="0.0 0.0;${xy};${xy}" ${SLIDE}/>` +
       `${markup}</g>`
     );
   };
@@ -1845,11 +1834,11 @@ export function draw(L: Layout, s: Frame): string {
       const e = P[id].g === Sex.Female ? half : half / Math.max(Math.abs(ux), Math.abs(uy));
       return [cx + ux * e, cy + uy * e];
     };
-    const [a, b] = [rim(m.from), rim(m.to)];
+    const [a, b] = [rim([0, 0]), rim(m)];
     return (
       `<line class="tie stretch" data-stretch="${esc(id)}" x1="${f(ax)}" y1="${f(ay)}" x2="${f(b[0])}" y2="${f(b[1])}">` +
-      `<animate attributeName="x2" from="${f(a[0])}" to="${f(b[0])}" ${SLIDE}/>` +
-      `<animate attributeName="y2" from="${f(a[1])}" to="${f(b[1])}" ${SLIDE}/></line>`
+      `<animate attributeName="x2" values="${f(a[0])};${f(b[0])};${f(b[0])}" ${SLIDE}/>` +
+      `<animate attributeName="y2" values="${f(a[1])};${f(b[1])};${f(b[1])}" ${SLIDE}/></line>`
     );
   };
   s.bonds.forEach((b) => [b.a, b.b].forEach((id) => (out += stretch(id, L.x[id], L.y[id] + d.half(P[id])))));

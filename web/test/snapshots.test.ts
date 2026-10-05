@@ -680,8 +680,8 @@ describe("moves other than toward and away", () => {
     expect(carried.slice(0, carried.indexOf("</svg>"))).not.toMatch(/<animate/);
   });
 
-  // R-0728
-  it.each(["inside", "outside"])("moves the three people of %s for its step, all three lit, their family lines stretched, and brings them home on the next", (kind) => {
+  // R-0728, R-0763, R-0764
+  it.each(["inside", "outside"])("moves the three people of %s for its step over and over, all three lit, their family lines stretched, and has them home at once on the next", (kind) => {
     const tl = moved(kind).tl;
     tl.events.find((e) => e.id === 131)!.relationshipTriangles = [Number(MARCUS)];
     const three = told(death(), tl);
@@ -690,11 +690,19 @@ describe("moves other than toward and away", () => {
     expect(marks(svg)).not.toContain(`word:${DELPHINE}:Called Corinne nightly`);
     const lit = marks(svg).filter((m) => m.startsWith("hl:") && markClass(svg, m).includes("now"));
     expect(lit.sort()).toEqual([DELPHINE, CORINNE, MARCUS].map((id) => `hl:${id}`).sort());
-    expect(svg).toContain('class="slid"');
     expect(svg).toContain('class="tie stretch"');
-    // the next step slides them home: the move starts where they were and ends at home
+    // each loop starts again from home at a jump: from home, to the place, held there
+    const slides = [...svg.matchAll(/<g class="slid" transform="translate\(([^)]*)\)"><animateTransform ([^>]*)\/>/g)];
+    expect(slides.length).toBeGreaterThan(0);
+    slides.forEach(([, at, attrs]) => {
+      expect(attrs).toContain(`values="0.0 0.0;${at};${at}"`);
+      expect(attrs).toContain('repeatCount="indefinite"');
+    });
+    expect([...svg.matchAll(/<animate [^>]*>/g)].filter((a) => a[0].includes("x2") && !a[0].includes('repeatCount="indefinite"'))).toEqual([]);
+    // the next step has them home in one frame: nothing slides back
     const next = three.shot(2).svg;
-    expect(next).toMatch(/<g class="slid" transform="translate\(0\.0 0\.0\)"><animateTransform[^>]*from="(?!0\.0 0\.0")/);
+    expect(next).not.toContain('class="slid"');
+    expect(next).not.toContain('class="tie stretch"');
   });
 });
 

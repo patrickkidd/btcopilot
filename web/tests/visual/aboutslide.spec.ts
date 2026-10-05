@@ -21,8 +21,8 @@ interface Seen {
   /** How much of the about page shows on screen, on its own or in a moving copy. */
   h: number;
   sliding: boolean;
-  /** Where the moving copy of the about card stands, while there is one. */
-  left: number | null;
+  /** How far down the moving copy of the about card stands, while there is one. */
+  top: number | null;
   folded: boolean;
 }
 
@@ -45,9 +45,9 @@ async function frames(page: Page, act: () => Promise<void>): Promise<Seen[]> {
       seen.push({
         h: Math.round(h),
         sliding: !!pic.querySelector(".slide-lay .card"),
-        left: (() => {
+        top: (() => {
           const copy = pic.querySelector(".slide-lay .card");
-          return copy ? Math.round(copy.getBoundingClientRect().left) : null;
+          return copy ? Math.round(copy.getBoundingClientRect().top) : null;
         })(),
         folded: pic.parentElement!.classList.contains("folded"),
       });
@@ -63,23 +63,23 @@ async function frames(page: Page, act: () => Promise<void>): Promise<Seen[]> {
 const shown = (seen: Seen[]) => seen.filter((s) => s.h > 0).map((s) => s.h);
 
 /** Where the moving copy stood, frame by frame, once each place. */
-const travel = (seen: Seen[]) => [...new Set(seen.flatMap((s) => (s.left === null ? [] : [s.left])))];
+const travel = (seen: Seen[]) => [...new Set(seen.flatMap((s) => (s.top === null ? [] : [s.top])))];
 
-// R-0680
-test("the about page slides in at its full height, with no jump once it lands", async ({ page }) => {
+// R-0680, R-0768
+test("the about page comes down from the top at its full height, with no jump once it lands", async ({ page }) => {
   await open(page);
   const seen = await frames(page, () => page.locator("#info").click());
   const h = shown(seen);
   expect(seen.some((s) => s.sliding)).toBe(true);
-  // it slides in from the right, over several frames, to where it rests
+  // it comes down from above, over several frames, to where it rests
   const went = travel(seen);
   expect(went.length).toBeGreaterThan(3);
-  expect(went[0]).toBeGreaterThan(went[went.length - 1]);
+  expect(went[0]).toBeLessThan(went[went.length - 1]);
   expect(h.length).toBeGreaterThan(0);
   expect(Math.max(...h) - h[0]).toBeLessThanOrEqual(2);
 });
 
-// R-0680
+// R-0680, R-0768
 test("scrolling up the chat slides the about page out at its full height before the picture folds", async ({ page }) => {
   await open(page);
   await page.locator("#info").click();
@@ -92,11 +92,11 @@ test("scrolling up the chat slides the about page out at its full height before 
     await page.mouse.wheel(0, -400);
   });
   expect(seen.some((s) => s.sliding)).toBe(true);
-  // it slides back out to the right, over several frames
+  // it goes back up, over several frames
   const went = travel(seen);
   expect(went.length).toBeGreaterThan(3);
-  expect(went[went.length - 1]).toBeGreaterThan(went[0]);
+  expect(went[went.length - 1]).toBeLessThan(went[0]);
   expect(shown(seen).filter((h) => h < full - 2)).toEqual([]);
   expect(seen.filter((s) => s.h > 0 && s.folded)).toEqual([]);
-  expect(seen[seen.length - 1]).toEqual({ h: 0, sliding: false, left: null, folded: true });
+  expect(seen[seen.length - 1]).toEqual({ h: 0, sliding: false, top: null, folded: true });
 });

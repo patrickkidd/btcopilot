@@ -2,6 +2,7 @@ import "./drawer.css";
 import { askedChip, chipOf } from "./chips";
 import { CLUSTER, closeX, esc, flash, pathRow, slideOver, stepBtn } from "./dom";
 import { leastScale } from "./diagram";
+import { clusterStep } from "./picture";
 import { kindForms, withKind } from "./rows";
 import { family, when, Told } from "./snapshots";
 import type { Case, Chip, Timeline } from "./types";
@@ -121,10 +122,10 @@ const spanOf = (told: Told) => {
 /** The drawer's top: the path row, the close button, which goes where the
  * path's cluster step goes, then the coach's point. The whole family hangs off
  * the timeline itself, and its close goes back there. */
-export const head = (told: Told, years: string) =>
+export const head = (told: Told, cluster: string) =>
   told.whole
     ? `<div class="path">${pathRow(["Timeline", "Family"])}</div>` + closeX(` data-step="0"`) + `<div class="when"></div>`
-    : `<div class="path">${pathRow(["Timeline", years, "explain"])}</div>` +
+    : `<div class="path">${pathRow(["Timeline", cluster, "explain"])}</div>` +
       closeX(` data-step="${CLUSTER}"`) +
       pointLine(told);
 
@@ -219,10 +220,10 @@ export class Drawer {
     this.statement = statement;
     this.i = i;
     this.height = null;
-    const years = told.tl.clusters.find((c) => c.id === told.told.cluster_id)?.label ?? spanOf(told);
+    const cluster = told.tl.clusters.find((c) => c.id === told.told.cluster_id);
     this.panel.classList.toggle("whole", told.whole);
     this.panel.innerHTML =
-      head(this.told, years) +
+      head(this.told, cluster ? clusterStep(cluster) : spanOf(told)) +
       `<div class="lv"><div class="wire"></div><div class="draw"></div><div class="scroll"></div></div>`;
     slideOver(this.panel, true);
     this.render(false);
