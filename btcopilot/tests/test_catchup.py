@@ -1,0 +1,258 @@
+"""The one pass that catches each record's questions up to the coach's newest
+question rules: wrong-kind fact questions moved by fixed rules, facts the
+person already said kept answered, stories the talk moved past kept for later.
+The dry run makes the one model call and writes nothing; the apply writes
+exactly the plan, each item a change row undo takes back.
+
+Invented names only.
+"""
+
+import json
+from dataclasses import asdict
+
+import pytest
+from mock import patch
+
+from btcopilot import record
+from btcopilot.admin import admin
+from btcopilot.extensions import db
+from btcopilot.models import Author, Change, ModelCall, Purpose
+from btcopilot.schema import PairBond, Person
+from btcopilot.tests.conftest import Model, calling
+from btcopilot.tests.test_questionbackfill import past  # noqa: F401
+from btcopilot.tests.test_questions import stored
+from btcopilot.tests.test_turnhistory import family  # noqa: F401
+from btcopilot.toolbox import ToolName
+
+STORY = "The summer your brother left home"
+
+
+def fact(past, iid="2", name="alive", kind="person"):
+    return (
+        ToolName.AddQuestion,
+        {
+            "text": "Is Ash still alive?",
+            "kind": "fact",
+            "state": "resolved",
+            "outcome": "answered",
+            "answer": past["user"],
+            "item_kind": kind,
+            "item_id": iid,
+            "fact": name,
+            "statement": past["user"],
+        },
+    )
+
+
+def story(past, text=STORY):
+    return (
+        ToolName.AddQuestion,
+        {"text": text, "kind": "thought", "state": "held", "statement": past["user"]},
+    )
+
+
+@pytest.fixture
+def kin(family, past):
+    """Wren and Ash, a couple, and Rue, Ash's partner before."""
+    data = family.get_diagram_data()
+    data.people = [
+        asdict(Person(id=1, name="Wren")),
+        asdict(Person(id=2, name="Ash")),
+        asdict(Person(id=4, name="Rue")),
+    ]
+    data.pair_bonds = [
+        asdict(PairBond(id=3, person_a=1, person_b=2)),
+        asdict(PairBond(id=5, person_a=2, person_b=4)),
+    ]
+    data.lastItemId = 5
+    family.set_diagram_data(data)
+    db.session.commit()
+    return family
+
+
+def filed(diagram, qid, name, kind, iid, state="resolved", outcome="answered"):
+    """A fact question on the wrong kind of thing, as the coach filed them
+    before its tool checked the kind."""
+    fields = {
+        "text": f"Asked {qid}?",
+        "kind": "fact",
+        "state": state,
+        "outcome": outcome if state == "resolved" else None,
+        "item_kind": kind,
+        "item_id": iid,
+        "fact": name,
+        "session_id": 7,
+        "asked_at": "2026-09-20",
+    }
+    record.apply(
+        diagram.id,
+        [
+            {"item_kind": "question", "item_id": qid, "field": k, "after": v}
+            for k, v in fields.items()
+        ],
+        author=Author.Coach,
+        turn_id=f"old:{qid}",
+    )
+
+
+def catch_up(flask_app, *args, model=None):
+    with patch("btcopilot.admin.catchup.model_for", return_value=model or Model()):
+        result = flask_app.test_cli_runner().invoke(
+            admin, ["questions", "catch-up", *args, "--json"]
+        )
+    assert result.exit_code == 0, result.output
+    return json.loads(result.output)
+
+
+def dry(flask_app, tmp_path, *turns) -> dict:
+    rows = catch_up(flask_app, "--plans", str(tmp_path), model=Model(*turns))
+    path = rows[0]["plan"]
+    return {**json.loads(open(path).read()), "path": path, "rows": rows}
+
+
+def apply(flask_app, plan) -> list[dict]:
+    return catch_up(flask_app, "--apply", "--plan", plan["path"])
+
+
+def test_the_dry_run_saves_a_readable_plan_and_writes_nothing(flask_app, tmp_path, kin, past):
+    # R-0760, R-0770, R-0772
+    filed(kin, "q1", "met", "person", "1", state="asked")
+    before, changes = stored(kin), Change.query.count()
+    plan = dry(flask_app, tmp_path, calling(fact(past), story(past)))
+
+    assert plan["counts"] == {"moved": 1, "left_as_is": 0, "facts": 1, "stories": 1, "dropped": 0}
+    assert plan["facts"][0]["said"] == "My grandmother raised me."
+    assert plan["facts"][0]["target"].startswith("person 2")
+    assert plan["stories"][0]["words"] == STORY
+    assert (stored(kin), Change.query.count()) == (before, changes)
+    assert ModelCall.query.filter_by(purpose=Purpose.Backfill).count() == 1
+
+
+def test_apply_writes_exactly_the_plan_one_row_each_with_no_model_call(
+    flask_app, tmp_path, kin, past
+):
+    # R-0760, R-0770, R-0772
+    plan = dry(flask_app, tmp_path, calling(fact(past), story(past)))
+    start = db.session.query(db.func.max(Change.id)).scalar() or 0
+    rows = apply(flask_app, plan)
+
+    assert [(r["entry"], r["refused"]) for r in rows] == [("q1", None), ("q2", None)]
+    after = stored(kin)
+    assert {k: after["q1"][k] for k in ("state", "outcome", "fact", "item_id")} == {
+        "state": "resolved",
+        "outcome": "answered",
+        "fact": "alive",
+        "item_id": "2",
+    }
+    assert after["q1"]["answer"]["id"] == past["user"]
+    assert (after["q2"]["text"], after["q2"]["state"]) == (STORY, "held")
+    made = Change.query.filter(Change.id > start).all()
+    assert [(c.turn_id, c.statement_id) for c in made] == [(f"catch-up:{kin.id}", past["user"])] * 2
+    assert ModelCall.query.filter_by(purpose=Purpose.Backfill).count() == 1
+
+
+def test_a_second_pass_proposes_nothing_already_written(flask_app, tmp_path, kin, past):
+    # R-0760, R-0770, R-0772
+    filed(kin, "q9", "met", "person", "1", state="asked")
+    apply(flask_app, dry(flask_app, tmp_path, calling(fact(past), story(past))))
+    again = dry(flask_app, tmp_path, calling(fact(past), story(past, "The summer he left")))
+
+    assert again["counts"] == {"moved": 0, "left_as_is": 0, "facts": 0, "stories": 0, "dropped": 2}
+    assert [d["reason"] for d in again["dropped"]] == [
+        "the record already holds it",
+        "a question was already kept from that message",
+    ]
+
+
+def test_a_proposal_the_tool_would_refuse_is_dropped_with_its_reason(
+    flask_app, tmp_path, kin, past
+):
+    # R-0760, R-0770, R-0772
+    plan = dry(
+        flask_app,
+        tmp_path,
+        calling(
+            fact(past, "2", "children"),
+            fact(past, "2", "name"),
+            fact(past),
+            fact(past),
+            (ToolName.AddQuestion, {**fact(past)[1], "state": "asked"}),
+            (ToolName.AddQuestion, {**story(past)[1], "statement": past["reply"]}),
+            *[story(past, f"Story {n}") for n in range(9)],
+        ),
+    )
+
+    reasons = [d["reason"] for d in plan["dropped"]]
+    assert "children is asked of a pair_bond, not a person" in reasons[0]
+    assert reasons[1:5] == [
+        "the record already holds it",
+        "the record already holds it",
+        "only a fact already answered or a story held is kept here",
+        "it names no message of the person's in this record",
+    ]
+    assert reasons[5:] == ["more than 8 stories"]
+    assert (plan["counts"]["facts"], plan["counts"]["stories"]) == (1, 8)
+
+
+def test_a_couple_fact_on_a_person_moves_to_their_one_pair_bond(flask_app, tmp_path, kin, past):
+    # R-0760, R-0772
+    filed(kin, "q1", "met", "person", "1", state="asked")
+    filed(kin, "q2", "children", "person", "2", state="held")
+    plan = dry(flask_app, tmp_path, calling())
+    assert [m["question"] for m in plan["moved"]] == ["q1"]
+    assert plan["left_as_is"][0]["reason"] == "the person has 2 pair-bonds, not one"
+
+    rows = apply(flask_app, plan)
+    assert rows[0]["refused"] is None
+    after = stored(kin)
+    assert (after["q1"]["item_kind"], after["q1"]["item_id"]) == ("pair_bond", "3")
+    assert (after["q2"]["item_kind"], after["q2"]["item_id"]) == ("person", "2")
+
+
+def test_a_question_the_record_will_not_move_is_left_as_is_with_the_reason(
+    flask_app, tmp_path, kin, past
+):
+    # R-0760, R-0772
+    filed(kin, "q1", "birth_date", "pair_bond", "3")
+    filed(kin, "q2", "work", "pair_bond", "3", state="asked")
+    before = stored(kin)
+    plan = dry(flask_app, tmp_path, calling())
+
+    assert plan["moved"] == []
+    assert [(m["question"], m["reason"]) for m in plan["left_as_is"]] == [
+        ("q1", "the record never changes a closed question"),
+        ("q2", "the pair-bond has 2 partners in the record, and an open question is kept once"),
+    ]
+    apply(flask_app, plan)
+    assert stored(kin) == before
+
+
+def test_a_question_changed_since_the_dry_run_is_not_moved(flask_app, tmp_path, kin, past):
+    # R-0772
+    filed(kin, "q1", "met", "person", "1", state="asked")
+    plan = dry(flask_app, tmp_path, calling())
+    record.apply(
+        kin.id,
+        [{"item_kind": "question", "item_id": "q1", "field": "text", "after": "Reworded?"}],
+        author=Author.Coach,
+        turn_id="later",
+    )
+
+    rows = apply(flask_app, plan)
+    assert rows[0]["refused"] == "the question changed since the dry run"
+    assert stored(kin)["q1"]["item_kind"] == "person"
+
+
+def test_undo_takes_a_catch_up_row_back(flask_app, tmp_path, kin, past):
+    # R-0772
+    filed(kin, "q1", "met", "person", "1", state="asked")
+    before = stored(kin)
+    start = db.session.query(db.func.max(Change.id)).scalar() or 0
+    apply(flask_app, dry(flask_app, tmp_path, calling(story(past))))
+    rows = [str(c.id) for c in Change.query.filter(Change.id > start)]
+
+    result = flask_app.test_cli_runner().invoke(
+        admin, ["diagrams", "undo", str(kin.id), *rows, "--yes"]
+    )
+    assert result.exit_code == 0, result.output
+    assert stored(kin) == before

@@ -5,6 +5,7 @@ themselves (T-11)."""
 import click
 
 from btcopilot.admin.casereport import case_report_group
+from btcopilot.admin.catchup import catch_up
 from btcopilot.admin.coachmodels import coach_model
 from btcopilot.admin.database import database
 from btcopilot.admin.diagrams import diagrams
@@ -52,6 +53,9 @@ for group in (
     run,
 ):
     admin.add_command(group)
+
+
+questions_group.add_command(catch_up)
 
 
 def init_app(app):

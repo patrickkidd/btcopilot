@@ -395,6 +395,20 @@ Changes something: needs `--yes`.
 | `--diagram` | Only this record. |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin questions catch-up`
+
+Bring each record's questions to where they would stand had the coach's question rules been there from the first session: a fact question filed on the wrong kind of thing moves to the right person or pair-bond, a fact the person already said is kept as a question already answered, and a story the talk moved past is kept to come back to. Chat messages are never changed. The dry run makes one model call per record with a session, goes to the model-calls ledger, and saves a plan a person can read; --apply --plan writes exactly that plan, each item one change row that `diagrams undo` takes back, with no model call.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--diagram` | Only this record. |
+| `--apply` | Write saved plans; the default, --dry-run, makes the model call and saves the plan, writing nothing to the record. |
+| `--plan` | With --apply: a plan file the dry run printed. |
+| `--plans` | Where the dry run saves its plans. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin report`
 
 The report sheet in a person's app, raised by hand in development.
