@@ -164,9 +164,9 @@
 /* a new mark is on screen the moment Next is tapped, at full strength within 200ms */
 .pbp .pop, .pbp .mvk.now .tipfill { transform-box: fill-box; transform-origin: center; animation: pbp-pop var(--speed-pop) cubic-bezier(0.2, 1.5, 0.4, 1) both; }
 @keyframes pbp-pop { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-/* a slash has no other motion, so its pop comes round again, one pop each
-   ten pops' time (Patrick, 2026-10-03) */
-.pbp .slash.now { animation: pbp-repop calc(var(--speed-pop) * 10) cubic-bezier(0.2, 1.5, 0.4, 1) infinite both; }
+/* a slash and functioning up's outline have no other motion, so their pop
+   comes round again, one pop each ten pops' time (Patrick, 2026-10-03; R-0763) */
+.pbp .slash.now, .pbp .fn.up.now { animation: pbp-repop calc(var(--speed-pop) * 10) cubic-bezier(0.2, 1.5, 0.4, 1) infinite both; }
 @keyframes pbp-repop { 0% { transform: scale(0.2); opacity: 0; } 10%, 100% { transform: scale(1); opacity: 1; } }
 /* inside and outside: a family line stretched to someone moved for the step (R-0728) */
 .diagram .tie.stretch { stroke-dasharray: none; }
