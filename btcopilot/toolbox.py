@@ -844,7 +844,8 @@ def said_label(statement: Statement) -> str:
         if statement.speaker_id == statement.discussion.chat_user_speaker_id
         else "The coach"
     )
-    return f"{who} said, {statement.created_at.day} {statement.created_at:%b}"
+    day = clock.day(statement.created_at, statement.discussion.user.timezone)
+    return f"{who} said, {day.day} {day:%b}"
 
 
 def said_in(*where):
@@ -988,8 +989,10 @@ class Toolbox:
         # before them, on the family they were said about.
         self.said = said
         # The person's IANA zone, for the day a question is asked on and the
-        # follow-up check; None is UTC.
-        self.zone = zone
+        # follow-up check: the one the page sent, else the one kept on their
+        # row; None is UTC.
+        kept = db.session.get(User, user_id).timezone if user_id is not None else None
+        self.zone = zone or kept
         self.deltas: list[dict] = []
         self.views: list[dict] = []
         # The record versions this turn's own writes made, undo included.
@@ -1116,7 +1119,7 @@ class Toolbox:
             )
         # A shadow turn's record is thrown away, and so is what it would ask.
         if not self.diagram.scratch:
-            proactive.ask_later(self.user_id, self.diagram_id, when, question)
+            proactive.ask_later(self.user_id, self.diagram_id, when, question, self.zone)
         return f"You will ask on {when}.", None
 
     def _read_people(self, args: dict) -> tuple[str, None]:
@@ -1645,10 +1648,13 @@ class Toolbox:
         ):
             return None
         fact, kind, iid = Fact(fact), ItemKind(kind), int(iid)
-        # a fact on the wrong kind of thing (children on a person, alive on a
-        # couple) is kept as it always was; the checklist has no such item
         if not coverage.fits(fact, kind):
-            return None
+            right = next(k for k in (ItemKind.Person, ItemKind.PairBond) if coverage.fits(fact, k))
+            raise ToolError(
+                f"{coverage.WORDS[fact]} is asked of a {right.value}, not a {kind.value}: "
+                f"file it with item_kind {right.value}, once for each {right.value} it is about",
+                "It filed a question on the wrong kind of thing.",
+            )
         where = coverage.label(data, kind, iid)
         asked = coverage.asking(data, fact, kind, iid)
         if asked is not None and state is not QuestionState.Held:

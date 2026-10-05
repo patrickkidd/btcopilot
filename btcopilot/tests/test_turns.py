@@ -150,6 +150,32 @@ def test_the_task_run_with_no_zone_keeps_the_servers_day(
     assert told_today(model) == "2026-09-28"
 
 
+def test_the_zone_sent_is_kept_on_the_user_and_a_turn_with_none_uses_it(
+    anchorage_evening, web, token, test_user, family, discussion, monkeypatch
+):
+    # R-0760
+    """A resumed turn carries no zone: its day is the one kept from the last
+    message, so an evening in Alaska stays that day."""
+    model = Model(said("Go on."), said("Go on."))
+    monkeypatch.setattr("btcopilot.turns.model_for", lambda *a, **k: model)
+    assert post(web, token, "Hi.", time_zone="America/Anchorage").status_code == 202
+    db.session.refresh(test_user)
+    assert test_user.timezone == "America/Anchorage"
+    said_statement = Statement(
+        discussion_id=discussion.id,
+        text="Dad turns 70 tomorrow.",
+        speaker=discussion.chat_user_speaker,
+        order=discussion.next_order(),
+    )
+    db.session.add(said_statement)
+    db.session.commit()
+    turnlog.start(discussion.id, "t2")
+    turns.run("t2", discussion.id, said_statement.id, resume=True)
+    assert re.findall(r"[Tt]oday(?:'s date)? is (\d{4}-\d{2}-\d{2})", model.systems[-1]) == [
+        "2026-09-27"
+    ]
+
+
 def test_a_question_asked_in_the_evening_in_anchorage_is_dated_that_day(
     anchorage_evening, web, token, family, monkeypatch
 ):

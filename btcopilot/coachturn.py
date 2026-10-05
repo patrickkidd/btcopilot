@@ -270,7 +270,8 @@ class CoachTurn:
         self.discussion = discussion
         self.statement = statement
         # The person's IANA zone, sent by the page with the message: "today"
-        # is their day, not the server's. None, as on a resumed turn, is UTC.
+        # is their day, not the server's. None, as on a resumed turn, is the
+        # zone kept on their row, and with none kept, UTC.
         self.zone = zone
         # The route stores the user's words before the turn is handed to the
         # worker, so the turn is told which statement it is answering.
@@ -349,7 +350,7 @@ class CoachTurn:
             interactions=recordtext.interactions(
                 recent(self.diagram.id, RECENT_INTERACTIONS)
             ),
-            today=clock.today(self.zone).isoformat(),
+            today=clock.today(self.toolbox.zone).isoformat(),
             coverage=coverage.block(data, plateau(answered, self.diagram.id)),
         )
         last = last_notes(answered)

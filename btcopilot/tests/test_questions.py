@@ -608,13 +608,53 @@ def test_an_asked_fact_question_the_record_answers_is_refused_with_the_answer(fa
         f'(the person and partner): q1 resolved fact "{CHILDREN}" about pair_bond 7 '
         "outcome=answered. Do not ask it; use the answer"
     )
-    # a thought question, or one kept for later, is never refused this way, and
-    # nor is a fact on the wrong kind of thing, which is kept as it always was
+    # a thought question, or one kept for later, is never refused this way
     add(toolbox, "What was your father like?", kind="thought", item_kind="person", item_id=str(HUGH))
     add(toolbox, ALIVE, state="held", fact="alive", item_kind="person", item_id=str(HUGH))
-    add(toolbox, "Was Joe your mother's father, or your father's?", fact="children", item_kind="person", item_id=str(HUGH))
-    add(toolbox, "Are Ada and Hugh both still living?", fact="alive", item_kind="pair_bond", item_id=str(HOME))
-    assert list(stored(family)) == ["q1", "q2", "q3", "q4", "q5"]
+    assert list(stored(family)) == ["q1", "q2", "q3"]
+
+
+def test_a_fact_question_on_the_wrong_kind_of_thing_is_refused_naming_the_right_one(family):
+    # R-0760
+    """Both seen in replay: alive filed on a couple, children on a person."""
+    grown(family)
+    toolbox = box(family)
+
+    with pytest.raises(ToolError) as refused:
+        add(toolbox, "Are Ada and Hugh both still living?", fact="alive", item_kind="pair_bond", item_id=str(HOME))
+    assert refused.value.plain == "It filed a question on the wrong kind of thing."
+    assert str(refused.value) == (
+        "alive or not is asked of a person, not a pair_bond: file it with item_kind "
+        "person, once for each person it is about"
+    )
+    with pytest.raises(ToolError) as refused:
+        add(toolbox, "Was grandpa Joe your mom's father or your dad's?", fact="children", item_kind="person", item_id=str(HUGH))
+    assert str(refused.value).startswith(
+        "how many children is asked of a pair_bond, not a person: file it with item_kind pair_bond"
+    )
+    with pytest.raises(ToolError):
+        add(toolbox, "Is Hugh living?", state="held", fact="alive", item_kind="pair_bond", item_id=str(HOME))
+    assert stored(family) == {}
+
+
+def test_a_question_kept_for_later_may_sit_beside_an_open_one_on_the_same_item(family):
+    # R-0760
+    grown(family)
+    toolbox = box(family)
+    add(toolbox, ALIVE, fact="alive", item_kind="person", item_id=str(HUGH))
+
+    add(toolbox, "Is Hugh living?", state="held", fact="alive", item_kind="person", item_id=str(HUGH))
+    assert [q["state"] for q in stored(family).values()] == ["asked", "held"]
+
+
+def test_the_label_on_a_stored_answer_is_dated_on_the_persons_day(family, test_user):
+    # R-0760
+    """An evening message in Alaska is already the next day in UTC."""
+    test_user.timezone = "America/Anchorage"
+    said_ = says(open_session(test_user, family), "Dad died in 2019.", "2026-10-05T04:00")
+    assert said_label(said_) == "You said, 4 Oct"
+    test_user.timezone = None
+    assert said_label(said_) == "You said, 5 Oct"
 
 
 def test_a_fact_question_can_be_added_already_answered_in_one_call(family, test_user):

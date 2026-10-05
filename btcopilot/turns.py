@@ -141,7 +141,7 @@ def run(
 ) -> dict:
     """The task itself. It ends in one of two events, always: the reply, or a
     sentence saying it did not finish. A resumed turn carries no zone, so its
-    day is UTC's."""
+    day is in the zone kept on the person's row."""
     _log.info(f"coach_turn {turn_id} discussion={discussion_id}")
     discussion = db.session.get(Discussion, discussion_id)
     said = db.session.get(Statement, statement_id)

@@ -175,6 +175,8 @@ def _start(discussion: Discussion, statement: str, zone: str | None):
     here, because a turn takes longer than a request may."""
     require_write_access(discussion.diagram)
     sync_chat_speakers(discussion)
+    if zone and discussion.user.timezone != zone:
+        discussion.user.timezone = zone
     db.session.commit()
     try:
         return jsonify(turns.start(discussion, statement, zone=zone)), 202

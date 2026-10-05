@@ -56,7 +56,8 @@ REPLIED_WITHIN = datetime.timedelta(hours=48)
 RETURNED_WITHIN = datetime.timedelta(days=7)
 # How long after sending the loop's counts are still looked for.
 COUNTED_FOR = datetime.timedelta(days=14)
-# No one's time zone is kept yet, so every message waits for the day in one.
+# The coders' meeting reminders wait for the day in Alaska; a person's own
+# messages wait for the day in the zone kept on their row, UTC with none.
 ZONE = ZoneInfo("America/Anchorage")
 HOURS = range(9, 20)
 # Words that broke the shape this many times for one pattern end its tries.
@@ -71,9 +72,7 @@ BUDGET = {
 class Reason(enum.StrEnum):
     """Why nothing went to a person on a run, as the run prints it."""
 
-    Night = (
-        f"outside sending hours, {HOURS.start}:00 to {HOURS.stop - 1}:59 Alaska time"
-    )
+    Night = f"outside sending hours, {HOURS.start}:00 to {HOURS.stop - 1}:59 their time"
     Waiting = "the last message is still waiting for an answer"
     Ignored = "the last two of its kind went unanswered; it waits for a reply"
     Off = "preference off: the person chose never"
@@ -87,13 +86,22 @@ class Unsendable(ValueError):
     cause of the other."""
 
 
-def ask_later(user_id: int, diagram_id: int, when: datetime.date, question: str):
+def ask_later(
+    user_id: int,
+    diagram_id: int,
+    when: datetime.date,
+    question: str,
+    zone: str | None = None,
+):
+    """Due at the start of sending hours on that day where the person is."""
     message = ProactiveMessage(
         user_id=user_id,
         diagram_id=diagram_id,
         trigger=Trigger.FollowUp,
         question=question,
-        due_at=_utc(datetime.datetime.combine(when, datetime.time(HOURS.start), ZONE)),
+        due_at=_utc(
+            datetime.datetime.combine(when, datetime.time(HOURS.start), _zone(zone))
+        ),
     )
     db.session.add(message)
     return message
@@ -106,13 +114,13 @@ def run(now: datetime.datetime | None = None, dry_run: bool = False) -> list[dic
     becomes a row saying the words would be written about it."""
     now = now or datetime.datetime.utcnow()
     rows = []
-    day = daytime(now)
     asked = _asked()
     for user in User.query.order_by(User.id):
         if user.id not in asked and user.pref(PrefKey.Proactive) is Proactive.Never:
             found = Reason.Off
         else:
             _answers(user, now)
+            day = daytime(now, _zone(user.timezone))
             found = _pick(user, now) if day else Reason.Night
         if isinstance(found, Reason):
             rows.append(_row(user, reason=found.value))
@@ -168,12 +176,16 @@ def _utc(moment: datetime.datetime) -> datetime.datetime:
     return moment.astimezone(datetime.timezone.utc).replace(tzinfo=None)
 
 
-def daytime(moment: datetime.datetime) -> bool:
-    return local(moment).hour in HOURS
+def _zone(name: str | None) -> datetime.tzinfo:
+    return ZoneInfo(name) if name else datetime.timezone.utc
 
 
-def local(moment: datetime.datetime) -> datetime.datetime:
-    return moment.replace(tzinfo=datetime.timezone.utc).astimezone(ZONE)
+def daytime(moment: datetime.datetime, zone: datetime.tzinfo = ZONE) -> bool:
+    return local(moment, zone).hour in HOURS
+
+
+def local(moment: datetime.datetime, zone: datetime.tzinfo = ZONE) -> datetime.datetime:
+    return moment.replace(tzinfo=datetime.timezone.utc).astimezone(zone)
 
 
 def _asked() -> set[int]:
