@@ -131,6 +131,8 @@ export interface Cast {
   cross: string[];
   words: Record<string, number>;
   moves: Arrow[];
+  /** The steps' insides and outsides, each moving people from their places. */
+  places: Place[];
   /** The moves drawn the moves board's way, and who shows anxiety, so names and
    * words stand clear of their marks. */
   kin: Kin[];
@@ -267,6 +269,11 @@ const AGE_DROP = 4.5;
 /** Decided 2026-09-27: labels never under 13px, the family's margin never under 20px.
  * A picture scales whole (R-0759), so the labels' floor is the people's too. */
 export const LEAST = { label: 13, margin: 20 };
+/** The least a drawn family may be scaled by, in any frame: labels at 13px and
+ * the family's margin, with the frame's own `padding`, at 20px. Below it the
+ * frame scrolls (R-0759, R-0744). */
+export const leastScale = (L: Layout, padding: number) =>
+  Math.max(LEAST.label / NAME, (LEAST.margin - padding) / L.my);
 export const CH = 0.6;
 const LEAD = 15;
 /** How far a label's box reaches above its line. */
@@ -1299,6 +1306,20 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
     names: [], h: 0, vw: VIEW, px: d.W, wide: 0, my: 0, ring, inset, loose: plan.loose,
     cut: cast.cut ?? [], note: null,
   };
+  // a step's inside or outside stands people away from their places; the box
+  // holds them and their words there too, so the frame scrolls to them (R-0728, R-0759)
+  cast.places.forEach((m) =>
+    Object.entries(placed(L, m)).forEach(([id, [ox, oy]]) => {
+      const e = half(id);
+      const nb = nameBox(id, side[id]);
+      grow(x[id] + ox - leftExt(id), y[id] + oy - e);
+      grow(x[id] + ox + rightExt(id), y[id] + oy + e);
+      grow(nb.x0 + ox, nb.y0 + oy);
+      grow(nb.x1 + ox, nb.y1 + oy);
+      said.x0 = Math.min(said.x0, x[id] + ox - leftExt(id, Reach.Words), nb.x0 + ox);
+      said.x1 = Math.max(said.x1, x[id] + ox + rightExt(id, Reach.Words), nb.x1 + ox);
+    }),
+  );
   cast.bonds.forEach((b) => fam(x[b.a], bar(L, b).y + 4));
   cast.moves.forEach((mv) => awayTip(L, mv).forEach(([ax, ay]) => grow(ax, ay)));
   L.cut.forEach((c) => {

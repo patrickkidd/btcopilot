@@ -1,5 +1,5 @@
 import { pill } from "./chips";
-import { draw } from "./diagram";
+import { draw, leastScale } from "./diagram";
 import { closeX, esc } from "./dom";
 import { Card, GUESS_CARDS, ORDER, type CaseView, type Fact, type Guess, type Still, type Who } from "./caseview";
 import { ChipKind, ChipTone, type Passages } from "./types";
@@ -135,6 +135,9 @@ const guessBlock = (g: Guess, ask: string | null = null) =>
 
 const notEnough = () => `<div class="gbub">${bubble(NOT_ENOUGH)}</div>`;
 
+/** The top padding of a family's frame on the report, as casereport.css gives it. */
+const FAM_PAD = 4;
+
 /** A family standing still, drawn by the app's own drawing, or the layout's
  * own words for why it cannot be. */
 export function picture(v: CaseView, still: Still, label: string): string {
@@ -143,7 +146,9 @@ export function picture(v: CaseView, still: Still, label: string): string {
   const bonds = L.bonds.map((b) => ({ a: b.a, b: b.b, st: b.st, married: b.married, fresh: false, hot: false }));
   const unknown = Object.keys(L.P).some((k) => k.startsWith("unknown-"));
   const svg = draw(L, { t: v.now, bonds, marks: [], died: new Set<string>(), moves: [], kin: [], label });
-  return `<div class="fam">${svg}</div>${unknown ? faint(UNKNOWN_NOTE) : ""}`;
+  // never drawn under the drawer's floor: a wider family pans in its frame (R-0759)
+  const least = Math.ceil(L.vw * leastScale(L, FAM_PAD));
+  return `<div class="fam" style="--least:${least}px">${svg}</div>${unknown ? faint(UNKNOWN_NOTE) : ""}`;
 }
 
 /** One side of the family: the one fold on the report (R-0689), its words

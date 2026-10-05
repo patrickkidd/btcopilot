@@ -1125,12 +1125,14 @@ export class Picture {
     const words = said.text ? said.text + bandHit(shows + X_PAD, screen - 2 * X_PAD) : "";
     const targets = restLayers(boxes, dotLayers(zoned)).map(hitButton).join("");
     // Where the line settles after a swipe: at a box's near edge, so a cluster
-    // is never cut in half, and at the present.
+    // is never cut in half.
     const stops = new Set<number>();
     for (const edge of edges(clusters, at)) {
       stops.add(Math.max(0, edge.left - X_PAD));
       stops.add(Math.max(0, edge.right + X_PAD - screen));
     }
+    // and at both ends, so the first moment is reachable as the last is
+    stops.add(0);
     stops.add(Math.max(0, width - screen));
     // whole pixels, or a redraw lands the line a pixel off where it stood (R-0542)
     const snaps = [...new Set([...stops].map(Math.round))]

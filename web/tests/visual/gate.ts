@@ -183,3 +183,35 @@ export async function colours(page: Page, target: Locator): Promise<Record<"ligh
   await page.emulateMedia({ colorScheme: "light" });
   return { light: await read(), dark };
 }
+
+/** Every word a family drawing writes that reaches past the drawing's own box,
+ * so past what its frame can scroll to, said with where it ends (R-0759). */
+export const wordsOutside = (page: Page, drawings: string) =>
+  page.evaluate((sel) => {
+    const out: string[] = [];
+    document.querySelectorAll<SVGSVGElement>(sel).forEach((svg) => {
+      const s = svg.getBoundingClientRect();
+      svg.querySelectorAll("text").forEach((t) => {
+        const b = t.getBoundingClientRect();
+        if (b.width && (b.left < s.left - 0.5 || b.right > s.right + 0.5))
+          out.push(`"${t.textContent}" at ${Math.round(b.left - s.left)}..${Math.round(b.right - s.left)} of ${Math.round(s.width)}`);
+      });
+    });
+    return out;
+  }, drawings);
+
+/** The smallest a name is drawn on the screen, in px, over the drawings shown. */
+export const leastName = (page: Page, drawings: string) =>
+  page.evaluate(
+    (sel) =>
+      Math.min(
+        ...[...document.querySelectorAll<SVGSVGElement>(sel)]
+          .filter((svg) => svg.getBoundingClientRect().width > 0)
+          .flatMap((svg) =>
+            [...svg.querySelectorAll<SVGTextElement>(".pt text")].map(
+              (t) => parseFloat(getComputedStyle(t).fontSize) * svg.getScreenCTM()!.a,
+            ),
+          ),
+      ),
+    drawings,
+  );

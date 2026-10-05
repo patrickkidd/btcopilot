@@ -1,7 +1,7 @@
 import "./drawer.css";
 import { askedChip, chipOf } from "./chips";
 import { CLUSTER, closeX, esc, flash, pathRow, slideOver, stepBtn } from "./dom";
-import { LEAST, NAME, type Layout } from "./diagram";
+import { leastScale } from "./diagram";
 import { kindForms, withKind } from "./rows";
 import { family, when, Told } from "./snapshots";
 import type { Case, Chip, Timeline } from "./types";
@@ -138,14 +138,6 @@ export const topLine = (told: Told, i: number) => {
 export const pictureHeight = (natural: number, room: number, captions: number[], floor: number) =>
   Math.max(Math.min(natural, floor), Math.min(natural, room - Math.max(...captions)));
 
-/** Decided 2026-09-27: the shrink stops where labels would go under 13px or
- * the family's margin under 20px; below that the drawer scrolls. The whole
- * picture shrinks by the one factor, people with their labels (R-0759). A row already shrunk to fit the phone's width stays as it is.
- * Re-ruled 2026-10-04: a picture wider than the drawer keeps this size and
- * scrolls sideways in its own frame. */
-export const leastScale = (L: Layout, padding: number) =>
-  Math.max(LEAST.label / NAME, (LEAST.margin - padding) / L.my);
-
 export class Drawer {
   private told: Told | null = null;
   private statement: number | null = null;
@@ -197,7 +189,7 @@ export class Drawer {
       head(this.told, years) +
       `<div class="lv"><div class="wire"></div><div class="draw"></div><div class="scroll"></div></div>`;
     slideOver(this.panel, true);
-    this.render();
+    this.render(false);
     this.onMoved?.();
   }
 
@@ -228,7 +220,9 @@ export class Drawer {
     if (this.told && this.panel.classList.contains("in")) this.back(this.told.whole ? 0 : CLUSTER, this.told.eventIds);
   }
 
-  private render(): void {
+  /** `glide`: the frame travels to the step's person; on opening it is put
+   * there at once, so it never opens on the empty width between. */
+  private render(glide = true): void {
     const told = this.told!;
     const q = (sel: string) => this.panel.querySelector<HTMLElement>(sel)!;
     q(".wire").innerHTML = yearsLine(told.tl, told, this.i);
@@ -237,14 +231,14 @@ export class Drawer {
     q(".draw").innerHTML = shot.svg;
     q(".scroll").innerHTML = below(told, this.i, this.statement);
     this.fit();
-    this.centre(shot.who);
+    this.centre(shot.who, glide);
   }
 
   /** The person the step is about in the middle of the frame, when the picture is wider than it. */
-  private centre(who: string): void {
+  private centre(who: string, glide: boolean): void {
     const draw = this.panel.querySelector<HTMLElement>(".draw")!;
     if (draw.scrollWidth <= draw.clientWidth) return;
-    draw.scrollTo({ left: this.told!.layout.x[who] * this.scale - draw.clientWidth / 2, behavior: "smooth" });
+    draw.scrollTo({ left: this.told!.layout.x[who] * this.scale - draw.clientWidth / 2, behavior: glide ? "smooth" : "instant" });
   }
 
   private fit(): void {

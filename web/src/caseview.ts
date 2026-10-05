@@ -235,6 +235,7 @@ class Reader {
       words: {},
       moves: [],
       kin: [],
+      places: [],
       anxious: [],
       assoc: {},
       until: this.now,
