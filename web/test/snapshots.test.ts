@@ -209,10 +209,15 @@ describe("names", () => {
     const t = told(apart());
     const L = t.layout;
     const id = String(MARCUS);
-    const [cx] = t.shot(1).svg.match(/<g class="mv-sym" transform="translate\(([\d.]+) /)!.slice(1).map(Number);
+    const [at, k, local] = t
+      .shot(1)
+      .svg.match(/transform="translate\(([\d.]+) [\d.]+\) scale\(([\d.]+)\)"><g class="mv-sym" transform="translate\((-?[\d.]+) /)!
+      .slice(1)
+      .map(Number);
+    const cx = at + k * local;
     const away = L.side[id] === Side.Right ? -1 : 1;
     expect(Math.sign(cx - L.x[id])).toBe(away);
-    const gap = Math.abs(cx - L.x[id]) - 8 - L.w / 2;
+    const gap = Math.abs(cx - L.x[id]) - 8 * k - L.w / 2;
     expect(gap).toBeLessThanOrEqual(L.w / 8 + 0.1);
   });
 

@@ -291,6 +291,7 @@ class Dims {
   OFF: number;
   GAP: number;
   MARK: number;
+  CK: number;
   ZONE: number;
 
   constructor(w: number, compact = false) {
@@ -307,8 +308,11 @@ class Dims {
     this.GAP = w / 8;
     // a mark that stands on its own, a wall, is as tall as a person; a slash is two thirds of that
     this.MARK = w;
+    // the health cross keeps the size against its person it had where people
+    // were drawn 36 across, as every mark scales with the person (R-0759)
+    this.CK = w / 36;
     // how far the cross and its arrow reach past the shape: two square cells
-    this.ZONE = this.GAP + 2 * CROSS;
+    this.ZONE = this.GAP + 2 * CROSS * this.CK;
   }
 
   half(p: Shape): number {
@@ -1492,17 +1496,13 @@ function boardMove(L: Layout, mv: Arrow): string {
  * the radius that lands it there. Nothing inside the mark changes. */
 function cross(L: Layout, id: string, dir: Shift, cls: Tone): string {
   const d = dimsOf(L);
-  const fig = {
-    id: 0,
-    name: L.P[id].name,
-    x: L.x[id],
-    y: L.y[id],
-    r: d.half(L.P[id]) + d.GAP + CROSS / 2 - 29,
-    mirror: L.zone[id] < 0,
-  };
+  const mirror = L.zone[id] < 0;
+  // drawn beside its own origin, then set a gap past the shape at the person's scale
+  const fig = { id: 0, name: L.P[id].name, x: 0, y: 0, r: CROSS / 2 - 29, mirror };
+  const x = L.x[id] + (mirror ? -1 : 1) * (d.half(L.P[id]) + d.GAP);
   return (
     `<g class="mk ${cls}${cls === Tone.Now ? " pop" : ""}" data-mark="cross:${esc(id)}">` +
-    healthCross(fig, dir) +
+    `<g transform="translate(${f(x)} ${f(L.y[id])}) scale(${d.CK.toFixed(4)})">${healthCross(fig, dir)}</g>` +
     `</g>`
   );
 }

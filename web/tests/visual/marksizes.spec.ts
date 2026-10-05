@@ -72,7 +72,8 @@ const show = (page: Page, svg: string) =>
   }, svg);
 
 /** The marks' union box in their own drawing frame, so a mark keeps its size
- * whatever angle it is drawn at, scaled to the screen; strokes included. */
+ * whatever angle it is drawn at, scaled as the frame scales it and to the
+ * screen; strokes included. */
 const measure = (page: Page, name: string, selector: string, tone: "now" | "was") =>
   page.evaluate(
     ({ name, selector, tone }): Size => {
@@ -85,6 +86,9 @@ const measure = (page: Page, name: string, selector: string, tone: "now" | "was"
       const ctm = root.getScreenCTM()!;
       const scale = Math.hypot(ctm.a, ctm.b);
       const frame = els[0].parentElement as unknown as SVGGraphicsElement;
+      // the frame may turn a mark but also scale it with its person (R-0759)
+      const inRoot = root.getScreenCTM()!.inverse().multiply(frame.getScreenCTM()!);
+      const grown = Math.hypot(inRoot.a, inRoot.b);
       let [x0, y0, x1, y1, sw] = [Infinity, Infinity, -Infinity, -Infinity, 0];
       els.forEach((el) => {
         const b = el.getBBox();
@@ -107,7 +111,7 @@ const measure = (page: Page, name: string, selector: string, tone: "now" | "was"
       // the lit one of a divorce's two slashes is the second
       const last = els[els.length - 1];
       const paint = getComputedStyle(last);
-      const r = (v: number) => Math.round(v * scale * 10) / 10;
+      const r = (v: number) => Math.round(v * grown * scale * 10) / 10;
       return {
         name,
         tone,
