@@ -51,8 +51,10 @@ CALLS_PER_SESSION = 3
 
 
 def asked(diagram_id: int, data: DiagramData) -> list[dict]:
-    """Every question ever asked and every impression ever raised, for the
-    page. One the coach only keeps for later never leaves the server."""
+    """Every question ever asked, every fact the person said unasked that is
+    kept as a question already answered (R-0758), and every impression ever
+    raised, for the page. One the coach only keeps for later never leaves the
+    server."""
     where = record.asked_in(diagram_id)
     return [
         {

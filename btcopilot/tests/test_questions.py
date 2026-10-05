@@ -11,15 +11,33 @@ import pytest
 from freezegun import freeze_time
 from mock import patch
 
-from btcopilot import chips, coachturn, observer, record, turnlog
+from btcopilot import chips, coachturn, coverage, observer, questions, record, turnlog
+from btcopilot.discussions import open_session
 from btcopilot.extensions import db
 from btcopilot.interactions import recent
-from btcopilot.models import Author, Change, InteractionKind, Observation, ObservationKind
+from btcopilot.models import (
+    Author,
+    Change,
+    InteractionKind,
+    Observation,
+    ObservationKind,
+    Statement,
+)
 from btcopilot.recordtext import outline
-from btcopilot.schema import DiagramData, ItemKind
+from btcopilot.schema import (
+    DiagramData,
+    Fact,
+    FactState,
+    ItemKind,
+    PairBond,
+    Person,
+    PersonKind,
+    asdict,
+)
 from btcopilot.tests.conftest import Model, called, calling, csrf_token, said, version
+from btcopilot.tests.test_searchchat import says
 from btcopilot.tests.test_turnhistory import coach, family, post, statements, titles  # noqa: F401
-from btcopilot.toolbox import ToolError, ToolName, Toolbox
+from btcopilot.toolbox import ToolError, ToolName, Toolbox, said_label
 
 ASK = "Who were your father's brothers and sisters?"
 LATER = "When did your grandmother die?"
@@ -503,3 +521,243 @@ def test_a_question_chip_survives_and_one_the_record_lacks_does_not():
     assert chips.context("[[question:q3]]", MAP, None).splitlines()[1] == (
         "question q3: \"How does your father respond when he's anxious?\""
     )
+
+
+HUGH, SAM, ADA = 2, 3, 4
+COUPLE, HOME = 7, 10
+CHILDREN = "Do you and Sam have children?"
+ALIVE = "Is your father still alive?"
+HOLDS = "It was about to ask something the record already holds."
+
+
+def grown(diagram):
+    """Wren with her parents Ada and Hugh, and her partner Sam."""
+    data = diagram.get_diagram_data()
+    data.people[0]["parents"] = HOME
+    data.people += [
+        asdict(Person(id=HUGH, name="Hugh", gender=PersonKind.Male)),
+        asdict(Person(id=SAM, name="Sam", gender=PersonKind.Male)),
+        asdict(Person(id=ADA, name="Ada", gender=PersonKind.Female)),
+    ]
+    data.pair_bonds = [
+        asdict(PairBond(id=COUPLE, person_a=1, person_b=SAM)),
+        asdict(PairBond(id=HOME, person_a=ADA, person_b=HUGH, married=True)),
+    ]
+    data.lastItemId = HOME
+    diagram.set_diagram_data(data)
+    db.session.commit()
+    return diagram
+
+
+def with_record(diagram, events=(), questions_=()):
+    """Events and questions written the record's way: a question only ever
+    arrives through a change row."""
+    record.apply(
+        diagram.id,
+        [
+            {"item_kind": kind, "item_id": item["id"], "field": None, "after": item}
+            for kind, items in (("event", events), ("question", questions_))
+            for item in items
+        ],
+        author=Author.Coach,
+        turn_id="t0",
+    )
+
+
+def speaking(family, user, text="What else do you want to know?"):
+    """A toolbox answering the person's words, as a coach turn's is."""
+    said_ = says(open_session(user, family), text, "2026-09-27T11:00")
+    return Toolbox(
+        family.id, "t1", user_id=user.id, session_id=said_.discussion_id, said=said_
+    ), said_
+
+
+def test_an_asked_fact_question_the_record_answers_is_refused_with_the_answer(family):
+    # R-0758
+    grown(family)
+    with_record(
+        family,
+        events=[{"id": 20, "kind": "death", "person": HUGH, "dateTime": "2019-05-02"}],
+        questions_=[
+            {
+                "id": "q1",
+                "text": CHILDREN,
+                "kind": "fact",
+                "state": "resolved",
+                "outcome": "answered",
+                "item_kind": "pair_bond",
+                "item_id": str(COUPLE),
+                "fact": "children",
+            }
+        ],
+    )
+    toolbox = box(family)
+
+    with pytest.raises(ToolError) as refused:
+        add(toolbox, ALIVE, fact="alive", item_kind="person", item_id=str(HUGH))
+    assert refused.value.plain == HOLDS
+    assert str(refused.value) == (
+        "The record already answers alive or not for 2 Hugh (father): "
+        "20 2019-05-02 [death] person=2. Do not ask it; use the answer"
+    )
+    with pytest.raises(ToolError) as refused:
+        add(toolbox, "How many children do you have?", fact="children", item_kind="pair_bond", item_id=str(COUPLE))
+    assert refused.value.plain == HOLDS
+    assert str(refused.value) == (
+        "The record already answers how many children for couple 7, Wren and Sam "
+        f'(the person and partner): q1 resolved fact "{CHILDREN}" about pair_bond 7 '
+        "outcome=answered. Do not ask it; use the answer"
+    )
+    # a thought question, or one kept for later, is never refused this way, and
+    # nor is a fact on the wrong kind of thing, which is kept as it always was
+    add(toolbox, "What was your father like?", kind="thought", item_kind="person", item_id=str(HUGH))
+    add(toolbox, ALIVE, state="held", fact="alive", item_kind="person", item_id=str(HUGH))
+    add(toolbox, "Was Joe your mother's father, or your father's?", fact="children", item_kind="person", item_id=str(HUGH))
+    add(toolbox, "Are Ada and Hugh both still living?", fact="alive", item_kind="pair_bond", item_id=str(HOME))
+    assert list(stored(family)) == ["q1", "q2", "q3", "q4", "q5"]
+
+
+def test_a_fact_question_can_be_added_already_answered_in_one_call(family, test_user):
+    # R-0758
+    grown(family)
+    toolbox, said_ = speaking(family, test_user, "We can't have children.")
+
+    text, _ = add(
+        toolbox,
+        CHILDREN,
+        state="resolved",
+        outcome="answered",
+        fact="children",
+        item_kind="pair_bond",
+        item_id=str(COUPLE),
+    )
+    assert text == "Added question q1."
+    kept = stored(family)["q1"]
+    assert (kept["state"], kept["outcome"], kept["session_id"], kept["asked_at"]) == (
+        "resolved",
+        "answered",
+        said_.discussion_id,
+        TODAY,
+    )
+    assert kept["answer"] == {"kind": "statement", "id": said_.id, "label": said_label(said_)}
+    assert Change.query.filter_by(diagram_id=family.id).count() == 1
+    # "we can't have children" answers how many children the couple had, with
+    # no number, and it is never asked again
+    data = stored_data(family)
+    children = (Fact.Children, ItemKind.PairBond, COUPLE)
+    assert coverage.state_of(data, *children) is FactState.Known
+    assert coverage.states(data)[children] is FactState.Known
+    with pytest.raises(ToolError) as refused:
+        add(toolbox, "How many children do you have?", fact="children", item_kind="pair_bond", item_id=str(COUPLE))
+    assert refused.value.plain == HOLDS
+    assert f"answer=message {said_.id}" in str(refused.value)
+    # it carries its day, so it shows where closed questions show, answered
+    assert [(q["id"], q["open"], q["answer"]["text"]) for q in questions.asked(family.id, data)] == [
+        ("q1", False, "We can't have children.")
+    ]
+
+
+def test_a_fact_question_can_be_added_already_said_unknown_citing_an_older_message(family, test_user):
+    # R-0758
+    grown(family)
+    toolbox, said_ = speaking(family, test_user)
+    earlier = says(said_.discussion, "I don't know when Dad was born.", "2026-09-20T10:00")
+
+    add(toolbox, "When was your father born?", state="resolved", outcome="unknown", fact="birth_date", item_kind="person", item_id=str(HUGH))
+    add(toolbox, ALIVE, state="resolved", outcome="answered", answer=earlier.id, fact="alive", item_kind="person", item_id=str(HUGH))
+
+    kept = stored(family)
+    assert (kept["q1"]["outcome"], kept["q1"].get("answer")) == ("unknown", None)
+    assert kept["q2"]["answer"]["id"] == earlier.id
+    data = stored_data(family)
+    assert coverage.state_of(data, Fact.BirthDate, ItemKind.Person, HUGH) is FactState.SaidUnknown
+    assert coverage.state_of(data, Fact.Alive, ItemKind.Person, HUGH) is FactState.Known
+
+
+BORN_CLOSED = [
+    (
+        {"kind": "fact", "fact": "children", "item_kind": "pair_bond", "item_id": "7", "outcome": "let_go"},
+        "That is not how a question added closed ends.",
+    ),
+    (
+        {"kind": "fact", "fact": "children", "item_kind": "pair_bond", "item_id": "7", "outcome": "answered"},
+        "It kept an answer with no message behind it.",
+    ),
+    ({"kind": "fact", "outcome": "answered"}, "It kept an answer without saying what it answers."),
+    (
+        {"kind": "thought", "outcome": "answered", "fact": "children", "item_kind": "pair_bond", "item_id": "7"},
+        "It kept an answer without saying what it answers.",
+    ),
+]
+
+
+@pytest.mark.parametrize("args,plain", BORN_CLOSED)
+def test_a_question_born_closed_needs_an_outcome_a_fact_and_its_item(family, args, plain):
+    # R-0758
+    grown(family)
+    with pytest.raises(ToolError) as refused:
+        box(family).call(ToolName.AddQuestion, {"text": CHILDREN, "state": "resolved", **args})
+    assert refused.value.plain == plain
+    assert stored(family) == {}
+
+
+def test_a_second_open_fact_question_on_the_same_item_is_refused(family):
+    # R-0758
+    grown(family)
+    toolbox = box(family)
+    add(toolbox, ALIVE, fact="alive", item_kind="person", item_id=str(HUGH))
+
+    with pytest.raises(ToolError) as refused:
+        add(toolbox, "Is Hugh living?", fact="alive", item_kind="person", item_id=str(HUGH))
+    assert refused.value.plain == "It asked the same thing twice."
+    assert str(refused.value).startswith(
+        "Question q1 already asks alive or not for 2 Hugh (father) and is open: close it "
+        "with set_question first"
+    )
+    # the person's answer closes the open one; a new closed one is not the way
+    with pytest.raises(ToolError) as refused:
+        add(toolbox, "Is Hugh living?", state="resolved", outcome="unknown", fact="alive", item_kind="person", item_id=str(HUGH))
+    assert refused.value.plain == "It asked the same thing twice."
+    settle(toolbox, family, "q1", state="resolved", outcome="unknown")
+    add(toolbox, "Is Hugh living?", fact="alive", item_kind="person", item_id=str(HUGH))
+    assert [q["state"] for q in stored(family).values()] == ["resolved", "asked"]
+
+
+def test_an_asked_fact_question_carries_what_the_person_said_before_about_it(family, test_user):
+    # R-0758
+    grown(family)
+    toolbox, said_ = speaking(family, test_user)
+    session = said_.discussion
+    says(session, "Sam and I were never able to start a family.", "2026-09-20T10:00")
+    says(session, "My dad had a stroke last year but he's still with us.", "2026-09-20T10:05")
+    says(session, "Work has been busy.", "2026-09-21T10:00")
+    says(session, "My neighbour's kids are loud all day.", "2026-09-21T10:05")
+    says(session, "My parents are still married, fifty years this June.", "2026-09-21T10:10")
+
+    # a paraphrase the word list catches ("start a family"); the person's own
+    # couple is searched by the item's words alone, since they say "we", so
+    # anyone's kids come back too, newest first, for the coach to judge
+    text, _ = add(toolbox, CHILDREN, fact="children", item_kind="pair_bond", item_id=str(COUPLE))
+    assert text.splitlines()[0] == "Added question q1."
+    assert text.splitlines()[2] == (
+        "Said before about how many children for couple 7, Wren and Sam (the person and "
+        "partner); read these before you ask, and when one answers it, close q1 with "
+        "set_question as answered, citing the message, instead of asking:"
+    )
+    assert [line.split(" ", 1)[1] for line in text.splitlines()[3:]] == [
+        "2026-09-21 user: My neighbour's kids are loud all day.",
+        "2026-09-20 user: Sam and I were never able to start a family.",
+    ]
+    # the father's words are found under what he is called, "my parents" too
+    text, _ = add(toolbox, ALIVE, fact="alive", item_kind="person", item_id=str(HUGH))
+    assert [line.split(" ", 1)[1] for line in text.splitlines()[3:]] == [
+        "2026-09-21 user: My parents are still married, fifty years this June.",
+        "2026-09-20 user: My dad had a stroke last year but he's still with us.",
+    ]
+    # words that name neither him nor what he is called are not his, and the
+    # neighbour's kids are not the parents' children
+    text, _ = add(toolbox, "What did Hugh do for work?", fact="work", item_kind="person", item_id=str(HUGH))
+    assert text == "Added question q3."
+    text, _ = add(toolbox, "How many children did your parents have?", fact="children", item_kind="pair_bond", item_id=str(HOME))
+    assert text == "Added question q4."
+    assert [q["state"] for q in stored(family).values()] == ["asked"] * 4

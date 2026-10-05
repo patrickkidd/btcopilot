@@ -301,6 +301,17 @@ def test_the_sandbox_will_not_start_on_the_open_prompts_unasked(tmp_path):
     assert "--open-prompts" in done.stderr
 
 
+def test_the_coach_keeps_a_fact_told_unasked_as_a_question_already_answered(public):
+    # R-0758
+    prompt = " ".join(public.get_agent_prompt(record=RECORD, coverage=COVERAGE).split())
+    assert "**Facts told before you ask.**" in prompt
+    assert (
+        "keep it at once as a fact question already closed: add_question with state "
+        "resolved, outcome answered"
+    ) in prompt
+    assert '"We can\'t have children" closes the couple\'s children item as answered' in prompt
+
+
 def test_the_coach_asks_one_item_and_the_question_names_it(public):
     # R-0006
     prompt = public.get_agent_prompt(record=RECORD, coverage=COVERAGE)

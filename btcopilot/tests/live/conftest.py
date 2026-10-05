@@ -30,7 +30,6 @@ import datetime
 import os
 from decimal import Decimal
 import subprocess
-from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
@@ -118,10 +117,7 @@ def run(request):
         patched.setattr(
             CoachModel, "turn", replay.wrap(capped(CoachModel.turn, opened))
         )
-        patched.setattr(
-            "btcopilot.coachturn.datetime",
-            SimpleNamespace(date=SimpleNamespace(today=lambda: TODAY)),
-        )
+        patched.setattr("btcopilot.clock.today", lambda zone=None: TODAY)
         yield opened
     if not opened.calls:
         event.remove(ModelCall, "after_insert", charged)

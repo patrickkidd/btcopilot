@@ -7,7 +7,9 @@ but the counts each coach turn keeps."""
 import datetime
 
 from btcopilot import profile
-from btcopilot.record import PLACEHOLDERS
+from btcopilot.prompts import Role
+from btcopilot.record import PLACEHOLDERS, ROLE_WORDS, generic_key
+from btcopilot.recordtext import event_line, note_line, person_line
 from btcopilot.schema import (
     DECLINED,
     DEFAULT_SUBJECT_NAME,
@@ -107,6 +109,90 @@ WORDS = {
     Fact.Met: "when they met",
     Fact.Stress: "periods of major stress",
     Fact.MostGoingOn: "the two or three times when the most was going on",
+}
+
+# The items the checklist places on a couple; every other one is a person's.
+COUPLE_FACTS = (Fact.Children, Fact.Met)
+
+# The everyday words the chat is searched for before a fact question is asked,
+# each matched at the start of a word, so "child" finds "children" and "die"
+# finds "died". The tool searches with these, not the coach, which may not know
+# the words the person used (Patrick, 2026-10-04) [R-0758].
+SEARCH_WORDS = {
+    Fact.Name: ("name", "called"),
+    Fact.BirthDate: ("born", "birthday", "birth", "years old", "turned", "turns"),
+    Fact.Alive: (
+        "alive", "living", "died", "dead", "death", "passed", "funeral", "buried",
+        "still married", "still with us", "still around",
+    ),
+    Fact.DeathDate: ("died", "death", "passed", "funeral", "buried"),
+    Fact.CauseOfDeath: (
+        "died of", "died from", "cancer", "heart attack", "stroke", "suicide",
+        "accident", "overdose",
+    ),
+    Fact.Schooling: (
+        "school", "college", "university", "degree", "graduated", "studied",
+        "dropped out",
+    ),
+    Fact.Work: ("work", "job", "career", "retired", "employ", "unemploy", "business", "laid off"),
+    Fact.Health: (
+        "health", "sick", "ill", "diagnos", "hospital", "cancer", "depress", "anxi",
+        "disease", "surgery", "drink", "alcohol",
+    ),
+    Fact.Marriages: (
+        "married", "marriage", "wedding", "divorce", "separated", "husband", "wife",
+        "remarried", "engaged",
+    ),
+    Fact.Places: ("lived", "lives", "live in", "moved", "grew up", "hometown"),
+    Fact.Contact: (
+        "contact", "talk", "speak", "spoken", "visit", "call", "estranged", "cut off",
+        "close",
+    ),
+    Fact.LifeCourse: ("life", "ended up", "turned out", "became"),
+    Fact.Order: (
+        "oldest", "youngest", "eldest", "middle child", "firstborn", "older", "younger",
+        "twin",
+    ),
+    Fact.Sex: ("man", "woman", "boy", "girl", "male", "female"),
+    Fact.Parents: ("parents", "mother", "father", "mom", "dad", "raised by", "adopted"),
+    Fact.Children: (
+        "children", "child", "kids", "son", "daughter", "pregnan", "baby", "babies",
+        "IVF", "adopt", "miscarriage", "infertil", "start a family", "childless",
+    ),
+    Fact.Met: ("met", "meet", "dating", "started seeing", "got together", "introduced"),
+    Fact.Stress: ("stress", "hardest", "worst", "crisis", "fell apart", "rough patch"),
+    Fact.MostGoingOn: ("most was going on", "most going on", "busiest"),
+}
+
+# What a relative is called in talk, by what they are to the person, searched
+# beside their name. A mother's and a father's words are the record's own, and
+# either is one of "my parents".
+PARENTS = ("parents", "folks")
+CALLED = {
+    "partner": ("partner", "husband", "wife", "spouse", "boyfriend", "girlfriend", "fianc"),
+    "daughter": ("daughter",),
+    "son": ("son",),
+    "child": ("child", "kid"),
+    "mother": (*(word for word, role in ROLE_WORDS.items() if role is Role.Mother), *PARENTS),
+    "father": (*(word for word, role in ROLE_WORDS.items() if role is Role.Father), *PARENTS),
+    "parent": ("parent",),
+    "step-parent": ("step",),
+    "sister": ("sister",),
+    "brother": ("brother",),
+    "sibling": ("sibling",),
+    "niece": ("niece",),
+    "nephew": ("nephew",),
+    "niece or nephew": ("niece", "nephew"),
+    "grandmother": ("grandmother", "grandma", "granny", "nana"),
+    "grandfather": ("grandfather", "grandpa", "grandad", "granddad", "gramps"),
+    "grandparent": ("grandparent",),
+    "aunt": ("aunt", "auntie"),
+    "uncle": ("uncle",),
+    "aunt or uncle": ("aunt", "uncle"),
+    "cousin": ("cousin",),
+    "great-grandmother": ("great-grand", "great grand"),
+    "great-grandfather": ("great-grand", "great grand"),
+    "great-grandparent": ("great-grand", "great grand"),
 }
 
 # How many unasked items the coach's summary lists, and how many while its
@@ -245,6 +331,112 @@ def counts(data: DiagramData) -> dict[str, int]:
     return {"required": len(found), **{s.value: found.count(s) for s in FactState}}
 
 
+def fits(fact: Fact, kind: ItemKind) -> bool:
+    """Whether the item is one the checklist places on that kind of thing: how
+    many children and when they met on a couple, everything else on a person."""
+    return (fact in COUPLE_FACTS) == (kind is ItemKind.PairBond)
+
+
+def state_of(data: DiagramData, fact: Fact, kind: ItemKind, iid: int) -> FactState:
+    """One item's state, by the rules of `states`, whether or not the
+    checklist requires it [R-0758]."""
+    answers = _answers(data)
+    item = (fact, kind, iid)
+    if _recorded(data, item, answers):
+        return FactState.Known
+    return answers.get(item, FactState.NotAsked)
+
+
+def evidence(data: DiagramData, fact: Fact, kind: ItemKind, iid: int) -> str | None:
+    """What makes an item known, as the map writes it: the record entry that
+    records it, or the closed question naming it; None while it is not known
+    [R-0758]."""
+    item = (fact, kind, iid)
+    answers = _answers(data)
+    if _recorded(data, item, answers):
+        events = _records(data, fact, iid)
+        if events:
+            return event_line(events[0])
+        if fact is Fact.Alive:
+            return "they are the person you are talking with"
+        if fact is Fact.Stress:
+            return f"the record's {len(data.clusters)} clusters"
+        if fact is Fact.Order:
+            return "every child of their parents has a dated birth"
+        return person_line(_person(data, iid))
+    if answers.get(item) is FactState.Known:
+        known = [o for o, s in ANSWERS.items() if s is FactState.Known]
+        return note_line(_last(data, item, QuestionState.Resolved, known))
+    return None
+
+
+def asking(data: DiagramData, fact: Fact, kind: ItemKind, iid: int) -> dict | None:
+    """The fact question naming the item that is asked and still open, if any."""
+    return _last(data, (fact, kind, iid), QuestionState.Asked)
+
+
+def label(data: DiagramData, kind: ItemKind, iid: int) -> str:
+    """A person or couple as the coach's list names them, with what they are
+    to the person when the record says."""
+    return _label(data, kind, iid, _role_of(data, kind, iid))
+
+
+def spoken_as(data: DiagramData, kind: ItemKind, iid: int) -> list[str] | None:
+    """The words a message about a person or couple carries: their first name
+    and what they are called for what they are to the person. None for the
+    person themself and their own couples, who say "I" and "we"."""
+    own = profile.own(data)
+    people = [iid] if kind is ItemKind.Person else _partners(data, iid)
+    if own is not None and own["id"] in people:
+        return None
+    words = []
+    for pid in people:
+        name = _person(data, pid).get("name") or ""
+        if name not in UNNAMED and generic_key({"name": name}) is None:
+            words.append(name)
+        role = _role_of(data, ItemKind.Person, pid)
+        if role is not None:
+            words.extend(_called(role))
+    if _role_of(data, kind, iid) == "parents":
+        words.append("parents")
+    return list(dict.fromkeys(words))
+
+
+def _role_of(data: DiagramData, kind: ItemKind, iid: int) -> str | None:
+    return next(
+        (role for (_, k, i), role in _walk(data).items() if (k, i) == (kind, iid)),
+        None,
+    )
+
+
+def _called(role: str) -> tuple[str, ...]:
+    """The everyday words for a relation: "partner's mother" is called by a
+    mother's words and as an in-law."""
+    if role in CALLED:
+        return CALLED[role]
+    words = CALLED.get(role.rsplit(" ", 1)[-1], ())
+    return (*words, "in-law") if role.startswith("partner's") else words
+
+
+def _last(
+    data: DiagramData, item: Item, state: QuestionState, outcomes: list | None = None
+) -> dict | None:
+    """The last fact question naming the item that is in the state, and ended
+    one of the ways given when any are."""
+    fact, kind, iid = item
+    found = None
+    for q in data.questions:
+        if (
+            q.get("fact") == fact.value
+            and q.get("item_kind") == kind.value
+            and str(q.get("item_id")) == str(iid)
+            and q["state"] == state
+            and (outcomes is None or q.get("outcome") in outcomes)
+        ):
+            found = q
+    return found
+
+
 def block(data: DiagramData, plateau: int | None = None) -> str:
     """The next unasked items in Kerr's loose order, grouped by whom they are
     about, the items said unknown, and coverage and resolution as fractions.
@@ -297,11 +489,13 @@ def _grouped(data: DiagramData, items: list[Item], roles: dict) -> list[str]:
     return [f"{label}: {', '.join(words)}" for label, words in groups.items()]
 
 
-def _label(data: DiagramData, kind: ItemKind, iid: int, role: str) -> str:
+def _label(data: DiagramData, kind: ItemKind, iid: int, role: str | None) -> str:
     if kind is ItemKind.PairBond:
         names = " and ".join(_name(data, pid) for pid in _partners(data, iid))
-        return f"couple {iid}, {names} ({role})"
-    return f"{iid} {_name(data, iid)} ({role})"
+        line = f"couple {iid}, {names}"
+    else:
+        line = f"{iid} {_name(data, iid)}"
+    return f"{line} ({role})" if role else line
 
 
 def _name(data: DiagramData, pid: int) -> str:
@@ -339,42 +533,10 @@ def _recorded(data: DiagramData, item: Item, answers: dict) -> bool:
     match fact:
         case Fact.Name:
             return (_person(data, iid).get("name") or "") not in UNNAMED
-        case Fact.BirthDate:
-            return any(
-                EventKind(e["kind"]).isOffspring()
-                and e.get("child") == iid
-                and _dated(e)
-                for e in data.events
-            )
         case Fact.Alive:
-            return iid == profile.own(data)["id"] or _death(data, iid) is not None
-        case Fact.DeathDate:
-            return _dated(_death(data, iid))
-        case Fact.CauseOfDeath:
-            return _worded(_death(data, iid))
-        case Fact.Schooling | Fact.Work:
-            return _noted(data, iid, fact)
-        case Fact.Health:
-            return _noted(data, iid, fact) or any(
-                e["kind"] == EventKind.Shift.value
-                and e.get("person") == iid
-                and e.get("symptom")
-                for e in data.events
-            )
-        case Fact.Marriages:
-            return any(
-                EventKind(e["kind"]) in MARRIAGE
-                and iid in (e.get("person"), e.get("spouse"))
-                and _dated(e)
-                for e in data.events
-            )
-        case Fact.Places:
-            return _noted(data, iid, fact) or any(
-                e["kind"] == EventKind.Noted.value
-                and e.get("person") == iid
-                and e.get("location")
-                for e in data.events
-            )
+            own = profile.own(data)
+            if own is not None and iid == own["id"]:
+                return True
         case Fact.Order:
             return _ordered(data, iid, answers)
         case Fact.Sex:
@@ -384,21 +546,70 @@ def _recorded(data: DiagramData, item: Item, answers: dict) -> bool:
             )
         case Fact.Parents:
             return _parents(data, iid) is not None
-        case Fact.Met:
-            return any(_dated(e) for e in _between(data, iid, TOGETHER))
         case Fact.Stress:
             return bool(data.clusters)
-    return False
+    return bool(_records(data, fact, iid))
 
 
-def _noted(data: DiagramData, pid: int, fact: Fact) -> bool:
-    """A noted event on the person that says it records this item."""
-    return any(
-        e["kind"] == EventKind.Noted.value
+def _records(data: DiagramData, fact: Fact, iid: int) -> list[dict]:
+    """The events that record the item, for the items events record."""
+    match fact:
+        case Fact.BirthDate:
+            return [
+                e
+                for e in data.events
+                if EventKind(e["kind"]).isOffspring() and e.get("child") == iid and _dated(e)
+            ]
+        case Fact.Alive | Fact.DeathDate | Fact.CauseOfDeath:
+            death = _death(data, iid)
+            if death is None:
+                return []
+            told = {
+                Fact.Alive: True,
+                Fact.DeathDate: _dated(death),
+                Fact.CauseOfDeath: _worded(death),
+            }[fact]
+            return [death] if told else []
+        case Fact.Schooling | Fact.Work:
+            return _noted(data, iid, fact)
+        case Fact.Health:
+            return _noted(data, iid, fact) + [
+                e
+                for e in data.events
+                if e["kind"] == EventKind.Shift.value
+                and e.get("person") == iid
+                and e.get("symptom")
+            ]
+        case Fact.Marriages:
+            return [
+                e
+                for e in data.events
+                if EventKind(e["kind"]) in MARRIAGE
+                and iid in (e.get("person"), e.get("spouse"))
+                and _dated(e)
+            ]
+        case Fact.Places:
+            return _noted(data, iid, fact) + [
+                e
+                for e in data.events
+                if e["kind"] == EventKind.Noted.value
+                and e.get("person") == iid
+                and e.get("location")
+            ]
+        case Fact.Met:
+            return [e for e in _between(data, iid, TOGETHER) if _dated(e)]
+    return []
+
+
+def _noted(data: DiagramData, pid: int, fact: Fact) -> list[dict]:
+    """The noted events on the person that say they record this item."""
+    return [
+        e
+        for e in data.events
+        if e["kind"] == EventKind.Noted.value
         and e.get("person") == pid
         and e.get("item") == fact.value
-        for e in data.events
-    )
+    ]
 
 
 def _ordered(data: DiagramData, pid: int, answers: dict) -> bool:
