@@ -540,6 +540,9 @@ def test_a_grown_sessions_backfill_taken_back_row_by_row_is_gone_through_again_f
     read, new = model.systems[0].split(questions.NEW)
     assert ("My grandmother raised me." in read, "My sister moved away." in new) == (True, True)
 
+    again, model = backfill(flask_app, group="impressions")
+    assert (again, model.systems) == ([], [])
+
 
 def test_a_middle_pass_taken_back_while_a_later_one_stays_is_read_again(
     flask_app, web, family, past, monkeypatch
@@ -573,3 +576,6 @@ def test_a_middle_pass_taken_back_while_a_later_one_stays_is_read_again(
     _, model = backfill(flask_app, raising, said(""), group="impressions")
     _, new = model.systems[0].split(questions.NEW)
     assert ("My sister moved away." in new, "She writes every week." in new) == (True, True)
+
+    again, model = backfill(flask_app, group="impressions")
+    assert (again, model.systems) == ([], [])

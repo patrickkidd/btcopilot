@@ -113,25 +113,34 @@ def unread(discussion: Discussion, kind: Kind, done: list[int]) -> list[Statemen
     """The session's statements the backfill has not gone through: all of
     them, or, once gone through, those after the last message the newest pass
     read, as the change that marked it gone through links it; a marking taken
-    back since does not count."""
+    back since does not count, and a pass made after that undo does."""
     said = sorted(discussion.statements, key=order)
     if discussion.id not in done:
         return said
-    taken = record.undone(discussion.diagram_id)
+    turn_id = f"{kind.turn}:{discussion.id}"
     passes = [
         change
         for change in Change.query.filter_by(
-            diagram_id=discussion.diagram_id, turn_id=f"{kind.turn}:{discussion.id}"
+            diagram_id=discussion.diagram_id, turn_id=turn_id
         ).order_by(Change.id.desc())
         if any(delta["field"] == kind.done for delta in change.deltas)
     ]
+    undos = Change.query.filter(
+        Change.diagram_id == discussion.diagram_id,
+        Change.turn_id.in_([f"undo:{turn_id}#{c.id}" for c in passes]),
+    ).all()
+    taken = {int(u.turn_id.rpartition("#")[2]) for u in undos}
+    after = max((u.id for u in undos), default=0)
     # a pass taken back while a later one stays: read again from before it
-    first = min((c.id for c in passes if c.id in taken), default=None)
     marked = next(
-        (c for c in passes if c.id not in taken and (first is None or c.id < first)),
+        (
+            c
+            for c in passes
+            if c.id not in taken and (c.id > after or c.id < min(taken, default=0))
+        ),
         None,
     )
-    if marked is None and first is not None:
+    if marked is None and undos:
         return said
     if marked is None or marked.statement is None:
         raise ValueError(f"No change links the last message read in session {discussion.id}")

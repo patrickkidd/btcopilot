@@ -182,6 +182,24 @@ def test_a_write_between_undone_rows_stops_the_rest_and_says_which_were_taken_ba
     assert (result.exit_code, f"taken back before it: [{second.id}]" in result.output) == (1, True)
 
 
+def test_a_conflict_names_only_the_rows_this_command_took_back(flask_app, subscriber):
+    # R-0084
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
+    first, second = _named(diagram, ("name", "Bea"), ("age", 40))
+    record.undo_changes(diagram.id, [second.id], author=Author.Coach)
+    record.apply(
+        diagram.id,
+        [{"item_kind": ItemKind.Person, "item_id": 1, "field": "name", "after": "Cy"}],
+        author=Author.User,
+        turn_id="t2",
+    )
+
+    result = flask_app.test_cli_runner().invoke(
+        admin, ["diagrams", "undo", str(diagram.id), str(first.id), str(second.id)]
+    )
+    assert (result.exit_code, "taken back before it: nothing" in result.output) == (1, True), result.output
+
+
 def test_undo_changes_passes_over_a_row_that_changed_nothing_and_a_field_emptied_since(
     subscriber,
 ):

@@ -92,6 +92,7 @@ def diagram_undo(diagram_id, change_ids, yes):
     changes = Change.query.filter(Change.diagram_id == diagram.id, Change.id.in_(change_ids)).all()
     if len(changes) != len(set(change_ids)):
         raise click.ClickException(f"not every change of {change_ids} is on diagram {diagram.id}")
+    earlier = record.undone(diagram.id)
     try:
         taken = record.taking_back(diagramjson.loads(diagram.data), changes)
         if yes:
@@ -101,7 +102,7 @@ def diagram_undo(diagram_id, change_ids, yes):
     except record.Conflict as e:
         # rows are written one at a time, so a write between them can stop the
         # rest after some were taken back
-        done = sorted(record.undone(diagram.id) & set(change_ids))
+        done = sorted((record.undone(diagram.id) - earlier) & set(change_ids))
         raise click.ClickException(
             f"changed since it was written: {e}; taken back before it: {done or 'nothing'}"
         )
