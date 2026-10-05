@@ -159,13 +159,14 @@ export interface Options {
 }
 
 /** Where a name sits: right, left, above beside the line up to the parents,
- * above centred, or under. */
+ * above centred, under, or under beside the line down to the children. */
 export enum Side {
   Right = "r",
   Left = "l",
   Above = "a",
   Top = "t",
   Under = "u",
+  Below = "b",
 }
 
 /** How far past a person's shape to count: the shape and name, those and the
@@ -918,7 +919,7 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
     let r = e;
     if (side[id] === Side.Under || side[id] === Side.Top) r = Math.max(r, lw[id] / 2);
     if (side[id] === Side.Right) r = Math.max(r, e + off(id) + lw[id]);
-    if (side[id] === Side.Above) r = Math.max(r, 5 + lw[id]);
+    if (side[id] === Side.Above || side[id] === Side.Below) r = Math.max(r, 5 + lw[id]);
     if (zone[id] === 1) r = Math.max(r, e + marks(id, reach));
     return r;
   }
@@ -1163,39 +1164,68 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
     } else if (sd === Side.Top) {
       x0 = x[id] - w / 2;
       base = y[id] - e - rise(ring[id]) - LEAD * (nl[id] - 1);
+    } else if (sd === Side.Below) {
+      x0 = x[id] + 5;
+      base = y[id] + below[id];
     } else {
       x0 = x[id] - w / 2;
       base = y[id] + below[id];
     }
     return { x0: x0 - 2, x1: x0 + w + 2, y0: base - 12, y1: base + LEAD * (nl[id] - 1) + 4 };
   }
-  // in the fallback, a child's line that slants to their parents' bar
-  const slants = (): Segment[] =>
+  // each child's line up to their parents' bar, straight or slanting to its end
+  const descents = (outside: boolean): Segment[] =>
     cast.bonds.flatMap((b) => {
       const k = cast.kids.find((c) => c.of.length === 2 && c.of.includes(b.a) && c.of.includes(b.b));
       if (!k) return [];
       const [x0, x1] = [Math.min(x[b.a], x[b.b]), Math.max(x[b.a], x[b.b])];
       const yb = Math.max(y[b.a] + half(b.a), y[b.b] + half(b.b)) + d.DROP + (level[`${b.a}|${b.b}`] ?? 0) * 6;
       return k.kids
-        .filter((id) => x[id] < x0 || x[id] > x1)
-        .map((id): Segment => [[x[id], y[id] - half(id)], [x[id] < x0 ? x0 : x1, yb]]);
+        .filter((id) => !outside || x[id] < x0 || x[id] > x1)
+        .map((id): Segment => [[x[id], y[id] - half(id)], [Math.min(Math.max(x[id], x0), x1), yb]]);
     });
-  // no move or slanted child's line crosses a name: each name takes the first
-  // side, right, left, above, below, that none crosses; the rows then widen and settle again
+  const overlap = (a: Box, b: Box) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+  const shape = (o: string): Box => ({ x0: x[o] - half(o), x1: x[o] + half(o), y0: y[o] - half(o), y1: y[o] + half(o) });
+  const tried = (id: string) => [Side.Right, Side.Left, parents[id] ? Side.Above : Side.Top, Side.Under];
+  /* no move, child's line, shape or other name lies on a name. A name a move
+   * crosses takes the first side, right, left, above, under, that no move
+   * crosses; any other takes, of those sides and under beside the line down
+   * to the children, the one on the fewest lines and shapes, then the one
+   * that widens the family least, then the one on the fewest names (which
+   * may still move out of its way). The rows then widen and settle again. */
   const where = { P, x, y, d };
   for (let pass = 0; pass < 4; pass++) {
-    const segs = [
+    const moves = [
       ...cast.moves.map((mv) => ends(where, mv)),
       ...cast.kin.flatMap((k) => across(where, k)),
-      ...(plan.loose ? slants() : []),
+      ...(plan.loose ? descents(true) : []),
     ];
+    const lines = [...moves, ...descents(false)];
+    const [x0, x1] = [Math.min(...ids.map((o) => x[o] - leftExt(o))), Math.max(...ids.map((o) => x[o] + rightExt(o)))];
+    // names as the pass found them: one moved this pass is not yet clear of its row
+    const was = { ...side };
+    const cost = (id: string, sd: Side, at = side): number[] => {
+      const bx = nameBox(id, sd);
+      const others = ids.filter((o) => o !== id);
+      return [
+        lines.filter((s) => crosses(s, bx)).length + others.filter((o) => overlap(bx, shape(o))).length,
+        Math.max(0, x0 - bx.x0) + Math.max(0, bx.x1 - x1),
+        others.filter((o) => overlap(bx, nameBox(o, at[o]))).length,
+      ];
+    };
+    const less = (a: number[], b: number[]) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
     let moved = false;
     ids.forEach((id) => {
-      if (!segs.some((s) => crosses(s, nameBox(id, side[id])))) return;
-      const pick =
-        [Side.Right, Side.Left, parents[id] ? Side.Above : Side.Top, Side.Under].find(
-          (sd) => !segs.some((s) => crosses(s, nameBox(id, sd))),
-        ) ?? Side.Under;
+      const free = (sd: Side) => !moves.some((s) => crosses(s, nameBox(id, sd)));
+      const now = cost(id, side[id], was);
+      let pick: Side;
+      if (!free(side[id])) pick = tried(id).find(free) ?? Side.Under;
+      else if (now[0] || now[2])
+        pick = [...tried(id), Side.Below]
+          .filter(free)
+          .map((sd) => ({ sd, c: cost(id, sd) }))
+          .reduce((a, b) => (less(b.c, a.c) < 0 ? b : a)).sd;
+      else return;
       if (pick === side[id]) return;
       side[id] = pick;
       zone[id] = marked.has(id) ? (pick === Side.Right ? -1 : 1) : 0;
@@ -1233,9 +1263,10 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
     said.x1 = Math.max(said.x1, x[id] + rightExt(id, Reach.Words));
     if (zone[id]) grow(x[id], y[id] - 16);
     // room under the person for a step's word that finds none beside them
-    if (words[id]) fam(x[id], y[id] + below[id] + (side[id] === Side.Under ? LEAD * nl[id] : 0) + 4);
+    const low = side[id] === Side.Under || side[id] === Side.Below;
+    if (words[id]) fam(x[id], y[id] + below[id] + (low ? LEAD * nl[id] : 0) + 4);
     if (side[id] === Side.Above || side[id] === Side.Top) fam(x[id], y[id] - e - rise(ring[id]) - LEAD * (nl[id] - 1) - 14);
-    else if (side[id] === Side.Under) fam(x[id], y[id] + below[id] + LEAD * (nl[id] - 1) + 3);
+    else if (low) fam(x[id], y[id] + below[id] + LEAD * (nl[id] - 1) + 3);
     else {
       fam(x[id], y[id] - e - 5);
       fam(x[id], y[id] - e + LEAD * (nl[id] - 1) + 4);
@@ -1542,7 +1573,7 @@ function spot(L: Layout, m: Placed, taken: Box[], drawn: Segment[]): Spot {
   };
   const centred = (y: number): Spot => ({ x: L.x[id], y, sd: 0, box: { x0: L.x[id] - w / 2, x1: L.x[id] + w / 2, y0: y - ASCENT, y1: y + 4 } });
   const under = (more: number) =>
-    centred(L.y[id] + L.below[id] + (L.side[id] === Side.Under ? LEAD * lines(L.P[id], Infinity).length : 0) + row + more);
+    centred(L.y[id] + L.below[id] + (L.side[id] === Side.Under || L.side[id] === Side.Below ? LEAD * lines(L.P[id], Infinity).length : 0) + row + more);
   // over the person, above their name when it is there
   const top = Math.min(L.y[id] - e - L.ring[id], ...L.names.filter((b) => b.x0 <= L.x[id] && L.x[id] <= b.x1 && b.y1 <= L.y[id]).map((b) => b.y0));
   const over = centred(top - 6 - row);
@@ -1849,6 +1880,9 @@ export function draw(L: Layout, s: Frame): string {
     } else if (sd === Side.Under) {
       lx = x;
       anchor = "middle";
+      y0 = y + L.below[id];
+    } else if (sd === Side.Below) {
+      lx = x + 5;
       y0 = y + L.below[id];
     } else {
       lx = sd === Side.Right ? x + e + offset(d, L.ring[id]) : x - e - offset(d, L.ring[id]);
