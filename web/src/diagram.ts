@@ -264,8 +264,9 @@ export const DROP = 1 / 2.2;
 export const RIM = 0.1;
 /** Where an age sits below the centre of its shape. */
 const AGE_DROP = 4.5;
-/** Decided 2026-09-27: labels never under 13px, shapes never under 36px, the family's margin never under 20px. */
-export const LEAST = { label: 13, shape: 36, margin: 20 };
+/** Decided 2026-09-27: labels never under 13px, the family's margin never under 20px.
+ * A picture scales whole (R-0759), so the labels' floor is the people's too. */
+export const LEAST = { label: 13, margin: 20 };
 export const CH = 0.6;
 const LEAD = 15;
 /** How far a label's box reaches above its line. */
@@ -275,9 +276,9 @@ const ASCENT = 18;
 const offset = (d: Dims, ring: number) => Math.max(d.OFF, ring + 2);
 /** How far above its shape a name above it ends, clear of the same. */
 const rise = (ring: number) => Math.max(4, ring + 4);
-/** The spec's size steps, largest first. Ruled 2026-09-26: people 44 across
- * where a row fits, never below 36. */
-const STEPS = [W, 40, 36];
+/** People are always laid out this wide against their names and marks; a
+ * family too wide for the phone is scaled whole, then scrolls (R-0759, R-0744). */
+const STEPS = [W];
 
 class Dims {
   W: number;
@@ -1318,7 +1319,7 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
     // re-ruled 2026-10-04: the shapes keep the drawer's floor and the picture scrolls sideways,
     // its margin still the same size on the screen, never growing with the width
     L.vw = Math.max(reach, span / (1 - (2 * MX) / VIEW));
-    const least = Math.max(LEAST.label / NAME, LEAST.shape / d.W);
+    const least = LEAST.label / NAME;
     if (VIEW / L.vw >= least) {
       L.px = d.W * (VIEW / L.vw);
       MX *= L.vw / VIEW;

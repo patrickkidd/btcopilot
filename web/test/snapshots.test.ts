@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { arrange, bar, crosses, draw, Mark, Side, VIEW, layout, Sex, Tie, type Cast, type Layout } from "../src/diagram";
+import { Move } from "../src/moves";
 import { among, family as wholeFamily, gapText, Told, untold } from "../src/snapshots";
 import type { Case, Timeline } from "../src/types";
 import {
@@ -430,21 +431,23 @@ const brood = (n: number): Cast => {
 };
 
 describe("a crowded row", () => {
-  // R-0566
-  it("moves names above the shapes when beside them does not fit", () => {
-    const L = arrange(brood(3));
-    expect(new Set(["k0", "k1", "k2"].map((id) => L.side[id]))).toEqual(new Set([Side.Above]));
+  // R-0566, R-0744
+  it("moves names above the shapes when beside them does not fit, and scrolls a row too wide for that", () => {
+    const L = arrange(brood(4));
+    expect(new Set(["k0", "k1", "k2", "k3"].map((id) => L.side[id]))).toEqual(new Set([Side.Above]));
+    expect(L.vw).toBeGreaterThan(VIEW);
   });
 
-  // R-0566
+  // R-0566, R-0759
   it("puts names under the shapes only when neither beside nor above fits", () => {
-    const L = arrange(brood(4));
-    expect(["k0", "k1", "k2", "k3"].every((id) => L.side[id] === Side.Under)).toBe(true);
+    const L = arrange(brood(3));
+    expect(["k0", "k1", "k2"].every((id) => L.side[id] === Side.Under)).toBe(true);
     // the children's lines never run through their parents' names
     const drawn = lines(draw(L, frame(L)));
-    expect(drawn.length).toBeGreaterThanOrEqual(4);
+    expect(drawn.length).toBeGreaterThanOrEqual(3);
     drawn.forEach((sg) => L.names.forEach((b) => expect(crosses(sg, b)).toBe(false)));
     expect(L.vw).toBe(VIEW);
+    expect(L.w).toBe(44);
   });
 
   // R-0547
@@ -458,11 +461,12 @@ describe("a crowded row", () => {
     expect(css).toMatch(/\.pbp \.draw \{[^}]*overflow-x: auto/);
   });
 
-  // R-0547, R-0558
-  it("scales down only when nothing else fits, keeping the margin on the screen", () => {
+  // R-0558, R-0759, R-0744
+  it("never shrinks the people against their names in a wide row, keeping the margin on the screen", () => {
     expect(arrange(brood(2))).toMatchObject({ w: 44, px: 44, vw: VIEW });
     const L = arrange(brood(5));
-    expect(L.px).toBeLessThan(44);
+    expect(L).toMatchObject({ w: 44, px: 44 });
+    expect(L.vw).toBeGreaterThan(VIEW);
     // the margin keeps its size on the screen, whatever the picture's scale
     const margin = ((24 * VIEW) / 393) * (L.w / L.px);
     L.names.forEach((b) => {
@@ -953,26 +957,54 @@ describe("a couple where both partners' parents are in the record", () => {
     sound(layout(c), c);
   });
 
-  // R-0547, R-0744, R-0749
-  // re-ruled 2026-10-04, scroll below the floor
-  it("keeps a wide joined family at least 36 across, wider than the frame", () => {
+  /** Family test page F2: six brothers and sisters on each side of the couple. */
+  const sixEach = () => {
     const sibs = (s: string, n: number) => Array.from({ length: n }, (_, i) => `${s}${i}`);
     const more: Cast["people"] = {};
     [...sibs("hs", 6), ...sibs("ws", 6)].forEach((id, i) => (more[id] = shape(`Sib${i}`, i % 2 ? Sex.Male : Sex.Female, 1940 + i)));
-    const L = arrange(
-      joined(
-        {
-          kids: [
-            { of: ["hf", "hm"], kids: ["h", ...sibs("hs", 6)] },
-            { of: ["wf", "wm"], kids: ["w", ...sibs("ws", 6)] },
-            { of: ["h", "w"], kids: ["c"] },
-          ],
-        },
-        more,
-      ),
+    return joined(
+      {
+        kids: [
+          { of: ["hf", "hm"], kids: ["h", ...sibs("hs", 6)] },
+          { of: ["wf", "wm"], kids: ["w", ...sibs("ws", 6)] },
+          { of: ["h", "w"], kids: ["c"] },
+        ],
+      },
+      more,
     );
-    expect(L.px).toBeGreaterThanOrEqual(36);
-    expect((L.vw * L.px) / L.w).toBeGreaterThan(VIEW);
+  };
+
+  // R-0547, R-0744, R-0749, R-0759
+  // re-ruled 2026-10-04, scroll below the floor
+  it("keeps a wide joined family at its people's full size, wider than the frame", () => {
+    const L = arrange(sixEach());
+    expect(L).toMatchObject({ w: 44, px: 44 });
+    expect(L.vw).toBeGreaterThan(VIEW);
+  });
+
+  // R-0759, R-0744, R-0749
+  it("draws a wide family's people, slashes, marks, names and lines the same size against each other as a small family's", () => {
+    const sprawl = JSON.parse(readFileSync(new URL("./family50.json", import.meta.url), "utf8"));
+    const measured = (c: Cast) => {
+      const L = arrange(c);
+      const [a, b] = L.bonds.map((x) => [x.a, x.b])[0];
+      const svg = draw(L, {
+        ...frame(L),
+        bonds: L.bonds.map((x, i) => ({ ...x, st: i ? x.st : Tie.Divorced, married: true, fresh: false, hot: false })),
+        kin: [{ k: Mark.Move, kind: Move.Cutoff, from: a, to: b }],
+      });
+      const shape = Number(svg.match(/<rect class="shape" x="[-\d.]+" y="[-\d.]+" width="([\d.]+)"/)![1]);
+      const [y1, y2] = svg.match(/<line class="slash[^"]*" x1="[-\d.]+" y1="([-\d.]+)" x2="[-\d.]+" y2="([-\d.]+)"/)!.slice(1).map(Number);
+      const w = svg.match(/<line class="mv-wall" x1="([-\d.]+)" y1="([-\d.]+)" x2="([-\d.]+)" y2="([-\d.]+)"/)!.slice(1).map(Number);
+      // names, ages and line widths are sized in the drawing's own units by the
+      // one rule set, so with the people the same size they stand the same
+      expect(svg).toMatch(/<svg class="ss diagram"/);
+      const r = (v: number) => Math.round(v * 1000) / 1000;
+      return { shape, slash: r((y1 - y2) / shape), wall: r(Math.hypot(w[2] - w[0], w[3] - w[1]) / shape) };
+    };
+    const narrow = measured(family());
+    expect(narrow.shape).toBe(44);
+    for (const wide of [sixEach(), { ...base(sprawl.people), ...sprawl }]) expect(measured(wide)).toEqual(narrow);
   });
 
   // R-0749, R-0545
@@ -1216,11 +1248,11 @@ describe("a family the row rules cannot place", () => {
   it("draws another family between a joining couple, both families married into it generation by generation with no child's line through a name", () =>
     clear(shapes["another family between a joining couple, both families married into it"]));
 
-  // R-0752
+  // R-0752, R-0759
   it("keeps the child of a father's second marriage clear of his name, as approved", () => {
     const L = arrange(prior);
     expect(L.loose).toBe(false);
-    expect(L.x.c - L.x.h).toBeGreaterThanOrEqual(L.w);
+    lines(draw(L, frame(L))).forEach((sg) => L.names.forEach((b) => expect(crosses(sg, b)).toBe(false)));
     expect(L.x.c).toBeLessThan(L.x.w);
   });
 

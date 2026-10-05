@@ -155,11 +155,12 @@ function clashes(L: Layout): string[] {
 }
 
 describe("names", () => {
-  // R-0566
-  it("never lie on a child's line, and the picture still fits the phone", () => {
+  // R-0566, R-0744, R-0759
+  it("never lie on a child's line, the picture scrolling rather than shrinking its people", () => {
     const L = arrange(remarried());
     expect(clashes(L)).toEqual([]);
-    expect(L.vw).toBe(VIEW);
+    expect(L.w).toBe(44);
+    expect(L.vw).toBeGreaterThan(VIEW);
   });
 
   // R-0566

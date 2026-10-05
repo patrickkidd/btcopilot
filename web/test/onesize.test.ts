@@ -93,12 +93,8 @@ it("draws the slashes two thirds of a person, lit or resting, and the cutoff's w
   walls.forEach((s) => expect(s.wall, s.view).toBe(1));
 });
 
-// Fails today: a family too wide for people 44 across is laid out with people
-// 40 or 36 across, and its names, ages and line widths keep their size, so
-// they stand larger against those people than in any other picture. Whitlock's
-// whole family is one such. Waiting on Patrick's ruling on what gives.
-// R-0759
-it.fails("draws line widths and names the same size against the people in every view", () => {
+// R-0759, R-0744
+it("draws line widths and names the same size against the people in every view", () => {
   const seen = drawn();
   seen.forEach((s) => expect(s.shape, s.view).toBe(seen[0].shape));
   // line widths and label sizes come from the one rule set, so with the shape

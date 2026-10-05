@@ -231,7 +231,7 @@ test.describe("the drawer on a small phone", () => {
 test.describe("an event's words at the drawing's edge", () => {
   test.use({ storageState: stateFor("whitlock") });
 
-  // R-0558, R-0551
+  // R-0558, R-0551, R-0744
   test("beside the rightmost person keep the family's margin from the drawing's side", async ({ page }) => {
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
@@ -246,11 +246,16 @@ test.describe("an event's words at the drawing's edge", () => {
     await expect(words).toBeVisible();
     // the word pops in; measured once it has landed
     await page.waitForTimeout(400);
-    const [w, d] = [await boxOf(words), await boxOf(drawer(page).locator(".draw svg"))];
-    // the ruled 24px at 393 wide, at this phone's width
-    const margin = (24 * d.width) / 393;
-    expect(d.x + d.width - (w.x + w.width)).toBeGreaterThanOrEqual(margin - 1);
-    expect(w.x - d.x).toBeGreaterThanOrEqual(margin - 1);
+    // the ruled 24px at 393 wide, in the drawing's own units: a wide family
+    // scrolls at that scale rather than shrinking (R-0759, R-0744). The word is
+    // measured by its letters, not the halo painted round them.
+    const [x, width, view] = await words.evaluate((t) => {
+      const b = (t as SVGTextElement).getBBox();
+      return [b.x, b.width, (t.ownerSVGElement as SVGSVGElement).viewBox.baseVal.width];
+    });
+    const margin = (24 * 360) / 393;
+    expect(view - (x + width)).toBeGreaterThanOrEqual(margin - 1);
+    expect(x).toBeGreaterThanOrEqual(margin - 1);
   });
 });
 

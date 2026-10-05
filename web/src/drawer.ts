@@ -138,13 +138,13 @@ export const topLine = (told: Told, i: number) => {
 export const pictureHeight = (natural: number, room: number, captions: number[], floor: number) =>
   Math.max(Math.min(natural, floor), Math.min(natural, room - Math.max(...captions)));
 
-/** Decided 2026-09-27: the shrink stops where labels would go under 13px,
- * shapes under 36px or the family's margin under 20px; below that the drawer
- * scrolls. A row already shrunk to fit the phone's width stays as it is.
+/** Decided 2026-09-27: the shrink stops where labels would go under 13px or
+ * the family's margin under 20px; below that the drawer scrolls. The whole
+ * picture shrinks by the one factor, people with their labels (R-0759). A row already shrunk to fit the phone's width stays as it is.
  * Re-ruled 2026-10-04: a picture wider than the drawer keeps this size and
  * scrolls sideways in its own frame. */
 export const leastScale = (L: Layout, padding: number) =>
-  Math.max(LEAST.label / NAME, LEAST.shape / L.w, (LEAST.margin - padding) / L.my);
+  Math.max(LEAST.label / NAME, (LEAST.margin - padding) / L.my);
 
 export class Drawer {
   private told: Told | null = null;
