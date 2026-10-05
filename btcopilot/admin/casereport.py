@@ -23,7 +23,7 @@ from btcopilot.coachturn import drain, run_call
 from btcopilot.metered import Metered
 from btcopilot.models import Author, Diagram, Purpose
 from btcopilot.prompts import get_agent_prompt
-from btcopilot.recordtext import outline
+from btcopilot.recordtext import note_line, on_map, outline, question_order
 from btcopilot.schema import CaseReportCard, DiagramData, QuestionState
 from btcopilot.toolbox import ToolError, ToolName, Toolbox, schemas
 
@@ -34,10 +34,11 @@ ALLOWED = {
     ToolName.AddQuestion: ("text", "kind", "state", CARD),
 }
 SHORT = 60
+CLOSED = "CLOSED QUESTIONS"
 START = (
     "This is not a chat; nobody reads your words. The case report is new: none "
     "of the guesses and questions on the map is on one of its cards yet. Put "
-    "each raised guess and each question that belongs on a card on it, by the "
+    "each raised guess and each open question that belongs on a card on it, by the "
     "same rules you follow in a chat, with set_impression or set_question "
     "giving only its id and case_report_card; leave one that belongs on no card "
     "as it is. Then, only if no question, open or answered, already asks about "
@@ -57,6 +58,17 @@ def raised(data: DiagramData) -> list[dict]:
         for q in data.questions
         if record.note(q) is record.IMPRESSION and q["state"] == QuestionState.Raised
     ]
+
+
+def closed(data: DiagramData) -> str:
+    """The questions the coach's map leaves out once closed, so the pass sees
+    an own part question that was already answered."""
+    lines = [
+        note_line(q)
+        for q in sorted(data.questions, key=question_order)
+        if record.note(q) is record.QUESTION and not on_map(q)
+    ]
+    return f"\n\n{CLOSED}\n" + "\n".join(lines) if lines else ""
 
 
 def offered() -> list[dict]:
@@ -163,7 +175,7 @@ def planned(diagram: Diagram, plans: pathlib.Path) -> list[dict]:
     )
     own = profile.own(data)
     system = get_agent_prompt(
-        record=outline(data, diagram.version, own and own["id"]),
+        record=outline(data, diagram.version, own and own["id"]) + closed(data),
         today=datetime.date.today().isoformat(),
         coverage=coverage.block(data),
     )

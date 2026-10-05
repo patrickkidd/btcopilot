@@ -19,7 +19,7 @@ from btcopilot.tests.conftest import Model, calling
 from btcopilot.tests.test_casereport import OWN, card, cards, raised
 from btcopilot.tests.test_impressions import LATCH, TENSE
 from btcopilot.tests.test_questionbackfill import past  # noqa: F401
-from btcopilot.tests.test_questions import add, box, stored
+from btcopilot.tests.test_questions import add, box, settle, stored
 from btcopilot.tests.test_turnhistory import family  # noqa: F401
 from btcopilot.toolbox import ToolName
 
@@ -157,3 +157,15 @@ def test_a_question_already_there_goes_on_the_own_part_card_and_none_is_added(
         ("set_question", False),
         ("add_question", True),
     ]
+
+
+def test_an_answered_question_is_on_the_map_the_pass_reads(flask_app, tmp_path, family, guesses):
+    # R-0739
+    add(box(family), text=OWN, kind="thought")
+    asked = next(i for i, q in stored(family).items() if q["text"] == OWN)
+    settle(box(family), family, asked, state="resolved", outcome="answered")
+    model = Model(calling(MAIN))
+    result = backfill(flask_app, "--plans", str(tmp_path), model=model)
+    assert result.exit_code == 0, result.output
+
+    assert f'{asked} resolved thought "{OWN}" outcome=answered' in model.systems[0]
