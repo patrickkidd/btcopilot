@@ -6,9 +6,11 @@ got to.
 """
 
 import json
+import re
 
 import aiohttp
 import pytest
+from freezegun import freeze_time
 from google.genai.errors import ServerError
 from mock import patch
 
@@ -69,14 +71,127 @@ def coach(monkeypatch, *scripted):
     )
 
 
-def post(web, token, statement="My sister is Nell."):
+def post(web, token, statement="My sister is Nell.", **body):
     return web.post(
-        "/app/chat", json={"statement": statement}, headers={"X-CSRFToken": token}
+        "/app/chat",
+        json={"statement": statement, **body},
+        headers={"X-CSRFToken": token},
     )
 
 
 def logged(turn_id):
     return [event for _, event in turnlog.read_from(turn_id, 0)]
+
+
+@pytest.fixture
+def anchorage_evening():
+    """21:30 on 27 September in Anchorage, where it is still the 27th while UTC
+    is already the 28th: the production fault was the coach taking UTC's day.
+    Asked for before `web`, so the sign-in cookie is dated by the same clock."""
+    with freeze_time("2026-09-28 05:30:00"):
+        yield
+
+
+def told_today(model: Model) -> str:
+    """The day the coach was told it is, from the prompt's own line."""
+    return re.search(
+        r"[Tt]oday(?:'s date)? is (\d{4}-\d{2}-\d{2})", model.systems[0]
+    ).group(1)
+
+
+def test_today_is_the_persons_day_in_the_zone_sent_with_the_message(
+    anchorage_evening, web, token, family, monkeypatch
+):
+    # R-0758
+    """An evening in Alaska when UTC is already tomorrow: the coach is told the
+    Alaska date, so "turns 70 tomorrow" is not said a day early."""
+    model = Model(said("Go on."))
+    monkeypatch.setattr("btcopilot.turns.model_for", lambda *a, **k: model)
+    response = post(web, token, "Dad turns 70 tomorrow.", time_zone="America/Anchorage")
+    assert response.status_code == 202
+    assert told_today(model) == "2026-09-27"
+
+
+@pytest.mark.parametrize(
+    "body",
+    [{}, {"time_zone": "Mars/Olympus"}, {"time_zone": 7}],
+    ids=["none", "unknown", "not-a-name"],
+)
+def test_a_message_with_no_zone_or_one_the_server_does_not_know_gets_the_servers_day(
+    anchorage_evening, web, token, family, monkeypatch, body
+):
+    # R-0758
+    """The server's own day, UTC on the box, as before the zone was sent."""
+    model = Model(said("Go on."))
+    monkeypatch.setattr("btcopilot.turns.model_for", lambda *a, **k: model)
+    response = post(web, token, "Dad turns 70 tomorrow.", **body)
+    assert response.status_code == 202
+    assert told_today(model) == "2026-09-28"
+
+
+def test_the_task_run_with_no_zone_keeps_the_servers_day(
+    anchorage_evening, discussion, family, monkeypatch
+):
+    # R-0758
+    """A resumed turn is re-run from the stored words, with no zone: its day is
+    the server's own, UTC on the box, as it always was."""
+    model = Model(said("Go on."))
+    monkeypatch.setattr("btcopilot.turns.model_for", lambda *a, **k: model)
+    said_statement = Statement(
+        discussion_id=discussion.id,
+        text="Dad turns 70 tomorrow.",
+        speaker=discussion.chat_user_speaker,
+        order=discussion.next_order(),
+    )
+    db.session.add(said_statement)
+    db.session.commit()
+    turnlog.start(discussion.id, "t1")
+    turns.run("t1", discussion.id, said_statement.id, resume=True)
+    assert told_today(model) == "2026-09-28"
+
+
+def test_a_question_asked_in_the_evening_in_anchorage_is_dated_that_day(
+    anchorage_evening, web, token, family, monkeypatch
+):
+    # R-0758
+    coach(
+        monkeypatch,
+        calling(
+            (
+                ToolName.AddQuestion,
+                {
+                    "text": "Who is older, you or Nell?",
+                    "kind": "thought",
+                    "state": "asked",
+                },
+            )
+        ),
+        said("Who is older, you or Nell?"),
+    )
+    body = post(web, token, time_zone="America/Anchorage").get_json()
+    assert logged(body["turn_id"])[-1]["type"] == TurnEventKind.Done.value
+    db.session.refresh(family)
+    assert [q["asked_at"] for q in family.get_diagram_data().questions] == [
+        "2026-09-27"
+    ]
+
+
+def test_a_follow_up_for_tomorrow_in_anchorage_is_not_refused_as_today(
+    anchorage_evening, web, token, family, monkeypatch
+):
+    # R-0758
+    """The 28th is tomorrow in Anchorage at 21:30 on the 27th; UTC's clock
+    already says the 28th and would refuse it as not after today."""
+    coach(
+        monkeypatch,
+        called(ToolName.FollowUp, when="2026-09-28", question="How was the party?"),
+        said("I will ask tomorrow."),
+    )
+    body = post(web, token, time_zone="America/Anchorage").get_json()
+    events = logged(body["turn_id"])
+    assert events[0]["type"] == TurnEventKind.ToolCall.value
+    assert "not after today" not in events[0]["result"]
+    assert events[-1]["type"] == TurnEventKind.Done.value
 
 
 def test_the_turn_is_handed_over_and_the_post_answers_at_once(

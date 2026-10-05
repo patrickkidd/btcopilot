@@ -8,7 +8,6 @@ The turn returns the coach's words plus the typed events behind them, so the
 page can move the picture with the same reply it types out.
 """
 
-import datetime
 import hashlib
 import itertools
 import logging
@@ -21,7 +20,16 @@ from google.genai.errors import APIError as GeminiError
 from opentelemetry import trace
 
 from btcopilot.extensions import ai_log, db
-from btcopilot import chips, clusters, coverage, profile, recordtext, turnlog, turnstore
+from btcopilot import (
+    chips,
+    clock,
+    clusters,
+    coverage,
+    profile,
+    recordtext,
+    turnlog,
+    turnstore,
+)
 from btcopilot.coachmodel import CoachModel, marked_ends
 from btcopilot.discussions import previous
 from btcopilot.metered import Metered
@@ -255,11 +263,15 @@ class CoachTurn:
         turn_id: str | None = None,
         resume: bool = False,
         scratch: bool = False,
+        zone: str | None = None,
     ):
         """A scratch turn runs on a copy: it charges no one's monthly cap and
         leaves the user's profile alone."""
         self.discussion = discussion
         self.statement = statement
+        # The person's IANA zone, sent by the page with the message: "today"
+        # is their day, not the server's. None, as on a resumed turn, is UTC.
+        self.zone = zone
         # The route stores the user's words before the turn is handed to the
         # worker, so the turn is told which statement it is answering.
         self.statement_id = statement_id
@@ -321,6 +333,7 @@ class CoachTurn:
             user_id=self.discussion.user_id,
             session_id=self.discussion.id,
             said=answered,
+            zone=self.zone,
         )
 
         # The coaching text is the same every turn and the rest is not, so the
@@ -336,7 +349,7 @@ class CoachTurn:
             interactions=recordtext.interactions(
                 recent(self.diagram.id, RECENT_INTERACTIONS)
             ),
-            today=datetime.date.today().isoformat(),
+            today=clock.today(self.zone).isoformat(),
             coverage=coverage.block(data, plateau(answered, self.diagram.id)),
         )
         last = last_notes(answered)

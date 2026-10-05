@@ -6,7 +6,7 @@ import flask
 import pytest
 
 import btcopilot
-from btcopilot import diagramjson
+from btcopilot import diagramjson, turns
 from btcopilot.discussions import open_session
 from btcopilot.models.etc import AccessRight
 from btcopilot.routes import Access
@@ -224,6 +224,27 @@ def test_chat_requires_json(web, token):
     # R-0453
     response = web.post("/app/chat", data="hello", headers={"X-CSRFToken": token})
     assert response.status_code == 415
+
+
+@pytest.mark.chat_flow
+def test_chat_hands_the_turn_the_time_zone_sent_with_the_words(web, token, monkeypatch):
+    # R-0758
+    """The browser's zone rides beside the words and reaches the worker's task;
+    a name the server does not know, or none, is handed on as none (UTC)."""
+    handed = []
+
+    def enqueue(*args, **kwargs):
+        handed.append(kwargs.get("zone"))
+        return turns.run(*args, **kwargs)
+
+    monkeypatch.setattr("btcopilot.turns.enqueue", enqueue)
+    for body in (
+        {"statement": "hi", "time_zone": "America/Anchorage"},
+        {"statement": "hi", "time_zone": "Mars/Olympus"},
+        {"statement": "hi"},
+    ):
+        assert post(web, token, "/app/chat", body).status_code == 202
+    assert handed == ["America/Anchorage", None, None]
 
 
 def test_session_of_another_user_is_not_found(web, token, test_user_2):

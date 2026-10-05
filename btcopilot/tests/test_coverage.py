@@ -498,6 +498,84 @@ def test_only_a_noted_event_names_the_item_it_records(family):
         )
 
 
+def test_a_closed_children_or_alive_question_makes_the_item_known(family):
+    # R-0758
+    data = parents(family.get_diagram_data())
+    children = (Fact.Children, ItemKind.PairBond, HOME)
+    alive = (Fact.Alive, ItemKind.Person, TOM)
+    assert coverage.state_of(data, *children) is FactState.NotAsked
+    assert coverage.evidence(data, *children) is None
+    assert coverage.fits(Fact.Children, ItemKind.PairBond)
+    assert not coverage.fits(Fact.Children, ItemKind.Person)
+    assert not coverage.fits(Fact.Alive, ItemKind.PairBond)
+
+    data.questions = [
+        {
+            "id": "q1",
+            "text": "How many children did your parents have?",
+            "kind": "fact",
+            "state": "resolved",
+            "outcome": "answered",
+            "item_kind": "pair_bond",
+            "item_id": str(HOME),
+            "fact": "children",
+        },
+        {
+            "id": "q2",
+            "text": "Is your father still alive?",
+            "kind": "fact",
+            "state": "resolved",
+            "outcome": "answered",
+            "item_kind": "person",
+            "item_id": str(TOM),
+            "fact": "alive",
+        },
+    ]
+    for item in (children, alive):
+        assert coverage.state_of(data, *item) is FactState.Known
+        assert coverage.states(data)[item] is FactState.Known
+    assert coverage.evidence(data, *children) == (
+        'q1 resolved fact "How many children did your parents have?" about pair_bond 4 '
+        "outcome=answered"
+    )
+    assert coverage.evidence(data, *alive) == (
+        'q2 resolved fact "Is your father still alive?" about person 3 outcome=answered'
+    )
+    # the record's own entries answer first; an item nobody required is still read
+    data.events = [{"id": 2, "kind": "death", "person": TOM, "dateTime": "2013-01-01"}]
+    assert coverage.evidence(data, *alive) == "2 2013-01-01 [death] person=3"
+    assert coverage.state_of(data, Fact.BirthDate, ItemKind.Person, NELL) is FactState.NotAsked
+    assert coverage.state_of(data, Fact.Alive, ItemKind.Person, ME) is FactState.Known
+    assert coverage.evidence(data, Fact.Alive, ItemKind.Person, ME) == (
+        "they are the person you are talking with"
+    )
+    assert coverage.label(data, ItemKind.Person, TOM) == "3 Tom (father)"
+    assert coverage.label(data, ItemKind.PairBond, HOME) == "couple 4, Ada and Tom (parents)"
+
+
+def test_the_chat_is_searched_for_a_relative_by_name_and_by_what_they_are_called(family):
+    # R-0758
+    data = parents(family.get_diagram_data())
+    assert coverage.spoken_as(data, ItemKind.Person, ME) is None
+    # a father is one of "my parents" too
+    assert coverage.spoken_as(data, ItemKind.Person, TOM) == [
+        "Tom", "father", "dad", "daddy", "papa", "parents", "folks",
+    ]
+    assert coverage.spoken_as(data, ItemKind.Person, NELL) == ["Nell", "sister"]
+    assert coverage.spoken_as(data, ItemKind.PairBond, HOME) == [
+        "Ada", "mother", "mum", "mom", "mommy", "mummy", "mama", "parents", "folks",
+        "Tom", "father", "dad", "daddy", "papa",
+    ]
+    # the person's own couple speaks as "we", and a generic name is no name
+    data.people += [{"id": SAM, "name": "Wren's partner"}]
+    data.pair_bonds.append(asdict(PairBond(id=BOND, person_a=ME, person_b=SAM)))
+    assert coverage.spoken_as(data, ItemKind.PairBond, BOND) is None
+    assert coverage.spoken_as(data, ItemKind.Person, SAM) == [
+        "partner", "husband", "wife", "spouse", "boyfriend", "girlfriend", "fianc",
+    ]
+    assert coverage.SEARCH_WORDS.keys() == set(Fact)
+
+
 def test_a_death_without_words_leaves_its_cause_unknown(family):
     # R-0364
     data = family.get_diagram_data()
