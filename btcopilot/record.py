@@ -103,6 +103,7 @@ def apply(
     user_id: int | None = None,
     session_id: int | None = None,
     statement_id: int | None = None,
+    refile: bool = False,
 ) -> Change:
     """Set each delta's `after` on the record and log the command.
 
@@ -114,6 +115,9 @@ def apply(
     the app's own scene does, and logs `before` as the whole item so undo puts
     it back. A field set on an id the record does not hold makes the item, and
     is logged as one add holding the whole item, so undo takes it off.
+
+    `refile` is the questions catch-up's alone: it moves a question, closed or
+    not, to another item and adds copies of it, and does nothing else to one.
     """
     with _locked(diagram_id) as diagram:
         data = diagramjson.loads(diagram.data)
@@ -127,6 +131,7 @@ def apply(
             user_id,
             session_id,
             statement_id,
+            refile=refile,
         )
 
 
@@ -558,7 +563,9 @@ def _removes(delta: dict) -> bool:
     return delta["field"] is None and delta["after"] is None
 
 
-def _validate(data: dict, deltas: list[dict], author: Author, undoing: bool):
+def _validate(
+    data: dict, deltas: list[dict], author: Author, undoing: bool, refile: bool = False
+):
     """Every cluster this write leaves behind holds at least MIN_CLUSTER_EVENTS
     events.
 
@@ -601,7 +608,7 @@ def _validate(data: dict, deltas: list[dict], author: Author, undoing: bool):
     _structure(data, deltas)
     # What a removal or an undo does to a question is the record's own doing.
     if not undoing and not any(_removes(delta) for delta in deltas):
-        _questions(data, deltas, author)
+        _questions(data, deltas, author, refile)
 
 
 COUPLE_KINDS = {kind.value for kind in EventKind if kind.isCouple()}
@@ -1224,6 +1231,10 @@ QUESTION_LINKS = (ItemKind.Person, ItemKind.PairBond, ItemKind.Event, ItemKind.C
 FACT_LINKS = (ItemKind.Person, ItemKind.PairBond)
 
 
+# The fields a re-filing writes on a question it moves.
+REFILED = ("item_kind", "item_id")
+
+
 @dataclass(frozen=True)
 class Note:
     """What differs between a question and an impression; everything else
@@ -1279,7 +1290,7 @@ def normal(text: str) -> str:
     return " ".join(text.lower().split())
 
 
-def _questions(data: dict, deltas: list[dict], author: Author):
+def _questions(data: dict, deltas: list[dict], author: Author, refile: bool = False):
     """A question or an impression has words, moves only forward from held to
     shown to resolved, says how it ended exactly when it is resolved, is kept
     once in the same words and never in words the user turned down, and is
@@ -1308,6 +1319,9 @@ def _questions(data: dict, deltas: list[dict], author: Author):
         moved = [d for d in mine if d["field"] == "state"]
         added = any(d["field"] is None for d in mine)
         was = None if added else QuestionState(moved[0]["before"] if moved else state)
+        if refile:
+            _refiled(data, question, question_id, added, written)
+            continue
         if state not in rules.order:
             raise Invalid(
                 f"{noun} {question_id} cannot be {state.value}: it is held, "
@@ -1385,6 +1399,19 @@ def _questions(data: dict, deltas: list[dict], author: Author):
                     f"that {noun} is already {other['id']}, {other['state']}: {_again(rules)}",
                     f"That {noun} is already there.",
                 )
+
+
+def _refiled(data: dict, question: dict, question_id: str, added: bool, written: set):
+    """A question filed on the wrong kind of thing, re-filed by the questions
+    catch-up even when closed: moved to the right item, or copied whole onto
+    another, and nothing else (R-0773)."""
+    if not (added or written <= set(REFILED)):
+        raise Invalid(
+            f"a re-filing only moves question {question_id} to another item",
+            "A question can only be moved here.",
+        )
+    _linked(data, question, question_id)
+    _names(question, question_id)
 
 
 def _again(rules) -> str:
@@ -1529,9 +1556,18 @@ def _unsourced(data: dict, impression: dict, impression_id: str):
 
 
 def _commit(
-    diagram, data, deltas, author, turn_id, user_id, session_id, statement_id, undoing=False
+    diagram,
+    data,
+    deltas,
+    author,
+    turn_id,
+    user_id,
+    session_id,
+    statement_id,
+    undoing=False,
+    refile=False,
 ) -> Change:
-    _validate(data, deltas, author, undoing)
+    _validate(data, deltas, author, undoing, refile)
     version = db.session.execute(
         sql_update(Diagram)
         .where(Diagram.id == diagram.id)

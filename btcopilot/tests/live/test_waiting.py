@@ -1,6 +1,5 @@
-"""A story the talk moves away from is kept as a question to come back to,
-and at a natural opening a waiting question comes before a new basic-data
-question.
+"""Stories left untold are kept for later, and a flat answer is followed by
+the question kept waiting, not by a fresh one from the still-unknown list.
 
 Invented names only.
 """

@@ -138,9 +138,10 @@ def item(data: DiagramData, args: dict, mine: dict[int, Statement]) -> dict:
 def moves(data: DiagramData) -> tuple[list[dict], list[dict]]:
     """Fact questions filed on the wrong kind of thing (coverage.fits): a
     couple's fact on a person moves to that person's one pair-bond, a
-    person's fact on a pair-bond with one partner to that partner. Any other
-    is left as is, with the reason: the record never changes a closed
-    question, and keeps an open one once in the same words, so it cannot be
+    person's fact on a pair-bond to its partner, and a closed one to each
+    partner, as one question per partner with the same words, state, outcome,
+    answer and dates (R-0773). Any other is left as is, with the reason: the
+    record keeps an open question once in the same words, so it cannot be
     open on both partners."""
     moved, left = [], []
     for q in data.questions:
@@ -161,28 +162,33 @@ def moves(data: DiagramData) -> tuple[list[dict], list[dict]]:
             "from": target(data, kind, q["item_id"]),
             "before": {k: q.get(k) for k in MATCHED},
         }
-        if q["state"] == QuestionState.Resolved:
-            left.append({**entry, "reason": "the record never changes a closed question"})
-            continue
+        closed = q["state"] == QuestionState.Resolved
         if kind is ItemKind.PairBond:
             bond = next(b for b in data.pair_bonds if str(b["id"]) == str(q["item_id"]))
             to = [
                 (ItemKind.Person, p) for p in (bond["person_a"], bond["person_b"]) if p is not None
             ]
-            why = f"the pair-bond has {len(to)} partners in the record, and an open question is kept once"
+            fits = len(to) == 1 or (closed and len(to) > 1)
+            why = f"the pair-bond has {len(to)} partners in the record" + (
+                "" if closed else ", and an open question is kept once"
+            )
         else:
             to = [
                 (ItemKind.PairBond, b["id"])
                 for b in data.pair_bonds
                 if int(q["item_id"]) in (b["person_a"], b["person_b"])
             ]
+            fits = len(to) == 1
             why = f"the person has {len(to)} pair-bonds, not one"
-        if len(to) != 1:
+        if not fits:
             left.append({**entry, "reason": why})
             continue
-        ((to_kind, to_id),) = to
         moved.append(
-            {**entry, "to": target(data, to_kind.value, to_id), "link": [to_kind.value, str(to_id)]}
+            {
+                **entry,
+                "to": ", ".join(target(data, k.value, i) for k, i in to),
+                "links": [[k.value, str(i)] for k, i in to],
+            }
         )
     return moved, left
 
@@ -369,26 +375,38 @@ def shown(plan: dict, path: pathlib.Path | None = None) -> list[dict]:
 
 
 def move(diagram: Diagram, one: dict) -> str | None:
-    """One wrong-kind question to its right target, as one change row; why
-    not, when the question changed since the dry run or the record refuses."""
-    q = next((q for q in diagram.get_diagram_data().questions if q["id"] == one["question"]), None)
+    """One wrong-kind question to its right target, and a copy of it to each
+    other target, as one change row; why not, when the question changed since
+    the dry run or the record refuses."""
+    questions = diagram.get_diagram_data().questions
+    q = next((q for q in questions if q["id"] == one["question"]), None)
     if q is None or {k: q.get(k) for k in one["before"]} != one["before"]:
         return "the question changed since the dry run"
+    first, *rest = one["links"]
+    taken = {x["id"] for x in questions if x["id"].startswith("q")}
+    filed = [(q["id"], dict(zip(record.REFILED, first)))]
+    for link in rest:
+        copy_id = record.next_key("q", taken)
+        taken.add(copy_id)
+        whole = {k: v for k, v in q.items() if k != "id" and v is not None}
+        filed.append((copy_id, {**whole, **dict(zip(record.REFILED, link))}))
     try:
         record.apply(
             diagram.id,
             [
                 {
                     "item_kind": ItemKind.Question.value,
-                    "item_id": q["id"],
+                    "item_id": qid,
                     "field": field,
                     "after": value,
                 }
-                for field, value in zip(("item_kind", "item_id"), one["link"])
+                for qid, fields in filed
+                for field, value in fields.items()
             ],
             author=Author.Coach,
             turn_id=TURN.format(diagram.id),
             user_id=diagram.user_id,
+            refile=True,
         )
     except record.Invalid as e:
         return str(e)

@@ -213,18 +213,63 @@ def test_a_question_the_record_will_not_move_is_left_as_is_with_the_reason(
     flask_app, tmp_path, kin, past
 ):
     # R-0760, R-0772
-    filed(kin, "q1", "birth_date", "pair_bond", "3")
     filed(kin, "q2", "work", "pair_bond", "3", state="asked")
     before = stored(kin)
     plan = dry(flask_app, tmp_path, calling())
 
     assert plan["moved"] == []
     assert [(m["question"], m["reason"]) for m in plan["left_as_is"]] == [
-        ("q1", "the record never changes a closed question"),
         ("q2", "the pair-bond has 2 partners in the record, and an open question is kept once"),
     ]
     apply(flask_app, plan)
     assert stored(kin) == before
+
+
+def test_a_closed_persons_fact_on_a_pair_bond_becomes_one_question_per_partner(
+    flask_app, tmp_path, kin, past
+):
+    # R-0773, R-0772
+    filed(kin, "q1", "birth_date", "pair_bond", "3")
+    filed(kin, "q2", "met", "person", "1", outcome="unknown")
+    before = stored(kin)
+    start = db.session.query(db.func.max(Change.id)).scalar() or 0
+    plan = dry(flask_app, tmp_path, calling())
+    assert [m["question"] for m in plan["moved"]] == ["q1", "q2"]
+
+    rows = apply(flask_app, plan)
+    assert [r["refused"] for r in rows if r["part"] == "wrong kind"] == [None, None]
+    after = stored(kin)
+    same = ("text", "kind", "state", "outcome", "fact", "session_id", "asked_at")
+    assert [(after[q]["item_kind"], after[q]["item_id"]) for q in ("q1", "q3", "q2")] == [
+        ("person", "1"),
+        ("person", "2"),
+        ("pair_bond", "3"),
+    ]
+    assert {k: after["q3"][k] for k in same} == {k: before["q1"][k] for k in same}
+    taken = [str(c.id) for c in Change.query.filter(Change.id > start)]
+    result = flask_app.test_cli_runner().invoke(
+        admin, ["diagrams", "undo", str(kin.id), *taken, "--yes"]
+    )
+    assert result.exit_code == 0, result.output
+    assert stored(kin) == before
+
+
+def test_only_the_catch_up_moves_a_closed_question(kin):
+    # R-0773
+    filed(kin, "q1", "birth_date", "pair_bond", "3")
+    moved = [
+        {"item_kind": "question", "item_id": "q1", "field": "item_kind", "after": "person"},
+        {"item_kind": "question", "item_id": "q1", "field": "item_id", "after": "1"},
+    ]
+    with pytest.raises(record.Invalid) as refused:
+        record.apply(kin.id, moved, author=Author.Coach, turn_id="coach")
+    assert refused.value.plain == "That question is already closed."
+    reworded = [{"item_kind": "question", "item_id": "q1", "field": "text", "after": "New?"}]
+    with pytest.raises(record.Invalid) as refused:
+        record.apply(kin.id, reworded, author=Author.Coach, turn_id="t", refile=True)
+    assert refused.value.plain == "A question can only be moved here."
+    record.apply(kin.id, moved, author=Author.Coach, turn_id="catch-up", refile=True)
+    assert (stored(kin)["q1"]["item_kind"], stored(kin)["q1"]["item_id"]) == ("person", "1")
 
 
 def test_a_question_changed_since_the_dry_run_is_not_moved(flask_app, tmp_path, kin, past):
