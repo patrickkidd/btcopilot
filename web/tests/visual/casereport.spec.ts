@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { leastName, wordsOutside } from "./gate";
+import { cutInFrame, leastName, wordsOutside } from "./gate";
 import { stateFor, type Key } from "./setup";
 
 /** The case report on the three case report fixtures at a phone's and a
@@ -282,6 +282,10 @@ test.describe("the case report's family pictures of a family many phones wide", 
     await page.locator("#case-family").click();
     await expect(page.locator("#case-famout")).toHaveClass(/in/);
     const slid = "#case-famout .fam svg";
+    // R-0759: the record's own person and their words whole in the frame, as the Family drawer opens
+    const own = await page.locator("#case-famout .fam[data-who]").first().getAttribute("data-who");
+    expect(await page.locator(`#case-famout .fam .pt[data-id="${own}"]`).first().textContent()).toContain("Margaret-Anne");
+    expect(await cutInFrame(page, "#case-famout .fam[data-who]", [own!])).toEqual({ fits: true, cut: {} });
     expect(await leastName(page, slid)).toBeGreaterThanOrEqual(13);
     expect(await wordsOutside(page, slid)).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

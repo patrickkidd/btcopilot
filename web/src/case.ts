@@ -148,7 +148,9 @@ export function picture(v: CaseView, still: Still, label: string): string {
   const svg = draw(L, { t: v.now, bonds, marks: [], died: new Set<string>(), moves: [], kin: [], label });
   // never drawn under the drawer's floor: a wider family pans in its frame (R-0759)
   const least = Math.ceil(L.vw * leastScale(L, FAM_PAD));
-  return `<div class="fam" style="--least:${least}px">${svg}</div>${unknown ? faint(UNKNOWN_NOTE) : ""}`;
+  const you = Object.keys(L.P).find((k) => L.P[k].you);
+  const who = you ? ` data-who="${esc(you)}"` : "";
+  return `<div class="fam" style="--least:${least}px"${who}>${svg}</div>${unknown ? faint(UNKNOWN_NOTE) : ""}`;
 }
 
 /** One side of the family: the one fold on the report (R-0689), its words

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { stateFor, boxOf, step } from "./setup";
-import { colours, leastName, wordsOutside } from "./gate";
+import { colours, cutInFrame, leastName, wordsOutside } from "./gate";
 import { mockTurn } from "./turn";
 
 /** The play-by-play drawer (R-0542, R-0562, R-0563). The `play` record holds
@@ -724,3 +724,42 @@ test.describe("a play-by-play wider than the phone", () => {
     }
   });
 });
+
+/** The `everymark` record's play-by-play, each step settled: the glide landed
+ * and the step's people slid to their places. */
+for (const viewport of [{ width: 393, height: 852 }, { width: 1280, height: 800 }])
+  test.describe(`a play-by-play at ${viewport.width} wide`, () => {
+    test.use({ storageState: stateFor("everymark"), viewport });
+
+    // R-0759, R-0744
+    test("opens each step with its people's names and ages whole inside the frame, or the step's person's when they reach wider", async ({ page }, info) => {
+      test.skip(info.project.name !== "phone", "the size is the describe's own");
+      await settle(page);
+      await stored(page).click();
+      await expect(drawer(page)).toBeVisible();
+      const draw = drawer(page).locator(".draw");
+      const steps: string[] = [];
+      for (;;) {
+        await draw.evaluate((d) => d.querySelector<SVGSVGElement>("svg")!.setCurrentTime(10));
+        let last = -1;
+        await expect.poll(async () => {
+          const at = await draw.evaluate((d) => d.scrollLeft);
+          const still = at === last;
+          last = at;
+          return still;
+        }, { intervals: [150] }).toBe(true);
+        const who = (await draw.getAttribute("data-who"))!;
+        const lit = await draw.evaluate((d) => [...d.querySelectorAll<SVGElement>('.hl.now[data-mark^="hl:"]')].map((m) => m.dataset.mark!.slice(3)));
+        const seen = await cutInFrame(page, "#pbp .draw", [...new Set([who, ...lit])]);
+        const at = (await step(page)) ?? "";
+        expect(seen.cut[who], `${at}: the step's person`).toBeUndefined();
+        if (seen.fits) expect(seen.cut, at).toEqual({});
+        steps.push(at);
+        const next = drawer(page).locator('[data-act="next"]:not([disabled])');
+        if (!(await next.count())) break;
+        await next.click();
+      }
+      expect(steps.length).toBeGreaterThan(1);
+      expect(await sideways(page)).toBe(false);
+    });
+  });

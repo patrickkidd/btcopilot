@@ -215,3 +215,32 @@ export const leastName = (page: Page, drawings: string) =>
       ),
     drawings,
   );
+
+/** The people `ids` of the family drawing in the frame `frame` as the frame
+ * shows them now: whether their shapes and words together fit its width, and
+ * the words of each cut at its visible left or right edge (R-0759). */
+export const cutInFrame = (page: Page, frame: string, ids: string[]) =>
+  page.evaluate(
+    ([sel, who]) => {
+      const f = document.querySelector<HTMLElement>(sel)!;
+      const r = f.getBoundingClientRect();
+      const left = r.left + f.clientLeft;
+      const right = left + f.clientWidth;
+      let lo = Infinity;
+      let hi = -Infinity;
+      const cut: Record<string, string[]> = {};
+      who.forEach((id) => {
+        const q = CSS.escape(id);
+        const marks = [...f.querySelectorAll(`.p[data-id="${q}"] .shape, .pt[data-id="${q}"] text`)];
+        marks.forEach((m) => {
+          const b = m.getBoundingClientRect();
+          if (!b.width) return;
+          lo = Math.min(lo, b.left);
+          hi = Math.max(hi, b.right);
+          if (b.left < left - 0.5 || b.right > right + 0.5) (cut[id] ??= []).push(m.textContent || "shape");
+        });
+      });
+      return { fits: hi - lo <= f.clientWidth, cut };
+    },
+    [frame, ids] as const,
+  );

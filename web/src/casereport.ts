@@ -6,7 +6,7 @@ import { Card, caseView } from "./caseview";
 import { aimedEvents, chipOf } from "./chips";
 import { BACK } from "./tokens";
 import { CLUSTER, esc, flash, slideOver } from "./dom";
-import { Drawer } from "./drawer";
+import { Drawer, frameOn } from "./drawer";
 import { Lens } from "./lens";
 import { Sheet } from "./sheet";
 import { untold } from "./snapshots";
@@ -182,6 +182,7 @@ export class CaseReport implements View {
     const dash = dashboard(v);
     q(this.root, "case-dash").innerHTML = wide ? dash : "";
     q(this.root, "case-famout-body").innerHTML = wide ? "" : dash;
+    this.onYou(this.root);
     this.lens.picture.setData(opened.record);
     this.lens.rest();
     this.follow();
@@ -254,10 +255,7 @@ export class CaseReport implements View {
       if (pinned) flash(pinned, true);
       return;
     }
-    if (card === Card.Family) {
-      slideOver(this.famout, true);
-      return;
-    }
+    if (card === Card.Family) return this.family();
     if (!at) return;
     this.asked = card;
     // the glide passes other cards on its way; the one asked for stays lit
@@ -265,6 +263,18 @@ export class CaseReport implements View {
     window.setTimeout(() => (this.gliding = false), GLIDE_MS);
     flash(at, true);
     this.follow();
+  }
+
+  /** The family slid out on the phone, its pictures on the record's own person. */
+  private family(): void {
+    slideOver(this.famout, true);
+    this.onYou(this.famout);
+  }
+
+  /** Each picture wider than its frame opens on the record's own person and
+   * their words, as the Family drawer opens on its step's person (R-0759). */
+  private onYou(within: HTMLElement): void {
+    within.querySelectorAll<HTMLElement>(".fam[data-who]").forEach((f) => frameOn(f, [f.dataset.who!], f.dataset.who!, false));
   }
 
   private async book(button: HTMLElement): Promise<void> {
@@ -292,7 +302,7 @@ export class CaseReport implements View {
     if (all) return this.chip({ kind: ChipKind.Event, target: all.dataset.target!, label: "Coach", tone: ChipTone.Data, bare: false });
     const jump = hit("[data-jump]");
     if (jump) return this.jump(jump.dataset.jump as Card);
-    if (hit("#case-family, .famcard")) return slideOver(this.famout, true);
+    if (hit("#case-family, .famcard")) return this.family();
     if (hit("#case-famout-close")) return slideOver(this.famout, false);
     const chip = hit("button.chip[data-kind]");
     if (chip && !hit("#case-pbp")) {

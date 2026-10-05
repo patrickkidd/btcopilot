@@ -138,6 +138,42 @@ export const topLine = (told: Told, i: number) => {
 export const pictureHeight = (natural: number, room: number, captions: number[], floor: number) =>
   Math.max(Math.min(natural, floor), Math.min(natural, room - Math.max(...captions)));
 
+/** Where a drawn person and their words rest across the drawing, in the
+ * frame's scroll coordinates: their place after a step's slide, never where
+ * the slide has them now. */
+function span(frame: HTMLElement, svg: SVGSVGElement, id: string): [number, number] {
+  const m = svg.getScreenCTM()!;
+  const from = frame.getBoundingClientRect().left + frame.clientLeft - frame.scrollLeft;
+  let lo = Infinity;
+  let hi = -Infinity;
+  svg.querySelectorAll<SVGGraphicsElement>(`.p[data-id="${CSS.escape(id)}"], .pt[data-id="${CSS.escape(id)}"]`).forEach((g) => {
+    const b = g.getBBox();
+    if (!b.width) return;
+    const slid = g.parentElement!.classList.contains("slid") ? (g.parentElement as unknown as SVGGraphicsElement).transform.baseVal.consolidate() : null;
+    const dx = slid ? slid.matrix.e : 0;
+    lo = Math.min(lo, m.a * (b.x + dx) + m.e - from);
+    hi = Math.max(hi, m.a * (b.x + b.width + dx) + m.e - from);
+  });
+  return [lo, hi];
+}
+
+/** A picture wider than its frame, put on the people `ids` with their names
+ * and ages whole inside the frame; when they reach wider than it, on `who`
+ * and their words, as near the rest as that allows (R-0759). The play-by-play,
+ * the Family drawer and the case report's pictures all open this way. */
+export function frameOn(frame: HTMLElement, ids: string[], who: string, glide: boolean): void {
+  if (frame.scrollWidth <= frame.clientWidth) return;
+  const svg = frame.querySelector<SVGSVGElement>("svg")!;
+  const spans = ids.map((id) => span(frame, svg, id));
+  const lo = Math.min(...spans.map((s) => s[0]));
+  const hi = Math.max(...spans.map((s) => s[1]));
+  const w = frame.clientWidth;
+  const [wl, wh] = span(frame, svg, who);
+  const mid = hi - lo <= w ? (lo + hi) / 2 : Math.min(Math.max((lo + hi) / 2, wh - w / 2), wl + w / 2);
+  const left = Math.min(Math.max(mid - w / 2, 0), frame.scrollWidth - w);
+  frame.scrollTo({ left, behavior: glide ? "smooth" : "instant" });
+}
+
 export class Drawer {
   private told: Told | null = null;
   private statement: number | null = null;
@@ -231,14 +267,10 @@ export class Drawer {
     q(".draw").innerHTML = shot.svg;
     q(".scroll").innerHTML = below(told, this.i, this.statement);
     this.fit();
-    this.centre(shot.who, glide);
-  }
-
-  /** The person the step is about in the middle of the frame, when the picture is wider than it. */
-  private centre(who: string, glide: boolean): void {
-    const draw = this.panel.querySelector<HTMLElement>(".draw")!;
-    if (draw.scrollWidth <= draw.clientWidth) return;
-    draw.scrollTo({ left: this.told!.layout.x[who] * this.scale - draw.clientWidth / 2, behavior: glide ? "smooth" : "instant" });
+    const draw = q(".draw");
+    const lit = [...draw.querySelectorAll<SVGElement>('.hl.now[data-mark^="hl:"]')].map((m) => m.dataset.mark!.slice(3));
+    draw.dataset.who = shot.who;
+    frameOn(draw, lit.length ? lit : [shot.who], shot.who, glide);
   }
 
   private fit(): void {
