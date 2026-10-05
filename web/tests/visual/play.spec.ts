@@ -746,15 +746,16 @@ test.describe("the whole family of a family many phones wide", () => {
   test.use({ storageState: stateFor("case-report-dense"), viewport: { width: 393, height: 852 } });
 
   // R-0759, R-0744, R-0749, R-0766
-  test("opens with the step's person in the frame, names at 13px or more and short, every word inside what the frame scrolls to", async ({ page }) => {
+  test("opens with the record's own person in the frame, names at 13px or more and short, every word inside what the frame scrolls to", async ({ page }) => {
     const errors = watched(page);
     await settle(page);
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
-    // opened, not glided: the frame is already on the step's person
+    // opened, not glided: the frame is already on the record's own person, Margaret-Anne
     const at = await drawer(page).evaluate((p) => {
       const draw = p.querySelector<HTMLElement>(".draw")!;
-      const shape = draw.querySelector(`.p[data-id="${draw.dataset.who}"] .shape`)!.getBoundingClientRect();
+      const own = [...draw.querySelectorAll<SVGGElement>(".pt")].find((g) => g.querySelector(".lbn")?.textContent === "Margaret-Anne")!.dataset.id;
+      const shape = draw.querySelector(`.p[data-id="${own}"] .shape`)!.getBoundingClientRect();
       const f = draw.getBoundingClientRect();
       return { wide: draw.scrollWidth > 4 * draw.clientWidth, inside: shape.left >= f.left && shape.right <= f.right };
     });
@@ -827,6 +828,48 @@ for (const viewport of [{ width: 393, height: 852 }, { width: 1280, height: 800 
       expect(await sideways(page)).toBe(false);
     });
   });
+
+test.describe("a play-by-play a little wider than the phone", () => {
+  test.use({ storageState: stateFor("everymark"), viewport: { width: 393, height: 852 } });
+
+  test("lands each step where no name or word is cut by the frame, whenever they all fit in it", async ({ page }) => {
+    // R-0759
+    await settle(page);
+    await stored(page).click();
+    await expect(drawer(page)).toBeVisible();
+    const draw = drawer(page).locator(".draw");
+    expect(await draw.evaluate((d) => d.scrollWidth > d.clientWidth)).toBe(true);
+    const cut: string[] = [];
+    let fitting = 0;
+    for (;;) {
+      let last = -1;
+      await expect.poll(async () => {
+        const at = await draw.evaluate((d) => d.scrollLeft);
+        const still = at === last;
+        last = at;
+        return still;
+      }, { intervals: [400] }).toBe(true);
+      const seen = await draw.evaluate((d) => {
+        const f = d.getBoundingClientRect();
+        const [left, right] = [f.left + d.clientLeft, f.left + d.clientLeft + d.clientWidth];
+        const marks = [...d.querySelectorAll(".pt text, text.evw")].map((t) => ({ t: t.textContent!, b: t.getBoundingClientRect() })).filter((m) => m.b.width);
+        const lo = Math.min(...marks.map((m) => m.b.left));
+        const hi = Math.max(...marks.map((m) => m.b.right));
+        return { fits: hi - lo <= d.clientWidth, cut: marks.filter((m) => m.b.left < left - 0.5 || m.b.right > right + 0.5).map((m) => m.t) };
+      });
+      if (seen.fits) {
+        fitting++;
+        const at = await step(page);
+        cut.push(...seen.cut.map((t) => `${at}: ${t}`));
+      }
+      const next = drawer(page).locator('[data-act="next"]:not([disabled])');
+      if (!(await next.count())) break;
+      await next.click();
+    }
+    expect(fitting).toBeGreaterThan(10);
+    expect(cut).toEqual([]);
+  });
+});
 
 /** Margaret-Anne's wide family (`case-report-dense`), its whole family opened
  * from the Family button at the phone's width and the desktop's. */

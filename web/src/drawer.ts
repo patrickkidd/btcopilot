@@ -143,11 +143,16 @@ export const pictureHeight = (natural: number, room: number, captions: number[],
  * frame's scroll coordinates: their place after a step's slide, never where
  * the slide has them now. */
 function span(frame: HTMLElement, svg: SVGSVGElement, id: string): [number, number] {
+  return reach(frame, svg, svg.querySelectorAll<SVGGraphicsElement>(`.p[data-id="${CSS.escape(id)}"], .pt[data-id="${CSS.escape(id)}"]`));
+}
+
+/** Where the marks `marks` rest across the drawing, as `span` reads a person. */
+function reach(frame: HTMLElement, svg: SVGSVGElement, marks: Iterable<SVGGraphicsElement>): [number, number] {
   const m = svg.getScreenCTM()!;
   const from = frame.getBoundingClientRect().left + frame.clientLeft - frame.scrollLeft;
   let lo = Infinity;
   let hi = -Infinity;
-  svg.querySelectorAll<SVGGraphicsElement>(`.p[data-id="${CSS.escape(id)}"], .pt[data-id="${CSS.escape(id)}"]`).forEach((g) => {
+  [...marks].forEach((g) => {
     const b = g.getBBox();
     if (!b.width) return;
     const slid = g.parentElement!.classList.contains("slid") ? (g.parentElement as unknown as SVGGraphicsElement).transform.baseVal.consolidate() : null;
@@ -171,7 +176,22 @@ export function frameOn(frame: HTMLElement, ids: string[], who: string, glide: b
   const w = frame.clientWidth;
   const [wl, wh] = span(frame, svg, who);
   const mid = hi - lo <= w ? (lo + hi) / 2 : Math.min(Math.max((lo + hi) / 2, wh - w / 2), wl + w / 2);
-  const left = Math.min(Math.max(mid - w / 2, 0), frame.scrollWidth - w);
+  const end = frame.scrollWidth - w;
+  const clamp = (v: number, a: number, b: number) => Math.min(Math.max(v, a), b);
+  const want = clamp(mid - w / 2, 0, end);
+  // anywhere the step's people (or, when they reach wider, its person) stay
+  // whole, the frame lands where it cuts the fewest other names, nearest
+  // where it was headed: a name at the drawing's edge gets room (R-0759)
+  const [a, b] = hi - lo <= w ? [hi - w, lo] : [wh - w, wl];
+  const [from, to] = [clamp(Math.min(a, b), 0, end), clamp(Math.max(a, b), 0, end)];
+  const names = [
+    ...[...svg.querySelectorAll<SVGGElement>(".p[data-id]")].map((g) => span(frame, svg, g.dataset.id!)),
+    ...[...svg.querySelectorAll<SVGTextElement>("text.evw")].map((t) => reach(frame, svg, [t])),
+  ];
+  const cuts = (l: number) => names.filter(([p, q]) => (p < l - 0.5 && l + 0.5 < q) || (p < l + w - 0.5 && l + w + 0.5 < q)).length;
+  const left = [want, ...names.flatMap(([p, q]) => [p, q - w])]
+    .map((l) => clamp(l, from, to))
+    .reduce((best, l) => (cuts(l) < cuts(best) || (cuts(l) === cuts(best) && Math.abs(l - want) < Math.abs(best - want)) ? l : best));
   pan(frame, Math.round(left), glide && !still());
 }
 
