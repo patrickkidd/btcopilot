@@ -83,6 +83,8 @@ for (const key of FIXTURES)
           expect(seen.outside).toBe(0);
           expect(seen.sideways).toBe(false);
           expect(seen.text).not.toMatch(/NaN|undefined|not in the record|From the record/);
+          // stored words show as written: an apostrophe is never escaped code
+          expect(seen.text).not.toMatch(/&#39;|&#x27;|&apos;|&amp;|&quot;/);
           // every family picture is drawn; each side is one picture (R-0733)
           expect(seen.text).not.toContain("cannot be drawn");
           expect(seen.sidePictures).toEqual(seen.sideCount);
@@ -101,8 +103,20 @@ test.describe("the case report with little in the record", () => {
     const record = await (await page.request.get("/app/timeline")).json();
     expect(record.asked_questions.filter((q: { open: boolean; kind: string; case_report_card: string | null }) => q.open && q.kind === "impression" && q.case_report_card === "work_on")).toEqual([]);
     const card = page.locator('#case-body .level[data-card="work_on"]');
-    await expect(card.locator(".bub.coach")).toHaveText(/You have not said yet what you are working on\. Chat more with me about it\./);
+    await expect(card.locator(".bub.coach")).toHaveText(/You haven't said yet what you're working on\. Chat more with me about it\./);
     await expect(card).not.toContainText("Not enough in the record to make a guess yet");
+  });
+});
+
+test.describe("the case report's words", () => {
+  test.use({ storageState: stateFor("case-report"), viewport: SIZES[0] });
+
+  // R-0740
+  test("a guess with an apostrophe shows the apostrophe, never escaped code", async ({ page }) => {
+    await open(page);
+    const card = page.locator('#case-body .level[data-card="guesses"]');
+    await expect(card.locator(".bub.coach").first()).toContainText("Your father's drinking got heavy");
+    await expect(card).not.toContainText("&#39;");
   });
 });
 

@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import { cards, NOT_ENOUGH, NOT_SAID, rail } from "../src/case";
 import { Card, caseView, ORDER } from "../src/caseview";
+import { esc } from "../src/dom";
 import {
   CaseReportCard,
   EventKind,
@@ -151,7 +152,7 @@ it("says on what to work on that the person has not said yet what they are worki
   const tl = halloran();
   tl.asked_questions = [guess("i9", "A guess on no card.", null, [202])];
   const work = cards(caseView(tl, ONE, ""), false).split(`data-card="${Card.WorkOn}"`)[1].split("</section>")[0];
-  expect(work).toContain(NOT_SAID);
+  expect(work).toContain(esc(NOT_SAID));
   expect(work).not.toContain(NOT_ENOUGH);
 });
 
