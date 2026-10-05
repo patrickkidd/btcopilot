@@ -305,13 +305,14 @@ def test_a_follow_up_for_the_day_after_saturday_waits_for_sunday_where_the_perso
     assert [s["text"] for s in said] == ["How did Sunday dinner go?"]
 
 
-def test_with_no_zone_kept_the_sending_hours_are_utcs(family, sent):
+def test_with_no_zone_kept_the_sending_hours_are_alaskas_as_before(family, sent):
     # R-0760
     family.timezone = None
     db.session.commit()
+    three_am_in_anchorage = T0.replace(hour=11)
+    assert _why(proactive.run(now=three_am_in_anchorage)) == [Reason.Night]
     noon_in_anchorage = T0
-    assert _why(proactive.run(now=noon_in_anchorage)) == [Reason.Night]
-    assert _why(proactive.run(now=T0.replace(hour=12))) != [Reason.Night]
+    assert _why(proactive.run(now=noon_in_anchorage)) != [Reason.Night]
 
 
 def test_rarely_waits_a_month_after_the_last_unasked_message(family, sent):

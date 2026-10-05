@@ -57,7 +57,7 @@ RETURNED_WITHIN = datetime.timedelta(days=7)
 # How long after sending the loop's counts are still looked for.
 COUNTED_FOR = datetime.timedelta(days=14)
 # The coders' meeting reminders wait for the day in Alaska; a person's own
-# messages wait for the day in the zone kept on their row, UTC with none.
+# messages wait for the day in the zone kept on their row, Alaska with none.
 ZONE = ZoneInfo("America/Anchorage")
 HOURS = range(9, 20)
 # Words that broke the shape this many times for one pattern end its tries.
@@ -177,7 +177,7 @@ def _utc(moment: datetime.datetime) -> datetime.datetime:
 
 
 def _zone(name: str | None) -> datetime.tzinfo:
-    return ZoneInfo(name) if name else datetime.timezone.utc
+    return ZoneInfo(name) if name else ZONE
 
 
 def daytime(moment: datetime.datetime, zone: datetime.tzinfo = ZONE) -> bool:
