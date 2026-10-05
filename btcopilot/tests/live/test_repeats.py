@@ -7,7 +7,6 @@ Invented names only.
 """
 
 import datetime
-import re
 
 import pytest
 from mock import patch
@@ -19,7 +18,8 @@ from btcopilot.extensions import db
 from btcopilot.models import Discussion, Observation, ObservationKind, Statement
 from btcopilot.schema import Fact, FactState, ItemKind
 from btcopilot.tests.conftest import replied
-from btcopilot.tests.live.criterion import once, passes
+from btcopilot.tests.live.checks import asks_children, asks_father_alive_or_age, title_retry
+from btcopilot.tests.live.criterion import Broken, once, passes
 
 
 class Breaks:
@@ -81,16 +81,22 @@ GRANDFATHER = {"id": 8, "name": "Joe", "last_name": "Hale", "gender": "male"}
 DIED = {"id": 31, "kind": "death", "person": 8, "dateTime": "2010-03-15"}
 
 
-# 2 of 3: the coach sometimes keeps "it hit my mom hard" as a new shift whose
-# first try lacks a title, and the retry is written down as a refusal; that is
-# not a repeat (seen once on the subscription, 2026-10-05).
+# 2 of 3 on one thing only: the coach sometimes keeps "it hit my mom hard" as
+# a new shift whose first try lacks a title, and the retry is written down as
+# a refusal (seen once on the subscription, 2026-10-05). A second death row,
+# or anything else written down, fails the case on any run.
 @passes(2, of=3)
 def test_an_event_said_again_is_not_added_again(coach):
     # R-0442, R-0481
     coach.record([GRANDFATHER], events=[DIED])
     coach.say("Like I said, my grandpa Joe died in March 2010. It hit my mom hard.")
-    assert [e["id"] for e in coach.events if e.get("kind") == "death"] == [31]
-    assert repeats(coach) == [], [(o.kind, o.detail) for o in repeats(coach)]
+    deaths = [e["id"] for e in coach.events if e.get("kind") == "death"]
+    if deaths != [31]:
+        raise Broken(f"the death was added again: {deaths}")
+    found = [(o.kind, o.detail) for o in repeats(coach)]
+    if any(not (k == ObservationKind.ToolRefused and title_retry(d)) for k, d in found):
+        raise Broken(f"a repeat was written down: {found}")
+    assert found == [], found
 
 
 BROTHER = {"id": 4, "name": "Colm", "gender": "male", "parents": 10}
@@ -165,29 +171,6 @@ FILLER = [
 ]
 
 
-# A question whether they have, had or plan children; one about how they took
-# learning they could not have them is a story to come back to (R-0770).
-KIDS = r"\b(children|child|kids?|sons?|daughters?|baby|babies)\b"
-HAVING = (
-    r"\b(do|did|does|are|were|will|would|have|has)\s+(you|you two|you both|both of you|"
-    r"you and Sam|Sam|we)\s+(ever\s+|still\s+|now\s+)?(have|had|want|wanted|plan|planning|"
-    r"planned|hope|hoping|try|trying|think|thinking|considered|considering|adopt)\b[^?]{0,40}"
-    + KIDS
-    + r"|\b(any|how many)\s+(\w+\s+)?"
-    + KIDS
-    + r"|\bhaving\s+(\w+\s+)?"
-    + KIDS
-)
-
-def asks(reply: str, who: str, what: str) -> list[str]:
-    """The questions in the reply that name the person and the item."""
-    return [
-        q.strip()
-        for q in re.findall(r"[^.?!]*\?", reply)
-        if re.search(who, q, re.I) and re.search(what, q, re.I)
-    ]
-
-
 def sitting(coach, lines: list[str]) -> None:
     """A finished sitting of the person and the coach in turn, in the words the
     coach reads back and searches."""
@@ -234,7 +217,7 @@ def test_a_person_who_said_they_cannot_have_children_is_not_asked_about_children
     opened(coach)
 
     reply = coach.say(ABOUT_US)
-    assert asks(reply, r"\b(you|your|we|Sam)\b", HAVING) == [], reply
+    assert asks_children(reply) == [], reply
     assert state(coach, Fact.Children, ItemKind.PairBond, 11) is FactState.Known
 
 
@@ -249,11 +232,7 @@ def test_a_father_given_a_birth_date_and_still_married_is_not_asked_if_alive_or_
     opened(coach)
 
     reply = coach.say(ABOUT_PARENTS)
-    assert asks(
-        reply,
-        r"\b(dad|father|Hugh)\b",
-        r"\b(alive|living|still with|still around|passed|died|how old|age|aged|born|birthday|birth date)\b",
-    ) == [], reply
+    assert asks_father_alive_or_age(reply) == [], reply
     assert state(coach, Fact.Alive, ItemKind.Person, 3) is FactState.Known
 
 
@@ -269,4 +248,4 @@ def test_what_a_past_sitting_said_of_children_is_found_before_the_coach_asks(coa
     opened(coach)
 
     reply = coach.say(ABOUT_US)
-    assert asks(reply, r"\b(you|your|we|Sam)\b", HAVING) == [], reply
+    assert asks_children(reply) == [], reply

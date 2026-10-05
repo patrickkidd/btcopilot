@@ -10,6 +10,7 @@ import datetime
 from btcopilot.extensions import db
 from btcopilot.models import Discussion, Speaker, SpeakerType, Statement
 from btcopilot.schema import Fact
+from btcopilot.tests.live.checks import asks_most_first
 from btcopilot.tests.live.criterion import passes
 
 SISTER = {"id": 4, "name": "Nell", "last_name": "Hale", "gender": "female", "parents": 10}
@@ -151,5 +152,5 @@ def test_the_coach_asks_in_its_next_reply_once_the_record_holds_what_brings_them
 
     opened(coach)
     reply = coach.say(ELSEWHERE)
-    assert "two or three times when the most was going on" in reply, reply
+    assert asks_most_first(reply), reply
     assert len(asked(coach)) == 1

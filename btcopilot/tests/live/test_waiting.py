@@ -9,6 +9,7 @@ from freezegun import freeze_time
 from btcopilot.extensions import db
 from btcopilot.models import Author, Discussion, Statement
 from btcopilot.schema import QuestionState
+from btcopilot.tests.live.checks import asks_only_waiting
 from btcopilot.tests.live.conftest import TODAY
 from btcopilot.tests.live.criterion import passes
 from btcopilot.toolbox import ToolName, Toolbox
@@ -113,7 +114,7 @@ def test_at_a_flat_answer_the_waiting_question_comes_before_new_basic_data(coach
 
     reply = coach.say("I have no idea.")
     after = {q["id"]: q for q in questions(coach)}
-    assert any(w in reply.lower() for w in ("drink", "drank")), reply
+    assert asks_only_waiting(reply), reply
     assert after["q2"]["state"] == QuestionState.Asked, after["q2"]
     new = [q for i, q in after.items() if i not in ("q1", "q2", "q3") and q["state"] == QuestionState.Asked]
     assert new == [], (reply, new)

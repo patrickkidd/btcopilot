@@ -23,6 +23,10 @@ class Criterion:
         return "once" if self.n == 1 else f"{self.k} of {self.n}"
 
 
+class Broken(Exception):
+    """A miss no k of n tolerates: it fails the case on the run it happens."""
+
+
 def missed(case, args, kwargs) -> str | None:
     try:
         case(*args, **kwargs)
