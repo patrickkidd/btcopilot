@@ -737,14 +737,15 @@ function move(
             target: "btrem2",
             marks:
               storm(target) +
+              // the clearing reaches as far as every other field (R-0776)
               `<circle class="mv-clear" cx="${n1(actor.x)}" cy="${n1(actor.y)}" ` +
               `r="20" opacity="0">` +
               // on the board the one who holds still clears once they have; where
               // the people stay put the clearing keeps coming, from the start
               (actor.still
-                ? `<animate attributeName="r" values="18;120" dur="${s_(SPEED.ring)}" repeatCount="indefinite"/>` +
+                ? `<animate attributeName="r" values="18;${Math.round(FIELD * tall(actor))}" dur="${s_(SPEED.ring)}" repeatCount="indefinite"/>` +
                   `<animate attributeName="opacity" values=".95;0" dur="${s_(SPEED.ring)}" repeatCount="indefinite"/>`
-                : `<animate attributeName="r" values="18;120" dur="${s_(SPEED.ring)}" begin="3.2s;11.2s"/>` +
+                : `<animate attributeName="r" values="18;${Math.round(FIELD * tall(actor))}" dur="${s_(SPEED.ring)}" begin="3.2s;11.2s"/>` +
                   `<animate attributeName="opacity" values=".95;0" dur="${s_(SPEED.ring)}" begin="3.2s;11.2s"/>`) +
               `</circle>`,
           }

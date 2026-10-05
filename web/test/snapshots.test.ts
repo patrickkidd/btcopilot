@@ -649,11 +649,11 @@ describe("moves other than toward and away", () => {
   });
 
   // R-0776
-  it("runs every field's rings out to the one reach, however near its person stands to the picture's edge", () => {
+  it("runs every field's rings out to the one reach, however near its person stands to the picture's edge, the clearing of one who holds their ground too", () => {
     const reaches = ["distance", "cutoff", "defined-self"].flatMap((kind) =>
-      [...moved(kind).shot(1).svg.matchAll(/<circle class="fld[^"]*"[^>]*><animate attributeName="r" values="[\d.]+;([\d.]+)"/g)].map((m) => `${kind} ${m[1]}`),
+      [...moved(kind).shot(1).svg.matchAll(/<circle class="(fld[^"]*|mv-clear)"[^>]*><animate attributeName="r" values="[\d.]+;([\d.]+)"/g)].map((m) => `${kind} ${m[1]} ${m[2]}`),
     );
-    expect(reaches.length).toBeGreaterThan(0);
+    expect(reaches.filter((r) => r.includes("mv-clear"))).toHaveLength(1);
     expect(reaches.filter((r) => !r.endsWith(` ${FIELD}`))).toEqual([]);
   });
 
